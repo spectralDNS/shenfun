@@ -721,38 +721,45 @@ class ADDmat(ShenMatrix):
 
         return c
 
-    def solve(self, b, u):
-        u.fill(0)
-        d = self[0]
-        d1 = self[2]
-        N = u.shape[0]
+    def solve(self, b, u=None):
+        N = self.shape[0] + 2
+        s = self.trialfunction.slice(N)
+        if b.shape[0] == N:
+            b = b[s]
+
+        if u is None:
+            u = np.zeros((N,)+b.shape[1:])
+            v = u[s]
+        elif u.shape[0] == N:
+            u.fill(0)
+            v = u[s]
+        elif u.shape[0] == N-2:
+            u.fill(0)
+            v = u
+
+        assert b.shape[0] == N-2
+        assert v.shape[0] == N-2
+
         if len(u.shape) == 1:
-            u[-1] = b[-1] / d[-1]
-            u[-2] = b[-2] / d[-2]
             se = 0.0
             so = 0.0
-            for k in range(N-3, -1, -1):
-                if k%2 == 0:
-                    se += u[k+2]
-                    u[k] = b[k] - d1[k]*se
-                else:
-                    so += u[k+2]
-                    u[k] = b[k] - d1[k]*so
-                u[k] /= d[k]
         else:
-            N = u.shape
-            u[-1] = b[-1] / d[-1]
-            u[-2] = b[-2] / d[-2]
-            se = zeros((N[1], N[2]))
-            so = zeros((N[1], N[2]))
-            for k in range(N-3, -1, -1):
-                if k%2 == 0:
-                    se += u[k+2]
-                    u[k] = b[k] - d1[k]*se
-                else:
-                    so += u[k+2]
-                    u[k] = b[k] - d1[k]*so
-                u[k] /= d[k]
+            se = np.zeros(v.shape[1:])
+            so = np.zeros(v.shape[1:])
+
+        d = self[0]
+        d1 = self[2]
+        M = v.shape
+        v[-1] = b[-1] / d[-1]
+        v[-2] = b[-2] / d[-2]
+        for k in range(M[0]-3, -1, -1):
+            if k%2 == 0:
+                se += v[k+2]
+                v[k] = b[k] - d1[k]*se
+            else:
+                so += v[k+2]
+                v[k] = b[k] - d1[k]*so
+            v[k] /= d[k]
         return u
 
 

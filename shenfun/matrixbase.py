@@ -4,6 +4,7 @@
 from __future__ import division
 import numpy as np
 from scipy.sparse import diags as sp_diags
+from scipy.sparse.linalg import spsolve
 import six
 from copy import deepcopy
 from . import inheritdocstrings
@@ -237,7 +238,21 @@ class SparseMatrix(dict):
         Vectors may be one- or multidimensional. Solve along first axis.
 
         """
-        raise NotImplementedError
+        assert self.shape[0] == self.shape[1]
+        assert self.shape[0] == b.shape[0]
+        if u is None:
+            u = b
+        if b.ndim == 1:
+            u[:] = spsolve(self.diags(), b)
+        else:
+            #for i in np.ndindex(b.shape[1:]):
+                #u[(slice(None),)+i] = spsolve(self.diags(), b[(slice(None),)+i])
+
+            N = b.shape[0]
+            P = np.prod(b.shape[1:])
+            u[:] = spsolve(self.diags(), b.reshape((N, P))).reshape(b.shape)
+
+        return u
 
 
 @inheritdocstrings
@@ -409,6 +424,22 @@ class ShenMatrix(SparseMatrix):
         Dsp *= self.scale
         for key, val in six.iteritems(self):
             assert np.allclose(val, Dsp[key])
+
+    def solve(self, b, u=None):
+        assert self.shape[0] == self.shape[1]
+        s = self.testfunction.slice(b.shape[0])
+        if u is None:
+            u = b
+        if b.ndim == 1:
+            u[s] = spsolve(self.diags(), b[s])
+        else:
+            #for i in np.ndindex(b.shape[1:]):
+                #u[(s,)+i] = spsolve(self.diags(), b[(s,)+i])
+            N = b[s].shape[0]
+            P = np.prod(b[s].shape[1:])
+            u[s] = spsolve(self.diags(), b[s].reshape((N, P))).reshape(b[s].shape)
+        return u
+
 
 def extract_diagonal_matrix(M, tol=1e-8):
     """Return matrix with essentially zero diagonals nulled out
