@@ -39,18 +39,18 @@ def BDNmat_matvec(real_t ud,
     cdef:
         int i, j, k
         int N = v.shape[0]-2
+
     for j in xrange(b.shape[1]):
         for k in xrange(b.shape[2]):
-            b[0, j, k] = ud*v[2, j, k]
-            b[1, j, k] = ud*v[3, j, k] + dd[0]*v[1, j, k]
-            b[2, j, k] = ud*v[4, j, k] + dd[1]*v[2, j, k]
-            b[N-2, j, k] = ld[N-5]*v[N-4, j, k] + dd[N-3]*v[N-2, j, k]
-            b[N-1, j, k] = ld[N-4]*v[N-3, j, k] + dd[N-2]*v[N-1, j, k]
+            b[0, j, k] = ud*v[2, j, k] + dd[0]*v[0, j, k]
+            b[1, j, k] = ud*v[3, j, k] + dd[1]*v[1, j, k]
+            b[N-2, j, k] = ld[N-4]*v[N-4, j, k] + dd[N-2]*v[N-2, j, k]
+            b[N-1, j, k] = ld[N-3]*v[N-3, j, k] + dd[N-1]*v[N-1, j, k]
 
-    for i in xrange(2, N-1):
+    for i in xrange(2, N-2):
         for j in xrange(b.shape[1]):
             for k in xrange(b.shape[2]):
-                b[i, j, k] = ud*v[i+2, j, k] + dd[i-1]*v[i, j, k] + ld[i-3]*v[i-2, j, k]
+                b[i, j, k] = ud*v[i+2, j, k] + dd[i]*v[i, j, k] + ld[i-2]*v[i-2, j, k]
 
 def CDDmat_matvec(np.ndarray[real_t, ndim=1] ud,
                   np.ndarray[real_t, ndim=1] ld,

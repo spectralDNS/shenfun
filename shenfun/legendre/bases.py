@@ -74,7 +74,7 @@ class LegendreBase(SpectralBase):
 
 
 @inheritdocstrings
-class LegendreTransform(LegendreBase):
+class LegendreBasis(LegendreBase):
     """Basis for regular Legendre series
 
     args:
@@ -114,9 +114,7 @@ class ShenDirichletBasis(LegendreBase):
 
     def __init__(self, quad="LG"):
         LegendreBase.__init__(self, quad)
-        self.LT = LegendreTransform(quad)
-        from shenfun.la import TDMA
-        self.apply_inverse_mass = TDMA(self)
+        self.LT = LegendreBasis(quad)
 
     def get_vandermonde_basis(self, V):
         P = np.zeros(V.shape)

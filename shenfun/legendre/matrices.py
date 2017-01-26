@@ -17,7 +17,7 @@ class BLLmat(ShenMatrix):
         N = K.shape[0]
         k = K[:N].astype(float)
         d = {0: 2./(2.*k+1)}
-        trial = bases.LegendreTransform()
+        trial = bases.LegendreBasis()
         ShenMatrix.__init__(self, d, N, (trial, 0), (trial, 0))
 
 class BDDmat(ShenMatrix):

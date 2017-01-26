@@ -1,6 +1,3 @@
-#pylint: disable=invalid-name
-#pylint: disable=no-name-in-module
-
 from __future__ import division
 import numpy as np
 from shenfun.optimization.Matvec import CDNmat_matvec, BDNmat_matvec, CDDmat_matvec, \
@@ -11,6 +8,7 @@ from shenfun.optimization.Matvec import CDNmat_matvec, BDNmat_matvec, CDDmat_mat
 
 from shenfun.matrixbase import ShenMatrix
 from shenfun import inheritdocstrings
+from shenfun.la import TDMA, PDMA
 from . import bases
 
 
@@ -35,6 +33,7 @@ class BDDmat(ShenMatrix):
         d[-2] = d[2]
         trial = bases.ShenDirichletBasis(quad=quad)
         ShenMatrix.__init__(self, d, N, (trial, 0), (trial, 0))
+        self.solve = TDMA(self)
 
     def matvec(self, v, c, format='cython'):
         N, M = self.shape
@@ -128,6 +127,20 @@ class BDNmat(ShenMatrix):
         test = bases.ShenDirichletBasis(quad=quad)
         ShenMatrix.__init__(self, d, N, (trial, 0), (test, 0))
 
+    def matvec(self, v, c, format='cython'):
+        c.fill(0)
+        if len(v.shape) > 1:
+            if format == 'cython':
+                BDNmat_matvec(self[2], self[-2], self[0], v, c)
+
+            else:
+                c = super(BDNmat, self).matvec(v, c, format=format)
+
+        else:
+            c = super(BDNmat, self).matvec(v, c, format=format)
+
+        return c
+
 
 @inheritdocstrings
 class BTTmat(ShenMatrix):
@@ -190,6 +203,7 @@ class BNNmat(ShenMatrix):
         d[-2] = d[2]
         trial = bases.ShenNeumannBasis(quad)
         ShenMatrix.__init__(self, d, N, (trial, 0), (trial, 0))
+        self.solve = TDMA(self)
 
     def matvec(self, v, c, format='csr'):
         c = ShenMatrix.matvec(self, v, c, format=format)
@@ -289,6 +303,7 @@ class BBBmat(ShenMatrix):
         d[-4] = d[4]
         trial = bases.ShenBiharmonicBasis(quad)
         ShenMatrix.__init__(self, d, N, (trial, 0), (trial, 0))
+        self.solve = PDMA(self)
 
     def matvec(self, v, c, format='cython'):
         c.fill(0)

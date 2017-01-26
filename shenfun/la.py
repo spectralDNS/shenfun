@@ -1,5 +1,5 @@
 from shenfun.optimization import la
-from shenfun.spectralbase import SpectralBase
+from shenfun.matrixbase import ShenMatrix
 import numpy as np
 
 class TDMA(object):
@@ -10,18 +10,18 @@ class TDMA(object):
 
     """
 
-    def __init__(self, basis):
-        assert isinstance(basis, SpectralBase)
-        self.basis = basis
+    def __init__(self, mat):
+        assert isinstance(mat, ShenMatrix)
+        self.mat = mat
         self.dd = np.zeros(0)
 
     def init(self, N):
-        M = self.basis.get_shape(N)
-        B = self.basis.get_mass_matrix()(np.arange(N).astype(float), self.basis.quad)
+        M = self.mat.shape[0]
+        B = self.mat
         self.dd = B[0].copy()*np.ones(M)
         self.ud = B[2].copy()*np.ones(M-2)
         self.L = np.zeros(M-2)
-        self.s = self.basis.slice(N)
+        self.s = self.mat.testfunction.slice(N)
         la.TDMA_SymLU(self.dd[self.s], self.ud[self.s], self.L)
 
     def __call__(self, u):
@@ -49,23 +49,23 @@ class PDMA(object):
 
     """
 
-    def __init__(self, basis, solver="cython"):
-        self.basis = basis
-        self.B = np.zeros(0)
+    def __init__(self, mat, solver="cython"):
+        assert isinstance(mat, ShenMatrix)
+        self.mat = mat
         self.solver = solver
 
     def init(self, N):
-        self.B = self.basis.get_mass_matrix()(np.arange(N), self.basis.quad)
+        B = self.mat
         if self.solver == "cython":
-            self.d0, self.d1, self.d2 = self.B[0].copy(), self.B[2].copy(), self.B[4].copy()
+            self.d0, self.d1, self.d2 = B[0].copy(), B[2].copy(), B[4].copy()
             la.PDMA_SymLU(self.d0, self.d1, self.d2)
             #self.SymLU(self.d0, self.d1, self.d2)
             ##self.d0 = self.d0.astype(float)
             ##self.d1 = self.d1.astype(float)
             ##self.d2 = self.d2.astype(float)
         else:
-            #self.L = lu_factor(self.B.diags().toarray())
-            self.d0, self.d1, self.d2 = self.B[0].copy(), self.B[2].copy(), self.B[4].copy()
+            #self.L = lu_factor(B.diags().toarray())
+            self.d0, self.d1, self.d2 = B[0].copy(), B[2].copy(), B[4].copy()
             #self.A = np.zeros((9, N-4))
             #self.A[0, 4:] = self.d2
             #self.A[2, 2:] = self.d1
@@ -122,7 +122,7 @@ class PDMA(object):
 
     def __call__(self, u):
         N = u.shape[0]
-        if not self.B.shape[0] == u.shape[0]:
+        if not self.mat.shape[0] == u.shape[0]:
             self.init(N)
         if len(u.shape) == 3:
             if self.solver == "cython":
@@ -132,7 +132,7 @@ class PDMA(object):
                 for i in range(u.shape[1]):
                     for j in range(u.shape[2]):
                         #u[:-4, i, j] = lu_solve(self.L, b[:-4, i, j])
-                        u[:-4, i, j] = la_solve.spsolve(self.B.diags(), b[:-4, i, j])
+                        u[:-4, i, j] = la_solve.spsolve(self.mat.diags(), b[:-4, i, j])
 
         elif len(u.shape) == 1:
             if self.solver == "cython":

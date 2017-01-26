@@ -30,12 +30,11 @@ def test_scalarproduct(ST, quad):
     fj = np.array([f.subs(x, j) for j in points], dtype=float)
     u0 = np.zeros(N)
     u1 = np.zeros(N)
-    ST.fast_transform = True
-    u0 = ST.scalar_product(fj, u0)
-    ST.fast_transform = False
-    u1 = ST.scalar_product(fj, u1)
+    u0 = ST.scalar_product(fj, u0, True)
+    u1 = ST.scalar_product(fj, u1, False)
     assert np.allclose(u1, u0)
 
+#test_scalarproduct(cbases.ShenNeumannBasis, 'GC')
 
 @pytest.mark.parametrize('ST', Basis)
 @pytest.mark.parametrize('quad', quads)
@@ -84,8 +83,8 @@ def test_BDNmat(mat, quad):
     u2 = B.matvec(f_hat, u2)
     u0 = np.zeros(N)
     u0 = S1.scalar_product(fj, u0)
-    #from IPython import embed; embed()
-    assert np.allclose(u0, u2)
+    s = S2.slice(N)
+    assert np.allclose(u0[s], u2[s])
 
     # Multidimensional version
     fj = fj.repeat(16).reshape((N, 4, 4)) + 1j*fj.repeat(16).reshape((N, 4, 4))
@@ -95,9 +94,9 @@ def test_BDNmat(mat, quad):
     u0 = S1.scalar_product(fj, u0)
     u2 = np.zeros_like(f_hat)
     u2 = B.matvec(f_hat, u2)
-    assert np.linalg.norm(u2-u0)/(N*16) < 1e-12
+    assert np.linalg.norm(u2[s]-u0[s])/(N*16) < 1e-12
 
-#test_BDNmat(BNDmat, "GL")
+#test_BDNmat(BDNmat, "GL")
 
 @pytest.mark.parametrize('quad', quads)
 def test_BDTmat(quad):
@@ -120,8 +119,8 @@ def test_BDTmat(quad):
     u0 = np.zeros(N)
     u0 = SD.scalar_product(fj, u0)
 
-    #from IPython import embed; embed()
-    assert np.allclose(u0, u2)
+    s = SD.slice(N)
+    assert np.allclose(u0[s], u2[s])
 
     # Multidimensional version
     fj = fj.repeat(16).reshape((N, 4, 4)) + 1j*fj.repeat(16).reshape((N, 4, 4))
@@ -131,9 +130,9 @@ def test_BDTmat(quad):
     u0 = SD.scalar_product(fj, u0)
     u2 = np.zeros_like(f_hat)
     u2 = B.matvec(f_hat, u2)
-    assert np.linalg.norm(u2-u0)/(N*16) < 1e-12
+    assert np.linalg.norm(u2[s]-u0[s])/(N*16) < 1e-12
 
-#test_BDTmat((ShenDirichletBasis("GL"), ShenNeumannBasis("GL")))
+#test_BDTmat("GL")
 
 @pytest.mark.parametrize('quad', quads)
 def test_BBDmat(quad):
@@ -229,7 +228,7 @@ def test_transforms(ST, quad):
 
     assert np.allclose(fj, u1)
 
-#test_transforms(ShenBiharmonicBasis("GC"))
+#test_transforms(cbases.ShenNeumannBasis, "GC")
 
 @pytest.mark.parametrize('quad', quads)
 def test_CDDmat(quad):
@@ -253,7 +252,7 @@ def test_CDDmat(quad):
     dudx_j = SD.CT.fast_derivative(uj, dudx_j)
 
     Cm = CDDmat(np.arange(M).astype(np.float))
-    TDMASolver = TDMA(SD)
+    TDMASolver = TDMA(BDDmat(np.arange(M).astype(np.float)))
 
     cs = np.zeros_like(u_hat)
     cs = Cm.matvec(u_hat, cs)
@@ -261,14 +260,14 @@ def test_CDDmat(quad):
     # Should equal (but not exact so use extra resolution)
     cs2 = np.zeros(M)
     cs2 = SD.scalar_product(dudx_j, cs2)
-
-    assert np.allclose(cs, cs2)
+    s = SD.slice(M)
+    assert np.allclose(cs[s], cs2[s])
 
     cs = TDMASolver(cs)
     du = np.zeros(M)
     du = SD.backward(cs, du)
 
-    assert np.linalg.norm(du-dudx_j)/M < 1e-10
+    assert np.linalg.norm(du[s]-dudx_j[s])/M < 1e-10
 
     # Multidimensional version
     u3_hat = u_hat.repeat(4*4).reshape((M, 4, 4)) + 1j*u_hat.repeat(4*4).reshape((M, 4, 4))
@@ -278,14 +277,14 @@ def test_CDDmat(quad):
     du3 = dudx_j.repeat(4*4).reshape((M, 4, 4)) + 1j*dudx_j.repeat(4*4).reshape((M, 4, 4))
     cs2 = SD.scalar_product(du3, cs2)
 
-    assert np.allclose(cs, cs2, 1e-10)
+    assert np.allclose(cs[s], cs2[s], 1e-10)
 
     cs = TDMASolver(cs)
     d3 = np.zeros((M, 4, 4), dtype=np.complex)
     d3 = SD.backward(cs, d3)
 
     #from IPython import embed; embed()
-    assert np.linalg.norm(du3-d3)/(M*16) < 1e-10
+    assert np.linalg.norm(du3[s]-d3[s])/(M*16) < 1e-10
 
 #test_CDDmat('GL')
 
@@ -309,8 +308,8 @@ def test_CXXmat(mat):
     df = S2.CT.fast_derivative(fj, df)
     cs2 = np.zeros(N)
     cs2 = S1.scalar_product(df, cs2)
-
-    assert np.allclose(cs, cs2)
+    s = S1.slice(N)
+    assert np.allclose(cs[s], cs2[s])
 
     # Multidimensional version
     f_hat = f_hat.repeat(4*4).reshape((N, 4, 4)) + 1j*f_hat.repeat(4*4).reshape((N, 4, 4))
@@ -320,7 +319,7 @@ def test_CXXmat(mat):
     cs2 = np.zeros((N, 4, 4), dtype=np.complex)
     cs2 = S1.scalar_product(df, cs2)
 
-    assert np.allclose(cs, cs2)
+    assert np.allclose(cs[s], cs2[s])
 
 #test_CXXmat(CNDmat)
 
@@ -346,8 +345,8 @@ def test_CDTmat(quad):
     cs2 = np.zeros(N)
     cs2 = SD.scalar_product(df, cs2)
 
-    #from IPython import embed; embed()
-    assert np.allclose(cs, cs2)
+    s = SD.slice(N)
+    assert np.allclose(cs[s], cs2[s])
 
     # Multidimensional version
     f_hat = f_hat.repeat(4*4).reshape((N, 4, 4)) + 1j*f_hat.repeat(4*4).reshape((N, 4, 4))
@@ -357,7 +356,7 @@ def test_CDTmat(quad):
     cs2 = np.zeros((N, 4, 4), dtype=np.complex)
     cs2 = SD.scalar_product(df, cs2)
 
-    assert np.allclose(cs, cs2)
+    assert np.allclose(cs[s], cs2[s])
 
 #test_CDTmat((ShenDirichletBasis('GL'), ChebyshevBasis('GL')))
 
@@ -430,8 +429,8 @@ def test_CDBmat(quad):
     cs2 = np.zeros(M)
     cs2 = SD.scalar_product(df, cs2)
 
-    #from IPython import embed; embed()
-    assert np.allclose(cs, cs2)
+    s = SD.slice(M)
+    assert np.allclose(cs[s], cs2[s])
 
     # Multidimensional version
     f_hat = f_hat.repeat(4*4).reshape((M, 4, 4)) + 1j*f_hat.repeat(4*4).reshape((M, 4, 4))
@@ -441,7 +440,7 @@ def test_CDBmat(quad):
     cs2 = np.zeros((M, 4, 4), dtype=np.complex)
     cs2 = SD.scalar_product(df, cs2)
 
-    assert np.allclose(cs, cs2)
+    assert np.allclose(cs[s], cs2[s])
 
 #test_CDBmat((ShenBiharmonicBasis("GC"), ShenDirichletBasis("GC")))
 
@@ -516,12 +515,11 @@ def test_ADDmat(ST, quad):
     f_hat = np.zeros(M)
     f_hat = ST.scalar_product(fj, f_hat)
     u_hat = np.zeros(M)
-    u_hat[s] = solve(A.diags().toarray()[s,s], f_hat[s])
+    u_hat = A.solve(f_hat, u_hat)
 
     u0 = np.zeros(M)
     u0 = ST.backward(u_hat, u0)
 
-    #from IPython import embed; embed()
     assert np.allclose(u0, uj)
 
     u1 = np.zeros(M)
@@ -529,9 +527,10 @@ def test_ADDmat(ST, quad):
     c = np.zeros_like(u1)
     c = A.matvec(u1, c)
 
-    assert np.allclose(c, f_hat)
+    s = ST.slice(M)
+    assert np.allclose(c[s], f_hat[s])
 
-#test_ADDmat(ShenNeumannBasis, "GL")
+#test_ADDmat(cbases.ShenNeumannBasis, "GL")
 
 @pytest.mark.parametrize('quad', quads)
 def test_SBBmat(quad):
@@ -548,7 +547,7 @@ def test_SBBmat(quad):
     f_hat = np.zeros(M)
     f_hat = SB.scalar_product(fj, f_hat)
     u_hat = np.zeros(M)
-    u_hat[:-4] = la.spsolve(A.diags(), f_hat[:-4])
+    u_hat = A.solve(f_hat, u_hat)
 
     u0 = np.zeros(M)
     u0 = SB.backward(u_hat, u0)
@@ -573,7 +572,7 @@ def test_SBBmat(quad):
 
     assert np.allclose(c, c2)
 
-#test_SBBmat(ShenBiharmonicBasis("GC"))
+test_SBBmat('GC')
 
 @pytest.mark.parametrize('quad', quads)
 def test_ABBmat(quad):

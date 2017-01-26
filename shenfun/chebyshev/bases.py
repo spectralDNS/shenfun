@@ -197,28 +197,25 @@ class ShenDirichletBasis(ChebyshevBase):
         self.planner_effort = planner_effort
         self.bc = bc
         self.CT = ChebyshevBasis(quad, threads, planner_effort)
-        from shenfun.la import TDMA
-        self.apply_inverse_mass = TDMA(self)
 
     def get_vandermonde_basis(self, V):
         P = np.zeros(V.shape)
         P[:, :-2] = V[:, :-2] - V[:, 2:]
-        P[:, -2] = (V[:, 0] + V[:, 1])/2*0
-        P[:, -1] = (V[:, 0] - V[:, 1])/2*0
+        P[:, -2] = (V[:, 0] + V[:, 1])/2
+        P[:, -1] = (V[:, 0] - V[:, 1])/2
         return P
 
     def scalar_product(self, fj, fk, fast_transform=True):
         if fast_transform:
             fk = self.CT.scalar_product(fj, fk)
-            #c0 = 0.5*(fk[0] + fk[1])
-            #c1 = 0.5*(fk[0] - fk[1])
+            c0 = 0.5*(fk[0] + fk[1])
+            c1 = 0.5*(fk[0] - fk[1])
             fk[:-2] -= fk[2:]
-            #fk[-2] = c0
-            #fk[-1] = c1
+            fk[-2] = c0
+            fk[-1] = c1
         else:
             fk = self.vandermonde_scalar_product(fj, fk)
 
-        fk[-2:] = 0     # Last two not used, so set to zero. Even for nonhomogeneous bcs, where they are technically non-zero
         return fk
 
     def evaluate_expansion_all(self, fk, fj):
@@ -258,25 +255,27 @@ class ShenNeumannBasis(ChebyshevBase):
         quad        ('GL', 'GC')  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss
         threads          1        Number of threads used by pyfftw
         planner_effort            Planner effort for FFTs.
+        mean           float      Mean value
 
     Transforms are performed along the first dimension of a multidimensional
     array.
 
     """
 
-    def __init__(self, quad="GC", threads=1, planner_effort="FFTW_MEASURE"):
+    def __init__(self, quad="GC", threads=1, planner_effort="FFTW_MEASURE",
+                 mean=0):
         ChebyshevBase.__init__(self, quad)
         self.threads = threads
         self.planner_effort = planner_effort
+        self.mean = mean
         self.CT = ChebyshevBasis(quad, threads, planner_effort)
         self._factor = np.zeros(0)
-        from shenfun.la import TDMA
-        self.apply_inverse_mass = TDMA(self)
 
     def get_vandermonde_basis(self, V):
+        N = V.shape[0]
         P = np.zeros(V.shape)
-        k = np.arange(V.shape[0]).astype(np.float)[:-2]
-        P[:, :-2] = V[:, :-2] - (k/(k+2))**2*V[:, 2:]
+        k = np.arange(N).astype(np.float)
+        P[:, :-2] = V[:, :-2] - (k[:-2]/(k[:-2]+2))**2*V[:, 2:]
         return P
 
     def set_factor_array(self, v):
@@ -291,20 +290,22 @@ class ShenNeumannBasis(ChebyshevBase):
         if fast_transform:
             fk = self.CT.scalar_product(fj, fk)
             self.set_factor_array(fk)
-            fk[1:-2] -= self._factor * fk[3:]
+            fk[:-2] -= self._factor * fk[2:]
 
         else:
             fk = self.vandermonde_scalar_product(fj, fk)
 
-        fk[0] = 0
+        fk[0] = self.mean*np.pi
         fk[-2:] = 0
         return fk
 
     def evaluate_expansion_all(self, fk, fj):
         w_hat = work[(fk, 0)]
         self.set_factor_array(fk)
-        w_hat[1:-2] = fk[1:-2]
-        w_hat[3:] -= self._factor*fk[1:-2]
+        s = self.slice(fj.shape[0])
+        sp2 = slice(s.start+2, s.stop+2)
+        w_hat[s] = fk[s]
+        w_hat[sp2] -= self._factor*fk[s]
         fj = self.CT.backward(w_hat, fj)
         return fj
 
@@ -313,7 +314,7 @@ class ShenNeumannBasis(ChebyshevBase):
         return BNNmat
 
     def slice(self, N):
-        return slice(1, N-2)
+        return slice(0, N-2)
 
     def get_shape(self, N):
         return N-2
@@ -336,14 +337,12 @@ class ShenBiharmonicBasis(ChebyshevBase):
     """
 
     def __init__(self, quad="GC", threads=1, planner_effort="FFTW_MEASURE"):
-        from shenfun.la import PDMA
         ChebyshevBase.__init__(self, quad)
         self.threads = threads
         self.planner_effort = planner_effort
         self.CT = ChebyshevBasis(quad, threads, planner_effort)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
-        self.apply_inverse_mass = PDMA(self)
 
     def get_vandermonde_basis(self, V):
         P = np.zeros_like(V)

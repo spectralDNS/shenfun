@@ -1,14 +1,11 @@
-#pylint: disable=invalid-name
-#pylint: disable=no-name-in-module
-
 from __future__ import division
 import numpy as np
 from scipy.sparse import diags as sp_diags
 from scipy.sparse.linalg import spsolve
+from scipy.linalg import solve
 import six
 from copy import deepcopy
 from . import inheritdocstrings
-
 
 class SparseMatrix(dict):
     """Base class for sparse matrices
@@ -66,6 +63,7 @@ class SparseMatrix(dict):
             if format == 'python':
                 for key, val in six.iteritems(self):
                     if key < 0:
+
                         for i in range(v.shape[1]):
                             for j in range(v.shape[2]):
                                 c[-key:min(N, M-key), i, j] += val*v[:min(M, N+key), i, j]
@@ -329,54 +327,22 @@ class ShenMatrix(SparseMatrix):
     The matrices can be automatically created using, e.g., for the mass
     matrix of the Dirichlet space
 
-      M = ShenMatrix({}, 16, (chebyshev.ShenDirichletBasis(), 0), (chebyshev.ShenDirichletBasis(), 0))
+      M = ShenMatrix({}, 16, (ShenDirichletBasis(), 0), (ShenDirichletBasis(), 0))
 
-    where the first (chebyshev.ShenDirichletBasis, 0) represents the trial function and
+    where the first (ShenDirichletBasis, 0) represents the trial function and
     the second the test function. The stiffness matrix can be obtained as
 
-      A = ShenMatrix({}, 16, (chebyshev.ShenDirichletBasis(), 2), (chebyshev.ShenDirichletBasis(), 0))
+      A = ShenMatrix({}, 16, (ShenDirichletBasis(), 2), (ShenDirichletBasis(), 0))
 
-    where (chebyshev.ShenDirichletBasis, 2) signals that we use the second derivative
+    where (ShenDirichletBasis, 2) signals that we use the second derivative
     of this trial function.
 
     The automatically created matrices may be overloaded with more exactly
     computed diagonals.
 
     Note that matrices with the Neumann basis are stored using index space
-    k = 0, 1, ..., N-2, i.e., including the zero index. This is used for
-    simplicity, and needs to be accounted for by users. For example, to
-    solve the Poisson equation:
-
-        from spectralDNS.shen.shentransform import chebyshev.ShenNeumannBasis
-        import numpy as np
-        from sympy import Symbol, sin, pi
-        M = 32
-        SN = chebyshev.ShenNeumannBasis('GC')
-        x = Symbol("x")
-        # Define an exact solution to compute rhs
-        u = (1-x**2)*sin(pi*x)
-        f = -u.diff(x, 2)
-        points, weights = SN.points_and_weights(M, SN.quad)
-        # Compute exact function on quadrature points
-        uj = np.array([u.subs(x, h) for h in points], dtype=np.float)
-        fj = np.array([f.subs(x, h) for h in points], dtype=np.float)
-        # Subtract mean
-        fj -= np.dot(fj, weights)/weights.sum()
-        uj -= np.dot(uj, weights)/weights.sum()
-        # Get the stiffness matrix
-        A = ShenMatrix({}, M, (SN, 2), (SN, 0), scale=-1)
-        # Compute rhs scalar product
-        f_hat = np.zeros(M)
-        f_hat = SN.scalar_product(fj, f_hat)
-        # Solve
-        u_hat = np.zeros(M)
-        s = slice(1, M-2)
-        u_hat[s] = np.linalg.solve(A.diags().toarray()[s, s], f_hat[s])
-        # Compare with exact solution
-        u0 = np.zeros(M)
-        u0 = SN.ifst(u_hat, u0)
-        assert np.allclose(u0, uj)
-
+    k = 0, 1, ..., N-2, i.e., including the zero index for a nonzero average
+    value.
 
     """
     def __init__(self, d, N, trial, test, scale=1.0):
@@ -426,18 +392,36 @@ class ShenMatrix(SparseMatrix):
             assert np.allclose(val, Dsp[key])
 
     def solve(self, b, u=None):
+        from .chebyshev.bases import ShenNeumannBasis
         assert self.shape[0] == self.shape[1]
         s = self.testfunction.slice(b.shape[0])
         if u is None:
             u = b
-        if b.ndim == 1:
-            u[s] = spsolve(self.diags(), b[s])
+
+        assert u.shape == b.shape
+        if isinstance(self.testfunction, ShenNeumannBasis):
+            # Handle level by using Dirichlet for dof=0
+            A = self.diags().toarray()
+            A[0] = 0
+            A[0,0] = 1
+            b[0] = self.testfunction.mean
+            if b.ndim == 1:
+                u[s] = solve(A, b[s])
+            else:
+                N = b[s].shape[0]
+                P = np.prod(b[s].shape[1:])
+                u[s] = solve(A, b[s].reshape((N, P))).reshape(b[s].shape)
+
         else:
-            #for i in np.ndindex(b.shape[1:]):
-                #u[(s,)+i] = spsolve(self.diags(), b[(s,)+i])
-            N = b[s].shape[0]
-            P = np.prod(b[s].shape[1:])
-            u[s] = spsolve(self.diags(), b[s].reshape((N, P))).reshape(b[s].shape)
+            if b.ndim == 1:
+                u[s] = spsolve(self.diags(), b[s])
+            else:
+                #for i in np.ndindex(b.shape[1:]):
+                    #u[(s,)+i] = spsolve(self.diags(), b[(s,)+i])
+                N = b[s].shape[0]
+                P = np.prod(b[s].shape[1:])
+                u[s] = spsolve(self.diags(), b[s].reshape((N, P))).reshape(b[s].shape)
+
         return u
 
 

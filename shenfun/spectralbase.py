@@ -7,52 +7,50 @@ All bases have expansions
 
     u(x_j) = \sum_k \hat{u}_k \phi_k
 
-where j = 0, 1, ..., N and k = indexset(base), and the indexset differs from
-base to base, see function space definitions below.
+where j = 0, 1, ..., N and k = indexset(basis), and the indexset differs from
+base to base, see function space definitions below. \phi_k is the k't basis
+function of the basis span(\phi_k, k=indexset(basis)).
 
-ChebyshevBasis:
-  Regular Chebyshev expansion, no boundary conditions
-        basis function:                 function space:
-      phi_k = T_k                       span(T_k, k=0,1,..., N)
+Chebyshev:
+    ChebyshevBasis:
+        basis functions:                basis:
+        phi_k = T_k                     span(T_k, k=0,1,..., N)
 
-ShenDirichletBasis:
-    Shen's Chebyshev Dirichlet basis.
-        basis function:                 function space:
-      phi_k = T_k-T_{k+2}               span(phi_k, k=0,1,...,N)
-      pni_{N-1} = 0.5(T_0+T_1)
-      pni_{N} = 0.5(T_0-T_1)
+    ShenDirichletBasis:
+        basis functions:                basis:
+        phi_k = T_k-T_{k+2}             span(phi_k, k=0,1,...,N)
+        pni_{N-1} = 0.5(T_0+T_1)
+        pni_{N} = 0.5(T_0-T_1)
 
-      u(1)=a, u(-1)=b, \hat{u}{N-1}=a, \hat{u}_{N}=b
+        u(1)=a, u(-1)=b, \hat{u}{N-1}=a, \hat{u}_{N}=b
 
-      Note that there are only N-1 unknown coefficients, \hat{u}_k, since
-      \hat{u}_{N-1} and \hat{u}_{N} are determined by boundary conditions.
+        Note that there are only N-1 unknown coefficients, \hat{u}_k, since
+        \hat{u}_{N-1} and \hat{u}_{N} are determined by boundary conditions.
 
-ShenNeumannBasis:
-    Shen's Chebyshev Neumann basis
-        basis function:                 function space:
-      phi_k = T_k-(k/(k+2))**2T_{k+2}   span(phi_k, k=1,2,...,N-2)
+    ShenNeumannBasis:
+        basis function:                 basis:
+        phi_k = T_k-(k/(k+2))**2T_{k+2} span(phi_k, k=1,2,...,N-2)
 
-      Homogeneous Neumann boundary conditions, u'(\pm 1) = 0, and
-      zero weighted mean: \int_{-1}^{1}u(x)w(x)dx = 0
+        Homogeneous Neumann boundary conditions, u'(\pm 1) = 0, and
+        zero weighted mean: \int_{-1}^{1}u(x)w(x)dx = 0
 
-ShenBiharmonicBasis:
-    Shen's Chebyshev Biharmonic basis
+    ShenBiharmonicBasis:
         basis function:
-      phi_k = T_k - (2*(k+2)/(k+3))*T_{k+2} + ((k+1)/(k+3))*T_{k+4}
-        function space:
-      span(phi_k, k=0,1,...,N-4)
+        phi_k = T_k - (2*(k+2)/(k+3))*T_{k+2} + ((k+1)/(k+3))*T_{k+4}
 
-      Homogeneous Dirichlet and Neumann, u(\pm 1)=0 and u'(\pm 1)=0
+        basis:
+        span(phi_k, k=0,1,...,N-4)
 
-LegendreTransform:
-    Regular Legendre expansion, no boundary conditions
-        basis function:                 function space:
-      phi_k = L_k                       span(L_k, k=0,1,...N)
+        Homogeneous Dirichlet and Neumann, u(\pm 1)=0 and u'(\pm 1)=0
 
-ShenLegendreDirichletBasis:
-    Shen's Legendre Dirichlet basis
-        basis function:                 function space:
-      phi_k = L_k-L_{k+2}               span(phi_k, k=0,1,...,N-2)
+Legendre:
+    LegendreBasis:
+        basis function:                 basis:
+        phi_k = L_k                     span(L_k, k=0,1,...N)
+
+    ShenDirichletBasis:
+        basis function:                 basis:
+        phi_k = L_k-L_{k+2}             span(phi_k, k=0,1,...,N-2)
 
       Homogeneous Dirichlet boundary conditions, u(\pm 1)=0
 
@@ -61,8 +59,6 @@ for computing the (weighted) scalar product.
 
 """
 
-#pylint: disable=invalid-name
-#pylint: disable=redefined-outer-name
 from mpiFFT4py import work_arrays
 from mpi4py import MPI
 import numpy as np
@@ -83,6 +79,7 @@ class SpectralBase(object):
 
     def __init__(self, quad):
         self.quad = quad
+        self._mass = np.zeros((0, 0)) # Mass matrix (if needed)
 
     def points_and_weights(self, N, quad):
         """Return points and weights of quadrature
@@ -232,10 +229,15 @@ class SpectralBase(object):
 
         args:
             fk   (input/output)    Expansion coefficients. fk is overwritten
-                                   by applying the mass matrix, and returned.
+                                   by applying the inverse mass matrix, and
+                                   returned.
 
         """
-        raise NotImplementedError
+        if not self._mass.shape[0] == fk.shape[0]:
+            B = self.get_mass_matrix()
+            self._mass = B(np.arange(fk.shape[0]).astype(np.float), quad=self.quad)
+        fk = self._mass.solve(fk)
+        return fk
 
     def get_mass_matrix(self):
         """Return mass matrix associated with current function space"""
