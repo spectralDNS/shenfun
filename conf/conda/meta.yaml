@@ -23,6 +23,7 @@ requirements:
     - cython
     - pyfftw
     - six
+    - sympy
 
 test:
   source_files:
