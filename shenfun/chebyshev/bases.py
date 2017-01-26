@@ -1,9 +1,11 @@
 from numpy.polynomial import chebyshev as n_cheb
 import numpy as np
-from mpiFFT4py import dct
-from shenfun.spectralbase import SpectralBase, work
+from mpiFFT4py import dct, work_arrays
+from shenfun.spectralbase import SpectralBase
 from shenfun.optimization import Cheb
 from shenfun import inheritdocstrings
+
+work = work_arrays()
 
 @inheritdocstrings
 class ChebyshevBase(SpectralBase):
@@ -302,10 +304,8 @@ class ShenNeumannBasis(ChebyshevBase):
     def evaluate_expansion_all(self, fk, fj):
         w_hat = work[(fk, 0)]
         self.set_factor_array(fk)
-        s = self.slice(fj.shape[0])
-        sp2 = slice(s.start+2, s.stop+2)
-        w_hat[s] = fk[s]
-        w_hat[sp2] -= self._factor*fk[s]
+        w_hat[:-2] = fk[:-2]
+        w_hat[2:] -= self._factor*fk[:-2]
         fj = self.CT.backward(w_hat, fj)
         return fj
 

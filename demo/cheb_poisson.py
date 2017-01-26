@@ -1,4 +1,5 @@
-"""
+#pylint: disable=invalid-name
+r"""
 Solve Poisson equation on (-1, 1) with homogeneous bcs
 
     \nabla^2 u = f, u(\pm 1) = 0
@@ -10,13 +11,11 @@ weighted L_w norm (u, v)_w = \int_{-1}^{1} u v / \sqrt(1-x^2) dx
     (\nabla^2 u, \phi_k)_w = (f, \phi_k)_w
 
 """
-from numpy.polynomial import chebyshev as n_cheb
 from sympy import Symbol, cos
 import numpy as np
 import matplotlib.pyplot as plt
 from shenfun.chebyshev.bases import ShenDirichletBasis
 from shenfun.chebyshev.matrices import ADDmat
-import time
 
 # Use sympy to compute a rhs, given an analytical solution
 x = Symbol("x")
@@ -43,7 +42,7 @@ f_hat = A.solve(f_hat)
 
 # Test 3D
 f2 = A.solve(f2)
-assert np.allclose(f2[:,1,1], f_hat)
+assert np.allclose(f2[:, 1, 1], f_hat)
 
 uq = np.zeros_like(fj)
 uq = ST.backward(f_hat, uq)
@@ -51,6 +50,10 @@ uq = ST.backward(f_hat, uq)
 uj = np.array([u.subs(x, i) for i in points], dtype=np.float)
 assert np.allclose(uj, uq)
 
-plt.figure(); plt.plot(points, uj); plt.title("U")
-plt.figure(); plt.plot(points, uq - uj); plt.title("Error")
+plt.figure()
+plt.plot(points, uj)
+plt.title("U")
+plt.figure()
+plt.plot(points, uq - uj)
+plt.title("Error")
 plt.show()

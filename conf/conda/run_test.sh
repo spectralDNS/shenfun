@@ -1,0 +1,2 @@
+pushd tests
+py.test

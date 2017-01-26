@@ -1,0 +1,42 @@
+# http://travis-ci.org/spectralDNS/shenfun
+
+language: generic
+
+os: osx
+osx_image: xcode7.2
+
+sudo: False
+
+env:
+  matrix:
+    - CONDA_PY=27
+    - CONDA_PY=34
+
+  global:
+    # Generated with "anaconda auth --create --name travis-2016"
+    # then "travis encrypt BINSTAR_TOKEN=<token> --repo spectralDNS/shenfun"
+    - secure: "q3eTmrI7PV+uTbE7uqvwEZxBUvDSv5eCPc4iAxr6RcTccIDfAAFmyS0oasWQWpiNQuHyOUPhwK8T04AMwDcH6TUWsLcrrKuc2BNFibRzvytPyRBqkODqsGcog8/xABbCQ95Vr3xAogU2/a3BSFm9cOgjI1O/kwQlLSPQKVCv45XoOyItkQ4FMmARbLF9fU6hC7VGADQtirkhRi5DqwHZffla00JfH8rBbEmRkK5/1SOv0b9/Kb1/mboVljmDkN46kbFQqn1/o8eA9xlyS7LOZBPqbuojWR96GTub1FMo5kVabkFxqdm5MrMCkhSpFN8TF4xCX0ICDtEdIpKOhGFpZ1jd86Ir3qWeG9TioOzi+3oz1RK8Qu6PTMtgM8v764jru5Xsze4BstSllDdL4GYztjGoua0HL3TAmYaWAqCE39XXyoCJ82X34Ntz3+j/N+UHeg4KRpZoKYf4ZDp0mGzFappCE6uWLzGVkU9t3opd2uLK/h+3eDKjvV26ABDpPLtGUct1p+MuU9MPsFvFaXRLIoBpjl4MBiC895VE3e6xgipKpwmgW80aAyJRlPwOAU3H8SSRTlFeQeAMannFgtN8tMkFf4FE61hy283orCegsRcudp06z+cgtjsAxgDBLKvJTd2Uqqn7lF7/4Lg0quu85YwbmhAI8HlQTVOj/A+zq8o="
+
+before_install:
+    # Remove homebrew.
+    - brew remove --force $(brew list)
+    - brew cleanup -s
+    - rm -rf $(brew --cache)
+
+install:
+    - |
+      MINICONDA_URL="https://repo.continuum.io/miniconda"
+      MINICONDA_FILE="Miniconda3-latest-MacOSX-x86_64.sh"
+      curl -L -O "${MINICONDA_URL}/${MINICONDA_FILE}"
+      bash $MINICONDA_FILE -b
+      source /Users/travis/miniconda3/bin/activate root
+      conda config --set show_channel_urls true
+      conda config --add channels conda-forge
+      conda install --yes --quiet conda-forge-build-setup
+      source run_conda_forge_build_setup
+
+script:
+    - conda build conf/conda
+
+after_success:
+    - upload_or_check_non_existence ./conf/conda spectralDNS --channel main || exit 1
