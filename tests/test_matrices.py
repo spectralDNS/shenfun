@@ -118,6 +118,7 @@ def test_isub(mat, quad):
 @pytest.mark.parametrize('mat', mats)
 @pytest.mark.parametrize('quad', ('GC', 'GL'))
 def test_sub(mat, quad):
+    assert False
     mat = eval(mat)
     m = mat(k, quad)
     mc = m - m

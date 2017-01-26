@@ -236,7 +236,7 @@ class SpectralBase(object):
         return fk
 
     def get_mass_matrix(self):
-        """Return mass matrix associated with current function space"""
+        """Return mass matrix associated with current basis"""
         raise NotImplementedError
 
     def slice(self, N):
@@ -244,5 +244,5 @@ class SpectralBase(object):
         return slice(0, N)
 
     def get_shape(self, N):
-        """Return shape of current basis used to build a ShenMatrix"""
+        """Return the shape of current basis used to build a ShenMatrix"""
         return N
