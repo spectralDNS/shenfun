@@ -19,7 +19,7 @@ requirements:
     - python
     - numpy
     - scipy
-    - mpiFFT4py
+    - mpifft4py
     - cython
     - pyfftw
 
