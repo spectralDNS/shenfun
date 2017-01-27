@@ -114,6 +114,20 @@ Square matrices have implemented a solve method that is using fast direct LU dec
     >>> fk = np.zeros_like(fj)
     >>> fk = SD.scalar_product(fj, fk)
     >>> fk = stiffness1.solve(fk)
+    
+Some predefined matrices are
+
+    * shenfun.chebyshev.matrices
+      * BDDmat  (mass ShenDirichletBasis)
+      * ADDmat  (stiffness ShenDirichletBasis)
+      * BNNmat  (mass ShenNeumannBasis)
+      * ANNmat  (stiffness ShenNeumannBasis)
+      * BBBmat  (mass ShenBiharmonicBasis)
+      * SBBmat  ((\nabla^4 \phi_j, \phi_k)_w ShenBiharmonicBasis)
+      * etc.
+ 
+      * ABBmat
+      
 
 
 
