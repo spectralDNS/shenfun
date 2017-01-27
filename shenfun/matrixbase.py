@@ -223,7 +223,7 @@ class SparseMatrix(dict):
 
         return self
 
-    def solve(self, b):
+    def solve(self, b, u=None):
         """Solve matrix system Au = b
 
         where A is the current matrix (self)
@@ -238,18 +238,27 @@ class SparseMatrix(dict):
         assert self.shape[0] == self.shape[1]
         assert self.shape[0] == b.shape[0]
         u = np.zeros_like(b)
+        if u is None:
+            us = np.zeros_like(b)
+        else:
+            assert u.shape == b.shape
+            us = u
 
         if b.ndim == 1:
-            u[:] = spsolve(self.diags(), b)
+            us[:] = spsolve(self.diags(), b)
         else:
             #for i in np.ndindex(b.shape[1:]):
                 #u[(slice(None),)+i] = spsolve(self.diags(), b[(slice(None),)+i])
 
             N = b.shape[0]
             P = np.prod(b.shape[1:])
-            u[:] = spsolve(self.diags(), b.reshape((N, P))).reshape(b.shape)
-        b[:] = u
-        return b
+            us[:] = spsolve(self.diags(), b.reshape((N, P))).reshape(b.shape)
+
+        if u is None:
+            b[:] = us
+            return b
+        else:
+            return u
 
 
 @inheritdocstrings
@@ -390,12 +399,16 @@ class ShenMatrix(SparseMatrix):
         for key, val in six.iteritems(self):
             assert np.allclose(val, Dsp[key])
 
-    def solve(self, b):
+    def solve(self, b, u=None):
         from .chebyshev.bases import ShenNeumannBasis
         assert self.shape[0] == self.shape[1]
         s = self.testfunction.slice(b.shape[0])
-        u = np.zeros_like(b)
-        v = u[s]
+        bs = b[s]
+        if u is None:
+            us = np.zeros_like(b[s])
+        else:
+            assert u.shape == b.shape
+            us = u[s]
 
         if isinstance(self.testfunction, ShenNeumannBasis):
             # Handle level by using Dirichlet for dof=0
@@ -404,23 +417,27 @@ class ShenMatrix(SparseMatrix):
             A[0,0] = 1
             b[0] = self.testfunction.mean
             if b.ndim == 1:
-                u[s] = solve(A, b[s])
+                us[:] = solve(A, bs)
             else:
-                N = b[s].shape[0]
-                P = np.prod(b[s].shape[1:])
-                u[s] = solve(A, b[s].reshape((N, P))).reshape(b[s].shape)
+                N = bs.shape[0]
+                P = np.prod(bs.shape[1:])
+                us[:] = solve(A, bs.reshape((N, P))).reshape(bs.shape)
 
         else:
             if b.ndim == 1:
-                u[s] = spsolve(self.diags(), b[s])
+                us[:] = spsolve(self.diags(), bs)
             else:
                 #for i in np.ndindex(b.shape[1:]):
                     #u[(s,)+i] = spsolve(self.diags(), b[(s,)+i])
-                N = b[s].shape[0]
-                P = np.prod(b[s].shape[1:])
-                u[s] = spsolve(self.diags(), b[s].reshape((N, P))).reshape(b[s].shape)
-        b[:] = u
-        return b
+                N = bs.shape[0]
+                P = np.prod(bs.shape[1:])
+                us[:] = spsolve(self.diags(), bs.reshape((N, P))).reshape(bs.shape)
+
+        if u is None:
+            b[s] = us
+            return b
+        else:
+            return u
 
 
 def extract_diagonal_matrix(M, tol=1e-8):

@@ -495,9 +495,9 @@ def test_CBDmat(quad):
 @pytest.mark.parametrize('ST', Basis[1:3])
 @pytest.mark.parametrize('quad', quads)
 def test_ADDmat(ST, quad):
-    ST = ST(quad=quad, mean=1.)
+    ST = ST(quad=quad)
     M = 2*N
-    u = (1-x**2)*sin(np.pi*x)+1.
+    u = (1-x**2)*sin(np.pi*x)
     f = -u.diff(x, 2)
 
     points, weights = ST.points_and_weights(M,  quad)
@@ -509,7 +509,6 @@ def test_ADDmat(ST, quad):
         A = ADDmat(np.arange(M).astype(np.float))
     elif ST.__class__.__name__ == "ShenNeumannBasis":
         A = ANNmat(np.arange(M).astype(np.float))
-        A.testfunction.mean = 1.
         #fj -= np.dot(fj, weights)/weights.sum()
         #uj -= np.dot(uj, weights)/weights.sum()
 
