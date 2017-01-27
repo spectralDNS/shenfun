@@ -33,11 +33,11 @@ Matrices that arise with Shen's bases and the spectral Galerkin method are often
 or similarly as
 
 ```python
-    >>> import numpy as np
+    >>> import numpy as np
     >>> d = {-1: np.ones(N-1), 0: -2*np.ones(N)}
     >>> d[1] = d[-1]  # Symmetric, reuse np.ones array
     >>> A = SparseMatrix(d, (N, N))
-```    
+```
 
 The matrix is a subclassed dictionary
 
@@ -50,9 +50,9 @@ The matrix is a subclassed dictionary
 
 and if you want a regular `Scipy` sparse matrix, just do
 
-```python    
-    >>> A.diags()
-    <4x4 sparse matrix of type '<class 'numpy.float64'>'
+```python
+    >>> A.diags()
+    <4x4 sparse matrix of type ‘<class ‘numpy.float64’>’
         with 10 stored elements (3 diagonals) in DIAgonal format>
     >>> A.diags().toarray()
     array([[-2.,  1.,  0.,  0.],
