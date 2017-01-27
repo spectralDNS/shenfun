@@ -13,16 +13,16 @@ Shenfun contains tools for working with Jie Shen's modified Chebyshev and Legend
 Shenfun has implemented classes for the bases described in these papers, and within each class there are methods for fast transforms, scalar products and for computing matrices arising with the spectral Galerkin method. The following bases are defined in submodules `shenfun.chebyshev` and `shendun.legendre`
 
   * shenfun.chebyshev
-    * ChebyshevBasis - Regular Chebyshev 
-    * ShenDirichletBasis - Dirichlet boundary conditions
-    * ShenNeumannBasis - Neumann boundary conditions (homogeneous)
-    * ShenBiharmonicBasis - Homogeneous Dirichlet and Neumann boundary conditions
+    * `ChebyshevBasis` - Regular Chebyshev 
+    * `ShenDirichletBasis` - Dirichlet boundary conditions
+    * `ShenNeumannBasis` - Neumann boundary conditions (homogeneous)
+    * `ShenBiharmonicBasis` - Homogeneous Dirichlet and Neumann boundary conditions
     
   * shenfun.legendre
-    * LegendreBasis - Regular Legendre
-    * LegendreDirichletBasis - Dirichlet boundary conditions
-    
-Matrices that arise with Shen's bases and the spectral Galerkin method are often very sparse. As such, `shenfun` defines it's own sparse matrix class `ShenMatrix` in `shenfun.matrixbase.py`. The matrix class is subclassing a regular Python dictionary, and its keys and values are, respectively, the offsets and the diagonals. For example, we may declare a tridiagonal matrix of shape N x N as
+    * LegendreBasis` - Regular Legendre
+    * `LegendreDirichletBasis - Dirichlet boundary conditions
+    
+Matrices that arise with Shen's bases and the spectral Galerkin method are often very sparse. As such, `shenfun` defines it's own sparse matrix class `SparseMatrix` and the subclassed `ShenMatrix` in `shenfun.matrixbase.py`. The matrix baseclass `SparseMatrix` is subclassing a regular Python dictionary, and its keys and values are, respectively, the offsets and the diagonals. For example, we may declare a tridiagonal matrix of shape N x N as
 
     >>> N = 4
     >>> d = {-1: 1, 0: -2, 1: 1}
@@ -41,6 +41,7 @@ The matrix is a subclassed dictionary
     {-1: array([ 1.,  1.,  1.]),
       0: array([-2., -2., -2., -2.]),
       1: array([ 1.,  1.,  1.])}
+     
 and if you want a regular `Scipy` sparse matrix, just do
 
     >>> A.diags()
@@ -117,16 +118,15 @@ Square matrices have implemented a solve method that is using fast direct LU dec
     
 Some predefined matrices are
 
-    * shenfun.chebyshev.matrices
-      * BDDmat  (mass ShenDirichletBasis)
-      * ADDmat  (stiffness ShenDirichletBasis)
-      * BNNmat  (mass ShenNeumannBasis)
-      * ANNmat  (stiffness ShenNeumannBasis)
-      * BBBmat  (mass ShenBiharmonicBasis)
-      * SBBmat  ((\nabla^4 \phi_j, \phi_k)_w ShenBiharmonicBasis)
-      * etc.
- 
-      * ABBmat
+  * shenfun.chebyshev.matrices
+    * BDDmat  (mass ShenDirichletBasis)
+    * ADDmat  (stiffness ShenDirichletBasis)
+    * BNNmat  (mass ShenNeumannBasis)
+    * ANNmat  (stiffness ShenNeumannBasis)
+    * BBBmat  (mass ShenBiharmonicBasis)
+    * SBBmat  (Biharmonic operator ShenBiharmonicBasis)
+    * ABBmat  (stiffness ShenBiharmonicBasis)
+    * etc.
       
 
 
