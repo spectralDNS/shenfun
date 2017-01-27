@@ -495,9 +495,9 @@ def test_CBDmat(quad):
 @pytest.mark.parametrize('ST', Basis[1:3])
 @pytest.mark.parametrize('quad', quads)
 def test_ADDmat(ST, quad):
-    ST = ST(quad=quad)
+    ST = ST(quad=quad, mean=1.)
     M = 2*N
-    u = (1-x**2)*sin(np.pi*x)
+    u = (1-x**2)*sin(np.pi*x)+1.
     f = -u.diff(x, 2)
 
     points, weights = ST.points_and_weights(M,  quad)
@@ -509,24 +509,30 @@ def test_ADDmat(ST, quad):
         A = ADDmat(np.arange(M).astype(np.float))
     elif ST.__class__.__name__ == "ShenNeumannBasis":
         A = ANNmat(np.arange(M).astype(np.float))
-        fj -= np.dot(fj, weights)/weights.sum()
-        uj -= np.dot(uj, weights)/weights.sum()
+        A.testfunction.mean = 1.
+        #fj -= np.dot(fj, weights)/weights.sum()
+        #uj -= np.dot(uj, weights)/weights.sum()
 
     f_hat = np.zeros(M)
     f_hat = ST.scalar_product(fj, f_hat)
-    u_hat = np.zeros(M)
+
+    # Test both solve interfaces
+    c_hat = f_hat.copy()
+    c_hat = A.solve(c_hat)
+
+    u_hat = np.zeros_like(f_hat)
     u_hat = A.solve(f_hat, u_hat)
+
+    assert np.allclose(c_hat[s], u_hat[s])
 
     u0 = np.zeros(M)
     u0 = ST.backward(u_hat, u0)
-
     assert np.allclose(u0, uj)
 
     u1 = np.zeros(M)
     u1 = ST.forward(uj, u1)
     c = np.zeros_like(u1)
     c = A.matvec(u1, c)
-
     s = ST.slice(M)
     assert np.allclose(c[s], f_hat[s])
 
@@ -560,7 +566,6 @@ def test_SBBmat(quad):
     c = np.zeros_like(u1)
     c = A.matvec(u1, c)
 
-    #from IPython import embed; embed()
     assert np.all(abs(c-f_hat)/c.max() < 1e-10)
 
     # Multidimensional
@@ -572,7 +577,7 @@ def test_SBBmat(quad):
 
     assert np.allclose(c, c2)
 
-test_SBBmat('GC')
+#test_SBBmat('GC')
 
 @pytest.mark.parametrize('quad', quads)
 def test_ABBmat(quad):

@@ -223,23 +223,22 @@ class SparseMatrix(dict):
 
         return self
 
-    def solve(self, b, u=None):
+    def solve(self, b):
         """Solve matrix system Au = b
 
         where A is the current matrix (self)
 
         args:
-            b    (input)    Vector of right hand side.
-            u    (output)   Solution vector. If None then the b vector is
-                            overwritten with the solution and returned instead.
+            b    (input/output)    Vector of right hand side on entry,
+                                   solution on exit.
 
         Vectors may be one- or multidimensional. Solve along first axis.
 
         """
         assert self.shape[0] == self.shape[1]
         assert self.shape[0] == b.shape[0]
-        if u is None:
-            u = b
+        u = np.zeros_like(b)
+
         if b.ndim == 1:
             u[:] = spsolve(self.diags(), b)
         else:
@@ -249,8 +248,8 @@ class SparseMatrix(dict):
             N = b.shape[0]
             P = np.prod(b.shape[1:])
             u[:] = spsolve(self.diags(), b.reshape((N, P))).reshape(b.shape)
-
-        return u
+        b[:] = u
+        return b
 
 
 @inheritdocstrings
@@ -391,14 +390,13 @@ class ShenMatrix(SparseMatrix):
         for key, val in six.iteritems(self):
             assert np.allclose(val, Dsp[key])
 
-    def solve(self, b, u=None):
+    def solve(self, b):
         from .chebyshev.bases import ShenNeumannBasis
         assert self.shape[0] == self.shape[1]
         s = self.testfunction.slice(b.shape[0])
-        if u is None:
-            u = b
+        u = np.zeros_like(b)
+        v = u[s]
 
-        assert u.shape == b.shape
         if isinstance(self.testfunction, ShenNeumannBasis):
             # Handle level by using Dirichlet for dof=0
             A = self.diags().toarray()
@@ -421,8 +419,8 @@ class ShenMatrix(SparseMatrix):
                 N = b[s].shape[0]
                 P = np.prod(b[s].shape[1:])
                 u[s] = spsolve(self.diags(), b[s].reshape((N, P))).reshape(b[s].shape)
-
-        return u
+        b[:] = u
+        return b
 
 
 def extract_diagonal_matrix(M, tol=1e-8):

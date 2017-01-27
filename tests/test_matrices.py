@@ -43,6 +43,7 @@ def test_matvec(mat, format, quad):
 
     d = m.matvec(b, d, format='csr')
     d1 = m.matvec(b, d1, format=format)
+    #from IPython import embed; embed()
     assert np.allclose(d, d1)
 
 #test_matvec('cmatrices.CDNmat', 'cython', 'GC')

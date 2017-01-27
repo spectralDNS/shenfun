@@ -749,41 +749,39 @@ class ADDmat(ShenMatrix):
         N = self.shape[0] + 2
         assert N == b.shape[0]
         s = self.trialfunction.slice(N)
-        if b.shape[0] == N:
-            b = b[s]
-
+        bs = b[s]
         if u is None:
-            u = np.zeros_like(b)
-            v = u[s]
-        elif u.shape[0] == N:
-            u.fill(0)
-            v = u[s]
-        elif u.shape[0] == N-2:
-            u.fill(0)
-            v = u
+            us = np.zeros_like(b[s])
+        else:
+            assert u.shape == b.shape
+            us = u[s]
 
-        assert v.shape[0] == N-2
-        if len(u.shape) == 1:
+        if len(b.shape) == 1:
             se = 0.0
             so = 0.0
         else:
-            se = np.zeros(v.shape[1:])
-            so = np.zeros(v.shape[1:])
+            se = np.zeros(u.shape[1:])
+            so = np.zeros(u.shape[1:])
 
         d = self[0]
         d1 = self[2]
-        M = v.shape
-        v[-1] = b[-1] / d[-1]
-        v[-2] = b[-2] / d[-2]
+        M = us.shape
+        us[-1] = bs[-1] / d[-1]
+        us[-2] = bs[-2] / d[-2]
         for k in range(M[0]-3, -1, -1):
             if k%2 == 0:
-                se += v[k+2]
-                v[k] = b[k] - d1[k]*se
+                se += us[k+2]
+                us[k] = bs[k] - d1[k]*se
             else:
-                so += v[k+2]
-                v[k] = b[k] - d1[k]*so
-            v[k] /= d[k]
-        return u
+                so += us[k+2]
+                us[k] = bs[k] - d1[k]*so
+            us[k] /= d[k]
+
+        if u is None:
+            b[s] = us
+            return b
+        else:
+            return u
 
 
 @inheritdocstrings
@@ -810,8 +808,51 @@ class ANNmat(ShenMatrix):
 
     def matvec(self, v, c, format='csr'):
         c = ShenMatrix.matvec(self, v, c, format=format)
-        c[0] = 0
+        c[0] = self.testfunction.mean*np.pi
         return c
+
+    def solve(self, b, u=None):
+        N = self.shape[0] + 2
+        assert N == b.shape[0]
+        s = self.trialfunction.slice(N)
+        bs = b[s]
+        if u is None:
+            us = np.zeros_like(b[s])
+        else:
+            assert u.shape == b.shape
+            us = u[s]
+
+        j2 = np.arange(N-2)**2
+        j2[0] = 1
+        j2 = 1./j2
+        d = self[0]*j2
+        d1 = self[2]*j2[2:]
+        if len(b.shape) == 1:
+            se = 0.0
+            so = 0.0
+        else:
+            se = np.zeros(u.shape[1:])
+            so = np.zeros(u.shape[1:])
+            j2.repeat(np.prod(bs.shape[1:])).reshape(bs.shape)
+
+        M = us.shape
+        us[-1] = bs[-1] / d[-1]
+        us[-2] = bs[-2] / d[-2]
+        for k in range(M[0]-3, 0, -1):
+            if k%2 == 0:
+                se += us[k+2]
+                us[k] = bs[k] - d1[k]*se
+            else:
+                so += us[k+2]
+                us[k] = bs[k] - d1[k]*so
+            us[k] /= d[k]
+        us[0] = self.testfunction.mean
+        us *= j2
+        if u is None:
+            b[s] = us
+            return b
+        else:
+            return u
 
 
 @inheritdocstrings
