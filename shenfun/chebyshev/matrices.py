@@ -280,6 +280,7 @@ class BTNmat(ShenMatrix):
         ShenMatrix.__init__(self, d, N, (trial, 0), (test, 0))
 
 
+@inheritdocstrings
 class BBBmat(ShenMatrix):
     """Mass matrix for inner product B_{kj} = (psi_j, psi_k)_w
 
@@ -344,6 +345,7 @@ class BBBmat(ShenMatrix):
         return c
 
 
+@inheritdocstrings
 class BBDmat(ShenMatrix):
     """Mass matrix for inner product B_{kj} = (phi_j, psi_k)_w
 
@@ -402,7 +404,8 @@ class BBDmat(ShenMatrix):
 
         return c
 
-# Derivative matrices
+
+@inheritdocstrings
 class CDNmat(ShenMatrix):
     """Matrix for inner product C_{kj} = (psi'_j, phi_k)_w
 
@@ -440,6 +443,7 @@ class CDNmat(ShenMatrix):
         return c
 
 
+@inheritdocstrings
 class CDDmat(ShenMatrix):
     """Matrix for inner product C_{kj} = (phi'_j, phi_k)_w
 
@@ -482,6 +486,7 @@ class CDDmat(ShenMatrix):
         return c
 
 
+@inheritdocstrings
 class CNDmat(ShenMatrix):
     """Matrix for inner product C_{kj} = (phi'_j, psi_k)_w
 
@@ -559,6 +564,7 @@ class CDTmat(ShenMatrix):
         ShenMatrix.__init__(self, d, N, (trial, 1), (test, 0))
 
 
+@inheritdocstrings
 class CBDmat(ShenMatrix):
     """Matrix for inner product C_{kj} = (phi'_j, psi_k)_w
 
@@ -606,6 +612,7 @@ class CBDmat(ShenMatrix):
         return c
 
 
+@inheritdocstrings
 class CDBmat(ShenMatrix):
     """Matrix for inner product C_{kj} = (psi'_j, phi_k)_w
 
@@ -654,6 +661,7 @@ class CDBmat(ShenMatrix):
         return c
 
 
+@inheritdocstrings
 class ABBmat(ShenMatrix):
     """Stiffness matrix for inner product A_{kj} = -(psi''_j, psi_k)_w
 
@@ -702,6 +710,7 @@ class ABBmat(ShenMatrix):
         return c
 
 
+@inheritdocstrings
 class ADDmat(ShenMatrix):
     """Stiffness matrix for inner product A_{kj} = -(psi''_j, psi_k)_w
 
@@ -778,6 +787,7 @@ class ADDmat(ShenMatrix):
         return u
 
 
+@inheritdocstrings
 class ANNmat(ShenMatrix):
     """Stiffness matrix for inner product A_{kj} = -(phi''_j, phi_k)_w
 
@@ -805,6 +815,7 @@ class ANNmat(ShenMatrix):
         return c
 
 
+@inheritdocstrings
 class ATTmat(ShenMatrix):
     """Stiffness matrix for inner product A_{kj} = -(psi''_j, psi_k)_w
 
@@ -826,6 +837,7 @@ class ATTmat(ShenMatrix):
         ShenMatrix.__init__(self, d, N, (trial, 2), (trial, 0), -1.0)
 
 
+@inheritdocstrings
 class SBBmat(ShenMatrix):
     """Biharmonic matrix for inner product S_{kj} = -(psi''''_j, psi_k)_w
 
