@@ -23,7 +23,7 @@ dependencies:
     - conda install --yes --quiet conda-forge-build-setup
     - source run_conda_forge_build_setup
 
-compile:
+test:
   override:
     - conda build conf/conda
     - conda build --python 3.4 conf/conda
