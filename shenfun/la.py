@@ -6,7 +6,7 @@ class TDMA(object):
     """Tridiagonal matrix solver
 
     args:
-        basis       ShenNeumannBasis, ShenDirichletBasis or ShenLegendreDirichletBasis
+        mat    Symmetric tridiagonal matrix with diagonals in offsets -2, 0, 2
 
     """
 
@@ -42,7 +42,8 @@ class PDMA(object):
     """Pentadiagonal matrix solver
 
     args:
-        basis       (ShenBiharmonicBasis)
+        mat       Symmetric pentadiagonal matrix with diagonals in offsets
+                  -4, -2, 0, 2, 4
 
     kwargs:
         solver      ('cython', 'python')     Choose implementation
