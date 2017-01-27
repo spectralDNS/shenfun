@@ -45,7 +45,7 @@ def test_matvec(mat, format, quad):
     d1 = m.matvec(b, d1, format=format)
     assert np.allclose(d, d1)
 
-#test_matvec('cmatrices.BDNmat', 'cython', 'GC')
+#test_matvec('cmatrices.CDNmat', 'cython', 'GC')
 
 @pytest.mark.parametrize('mat', mats)
 @pytest.mark.parametrize('quad', ('GC', 'GL'))

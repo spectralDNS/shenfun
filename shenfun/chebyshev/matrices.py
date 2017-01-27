@@ -433,7 +433,7 @@ class CDNmat(ShenMatrix):
     def matvec(self, v, c, format='cython'):
         if len(v.shape) > 1:
             if format == 'cython':
-                CDNmat_matvec(self[1], self[-1][1:], v, c)
+                CDNmat_matvec(self[1], self[-1], v, c)
             else:
                 c = ShenMatrix.matvec(self, v, c, format=format)
         else:
@@ -747,12 +747,13 @@ class ADDmat(ShenMatrix):
 
     def solve(self, b, u=None):
         N = self.shape[0] + 2
+        assert N == b.shape[0]
         s = self.trialfunction.slice(N)
         if b.shape[0] == N:
             b = b[s]
 
         if u is None:
-            u = np.zeros((N,)+b.shape[1:])
+            u = np.zeros_like(b)
             v = u[s]
         elif u.shape[0] == N:
             u.fill(0)
@@ -761,9 +762,7 @@ class ADDmat(ShenMatrix):
             u.fill(0)
             v = u
 
-        assert b.shape[0] == N-2
         assert v.shape[0] == N-2
-
         if len(u.shape) == 1:
             se = 0.0
             so = 0.0
