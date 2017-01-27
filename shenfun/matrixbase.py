@@ -76,9 +76,12 @@ class SparseMatrix(dict):
                 if format not in ('csr', 'dia'): # Fallback on 'csr'. Should probably throw warning
                     format = 'csr'
                 diags = self.diags(format=format)
-                for i in range(v.shape[1]):
-                    for j in range(v.shape[2]):
-                        c[:N, i, j] = diags.dot(v[:M, i, j])
+                P = np.prod(v.shape[1:])
+                c[:N] = diags.dot(v[:M].reshape(M, P)).reshape(c[:N].shape)
+
+                #for i in range(v.shape[1]):
+                    #for j in range(v.shape[2]):
+                        #c[:N, i, j] = diags.dot(v[:M, i, j])
 
         else:
             if format == 'python':
