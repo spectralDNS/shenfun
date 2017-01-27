@@ -62,6 +62,7 @@ and if you want a regular `Scipy` sparse matrix, just do
 ```
 
 A Dirichlet basis is created as
+
 ```python
     >>> from shenfun.chebyshev.bases import ShenDirichletBasis
     >>> SD = ShenDirichletBasis()
