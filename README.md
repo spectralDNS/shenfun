@@ -143,7 +143,7 @@ Square matrices have implemented a solve method that is using fast direct LU dec
     >>> b = stiffness1.solve(b)
 ```
 
-where `b` is the right hand side (`b`) on input and the solution (`u`) on output.
+where `b` is the right hand side on input and the solution (`u`) on output.
 
 Some other predefined matrices are
 
