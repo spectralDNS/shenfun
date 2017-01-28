@@ -13,7 +13,7 @@ Shenfun contains tools for working with Jie Shen's modified Chebyshev and Legend
 Shenfun has implemented classes for the bases described in these papers, and within each class there are methods for fast transforms, scalar products and for computing matrices arising with the spectral Galerkin method. The following bases are defined in submodules `shenfun.chebyshev` and `shendun.legendre`
 
 * shenfun.chebyshev
-  * ChebyshevBasis  Regular Chebyshev 
+  * ChebyshevBasis - Regular Chebyshev 
   * ShenDirichletBasis - Dirichlet boundary conditions
   * ShenNeumannBasis - Neumann boundary conditions (homogeneous)
   * ShenBiharmonicBasis - Homogeneous Dirichlet and Neumann boundary conditions
