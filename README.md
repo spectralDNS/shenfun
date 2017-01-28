@@ -134,16 +134,18 @@ You may notice that `BDDmat` takes advantage of the fact that two diagonals are 
 
 Here `stiffness1` and `stiffness2` are equal up to roundoff, but `stiffness2` is automatically generated from Vandermonde type matrices, whereas `stiffness1` uses analytical expressions for the diagonals (see `class ADDmat` in `shenfun.chebyshev.matrices.py`). 
 
-Square matrices have implemented a solve method that is using fast direct LU decomposition or similar (TDMA/PDMA). For example
+Square matrices have implemented a solve method that is using fast direct LU decomposition or similar (TDMA/PDMA). For example, to solve the linear system `Au=b`
 
 ```python
     >>> fj = np.random.random(8)
-    >>> fk = np.zeros_like(fj)
-    >>> fk = SD.scalar_product(fj, fk)
-    >>> fk = stiffness1.solve(fk)
+    >>> b = np.zeros_like(fj)
+    >>> b = SD.scalar_product(fj, b)
+    >>> b = stiffness1.solve(b)
 ```
 
-Some predefined matrices are
+where `b` is the right hand side (`b`) on input and the solution (`u`) on output.
+
+Some other predefined matrices are
 
 * shenfun.chebyshev.matrices
   * BDDmat  (mass ShenDirichletBasis)
