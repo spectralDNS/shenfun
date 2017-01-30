@@ -7,6 +7,7 @@ import six
 from copy import deepcopy
 from . import inheritdocstrings
 
+
 class SparseMatrix(dict):
     """Base class for sparse matrices
 
@@ -43,7 +44,7 @@ class SparseMatrix(dict):
         Returns c = dot(self, v)
 
         args:
-            v    (input)         Numpy array of ndim=1 or 3
+            v    (input)         Numpy array of ndim>=1
             c    (output)        Numpy array of same ndim as v
 
         kwargs:
@@ -59,43 +60,21 @@ class SparseMatrix(dict):
         assert v.shape == c.shape
         N, M = self.shape
         c.fill(0)
-        if len(v.shape) > 1:
-            if format == 'python':
-                for key, val in six.iteritems(self):
-                    if key < 0:
-
-                        for i in range(v.shape[1]):
-                            for j in range(v.shape[2]):
-                                c[-key:min(N, M-key), i, j] += val*v[:min(M, N+key), i, j]
-                    else:
-                        for i in range(v.shape[1]):
-                            for j in range(v.shape[2]):
-                                c[:min(N, M-key), i, j] += val*v[key:min(M, N+key), i, j]
-
-            else:
-                if format not in ('csr', 'dia'): # Fallback on 'csr'. Should probably throw warning
-                    format = 'csr'
-                diags = self.diags(format=format)
-                P = np.prod(v.shape[1:])
-                c[:N] = diags.dot(v[:M].reshape(M, P)).reshape(c[:N].shape)
-
-                #for i in range(v.shape[1]):
-                    #for j in range(v.shape[2]):
-                        #c[:N, i, j] = diags.dot(v[:M, i, j])
+        if format == 'python':
+            for key, val in six.iteritems(self):
+                if np.ndim(val) > 0: # broadcasting
+                    val = val[(slice(None), ) + (np.newaxis,)*(v.ndim-1)]
+                if key < 0:
+                    c[-key:min(N, M-key)] += val*v[:min(M, N+key)]
+                else:
+                    c[:min(N, M-key)] += val*v[key:min(M, N+key)]
 
         else:
-            if format == 'python':
-                for key, val in six.iteritems(self):
-                    if key < 0:
-                        c[-key:min(N, M-key)] += val*v[:min(M, N+key)]
-                    else:
-                        c[:min(N, M-key)] += val*v[key:min(M, N+key)]
-
-            else:
-                if format not in ('csr', 'dia'):
-                    format = 'csr'
-                diags = self.diags(format=format)
-                c[:N] = diags.dot(v[:M])
+            if format not in ('csr', 'dia'): # Fallback on 'csr'. Should probably throw warning
+                format = 'csr'
+            diags = self.diags(format=format)
+            P = int(np.prod(v.shape[1:]))
+            c[:N] = diags.dot(v[:M].reshape(M, P)).reshape(c[:N].shape)
 
         return c
 
@@ -250,9 +229,6 @@ class SparseMatrix(dict):
         if b.ndim == 1:
             us[:] = spsolve(self.diags(), b)
         else:
-            #for i in np.ndindex(b.shape[1:]):
-                #u[(slice(None),)+i] = spsolve(self.diags(), b[(slice(None),)+i])
-
             N = b.shape[0]
             P = np.prod(b.shape[1:])
             us[:] = spsolve(self.diags(), b.reshape((N, P))).reshape(b.shape)
@@ -430,8 +406,6 @@ class ShenMatrix(SparseMatrix):
             if b.ndim == 1:
                 us[:] = spsolve(self.diags(), bs)
             else:
-                #for i in np.ndindex(b.shape[1:]):
-                    #u[(s,)+i] = spsolve(self.diags(), b[(s,)+i])
                 N = bs.shape[0]
                 P = np.prod(bs.shape[1:])
                 us[:] = spsolve(self.diags(), bs.reshape((N, P))).reshape(bs.shape)
@@ -444,7 +418,14 @@ class ShenMatrix(SparseMatrix):
 
 
 def extract_diagonal_matrix(M, tol=1e-8):
-    """Return matrix with essentially zero diagonals nulled out
+    """Return SparseMatrix version of M
+
+    args:
+        M                    Dense matrix. Numpy array of ndim=2
+
+    kwargs:
+        tol     (float)      Tolerance. Only diagonals with max(|d|) < tol
+                             are kept in the returned SparseMatrix
     """
     d = {}
     for i in range(M.shape[1]):

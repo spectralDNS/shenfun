@@ -12,7 +12,7 @@ mats += ['.'.join(('lmatrices', m)) for m in lmats]
 
 formats = ('dia', 'cython', 'python', 'self')
 
-N = 16
+N = 128
 k = np.arange(N).astype(float)
 a = np.random.random(N)
 b = np.random.random((N, N, N))
@@ -34,7 +34,7 @@ def test_mat(mat, quad):
 @pytest.mark.parametrize('quad', ('GC', 'GL'))
 def test_matvec(mat, format, quad):
     """Test matrix-vector product"""
-    global c, c1, d, d1
+    global c, c1, d, d1, k
     mat = eval(mat)
     m = mat(k, quad)
     c = m.matvec(a, c, format='csr')

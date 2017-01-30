@@ -38,32 +38,24 @@ class BDDmat(ShenMatrix):
     def matvec(self, v, c, format='cython'):
         N, M = self.shape
         c.fill(0)
-        if len(v.shape) > 1:
+        if format == 'cython':
             ld = self[-2]*np.ones(M-2)
-            if format == 'cython':
+            if v.ndim == 3:
                 Tridiagonal_matvec3D(v, c, ld, self[0], ld)
-
-            elif format == 'self':
-                P = np.array(v.shape[1:]).prod()
-                c[:(N-2)] = self[2]*v[2:N]
-                c[:N] += self[0].repeat(P).reshape(v[:N].shape)*v[:N]
-                c[2:N] += self[-2]*v[:(N-2)]
-
+            elif v.ndim == 1:
+                Tridiagonal_matvec(v, c, ld, self[0], ld)
             else:
                 c = super(BDDmat, self).matvec(v, c, format=format)
+                #raise NotImplementedError
+
+        elif format == 'self':
+            s = (slice(None),)+(np.newaxis,)*(v.ndim-1) # broadcasting
+            c[:(N-2)] = self[2]*v[2:N]
+            c[:N] += self[0][s]*v[:N]
+            c[2:N] += self[-2]*v[:(N-2)]
 
         else:
-            if format == 'cython':
-                ld = self[-2]*np.ones(M-2)
-                Tridiagonal_matvec(v, c, ld, self[0], ld)
-
-            elif format == 'self':
-                c[:(N-2)] = self[2]*v[2:M]
-                c[:N] += self[0]*v[:M]
-                c[2:N] += self[-2]*v[:(M-2)]
-
-            else:
-                c = ShenMatrix.matvec(self, v, c, format=format)
+            c = super(BDDmat, self).matvec(v, c, format=format)
 
         return c
 
@@ -129,12 +121,8 @@ class BDNmat(ShenMatrix):
 
     def matvec(self, v, c, format='cython'):
         c.fill(0)
-        if len(v.shape) > 1:
-            if format == 'cython':
-                BDNmat_matvec(self[2], self[-2], self[0], v, c)
-
-            else:
-                c = super(BDNmat, self).matvec(v, c, format=format)
+        if format == 'cython' and v.ndim == 3:
+            BDNmat_matvec(self[2], self[-2], self[0], v, c)
 
         else:
             c = super(BDNmat, self).matvec(v, c, format=format)
@@ -731,6 +719,12 @@ class ADDmat(ShenMatrix):
         trial = bases.ShenDirichletBasis()
         ShenMatrix.__init__(self, d, N, (trial, 2), (trial, 0), scale)
 
+        # Following storage more efficient, but requires effort in iadd/isub...
+        #d = {0: -2*np.pi*(K[:N-2]+1)*(K[:N-2]+2),
+             #2: -4*np.pi*(K[:-4]+1)}
+        #for i in range(4, N-2, 2):
+            #d[i] = d[2][:2-i]
+
     def matvec(self, v, c, format='cython'):
         c.fill(0)
         if len(v.shape) > 1:
@@ -760,8 +754,8 @@ class ADDmat(ShenMatrix):
             se = 0.0
             so = 0.0
         else:
-            se = np.zeros(u.shape[1:])
-            so = np.zeros(u.shape[1:])
+            se = np.zeros(us.shape[1:])
+            so = np.zeros(us.shape[1:])
 
         d = self[0]
         d1 = self[2]
