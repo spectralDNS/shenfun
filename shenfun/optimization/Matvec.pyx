@@ -279,13 +279,13 @@ def Pentadiagonal_matvec3D(np.ndarray[T, ndim=3] v,
             b[k, i, j] = ldd[k-4]*v[k-4, i, j]+ ld[k-2]* v[k-2, i, j] + dd[k]*v[k, i, j]
 
 
-def Pentadiagonal_matvec(np.ndarray[T, ndim=1] v,
-                  np.ndarray[T, ndim=1] b,
-                  np.ndarray[real_t, ndim=1] ldd,
-                  np.ndarray[real_t, ndim=1] ld,
-                  np.ndarray[real_t, ndim=1] dd,
-                  np.ndarray[real_t, ndim=1] ud,
-                  np.ndarray[real_t, ndim=1] udd):
+def Pentadiagonal_matvec(T[::1] v,
+                         T[::1] b,
+                         real_t[::1] ldd,
+                         real_t[::1] ld,
+                         real_t[::1] dd,
+                         real_t[::1] ud,
+                         real_t[::1] udd):
     cdef:
         int i
         int N = dd.shape[0]
@@ -295,15 +295,16 @@ def Pentadiagonal_matvec(np.ndarray[T, ndim=1] v,
     b[2] = ld[0]*v[0] + dd[2]*v[2] + ud[2]*v[4] + udd[2]*v[6]
     b[3] = ld[1]*v[1] + dd[3]*v[3] + ud[3]*v[5] + udd[3]*v[7]
     for i in xrange(4, N-4):
-        b[i] = ldd[i-4]*v[i-4]+ ld[i-2]* v[i-2] + dd[i]*v[i] + ud[i]*v[i+2] + udd[i]*v[i+4]
+        b[i] = ldd[i-4]*v[i-4] + ld[i-2]*v[i-2] + dd[i]*v[i] + ud[i]*v[i+2] + udd[i]*v[i+4]
     i = N-4
-    b[i] = ldd[i-4]*v[i-4]+ ld[i-2]* v[i-2] + dd[i]*v[i] + ud[i]*v[i+2]
+    b[i] = ldd[i-4]*v[i-4] + ld[i-2]*v[i-2] + dd[i]*v[i] + ud[i]*v[i+2]
     i = N-3
-    b[i] = ldd[i-4]*v[i-4]+ ld[i-2]* v[i-2] + dd[i]*v[i] + ud[i]*v[i+2]
+    b[i] = ldd[i-4]*v[i-4] + ld[i-2]*v[i-2] + dd[i]*v[i] + ud[i]*v[i+2]
     i = N-2
-    b[i] = ldd[i-4]*v[i-4]+ ld[i-2]* v[i-2] + dd[i]*v[i]
+    b[i] = ldd[i-4]*v[i-4] + ld[i-2]*v[i-2] + dd[i]*v[i]
     i = N-1
-    b[i] = ldd[i-4]*v[i-4]+ ld[i-2]* v[i-2] + dd[i]*v[i]
+    b[i] = ldd[i-4]*v[i-4] + ld[i-2]*v[i-2] + dd[i]*v[i]
+
 
 def CBD_matvec3D(np.ndarray[T, ndim=3] v,
                  np.ndarray[T, ndim=3] b,

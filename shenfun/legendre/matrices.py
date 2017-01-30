@@ -1,6 +1,6 @@
 import numpy as np
 from shenfun.matrixbase import ShenMatrix
-from shenfun import inheritdocstrings
+from shenfun.utilities import inheritdocstrings
 from . import bases
 
 class BLLmat(ShenMatrix):

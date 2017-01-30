@@ -3,7 +3,7 @@ import numpy as np
 from mpiFFT4py import dct, work_arrays
 from shenfun.spectralbase import SpectralBase
 from shenfun.optimization import Cheb
-from shenfun import inheritdocstrings
+from shenfun.utilities import inheritdocstrings
 
 work = work_arrays()
 

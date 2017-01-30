@@ -7,8 +7,8 @@ from shenfun.optimization.Matvec import CDNmat_matvec, BDNmat_matvec, CDDmat_mat
     BBD_matvec3D
 
 from shenfun.matrixbase import ShenMatrix
-from shenfun import inheritdocstrings
 from shenfun.la import TDMA, PDMA
+from shenfun.utilities import inheritdocstrings
 from . import bases
 
 
@@ -38,15 +38,13 @@ class BDDmat(ShenMatrix):
     def matvec(self, v, c, format='cython'):
         N, M = self.shape
         c.fill(0)
-        if format == 'cython':
+        if format == 'cython' and v.ndim == 3:
             ld = self[-2]*np.ones(M-2)
-            if v.ndim == 3:
-                Tridiagonal_matvec3D(v, c, ld, self[0], ld)
-            elif v.ndim == 1:
-                Tridiagonal_matvec(v, c, ld, self[0], ld)
-            else:
-                c = super(BDDmat, self).matvec(v, c, format=format)
-                #raise NotImplementedError
+            Tridiagonal_matvec3D(v, c, ld, self[0], ld)
+
+        elif format == 'cython' and v.ndim == 1:
+            ld = self[-2]*np.ones(M-2)
+            Tridiagonal_matvec(v, c, ld, self[0], ld)
 
         elif format == 'self':
             s = (slice(None),)+(np.newaxis,)*(v.ndim-1) # broadcasting
@@ -87,7 +85,7 @@ class BNDmat(ShenMatrix):
         ShenMatrix.__init__(self, d, N, (trial, 0), (test, 0))
 
     def matvec(self, v, c, format='csr'):
-        c = ShenMatrix.matvec(self, v, c, format=format)
+        c = super(ShenMatrix, self).matvec(v, c, format=format)
         c[0] = 0
         return c
 
@@ -155,7 +153,7 @@ class BTTmat(ShenMatrix):
             s = (slice(None),)+(np.newaxis,)*(v.ndim-1) # broadcasting
             c[:] = self[0][s]*v
         else:
-            c = ShenMatrix.matvec(self, v, c, format=format)
+            c = super(ShenMatrix, self).matvec(v, c, format=format)
 
         return c
 
@@ -187,7 +185,7 @@ class BNNmat(ShenMatrix):
         self.solve = TDMA(self)
 
     def matvec(self, v, c, format='csr'):
-        c = ShenMatrix.matvec(self, v, c, format=format)
+        c = super(ShenMatrix, self).matvec(v, c, format=format)
         c[0] = 0
         return c
 
@@ -299,18 +297,15 @@ class BBBmat(ShenMatrix):
             c[2:N] += self[-2][s] * vv[:-2]
             c[4:N] += self[-4][s] * vv[:-4]
 
-        elif format == 'cython':
-            if v.ndim == 3:
-                Pentadiagonal_matvec3D(v, c, self[-4], self[-2], self[0],
-                                       self[2], self[4])
-            elif v.ndim == 1:
-                Pentadiagonal_matvec(v, c, self[-4], self[-2], self[0],
-                                     self[2], self[4])
-            else:
-                c = ShenMatrix.matvec(self, v, c, format=format)
+        elif format == 'cython' and v.ndim == 3:
+            Pentadiagonal_matvec3D(v, c, self[-4], self[-2], self[0],
+                                   self[2], self[4])
 
+        elif format == 'cython' and v.ndim == 1:
+            Pentadiagonal_matvec(v, c, self[-4], self[-2], self[0],
+                                 self[2], self[4])
         else:
-            c = ShenMatrix.matvec(self, v, c, format=format)
+            c = super(ShenMatrix, self).matvec(v, c, format=format)
 
         return c
 
@@ -358,7 +353,7 @@ class BBDmat(ShenMatrix):
             BBD_matvec3D(v, c, self[-2], self[0], self[2], self[4])
 
         else:
-            c = ShenMatrix.matvec(self, v, c, format=format)
+            c = super(ShenMatrix, self).matvec(v, c, format=format)
 
         return c
 
@@ -392,7 +387,7 @@ class CDNmat(ShenMatrix):
         if format == 'cython' and v.ndim == 3:
             CDNmat_matvec(self[1], self[-1], v, c)
         else:
-            c = ShenMatrix.matvec(self, v, c, format=format)
+            c = super(ShenMatrix, self).matvec(v, c, format=format)
 
         return c
 
@@ -427,7 +422,7 @@ class CDDmat(ShenMatrix):
         elif format == 'cython' and v.ndim == 3:
             CDDmat_matvec(self[1], self[-1], v, c)
         else:
-            c = ShenMatrix.matvec(self, v, c, format=format)
+            c = super(ShenMatrix, self).matvec(v, c, format=format)
 
         return c
 
@@ -460,7 +455,7 @@ class CNDmat(ShenMatrix):
         ShenMatrix.__init__(self, d, N, (trial, 1), (test, 0))
 
     def matvec(self, v, c, format='csr'):
-        c = ShenMatrix.matvec(self, v, c, format=format)
+        c = super(ShenMatrix, self).matvec(v, c, format=format)
         c[0] = 0
         return c
 
@@ -546,7 +541,7 @@ class CBDmat(ShenMatrix):
         elif format == 'cython' and v.ndim == 1:
             CBD_matvec(v, c, self[-1], self[1], self[3])
         else:
-            c = ShenMatrix.matvec(self, v, c, format=format)
+            c = super(ShenMatrix, self).matvec(v, c, format=format)
         return c
 
 
@@ -585,7 +580,7 @@ class CDBmat(ShenMatrix):
             CDB_matvec3D(v, c, self[-3], self[-1], self[1])
 
         else:
-            c = ShenMatrix.matvec(self, v, c, format=format)
+            c = super(ShenMatrix, self).matvec(v, c, format=format)
 
         return c
 
@@ -627,7 +622,7 @@ class ABBmat(ShenMatrix):
             Tridiagonal_matvec(v, c, self[-2], self[0], self[2])
 
         else:
-            c = ShenMatrix.matvec(self, v, c, format=format)
+            c = super(ShenMatrix, self).matvec(v, c, format=format)
 
         return c
 
@@ -664,7 +659,7 @@ class ADDmat(ShenMatrix):
         if format == 'cython' and v.ndim == 1:
             ADDmat_matvec(v, c, self[0])
         else:
-            c = ShenMatrix.matvec(self, v, c, format=format)
+            c = super(ShenMatrix, self).matvec(v, c, format=format)
 
         return c
 
@@ -730,7 +725,7 @@ class ANNmat(ShenMatrix):
         ShenMatrix.__init__(self, d, N, (trial, 2), (trial, 0), -1.0)
 
     def matvec(self, v, c, format='csr'):
-        c = ShenMatrix.matvec(self, v, c, format=format)
+        c = super(ShenMatrix, self).matvec(v, c, format=format)
         c[0] = self.testfunction.mean*np.pi
         return c
 
@@ -833,6 +828,6 @@ class SBBmat(ShenMatrix):
             SBBmat_matvec(v, c, self[0])
 
         else:
-            c = ShenMatrix.matvec(self, v, c, format=format)
+            c = super(ShenMatrix, self).matvec(v, c, format=format)
 
         return c

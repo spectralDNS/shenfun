@@ -76,7 +76,8 @@ setup(name = "shenfun",
       packages = ["shenfun",
                   "shenfun.optimization",
                   "shenfun.legendre",
-                  "shenfun.chebyshev"
+                  "shenfun.chebyshev",
+                  "shenfun.utilities"
                   ],
       package_dir = {"shenfun": "shenfun"},
       ext_modules = ext,

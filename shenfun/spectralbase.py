@@ -59,7 +59,7 @@ for computing the (weighted) scalar product.
 
 """
 import numpy as np
-
+from .utilities import inheritdocstrings
 
 class SpectralBase(object):
     """Abstract base class for all spectral function spaces

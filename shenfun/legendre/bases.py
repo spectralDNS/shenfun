@@ -1,5 +1,5 @@
 from shenfun.spectralbase import SpectralBase
-from shenfun import inheritdocstrings
+from shenfun.utilities import inheritdocstrings
 from numpy.polynomial import legendre as leg
 import numpy as np
 

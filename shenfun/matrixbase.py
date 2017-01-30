@@ -5,7 +5,7 @@ from scipy.sparse.linalg import spsolve
 from scipy.linalg import solve
 import six
 from copy import deepcopy
-from . import inheritdocstrings
+from .utilities import inheritdocstrings
 
 
 class SparseMatrix(dict):
