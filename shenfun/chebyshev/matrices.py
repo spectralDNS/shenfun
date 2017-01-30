@@ -151,18 +151,11 @@ class BTTmat(ShenMatrix):
 
     def matvec(self, v, c, format='self'):
         c.fill(0)
-        if len(v.shape) > 1:
-            if format == 'self':
-                P = np.array(v.shape[1:]).prod()
-                c[:] = self[0].repeat(P).reshape(v[:].shape)*v
-            else:
-                c = ShenMatrix.matvec(self, v, c, format=format)
-
+        if format == 'self':
+            s = (slice(None),)+(np.newaxis,)*(v.ndim-1) # broadcasting
+            c[:] = self[0][s]*v
         else:
-            if format == 'self':
-                c[:] = self[0]*v
-            else:
-                c = ShenMatrix.matvec(self, v, c, format=format)
+            c = ShenMatrix.matvec(self, v, c, format=format)
 
         return c
 
@@ -297,38 +290,27 @@ class BBBmat(ShenMatrix):
     def matvec(self, v, c, format='cython'):
         c.fill(0)
         N = self.shape[0]
-        if len(v.shape) > 1:
-            if format == 'self':
-                vv = v[:-4]
-                P = np.array(v.shape[1:]).prod()
-                c[:N] = self[0].repeat(P).reshape(vv.shape) * vv[:]
-                c[:N-2] += self[2].repeat(P).reshape(vv[2:].shape) * vv[2:]
-                c[:N-4] += self[4].repeat(P).reshape(vv[4:].shape) * vv[4:]
-                c[2:N] += self[-2].repeat(P).reshape(vv[:-2].shape) * vv[:-2]
-                c[4:N] += self[-4].repeat(P).reshape(vv[:-4].shape) * vv[:-4]
+        if format == 'self':
+            vv = v[:-4]
+            s = (slice(None),) + (np.newaxis,)*(v.ndim-1) # broadcasting
+            c[:N] = self[0][s] * vv[:]
+            c[:N-2] += self[2][s] * vv[2:]
+            c[:N-4] += self[4][s] * vv[4:]
+            c[2:N] += self[-2][s] * vv[:-2]
+            c[4:N] += self[-4][s] * vv[:-4]
 
-            elif format == 'cython':
+        elif format == 'cython':
+            if v.ndim == 3:
                 Pentadiagonal_matvec3D(v, c, self[-4], self[-2], self[0],
                                        self[2], self[4])
-
+            elif v.ndim == 1:
+                Pentadiagonal_matvec(v, c, self[-4], self[-2], self[0],
+                                     self[2], self[4])
             else:
                 c = ShenMatrix.matvec(self, v, c, format=format)
 
         else:
-            if format == 'self':
-                vv = v[:-4]
-                c[:N] = self[0] * vv[:]
-                c[:N-2] += self[2] * vv[2:]
-                c[:N-4] += self[4] * vv[4:]
-                c[2:N] += self[-2] * vv[:-2]
-                c[4:N] += self[-4] * vv[:-4]
-
-            elif format == 'cython':
-                Pentadiagonal_matvec(v, c, self[-4], self[-2], self[0],
-                                     self[2], self[4])
-
-            else:
-                c = ShenMatrix.matvec(self, v, c, format=format)
+            c = ShenMatrix.matvec(self, v, c, format=format)
 
         return c
 
@@ -364,31 +346,19 @@ class BBDmat(ShenMatrix):
     def matvec(self, v, c, format='cython'):
         c.fill(0)
         N = self.shape[0]
-        if len(v.shape) > 1:
-            if format == 'self':
-                vv = v[:-2]
-                P = np.array(v.shape[1:]).prod()
-                c[:N] = self[0].repeat(P).reshape(vv[:-2].shape) * vv[:-2]
-                c[:N] += self[2].repeat(P).reshape(vv[2:].shape) * vv[2:]
-                c[:N-2] += self[4].repeat(P).reshape(vv[4:].shape) * vv[4:]
-                c[2:N] += self[-2] * vv[:-4]
+        if format == 'self':
+            vv = v[:-2]
+            s = (slice(None),) + (np.newaxis,)*(v.ndim-1) # broadcasting
+            c[:N] = self[0][s] * vv[:-2]
+            c[:N] += self[2][s] * vv[2:]
+            c[:N-2] += self[4][s] * vv[4:]
+            c[2:N] += self[-2] * vv[:-4]
 
-            elif format == 'cython':
-                BBD_matvec3D(v, c, self[-2], self[0], self[2], self[4])
-
-            else:
-                c = ShenMatrix.matvec(self, v, c, format=format)
+        elif format == 'cython' and v.ndim == 3:
+            BBD_matvec3D(v, c, self[-2], self[0], self[2], self[4])
 
         else:
-            if format == 'self':
-                vv = v[:-2]
-                c[:N] = self[0] * vv[:-2]
-                c[:N] += self[2] * vv[2:]
-                c[:N-2] += self[4] * vv[4:]
-                c[2:N] += self[-2] * vv[:-4]
-            else:
-                if format == 'cython': format = 'csr'
-                c = ShenMatrix.matvec(self, v, c, format=format)
+            c = ShenMatrix.matvec(self, v, c, format=format)
 
         return c
 
@@ -419,13 +389,9 @@ class CDNmat(ShenMatrix):
         ShenMatrix.__init__(self, d, N, (trial, 1), (test, 0))
 
     def matvec(self, v, c, format='cython'):
-        if len(v.shape) > 1:
-            if format == 'cython':
-                CDNmat_matvec(self[1], self[-1], v, c)
-            else:
-                c = ShenMatrix.matvec(self, v, c, format=format)
+        if format == 'cython' and v.ndim == 3:
+            CDNmat_matvec(self[1], self[-1], v, c)
         else:
-            if format == 'cython': format = 'csr'
             c = ShenMatrix.matvec(self, v, c, format=format)
 
         return c
@@ -454,22 +420,14 @@ class CDDmat(ShenMatrix):
     def matvec(self, v, c, format='cython'):
         N = self.shape[0]
         c.fill(0)
-        if len(v.shape) > 1:
-            if format == 'self':
-                P = np.array(v.shape[1:]).prod()
-                c[:N-1] = self[1].repeat(P).reshape(v[1:N].shape)*v[1:N]
-                c[1:N] += self[-1].repeat(P).reshape(v[:(N-1)].shape)*v[:(N-1)]
-            elif format == 'cython':
-                CDDmat_matvec(self[1], self[-1], v, c)
-            else:
-                c = ShenMatrix.matvec(self, v, c, format=format)
+        if format == 'self':
+            s = (slice(None),) + (np.newaxis,)*(v.ndim-1) # broadcasting
+            c[:N-1] = self[1][s]*v[1:N]
+            c[1:N] += self[-1][s]*v[:(N-1)]
+        elif format == 'cython' and v.ndim == 3:
+            CDDmat_matvec(self[1], self[-1], v, c)
         else:
-            if format == 'self':
-                c[:N-1] = self[1]*v[1:N]
-                c[1:N] += self[-1]*v[:(N-1)]
-            else:
-                if format == 'cython': format = 'csr'
-                c = ShenMatrix.matvec(self, v, c, format=format)
+            c = ShenMatrix.matvec(self, v, c, format=format)
 
         return c
 
@@ -578,25 +536,17 @@ class CBDmat(ShenMatrix):
     def matvec(self, v, c, format='cython'):
         N, M = self.shape
         c.fill(0)
-        if len(v.shape) > 1:
-            if format == 'self':
-                P = np.array(v.shape[1:]).prod()
-                c[1:N] = self[-1].repeat(P).reshape(v[:M-3].shape)*v[:M-3]
-                c[:N] += self[1].repeat(P).reshape(v[1:M-1].shape)*v[1:M-1]
-                c[:N-1] += self[3].repeat(P).reshape(v[3:M].shape)*v[3:M]
-            elif format == 'cython':
-                CBD_matvec3D(v, c, self[-1], self[1], self[3])
-            else:
-                c = ShenMatrix.matvec(self, v, c, format=format)
+        if format == 'self':
+            s = (slice(None),) + (np.newaxis,)*(v.ndim-1) # broadcasting
+            c[1:N] = self[-1][s]*v[:M-3]
+            c[:N] += self[1][s]*v[1:M-1]
+            c[:N-1] += self[3][s]*v[3:M]
+        elif format == 'cython' and v.ndim == 3:
+            CBD_matvec3D(v, c, self[-1], self[1], self[3])
+        elif format == 'cython' and v.ndim == 1:
+            CBD_matvec(v, c, self[-1], self[1], self[3])
         else:
-            if format == 'self':
-                c[1:N] = self[-1] * v[:M-3]
-                c[:N] += self[1] * v[1:M-1]
-                c[:N-1] += self[3] * v[3:M]
-            elif format == 'cython':
-                CBD_matvec(v, c, self[-1], self[1], self[3])
-            else:
-                c = ShenMatrix.matvec(self, v, c, format=format)
+            c = ShenMatrix.matvec(self, v, c, format=format)
         return c
 
 
@@ -626,25 +576,16 @@ class CDBmat(ShenMatrix):
     def matvec(self, v, c, format='cython'):
         N, M = self.shape
         c.fill(0)
-        if len(v.shape) > 1:
-            if format == 'self':
-                P = np.array(v.shape[1:]).prod()
-                c[3:N] = self[-3].repeat(P).reshape(v[:M-1].shape) * v[:M-1]
-                c[1:N-1] += self[-1].repeat(P).reshape(v[:M].shape) * v[:M]
-                c[:N-3] += self[1].repeat(P).reshape(v[1:M].shape) * v[1:M]
-            elif format == 'cython':
-                CDB_matvec3D(v, c, self[-3], self[-1], self[1])
-            else:
-                c = ShenMatrix.matvec(self, v, c, format=format)
+        if format == 'self':
+            s = (slice(None),) + (np.newaxis,)*(v.ndim-1) # broadcasting
+            c[3:N] = self[-3][s] * v[:M-1]
+            c[1:N-1] += self[-1][s] * v[:M]
+            c[:N-3] += self[1][s] * v[1:M]
+        elif format == 'cython' and v.ndim == 3:
+            CDB_matvec3D(v, c, self[-3], self[-1], self[1])
 
         else:
-            if format == 'self':
-                c[3:N] = self[-3] * v[:M-1]
-                c[1:N-1] += self[-1] * v[:M]
-                c[:N-3] += self[1] * v[1:M]
-            else:
-                if format == 'cython': format = 'csr'
-                c = ShenMatrix.matvec(self, v, c, format=format)
+            c = ShenMatrix.matvec(self, v, c, format=format)
 
         return c
 
@@ -674,26 +615,19 @@ class ABBmat(ShenMatrix):
     def matvec(self, v, c, format='cython'):
         N = self.shape[0]
         c.fill(0)
-        if len(v.shape) > 1:
-            if format == 'self':
-                P = np.array(v.shape[1:]).prod()
-                c[:N] = self[0].repeat(P).reshape(v[:N].shape) * v[:N]
-                c[:N-2] += self[2].repeat(P).reshape(v[2:N].shape) * v[2:N]
-                c[2:N] += self[-2].repeat(P).reshape(v[:N-2].shape) * v[:N-2]
-            elif format == 'cython':
-                Tridiagonal_matvec3D(v, c, self[-2], self[0], self[2])
-            else:
-                c = ShenMatrix.matvec(self, v, c, format=format)
+        if format == 'self':
+            s = (slice(None),) + (np.newaxis,)*(v.ndim-1) # broadcasting
+            c[:N] = self[0][s] * v[:N]
+            c[:N-2] += self[2][s] * v[2:N]
+            c[2:N] += self[-2][s] * v[:N-2]
+        elif format == 'cython' and v.ndim == 3:
+            Tridiagonal_matvec3D(v, c, self[-2], self[0], self[2])
+
+        elif format == 'cython' and v.ndim == 1:
+            Tridiagonal_matvec(v, c, self[-2], self[0], self[2])
 
         else:
-            if format == 'self':
-                c[:N] = self[0] * v[:N]
-                c[:N-2] += self[2] * v[2:N]
-                c[2:N] += self[-2] * v[:N-2]
-            elif format == 'cython':
-                Tridiagonal_matvec(v, c, self[-2], self[0], self[2])
-            else:
-                c = ShenMatrix.matvec(self, v, c, format=format)
+            c = ShenMatrix.matvec(self, v, c, format=format)
 
         return c
 
@@ -727,15 +661,10 @@ class ADDmat(ShenMatrix):
 
     def matvec(self, v, c, format='cython'):
         c.fill(0)
-        if len(v.shape) > 1:
-            if format == 'cython': format = 'csr'
-            c = ShenMatrix.matvec(self, v, c, format=format)
-
+        if format == 'cython' and v.ndim == 1:
+            ADDmat_matvec(v, c, self[0])
         else:
-            if format == 'cython':
-                ADDmat_matvec(v, c, self[0])
-            else:
-                c = ShenMatrix.matvec(self, v, c, format=format)
+            c = ShenMatrix.matvec(self, v, c, format=format)
 
         return c
 
@@ -897,16 +826,13 @@ class SBBmat(ShenMatrix):
 
     def matvec(self, v, c, format='cython'):
         c.fill(0)
-        if len(v.shape) > 1:
-            if format == 'cython':
-                SBBmat_matvec3D(v, c, self[0])
-            else:
-                c = ShenMatrix.matvec(self, v, c, format=format)
+        if format == 'cython' and v.ndim == 3:
+            SBBmat_matvec3D(v, c, self[0])
+
+        elif format == 'cython' and v.ndim == 1:
+            SBBmat_matvec(v, c, self[0])
+
         else:
-            if format == 'cython':
-                SBBmat_matvec(v, c, self[0])
-            else:
-                c = ShenMatrix.matvec(self, v, c, format=format)
+            c = ShenMatrix.matvec(self, v, c, format=format)
 
         return c
-

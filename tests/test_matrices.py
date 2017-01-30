@@ -12,7 +12,7 @@ mats += ['.'.join(('lmatrices', m)) for m in lmats]
 
 formats = ('dia', 'cython', 'python', 'self')
 
-N = 128
+N = 16
 k = np.arange(N).astype(float)
 a = np.random.random(N)
 b = np.random.random((N, N, N))
