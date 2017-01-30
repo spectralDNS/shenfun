@@ -235,6 +235,16 @@ class SpectralBase(object):
         fk = self._mass.solve(fk)
         return fk
 
+    def eval(self, x, fk):
+        """Evaluate basis at position x
+
+        args:
+            x    float or array of floats
+            fk   Array of expansion coefficients
+
+        """
+        raise NotImplementedError
+
     def get_mass_matrix(self):
         """Return mass matrix associated with current basis"""
         raise NotImplementedError

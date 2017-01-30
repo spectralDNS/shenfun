@@ -176,6 +176,9 @@ class ChebyshevBasis(ChebyshevBase):
         from .matrices import BTTmat
         return BTTmat
 
+    def eval(self, x, fk):
+        return n_cheb.chebval(x, fk)
+
 
 @inheritdocstrings
 class ShenDirichletBasis(ChebyshevBase):
@@ -248,6 +251,13 @@ class ShenDirichletBasis(ChebyshevBase):
     def get_shape(self, N):
         return N-2
 
+    def eval(self, x, fk):
+        w_hat = work[(fk, 0)]
+        f = n_cheb.chebval(x, fk[:-2])
+        w_hat[2:] = fk[:-2]
+        f -= n_cheb.chebval(x, w_hat)
+        return f + 0.5*(fk[-1]*(1+x)+fk[-2]*(1-x))
+
 
 @inheritdocstrings
 class ShenNeumannBasis(ChebyshevBase):
@@ -318,6 +328,14 @@ class ShenNeumannBasis(ChebyshevBase):
 
     def get_shape(self, N):
         return N-2
+
+    def eval(self, x, fk):
+        w_hat = work[(fk, 0)]
+        self.set_factor_array(fk)
+        f = n_cheb.chebval(x, fk[:-2])
+        w_hat[2:] = self._factor*fk[:-2]
+        f -= n_cheb.chebval(x, w_hat)
+        return f
 
 
 @inheritdocstrings
@@ -399,3 +417,14 @@ class ShenBiharmonicBasis(ChebyshevBase):
 
     def get_shape(self, N):
         return N-4
+
+    def eval(self, x, fk):
+        w_hat = work[(fk, 0)]
+        self.set_factor_arrays(fk)
+        f = n_cheb.chebval(x, fk[:-4])
+        w_hat[2:-2] = self._factor1*fk[:-4]
+        f += n_cheb.chebval(x, w_hat[:-2])
+        w_hat[4:] = self._factor2*fk[:-4]
+        w_hat[:4] = 0
+        f += n_cheb.chebval(x, w_hat)
+        return f

@@ -697,8 +697,12 @@ class ADDmat(ShenMatrix):
 
         if u is None:
             b[s] = us
+            b[-1] = self.testfunction.bc[0]
+            b[-2] = self.testfunction.bc[1]
             return b
         else:
+            u[-1] = self.testfunction.bc[0]
+            u[-2] = self.testfunction.bc[1]
             return u
 
 

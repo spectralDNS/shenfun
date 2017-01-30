@@ -38,6 +38,22 @@ def test_scalarproduct(ST, quad):
 
 @pytest.mark.parametrize('ST', Basis)
 @pytest.mark.parametrize('quad', quads)
+def test_eval(ST, quad):
+    """Test eval agains fast inverse"""
+    ST = ST(quad=quad)
+    points, weights = ST.points_and_weights(N,  ST.quad)
+    fk = np.zeros(N)
+    fj = np.random.random(N)
+    fk = ST.forward(fj, fk)
+    fj = ST.backward(fk, fj)
+    fk = ST.forward(fj, fk)
+    f = ST.eval(points, fk)
+    assert np.allclose(fj, f)
+
+#test_eval(cbases.ShenBiharmonicBasis, 'GC')
+
+@pytest.mark.parametrize('ST', Basis)
+@pytest.mark.parametrize('quad', quads)
 def test_BNNmat(ST, quad):
     ST = ST(quad=quad)
     points, weights = ST.points_and_weights(N,  ST.quad)

@@ -18,14 +18,16 @@ from shenfun.chebyshev.bases import ShenDirichletBasis
 from shenfun.chebyshev.matrices import ADDmat
 
 # Use sympy to compute a rhs, given an analytical solution
+a = -0.5
+b = 1.5
 x = Symbol("x")
-u = (1-x**2)**2*cos(np.pi*x)*(x-0.25)**2
+u = (1-x**2)**2*cos(np.pi*4*x)*(x-0.25)**2 + a*(1 + x)/2. + b*(1 - x)/2.
 f = u.diff(x, 2)
 
 # Size of discretization
 N = 128
 
-ST = ShenDirichletBasis(quad="GC")
+ST = ShenDirichletBasis(quad="GC", bc=(a, b))
 points, weights = ST.points_and_weights(N, ST.quad)
 
 # Gauss-Chebyshev quadrature to compute rhs
@@ -38,6 +40,7 @@ f2 = f_hat.repeat(36).reshape((N, 6, 6))
 
 # Solve Poisson equation
 A = ADDmat(np.arange(N).astype(float), scale=1.0)
+A.testfunction.bc = (a, b)
 f_hat = A.solve(f_hat)
 
 # Test 3D
