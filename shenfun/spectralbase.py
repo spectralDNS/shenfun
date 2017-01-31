@@ -60,6 +60,9 @@ for computing the (weighted) scalar product.
 """
 import numpy as np
 from .utilities import inheritdocstrings
+from mpiFFT4py import work_arrays
+
+work = work_arrays()
 
 class SpectralBase(object):
     """Abstract base class for all spectral function spaces
@@ -202,7 +205,13 @@ class SpectralBase(object):
         points, weights = self.points_and_weights(N, self.quad)
         V = self.vandermonde(points, N)
         P = self.get_vandermonde_basis(V)
-        fk[:] = np.dot(fj*weights, P)
+        if fj.ndim == 1:
+            fk[:] = np.dot(fj*weights, P)
+
+        else: # broadcasting
+            fc = np.rollaxis(fj*weights[(slice(None),)+(np.newaxis,)*(fj.ndim-1)], 0, fj.ndim)
+            fk[:] = np.rollaxis(np.dot(fc, P), fj.ndim-1, 0)
+
         return fk
 
     def vandermonde_evaluate_expansion_all(self, fk, fj):
@@ -217,7 +226,12 @@ class SpectralBase(object):
         points = self.points_and_weights(N, self.quad)[0]
         V = self.vandermonde(points, N)
         P = self.get_vandermonde_basis(V)
-        fj[:] = np.dot(P, fk)
+        if fj.ndim == 1:
+            fj = np.dot(P, fk, out=fj)
+        else:
+            fc = np.rollaxis(fk, 0, fj.ndim-1)
+            fj = np.dot(P, fc, out=fj)
+
         return fj
 
     def apply_inverse_mass(self, fk):
@@ -229,9 +243,14 @@ class SpectralBase(object):
                                    returned.
 
         """
-        if not self._mass.shape[0] == fk.shape[0]:
+        if self._mass.shape[0] != fk.shape[0]:
             B = self.get_mass_matrix()
-            self._mass = B(np.arange(fk.shape[0]).astype(np.float), quad=self.quad)
+            B.testfunction[0].quad = self.quad
+            self._mass = B(np.arange(fk.shape[0]).astype(np.float))
+        if self._mass.testfunction[0].quad != self.quad:
+            B = self.get_mass_matrix()
+            B.testfunction[0].quad = self.quad
+            self._mass = B(np.arange(fk.shape[0]).astype(np.float))
         fk = self._mass.solve(fk)
         return fk
 
@@ -256,3 +275,9 @@ class SpectralBase(object):
     def get_shape(self, N):
         """Return the shape of current basis used to build a ShenMatrix"""
         return N
+
+    def __hash__(self):
+        return hash(repr(self.__class__))
+
+    def __eq__(self, other):
+        return self.__class__.__name__ == other.__class__.__name__

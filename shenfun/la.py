@@ -21,7 +21,7 @@ class TDMA(object):
         self.dd = B[0].copy()*np.ones(M)
         self.ud = B[2].copy()*np.ones(M-2)
         self.L = np.zeros(M-2)
-        self.s = self.mat.testfunction.slice(N)
+        self.s = self.mat.testfunction[0].slice(N)
         la.TDMA_SymLU(self.dd[self.s], self.ud[self.s], self.L)
 
     def __call__(self, u):

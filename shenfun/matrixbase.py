@@ -262,42 +262,57 @@ class ShenMatrix(SparseMatrix):
 
 
     Shen matrices are assumed to be sparse diagonal. The matrices are
-    scalar products of trial and test functions from one of six function
+    scalar products of trial and test functions from one of eight function
     spaces
 
-    Chebyshev basis and space of first kind
+    Chebyshev basis:
+
+      Chebyshev basis of first kind
 
         T_k,
         span(T_k) for k = 0, 1, ..., N
 
-    For homogeneous Dirichlet boundary conditions:
+      For homogeneous Dirichlet boundary conditions:
 
         phi_k = T_k - T_{k+2},
         span(phi_k) for k = 0, 1, ..., N-2
 
-    For homogeneous Neumann boundary conditions:
+      For homogeneous Neumann boundary conditions:
 
         phi_k = T_k - (k/(k+2))**2T_{k+2},
         span(phi_k) for k = 1, 2, ..., N-2
 
-    For Biharmonic basis with both homogeneous Dirichlet
-    and Neumann:
+      For Biharmonic basis with both homogeneous Dirichlet
+      and Neumann:
 
         psi_k = T_k - 2(k+2)/(k+3)*T_{k+2} + (k+1)/(k+3)*T_{k+4},
         span(psi_k) for k = 0, 1, ..., N-4
 
-    The scalar product is computed as a weighted inner product with
-    w=1/sqrt(1-x**2) the weights.
+      The scalar product is computed as a weighted inner product with
+      w=1/sqrt(1-x**2) the weights.
 
-    For Legendre basis
+    Legendre basis:
+
+      Regular Legendre
 
         L_k
         span(L_k, k=0,1,...,N)
 
-    For Legendre with homogeneous Dirichlet boundary conditions
+      Dirichlet boundary conditions
 
         xi_k = L_k-L_{k+2}
         span(xi_k, k=0,1,...,N-2)
+
+      Homogeneous Neumann boundary conditions:
+
+        phi_k = L_k - k*(k+1)/(k+2)/(k+3)L_{k+2},
+        span(phi_k) for k = 1, 2, ..., N-2
+
+      Both homogeneous Dirichlet and Neumann:
+
+        psi_k = L_k -2*(2*k+5)/(2*k+7)*L_{k+2} + (2*k+3)/(2*k+7)*L_{k+4},
+        span(psi_k) for k = 0, 1, ..., N-4
+
 
     Examples:
 
@@ -319,7 +334,7 @@ class ShenMatrix(SparseMatrix):
     where the first (ShenDirichletBasis, 0) represents the trial function and
     the second the test function. The stiffness matrix can be obtained as
 
-      A = ShenMatrix({}, 16, (ShenDirichletBasis(), 2), (ShenDirichletBasis(), 0))
+      A = ShenMatrix({}, 16, (ShenDirichletBasis(), 0), (ShenDirichletBasis(), 2))
 
     where (ShenDirichletBasis, 2) signals that we use the second derivative
     of this trial function.
@@ -332,9 +347,9 @@ class ShenMatrix(SparseMatrix):
     value.
 
     """
-    def __init__(self, d, N, trial, test, scale=1.0):
-        self.trialfunction, self.trial_derivative = trial
-        self.testfunction, self.test_derivative = test
+    def __init__(self, d, N, test, trial, scale=1.0):
+        self.testfunction = test
+        self.trialfunction = trial
         self.N = N
         self.scale = scale
         shape = self.get_shape()
@@ -347,8 +362,8 @@ class ShenMatrix(SparseMatrix):
 
     def get_shape(self):
         """Return shape of matrix"""
-        return (self.testfunction.get_shape(self.N),
-                self.trialfunction.get_shape(self.N))
+        return (self.testfunction[0].get_shape(self.N),
+                self.trialfunction[0].get_shape(self.N))
 
     def get_ck(self, N, quad):
         ck = np.ones(N, int)
@@ -359,16 +374,16 @@ class ShenMatrix(SparseMatrix):
     def get_dense_matrix(self):
         """Return dense matrix automatically computed from basis"""
         N = self.N
-        x, w = self.testfunction.points_and_weights(N, self.testfunction.quad)
-        V = self.testfunction.vandermonde(x, N)
-        test = self.testfunction.get_vandermonde_basis_derivative(V, self.test_derivative)
-        trial = self.trialfunction.get_vandermonde_basis_derivative(V, self.trial_derivative)
+        x, w = self.testfunction[0].points_and_weights(N, self.testfunction[0].quad)
+        V = self.testfunction[0].vandermonde(x, N)
+        test = self.testfunction[0].get_vandermonde_basis_derivative(V, self.testfunction[1])
+        trial = self.trialfunction[0].get_vandermonde_basis_derivative(V, self.trialfunction[1])
         return np.dot(w*test.T, trial)
 
-    def test(self):
-        """Test for matrix.
+    def test_sanity(self):
+        """Sanity test for matrix.
 
-        Test that automatically created matrix is the same as the one created
+        Test that automatically created matrix agrees with overloaded one
 
         """
         N, M = self.shape
@@ -378,10 +393,17 @@ class ShenMatrix(SparseMatrix):
         for key, val in six.iteritems(self):
             assert np.allclose(val, Dsp[key])
 
+    def matvec(self, v, c, format='csr'):
+        from .chebyshev.bases import ShenNeumannBasis
+        c = super(ShenMatrix, self).matvec(v, c, format=format)
+        if isinstance(self.testfunction[0], ShenNeumannBasis):
+            c[0] = 0
+        return c
+
     def solve(self, b, u=None):
         from .chebyshev.bases import ShenNeumannBasis
         assert self.shape[0] == self.shape[1]
-        s = self.testfunction.slice(b.shape[0])
+        s = self.testfunction[0].slice(b.shape[0])
         bs = b[s]
         if u is None:
             us = np.zeros_like(b[s])
@@ -389,12 +411,12 @@ class ShenMatrix(SparseMatrix):
             assert u.shape == b.shape
             us = u[s]
 
-        if isinstance(self.testfunction, ShenNeumannBasis):
+        if isinstance(self.testfunction[0], ShenNeumannBasis):
             # Handle level by using Dirichlet for dof=0
             A = self.diags().toarray()
             A[0] = 0
             A[0,0] = 1
-            b[0] = self.testfunction.mean
+            b[0] = self.testfunction[0].mean
             if b.ndim == 1:
                 us[:] = solve(A, bs)
             else:
@@ -408,7 +430,12 @@ class ShenMatrix(SparseMatrix):
             else:
                 N = bs.shape[0]
                 P = np.prod(bs.shape[1:])
-                us[:] = spsolve(self.diags(), bs.reshape((N, P))).reshape(bs.shape)
+                br = bs.reshape((N, P))
+                if b.dtype is np.dtype('complex'):
+                    us.real[:] = spsolve(self.diags(), br.real).reshape(bs.shape)
+                    us.imag[:] = spsolve(self.diags(), br.imag).reshape(bs.shape)
+                else:
+                    us[:] = spsolve(self.diags(), br).reshape(bs.shape)
 
         if u is None:
             b[s] = us

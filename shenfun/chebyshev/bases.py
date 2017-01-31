@@ -1,11 +1,12 @@
 from numpy.polynomial import chebyshev as n_cheb
 import numpy as np
-from mpiFFT4py import dct, work_arrays
-from shenfun.spectralbase import SpectralBase
+from mpiFFT4py import dct
+from shenfun.spectralbase import SpectralBase, work
 from shenfun.optimization import Cheb
 from shenfun.utilities import inheritdocstrings
 
-work = work_arrays()
+__all__ = ['ChebyshevBase', 'ChebyshevBasis', 'ShenDirichletBasis',
+           'ShenNeumannBasis', 'ShenBiharmonicBasis']
 
 @inheritdocstrings
 class ChebyshevBase(SpectralBase):
