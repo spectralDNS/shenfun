@@ -123,7 +123,7 @@ The `inner_product` may be used to compute any bilinear form. For example the st
 ```python
     >>> K = inner_product((SD, 0), (SD, 2), N)
 ```
-Note that the `inner_product` takes as arguments two bases, where the first represents the test function and the matrix row, whereas the second represents the trial function and the matrix column. The integer in the tuples determines how many time the basis is differentiated.
+Note that the `inner_product` takes as arguments two bases, where the first represents the test function and the matrix row, whereas the second represents the trial function and the matrix column. The integer in the tuples determines how many times the basis is differentiated.
 
 Square matrices have implemented a solve method that is using fast direct LU decomposition or similar (TDMA/PDMA). For example, to solve the linear system `Au=b`
 
