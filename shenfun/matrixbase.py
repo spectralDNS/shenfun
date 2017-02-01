@@ -2,7 +2,7 @@ from __future__ import division
 import numpy as np
 from scipy.sparse import diags as sp_diags
 from scipy.sparse.linalg import spsolve
-from scipy.linalg import solve
+from scipy.linalg import solve as lasolve
 import six
 from copy import deepcopy
 from .utilities import inheritdocstrings
@@ -401,47 +401,18 @@ class ShenMatrix(SparseMatrix):
         return c
 
     def solve(self, b, u=None):
-        from .chebyshev.bases import ShenNeumannBasis
-        assert self.shape[0] == self.shape[1]
-        s = self.testfunction[0].slice(b.shape[0])
-        bs = b[s]
-        if u is None:
-            us = np.zeros_like(b[s])
-        else:
-            assert u.shape == b.shape
-            us = u[s]
+        """Solve self u = b and return u
 
-        if isinstance(self.testfunction[0], ShenNeumannBasis):
-            # Handle level by using Dirichlet for dof=0
-            A = self.diags().toarray()
-            A[0] = 0
-            A[0,0] = 1
-            b[0] = self.testfunction[0].mean
-            if b.ndim == 1:
-                us[:] = solve(A, bs)
-            else:
-                N = bs.shape[0]
-                P = np.prod(bs.shape[1:])
-                us[:] = solve(A, bs.reshape((N, P))).reshape(bs.shape)
+        The matrix self must be square
 
-        else:
-            if b.ndim == 1:
-                us[:] = spsolve(self.diags(), bs)
-            else:
-                N = bs.shape[0]
-                P = np.prod(bs.shape[1:])
-                br = bs.reshape((N, P))
-                if b.dtype is np.dtype('complex'):
-                    us.real[:] = spsolve(self.diags(), br.real).reshape(bs.shape)
-                    us.imag[:] = spsolve(self.diags(), br.imag).reshape(bs.shape)
-                else:
-                    us[:] = spsolve(self.diags(), br).reshape(bs.shape)
+        args:
+            u   (output)    Array
+            b   (input)     Array
 
-        if u is None:
-            b[s] = us
-            return b
-        else:
-            return u
+        """
+        from shenfun import solve as default_solve
+        u = default_solve(self, b, u)
+        return u
 
 
 def extract_diagonal_matrix(M, tol=1e-8):

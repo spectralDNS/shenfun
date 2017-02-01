@@ -63,7 +63,7 @@ def test_eval(ST, quad):
     assert np.allclose(fj, f)
 
 
-##test_eval(lbases.ShenDirichletBasis, 'LG')
+#test_eval(cbases.ShenDirichletBasis, 'GC')
 
 @pytest.mark.parametrize('test,trial', product(cBasis, cBasis))
 @pytest.mark.parametrize('quad', quads)
