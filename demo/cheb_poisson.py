@@ -32,7 +32,7 @@ f = -u.diff(x, 2)
 # Size of discretization
 N = 128
 
-ST = ShenDirichletBasis(quad="GC", bc=(a, b))
+ST = ShenDirichletBasis(quad="GL", bc=(a, b))
 points, weights = ST.points_and_weights(N, ST.quad)
 
 # Gauss-Chebyshev quadrature to compute rhs

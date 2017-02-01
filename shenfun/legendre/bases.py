@@ -74,6 +74,9 @@ class LegendreBase(SpectralBase):
         fk = SpectralBase.forward(self, fj, fk, False)
         return fk
 
+    def get_mass_matrix(self):
+        from .matrices import mat
+        return mat[(self, 0), (self, 0)]
 
 
 @inheritdocstrings
@@ -101,10 +104,6 @@ class LegendreBasis(LegendreBase):
             fk = self.vandermonde_scalar_product(fj, fk)
 
         return fk
-
-    def get_mass_matrix(self):
-        from .matrices import BLLmat
-        return BLLmat
 
     def eval(self, x, fk):
         return leg.legval(x, fk)
@@ -165,10 +164,6 @@ class ShenDirichletBasis(LegendreBase):
         w_hat[1] += 0.5*(self.bc[0] - self.bc[1])
         fj = self.LT.backward(w_hat, fj)
         return fj
-
-    def get_mass_matrix(self):
-        from .matrices import BDDmat
-        return BDDmat
 
     def slice(self, N):
         return slice(0, N-2)
@@ -238,10 +233,6 @@ class ShenNeumannBasis(LegendreBase):
         w_hat[2:] -= self._factor*fk[:-2]
         fj = self.LT.backward(w_hat, fj)
         return fj
-
-    def get_mass_matrix(self):
-        from .matrices import BNNmat
-        return BNNmat
 
     def slice(self, N):
         return slice(0, N-2)
@@ -323,10 +314,6 @@ class ShenBiharmonicBasis(LegendreBase):
         w_hat = ShenBiharmonicBasis.set_w_hat(w_hat, fk, self._factor1, self._factor2)
         fj = self.LT.backward(w_hat, fj)
         return fj
-
-    def get_mass_matrix(self):
-        from .matrices import BBBmat
-        return BBBmat
 
     def slice(self, N):
         return slice(0, N-4)

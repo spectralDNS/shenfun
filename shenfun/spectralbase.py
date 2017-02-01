@@ -245,11 +245,9 @@ class SpectralBase(object):
         """
         if self._mass.shape[0] != fk.shape[0]:
             B = self.get_mass_matrix()
-            B.testfunction[0].quad = self.quad
             self._mass = B(np.arange(fk.shape[0]).astype(np.float))
         if self._mass.testfunction[0].quad != self.quad:
             B = self.get_mass_matrix()
-            B.testfunction[0].quad = self.quad
             self._mass = B(np.arange(fk.shape[0]).astype(np.float))
         fk = self._mass.solve(fk)
         return fk

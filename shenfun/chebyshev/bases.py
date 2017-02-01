@@ -72,6 +72,10 @@ class ChebyshevBase(SpectralBase):
             V = np.dot(V, D)
         return self.get_vandermonde_basis(V)
 
+    def get_mass_matrix(self):
+        from .matrices import mat
+        return mat[((self, 0), (self, 0))]
+
 
 @inheritdocstrings
 class ChebyshevBasis(ChebyshevBase):
@@ -173,10 +177,6 @@ class ChebyshevBasis(ChebyshevBase):
 
         return fk
 
-    def get_mass_matrix(self):
-        from .matrices import BTTmat
-        return BTTmat
-
     def eval(self, x, fk):
         return n_cheb.chebval(x, fk)
 
@@ -241,10 +241,6 @@ class ShenDirichletBasis(ChebyshevBase):
         fk[-2] = self.bc[0]
         fk[-1] = self.bc[1]
         return fk
-
-    def get_mass_matrix(self):
-        from .matrices import BDDmat
-        return BDDmat
 
     def slice(self, N):
         return slice(0, N-2)
@@ -319,10 +315,6 @@ class ShenNeumannBasis(ChebyshevBase):
         w_hat[2:] -= self._factor*fk[:-2]
         fj = self.CT.backward(w_hat, fj)
         return fj
-
-    def get_mass_matrix(self):
-        from .matrices import BNNmat
-        return BNNmat
 
     def slice(self, N):
         return slice(0, N-2)
@@ -408,10 +400,6 @@ class ShenBiharmonicBasis(ChebyshevBase):
         w_hat = ShenBiharmonicBasis.set_w_hat(w_hat, fk, self._factor1, self._factor2)
         fj = self.CT.backward(w_hat, fj)
         return fj
-
-    def get_mass_matrix(self):
-        from .matrices import BBBmat
-        return BBBmat
 
     def slice(self, N):
         return slice(0, N-4)

@@ -8,8 +8,10 @@ from itertools import product
 
 cmats = list(filter(lambda f: f.endswith('mat'), vars(cmatrices).keys()))
 cmats = ['.'.join(('cmatrices', m)) for m in cmats]
+cmats.remove('cmatrices.mat')
 lmats = list(filter(lambda f: f.endswith('mat'), vars(lmatrices).keys()))
 lmats = ['.'.join(('lmatrices', m)) for m in lmats]
+lmats.remove('lmatrices.mat')
 
 cquads = ('GC', 'GL')
 lquads = ('LG',)

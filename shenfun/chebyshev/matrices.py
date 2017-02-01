@@ -1,10 +1,6 @@
 from __future__ import division
 
-__all__ = ['BDDmat', 'BDNmat', 'CDNmat', 'BTNmat', 'ADDmat', 'ATTmat',
-           'BBBmat', 'BBDmat', 'ANNmat', 'BTTmat', 'BNNmat', 'ABBmat',
-           'BTDmat', 'BNDmat', 'CBDmat', 'CTDmat', 'CDDmat', 'CNDmat',
-           'SBBmat', 'CDBmat', 'CDTmat', 'BDTmat', 'BNTmat', 'BNBmat',
-           'ChebyshevMatrices']
+__all__ = ['mat']
 
 import numpy as np
 from shenfun.optimization.Matvec import CDNmat_matvec, BDNmat_matvec, \
@@ -18,10 +14,10 @@ from shenfun.utilities import inheritdocstrings
 from . import bases
 
 # Short names for instances of bases
-CB = bases.ChebyshevBasis()
-SD = bases.ShenDirichletBasis()
-SB = bases.ShenBiharmonicBasis()
-SN = bases.ShenNeumannBasis()
+CB = bases.ChebyshevBasis
+SD = bases.ShenDirichletBasis
+SB = bases.ShenBiharmonicBasis
+SN = bases.ShenNeumannBasis
 
 
 @inheritdocstrings
@@ -35,8 +31,8 @@ class BDDmat(ShenMatrix):
     and phi_j is a Shen Dirichlet basis function.
 
     """
-    testfunction = (SD, 0)
-    trialfunction = (SD, 0)
+    testfunction = (SD(), 0)
+    trialfunction = (SD(), 0)
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
@@ -84,8 +80,8 @@ class BNDmat(ShenMatrix):
     For simplicity, the matrix is stored including the zero index row (k=0)
 
     """
-    testfunction = (SN, 0)
-    trialfunction = (SD, 0)
+    testfunction = (SN(), 0)
+    trialfunction = (SD(), 0)
     def __init__(self, K):
         N = K.shape[0]
         ck = self.get_ck(N, self.testfunction[0].quad)
@@ -115,8 +111,8 @@ class BDNmat(ShenMatrix):
     For simplicity, the matrix is stored including the zero index column (j=0)
 
     """
-    testfunction = (SD, 0)
-    trialfunction = (SN, 0)
+    testfunction = (SD(), 0)
+    trialfunction = (SN(), 0)
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
@@ -151,8 +147,8 @@ class BNTmat(ShenMatrix):
     For simplicity, the matrix is stored including the zero index row (k=0)
 
     """
-    testfunction = (SN, 0)
-    trialfunction = (CB, 0)
+    testfunction = (SN(), 0)
+    trialfunction = (CB(), 0)
     def __init__(self, K):
         N = K.shape[0]
         ShenMatrix.__init__(self, {}, N, self.testfunction, self.trialfunction)
@@ -177,8 +173,8 @@ class BNBmat(ShenMatrix):
     For simplicity, the matrix is stored including the zero index row (k=0)
 
     """
-    testfunction = (SN, 0)
-    trialfunction = (CB, 0)
+    testfunction = (SN(), 0)
+    trialfunction = (CB(), 0)
     def __init__(self, K):
         N = K.shape[0]
         ShenMatrix.__init__(self, {}, N, self.testfunction, self.trialfunction)
@@ -200,8 +196,8 @@ class BTTmat(ShenMatrix):
     and T_j is the jth order Chebyshev function of the first kind.
 
     """
-    testfunction = (CB, 0)
-    trialfunction = (CB, 0)
+    testfunction = (CB(), 0)
+    trialfunction = (CB(), 0)
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
@@ -233,8 +229,8 @@ class BNNmat(ShenMatrix):
     The matrix is stored including the zero index row and column
 
     """
-    testfunction = (SN, 0)
-    trialfunction = (SN, 0)
+    testfunction = (SN(), 0)
+    trialfunction = (SN(), 0)
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
@@ -252,6 +248,7 @@ class BNNmat(ShenMatrix):
         return c
 
 
+@inheritdocstrings
 class BDTmat(ShenMatrix):
     """Mass matrix for inner product B_{kj} = (T_j, phi_k)_w
 
@@ -263,8 +260,8 @@ class BDTmat(ShenMatrix):
     function.
 
     """
-    testfunction = (SD, 0)
-    trialfunction = (CB, 0)
+    testfunction = (SD(), 0)
+    trialfunction = (CB(), 0)
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
@@ -274,6 +271,7 @@ class BDTmat(ShenMatrix):
         ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
 
 
+@inheritdocstrings
 class BTDmat(ShenMatrix):
     """Mass matrix for inner product B_{kj} = (phi_j, T_k)_w
 
@@ -285,8 +283,8 @@ class BTDmat(ShenMatrix):
     function.
 
     """
-    testfunction = (CB, 0)
-    trialfunction = (SD, 0)
+    testfunction = (CB(), 0)
+    trialfunction = (SD(), 0)
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
@@ -296,6 +294,7 @@ class BTDmat(ShenMatrix):
         ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
 
 
+@inheritdocstrings
 class BTNmat(ShenMatrix):
     """Mass matrix for inner product B_{kj} = (phi_j, T_k)_w
 
@@ -307,8 +306,8 @@ class BTNmat(ShenMatrix):
     function.
 
     """
-    testfunction = (CB, 0)
-    trialfunction = (SN, 0)
+    testfunction = (CB(), 0)
+    trialfunction = (SN(), 0)
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
@@ -329,8 +328,8 @@ class BBBmat(ShenMatrix):
     and psi_j is the Shen Biharmonic basis function.
 
     """
-    testfunction = (SB, 0)
-    trialfunction = (SB, 0)
+    testfunction = (SB(), 0)
+    trialfunction = (SB(), 0)
     def __init__(self, K):
         N = K.shape[0]
         ck = self.get_ck(N, self.testfunction[0].quad)
@@ -380,8 +379,8 @@ class BBDmat(ShenMatrix):
     Biharmonic basis function.
 
     """
-    testfunction = (SB, 0)
-    trialfunction = (SD, 0)
+    testfunction = (SB(), 0)
+    trialfunction = (SD(), 0)
     def __init__(self, K):
         N = K.shape[0]
         ck = self.get_ck(N, self.testfunction[0].quad)
@@ -428,8 +427,8 @@ class CDNmat(ShenMatrix):
     For simplicity, the matrix is stored including the zero index row (k=0)
 
     """
-    testfunction = (SD, 0)
-    trialfunction = (SN, 1)
+    testfunction = (SD(), 0)
+    trialfunction = (SN(), 1)
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
@@ -458,8 +457,8 @@ class CDDmat(ShenMatrix):
     and phi_k is the Shen Dirichlet basis function.
 
     """
-    testfunction = (SD, 0)
-    trialfunction = (SD, 1)
+    testfunction = (SD(), 0)
+    trialfunction = (SD(), 1)
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
@@ -496,8 +495,8 @@ class CNDmat(ShenMatrix):
     For simplicity, the matrix is stored including the zero index coloumn (j=0)
 
     """
-    testfunction = (SN, 0)
-    trialfunction = (SD, 1)
+    testfunction = (SN(), 0)
+    trialfunction = (SD(), 1)
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
@@ -514,6 +513,7 @@ class CNDmat(ShenMatrix):
         return c
 
 
+@inheritdocstrings
 class CTDmat(ShenMatrix):
     """Matrix for inner product C_{kj} = (phi'_j, T_k)_w
 
@@ -525,8 +525,8 @@ class CTDmat(ShenMatrix):
     function.
 
     """
-    testfunction = (CB, 0)
-    trialfunction = (SD, 1)
+    testfunction = (CB(), 0)
+    trialfunction = (SD(), 1)
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
@@ -548,8 +548,8 @@ class CDTmat(ShenMatrix):
     function.
 
     """
-    testfunction = (SD, 0)
-    trialfunction = (CB, 1)
+    testfunction = (SD(), 0)
+    trialfunction = (CB(), 1)
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
@@ -569,8 +569,8 @@ class CBDmat(ShenMatrix):
     function.
 
     """
-    testfunction = (SB, 0)
-    trialfunction = (SD, 1)
+    testfunction = (SB(), 0)
+    trialfunction = (SD(), 1)
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
@@ -608,8 +608,8 @@ class CDBmat(ShenMatrix):
     basis function.
 
     """
-    testfunction = (SD, 0)
-    trialfunction = (SB, 1)
+    testfunction = (SD(), 0)
+    trialfunction = (SB(), 1)
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
@@ -646,8 +646,8 @@ class ABBmat(ShenMatrix):
     and psi_k is the Shen Biharmonic basis function.
 
     """
-    testfunction = (SB, 0)
-    trialfunction = (SB, 2)
+    testfunction = (SB(), 0)
+    trialfunction = (SB(), 2)
     def __init__(self, K):
         N = K.shape[0]
         ki = K[:N-4]
@@ -688,8 +688,8 @@ class ADDmat(ShenMatrix):
     and psi_k is the Shen Dirichlet basis function.
 
     """
-    testfunction = (SD, 0)
-    trialfunction = (SD, 2)
+    testfunction = (SD(), 0)
+    trialfunction = (SD(), 2)
     def __init__(self, K, scale=-1.):
         assert len(K.shape) == 1
         N = K.shape[0]
@@ -767,8 +767,8 @@ class ANNmat(ShenMatrix):
     and phi_k is the Shen Neumann basis function.
 
     """
-    testfunction = (SN, 0)
-    trialfunction = (SN, 2)
+    testfunction = (SN(), 0)
+    trialfunction = (SN(), 2)
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
@@ -838,8 +838,8 @@ class ATTmat(ShenMatrix):
     and psi_k is the Chebyshev basis function.
 
     """
-    testfunction = (CB, 0)
-    trialfunction = (CB, 2)
+    testfunction = (CB(), 0)
+    trialfunction = (CB(), 2)
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
@@ -860,8 +860,8 @@ class SBBmat(ShenMatrix):
     and psi_k is the Shen Biharmonic basis function.
 
     """
-    testfunction = (SB, 0)
-    trialfunction = (SB, 4)
+    testfunction = (SB(), 0)
+    trialfunction = (SB(), 4)
     def __init__(self, K):
         N = K.shape[0]
         k = K[:N-4].astype(np.float)
@@ -887,6 +887,7 @@ class SBBmat(ShenMatrix):
         return c
 
 
+@inheritdocstrings
 class _Chebmatrix(ShenMatrix):
     testfunction = None
     trialfunction = None
@@ -918,29 +919,29 @@ class _ChebMatDict(dict):
 
 # Define dictionary to hold all predefined matrices
 # When looked up, missing matrices will be generated automatically
-ChebyshevMatrices = _ChebMatDict({
-    ((CB, 0), (CB, 0)): BTTmat,
-    ((SD, 0), (SD, 0)): BDDmat,
-    ((SB, 0), (SB, 0)): BBBmat,
-    ((SN, 0), (SN, 0)): BNNmat,
-    ((SN, 0), (CB, 0)): BNTmat,
-    ((SN, 0), (SB, 0)): BNBmat,
-    ((SD, 0), (SN, 0)): BDNmat,
-    ((SN, 0), (SD, 0)): BNDmat,
-    ((CB, 0), (SN, 0)): BTNmat,
-    ((SB, 0), (SD, 0)): BBDmat,
-    ((CB, 0), (SD, 0)): BTDmat,
-    ((SD, 0), (CB, 0)): BDTmat,
-    ((SD, 0), (SD, 2)): ADDmat,
-    ((CB, 0), (CB, 2)): ATTmat,
-    ((SN, 0), (SN, 2)): ANNmat,
-    ((SB, 0), (SB, 2)): ABBmat,
-    ((SB, 0), (SB, 4)): SBBmat,
-    ((SD, 0), (SN, 1)): CDNmat,
-    ((SB, 0), (SD, 1)): CBDmat,
-    ((CB, 0), (SD, 1)): CTDmat,
-    ((SD, 0), (SD, 1)): CDDmat,
-    ((SN, 0), (SD, 1)): CNDmat,
-    ((SD, 0), (SB, 1)): CDBmat,
-    ((SD, 0), (CB, 1)): CDTmat
+mat = _ChebMatDict({
+    ((CB(), 0), (CB(), 0)): BTTmat,
+    ((SD(), 0), (SD(), 0)): BDDmat,
+    ((SB(), 0), (SB(), 0)): BBBmat,
+    ((SN(), 0), (SN(), 0)): BNNmat,
+    ((SN(), 0), (CB(), 0)): BNTmat,
+    ((SN(), 0), (SB(), 0)): BNBmat,
+    ((SD(), 0), (SN(), 0)): BDNmat,
+    ((SN(), 0), (SD(), 0)): BNDmat,
+    ((CB(), 0), (SN(), 0)): BTNmat,
+    ((SB(), 0), (SD(), 0)): BBDmat,
+    ((CB(), 0), (SD(), 0)): BTDmat,
+    ((SD(), 0), (CB(), 0)): BDTmat,
+    ((SD(), 0), (SD(), 2)): ADDmat,
+    ((CB(), 0), (CB(), 2)): ATTmat,
+    ((SN(), 0), (SN(), 2)): ANNmat,
+    ((SB(), 0), (SB(), 2)): ABBmat,
+    ((SB(), 0), (SB(), 4)): SBBmat,
+    ((SD(), 0), (SN(), 1)): CDNmat,
+    ((SB(), 0), (SD(), 1)): CBDmat,
+    ((CB(), 0), (SD(), 1)): CTDmat,
+    ((SD(), 0), (SD(), 1)): CDDmat,
+    ((SN(), 0), (SD(), 1)): CNDmat,
+    ((SD(), 0), (SB(), 1)): CDBmat,
+    ((SD(), 0), (CB(), 1)): CDTmat
     })

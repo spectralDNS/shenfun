@@ -2,9 +2,6 @@ import pytest
 from shenfun.chebyshev import bases as cbases
 from shenfun.legendre import bases as lbases
 
-from shenfun.chebyshev.matrices import BNNmat, BTTmat, BDDmat, CDDmat, CDNmat, \
-    BNDmat, CNDmat, BDNmat, ADDmat, ANNmat, CTDmat, BDTmat, CDTmat, BTDmat, \
-    BTNmat, BBBmat, ABBmat, SBBmat, CDBmat, CBDmat, ATTmat, BBDmat
 from shenfun.la import TDMA
 from shenfun import inner_product
 from scipy.linalg import solve
@@ -285,7 +282,7 @@ def test_SBBmat(quad):
     uj = ul(points)
     fj = fl(points)
 
-    A = SBBmat(np.arange(M).astype(np.float))
+    A = inner_product((SB, 0), (SB, 4), M)
     f_hat = np.zeros(M)
     f_hat = SB.scalar_product(fj, f_hat)
     u_hat = np.zeros(M)
