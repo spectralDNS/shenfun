@@ -12,15 +12,17 @@ Shenfun contains tools for working with Jie Shen's modified Chebyshev and Legend
 
 Shenfun has implemented classes for the bases described in these papers, and within each class there are methods for fast transforms, scalar products and for computing matrices arising with the spectral Galerkin method. The following bases are defined in submodules `shenfun.chebyshev` and `shendun.legendre`
 
-* shenfun.chebyshev
+* shenfun.chebyshev.bases
   * ChebyshevBasis - Regular Chebyshev 
   * ShenDirichletBasis - Dirichlet boundary conditions
   * ShenNeumannBasis - Neumann boundary conditions (homogeneous)
   * ShenBiharmonicBasis - Homogeneous Dirichlet and Neumann boundary conditions
 
-* shenfun.legendre
+* shenfun.legendre.bases
   * LegendreBasis - Regular Legendre
-  * LegendreDirichletBasis - Dirichlet boundary conditions
+  * ShenDirichletBasis - Dirichlet boundary conditions
+  * ShenNeumannBasis - Neumann boundary conditions (homogeneous)
+  * ShenBiharmonicBasis - Homogeneous Dirichlet and Neumann boundary conditions
 
 Matrices that arise with Shen's bases and the spectral Galerkin method are often very sparse. As such, `shenfun` defines it's own sparse matrix class `SparseMatrix` and the subclassed `ShenMatrix` in `shenfun.matrixbase.py`. The matrix baseclass `SparseMatrix` is subclassing a regular Python dictionary, and its keys and values are, respectively, the offsets and the diagonals. For example, we may declare a tridiagonal matrix of shape N x N as
 
