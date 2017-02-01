@@ -10,7 +10,7 @@ Shenfun contains tools for working with Jie Shen's modified Chebyshev and Legend
   * Jie Shen, SIAM Journal on Scientific Computing, 15 (6), 1489-1505 (1994) (JS1)
   * Jie Shen, SIAM Journal on Scientific Computing, 16 (1), 74-87, (1995) (JS2)
 
-Shenfun has implemented classes for the bases described in these papers, and within each class there are methods for fast transforms, scalar products and for computing matrices arising with the spectral Galerkin method. The following bases are defined in submodules `shenfun.chebyshev` and `shendun.legendre`
+Shenfun has implemented classes for the bases described in these papers, and within each class there are methods for fast transforms, scalar products and for computing matrices arising from bilinear forms in the spectral Galerkin method. The following bases are defined in submodules `shenfun.chebyshev` and `shenfun.legendre`
 
 * shenfun.chebyshev.bases
   * ChebyshevBasis - Regular Chebyshev 
@@ -137,3 +137,13 @@ Square matrices have implemented a solve method that is using fast direct LU dec
     >>> u = K.solve(b, u)
 ```
 
+All methods are designed to work along the first dimension of a multidimensional array. Very little differs in the users interface. Consider, for example, the previous example on a three-dimensional cube 
+
+```python
+    >>> fj = np.random.random((N, N, N))
+    >>> b = np.zeros_like(fj)
+    >>> b = SD.scalar_product(fj, b)
+    >>> u = np.zeros_like(b)
+    >>> u = K.solve(b, u)
+```
+where `K` is exactly the same as before, from the 1D example.
