@@ -99,60 +99,39 @@ The `SD` class can also be used to compute the scalar product of an array
     >>> fs = SD.scalar_product(fj, fs)
 ```
 
-The bases can also be used to assemble coefficient matrices, like the mass matrix
+The bases can also be used to assemble inner products of bilinear forms, like the mass matrix
 
 ```python
-    >>> mass = ShenMatrix({}, 8, (SD, 0), (SD, 0))
+    >>> from shenfun import inner_product
+    >>> N = 8
+    >>> mass = inner_product((SD, 0), (SD, 0), 8)
 ```
 
 This `mass` matrix will be the same as Eq. (2.5) of JS1:
-```python
-    >>> mass
-    {-2: array([-1.57079633, -1.57079633, -1.57079633, -1.57079633]),
-      0: array([ 4.71238898,  3.14159265,  3.14159265,  3.14159265,  3.14159265, 3.14159265]),
-      2: array([-1.57079633, -1.57079633, -1.57079633, -1.57079633])}
-```
-
-and it will be (up to roundoff) the same as `BDDmat` from `shenfun.chebyshev.matrices`
 
 ```python
-    >>> from shenfun.chebyshev.matrices import BDDmat
-    >>> mass = BDDmat(np.arange(8))
     >>> mass
     {-2: array([-1.57079633]),
       0: array([ 4.71238898,  3.14159265,  3.14159265,  3.14159265,  3.14159265, 3.14159265]),
       2: array([-1.57079633])}
 ```
 
-You may notice that `BDDmat` takes advantage of the fact that two diagonals are constant. There are many such precomputed matrices. For example the stiffness matrix `ADDmat`
+You may notice that `mass` takes advantage of the fact that two diagonals are constant. 
+
+The `inner_product` may be used to compute any bilinear form. For example the stiffness matrix `K`
 
 ```python
-    >>> from shenfun.chebyshev.matrices import ADDmat
-    >>> stiffness1 = ADDmat(np.arange(8))
-    >>> stiffness2 = ShenMatrix({}, 8, (SD, 2), (SD, 0), -1.)
+    >>> K = inner_product((SD, 0), (SD, 2), N)
 ```
-
-Here `stiffness1` and `stiffness2` are equal up to roundoff, but `stiffness2` is automatically generated from Vandermonde type matrices, whereas `stiffness1` uses analytical expressions for the diagonals (see `class ADDmat` in `shenfun.chebyshev.matrices.py`). 
+Note that the `inner_product` takes as arguments two bases, where the first represents the test function and the matrix row, whereas the second represents the trial function and the matrix column. The integer in the tuples determines how many time the basis is differentiated.
 
 Square matrices have implemented a solve method that is using fast direct LU decomposition or similar (TDMA/PDMA). For example, to solve the linear system `Au=b`
 
 ```python
-    >>> fj = np.random.random(8)
+    >>> fj = np.random.random(N)
     >>> b = np.zeros_like(fj)
     >>> b = SD.scalar_product(fj, b)
-    >>> b = stiffness1.solve(b)
+    >>> u = np.zeros_like(b)
+    >>> u = K.solve(b, u)
 ```
 
-where `b` is the right hand side on input and the solution (`u`) on output.
-
-Some other predefined matrices are
-
-* shenfun.chebyshev.matrices
-  * BDDmat  (mass ShenDirichletBasis)
-  * ADDmat  (stiffness ShenDirichletBasis)
-  * BNNmat  (mass ShenNeumannBasis)
-  * ANNmat  (stiffness ShenNeumannBasis)
-  * BBBmat  (mass ShenBiharmonicBasis)
-  * SBBmat  (Biharmonic operator ShenBiharmonicBasis)
-  * ABBmat  (stiffness ShenBiharmonicBasis)
-  * etc.
