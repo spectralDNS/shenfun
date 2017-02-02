@@ -99,7 +99,7 @@ class SpectralBase(object):
 
         """
         N = list(N) if np.ndim(N) else [N]
-        k = np.arange(N[0])[self.slice(N[0])]
+        k = np.arange(N[0], dtype=np.float)[self.slice(N[0])]
         return k[(self.slice(N[0]),)+(np.newaxis,)*(len(N)-1)]
         #s = [self.slice(N[0])]
         #for n in N[1:]:

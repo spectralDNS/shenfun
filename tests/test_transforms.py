@@ -334,7 +334,6 @@ def test_ABBmat(quad):
 
     u0 = np.zeros(M)
     u0 = SB.backward(u_hat, u0)
-
     assert np.allclose(u0, uj)
 
     u1 = np.zeros(M)
@@ -370,6 +369,5 @@ def test_ABBmat(quad):
     z0 = np.zeros(M)
     z0 = SB.backward(z0_hat, z0)
     assert np.allclose(z0, u0)
-
 
 #test_ABBmat('GC')
