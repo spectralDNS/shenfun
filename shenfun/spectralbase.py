@@ -95,14 +95,16 @@ class SpectralBase(object):
         """Return the wavenumbermesh
 
         The first axis is inhomogeneous, and if ndim(N) > 1, then the trailing
-        axes are assumed to be periodic.
+        axes are broadcasted.
 
         """
         N = list(N) if np.ndim(N) else [N]
-        s = [self.slice(N[0])]
-        for n in N[1:]:
-            s.append(slice(0, n))
-        return np.mgrid.__getitem__(s).astype(float)[0]
+        k = np.arange(N[0])[self.slice(N[0])]
+        return k[(self.slice(N[0]),)+(np.newaxis,)*(len(N)-1)]
+        #s = [self.slice(N[0])]
+        #for n in N[1:]:
+            #s.append(slice(0, n))
+        #return np.mgrid.__getitem__(s).astype(float)[0]
 
     def evaluate_expansion_all(self, fk, fj):
         r"""Evaluate expansion on entire mesh

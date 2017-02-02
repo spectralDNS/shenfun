@@ -249,15 +249,14 @@ class ShenMatrix(SparseMatrix):
                                      offsets and values the diagonals
         N      integer               Length of main diagonal
         trial  (basis, derivative)   tuple, where basis is an instance of
-                                     one of
-                                         - chebyshev.ChebyshevBasis
-                                         - chebyshev.ShenDirichletBasis
-                                         - chebyshev.ShenBiharmonicBasis
-                                         - chebyshev.ShenNeumannBasis
+                                     a class for one of the bases in
+                                         - shenfun.legendre.bases
+                                         - shenfun.chebyshev.bases
                                      derivative is an integer, and represents
                                      the number of times the trial function
-                                     should be differentiated
-        test   (basis, derivative)   As trial
+                                     should be differentiated. Representing
+                                     matrix column.
+        test   (basis, derivative)   As trial, but representing matrix row.
         scale  float                 Scale matrix with this constant
 
 

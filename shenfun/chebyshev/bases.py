@@ -289,10 +289,7 @@ class ShenNeumannBasis(ChebyshevBase):
 
     def set_factor_array(self, v):
         if not self._factor.shape == v.shape:
-            if len(v.shape) == 3:
-                k = self.wavenumbers(v.shape)
-            elif len(v.shape) == 1:
-                k = self.wavenumbers(v.shape[0])
+            k = self.wavenumbers(v.shape)
             self._factor = (k/(k+2))**2
 
     def scalar_product(self, fj, fk, fast_transform=True):
@@ -363,11 +360,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
 
     def set_factor_arrays(self, v):
         if not self._factor1.shape == v[:-4].shape:
-            if len(v.shape) > 1:
-                k = self.wavenumbers(v.shape)
-            elif len(v.shape) == 1:
-                k = self.wavenumbers(v.shape[0])
-
+            k = self.wavenumbers(v.shape)
             self._factor1 = (-2*(k+2)/(k+3)).astype(float)
             self._factor2 = ((k+1)/(k+3)).astype(float)
 
