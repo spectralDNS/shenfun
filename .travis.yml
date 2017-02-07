@@ -10,7 +10,7 @@ sudo: False
 env:
   matrix:
     - CONDA_PY=27
-    - CONDA_PY=34
+    - CONDA_PY=36
 
   global:
     # "travis encrypt BINSTAR_TOKEN=<token> --repo spectralDNS/shenfun"
