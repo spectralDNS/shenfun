@@ -65,7 +65,7 @@ class ChebyshevBase(SpectralBase):
             k    integer    k'th derivative
 
         """
-        N = V.shape[0]
+        N = V.shape[1]
         if k > 0:
             D = np.zeros((N, N))
             D[:-k, :] = n_cheb.chebder(np.eye(N), k)
