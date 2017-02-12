@@ -38,7 +38,7 @@ class SparseMatrix(dict):
         self.shape = shape
         self._diags = None
 
-    def matvec(self, v, c, format='dia'):
+    def matvec(self, v, c, format='dia', axis=0):
         """Matrix vector product
 
         Returns c = dot(self, v)
@@ -60,6 +60,12 @@ class SparseMatrix(dict):
         assert v.shape == c.shape
         N, M = self.shape
         c.fill(0)
+
+        # Roll relevant axis to first
+        if axis > 0:
+            v = np.moveaxis(v, axis, 0)
+            c = np.moveaxis(c, axis, 0)
+
         if format == 'python':
             for key, val in six.iteritems(self):
                 if np.ndim(val) > 0: # broadcasting
@@ -75,6 +81,10 @@ class SparseMatrix(dict):
             diags = self.diags(format=format)
             P = int(np.prod(v.shape[1:]))
             c[:N] = diags.dot(v[:M].reshape(M, P)).reshape(c[:N].shape)
+
+        if axis > 0:
+            c = np.moveaxis(c, 0, axis)
+            v = np.moveaxis(v, 0, axis)
 
         return c
 
@@ -205,7 +215,7 @@ class SparseMatrix(dict):
 
         return self
 
-    def solve(self, b, u=None):
+    def solve(self, b, u=None, axis=0):
         """Solve matrix system Au = b
 
         where A is the current matrix (self)
@@ -213,30 +223,41 @@ class SparseMatrix(dict):
         args:
             b    (input/output)    Vector of right hand side on entry,
                                    solution on exit.
+            u    (output)          Optional optput vector
 
         Vectors may be one- or multidimensional. Solve along first axis.
 
         """
         assert self.shape[0] == self.shape[1]
         assert self.shape[0] == b.shape[0]
-        u = np.zeros_like(b)
+
+        uc = False
         if u is None:
-            us = np.zeros_like(b)
+            uc = True
+            u = np.zeros_like(b)
         else:
             assert u.shape == b.shape
-            us = u
+
+        # Roll relevant axis to first
+        if axis > 0:
+            v = np.moveaxis(v, axis, 0)
+            c = np.moveaxis(c, axis, 0)
 
         if b.ndim == 1:
-            us[:] = spsolve(self.diags(), b)
+            u[:] = spsolve(self.diags(), b)
         else:
             N = b.shape[0]
             P = np.prod(b.shape[1:])
-            us[:] = spsolve(self.diags(), b.reshape((N, P))).reshape(b.shape)
+            u[:] = spsolve(self.diags(), b.reshape((N, P))).reshape(u.shape)
 
         if u is None:
-            b[:] = us
+            b[:] = u
+            if axis > 0:
+                b = np.moveaxis(b, 0, axis)
             return b
         else:
+            if axis > 0:
+                u = np.moveaxis(u, 0, axis)
             return u
 
 
@@ -364,12 +385,6 @@ class ShenMatrix(SparseMatrix):
         return (self.testfunction[0].get_shape(self.N),
                 self.trialfunction[0].get_shape(self.N))
 
-    def get_ck(self, N, quad):
-        ck = np.ones(N, int)
-        ck[0] = 2
-        if quad == "GL": ck[-1] = 2
-        return ck
-
     def get_dense_matrix(self):
         """Return dense matrix automatically computed from basis"""
         N = self.N
@@ -392,14 +407,18 @@ class ShenMatrix(SparseMatrix):
         for key, val in six.iteritems(self):
             assert np.allclose(val, Dsp[key])
 
-    def matvec(self, v, c, format='csr'):
+    def matvec(self, v, c, format='csr', axis=0):
         from .chebyshev.bases import ShenNeumannBasis
-        c = super(ShenMatrix, self).matvec(v, c, format=format)
+        c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
         if isinstance(self.testfunction[0], ShenNeumannBasis):
+            if axis > 0:
+                c = np.moveaxis(c, axis, 0)
             c[0] = 0
+            if axis > 0:
+                c = np.moveaxis(c, 0, axis)
         return c
 
-    def solve(self, b, u=None):
+    def solve(self, b, u=None, axis=0):
         """Solve self u = b and return u
 
         The matrix self must be square
@@ -410,7 +429,7 @@ class ShenMatrix(SparseMatrix):
 
         """
         from shenfun import solve as default_solve
-        u = default_solve(self, b, u)
+        u = default_solve(self, b, u, axis=axis)
         return u
 
 

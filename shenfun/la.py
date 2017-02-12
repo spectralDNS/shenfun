@@ -13,9 +13,11 @@ class TDMA(object):
     def __init__(self, mat):
         assert isinstance(mat, ShenMatrix)
         self.mat = mat
+        self.N = 0
         self.dd = np.zeros(0)
 
     def init(self, N):
+        self.N = N
         M = self.mat.shape[0]
         B = self.mat
         self.dd = B[0].copy()*np.ones(M)
@@ -24,18 +26,28 @@ class TDMA(object):
         self.s = self.mat.testfunction[0].slice(N)
         la.TDMA_SymLU(self.dd[self.s], self.ud[self.s], self.L)
 
-    def __call__(self, u):
-        N = u.shape[0]
-        if not self.dd.shape[0] == u.shape[0]:
+    def __call__(self, b, u=None, axis=0):
+
+        if u is None:
+            u = b
+        else:
+            assert u.shape == b.shape
+            u[:] = b
+
+        N = u.shape[axis]
+        if not N == self.N:
             self.init(N)
+
         if len(u.shape) == 3:
-            #la.TDMA_3D(self.ud, self.dd, self.dd.copy(), self.ud.copy(), u[self.s])
-            la.TDMA_SymSolve3D(self.dd[self.s], self.ud[self.s], self.L, u[self.s])
+            la.TDMA_SymSolve3D(self.dd[self.s], self.ud[self.s], self.L,
+                               u[self.s], axis)
         elif len(u.shape) == 1:
-            #la.TDMA_1D(self.ud, self.dd, self.dd.copy(), self.ud.copy(), u[self.s])
-            la.TDMA_SymSolve(self.dd[self.s], self.ud[self.s], self.L, u[self.s])
+            la.TDMA_SymSolve(self.dd[self.s], self.ud[self.s], self.L,
+                             u[self.s])
+
         else:
             raise NotImplementedError
+
         return u
 
 class PDMA(object):
@@ -54,8 +66,10 @@ class PDMA(object):
         assert isinstance(mat, ShenMatrix)
         self.mat = mat
         self.solver = solver
+        self.N = 0
 
     def init(self, N):
+        self.N = N
         B = self.mat
         if self.solver == "cython":
             self.d0, self.d1, self.d2 = B[0].copy(), B[2].copy(), B[4].copy()
@@ -121,30 +135,23 @@ class PDMA(object):
             bc[k] -= (e[k]*bc[k+2] + f[k]*bc[k+4])
         b[:] = bc.astype(float)
 
-    def __call__(self, u):
+    def __call__(self, b, u=None, axis=0):
+
+        if u is None:
+            u = b
+        else:
+            assert u.shape == b.shape
+            u[:] = b
+
         N = u.shape[0]
-        if not self.mat.shape[0] == u.shape[0]:
+        if not N == self.N:
             self.init(N)
         if len(u.shape) == 3:
-            if self.solver == "cython":
-                la.PDMA_Symsolve3D(self.d0, self.d1, self.d2, u[:-4])
-            else:
-                b = u.copy()
-                for i in range(u.shape[1]):
-                    for j in range(u.shape[2]):
-                        #u[:-4, i, j] = lu_solve(self.L, b[:-4, i, j])
-                        u[:-4, i, j] = la_solve.spsolve(self.mat.diags(), b[:-4, i, j])
+            la.PDMA_Symsolve3D(self.d0, self.d1, self.d2, u[:-4], axis)
 
         elif len(u.shape) == 1:
-            if self.solver == "cython":
-                la.PDMA_Symsolve(self.d0, self.d1, self.d2, u[:-4])
-                #self.SymSolve(self.d0, self.d1, self.d2, u[:-4])
-            else:
-                b = u.copy()
-                #u[:-4] = lu_solve(self.L, b[:-4])
-                #u[:-4] = la_solve.spsolve(self.B.diags(), b[:-4])
-                #u[:-4] = solve_banded((4, 4), self.A, b[:-4])
-                u[:-4] = decomp_cholesky.cho_solve_banded((self.L, False), b[:-4])
+            la.PDMA_Symsolve(self.d0, self.d1, self.d2, u[:-4])
+
         else:
             raise NotImplementedError
 

@@ -39,7 +39,8 @@ def test_mat(mat, quad):
 
 @pytest.mark.parametrize('mat,quad', all_mats_and_quads)
 @pytest.mark.parametrize('format', formats)
-def test_matvec(mat, quad, format):
+@pytest.mark.parametrize('axis', (0,1,2))
+def test_matvec(mat, quad, format, axis):
     """Test matrix-vector product"""
     global c, c1, d, d1, k
     mat = eval(mat)
@@ -51,11 +52,21 @@ def test_matvec(mat, quad, format):
 
     d.fill(0)
     d1.fill(0)
-    d = m.matvec(b, d, format='csr')
-    d1 = m.matvec(b, d1, format=format)
+    d = m.matvec(b, d, format='csr', axis=axis)
+    d1 = m.matvec(b, d1, format=format, axis=axis)
     assert np.allclose(d, d1)
 
-##test_matvec('cmatrices.CDNmat', 'cython', 'GL')
+    # Test multidimensional with axis equals 1D case
+    d1.fill(0)
+    bc = [np.newaxis,]*3
+    bc[axis] = slice(None)
+    fj = np.broadcast_to(a[bc], (N,)*3).copy()
+    d1 = m.matvec(fj, d1, format=format, axis=axis)
+    cc = [0,]*3
+    cc[axis] = slice(None)
+    assert np.allclose(c, d1[cc])
+
+#test_matvec('cmatrices.ADDmat', 'GL', 'self', 2)
 
 @pytest.mark.parametrize('mat,quad', all_mats_and_quads)
 def test_imul(mat, quad):

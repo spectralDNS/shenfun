@@ -37,27 +37,36 @@ def inner_product(test, trial, N):
     elif isinstance(test[0], legendre.LegendreBase):
         return legendre.mat[(test, trial)](k)
 
-def solve(A, b, u=None):
+def solve(A, b, u=None, axis=0):
     """Solve Au=b and return u
 
     The matrix A must be square
 
     args:
-        A               SparseMatrix
-        u   (output)    Array
-        b   (input)     Array
+        A                      SparseMatrix
+        u   (output)           Array
+        b   (input/output)     Array
 
     """
     assert A.shape[0] == A.shape[1]
     assert isinstance(A, matrixbase.SparseMatrix)
-    s = A.testfunction[0].slice(b.shape[0])
-    bs = b[s]
+    s = A.testfunction[0].slice(b.shape[axis])
+
+    uc = False
     if u is None:
-        us = np.zeros_like(b[s])
+        uc = True
+        u = np.zeros_like(b)
     else:
         assert u.shape == b.shape
-        us = u[s]
 
+    # Move axis to first
+    if axis > 0:
+        b = np.moveaxis(b, axis, 0)
+        u = np.moveaxis(u, axis, 0)
+
+    bs = b[s]
+    us = u[s]
+    assert A.shape[0] == bs.shape[0]
     if isinstance(A.testfunction[0], chebyshev.bases.ShenNeumannBasis):
         # Handle level by using Dirichlet for dof=0
         Aa = A.diags().toarray()
@@ -73,19 +82,25 @@ def solve(A, b, u=None):
 
     else:
         if b.ndim == 1:
-            us[:] = spsolve(A.diags('csr'), bs)
+            u[s] = spsolve(A.diags('csr'), b[s])
         else:
             N = bs.shape[0]
             P = np.prod(bs.shape[1:])
             br = bs.reshape((N, P))
+
             if b.dtype is np.dtype('complex'):
                 us.real[:] = spsolve(A.diags('csr'), br.real).reshape(bs.shape)
                 us.imag[:] = spsolve(A.diags('csr'), br.imag).reshape(bs.shape)
             else:
-                us[:] = spsolve(A.diags('csr'), br).reshape(bs.shape)
+                us[:] = spsolve(A.diags('csr'), br).reshape(us.shape)
 
-    if u is None:
-        b[s] = us
+    if uc is True:
+        b[:] = u
+        if axis > 0:
+            b = np.moveaxis(b, 0, axis)
         return b
+
     else:
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
         return u
