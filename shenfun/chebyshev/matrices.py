@@ -19,6 +19,11 @@ SD = bases.ShenDirichletBasis
 SB = bases.ShenBiharmonicBasis
 SN = bases.ShenNeumannBasis
 
+def get_ck(N, quad):
+    ck = np.ones(N, int)
+    ck[0] = 2
+    if quad == "GL": ck[-1] = 2
+    return ck
 
 @inheritdocstrings
 class BDDmat(ShenMatrix):
@@ -36,32 +41,38 @@ class BDDmat(ShenMatrix):
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
-        ck = self.get_ck(N, self.testfunction[0].quad)
+        ck = get_ck(N, self.testfunction[0].quad)
         d = {0: np.pi/2*(ck[:-2]+ck[2:]),
              2: np.array([-np.pi/2])}
         d[-2] = d[2]
         ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
         self.solve = TDMA(self)
 
-    def matvec(self, v, c, format='cython'):
+    def matvec(self, v, c, format='cython', axis=0):
         N, M = self.shape
         c.fill(0)
         if format == 'cython' and v.ndim == 3:
             ld = self[-2]*np.ones(M-2)
-            Tridiagonal_matvec3D(v, c, ld, self[0], ld)
+            Tridiagonal_matvec3D(v, c, ld, self[0], ld, axis)
 
         elif format == 'cython' and v.ndim == 1:
             ld = self[-2]*np.ones(M-2)
             Tridiagonal_matvec(v, c, ld, self[0], ld)
 
         elif format == 'self':
+            if axis > 0:
+                v = np.moveaxis(v, axis, 0)
+                c = np.moveaxis(c, axis, 0)
             s = (slice(None),)+(np.newaxis,)*(v.ndim-1) # broadcasting
             c[:(N-2)] = self[2]*v[2:N]
             c[:N] += self[0][s]*v[:N]
             c[2:N] += self[-2]*v[:(N-2)]
+            if axis > 0:
+                v = np.moveaxis(v, 0, axis)
+                c = np.moveaxis(c, 0, axis)
 
         else:
-            c = super(BDDmat, self).matvec(v, c, format=format)
+            c = super(BDDmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
@@ -84,16 +95,18 @@ class BNDmat(ShenMatrix):
     trialfunction = (SD(), 0)
     def __init__(self, K):
         N = K.shape[0]
-        ck = self.get_ck(N, self.testfunction[0].quad)
+        ck = get_ck(N, self.testfunction[0].quad)
         k = K[:N-2].astype(np.float)
         d = {-2: -np.pi/2,
               0: np.pi/2.*(ck[:-2]+ck[2:]*(k/(k+2))**2),
               2: -np.pi/2*(k[:N-4]/(k[:N-4]+2))**2}
         ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
 
-    def matvec(self, v, c, format='csr'):
-        c = super(ShenMatrix, self).matvec(v, c, format=format)
-        c[0] = 0
+    def matvec(self, v, c, format='csr', axis=0):
+        c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+        s = [slice(None),]*v.ndim
+        s[axis] = 0
+        c[s] = 0
         return c
 
 
@@ -116,20 +129,20 @@ class BDNmat(ShenMatrix):
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
-        ck = self.get_ck(N, self.testfunction[0].quad)
+        ck = get_ck(N, self.testfunction[0].quad)
         k = K[:N-2].astype(np.float)
         d = {-2: -np.pi/2*(k[:N-4]/(k[:N-4]+2))**2,
               0:  np.pi/2.*(ck[:-2]+ck[2:]*(k/(k+2))**2),
               2: -np.pi/2}
         ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
 
-    def matvec(self, v, c, format='cython'):
+    def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
         if format == 'cython' and v.ndim == 3:
-            BDNmat_matvec(self[2], self[-2], self[0], v, c)
+            BDNmat_matvec(self[2], self[-2], self[0], v, c, axis)
 
         else:
-            c = super(BDNmat, self).matvec(v, c, format=format)
+            c = super(BDNmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
@@ -153,9 +166,11 @@ class BNTmat(ShenMatrix):
         N = K.shape[0]
         ShenMatrix.__init__(self, {}, N, self.testfunction, self.trialfunction)
 
-    def matvec(self, v, c, format='csr'):
-        c = super(ShenMatrix, self).matvec(v, c, format=format)
-        c[0] = 0
+    def matvec(self, v, c, format='csr', axis=0):
+        c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+        s = [slice(None),]*v.ndim
+        s[axis] = 0
+        c[s] = 0
         return c
 
 
@@ -179,9 +194,11 @@ class BNBmat(ShenMatrix):
         N = K.shape[0]
         ShenMatrix.__init__(self, {}, N, self.testfunction, self.trialfunction)
 
-    def matvec(self, v, c, format='csr'):
-        c = super(ShenMatrix, self).matvec(v, c, format=format)
-        c[0] = 0
+    def matvec(self, v, c, format='csr', axis=0):
+        c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+        s = [slice(None),]*v.ndim
+        s[axis] = 0
+        c[s] = 0
         return c
 
 
@@ -201,17 +218,18 @@ class BTTmat(ShenMatrix):
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
-        ck = self.get_ck(N, self.testfunction[0].quad)
+        ck = get_ck(N, self.testfunction[0].quad)
         ShenMatrix.__init__(self, {0: np.pi/2*ck}, N, self.testfunction,
                             self.trialfunction)
 
-    def matvec(self, v, c, format='self'):
+    def matvec(self, v, c, format='self', axis=0):
         c.fill(0)
         if format == 'self':
-            s = (slice(None),)+(np.newaxis,)*(v.ndim-1) # broadcasting
+            s = [np.newaxis,]*v.ndim # broadcasting
+            s[axis] = slice(None)
             c[:] = self[0][s]*v
         else:
-            c = super(ShenMatrix, self).matvec(v, c, format=format)
+            c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
@@ -234,7 +252,7 @@ class BNNmat(ShenMatrix):
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
-        ck = self.get_ck(N, self.testfunction[0].quad)
+        ck = get_ck(N, self.testfunction[0].quad)
         k = K[:-2].astype(np.float)
         d = {0: np.pi/2*(ck[:-2]+ck[2:]*(k[:]/(k[:]+2))**4),
              2: -np.pi/2*((k[2:]-2)/(k[2:]))**2}
@@ -242,9 +260,11 @@ class BNNmat(ShenMatrix):
         ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
         self.solve = TDMA(self)
 
-    def matvec(self, v, c, format='csr'):
-        c = super(ShenMatrix, self).matvec(v, c, format=format)
-        c[0] = 0
+    def matvec(self, v, c, format='csr', axis=0):
+        c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+        s = [slice(None),]*v.ndim
+        s[axis] = 0
+        c[s] = 0
         return c
 
 
@@ -265,7 +285,7 @@ class BDTmat(ShenMatrix):
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
-        ck = self.get_ck(N, self.testfunction[0].quad)
+        ck = get_ck(N, self.testfunction[0].quad)
         d = {0: np.pi/2*ck[:N-2],
              2: -np.pi/2*ck[2:]}
         ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
@@ -288,7 +308,7 @@ class BTDmat(ShenMatrix):
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
-        ck = self.get_ck(N, self.testfunction[0].quad)
+        ck = get_ck(N, self.testfunction[0].quad)
         d = {-2: -np.pi/2*ck[2:],
               0: np.pi/2*ck[:N-2]}
         ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
@@ -311,7 +331,7 @@ class BTNmat(ShenMatrix):
     def __init__(self, K):
         assert len(K.shape) == 1
         N = K.shape[0]
-        ck = self.get_ck(N, self.testfunction[0].quad)
+        ck = get_ck(N, self.testfunction[0].quad)
         d = {-2: -np.pi/2*ck[2:]*((K[2:]-2)/K[2:])**2,
               0: np.pi/2*ck[:-2]}
         ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
@@ -332,7 +352,7 @@ class BBBmat(ShenMatrix):
     trialfunction = (SB(), 0)
     def __init__(self, K):
         N = K.shape[0]
-        ck = self.get_ck(N, self.testfunction[0].quad)
+        ck = get_ck(N, self.testfunction[0].quad)
         k = K[:N-4].astype(np.float)
         d = {4: (k[:-4]+1)/(k[:-4]+3)*np.pi/2,
              2: -((k[:-2]+2)/(k[:-2]+3) + (k[:-2]+4)*(k[:-2]+1)/((k[:-2]+5)*(k[:-2]+3)))*np.pi,
@@ -342,10 +362,14 @@ class BBBmat(ShenMatrix):
         ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
         self.solve = PDMA(self)
 
-    def matvec(self, v, c, format='cython'):
+    def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
         N = self.shape[0]
         if format == 'self':
+            if axis > 0:
+                v = np.moveaxis(v, axis, 0)
+                c = np.moveaxis(c, axis, 0)
+
             vv = v[:-4]
             s = (slice(None),) + (np.newaxis,)*(v.ndim-1) # broadcasting
             c[:N] = self[0][s] * vv[:]
@@ -353,16 +377,19 @@ class BBBmat(ShenMatrix):
             c[:N-4] += self[4][s] * vv[4:]
             c[2:N] += self[-2][s] * vv[:-2]
             c[4:N] += self[-4][s] * vv[:-4]
+            if axis > 0:
+                v = np.moveaxis(v, 0, axis)
+                c = np.moveaxis(c, 0, axis)
 
         elif format == 'cython' and v.ndim == 3:
             Pentadiagonal_matvec3D(v, c, self[-4], self[-2], self[0],
-                                   self[2], self[4])
+                                   self[2], self[4], axis)
 
         elif format == 'cython' and v.ndim == 1:
             Pentadiagonal_matvec(v, c, self[-4], self[-2], self[0],
                                  self[2], self[4])
         else:
-            c = super(ShenMatrix, self).matvec(v, c, format=format)
+            c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
@@ -383,7 +410,7 @@ class BBDmat(ShenMatrix):
     trialfunction = (SD(), 0)
     def __init__(self, K):
         N = K.shape[0]
-        ck = self.get_ck(N, self.testfunction[0].quad)
+        ck = get_ck(N, self.testfunction[0].quad)
         k = K[:N-4].astype(np.float)
         a = 2*(k+2)/(k+3)
         b = (k[:N-4]+1)/(k[:N-4]+3)
@@ -393,22 +420,28 @@ class BBDmat(ShenMatrix):
               4: b[:-2]*np.pi/2}
         ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
 
-    def matvec(self, v, c, format='cython'):
+    def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
         N = self.shape[0]
         if format == 'self':
+            if axis > 0:
+                v = np.moveaxis(v, axis, 0)
+                c = np.moveaxis(c, axis, 0)
             vv = v[:-2]
             s = (slice(None),) + (np.newaxis,)*(v.ndim-1) # broadcasting
             c[:N] = self[0][s] * vv[:-2]
             c[:N] += self[2][s] * vv[2:]
             c[:N-2] += self[4][s] * vv[4:]
             c[2:N] += self[-2] * vv[:-4]
+            if axis > 0:
+                c = np.moveaxis(c, 0, axis)
+                v = np.moveaxis(v, 0, axis)
 
         elif format == 'cython' and v.ndim == 3:
-            BBD_matvec3D(v, c, self[-2], self[0], self[2], self[4])
+            BBD_matvec3D(v, c, self[-2], self[0], self[2], self[4], axis)
 
         else:
-            c = super(ShenMatrix, self).matvec(v, c, format=format)
+            c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
@@ -437,11 +470,11 @@ class CDNmat(ShenMatrix):
               1: (k[:-1]+1)*np.pi}
         ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
 
-    def matvec(self, v, c, format='cython'):
+    def matvec(self, v, c, format='cython', axis=0):
         if format == 'cython' and v.ndim == 3:
-            CDNmat_matvec(self[1], self[-1], v, c)
+            CDNmat_matvec(self[1], self[-1], v, c, axis)
         else:
-            c = super(ShenMatrix, self).matvec(v, c, format=format)
+            c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
@@ -466,17 +499,25 @@ class CDDmat(ShenMatrix):
               1: (K[:(N-3)]+1)*np.pi}
         ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
 
-    def matvec(self, v, c, format='cython'):
+    def matvec(self, v, c, format='cython', axis=0):
         N = self.shape[0]
         c.fill(0)
         if format == 'self':
+            if axis > 0:
+                v = np.moveaxis(v, axis, 0)
+                c = np.moveaxis(c, axis, 0)
+
             s = (slice(None),) + (np.newaxis,)*(v.ndim-1) # broadcasting
             c[:N-1] = self[1][s]*v[1:N]
             c[1:N] += self[-1][s]*v[:(N-1)]
+            if axis > 0:
+                v = np.moveaxis(v, 0, axis)
+                c = np.moveaxis(c, 0, axis)
+
         elif format == 'cython' and v.ndim == 3:
-            CDDmat_matvec(self[1], self[-1], v, c)
+            CDDmat_matvec(self[1], self[-1], v, c, axis)
         else:
-            c = super(ShenMatrix, self).matvec(v, c, format=format)
+            c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
@@ -507,9 +548,11 @@ class CNDmat(ShenMatrix):
             d[i] = -(1-k[:-i]**2/(k[:-i]+2)**2)*2*np.pi
         ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
 
-    def matvec(self, v, c, format='csr'):
-        c = super(ShenMatrix, self).matvec(v, c, format=format)
-        c[0] = 0
+    def matvec(self, v, c, format='csr', axis=0):
+        c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+        s = [slice(None),]*v.ndim
+        s[axis] = 0
+        c[s] = 0
         return c
 
 
@@ -579,20 +622,26 @@ class CBDmat(ShenMatrix):
               3: -(K[:N-5]+1)*np.pi}
         ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
 
-    def matvec(self, v, c, format='cython'):
+    def matvec(self, v, c, format='cython', axis=0):
         N, M = self.shape
         c.fill(0)
         if format == 'self':
+            if axis > 0:
+                c = np.moveaxis(c, axis, 0)
+                v = np.moveaxis(v, axis, 0)
             s = (slice(None),) + (np.newaxis,)*(v.ndim-1) # broadcasting
             c[1:N] = self[-1][s]*v[:M-3]
             c[:N] += self[1][s]*v[1:M-1]
             c[:N-1] += self[3][s]*v[3:M]
+            if axis > 0:
+                c = np.moveaxis(c, 0, axis)
+                v = np.moveaxis(v, 0, axis)
         elif format == 'cython' and v.ndim == 3:
-            CBD_matvec3D(v, c, self[-1], self[1], self[3])
+            CBD_matvec3D(v, c, self[-1], self[1], self[3], axis)
         elif format == 'cython' and v.ndim == 1:
             CBD_matvec(v, c, self[-1], self[1], self[3])
         else:
-            c = super(ShenMatrix, self).matvec(v, c, format=format)
+            c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
         return c
 
 
@@ -618,19 +667,27 @@ class CDBmat(ShenMatrix):
               1: (K[:-5]+1)*np.pi}
         ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
 
-    def matvec(self, v, c, format='cython'):
+    def matvec(self, v, c, format='cython', axis=0):
         N, M = self.shape
         c.fill(0)
         if format == 'self':
+            if axis > 0:
+                c = np.moveaxis(c, axis, 0)
+                v = np.moveaxis(v, axis, 0)
+
             s = (slice(None),) + (np.newaxis,)*(v.ndim-1) # broadcasting
             c[3:N] = self[-3][s] * v[:M-1]
             c[1:N-1] += self[-1][s] * v[:M]
             c[:N-3] += self[1][s] * v[1:M]
+            if axis > 0:
+                c = np.moveaxis(c, 0, axis)
+                v = np.moveaxis(v, 0, axis)
+
         elif format == 'cython' and v.ndim == 3:
-            CDB_matvec3D(v, c, self[-3], self[-1], self[1])
+            CDB_matvec3D(v, c, self[-3], self[-1], self[1], axis)
 
         else:
-            c = super(ShenMatrix, self).matvec(v, c, format=format)
+            c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
@@ -657,22 +714,30 @@ class ABBmat(ShenMatrix):
               2: 2*(ki[:-2]+1)*(ki[:-2]+2)*np.pi}
         ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
 
-    def matvec(self, v, c, format='cython'):
+    def matvec(self, v, c, format='cython', axis=0):
         N = self.shape[0]
         c.fill(0)
         if format == 'self':
+            if axis > 0:
+                c = np.moveaxis(c, axis, 0)
+                v = np.moveaxis(v, axis, 0)
+
             s = (slice(None),) + (np.newaxis,)*(v.ndim-1) # broadcasting
             c[:N] = self[0][s] * v[:N]
             c[:N-2] += self[2][s] * v[2:N]
             c[2:N] += self[-2][s] * v[:N-2]
+            if axis > 0:
+                c = np.moveaxis(c, 0, axis)
+                v = np.moveaxis(v, 0, axis)
+
         elif format == 'cython' and v.ndim == 3:
-            Tridiagonal_matvec3D(v, c, self[-2], self[0], self[2])
+            Tridiagonal_matvec3D(v, c, self[-2], self[0], self[2], axis)
 
         elif format == 'cython' and v.ndim == 1:
             Tridiagonal_matvec(v, c, self[-2], self[0], self[2])
 
         else:
-            c = super(ShenMatrix, self).matvec(v, c, format=format)
+            c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
@@ -704,26 +769,34 @@ class ADDmat(ShenMatrix):
         #for i in range(4, N-2, 2):
             #d[i] = d[2][:2-i]
 
-    def matvec(self, v, c, format='cython'):
+    def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
         if format == 'cython' and v.ndim == 1:
             ADDmat_matvec(v, c, self[0])
         else:
-            c = super(ShenMatrix, self).matvec(v, c, format=format)
+            c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
-    def solve(self, b, u=None):
+    def solve(self, b, u=None, axis=0):
         N = self.shape[0] + 2
         assert N == b.shape[0]
         s = self.trialfunction[0].slice(N)
-        bs = b[s]
+
+        uc = False
         if u is None:
-            us = np.zeros_like(b[s])
+            uc = True
+            u = np.zeros_like(b)
         else:
             assert u.shape == b.shape
-            us = u[s]
 
+        # Move axis to first
+        if axis > 0:
+            b = np.moveaxis(b, axis, 0)
+            u = np.moveaxis(u, axis, 0)
+
+        bs = b[s]
+        us = u[s]
         if len(b.shape) == 1:
             se = 0.0
             so = 0.0
@@ -745,14 +818,18 @@ class ADDmat(ShenMatrix):
                 us[k] = bs[k] - d1[k]*so
             us[k] /= d[k]
 
-        if u is None:
-            b[s] = us
+        if uc is True:
+            b[:] = u
             b[-1] = self.testfunction[0].bc[0]
             b[-2] = self.testfunction[0].bc[1]
+            if axis > 0:
+                b = np.moveaxis(b, 0, axis)
             return b
         else:
             u[-1] = self.testfunction[0].bc[0]
             u[-2] = self.testfunction[0].bc[1]
+            if axis > 0:
+                u = np.moveaxis(u, 0, axis)
             return u
 
 
@@ -778,22 +855,32 @@ class ANNmat(ShenMatrix):
             d[i] = -4*np.pi*(k[:-i]+i)**2*(k[:-i]+1)/(k[:-i]+2)**2
         ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction, -1.0)
 
-    def matvec(self, v, c, format='csr'):
-        c = super(ShenMatrix, self).matvec(v, c, format=format)
-        c[0] = self.testfunction[0].mean*np.pi
+    def matvec(self, v, c, format='csr', axis=0):
+        c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+        s = [slice(None),]*v.ndim
+        s[axis] = 0
+        c[s] = self.testfunction[0].mean*np.pi
         return c
 
-    def solve(self, b, u=None):
+    def solve(self, b, u=None, axis=0):
         N = self.shape[0] + 2
         assert N == b.shape[0]
         s = self.trialfunction[0].slice(N)
-        bs = b[s]
+
+        uc = False
         if u is None:
-            us = np.zeros_like(b[s])
+            uc = True
+            u = np.zeros_like(b)
         else:
             assert u.shape == b.shape
-            us = u[s]
 
+        # Move axis to first
+        if axis > 0:
+            b = np.moveaxis(b, axis, 0)
+            u = np.moveaxis(u, axis, 0)
+
+        bs = b[s]
+        us = u[s]
         j2 = np.arange(N-2)**2
         j2[0] = 1
         j2 = 1./j2
@@ -820,10 +907,15 @@ class ANNmat(ShenMatrix):
             us[k] /= d[k]
         us[0] = self.testfunction[0].mean
         us *= j2
-        if u is None:
-            b[s] = us
+
+        if uc is True:
+            b[:] = u
+            if axis > 0:
+                b = np.moveaxis(b, 0, axis)
             return b
         else:
+            if axis > 0:
+                u = np.moveaxis(u, 0, axis)
             return u
 
 
@@ -873,16 +965,16 @@ class SBBmat(ShenMatrix):
             d[j] = np.array(i*np.pi/(k[j:]+3))
         ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
 
-    def matvec(self, v, c, format='cython'):
+    def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
         if format == 'cython' and v.ndim == 3:
-            SBBmat_matvec3D(v, c, self[0])
+            SBBmat_matvec3D(v, c, self[0], axis)
 
         elif format == 'cython' and v.ndim == 1:
             SBBmat_matvec(v, c, self[0])
 
         else:
-            c = super(ShenMatrix, self).matvec(v, c, format=format)
+            c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
@@ -905,14 +997,12 @@ class _ChebMatDict(dict):
 
     def __missing__(self, key):
         c = _Chebmatrix
-        c.testfunction = key[0]
-        c.trialfunction = key[1]
-        assert c.testfunction[1] == 0, 'Test cannot be differentiated (weighted space)'
         self[key] = c
         return c
 
     def __getitem__(self, key):
         matrix = dict.__getitem__(self, key)
+        assert key[0][1] == 0, 'Test cannot be differentiated (weighted space)'
         matrix.testfunction = key[0]
         matrix.trialfunction = key[1]
         return matrix

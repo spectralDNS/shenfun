@@ -78,7 +78,7 @@ class SpectralBase(object):
 
     def __init__(self, quad):
         self.quad = quad
-        self._mass = np.zeros((0, 0)) # Mass matrix (if needed)
+        self._mass = None # Mass matrix (if needed)
 
     def points_and_weights(self, N, quad):
         """Return points and weights of quadrature
@@ -106,7 +106,7 @@ class SpectralBase(object):
             #s.append(slice(0, n))
         #return np.mgrid.__getitem__(s).astype(float)[0]
 
-    def evaluate_expansion_all(self, fk, fj):
+    def evaluate_expansion_all(self, fk, fj, axis=0):
         r"""Evaluate expansion on entire mesh
 
            f(x_j) = \sum_k f_k \T_k(x_j)  for all j = 0, 1, ..., N
@@ -118,7 +118,7 @@ class SpectralBase(object):
         """
         raise NotImplementedError
 
-    def scalar_product(self, fj, fk, fast_transform=True):
+    def scalar_product(self, fj, fk, fast_transform=True, axis=0):
         r"""Return scalar product
 
           f_k = (f, \phi_k)_w      for all k = 0, 1, ..., N
@@ -131,7 +131,7 @@ class SpectralBase(object):
         """
         raise NotImplementedError
 
-    def forward(self, fj, fk, fast_transform=True):
+    def forward(self, fj, fk, fast_transform=True, axis=0):
         """Fast forward transform
 
         args:
@@ -143,11 +143,12 @@ class SpectralBase(object):
                              if False use Vandermonde type
 
         """
-        fk = self.scalar_product(fj, fk, fast_transform)
-        fk = self.apply_inverse_mass(fk)
+        fk = self.scalar_product(fj, fk, fast_transform=fast_transform,
+                                 axis=axis)
+        fk = self.apply_inverse_mass(fk, axis=axis)
         return fk
 
-    def backward(self, fk, fj, fast_transform=True):
+    def backward(self, fk, fj, fast_transform=True, axis=0):
         """Fast backward transform
 
         args:
@@ -160,9 +161,9 @@ class SpectralBase(object):
 
         """
         if fast_transform:
-            fj = self.evaluate_expansion_all(fk, fj)
+            fj = self.evaluate_expansion_all(fk, fj, axis=axis)
         else:
-            fj = self.vandermonde_evaluate_expansion_all(fk, fj)
+            fj = self.vandermonde_evaluate_expansion_all(fk, fj, axis=axis)
         return fj
 
     def vandermonde(self, x, N):
@@ -195,7 +196,7 @@ class SpectralBase(object):
         """
         raise NotImplementedError
 
-    def vandermonde_scalar_product(self, fj, fk):
+    def vandermonde_scalar_product(self, fj, fk, axis=0):
         """Naive implementation of scalar product
 
         args:
@@ -203,7 +204,7 @@ class SpectralBase(object):
             fk   (output)   Expansion coefficients
 
         """
-        N = fj.shape[0]
+        N = fj.shape[axis]
         points, weights = self.points_and_weights(N, self.quad)
         V = self.vandermonde(points, N)
         P = self.get_vandermonde_basis(V)
@@ -211,12 +212,15 @@ class SpectralBase(object):
             fk[:] = np.dot(fj*weights, P)
 
         else: # broadcasting
-            fc = np.rollaxis(fj*weights[(slice(None),)+(np.newaxis,)*(fj.ndim-1)], 0, fj.ndim)
-            fk[:] = np.rollaxis(np.dot(fc, P), fj.ndim-1, 0)
+            bc_shape = [np.newaxis,]*fj.ndim
+            bc_shape[axis] = slice(None)
+            fc = np.moveaxis(fj*weights[bc_shape], axis, -1)
+            fk[:] = np.moveaxis(np.dot(fc, P), -1, axis)
+            #fk[:] = np.tensordot(fj*weights[bc_shape], P, ((axis,), (0,)))
 
         return fk
 
-    def vandermonde_evaluate_expansion_all(self, fk, fj):
+    def vandermonde_evaluate_expansion_all(self, fk, fj, axis=0):
         """Naive implementation of evaluate_expansion_all
 
         args:
@@ -224,19 +228,21 @@ class SpectralBase(object):
             fj   (output)   Function values on quadrature mesh
 
         """
-        N = fj.shape[0]
+        N = fj.shape[axis]
+
         points = self.points_and_weights(N, self.quad)[0]
         V = self.vandermonde(points, N)
         P = self.get_vandermonde_basis(V)
         if fj.ndim == 1:
             fj = np.dot(P, fk, out=fj)
         else:
-            fc = np.rollaxis(fk, 0, fj.ndim-1)
+            fc = np.moveaxis(fk, axis, -2)
             fj = np.dot(P, fc, out=fj)
+            fj = np.moveaxis(fj, 0, axis)
 
         return fj
 
-    def apply_inverse_mass(self, fk):
+    def apply_inverse_mass(self, fk, axis=0):
         """Apply inverse mass matrix
 
         args:
@@ -245,13 +251,15 @@ class SpectralBase(object):
                                    returned.
 
         """
-        if self._mass.shape[0] != fk.shape[0]:
-            B = self.get_mass_matrix()
-            self._mass = B(np.arange(fk.shape[0]).astype(np.float))
-        if self._mass.testfunction[0].quad != self.quad:
-            B = self.get_mass_matrix()
-            self._mass = B(np.arange(fk.shape[0]).astype(np.float))
-        fk = self._mass.solve(fk)
+        B = self.get_mass_matrix()
+        if self._mass is None:
+            self._mass = B(np.arange(fk.shape[axis]).astype(np.float))
+
+        if (self._mass.testfunction[0].quad != self.quad or
+            self._mass.N != fk.shape[axis]):
+            self._mass = B(np.arange(fk.shape[axis]).astype(np.float))
+
+        fk = self._mass.solve(fk, axis=axis)
         return fk
 
     def eval(self, x, fk):

@@ -64,14 +64,14 @@ class LegendreBase(SpectralBase):
             V = np.dot(V, D)
         return self.get_vandermonde_basis(V)
 
-    def backward(self, fk, fj, fast_transform=False):
+    def backward(self, fk, fj, fast_transform=False, axis=0):
         assert fast_transform is False
-        fj = SpectralBase.backward(self, fk, fj, False)
+        fj = SpectralBase.backward(self, fk, fj, False, axis=axis)
         return fj
 
-    def forward(self, fj, fk, fast_transform=False):
+    def forward(self, fj, fk, fast_transform=False, axis=0):
         assert fast_transform is False
-        fk = SpectralBase.forward(self, fj, fk, False)
+        fk = SpectralBase.forward(self, fj, fk, False, axis=axis)
         return fk
 
     def get_mass_matrix(self):
@@ -94,14 +94,14 @@ class LegendreBasis(LegendreBase):
     def __init__(self, quad="LG"):
         LegendreBase.__init__(self, quad)
 
-    def evaluate_expansion_all(self, fk, fj):
+    def evaluate_expansion_all(self, fk, fj, axis=0):
         raise NotImplementedError
 
-    def scalar_product(self, fj, fk, fast_transform=False):
+    def scalar_product(self, fj, fk, fast_transform=False, axis=0):
         if fast_transform:
             raise NotImplementedError
         else:
-            fk = self.vandermonde_scalar_product(fj, fk)
+            fk = self.vandermonde_scalar_product(fj, fk, axis=axis)
 
         return fk
 
@@ -134,35 +134,61 @@ class ShenDirichletBasis(LegendreBase):
         P[:, -1] = (V[:, 0] - V[:, 1])/2
         return P
 
-    def scalar_product(self, fj, fk, fast_transform=False):
+    def scalar_product(self, fj, fk, fast_transform=False, axis=0):
+        if axis > 0:
+            fk = np.moveaxis(fk, axis, 0)
+            fj = np.moveaxis(fj, axis, 0)
+
         if fast_transform:
-            fk = self.LT.scalar_product(fj, fk)
+            fk = self.LT.scalar_product(fj, fk, axis=0)
             c0 = 0.5*(fk[0] + fk[1])
             c1 = 0.5*(fk[0] - fk[1])
             fk[:-2] -= fk[2:]
             fk[-2] = c0
             fk[-1] = c1
         else:
-            fk = self.vandermonde_scalar_product(fj, fk)
+            fk = self.vandermonde_scalar_product(fj, fk, axis=0)
+
+        if axis > 0:
+            fk = np.moveaxis(fk, 0, axis)
+            fj = np.moveaxis(fj, 0, axis)
 
         return fk
 
-    def forward(self, fj, fk, fast_transform=True):
-        fk = self.scalar_product(fj, fk, fast_transform)
+    def forward(self, fj, fk, fast_transform=True, axis=0):
+        if axis > 0:
+            fk = np.moveaxis(fk, axis, 0)
+            fj = np.moveaxis(fj, axis, 0)
+
+        fk = self.scalar_product(fj, fk, fast_transform, axis=0)
         fk[0] -= np.pi/2*(self.bc[0] + self.bc[1])
         fk[1] -= np.pi/4*(self.bc[0] - self.bc[1])
-        fk = self.apply_inverse_mass(fk)
+        fk = self.apply_inverse_mass(fk, axis=0)
         fk[-2] = self.bc[0]
         fk[-1] = self.bc[1]
+
+        if axis > 0:
+            fk = np.moveaxis(fk, 0, axis)
+            fj = np.moveaxis(fj, 0, axis)
+
         return fk
 
-    def evaluate_expansion_all(self, fk, fj):
+    def evaluate_expansion_all(self, fk, fj, axis=0):
+        if axis > 0:
+            fk = np.moveaxis(fk, axis, 0)
+            fj = np.moveaxis(fj, axis, 0)
+
         w_hat = work[(fk, 0)]
         w_hat[:-2] = fk[:-2]
         w_hat[2:] -= fk[:-2]
         w_hat[0] += 0.5*(self.bc[0] + self.bc[1])
         w_hat[1] += 0.5*(self.bc[0] - self.bc[1])
-        fj = self.LT.backward(w_hat, fj)
+        fj = self.LT.backward(w_hat, fj, axis=0)
+
+        if axis > 0:
+            fk = np.moveaxis(fk, 0, axis)
+            fj = np.moveaxis(fj, 0, axis)
+
         return fj
 
     def slice(self, N):
@@ -213,25 +239,43 @@ class ShenNeumannBasis(LegendreBase):
                 k = self.wavenumbers(v.shape[0])
             self._factor = k*(k+1)/(k+2)/(k+3)
 
-    def scalar_product(self, fj, fk, fast_transform=True):
+    def scalar_product(self, fj, fk, fast_transform=True, axis=0):
+        if axis > 0:
+            fk = np.moveaxis(fk, axis, 0)
+            fj = np.moveaxis(fj, axis, 0)
+
         if fast_transform:
-            fk = self.LT.scalar_product(fj, fk)
+            fk = self.LT.scalar_product(fj, fk, axis=0)
             self.set_factor_array(fk)
             fk[:-2] -= self._factor * fk[2:]
 
         else:
-            fk = self.vandermonde_scalar_product(fj, fk)
+            fk = self.vandermonde_scalar_product(fj, fk, axis=0)
 
         fk[0] = self.mean*np.pi
         fk[-2:] = 0
+
+        if axis > 0:
+            fk = np.moveaxis(fk, 0, axis)
+            fj = np.moveaxis(fj, 0, axis)
+
         return fk
 
     def evaluate_expansion_all(self, fk, fj):
+        if axis > 0:
+            fk = np.moveaxis(fk, axis, 0)
+            fj = np.moveaxis(fj, axis, 0)
+
         w_hat = work[(fk, 0)]
         self.set_factor_array(fk)
         w_hat[:-2] = fk[:-2]
         w_hat[2:] -= self._factor*fk[:-2]
         fj = self.LT.backward(w_hat, fj)
+
+        if axis > 0:
+            fk = np.moveaxis(fk, 0, axis)
+            fj = np.moveaxis(fj, 0, axis)
+
         return fj
 
     def slice(self, N):
@@ -285,11 +329,15 @@ class ShenBiharmonicBasis(LegendreBase):
             self._factor1 = (-2*(2*k+5)/(2*k+7)).astype(float)
             self._factor2 = ((2*k+3)/(2*k+7)).astype(float)
 
-    def scalar_product(self, fj, fk, fast_transform=False):
+    def scalar_product(self, fj, fk, fast_transform=False, axis=0):
+        if axis > 0:
+            fk = np.moveaxis(fk, axis, 0)
+            fj = np.moveaxis(fj, axis, 0)
+
         if fast_transform:
             self.set_factor_arrays(fk)
             Tk = work[(fk, 0)]
-            Tk = self.LT.scalar_product(fj, Tk)
+            Tk = self.LT.scalar_product(fj, Tk, axis=0)
             fk[:-4] = Tk[:-4]
             fk[:-4] += self._factor1 * Tk[2:-2]
             fk[:-4] += self._factor2 * Tk[4:]
@@ -298,6 +346,10 @@ class ShenBiharmonicBasis(LegendreBase):
             fk = self.vandermonde_scalar_product(fj, fk)
 
         fk[-4:] = 0
+        if axis > 0:
+            fk = np.moveaxis(fk, 0, axis)
+            fj = np.moveaxis(fj, 0, axis)
+
         return fk
 
     @staticmethod
@@ -308,11 +360,18 @@ class ShenBiharmonicBasis(LegendreBase):
         w_hat[4:] += f2*fk[:-4]
         return w_hat
 
-    def evaluate_expansion_all(self, fk, fj):
+    def evaluate_expansion_all(self, fk, fj, axis=0):
+        if axis > 0:
+            fk = np.moveaxis(fk, axis, 0)
+            fj = np.moveaxis(fj, axis, 0)
         w_hat = work[(fk, 0)]
         self.set_factor_arrays(fk)
         w_hat = ShenBiharmonicBasis.set_w_hat(w_hat, fk, self._factor1, self._factor2)
         fj = self.LT.backward(w_hat, fj)
+        if axis > 0:
+            fk = np.moveaxis(fk, 0, axis)
+            fj = np.moveaxis(fj, 0, axis)
+
         return fj
 
     def slice(self, N):

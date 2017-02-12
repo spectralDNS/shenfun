@@ -40,7 +40,7 @@ def test_scalarproduct(ST, quad):
     u1 = ST.scalar_product(fj, u1, False)
     assert np.allclose(u1, u0)
 
-#test_scalarproduct(cbases.ShenNeumannBasis, 'GC')
+#test_scalarproduct(cbases.ShenDirichletBasis, 'GC')
 
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
 def test_eval(ST, quad):
@@ -97,7 +97,8 @@ def test_massmatrices(test, trial, quad):
 #test_massmatrices(cBasis[2], cBasis[0], 'GC')
 
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
-def test_transforms(ST, quad):
+@pytest.mark.parametrize('axis', (0,1,2))
+def test_transforms(ST, quad, axis):
     ST = ST(quad=quad)
     points, weights = ST.points_and_weights(N,  ST.quad)
     fj = np.random.random(N)
@@ -116,15 +117,46 @@ def test_transforms(ST, quad):
     assert np.allclose(fj, u1)
 
     # Multidimensional version
-    fj = fj.repeat(16).reshape((N, 4, 4)) + 1j*fj.repeat(16).reshape((N, 4, 4))
-    u0 = np.zeros((N, 4, 4), dtype=np.complex)
-    u1 = np.zeros((N, 4, 4), dtype=np.complex)
-    u0 = ST.forward(fj, u0)
-    u1 = ST.backward(u0, u1)
+    bc = [np.newaxis,]*3
+    bc[axis] = slice(None)
+    fj = np.broadcast_to(fj[bc], (N,)*3).copy()
 
-    assert np.allclose(fj, u1)
+    u00 = np.zeros_like(fj)
+    u11 = np.zeros_like(fj)
+    u00 = ST.forward(fj, u00, axis=axis)
+    u11 = ST.backward(u00, u11, axis=axis)
+    cc = [0,]*3
+    cc[axis] = slice(None)
+    #from IPython import embed; embed()
+    assert np.allclose(fj[cc], u11[cc])
 
-##test_transforms(lbases.ShenBiharmonicBasis, "LG")
+test_transforms(lbases.ShenDirichletBasis, "LG", 2)
+
+
+@pytest.mark.parametrize('ST,quad', all_bases_and_quads)
+@pytest.mark.parametrize('axis', (0,1,2))
+def test_axis(ST, quad, axis):
+    ST = ST(quad=quad)
+    points, weights = ST.points_and_weights(N,  ST.quad)
+    f_hat = np.random.random(N)
+
+    B = inner_product((ST, 0), (ST, 0), N)
+
+    c = np.zeros_like(f_hat)
+    c = B.solve(f_hat, c)
+
+    # Multidimensional version
+    bc = [np.newaxis,]*3
+    bc[axis] = slice(None)
+    fk = np.broadcast_to(f_hat[bc], (N,)*3).copy()
+    #ck = np.zeros_like(fk)
+    ck = B.solve(fk, axis=axis)
+    cc = [0,]*3
+    cc[axis] = slice(None)
+    assert np.allclose(ck[cc], c)
+
+#test_axis(cbases.ShenNeumannBasis, "GC", 2)
+
 
 @pytest.mark.parametrize('quad', quads)
 def test_CDDmat(quad):
@@ -183,7 +215,6 @@ def test_CDDmat(quad):
     d3 = np.zeros((M, 4, 4), dtype=np.complex)
     d3 = SD.backward(cs, d3)
 
-    #from IPython import embed; embed()
     assert np.linalg.norm(du3[s]-d3[s])/(M*16) < 1e-10
 
 #test_CDDmat('GL')

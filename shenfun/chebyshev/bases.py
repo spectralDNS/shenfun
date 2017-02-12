@@ -125,13 +125,17 @@ class ChebyshevBasis(ChebyshevBase):
         fd = self.backward(ck, fd)
         return fd
 
-    def apply_inverse_mass(self, fk):
+    def apply_inverse_mass(self, fk, axis=0):
         """Apply inverse BTT_{kj} = c_k 2/pi \delta_{kj}
 
         args:
             fk   (input/output)    Expansion coefficients
 
         """
+        # Roll relevant axis to first
+        if axis > 0:
+            fk = np.moveaxis(fk, axis, 0)
+
         if self.quad == 'GC':
             fk *= (2/np.pi)
             fk[0] /= 2
@@ -141,9 +145,16 @@ class ChebyshevBasis(ChebyshevBase):
             fk[0] /= 2
             fk[-1] /= 2
 
+        if axis > 0:
+            fk = np.moveaxis(fk, 0, axis)
+
         return fk
 
-    def evaluate_expansion_all(self, fk, fj):
+    def evaluate_expansion_all(self, fk, fj, axis=0):
+        if axis > 0:
+            fk = np.moveaxis(fk, axis, 0)
+            fj = np.moveaxis(fj, axis, 0)
+
         if self.quad == "GC":
             fj = dct(fk, fj, type=3, axis=0, threads=self.threads,
                      planner_effort=self.planner_effort)
@@ -158,11 +169,19 @@ class ChebyshevBasis(ChebyshevBase):
             fj[::2] += fk[-1]/2
             fj[1::2] -= fk[-1]/2
 
+        if axis > 0:
+            fk = np.moveaxis(fk, 0, axis)
+            fj = np.moveaxis(fj, 0, axis)
+
         return fj
 
-    def scalar_product(self, fj, fk, fast_transform=True):
-        N = fj.shape[0]
+    def scalar_product(self, fj, fk, fast_transform=True, axis=0):
+        N = fj.shape[axis]
         if fast_transform:
+            if axis > 0:
+                fk = np.moveaxis(fk, axis, 0)
+                fj = np.moveaxis(fj, axis, 0)
+
             if self.quad == "GC":
                 fk = dct(fj, fk, type=2, axis=0, threads=self.threads,
                          planner_effort=self.planner_effort)
@@ -172,8 +191,13 @@ class ChebyshevBasis(ChebyshevBase):
                 fk = dct(fj, fk, type=1, axis=0, threads=self.threads,
                          planner_effort=self.planner_effort)
                 fk *= (np.pi/(2*(N-1)))
+
+        if axis > 0:
+            fk = np.moveaxis(fk, 0, axis)
+            fj = np.moveaxis(fj, 0, axis)
+
         else:
-            fk = self.vandermonde_scalar_product(fj, fk)
+            fk = self.vandermonde_scalar_product(fj, fk, axis=axis)
 
         return fk
 
@@ -211,35 +235,62 @@ class ShenDirichletBasis(ChebyshevBase):
         P[:, -1] = (V[:, 0] - V[:, 1])/2
         return P
 
-    def scalar_product(self, fj, fk, fast_transform=True):
+    def scalar_product(self, fj, fk, fast_transform=True, axis=0):
         if fast_transform:
-            fk = self.CT.scalar_product(fj, fk)
+            if axis > 0:
+                fk = np.moveaxis(fk, axis, 0)
+                fj = np.moveaxis(fj, axis, 0)
+
+            fk = self.CT.scalar_product(fj, fk, axis=0)
             c0 = 0.5*(fk[0] + fk[1])
             c1 = 0.5*(fk[0] - fk[1])
             fk[:-2] -= fk[2:]
             fk[-2] = c0
             fk[-1] = c1
+
+            if axis > 0:
+                fk = np.moveaxis(fk, 0, axis)
+                fj = np.moveaxis(fj, 0, axis)
+
         else:
-            fk = self.vandermonde_scalar_product(fj, fk)
+            fk = self.vandermonde_scalar_product(fj, fk, axis=axis)
 
         return fk
 
-    def evaluate_expansion_all(self, fk, fj):
+    def evaluate_expansion_all(self, fk, fj, axis=0):
+        if axis > 0:
+            fk = np.moveaxis(fk, axis, 0)
+            fj = np.moveaxis(fj, axis, 0)
+
         w_hat = work[(fk, 0)]
         w_hat[:-2] = fk[:-2]
         w_hat[2:] -= fk[:-2]
         w_hat[0] += 0.5*(self.bc[0] + self.bc[1])
         w_hat[1] += 0.5*(self.bc[0] - self.bc[1])
-        fj = self.CT.backward(w_hat, fj)
+        fj = self.CT.backward(w_hat, fj, axis=0)
+
+        if axis > 0:
+            fk = np.moveaxis(fk, 0, axis)
+            fj = np.moveaxis(fj, 0, axis)
+
         return fj
 
-    def forward(self, fj, fk, fast_transform=True):
-        fk = self.scalar_product(fj, fk, fast_transform)
+    def forward(self, fj, fk, fast_transform=True, axis=0):
+        if axis > 0:
+            fk = np.moveaxis(fk, axis, 0)
+            fj = np.moveaxis(fj, axis, 0)
+
+        fk = self.scalar_product(fj, fk, fast_transform, axis=0)
         fk[0] -= np.pi/2*(self.bc[0] + self.bc[1])
         fk[1] -= np.pi/4*(self.bc[0] - self.bc[1])
-        fk = self.apply_inverse_mass(fk)
+        fk = self.apply_inverse_mass(fk, axis=0)
         fk[-2] = self.bc[0]
         fk[-1] = self.bc[1]
+
+        if axis > 0:
+            fk = np.moveaxis(fk, 0, axis)
+            fj = np.moveaxis(fj, 0, axis)
+
         return fk
 
     def slice(self, N):
@@ -292,25 +343,43 @@ class ShenNeumannBasis(ChebyshevBase):
             k = self.wavenumbers(v.shape)
             self._factor = (k/(k+2))**2
 
-    def scalar_product(self, fj, fk, fast_transform=True):
+    def scalar_product(self, fj, fk, fast_transform=True, axis=0):
+        if axis > 0:
+            fk = np.moveaxis(fk, axis, 0)
+            fj = np.moveaxis(fj, axis, 0)
+
         if fast_transform:
-            fk = self.CT.scalar_product(fj, fk)
+            fk = self.CT.scalar_product(fj, fk, axis=0)
             self.set_factor_array(fk)
             fk[:-2] -= self._factor * fk[2:]
 
         else:
-            fk = self.vandermonde_scalar_product(fj, fk)
+            fk = self.vandermonde_scalar_product(fj, fk, axis=0)
 
         fk[0] = self.mean*np.pi
         fk[-2:] = 0
+
+        if axis > 0:
+            fk = np.moveaxis(fk, 0, axis)
+            fj = np.moveaxis(fj, 0, axis)
+
         return fk
 
-    def evaluate_expansion_all(self, fk, fj):
+    def evaluate_expansion_all(self, fk, fj, axis=0):
+        if axis > 0:
+            fk = np.moveaxis(fk, axis, 0)
+            fj = np.moveaxis(fj, axis, 0)
+
         w_hat = work[(fk, 0)]
         self.set_factor_array(fk)
         w_hat[:-2] = fk[:-2]
         w_hat[2:] -= self._factor*fk[:-2]
-        fj = self.CT.backward(w_hat, fj)
+        fj = self.CT.backward(w_hat, fj, axis=0)
+
+        if axis > 0:
+            fk = np.moveaxis(fk, 0, axis)
+            fj = np.moveaxis(fj, 0, axis)
+
         return fj
 
     def slice(self, N):
@@ -364,7 +433,11 @@ class ShenBiharmonicBasis(ChebyshevBase):
             self._factor1 = (-2*(k+2)/(k+3)).astype(float)
             self._factor2 = ((k+1)/(k+3)).astype(float)
 
-    def scalar_product(self, fj, fk, fast_transform=True):
+    def scalar_product(self, fj, fk, fast_transform=True, axis=0):
+        if axis > 0:
+            fk = np.moveaxis(fk, axis, 0)
+            fj = np.moveaxis(fj, axis, 0)
+
         if fast_transform:
             self.set_factor_arrays(fk)
             Tk = work[(fk, 0)]
@@ -377,6 +450,11 @@ class ShenBiharmonicBasis(ChebyshevBase):
             fk = self.vandermonde_scalar_product(fj, fk)
 
         fk[-4:] = 0
+
+        if axis > 0:
+            fk = np.moveaxis(fk, 0, axis)
+            fj = np.moveaxis(fj, 0, axis)
+
         return fk
 
     @staticmethod
@@ -387,11 +465,19 @@ class ShenBiharmonicBasis(ChebyshevBase):
         w_hat[4:] += f2*fk[:-4]
         return w_hat
 
-    def evaluate_expansion_all(self, fk, fj):
+    def evaluate_expansion_all(self, fk, fj, axis=0):
+        if axis > 0:
+            fk = np.moveaxis(fk, axis, 0)
+            fj = np.moveaxis(fj, axis, 0)
+
         w_hat = work[(fk, 0)]
         self.set_factor_arrays(fk)
         w_hat = ShenBiharmonicBasis.set_w_hat(w_hat, fk, self._factor1, self._factor2)
         fj = self.CT.backward(w_hat, fj)
+        if axis > 0:
+            fk = np.moveaxis(fk, 0, axis)
+            fj = np.moveaxis(fj, 0, axis)
+
         return fj
 
     def slice(self, N):
