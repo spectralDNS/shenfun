@@ -427,9 +427,11 @@ class ShenBiharmonicBasis(ChebyshevBase):
         P[:, :-4] = V[:, :-4] - (2*(k+2)/(k+3))*V[:, 2:-2] + ((k+1)/(k+3))*V[:, 4:]
         return P
 
-    def set_factor_arrays(self, v):
-        if not self._factor1.shape == v[:-4].shape:
-            k = self.wavenumbers(v.shape)
+    def set_factor_arrays(self, v, axis=0):
+        s = [slice(None)]*v.ndim
+        s[axis] = self.slice(v.shape[axis])
+        if not self._factor1.shape == v[s].shape:
+            k = self.wavenumbers(v.shape, axis=axis)
             self._factor1 = (-2*(k+2)/(k+3)).astype(float)
             self._factor2 = ((k+1)/(k+3)).astype(float)
 
@@ -439,15 +441,15 @@ class ShenBiharmonicBasis(ChebyshevBase):
             fj = np.moveaxis(fj, axis, 0)
 
         if fast_transform:
-            self.set_factor_arrays(fk)
+            self.set_factor_arrays(fk, axis=0)
             Tk = work[(fk, 0)]
-            Tk = self.CT.scalar_product(fj, Tk)
+            Tk = self.CT.scalar_product(fj, Tk, axis=0)
             fk[:-4] = Tk[:-4]
             fk[:-4] += self._factor1 * Tk[2:-2]
             fk[:-4] += self._factor2 * Tk[4:]
 
         else:
-            fk = self.vandermonde_scalar_product(fj, fk)
+            fk = self.vandermonde_scalar_product(fj, fk, axis=0)
 
         fk[-4:] = 0
 
@@ -473,7 +475,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
         w_hat = work[(fk, 0)]
         self.set_factor_arrays(fk)
         w_hat = ShenBiharmonicBasis.set_w_hat(w_hat, fk, self._factor1, self._factor2)
-        fj = self.CT.backward(w_hat, fj)
+        fj = self.CT.backward(w_hat, fj, axis=0)
         if axis > 0:
             fk = np.moveaxis(fk, 0, axis)
             fj = np.moveaxis(fj, 0, axis)

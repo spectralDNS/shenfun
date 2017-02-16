@@ -91,7 +91,7 @@ class SpectralBase(object):
         """
         raise NotImplementedError
 
-    def wavenumbers(self, N):
+    def wavenumbers(self, N, axis=0):
         """Return the wavenumbermesh
 
         The first axis is inhomogeneous, and if ndim(N) > 1, then the trailing
@@ -99,8 +99,10 @@ class SpectralBase(object):
 
         """
         N = list(N) if np.ndim(N) else [N]
-        k = np.arange(N[0], dtype=np.float)[self.slice(N[0])]
-        return k[(self.slice(N[0]),)+(np.newaxis,)*(len(N)-1)]
+        s = [np.newaxis]*len(N)
+        s[axis] = self.slice(N[axis])
+        k = np.arange(N[axis], dtype=np.float)
+        return k[s]
         #s = [self.slice(N[0])]
         #for n in N[1:]:
             #s.append(slice(0, n))
