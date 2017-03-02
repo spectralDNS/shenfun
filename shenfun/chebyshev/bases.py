@@ -5,55 +5,45 @@ from shenfun.spectralbase import SpectralBase, work
 from shenfun.optimization import Cheb
 from shenfun.utilities import inheritdocstrings
 
-__all__ = ['ChebyshevBase', 'ChebyshevBasis', 'ShenDirichletBasis',
+__all__ = ['ChebyshevBase', 'Basis', 'ShenDirichletBasis',
            'ShenNeumannBasis', 'ShenBiharmonicBasis']
 
 @inheritdocstrings
 class ChebyshevBase(SpectralBase):
     """Abstract base class for all Chebyshev bases
 
-    args:
+    kwargs:
+        N             int         Number of quadrature points
         quad        ('GL', 'GC')  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss
-
-    Transforms are performed along the first dimension of a multidimensional
-    array.
 
     """
 
-    def __init__(self, quad="GC"):
+    def __init__(self, N=0, quad="GC"):
         assert quad in ('GC', 'GL')
-        SpectralBase.__init__(self, quad)
+        SpectralBase.__init__(self, N, quad)
 
-    def points_and_weights(self, N, quad):
-        """Return points and weights of quadrature
-
-        args:
-            N      integer      Number of points
-            quad ('GL', 'GC')   Chebyshev-Gauss-Lobatto or Chebyshev-Gauss
-
-        """
-        if quad == "GL":
-            points = -(n_cheb.chebpts2(N)).astype(float)
-            weights = np.zeros(N)+np.pi/(N-1)
+    def points_and_weights(self):
+        if self.quad == "GL":
+            points = -(n_cheb.chebpts2(self.N)).astype(float)
+            weights = np.zeros(self.N)+np.pi/(self.N-1)
             weights[0] /= 2
             weights[-1] /= 2
 
-        elif quad == "GC":
-            points, weights = n_cheb.chebgauss(N)
+        elif self.quad == "GC":
+            points, weights = n_cheb.chebgauss(self.N)
             points = points.astype(float)
             weights = weights.astype(float)
 
         return points, weights
 
-    def vandermonde(self, x, N):
+    def vandermonde(self, x):
         """Return Chebyshev Vandermonde matrix
 
         args:
             x               points for evaluation
-            N               Number of Chebyshev polynomials
 
         """
-        return n_cheb.chebvander(x, N-1)
+        return n_cheb.chebvander(x, self.N-1)
 
     def get_vandermonde_basis_derivative(self, V, k=0):
         """Return k'th derivative of basis as a Vandermonde matrix
@@ -65,34 +55,32 @@ class ChebyshevBase(SpectralBase):
             k    integer    k'th derivative
 
         """
-        N = V.shape[1]
+        assert self.N == V.shape[1]
         if k > 0:
-            D = np.zeros((N, N))
-            D[:-k, :] = n_cheb.chebder(np.eye(N), k)
+            D = np.zeros((self.N, self.N))
+            D[:-k, :] = n_cheb.chebder(np.eye(self.N), k)
             V = np.dot(V, D)
         return self.get_vandermonde_basis(V)
 
     def get_mass_matrix(self):
         from .matrices import mat
-        return mat[((self, 0), (self, 0))]
+        return mat[((self.__class__, 0), (self.__class__, 0))]
 
 
 @inheritdocstrings
-class ChebyshevBasis(ChebyshevBase):
+class Basis(ChebyshevBase):
     """Basis for regular Chebyshev series
 
-    args:
+    kwargs:
+        N             int         Number of quadrature points
         quad        ('GL', 'GC')  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss
         threads          1        Number of threads used by pyfftw
         planner_effort            Planner effort for FFTs.
 
-    Transforms are performed along the first dimension of a multidimensional
-    array.
-
     """
 
-    def __init__(self, quad="GC", threads=1, planner_effort="FFTW_MEASURE"):
-        ChebyshevBase.__init__(self, quad)
+    def __init__(self, N=0, quad="GC", threads=1, planner_effort="FFTW_MEASURE"):
+        ChebyshevBase.__init__(self, N, quad)
         self.threads = threads
         self.planner_effort = planner_effort
 
@@ -132,17 +120,12 @@ class ChebyshevBasis(ChebyshevBase):
             fk   (input/output)    Expansion coefficients
 
         """
-        # Roll relevant axis to first
         if axis > 0:
             fk = np.moveaxis(fk, axis, 0)
 
-        if self.quad == 'GC':
-            fk *= (2/np.pi)
-            fk[0] /= 2
-
-        elif self.quad == 'GL':
-            fk *= (2/np.pi)
-            fk[0] /= 2
+        fk *= (2/np.pi)
+        fk[0] /= 2
+        if self.quad == 'GL':
             fk[-1] /= 2
 
         if axis > 0:
@@ -151,6 +134,7 @@ class ChebyshevBasis(ChebyshevBase):
         return fk
 
     def evaluate_expansion_all(self, fk, fj, axis=0):
+        M = len(fj.shape)-1
         if axis > 0:
             fk = np.moveaxis(fk, axis, 0)
             fj = np.moveaxis(fj, axis, 0)
@@ -176,25 +160,17 @@ class ChebyshevBasis(ChebyshevBase):
         return fj
 
     def scalar_product(self, fj, fk, fast_transform=True, axis=0):
-        N = fj.shape[axis]
         if fast_transform:
-            if axis > 0:
-                fk = np.moveaxis(fk, axis, 0)
-                fj = np.moveaxis(fj, axis, 0)
-
+            assert self.N == fj.shape[axis]
             if self.quad == "GC":
-                fk = dct(fj, fk, type=2, axis=0, threads=self.threads,
+                fk = dct(fj, fk, type=2, axis=axis, threads=self.threads,
                          planner_effort=self.planner_effort)
-                fk *= (np.pi/(2*N))
+                fk *= (np.pi/(2*self.N))
 
             elif self.quad == "GL":
-                fk = dct(fj, fk, type=1, axis=0, threads=self.threads,
+                fk = dct(fj, fk, type=1, axis=axis, threads=self.threads,
                          planner_effort=self.planner_effort)
-                fk *= (np.pi/(2*(N-1)))
-
-        if axis > 0:
-            fk = np.moveaxis(fk, 0, axis)
-            fj = np.moveaxis(fj, 0, axis)
+                fk *= (np.pi/(2*(self.N-1)))
 
         else:
             fk = self.vandermonde_scalar_product(fj, fk, axis=axis)
@@ -209,24 +185,22 @@ class ChebyshevBasis(ChebyshevBase):
 class ShenDirichletBasis(ChebyshevBase):
     """Shen basis for Dirichlet boundary conditions
 
-    args:
+    kwargs:
+        N             int         Number of quadrature points
         quad        ('GL', 'GC')  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss
         threads          1        Number of threads used by pyfftw
         planner_effort            Planner effort for FFTs.
         bc             (a, b)     Boundary conditions at x=(1,-1)
 
-    Transforms are performed along the first dimension of a multidimensional
-    array.
-
     """
 
-    def __init__(self, quad="GC", threads=1, planner_effort="FFTW_MEASURE",
+    def __init__(self, N=0, quad="GC", threads=1, planner_effort="FFTW_MEASURE",
                  bc=(0., 0.)):
-        ChebyshevBase.__init__(self, quad)
+        ChebyshevBase.__init__(self, N, quad)
         self.threads = threads
         self.planner_effort = planner_effort
         self.bc = bc
-        self.CT = ChebyshevBasis(quad, threads, planner_effort)
+        self.CT = Basis(N, quad, threads, planner_effort)
 
     def get_vandermonde_basis(self, V):
         P = np.zeros(V.shape)
@@ -293,11 +267,11 @@ class ShenDirichletBasis(ChebyshevBase):
 
         return fk
 
-    def slice(self, N):
-        return slice(0, N-2)
+    def slice(self):
+        return slice(0, self.N-2)
 
-    def get_shape(self, N):
-        return N-2
+    def get_shape(self):
+        return self.N-2
 
     def eval(self, x, fk):
         w_hat = work[(fk, 0)]
@@ -311,30 +285,28 @@ class ShenDirichletBasis(ChebyshevBase):
 class ShenNeumannBasis(ChebyshevBase):
     """Shen basis for homogeneous Neumann boundary conditions
 
-    args:
+    kwargs:
+        N             int         Number of quadrature points
         quad        ('GL', 'GC')  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss
         threads          1        Number of threads used by pyfftw
         planner_effort            Planner effort for FFTs.
         mean           float      Mean value
 
-    Transforms are performed along the first dimension of a multidimensional
-    array.
-
     """
 
-    def __init__(self, quad="GC", threads=1, planner_effort="FFTW_MEASURE",
+    def __init__(self, N=0, quad="GC", threads=1, planner_effort="FFTW_MEASURE",
                  mean=0):
-        ChebyshevBase.__init__(self, quad)
+        ChebyshevBase.__init__(self, N, quad)
         self.threads = threads
         self.planner_effort = planner_effort
         self.mean = mean
-        self.CT = ChebyshevBasis(quad, threads, planner_effort)
+        self.CT = Basis(N, quad, threads, planner_effort)
         self._factor = np.zeros(0)
 
     def get_vandermonde_basis(self, V):
-        N = V.shape[0]
+        assert self.N == V.shape[1]
         P = np.zeros(V.shape)
-        k = np.arange(N).astype(np.float)
+        k = np.arange(self.N).astype(np.float)
         P[:, :-2] = V[:, :-2] - (k[:-2]/(k[:-2]+2))**2*V[:, 2:]
         return P
 
@@ -382,11 +354,11 @@ class ShenNeumannBasis(ChebyshevBase):
 
         return fj
 
-    def slice(self, N):
-        return slice(0, N-2)
+    def slice(self):
+        return slice(0, self.N-2)
 
-    def get_shape(self, N):
-        return N-2
+    def get_shape(self):
+        return self.N-2
 
     def eval(self, x, fk):
         w_hat = work[(fk, 0)]
@@ -403,21 +375,19 @@ class ShenBiharmonicBasis(ChebyshevBase):
 
     Homogeneous Dirichlet and Neumann boundary conditions.
 
-    args:
+    kwargs:
+        N             int         Number of quadrature points
         quad        ('GL', 'GC')  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss
         threads          1        Number of threads used by pyfftw
         planner_effort            Planner effort for FFTs.
 
-    Transforms are performed along the first dimension of a multidimensional
-    array.
-
     """
 
-    def __init__(self, quad="GC", threads=1, planner_effort="FFTW_MEASURE"):
-        ChebyshevBase.__init__(self, quad)
+    def __init__(self, N=0, quad="GC", threads=1, planner_effort="FFTW_MEASURE"):
+        ChebyshevBase.__init__(self, N, quad)
         self.threads = threads
         self.planner_effort = planner_effort
-        self.CT = ChebyshevBasis(quad, threads, planner_effort)
+        self.CT = Basis(N, quad, threads, planner_effort)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
 
@@ -429,7 +399,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
 
     def set_factor_arrays(self, v, axis=0):
         s = [slice(None)]*v.ndim
-        s[axis] = self.slice(v.shape[axis])
+        s[axis] = self.slice()
         if not self._factor1.shape == v[s].shape:
             k = self.wavenumbers(v.shape, axis=axis)
             self._factor1 = (-2*(k+2)/(k+3)).astype(float)
@@ -482,11 +452,11 @@ class ShenBiharmonicBasis(ChebyshevBase):
 
         return fj
 
-    def slice(self, N):
-        return slice(0, N-4)
+    def slice(self):
+        return slice(0, self.N-4)
 
-    def get_shape(self, N):
-        return N-4
+    def get_shape(self):
+        return self.N-4
 
     def eval(self, x, fk):
         w_hat = work[(fk, 0)]

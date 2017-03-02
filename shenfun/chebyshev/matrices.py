@@ -14,7 +14,7 @@ from shenfun.utilities import inheritdocstrings
 from . import bases
 
 # Short names for instances of bases
-CB = bases.ChebyshevBasis
+CB = bases.Basis
 SD = bases.ShenDirichletBasis
 SB = bases.ShenBiharmonicBasis
 SN = bases.ShenNeumannBasis
@@ -36,16 +36,14 @@ class BDDmat(ShenMatrix):
     and phi_j is a Shen Dirichlet basis function.
 
     """
-    testfunction = (SD(), 0)
-    trialfunction = (SD(), 0)
-    def __init__(self, K):
-        assert len(K.shape) == 1
-        N = K.shape[0]
-        ck = get_ck(N, self.testfunction[0].quad)
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SD)
+        assert isinstance(trial[0], SD)
+        ck = get_ck(test[0].N, test[0].quad)
         d = {0: np.pi/2*(ck[:-2]+ck[2:]),
              2: np.array([-np.pi/2])}
         d[-2] = d[2]
-        ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
+        ShenMatrix.__init__(self, d, test, trial)
         self.solve = TDMA(self)
 
     def matvec(self, v, c, format='cython', axis=0):
@@ -91,16 +89,16 @@ class BNDmat(ShenMatrix):
     For simplicity, the matrix is stored including the zero index row (k=0)
 
     """
-    testfunction = (SN(), 0)
-    trialfunction = (SD(), 0)
-    def __init__(self, K):
-        N = K.shape[0]
-        ck = get_ck(N, self.testfunction[0].quad)
-        k = K[:N-2].astype(np.float)
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SN)
+        assert isinstance(trial[0], SD)
+        N = test[0].N
+        ck = get_ck(N, test[0].quad)
+        k = np.arange(N-2, dtype=np.float)
         d = {-2: -np.pi/2,
               0: np.pi/2.*(ck[:-2]+ck[2:]*(k/(k+2))**2),
               2: -np.pi/2*(k[:N-4]/(k[:N-4]+2))**2}
-        ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
+        ShenMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='csr', axis=0):
         c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
@@ -124,17 +122,16 @@ class BDNmat(ShenMatrix):
     For simplicity, the matrix is stored including the zero index column (j=0)
 
     """
-    testfunction = (SD(), 0)
-    trialfunction = (SN(), 0)
-    def __init__(self, K):
-        assert len(K.shape) == 1
-        N = K.shape[0]
-        ck = get_ck(N, self.testfunction[0].quad)
-        k = K[:N-2].astype(np.float)
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SD)
+        assert isinstance(trial[0], SN)
+        N = test[0].N
+        ck = get_ck(N, test[0].quad)
+        k = np.arange(N-2, dtype=np.float)
         d = {-2: -np.pi/2*(k[:N-4]/(k[:N-4]+2))**2,
               0:  np.pi/2.*(ck[:-2]+ck[2:]*(k/(k+2))**2),
               2: -np.pi/2}
-        ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
+        ShenMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -160,11 +157,10 @@ class BNTmat(ShenMatrix):
     For simplicity, the matrix is stored including the zero index row (k=0)
 
     """
-    testfunction = (SN(), 0)
-    trialfunction = (CB(), 0)
-    def __init__(self, K):
-        N = K.shape[0]
-        ShenMatrix.__init__(self, {}, N, self.testfunction, self.trialfunction)
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SN)
+        assert isinstance(trial[0], CB)
+        ShenMatrix.__init__(self, {}, test, trial)
 
     def matvec(self, v, c, format='csr', axis=0):
         c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
@@ -188,11 +184,10 @@ class BNBmat(ShenMatrix):
     For simplicity, the matrix is stored including the zero index row (k=0)
 
     """
-    testfunction = (SN(), 0)
-    trialfunction = (CB(), 0)
-    def __init__(self, K):
-        N = K.shape[0]
-        ShenMatrix.__init__(self, {}, N, self.testfunction, self.trialfunction)
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SN)
+        assert isinstance(trial[0], SB)
+        ShenMatrix.__init__(self, {}, test, trial)
 
     def matvec(self, v, c, format='csr', axis=0):
         c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
@@ -213,14 +208,11 @@ class BTTmat(ShenMatrix):
     and T_j is the jth order Chebyshev function of the first kind.
 
     """
-    testfunction = (CB(), 0)
-    trialfunction = (CB(), 0)
-    def __init__(self, K):
-        assert len(K.shape) == 1
-        N = K.shape[0]
-        ck = get_ck(N, self.testfunction[0].quad)
-        ShenMatrix.__init__(self, {0: np.pi/2*ck}, N, self.testfunction,
-                            self.trialfunction)
+    def __init__(self, test, trial):
+        assert isinstance(test[0], CB)
+        assert isinstance(trial[0], CB)
+        ck = get_ck(test[0].N, test[0].quad)
+        ShenMatrix.__init__(self, {0: np.pi/2*ck}, test, trial)
 
     def matvec(self, v, c, format='self', axis=0):
         c.fill(0)
@@ -247,17 +239,16 @@ class BNNmat(ShenMatrix):
     The matrix is stored including the zero index row and column
 
     """
-    testfunction = (SN(), 0)
-    trialfunction = (SN(), 0)
-    def __init__(self, K):
-        assert len(K.shape) == 1
-        N = K.shape[0]
-        ck = get_ck(N, self.testfunction[0].quad)
-        k = K[:-2].astype(np.float)
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SN)
+        assert isinstance(trial[0], SN)
+        N = test[0].N
+        ck = get_ck(N, test[0].quad)
+        k = np.arange(N-2, dtype=np.float)
         d = {0: np.pi/2*(ck[:-2]+ck[2:]*(k[:]/(k[:]+2))**4),
              2: -np.pi/2*((k[2:]-2)/(k[2:]))**2}
         d[-2] = d[2]
-        ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
+        ShenMatrix.__init__(self, d, test, trial)
         self.solve = TDMA(self)
 
     def matvec(self, v, c, format='csr', axis=0):
@@ -280,15 +271,15 @@ class BDTmat(ShenMatrix):
     function.
 
     """
-    testfunction = (SD(), 0)
-    trialfunction = (CB(), 0)
-    def __init__(self, K):
-        assert len(K.shape) == 1
-        N = K.shape[0]
-        ck = get_ck(N, self.testfunction[0].quad)
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SD)
+        assert isinstance(trial[0], CB)
+        N = test[0].N
+        ck = get_ck(N, test[0].quad)
+        k = np.arange(N-2, dtype=np.float)
         d = {0: np.pi/2*ck[:N-2],
              2: -np.pi/2*ck[2:]}
-        ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
+        ShenMatrix.__init__(self, d, test, trial)
 
 
 @inheritdocstrings
@@ -303,15 +294,14 @@ class BTDmat(ShenMatrix):
     function.
 
     """
-    testfunction = (CB(), 0)
-    trialfunction = (SD(), 0)
-    def __init__(self, K):
-        assert len(K.shape) == 1
-        N = K.shape[0]
-        ck = get_ck(N, self.testfunction[0].quad)
+    def __init__(self, test, trial):
+        assert isinstance(test[0], CB)
+        assert isinstance(trial[0], SD)
+        N = test[0].N
+        ck = get_ck(N, test[0].quad)
         d = {-2: -np.pi/2*ck[2:],
               0: np.pi/2*ck[:N-2]}
-        ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
+        ShenMatrix.__init__(self, d, test, trial)
 
 
 @inheritdocstrings
@@ -326,15 +316,15 @@ class BTNmat(ShenMatrix):
     function.
 
     """
-    testfunction = (CB(), 0)
-    trialfunction = (SN(), 0)
-    def __init__(self, K):
-        assert len(K.shape) == 1
-        N = K.shape[0]
-        ck = get_ck(N, self.testfunction[0].quad)
-        d = {-2: -np.pi/2*ck[2:]*((K[2:]-2)/K[2:])**2,
+    def __init__(self, test, trial):
+        assert isinstance(test[0], CB)
+        assert isinstance(trial[0], SN)
+        N = test[0].N
+        ck = get_ck(N, test[0].quad)
+        k = np.arange(N, dtype=np.float)
+        d = {-2: -np.pi/2*ck[2:]*((k[2:]-2)/k[2:])**2,
               0: np.pi/2*ck[:-2]}
-        ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
+        ShenMatrix.__init__(self, d, test, trial)
 
 
 @inheritdocstrings
@@ -348,18 +338,18 @@ class BBBmat(ShenMatrix):
     and psi_j is the Shen Biharmonic basis function.
 
     """
-    testfunction = (SB(), 0)
-    trialfunction = (SB(), 0)
-    def __init__(self, K):
-        N = K.shape[0]
-        ck = get_ck(N, self.testfunction[0].quad)
-        k = K[:N-4].astype(np.float)
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SB)
+        assert isinstance(trial[0], SB)
+        N = test[0].N
+        ck = get_ck(N, test[0].quad)
+        k = np.arange(N-4, dtype=np.float)
         d = {4: (k[:-4]+1)/(k[:-4]+3)*np.pi/2,
              2: -((k[:-2]+2)/(k[:-2]+3) + (k[:-2]+4)*(k[:-2]+1)/((k[:-2]+5)*(k[:-2]+3)))*np.pi,
              0: (ck[:N-4] + 4*((k+2)/(k+3))**2 + ck[4:]*((k+1)/(k+3))**2)*np.pi/2.}
         d[-2] = d[2]
         d[-4] = d[4]
-        ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
+        ShenMatrix.__init__(self, d, test, trial)
         self.solve = PDMA(self)
 
     def matvec(self, v, c, format='cython', axis=0):
@@ -406,19 +396,19 @@ class BBDmat(ShenMatrix):
     Biharmonic basis function.
 
     """
-    testfunction = (SB(), 0)
-    trialfunction = (SD(), 0)
-    def __init__(self, K):
-        N = K.shape[0]
-        ck = get_ck(N, self.testfunction[0].quad)
-        k = K[:N-4].astype(np.float)
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SB)
+        assert isinstance(trial[0], SD)
+        N = test[0].N
+        ck = get_ck(N, test[0].quad)
+        k = np.arange(N-4, dtype=np.float)
         a = 2*(k+2)/(k+3)
         b = (k[:N-4]+1)/(k[:N-4]+3)
         d = {-2: -np.pi/2,
               0: (ck[:N-4] + a)*np.pi/2,
               2: -(a+b*ck[4:])*np.pi/2,
               4: b[:-2]*np.pi/2}
-        ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
+        ShenMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -460,15 +450,15 @@ class CDNmat(ShenMatrix):
     For simplicity, the matrix is stored including the zero index row (k=0)
 
     """
-    testfunction = (SD(), 0)
-    trialfunction = (SN(), 1)
-    def __init__(self, K):
-        assert len(K.shape) == 1
-        N = K.shape[0]
-        k = K[:N-2].astype(np.float)
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SD)
+        assert isinstance(trial[0], SN)
+        N = test[0].N
+        ck = get_ck(N, test[0].quad)
+        k = np.arange(N-2, dtype=np.float)
         d = {-1: -((k[1:]-1)/(k[1:]+1))**2*(k[1:]+1)*np.pi,
               1: (k[:-1]+1)*np.pi}
-        ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
+        ShenMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='cython', axis=0):
         if format == 'cython' and v.ndim == 3:
@@ -490,14 +480,14 @@ class CDDmat(ShenMatrix):
     and phi_k is the Shen Dirichlet basis function.
 
     """
-    testfunction = (SD(), 0)
-    trialfunction = (SD(), 1)
-    def __init__(self, K):
-        assert len(K.shape) == 1
-        N = K.shape[0]
-        d = {-1: -(K[1:N-2]+1)*np.pi,
-              1: (K[:(N-3)]+1)*np.pi}
-        ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SD)
+        assert isinstance(trial[0], SD)
+        N = test[0].N
+        k = np.arange(N, dtype=np.float)
+        d = {-1: -(k[1:N-2]+1)*np.pi,
+              1: (k[:(N-3)]+1)*np.pi}
+        ShenMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='cython', axis=0):
         N = self.shape[0]
@@ -536,17 +526,16 @@ class CNDmat(ShenMatrix):
     For simplicity, the matrix is stored including the zero index coloumn (j=0)
 
     """
-    testfunction = (SN(), 0)
-    trialfunction = (SD(), 1)
-    def __init__(self, K):
-        assert len(K.shape) == 1
-        N = K.shape[0]
-        k = K[:N-2].astype(np.float)
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SN)
+        assert isinstance(trial[0], SD)
+        N = test[0].N
+        k = np.arange(N-2, dtype=np.float)
         d = {-1: -(k[1:]+1)*np.pi,
               1: -(2-k[:-1]**2/(k[:-1]+2)**2*(k[:-1]+3))*np.pi}
         for i in range(3, N-1, 2):
             d[i] = -(1-k[:-i]**2/(k[:-i]+2)**2)*2*np.pi
-        ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
+        ShenMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='csr', axis=0):
         c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
@@ -568,16 +557,16 @@ class CTDmat(ShenMatrix):
     function.
 
     """
-    testfunction = (CB(), 0)
-    trialfunction = (SD(), 1)
-    def __init__(self, K):
-        assert len(K.shape) == 1
-        N = K.shape[0]
-        d = {-1: -(K[1:N-1]+1)*np.pi,
+    def __init__(self, test, trial):
+        assert isinstance(test[0], CB)
+        assert isinstance(trial[0], SD)
+        N = test[0].N
+        k = np.arange(N, dtype=np.float)
+        d = {-1: -(k[1:N-1]+1)*np.pi,
               1: -2*np.pi}
         for i in range(3, N-2, 2):
             d[i] = -2*np.pi
-        ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
+        ShenMatrix.__init__(self, d, test, trial)
 
 
 class CDTmat(ShenMatrix):
@@ -591,13 +580,13 @@ class CDTmat(ShenMatrix):
     function.
 
     """
-    testfunction = (SD(), 0)
-    trialfunction = (CB(), 1)
-    def __init__(self, K):
-        assert len(K.shape) == 1
-        N = K.shape[0]
-        d = {1: np.pi*(K[:N-2]+1)}
-        ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SD)
+        assert isinstance(trial[0], CB)
+        N = test[0].N
+        k = np.arange(N, dtype=np.float)
+        d = {1: np.pi*(k[:N-2]+1)}
+        ShenMatrix.__init__(self, d, test, trial)
 
 
 @inheritdocstrings
@@ -612,15 +601,15 @@ class CBDmat(ShenMatrix):
     function.
 
     """
-    testfunction = (SB(), 0)
-    trialfunction = (SD(), 1)
-    def __init__(self, K):
-        assert len(K.shape) == 1
-        N = K.shape[0]
-        d = {-1: -(K[1:N-4]+1)*np.pi,
-              1: 2*(K[:N-4]+1)*np.pi,
-              3: -(K[:N-5]+1)*np.pi}
-        ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SB)
+        assert isinstance(trial[0], SD)
+        N = test[0].N
+        k = np.arange(N, dtype=np.float)
+        d = {-1: -(k[1:N-4]+1)*np.pi,
+              1: 2*(k[:N-4]+1)*np.pi,
+              3: -(k[:N-5]+1)*np.pi}
+        ShenMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='cython', axis=0):
         N, M = self.shape
@@ -657,15 +646,15 @@ class CDBmat(ShenMatrix):
     basis function.
 
     """
-    testfunction = (SD(), 0)
-    trialfunction = (SB(), 1)
-    def __init__(self, K):
-        assert len(K.shape) == 1
-        N = K.shape[0]
-        d = {-3: (K[3:-2]-2)*(K[3:-2]+1)/K[3:-2]*np.pi,
-             -1: -2*(K[1:-3]+1)**2/(K[1:-3]+2)*np.pi,
-              1: (K[:-5]+1)*np.pi}
-        ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SD)
+        assert isinstance(trial[0], SB)
+        N = test[0].N
+        k = np.arange(N, dtype=np.float)
+        d = {-3: (k[3:-2]-2)*(k[3:-2]+1)/k[3:-2]*np.pi,
+             -1: -2*(k[1:-3]+1)**2/(k[1:-3]+2)*np.pi,
+              1: (k[:-5]+1)*np.pi}
+        ShenMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='cython', axis=0):
         N, M = self.shape
@@ -694,7 +683,7 @@ class CDBmat(ShenMatrix):
 
 @inheritdocstrings
 class ABBmat(ShenMatrix):
-    """Stiffness matrix for inner product A_{kj} = -(psi''_j, psi_k)_w
+    """Stiffness matrix for inner product A_{kj} = (psi''_j, psi_k)_w
 
     where
 
@@ -703,16 +692,15 @@ class ABBmat(ShenMatrix):
     and psi_k is the Shen Biharmonic basis function.
 
     """
-    testfunction = (SB(), 0)
-    trialfunction = (SB(), 2)
-    def __init__(self, K):
-        N = K.shape[0]
-        ki = K[:N-4]
-        k = K[:N-4].astype(np.float)
-        d = {-2: 2*(ki[2:]-1)*(ki[2:]+2)*np.pi,
-              0: -4*((ki+1)*(ki+2)**2)/(k+3)*np.pi,
-              2: 2*(ki[:-2]+1)*(ki[:-2]+2)*np.pi}
-        ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SB)
+        assert isinstance(trial[0], SB)
+        N = test[0].N
+        k = np.arange(N-4, dtype=np.float)
+        d = {-2: 2*(k[2:]-1)*(k[2:]+2)*np.pi,
+              0: -4*((k+1)*(k+2)**2)/(k+3)*np.pi,
+              2: 2*(k[:-2]+1)*(k[:-2]+2)*np.pi}
+        ShenMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='cython', axis=0):
         N = self.shape[0]
@@ -753,19 +741,19 @@ class ADDmat(ShenMatrix):
     and psi_k is the Shen Dirichlet basis function.
 
     """
-    testfunction = (SD(), 0)
-    trialfunction = (SD(), 2)
-    def __init__(self, K, scale=-1.):
-        assert len(K.shape) == 1
-        N = K.shape[0]
-        d = {0: -2*np.pi*(K[:N-2]+1)*(K[:N-2]+2)}
+    def __init__(self, test, trial, scale=-1.):
+        assert isinstance(test[0], SD)
+        assert isinstance(trial[0], SD)
+        N = test[0].N
+        k = np.arange(N, dtype=np.float)
+        d = {0: -2*np.pi*(k[:N-2]+1)*(k[:N-2]+2)}
         for i in range(2, N-2, 2):
-            d[i] = -4*np.pi*(K[:-(i+2)]+1)
-        ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction, scale)
+            d[i] = -4*np.pi*(k[:-(i+2)]+1)
+        ShenMatrix.__init__(self, d, test, trial, scale)
 
         # Following storage more efficient, but requires effort in iadd/isub...
-        #d = {0: -2*np.pi*(K[:N-2]+1)*(K[:N-2]+2),
-             #2: -4*np.pi*(K[:-4]+1)}
+        #d = {0: -2*np.pi*(k[:N-2]+1)*(k[:N-2]+2),
+             #2: -4*np.pi*(k[:-4]+1)}
         #for i in range(4, N-2, 2):
             #d[i] = d[2][:2-i]
 
@@ -781,19 +769,18 @@ class ADDmat(ShenMatrix):
     def solve(self, b, u=None, axis=0):
         N = self.shape[0] + 2
         assert N == b.shape[0]
-        s = self.trialfunction[0].slice(N)
+        s = self.trialfunction[0].slice()
 
-        uc = False
         if u is None:
-            uc = True
-            u = np.zeros_like(b)
+            u = b
         else:
             assert u.shape == b.shape
 
         # Move axis to first
         if axis > 0:
-            b = np.moveaxis(b, axis, 0)
             u = np.moveaxis(u, axis, 0)
+            if not u is b:
+                b = np.moveaxis(b, axis, 0)
 
         bs = b[s]
         us = u[s]
@@ -818,19 +805,13 @@ class ADDmat(ShenMatrix):
                 us[k] = bs[k] - d1[k]*so
             us[k] /= d[k]
 
-        if uc is True:
-            b[:] = u
-            b[-1] = self.testfunction[0].bc[0]
-            b[-2] = self.testfunction[0].bc[1]
-            if axis > 0:
+        u[-2] = self.testfunction[0].bc[0]
+        u[-1] = self.testfunction[0].bc[1]
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
+            if not u is b:
                 b = np.moveaxis(b, 0, axis)
-            return b
-        else:
-            u[-1] = self.testfunction[0].bc[0]
-            u[-2] = self.testfunction[0].bc[1]
-            if axis > 0:
-                u = np.moveaxis(u, 0, axis)
-            return u
+        return u
 
 
 @inheritdocstrings
@@ -844,16 +825,15 @@ class ANNmat(ShenMatrix):
     and phi_k is the Shen Neumann basis function.
 
     """
-    testfunction = (SN(), 0)
-    trialfunction = (SN(), 2)
-    def __init__(self, K):
-        assert len(K.shape) == 1
-        N = K.shape[0]
-        k = K[:-2].astype(np.float)
+    def __init__(self, test, trial, scale=-1.):
+        assert isinstance(test[0], SN)
+        assert isinstance(trial[0], SN)
+        N = test[0].N
+        k = np.arange(N-2, dtype=np.float)
         d = {0: -2*np.pi*k**2*(k+1)/(k+2)}
         for i in range(2, N-2, 2):
             d[i] = -4*np.pi*(k[:-i]+i)**2*(k[:-i]+1)/(k[:-i]+2)**2
-        ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction, -1.0)
+        ShenMatrix.__init__(self, d, test, trial, scale)
 
     def matvec(self, v, c, format='csr', axis=0):
         c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
@@ -863,14 +843,11 @@ class ANNmat(ShenMatrix):
         return c
 
     def solve(self, b, u=None, axis=0):
-        N = self.shape[0] + 2
-        assert N == b.shape[0]
-        s = self.trialfunction[0].slice(N)
+        assert self.shape[0] + 2 == b.shape[0]
+        s = self.trialfunction[0].slice()
 
-        uc = False
         if u is None:
-            uc = True
-            u = np.zeros_like(b)
+            u = b
         else:
             assert u.shape == b.shape
 
@@ -881,7 +858,7 @@ class ANNmat(ShenMatrix):
 
         bs = b[s]
         us = u[s]
-        j2 = np.arange(N-2)**2
+        j2 = np.arange(self.shape[0])**2
         j2[0] = 1
         j2 = 1./j2
         d = self[0]*j2
@@ -908,15 +885,11 @@ class ANNmat(ShenMatrix):
         us[0] = self.testfunction[0].mean
         us *= j2
 
-        if uc is True:
-            b[:] = u
-            if axis > 0:
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
+            if not u is b:
                 b = np.moveaxis(b, 0, axis)
-            return b
-        else:
-            if axis > 0:
-                u = np.moveaxis(u, 0, axis)
-            return u
+        return u
 
 
 @inheritdocstrings
@@ -930,15 +903,15 @@ class ATTmat(ShenMatrix):
     and psi_k is the Chebyshev basis function.
 
     """
-    testfunction = (CB(), 0)
-    trialfunction = (CB(), 2)
-    def __init__(self, K):
-        assert len(K.shape) == 1
-        N = K.shape[0]
+    def __init__(self, test, trial, scale=-1.):
+        assert isinstance(test[0], CB)
+        assert isinstance(trial[0], CB)
+        N = test[0].N
+        k = np.arange(N, dtype=np.float)
         d = {}
         for j in range(2, N, 2):
-            d[j] = K[j:]*(K[j:]**2-K[:-j]**2)*np.pi/2.
-        ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction, -1.0)
+            d[j] = k[j:]*(k[j:]**2-k[:-j]**2)*np.pi/2.
+        ShenMatrix.__init__(self, d, test, trial, scale)
 
 
 @inheritdocstrings
@@ -952,18 +925,18 @@ class SBBmat(ShenMatrix):
     and psi_k is the Shen Biharmonic basis function.
 
     """
-    testfunction = (SB(), 0)
-    trialfunction = (SB(), 4)
-    def __init__(self, K):
-        N = K.shape[0]
-        k = K[:N-4].astype(np.float)
-        ki = K[:N-4]
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SB)
+        assert isinstance(trial[0], SB)
+        N = test[0].N
+        ki = np.arange(N-4)
+        k = np.arange(N-4, dtype=np.float)
         i = 8*(ki+1)**2*(ki+2)*(ki+4)
-        d = {0: i * np.pi}
+        d = {0: i*np.pi}
         for j in range(2, N-4, 2):
             i = 8*(ki[:-j]+1)*(ki[:-j]+2)*(ki[:-j]*(ki[:-j]+4)+3*(ki[j:]+2)**2)
             d[j] = np.array(i*np.pi/(k[j:]+3))
-        ShenMatrix.__init__(self, d, N, self.testfunction, self.trialfunction)
+        ShenMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -981,11 +954,9 @@ class SBBmat(ShenMatrix):
 
 @inheritdocstrings
 class _Chebmatrix(ShenMatrix):
-    testfunction = None
-    trialfunction = None
-    def __init__(self, K):
-        assert len(K.shape) == 1
-        ShenMatrix.__init__(self, {}, K.shape[0], self.testfunction, self.trialfunction)
+    def __init__(self, test, trial):
+        ShenMatrix.__init__(self, {}, test, trial)
+
 
 class _ChebMatDict(dict):
     """Dictionary of inner product matrices
@@ -1003,35 +974,34 @@ class _ChebMatDict(dict):
     def __getitem__(self, key):
         matrix = dict.__getitem__(self, key)
         assert key[0][1] == 0, 'Test cannot be differentiated (weighted space)'
-        matrix.testfunction = key[0]
-        matrix.trialfunction = key[1]
         return matrix
+
 
 # Define dictionary to hold all predefined matrices
 # When looked up, missing matrices will be generated automatically
 mat = _ChebMatDict({
-    ((CB(), 0), (CB(), 0)): BTTmat,
-    ((SD(), 0), (SD(), 0)): BDDmat,
-    ((SB(), 0), (SB(), 0)): BBBmat,
-    ((SN(), 0), (SN(), 0)): BNNmat,
-    ((SN(), 0), (CB(), 0)): BNTmat,
-    ((SN(), 0), (SB(), 0)): BNBmat,
-    ((SD(), 0), (SN(), 0)): BDNmat,
-    ((SN(), 0), (SD(), 0)): BNDmat,
-    ((CB(), 0), (SN(), 0)): BTNmat,
-    ((SB(), 0), (SD(), 0)): BBDmat,
-    ((CB(), 0), (SD(), 0)): BTDmat,
-    ((SD(), 0), (CB(), 0)): BDTmat,
-    ((SD(), 0), (SD(), 2)): ADDmat,
-    ((CB(), 0), (CB(), 2)): ATTmat,
-    ((SN(), 0), (SN(), 2)): ANNmat,
-    ((SB(), 0), (SB(), 2)): ABBmat,
-    ((SB(), 0), (SB(), 4)): SBBmat,
-    ((SD(), 0), (SN(), 1)): CDNmat,
-    ((SB(), 0), (SD(), 1)): CBDmat,
-    ((CB(), 0), (SD(), 1)): CTDmat,
-    ((SD(), 0), (SD(), 1)): CDDmat,
-    ((SN(), 0), (SD(), 1)): CNDmat,
-    ((SD(), 0), (SB(), 1)): CDBmat,
-    ((SD(), 0), (CB(), 1)): CDTmat
+    ((CB, 0), (CB, 0)): BTTmat,
+    ((SD, 0), (SD, 0)): BDDmat,
+    ((SB, 0), (SB, 0)): BBBmat,
+    ((SN, 0), (SN, 0)): BNNmat,
+    ((SN, 0), (CB, 0)): BNTmat,
+    ((SN, 0), (SB, 0)): BNBmat,
+    ((SD, 0), (SN, 0)): BDNmat,
+    ((SN, 0), (SD, 0)): BNDmat,
+    ((CB, 0), (SN, 0)): BTNmat,
+    ((SB, 0), (SD, 0)): BBDmat,
+    ((CB, 0), (SD, 0)): BTDmat,
+    ((SD, 0), (CB, 0)): BDTmat,
+    ((SD, 0), (SD, 2)): ADDmat,
+    ((CB, 0), (CB, 2)): ATTmat,
+    ((SN, 0), (SN, 2)): ANNmat,
+    ((SB, 0), (SB, 2)): ABBmat,
+    ((SB, 0), (SB, 4)): SBBmat,
+    ((SD, 0), (SN, 1)): CDNmat,
+    ((SB, 0), (SD, 1)): CBDmat,
+    ((CB, 0), (SD, 1)): CTDmat,
+    ((SD, 0), (SD, 1)): CDDmat,
+    ((SN, 0), (SD, 1)): CNDmat,
+    ((SD, 0), (SB, 1)): CDBmat,
+    ((SD, 0), (CB, 1)): CDTmat
     })

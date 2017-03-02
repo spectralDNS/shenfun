@@ -1,7 +1,7 @@
 r"""
 This module contains classes for working with the spectral-Galerkin method
 
-There are classes for 6 bases and corresponding function spaces
+There are classes for 8 bases and corresponding function spaces
 
 All bases have expansions
 
@@ -50,9 +50,31 @@ Legendre:
 
     ShenDirichletBasis:
         basis function:                  basis:
-        \phi_k = L_k-L_{k+2}             span(\phi_k, k=0,1,...,N-2)
+        \phi_k = L_k-L_{k+2}             span(\phi_k, k=0,1,...,N)
+        \phi_{N-1} = 0.5(L_0+L_1)
+        \phi_{N} = 0.5(L_0-L_1)
 
-      Homogeneous Dirichlet boundary conditions, u(\pm 1)=0
+        u(1)=a, u(-1)=b, \hat{u}{N-1}=a, \hat{u}_{N}=b
+
+        Note that there are only N-1 unknown coefficients, \hat{u}_k, since
+        \hat{u}_{N-1} and \hat{u}_{N} are determined by boundary conditions.
+
+    ShenNeumannBasis:
+        basis function:                  basis:
+        \phi_k = L_k-(k(k+1)/(k+2)/(k+3))L_{k+2} span(\phi_k, k=1,2,...,N-2)
+
+        Homogeneous Neumann boundary conditions, u'(\pm 1) = 0, and
+        zero mean: \int_{-1}^{1}u(x)dx = 0
+
+    ShenBiharmonicBasis:
+        basis function:
+        \phi_k = L_k - (2*(2k+5)/(2k+7))*L_{k+2} + ((2k+3)/(2k+7))*L_{k+4}
+
+        basis:
+        span(\phi_k, k=0,1,...,N-4)
+
+        Homogeneous Dirichlet and Neumann, u(\pm 1)=0 and u'(\pm 1)=0
+
 
 Each class has methods for moving fast between spectral and physical space, and
 for computing the (weighted) scalar product.
@@ -68,45 +90,33 @@ class SpectralBase(object):
     """Abstract base class for all spectral function spaces
 
     args:
+        N             int          Number of quadrature points
         quad   ('GL', 'GC', 'LG')  Chebyshev-Gauss-Lobatto, Chebyshev-Gauss
                                    or Legendre-Gauss
 
-    Transforms are performed along the first dimension of a multidimensional
-    array.
-
     """
 
-    def __init__(self, quad):
+    def __init__(self, N, quad):
+        self.N = N
         self.quad = quad
         self._mass = None # Mass matrix (if needed)
 
-    def points_and_weights(self, N, quad):
-        """Return points and weights of quadrature
-
-        args:
-            N      integer            Number of points
-            quad ('GL', 'GC', 'LG')   Chebyshev-Gauss-Lobatto, Chebyshev-Gauss
-                                      or Legendre-Gauss
-
-        """
+    def points_and_weights(self):
+        """Return points and weights of quadrature"""
         raise NotImplementedError
 
     def wavenumbers(self, N, axis=0):
         """Return the wavenumbermesh
 
-        The first axis is inhomogeneous, and if ndim(N) > 1, then the trailing
-        axes are broadcasted.
+        All dimensions, except axis, are obtained through broadcasting.
 
         """
         N = list(N) if np.ndim(N) else [N]
+        assert self.N == N[axis]
         s = [np.newaxis]*len(N)
-        s[axis] = self.slice(N[axis])
+        s[axis] = self.slice()
         k = np.arange(N[axis], dtype=np.float)
         return k[s]
-        #s = [self.slice(N[0])]
-        #for n in N[1:]:
-            #s.append(slice(0, n))
-        #return np.mgrid.__getitem__(s).astype(float)[0]
 
     def evaluate_expansion_all(self, fk, fj, axis=0):
         r"""Evaluate expansion on entire mesh
@@ -168,12 +178,11 @@ class SpectralBase(object):
             fj = self.vandermonde_evaluate_expansion_all(fk, fj, axis=axis)
         return fj
 
-    def vandermonde(self, x, N):
+    def vandermonde(self, x):
         """Return Vandermonde matrix
 
         args:
             x               points for evaluation
-            N               Number of polynomials
 
         """
         raise NotImplementedError
@@ -206,19 +215,18 @@ class SpectralBase(object):
             fk   (output)   Expansion coefficients
 
         """
-        N = fj.shape[axis]
-        points, weights = self.points_and_weights(N, self.quad)
-        V = self.vandermonde(points, N)
+        assert self.N == fj.shape[axis]
+        points, weights = self.points_and_weights()
+        V = self.vandermonde(points)
         P = self.get_vandermonde_basis(V)
         if fj.ndim == 1:
-            fk[:] = np.dot(fj*weights, P)
+            fk[:] = np.dot(fj*weights, np.conj(P))
 
         else: # broadcasting
             bc_shape = [np.newaxis,]*fj.ndim
             bc_shape[axis] = slice(None)
             fc = np.moveaxis(fj*weights[bc_shape], axis, -1)
-            fk[:] = np.moveaxis(np.dot(fc, P), -1, axis)
-            #fk[:] = np.tensordot(fj*weights[bc_shape], P, ((axis,), (0,)))
+            fk[:] = np.moveaxis(np.dot(fc, np.conj(P)), -1, axis)
 
         return fk
 
@@ -230,10 +238,9 @@ class SpectralBase(object):
             fj   (output)   Function values on quadrature mesh
 
         """
-        N = fj.shape[axis]
-
-        points = self.points_and_weights(N, self.quad)[0]
-        V = self.vandermonde(points, N)
+        assert self.N == fj.shape[axis]
+        points = self.points_and_weights()[0]
+        V = self.vandermonde(points)
         P = self.get_vandermonde_basis(V)
         if fj.ndim == 1:
             fj = np.dot(P, fk, out=fj)
@@ -255,11 +262,12 @@ class SpectralBase(object):
         """
         B = self.get_mass_matrix()
         if self._mass is None:
-            self._mass = B(np.arange(fk.shape[axis]).astype(np.float))
+            assert self.N == fk.shape[axis]
+            self._mass = B((self, 0), (self, 0))
 
         if (self._mass.testfunction[0].quad != self.quad or
-            self._mass.N != fk.shape[axis]):
-            self._mass = B(np.arange(fk.shape[axis]).astype(np.float))
+            self._mass.testfunction[0].N != fk.shape[axis]):
+            self._mass = B((self, 0), (self, 0))
 
         fk = self._mass.solve(fk, axis=axis)
         return fk
@@ -278,13 +286,13 @@ class SpectralBase(object):
         """Return mass matrix associated with current basis"""
         raise NotImplementedError
 
-    def slice(self, N):
+    def slice(self):
         """Return index set of current basis, with N points in real space"""
-        return slice(0, N)
+        return slice(0, self.N)
 
-    def get_shape(self, N):
+    def get_shape(self):
         """Return the shape of current basis used to build a ShenMatrix"""
-        return N
+        return self.N
 
     def __hash__(self):
         return hash(repr(self.__class__))

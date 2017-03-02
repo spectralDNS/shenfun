@@ -32,8 +32,8 @@ f = -u.diff(x, 2)
 # Size of discretization
 N = 128
 
-ST = ShenDirichletBasis(quad="GL", bc=(a, b))
-points, weights = ST.points_and_weights(N, ST.quad)
+ST = ShenDirichletBasis(N, quad="GL", bc=(a, b))
+points, weights = ST.points_and_weights()
 
 # Gauss-Chebyshev quadrature to compute rhs
 fj = np.array([f.subs(x, j) for j in points], dtype=float)     # Get f on quad points

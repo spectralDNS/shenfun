@@ -3,7 +3,7 @@ from shenfun.utilities import inheritdocstrings
 from numpy.polynomial import legendre as leg
 import numpy as np
 
-__all__ = ['LegendreBase', 'LegendreBasis', 'ShenDirichletBasis',
+__all__ = ['LegendreBase', 'Basis', 'ShenDirichletBasis',
            'ShenBiharmonicBasis', 'ShenNeumannBasis']
 
 @inheritdocstrings
@@ -11,41 +11,31 @@ class LegendreBase(SpectralBase):
     """Base class for all Legendre bases
 
     args:
-        quad        ('LG')  Legendre-Gauss
-
-    Transforms are performed along the first dimension of a multidimensional
-    array.
+        N             int         Number of quadrature points
+        quad        ('LG')        Legendre-Gauss
 
     """
 
-    def __init__(self, quad="LG"):
-        assert quad in ('LG',)
-        SpectralBase.__init__(self, quad)
+    def __init__(self, N=0, quad="LG"):
+        assert quad == 'LG'
+        SpectralBase.__init__(self, N, quad)
 
-    def points_and_weights(self, N, quad):
-        """Return points and weights of quadrature
-
-        args:
-            N      integer      Number of points
-            quad ('LG', )       Legendre-Gauss
-
-        """
-        if quad == "LG":
-            points, weights = leg.leggauss(N)
+    def points_and_weights(self):
+        if self.quad == "LG":
+            points, weights = leg.leggauss(self.N)
         else:
             raise NotImplementedError
 
         return points, weights
 
-    def vandermonde(self, x, N):
+    def vandermonde(self, x):
         """Return Legendre Vandermonde matrix
 
         args:
             x               points for evaluation
-            N               Number of Legendre polynomials
 
         """
-        return leg.legvander(x, N-1)
+        return leg.legvander(x, self.N-1)
 
     def get_vandermonde_basis_derivative(self, V, k=0):
         """Return k'th derivatives of basis as a Vandermonde matrix
@@ -57,10 +47,10 @@ class LegendreBase(SpectralBase):
             k     integer   Use k'th derivative of basis
 
         """
-        N = V.shape[0]
+        assert self.N == V.shape[1]
         if k > 0:
-            D = np.zeros((N, N))
-            D[:-k, :] = leg.legder(np.eye(N), k)
+            D = np.zeros((self.N, self.N))
+            D[:-k, :] = leg.legder(np.eye(self.N), k)
             V = np.dot(V, D)
         return self.get_vandermonde_basis(V)
 
@@ -76,23 +66,21 @@ class LegendreBase(SpectralBase):
 
     def get_mass_matrix(self):
         from .matrices import mat
-        return mat[(self, 0), (self, 0)]
+        return mat[(self.__class__, 0), (self.__class__, 0)]
 
 
 @inheritdocstrings
-class LegendreBasis(LegendreBase):
+class Basis(LegendreBase):
     """Basis for regular Legendre series
 
-    args:
+    kwargs:
+        N             int         Number of quadrature points
         quad        ('LG',)       Legendre-Gauss
-
-    Transforms are performed along the first dimension of a multidimensional
-    array.
 
     """
 
-    def __init__(self, quad="LG"):
-        LegendreBase.__init__(self, quad)
+    def __init__(self, N=0, quad="LG"):
+        LegendreBase.__init__(self, N, quad)
 
     def evaluate_expansion_all(self, fk, fj, axis=0):
         raise NotImplementedError
@@ -113,19 +101,17 @@ class LegendreBasis(LegendreBase):
 class ShenDirichletBasis(LegendreBase):
     """Shen Legendre basis for Dirichlet boundary conditions
 
-    args:
+    kwargs:
+        N             int         Number of quadrature points
         quad        ('LG',)       Legendre-Gauss
         bc           (a, b)       Boundary conditions at x=(1,-1)
 
-    Transforms are performed along the first dimension of a multidimensional
-    array.
-
     """
 
-    def __init__(self, quad="LG", bc=(0., 0.)):
-        LegendreBase.__init__(self, quad)
+    def __init__(self, N=0, quad="LG", bc=(0., 0.)):
+        LegendreBase.__init__(self, N, quad)
         self.bc = bc
-        self.LT = LegendreBasis(quad)
+        self.LT = Basis(N, quad)
 
     def get_vandermonde_basis(self, V):
         P = np.zeros(V.shape)
@@ -191,11 +177,11 @@ class ShenDirichletBasis(LegendreBase):
 
         return fj
 
-    def slice(self, N):
-        return slice(0, N-2)
+    def slice(self):
+        return slice(0, self.N-2)
 
-    def get_shape(self, N):
-        return N-2
+    def get_shape(self):
+        return self.N-2
 
     def eval(self, x, fk):
         w_hat = work[(fk, 0)]
@@ -209,25 +195,23 @@ class ShenDirichletBasis(LegendreBase):
 class ShenNeumannBasis(LegendreBase):
     """Shen basis for homogeneous Neumann boundary conditions
 
-    args:
+    kwargs:
+        N             int         Number of quadrature points
         quad        ('LG')        Legendre-Gauss
-        mean           float      Mean value
-
-    Transforms are performed along the first dimension of a multidimensional
-    array.
+        mean         float        Mean value
 
     """
 
-    def __init__(self, quad="LG", mean=0):
-        LegendreBase.__init__(self, quad)
+    def __init__(self, N=0, quad="LG", mean=0):
+        LegendreBase.__init__(self, N, quad)
         self.mean = mean
-        self.LT = LegendreBasis(quad)
+        self.LT = Basis(N, quad)
         self._factor = np.zeros(0)
 
     def get_vandermonde_basis(self, V):
-        N = V.shape[0]
+        assert self.N == V.shape[1]
         P = np.zeros(V.shape)
-        k = np.arange(N).astype(np.float)
+        k = np.arange(self.N).astype(np.float)
         P[:, :-2] = V[:, :-2] - (k[:-2]*(k[:-2]+1)/(k[:-2]+2))/(k[:-2]+3)*V[:, 2:]
         return P
 
@@ -278,11 +262,11 @@ class ShenNeumannBasis(LegendreBase):
 
         return fj
 
-    def slice(self, N):
-        return slice(0, N-2)
+    def slice(self):
+        return slice(0, self.N-2)
 
-    def get_shape(self, N):
-        return N-2
+    def get_shape(self):
+        return self.N-2
 
     def eval(self, x, fk):
         w_hat = work[(fk, 0)]
@@ -299,17 +283,15 @@ class ShenBiharmonicBasis(LegendreBase):
 
     Homogeneous Dirichlet and Neumann boundary conditions.
 
-    args:
+    kwargs:
+        N             int         Number of quadrature points
         quad        ('LG',)       Legendre-Gauss
-
-    Transforms are performed along the first dimension of a multidimensional
-    array.
 
     """
 
-    def __init__(self, quad="LG"):
-        LegendreBase.__init__(self, quad)
-        self.LT = LegendreBasis(quad)
+    def __init__(self, N=0, quad="LG"):
+        LegendreBase.__init__(self, N, quad)
+        self.LT = Basis(N, quad)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
 
@@ -374,11 +356,11 @@ class ShenBiharmonicBasis(LegendreBase):
 
         return fj
 
-    def slice(self, N):
-        return slice(0, N-4)
+    def slice(self):
+        return slice(0, self.N-4)
 
-    def get_shape(self, N):
-        return N-4
+    def get_shape(self):
+        return self.N-4
 
     def eval(self, x, fk):
         w_hat = work[(fk, 0)]

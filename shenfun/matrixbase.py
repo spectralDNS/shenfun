@@ -268,7 +268,6 @@ class ShenMatrix(SparseMatrix):
     args:
         d                            Dictionary, where keys are the diagonal
                                      offsets and values the diagonals
-        N      integer               Length of main diagonal
         trial  (basis, derivative)   tuple, where basis is an instance of
                                      a class for one of the bases in
                                          - shenfun.legendre.bases
@@ -349,15 +348,16 @@ class ShenMatrix(SparseMatrix):
     The matrices can be automatically created using, e.g., for the mass
     matrix of the Dirichlet space
 
-      M = ShenMatrix({}, 16, (ShenDirichletBasis(), 0), (ShenDirichletBasis(), 0))
+      M = ShenMatrix({}, (ShenDirichletBasis(18), 0), (ShenDirichletBasis(18), 0))
 
-    where the first (ShenDirichletBasis, 0) represents the trial function and
+    where the first (ShenDirichletBasis(18), 0) represents the trial function and
     the second the test function. The stiffness matrix can be obtained as
 
-      A = ShenMatrix({}, 16, (ShenDirichletBasis(), 0), (ShenDirichletBasis(), 2))
+      A = ShenMatrix({}, (ShenDirichletBasis(18), 0), (ShenDirichletBasis(18), 2))
 
-    where (ShenDirichletBasis, 2) signals that we use the second derivative
-    of this trial function.
+    where (ShenDirichletBasis(18), 2) signals that we use the second derivative
+    of this trial function. The number (here 18) is the number of quadrature
+    points used for the basis.
 
     The automatically created matrices may be overloaded with more exactly
     computed diagonals.
@@ -367,10 +367,9 @@ class ShenMatrix(SparseMatrix):
     value.
 
     """
-    def __init__(self, d, N, test, trial, scale=1.0):
+    def __init__(self, d, test, trial, scale=1.0):
         self.testfunction = test
         self.trialfunction = trial
-        self.N = N
         self.scale = scale
         shape = self.get_shape()
         if d == {}:
@@ -382,17 +381,16 @@ class ShenMatrix(SparseMatrix):
 
     def get_shape(self):
         """Return shape of matrix"""
-        return (self.testfunction[0].get_shape(self.N),
-                self.trialfunction[0].get_shape(self.N))
+        return (self.testfunction[0].get_shape(),
+                self.trialfunction[0].get_shape())
 
     def get_dense_matrix(self):
         """Return dense matrix automatically computed from basis"""
-        N = self.N
-        x, w = self.testfunction[0].points_and_weights(N, self.testfunction[0].quad)
-        V = self.testfunction[0].vandermonde(x, N)
+        x, w = self.testfunction[0].points_and_weights()
+        V = self.testfunction[0].vandermonde(x)
         test = self.testfunction[0].get_vandermonde_basis_derivative(V, self.testfunction[1])
         trial = self.trialfunction[0].get_vandermonde_basis_derivative(V, self.trialfunction[1])
-        return np.dot(w*test.T, trial)
+        return np.dot(w*test.T, np.conj(trial))
 
     def test_sanity(self):
         """Sanity test for matrix.
@@ -408,9 +406,8 @@ class ShenMatrix(SparseMatrix):
             assert np.allclose(val, Dsp[key])
 
     def matvec(self, v, c, format='csr', axis=0):
-        from .chebyshev.bases import ShenNeumannBasis
         c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
-        if isinstance(self.testfunction[0], ShenNeumannBasis):
+        if self.testfunction[0].__class__.__name__ == 'ShenNeumannBasis':
             if axis > 0:
                 c = np.moveaxis(c, axis, 0)
             c[0] = 0
