@@ -81,7 +81,7 @@ Now one may project for example a random vector to this space using
     >>> import numpy as np
     >>> fj = np.random.random(N)
     >>> fk = np.zeros_like(fj)
-    >>> fk = SD.forward(fj, fk) # Gets expansion coefficients of Shen Dirichlet basis```
+    >>> fk = SD.forward(fj, fk) # Gets expansion coefficients of Shen Dirichlet basis
 ```
 
 and back to real physical space again
@@ -150,4 +150,4 @@ All methods are designed to work along any dimension of a multidimensional array
     >>> u = np.zeros_like(b)
     >>> u = K.solve(b, u)
 ```
-where `K` is exactly the same as before, from the 1D example.
+where `K` is exactly the same as before, from the 1D example. The matrix solve is applied along the first dimension since this is the default behaviour.
