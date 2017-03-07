@@ -270,9 +270,6 @@ class ShenDirichletBasis(ChebyshevBase):
     def slice(self):
         return slice(0, self.N-2)
 
-    def get_shape(self):
-        return self.N-2
-
     def eval(self, x, fk):
         w_hat = work[(fk, 0)]
         f = n_cheb.chebval(x, fk[:-2])
@@ -356,9 +353,6 @@ class ShenNeumannBasis(ChebyshevBase):
 
     def slice(self):
         return slice(0, self.N-2)
-
-    def get_shape(self):
-        return self.N-2
 
     def eval(self, x, fk):
         w_hat = work[(fk, 0)]
@@ -454,9 +448,6 @@ class ShenBiharmonicBasis(ChebyshevBase):
 
     def slice(self):
         return slice(0, self.N-4)
-
-    def get_shape(self):
-        return self.N-4
 
     def eval(self, x, fk):
         w_hat = work[(fk, 0)]

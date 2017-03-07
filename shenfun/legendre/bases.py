@@ -180,7 +180,7 @@ class ShenDirichletBasis(LegendreBase):
     def slice(self):
         return slice(0, self.N-2)
 
-    def get_shape(self):
+    def spectral_shape(self):
         return self.N-2
 
     def eval(self, x, fk):
@@ -265,7 +265,7 @@ class ShenNeumannBasis(LegendreBase):
     def slice(self):
         return slice(0, self.N-2)
 
-    def get_shape(self):
+    def spectral_shape(self):
         return self.N-2
 
     def eval(self, x, fk):
@@ -359,7 +359,7 @@ class ShenBiharmonicBasis(LegendreBase):
     def slice(self):
         return slice(0, self.N-4)
 
-    def get_shape(self):
+    def spectral_shape(self):
         return self.N-4
 
     def eval(self, x, fk):

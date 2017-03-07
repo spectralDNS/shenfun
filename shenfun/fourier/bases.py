@@ -1,9 +1,11 @@
 import numpy as np
+import pyfftw
 from mpiFFT4py import rfft, fft, irfft, ifft
-from shenfun.spectralbase import SpectralBase, work
+from shenfun.spectralbase import SpectralBase
 from shenfun.utilities import inheritdocstrings
 
 __all__ = ['FourierBase', 'R2CBasis', 'C2CBasis']
+
 
 @inheritdocstrings
 class FourierBase(SpectralBase):
@@ -19,7 +21,7 @@ class FourierBase(SpectralBase):
     def points_and_weights(self):
         """Return points and weights of quadrature"""
         points = np.arange(self.N, dtype=np.float)*2*np.pi/self.N
-        return points, 2*np.pi/self.N
+        return points, np.array([2*np.pi/self.N])
 
     def vandermonde(self, x):
         """Return Vandermonde matrix
@@ -28,7 +30,7 @@ class FourierBase(SpectralBase):
             x               points for evaluation
 
         """
-        k = self.wavenumbers(self.N)
+        k = self.wavenumbers(self.N, 0)
         return np.exp(1j*x[:, np.newaxis]*k[np.newaxis, :])
 
     def get_vandermonde_basis_derivative(self, V, d=0):
@@ -42,7 +44,7 @@ class FourierBase(SpectralBase):
 
         """
         if d > 0:
-            k = self.wavenumbers(self.N)
+            k = self.wavenumbers(self.N, 0)
             V = V*((1j*k)**d)[np.newaxis, :]
         return V
 
@@ -50,17 +52,41 @@ class FourierBase(SpectralBase):
         from .matrices import mat
         return mat[(self.__class__, 0), (self.__class__, 0)]
 
-    def apply_inverse_mass(self, fk, axis=0):
+    def apply_inverse_mass(self, array):
         """Apply inverse mass, which is identity for Fourier basis
 
         args:
-            fk   (input/output)    Expansion coefficients
-
-        kwargs:
-            axis        int        The axis to apply inverse mass along
+            array   (input/output)    Expansion coefficients
 
         """
-        return fk/(2*np.pi)
+        assert array is self.xfftn_fwd.output_array
+        array *= (0.5/np.pi)
+        return array
+
+    def evaluate_expansion_all(self, input_array, output_array):
+        self.xfftn_bck()
+        output_array *= self.N
+        return output_array
+
+    def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
+        if input_array is not None:
+            self.xfftn_fwd.input_array[...] = input_array
+
+        if fast_transform:
+            self.xfftn_fwd()
+            output = self.xfftn_fwd._get_output_array()
+            output *= (2*np.pi/self.N)
+
+        else:
+            self.vandermonde_scalar_product(self.xfftn_fwd.input_array,
+                                            self.xfftn_fwd.output_array)
+
+        if output_array is not None:
+            output_array[...] = self.xfftn_fwd.output_array
+            return output_array
+        else:
+            return self.xfftn_fwd.output_array
+
 
 class R2CBasis(FourierBase):
     """Fourier basis class for real to complex transforms
@@ -71,6 +97,8 @@ class R2CBasis(FourierBase):
         self.N = N
         self.threads = threads
         self.planner_effort = planner_effort
+        self.xfftn_fwd = pyfftw.builders.rfft
+        self.xfftn_bck = pyfftw.builders.irfft
 
     def wavenumbers(self, N, axis=0):
         """Return the wavenumbermesh
@@ -80,27 +108,9 @@ class R2CBasis(FourierBase):
         """
         N = list(N) if np.ndim(N) else [N]
         assert self.N == N[axis]
-        s = [np.newaxis]*len(N)
-        s[axis] = self.slice()
         k = np.fft.rfftfreq(N[axis], 1./N[axis])
-        return k[s]
-
-    def evaluate_expansion_all(self, fk, fj, axis=0):
-        fj = irfft(fk, fj, axis=axis, threads=self.threads,
-                   planner_effort=self.planner_effort)
-        fj *= self.N
-        return fj
-
-    def scalar_product(self, fj, fk, fast_transform=True, axis=0):
-        if fast_transform:
-            fk = rfft(fj, fk, axis=axis, threads=self.threads,
-                      planner_effort=self.planner_effort)
-            fk *= (2*np.pi/self.N)
-
-        else:
-            fk = self.vandermonde_scalar_product(fj, fk, axis=axis)
-
-        return fk
+        K = self.broadcast_to_ndims(k, len(N), axis)
+        return K
 
     def eval(self, x, fk):
         V = self.vandermonde(x)
@@ -109,30 +119,27 @@ class R2CBasis(FourierBase):
     def slice(self):
         return slice(0, self.N//2+1)
 
-    def get_shape(self):
-        return self.N//2+1
-
-    def vandermonde_evaluate_expansion_all(self, fk, fj, axis=0):
+    def vandermonde_evaluate_expansion_all(self, input_array, output_array):
         """Naive implementation of evaluate_expansion_all
 
         args:
-            fk   (input)    Expansion coefficients
-            fj   (output)   Function values on quadrature mesh
+            input_array    (input)    Expansion coefficients
+            output_array   (output)   Function values on quadrature mesh
 
         """
-        assert self.N == fj.shape[axis]
+        assert self.N == output_array.shape[self.axis]
         points = self.points_and_weights()[0]
         V = self.vandermonde(points)
         P = self.get_vandermonde_basis(V)
-        if fj.ndim == 1:
-            fj[:] = np.dot(P, fk).real
-            fj += np.dot(P[:, 1:], np.conj(fk[1:])).real
+        if output_array.ndim == 1:
+            output_array[:] = np.dot(P, input_array).real
+            output_array += np.dot(P[:, 1:], np.conj(input_array[1:])).real
         else:
-            fc = np.moveaxis(fk, axis, -2)
-            fj[:] = np.dot(P, fc).real
-            fj += np.dot(P[:, 1:], np.conj(fc[1:])).real
-            fj = np.moveaxis(fj, 0, axis)
-        return fj
+            fc = np.moveaxis(input_array, self.axis, -2)
+            output_array[:] = np.dot(P, fc).real
+            output_array += np.dot(P[:, 1:], np.conj(fc[1:])).real
+            output_array = np.moveaxis(output_array, 0, self.axis)
+        return output_array
 
 
 class C2CBasis(FourierBase):
@@ -144,6 +151,8 @@ class C2CBasis(FourierBase):
         self.N = N
         self.threads = threads
         self.planner_effort = planner_effort
+        self.xfftn_fwd = pyfftw.builders.fft
+        self.xfftn_bck = pyfftw.builders.ifft
 
     def wavenumbers(self, N, axis=0):
         """Return the wavenumbermesh
@@ -153,25 +162,9 @@ class C2CBasis(FourierBase):
         """
         N = list(N) if np.ndim(N) else [N]
         assert self.N == N[axis]
-        s = [np.newaxis]*len(N)
-        s[axis] = self.slice()
         k = np.fft.fftfreq(N[axis], 1./N[axis])
-        return k[s]
-
-    def evaluate_expansion_all(self, fk, fj, axis=0):
-        fj = ifft(fk, fj, axis=axis, threads=self.threads,
-                  planner_effort=self.planner_effort)
-        fj *= self.N
-        return fj
-
-    def scalar_product(self, fj, fk, fast_transform=True, axis=0):
-        if fast_transform:
-            fk = fft(fj, fk, axis=axis, threads=self.threads,
-                     planner_effort=self.planner_effort)
-            fk *= (2*np.pi/self.N)
-        else:
-            fk = self.vandermonde_scalar_product(fj, fk, axis=axis)
-        return fk
+        K = self.broadcast_to_ndims(k, len(N), axis)
+        return K
 
     def eval(self, x, fk):
         V = self.vandermonde(x)
@@ -180,25 +173,23 @@ class C2CBasis(FourierBase):
     def slice(self):
         return slice(0, self.N)
 
-    def get_shape(self):
-        return self.N
-
-    def vandermonde_evaluate_expansion_all(self, fk, fj, axis=0):
+    def vandermonde_evaluate_expansion_all(self, input_array, output_array):
         """Naive implementation of evaluate_expansion_all
 
         args:
-            fk   (input)    Expansion coefficients
-            fj   (output)   Function values on quadrature mesh
+            input_array    (input)    Expansion coefficients
+            output_array   (output)   Function values on quadrature mesh
 
         """
-        assert self.N == fj.shape[axis]
+        assert self.N == output_array.shape[self.axis]
         points = self.points_and_weights()[0]
         V = self.vandermonde(points)
         P = self.get_vandermonde_basis(V)
-        if fj.ndim == 1:
-            fj = np.dot(P, fk, out=fj)
+        if output_array.ndim == 1:
+            output_array = np.dot(P, input_array, out=output_array)
         else:
-            fc = np.moveaxis(fk, axis, -2)
-            fj = np.dot(P, fc, out=fj)
-            fj = np.moveaxis(fj, 0, axis)
-        return fj
+            fc = np.moveaxis(input_array, self.axis, -2)
+            output_array = np.dot(P, fc, out=output_array)
+            output_array = np.moveaxis(output_array, 0, self.axis)
+        return output_array
+

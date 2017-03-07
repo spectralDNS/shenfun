@@ -153,14 +153,14 @@ class SparseMatrix(dict):
         """Return copy of self.__add__(y) <==> self+d"""
         f = SparseMatrix(deepcopy(dict(self)), self.shape)
         assert isinstance(d, dict)
-        assert d.shape == self.shape
+        #assert d.shape == self.shape
         for key, val in six.iteritems(d):
             if key in f:
                 # Check if symmetric and make copy if necessary
                 if -key in f:
                     if id(f[key]) == id(f[-key]):
                         f[-key] = deepcopy(f[key])
-                f[key] += val
+                f[key] = f[key] + val
             else:
                 f[key] = val
 
@@ -221,27 +221,26 @@ class SparseMatrix(dict):
         where A is the current matrix (self)
 
         args:
-            b    (input/output)    Vector of right hand side on entry,
-                                   solution on exit.
-            u    (output)          Optional optput vector
+            b    (input/output)    Vector of right hand side on entry.
+                                   Solution on exit unless u is provided.
+            u    (output)          Optional output vector
 
-        Vectors may be one- or multidimensional. Solve along first axis.
+        Vectors may be one- or multidimensional.
 
         """
         assert self.shape[0] == self.shape[1]
         assert self.shape[0] == b.shape[0]
 
-        uc = False
         if u is None:
-            uc = True
-            u = np.zeros_like(b)
+            u = b
         else:
             assert u.shape == b.shape
 
         # Roll relevant axis to first
         if axis > 0:
-            v = np.moveaxis(v, axis, 0)
-            c = np.moveaxis(c, axis, 0)
+            b = np.moveaxis(b, axis, 0)
+            if not u is b:
+                u = np.moveaxis(u, axis, 0)
 
         if b.ndim == 1:
             u[:] = spsolve(self.diags(), b)
@@ -250,15 +249,11 @@ class SparseMatrix(dict):
             P = np.prod(b.shape[1:])
             u[:] = spsolve(self.diags(), b.reshape((N, P))).reshape(u.shape)
 
-        if u is None:
-            b[:] = u
-            if axis > 0:
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
+            if not u is b:
                 b = np.moveaxis(b, 0, axis)
-            return b
-        else:
-            if axis > 0:
-                u = np.moveaxis(u, 0, axis)
-            return u
+        return u
 
 
 @inheritdocstrings
@@ -371,7 +366,7 @@ class ShenMatrix(SparseMatrix):
         self.testfunction = test
         self.trialfunction = trial
         self.scale = scale
-        shape = self.get_shape()
+        shape = self.spectral_shape()
         if d == {}:
             D = self.get_dense_matrix()[:shape[0], :shape[1]]
             d = extract_diagonal_matrix(D)
@@ -379,10 +374,10 @@ class ShenMatrix(SparseMatrix):
         if not round(scale-1.0, 8) == 0:
             self *= scale
 
-    def get_shape(self):
+    def spectral_shape(self):
         """Return shape of matrix"""
-        return (self.testfunction[0].get_shape(),
-                self.trialfunction[0].get_shape())
+        return (self.testfunction[0].spectral_shape(),
+                self.trialfunction[0].spectral_shape())
 
     def get_dense_matrix(self):
         """Return dense matrix automatically computed from basis"""

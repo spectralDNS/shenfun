@@ -53,10 +53,10 @@ class _Fouriermatrix(ShenMatrix):
 
 
 class _FourierMatDict(dict):
-    """Dictionary of inner product matrices
+    """Dictionary of inner product matrices.
 
-    Matrices that are missing keys are generated from Vandermonde type
-    computations.
+    Matrices that are missing keys are generated. All Fourier matrices are
+    diagonal.
 
     """
 
@@ -71,3 +71,4 @@ class _FourierMatDict(dict):
 
 
 mat = _FourierMatDict({})
+
