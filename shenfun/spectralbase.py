@@ -167,9 +167,8 @@ class SpectralBase(object):
         if input_array is not None:
             self.xfftn_fwd.input_array[...] = input_array
 
-        self.scalar_product(input_array, output_array,
-                            fast_transform=fast_transform)
-        self.apply_inverse_mass(output_array)
+        self.scalar_product(fast_transform=fast_transform)
+        self.apply_inverse_mass(self.xfftn_fwd.output_array)
 
         if output_array is not None:
             output_array[...] = self.xfftn_fwd.output_array
@@ -256,6 +255,7 @@ class SpectralBase(object):
             fc = np.moveaxis(input_array*weights[bc_shape], self.axis, -1)
             output_array[:] = np.moveaxis(np.dot(fc, np.conj(P)), -1, self.axis)
 
+        assert output_array is self.xfftn_fwd.output_array
         return output_array
 
     def vandermonde_evaluate_expansion_all(self, input_array, output_array):
@@ -270,13 +270,15 @@ class SpectralBase(object):
         points = self.points_and_weights()[0]
         V = self.vandermonde(points)
         P = self.get_vandermonde_basis(V)
+
         if output_array.ndim == 1:
             output_array = np.dot(P, input_array, out=output_array)
         else:
             fc = np.moveaxis(input_array, self.axis, -2)
-            output_array = np.dot(P, fc, out=output_array)
-            output_array = np.moveaxis(output_array, 0, self.axis)
+            array = np.dot(P, fc)
+            output_array[:] = np.moveaxis(array, 0, self.axis)
 
+        assert output_array is self.xfftn_bck.output_array
         return output_array
 
     def apply_inverse_mass(self, array):
@@ -297,15 +299,17 @@ class SpectralBase(object):
             self._mass.testfunction[0].N != array.shape[self.axis]):
             self._mass = B((self, 0), (self, 0))
 
-        array = self._mass.solve(array, axis=self.axis)
+        array = self._mass.solve(array, axis=self.axis, sol=self)
+
         return array
 
     def plan(self, shape, axis, dtype, options):
         opts = dict(
             avoid_copy=True,
-            overwrite_input=True,
+            overwrite_input=False,
             auto_align_input=True,
             auto_contiguous=True,
+            planner_effort='FFTW_MEASURE',
             threads=1,
         )
         opts.update(options)
@@ -373,6 +377,11 @@ class SpectralBase(object):
 
     def __eq__(self, other):
         return self.__class__.__name__ == other.__class__.__name__
+
+    def sl(self, a):
+        s = [slice(None)]*self.xfftn_fwd.output_array.ndim
+        s[self.axis] = a
+        return s
 
 
 def _transform_exec(func_obj, in_array, out_array, xfftn_obj, options):

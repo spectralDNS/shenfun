@@ -410,7 +410,7 @@ class ShenMatrix(SparseMatrix):
                 c = np.moveaxis(c, 0, axis)
         return c
 
-    def solve(self, b, u=None, axis=0):
+    def solve(self, b, u=None, axis=0, sol=None):
         """Solve self u = b and return u
 
         The matrix self must be square

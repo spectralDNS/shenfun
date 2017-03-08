@@ -44,7 +44,7 @@ class BDDmat(ShenMatrix):
              2: np.array([-np.pi/2])}
         d[-2] = d[2]
         ShenMatrix.__init__(self, d, test, trial)
-        self.solve = TDMA(self)
+        #self.solve = TDMA(self)
 
     def matvec(self, v, c, format='cython', axis=0):
         N, M = self.shape

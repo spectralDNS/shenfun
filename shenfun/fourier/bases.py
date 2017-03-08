@@ -73,8 +73,7 @@ class FourierBase(SpectralBase):
             self.xfftn_fwd.input_array[...] = input_array
 
         if fast_transform:
-            self.xfftn_fwd()
-            output = self.xfftn_fwd._get_output_array()
+            output = self.xfftn_fwd()
             output *= (2*np.pi/self.N)
 
         else:
@@ -136,9 +135,11 @@ class R2CBasis(FourierBase):
             output_array += np.dot(P[:, 1:], np.conj(input_array[1:])).real
         else:
             fc = np.moveaxis(input_array, self.axis, -2)
-            output_array[:] = np.dot(P, fc).real
-            output_array += np.dot(P[:, 1:], np.conj(fc[1:])).real
-            output_array = np.moveaxis(output_array, 0, self.axis)
+            array = np.dot(P, fc).real
+            s = [slice(None)]*fc.ndim
+            s[-2] = slice(1, None)
+            array += np.dot(P[:, 1:], np.conj(fc[s])).real
+            output_array = np.moveaxis(array, 0, self.axis)
         return output_array
 
 
@@ -189,7 +190,7 @@ class C2CBasis(FourierBase):
             output_array = np.dot(P, input_array, out=output_array)
         else:
             fc = np.moveaxis(input_array, self.axis, -2)
-            output_array = np.dot(P, fc, out=output_array)
-            output_array = np.moveaxis(output_array, 0, self.axis)
+            array = np.dot(P, fc)
+            output_array = np.moveaxis(array, 0, self.axis)
         return output_array
 
