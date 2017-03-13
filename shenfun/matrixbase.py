@@ -239,8 +239,7 @@ class SparseMatrix(dict):
         # Roll relevant axis to first
         if axis > 0:
             b = np.moveaxis(b, axis, 0)
-            if not u is b:
-                u = np.moveaxis(u, axis, 0)
+            u = np.moveaxis(u, axis, 0)
 
         if b.ndim == 1:
             u[:] = spsolve(self.diags(), b)
@@ -251,8 +250,7 @@ class SparseMatrix(dict):
 
         if axis > 0:
             u = np.moveaxis(u, 0, axis)
-            if not u is b:
-                b = np.moveaxis(b, 0, axis)
+            b = np.moveaxis(b, 0, axis)
         return u
 
 

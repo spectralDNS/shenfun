@@ -12,11 +12,9 @@ class FourierBase(SpectralBase):
     """Fourier base class
     """
 
-    def __init__(self, N, threads=1, planner_effort="FFTW_MEASURE"):
+    def __init__(self, N, threads=1):
         SpectralBase.__init__(self, N, '')
         self.N = N
-        self.threads = threads
-        self.planner_effort = planner_effort
 
     def points_and_weights(self):
         """Return points and weights of quadrature"""
@@ -91,13 +89,11 @@ class R2CBasis(FourierBase):
     """Fourier basis class for real to complex transforms
     """
 
-    def __init__(self, N, threads=1, planner_effort="FFTW_MEASURE"):
+    def __init__(self, N):
         FourierBase.__init__(self, N, '')
         self.N = N
-        self.threads = threads
-        self.planner_effort = planner_effort
-        self.xfftn_fwd = pyfftw.builders.rfft
-        self.xfftn_bck = pyfftw.builders.irfft
+        self._xfftn_fwd = pyfftw.builders.rfft
+        self._xfftn_bck = pyfftw.builders.irfft
 
     def wavenumbers(self, N, axis=0):
         """Return the wavenumbermesh
@@ -147,13 +143,11 @@ class C2CBasis(FourierBase):
     """Fourier basis class for complex to complex transforms
     """
 
-    def __init__(self, N, threads=1, planner_effort="FFTW_MEASURE"):
+    def __init__(self, N):
         FourierBase.__init__(self, N, '')
         self.N = N
-        self.threads = threads
-        self.planner_effort = planner_effort
-        self.xfftn_fwd = pyfftw.builders.fft
-        self.xfftn_bck = pyfftw.builders.ifft
+        self._xfftn_fwd = pyfftw.builders.fft
+        self._xfftn_bck = pyfftw.builders.ifft
 
     def wavenumbers(self, N, axis=0):
         """Return the wavenumbermesh

@@ -10,6 +10,45 @@ from shenfun.utilities import inheritdocstrings
 __all__ = ['ChebyshevBase', 'Basis', 'ShenDirichletBasis',
            'ShenNeumannBasis', 'ShenBiharmonicBasis']
 
+
+class _dct_wrap(object):
+
+    # pylint: disable=too-few-public-methods
+
+    __slots__ = ('_dct', 'input_array', 'output_array')
+
+    def __init__(self, xfftn, in_array, out_array):
+        object.__setattr__(self, '_dct', xfftn)
+        object.__setattr__(self, 'input_array', in_array)
+        object.__setattr__(self, 'output_array', out_array)
+
+    def __getattribute__(self, name):
+        if name in ('input_array', 'output_array'):
+            return object.__getattribute__(self, name)
+        else:
+            dct_obj = object.__getattribute__(self, '_dct')
+            return getattr(dct_obj, name)
+
+    def __call__(self, input_array=None, output_array=None, **kw):
+        dct_obj = object.__getattribute__(self, '_dct')
+
+        if input_array is not None:
+            self.input_array[...] = input_array
+
+        dct_obj.input_array[...] = self.input_array.real
+        dct_obj(None, None, **kw)
+        self.output_array.real[:] = dct_obj.output_array
+        dct_obj.input_array[...] = self.input_array.imag
+        dct_obj(None, None, **kw)
+        self.output_array.imag[:] = dct_obj.output_array
+
+        if output_array is not None:
+            output_array[...] = self.output_array
+            return output_array
+        else:
+            return self.output_array
+
+
 @inheritdocstrings
 class ChebyshevBase(SpectralBase):
     """Abstract base class for all Chebyshev bases
@@ -68,6 +107,50 @@ class ChebyshevBase(SpectralBase):
         from .matrices import mat
         return mat[((self.__class__, 0), (self.__class__, 0))]
 
+    def plan(self, shape, axis, dtype, options):
+        opts = dict(
+            avoid_copy=True,
+            overwrite_input=True,
+            auto_align_input=True,
+            auto_contiguous=True,
+            planner_effort='FFTW_MEASURE',
+            threads=1,
+        )
+        opts.update(options)
+
+        plan_fwd = self._xfftn_fwd
+        plan_bck = self._xfftn_bck
+        if isinstance(axis, tuple):
+            axis = axis[0]
+
+        U = pyfftw.empty_aligned(shape, dtype=np.float)
+        xfftn_fwd = plan_fwd(U, axis=axis, **opts)
+        U.fill(0)
+        V = xfftn_fwd.output_array
+        xfftn_bck = plan_bck(V, axis=axis, **opts)
+        V.fill(0)
+
+        xfftn_fwd.update_arrays(U, V)
+        xfftn_bck.update_arrays(V, U)
+
+        self.axis = axis
+        if dtype is np.dtype('float64'):
+            self.xfftn_fwd = xfftn_fwd
+            self.xfftn_bck = xfftn_bck
+
+        else:
+            # dct only works on real data, so need to wrap it
+            U = pyfftw.empty_aligned(shape, dtype=np.complex)
+            V = pyfftw.empty_aligned(shape, dtype=np.complex)
+            U.fill(0)
+            V.fill(0)
+            self.xfftn_fwd = _dct_wrap(xfftn_fwd, U, V)
+            self.xfftn_bck = _dct_wrap(xfftn_bck, V, U)
+
+        self.forward = _func_wrap(self.forward, self.xfftn_fwd)
+        self.backward = _func_wrap(self.backward, self.xfftn_bck)
+        self.scalar_product = _func_wrap(self.scalar_product, self.xfftn_fwd)
+
 
 @inheritdocstrings
 class Basis(ChebyshevBase):
@@ -76,19 +159,20 @@ class Basis(ChebyshevBase):
     kwargs:
         N             int         Number of quadrature points
         quad        ('GL', 'GC')  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss
-        threads          1        Number of threads used by pyfftw
-        planner_effort            Planner effort for FFTs.
+        plan         boolean      Execute plan assuming 1D
 
     """
 
-    def __init__(self, N=0, quad="GC"):
+    def __init__(self, N=0, quad="GC", plan=False):
         ChebyshevBase.__init__(self, N, quad)
         if quad == 'GC':
-            self.xfftn_fwd = functools.partial(pyfftw.builders.dct, type=2)
-            self.xfftn_bck = functools.partial(pyfftw.builders.dct, type=3)
+            self._xfftn_fwd = functools.partial(pyfftw.builders.dct, type=2)
+            self._xfftn_bck = functools.partial(pyfftw.builders.dct, type=3)
         else:
-            self.xfftn_fwd = functools.partial(pyfftw.builders.dct, type=1)
-            self.xfftn_bck = functools.partial(pyfftw.builders.dct, type=1)
+            self._xfftn_fwd = functools.partial(pyfftw.builders.dct, type=1)
+            self._xfftn_bck = functools.partial(pyfftw.builders.dct, type=1)
+        if plan:
+            self.plan(N, 0, np.float, {})
 
 
     def derivative_coefficients(self, fk, ck):
@@ -197,10 +281,12 @@ class ShenDirichletBasis(ChebyshevBase):
 
     """
 
-    def __init__(self, N=0, quad="GC", bc=(0., 0.)):
+    def __init__(self, N=0, quad="GC", bc=(0., 0.), plan=False):
         ChebyshevBase.__init__(self, N, quad)
         self.bc = bc
         self.CT = Basis(N, quad)
+        if plan:
+            self.plan(N, 0, np.float, {})
 
     def get_vandermonde_basis(self, V):
         P = np.zeros(V.shape)
@@ -227,8 +313,6 @@ class ShenDirichletBasis(ChebyshevBase):
             output[s0] = c0
             s0[self.axis] = -1
             output[s0] = c1
-
-            assert output is self.CT.xfftn_fwd.output_array
 
         else:
             self.vandermonde_scalar_product(self.xfftn_fwd.input_array,
@@ -290,30 +374,6 @@ class ShenDirichletBasis(ChebyshevBase):
         return f + 0.5*(fk[-1]*(1+x)+fk[-2]*(1-x))
 
     def plan(self, shape, axis, dtype, options):
-        #opts = dict(
-            #avoid_copy=True,
-            #overwrite_input=True,
-            #auto_align_input=True,
-            #auto_contiguous=True,
-            #planner_effort='FFTW_MEASURE',
-            #threads=1,
-        #)
-        #opts.update(options)
-
-        #plan_fwd = self.xfftn_fwd
-        #plan_bck = self.xfftn_bck
-        #if isinstance(axis, tuple):
-            #axis = axis[0]
-
-        #U = pyfftw.empty_aligned(shape, dtype=dtype)
-        #xfftn_fwd = plan_fwd(U, axis=axis, **opts)
-        #U.fill(0)
-        #V = xfftn_fwd.output_array
-        #xfftn_bck = plan_bck(V, axis=axis, **opts)
-        #V.fill(0)
-
-        #xfftn_fwd.update_arrays(U, V)
-        #xfftn_bck.update_arrays(V, U)
         self.CT.plan(shape, axis, dtype, options)
         self.axis = self.CT.axis
         self.xfftn_fwd = self.CT.xfftn_fwd
@@ -321,12 +381,6 @@ class ShenDirichletBasis(ChebyshevBase):
         self.forward = _func_wrap(self.forward, self.xfftn_fwd)
         self.backward = _func_wrap(self.backward, self.xfftn_bck)
         self.scalar_product = _func_wrap(self.scalar_product, self.xfftn_fwd)
-        #self.CT.axis = axis
-        #self.CT.xfftn_fwd = xfftn_fwd
-        #self.CT.xfftn_bck = xfftn_bck
-        #self.CT.forward = _func_wrap(self.CT.forward, xfftn_fwd)
-        #self.CT.backward = _func_wrap(self.CT.backward, xfftn_bck)
-        #self.CT.scalar_product = _func_wrap(self.CT.scalar_product, xfftn_fwd)
 
 
 @inheritdocstrings
@@ -342,14 +396,13 @@ class ShenNeumannBasis(ChebyshevBase):
 
     """
 
-    def __init__(self, N=0, quad="GC", threads=1, planner_effort="FFTW_MEASURE",
-                 mean=0):
+    def __init__(self, N=0, quad="GC", mean=0, plan=False):
         ChebyshevBase.__init__(self, N, quad)
-        self.threads = threads
-        self.planner_effort = planner_effort
         self.mean = mean
-        self.CT = Basis(N, quad, threads, planner_effort)
+        self.CT = Basis(N, quad)
         self._factor = np.zeros(0)
+        if plan:
+            self.plan(N, 0, np.float, {})
 
     def get_vandermonde_basis(self, V):
         assert self.N == V.shape[1]
@@ -412,6 +465,15 @@ class ShenNeumannBasis(ChebyshevBase):
         w_hat[2:] = self._factor*fk[:-2]
         f -= n_cheb.chebval(x, w_hat)
         return f
+
+    def plan(self, shape, axis, dtype, options):
+        self.CT.plan(shape, axis, dtype, options)
+        self.axis = self.CT.axis
+        self.xfftn_fwd = self.CT.xfftn_fwd
+        self.xfftn_bck = self.CT.xfftn_bck
+        self.forward = _func_wrap(self.forward, self.xfftn_fwd)
+        self.backward = _func_wrap(self.backward, self.xfftn_bck)
+        self.scalar_product = _func_wrap(self.scalar_product, self.xfftn_fwd)
 
 
 @inheritdocstrings

@@ -306,7 +306,7 @@ class SpectralBase(object):
     def plan(self, shape, axis, dtype, options):
         opts = dict(
             avoid_copy=True,
-            overwrite_input=False,
+            overwrite_input=True,
             auto_align_input=True,
             auto_contiguous=True,
             planner_effort='FFTW_MEASURE',
@@ -314,16 +314,17 @@ class SpectralBase(object):
         )
         opts.update(options)
 
-        plan_fwd = self.xfftn_fwd
-        plan_bck = self.xfftn_bck
+        plan_fwd = self._xfftn_fwd
+        plan_bck = self._xfftn_bck
         if isinstance(axis, tuple):
             axis = axis[0]
 
+        n = shape[axis]
         U = pyfftw.empty_aligned(shape, dtype=dtype)
-        xfftn_fwd = plan_fwd(U, axis=axis, **opts)
+        xfftn_fwd = plan_fwd(U, n=n, axis=axis, **opts)
         U.fill(0)
         V = xfftn_fwd.output_array
-        xfftn_bck = plan_bck(V, axis=axis, **opts)
+        xfftn_bck = plan_bck(V, n=n, axis=axis, **opts)
         V.fill(0)
 
         xfftn_fwd.update_arrays(U, V)

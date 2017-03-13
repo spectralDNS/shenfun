@@ -156,3 +156,69 @@ class PDMA(object):
             raise NotImplementedError
 
         return u
+
+class Helmholtz(object):
+    """Helmholtz solver -u'' + alfa*u = b
+
+    args:
+
+    """
+
+    def __init__(self, A, B, T=None, scale_A=True):
+        self.B = B
+        self.A = A
+        B[2] = np.broadcast_to(B[2], A[2].shape)
+        B[-2] = np.broadcast_to(B[-2], A[2].shape)
+        A.scale = np.broadcast_to(A.scale, B.scale.shape)
+        if scale_A:
+            A *= -1.
+
+        A_scale = A.scale
+        B_scale = B.scale
+        N = A.testfunction[0].N
+        if T is None:
+            self.u0 = np.zeros(N-2, float)     # Diagonal entries of U
+            self.u1 = np.zeros(N-4, float)     # Diagonal+1 entries of U
+            self.u2 = np.zeros(N-6, float)     # Diagonal+2 entries of U
+            self.L  = np.zeros(N-4, float)     # The single nonzero row of L
+            la.LU_Helmholtz_1D(A, B, A_scale, B_scale, self.u0, self.u1, self.u2, self.L)
+
+        else:
+            axis = A.axis
+            assert A_scale.shape[axis] == 1
+            assert B_scale.shape[axis] == 1
+
+            shape = list(T.local_shape())
+            shape[axis] = N-2
+            self.u0 = np.zeros(shape, float)     # Diagonal entries of U
+            shape[axis] = N-4
+            self.u1 = np.zeros(shape, float)     # Diagonal+2 entries of U
+            self.L  = np.zeros(shape, float)     # The single nonzero row of L
+            shape[axis] = N-6
+            self.u2 = np.zeros(shape, float)     # Diagonal+4 entries of U
+            if len(T) == 2:
+                la.LU_Helmholtz_2D(A, B, axis, A_scale, B_scale, self.u0, self.u1, self.u2, self.L)
+
+            elif len(T) == 3:
+                la.LU_Helmholtz_3D(A, B, axis, A_scale, B_scale, self.u0, self.u1, self.u2, self.L)
+
+    def __call__(self, u, b):
+        if len(u.shape) == 3:
+            la.Solve_Helmholtz_3D(self.A.axis, b, u, self.u0, self.u1, self.u2, self.L)
+
+        elif len(u.shape) == 2:
+            la.Solve_Helmholtz_2D(self.A.axis, b, u, self.u0, self.u1, self.u2, self.L)
+
+        else:
+            la.Solve_Helmholtz_1D(b, u, self.u0, self.u1, self.u2, self.L)
+
+        return u
+
+    #def matvec(self, v, c):
+        #assert self.neumann is False
+        #c[:] = 0
+        #if len(v.shape) > 1:
+            #Matvec.Helmholtz_matvec3D(v, c, 1.0, self.alfa**2, self.A[0], self.A[2], self.B[0])
+        #else:
+            #Matvec.Helmholtz_matvec(v, c, 1.0, self.alfa**2, self.A[0], self.A[2], self.B[0])
+        #return c

@@ -128,5 +128,6 @@ def solve(A, b, u=None, axis=0):
 
     if axis > 0:
         u = np.moveaxis(u, 0, axis)
+        b = np.moveaxis(b, 0, axis)
 
     return u
