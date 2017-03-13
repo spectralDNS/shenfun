@@ -61,7 +61,7 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
                 out = np.zeros(sl, dtype=np.complex)
             else:
                 out = np.zeros_like(trial)
-        out = test.scalar_product(trial, out, axis=axis, fast_transform=fast_transform)
+        out = test.scalar_product(trial, out, fast_transform=fast_transform)
         return out
 
 def solve(A, b, u=None, axis=0):

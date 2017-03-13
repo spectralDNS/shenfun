@@ -1,11 +1,11 @@
 r"""
-Solve Poisson equation in 3D with periodic bcs in two directions
-and homogeneous Dirichlet in the third
+Solve Poisson equation in 2D with periodic bcs in one direction
+and homogeneous Dirichlet in the other
 
     \nabla^2 u = f,
 
-Use Fourier basis for the periodic directions and Shen's Dirichlet basis for the
-remaining non-periodic direction.
+Use Fourier basis for the periodic direction and Shen's Dirichlet basis for the
+non-periodic direction.
 
 """
 from sympy import symbols, cos, sin, exp, lambdify

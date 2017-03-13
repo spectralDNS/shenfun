@@ -89,11 +89,13 @@ class R2CBasis(FourierBase):
     """Fourier basis class for real to complex transforms
     """
 
-    def __init__(self, N):
+    def __init__(self, N, plan=False):
         FourierBase.__init__(self, N, '')
         self.N = N
         self._xfftn_fwd = pyfftw.builders.rfft
         self._xfftn_bck = pyfftw.builders.irfft
+        if plan:
+            self.plan((N,), 0, np.float, {})
 
     def wavenumbers(self, N, axis=0):
         """Return the wavenumbermesh
