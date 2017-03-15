@@ -16,6 +16,7 @@ from shenfun.chebyshev.bases import ShenDirichletBasis
 from shenfun.tensorproductspace import TensorProductSpace, Function, Laplace,\
     inner_product
 from shenfun.la import Helmholtz
+import time
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
@@ -30,7 +31,7 @@ ul = lambdify((x, y, z), u, 'numpy')
 fl = lambdify((x, y, z), f, 'numpy')
 
 # Size of discretization
-N = (31, 32, 64)
+N = (128, 128, 64)
 
 K1 = C2CBasis(N[0])
 K2 = R2CBasis(N[1])
@@ -47,15 +48,19 @@ f_hat = T.scalar_product(fj, f_hat)
 
 # Get left hand side of Poisson equation
 v = T.test_function()
-mats = inner_product(v, Laplace(v))
+matrices = inner_product(v, Laplace(v))
 
 # Create Helmholtz linear algebra solver
-H = Helmholtz(mats['ADDmat'], mats['BDDmat'], T)
+A, B = matrices['ADDmat'], matrices['BDDmat']
+H = Helmholtz(A, B, A.scale, B.scale, T)
 
 # Solve and transform to real space
 u = Function(T, False)        # Solution real space
 u_hat = Function(T)           # Solution spectral space
+t0 = time.time()
 u_hat = H(u_hat, f_hat)       # Solve
+print("Timing solve = {}".format(time.time()-t0))
+
 u = T.backward(u_hat, u)
 
 # Compare with analytical solution

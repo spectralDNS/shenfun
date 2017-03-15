@@ -165,16 +165,16 @@ class SpectralBase(object):
 
         """
         if input_array is not None:
-            self.xfftn_fwd.input_array[...] = input_array
+            self.forward.input_array[...] = input_array
 
         self.scalar_product(fast_transform=fast_transform)
-        self.apply_inverse_mass(self.xfftn_fwd.output_array)
+        self.apply_inverse_mass(self.forward.output_array)
 
         if output_array is not None:
-            output_array[...] = self.xfftn_fwd.output_array
+            output_array[...] = self.forward.output_array
             return output_array
         else:
-            return self.xfftn_fwd.output_array
+            return self.forward.output_array
 
     def backward(self, input_array=None, output_array=None, fast_transform=True):
         """Fast backward transform
@@ -189,20 +189,20 @@ class SpectralBase(object):
 
         """
         if input_array is not None:
-            self.xfftn_bck.input_array[...] = input_array
+            self.backward.input_array[...] = input_array
 
         if fast_transform:
-            self.evaluate_expansion_all(self.xfftn_bck.input_array,
-                                        self.xfftn_bck.output_array)
+            self.evaluate_expansion_all(self.backward.input_array,
+                                        self.backward.output_array)
         else:
-            self.vandermonde_evaluate_expansion_all(self.xfftn_bck.input_array,
-                                                    self.xfftn_bck.output_array)
+            self.vandermonde_evaluate_expansion_all(self.backward.input_array,
+                                                    self.backward.output_array)
 
         if output_array is not None:
-            output_array[...] = self.xfftn_bck.output_array
+            output_array[...] = self.backward.output_array
             return output_array
         else:
-            return self.xfftn_bck.output_array
+            return self.backward.output_array
 
 
     def vandermonde(self, x):
@@ -255,7 +255,7 @@ class SpectralBase(object):
             fc = np.moveaxis(input_array*weights[bc_shape], self.axis, -1)
             output_array[:] = np.moveaxis(np.dot(fc, np.conj(P)), -1, self.axis)
 
-        assert output_array is self.xfftn_fwd.output_array
+        assert output_array is self.forward.output_array
         return output_array
 
     def vandermonde_evaluate_expansion_all(self, input_array, output_array):
@@ -278,7 +278,7 @@ class SpectralBase(object):
             array = np.dot(P, fc)
             output_array[:] = np.moveaxis(array, 0, self.axis)
 
-        assert output_array is self.xfftn_bck.output_array
+        assert output_array is self.backward.output_array
         return output_array
 
     def apply_inverse_mass(self, array):
@@ -299,7 +299,7 @@ class SpectralBase(object):
             self._mass.testfunction[0].N != array.shape[self.axis]):
             self._mass = B((self, 0), (self, 0))
 
-        array = self._mass.solve(array, axis=self.axis, sol=self)
+        array = self._mass.solve(array, axis=self.axis)
 
         return array
 
@@ -380,7 +380,7 @@ class SpectralBase(object):
         return self.__class__.__name__ == other.__class__.__name__
 
     def sl(self, a):
-        s = [slice(None)]*self.xfftn_fwd.output_array.ndim
+        s = [slice(None)]*self.forward.output_array.ndim
         s[self.axis] = a
         return s
 

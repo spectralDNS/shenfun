@@ -22,7 +22,7 @@ comm = MPI.COMM_WORLD
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y = symbols("x,y")
-u = (cos(4*x) + sin(2*y))*(1-y**2)
+u = (cos(4*x) + sin(2*y))*(1-x**2)
 f = u.diff(x, 2) + u.diff(y, 2)
 
 # Lambdify for faster evaluation
@@ -32,9 +32,9 @@ fl = lambdify((x, y), f, 'numpy')
 # Size of discretization
 N = (31, 32)
 
-K1 = R2CBasis(N[0])
-SD = ShenDirichletBasis(N[1])
-T = TensorProductSpace(comm, (K1, SD))
+SD = ShenDirichletBasis(N[0])
+K1 = R2CBasis(N[1])
+T = TensorProductSpace(comm, (SD, K1))
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 
 # Get f on quad points
@@ -49,7 +49,8 @@ v = T.test_function()
 matrices = inner_product(v, Laplace(v))
 
 # Create Helmholtz linear algebra solver
-H = Helmholtz(matrices['ADDmat'], matrices['BDDmat'], T)
+A, B = matrices['ADDmat'], matrices['BDDmat']
+H = Helmholtz(A, B, A.scale, B.scale, T)
 
 # Solve and transform to real space
 u = Function(T, False)        # Solution real space

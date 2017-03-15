@@ -134,7 +134,7 @@ class ChebyshevBase(SpectralBase):
         xfftn_bck.update_arrays(V, U)
 
         self.axis = axis
-        if dtype is np.dtype('float64'):
+        if np.dtype(dtype) is np.dtype('float64'):
             self.xfftn_fwd = xfftn_fwd
             self.xfftn_bck = xfftn_bck
 
@@ -244,27 +244,27 @@ class Basis(ChebyshevBase):
 
     def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
         if input_array is not None:
-            self.xfftn_fwd.input_array[...] = input_array
+            self.scalar_product.input_array[...] = input_array
 
         if fast_transform:
-            assert self.N == self.xfftn_fwd.input_array.shape[self.axis]
+            assert self.N == self.scalar_product.input_array.shape[self.axis]
             out = self.xfftn_fwd()
             if self.quad == "GC":
                 out *= (np.pi/(2*self.N))
 
             elif self.quad == "GL":
                 out *= (np.pi/(2*(self.N-1)))
-            assert out is self.xfftn_fwd.output_array
+            assert out is self.scalar_product.output_array
 
         else:
-            self.vandermonde_scalar_product(self.xfftn_fwd.input_array,
-                                            self.xfftn_fwd.output_array)
+            self.vandermonde_scalar_product(self.scalar_product.input_array,
+                                            self.scalar_product.output_array)
 
         if output_array is not None:
-            output_array[...] = self.xfftn_fwd.output_array
+            output_array[...] = self.scalar_product.output_array
             return output_array
         else:
-            return self.xfftn_fwd.output_array
+            return self.scalar_product.output_array
 
     def eval(self, x, fk):
         return n_cheb.chebval(x, fk)
@@ -297,7 +297,7 @@ class ShenDirichletBasis(ChebyshevBase):
 
     def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
         if input_array is not None:
-            self.xfftn_fwd.input_array[...] = input_array
+            self.scalar_product.input_array[...] = input_array
 
         if fast_transform:
             output = self.CT.scalar_product(fast_transform=fast_transform)
@@ -315,14 +315,14 @@ class ShenDirichletBasis(ChebyshevBase):
             output[s0] = c1
 
         else:
-            self.vandermonde_scalar_product(self.xfftn_fwd.input_array,
-                                            self.xfftn_fwd.output_array)
+            self.vandermonde_scalar_product(self.scalar_product.input_array,
+                                            self.scalar_product.output_array)
 
         if output_array is not None:
-            output_array[...] = self.xfftn_fwd.output_array
+            output_array[...] = self.scalar_product.output_array
             return output_array
         else:
-            return self.xfftn_fwd.output_array
+            return self.scalar_product.output_array
 
     def evaluate_expansion_all(self, fk, fj):
         w_hat = work[(fk, 0)]
@@ -335,20 +335,21 @@ class ShenDirichletBasis(ChebyshevBase):
         w_hat[s0] += 0.5*(self.bc[0] + self.bc[1])
         w_hat[s1] += 0.5*(self.bc[0] - self.bc[1])
         fj = self.CT.backward(w_hat)
-
+        assert fk is self.xfftn_bck.input_array
+        assert fj is self.xfftn_bck.output_array
         return fj
 
     def forward(self, input_array=None, output_array=None, fast_transform=True):
         if input_array is not None:
-            self.xfftn_fwd.input_array[...] = input_array
+            self.forward.input_array[...] = input_array
 
         output = self.scalar_product(fast_transform=fast_transform)
-        assert output is self.xfftn_fwd.output_array
+        assert output is self.forward.output_array
         s = self.sl(0)
         output[s] -= np.pi/2*(self.bc[0] + self.bc[1])
         s[self.axis] = 1
         output[s] -= np.pi/4*(self.bc[0] - self.bc[1])
-        assert output is self.xfftn_fwd.output_array
+        assert output is self.forward.output_array
 
         self.apply_inverse_mass(output)
         s[self.axis] = -2
@@ -356,12 +357,12 @@ class ShenDirichletBasis(ChebyshevBase):
         s[self.axis] = -1
         output[s] = self.bc[1]
 
-        assert output is self.xfftn_fwd.output_array
+        assert output is self.forward.output_array
         if output_array is not None:
-            output_array[...] = self.xfftn_fwd.output_array
+            output_array[...] = self.forward.output_array
             return output_array
         else:
-            return self.xfftn_fwd.output_array
+            return self.forward.output_array
 
     def slice(self):
         return slice(0, self.N-2)
@@ -413,46 +414,43 @@ class ShenNeumannBasis(ChebyshevBase):
 
     def set_factor_array(self, v):
         if not self._factor.shape == v.shape:
-            k = self.wavenumbers(v.shape)
+            k = self.wavenumbers(v.shape, self.axis)
             self._factor = (k/(k+2))**2
 
-    def scalar_product(self, fj, fk, fast_transform=True, axis=0):
-        if axis > 0:
-            fk = np.moveaxis(fk, axis, 0)
-            fj = np.moveaxis(fj, axis, 0)
+    def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
+        if input_array is not None:
+            self.xfftn_fwd.input_array[...] = input_array
 
         if fast_transform:
-            fk = self.CT.scalar_product(fj, fk, axis=0)
+            fk = self.CT.scalar_product(fast_transform=fast_transform)
             self.set_factor_array(fk)
-            fk[:-2] -= self._factor * fk[2:]
+            sm2 = self.sl(slice(0, -2))
+            s2p = self.sl(slice(2, None))
+            fk[sm2] -= self._factor * fk[s2p]
 
         else:
-            fk = self.vandermonde_scalar_product(fj, fk, axis=0)
+            self.vandermonde_scalar_product(self.xfftn_fwd.input_array,
+                                            self.xfftn_fwd.output_array)
 
-        fk[0] = self.mean*np.pi
-        fk[-2:] = 0
+        s = self.sl(0)
+        fk[s] = self.mean*np.pi
+        s[self.axis] = slice(-2, None)
+        fk[s] = 0
 
-        if axis > 0:
-            fk = np.moveaxis(fk, 0, axis)
-            fj = np.moveaxis(fj, 0, axis)
+        if output_array is not None:
+            output_array[...] = self.xfftn_fwd.output_array
+            return output_array
+        else:
+            return self.xfftn_fwd.output_array
 
-        return fk
-
-    def evaluate_expansion_all(self, fk, fj, axis=0):
-        if axis > 0:
-            fk = np.moveaxis(fk, axis, 0)
-            fj = np.moveaxis(fj, axis, 0)
-
+    def evaluate_expansion_all(self, fk, fj):
         w_hat = work[(fk, 0)]
         self.set_factor_array(fk)
-        w_hat[:-2] = fk[:-2]
-        w_hat[2:] -= self._factor*fk[:-2]
-        fj = self.CT.backward(w_hat, fj, axis=0)
-
-        if axis > 0:
-            fk = np.moveaxis(fk, 0, axis)
-            fj = np.moveaxis(fj, 0, axis)
-
+        s0 = self.sl(slice(0, -2))
+        s1 = self.sl(slice(2, None))
+        w_hat[s0] = fk[s0]
+        w_hat[s1] -= self._factor*fk[s0]
+        fj = self.CT.backward(w_hat)
         return fj
 
     def slice(self):
@@ -485,18 +483,16 @@ class ShenBiharmonicBasis(ChebyshevBase):
     kwargs:
         N             int         Number of quadrature points
         quad        ('GL', 'GC')  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss
-        threads          1        Number of threads used by pyfftw
-        planner_effort            Planner effort for FFTs.
 
     """
 
-    def __init__(self, N=0, quad="GC", threads=1, planner_effort="FFTW_MEASURE"):
+    def __init__(self, N=0, quad="GC", plan=False):
         ChebyshevBase.__init__(self, N, quad)
-        self.threads = threads
-        self.planner_effort = planner_effort
-        self.CT = Basis(N, quad, threads, planner_effort)
+        self.CT = Basis(N, quad)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
+        if plan:
+            self.plan(N, 0, np.float, {})
 
     def get_vandermonde_basis(self, V):
         P = np.zeros_like(V)
@@ -504,59 +500,59 @@ class ShenBiharmonicBasis(ChebyshevBase):
         P[:, :-4] = V[:, :-4] - (2*(k+2)/(k+3))*V[:, 2:-2] + ((k+1)/(k+3))*V[:, 4:]
         return P
 
-    def set_factor_arrays(self, v, axis=0):
+    def set_factor_arrays(self, v):
         s = [slice(None)]*v.ndim
-        s[axis] = self.slice()
+        s[self.axis] = self.slice()
         if not self._factor1.shape == v[s].shape:
-            k = self.wavenumbers(v.shape, axis=axis)
+            k = self.wavenumbers(v.shape, axis=self.axis)
             self._factor1 = (-2*(k+2)/(k+3)).astype(float)
             self._factor2 = ((k+1)/(k+3)).astype(float)
 
-    def scalar_product(self, fj, fk, fast_transform=True, axis=0):
-        if axis > 0:
-            fk = np.moveaxis(fk, axis, 0)
-            fj = np.moveaxis(fj, axis, 0)
+    def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
+        if input_array is not None:
+            self.scalar_product.input_array[...] = input_array
 
         if fast_transform:
-            self.set_factor_arrays(fk, axis=0)
-            Tk = work[(fk, 0)]
-            Tk = self.CT.scalar_product(fj, Tk, axis=0)
-            fk[:-4] = Tk[:-4]
-            fk[:-4] += self._factor1 * Tk[2:-2]
-            fk[:-4] += self._factor2 * Tk[4:]
+            output = self.CT.scalar_product(fast_transform=fast_transform)
+            Tk = work[(output, 0)]
+            Tk[...] = output
+            self.set_factor_arrays(Tk)
+
+            s = self.sl(self.slice())
+            s2 = self.sl(slice(2, -2))
+            output[s] += self._factor1 * Tk[s2]
+            s2[self.axis] = slice(4, None)
+            output[s] += self._factor2 * Tk[s2]
 
         else:
-            fk = self.vandermonde_scalar_product(fj, fk, axis=0)
+            output = self.vandermonde_scalar_product(self.scalar_product.input_array,
+                                                     self.scalar_product.output_array)
 
-        fk[-4:] = 0
+        output[self.sl(slice(-4, None))] = 0
 
-        if axis > 0:
-            fk = np.moveaxis(fk, 0, axis)
-            fj = np.moveaxis(fj, 0, axis)
+        if output_array is not None:
+            output_array[...] = output
+            return output_array
+        else:
+            return output
 
-        return fk
-
-    @staticmethod
     #@optimizer
-    def set_w_hat(w_hat, fk, f1, f2):
-        w_hat[:-4] = fk[:-4]
-        w_hat[2:-2] += f1*fk[:-4]
-        w_hat[4:] += f2*fk[:-4]
+    def set_w_hat(self, w_hat, fk, f1, f2):
+        s = self.sl(self.slice())
+        s2 = self.sl(slice(2, -2))
+        s4 = self.sl(slice(4, None))
+        w_hat[s] = fk[s]
+        w_hat[s2] += f1*fk[s]
+        w_hat[s4] += f2*fk[s]
         return w_hat
 
-    def evaluate_expansion_all(self, fk, fj, axis=0):
-        if axis > 0:
-            fk = np.moveaxis(fk, axis, 0)
-            fj = np.moveaxis(fj, axis, 0)
-
+    def evaluate_expansion_all(self, fk, fj):
         w_hat = work[(fk, 0)]
         self.set_factor_arrays(fk)
-        w_hat = ShenBiharmonicBasis.set_w_hat(w_hat, fk, self._factor1, self._factor2)
-        fj = self.CT.backward(w_hat, fj, axis=0)
-        if axis > 0:
-            fk = np.moveaxis(fk, 0, axis)
-            fj = np.moveaxis(fj, 0, axis)
-
+        w_hat = self.set_w_hat(w_hat, fk, self._factor1, self._factor2)
+        fj = self.CT.backward(w_hat)
+        assert fk is self.backward.input_array
+        assert fj is self.backward.output_array
         return fj
 
     def slice(self):
@@ -572,3 +568,13 @@ class ShenBiharmonicBasis(ChebyshevBase):
         w_hat[:4] = 0
         f += n_cheb.chebval(x, w_hat)
         return f
+
+    def plan(self, shape, axis, dtype, options):
+        self.CT.plan(shape, axis, dtype, options)
+        self.axis = self.CT.axis
+        self.xfftn_fwd = self.CT.xfftn_fwd
+        self.xfftn_bck = self.CT.xfftn_bck
+        self.forward = _func_wrap(self.forward, self.xfftn_fwd)
+        self.backward = _func_wrap(self.backward, self.xfftn_bck)
+        self.scalar_product = _func_wrap(self.scalar_product, self.xfftn_fwd)
+
