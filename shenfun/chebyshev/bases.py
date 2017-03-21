@@ -217,7 +217,6 @@ class Basis(ChebyshevBase):
         if self.quad == 'GL':
             sl[self.axis] = -1
             array[sl] /= 2
-        assert array is self.xfftn_fwd.output_array
         return array
 
     def evaluate_expansion_all(self, fk, fj):
@@ -308,7 +307,6 @@ class ShenDirichletBasis(ChebyshevBase):
             s0[self.axis] = slice(0, -2)
             s1[self.axis] = slice(2, None)
             output[s0] -= output[s1]
-            #output[:-2] -= output[2:]
             s0[self.axis] = -2
             output[s0] = c0
             s0[self.axis] = -1
@@ -419,7 +417,7 @@ class ShenNeumannBasis(ChebyshevBase):
 
     def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
         if input_array is not None:
-            self.xfftn_fwd.input_array[...] = input_array
+            self.scalar_product.input_array[...] = input_array
 
         if fast_transform:
             fk = self.CT.scalar_product(fast_transform=fast_transform)
@@ -429,19 +427,20 @@ class ShenNeumannBasis(ChebyshevBase):
             fk[sm2] -= self._factor * fk[s2p]
 
         else:
-            self.vandermonde_scalar_product(self.xfftn_fwd.input_array,
-                                            self.xfftn_fwd.output_array)
+            self.vandermonde_scalar_product(self.scalar_product.input_array,
+                                            self.scalar_product.output_array)
 
+        fk = self.scalar_product.output_array
         s = self.sl(0)
         fk[s] = self.mean*np.pi
         s[self.axis] = slice(-2, None)
         fk[s] = 0
 
         if output_array is not None:
-            output_array[...] = self.xfftn_fwd.output_array
+            output_array[...] = self.scalar_product.output_array
             return output_array
         else:
-            return self.xfftn_fwd.output_array
+            return self.scalar_product.output_array
 
     def evaluate_expansion_all(self, fk, fj):
         w_hat = work[(fk, 0)]

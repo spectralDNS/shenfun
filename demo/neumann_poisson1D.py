@@ -1,9 +1,17 @@
 r"""
-Solve biharmonic equation in 1D
+Solve Poisson equation in 1D with homogeneous Neumann bcs
 
-    u'''' + a*u'' + b*u = f,
+    \nabla^2 u = f
 
-Use Shen's Biharmonic basis.
+Use Shen's Neumann basis
+
+The equation to solve for Legendre basis is
+
+    -(\nabla u, \nabla v) = (f, v)
+
+whereas for Chebyshev we solve
+
+     (\nabla^2 u, v) = (f, v)
 
 """
 import sys
@@ -13,23 +21,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from shenfun import inner_product
 
-# Collect basis and solver from either Chebyshev or Legendre submodules
+# Collect basis from either Chebyshev or Legendre submodules
 basis = sys.argv[-1] if len(sys.argv) == 2 else 'chebyshev'
 shen = importlib.import_module('.'.join(('shenfun', basis)))
-Basis = shen.bases.ShenBiharmonicBasis
-Solver = shen.la.Biharmonic
+Basis = shen.bases.ShenNeumannBasis
 
 # Use sympy to compute a rhs, given an analytical solution
 x = symbols("x")
 u = sin(np.pi*x)*(1-x**2)
-
-k = 8
-nu = 1./590.
-dt = 5e-5
-a = -(k**2+nu*dt/2*k**4)
-b = 1.0
-c = -nu*dt/2.
-f = a*u.diff(x, 4) + b*u.diff(x, 2) + c*u
+f = u.diff(x, 2)
 
 # Lambdify for faster evaluation
 ul = lambdify(x, u, 'numpy')
@@ -47,20 +47,20 @@ fj = fl(X)
 # Compute right hand side of Poisson equation
 f_hat = np.zeros(N)
 f_hat = SD.scalar_product(fj, f_hat)
+if basis == 'legendre':
+    f_hat *= -1.
 
-# Get left hand side of Poisson equation (no integration by parts)
-S = inner_product((SD, 0), (SD, 4))
-A = inner_product((SD, 0), (SD, 2))
-B = inner_product((SD, 0), (SD, 0))
+# Get left hand side of Poisson equation
+if basis == 'chebyshev':
+    A = inner_product((SD, 0), (SD, 2))
+else:
+    A = inner_product((SD, 1), (SD, 1))
 
-# Create Helmholtz linear algebra solver
-H = Solver(S, A, B, a, b, c)
+f_hat = A.solve(f_hat)
 
 # Solve and transform to real space
 u = np.zeros(N)               # Solution real space
-u_hat = np.zeros(N)           # Solution spectral space
-u_hat = H(u_hat, f_hat)       # Solve
-u = SD.backward(u_hat, u)
+u = SD.backward(f_hat, u)
 
 # Compare with analytical solution
 uj = ul(X)

@@ -1,71 +1,68 @@
 r"""
-Solve Poisson equation in 2D with periodic bcs in one direction
-and homogeneous Dirichlet in the other
+Solve Biharmonic equation in 2D with periodic bcs in one direction
+and homogeneous Dirichlet and Neumann in the other
 
-    \nabla^2 u = f,
+    \nabla^4 u = f,
 
-Use Fourier basis for the periodic direction and Shen's Dirichlet basis for the
-non-periodic direction.
+Use Fourier basis for the periodic direction and Shen's Biharmonic
+basis for the non-periodic direction.
 
 """
-import sys
-import importlib
 from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
 from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun.tensorproductspace import TensorProductSpace, Function, Laplace,\
-    inner_product, Grad
+from shenfun.legendre.bases import ShenBiharmonicBasis
+from shenfun.tensorproductspace import TensorProductSpace, Function,\
+    Laplace, inner_product, BiharmonicOperator
+from shenfun.legendre.la import Biharmonic
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
 
-# Collect basis and solver from either Chebyshev or Legendre submodules
-basis = sys.argv[-1] if len(sys.argv) == 2 else 'chebyshev'
-shen = importlib.import_module('.'.join(('shenfun', basis)))
-Basis = shen.bases.ShenDirichletBasis
-Solver = shen.la.Helmholtz
-
 # Use sympy to compute a rhs, given an analytical solution
 x, y = symbols("x,y")
-u = (cos(4*x) + sin(2*y))*(1-x**2)
-f = u.diff(x, 2) + u.diff(y, 2)
+u = (sin(4*np.pi*x)*sin(2*y))*(1-x**2)
+f = u.diff(x, 4) + u.diff(y, 4) + 2*u.diff(x, 2, y, 2)
 
 # Lambdify for faster evaluation
 ul = lambdify((x, y), u, 'numpy')
 fl = lambdify((x, y), f, 'numpy')
 
 # Size of discretization
-N = (31, 32)
+N = (64, 64)
 
-SD = Basis(N[0])
+SD = ShenBiharmonicBasis(N[0])
 K1 = R2CBasis(N[1])
 T = TensorProductSpace(comm, (SD, K1))
-X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
+X = T.local_mesh(True)
+
+# Discretization
+use_integration_by_parts = False
 
 # Get f on quad points
 fj = fl(X[0], X[1])
 
-# Compute right hand side of Poisson equation
+# Compute right hand side of Biharmonic equation
 f_hat = Function(T)
 f_hat = T.scalar_product(fj, f_hat)
-if basis == 'legendre':
-    f_hat *= -1.
 
-# Get left hand side of Poisson equation
+# Get left hand side of Biharmonic equation
 v = T.test_function()
-if basis == 'chebyshev':
-    matrices = inner_product(v, Laplace(v))
+if use_integration_by_parts:
+    matrices = inner_product(Laplace(v), Laplace(v))
 else:
-    matrices = inner_product(Grad(v), Grad(v))
+    matrices = inner_product(v, BiharmonicOperator(v))
 
 # Create Helmholtz linear algebra solver
-H = Solver(**matrices, local_shape=T.local_shape())
+S, A, B = matrices['SBBmat'], matrices['PBBmat'], matrices['BBBmat']
+H = Biharmonic(S, A, B, S.scale, A.scale, B.scale, T.local_shape())
 
 # Solve and transform to real space
 u = Function(T, False)        # Solution real space
 u_hat = Function(T)           # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
+
 u = T.backward(u_hat, u)
 
 # Compare with analytical solution

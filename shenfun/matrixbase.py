@@ -423,25 +423,29 @@ class ShenMatrix(SparseMatrix):
         return u
 
 
-def extract_diagonal_matrix(M, tol=1e-8):
+def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-12):
     """Return SparseMatrix version of M
 
     args:
         M                    Dense matrix. Numpy array of ndim=2
 
     kwargs:
-        tol     (float)      Tolerance. Only diagonals with max(|d|) < tol
+        abstol     (float)   Tolerance. Only diagonals with max(|d|) < tol
                              are kept in the returned SparseMatrix
+        reltol     (float)   Relative tolerance. Only diagonals with
+                             max(|d|)/max(|M|) > reltol are kept in
+                             the returned SparseMatrix
     """
     d = {}
+    relmax = abs(M).max()
     for i in range(M.shape[1]):
         u = M.diagonal(i).copy()
-        if abs(u).max() > tol:
+        if abs(u).max() > abstol and abs(u).max()/relmax > reltol :
             d[i] = u
 
     for i in range(1, M.shape[0]):
         l = M.diagonal(-i).copy()
-        if abs(l).max() > tol:
+        if abs(l).max() > abstol and abs(l).max()/relmax > reltol:
             d[-i] = l
 
     return SparseMatrix(d, M.shape)

@@ -6,7 +6,6 @@ import numpy as np
 from shenfun.matrixbase import ShenMatrix
 from shenfun.utilities import inheritdocstrings
 from . import bases
-from shenfun.la import TDMA, PDMA
 
 # Short names for instances of bases
 LB = bases.Basis
@@ -49,6 +48,7 @@ class BDDmat(ShenMatrix):
     def __init__(self, test, trial):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
+        from shenfun.la import TDMA
         N = test[0].N
         k = np.arange(N-2, dtype=np.float)
         d = {-2: -2./(2*k[2:] + 1),
@@ -88,10 +88,20 @@ class BBBmat(ShenMatrix):
 
     """
     def __init__(self, test, trial):
+        from shenfun.la import PDMA
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
-        ShenMatrix.__init__(self, {}, test, trial)
+        k = np.arange(N, dtype=np.float)
+        gk = (2*k+3)/(2*k+7)
+        hk = -(1+gk)
+        ek = 2./(2*k+1)
+        d = {0: ek[:-4] + hk[:-4]**2*ek[2:-2] + gk[:-4]**2*ek[4:],
+             2: hk[:-6]*ek[2:-4] + gk[:-6]*hk[2:-4]*ek[4:-2],
+             4: gk[:-8]*ek[4:-4]}
+        d[-2] = d[2]
+        d[-4] = d[4]
+        ShenMatrix.__init__(self, d, test, trial)
         self.solver = PDMA(self)
 
 
@@ -146,6 +156,89 @@ class ADDmat(ShenMatrix):
 
         return u
 
+@inheritdocstrings
+class ANNmat(ShenMatrix):
+    """Stiffness matrix for inner product A_{kj} = (psi'_j, psi'_k)_w
+
+    where
+
+        j = 0, 1, ..., N-2 and k = 0, 1, ..., N-2
+
+    and psi_k is the Shen Legendre Neumann basis function.
+
+    """
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SN)
+        assert isinstance(trial[0], SN)
+        N = test[0].N
+        k = np.arange(N-2, dtype=np.float)
+        d = {}
+        ShenMatrix.__init__(self, d, test, trial)
+
+
+@inheritdocstrings
+class ABBmat(ShenMatrix):
+    """Stiffness matrix for inner product A_{kj} = (psi'_j, psi'_k)_w
+
+    where
+
+        j = 0, 1, ..., N-4 and k = 0, 1, ..., N-4
+
+    and psi_k is the Shen Legendre Biharmonic basis function.
+
+    """
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SB)
+        assert isinstance(trial[0], SB)
+        N = test[0].N
+        k = np.arange(N-4, dtype=np.float)
+        gk = (2*k+3)/(2*k+7)
+        d = {0: 2*(2*k+3)*(1+gk),
+             2: -2*(2*k[:-2]+3)}
+        d[-2] = d[2]
+        ShenMatrix.__init__(self, d, test, trial)
+
+@inheritdocstrings
+class PBBmat(ShenMatrix):
+    """Stiffness matrix for inner product A_{kj} = (psi_j, psi''_k)_w
+
+    where
+
+        j = 0, 1, ..., N-4 and k = 0, 1, ..., N-4
+
+    and psi_k is the Shen Legendre Biharmonic basis function.
+
+    """
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SB)
+        assert isinstance(trial[0], SB)
+        N = test[0].N
+        k = np.arange(N-4, dtype=np.float)
+        gk = (2*k+3)/(2*k+7)
+        d = {0: -2*(2*k+3)*(1+gk),
+             2: 2*(2*k[:-2]+3)}
+        d[-2] = d[2]
+        ShenMatrix.__init__(self, d, test, trial)
+
+@inheritdocstrings
+class SBBmat(ShenMatrix):
+    """Stiffness matrix for inner product A_{kj} = (psi''_j, psi''_k)_w
+
+    where
+
+        j = 0, 1, ..., N-4 and k = 0, 1, ..., N-4
+
+    and psi_k is the Shen Legendre Biharmonic basis function.
+
+    """
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SB)
+        assert isinstance(trial[0], SB)
+        N = test[0].N
+        k = np.arange(N-4, dtype=np.float)
+        d = {0: 2*(2*k+3)**2*(2*k+5)}
+        ShenMatrix.__init__(self, d, test, trial)
+
 
 @inheritdocstrings
 class _Legmatrix(ShenMatrix):
@@ -177,4 +270,11 @@ mat = _LegMatDict({
     ((SB, 0), (SB, 0)): BBBmat,
     ((SN, 0), (SN, 0)): BNNmat,
     ((SD, 1), (SD, 1)): ADDmat,
+    ((SN, 1), (SN, 1)): ANNmat,
+    ((SB, 2), (SB, 2)): SBBmat,
+    ((SB, 1), (SB, 1)): ABBmat,
+    ((SB, 0), (SB, 2)): PBBmat,
+    ((SB, 2), (SB, 0)): PBBmat,
+    ((SB, 0), (SB, 4)): SBBmat,
+    ((SB, 4), (SB, 0)): SBBmat
     })

@@ -11,9 +11,9 @@ from shenfun.utilities import inheritdocstrings
 class _Fouriermatrix(ShenMatrix):
     def __init__(self, test, trial):
         k = test[0].wavenumbers(test[0].N)
-        if trial[1] > 0:
-            val = 2*np.pi*(1j*k)**trial[1]
-            if trial[1] % 2 == 0:
+        if trial[1] > 0 or test[1] > 0:
+            val = 2*np.pi*(1j*k)**(trial[1])*(-1j*k)**test[1]
+            if (trial[1]+test[1]) % 2 == 0:
                 val = val.real
             d = {0: val}
         else:

@@ -111,7 +111,7 @@ class R2CBasis(FourierBase):
 
     def eval(self, x, fk):
         V = self.vandermonde(x)
-        return np.dot(V, fk) + np.conj(np.dot(V[:, 1:], fk[1:]))
+        return np.dot(V, fk) + np.conj(np.dot(V[:, 1:-1], fk[1:-1]))
 
     def slice(self):
         return slice(0, self.N//2+1)
@@ -126,18 +126,20 @@ class R2CBasis(FourierBase):
         """
         assert self.N == output_array.shape[self.axis]
         points = self.points_and_weights()[0]
-        V = self.vandermonde(points)
-        P = self.get_vandermonde_basis(V)
+        P = self.vandermonde(points)
         if output_array.ndim == 1:
             output_array[:] = np.dot(P, input_array).real
-            output_array += np.dot(P[:, 1:], np.conj(input_array[1:])).real
+            output_array += np.dot(P[:, 1:-1], np.conj(input_array[1:-1])).real
         else:
             fc = np.moveaxis(input_array, self.axis, -2)
             array = np.dot(P, fc).real
             s = [slice(None)]*fc.ndim
-            s[-2] = slice(1, None)
-            array += np.dot(P[:, 1:], np.conj(fc[s])).real
-            output_array = np.moveaxis(array, 0, self.axis)
+            s[-2] = slice(1, -1)
+            array += np.conj(np.dot(P[:, 1:-1], fc[s])).real
+            output_array[:] = np.moveaxis(array, 0, self.axis)
+
+        assert output_array is self.backward.output_array
+        assert input_array is self.backward.input_array
         return output_array
 
 
@@ -187,6 +189,9 @@ class C2CBasis(FourierBase):
         else:
             fc = np.moveaxis(input_array, self.axis, -2)
             array = np.dot(P, fc)
-            output_array = np.moveaxis(array, 0, self.axis)
+            output_array[:] = np.moveaxis(array, 0, self.axis)
+
+        assert output_array is self.backward.output_array
+        assert input_array is self.backward.input_array
         return output_array
 

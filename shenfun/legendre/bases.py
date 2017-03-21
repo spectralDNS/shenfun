@@ -1,8 +1,8 @@
+import numpy as np
 import pyfftw
 from shenfun.spectralbase import SpectralBase, work
 from shenfun.utilities import inheritdocstrings
 from numpy.polynomial import legendre as leg
-import numpy as np
 
 __all__ = ['LegendreBase', 'Basis', 'ShenDirichletBasis',
            'ShenBiharmonicBasis', 'ShenNeumannBasis']
@@ -266,6 +266,7 @@ class ShenNeumannBasis(LegendreBase):
             self.vandermonde_scalar_product(self.scalar_product.input_array,
                                             self.scalar_product.output_array)
 
+        fk = self.scalar_product.output_array
         s = self.sl(0)
         fk[s] = self.mean*np.pi
         s[self.axis] = slice(-2, None)

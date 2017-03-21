@@ -6,18 +6,15 @@ Solve biharmonic equation in 1D
 Use Shen's Biharmonic basis.
 
 """
-import sys
-import importlib
 from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
+from shenfun.legendre.bases import ShenBiharmonicBasis
 from shenfun import inner_product
+from shenfun.legendre.la import Biharmonic
+from mpi4py import MPI
 
-# Collect basis and solver from either Chebyshev or Legendre submodules
-basis = sys.argv[-1] if len(sys.argv) == 2 else 'chebyshev'
-shen = importlib.import_module('.'.join(('shenfun', basis)))
-Basis = shen.bases.ShenBiharmonicBasis
-Solver = shen.la.Biharmonic
+comm = MPI.COMM_WORLD
 
 # Use sympy to compute a rhs, given an analytical solution
 x = symbols("x")
@@ -38,7 +35,7 @@ fl = lambdify(x, f, 'numpy')
 # Size of discretization
 N = 32
 
-SD = Basis(N, plan=True)
+SD = ShenBiharmonicBasis(N, plan=True)
 X = SD.mesh(N)
 
 # Get f on quad points
@@ -48,16 +45,17 @@ fj = fl(X)
 f_hat = np.zeros(N)
 f_hat = SD.scalar_product(fj, f_hat)
 
-# Get left hand side of Poisson equation (no integration by parts)
-S = inner_product((SD, 0), (SD, 4))
-A = inner_product((SD, 0), (SD, 2))
+# Get left hand side of Poisson equation
+S = inner_product((SD, 2), (SD, 2))
+A = inner_product((SD, 1), (SD, 1))
 B = inner_product((SD, 0), (SD, 0))
 
 # Create Helmholtz linear algebra solver
-H = Solver(S, A, B, a, b, c)
+H = Biharmonic(S, A, B, a, -b, c)
 
 # Solve and transform to real space
 u = np.zeros(N)               # Solution real space
+
 u_hat = np.zeros(N)           # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
 u = SD.backward(u_hat, u)
@@ -76,4 +74,4 @@ plt.plot(X, uj)
 plt.figure()
 plt.plot(X, u-uj)
 plt.title('Error')
-#plt.show()
+plt.show()

@@ -8,31 +8,37 @@ Use Fourier basis for the periodic direction and Shen's Biharmonic
 basis for the non-periodic direction.
 
 """
+import sys
+import importlib
 from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
 from shenfun.fourier.bases import R2CBasis
-from shenfun.chebyshev.bases import ShenBiharmonicBasis
 from shenfun.tensorproductspace import TensorProductSpace, Function,\
-    BiharmonicOperator, inner_product
-from shenfun.la import Biharmonic
+    BiharmonicOperator, inner_product, Laplace
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
 
+# Collect basis and solver from either Chebyshev or Legendre submodules
+basis = sys.argv[-1] if len(sys.argv) == 2 else 'chebyshev'
+shen = importlib.import_module('.'.join(('shenfun', basis)))
+BiharmonicBasis = shen.bases.ShenBiharmonicBasis
+BiharmonicSolver = shen.la.Biharmonic
+
 # Use sympy to compute a rhs, given an analytical solution
 x, y = symbols("x,y")
-u = (cos(4*x) + sin(2*y))*(1-x**2)
-f = u.diff(x, 4) + u.diff(y, 4) + 2*u.diff(x, 2)*u.diff(y, 2)
+u = (sin(4*np.pi*x)*cos(4*y))*(1-x**2)
+f = u.diff(x, 4) + u.diff(y, 4) + 2*u.diff(x, 2, y, 2)
 
 # Lambdify for faster evaluation
 ul = lambdify((x, y), u, 'numpy')
 fl = lambdify((x, y), f, 'numpy')
 
 # Size of discretization
-N = (31, 32)
+N = (64, 64)
 
-SD = ShenBiharmonicBasis(N[0])
+SD = BiharmonicBasis(N[0])
 K1 = R2CBasis(N[1])
 T = TensorProductSpace(comm, (SD, K1))
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
@@ -46,11 +52,13 @@ f_hat = T.scalar_product(fj, f_hat)
 
 # Get left hand side of Poisson equation
 v = T.test_function()
-matrices = inner_product(v, BiharmonicOperator(v))
+if basis == 'chebyshev': # No integration by parts due to weights
+    matrices = inner_product(v, BiharmonicOperator(v))
+else: # Use form with integration by parts. Note that BiharmonicOperator also works for Legendre though
+    matrices = inner_product(Laplace(v), Laplace(v))
 
 # Create Helmholtz linear algebra solver
-S, A, B = matrices['SBBmat'], matrices['ABBmat'], matrices['BBBmat']
-H = Biharmonic(S, A, B, S.scale, A.scale, B.scale, T)
+H = BiharmonicSolver(matrices, T.local_shape())
 
 # Solve and transform to real space
 u = Function(T, False)        # Solution real space

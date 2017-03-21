@@ -279,6 +279,7 @@ class SpectralBase(object):
             output_array[:] = np.moveaxis(array, 0, self.axis)
 
         assert output_array is self.backward.output_array
+        assert input_array is self.backward.input_array
         return output_array
 
     def apply_inverse_mass(self, array):

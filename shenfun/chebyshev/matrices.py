@@ -9,7 +9,6 @@ from shenfun.optimization.Matvec import CDNmat_matvec, BDNmat_matvec, \
     CBD_matvec3D, CBD_matvec, CDB_matvec3D, ADDmat_matvec, BBD_matvec3D
 
 from shenfun.matrixbase import ShenMatrix
-from shenfun.la import TDMA, PDMA
 from shenfun.utilities import inheritdocstrings
 from . import bases
 
@@ -37,6 +36,7 @@ class BDDmat(ShenMatrix):
 
     """
     def __init__(self, test, trial):
+        from shenfun.la import TDMA
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         ck = get_ck(test[0].N, test[0].quad)
@@ -242,6 +242,7 @@ class BNNmat(ShenMatrix):
     def __init__(self, test, trial):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SN)
+        from shenfun.la import TDMA
         N = test[0].N
         ck = get_ck(N, test[0].quad)
         k = np.arange(N-2, dtype=np.float)
@@ -341,6 +342,7 @@ class BBBmat(ShenMatrix):
     def __init__(self, test, trial):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
+        from shenfun.la import PDMA
         N = test[0].N
         ck = get_ck(N, test[0].quad)
         k = np.arange(N-4, dtype=np.float)
@@ -732,7 +734,7 @@ class ABBmat(ShenMatrix):
 
 @inheritdocstrings
 class ADDmat(ShenMatrix):
-    """Stiffness matrix for inner product A_{kj} = -(psi''_j, psi_k)_w
+    """Stiffness matrix for inner product A_{kj} = (psi''_j, psi_k)_w
 
     where
 
@@ -741,7 +743,7 @@ class ADDmat(ShenMatrix):
     and psi_k is the Shen Dirichlet basis function.
 
     """
-    def __init__(self, test, trial, scale=-1.):
+    def __init__(self, test, trial):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -749,7 +751,7 @@ class ADDmat(ShenMatrix):
         d = {0: -2*np.pi*(k[:N-2]+1)*(k[:N-2]+2)}
         for i in range(2, N-2, 2):
             d[i] = -4*np.pi*(k[:-(i+2)]+1)
-        ShenMatrix.__init__(self, d, test, trial, scale)
+        ShenMatrix.__init__(self, d, test, trial)
 
         # Following storage more efficient, but requires effort in iadd/isub...
         #d = {0: -2*np.pi*(k[:N-2]+1)*(k[:N-2]+2),
@@ -825,7 +827,7 @@ class ANNmat(ShenMatrix):
     and phi_k is the Shen Neumann basis function.
 
     """
-    def __init__(self, test, trial, scale=-1.):
+    def __init__(self, test, trial):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SN)
         N = test[0].N
@@ -833,7 +835,7 @@ class ANNmat(ShenMatrix):
         d = {0: -2*np.pi*k**2*(k+1)/(k+2)}
         for i in range(2, N-2, 2):
             d[i] = -4*np.pi*(k[:-i]+i)**2*(k[:-i]+1)/(k[:-i]+2)**2
-        ShenMatrix.__init__(self, d, test, trial, scale)
+        ShenMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='csr', axis=0):
         c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
@@ -903,7 +905,7 @@ class ATTmat(ShenMatrix):
     and psi_k is the Chebyshev basis function.
 
     """
-    def __init__(self, test, trial, scale=-1.):
+    def __init__(self, test, trial):
         assert isinstance(test[0], CB)
         assert isinstance(trial[0], CB)
         N = test[0].N
@@ -911,7 +913,7 @@ class ATTmat(ShenMatrix):
         d = {}
         for j in range(2, N, 2):
             d[j] = k[j:]*(k[j:]**2-k[:-j]**2)*np.pi/2.
-        ShenMatrix.__init__(self, d, test, trial, scale)
+        ShenMatrix.__init__(self, d, test, trial)
 
 
 @inheritdocstrings

@@ -47,6 +47,202 @@ def PDMA_SymLU(real_t[::1] d,
     d[n-1] -= lam*e[n-3]
     e[n-3] = lam
 
+cdef void PDMA_SymLU_ptr(real_t* d,
+                         real_t* e,
+                         real_t* f,
+                         int n,
+                         int st):
+
+    cdef:
+        int m, k, i
+        real_t lam
+
+    m = n-2
+    k = n-m
+
+    for i in xrange(n-2*k):
+        lam = e[i*st]/d[i*st]
+        d[(i+k)*st] -= lam*e[i*st]
+        e[(i+k)*st] -= lam*f[i*st]
+        e[i*st] = lam
+        lam = f[i*st]/d[i*st]
+        d[(i+2*k)*st] -= lam*f[i*st]
+        f[i*st] = lam
+
+    lam = e[(n-4)*st]/d[(n-4)*st]
+    d[(n-2)*st] -= lam*e[(n-4)*st]
+    e[(n-4)*st] = lam
+    lam = e[(n-3)*st]/d[(n-3)*st]
+    d[(n-1)*st] -= lam*e[(n-3)*st]
+    e[(n-3)*st] = lam
+
+def PDMA_SymLU_3D(S, A, B, np.int64_t axis,
+                 real_t S_scale,
+                 real_t[:, :, ::1] A_scale,
+                 real_t[:, :, ::1] B_scale,
+                 real_t[:, :, ::1] d0,
+                 real_t[:, :, ::1] d1,
+                 real_t[:, :, ::1] d2):
+    cdef:
+        unsigned int i, ii, jj, strides
+        np.ndarray[real_t, ndim=1] S_0 = S[0].copy()
+        np.ndarray[real_t, ndim=1] A_0 = A[0].copy()
+        np.ndarray[real_t, ndim=1] A_2 = A[2].copy()
+        np.ndarray[real_t, ndim=1] B_0 = B[0].copy()
+        np.ndarray[real_t, ndim=1] B_2 = B[2].copy()
+        np.ndarray[real_t, ndim=1] B_4 = B[4].copy()
+
+    strides = d0.strides[axis]/d0.itemsize
+    if axis == 0:
+        for i in range(d0.shape[0]):
+            for ii in range(d0.shape[1]):
+                for jj in range(d0.shape[2]):
+                    d0[i, ii, jj] = S_0[i]*S_scale + A_0[i]*A_scale[0,ii,jj] + B_0[i]*B_scale[0, ii, jj]
+                    if i < d1.shape[0]:
+                        d1[i, ii, jj] = A_2[i]*A_scale[0, ii, jj] + B_2[i]*B_scale[0, ii, jj]
+                    if i < d2.shape[0]:
+                        d2[i, ii, jj] = B_4[i]*B_scale[0, ii, jj]
+
+        for ii in range(d0.shape[1]):
+            for jj in range(d0.shape[2]):
+                PDMA_SymLU_ptr(&d0[0, ii, jj],
+                               &d1[0, ii, jj],
+                               &d2[0, ii, jj],
+                               d0.shape[axis],
+                               strides)
+
+    elif axis == 1:
+        for ii in range(d0.shape[0]):
+            for i in range(d0.shape[1]):
+                for jj in range(d0.shape[2]):
+                    d0[ii, i, jj] = S_0[i]*S_scale + A_0[i]*A_scale[ii, 0, jj] + B_0[i]*B_scale[ii, 0, jj]
+                    if i < d1.shape[1]:
+                        d1[ii, i, jj] = A_2[i]*A_scale[ii, 0, jj] + B_2[i]*B_scale[ii, 0, jj]
+                    if i < d2.shape[1]:
+                        d2[ii, i, jj] = B_4[i]*B_scale[ii, 0, jj]
+
+        for ii in range(d0.shape[0]):
+            for jj in range(d0.shape[2]):
+                PDMA_SymLU_ptr(&d0[ii, 0, jj],
+                               &d1[ii, 0, jj],
+                               &d2[ii, 0, jj],
+                               d0.shape[axis],
+                               strides)
+
+    elif axis == 2:
+        for ii in range(d0.shape[0]):
+            for jj in range(d0.shape[1]):
+                for i in range(d0.shape[2]):
+                    d0[ii, jj, i] = S_0[i]*S_scale + A_0[i]*A_scale[ii, jj, 0] + B_0[i]*B_scale[ii, jj, 0]
+                    if i < d1.shape[2]:
+                        d1[ii, jj, i] = A_2[i]*A_scale[ii, jj, 0] + B_2[i]*B_scale[ii, jj, 0]
+                    if i < d2.shape[2]:
+                        d2[ii, jj, i] = B_4[i]*B_scale[ii, jj, 0]
+                PDMA_SymLU_ptr(&d0[ii, jj, 0],
+                               &d1[ii, jj, 0],
+                               &d2[ii, jj, 0],
+                               d0.shape[axis],
+                               strides)
+
+def PDMA_SymLU_2D(S, A, B, np.int64_t axis,
+                 real_t S_scale,
+                 real_t[:, ::1] A_scale,
+                 real_t[:, ::1] B_scale,
+                 real_t[:, ::1] d0,
+                 real_t[:, ::1] d1,
+                 real_t[:, ::1] d2):
+    cdef:
+        unsigned int i, ii, strides
+        np.ndarray[real_t, ndim=1] S_0 = S[0].copy()
+        np.ndarray[real_t, ndim=1] A_0 = A[0].copy()
+        np.ndarray[real_t, ndim=1] A_2 = A[2].copy()
+        np.ndarray[real_t, ndim=1] B_0 = B[0].copy()
+        np.ndarray[real_t, ndim=1] B_2 = B[2].copy()
+        np.ndarray[real_t, ndim=1] B_4 = B[4].copy()
+
+    strides = d0.strides[axis]/d0.itemsize
+    if axis == 0:
+        for i in range(d0.shape[0]):
+            for ii in range(d0.shape[1]):
+                d0[i, ii] = S_0[i]*S_scale + A_0[i]*A_scale[0, ii] + B_0[i]*B_scale[0, ii]
+                if i < d1.shape[0]:
+                    d1[i, ii] = A_2[i]*A_scale[0, ii] + B_2[i]*B_scale[0, ii]
+                if i < d2.shape[0]:
+                    d2[i, ii] = B_4[i]*B_scale[0, ii]
+
+        for ii in range(d0.shape[1]):
+            PDMA_SymLU_ptr(&d0[0, ii],
+                            &d1[0, ii],
+                            &d2[0, ii],
+                            d0.shape[axis],
+                            strides)
+
+    elif axis == 1:
+        for ii in range(d0.shape[0]):
+            for i in range(d0.shape[1]):
+                d0[ii, i] = S_0[i]*S_scale + A_0[i]*A_scale[ii, 0] + B_0[i]*B_scale[ii, 0]
+                if i < d1.shape[1]:
+                    d1[ii, i] = A_2[i]*A_scale[ii, 0] + B_2[i]*B_scale[ii, 0]
+                if i < d2.shape[1]:
+                    d2[ii, i] = B_4[i]*B_scale[ii, 0]
+
+        for ii in range(d0.shape[0]):
+            PDMA_SymLU_ptr(&d0[ii, 0],
+                            &d1[ii, 0],
+                            &d2[ii, 0],
+                            d0.shape[axis],
+                            strides)
+
+def PDMA_SymSolve3D_VC(real_t[:, :, ::1] d,
+                       real_t[:, :, ::1] a,
+                       real_t[:, :, ::1] l,
+                       T[:, :, ::1] x,
+                       np.int64_t axis):
+    cdef:
+        unsigned int n = d.shape[0]
+        np.intp_t i, j, k, strides
+
+    strides = x.strides[axis]/x.itemsize
+    if axis == 0:
+        for i in range(d.shape[1]):
+            for j in range(d.shape[2]):
+                PDMA_SymSolve_ptr3(&d[0, i, j], &a[0, i, j], &l[0, i, j],
+                                   &x[0, i, j], d.shape[axis], strides)
+
+    elif axis == 1:
+        for i in range(d.shape[0]):
+            for j in range(d.shape[2]):
+                PDMA_SymSolve_ptr3(&d[i, 0, j], &a[i, 0, j], &l[i, 0, j],
+                                   &x[i, 0, j], d.shape[axis], strides)
+
+    elif axis == 2:
+        for i in range(d.shape[0]):
+            for j in range(d.shape[1]):
+                PDMA_SymSolve_ptr3(&d[i, j, 0], &a[i, j, 0], &l[i, j, 0],
+                                   &x[i, j, 0], d.shape[axis], strides)
+
+
+def PDMA_SymSolve2D_VC(real_t[:, ::1] d,
+                       real_t[:, ::1] a,
+                       real_t[:, ::1] l,
+                       T[:, ::1] x,
+                       np.int64_t axis):
+    cdef:
+        unsigned int n = d.shape[0]
+        np.intp_t i, j, strides
+
+    strides = x.strides[axis]/x.itemsize
+    if axis == 0:
+        for i in range(d.shape[1]):
+            PDMA_SymSolve_ptr3(&d[0, i], &a[0, i], &l[0, i],
+                                &x[0, i], d.shape[axis], strides)
+
+    elif axis == 1:
+        for i in range(d.shape[0]):
+            PDMA_SymSolve_ptr3(&d[i, 0], &a[i, 0], &l[i, 0],
+                                &x[i, 0], d.shape[axis], strides)
+
+
 def PDMA_Symsolve(real_t[::1] d,
                   real_t[::1] e,
                   real_t[::1] f,
@@ -149,7 +345,31 @@ def PDMA_Symsolve3D(real_t [::1] d,
                     b[i, j, k] -= (e[k]*b[i, j, k+2] + f[k]*b[i, j, k+4])
 
 
-cdef void PDMA_Symsolve_ptr(real_t* d,
+cdef void PDMA_SymSolve_ptr3(real_t* d,
+                             real_t* e,
+                             real_t* f,
+                             T* b,
+                             int n,
+                             int st) nogil:
+    cdef:
+        int k
+
+    b[2*st] -= e[0]*b[0]
+    b[3*st] -= e[st]*b[st]
+    for k in range(4, n):
+        b[k*st] -= (e[(k-2)*st]*b[(k-2)*st] + f[(k-4)*st]*b[(k-4)*st])
+
+    b[(n-1)*st] /= d[(n-1)*st]
+    b[(n-2)*st] /= d[(n-2)*st]
+    b[(n-3)*st] /= d[(n-3)*st]
+    b[(n-3)*st] -= e[(n-3)*st]*b[(n-1)*st]
+    b[(n-4)*st] /= d[(n-4)*st]
+    b[(n-4)*st] -= e[(n-4)*st]*b[(n-2)*st]
+    for k in range(n-5,-1,-1):
+        b[k*st] /= d[k*st]
+        b[k*st] -= (e[k*st]*b[(k+2)*st] + f[k*st]*b[(k+4)*st])
+
+cdef void PDMA_SymSolve_ptr(real_t* d,
                             real_t* e,
                             real_t* f,
                             T* b,
@@ -187,31 +407,132 @@ def PDMA_Symsolve3D_ptr(real_t[::1] d,
     if axis == 0:
         for j in range(x.shape[1]):
             for k in range(x.shape[2]):
-                PDMA_Symsolve_ptr(&d[0], &e[0], &f[0], &x[0,j,k], n, strides)
+                PDMA_SymSolve_ptr(&d[0], &e[0], &f[0], &x[0,j,k], n, strides)
 
     elif axis == 1:
         for i in range(x.shape[0]):
             for k in range(x.shape[2]):
-                PDMA_Symsolve_ptr(&d[0], &e[0], &f[0], &x[i,0,k], n, strides)
+                PDMA_SymSolve_ptr(&d[0], &e[0], &f[0], &x[i,0,k], n, strides)
 
     elif axis == 2:
         for i in range(x.shape[0]):
             for j in range(x.shape[1]):
-                PDMA_Symsolve_ptr(&d[0], &e[0], &f[0], &x[i,j,0], n, strides)
+                PDMA_SymSolve_ptr(&d[0], &e[0], &f[0], &x[i,j,0], n, strides)
 
-#def TDMA_SymLU(np.ndarray[real_t, ndim=1, mode='c'] d,
-               #np.ndarray[real_t, ndim=1, mode='c'] a,
-               #np.ndarray[real_t, ndim=1, mode='c'] l):
 def TDMA_SymLU(real_t[::1] d,
-               real_t[::1] a,
-               real_t[::1] l):
+               real_t[::1] ud,
+               real_t[::1] ld):
     cdef:
         unsigned int n = d.shape[0]
         int i
 
     for i in range(2, n):
-        l[i-2] = a[i-2]/d[i-2]
-        d[i] = d[i] - l[i-2]*a[i-2]
+        ld[i-2] = ud[i-2]/d[i-2]
+        d[i] = d[i] - ld[i-2]*ud[i-2]
+
+
+cdef TDMA_SymLU_ptr(real_t* d,
+                    real_t* ud,
+                    real_t* ld,
+                    int n,
+                    int st):
+    cdef:
+        int i
+
+    for i in range(2, n):
+        ld[(i-2)*st] = ud[(i-2)*st]/d[(i-2)*st]
+        d[i*st] = d[i*st] - ld[(i-2)*st]*ud[(i-2)*st]
+
+def TDMA_SymLU_3D(A, B, np.int64_t axis,
+                 real_t A_scale,
+                 real_t[:, :, ::1] B_scale,
+                 real_t[:, :, ::1] d0,
+                 real_t[:, :, ::1] d1,
+                 real_t[:, :, ::1] L):
+    cdef:
+        unsigned int i, ii, jj, strides
+        np.ndarray[real_t, ndim=1] A_0 = A[0].copy()
+        np.ndarray[real_t, ndim=1] B_0 = B[0].copy()
+        np.ndarray[real_t, ndim=1] B_2 = B[2].copy()
+
+    strides = d0.strides[axis]/d0.itemsize
+    if axis == 0:
+        for ii in range(d0.shape[1]):
+            for jj in range(d0.shape[2]):
+                for i in range(d0.shape[0]):
+                    d0[i, ii, jj] = A_0[i]*A_scale + B_0[i]*B_scale[0, ii, jj]
+                for i in range(d1.shape[0]):
+                    d1[i, ii, jj] = B_2[i]*B_scale[0, ii, jj]
+                TDMA_SymLU_ptr(&d0[0, ii, jj],
+                               &d1[0, ii, jj],
+                               &L[0, ii, jj],
+                               d0.shape[axis],
+                               strides)
+
+    elif axis == 1:
+        for ii in range(d0.shape[0]):
+            for jj in range(d0.shape[2]):
+                for i in range(d0.shape[1]):
+                    d0[ii, i, jj] = A_0[i]*A_scale + B_0[i]*B_scale[ii, 0, jj]
+                for i in range(d1.shape[axis]):
+                    d1[ii, i, jj] = B_2[i]*B_scale[ii, 0, jj]
+                TDMA_SymLU_ptr(&d0[ii, 0, jj],
+                               &d1[ii, 0, jj],
+                               &L[ii, 0, jj],
+                               d0.shape[axis],
+                               strides)
+
+    elif axis == 2:
+        for ii in range(d0.shape[0]):
+            for jj in range(d0.shape[1]):
+                for i in range(d0.shape[2]):
+                    d0[ii, jj, i] = A_0[i]*A_scale + B_0[i]*B_scale[ii, jj, 0]
+                for i in range(d1.shape[axis]):
+                    d1[ii, jj, i] = B_2[i]*B_scale[ii, jj, 0]
+                TDMA_SymLU_ptr(&d0[ii, jj, 0],
+                               &d1[ii, jj, 0],
+                               &L[ii, jj, 0],
+                               d0.shape[axis],
+                               strides)
+
+
+def TDMA_SymLU_2D(A, B, np.int64_t axis,
+                 real_t A_scale,
+                 real_t[:, ::1] B_scale,
+                 real_t[:, ::1] d0,
+                 real_t[:, ::1] d1,
+                 real_t[:, ::1] L):
+    cdef:
+        unsigned int i, ii, jj, strides
+        np.ndarray[real_t, ndim=1] A_0 = A[0].copy()
+        np.ndarray[real_t, ndim=1] B_0 = B[0].copy()
+        np.ndarray[real_t, ndim=1] B_2 = B[2].copy()
+
+    strides = d0.strides[axis]/d0.itemsize
+    if axis == 0:
+        for ii in range(d0.shape[1]):
+            for i in range(d0.shape[0]):
+                d0[i, ii] = A_0[i]*A_scale + B_0[i]*B_scale[0, ii]
+            for i in range(d1.shape[0]):
+                d1[i, ii] = B_2[i]*B_scale[0, ii]
+            TDMA_SymLU_ptr(&d0[0, ii],
+                            &d1[0, ii],
+                            &L[0, ii],
+                            d0.shape[axis],
+                            strides)
+
+    elif axis == 1:
+        for ii in range(d0.shape[0]):
+            for i in range(d0.shape[1]):
+                d0[ii, i] = A_0[i]*A_scale + B_0[i]*B_scale[ii, 0]
+            for i in range(d1.shape[axis]):
+                d1[ii, i] = B_2[i]*B_scale[ii, 0]
+            TDMA_SymLU_ptr(&d0[ii, 0],
+                            &d1[ii, 0],
+                            &L[ii, 0],
+                            d0.shape[axis],
+                            strides)
+
 
 cdef void TDMA_SymSolve_ptr(real_t* d,
                             real_t* a,
@@ -239,13 +560,12 @@ def TDMA_SymSolve3D_ptr(real_t[::1] d,
     cdef:
         int n = d.shape[0]
         int i, j, k, strides
-        T[::1, :, :] xT = x.T
 
     strides = x.strides[axis]/x.itemsize
     if axis == 0:
-        for j in range(xT.shape[0]):
-            for k in range(xT.shape[1]):
-                TDMA_SymSolve_ptr(&d[0], &a[0], &l[0], &xT[0,j,k], n, 1)
+        for j in range(x.shape[1]):
+            for k in range(x.shape[2]):
+                TDMA_SymSolve_ptr(&d[0], &a[0], &l[0], &x[0,j,k], n, strides)
 
     elif axis == 1:
         for i in range(x.shape[0]):
@@ -272,6 +592,7 @@ def TDMA_SymSolve(real_t[::1] d,
     x[n-2] = x[n-2]/d[n-2]
     for i in range(n - 3, -1, -1):
         x[i] = (x[i] - a[i]*x[i+2])/d[i]
+
 
 def TDMA_SymSolve3D(real_t[::1] d,
                     real_t[::1] a,
@@ -324,6 +645,74 @@ def TDMA_SymSolve3D(real_t[::1] d,
                 x[i, j, n-2] = x[i, j, n-2]/d[n-2]
                 for k in range(n - 3, -1, -1):
                     x[i, j, k] = (x[i, j, k] - a[k]*x[i, j, k+2])/d[k]
+
+
+def TDMA_SymSolve3D_VC(real_t[:, :, ::1] d,
+                       real_t[:, :, ::1] a,
+                       real_t[:, :, ::1] l,
+                       T[:,:,::1] x,
+                       np.int64_t axis):
+    cdef:
+        unsigned int n = d.shape[0]
+        np.intp_t i, j, k, strides
+
+    strides = x.strides[axis]/x.itemsize
+    if axis == 0:
+        for i in range(d.shape[1]):
+            for j in range(d.shape[2]):
+                TDMA_SymSolve_ptr3(&d[0, i, j], &a[0, i, j], &l[0, i, j],
+                                   &x[0, i, j], d.shape[axis], strides)
+
+    elif axis == 1:
+        for i in range(d.shape[0]):
+            for j in range(d.shape[2]):
+                TDMA_SymSolve_ptr3(&d[i, 0, j], &a[i, 0, j], &l[i, 0, j],
+                                   &x[i, 0, j], d.shape[axis], strides)
+
+    elif axis == 2:
+        for i in range(d.shape[0]):
+            for j in range(d.shape[1]):
+                TDMA_SymSolve_ptr3(&d[i, j, 0], &a[i, j, 0], &l[i, j, 0],
+                                   &x[i, j, 0], d.shape[axis], strides)
+
+
+def TDMA_SymSolve2D_VC(real_t[:, ::1] d,
+                       real_t[:, ::1] a,
+                       real_t[:, ::1] l,
+                       T[:, ::1] x,
+                       np.int64_t axis):
+    cdef:
+        unsigned int n = d.shape[0]
+        np.intp_t i, j, strides
+
+    strides = x.strides[axis]/x.itemsize
+    if axis == 0:
+        for j in range(d.shape[1]):
+            TDMA_SymSolve_ptr3(&d[0, j], &a[0, j], &l[0, j],
+                               &x[0, j], d.shape[axis], strides)
+
+    elif axis == 1:
+        for i in range(d.shape[0]):
+            TDMA_SymSolve_ptr3(&d[i, 0], &a[i, 0], &l[i, 0],
+                               &x[i, 0], d.shape[axis], strides)
+
+
+cdef void TDMA_SymSolve_ptr3(real_t* d,
+                             real_t* a,
+                             real_t* l,
+                             T* x,
+                             int n,
+                             int st) nogil:
+    cdef:
+        np.intp_t i
+
+    for i in range(2, n):
+        x[i*st] -= l[(i-2)*st]*x[(i-2)*st]
+
+    x[(n-1)*st] = x[(n-1)*st]/d[(n-1)*st]
+    x[(n-2)*st] = x[(n-2)*st]/d[(n-2)*st]
+    for i in range(n - 3, -1, -1):
+        x[i*st] = (x[i*st] - a[i*st]*x[(i+2)*st])/d[i*st]
 
 
 def LU_Helmholtz_1D(A, B,
@@ -1031,6 +1420,29 @@ def Biharmonic_factor_pr_3D(np.int64_t axis,
                                     l1[:, ii, jj, :])
 
 
+def Biharmonic_factor_pr_2D(np.int64_t axis,
+                            np.ndarray[real_t, ndim=3] a,
+                            np.ndarray[real_t, ndim=3] b,
+                            np.ndarray[real_t, ndim=3] l0,
+                            np.ndarray[real_t, ndim=3] l1):
+
+    cdef:
+        unsigned int ii
+
+    if axis == 0:
+        for ii in range(a.shape[2]):
+            Biharmonic_factor_pr(a[:, :, ii],
+                                b[:, :, ii],
+                                l0[:, :, ii],
+                                l1[:, :, ii])
+    elif axis == 1:
+        for ii in range(a.shape[1]):
+            Biharmonic_factor_pr(a[:, ii, :],
+                                b[:, ii, :],
+                                l0[:, ii, :],
+                                l1[:, ii, :])
+
+
 def Biharmonic_factor_pr(np.ndarray[real_t, ndim=2] a,
                          np.ndarray[real_t, ndim=2] b,
                          np.ndarray[real_t, ndim=2] l0,
@@ -1210,7 +1622,6 @@ def Solve_Biharmonic_3D_n(np.int64_t axis,
             for k in range(fk.shape[2]):
                 uk[ke, j, k] = y[ke, j, k] / u0[0, M-1, j, k]
                 uk[ko, j, k] = y[ko, j, k] / u0[1, M-1, j, k]
-                print(uk[ke,j,k], uk[ko,j,k], u0[0, M-1, j, k], u0[1, M-1, j, k])
 
         ke = 2*(M-2)
         ko = ke+1
@@ -1342,6 +1753,130 @@ def Solve_Biharmonic_3D_n(np.int64_t axis,
                     o1[j, k] += uk[j, k, jo]/(jo+3.)
                     o2[j, k] += (uk[j, k, jo]/(jo+3.))*((jo+2.)*(jo+2.))
                     uk[j, k, ko] = (y[j, k, ko] - u1[1, j, k, kk]*uk[j, k, ko+2] - u2[1, j, k, kk]*uk[j, k, ko+4] - a[1, j, k, kk]*ac*o1[j, k] - b[1, j, k, kk]*ac*o2[j, k]) / u0[1, j, k, kk]
+
+
+@cython.cdivision(True)
+def Solve_Biharmonic_2D_n(np.int64_t axis,
+                          np.ndarray[T, ndim=2, mode='c'] fk,
+                          np.ndarray[T, ndim=2, mode='c'] uk,
+                          np.ndarray[real_t, ndim=3, mode='c'] u0,
+                          np.ndarray[real_t, ndim=3, mode='c'] u1,
+                          np.ndarray[real_t, ndim=3, mode='c'] u2,
+                          np.ndarray[real_t, ndim=3, mode='c'] l0,
+                          np.ndarray[real_t, ndim=3, mode='c'] l1,
+                          np.ndarray[real_t, ndim=3, mode='c'] a,
+                          np.ndarray[real_t, ndim=3, mode='c'] b,
+                          np.ndarray[real_t, ndim=2] a0):
+
+    cdef:
+        int i, j, k, kk, m, M, ke, ko, jj, je, jo
+        np.float_t ac
+        np.ndarray[T, ndim=1, mode='c'] s1
+        np.ndarray[T, ndim=1, mode='c'] s2
+        np.ndarray[T, ndim=1, mode='c'] o1
+        np.ndarray[T, ndim=1, mode='c'] o2
+        np.ndarray[T, ndim=2, mode='c'] y = np.zeros((fk.shape[0], fk.shape[1]), dtype=fk.dtype)
+
+
+    if axis == 0:
+        s1 = np.zeros(fk.shape[1], dtype=fk.dtype)
+        s2 = np.zeros(fk.shape[1], dtype=fk.dtype)
+        o1 = np.zeros(fk.shape[1], dtype=fk.dtype)
+        o2 = np.zeros(fk.shape[1], dtype=fk.dtype)
+
+        M = u0.shape[1]
+        for j in range(fk.shape[1]):
+            y[0, j] = fk[0, j]
+            y[1, j] = fk[1, j]
+            y[2, j] = fk[2, j] - l0[0, 0, j]*y[0, j]
+            y[3, j] = fk[3, j] - l0[1, 0, j]*y[1, j]
+
+        for i in xrange(2, M):
+            ke = 2*i
+            ko = ke+1
+            for j in range(fk.shape[1]):
+                y[ko, j] = fk[ko, j] - l0[1, i-1, j]*y[ko-2, j] - l1[1, i-2, j]*y[ko-4, j]
+                y[ke, j] = fk[ke, j] - l0[0, i-1, j]*y[ke-2, j] - l1[0, i-2, j]*y[ke-4, j]
+
+        ke = 2*(M-1)
+        ko = ke+1
+        for j in range(fk.shape[1]):
+            uk[ke, j] = y[ke, j] / u0[0, M-1, j]
+            uk[ko, j] = y[ko, j] / u0[1, M-1, j]
+
+        ke = 2*(M-2)
+        ko = ke+1
+        for j in range(fk.shape[1]):
+            uk[ke, j] = (y[ke, j] - u1[0, M-2, j]*uk[ke+2, j]) / u0[0, M-2, j]
+            uk[ko, j] = (y[ko, j] - u1[1, M-2, j]*uk[ko+2, j]) / u0[1, M-2, j]
+
+        ke = 2*(M-3)
+        ko = ke+1
+        for j in range(fk.shape[1]):
+            uk[ke, j] = (y[ke, j] - u1[0, M-3, j]*uk[ke+2, j] - u2[0, M-3, j]*uk[ke+4, j]) / u0[0, M-3, j]
+            uk[ko, j] = (y[ko, j] - u1[1, M-3, j]*uk[ko+2, j] - u2[1, M-3, j]*uk[ko+4, j]) / u0[1, M-3, j]
+
+        for kk in xrange(M-4, -1, -1):
+            ke = 2*kk
+            ko = ke+1
+            je = ke+6
+            jo = ko+6
+            for j in range(fk.shape[1]):
+                ac = a0[0, j]
+                s1[j] += uk[je, j]/(je+3.)
+                s2[j] += (uk[je, j]/(je+3.))*((je+2.)*(je+2.))
+                uk[ke, j] = (y[ke, j] - u1[0, kk, j]*uk[ke+2, j] - u2[0, kk, j]*uk[ke+4, j] - a[0, kk, j]*ac*s1[j] - b[0, kk, j]*ac*s2[j]) / u0[0, kk, j]
+                o1[j] += uk[jo, j]/(jo+3.)
+                o2[j] += (uk[jo, j]/(jo+3.))*((jo+2.)*(jo+2.))
+                uk[ko, j] = (y[ko, j] - u1[1, kk, j]*uk[ko+2, j] - u2[1, kk, j]*uk[ko+4, j] - a[1, kk, j]*ac*o1[j] - b[1, kk, j]*ac*o2[j]) / u0[1, kk, j]
+
+    elif axis == 1:
+        s1 = np.zeros(fk.shape[0], dtype=fk.dtype)
+        s2 = np.zeros(fk.shape[0], dtype=fk.dtype)
+        o1 = np.zeros(fk.shape[0], dtype=fk.dtype)
+        o2 = np.zeros(fk.shape[0], dtype=fk.dtype)
+
+        M = u0.shape[2]
+        for j in range(fk.shape[0]):
+            y[j, 0] = fk[j, 0]
+            y[j, 1] = fk[j, 1]
+            y[j, 2] = fk[j, 2] - l0[0, j, 0]*y[j, 0]
+            y[j, 3] = fk[j, 3] - l0[1, j, 0]*y[j, 1]
+
+            for i in xrange(2, M):
+                ke = 2*i
+                ko = ke+1
+                y[j, ko] = fk[j, ko] - l0[1, j, i-1]*y[j, ko-2] - l1[1, j, i-2]*y[j, ko-4]
+                y[j, ke] = fk[j, ke] - l0[0, j, i-1]*y[j, ke-2] - l1[0, j, i-2]*y[j, ke-4]
+
+            ke = 2*(M-1)
+            ko = ke+1
+            uk[j, ke] = y[j, ke] / u0[0, j, M-1]
+            uk[j, ko] = y[j, ko] / u0[1, j, M-1]
+
+            ke = 2*(M-2)
+            ko = ke+1
+            uk[j, ke] = (y[j, ke] - u1[0, j, M-2]*uk[j, ke+2]) / u0[0, j, M-2]
+            uk[j, ko] = (y[j, ko] - u1[1, j, M-2]*uk[j, ko+2]) / u0[1, j, M-2]
+
+            ke = 2*(M-3)
+            ko = ke+1
+            uk[j, ke] = (y[j, ke] - u1[0, j, M-3]*uk[j, ke+2] - u2[0, j, M-3]*uk[j, ke+4]) / u0[0, j, M-3]
+            uk[j, ko] = (y[j, ko] - u1[1, j, M-3]*uk[j, ko+2] - u2[1, j, M-3]*uk[j, ko+4]) / u0[1, j, M-3]
+
+            for kk in xrange(M-4, -1, -1):
+                ke = 2*kk
+                ko = ke+1
+                je = ke+6
+                jo = ko+6
+                ac = a0[j, 0]
+                s1[j] += uk[j, je]/(je+3.)
+                s2[j] += (uk[j, je]/(je+3.))*((je+2.)*(je+2.))
+                uk[j, ke] = (y[j, ke] - u1[0, j, kk]*uk[j, ke+2] - u2[0, j, kk]*uk[j, ke+4] - a[0, j, kk]*ac*s1[j] - b[0, j, kk]*ac*s2[j]) / u0[0, j, kk]
+                o1[j] += uk[j, jo]/(jo+3.)
+                o2[j] += (uk[j, jo]/(jo+3.))*((jo+2.)*(jo+2.))
+                uk[j, ko] = (y[j, ko] - u1[1, j, kk]*uk[j, ko+2] - u2[1, j, kk]*uk[j, ko+4] - a[1, j, kk]*ac*o1[j] - b[1, j, kk]*ac*o2[j]) / u0[1, j, kk]
+
 
 
 @cython.cdivision(True)
@@ -1641,3 +2176,213 @@ def LU_Biharmonic_3D_n(np.int64_t axis,
                             u1[odd, j, k, kk] = c0[kk+1]
                         if kk < M-2:
                             u2[odd, j, k, kk] = c0[kk+2]
+
+
+@cython.cdivision(True)
+#@cython.linetrace(True)
+#@cython.binding(True)
+def LU_Biharmonic_2D_n(np.int64_t axis,
+                     np.ndarray[real_t, ndim=2] alfa,
+                     np.ndarray[real_t, ndim=2] beta,
+                     np.ndarray[real_t, ndim=2] ceta,
+                     # 3 upper diagonals of SBB
+                     np.ndarray[real_t, ndim=1, mode='c'] sii,
+                     np.ndarray[real_t, ndim=1, mode='c'] siu,
+                     np.ndarray[real_t, ndim=1, mode='c'] siuu,
+                     # All 3 diagonals of ABB
+                     np.ndarray[real_t, ndim=1, mode='c'] ail,
+                     np.ndarray[real_t, ndim=1, mode='c'] aii,
+                     np.ndarray[real_t, ndim=1, mode='c'] aiu,
+                     # All 5 diagonals of BBB
+                     np.ndarray[real_t, ndim=1, mode='c'] bill,
+                     np.ndarray[real_t, ndim=1, mode='c'] bil,
+                     np.ndarray[real_t, ndim=1, mode='c'] bii,
+                     np.ndarray[real_t, ndim=1, mode='c'] biu,
+                     np.ndarray[real_t, ndim=1, mode='c'] biuu,
+                     np.ndarray[real_t, ndim=3, mode='c'] u0,
+                     np.ndarray[real_t, ndim=3, mode='c'] u1,
+                     np.ndarray[real_t, ndim=3, mode='c'] u2,
+                     np.ndarray[real_t, ndim=3, mode='c'] l0,
+                     np.ndarray[real_t, ndim=3, mode='c'] l1):
+    cdef:
+        unsigned int ii, jj, N1, N2, odd, i, j, k, kk, M, ll
+        long long int m, n, p, dd, w0
+        double a, b, c, pp
+        double pi = np.pi
+        vector[double] c0, c1, c2
+        #double* pc0, pc1, pc2
+        #np.ndarray[real_t, ndim=1] c0 = np.zeros(sii.shape[0]/2)
+        #np.ndarray[real_t, ndim=1] c1 = np.zeros(sii.shape[0]/2)
+        #np.ndarray[real_t, ndim=1] c2 = np.zeros(sii.shape[0]/2)
+
+    M = sii.shape[0]/2
+
+    c0.resize(M)
+    c1.resize(M)
+    c2.resize(M)
+
+    if axis == 0:
+        N1 = alfa.shape[1]
+
+        for j in xrange(N1):
+            a = alfa[0, j]
+            b = beta[0, j]
+            c = ceta[0, j]
+            for odd in xrange(2):
+                c0[0] = a*sii[odd] + b*aii[odd] + c*bii[odd]
+                c0[1] = a*siu[odd] + b*aiu[odd] + c*biu[odd]
+                c0[2] = a*siuu[odd] + c*biuu[odd]
+                m = 8*(odd+1)*(odd+2)*(odd*(odd+4)+3*(6+odd+2)*(6+odd+2))
+                c0[3] = m*a*pi/(6+odd+3.)
+                m = 8*(odd+1)*(odd+2)*(odd*(odd+4)+3*(8+odd+2)*(8+odd+2))
+                c0[4] = m*a*pi/(8+odd+3.)
+
+                c1[0] = b*ail[odd] + c*bil[odd]
+                c1[1] = a*sii[2+odd] + b*aii[2+odd] + c*bii[2+odd]
+                c1[2] = a*siu[2+odd] + b*aiu[2+odd] + c*biu[2+odd]
+                c1[3] = a*siuu[2+odd] + c*biuu[2+odd]
+                m = 8*(odd+3)*(odd+4)*((odd+2)*(odd+6)+3*(8+odd+2)*(8+odd+2))
+                c1[4] = m*a*pi/(8+odd+3.)
+
+                c2[0] = c*bill[odd]
+                c2[1] = b*ail[2+odd] + c*bil[2+odd]
+                c2[2] = a*sii[4+odd] + b*aii[4+odd] + c*bii[4+odd]
+                c2[3] = a*siu[4+odd] + b*aiu[4+odd] + c*biu[4+odd]
+                c2[4] = a*siuu[4+odd] + c*biuu[4+odd]
+
+                for i in xrange(5, M):
+                    p = 2*i+odd
+                    pp = pi/(p+3.)
+                    m = 8*(odd+1)*(odd+2)*(odd*(odd+4)+3*(p+2)*(p+2))
+                    c0[i] = m*a*pp
+                    m = 8*(odd+3)*(odd+4)*((odd+2)*(odd+6)+3*(p+2)*(p+2))
+                    c1[i] = m*a*pp
+                    m = 8*(odd+5)*(odd+6)*((odd+4)*(odd+8)+3*(p+2)*(p+2))
+                    c2[i] = m*a*pp
+
+                u0[odd, 0, j] = c0[0]
+                u1[odd, 0, j] = c0[1]
+                u2[odd, 0, j] = c0[2]
+                for kk in xrange(1, M):
+                    l0[odd, kk-1, j] = c1[kk-1]/u0[odd, kk-1, j]
+                    if kk < M-1:
+                        l1[odd, kk-1, j] = c2[kk-1]/u0[odd, kk-1, j]
+
+                    for i in xrange(kk, M):
+                        c1[i] -= l0[odd, kk-1, j]*c0[i]
+
+                    if kk < M-1:
+                        for i in xrange(kk, M):
+                            c2[i] -= l1[odd, kk-1, j]*c0[i]
+
+                    #for i in xrange(kk, M):
+                        #c0[i] = c1[i]
+                        #c1[i] = c2[i]
+                    copy(c1.begin()+kk, c1.end(), c0.begin()+kk)
+                    copy(c2.begin()+kk, c2.end(), c1.begin()+kk)
+
+                    if kk < M-2:
+                        ll = 2*kk+odd
+                        c2[kk] = c*bill[ll]
+                        c2[kk+1] = b*ail[ll+2] + c*bil[ll+2]
+                        c2[kk+2] = a*sii[ll+4] + b*aii[ll+4] + c*bii[ll+4]
+                        if kk < M-3:
+                            c2[kk+3] = a*siu[ll+4] + b*aiu[ll+4] + c*biu[ll+4]
+                        if kk < M-4:
+                            c2[kk+4] = a*siuu[ll+4] + c*biuu[ll+4]
+                        if kk < M-5:
+                            n = 2*(kk+2)+odd
+                            dd = 8*(n+1)*(n+2)
+                            w0 = dd*n*(n+4)
+                            for i in xrange(kk+5, M):
+                                p = 2*i+odd
+                                c2[i] = (w0 + dd*3*(p+2)*(p+2))*a*pi/(p+3.)
+
+                    u0[odd, kk, j] = c0[kk]
+                    if kk < M-1:
+                        u1[odd, kk, j] = c0[kk+1]
+                    if kk < M-2:
+                        u2[odd, kk, j] = c0[kk+2]
+
+    elif axis == 1:
+        N1 = alfa.shape[0]
+
+        for j in xrange(N1):
+            a = alfa[j, 0]
+            b = beta[j, 0]
+            c = ceta[j, 0]
+            for odd in xrange(2):
+                c0[0] = a*sii[odd] + b*aii[odd] + c*bii[odd]
+                c0[1] = a*siu[odd] + b*aiu[odd] + c*biu[odd]
+                c0[2] = a*siuu[odd] + c*biuu[odd]
+                m = 8*(odd+1)*(odd+2)*(odd*(odd+4)+3*(6+odd+2)*(6+odd+2))
+                c0[3] = m*a*pi/(6+odd+3.)
+                m = 8*(odd+1)*(odd+2)*(odd*(odd+4)+3*(8+odd+2)*(8+odd+2))
+                c0[4] = m*a*pi/(8+odd+3.)
+
+                c1[0] = b*ail[odd] + c*bil[odd]
+                c1[1] = a*sii[2+odd] + b*aii[2+odd] + c*bii[2+odd]
+                c1[2] = a*siu[2+odd] + b*aiu[2+odd] + c*biu[2+odd]
+                c1[3] = a*siuu[2+odd] + c*biuu[2+odd]
+                m = 8*(odd+3)*(odd+4)*((odd+2)*(odd+6)+3*(8+odd+2)*(8+odd+2))
+                c1[4] = m*a*pi/(8+odd+3.)
+
+                c2[0] = c*bill[odd]
+                c2[1] = b*ail[2+odd] + c*bil[2+odd]
+                c2[2] = a*sii[4+odd] + b*aii[4+odd] + c*bii[4+odd]
+                c2[3] = a*siu[4+odd] + b*aiu[4+odd] + c*biu[4+odd]
+                c2[4] = a*siuu[4+odd] + c*biuu[4+odd]
+
+                for i in xrange(5, M):
+                    p = 2*i+odd
+                    pp = pi/(p+3.)
+                    m = 8*(odd+1)*(odd+2)*(odd*(odd+4)+3*(p+2)*(p+2))
+                    c0[i] = m*a*pp
+                    m = 8*(odd+3)*(odd+4)*((odd+2)*(odd+6)+3*(p+2)*(p+2))
+                    c1[i] = m*a*pp
+                    m = 8*(odd+5)*(odd+6)*((odd+4)*(odd+8)+3*(p+2)*(p+2))
+                    c2[i] = m*a*pp
+
+                u0[odd, j, 0] = c0[0]
+                u1[odd, j, 0] = c0[1]
+                u2[odd, j, 0] = c0[2]
+                for kk in xrange(1, M):
+                    l0[odd, j, kk-1] = c1[kk-1]/u0[odd, j, kk-1]
+                    if kk < M-1:
+                        l1[odd, j, kk-1] = c2[kk-1]/u0[odd, j, kk-1]
+
+                    for i in xrange(kk, M):
+                        c1[i] -= l0[odd, j, kk-1]*c0[i]
+
+                    if kk < M-1:
+                        for i in xrange(kk, M):
+                            c2[i] -= l1[odd, j, kk-1]*c0[i]
+
+                    #for i in xrange(kk, M):
+                        #c0[i] = c1[i]
+                        #c1[i] = c2[i]
+                    copy(c1.begin()+kk, c1.end(), c0.begin()+kk)
+                    copy(c2.begin()+kk, c2.end(), c1.begin()+kk)
+
+                    if kk < M-2:
+                        ll = 2*kk+odd
+                        c2[kk] = c*bill[ll]
+                        c2[kk+1] = b*ail[ll+2] + c*bil[ll+2]
+                        c2[kk+2] = a*sii[ll+4] + b*aii[ll+4] + c*bii[ll+4]
+                        if kk < M-3:
+                            c2[kk+3] = a*siu[ll+4] + b*aiu[ll+4] + c*biu[ll+4]
+                        if kk < M-4:
+                            c2[kk+4] = a*siuu[ll+4] + c*biuu[ll+4]
+                        if kk < M-5:
+                            n = 2*(kk+2)+odd
+                            dd = 8*(n+1)*(n+2)
+                            w0 = dd*n*(n+4)
+                            for i in xrange(kk+5, M):
+                                p = 2*i+odd
+                                c2[i] = (w0 + dd*3*(p+2)*(p+2))*a*pi/(p+3.)
+
+                    u0[odd, j, kk] = c0[kk]
+                    if kk < M-1:
+                        u1[odd, j, kk] = c0[kk+1]
+                    if kk < M-2:
+                        u2[odd, j, kk] = c0[kk+2]
