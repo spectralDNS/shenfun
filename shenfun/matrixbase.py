@@ -361,8 +361,18 @@ class ShenMatrix(SparseMatrix):
 
     """
     def __init__(self, d, test, trial, scale=1.0):
-        self.testfunction = test
-        self.trialfunction = trial
+        if isinstance(test[1], (int, np.integer)):
+            k_test, k_trial = test[1], trial[1]
+        elif isinstance(test[1], np.ndarray):
+            assert len(test[1]) == 1
+            k_test = test[1][(0,)*np.ndim(test[1])]
+            k_trial = trial[1][(0,)*np.ndim(trial[1])]
+        else:
+            raise RuntimeError
+
+        self.testfunction = (test[0], k_test)
+        self.trialfunction = (trial[0], k_trial)
+
         self.scale = scale
         shape = self.spectral_shape()
         if d == {}:

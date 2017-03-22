@@ -41,7 +41,16 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
     if isinstance(test, tuple):
         # Bilinear form
         assert trial[0].__module__ == test[0].__module__
-        key = ((test[0].__class__, test[1]), (trial[0].__class__, trial[1]))
+        if isinstance(test[1], (int, np.integer)):
+            key = ((test[0].__class__, test[1]), (trial[0].__class__, trial[1]))
+        elif isinstance(test[1], np.ndarray):
+            assert len(test[1]) == 1
+            k_test = test[1][(0,)*np.ndim(test[1])]
+            k_trial = trial[1][(0,)*np.ndim(trial[1])]
+            key = ((test[0].__class__, k_test), (trial[0].__class__, k_trial))
+        else:
+            raise RuntimeError
+
         if isinstance(test[0], chebyshev.ChebyshevBase):
             return chebyshev.mat[key](test, trial)
 

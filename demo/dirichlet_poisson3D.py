@@ -15,8 +15,9 @@ from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
 from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun.tensorproductspace import TensorProductSpace, Function, Laplace,\
-    inner_product, Grad
+from shenfun.tensorproductspace import TensorProductSpace, Function,\
+    inner_product
+from shenfun.operators import div, grad
 import time
 from mpi4py import MPI
 
@@ -58,9 +59,9 @@ if basis == 'legendre':
 # Get left hand side of Poisson equation
 v = T.test_function()
 if basis == 'chebyshev':
-    matrices = inner_product(v, Laplace(v))
+    matrices = inner_product(v, div(grad(v)))
 else:
-    matrices = inner_product(Grad(v), Grad(v))
+    matrices = inner_product(grad(v), grad(v))
 
 # Create Helmholtz linear algebra solver
 H = Solver(**matrices, local_shape=T.local_shape())

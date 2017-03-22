@@ -15,7 +15,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun.tensorproductspace import TensorProductSpace, Function,\
-    BiharmonicOperator, Laplace, inner_product
+    inner_product
+from shenfun.operators import BiharmonicOperator, Laplace, grad, div
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
@@ -54,9 +55,9 @@ f_hat = T.scalar_product(fj, f_hat)
 # Get left hand side of Poisson equation
 v = T.test_function()
 if basis == 'chebyshev': # No integration by parts due to weights
-    matrices = inner_product(v, BiharmonicOperator(v))
+    matrices = inner_product(v, div(grad(div(grad(v)))))
 else: # Use form with integration by parts. Note that BiharmonicOperator also works for Legendre though
-    matrices = inner_product(Laplace(v), Laplace(v))
+    matrices = inner_product(div(grad(v)), div(grad(v)))
 
 # Create Helmholtz linear algebra solver
 H = BiharmonicSolver(**matrices, local_shape=T.local_shape())

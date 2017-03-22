@@ -11,9 +11,18 @@ from shenfun.utilities import inheritdocstrings
 class _Fouriermatrix(ShenMatrix):
     def __init__(self, test, trial):
         k = test[0].wavenumbers(test[0].N)
-        if trial[1] > 0 or test[1] > 0:
-            val = 2*np.pi*(1j*k)**(trial[1])*(-1j*k)**test[1]
-            if (trial[1]+test[1]) % 2 == 0:
+        if isinstance(test[1], (int, np.integer)):
+            k_test, k_trial = test[1], trial[1]
+        elif isinstance(test[1], np.ndarray):
+            assert len(test[1]) == 1
+            k_test = test[1][(0,)*np.ndim(test[1])]
+            k_trial = trial[1][(0,)*np.ndim(trial[1])]
+        else:
+            raise RuntimeError
+
+        if k_trial > 0 or k_test > 0:
+            val = 2*np.pi*(1j*k)**(k_trial)*(-1j*k)**k_test
+            if (k_trial+k_test) % 2 == 0:
                 val = val.real
             d = {0: val}
         else:

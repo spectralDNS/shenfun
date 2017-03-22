@@ -12,6 +12,7 @@ from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
 from shenfun import inner_product
+from shenfun.operators import div, grad, Dx
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 basis = sys.argv[-1] if len(sys.argv) == 2 else 'chebyshev'
@@ -49,9 +50,10 @@ f_hat = np.zeros(N)
 f_hat = SD.scalar_product(fj, f_hat)
 
 # Get left hand side of Poisson equation (no integration by parts)
-S = inner_product((SD, 0), (SD, 4))
-A = inner_product((SD, 0), (SD, 2))
-B = inner_product((SD, 0), (SD, 0))
+v = SD.test_function()
+S = inner_product(v, Dx(v, 0, 4))
+A = inner_product(v, Dx(v, 0, 2))
+B = inner_product(v, v)
 
 # Create Helmholtz linear algebra solver
 H = Solver(S, A, B, a, b, c)

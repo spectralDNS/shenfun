@@ -10,9 +10,9 @@ from sympy import Symbol, cos, sin, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
 from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun.tensorproductspace import TensorProductSpace
-import shenfun
-from shenfun import inner_product
+from shenfun.tensorproductspace import TensorProductSpace, Function,\
+    inner_product
+from shenfun.operators import div, grad
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
@@ -44,9 +44,8 @@ fj = fl(X[0], X[1], X[2])
 f_hat = T.scalar_product(fj)
 
 # Solve Poisson equation
-Laplace = shenfun.tensorproductspace.Laplace
 v = T.test_function()
-A = shenfun.tensorproductspace.inner_product(v, Laplace(v))
+A = inner_product(v, div(grad(v)))
 f_hat = f_hat / A['diagonal']
 
 uq = T.backward(f_hat, fast_transform=True)

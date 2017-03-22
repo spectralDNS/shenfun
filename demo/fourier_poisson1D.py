@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from shenfun.fourier.bases import R2CBasis
 from shenfun import inner_product
+from shenfun.operators import div, grad
 
 # Use sympy to compute a rhs, given an analytical solution
 x = Symbol("x")
@@ -31,7 +32,8 @@ fj = np.array([f.subs(x, j) for j in points], dtype=np.float)
 f_hat = ST.scalar_product(fj)
 
 # Solve Poisson equation
-A = inner_product((ST, 0), (ST, 2))
+v = ST.test_function()
+A = inner_product(v, div(grad(v)))
 f_hat = A.solve(f_hat)
 
 uq = ST.backward(f_hat)

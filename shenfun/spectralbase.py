@@ -385,6 +385,12 @@ class SpectralBase(object):
         s[self.axis] = a
         return s
 
+    def test_function(self):
+        return (self, np.zeros((1, 1), dtype=int))
+
+    def __len__(self):
+        return 1
+
 
 def _transform_exec(func_obj, in_array, out_array, xfftn_obj, options):
     if in_array is not None:

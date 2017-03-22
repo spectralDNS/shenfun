@@ -18,6 +18,7 @@ from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
 from shenfun import inner_product
+from shenfun.operators import div, grad
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 basis = sys.argv[-1] if len(sys.argv) == 2 else 'chebyshev'
@@ -48,11 +49,12 @@ f_hat = SD.scalar_product(fj, f_hat)
 if basis == 'legendre':
     f_hat *= -1.
 
+v = SD.test_function()
 # Get left hand side of Poisson equation
 if basis == 'chebyshev':
-    A = inner_product((SD, 0), (SD, 2))
+    A = inner_product(v, div(grad(v)))
 else:
-    A = inner_product((SD, 1), (SD, 1))
+    A = inner_product(grad(v), grad(v))
 
 f_hat = A.solve(f_hat)
 
