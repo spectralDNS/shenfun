@@ -5,7 +5,7 @@ Solve Poisson equation in 1D with homogeneous Dirichlet bcs
 
 The equation to solve for Legendre basis is
 
-    -(\nabla u, \nabla v) = (f, v)
+     (\nabla u, \nabla v) = -(f, v)
 
 whereas for Chebyshev we solve
 

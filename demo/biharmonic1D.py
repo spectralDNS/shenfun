@@ -45,17 +45,17 @@ X = SD.mesh(N)
 # Get f on quad points
 fj = fl(X)
 
-# Compute right hand side of Poisson equation
+# Compute right hand side of biharmonic equation
 f_hat = np.zeros(N)
 f_hat = SD.scalar_product(fj, f_hat)
 
-# Get left hand side of Poisson equation (no integration by parts)
+# Get left hand side of biharmonic equation (no integration by parts)
 v = SD.test_function()
 S = inner_product(v, Dx(v, 0, 4))
 A = inner_product(v, Dx(v, 0, 2))
 B = inner_product(v, v)
 
-# Create Helmholtz linear algebra solver
+# Create linear algebra solver
 H = Solver(S, A, B, a, b, c)
 
 # Solve and transform to real space

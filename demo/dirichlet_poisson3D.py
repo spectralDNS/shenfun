@@ -5,8 +5,15 @@ and homogeneous Dirichlet in the third
     \nabla^2 u = f,
 
 Use Fourier basis for the periodic directions and Shen's Dirichlet basis for the
-remaining non-periodic direction. Discretization leads to a Holmholtz problem
-to be solved.
+remaining non-periodic direction. Discretization leads to a Holmholtz problem.
+
+Note that the equation to solve for Legendre basis is
+
+     (\nabla u, \nabla v) = -(f, v)
+
+whereas for Chebyshev we solve
+
+     (\nabla^2 u, v) = (f, v)
 
 """
 import sys

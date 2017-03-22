@@ -7,6 +7,14 @@ and homogeneous Neumann in the other
 Use Fourier basis for the periodic direction and Shen's Neumann basis for the
 non-periodic direction.
 
+The equation to solve for the Legendre basis is
+
+    -(\nabla u, \nabla v) = (f, v)
+
+whereas for Chebyshev we solve
+
+     (\nabla^2 u, v) = (f, v)
+
 """
 import sys
 import importlib

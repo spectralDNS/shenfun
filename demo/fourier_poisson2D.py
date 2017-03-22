@@ -3,7 +3,12 @@ Solve Poisson equation on (0, 2pi)x(0, 2pi) with periodic bcs
 
     \nabla^2 u = f, u(2pi, y) = u(0, y), u(x, 2pi) = u(x, 0)
 
-Use Fourier basis
+Use Fourier basis and find u in VxV such that
+
+    (v, div(grad(u))) = (v, f)    for all v in VxV
+
+where V is the Fourier basis span{exp(1jkx)}_{k=-N/2}^{N/2-1} and
+VxV is a tensorproductspace.
 
 """
 from sympy import Symbol, cos, sin, exp, lambdify

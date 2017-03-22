@@ -7,6 +7,16 @@ and homogeneous Dirichlet and Neumann in the remaining third
 Use Fourier basis for the periodic direction and Shen's Biharmonic
 basis for the non-periodic direction.
 
+Note that we are solving
+
+    (v, \nabla^4 u) = (v, f)
+
+with the Chebyshev basis, and
+
+    (div(grad(v), div(grad(u)) = -(v, f)
+
+for the Legendre basis.
+
 """
 import sys
 import importlib

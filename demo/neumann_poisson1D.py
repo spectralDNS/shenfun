@@ -5,7 +5,7 @@ Solve Poisson equation in 1D with homogeneous Neumann bcs
 
 Use Shen's Neumann basis
 
-The equation to solve for Legendre basis is
+The equation to solve for the Legendre basis is
 
     -(\nabla u, \nabla v) = (f, v)
 

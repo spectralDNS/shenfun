@@ -3,7 +3,11 @@ Solve Poisson equation on (0, 2pi) with periodic bcs
 
     \nabla^2 u = f, u(2pi) = u(0)
 
-Use Fourier basis
+Use Fourier basis and find u in V such that
+
+    (v, div(grad(u))) = (v, f)    for all v in V
+
+V is the Fourier basis span{exp(1jkx)}_{k=-N/2}^{N/2-1}
 
 """
 from sympy import Symbol, cos, sin, exp

@@ -1,9 +1,14 @@
 r"""
-Solve Poisson equation on (0, 2pi)x(0, 2pi) with periodic bcs
+Solve Poisson equation on (0, 2pi)x(0, 2pi)x(0, 2pi) with periodic bcs
 
-    \nabla^2 u = f, u(2pi, y) = u(0, y), u(x, 2pi) = u(x, 0)
+    \nabla^2 u = f,
 
-Use Fourier basis
+Use Fourier basis and find u in VxVxV such that
+
+    (v, div(grad(u))) = (v, f)    for all v in VxVxV
+
+where V is the Fourier basis span{exp(1jkx)}_{k=-N/2}^{N/2-1} and
+VxVxV is a tensorproductspace.
 
 """
 from sympy import Symbol, cos, sin, exp, lambdify
@@ -22,7 +27,6 @@ x = Symbol("x")
 y = Symbol("y")
 z = Symbol("z")
 u = cos(4*x) + sin(8*y) + sin(6*z)
-#u = exp(1j*4*x)
 f = u.diff(x, 2) + u.diff(y, 2) + u.diff(z, 2)
 
 ul = lambdify((x, y, z), u, 'numpy')
@@ -66,12 +70,4 @@ plt.figure()
 plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 8]-uj[:, :, 8])
 plt.colorbar()
 plt.title('Error')
-#plt.show()
-
-#plt.figure()
-#plt.plot(points, uj)
-#plt.title("U")
-#plt.figure()
-#plt.plot(points, uq - uj)
-#plt.title("Error")
 #plt.show()
