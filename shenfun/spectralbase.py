@@ -414,7 +414,7 @@ class _func_wrap(object):
         object.__setattr__(self, '_func', func)
 
     def __getattribute__(self, name):
-        if name in ('input_array', 'output_array'):
+        if name in ('input_array', 'output_array', 'direction'):
             xfftn = object.__getattribute__(self, '_xfftn')
             return getattr(xfftn, name)
         else:
