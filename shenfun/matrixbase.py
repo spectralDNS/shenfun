@@ -193,7 +193,7 @@ class SparseMatrix(dict):
                 if -key in f:
                     if id(f[key]) == id(f[-key]):
                         f[-key] = deepcopy(f[key])
-                f[key] -= val
+                f[key] = f[key] - val
             else:
                 f[key] = -val
 

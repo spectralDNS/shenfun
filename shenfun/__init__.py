@@ -3,6 +3,7 @@ from . import chebyshev
 from . import legendre
 from . import fourier
 from . import matrixbase
+from . import operators
 from scipy.sparse.linalg import spsolve
 from scipy.linalg import solve as lasolve
 

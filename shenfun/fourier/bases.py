@@ -57,7 +57,7 @@ class FourierBase(SpectralBase):
             array   (input/output)    Expansion coefficients
 
         """
-        assert array is self.xfftn_fwd.output_array
+        #assert array is self.xfftn_fwd.output_array
         array *= (0.5/np.pi)
         return array
 
