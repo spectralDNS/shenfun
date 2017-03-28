@@ -151,3 +151,5 @@ All methods are designed to work along any dimension of a multidimensional array
     >>> u = K.solve(b, u)
 ```
 where `K` is exactly the same as before, from the 1D example. The matrix solve is applied along the first dimension since this is the default behaviour.
+
+
