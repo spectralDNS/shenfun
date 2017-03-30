@@ -97,15 +97,16 @@ class SpectralBase(object):
 
     """
 
-    def __init__(self, N, quad):
+    def __init__(self, N, quad, padding_factor=1):
         self.N = N
         self.quad = quad
         self._mass = None # Mass matrix (if needed)
         self.axis = 0
         self.xfftn_fwd = None
         self.xfftn_bck = None
+        self.padding_factor = padding_factor
 
-    def points_and_weights(self):
+    def points_and_weights(self, N):
         """Return points and weights of quadrature"""
         raise NotImplementedError
 
@@ -116,8 +117,8 @@ class SpectralBase(object):
 
         """
         N = list(N) if np.ndim(N) else [N]
-        assert self.N == N[axis]
-        x = self.points_and_weights()[0]
+        #assert self.N == N[axis]
+        x = self.points_and_weights(N[axis])[0]
         X = self.broadcast_to_ndims(x, len(N), axis)
         return X
 
@@ -168,7 +169,9 @@ class SpectralBase(object):
             self.forward.input_array[...] = input_array
 
         self.scalar_product(fast_transform=fast_transform)
-        self.apply_inverse_mass(self.forward.output_array)
+        self.apply_inverse_mass(self.xfftn_fwd.output_array)
+        self._truncation_forward(self.xfftn_fwd.output_array,
+                                 self.forward.output_array)
 
         if output_array is not None:
             output_array[...] = self.forward.output_array
@@ -191,11 +194,14 @@ class SpectralBase(object):
         if input_array is not None:
             self.backward.input_array[...] = input_array
 
+        self._padding_backward(self.backward.input_array,
+                               self.xfftn_bck.input_array)
+
         if fast_transform:
-            self.evaluate_expansion_all(self.backward.input_array,
+            self.evaluate_expansion_all(self.xfftn_bck.input_array,
                                         self.backward.output_array)
         else:
-            self.vandermonde_evaluate_expansion_all(self.backward.input_array,
+            self.vandermonde_evaluate_expansion_all(self.xfftn_bck.input_array,
                                                     self.backward.output_array)
 
         if output_array is not None:
@@ -334,10 +340,24 @@ class SpectralBase(object):
         self.axis = axis
         self.xfftn_fwd = xfftn_fwd
         self.xfftn_bck = xfftn_bck
-        self.forward = _func_wrap(self.forward, xfftn_fwd)
-        self.backward = _func_wrap(self.backward, xfftn_bck)
-        self.scalar_product = _func_wrap(self.scalar_product, xfftn_fwd)
 
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, dtype)
+
+        if self.padding_factor > 1.+1e-8:
+            self.forward = _func_wrap(self.forward, xfftn_fwd, U, trunc_array)
+            self.backward = _func_wrap(self.backward, xfftn_bck, trunc_array, U)
+        else:
+            self.forward = _func_wrap(self.forward, xfftn_fwd, U, V)
+            self.backward = _func_wrap(self.backward, xfftn_bck, V, U)
+
+        # scalar_product is not padded, just the forward/backward
+        self.scalar_product = _func_wrap(self.scalar_product, xfftn_fwd, U, V)
+
+    def _get_truncarray(self, shape, dtype):
+        shape = list(shape)
+        shape[self.axis] = int(shape[self.axis] / self.padding_factor)
+        return pyfftw.empty_aligned(shape, dtype=dtype)
 
     def evaluate_expansion_all(self, input_array, output_array):
         r"""Evaluate expansion on entire mesh
@@ -391,30 +411,47 @@ class SpectralBase(object):
     def __len__(self):
         return 1
 
+    def _truncation_forward(self, padded_array, trunc_array):
+        if self.padding_factor > 1.0+1e-8:
+            trunc_array.fill(0)
+            N = trunc_array.shape[self.axis]
+            su = [slice(None)]*trunc_array.ndim
+            su[self.axis] = slice(0, N//2+1)
+            trunc_array[su] = padded_array[su]
+            su[self.axis] = slice(-N//2, None)
+            trunc_array[su] += padded_array[su]
+            trunc_array *= (1./self.padding_factor)
 
-def _transform_exec(func_obj, in_array, out_array, xfftn_obj, options):
-    if in_array is not None:
-        xfftn_obj.input_array[...] = in_array
-    func_obj(None, None, **options)
-    if out_array is not None:
-        out_array[...] = xfftn_obj.output_array
-        return out_array
-    else:
-        return xfftn_obj.output_array
+    def _padding_backward(self, trunc_array, padded_array):
+        if self.padding_factor > 1.0+1e-8:
+            padded_array.fill(0)
+            N = trunc_array.shape[self.axis]
+            su = [slice(None)]*trunc_array.ndim
+            su[self.axis] = slice(0, N//2)
+            padded_array[su] = trunc_array[su]
+            su[self.axis] = slice(-N//2, None)
+            padded_array[su] = trunc_array[su]
+            padded_array *= self.padding_factor
 
 
 class _func_wrap(object):
 
     # pylint: disable=too-few-public-methods
 
-    __slots__ = ('_func', '_xfftn', '__doc__')
+    __slots__ = ('_func', '_xfftn', '__doc__', 'input_array', 'output_array')
 
-    def __init__(self, func, xfftn):
+    def __init__(self, func, xfftn, input_array, output_array):
         object.__setattr__(self, '_xfftn', xfftn)
         object.__setattr__(self, '_func', func)
+        object.__setattr__(self, 'input_array', input_array)
+        object.__setattr__(self, 'output_array', output_array)
 
     def __getattribute__(self, name):
-        if name in ('input_array', 'output_array', 'direction'):
+        if name in ('input_array', 'output_array'):
+            return object.__getattribute__(self, name)
+        elif name in ('_xfftn', '_func'):
+            return object.__getattribute__(self, name)
+        elif name in ('direction',):
             xfftn = object.__getattribute__(self, '_xfftn')
             return getattr(xfftn, name)
         else:
@@ -424,4 +461,12 @@ class _func_wrap(object):
     def __call__(self, input_array=None, output_array=None, **kw):
         func_obj = object.__getattribute__(self, '_func')
         xfftn_obj = object.__getattribute__(self, '_xfftn')
-        return _transform_exec(func_obj, input_array, output_array, xfftn_obj, kw)
+        if input_array is not None:
+            self.input_array[...] = input_array
+        func_obj(None, None, **kw)
+        if output_array is not None:
+            output_array[...] = self.output_array
+            return output_array
+        else:
+            return self.output_array
+

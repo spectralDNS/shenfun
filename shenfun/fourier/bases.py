@@ -12,14 +12,13 @@ class FourierBase(SpectralBase):
     """Fourier base class
     """
 
-    def __init__(self, N, threads=1):
-        SpectralBase.__init__(self, N, '')
-        self.N = N
+    def __init__(self, N, padding_factor=1.):
+        SpectralBase.__init__(self, N, '', padding_factor)
 
-    def points_and_weights(self):
+    def points_and_weights(self, N):
         """Return points and weights of quadrature"""
-        points = np.arange(self.N, dtype=np.float)*2*np.pi/self.N
-        return points, np.array([2*np.pi/self.N])
+        points = np.arange(N, dtype=np.float)*2*np.pi/N
+        return points, np.array([2*np.pi/N])
 
     def vandermonde(self, x):
         """Return Vandermonde matrix
@@ -89,13 +88,13 @@ class R2CBasis(FourierBase):
     """Fourier basis class for real to complex transforms
     """
 
-    def __init__(self, N, plan=False):
-        FourierBase.__init__(self, N, '')
+    def __init__(self, N, padding_factor=1., plan=False):
+        FourierBase.__init__(self, N, padding_factor)
         self.N = N
         self._xfftn_fwd = pyfftw.builders.rfft
         self._xfftn_bck = pyfftw.builders.irfft
         if plan:
-            self.plan((N,), 0, np.float, {})
+            self.plan((int(padding_factor*N),), 0, np.float, {})
 
     def wavenumbers(self, N, axis=0):
         """Return the wavenumbermesh
@@ -108,6 +107,12 @@ class R2CBasis(FourierBase):
         k = np.fft.rfftfreq(N[axis], 1./N[axis])
         K = self.broadcast_to_ndims(k, len(N), axis)
         return K
+
+    def _get_truncarray(self, shape, dtype):
+        shape = list(shape)
+        shape[self.axis] = int(shape[self.axis] / self.padding_factor)
+        shape[self.axis] = shape[self.axis]//2 + 1
+        return pyfftw.empty_aligned(shape, dtype=np.complex)
 
     def eval(self, x, fk):
         V = self.vandermonde(x)
@@ -142,16 +147,34 @@ class R2CBasis(FourierBase):
         assert input_array is self.backward.input_array
         return output_array
 
+    def _truncation_forward(self, padded_array, trunc_array):
+        if self.padding_factor > 1.0+1e-8:
+            trunc_array.fill(0)
+            N = trunc_array.shape[self.axis]
+            s = [slice(None)]*trunc_array.ndim
+            s[self.axis] = slice(0, N)
+            trunc_array[:] = padded_array[s]
+            trunc_array *= (1./self.padding_factor)
+
+    def _padding_backward(self, trunc_array, padded_array):
+        if self.padding_factor > 1.0+1e-8:
+            padded_array.fill(0)
+            s = [slice(0, n) for n in trunc_array.shape]
+            padded_array[s] = trunc_array[:]
+            padded_array *= self.padding_factor
+
 
 class C2CBasis(FourierBase):
     """Fourier basis class for complex to complex transforms
     """
 
-    def __init__(self, N):
-        FourierBase.__init__(self, N, '')
+    def __init__(self, N, padding_factor=1., plan=False):
+        FourierBase.__init__(self, N, padding_factor)
         self.N = N
         self._xfftn_fwd = pyfftw.builders.fft
         self._xfftn_bck = pyfftw.builders.ifft
+        if plan:
+            self.plan((int(padding_factor*N),), 0, np.complex, {})
 
     def wavenumbers(self, N, axis=0):
         """Return the wavenumbermesh

@@ -9,7 +9,7 @@ from mpi4py_fft.padder import Padder
 
 class TensorProductSpace(object):
 
-    def __init__(self, comm, bases, axes=None, padding=False, **kw):
+    def __init__(self, comm, bases, axes=None, **kw):
         self.bases = bases
         shape = self.shape()
         assert len(shape) > 0
@@ -45,14 +45,8 @@ class TensorProductSpace(object):
                 dims[axes[-1]] = 1
             self.subcomm = Subcomm(comm, dims)
 
-        self.padding = padding
-        if padding is True:
-            real = False
-            for i, s in enumerate(shape):
-                shape[i] = 3*s//2+2
-
         collapse = False # kw.pop('collapse', True)
-        if collapse and not padding:
+        if collapse:
             groups = [[]]
             for axis in reversed(axes):
                 if self.subcomm[axis].Get_size() == 1:
@@ -63,8 +57,7 @@ class TensorProductSpace(object):
         else:
             self.axes = tuple((axis,) for axis in axes)
 
-        #self.xfftn = []
-        self.padder = []
+        self.xfftn = []
         self.transfer = []
         self.pencil = [None, None]
 
@@ -74,28 +67,10 @@ class TensorProductSpace(object):
         #self.xfftn.append(xfftn)
         self.bases[-1].plan(pencil.subshape, axes, dtype, kw)
         self.pencil[0] = pencilA = pencil
-
-        if padding:
-            if isinstance(self.bases[-1], R2CBasis):
-                dtype = self.bases[-1].forward.output_array.dtype
-                shape[axes[-1]] = (shape[axes[-1]]-2)//3 + 1
-                real = True
-
-            else:
-                shape[axes[-1]] = 2*(shape[axes[-1]]-2)//3
-
+        if not shape[axes[-1]] == self.bases[-1].forward.output_array.shape[axes[-1]]:
+            dtype = self.bases[-1].forward.output_array.dtype
+            shape[axes[-1]] = self.bases[-1].forward.output_array.shape[axes[-1]]
             pencilA = Pencil(self.subcomm, shape, axes[-1])
-            padder = Padder(padded_array=self.bases[-1].forward.output_array,
-                            trunc_shape=pencilA.subshape, axis=axes[-1],
-                            real=real, scale=(1.5+3//(shape[axes[-1]-2])))
-            self.padder.append(padder)
-
-        else:
-            if isinstance(self.bases[-1], R2CBasis):
-                dtype = self.bases[-1].forward.output_array.dtype
-                shape[axes[-1]] = shape[axes[-1]]//2 + 1
-                pencilA = Pencil(self.subcomm, shape, axes[-1])
-
 
         for i, axes in enumerate(reversed(self.axes[:-1])):
             pencilB = pencilA.pencil(axes[-1])
@@ -104,47 +79,25 @@ class TensorProductSpace(object):
             #self.xfftn.append(xfftn)
             xfftn = self.bases[-(i+2)]
             xfftn.plan(pencilB.subshape, axes, dtype, kw)
-
-            if padding:
-                trunc_shape = list(xfftn.forward.output_array.shape)
-                dtype = xfftn.forward.output_array.dtype
-                if isinstance(xfftn, R2CBasis):
-                    trunc_shape[axes[-1]] = (shape[axes[-1]]-2)//3 + 1
-
-                else:
-                    trunc_shape[axes[-1]] = 2*(trunc_shape[axes[-1]]-2)//3
-
-                padder = Padder(padded_array=xfftn.forward.output_array,
-                                trunc_shape=tuple(trunc_shape),
-                                axis=axes[-1], scale=(1.5+3//(trunc_shape[axes[-1]]-2)))
-                self.padder.append(padder)
-
             self.transfer.append(transAB)
             pencilA = pencilB
-            if padding:
-                shape[axes[-1]] = trunc_shape[axes[-1]]
-                pencilA = Pencil(pencilB.subcomm, shape, axes[-1])
-            elif isinstance(xfftn, R2CBasis):
+            if not shape[axes[-1]] == xfftn.forward.output_array.shape[axes[-1]]:
                 dtype = xfftn.forward.output_array.dtype
-                shape[axes[-1]] = shape[axes[-1]]//2 + 1
+                shape[axes[-1]] = xfftn.forward.output_array.shape[axes[-1]]
                 pencilA = Pencil(pencilB.subcomm, shape, axes[-1])
-
 
         self.pencil[1] = pencilA
 
         self.forward = Transform(
             [o.forward for o in self.bases[::-1]],
-            [o.forward for o in self.padder],
             [o.forward for o in self.transfer],
             self.pencil)
         self.backward = Transform(
             [o.backward for o in self.bases],
-            [o.backward for o in self.padder[::-1]],
             [o.backward for o in self.transfer[::-1]],
             self.pencil[::-1])
         self.scalar_product = Transform(
             [o.scalar_product for o in self.bases[::-1]],
-            [o.forward for o in self.padder],
             [o.forward for o in self.transfer],
             self.pencil)
 
@@ -185,7 +138,7 @@ class TensorProductSpace(object):
         return lm
 
     def shape(self):
-        return [base.N for base in self]
+        return [int(base.N*base.padding_factor) for base in self]
 
     def spectral_shape(self):
         return [base.spectral_shape() for base in self]

@@ -59,15 +59,29 @@ print(abs(uj-uq).max())
 assert np.allclose(uj, uq)
 
 plt.figure()
-plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 8])
+plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 0])
 plt.colorbar()
 
 plt.figure()
-plt.contourf(X[0][:,:,0], X[1][:,:,0], uj[:, :, 8])
+plt.contourf(X[0][:,:,0], X[1][:,:,0], uj[:, :, 0])
 plt.colorbar()
 
 plt.figure()
-plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 8]-uj[:, :, 8])
+plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 0]-uj[:, :, 0])
 plt.colorbar()
 plt.title('Error')
 #plt.show()
+
+P0 = C2CBasis(N, padding_factor=1.5)
+P1 = C2CBasis(N, padding_factor=1.5)
+P2 = R2CBasis(N, padding_factor=1.5)
+P = TensorProductSpace(comm, (P0, P1, P2))
+XP = P.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
+up = P.backward(f_hat)
+up_hat = P.forward(up)
+assert np.allclose(up_hat, f_hat)
+
+plt.figure()
+plt.contourf(XP[0][:,:,0], XP[1][:,:,0], up[:, :, 0])
+plt.colorbar()
+plt.show()
