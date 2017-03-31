@@ -147,9 +147,9 @@ class ChebyshevBase(SpectralBase):
             self.xfftn_fwd = _dct_wrap(xfftn_fwd, U, V)
             self.xfftn_bck = _dct_wrap(xfftn_bck, V, U)
 
-        self.forward = _func_wrap(self.forward, self.xfftn_fwd)
-        self.backward = _func_wrap(self.backward, self.xfftn_bck)
-        self.scalar_product = _func_wrap(self.scalar_product, self.xfftn_fwd)
+        self.forward = _func_wrap(self.forward, self.xfftn_fwd, U, V)
+        self.backward = _func_wrap(self.backward, self.xfftn_bck, V, U)
+        self.scalar_product = _func_wrap(self.scalar_product, self.xfftn_fwd, U, V)
 
 
 @inheritdocstrings
@@ -283,7 +283,7 @@ class ShenDirichletBasis(ChebyshevBase):
     def __init__(self, N=0, quad="GC", bc=(0., 0.), plan=False):
         ChebyshevBase.__init__(self, N, quad)
         self.bc = bc
-        self.CT = Basis(N, quad)
+        self.CT = Basis(N, quad, plan=plan)
         if plan:
             self.plan(N, 0, np.float, {})
 
@@ -377,9 +377,11 @@ class ShenDirichletBasis(ChebyshevBase):
         self.axis = self.CT.axis
         self.xfftn_fwd = self.CT.xfftn_fwd
         self.xfftn_bck = self.CT.xfftn_bck
-        self.forward = _func_wrap(self.forward, self.xfftn_fwd)
-        self.backward = _func_wrap(self.backward, self.xfftn_bck)
-        self.scalar_product = _func_wrap(self.scalar_product, self.xfftn_fwd)
+        U = self.CT.xfftn_fwd.input_array
+        V = self.CT.xfftn_fwd.output_array
+        self.forward = _func_wrap(self.forward, self.xfftn_fwd, U, V)
+        self.backward = _func_wrap(self.backward, self.xfftn_bck, V, U)
+        self.scalar_product = _func_wrap(self.scalar_product, self.xfftn_fwd, U, V)
 
 
 @inheritdocstrings
@@ -468,9 +470,11 @@ class ShenNeumannBasis(ChebyshevBase):
         self.axis = self.CT.axis
         self.xfftn_fwd = self.CT.xfftn_fwd
         self.xfftn_bck = self.CT.xfftn_bck
-        self.forward = _func_wrap(self.forward, self.xfftn_fwd)
-        self.backward = _func_wrap(self.backward, self.xfftn_bck)
-        self.scalar_product = _func_wrap(self.scalar_product, self.xfftn_fwd)
+        U = self.CT.xfftn_fwd.input_array
+        V = self.CT.xfftn_fwd.output_array
+        self.forward = _func_wrap(self.forward, self.xfftn_fwd, U, V)
+        self.backward = _func_wrap(self.backward, self.xfftn_bck, V, U)
+        self.scalar_product = _func_wrap(self.scalar_product, self.xfftn_fwd, U, V)
 
 
 @inheritdocstrings
@@ -573,7 +577,8 @@ class ShenBiharmonicBasis(ChebyshevBase):
         self.axis = self.CT.axis
         self.xfftn_fwd = self.CT.xfftn_fwd
         self.xfftn_bck = self.CT.xfftn_bck
-        self.forward = _func_wrap(self.forward, self.xfftn_fwd)
-        self.backward = _func_wrap(self.backward, self.xfftn_bck)
-        self.scalar_product = _func_wrap(self.scalar_product, self.xfftn_fwd)
-
+        U = self.CT.xfftn_fwd.input_array
+        V = self.CT.xfftn_fwd.output_array
+        self.forward = _func_wrap(self.forward, self.xfftn_fwd, U, V)
+        self.backward = _func_wrap(self.backward, self.xfftn_bck, V, U)
+        self.scalar_product = _func_wrap(self.scalar_product, self.xfftn_fwd, U, V)

@@ -5,11 +5,10 @@ import pyfftw
 import six
 from mpi4py_fft.mpifft import Transform
 from mpi4py_fft.pencil import Subcomm, Pencil
-from mpi4py_fft.padder import Padder
 
 class TensorProductSpace(object):
 
-    def __init__(self, comm, bases, axes=None, **kw):
+    def __init__(self, comm, bases, axes=None, dtype=None, **kw):
         self.bases = bases
         shape = self.shape()
         assert len(shape) > 0
@@ -27,7 +26,8 @@ class TensorProductSpace(object):
         assert 0 < len(axes) <= len(shape)
         assert sorted(axes) == sorted(set(axes))
 
-        dtype = np.complex if isinstance(self.bases[-1], C2CBasis) else np.float
+        if dtype is None:
+            dtype = np.complex if isinstance(bases[-1], C2CBasis) else np.float
         dtype = np.dtype(dtype)
         assert dtype.char in 'fdgFDG'
 
@@ -63,8 +63,6 @@ class TensorProductSpace(object):
 
         axes = self.axes[-1]
         pencil = Pencil(self.subcomm, shape, axes[-1])
-        #xfftn = FFT(pencil.subshape, axes, dtype, **kw)
-        #self.xfftn.append(xfftn)
         self.bases[-1].plan(pencil.subshape, axes, dtype, kw)
         self.pencil[0] = pencilA = pencil
         if not shape[axes[-1]] == self.bases[-1].forward.output_array.shape[axes[-1]]:
@@ -75,8 +73,6 @@ class TensorProductSpace(object):
         for i, axes in enumerate(reversed(self.axes[:-1])):
             pencilB = pencilA.pencil(axes[-1])
             transAB = pencilA.transfer(pencilB, dtype)
-            #xfftn = FFT(pencilB.subshape, axes, dtype, **kw)
-            #self.xfftn.append(xfftn)
             xfftn = self.bases[-(i+2)]
             xfftn.plan(pencilB.subshape, axes, dtype, kw)
             self.transfer.append(transAB)
@@ -100,6 +96,11 @@ class TensorProductSpace(object):
             [o.scalar_product for o in self.bases[::-1]],
             [o.forward for o in self.transfer],
             self.pencil)
+
+    def destroy(self):
+        self.subcomm.destroy()
+        for trans in self.transfer:
+            trans.destroy()
 
     def wavenumbers(self):
         K = []
@@ -138,7 +139,7 @@ class TensorProductSpace(object):
         return lm
 
     def shape(self):
-        return [int(base.N*base.padding_factor) for base in self]
+        return [int(np.round(base.N*base.padding_factor)) for base in self]
 
     def spectral_shape(self):
         return [base.spectral_shape() for base in self]
@@ -181,19 +182,10 @@ class Function(np.ndarray):
     Parameters
     ----------
 
-    space : TensorProductSpace
-    spectral: boolean. If True then create instance of transformed
-        Function, else create Function for real space
-    dtype : data-type, optional
-        Any object that can be interpreted as a numpy data type.
-    buffer : object exposing buffer interface, optional
-        Used to fill the array with data.
-    offset : int, optional
-        Offset of array data in buffer.
-    strides : tuple of ints, optional
-        Strides of data in memory.
-    order : {'C', 'F'}, optional
-        Row-major (C-style) or column-major (Fortran-style) order.
+    space : Instance of TensorProductSpace
+    input_array: boolean.
+        If True then create Function of shape/type for input to PFFT.forward,
+        otherwise create Function of shape/type for output from PFFT.forward
     val : int or float
         Value used to initialize array
 
@@ -201,14 +193,21 @@ class Function(np.ndarray):
 
     Examples
     --------
-    ToDo
+    from mpi4py_fft import MPI
+    from shenfun.tensorproductspace import TensorProductSpace, Function
+    from shenfun.fourier.bases import R2CBasis, C2CBasis
+
+    K0 = C2CBasis(8)
+    K1 = R2CBasis(8)
+    FFT = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
+    u = Function(FFT)
+    uhat = Function(FFT, False)
 
     """
 
     # pylint: disable=too-few-public-methods,too-many-arguments
 
-    def __new__(cls, space, spectral=True, buffer=None, offset=0,
-                strides=None, order=None, val=0):
+    def __new__(cls, space, input_array=True, val=0):
 
         shape = space.forward.input_array.shape
         dtype = space.forward.input_array.dtype
@@ -218,11 +217,7 @@ class Function(np.ndarray):
 
         obj = np.ndarray.__new__(cls,
                                  shape,
-                                 dtype=dtype,
-                                 buffer=buffer,
-                                 offset=offset,
-                                 strides=strides,
-                                 order=order)
+                                 dtype=dtype)
         obj.fill(val)
         return obj
 

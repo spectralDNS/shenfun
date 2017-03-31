@@ -104,7 +104,7 @@ class SpectralBase(object):
         self.axis = 0
         self.xfftn_fwd = None
         self.xfftn_bck = None
-        self.padding_factor = padding_factor
+        self.padding_factor = np.floor(N*padding_factor)/N
 
     def points_and_weights(self, N):
         """Return points and weights of quadrature"""
@@ -117,7 +117,6 @@ class SpectralBase(object):
 
         """
         N = list(N) if np.ndim(N) else [N]
-        #assert self.N == N[axis]
         x = self.points_and_weights(N[axis])[0]
         X = self.broadcast_to_ndims(x, len(N), axis)
         return X
@@ -342,7 +341,7 @@ class SpectralBase(object):
         self.xfftn_bck = xfftn_bck
 
         if self.padding_factor > 1.+1e-8:
-            trunc_array = self._get_truncarray(shape, dtype)
+            trunc_array = self._get_truncarray(shape, V.dtype)
 
         if self.padding_factor > 1.+1e-8:
             self.forward = _func_wrap(self.forward, xfftn_fwd, U, trunc_array)
@@ -418,7 +417,7 @@ class SpectralBase(object):
             su = [slice(None)]*trunc_array.ndim
             su[self.axis] = slice(0, N//2+1)
             trunc_array[su] = padded_array[su]
-            su[self.axis] = slice(-N//2, None)
+            su[self.axis] = slice(-(N//2), None)
             trunc_array[su] += padded_array[su]
             trunc_array *= (1./self.padding_factor)
 
@@ -427,9 +426,9 @@ class SpectralBase(object):
             padded_array.fill(0)
             N = trunc_array.shape[self.axis]
             su = [slice(None)]*trunc_array.ndim
-            su[self.axis] = slice(0, N//2)
+            su[self.axis] = slice(0, np.ceil(N/2).astype(np.int))
             padded_array[su] = trunc_array[su]
-            su[self.axis] = slice(-N//2, None)
+            su[self.axis] = slice(-(N//2), None)
             padded_array[su] = trunc_array[su]
             padded_array *= self.padding_factor
 

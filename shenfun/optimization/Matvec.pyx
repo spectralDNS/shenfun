@@ -289,7 +289,7 @@ def ADDmat_matvec(np.ndarray[T, ndim=1] v,
     b[k-1] = dd[k-1]*v[k-1]
     for k in range(N-3, -1, -1):
         j = k+2
-        p = 4*(k+1)*pi
+        p = -4*(k+1)*pi
         if j % 2 == 0:
             s1 += v[j]
             b[k] = dd[k]*v[k] + p*s1

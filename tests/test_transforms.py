@@ -35,15 +35,15 @@ lbases2 = list(list(i[0]) + [i[1]] for i in product(list(product(lBasis, lBasis)
 @pytest.mark.parametrize('ST,quad', product(cBasis, cquads))
 def test_scalarproduct(ST, quad):
     """Test fast scalar product against Vandermonde computed version"""
-    ST = ST(N, quad=quad)
+    ST = ST(N, quad=quad, plan=True)
     points, weights = ST.points_and_weights()
     f = x*x+cos(pi*x)
     fl = lambdify(x, f, 'numpy')
     fj = fl(points)
     u0 = np.zeros(N)
     u1 = np.zeros(N)
-    u0 = ST.scalar_product(fj, u0, True)
-    u1 = ST.scalar_product(fj, u1, False)
+    u0 = ST.scalar_product(fj, u0, fast_transform=True)
+    u1 = ST.scalar_product(fj, u1, fast_transform=False)
     assert np.allclose(u1, u0)
 
 #test_scalarproduct(cbases.ShenDirichletBasis, 'GC')
@@ -51,7 +51,7 @@ def test_scalarproduct(ST, quad):
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
 def test_eval(ST, quad):
     """Test eval agains fast inverse"""
-    ST = ST(N, quad=quad)
+    ST = ST(N, quad=quad, plan=True)
     points, weights = ST.points_and_weights()
     fk = np.zeros(N)
     fj = np.random.random(N)
@@ -60,8 +60,8 @@ def test_eval(ST, quad):
     fk = ST.forward(fj, fk)
     f = ST.eval(points, fk)
     assert np.allclose(fj, f)
-    fj = ST.backward(fk, fj, False)
-    fk = ST.forward(fj, fk, False)
+    fj = ST.backward(fk, fj, fast_transform=False)
+    fk = ST.forward(fj, fk, fast_transform=False)
     f = ST.eval(points, fk)
     assert np.allclose(fj, f)
 
@@ -69,8 +69,8 @@ def test_eval(ST, quad):
 
 @pytest.mark.parametrize('test, trial, quad', cbases2+lbases2)
 def test_massmatrices(test, trial, quad):
-    test = test(N, quad=quad)
-    trial = trial(N, quad=quad)
+    test = test(N, quad=quad, plan=True)
+    trial = trial(N, quad=quad, plan=True)
 
     f_hat = np.zeros(N)
     fj = np.random.random(N)
@@ -92,7 +92,8 @@ def test_massmatrices(test, trial, quad):
     fj = fj.repeat(N*N).reshape((N, N, N)) + 1j*fj.repeat(N*N).reshape((N, N, N))
     f_hat = f_hat.repeat(N*N).reshape((N, N, N)) + 1j*f_hat.repeat(N*N).reshape((N, N, N))
 
-    u0 = np.zeros((N, N, N), dtype=np.complex)
+    test.plan((N,)*3, 0, np.complex, {})
+    u0 = np.zeros((N,)*3, dtype=np.complex)
     u0 = test.scalar_product(fj, u0)
     u2 = np.zeros_like(f_hat)
     u2 = BBD.matvec(f_hat, u2)
@@ -103,7 +104,7 @@ def test_massmatrices(test, trial, quad):
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
 @pytest.mark.parametrize('axis', (0,1,2))
 def test_transforms(ST, quad, axis):
-    ST = ST(N, quad=quad)
+    ST = ST(N, quad=quad, plan=True)
     points, weights = ST.points_and_weights()
     fj = np.random.random(N)
 
@@ -127,20 +128,21 @@ def test_transforms(ST, quad, axis):
 
     u00 = np.zeros_like(fj)
     u11 = np.zeros_like(fj)
-    u00 = ST.forward(fj, u00, axis=axis)
-    u11 = ST.backward(u00, u11, axis=axis)
+    ST.plan((N,)*3, axis, np.float, {})
+    u00 = ST.forward(fj, u00)
+    u11 = ST.backward(u00, u11)
     cc = [0,]*3
     cc[axis] = slice(None)
     #from IPython import embed; embed()
     assert np.allclose(fj[cc], u11[cc])
 
-test_transforms(lbases.ShenDirichletBasis, "LG", 2)
+#test_transforms(lbases.ShenNeumannBasis, "LG", 2)
 
 
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
 @pytest.mark.parametrize('axis', (0,1,2))
 def test_axis(ST, quad, axis):
-    ST = ST(N, quad=quad)
+    ST = ST(N, quad=quad, plan=True)
     points, weights = ST.points_and_weights()
     f_hat = np.random.random(N)
 
@@ -159,12 +161,12 @@ def test_axis(ST, quad, axis):
     cc[axis] = slice(None)
     assert np.allclose(ck[cc], c)
 
-#test_axis(cbases.ShenNeumannBasis, "GC", 2)
+#test_axis(cbases.ShenBiharmonicBasis, "GC", 2)
 
 @pytest.mark.parametrize('quad', cquads)
 def test_CDDmat(quad):
     M = 128
-    SD = cbases.ShenDirichletBasis(M, quad=quad)
+    SD = cbases.ShenDirichletBasis(M, quad=quad, plan=True)
     u = (1-x**2)*sin(np.pi*6*x)
     dudx = u.diff(x, 1)
     points, weights = SD.points_and_weights()
@@ -210,6 +212,7 @@ def test_CDDmat(quad):
     cs = Cm.matvec(u3_hat, cs)
     cs2 = np.zeros((M, 4, 4), dtype=np.complex)
     du3 = dudx_j.repeat(4*4).reshape((M, 4, 4)) + 1j*dudx_j.repeat(4*4).reshape((M, 4, 4))
+    SD.plan((M, 4, 4), 0, np.complex, {})
     cs2 = SD.scalar_product(du3, cs2)
 
     assert np.allclose(cs[s], cs2[s], 1e-10)
@@ -224,10 +227,10 @@ def test_CDDmat(quad):
 
 @pytest.mark.parametrize('test,trial', product(cBasis, cBasis))
 def test_CXXmat(test, trial):
-    test = test(N)
-    trial = trial(N)
+    test = test(N, plan=True)
+    trial = trial(N, plan=True)
 
-    CT = cBasis[0](N)
+    CT = cBasis[0](N, plan=True)
 
     Cm = inner_product((test, 0), (trial, 1))
     S2 = Cm.trialfunction[0]
@@ -256,6 +259,7 @@ def test_CXXmat(test, trial):
     cs = np.zeros_like(f_hat)
     cs = Cm.matvec(f_hat, cs)
     cs2 = np.zeros((N, 4, 4), dtype=np.complex)
+    S1.plan((N, 4, 4), 0, np.complex, {})
     cs2 = S1.scalar_product(df, cs2)
 
     assert np.allclose(cs[s], cs2[s])
@@ -268,9 +272,9 @@ dirichlet_with_quads = (list(product([cbases.ShenNeumannBasis, cbases.ShenDirich
 @pytest.mark.parametrize('ST,quad', dirichlet_with_quads)
 def test_ADDmat(ST, quad):
     M = 2*N
-    ST = ST(M, quad=quad)
+    ST = ST(M, quad=quad, plan=True)
     u = (1-x**2)*sin(np.pi*x)
-    f = -u.diff(x, 2)
+    f = u.diff(x, 2)
     ul = lambdify(x, u, 'numpy')
     fl = lambdify(x, f, 'numpy')
     points, weights = ST.points_and_weights()
@@ -285,6 +289,8 @@ def test_ADDmat(ST, quad):
 
     f_hat = np.zeros(M)
     f_hat = ST.scalar_product(fj, f_hat)
+    if isinstance(ST, shenfun.legendre.bases.LegendreBase):
+        f_hat *= -1
 
     # Test both solve interfaces
     c_hat = f_hat.copy()
@@ -306,7 +312,7 @@ def test_ADDmat(ST, quad):
     s = ST.slice()
     assert np.allclose(c[s], f_hat[s])
 
-#test_ADDmat(cbases.ShenNeumannBasis, "GL")
+test_ADDmat(lbases.ShenBiharmonicBasis, "LG")
 
 biharmonic_with_quads = (list(product([cbases.ShenBiharmonicBasis], cquads)) +
                         list(product([lbases.ShenBiharmonicBasis], lquads)))
@@ -314,7 +320,7 @@ biharmonic_with_quads = (list(product([cbases.ShenBiharmonicBasis], cquads)) +
 @pytest.mark.parametrize('SB,quad', biharmonic_with_quads)
 def test_SBBmat(SB, quad):
     M = 72
-    SB = SB(M, quad=quad)
+    SB = SB(M, quad=quad, plan=True)
     u = sin(4*pi*x)**2
     f = u.diff(x, 4)
     ul = lambdify(x, u, 'numpy')
@@ -354,12 +360,12 @@ def test_SBBmat(SB, quad):
 
     assert np.allclose(c, c2)
 
-#test_SBBmat('GC')
+#test_SBBmat(cbases.ShenBiharmonicBasis, 'GC')
 
 @pytest.mark.parametrize('SB,quad', biharmonic_with_quads)
 def test_ABBmat(SB, quad):
     M = 4*N
-    SB = SB(M, quad=quad)
+    SB = SB(M, quad=quad, plan=True)
     u = sin(6*pi*x)**2
     f = u.diff(x, 2)
     fl = lambdify(x, f, "numpy")

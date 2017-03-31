@@ -94,7 +94,7 @@ class R2CBasis(FourierBase):
         self._xfftn_fwd = pyfftw.builders.rfft
         self._xfftn_bck = pyfftw.builders.irfft
         if plan:
-            self.plan((int(padding_factor*N),), 0, np.float, {})
+            self.plan((int(np.round(padding_factor*N)),), 0, np.float, {})
 
     def wavenumbers(self, N, axis=0):
         """Return the wavenumbermesh
@@ -112,7 +112,7 @@ class R2CBasis(FourierBase):
         shape = list(shape)
         shape[self.axis] = int(shape[self.axis] / self.padding_factor)
         shape[self.axis] = shape[self.axis]//2 + 1
-        return pyfftw.empty_aligned(shape, dtype=np.complex)
+        return pyfftw.empty_aligned(shape, dtype=dtype)
 
     def eval(self, x, fk):
         V = self.vandermonde(x)
@@ -174,7 +174,7 @@ class C2CBasis(FourierBase):
         self._xfftn_fwd = pyfftw.builders.fft
         self._xfftn_bck = pyfftw.builders.ifft
         if plan:
-            self.plan((int(padding_factor*N),), 0, np.complex, {})
+            self.plan((int(np.round(padding_factor*N)),), 0, np.complex, {})
 
     def wavenumbers(self, N, axis=0):
         """Return the wavenumbermesh

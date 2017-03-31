@@ -27,7 +27,7 @@ N = 32
 
 ST = R2CBasis(N, plan=True)
 
-points = ST.points_and_weights()[0]
+points = ST.points_and_weights(N)[0]
 
 # Get f on quad points
 fj = np.array([f.subs(x, j) for j in points], dtype=np.float)
@@ -52,3 +52,7 @@ plt.figure()
 plt.plot(points, uq - uj)
 plt.title("Error")
 #plt.show()
+
+SP = R2CBasis(N, plan=True, padding_factor=1.5)
+up = SP.backward(f_hat)
+
