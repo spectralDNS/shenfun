@@ -312,7 +312,7 @@ def test_ADDmat(ST, quad):
     s = ST.slice()
     assert np.allclose(c[s], f_hat[s])
 
-test_ADDmat(lbases.ShenBiharmonicBasis, "LG")
+#test_ADDmat(lbases.ShenBiharmonicBasis, "LG")
 
 biharmonic_with_quads = (list(product([cbases.ShenBiharmonicBasis], cquads)) +
                         list(product([lbases.ShenBiharmonicBasis], lquads)))
