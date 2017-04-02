@@ -1,0 +1,2 @@
+git+https://bitbucket.org/dalcinl/mpi4py-fft@master
+##https://mikael_mortensen@bitbucket.org/dalcinl/mpi4py-fft.git

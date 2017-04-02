@@ -2,7 +2,6 @@ from numpy.polynomial import chebyshev as n_cheb
 import functools
 import numpy as np
 import pyfftw
-from mpiFFT4py import dct
 from shenfun.spectralbase import SpectralBase, work, _func_wrap
 from shenfun.optimization import Cheb
 from shenfun.utilities import inheritdocstrings
@@ -15,19 +14,24 @@ class _dct_wrap(object):
 
     # pylint: disable=too-few-public-methods
 
-    __slots__ = ('_dct', 'input_array', 'output_array')
+    __slots__ = ('_dct', '_input_array', '_output_array')
 
-    def __init__(self, xfftn, in_array, out_array):
-        object.__setattr__(self, '_dct', xfftn)
-        object.__setattr__(self, 'input_array', in_array)
-        object.__setattr__(self, 'output_array', out_array)
+    def __init__(self, dct, in_array, out_array):
+        object.__setattr__(self, '_dct', dct)
+        object.__setattr__(self, '_input_array', in_array)
+        object.__setattr__(self, '_output_array', out_array)
 
-    def __getattribute__(self, name):
-        if name in ('input_array', 'output_array'):
-            return object.__getattribute__(self, name)
-        else:
-            dct_obj = object.__getattribute__(self, '_dct')
-            return getattr(dct_obj, name)
+    @property
+    def input_array(self):
+        return object.__getattribute__(self, '_input_array')
+
+    @property
+    def output_array(self):
+        return object.__getattribute__(self, '_output_array')
+
+    @property
+    def dct(self):
+        return object.__getattribute__(self, '_dct')
 
     def __call__(self, input_array=None, output_array=None, **kw):
         dct_obj = object.__getattribute__(self, '_dct')
@@ -37,10 +41,10 @@ class _dct_wrap(object):
 
         dct_obj.input_array[...] = self.input_array.real
         dct_obj(None, None, **kw)
-        self.output_array.real[:] = dct_obj.output_array
+        self.output_array.real[...] = dct_obj.output_array
         dct_obj.input_array[...] = self.input_array.imag
         dct_obj(None, None, **kw)
-        self.output_array.imag[:] = dct_obj.output_array
+        self.output_array.imag[...] = dct_obj.output_array
 
         if output_array is not None:
             output_array[...] = self.output_array

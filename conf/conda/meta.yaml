@@ -7,7 +7,7 @@ source:
 
 build:
   number: 2
-  script: python setup.py install --prefix=$PREFIX
+  #script: python setup.py install --prefix=$PREFIX
 
 requirements:
   build:
@@ -19,7 +19,6 @@ requirements:
     - python
     - numpy
     - scipy
-    - mpifft4py
     - cython
     - pyfftw
     - six

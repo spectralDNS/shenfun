@@ -1,6 +1,5 @@
 import numpy as np
 import pyfftw
-from mpiFFT4py import rfft, fft, irfft, ifft
 from shenfun.spectralbase import SpectralBase
 from shenfun.utilities import inheritdocstrings
 
