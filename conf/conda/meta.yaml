@@ -21,6 +21,7 @@ requirements:
     - scipy
     - cython
     - pyfftw
+    - mpi4py
     - six
     - sympy
 
