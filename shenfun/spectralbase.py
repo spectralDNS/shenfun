@@ -248,7 +248,7 @@ class SpectralBase(object):
 
         """
         assert self.N == input_array.shape[self.axis]
-        points, weights = self.points_and_weights()
+        points, weights = self.points_and_weights(self.N)
         V = self.vandermonde(points)
         P = self.get_vandermonde_basis(V)
         if input_array.ndim == 1:
@@ -272,7 +272,7 @@ class SpectralBase(object):
 
         """
         assert self.N == output_array.shape[self.axis]
-        points = self.points_and_weights()[0]
+        points = self.points_and_weights(self.N)[0]
         V = self.vandermonde(points)
         P = self.get_vandermonde_basis(V)
 
@@ -342,8 +342,6 @@ class SpectralBase(object):
 
         if self.padding_factor > 1.+1e-8:
             trunc_array = self._get_truncarray(shape, V.dtype)
-
-        if self.padding_factor > 1.+1e-8:
             self.forward = _func_wrap(self.forward, xfftn_fwd, U, trunc_array)
             self.backward = _func_wrap(self.backward, xfftn_bck, trunc_array, U)
         else:
@@ -355,7 +353,7 @@ class SpectralBase(object):
 
     def _get_truncarray(self, shape, dtype):
         shape = list(shape)
-        shape[self.axis] = int(shape[self.axis] / self.padding_factor)
+        shape[self.axis] = int(np.round(shape[self.axis] / self.padding_factor))
         return pyfftw.empty_aligned(shape, dtype=dtype)
 
     def evaluate_expansion_all(self, input_array, output_array):
@@ -404,11 +402,15 @@ class SpectralBase(object):
         s[self.axis] = a
         return s
 
-    def test_function(self):
-        return (self, np.zeros((1, 1), dtype=int))
-
     def __len__(self):
         return 1
+
+    def __getitem__(self, i):
+        assert i == 0
+        return self
+
+    def _get_mat(self):
+        raise NotImplementedError
 
     def _truncation_forward(self, padded_array, trunc_array):
         if self.padding_factor > 1.0+1e-8:
@@ -433,36 +435,101 @@ class SpectralBase(object):
             padded_array *= self.padding_factor
 
 
+def inner_product(test, trial, out=None, axis=0, fast_transform=False):
+    """Return inner product of linear or bilinear form
+
+    args:
+        test     (Basis, integer)     Basis is any of the classes from
+                                      shenfun.chebyshev.bases,
+                                      shenfun.legendre.bases or
+                                      shenfun.fourier.bases
+                                      The integer determines the numer of times
+                                      the basis is differentiated.
+                                      The test represents the matrix row
+        trial    (Basis, integer)     As test, but representing matrix column
+                       or
+                    function          Function evaluated at quadrature nodes
+                                      (for linear forms)
+
+    kwargs:
+        out          Numpy array      Return array
+        axis             int          Axis to take the inner product over
+
+    Example:
+        Compute mass matrix of Shen's Chebyshev Dirichlet basis:
+
+        >>> from shenfun.chebyshev.bases import ShenDirichletBasis
+        >>> SD = ShenDirichletBasis(6)
+        >>> B = inner_product((SD, 0), (SD, 0))
+        >>> B
+        {-2: array([-1.57079633]),
+          0: array([ 4.71238898,  3.14159265,  3.14159265,  3.14159265]),
+          2: array([-1.57079633])}
+
+    """
+    if isinstance(test, tuple):
+        # Bilinear form
+        assert trial[0].__module__ == test[0].__module__
+        if isinstance(test[1], (int, np.integer)):
+            key = ((test[0].__class__, test[1]), (trial[0].__class__, trial[1]))
+        elif isinstance(test[1], np.ndarray):
+            assert len(test[1]) == 1
+            k_test = test[1][(0,)*np.ndim(test[1])]
+            k_trial = trial[1][(0,)*np.ndim(trial[1])]
+            key = ((test[0].__class__, k_test), (trial[0].__class__, k_trial))
+        else:
+            raise RuntimeError
+
+        mat = test[0]._get_mat()
+        return mat[key](test, trial)
+
+    else:
+        # Linear form
+        if out is None:
+            sl = list(trial.shape)
+            if isinstance(test, fourier.FourierBase):
+                if isinstance(test, fourier.R2CBasis):
+                    sl[axis] = sl[axis]//2+1
+                out = np.zeros(sl, dtype=np.complex)
+            else:
+                out = np.zeros_like(trial)
+        out = test.scalar_product(trial, out, fast_transform=fast_transform)
+        return out
+
+
 class _func_wrap(object):
 
     # pylint: disable=too-few-public-methods
 
-    __slots__ = ('_func', '_xfftn', '__doc__', 'input_array', 'output_array')
+    __slots__ = ('_func', '_xfftn', '__doc__', '_input_array', '_output_array')
 
     def __init__(self, func, xfftn, input_array, output_array):
         object.__setattr__(self, '_xfftn', xfftn)
         object.__setattr__(self, '_func', func)
-        object.__setattr__(self, 'input_array', input_array)
-        object.__setattr__(self, 'output_array', output_array)
+        object.__setattr__(self, '_input_array', input_array)
+        object.__setattr__(self, '_output_array', output_array)
+        object.__setattr__(self, '__doc__', func.__doc__)
 
-    def __getattribute__(self, name):
-        if name in ('input_array', 'output_array'):
-            return object.__getattribute__(self, name)
-        elif name in ('_xfftn', '_func'):
-            return object.__getattribute__(self, name)
-        elif name in ('direction',):
-            xfftn = object.__getattribute__(self, '_xfftn')
-            return getattr(xfftn, name)
-        else:
-            func = object.__getattribute__(self, '_func')
-            return getattr(func, name)
+    @property
+    def input_array(self):
+        return object.__getattribute__(self, '_input_array')
+
+    @property
+    def output_array(self):
+        return object.__getattribute__(self, '_output_array')
+
+    @property
+    def xfftn(self):
+        return object.__getattribute__(self, '_xfftn')
+
+    @property
+    def func(self):
+        return object.__getattribute__(self, '_func')
 
     def __call__(self, input_array=None, output_array=None, **kw):
-        func_obj = object.__getattribute__(self, '_func')
-        xfftn_obj = object.__getattribute__(self, '_xfftn')
         if input_array is not None:
             self.input_array[...] = input_array
-        func_obj(None, None, **kw)
+        self.func(None, None, **kw)
         if output_array is not None:
             output_array[...] = self.output_array
             return output_array

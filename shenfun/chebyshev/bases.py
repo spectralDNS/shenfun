@@ -14,12 +14,13 @@ class _dct_wrap(object):
 
     # pylint: disable=too-few-public-methods
 
-    __slots__ = ('_dct', '_input_array', '_output_array')
+    __slots__ = ('_dct', '__doc__', '_input_array', '_output_array')
 
     def __init__(self, dct, in_array, out_array):
         object.__setattr__(self, '_dct', dct)
         object.__setattr__(self, '_input_array', in_array)
         object.__setattr__(self, '_output_array', out_array)
+        object.__setattr__(self, '__doc__', dct.__doc__)
 
     @property
     def input_array(self):
@@ -67,15 +68,15 @@ class ChebyshevBase(SpectralBase):
         assert quad in ('GC', 'GL')
         SpectralBase.__init__(self, N, quad)
 
-    def points_and_weights(self):
+    def points_and_weights(self, N):
         if self.quad == "GL":
-            points = -(n_cheb.chebpts2(self.N)).astype(float)
-            weights = np.zeros(self.N)+np.pi/(self.N-1)
+            points = -(n_cheb.chebpts2(N)).astype(float)
+            weights = np.zeros(N)+np.pi/(N-1)
             weights[0] /= 2
             weights[-1] /= 2
 
         elif self.quad == "GC":
-            points, weights = n_cheb.chebgauss(self.N)
+            points, weights = n_cheb.chebgauss(N)
             points = points.astype(float)
             weights = weights.astype(float)
 
@@ -110,6 +111,10 @@ class ChebyshevBase(SpectralBase):
     def get_mass_matrix(self):
         from .matrices import mat
         return mat[((self.__class__, 0), (self.__class__, 0))]
+
+    def _get_mat(self):
+        from .matrices import mat
+        return mat
 
     def plan(self, shape, axis, dtype, options):
         opts = dict(

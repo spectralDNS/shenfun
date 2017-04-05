@@ -4,75 +4,11 @@ from . import legendre
 from . import fourier
 from . import matrixbase
 from . import operators
+from . import arguments
+from . import inner
 from scipy.sparse.linalg import spsolve
 from scipy.linalg import solve as lasolve
 
-def inner_product(test, trial, out=None, axis=0, fast_transform=False):
-    """Return inner product of linear or bilinear form
-
-    args:
-        test     (Basis, integer)     Basis is any of the classes from
-                                      shenfun.chebyshev.bases,
-                                      shenfun.legendre.bases or
-                                      shenfun.fourier.bases
-                                      The integer determines the numer of times
-                                      the basis is differentiated.
-                                      The test represents the matrix row
-        trial    (Basis, integer)     As test, but representing matrix column
-                       or
-                    function          Function evaluated at quadrature nodes
-                                      (for linear forms)
-
-    kwargs:
-        out          Numpy array      Return array
-        axis             int          Axis to take the inner product over
-
-    Example:
-        Compute mass matrix of Shen's Chebyshev Dirichlet basis:
-
-        >>> from shenfun.chebyshev.bases import ShenDirichletBasis
-        >>> SD = ShenDirichletBasis(6)
-        >>> B = inner_product((SD, 0), (SD, 0))
-        >>> B
-        {-2: array([-1.57079633]),
-          0: array([ 4.71238898,  3.14159265,  3.14159265,  3.14159265]),
-          2: array([-1.57079633])}
-
-    """
-    if isinstance(test, tuple):
-        # Bilinear form
-        assert trial[0].__module__ == test[0].__module__
-        if isinstance(test[1], (int, np.integer)):
-            key = ((test[0].__class__, test[1]), (trial[0].__class__, trial[1]))
-        elif isinstance(test[1], np.ndarray):
-            assert len(test[1]) == 1
-            k_test = test[1][(0,)*np.ndim(test[1])]
-            k_trial = trial[1][(0,)*np.ndim(trial[1])]
-            key = ((test[0].__class__, k_test), (trial[0].__class__, k_trial))
-        else:
-            raise RuntimeError
-
-        if isinstance(test[0], chebyshev.ChebyshevBase):
-            return chebyshev.mat[key](test, trial)
-
-        elif isinstance(test[0], legendre.LegendreBase):
-            return legendre.mat[key](test, trial)
-
-        elif isinstance(test[0], fourier.FourierBase):
-            return fourier.mat[key](test, trial)
-
-    else:
-        # Linear form
-        if out is None:
-            sl = list(trial.shape)
-            if isinstance(test, fourier.FourierBase):
-                if isinstance(test, fourier.R2CBasis):
-                    sl[axis] = sl[axis]//2+1
-                out = np.zeros(sl, dtype=np.complex)
-            else:
-                out = np.zeros_like(trial)
-        out = test.scalar_product(trial, out, fast_transform=fast_transform)
-        return out
 
 def solve(A, b, u=None, axis=0):
     """Solve Au=b and return u

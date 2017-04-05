@@ -389,7 +389,8 @@ class ShenMatrix(SparseMatrix):
 
     def get_dense_matrix(self):
         """Return dense matrix automatically computed from basis"""
-        x, w = self.testfunction[0].points_and_weights()
+        N = self.testfunction[0].N
+        x, w = self.testfunction[0].points_and_weights(N)
         V = self.testfunction[0].vandermonde(x)
         test = self.testfunction[0].get_vandermonde_basis_derivative(V, self.testfunction[1])
         trial = self.trialfunction[0].get_vandermonde_basis_derivative(V, self.trialfunction[1])

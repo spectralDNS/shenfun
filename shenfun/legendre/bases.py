@@ -10,10 +10,25 @@ __all__ = ['LegendreBase', 'Basis', 'ShenDirichletBasis',
 
 class _Wrap(object):
 
-    def __init__(self, func, in_array, out_array):
-        self.func = func
-        self.input_array = in_array
-        self.output_array = out_array
+    __slots__ = ('_func', '__doc__', '_input_array', '_output_array')
+
+    def __init__(self, func, input_array, output_array):
+        object.__setattr__(self, '_func', func)
+        object.__setattr__(self, '_input_array', input_array)
+        object.__setattr__(self, '_output_array', output_array)
+        object.__setattr__(self, '__doc__', func.__doc__)
+
+    @property
+    def input_array(self):
+        return object.__getattribute__(self, '_input_array')
+
+    @property
+    def output_array(self):
+        return object.__getattribute__(self, '_output_array')
+
+    @property
+    def func(self):
+        return object.__getattribute__(self, '_func')
 
     def __call__(self, input_array=None, output_array=None, **kw):
         if input_array is not None:
@@ -42,9 +57,9 @@ class LegendreBase(SpectralBase):
         assert quad == 'LG'
         SpectralBase.__init__(self, N, quad)
 
-    def points_and_weights(self):
+    def points_and_weights(self, N):
         if self.quad == "LG":
-            points, weights = leg.leggauss(self.N)
+            points, weights = leg.leggauss(N)
         else:
             raise NotImplementedError
 
@@ -79,6 +94,10 @@ class LegendreBase(SpectralBase):
     def get_mass_matrix(self):
         from .matrices import mat
         return mat[(self.__class__, 0), (self.__class__, 0)]
+
+    def _get_mat(self):
+        from .matrices import mat
+        return mat
 
     def forward(self, input_array=None, output_array=None, fast_transform=False):
         """Fast forward transform

@@ -19,8 +19,9 @@ import importlib
 from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
-from shenfun import inner_product
+from shenfun.inner import inner
 from shenfun.operators import div, grad
+from shenfun.arguments import TestFunction, TrialFunction
 
 # Collect basis from either Chebyshev or Legendre submodules
 basis = sys.argv[-1] if len(sys.argv) == 2 else 'chebyshev'
@@ -29,34 +30,34 @@ Basis = shen.bases.ShenNeumannBasis
 
 # Use sympy to compute a rhs, given an analytical solution
 x = symbols("x")
-u = sin(np.pi*x)*(1-x**2)
-f = u.diff(x, 2)
+ue = sin(np.pi*x)*(1-x**2)
+fe = ue.diff(x, 2)
 
 # Lambdify for faster evaluation
-ul = lambdify(x, u, 'numpy')
-fl = lambdify(x, f, 'numpy')
+ul = lambdify(x, ue, 'numpy')
+fl = lambdify(x, fe, 'numpy')
 
 # Size of discretization
 N = 32
 
 SD = Basis(N, plan=True)
 X = SD.mesh(N)
+u = TrialFunction(SD)
+v = TestFunction(SD)
 
 # Get f on quad points
 fj = fl(X)
 
 # Compute right hand side of Poisson equation
-f_hat = np.zeros(N)
-f_hat = SD.scalar_product(fj, f_hat)
+f_hat = inner(v, fj)
 if basis == 'legendre':
     f_hat *= -1.
 
 # Get left hand side of Poisson equation
-v = SD.test_function()
 if basis == 'chebyshev':
-    A = inner_product(v, div(grad(v)))
+    A = inner(v, div(grad(u)))
 else:
-    A = inner_product(grad(v), grad(v))
+    A = inner(grad(v), grad(u))
 
 f_hat = A.solve(f_hat)
 

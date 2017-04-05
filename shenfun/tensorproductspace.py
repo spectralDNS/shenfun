@@ -3,6 +3,7 @@ from shenfun.fourier.bases import FourierBase, R2CBasis, C2CBasis
 import shenfun
 import pyfftw
 import six
+from .operators import Expr
 from mpi4py_fft.mpifft import Transform
 from mpi4py_fft.pencil import Subcomm, Pencil
 
@@ -147,8 +148,8 @@ class TensorProductSpace(object):
     def __iter__(self):
         return iter(self.bases)
 
-    def test_function(self):
-        return (self, np.zeros((1, len(self)), dtype=np.int))
+    #def test_function(self):
+        #return (self, np.zeros((1, 1, len(self)), dtype=np.int))
 
     def local_shape(self, spectral=True):
         if not spectral:
@@ -183,8 +184,8 @@ class Function(np.ndarray):
     ----------
 
     space : Instance of TensorProductSpace
-    input_array: boolean.
-        If True then create Function of shape/type for input to PFFT.forward,
+    forward_output: boolean.
+        If False then create Function of shape/type for input to PFFT.forward,
         otherwise create Function of shape/type for output from PFFT.forward
     val : int or float
         Value used to initialize array
@@ -200,18 +201,18 @@ class Function(np.ndarray):
     K0 = C2CBasis(8)
     K1 = R2CBasis(8)
     FFT = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
-    u = Function(FFT)
-    uhat = Function(FFT, False)
+    u = Function(FFT, False)
+    uhat = Function(FFT, True)
 
     """
 
     # pylint: disable=too-few-public-methods,too-many-arguments
 
-    def __new__(cls, space, input_array=True, val=0):
+    def __new__(cls, space, forward_output=True, val=0):
 
         shape = space.forward.input_array.shape
         dtype = space.forward.input_array.dtype
-        if spectral is True:
+        if forward_output is True:
             shape = space.forward.output_array.shape
             dtype = space.forward.output_array.dtype
 
@@ -220,95 +221,6 @@ class Function(np.ndarray):
                                  dtype=dtype)
         obj.fill(val)
         return obj
-
-def inner_product(test, trial):
-    assert test[1].shape[0] == trial[1].shape[0]
-
-    base = test[0]
-    A = []
-
-    for base_test, base_trial in zip(test[1], trial[1]):
-
-        if len(base_test.shape) == 1:
-            base_test = base_test[np.newaxis, :]
-        if len(base_trial.shape) == 1:
-            base_trial = base_trial[np.newaxis, :]
-
-        for b0 in base_test:
-            for b1 in base_trial:
-                A.append([])
-                assert len(b0) == len(b1)
-                for i, (a, b) in enumerate(zip(b0, b1)):
-                    AA = shenfun.inner_product((base[i], a), (base[i], b))
-                    AA.axis = i
-                    A[-1].append(AA)
-
-    # Strip off diagonal matrices, put contribution in scale array
-    B = []
-    for matrices in A:
-        scale = np.ones(1).reshape((1,)*len(base))
-        nonperiodic = None
-        for axis, mat in enumerate(matrices):
-            if isinstance(base[axis], shenfun.fourier.FourierBase):
-                a = mat[0]
-                if np.ndim(a):
-                    ss = [np.newaxis]*len(base)
-                    ss[axis] = slice(None)
-                    a = mat[0][ss]
-                scale = scale*a
-            else:
-                nonperiodic = mat
-                nonperiodic.axis = axis
-        if nonperiodic is None:
-            # All diagonal matrices
-            B.append(scale)
-
-        else:
-            nonperiodic.scale = scale
-            B.append(nonperiodic)
-
-    # Get local matrices
-    if np.all([isinstance(b, np.ndarray) for b in B]):
-        # All Fourier
-        BB = []
-        for b in B:
-            s = b.shape
-            ss = [slice(None)]*len(base)
-            ls = base.local_slice()
-            for axis, shape in enumerate(s):
-                if shape > 1:
-                    ss[axis] = ls[axis]
-            BB.append((b[ss]).copy())
-
-        diagonal_array = BB[0]
-        for ci in BB[1:]:
-            diagonal_array = diagonal_array + ci
-
-        diagonal_array = np.where(diagonal_array==0, 1, diagonal_array)
-
-        return {'diagonal': diagonal_array}
-
-    else:
-        c = B[0]
-        C = {c.__class__.__name__: c}
-        for b in B[1:]:
-            name = b.__class__.__name__
-            if name in C:
-                C[name].scale = C[name].scale + b.scale
-            else:
-                C[name] = b
-
-        for v in C.values():
-            if hasattr(v, 'scale'):
-                s = v.scale.shape
-                ss = [slice(None)]*len(base)
-                ls = base.local_slice()
-                for axis, shape in enumerate(s):
-                    if shape > 1:
-                        ss[axis] = ls[axis]
-                v.scale = (v.scale[ss]).copy()
-
-        return C
 
 
 if __name__ == '__main__':

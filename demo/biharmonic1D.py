@@ -11,8 +11,9 @@ import importlib
 from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
-from shenfun import inner_product
+from shenfun.inner import inner
 from shenfun.operators import div, grad, Dx
+from shenfun.arguments import TestFunction, TrialFunction
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 basis = sys.argv[-1] if len(sys.argv) == 2 else 'chebyshev'
@@ -22,7 +23,7 @@ Solver = shen.la.Biharmonic
 
 # Use sympy to compute a rhs, given an analytical solution
 x = symbols("x")
-u = sin(np.pi*x)*(1-x**2)
+ue = sin(np.pi*x)*(1-x**2)
 
 k = 8
 nu = 1./590.
@@ -30,39 +31,38 @@ dt = 5e-5
 a = -(k**2+nu*dt/2*k**4)
 b = 1.0
 c = -nu*dt/2.
-f = a*u.diff(x, 4) + b*u.diff(x, 2) + c*u
+fe = a*ue.diff(x, 4) + b*ue.diff(x, 2) + c*ue
 
 # Lambdify for faster evaluation
-ul = lambdify(x, u, 'numpy')
-fl = lambdify(x, f, 'numpy')
+ul = lambdify(x, ue, 'numpy')
+fl = lambdify(x, fe, 'numpy')
 
 # Size of discretization
 N = 32
 
 SD = Basis(N, plan=True)
 X = SD.mesh(N)
+u = TrialFunction(SD)
+v = TestFunction(SD)
 
 # Get f on quad points
 fj = fl(X)
 
 # Compute right hand side of biharmonic equation
-f_hat = np.zeros(N)
-f_hat = SD.scalar_product(fj, f_hat)
+f_hat = inner(v, fj)
 
 # Get left hand side of biharmonic equation (no integration by parts)
-v = SD.test_function()
-S = inner_product(v, Dx(v, 0, 4))
-A = inner_product(v, Dx(v, 0, 2))
-B = inner_product(v, v)
+S = inner(v, Dx(u, 0, 4))
+A = inner(v, Dx(u, 0, 2))
+B = inner(v, u)
 
 # Create linear algebra solver
 H = Solver(S, A, B, a, b, c)
 
 # Solve and transform to real space
-u = np.zeros(N)               # Solution real space
 u_hat = np.zeros(N)           # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
-u = SD.backward(u_hat, u)
+u = SD.backward(u_hat)
 
 # Compare with analytical solution
 uj = ul(X)

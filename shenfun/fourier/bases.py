@@ -48,6 +48,10 @@ class FourierBase(SpectralBase):
         from .matrices import mat
         return mat[(self.__class__, 0), (self.__class__, 0)]
 
+    def _get_mat(self):
+        from .matrices import mat
+        return mat
+
     def apply_inverse_mass(self, array):
         """Apply inverse mass, which is identity for Fourier basis
 
@@ -129,7 +133,7 @@ class R2CBasis(FourierBase):
 
         """
         assert self.N == output_array.shape[self.axis]
-        points = self.points_and_weights()[0]
+        points = self.points_and_weights(self.N)[0]
         P = self.vandermonde(points)
         if output_array.ndim == 1:
             output_array[:] = np.dot(P, input_array).real
@@ -203,7 +207,7 @@ class C2CBasis(FourierBase):
 
         """
         assert self.N == output_array.shape[self.axis]
-        points = self.points_and_weights()[0]
+        points = self.points_and_weights(self.N)[0]
         V = self.vandermonde(points)
         P = self.get_vandermonde_basis(V)
         if output_array.ndim == 1:
@@ -216,4 +220,14 @@ class C2CBasis(FourierBase):
         assert output_array is self.backward.output_array
         assert input_array is self.backward.input_array
         return output_array
+
+
+def FourierBasis(N, dtype, padding_factor=1., plan=False):
+    """Fourier basis"""
+    dtype = np.dtype(dtype)
+    if dtype.char in 'fdg':
+        return R2CBasis(N, padding_factor, plan)
+
+    else:
+        return C2CBasis(N, padding_factor, plan)
 
