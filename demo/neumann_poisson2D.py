@@ -56,7 +56,7 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = fl(X[0], X[1])
+fj = fl(*X)
 
 # Compute right hand side of Poisson equation
 f_hat = inner(v, fj)
@@ -75,15 +75,15 @@ H = Solver(**matrices, local_shape=T.local_shape())
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
-u = T.backward(u_hat)
+uq = T.backward(u_hat)
 
 # Compare with analytical solution
-uj = ul(X[0], X[1])
-print(abs(uj-u).max())
-assert np.allclose(uj, u)
+uj = ul(*X)
+print(abs(uj-uq).max())
+assert np.allclose(uj, uq)
 
 plt.figure()
-plt.contourf(X[0], X[1], u)
+plt.contourf(X[0], X[1], uq)
 plt.colorbar()
 
 plt.figure()
@@ -91,8 +91,9 @@ plt.contourf(X[0], X[1], uj)
 plt.colorbar()
 
 plt.figure()
-plt.contourf(X[0], X[1], u-uj)
+plt.contourf(X[0], X[1], uq-uj)
 plt.colorbar()
 plt.title('Error')
-#plt.show()
+
+plt.show()
 

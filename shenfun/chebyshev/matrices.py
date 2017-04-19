@@ -813,12 +813,13 @@ class ADDmat(ShenMatrix):
             u = np.moveaxis(u, 0, axis)
             if not u is b:
                 b = np.moveaxis(b, 0, axis)
+        u /= self.scale
         return u
 
 
 @inheritdocstrings
 class ANNmat(ShenMatrix):
-    """Stiffness matrix for inner product A_{kj} = -(phi''_j, phi_k)_w
+    """Stiffness matrix for inner product A_{kj} = (phi''_j, phi_k)_w
 
     where
 
@@ -891,12 +892,13 @@ class ANNmat(ShenMatrix):
             u = np.moveaxis(u, 0, axis)
             if not u is b:
                 b = np.moveaxis(b, 0, axis)
+        u /= self.scale
         return u
 
 
 @inheritdocstrings
 class ATTmat(ShenMatrix):
-    """Stiffness matrix for inner product A_{kj} = -(psi''_j, psi_k)_w
+    """Stiffness matrix for inner product A_{kj} = (psi''_j, psi_k)_w
 
     where
 
@@ -918,7 +920,7 @@ class ATTmat(ShenMatrix):
 
 @inheritdocstrings
 class SBBmat(ShenMatrix):
-    """Biharmonic matrix for inner product S_{kj} = -(psi''''_j, psi_k)_w
+    """Biharmonic matrix for inner product S_{kj} = (psi''''_j, psi_k)_w
 
     where
 

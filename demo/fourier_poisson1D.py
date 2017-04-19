@@ -13,10 +13,8 @@ V is the Fourier basis span{exp(1jkx)}_{k=-N/2}^{N/2-1}
 from sympy import Symbol, cos, sin, exp
 import numpy as np
 import matplotlib.pyplot as plt
+from shenfun import inner, div, grad, TestFunction, TrialFunction
 from shenfun.fourier.bases import FourierBasis
-from shenfun.inner import inner
-from shenfun.operators import div, grad
-from shenfun.arguments import TestFunction, TrialFunction
 
 # Use sympy to compute a rhs, given an analytical solution
 x = Symbol("x")
@@ -30,31 +28,27 @@ ST = FourierBasis(N, np.float, plan=True)
 u = TrialFunction(ST)
 v = TestFunction(ST)
 
-points = ST.points_and_weights(N)[0]
+X = ST.mesh(N)
 
 # Get f on quad points and exact solution
-fj = np.array([fe.subs(x, j) for j in points], dtype=np.float)
-uj = np.array([ue.subs(x, i) for i in points], dtype=np.float)
+fj = np.array([fe.subs(x, j) for j in X], dtype=np.float)
+uj = np.array([ue.subs(x, i) for i in X], dtype=np.float)
 
 # Compute right hand side
 f_hat = inner(v, fj)
 
 # Solve Poisson equation
 A = inner(v, div(grad(u)))
-f_hat = A.solve(f_hat)
+u_hat = A.solve(f_hat)
 
-uq = ST.backward(f_hat)
+uq = ST.backward(u_hat)
 
 assert np.allclose(uj, uq)
 
 plt.figure()
-plt.plot(points, uj)
+plt.plot(X, uj)
 plt.title("U")
 plt.figure()
-plt.plot(points, uq - uj)
+plt.plot(X, uq - uj)
 plt.title("Error")
 #plt.show()
-
-SP = FourierBasis(N, np.float, plan=True, padding_factor=1.5)
-up = SP.backward(f_hat)
-

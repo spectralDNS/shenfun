@@ -80,10 +80,10 @@ class Helmholtz(object):
                                       #self.u1, self.u2, self.L)
 
         elif np.ndim(u) == 2:
-            #la.Solve_Helmholtz_2D(self.axis, b, u, self.neumann, self.u0, self.u1,
-                                  #self.u2, self.L)
-            la.Solve_Helmholtz_2D_ptr(self.axis, b, u, self.neumann, self.u0,
-                                      self.u1, self.u2, self.L)
+            la.Solve_Helmholtz_2D(self.axis, b, u, self.neumann, self.u0, self.u1,
+                                  self.u2, self.L)
+            #la.Solve_Helmholtz_2D_ptr(self.axis, b, u, self.neumann, self.u0,
+            #                          self.u1, self.u2, self.L)
 
         else:
             la.Solve_Helmholtz_1D(b, u, self.neumann, self.u0, self.u1, self.u2, self.L)

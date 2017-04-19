@@ -22,10 +22,9 @@ from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
 from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun.tensorproductspace import TensorProductSpace, Function
-from shenfun.inner import inner
-from shenfun.operators import div, grad
-from shenfun.arguments import TestFunction, TrialFunction
+from shenfun.tensorproductspace import TensorProductSpace
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
+    project, Dx
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
@@ -46,18 +45,18 @@ ul = lambdify((x, y, z), ue, 'numpy')
 fl = lambdify((x, y, z), fe, 'numpy')
 
 # Size of discretization
-N = (31, 32, 33)
+N = (32, 32, 32)
 
 SD = Basis(N[0])
 K1 = C2CBasis(N[1])
-K2 = R2CBasis(N[1])
-T = TensorProductSpace(comm, (SD, K1, K2))
+K2 = R2CBasis(N[2])
+T = TensorProductSpace(comm, (SD, K1, K2), dtype='d')
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = fl(X[0], X[1], X[2])
+fj = fl(*X)
 
 # Compute right hand side of Poisson equation
 f_hat = inner(v, fj)
@@ -79,7 +78,7 @@ u_hat = H(u_hat, f_hat)       # Solve
 u = T.backward(u_hat)
 
 # Compare with analytical solution
-uj = ul(X[0], X[1], X[2])
+uj = ul(*X)
 print(abs(uj-u).max())
 assert np.allclose(uj, u)
 
@@ -95,4 +94,5 @@ plt.figure()
 plt.contourf(X[0][:,:,0], X[1][:,:,0], u[:, :, 2]-uj[:, :, 2])
 plt.colorbar()
 plt.title('Error')
+
 #plt.show()

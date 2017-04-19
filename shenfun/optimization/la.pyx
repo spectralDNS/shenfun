@@ -345,6 +345,57 @@ def PDMA_Symsolve3D(real_t [::1] d,
                     b[i, j, k] -= (e[k]*b[i, j, k+2] + f[k]*b[i, j, k+4])
 
 
+def PDMA_Symsolve2D(real_t [::1] d,
+                    real_t [::1] e,
+                    real_t [::1] f,
+                    T [:, ::1] b,
+                    np.int64_t axis):
+    cdef:
+        int i, j
+        int n = d.shape[0]
+
+    if axis == 0:
+        for j in xrange(b.shape[1]):
+            b[2, j] -= e[0]*b[0, j]
+            b[3, j] -= e[1]*b[1, j]
+
+        for k in xrange(4, n):
+            for j in xrange(b.shape[1]):
+                b[k, j] -= (e[k-2]*b[k-2, j] + f[k-4]*b[k-4, j])
+
+        for j in xrange(b.shape[1]):
+            b[n-1, j] /= d[n-1]
+            b[n-2, j] /= d[n-2]
+            b[n-3, j] /= d[n-3]
+            b[n-3, j] -= e[n-3]*b[n-1, j]
+            b[n-4, j] /= d[n-4]
+            b[n-4, j] -= e[n-4]*b[n-2, j]
+
+        for k in xrange(n-5,-1,-1):
+            for i in xrange(b.shape[1]):
+                b[k, j] /= d[k]
+                b[k, j] -= (e[k]*b[k+2, j] + f[k]*b[k+4, j])
+
+    elif axis == 1:
+        for i in xrange(b.shape[0]):
+            b[i, 2] -= e[0]*b[i, 0]
+            b[i, 3] -= e[1]*b[i, 1]
+
+            for j in xrange(4, n):
+                b[i, j] -= (e[j-2]*b[i, j-2] + f[j-4]*b[i, j-4])
+
+            b[i, n-1] /= d[n-1]
+            b[i, n-2] /= d[n-2]
+            b[i, n-3] /= d[n-3]
+            b[i, n-3] -= e[n-3]*b[i, n-1]
+            b[i, n-4] /= d[n-4]
+            b[i, n-4] -= e[n-4]*b[i, n-2]
+
+            for j in xrange(n-5,-1,-1):
+                b[i, j] /= d[j]
+                b[i, j] -= (e[j]*b[i, j+2] + f[j]*b[i, j+4])
+
+
 cdef void PDMA_SymSolve_ptr3(real_t* d,
                              real_t* e,
                              real_t* f,
@@ -645,6 +696,41 @@ def TDMA_SymSolve3D(real_t[::1] d,
                 x[i, j, n-2] = x[i, j, n-2]/d[n-2]
                 for k in range(n - 3, -1, -1):
                     x[i, j, k] = (x[i, j, k] - a[k]*x[i, j, k+2])/d[k]
+
+def TDMA_SymSolve2D(real_t[::1] d,
+                    real_t[::1] a,
+                    real_t[::1] l,
+                    T[:, ::1] x,
+                    np.int64_t axis):
+    cdef:
+        unsigned int n = d.shape[0]
+        np.intp_t i, j, k
+        real_t d1
+
+    if axis == 0:
+        for i in range(2, n):
+            for j in range(x.shape[1]):
+                x[i, j] -= l[i-2]*x[i-2, j]
+
+        for j in range(x.shape[1]):
+            x[n-1, j] = x[n-1, j]/d[n-1]
+            x[n-2, j] = x[n-2, j]/d[n-2]
+
+        for i in range(n - 3, -1, -1):
+            d1 = 1./d[i]
+            for j in range(x.shape[1]):
+                x[i, j] = (x[i, j] - a[i]*x[i+2, j])*d1
+
+    elif axis == 1:
+        for i in range(x.shape[0]):
+            for j in range(2, n):
+                x[i, j] -= l[j-2]*x[i, j-2]
+
+            x[i, n-1] = x[i, n-1]/d[n-1]
+            x[i, n-2] = x[i, n-2]/d[n-2]
+
+            for j in range(n - 3, -1, -1):
+                x[i, j] = (x[i, j] - a[j]*x[i, j+2])/d[j]
 
 
 def TDMA_SymSolve3D_VC(real_t[:, :, ::1] d,

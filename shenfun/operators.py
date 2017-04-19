@@ -1,5 +1,8 @@
 import numpy as np
-from .arguments import Expr
+from .arguments import Expr, Function
+
+__all__ = ('div', 'grad', 'Dx')
+
 
 # operators
 def div(test):
@@ -17,7 +20,16 @@ def div(test):
         for i, s in enumerate(v):
             s[..., i] += 1
         v = v.reshape((1, np.prod(v.shape[:-1]), ndim))
-    return Expr(space, v, test.argument())
+
+    if test.argument() < 2:
+        return Expr(space, v, test.argument())
+
+    elif test.argument() == 2:
+        f = Function(space, forward_output=space.is_forward_output(test))
+        f[:] = test
+        f._integrals = v.copy()
+        return f
+
 
 def grad(test):
     assert isinstance(test, Expr)
@@ -25,14 +37,23 @@ def grad(test):
     integrals = test.integrals()
 
     ndim = len(space)
-    assert ndim == integrals.shape[-1]
-    assert integrals.shape[0] == 1       # can only take gradient of scalar (for now)
+    assert test.dim() == ndim
+    assert test.rank() == 1       # can only take gradient of scalar (for now)
     ss = list(integrals.shape)
     ss[0] *= ndim
     v = np.broadcast_to(integrals, ss).copy()  # vector
     for i, s in enumerate(v):
         s[..., i%ndim] += 1
-    return Expr(space, v, test.argument())
+
+    if test.argument() < 2:
+        return Expr(space, v, test.argument())
+
+    elif test.argument() == 2:
+        f = Function(space, forward_output=space.is_forward_output(test))
+        f[:] = test
+        f._integrals = v.copy()
+        return f
+
 
 def Dx(test, x, k):
     assert isinstance(test, Expr)
@@ -40,29 +61,16 @@ def Dx(test, x, k):
     integrals = test.integrals()
 
     v = integrals.copy()
-    for t in v:
-        t[x] = k
-    return Expr(space, v, test.argument())
+    for comp in v:
+        for i in comp:
+            i[x] += k
 
-#def Laplace(test):
-    #ndim = len(test[0])
-    #s = 2*np.identity(ndim, dtype=int)[np.newaxis, :]
-    #return (test[0], s)
+    if test.argument() < 2:
+        return Expr(space, v, test.argument())
 
-#def BiharmonicOperator(test):
-    #ndim = len(test[0])
-    #if ndim == 1:
-        #s = np.array([[4]], dtype=np.int)
-    #elif ndim == 2:
-        #s = np.array([[[4, 0],[0, 4], [2, 2], [2, 2]]], dtype=np.int)
-    #elif ndim == 3:
-        #s = np.array([[[4, 0, 0],
-                      #[0, 4, 0],
-                      #[0, 0, 4],
-                      #[2, 2, 0],
-                      #[2, 2, 0],
-                      #[2, 0, 2],
-                      #[2, 0, 2],
-                      #[0, 2, 2],
-                      #[0, 2, 2]]], dtype=np.int)
-    #return (test[0], s)
+    elif test.argument() == 2:
+        f = Function(space, forward_output=space.is_forward_output(test))
+        f[:] = test
+        f._integrals = v
+        return f
+

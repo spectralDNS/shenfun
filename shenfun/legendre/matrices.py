@@ -31,6 +31,8 @@ class BLLmat(ShenMatrix):
         N = test[0].N
         k = np.arange(N, dtype=np.float)
         d = {0: 2./(2.*k+1)}
+        if test[0].quad == 'GL':
+            d[0][-1] = 2./(N-1)
         ShenMatrix.__init__(self, d, test, trial)
 
 
@@ -54,8 +56,11 @@ class BDDmat(ShenMatrix):
         d = {-2: -2./(2*k[2:] + 1),
               0: 2./(2.*k+1) + 2./(2*k+5)}
         d[2] = d[-2]
+        if test[0].quad == 'GL':
+            d[0][-1] = 2./(2*(N-3)+1) + 2./(N-1)
+
         ShenMatrix.__init__(self, d, test, trial)
-        self.solver = TDMA(self)
+        self.solve = TDMA(self)
 
 
 @inheritdocstrings
@@ -96,13 +101,15 @@ class BBBmat(ShenMatrix):
         gk = (2*k+3)/(2*k+7)
         hk = -(1+gk)
         ek = 2./(2*k+1)
+        if test[0].quad == 'GL':
+            ek[-1] = 2./(N-1)
         d = {0: ek[:-4] + hk[:-4]**2*ek[2:-2] + gk[:-4]**2*ek[4:],
              2: hk[:-6]*ek[2:-4] + gk[:-6]*hk[2:-4]*ek[4:-2],
              4: gk[:-8]*ek[4:-4]}
         d[-2] = d[2]
         d[-4] = d[4]
         ShenMatrix.__init__(self, d, test, trial)
-        self.solver = PDMA(self)
+        self.solve = PDMA(self)
 
 
 @inheritdocstrings
@@ -154,6 +161,7 @@ class ADDmat(ShenMatrix):
             if not u is b:
                 b = np.moveaxis(b, axis, 0)
 
+        u /= self.scale
         return u
 
 @inheritdocstrings

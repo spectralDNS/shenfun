@@ -1,10 +1,11 @@
 import pytest
 from shenfun.chebyshev import bases as cbases
 from shenfun.legendre import bases as lbases
+from shenfun.fourier import bases as fbases
 
 import shenfun
 from shenfun.la import TDMA
-from shenfun import inner_product
+from shenfun.spectralbase import inner_product
 from scipy.linalg import solve
 from sympy import chebyshevt, Symbol, sin, cos, pi, lambdify
 import numpy as np
@@ -25,7 +26,7 @@ lBasis = (lbases.Basis,
           lbases.ShenNeumannBasis)
 
 cquads = ('GC', 'GL')
-lquads = ('LG',)
+lquads = ('LG', 'GL')
 
 all_bases_and_quads = list(product(lBasis, lquads))+list(product(cBasis, cquads))
 
@@ -36,7 +37,7 @@ lbases2 = list(list(i[0]) + [i[1]] for i in product(list(product(lBasis, lBasis)
 def test_scalarproduct(ST, quad):
     """Test fast scalar product against Vandermonde computed version"""
     ST = ST(N, quad=quad, plan=True)
-    points, weights = ST.points_and_weights()
+    points, weights = ST.points_and_weights(N)
     f = x*x+cos(pi*x)
     fl = lambdify(x, f, 'numpy')
     fj = fl(points)
@@ -52,20 +53,21 @@ def test_scalarproduct(ST, quad):
 def test_eval(ST, quad):
     """Test eval agains fast inverse"""
     ST = ST(N, quad=quad, plan=True)
-    points, weights = ST.points_and_weights()
+    points, weights = ST.points_and_weights(N)
     fk = np.zeros(N)
     fj = np.random.random(N)
     fk = ST.forward(fj, fk)
     fj = ST.backward(fk, fj)
     fk = ST.forward(fj, fk)
     f = ST.eval(points, fk)
+    #from IPython import embed; embed()
     assert np.allclose(fj, f)
     fj = ST.backward(fk, fj, fast_transform=False)
     fk = ST.forward(fj, fk, fast_transform=False)
     f = ST.eval(points, fk)
     assert np.allclose(fj, f)
 
-#test_eval(cbases.ShenDirichletBasis, 'GL')
+#test_eval(lbases.ShenDirichletBasis, 'LG')
 
 @pytest.mark.parametrize('test, trial, quad', cbases2+lbases2)
 def test_massmatrices(test, trial, quad):
@@ -104,21 +106,24 @@ def test_massmatrices(test, trial, quad):
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
 @pytest.mark.parametrize('axis', (0,1,2))
 def test_transforms(ST, quad, axis):
+    #N = 11
     ST = ST(N, quad=quad, plan=True)
-    points, weights = ST.points_and_weights()
+    points, weights = ST.points_and_weights(N)
     fj = np.random.random(N)
 
     # Project function to space first
-    f_hat = np.zeros(N)
+    f_hat = np.zeros_like(ST.forward.output_array)
     f_hat = ST.forward(fj, f_hat)
     fj = ST.backward(f_hat, fj)
 
     # Then check if transformations work as they should
-    u0 = np.zeros(N)
+    u0 = np.zeros_like(f_hat)
     u1 = np.zeros(N)
     u0 = ST.forward(fj, u0)
     u1 = ST.backward(u0, u1)
-
+    assert np.allclose(fj, u1)
+    u0 = ST.forward(fj, u0, fast_transform=False)
+    u1 = ST.backward(u0, u1, fast_transform=False)
     assert np.allclose(fj, u1)
 
     # Multidimensional version
@@ -126,24 +131,23 @@ def test_transforms(ST, quad, axis):
     bc[axis] = slice(None)
     fj = np.broadcast_to(fj[bc], (N,)*3).copy()
 
-    u00 = np.zeros_like(fj)
-    u11 = np.zeros_like(fj)
     ST.plan((N,)*3, axis, np.float, {})
-    u00 = ST.forward(fj, u00)
-    u11 = ST.backward(u00, u11)
+    u00 = np.zeros_like(ST.forward.output_array)
+    u11 = np.zeros_like(ST.forward.input_array)
+    u00 = ST.forward(fj, u00, fast_transform=False)
+    u11 = ST.backward(u00, u11, fast_transform=False)
     cc = [0,]*3
     cc[axis] = slice(None)
-    #from IPython import embed; embed()
     assert np.allclose(fj[cc], u11[cc])
 
-#test_transforms(lbases.ShenNeumannBasis, "LG", 2)
+#test_transforms(lbases.ShenBiharmonicBasis, 'GL', 2)
 
 
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
 @pytest.mark.parametrize('axis', (0,1,2))
 def test_axis(ST, quad, axis):
     ST = ST(N, quad=quad, plan=True)
-    points, weights = ST.points_and_weights()
+    points, weights = ST.points_and_weights(N)
     f_hat = np.random.random(N)
 
     B = inner_product((ST, 0), (ST, 0))
@@ -169,7 +173,7 @@ def test_CDDmat(quad):
     SD = cbases.ShenDirichletBasis(M, quad=quad, plan=True)
     u = (1-x**2)*sin(np.pi*6*x)
     dudx = u.diff(x, 1)
-    points, weights = SD.points_and_weights()
+    points, weights = SD.points_and_weights(M)
 
     ul = lambdify(x, u, 'numpy')
     dudx_l = lambdify(x, dudx, 'numpy')
@@ -277,7 +281,7 @@ def test_ADDmat(ST, quad):
     f = u.diff(x, 2)
     ul = lambdify(x, u, 'numpy')
     fl = lambdify(x, f, 'numpy')
-    points, weights = ST.points_and_weights()
+    points, weights = ST.points_and_weights(M)
     uj = ul(points)
     fj = fl(points)
     s = ST.slice()
@@ -325,7 +329,7 @@ def test_SBBmat(SB, quad):
     f = u.diff(x, 4)
     ul = lambdify(x, u, 'numpy')
     fl = lambdify(x, f, 'numpy')
-    points, weights = SB.points_and_weights()
+    points, weights = SB.points_and_weights(M)
     uj = ul(points)
     fj = fl(points)
 
@@ -371,7 +375,7 @@ def test_ABBmat(SB, quad):
     fl = lambdify(x, f, "numpy")
     ul = lambdify(x, u, "numpy")
 
-    points, weights = SB.points_and_weights()
+    points, weights = SB.points_and_weights(M)
     uj = ul(points)
     fj = fl(points)
 

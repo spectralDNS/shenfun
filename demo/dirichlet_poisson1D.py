@@ -17,9 +17,9 @@ import importlib
 from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
-from shenfun.inner import inner
-from shenfun.arguments import TestFunction, TrialFunction
-from shenfun.operators import div, grad
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
+    project, Dx
+
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 basis = sys.argv[-1] if len(sys.argv) == 2 else 'chebyshev'
@@ -62,17 +62,18 @@ f_hat = A.solve(f_hat)
 uj = SD.backward(f_hat)
 
 # Compare with analytical solution
-ue = ul(X)
-print(abs(uj-ue).max())
-assert np.allclose(uj, ue)
+ua = ul(X)
+print(abs(uj-ua).max())
+assert np.allclose(uj, ua)
 
 plt.figure()
 plt.plot(X, uj)
 
 plt.figure()
-plt.plot(X, ue)
+plt.plot(X, ua)
 
 plt.figure()
-plt.plot(X, uj-ue)
+plt.plot(X, uj-ua)
 plt.title('Error')
+
 #plt.show()

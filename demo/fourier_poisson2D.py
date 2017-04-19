@@ -15,10 +15,8 @@ from sympy import Symbol, cos, sin, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
 from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun.tensorproductspace import TensorProductSpace, Function
-from shenfun.inner import inner
-from shenfun.operators import div, grad
-from shenfun.arguments import TestFunction, TrialFunction
+from shenfun.tensorproductspace import TensorProductSpace
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Function
 
 from mpi4py import MPI
 
@@ -44,7 +42,7 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = fl(X[0], X[1])
+fj = fl(*X)
 
 # Compute right hand side
 f_hat = inner(v, fj)
@@ -55,7 +53,7 @@ f_hat = f_hat / A['diagonal']
 
 uq = T.backward(f_hat, fast_transform=True)
 
-uj = ul(X[0], X[1])
+uj = ul(*X)
 assert np.allclose(uj, uq)
 
 plt.figure()

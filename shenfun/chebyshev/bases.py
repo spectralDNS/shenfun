@@ -161,6 +161,7 @@ class ChebyshevBase(SpectralBase):
         self.scalar_product = _func_wrap(self.scalar_product, self.xfftn_fwd, U, V)
 
 
+
 @inheritdocstrings
 class Basis(ChebyshevBase):
     """Basis for regular Chebyshev series

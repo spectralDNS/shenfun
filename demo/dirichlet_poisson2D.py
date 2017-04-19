@@ -22,10 +22,9 @@ from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
 from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun.tensorproductspace import TensorProductSpace, Function
-from shenfun.inner import inner
-from shenfun.arguments import TestFunction, TrialFunction
-from shenfun.operators import grad, div
+from shenfun.tensorproductspace import TensorProductSpace
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
+    project
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
@@ -38,7 +37,7 @@ Solver = shen.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y = symbols("x,y")
-ue = (cos(4*x) + sin(2*y))*(1-x**2)
+ue = (cos(4*y) + sin(2*x))*(1-x**2)
 fe = ue.diff(x, 2) + ue.diff(y, 2)
 
 # Lambdify for faster evaluation
@@ -46,7 +45,7 @@ ul = lambdify((x, y), ue, 'numpy')
 fl = lambdify((x, y), fe, 'numpy')
 
 # Size of discretization
-N = (31, 32)
+N = (32, 32)
 
 SD = Basis(N[0])
 K1 = R2CBasis(N[1])
@@ -56,7 +55,7 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = fl(X[0], X[1])
+fj = fl(*X)
 
 # Compute right hand side of Poisson equation
 f_hat = inner(v, fj)
@@ -75,15 +74,16 @@ H = Solver(**matrices, local_shape=T.local_shape())
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
-u = T.backward(u_hat)
+uq = Function(T, False)
+uq = T.backward(u_hat, uq)
 
 # Compare with analytical solution
-uj = ul(X[0], X[1])
-print(abs(uj-u).max())
-assert np.allclose(uj, u)
+uj = ul(*X)
+print(abs(uj-uq).max())
+assert np.allclose(uj, uq)
 
 plt.figure()
-plt.contourf(X[0], X[1], u)
+plt.contourf(X[0], X[1], uq)
 plt.colorbar()
 
 plt.figure()
@@ -91,8 +91,8 @@ plt.contourf(X[0], X[1], uj)
 plt.colorbar()
 
 plt.figure()
-plt.contourf(X[0], X[1], u-uj)
+plt.contourf(X[0], X[1], uq-uj)
 plt.colorbar()
 plt.title('Error')
-#plt.show()
 
+plt.show()

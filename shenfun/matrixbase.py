@@ -412,11 +412,14 @@ class ShenMatrix(SparseMatrix):
     def matvec(self, v, c, format='csr', axis=0):
         c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
         if self.testfunction[0].__class__.__name__ == 'ShenNeumannBasis':
-            if axis > 0:
-                c = np.moveaxis(c, axis, 0)
-            c[0] = 0
-            if axis > 0:
-                c = np.moveaxis(c, 0, axis)
+            ss = [slice(None)]*len(v.shape)
+            ss[axis] = 0
+            c[ss] = 0
+            #if axis > 0:
+                #c = np.moveaxis(c, axis, 0)
+            #c[0] = 0
+            #if axis > 0:
+                #c = np.moveaxis(c, 0, axis)
         return c
 
     def solve(self, b, u=None, axis=0):
@@ -432,6 +435,16 @@ class ShenMatrix(SparseMatrix):
         from shenfun import solve as default_solve
         u = default_solve(self, b, u, axis=axis)
         return u
+
+    def __hash__(self):
+        return hash(((self.testfunction[0].__class__, self.testfunction[1]),
+                     (self.trialfunction[0].__class__, self.trialfunction[1])))
+
+    def get_key(self):
+        if self.__class__.__name__.startswith('_'):
+            return self.__hash__()
+        else:
+            return self.__class__.__name__
 
 
 def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-12):

@@ -15,10 +15,8 @@ from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
 from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun.tensorproductspace import TensorProductSpace, Function
-from shenfun.inner import inner
-from shenfun.operators import div, grad
-from shenfun.arguments import TestFunction, TrialFunction
+from shenfun.tensorproductspace import TensorProductSpace
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Function
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
@@ -43,7 +41,7 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = fl(X[0], X[1], X[2])
+fj = fl(*X)
 
 # Compute right hand side
 f_hat = inner(v, fj)
@@ -54,7 +52,7 @@ f_hat = f_hat / A['diagonal']
 
 uq = T.backward(f_hat, fast_transform=True)
 
-uj = ul(X[0], X[1], X[2])
+uj = ul(*X)
 print(abs(uj-uq).max())
 assert np.allclose(uj, uq)
 
@@ -72,16 +70,3 @@ plt.colorbar()
 plt.title('Error')
 #plt.show()
 
-P0 = C2CBasis(N, padding_factor=1.5)
-P1 = C2CBasis(N, padding_factor=1.5)
-P2 = R2CBasis(N, padding_factor=1.5)
-P = TensorProductSpace(comm, (P0, P1, P2))
-XP = P.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
-up = P.backward(f_hat)
-up_hat = P.forward(up)
-assert np.allclose(up_hat, f_hat)
-
-plt.figure()
-plt.contourf(XP[0][:,:,0], XP[1][:,:,0], up[:, :, 0])
-plt.colorbar()
-plt.show()

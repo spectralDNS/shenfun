@@ -137,17 +137,26 @@ class R2CBasis(FourierBase):
         P = self.vandermonde(points)
         if output_array.ndim == 1:
             output_array[:] = np.dot(P, input_array).real
-            output_array += np.dot(P[:, 1:-1], np.conj(input_array[1:-1])).real
+            if self.N % 2 == 0:
+                output_array += np.conj(np.dot(P[:, 1:-1], input_array[1:-1])).real
+            else:
+                output_array += np.conj(np.dot(P[:, 1:], input_array[1:])).real
+
         else:
             fc = np.moveaxis(input_array, self.axis, -2)
             array = np.dot(P, fc).real
             s = [slice(None)]*fc.ndim
-            s[-2] = slice(1, -1)
-            array += np.conj(np.dot(P[:, 1:-1], fc[s])).real
+            if self.N % 2 == 0:
+                s[-2] = slice(1, -1)
+                array += np.conj(np.dot(P[:, 1:-1], fc[s])).real
+            else:
+               s[-2] = slice(1, None)
+               array += np.conj(np.dot(P[:, 1:], fc[s])).real
+
             output_array[:] = np.moveaxis(array, 0, self.axis)
 
-        assert output_array is self.backward.output_array
-        assert input_array is self.backward.input_array
+        #assert output_array is self.backward.output_array
+        #assert input_array is self.backward.input_array
         return output_array
 
     def _truncation_forward(self, padded_array, trunc_array):

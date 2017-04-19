@@ -3,9 +3,11 @@ from . import chebyshev
 from . import legendre
 from . import fourier
 from . import matrixbase
-from . import operators
-from . import arguments
-from . import inner
+from .inner import *
+from .operators import *
+from .arguments import *
+from .tensorproductspace import *
+
 from scipy.sparse.linalg import spsolve
 from scipy.linalg import solve as lasolve
 
@@ -75,5 +77,7 @@ def solve(A, b, u=None, axis=0):
     if axis > 0:
         u = np.moveaxis(u, 0, axis)
         b = np.moveaxis(b, 0, axis)
+
+    u /= A.scale
 
     return u

@@ -1,11 +1,10 @@
 import numpy as np
 from shenfun.fourier.bases import FourierBase, R2CBasis, C2CBasis
-import shenfun
-import pyfftw
-import six
-from .operators import Expr
 from mpi4py_fft.mpifft import Transform
 from mpi4py_fft.pencil import Subcomm, Pencil
+
+__all__ = ('TensorProductSpace', )
+
 
 class TensorProductSpace(object):
 
@@ -64,18 +63,20 @@ class TensorProductSpace(object):
 
         axes = self.axes[-1]
         pencil = Pencil(self.subcomm, shape, axes[-1])
-        self.bases[-1].plan(pencil.subshape, axes, dtype, kw)
+        self.xfftn.append(self.bases[axes[-1]])
+        self.xfftn[-1].plan(pencil.subshape, axes, dtype, kw)
         self.pencil[0] = pencilA = pencil
-        if not shape[axes[-1]] == self.bases[-1].forward.output_array.shape[axes[-1]]:
-            dtype = self.bases[-1].forward.output_array.dtype
-            shape[axes[-1]] = self.bases[-1].forward.output_array.shape[axes[-1]]
+        if not shape[axes[-1]] == self.xfftn[-1].forward.output_array.shape[axes[-1]]:
+            dtype = self.xfftn[-1].forward.output_array.dtype
+            shape[axes[-1]] = self.xfftn[-1].forward.output_array.shape[axes[-1]]
             pencilA = Pencil(self.subcomm, shape, axes[-1])
 
         for i, axes in enumerate(reversed(self.axes[:-1])):
             pencilB = pencilA.pencil(axes[-1])
             transAB = pencilA.transfer(pencilB, dtype)
-            xfftn = self.bases[-(i+2)]
+            xfftn = self.bases[axes[-1]]
             xfftn.plan(pencilB.subshape, axes, dtype, kw)
+            self.xfftn.append(xfftn)
             self.transfer.append(transAB)
             pencilA = pencilB
             if not shape[axes[-1]] == xfftn.forward.output_array.shape[axes[-1]]:
@@ -86,15 +87,15 @@ class TensorProductSpace(object):
         self.pencil[1] = pencilA
 
         self.forward = Transform(
-            [o.forward for o in self.bases[::-1]],
+            [o.forward for o in self.xfftn],
             [o.forward for o in self.transfer],
             self.pencil)
         self.backward = Transform(
-            [o.backward for o in self.bases],
+            [o.backward for o in self.xfftn[::-1]],
             [o.backward for o in self.transfer[::-1]],
             self.pencil[::-1])
         self.scalar_product = Transform(
-            [o.scalar_product for o in self.bases[::-1]],
+            [o.scalar_product for o in self.xfftn],
             [o.forward for o in self.transfer],
             self.pencil)
 
@@ -148,9 +149,6 @@ class TensorProductSpace(object):
     def __iter__(self):
         return iter(self.bases)
 
-    #def test_function(self):
-        #return (self, np.zeros((1, 1, len(self)), dtype=np.int))
-
     def local_shape(self, spectral=True):
         if not spectral:
             return self.forward.input_pencil.subshape
@@ -170,61 +168,64 @@ class TensorProductSpace(object):
                                                                    ip.subshape)]
         return s
 
+    def rank(self):
+        return 1
+
     def __len__(self):
         return len(self.bases)
 
     def __getitem__(self, i):
         return self.bases[i]
 
+    def is_forward_output(self, u):
+        return (np.all(u.shape == self.forward.output_array.shape) and
+                u.dtype == self.forward.output_array.dtype)
 
-class Function(np.ndarray):
-    """Numpy array for TensorProductSpace
+    def as_function(self, u):
+        from .arguments import Function
+        assert isinstance(u, np.ndarray)
+        forward_output = self.is_forward_output(u)
+        return Function(self, forward_output=forward_output, buffer=u)
 
-    Parameters
-    ----------
+class VectorTransform(object):
 
-    space : Instance of TensorProductSpace
-    forward_output: boolean.
-        If False then create Function of shape/type for input to PFFT.forward,
-        otherwise create Function of shape/type for output from PFFT.forward
-    val : int or float
-        Value used to initialize array
+    __slots__ = ('_transform', '_dim')
 
-    For more information, see numpy.ndarray
+    def __init__(self, transform, dim):
+        self._transform = transform
+        self._dim = dim
 
-    Examples
-    --------
-    from mpi4py_fft import MPI
-    from shenfun.tensorproductspace import TensorProductSpace, Function
-    from shenfun.fourier.bases import R2CBasis, C2CBasis
+    @property
+    def dim(self):
+        return object.__getattribute__(self, '_dim')
 
-    K0 = C2CBasis(8)
-    K1 = R2CBasis(8)
-    FFT = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
-    u = Function(FFT, False)
-    uhat = Function(FFT, True)
+    @property
+    def transform(self):
+        return object.__getattribute__(self, '_transform')
 
-    """
+    def __call__(self, input_array, output_array, **kw):
+        for i in range(self.dim):
+            output_array[i] = self.transform(input_array[i], output_array[i], **kw)
+        return output_array
 
-    # pylint: disable=too-few-public-methods,too-many-arguments
 
-    def __new__(cls, space, forward_output=True, val=0):
+class VectorTensorProductSpace(TensorProductSpace):
 
-        shape = space.forward.input_array.shape
-        dtype = space.forward.input_array.dtype
-        if forward_output is True:
-            shape = space.forward.output_array.shape
-            dtype = space.forward.output_array.dtype
+    def __init__(self, comm, bases, axes=None, dtype=None, **kw):
+        TensorProductSpace.__init__(self, comm, bases, axes=axes, dtype=dtype,
+                                    **kw)
 
-        obj = np.ndarray.__new__(cls,
-                                 shape,
-                                 dtype=dtype)
-        obj.fill(val)
-        return obj
+        self.forward = VectorTransform(self.forward, len(self.bases))
+        self.backward = VectorTransform(self.backward, len(self.bases))
+        self.scalar_product = VectorTransform(self.scalar_product, len(self.bases))
+
+    def rank(self):
+        return len(self.bases)
 
 
 if __name__ == '__main__':
     import shenfun
+    import pyfftw
     from mpi4py import MPI
 
     comm = MPI.COMM_WORLD
@@ -248,7 +249,7 @@ if __name__ == '__main__':
     comm.Bcast(f_g_hat, root=0)
 
     # Create a function in real space to hold the test data
-    fj = Function(T, spectral=False)
+    fj = shenfun.Function(T, False)
     fj[:] = f_g[T.local_slice(False)]
 
     # Perform forward transformation
@@ -257,7 +258,7 @@ if __name__ == '__main__':
     assert np.allclose(f_g_hat[T.local_slice(True)], f_hat*N**4)
 
     # Perform backward transformation
-    fj2 = Function(T, spectral=False)
+    fj2 = shenfun.Function(T, False)
     fj2 = T.backward(f_hat)
 
     assert np.allclose(fj, fj2)
@@ -266,11 +267,11 @@ if __name__ == '__main__':
 
     # Padding
     # Needs new instances of bases because arrays have new sizes
-    Kp0 = shenfun.fourier.bases.C2CBasis(N)
-    Kp1 = shenfun.fourier.bases.C2CBasis(N)
-    Kp2 = shenfun.fourier.bases.C2CBasis(N)
-    Kp3 = shenfun.fourier.bases.R2CBasis(N)
-    Tp = TensorProductSpace(comm, (Kp0, Kp1, Kp2, Kp3), padding=True)
+    Kp0 = shenfun.fourier.bases.C2CBasis(N, padding_factor=1.5)
+    Kp1 = shenfun.fourier.bases.C2CBasis(N, padding_factor=1.5)
+    Kp2 = shenfun.fourier.bases.C2CBasis(N, padding_factor=1.5)
+    Kp3 = shenfun.fourier.bases.R2CBasis(N, padding_factor=1.5)
+    Tp = TensorProductSpace(comm, (Kp0, Kp1, Kp2, Kp3))
 
     f_g_pad = Tp.backward(f_hat)
     f_hat2 = Tp.forward(f_g_pad)

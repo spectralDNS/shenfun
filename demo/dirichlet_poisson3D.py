@@ -22,10 +22,9 @@ from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
 from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun.tensorproductspace import TensorProductSpace, Function
-from shenfun.inner import inner
-from shenfun.arguments import TestFunction, TrialFunction
-from shenfun.operators import grad, div
+from shenfun.tensorproductspace import TensorProductSpace
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
+    project, Dx
 import time
 from mpi4py import MPI
 
@@ -47,7 +46,7 @@ ul = lambdify((x, y, z), ue, 'numpy')
 fl = lambdify((x, y, z), fe, 'numpy')
 
 # Size of discretization
-N = (36, 44, 24)
+N = (32, 32, 32)
 
 SD = Basis(N[0])
 K1 = C2CBasis(N[1])
@@ -58,7 +57,7 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = fl(X[0], X[1], X[2])
+fj = fl(*X)
 
 # Compute right hand side of Poisson equation
 f_hat = inner(v, fj)
@@ -78,17 +77,15 @@ H = Solver(**matrices, local_shape=T.local_shape())
 u_hat = Function(T)           # Solution spectral space
 t0 = time.time()
 u_hat = H(u_hat, f_hat)       # Solve
-print("Timing solve = {}".format(time.time()-t0))
-
-u = T.backward(u_hat, fast_transform=False)
+uq = T.backward(u_hat, fast_transform=False)
 
 # Compare with analytical solution
-uj = ul(X[0], X[1], X[2])
-print(abs(uj-u).max())
-assert np.allclose(uj, u)
+uj = ul(*X)
+print(abs(uj-uq).max())
+assert np.allclose(uj, uq)
 
 plt.figure()
-plt.contourf(X[0][:,:,0], X[1][:,:,0], u[:, :, 2])
+plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 2])
 plt.colorbar()
 
 plt.figure()
@@ -96,8 +93,9 @@ plt.contourf(X[0][:,:,0], X[1][:,:,0], uj[:, :, 2])
 plt.colorbar()
 
 plt.figure()
-plt.contourf(X[0][:,:,0], X[1][:,:,0], u[:, :, 2]-uj[:, :, 2])
+plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 2]-uj[:, :, 2])
 plt.colorbar()
 plt.title('Error')
+
 #plt.show()
 

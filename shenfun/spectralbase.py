@@ -140,28 +140,31 @@ class SpectralBase(object):
         return x[s]
 
     def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
-        r"""Return scalar product
+        """Scalar product
 
-          f_k = (f, \phi_k)_w      for all k = 0, 1, ..., N
-              = \sum_j f(x_j) \phi_k(x_j) \sigma(x_j)
-
-        args:
+        kwargs:
             input_array    (input)     Function values on quadrature mesh
             output_array   (output)    Expansion coefficients
+            fast_transform   bool      If True use fast transforms, if False
+                                       use Vandermonde type
+
+        If kwargs input_array/output_array are not given, then use predefined
+        arrays as planned with self.plan
 
         """
         raise NotImplementedError
 
     def forward(self, input_array=None, output_array=None, fast_transform=True):
-        """Fast forward transform
-
-        args:
-            input_array    (input)     Function values on quadrature mesh
-            output_array   (output)    Expansion coefficients
+        """Forward transform
 
         kwargs:
-            fast_transform   bool - If True use fast transforms,
-                             if False use Vandermonde type
+            input_array    (input)     Function values on quadrature mesh
+            output_array   (output)    Expansion coefficients
+            fast_transform   bool      If True use fast transforms, if False
+                                       use Vandermonde type
+
+        If kwargs input_array/output_array are not given, then use predefined
+        arrays as planned with self.plan
 
         """
         if input_array is not None:
@@ -179,15 +182,16 @@ class SpectralBase(object):
             return self.forward.output_array
 
     def backward(self, input_array=None, output_array=None, fast_transform=True):
-        """Fast backward transform
-
-        args:
-            input_array    (input)     Expansion coefficients
-            output_array   (output)    Function values on quadrature mesh
+        """Inverse transform
 
         kwargs:
-            fast_transform   bool - If True use fast transforms,
-                             if False use Vandermonde type
+            input_array    (input)     Function values on quadrature mesh
+            output_array   (output)    Expansion coefficients
+            fast_transform   bool      If True use fast transforms, if False
+                                       use Vandermonde type
+
+        If kwargs input_array/output_array are not given, then use predefined
+        arrays as planned with self.plan
 
         """
         if input_array is not None:
@@ -310,6 +314,16 @@ class SpectralBase(object):
         return array
 
     def plan(self, shape, axis, dtype, options):
+        """Plan transform
+
+        Allocate work arrays for transforms and set up methods
+
+          forward
+          backward
+          scalar_product
+
+        with or without padding
+        """
         opts = dict(
             avoid_copy=True,
             overwrite_input=True,
@@ -402,6 +416,9 @@ class SpectralBase(object):
         s[self.axis] = a
         return s
 
+    def rank(self):
+        return 1
+
     def __len__(self):
         return 1
 
@@ -411,6 +428,16 @@ class SpectralBase(object):
 
     def _get_mat(self):
         raise NotImplementedError
+
+    def is_forward_output(self, u):
+        return (np.all(u.shape == self.forward.output_array.shape) and
+                u.dtype == self.forward.output_array.dtype)
+
+    def as_function(self, u):
+        from .arguments import Function
+        assert isinstance(u, np.ndarray)
+        forward_output = self.is_forward_output(u)
+        return Function(self, forward_output=forward_output, buffer=u)
 
     def _truncation_forward(self, padded_array, trunc_array):
         if self.padding_factor > 1.0+1e-8:
@@ -452,8 +479,9 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
                                       (for linear forms)
 
     kwargs:
-        out          Numpy array      Return array
+        out              Numpy array  Return array
         axis             int          Axis to take the inner product over
+        fast_transform   bool         Use fast transform method if True
 
     Example:
         Compute mass matrix of Shen's Chebyshev Dirichlet basis:

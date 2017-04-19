@@ -114,7 +114,7 @@ def CDDmat_matvec(np.ndarray[real_t, ndim=1] ud,
                   np.int64_t axis):
     cdef:
         int i, j, k
-        int N = v.shape[0]-2
+        int N = v.shape[axis]-2
 
     if axis == 0:
         for j in xrange(b.shape[1]):

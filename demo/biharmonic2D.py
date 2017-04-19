@@ -24,10 +24,9 @@ from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
 from shenfun.fourier.bases import R2CBasis
-from shenfun.tensorproductspace import TensorProductSpace, Function
-from shenfun.inner import inner
-from shenfun.operators import div, grad
-from shenfun.arguments import TestFunction, TrialFunction
+from shenfun.tensorproductspace import TensorProductSpace
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Function
+
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
@@ -58,7 +57,7 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = fl(X[0], X[1])
+fj = fl(*X)
 
 # Compute right hand side of Poisson equation
 f_hat = inner(v, fj)
@@ -75,15 +74,15 @@ H = BiharmonicSolver(**matrices, local_shape=T.local_shape())
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
-u = T.backward(u_hat)
+uq = T.backward(u_hat)
 
 # Compare with analytical solution
-uj = ul(X[0], X[1])
-print(abs(uj-u).max())
-assert np.allclose(uj, u)
+uj = ul(*X)
+print(abs(uj-uq).max())
+assert np.allclose(uj, uq)
 
 plt.figure()
-plt.contourf(X[0], X[1], u)
+plt.contourf(X[0], X[1], uq)
 plt.colorbar()
 
 plt.figure()
@@ -91,8 +90,9 @@ plt.contourf(X[0], X[1], uj)
 plt.colorbar()
 
 plt.figure()
-plt.contourf(X[0], X[1], u-uj)
+plt.contourf(X[0], X[1], uq-uj)
 plt.colorbar()
 plt.title('Error')
-#plt.show()
+
+plt.show()
 

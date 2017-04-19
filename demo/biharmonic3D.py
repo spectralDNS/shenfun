@@ -24,10 +24,8 @@ from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
 from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun.tensorproductspace import TensorProductSpace, Function
-from shenfun.inner import inner
-from shenfun.operators import div, grad
-from shenfun.arguments import TestFunction, TrialFunction
+from shenfun.tensorproductspace import TensorProductSpace
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, Dx, project
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
@@ -40,7 +38,7 @@ BiharmonicSolver = shen.la.Biharmonic
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y, z = symbols("x,y,z")
-ue = (sin(4*np.pi*x)*sin(2*x)*cos(3*z))*(1-x**2)
+ue = (sin(4*np.pi*z)*sin(2*y)*cos(4*x))*(1-z**2)
 fe = ue.diff(x, 4) + ue.diff(y, 4) + ue.diff(z, 4) + 2*ue.diff(x, 2, y, 2) + 2*ue.diff(x, 2, z, 2) + 2*ue.diff(y, 2, z, 2)
 
 # Lambdify for faster evaluation
@@ -53,13 +51,13 @@ N = (64, 64, 64)
 SD = BiharmonicBasis(N[0])
 K1 = C2CBasis(N[1])
 K2 = R2CBasis(N[2])
-T = TensorProductSpace(comm, (SD, K1, K2))
+T = TensorProductSpace(comm, (K1, K2, SD), axes=(2,0,1))
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = fl(X[0], X[1], X[2])
+fj = fl(*X)
 
 # Compute right hand side of Poisson equation
 f_hat = inner(v, fj)
@@ -76,15 +74,15 @@ H = BiharmonicSolver(**matrices, local_shape=T.local_shape())
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
-u = T.backward(u_hat)
+uq = T.backward(u_hat)
 
 # Compare with analytical solution
-uj = ul(X[0], X[1], X[2])
-print(abs(uj-u).max())
-assert np.allclose(uj, u)
+uj = ul(*X)
+print(abs(uj-uq).max())
+assert np.allclose(uj, uq)
 
 plt.figure()
-plt.contourf(X[0][:,:,0], X[1][:,:,0], u[:, :, 8])
+plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 8])
 plt.colorbar()
 
 plt.figure()
@@ -92,9 +90,10 @@ plt.contourf(X[0][:,:,0], X[1][:,:,0], uj[:, :, 8])
 plt.colorbar()
 
 plt.figure()
-plt.contourf(X[0][:,:,0], X[1][:,:,0], u[:, :, 8]-uj[:, :, 8])
+plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 8]-uj[:, :, 8])
 plt.colorbar()
 plt.title('Error')
+
 #plt.show()
 
 

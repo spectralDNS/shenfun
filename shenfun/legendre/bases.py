@@ -1,5 +1,6 @@
 import numpy as np
 import pyfftw
+from .lobatto import legendre_lobatto_nodes_and_weights
 from shenfun.spectralbase import SpectralBase, work
 from shenfun.utilities import inheritdocstrings
 from numpy.polynomial import legendre as leg
@@ -49,17 +50,18 @@ class LegendreBase(SpectralBase):
 
     args:
         N             int         Number of quadrature points
-        quad        ('LG')        Legendre-Gauss
+        quad      ('LG', 'GL')    Legendre-Gauss or Legendre-Gauss-Lobatto
 
     """
 
     def __init__(self, N=0, quad="LG"):
-        assert quad == 'LG'
         SpectralBase.__init__(self, N, quad)
 
     def points_and_weights(self, N):
         if self.quad == "LG":
             points, weights = leg.leggauss(N)
+        elif self.quad == "GL":
+            points, weights = legendre_lobatto_nodes_and_weights(N)
         else:
             raise NotImplementedError
 
