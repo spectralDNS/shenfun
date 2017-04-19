@@ -22,9 +22,8 @@ from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
 from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun.tensorproductspace import TensorProductSpace
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    project, Dx
+    project, Dx, TensorProductSpace
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
@@ -70,7 +69,7 @@ else:
     matrices = inner(grad(v), grad(u))
 
 # Create Helmholtz linear algebra solver
-H = Solver(**matrices, local_shape=T.local_shape())
+H = Solver(**matrices)
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space

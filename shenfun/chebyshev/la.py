@@ -31,7 +31,7 @@ class Helmholtz(object):
         else:
             raise RuntimeError('Wrong input to Helmholtz solver')
 
-        local_shape = kwargs.get('local_shape', None)
+        local_shape = A.testfunction[0].forward.input_array.shape
         B[2] = np.broadcast_to(B[2], A[2].shape)
         B[-2] = np.broadcast_to(B[-2], A[2].shape)
         neumann = self.neumann = isinstance(A.testfunction[0], bases.ShenNeumannBasis)
@@ -138,7 +138,7 @@ class Biharmonic(object):
         else:
             raise RuntimeError('Wrong input to Biharmonic solver')
 
-        local_shape = kwargs.get('local_shape', None)
+        local_shape = A.testfunction[0].forward.input_array.shape
         self.S_scale = S_scale
         sii, siu, siuu = S[0], S[2], S[4]
         ail, aii, aiu = A[-2], A[0], A[2]

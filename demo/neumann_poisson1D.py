@@ -19,9 +19,7 @@ import importlib
 from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
-from shenfun.inner import inner
-from shenfun.operators import div, grad
-from shenfun.arguments import TestFunction, TrialFunction
+from shenfun import inner, div, grad, TestFunction, TrialFunction
 
 # Collect basis from either Chebyshev or Legendre submodules
 basis = sys.argv[-1] if len(sys.argv) == 2 else 'chebyshev'

@@ -31,7 +31,7 @@ class Helmholtz(object):
         else:
             raise RuntimeError('Wrong input to Helmholtz solver')
 
-        local_shape = kwargs.get('local_shape', None)
+        local_shape = A.testfunction[0].forward.input_array.shape
         self.s = A.testfunction[0].slice()
         if local_shape is None:
             M = A[0].shape[0]
@@ -112,7 +112,7 @@ class Biharmonic(object):
         else:
             raise RuntimeError('Wrong input to Biharmonic solver')
 
-        local_shape = kwargs.get('local_shape', None)
+        local_shape = A.testfunction[0].forward.input_array.shape
         if np.ndim(B_scale) > 1:
             self.axis = S.axis
             ss = list(local_shape)

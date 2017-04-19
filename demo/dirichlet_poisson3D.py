@@ -71,7 +71,7 @@ else:
     matrices = inner(grad(v), grad(u))
 
 # Create Helmholtz linear algebra solver
-H = Solver(**matrices, local_shape=T.local_shape())
+H = Solver(**matrices)
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space

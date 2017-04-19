@@ -136,13 +136,14 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                 nonperiodic[axis] = mat
 
         # Decomposition
-        s = scale.shape
-        ss = [slice(None)]*len(space)
-        ls = space.local_slice()
-        for axis, shape in enumerate(s):
-            if shape > 1:
-                ss[axis] = ls[axis]
-        scale = (scale[ss]).copy()
+        if hasattr(space, 'local_slice'):
+            s = scale.shape
+            ss = [slice(None)]*len(space)
+            ls = space.local_slice()
+            for axis, shape in enumerate(s):
+                if shape > 1:
+                    ss[axis] = ls[axis]
+            scale = (scale[ss]).copy()
 
         if len(nonperiodic) is 0:
             # All diagonal matrices
@@ -188,9 +189,12 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
 
         # For now only allow one nonperiodic direction
         assert np.all([len(f) == 2 for f in B])
-        for axis, sp in enumerate(space):
-            if not isinstance(sp, FourierBase):
-                npaxis = axis
+        if len(space) > 1:
+            for axis, sp in enumerate(space):
+                if not isinstance(sp, FourierBase):
+                    npaxis = axis
+        else:
+            npaxis = 0
 
         if len(B) == 1:
             if trial.argument() == 1:
@@ -218,16 +222,6 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                 C[name].scale = C[name].scale + b.scale
             else:
                 C[name] = b
-
-        #for v in C.values():
-            #if hasattr(v, 'scale') and len(space) > 1:
-                #s = v.scale.shape
-                #ss = [slice(None)]*len(space)
-                #ls = space.local_slice()
-                #for axis, shape in enumerate(s):
-                    #if shape > 1:
-                        #ss[axis] = ls[axis]
-                #v.scale = (v.scale[ss]).copy()
 
         if trial.argument() == 1:
             return C

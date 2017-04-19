@@ -69,7 +69,7 @@ else: # Use form with integration by parts. Note that BiharmonicOperator also wo
     matrices = inner(div(grad(v)), div(grad(u)))
 
 # Create Helmholtz linear algebra solver
-H = BiharmonicSolver(**matrices, local_shape=T.local_shape())
+H = BiharmonicSolver(**matrices)
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space
