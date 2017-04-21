@@ -107,7 +107,7 @@ class SparseMatrix(dict):
 
     def __imul__(self, y):
         """self.__imul__(y) <==> self*=y"""
-        assert isinstance(y, (np.float, np.int))
+        assert isinstance(y, (float, int, np.floating, np.integer))
         for key in self:
             # Check if symmetric
             if key < 0 and (-key) in self:
@@ -120,7 +120,7 @@ class SparseMatrix(dict):
     def __mul__(self, y):
         """Returns copy of self.__mul__(y) <==> self*y"""
         f = SparseMatrix(deepcopy(dict(self)), self.shape)
-        assert isinstance(y, (np.float, np.int))
+        assert isinstance(y, (float, int, np.floating, np.integer))
         for key in f:
             # Check if symmetric
             if key < 0 and (-key) in f:
@@ -136,7 +136,7 @@ class SparseMatrix(dict):
     def __div__(self, y):
         """Returns copy self.__div__(y) <==> self/y"""
         f = SparseMatrix(deepcopy(dict(self)), self.shape)
-        assert isinstance(y, (np.float, np.int))
+        assert isinstance(y, (float, int, np.floating, np.integer))
         for key in f:
             # Check if symmetric
             if key < 0 and (-key) in f:
@@ -183,7 +183,7 @@ class SparseMatrix(dict):
         return self
 
     def __sub__(self, d):
-        """Return copy of self.__add__(y) <==> self+d"""
+        """Return copy of self.__sub__(y) <==> self-d"""
         f = SparseMatrix(deepcopy(dict(self)), self.shape)
         assert isinstance(d, dict)
         assert d.shape == self.shape
@@ -214,6 +214,9 @@ class SparseMatrix(dict):
                 self[key] = -val
 
         return self
+
+    def get_key(self):
+        return self.__hash__()
 
     def solve(self, b, u=None, axis=0):
         """Solve matrix system Au = b

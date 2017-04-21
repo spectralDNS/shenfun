@@ -47,9 +47,6 @@ if not "sdist" in sys.argv:
                                    sources = [os.path.join(cdir, '{0}.pyx'.format(s))]))
 
     [e.include_dirs.extend([get_include()]) for e in ext]
-    ext0 = cythonize(os.path.join(cdir, "*.pyx"))
-    [e.include_dirs.extend([get_include()]) for e in ext0]
-    ext += ext0
     cmdclass = {'build_ext': build_ext_subclass}
 
 else:

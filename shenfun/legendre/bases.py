@@ -170,6 +170,14 @@ class LegendreBase(SpectralBase):
         if isinstance(axis, tuple):
             axis = axis[0]
 
+        if isinstance(self.forward, _Wrap):
+            if self.forward.input_array.shape == shape and self.axis == axis:
+                # Already planned
+                return
+
+        if isinstance(axis, tuple):
+            axis = axis[0]
+
         U = pyfftw.empty_aligned(shape, dtype=dtype)
         V = pyfftw.empty_aligned(shape, dtype=dtype)
         U.fill(0)
@@ -283,6 +291,14 @@ class ShenDirichletBasis(LegendreBase):
         return f + 0.5*(fk[-1]*(1+x)+fk[-2]*(1-x))
 
     def plan(self, shape, axis, dtype, options):
+        if isinstance(axis, tuple):
+            axis = axis[0]
+
+        if isinstance(self.forward, _Wrap):
+            if self.forward.input_array.shape == shape and self.axis == axis:
+                # Already planned
+                return
+
         self.LT.plan(shape, axis, dtype, options)
         self.axis = self.LT.axis
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
@@ -319,7 +335,7 @@ class ShenNeumannBasis(LegendreBase):
 
     def set_factor_array(self, v):
         if not self._factor.shape == v.shape:
-            k = self.wavenumbers(v.shape, self.axis)
+            k = self.wavenumbers(v.shape, self.axis).astype(np.float)
             self._factor = k*(k+1)/(k+2)/(k+3)
 
     def scalar_product(self, input_array=None, output_array=None, fast_transform=False):
@@ -367,6 +383,14 @@ class ShenNeumannBasis(LegendreBase):
         return f
 
     def plan(self, shape, axis, dtype, options):
+        if isinstance(axis, tuple):
+            axis = axis[0]
+
+        if isinstance(self.forward, _Wrap):
+            if self.forward.input_array.shape == shape and self.axis == axis:
+                # Already planned
+                return
+
         self.LT.plan(shape, axis, dtype, options)
         self.axis = self.LT.axis
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
@@ -405,7 +429,7 @@ class ShenBiharmonicBasis(LegendreBase):
         s = [slice(None)]*v.ndim
         s[self.axis] = self.slice()
         if not self._factor1.shape == v[s].shape:
-            k = self.wavenumbers(v.shape, axis=self.axis)
+            k = self.wavenumbers(v.shape, axis=self.axis).astype(np.float)
             self._factor1 = (-2*(2*k+5)/(2*k+7)).astype(float)
             self._factor2 = ((2*k+3)/(2*k+7)).astype(float)
 
@@ -462,6 +486,14 @@ class ShenBiharmonicBasis(LegendreBase):
         return f
 
     def plan(self, shape, axis, dtype, options):
+        if isinstance(axis, tuple):
+            axis = axis[0]
+
+        if isinstance(self.forward, _Wrap):
+            if self.forward.input_array.shape == shape and self.axis == axis:
+                # Already planned
+                return
+
         self.LT.plan(shape, axis, dtype, options)
         self.axis = self.LT.axis
         U, V = self.LT.forward.input_array, self.LT.forward.output_array

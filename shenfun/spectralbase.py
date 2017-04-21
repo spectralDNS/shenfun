@@ -324,6 +324,14 @@ class SpectralBase(object):
 
         with or without padding
         """
+        if isinstance(axis, tuple):
+            axis = axis[0]
+
+        if isinstance(self.forward, _func_wrap):
+            if self.forward.input_array.shape == shape and self.axis == axis:
+                # Already planned
+                return
+
         opts = dict(
             avoid_copy=True,
             overwrite_input=True,
@@ -336,8 +344,6 @@ class SpectralBase(object):
 
         plan_fwd = self._xfftn_fwd
         plan_bck = self._xfftn_bck
-        if isinstance(axis, tuple):
-            axis = axis[0]
 
         n = shape[axis]
         U = pyfftw.empty_aligned(shape, dtype=dtype)
@@ -455,7 +461,7 @@ class SpectralBase(object):
             padded_array.fill(0)
             N = trunc_array.shape[self.axis]
             su = [slice(None)]*trunc_array.ndim
-            su[self.axis] = slice(0, np.ceil(N/2).astype(np.int))
+            su[self.axis] = slice(0, np.ceil(N/2.).astype(np.int))
             padded_array[su] = trunc_array[su]
             su[self.axis] = slice(-(N//2), None)
             padded_array[su] = trunc_array[su]

@@ -38,7 +38,7 @@ Solver = shen.la.Helmholtz
 # Use sympy to compute a rhs, given an analytical solution
 x, y = symbols("x,y")
 ue = (cos(4*y) + sin(2*x))*(1-x**2)
-fe = ue.diff(x, 2) + ue.diff(y, 2)
+fe = 2*ue.diff(x, 2) + 2*ue.diff(y, 2)
 
 # Lambdify for faster evaluation
 ul = lambdify((x, y), ue, 'numpy')
@@ -64,9 +64,9 @@ if basis == 'legendre':
 
 # Get left hand side of Poisson equation
 if basis == 'chebyshev':
-    matrices = inner(v, div(grad(u)))
+    matrices = inner(v, div(2*grad(u)))
 else:
-    matrices = inner(grad(v), grad(u))
+    matrices = inner(grad(v), 2*grad(u))
 
 # Create Helmholtz linear algebra solver
 H = Solver(**matrices)
@@ -95,4 +95,4 @@ plt.contourf(X[0], X[1], uq-uj)
 plt.colorbar()
 plt.title('Error')
 
-plt.show()
+#plt.show()

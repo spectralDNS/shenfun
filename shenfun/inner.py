@@ -60,7 +60,8 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
             output_array = space.scalar_product(fun, output_array)
             return output_array
         else:
-            if np.all(fun.integrals() == np.zeros((1, 1, len(space)), dtype=np.int)):
+            ndim = len(space)
+            if np.all(fun.integrals() == np.zeros((ndim**(space.rank()-1), 1, len(space)), dtype=np.int)):
                 output_array = space.scalar_product(fun, output_array)
                 return output_array
 
@@ -85,47 +86,35 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
 
     space = test.function_space()
     trialspace = trial.function_space()
-    assert test.integrals().shape[0] == trial.integrals().shape[0]
+    assert test.num_components() == trial.num_components()
+    test_scale = test.scales()
+    trial_scale = trial.scales()
 
     A = []
+    S = []
+    vec = 0
     for base_test, base_trial in zip(test.integrals(), trial.integrals()): # vector/scalar
-        for b0 in base_test:             # second index test
-            for b1 in base_trial:        # second index trial
+        for test_j, b0 in enumerate(base_test):              # second index test
+            for trial_j, b1 in enumerate(base_trial):        # second index trial
+                sc = test_scale[vec, test_j]*trial_scale[vec, trial_j]
                 A.append([])
+                S.append(np.array([sc]))
                 assert len(b0) == len(b1)
                 for i, (a, b) in enumerate(zip(b0, b1)): # Third index, one inner for each dimension
                     AA = inner_product((space[i], a), (trialspace[i], b))
                     if isinstance(space[i], FourierBase):
-                        if np.ndim(AA[0]):
-                            d = space[i].broadcast_to_ndims(AA[0], len(space), i)
-                        else:
-                            d = AA[0]
+                        d = AA[0]
+                        if np.ndim(d):
+                            d = space[i].broadcast_to_ndims(d, len(space), i)
                     else:
                         d = AA
                     A[-1].append(d)
-
-
-    #D = {i:[] for i in range(len(space))}
-    #for base_test, base_trial in zip(test.integrals(), trial.integrals()): # vector/scalar
-        #for b0 in base_test:             # second index test
-            #for b1 in base_trial:        # second index trial
-                #assert len(b0) == len(b1)
-                #for i, (a, b) in enumerate(zip(b0, b1)): # Third index, one inner for each dimension
-                    #AA = inner_product((space[i], a), (trialspace[i], b))
-                    #if isinstance(space[i], FourierBase):
-                        #if np.ndim(AA[0]):
-                            #d = space[i].broadcast_to_ndims(AA[0], len(space), i)
-                        #else:
-                            #d = AA[0]
-                    #else:
-                        #d = AA
-                    #D[i].append(d)
-
+        vec += 1
 
     # Strip off diagonal matrices, put contribution in scale array
     B = []
-    for matrices in A:
-        scale = np.ones(1).reshape((1,)*len(space))
+    for sc, matrices in zip(S, A):
+        scale = sc.reshape((1,)*len(space))
         nonperiodic = {}
         for axis, mat in enumerate(matrices):
             if isinstance(space[axis], FourierBase):
@@ -164,16 +153,6 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                 return A[0][0]*trial
 
         else:
-            #BB = []
-            #for b in B:
-                #s = b.shape
-                #ss = [slice(None)]*len(space)
-                #ls = space.local_slice()
-                #for axis, shape in enumerate(s):
-                    #if shape > 1:
-                        #ss[axis] = ls[axis]
-                #BB.append((b[ss]).copy())
-
             diagonal_array = B[0]
             for ci in B[1:]:
                 diagonal_array = diagonal_array + ci
@@ -207,8 +186,10 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                     uh = Function(trialspace, forward_output=True)
                     uh = trialspace.forward(trial, uh)
                 vh = Function(space, forward_output=True)
-                vh = B[0][npaxis].matvec(uh, vh, axis=npaxis)
-                vh *= B[0]['scale']
+                mat = B[0][npaxis]
+                mat.scale = B[0]['scale']
+                vh = mat.matvec(uh, vh, axis=npaxis)
+                vh *= mat.scale
                 return vh
 
         b = B[0][npaxis]

@@ -9,6 +9,7 @@ __all__ = ('TensorProductSpace', )
 class TensorProductSpace(object):
 
     def __init__(self, comm, bases, axes=None, dtype=None, **kw):
+        self.comm = comm
         self.bases = bases
         shape = self.shape()
         assert len(shape) > 0
@@ -28,7 +29,7 @@ class TensorProductSpace(object):
 
         if dtype is None:
             dtype = np.complex if isinstance(bases[-1], C2CBasis) else np.float
-        dtype = np.dtype(dtype)
+        dtype = self.dtype = np.dtype(dtype)
         assert dtype.char in 'fdgFDG'
 
         slab = False
@@ -212,15 +213,13 @@ class VectorTransform(object):
 class VectorTensorProductSpace(TensorProductSpace):
 
     def __init__(self, comm, bases, axes=None, dtype=None, **kw):
-        TensorProductSpace.__init__(self, comm, bases, axes=axes, dtype=dtype,
-                                    **kw)
-
+        TensorProductSpace.__init__(self, comm, bases, axes=axes, dtype=dtype, **kw)
         self.forward = VectorTransform(self.forward, len(self.bases))
         self.backward = VectorTransform(self.backward, len(self.bases))
         self.scalar_product = VectorTransform(self.scalar_product, len(self.bases))
 
     def rank(self):
-        return len(self.bases)
+        return 2
 
 
 if __name__ == '__main__':

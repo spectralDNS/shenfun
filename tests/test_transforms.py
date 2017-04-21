@@ -67,7 +67,7 @@ def test_eval(ST, quad):
     f = ST.eval(points, fk)
     assert np.allclose(fj, f)
 
-#test_eval(lbases.ShenDirichletBasis, 'LG')
+test_eval(lbases.ShenNeumannBasis, 'GL')
 
 @pytest.mark.parametrize('test, trial, quad', cbases2+lbases2)
 def test_massmatrices(test, trial, quad):
@@ -140,7 +140,7 @@ def test_transforms(ST, quad, axis):
     cc[axis] = slice(None)
     assert np.allclose(fj[cc], u11[cc])
 
-#test_transforms(lbases.ShenBiharmonicBasis, 'GL', 2)
+#test_transforms(cbases.ShenBiharmonicBasis, 'GC', 0)
 
 
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
