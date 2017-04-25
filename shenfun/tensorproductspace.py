@@ -172,6 +172,9 @@ class TensorProductSpace(object):
     def rank(self):
         return 1
 
+    def ndim(self):
+        return len(self)
+
     def __len__(self):
         return len(self.bases)
 
@@ -188,38 +191,55 @@ class TensorProductSpace(object):
         forward_output = self.is_forward_output(u)
         return Function(self, forward_output=forward_output, buffer=u)
 
-class VectorTransform(object):
 
-    __slots__ = ('_transform', '_dim')
+class MixedTensorProductSpace(object):
 
-    def __init__(self, transform, dim):
-        self._transform = transform
-        self._dim = dim
+    def __init__(self, spaces):
+        self.spaces = spaces
 
-    @property
-    def dim(self):
-        return object.__getattribute__(self, '_dim')
+    def ndim(self):
+        return self.spaces[0].ndim()
 
-    @property
-    def transform(self):
-        return object.__getattribute__(self, '_transform')
+    def rank(self):
+        raise NotImplementedError
 
-    def __call__(self, input_array, output_array, **kw):
-        for i in range(self.dim):
-            output_array[i] = self.transform(input_array[i], output_array[i], **kw)
-        return output_array
+    def __getitem__(self, i):
+        return self.spaces[i]
+
+    def __getattr__(self, name):
+        obj = object.__getattribute__(self, 'spaces')
+        return getattr(obj[0], name)
 
 
-class VectorTensorProductSpace(TensorProductSpace):
+class VectorTensorProductSpace(MixedTensorProductSpace):
 
-    def __init__(self, comm, bases, axes=None, dtype=None, **kw):
-        TensorProductSpace.__init__(self, comm, bases, axes=axes, dtype=dtype, **kw)
-        self.forward = VectorTransform(self.forward, len(self.bases))
-        self.backward = VectorTransform(self.backward, len(self.bases))
-        self.scalar_product = VectorTransform(self.scalar_product, len(self.bases))
+    def __init__(self, spaces):
+        MixedTensorProductSpace.__init__(self, spaces)
+        self.forward = VectorTransform([space.forward for space in spaces])
+        self.backward = VectorTransform([space.backward for space in spaces])
+        self.scalar_product = VectorTransform([space.scalar_product for space in spaces])
 
     def rank(self):
         return 2
+
+
+class VectorTransform(object):
+
+    __slots__ = ('_transforms')
+
+    def __init__(self, transforms):
+        self._transforms = transforms
+
+    def __getattr__(self, name):
+        obj = object.__getattribute__(self, '_transforms')
+        if name == '_transforms':
+            return obj
+        return getattr(obj[0], name)
+
+    def __call__(self, input_array, output_array, **kw):
+        for i, transform in enumerate(self._transforms):
+            output_array[i] = transform(input_array[i], output_array[i], **kw)
+        return output_array
 
 
 if __name__ == '__main__':

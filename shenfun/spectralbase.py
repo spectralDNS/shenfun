@@ -425,6 +425,9 @@ class SpectralBase(object):
     def rank(self):
         return 1
 
+    def ndim(self):
+        return 1
+
     def __len__(self):
         return 1
 

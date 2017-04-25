@@ -46,6 +46,18 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
           2: array([-1.57079633])}
 
     """
+    if expr0.rank() > 1: # For vector spaces of rank 2 use recursive algorithm
+        assert expr0.rank() == 2
+        assert expr1.rank() == 2
+        ndim = expr0.function_space().ndim()
+        result = []
+        for ii in range(ndim):
+            result.append(inner(expr0[ii], expr1[ii]))
+        if np.all([isinstance(a, np.ndarray) for a in result]):
+            return Function(expr0.function_space(), buffer=np.array(result))
+        else:
+            return result
+
     if isinstance(expr0, np.ndarray) or isinstance(expr1, np.ndarray):
         # Linear form
         if isinstance(expr0, np.ndarray):
@@ -60,12 +72,12 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
             output_array = space.scalar_product(fun, output_array)
             return output_array
         else:
-            ndim = len(space)
-            if np.all(fun.integrals() == np.zeros((ndim**(space.rank()-1), 1, len(space)), dtype=np.int)):
+            ndim = space.ndim()
+            if np.all(fun.terms() == np.zeros((1, 1, ndim), dtype=np.int)):
                 output_array = space.scalar_product(fun, output_array)
                 return output_array
 
-        # If fun is an Expr with integrals, then compute using bilinear form and matvec
+        # If fun is an Expr with terms, then compute using bilinear form and matvec
         expr0 = test
         expr1 = fun
 
@@ -93,7 +105,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
     A = []
     S = []
     vec = 0
-    for base_test, base_trial in zip(test.integrals(), trial.integrals()): # vector/scalar
+    for base_test, base_trial in zip(test.terms(), trial.terms()): # vector/scalar
         for test_j, b0 in enumerate(base_test):              # second index test
             for trial_j, b1 in enumerate(base_trial):        # second index trial
                 sc = test_scale[vec, test_j]*trial_scale[vec, trial_j]
@@ -105,7 +117,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                     if isinstance(space[i], FourierBase):
                         d = AA[0]
                         if np.ndim(d):
-                            d = space[i].broadcast_to_ndims(d, len(space), i)
+                            d = space[i].broadcast_to_ndims(d, space.ndim(), i)
                     else:
                         d = AA
                     A[-1].append(d)
@@ -114,7 +126,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
     # Strip off diagonal matrices, put contribution in scale array
     B = []
     for sc, matrices in zip(S, A):
-        scale = sc.reshape((1,)*len(space))
+        scale = sc.reshape((1,)*space.ndim())
         nonperiodic = {}
         for axis, mat in enumerate(matrices):
             if isinstance(space[axis], FourierBase):
@@ -127,7 +139,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
         # Decomposition
         if hasattr(space, 'local_slice'):
             s = scale.shape
-            ss = [slice(None)]*len(space)
+            ss = [slice(None)]*space.ndim()
             ls = space.local_slice()
             for axis, shape in enumerate(s):
                 if shape > 1:
@@ -150,7 +162,11 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
             if trial.argument() == 1:
                 return A[0][0]
             else:
-                return A[0][0]*trial
+                uh = uh_hat
+                if uh is None:
+                    uh = Function(trialspace, forward_output=True)
+                    uh = trialspace.forward(trial, uh)
+                return A[0][0]*uh
 
         else:
             diagonal_array = B[0]
@@ -162,13 +178,17 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                 return {'diagonal': diagonal_array}
 
             else:
-                return diagonal_array*trial
+                uh = uh_hat
+                if uh is None:
+                    uh = Function(trialspace, forward_output=True)
+                    uh = trialspace.forward(trial, uh)
+                return diagonal_array*uh
 
     else:
 
         # For now only allow one nonperiodic direction
         assert np.all([len(f) == 2 for f in B])
-        if len(space) > 1:
+        if space.ndim() > 1:
             for axis, sp in enumerate(space):
                 if not isinstance(sp, FourierBase):
                     npaxis = axis
@@ -222,6 +242,42 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
             return vh
 
 
+#def inner_vector(test, trial):
+    #assert test.rank() == 2
+    #assert test.rank() == trial.rank()
+
+    #A = []
+    #S = []
+    #ndim = test.function_space().ndim()
+    #for ii in range(ndim):
+        #A.append([])
+        #S.append([])
+        #space = test[ii].function_space()
+        #trialspace = trial[ii].function_space()
+        #assert test[ii].num_components() == trial[ii].num_components()
+        #test_scale = test.scales()
+        #trial_scale = trial.scales()
+        #vec = 0
+        #for base_test, base_trial in zip(test.terms(), trial.terms()): # vector/scalar
+            #for test_j, b0 in enumerate(base_test):              # second index test
+                #for trial_j, b1 in enumerate(base_trial):        # second index trial
+                    #sc = test_scale[vec, test_j]*trial_scale[vec, trial_j]
+                    #A[-1].append([])
+                    #S[-1].append(np.array([sc]))
+                    #assert len(b0) == len(b1)
+                    #for i, (a, b) in enumerate(zip(b0, b1)): # Third index, one inner for each dimension
+                        #AA = inner_product((space[i], a), (trialspace[i], b))
+                        #if isinstance(space[i], FourierBase):
+                            #d = AA[0]
+                            #if np.ndim(d):
+                                #d = space[i].broadcast_to_ndims(d, space.ndim(), i)
+                        #else:
+                            #d = AA
+                        #A[-1][-1].append(d)
+            #vec += 1
+    #return A
+
+
 def project(uh, T, output_array=None, uh_hat=None):
     """Project uh to tensor product space T
 
@@ -264,7 +320,7 @@ def project(uh, T, output_array=None, uh_hat=None):
     if output_array is None:
         output_array = Function(T)
 
-    if np.all(uh.integrals() == np.zeros((1, 1, len(T)), dtype=np.int)):
+    if np.all(uh.terms() == np.zeros((1, 1, len(T)), dtype=np.int)):
         # Just regular forward transform
         output_array = T.forward(uh, output_array)
         return output_array
