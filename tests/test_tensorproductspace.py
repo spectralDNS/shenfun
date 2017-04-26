@@ -300,9 +300,10 @@ def test_project2(typecode, dim, ST, quad):
             bases.pop(axis)
             fft.destroy()
 
+
 if __name__ == '__main__':
     #test_transform('f', 3)
     #test_transform('d', 3)
     #test_shentransform('d', 2, cbases.ShenNeumannBasis, 'GC')
-    #test_project('d', 2, cbases.ShenDirichletBasis, 'GL')
+    test_project('d', 2, cbases.ShenDirichletBasis, 'GL')
     test_project2('D', 2, lbases.ShenNeumannBasis, 'GL')

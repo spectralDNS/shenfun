@@ -75,6 +75,7 @@ setup(name = "shenfun",
                   "shenfun.legendre",
                   "shenfun.chebyshev",
                   "shenfun.fourier",
+                  "shenfun.forms",
                   "shenfun.utilities"
                   ],
       package_dir = {"shenfun": "shenfun"},

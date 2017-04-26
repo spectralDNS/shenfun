@@ -3,9 +3,9 @@ from . import chebyshev
 from . import legendre
 from . import fourier
 from . import matrixbase
-from .inner import *
-from .operators import *
-from .arguments import *
+from .forms.inner import *
+from .forms.operators import *
+from .forms.arguments import *
 from .tensorproductspace import *
 
 from scipy.sparse.linalg import spsolve

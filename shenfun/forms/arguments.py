@@ -55,26 +55,28 @@ class Expr(object):
 
     """
 
-    def __init__(self, space, argument, terms=None, scales=None, indices=None):
-        self._space = space
+    def __init__(self, basis, terms=None, scales=None, indices=None):
+        self._basis = basis
         self._terms = terms
-        self._argument = argument
         self._scales = scales
         self._indices = indices
-        ndim = space.ndim()
+        ndim = basis._space.ndim()
         if terms is None:
-            self._terms = np.zeros((ndim**(space.rank()-1), 1, ndim),
+            self._terms = np.zeros((ndim**(basis.rank()-1), 1, ndim),
                                        dtype=np.int)
         if scales is None:
-            self._scales = np.ones((ndim**(space.rank()-1), 1))
+            self._scales = np.ones((ndim**(basis.rank()-1), 1))
 
         if indices is None:
-            self._indices = np.arange(ndim**(space.rank()-1))[:, np.newaxis]
+            self._indices = np.arange(ndim**(basis.rank()-1))[:, np.newaxis]
 
         assert np.prod(self._scales.shape) == self.num_terms()*self.num_components()
 
+    def basis(self):
+        return self._basis
+
     def function_space(self):
-        return self._space
+        return self._basis.function_space()
 
     def terms(self):
         return self._terms
@@ -83,10 +85,10 @@ class Expr(object):
         return self._scales
 
     def argument(self):
-        return self._argument
+        return self._basis.argument()
 
     def rank(self):
-        return self._space.rank()
+        return self._basis.rank()
 
     def indices(self):
         return self._indices
@@ -102,7 +104,7 @@ class Expr(object):
 
     def __getitem__(self, i):
         assert self.num_components() == self.dim()
-        return Expr(self._space[i], self._argument,
+        return Expr(self._basis[i],
                     self._terms[i][np.newaxis, :, :],
                     self._scales[i][np.newaxis, :],
                     self._indices[i][np.newaxis, :])
@@ -110,7 +112,7 @@ class Expr(object):
     def __mul__(self, a):
         assert isinstance(a, (int, float, np.floating, np.integer))
         sc = self.scales().copy()*a
-        return Expr(self._space, self._argument, self._terms, sc, self._indices)
+        return Expr(self._basis, self._terms, sc, self._indices)
 
     def __rmul__(self, a):
         return self.__mul__(a)
@@ -126,7 +128,7 @@ class Expr(object):
         assert self.num_components() == a.num_components()
         assert self.function_space() == a.function_space()
         assert self.argument() == a.argument()
-        return Expr(self.function_space(), self.argument(),
+        return Expr(self._basis,
                     np.concatenate((self.terms(), a.terms()), axis=1),
                     np.concatenate((self.scales(), a.scales()), axis=1),
                     np.concatenate((self.indices(), a.indices()), axis=1))
@@ -146,7 +148,7 @@ class Expr(object):
         assert self.num_components() == a.num_components()
         assert self.function_space() == a.function_space()
         assert self.argument() == a.argument()
-        return Expr(self.function_space(), self.argument(),
+        return Expr(self._basis,
                     np.concatenate((self.terms(), a.terms()), axis=1),
                     np.concatenate((self.scales(), -a.scales()), axis=1),
                     np.concatenate((self.indices(), a.indices()), axis=1))
@@ -162,25 +164,58 @@ class Expr(object):
         return self
 
 
-class BasisFunction(Expr):
+class BasisFunction(object):
 
-    def __init__(self, space, argument=0):
-        return Expr.__init__(self, space, argument)
+    def __init__(self, space, argument=0, index=0, subclass=False):
+        self._space = space
+        self._argument = argument
+        self._index = index
+        self._subclass = subclass
+
+    def rank(self):
+        return self._space.rank()
+
+    def function_space(self):
+        return self._space
+
+    def argument(self):
+        return self._argument
+
+    def index(self):
+        """Return index into vector of rank 2"""
+        return self._index
+
+    def is_subclass(self):
+        return self._subclass
+
+    def __getitem__(self, i):
+        assert self.rank() == 2
+        t0 = BasisFunction(self._space[i], self._argument, i, True)
+        return t0
 
 
 class TestFunction(BasisFunction):
 
-    def __init__(self, space):
-        return BasisFunction.__init__(self, space, 0)
+    def __init__(self, space, index=0, subclass=False):
+        return BasisFunction.__init__(self, space, 0, index, subclass)
 
+    def __getitem__(self, i):
+        assert self.rank() == 2
+        t0 = TestFunction(self._space[i], index=i, subclass=True)
+        return t0
 
 class TrialFunction(BasisFunction):
 
-    def __init__(self, space):
-        return BasisFunction.__init__(self, space, 1)
+    def __init__(self, space, index=0, subclass=False):
+        return BasisFunction.__init__(self, space, 1, index, subclass)
+
+    def __getitem__(self, i):
+        assert self.rank() == 2
+        t0 = TrialFunction(self._space[i], index=i, subclass=True)
+        return t0
 
 
-class Function(np.ndarray, Expr):
+class Function(np.ndarray, BasisFunction):
     """Numpy array for TensorProductSpace
 
     Parameters
@@ -234,42 +269,25 @@ class Function(np.ndarray, Expr):
         return obj
 
     def __init__(self, space, forward_output=True, val=0, buffer=None):
-        Expr.__init__(self, space, 2)
+        super(Function, self).__init__(space, 2)
 
     def __getitem__(self, i):
-        self.i = i
-        v = np.ndarray.__getitem__(self, i)
-        return v
-
-    def __array_finalize__(self, obj):
-        if obj is None: return
-        if hasattr(obj, 'i'):
-            if obj.i in (0, 1, 2):
-                if obj.rank() == 2:
-                    self._space = getattr(obj, '_space')[obj.i]
-                    self._argument = getattr(obj, '_argument')
-                    self._terms = getattr(obj, '_terms')[obj.i][np.newaxis, :, :]
-                    self._scales = getattr(obj, '_scales')[obj.i][np.newaxis, :]
-                    self._indices = getattr(obj, '_indices')[obj.i][np.newaxis, :]
-
-                else:
-                    self._space = getattr(obj, '_space')
-                    self._argument = getattr(obj, '_argument')
-                    self._terms = getattr(obj, '_terms')
-                    self._scales = getattr(obj, '_scales')
-                    self._indices = getattr(obj, '_indices')
-
+        # If it's a vector space, then return component, otherwise just return sliced numpy array
+        if hasattr(self, '_space'):
+            if self.rank() == 2 and i in (0, 1, 2):
+                v0 = BasisFunction.__getitem__(self, i)
+                v1 = np.ndarray.__getitem__(self, i)
+                f0 = Function(v0.function_space(),
+                              v0.function_space().is_forward_output(v1),
+                              buffer=v1)
+                f0._index = i
+                f0._subclass = True
+                return f0
             else:
-                self._space = getattr(obj, '_space')
-                self._argument = getattr(obj, '_argument')
-                self._terms = getattr(obj, '_terms')
-                self._scales = getattr(obj, '_scales')
-                self._indices = getattr(obj, '_indices')
+                v = np.ndarray.__getitem__(self, i)
+                return v
 
         else:
-            self._space = getattr(obj, '_space')
-            self._argument = getattr(obj, '_argument')
-            self._terms = getattr(obj, '_terms')
-            self._scales = getattr(obj, '_scales')
-            self._indices = getattr(obj, '_indices')
+            v = np.ndarray.__getitem__(self, i)
+            return v
 

@@ -1,9 +1,8 @@
 import numpy as np
 import six
 from shenfun.fourier import FourierBase
-from .arguments import Expr
-from .spectralbase import inner_product
-from .arguments import TestFunction, TrialFunction, Function
+from shenfun.spectralbase import inner_product
+from .arguments import Expr, TestFunction, TrialFunction, Function, BasisFunction
 
 __all__ = ('inner', 'project')
 
@@ -46,43 +45,90 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
           2: array([-1.57079633])}
 
     """
+    # Wrap numpy array in Function
+    if not hasattr(expr0, 'argument'):
+        if isinstance(expr0, np.ndarray):
+            try:
+                expr0 = Function(expr1.function_space(), forward_output=False, buffer=expr0)
+            except:
+                raise RuntimeError
+
+    if not hasattr(expr1, 'argument'):
+        if isinstance(expr1, np.ndarray):
+            try:
+                expr1 = Function(expr0.function_space(), forward_output=False, buffer=expr1)
+            except:
+                raise RuntimeError
+
     if expr0.rank() > 1: # For vector spaces of rank 2 use recursive algorithm
         assert expr0.rank() == 2
         assert expr1.rank() == 2
         ndim = expr0.function_space().ndim()
-        result = []
-        for ii in range(ndim):
-            result.append(inner(expr0[ii], expr1[ii]))
-        if np.all([isinstance(a, np.ndarray) for a in result]):
-            return Function(expr0.function_space(), buffer=np.array(result))
+
+        t0 = expr0.argument()
+        t1 = expr1.argument()
+        if t0 == 0:
+            assert t1 in (1, 2)
+            test = expr0
+            trial = expr1
+        elif t0 == 1:
+            assert t1 == 0
+            test = expr1
+            trial = expr0
         else:
+            raise RuntimeError
+
+        uh = uh_hat
+        if uh is None and trial.argument() == 2:
+            uh = Function(trial.function_space(), forward_output=True)
+            basis = trial if isinstance(trial, np.ndarray) else trial.basis()
+            uh = trial.function_space().forward(basis, uh)
+
+        if output_array is None and trial.argument() == 2:
+            output_array = Function(trial.function_space())
+
+        if trial.argument() == 2:
+            # linear form
+            for ii in range(ndim):
+                output_array[ii] = inner(expr0[ii], expr1[ii],
+                                         output_array=output_array[ii],
+                                         uh_hat=uh)
+            return output_array
+
+        else:
+            result = []
+            for ii in range(ndim):
+                result.append(inner(expr0[ii], expr1[ii], uh_hat=uh))
             return result
 
-    if isinstance(expr0, np.ndarray) or isinstance(expr1, np.ndarray):
+
+    if expr0.argument() + expr1.argument() > 1:
         # Linear form
-        if isinstance(expr0, np.ndarray):
+        if expr0.argument() == 2:
             fun = expr0
             test = expr1
         else:
             fun = expr1
             test = expr0
-        assert isinstance(test, Expr)
+        assert isinstance(test, (Expr, BasisFunction))
+        assert test.argument() == 0
         space = test.function_space()
-        if not isinstance(fun, Expr):
+        if isinstance(fun, np.ndarray):
             output_array = space.scalar_product(fun, output_array)
             return output_array
-        else:
-            ndim = space.ndim()
-            if np.all(fun.terms() == np.zeros((1, 1, ndim), dtype=np.int)):
-                output_array = space.scalar_product(fun, output_array)
-                return output_array
 
         # If fun is an Expr with terms, then compute using bilinear form and matvec
         expr0 = test
         expr1 = fun
 
-    assert isinstance(expr0, Expr)
-    assert isinstance(expr1, Expr)
+    assert isinstance(expr0, (Expr, BasisFunction))
+    assert isinstance(expr1, (Expr, BasisFunction))
+
+    if isinstance(expr0, BasisFunction):
+        expr0 = Expr(expr0)
+    if isinstance(expr1, BasisFunction):
+        expr1 = Expr(expr1)
+
     t0 = expr0.argument()
     t1 = expr1.argument()
     if t0 == 0:
@@ -101,6 +147,15 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
     assert test.num_components() == trial.num_components()
     test_scale = test.scales()
     trial_scale = trial.scales()
+    trial_indices = trial.indices()
+
+    uh = uh_hat
+    if uh is None and trial.argument() == 2:
+        uh = Function(trialspace, forward_output=True)
+        uh = trialspace.forward(trial.basis(), uh)
+
+    if output_array is None and trial.argument() == 2:
+        output_array = Function(trial.function_space())
 
     A = []
     S = []
@@ -112,15 +167,10 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                 A.append([])
                 S.append(np.array([sc]))
                 assert len(b0) == len(b1)
+                #from IPython import embed; embed()
                 for i, (a, b) in enumerate(zip(b0, b1)): # Third index, one inner for each dimension
                     AA = inner_product((space[i], a), (trialspace[i], b))
-                    if isinstance(space[i], FourierBase):
-                        d = AA[0]
-                        if np.ndim(d):
-                            d = space[i].broadcast_to_ndims(d, space.ndim(), i)
-                    else:
-                        d = AA
-                    A[-1].append(d)
+                    A[-1].append(AA)
         vec += 1
 
     # Strip off diagonal matrices, put contribution in scale array
@@ -130,6 +180,10 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
         nonperiodic = {}
         for axis, mat in enumerate(matrices):
             if isinstance(space[axis], FourierBase):
+                mat = mat[0]
+                if np.ndim(mat):
+                    mat = space[axis].broadcast_to_ndims(mat, space.ndim(), axis)
+
                 scale = scale*mat
 
             else:
@@ -158,31 +212,36 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
     if np.all([isinstance(b, np.ndarray) for b in B]):
 
         # All Fourier
-        if len(B) == 1:
+        if space.ndim() == 1:
             if trial.argument() == 1:
                 return A[0][0]
+
             else:
-                uh = uh_hat
-                if uh is None:
-                    uh = Function(trialspace, forward_output=True)
-                    uh = trialspace.forward(trial, uh)
-                return A[0][0]*uh
+                output_array[:] = A[0][0]*uh
+                return output_array
 
         else:
-            diagonal_array = B[0]
-            for ci in B[1:]:
-                diagonal_array = diagonal_array + ci
-
             if trial.argument() == 1:
+                diagonal_array = B[0]
+                for ci in B[1:]:
+                    diagonal_array = diagonal_array + ci
+
                 diagonal_array = np.where(diagonal_array==0, 1, diagonal_array)
                 return {'diagonal': diagonal_array}
 
             else:
-                uh = uh_hat
-                if uh is None:
-                    uh = Function(trialspace, forward_output=True)
-                    uh = trialspace.forward(trial, uh)
-                return diagonal_array*uh
+                #from IPython import embed; embed()
+                if uh.rank() == 2:
+                    for i, b in enumerate(B):
+                        output_array += b*uh[trial_indices[0, i]]
+
+                else:
+                    diagonal_array = B[0]
+                    for ci in B[1:]:
+                        diagonal_array = diagonal_array + ci
+                    output_array[:] = diagonal_array*uh
+
+                return output_array
 
     else:
 
@@ -195,87 +254,51 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
         else:
             npaxis = 0
 
-        if len(B) == 1:
+        if space.ndim() == 1:
             if trial.argument() == 1:
                 b = B[0][npaxis]
                 b.scale = B[0]['scale']
                 return b
             else:
-                uh = uh_hat
-                if uh is None:
-                    uh = Function(trialspace, forward_output=True)
-                    uh = trialspace.forward(trial, uh)
-                vh = Function(space, forward_output=True)
                 mat = B[0][npaxis]
                 mat.scale = B[0]['scale']
-                vh = mat.matvec(uh, vh, axis=npaxis)
-                vh *= mat.scale
-                return vh
-
-        b = B[0][npaxis]
-        b.scale = B[0]['scale']
-        C = {b.get_key(): b}
-        for bb in B[1:]:
-            b = bb[npaxis]
-            b.scale = bb['scale']
-            name = b.get_key()
-            if name in C:
-                C[name].scale = C[name].scale + b.scale
-            else:
-                C[name] = b
+                output_array = mat.matvec(uh, output_array, axis=npaxis)
+                output_array *= mat.scale
+                return output_array
 
         if trial.argument() == 1:
-            return C
+            b = B[0][npaxis]
+            b.scale = B[0]['scale']
+            C = {b.get_key(): b}
+            for bb in B[1:]:
+                b = bb[npaxis]
+                b.scale = bb['scale']
+                name = b.get_key()
+                if name in C:
+                    C[name].scale = C[name].scale + b.scale
+                else:
+                    C[name] = b
+
+            if len(C) == 1:
+                return C[b.get_key()]
+            else:
+                return C
 
         else:
-            uh = uh_hat
-            if uh is None:
-                uh = Function(trialspace, forward_output=True)
-                uh = trialspace.forward(trial, uh)
 
-            vh = Function(space, forward_output=True)
-            wh = Function(space, forward_output=True)
-            for key, val in six.iteritems(C):
-                wh = val.matvec(uh, wh, axis=val.axis)
-                vh += wh*val.scale
+            for i, bb in enumerate(B):
+                b = bb[npaxis]
+                b.scale = bb['scale']
+                if uh.rank() == 2:
+                    wh = Function(trialspace[i], forward_output=True)
+                    wh = b.matvec(uh[trial_indices[0, i]], wh, axis=b.axis)
+                else:
+                    wh = Function(trialspace, forward_output=True)
+                    wh = b.matvec(uh, wh, axis=b.axis)
+                output_array += wh*b.scale
 
-            return vh
+            return output_array
 
-
-#def inner_vector(test, trial):
-    #assert test.rank() == 2
-    #assert test.rank() == trial.rank()
-
-    #A = []
-    #S = []
-    #ndim = test.function_space().ndim()
-    #for ii in range(ndim):
-        #A.append([])
-        #S.append([])
-        #space = test[ii].function_space()
-        #trialspace = trial[ii].function_space()
-        #assert test[ii].num_components() == trial[ii].num_components()
-        #test_scale = test.scales()
-        #trial_scale = trial.scales()
-        #vec = 0
-        #for base_test, base_trial in zip(test.terms(), trial.terms()): # vector/scalar
-            #for test_j, b0 in enumerate(base_test):              # second index test
-                #for trial_j, b1 in enumerate(base_trial):        # second index trial
-                    #sc = test_scale[vec, test_j]*trial_scale[vec, trial_j]
-                    #A[-1].append([])
-                    #S[-1].append(np.array([sc]))
-                    #assert len(b0) == len(b1)
-                    #for i, (a, b) in enumerate(zip(b0, b1)): # Third index, one inner for each dimension
-                        #AA = inner_product((space[i], a), (trialspace[i], b))
-                        #if isinstance(space[i], FourierBase):
-                            #d = AA[0]
-                            #if np.ndim(d):
-                                #d = space[i].broadcast_to_ndims(d, space.ndim(), i)
-                        #else:
-                            #d = AA
-                        #A[-1][-1].append(d)
-            #vec += 1
-    #return A
 
 
 def project(uh, T, output_array=None, uh_hat=None):
@@ -313,14 +336,12 @@ def project(uh, T, output_array=None, uh_hat=None):
 
     """
 
-    assert uh.shape == T.forward.input_array.shape
-    assert isinstance(uh, np.ndarray)
-    assert isinstance(uh, Expr)
+    assert isinstance(uh, (Expr, BasisFunction))
 
     if output_array is None:
         output_array = Function(T)
 
-    if np.all(uh.terms() == np.zeros((1, 1, len(T)), dtype=np.int)):
+    if isinstance(uh, np.ndarray):
         # Just regular forward transform
         output_array = T.forward(uh, output_array)
         return output_array
@@ -329,6 +350,6 @@ def project(uh, T, output_array=None, uh_hat=None):
     u = TrialFunction(T)
     u_hat = inner(v, uh, uh_hat=uh_hat)
     B = inner(v, u)
-    #from IPython import embed; embed()
     output_array = B.solve(u_hat, output_array, axis=B.axis)
     return output_array
+

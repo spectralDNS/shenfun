@@ -40,37 +40,48 @@ X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, e
 u = TrialFunction(T)
 v = TestFunction(T)
 
-## Get f on quad points
-#fj = fl(*X)
+# Get f on quad points
+fj = fl(*X)
 
-## Compute right hand side
-#f_hat = inner(v, fj)
+# Compute right hand side
+f_hat = inner(v, fj)
 
-## Solve Poisson equation
-#A = inner(v, div(grad(u)))
-#f_hat = f_hat / A['diagonal']
+# Solve Poisson equation
+A = inner(v, div(grad(u)))
+f_hat = f_hat / A['diagonal']
 
-#uq = T.backward(f_hat, fast_transform=True)
+uq = T.backward(f_hat, fast_transform=True)
 
-#uj = ul(*X)
-#print(abs(uj-uq).max())
-##assert np.allclose(uj, uq)
+uj = ul(*X)
+print(abs(uj-uq).max())
+#assert np.allclose(uj, uq)
 
-#plt.figure()
-#plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 0])
-#plt.colorbar()
+plt.figure()
+plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 0])
+plt.colorbar()
 
-#plt.figure()
-#plt.contourf(X[0][:,:,0], X[1][:,:,0], uj[:, :, 0])
-#plt.colorbar()
+plt.figure()
+plt.contourf(X[0][:,:,0], X[1][:,:,0], uj[:, :, 0])
+plt.colorbar()
 
-#plt.figure()
-#plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 0]-uj[:, :, 0])
-#plt.colorbar()
-#plt.title('Error')
-##plt.show()
+plt.figure()
+plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 0]-uj[:, :, 0])
+plt.colorbar()
+plt.title('Error')
+#plt.show()
 
-import shenfun
-Tk = shenfun.tensorproductspace.VectorTensorProductSpace([T]*3)
-u_ = Function(Tk, forward_output=False)
+from shenfun import VectorTensorProductSpace, curl
+
+Tk = VectorTensorProductSpace([T]*3)
+v = TestFunction(Tk)
+u_ = Function(Tk, False)
+u_[:] = np.random.random(u_.shape)
+u_hat = Function(Tk)
+u_hat = Tk.forward(u_, u_hat)
+w_hat = inner(v, curl(u_), uh_hat=u_hat)
+
 u0 = u_[0]
+inner(v, u_)
+
+
+

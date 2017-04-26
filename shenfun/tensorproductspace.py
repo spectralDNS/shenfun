@@ -3,7 +3,7 @@ from shenfun.fourier.bases import FourierBase, R2CBasis, C2CBasis
 from mpi4py_fft.mpifft import Transform
 from mpi4py_fft.pencil import Subcomm, Pencil
 
-__all__ = ('TensorProductSpace', )
+__all__ = ('TensorProductSpace', 'VectorTensorProductSpace')
 
 
 class TensorProductSpace(object):
@@ -186,7 +186,7 @@ class TensorProductSpace(object):
                 u.dtype == self.forward.output_array.dtype)
 
     def as_function(self, u):
-        from .arguments import Function
+        from .forms.arguments import Function
         assert isinstance(u, np.ndarray)
         forward_output = self.is_forward_output(u)
         return Function(self, forward_output=forward_output, buffer=u)
