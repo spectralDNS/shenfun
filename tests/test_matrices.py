@@ -65,7 +65,7 @@ def test_cmatvec(b0, b1, quad, format, axis, k):
     global c, c1, d, d1
     b0 = b0(N, quad=quad)
     b1 = b1(N, quad=quad)
-    mat = shenfun.inner_product((b0, 0), (b1, k))
+    mat = shenfun.spectralbase.inner_product((b0, 0), (b1, k))
     c = mat.matvec(a, c, format='csr')
     c1 = mat.matvec(a, c1, format=format)
     assert np.allclose(c, c1)
@@ -86,7 +86,7 @@ def test_cmatvec(b0, b1, quad, format, axis, k):
     cc[axis] = slice(None)
     assert np.allclose(c, d1[cc])
 
-#test_cmatvec(cBasis[0], cBasis[0], 'GC', 'dia', 1, 0)
+test_cmatvec(cBasis[0], cBasis[0], 'GC', 'csr', 2, 1)
 
 @pytest.mark.parametrize('b0,b1', lbases2)
 @pytest.mark.parametrize('quad', lquads)
@@ -98,7 +98,7 @@ def test_lmatvec(b0, b1, quad, format, axis, k0, k1):
     global c, c1, d, d1
     b0 = b0(N, quad=quad)
     b1 = b1(N, quad=quad)
-    mat = shenfun.inner_product((b0, k0), (b1, k1))
+    mat = shenfun.spectralbase.inner_product((b0, k0), (b1, k1))
     c = mat.matvec(a, c, format='csr')
     c1 = mat.matvec(a, c1, format=format)
     assert np.allclose(c, c1)

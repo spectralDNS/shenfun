@@ -3,18 +3,35 @@ from __future__ import division
 __all__ = ['mat']
 
 import numpy as np
-from shenfun.matrixbase import ShenMatrix
+from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
-
+from .bases import R2CBasis, C2CBasis
 
 @inheritdocstrings
-class _Fouriermatrix(ShenMatrix):
+class _Fouriermatrix(SpectralMatrix):
     def __init__(self, test, trial):
-        k = test[0].wavenumbers(test[0].N)
-        d = {0: 2*np.pi*(1j*k)**trial[1]}
-        ShenMatrix.__init__(self, d, test, trial)
+        k = test[0].wavenumbers(test[0].N, scaled=True)
+        if isinstance(test[1], (int, np.integer)):
+            k_test, k_trial = test[1], trial[1]
+        elif isinstance(test[1], np.ndarray):
+            assert len(test[1]) == 1
+            k_test = test[1][(0,)*np.ndim(test[1])]
+            k_trial = trial[1][(0,)*np.ndim(trial[1])]
+        else:
+            raise RuntimeError
 
-    def solve(self, b, u=None, axis=0):
+        if k_trial > 0 or k_test > 0:
+            #if test[0].N % 2 == 0:
+                #k[test[0].N//2] = 0
+            val = 2*np.pi*(1j*k)**(k_trial)*(-1j*k)**k_test
+            if (k_trial+k_test) % 2 == 0:
+                val = val.real
+            d = {0: val}
+        else:
+            d = {0: 2*np.pi}
+        SpectralMatrix.__init__(self, d, test, trial)
+
+    def solve(self, b, u=None, axis=0, neglect_zero_wavenumber=True):
         N = self.shape[0]
         assert N == b.shape[0]
 
@@ -29,17 +46,15 @@ class _Fouriermatrix(ShenMatrix):
             if not u is b:
                 b = np.moveaxis(b, axis, 0)
 
-        neglect_zero = False
-        if self[0][0] == 0:
+        if self[0][0] == 0 and neglect_zero_wavenumber:
             self[0][0] = 1
-            neglect_zero = True
 
         d = 1./self[0]
         sl = [np.newaxis]*u.ndim
         sl[0] = slice(None)
         u[:] = b*d[sl]
 
-        if neglect_zero is True:
+        if neglect_zero_wavenumber:
             sl[0] = 0
             u[sl] = 0
             self[0][0] = 0
@@ -53,10 +68,10 @@ class _Fouriermatrix(ShenMatrix):
 
 
 class _FourierMatDict(dict):
-    """Dictionary of inner product matrices
+    """Dictionary of inner product matrices.
 
-    Matrices that are missing keys are generated from Vandermonde type
-    computations.
+    Matrices that are missing keys are generated. All Fourier matrices are
+    diagonal.
 
     """
 
@@ -71,3 +86,4 @@ class _FourierMatDict(dict):
 
 
 mat = _FourierMatDict({})
+

@@ -1,6 +1,7 @@
-from shenfun.optimization import la
-from shenfun.matrixbase import ShenMatrix
 import numpy as np
+from shenfun.optimization import la
+from shenfun.matrixbase import SparseMatrix
+from shenfun.legendre import bases as lbases
 
 class TDMA(object):
     """Tridiagonal matrix solver
@@ -11,7 +12,7 @@ class TDMA(object):
     """
 
     def __init__(self, mat):
-        assert isinstance(mat, ShenMatrix)
+        assert isinstance(mat, SparseMatrix)
         self.mat = mat
         self.N = 0
         self.dd = np.zeros(0)
@@ -23,31 +24,42 @@ class TDMA(object):
         self.dd = B[0].copy()*np.ones(M)
         self.ud = B[2].copy()*np.ones(M-2)
         self.L = np.zeros(M-2)
-        self.s = self.mat.testfunction[0].slice()
-        la.TDMA_SymLU(self.dd[self.s], self.ud[self.s], self.L)
+        la.TDMA_SymLU(self.dd, self.ud, self.L)
 
     def __call__(self, b, u=None, axis=0):
 
+        v = self.mat.testfunction[0]
         if u is None:
             u = b
         else:
             assert u.shape == b.shape
-            u[:] = b
+            u[:] = b[:]
+
+        if hasattr(v, 'bc'):
+            s = [slice(None)]*u.ndim
+            s[axis] = slice(-2, None)
+            sl = [np.newaxis]*u.ndim
+            sl[axis] = slice(None)
+            u[s] = np.array(v.bc)[sl]
 
         N = u.shape[axis]
         if not N == self.N:
             self.init(N)
 
         if len(u.shape) == 3:
-            la.TDMA_SymSolve3D(self.dd[self.s], self.ud[self.s], self.L,
-                               u[self.s], axis)
+            la.TDMA_SymSolve3D(self.dd, self.ud, self.L, u, axis)
+            #la.TDMA_SymSolve3D_ptr(self.dd[self.s], self.ud[self.s], self.L,
+                                   #u[self.s], axis)
+        elif len(u.shape) == 2:
+            la.TDMA_SymSolve2D(self.dd, self.ud, self.L, u, axis)
+
         elif len(u.shape) == 1:
-            la.TDMA_SymSolve(self.dd[self.s], self.ud[self.s], self.L,
-                             u[self.s])
+            la.TDMA_SymSolve(self.dd, self.ud, self.L, u)
 
         else:
             raise NotImplementedError
 
+        u /= self.mat.scale
         return u
 
 class PDMA(object):
@@ -63,7 +75,7 @@ class PDMA(object):
     """
 
     def __init__(self, mat, solver="cython"):
-        assert isinstance(mat, ShenMatrix)
+        assert isinstance(mat, SparseMatrix)
         self.mat = mat
         self.solver = solver
         self.N = 0
@@ -147,7 +159,11 @@ class PDMA(object):
         if not N == self.N:
             self.init(N)
         if len(u.shape) == 3:
-            la.PDMA_Symsolve3D(self.d0, self.d1, self.d2, u[:-4], axis)
+            #la.PDMA_Symsolve3D(self.d0, self.d1, self.d2, u, axis)
+            la.PDMA_Symsolve3D_ptr(self.d0, self.d1, self.d2, u, axis)
+
+        elif len(u.shape) == 2:
+            la.PDMA_Symsolve2D(self.d0, self.d1, self.d2, u, axis)
 
         elif len(u.shape) == 1:
             la.PDMA_Symsolve(self.d0, self.d1, self.d2, u[:-4])
@@ -155,4 +171,28 @@ class PDMA(object):
         else:
             raise NotImplementedError
 
+        u /= self.mat.scale
         return u
+
+class DiagonalMatrix(object):
+
+    def __init__(self, diagonal_array):
+        self.diagonal_array = diagonal_array
+        self.axis = 0
+
+    def solve(self, b, u=None, axis=0, neglect_zero_wavenumber=True):
+        diagonal_array = self.diagonal_array
+        if neglect_zero_wavenumber:
+            diagonal_array = np.where(diagonal_array==0, 1, diagonal_array)
+
+        if u is not None:
+            u[:] = b / diagonal_array
+            return u
+        else:
+            return b / diagonal_array
+
+    def matvec(self, v, c):
+        assert self.diagonal_array.shape == v.shape
+        c[:] = self.diagonal_array*v
+        return c
+

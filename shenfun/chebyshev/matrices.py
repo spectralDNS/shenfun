@@ -8,8 +8,7 @@ from shenfun.optimization.Matvec import CDNmat_matvec, BDNmat_matvec, \
     Tridiagonal_matvec3D, Pentadiagonal_matvec, Pentadiagonal_matvec3D, \
     CBD_matvec3D, CBD_matvec, CDB_matvec3D, ADDmat_matvec, BBD_matvec3D
 
-from shenfun.matrixbase import ShenMatrix
-from shenfun.la import TDMA, PDMA
+from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
 from . import bases
 
@@ -26,7 +25,7 @@ def get_ck(N, quad):
     return ck
 
 @inheritdocstrings
-class BDDmat(ShenMatrix):
+class BDDmat(SpectralMatrix):
     """Matrix for inner product B_{kj}=(phi_j, phi_k)_w
 
     where
@@ -37,13 +36,14 @@ class BDDmat(ShenMatrix):
 
     """
     def __init__(self, test, trial):
+        from shenfun.la import TDMA
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         ck = get_ck(test[0].N, test[0].quad)
         d = {0: np.pi/2*(ck[:-2]+ck[2:]),
              2: np.array([-np.pi/2])}
         d[-2] = d[2]
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
         self.solve = TDMA(self)
 
     def matvec(self, v, c, format='cython', axis=0):
@@ -76,7 +76,7 @@ class BDDmat(ShenMatrix):
 
 
 @inheritdocstrings
-class BNDmat(ShenMatrix):
+class BNDmat(SpectralMatrix):
     """Mass matrix for inner product B_{kj} = (phi_j, psi_k)_w
 
     where
@@ -98,10 +98,10 @@ class BNDmat(ShenMatrix):
         d = {-2: -np.pi/2,
               0: np.pi/2.*(ck[:-2]+ck[2:]*(k/(k+2))**2),
               2: -np.pi/2*(k[:N-4]/(k[:N-4]+2))**2}
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='csr', axis=0):
-        c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+        c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
         s = [slice(None),]*v.ndim
         s[axis] = 0
         c[s] = 0
@@ -109,7 +109,7 @@ class BNDmat(ShenMatrix):
 
 
 @inheritdocstrings
-class BDNmat(ShenMatrix):
+class BDNmat(SpectralMatrix):
     """Mass matrix for inner product B_{kj} = (psi_j, phi_k)_w
 
     where
@@ -131,7 +131,7 @@ class BDNmat(ShenMatrix):
         d = {-2: -np.pi/2*(k[:N-4]/(k[:N-4]+2))**2,
               0:  np.pi/2.*(ck[:-2]+ck[2:]*(k/(k+2))**2),
               2: -np.pi/2}
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -144,7 +144,7 @@ class BDNmat(ShenMatrix):
         return c
 
 @inheritdocstrings
-class BNTmat(ShenMatrix):
+class BNTmat(SpectralMatrix):
     """Mass matrix for inner product B_{kj} = (phi_j, psi_k)_w
 
     where
@@ -160,10 +160,10 @@ class BNTmat(ShenMatrix):
     def __init__(self, test, trial):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], CB)
-        ShenMatrix.__init__(self, {}, test, trial)
+        SpectralMatrix.__init__(self, {}, test, trial)
 
     def matvec(self, v, c, format='csr', axis=0):
-        c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+        c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
         s = [slice(None),]*v.ndim
         s[axis] = 0
         c[s] = 0
@@ -171,7 +171,7 @@ class BNTmat(ShenMatrix):
 
 
 @inheritdocstrings
-class BNBmat(ShenMatrix):
+class BNBmat(SpectralMatrix):
     """Mass matrix for inner product B_{kj} = (phi_j, psi_k)_w
 
     where
@@ -187,10 +187,10 @@ class BNBmat(ShenMatrix):
     def __init__(self, test, trial):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SB)
-        ShenMatrix.__init__(self, {}, test, trial)
+        SpectralMatrix.__init__(self, {}, test, trial)
 
     def matvec(self, v, c, format='csr', axis=0):
-        c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+        c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
         s = [slice(None),]*v.ndim
         s[axis] = 0
         c[s] = 0
@@ -198,7 +198,7 @@ class BNBmat(ShenMatrix):
 
 
 @inheritdocstrings
-class BTTmat(ShenMatrix):
+class BTTmat(SpectralMatrix):
     """Mass matrix for inner product B_{kj} = (T_j, T_k)_w
 
     where
@@ -212,7 +212,7 @@ class BTTmat(ShenMatrix):
         assert isinstance(test[0], CB)
         assert isinstance(trial[0], CB)
         ck = get_ck(test[0].N, test[0].quad)
-        ShenMatrix.__init__(self, {0: np.pi/2*ck}, test, trial)
+        SpectralMatrix.__init__(self, {0: np.pi/2*ck}, test, trial)
 
     def matvec(self, v, c, format='self', axis=0):
         c.fill(0)
@@ -221,13 +221,13 @@ class BTTmat(ShenMatrix):
             s[axis] = slice(None)
             c[:] = self[0][s]*v
         else:
-            c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
 
 @inheritdocstrings
-class BNNmat(ShenMatrix):
+class BNNmat(SpectralMatrix):
     """Mass matrix for inner product B_{kj} = (phi_j, phi_k)_w
 
     where
@@ -242,17 +242,18 @@ class BNNmat(ShenMatrix):
     def __init__(self, test, trial):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SN)
+        from shenfun.la import TDMA
         N = test[0].N
         ck = get_ck(N, test[0].quad)
         k = np.arange(N-2, dtype=np.float)
         d = {0: np.pi/2*(ck[:-2]+ck[2:]*(k[:]/(k[:]+2))**4),
              2: -np.pi/2*((k[2:]-2)/(k[2:]))**2}
         d[-2] = d[2]
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
         self.solve = TDMA(self)
 
     def matvec(self, v, c, format='csr', axis=0):
-        c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+        c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
         s = [slice(None),]*v.ndim
         s[axis] = 0
         c[s] = 0
@@ -260,7 +261,7 @@ class BNNmat(ShenMatrix):
 
 
 @inheritdocstrings
-class BDTmat(ShenMatrix):
+class BDTmat(SpectralMatrix):
     """Mass matrix for inner product B_{kj} = (T_j, phi_k)_w
 
     where
@@ -279,11 +280,11 @@ class BDTmat(ShenMatrix):
         k = np.arange(N-2, dtype=np.float)
         d = {0: np.pi/2*ck[:N-2],
              2: -np.pi/2*ck[2:]}
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
 
 
 @inheritdocstrings
-class BTDmat(ShenMatrix):
+class BTDmat(SpectralMatrix):
     """Mass matrix for inner product B_{kj} = (phi_j, T_k)_w
 
     where
@@ -301,11 +302,11 @@ class BTDmat(ShenMatrix):
         ck = get_ck(N, test[0].quad)
         d = {-2: -np.pi/2*ck[2:],
               0: np.pi/2*ck[:N-2]}
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
 
 
 @inheritdocstrings
-class BTNmat(ShenMatrix):
+class BTNmat(SpectralMatrix):
     """Mass matrix for inner product B_{kj} = (phi_j, T_k)_w
 
     where
@@ -324,11 +325,11 @@ class BTNmat(ShenMatrix):
         k = np.arange(N, dtype=np.float)
         d = {-2: -np.pi/2*ck[2:]*((k[2:]-2)/k[2:])**2,
               0: np.pi/2*ck[:-2]}
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
 
 
 @inheritdocstrings
-class BBBmat(ShenMatrix):
+class BBBmat(SpectralMatrix):
     """Mass matrix for inner product B_{kj} = (psi_j, psi_k)_w
 
     where
@@ -341,6 +342,7 @@ class BBBmat(ShenMatrix):
     def __init__(self, test, trial):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
+        from shenfun.la import PDMA
         N = test[0].N
         ck = get_ck(N, test[0].quad)
         k = np.arange(N-4, dtype=np.float)
@@ -349,7 +351,7 @@ class BBBmat(ShenMatrix):
              0: (ck[:N-4] + 4*((k+2)/(k+3))**2 + ck[4:]*((k+1)/(k+3))**2)*np.pi/2.}
         d[-2] = d[2]
         d[-4] = d[4]
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
         self.solve = PDMA(self)
 
     def matvec(self, v, c, format='cython', axis=0):
@@ -379,13 +381,13 @@ class BBBmat(ShenMatrix):
             Pentadiagonal_matvec(v, c, self[-4], self[-2], self[0],
                                  self[2], self[4])
         else:
-            c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
 
 @inheritdocstrings
-class BBDmat(ShenMatrix):
+class BBDmat(SpectralMatrix):
     """Mass matrix for inner product B_{kj} = (phi_j, psi_k)_w
 
     where
@@ -408,7 +410,7 @@ class BBDmat(ShenMatrix):
               0: (ck[:N-4] + a)*np.pi/2,
               2: -(a+b*ck[4:])*np.pi/2,
               4: b[:-2]*np.pi/2}
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -431,13 +433,13 @@ class BBDmat(ShenMatrix):
             BBD_matvec3D(v, c, self[-2], self[0], self[2], self[4], axis)
 
         else:
-            c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
 
 @inheritdocstrings
-class CDNmat(ShenMatrix):
+class CDNmat(SpectralMatrix):
     """Matrix for inner product C_{kj} = (psi'_j, phi_k)_w
 
     where
@@ -458,19 +460,19 @@ class CDNmat(ShenMatrix):
         k = np.arange(N-2, dtype=np.float)
         d = {-1: -((k[1:]-1)/(k[1:]+1))**2*(k[1:]+1)*np.pi,
               1: (k[:-1]+1)*np.pi}
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='cython', axis=0):
         if format == 'cython' and v.ndim == 3:
             CDNmat_matvec(self[1], self[-1], v, c, axis)
         else:
-            c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
 
 @inheritdocstrings
-class CDDmat(ShenMatrix):
+class CDDmat(SpectralMatrix):
     """Matrix for inner product C_{kj} = (phi'_j, phi_k)_w
 
     where
@@ -487,7 +489,7 @@ class CDDmat(ShenMatrix):
         k = np.arange(N, dtype=np.float)
         d = {-1: -(k[1:N-2]+1)*np.pi,
               1: (k[:(N-3)]+1)*np.pi}
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='cython', axis=0):
         N = self.shape[0]
@@ -507,13 +509,13 @@ class CDDmat(ShenMatrix):
         elif format == 'cython' and v.ndim == 3:
             CDDmat_matvec(self[1], self[-1], v, c, axis)
         else:
-            c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
 
 @inheritdocstrings
-class CNDmat(ShenMatrix):
+class CNDmat(SpectralMatrix):
     """Matrix for inner product C_{kj} = (phi'_j, psi_k)_w
 
     where
@@ -535,10 +537,10 @@ class CNDmat(ShenMatrix):
               1: -(2-k[:-1]**2/(k[:-1]+2)**2*(k[:-1]+3))*np.pi}
         for i in range(3, N-1, 2):
             d[i] = -(1-k[:-i]**2/(k[:-i]+2)**2)*2*np.pi
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='csr', axis=0):
-        c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+        c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
         s = [slice(None),]*v.ndim
         s[axis] = 0
         c[s] = 0
@@ -546,7 +548,7 @@ class CNDmat(ShenMatrix):
 
 
 @inheritdocstrings
-class CTDmat(ShenMatrix):
+class CTDmat(SpectralMatrix):
     """Matrix for inner product C_{kj} = (phi'_j, T_k)_w
 
     where
@@ -566,10 +568,10 @@ class CTDmat(ShenMatrix):
               1: -2*np.pi}
         for i in range(3, N-2, 2):
             d[i] = -2*np.pi
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
 
 
-class CDTmat(ShenMatrix):
+class CDTmat(SpectralMatrix):
     """Matrix for inner product C_{kj} = (T'_j, phi_k)_w
 
     where
@@ -586,11 +588,11 @@ class CDTmat(ShenMatrix):
         N = test[0].N
         k = np.arange(N, dtype=np.float)
         d = {1: np.pi*(k[:N-2]+1)}
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
 
 
 @inheritdocstrings
-class CBDmat(ShenMatrix):
+class CBDmat(SpectralMatrix):
     """Matrix for inner product C_{kj} = (phi'_j, psi_k)_w
 
     where
@@ -609,7 +611,7 @@ class CBDmat(ShenMatrix):
         d = {-1: -(k[1:N-4]+1)*np.pi,
               1: 2*(k[:N-4]+1)*np.pi,
               3: -(k[:N-5]+1)*np.pi}
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='cython', axis=0):
         N, M = self.shape
@@ -630,12 +632,12 @@ class CBDmat(ShenMatrix):
         elif format == 'cython' and v.ndim == 1:
             CBD_matvec(v, c, self[-1], self[1], self[3])
         else:
-            c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
         return c
 
 
 @inheritdocstrings
-class CDBmat(ShenMatrix):
+class CDBmat(SpectralMatrix):
     """Matrix for inner product C_{kj} = (psi'_j, phi_k)_w
 
     where
@@ -654,7 +656,7 @@ class CDBmat(ShenMatrix):
         d = {-3: (k[3:-2]-2)*(k[3:-2]+1)/k[3:-2]*np.pi,
              -1: -2*(k[1:-3]+1)**2/(k[1:-3]+2)*np.pi,
               1: (k[:-5]+1)*np.pi}
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='cython', axis=0):
         N, M = self.shape
@@ -676,13 +678,13 @@ class CDBmat(ShenMatrix):
             CDB_matvec3D(v, c, self[-3], self[-1], self[1], axis)
 
         else:
-            c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
 
 @inheritdocstrings
-class ABBmat(ShenMatrix):
+class ABBmat(SpectralMatrix):
     """Stiffness matrix for inner product A_{kj} = (psi''_j, psi_k)_w
 
     where
@@ -700,7 +702,7 @@ class ABBmat(ShenMatrix):
         d = {-2: 2*(k[2:]-1)*(k[2:]+2)*np.pi,
               0: -4*((k+1)*(k+2)**2)/(k+3)*np.pi,
               2: 2*(k[:-2]+1)*(k[:-2]+2)*np.pi}
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='cython', axis=0):
         N = self.shape[0]
@@ -725,14 +727,14 @@ class ABBmat(ShenMatrix):
             Tridiagonal_matvec(v, c, self[-2], self[0], self[2])
 
         else:
-            c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
 
 @inheritdocstrings
-class ADDmat(ShenMatrix):
-    """Stiffness matrix for inner product A_{kj} = -(psi''_j, psi_k)_w
+class ADDmat(SpectralMatrix):
+    """Stiffness matrix for inner product A_{kj} = (psi''_j, psi_k)_w
 
     where
 
@@ -741,7 +743,7 @@ class ADDmat(ShenMatrix):
     and psi_k is the Shen Dirichlet basis function.
 
     """
-    def __init__(self, test, trial, scale=-1.):
+    def __init__(self, test, trial):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -749,7 +751,7 @@ class ADDmat(ShenMatrix):
         d = {0: -2*np.pi*(k[:N-2]+1)*(k[:N-2]+2)}
         for i in range(2, N-2, 2):
             d[i] = -4*np.pi*(k[:-(i+2)]+1)
-        ShenMatrix.__init__(self, d, test, trial, scale)
+        SpectralMatrix.__init__(self, d, test, trial)
 
         # Following storage more efficient, but requires effort in iadd/isub...
         #d = {0: -2*np.pi*(k[:N-2]+1)*(k[:N-2]+2),
@@ -762,7 +764,7 @@ class ADDmat(ShenMatrix):
         if format == 'cython' and v.ndim == 1:
             ADDmat_matvec(v, c, self[0])
         else:
-            c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
@@ -811,12 +813,13 @@ class ADDmat(ShenMatrix):
             u = np.moveaxis(u, 0, axis)
             if not u is b:
                 b = np.moveaxis(b, 0, axis)
+        u /= self.scale
         return u
 
 
 @inheritdocstrings
-class ANNmat(ShenMatrix):
-    """Stiffness matrix for inner product A_{kj} = -(phi''_j, phi_k)_w
+class ANNmat(SpectralMatrix):
+    """Stiffness matrix for inner product A_{kj} = (phi''_j, phi_k)_w
 
     where
 
@@ -825,7 +828,7 @@ class ANNmat(ShenMatrix):
     and phi_k is the Shen Neumann basis function.
 
     """
-    def __init__(self, test, trial, scale=-1.):
+    def __init__(self, test, trial):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SN)
         N = test[0].N
@@ -833,10 +836,10 @@ class ANNmat(ShenMatrix):
         d = {0: -2*np.pi*k**2*(k+1)/(k+2)}
         for i in range(2, N-2, 2):
             d[i] = -4*np.pi*(k[:-i]+i)**2*(k[:-i]+1)/(k[:-i]+2)**2
-        ShenMatrix.__init__(self, d, test, trial, scale)
+        SpectralMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='csr', axis=0):
-        c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+        c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
         s = [slice(None),]*v.ndim
         s[axis] = 0
         c[s] = self.testfunction[0].mean*np.pi
@@ -889,12 +892,13 @@ class ANNmat(ShenMatrix):
             u = np.moveaxis(u, 0, axis)
             if not u is b:
                 b = np.moveaxis(b, 0, axis)
+        u /= self.scale
         return u
 
 
 @inheritdocstrings
-class ATTmat(ShenMatrix):
-    """Stiffness matrix for inner product A_{kj} = -(psi''_j, psi_k)_w
+class ATTmat(SpectralMatrix):
+    """Stiffness matrix for inner product A_{kj} = (psi''_j, psi_k)_w
 
     where
 
@@ -903,7 +907,7 @@ class ATTmat(ShenMatrix):
     and psi_k is the Chebyshev basis function.
 
     """
-    def __init__(self, test, trial, scale=-1.):
+    def __init__(self, test, trial):
         assert isinstance(test[0], CB)
         assert isinstance(trial[0], CB)
         N = test[0].N
@@ -911,12 +915,12 @@ class ATTmat(ShenMatrix):
         d = {}
         for j in range(2, N, 2):
             d[j] = k[j:]*(k[j:]**2-k[:-j]**2)*np.pi/2.
-        ShenMatrix.__init__(self, d, test, trial, scale)
+        SpectralMatrix.__init__(self, d, test, trial)
 
 
 @inheritdocstrings
-class SBBmat(ShenMatrix):
-    """Biharmonic matrix for inner product S_{kj} = -(psi''''_j, psi_k)_w
+class SBBmat(SpectralMatrix):
+    """Biharmonic matrix for inner product S_{kj} = (psi''''_j, psi_k)_w
 
     where
 
@@ -936,7 +940,7 @@ class SBBmat(ShenMatrix):
         for j in range(2, N-4, 2):
             i = 8*(ki[:-j]+1)*(ki[:-j]+2)*(ki[:-j]*(ki[:-j]+4)+3*(ki[j:]+2)**2)
             d[j] = np.array(i*np.pi/(k[j:]+3))
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -947,15 +951,15 @@ class SBBmat(ShenMatrix):
             SBBmat_matvec(v, c, self[0])
 
         else:
-            c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
 
 @inheritdocstrings
-class _Chebmatrix(ShenMatrix):
+class _Chebmatrix(SpectralMatrix):
     def __init__(self, test, trial):
-        ShenMatrix.__init__(self, {}, test, trial)
+        SpectralMatrix.__init__(self, {}, test, trial)
 
 
 class _ChebMatDict(dict):

@@ -13,7 +13,7 @@ Shenfun contains tools for working with Jie Shen's modified Chebyshev and Legend
 Shenfun has implemented classes for the bases described in these papers, and within each class there are methods for fast transforms, scalar products and for computing matrices arising from bilinear forms in the spectral Galerkin method. The following bases are defined in submodules `shenfun.chebyshev`, `shenfun.legendre` and `shenfun.fourier`
 
 * shenfun.chebyshev.bases
-  * Basis - Regular Chebyshev 
+  * Basis - Regular Chebyshev
   * ShenDirichletBasis - Dirichlet boundary conditions
   * ShenNeumannBasis - Neumann boundary conditions (homogeneous)
   * ShenBiharmonicBasis - Homogeneous Dirichlet and Neumann boundary conditions
@@ -28,7 +28,7 @@ Shenfun has implemented classes for the bases described in these papers, and wit
   * R2CBasis - Real to complex Fourier transforms
   * C2CBasis - Complex to complex transforms
 
-Matrices that arise with Shen's bases and the spectral Galerkin method are often very sparse. As such, `shenfun` defines it's own sparse matrix class `SparseMatrix` and the subclassed `ShenMatrix` in `shenfun.matrixbase.py`. The matrix baseclass `SparseMatrix` is subclassing a regular Python dictionary, and its keys and values are, respectively, the offsets and the diagonals. For example, we may declare a tridiagonal matrix of shape N x N as
+Matrices that arise with Shen's bases and the spectral Galerkin method are often very sparse. As such, `shenfun` defines it's own sparse matrix class `SparseMatrix` and the subclassed `SpectralMatrix` in `shenfun.matrixbase.py`. The matrix baseclass `SparseMatrix` is subclassing a regular Python dictionary, and its keys and values are, respectively, the offsets and the diagonals. For example, we may declare a tridiagonal matrix of shape N x N as
 
 ```python
     >>> N = 4
@@ -88,7 +88,7 @@ and back to real physical space again
 
 ```python
     >>> fj = SD.backward(fk, fj)
-``` 
+```
 
 Note that `fj` now will be different than the original `fj` since it now has homogeneous boundary conditions. However, if we transfer back and forth one more time, starting from `fj` which is in the Shen Dirichlet function space, then we come back to the same array:
 
@@ -122,7 +122,7 @@ This `mass` matrix will be the same as Eq. (2.5) of JS1:
       2: array([-1.57079633])}
 ```
 
-You may notice that `mass` takes advantage of the fact that two diagonals are constant. 
+You may notice that `mass` takes advantage of the fact that two diagonals are constant.
 
 The `inner_product` may be used to compute any bilinear form. For example the stiffness matrix `K`
 
@@ -141,7 +141,7 @@ Square matrices have implemented a solve method that is using fast direct LU dec
     >>> u = K.solve(b, u)
 ```
 
-All methods are designed to work along any dimension of a multidimensional array. Very little differs in the users interface. Consider, for example, the previous example on a three-dimensional cube 
+All methods are designed to work along any dimension of a multidimensional array. Very little differs in the users interface. Consider, for example, the previous example on a three-dimensional cube
 
 ```python
     >>> fj = np.random.random((N, N, N))

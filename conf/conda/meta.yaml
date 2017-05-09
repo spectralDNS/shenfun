@@ -1,33 +1,37 @@
 package:
   name: shenfun
-  version: "1.0"
+  version: "1.0.1"
 
 source:
   git_url: ../../
 
 build:
   number: 2
-  script: python setup.py install --prefix=$PREFIX
+  #script: python setup.py install --prefix=$PREFIX
 
 requirements:
   build:
     - python
     - cython
     - numpy
+    - pip
 
   run:
     - python
     - numpy
     - scipy
-    - mpifft4py
     - cython
-    - pyfftw
+    - pyfftw 0.10.0
+    - mpi4py
     - six
     - sympy
 
 test:
   source_files:
     - tests
+
+  imports:
+    - shenfun
 
   requires:
     - pytest

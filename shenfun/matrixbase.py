@@ -107,7 +107,7 @@ class SparseMatrix(dict):
 
     def __imul__(self, y):
         """self.__imul__(y) <==> self*=y"""
-        assert isinstance(y, (np.float, np.int))
+        assert isinstance(y, (float, int, np.floating, np.integer))
         for key in self:
             # Check if symmetric
             if key < 0 and (-key) in self:
@@ -120,7 +120,7 @@ class SparseMatrix(dict):
     def __mul__(self, y):
         """Returns copy of self.__mul__(y) <==> self*y"""
         f = SparseMatrix(deepcopy(dict(self)), self.shape)
-        assert isinstance(y, (np.float, np.int))
+        assert isinstance(y, (float, int, np.floating, np.integer))
         for key in f:
             # Check if symmetric
             if key < 0 and (-key) in f:
@@ -136,7 +136,7 @@ class SparseMatrix(dict):
     def __div__(self, y):
         """Returns copy self.__div__(y) <==> self/y"""
         f = SparseMatrix(deepcopy(dict(self)), self.shape)
-        assert isinstance(y, (np.float, np.int))
+        assert isinstance(y, (float, int, np.floating, np.integer))
         for key in f:
             # Check if symmetric
             if key < 0 and (-key) in f:
@@ -153,14 +153,14 @@ class SparseMatrix(dict):
         """Return copy of self.__add__(y) <==> self+d"""
         f = SparseMatrix(deepcopy(dict(self)), self.shape)
         assert isinstance(d, dict)
-        assert d.shape == self.shape
+        #assert d.shape == self.shape
         for key, val in six.iteritems(d):
             if key in f:
                 # Check if symmetric and make copy if necessary
                 if -key in f:
                     if id(f[key]) == id(f[-key]):
                         f[-key] = deepcopy(f[key])
-                f[key] += val
+                f[key] = f[key] + val
             else:
                 f[key] = val
 
@@ -183,7 +183,7 @@ class SparseMatrix(dict):
         return self
 
     def __sub__(self, d):
-        """Return copy of self.__add__(y) <==> self+d"""
+        """Return copy of self.__sub__(y) <==> self-d"""
         f = SparseMatrix(deepcopy(dict(self)), self.shape)
         assert isinstance(d, dict)
         assert d.shape == self.shape
@@ -193,7 +193,7 @@ class SparseMatrix(dict):
                 if -key in f:
                     if id(f[key]) == id(f[-key]):
                         f[-key] = deepcopy(f[key])
-                f[key] -= val
+                f[key] = f[key] - val
             else:
                 f[key] = -val
 
@@ -215,33 +215,34 @@ class SparseMatrix(dict):
 
         return self
 
+    def get_key(self):
+        return self.__hash__()
+
     def solve(self, b, u=None, axis=0):
         """Solve matrix system Au = b
 
         where A is the current matrix (self)
 
         args:
-            b    (input/output)    Vector of right hand side on entry,
-                                   solution on exit.
-            u    (output)          Optional optput vector
+            b    (input/output)    Vector of right hand side on entry.
+                                   Solution on exit unless u is provided.
+            u    (output)          Optional output vector
 
-        Vectors may be one- or multidimensional. Solve along first axis.
+        Vectors may be one- or multidimensional.
 
         """
         assert self.shape[0] == self.shape[1]
         assert self.shape[0] == b.shape[0]
 
-        uc = False
         if u is None:
-            uc = True
-            u = np.zeros_like(b)
+            u = b
         else:
             assert u.shape == b.shape
 
         # Roll relevant axis to first
         if axis > 0:
-            v = np.moveaxis(v, axis, 0)
-            c = np.moveaxis(c, axis, 0)
+            b = np.moveaxis(b, axis, 0)
+            u = np.moveaxis(u, axis, 0)
 
         if b.ndim == 1:
             u[:] = spsolve(self.diags(), b)
@@ -250,20 +251,15 @@ class SparseMatrix(dict):
             P = np.prod(b.shape[1:])
             u[:] = spsolve(self.diags(), b.reshape((N, P))).reshape(u.shape)
 
-        if u is None:
-            b[:] = u
-            if axis > 0:
-                b = np.moveaxis(b, 0, axis)
-            return b
-        else:
-            if axis > 0:
-                u = np.moveaxis(u, 0, axis)
-            return u
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
+            b = np.moveaxis(b, 0, axis)
+        return u
 
 
 @inheritdocstrings
-class ShenMatrix(SparseMatrix):
-    """Base class for Shen matrices
+class SpectralMatrix(SparseMatrix):
+    """Base class for inner product matrices
 
     args:
         d                            Dictionary, where keys are the diagonal
@@ -280,8 +276,8 @@ class ShenMatrix(SparseMatrix):
         scale  float                 Scale matrix with this constant
 
 
-    Shen matrices are assumed to be sparse diagonal. The matrices are
-    scalar products of trial and test functions from one of eight function
+    The matrices are assumed to be sparse diagonal. The matrices are
+    inner products of trial and test functions from one of eight function
     spaces
 
     Chebyshev basis:
@@ -348,12 +344,12 @@ class ShenMatrix(SparseMatrix):
     The matrices can be automatically created using, e.g., for the mass
     matrix of the Dirichlet space
 
-      M = ShenMatrix({}, (ShenDirichletBasis(18), 0), (ShenDirichletBasis(18), 0))
+      M = SpectralMatrix({}, (ShenDirichletBasis(18), 0), (ShenDirichletBasis(18), 0))
 
     where the first (ShenDirichletBasis(18), 0) represents the trial function and
     the second the test function. The stiffness matrix can be obtained as
 
-      A = ShenMatrix({}, (ShenDirichletBasis(18), 0), (ShenDirichletBasis(18), 2))
+      A = SpectralMatrix({}, (ShenDirichletBasis(18), 0), (ShenDirichletBasis(18), 2))
 
     where (ShenDirichletBasis(18), 2) signals that we use the second derivative
     of this trial function. The number (here 18) is the number of quadrature
@@ -368,10 +364,20 @@ class ShenMatrix(SparseMatrix):
 
     """
     def __init__(self, d, test, trial, scale=1.0):
-        self.testfunction = test
-        self.trialfunction = trial
+        if isinstance(test[1], (int, np.integer)):
+            k_test, k_trial = test[1], trial[1]
+        elif isinstance(test[1], np.ndarray):
+            assert len(test[1]) == 1
+            k_test = test[1][(0,)*np.ndim(test[1])]
+            k_trial = trial[1][(0,)*np.ndim(trial[1])]
+        else:
+            raise RuntimeError
+
+        self.testfunction = (test[0], k_test)
+        self.trialfunction = (trial[0], k_trial)
+
         self.scale = scale
-        shape = self.get_shape()
+        shape = self.spectral_shape()
         if d == {}:
             D = self.get_dense_matrix()[:shape[0], :shape[1]]
             d = extract_diagonal_matrix(D)
@@ -379,14 +385,15 @@ class ShenMatrix(SparseMatrix):
         if not round(scale-1.0, 8) == 0:
             self *= scale
 
-    def get_shape(self):
+    def spectral_shape(self):
         """Return shape of matrix"""
-        return (self.testfunction[0].get_shape(),
-                self.trialfunction[0].get_shape())
+        return (self.testfunction[0].spectral_shape(),
+                self.trialfunction[0].spectral_shape())
 
     def get_dense_matrix(self):
         """Return dense matrix automatically computed from basis"""
-        x, w = self.testfunction[0].points_and_weights()
+        N = self.testfunction[0].N
+        x, w = self.testfunction[0].points_and_weights(N)
         V = self.testfunction[0].vandermonde(x)
         test = self.testfunction[0].get_vandermonde_basis_derivative(V, self.testfunction[1])
         trial = self.trialfunction[0].get_vandermonde_basis_derivative(V, self.trialfunction[1])
@@ -406,13 +413,16 @@ class ShenMatrix(SparseMatrix):
             assert np.allclose(val, Dsp[key])
 
     def matvec(self, v, c, format='csr', axis=0):
-        c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+        c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
         if self.testfunction[0].__class__.__name__ == 'ShenNeumannBasis':
-            if axis > 0:
-                c = np.moveaxis(c, axis, 0)
-            c[0] = 0
-            if axis > 0:
-                c = np.moveaxis(c, 0, axis)
+            ss = [slice(None)]*len(v.shape)
+            ss[axis] = 0
+            c[ss] = 0
+            #if axis > 0:
+                #c = np.moveaxis(c, axis, 0)
+            #c[0] = 0
+            #if axis > 0:
+                #c = np.moveaxis(c, 0, axis)
         return c
 
     def solve(self, b, u=None, axis=0):
@@ -429,26 +439,41 @@ class ShenMatrix(SparseMatrix):
         u = default_solve(self, b, u, axis=axis)
         return u
 
+    def __hash__(self):
+        return hash(((self.testfunction[0].__class__, self.testfunction[1]),
+                     (self.trialfunction[0].__class__, self.trialfunction[1])))
 
-def extract_diagonal_matrix(M, tol=1e-8):
+    def get_key(self):
+        if self.__class__.__name__.startswith('_'):
+            return self.__hash__()
+        else:
+            return self.__class__.__name__
+
+
+def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-12):
     """Return SparseMatrix version of M
 
     args:
         M                    Dense matrix. Numpy array of ndim=2
 
     kwargs:
-        tol     (float)      Tolerance. Only diagonals with max(|d|) < tol
+        abstol     (float)   Tolerance. Only diagonals with max(|d|) < tol
                              are kept in the returned SparseMatrix
+        reltol     (float)   Relative tolerance. Only diagonals with
+                             max(|d|)/max(|M|) > reltol are kept in
+                             the returned SparseMatrix
     """
     d = {}
+    relmax = abs(M).max()
     for i in range(M.shape[1]):
         u = M.diagonal(i).copy()
-        if abs(u).max() > tol:
+        if abs(u).max() > abstol and abs(u).max()/relmax > reltol :
             d[i] = u
 
     for i in range(1, M.shape[0]):
         l = M.diagonal(-i).copy()
-        if abs(l).max() > tol:
+        if abs(l).max() > abstol and abs(l).max()/relmax > reltol:
             d[-i] = l
 
     return SparseMatrix(d, M.shape)
+
