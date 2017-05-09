@@ -30,7 +30,6 @@ test:
     - tests
 
   imports:
-    - mpi4py_fft
     - shenfun
 
   requires:
