@@ -2,11 +2,12 @@ import numpy as np
 import six
 from shenfun.fourier import FourierBase
 from shenfun.spectralbase import inner_product
+from shenfun.la import DiagonalMatrix
 from .arguments import Expr, TestFunction, TrialFunction, Function, BasisFunction
 
 __all__ = ('inner', 'project')
 
-
+#@profile
 def inner(expr0, expr1, output_array=None, uh_hat=None):
     """Return inner product of linear or bilinear form
 
@@ -60,9 +61,9 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
             except:
                 raise RuntimeError
 
-    if expr0.rank() > 1: # For vector spaces of rank 2 use recursive algorithm
-        assert expr0.rank() == 2
-        assert expr1.rank() == 2
+    if expr0.rank() + expr1.rank() > 2: # For vector spaces of rank 2 use recursive algorithm
+        #assert expr0.expr_rank() == 2
+        #assert expr1.expr_rank() == 2
         ndim = expr0.function_space().ndim()
 
         t0 = expr0.argument()
@@ -85,7 +86,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
             uh = trial.function_space().forward(basis, uh)
 
         if output_array is None and trial.argument() == 2:
-            output_array = Function(trial.function_space())
+            output_array = Function(test.function_space())
 
         if trial.argument() == 2:
             # linear form
@@ -167,7 +168,6 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                 A.append([])
                 S.append(np.array([sc]))
                 assert len(b0) == len(b1)
-                #from IPython import embed; embed()
                 for i, (a, b) in enumerate(zip(b0, b1)): # Third index, one inner for each dimension
                     AA = inner_product((space[i], a), (trialspace[i], b))
                     A[-1].append(AA)
@@ -217,7 +217,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                 return A[0][0]
 
             else:
-                output_array[:] = A[0][0]*uh
+                output_array[:] = B[0]*uh
                 return output_array
 
         else:
@@ -226,8 +226,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                 for ci in B[1:]:
                     diagonal_array = diagonal_array + ci
 
-                diagonal_array = np.where(diagonal_array==0, 1, diagonal_array)
-                return {'diagonal': diagonal_array}
+                return DiagonalMatrix(diagonal_array)
 
             else:
                 #from IPython import embed; embed()
@@ -350,6 +349,10 @@ def project(uh, T, output_array=None, uh_hat=None):
     u = TrialFunction(T)
     u_hat = inner(v, uh, uh_hat=uh_hat)
     B = inner(v, u)
-    output_array = B.solve(u_hat, output_array, axis=B.axis)
+    if v.rank() == 1:
+        output_array = B.solve(u_hat, output_array, axis=B.axis)
+    else:
+        for i in range(v.function_space().ndim()):
+            output_array[i] = B[i].solve(u_hat[i], output_array[i], axis=B[i].axis)
     return output_array
 

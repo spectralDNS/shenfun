@@ -64,9 +64,9 @@ class ChebyshevBase(SpectralBase):
 
     """
 
-    def __init__(self, N=0, quad="GC"):
+    def __init__(self, N=0, quad="GC", domain=(-1., 1.)):
         assert quad in ('GC', 'GL')
-        SpectralBase.__init__(self, N, quad)
+        SpectralBase.__init__(self, N, quad, domain=domain)
 
     def points_and_weights(self, N):
         if self.quad == "GL":
@@ -80,6 +80,8 @@ class ChebyshevBase(SpectralBase):
             points = points.astype(float)
             weights = weights.astype(float)
 
+        a, b = self.domain
+        points = a+(b-a)/2+points*(b-a)/2
         return points, weights
 
     def vandermonde(self, x):
@@ -105,7 +107,8 @@ class ChebyshevBase(SpectralBase):
         if k > 0:
             D = np.zeros((self.N, self.N))
             D[:-k, :] = n_cheb.chebder(np.eye(self.N), k)
-            V = np.dot(V, D)
+            a, b = self.domain
+            V = np.dot(V, D)*(2./(b-a))**k
         return self.get_vandermonde_basis(V)
 
     def get_mass_matrix(self):

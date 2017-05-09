@@ -48,8 +48,9 @@ fj = fl(*X)
 f_hat = inner(v, fj)
 
 # Solve Poisson equation
-A = inner(v, div(grad(u)))
-f_hat = f_hat / A['diagonal']
+#A = inner(v, div(grad(u)))
+A = inner(grad(v), grad(u))
+f_hat = A.solve(-f_hat)
 
 uq = T.backward(f_hat, fast_transform=True)
 

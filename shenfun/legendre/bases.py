@@ -54,8 +54,8 @@ class LegendreBase(SpectralBase):
 
     """
 
-    def __init__(self, N=0, quad="LG"):
-        SpectralBase.__init__(self, N, quad)
+    def __init__(self, N=0, quad="LG", domain=(-1., 1.)):
+        SpectralBase.__init__(self, N, quad, domain=domain)
 
     def points_and_weights(self, N):
         if self.quad == "LG":
@@ -65,6 +65,8 @@ class LegendreBase(SpectralBase):
         else:
             raise NotImplementedError
 
+        a, b = self.domain
+        points = a+(b-a)/2+points*(b-a)/2
         return points, weights
 
     def vandermonde(self, x):
@@ -90,7 +92,9 @@ class LegendreBase(SpectralBase):
         if k > 0:
             D = np.zeros((self.N, self.N))
             D[:-k, :] = leg.legder(np.eye(self.N), k)
-            V = np.dot(V, D)
+            a, b = self.domain
+            V = np.dot(V, D)*(2./(b-a))**k
+
         return self.get_vandermonde_basis(V)
 
     def get_mass_matrix(self):
@@ -199,8 +203,8 @@ class Basis(LegendreBase):
 
     """
 
-    def __init__(self, N=0, quad="LG", plan=False):
-        LegendreBase.__init__(self, N, quad)
+    def __init__(self, N=0, quad="LG", plan=False, domain=(-1., 1.)):
+        LegendreBase.__init__(self, N, quad, domain=domain)
         if plan:
             self.plan(N, 0, np.float, {})
 
@@ -222,8 +226,8 @@ class ShenDirichletBasis(LegendreBase):
 
     """
 
-    def __init__(self, N=0, quad="LG", bc=(0., 0.), plan=False):
-        LegendreBase.__init__(self, N, quad)
+    def __init__(self, N=0, quad="LG", bc=(0., 0.), plan=False, domain=(-1., 1.)):
+        LegendreBase.__init__(self, N, quad, domain=domain)
         self.bc = bc
         self.LT = Basis(N, quad)
         if plan:
@@ -318,8 +322,8 @@ class ShenNeumannBasis(LegendreBase):
 
     """
 
-    def __init__(self, N=0, quad="LG", mean=0, plan=False):
-        LegendreBase.__init__(self, N, quad)
+    def __init__(self, N=0, quad="LG", mean=0, plan=False, domain=(-1., 1.)):
+        LegendreBase.__init__(self, N, quad, domain=domain)
         self.mean = mean
         self.LT = Basis(N, quad)
         self._factor = np.zeros(0)
@@ -411,8 +415,8 @@ class ShenBiharmonicBasis(LegendreBase):
 
     """
 
-    def __init__(self, N=0, quad="LG", plan=False):
-        LegendreBase.__init__(self, N, quad)
+    def __init__(self, N=0, quad="LG", plan=False, domain=(-1., 1.)):
+        LegendreBase.__init__(self, N, quad, domain=domain)
         self.LT = Basis(N, quad)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)

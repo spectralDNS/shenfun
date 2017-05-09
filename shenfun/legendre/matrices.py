@@ -3,7 +3,7 @@ from __future__ import division
 __all__ = ['mat']
 
 import numpy as np
-from shenfun.matrixbase import ShenMatrix
+from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
 from . import bases
 
@@ -15,7 +15,7 @@ SN = bases.ShenNeumannBasis
 
 
 @inheritdocstrings
-class BLLmat(ShenMatrix):
+class BLLmat(SpectralMatrix):
     """Mass matrix for inner product B_{kj} = (L_j, L_k)_w
 
     where
@@ -33,11 +33,11 @@ class BLLmat(ShenMatrix):
         d = {0: 2./(2.*k+1)}
         if test[0].quad == 'GL':
             d[0][-1] = 2./(N-1)
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
 
 
 @inheritdocstrings
-class BDDmat(ShenMatrix):
+class BDDmat(SpectralMatrix):
     """Mass matrix for inner product B_{kj} = (psi_j, psi_k)_w
 
     where
@@ -59,12 +59,12 @@ class BDDmat(ShenMatrix):
         if test[0].quad == 'GL':
             d[0][-1] = 2./(2*(N-3)+1) + 2./(N-1)
 
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
         self.solve = TDMA(self)
 
 
 @inheritdocstrings
-class BNNmat(ShenMatrix):
+class BNNmat(SpectralMatrix):
     """Mass matrix for inner product B_{kj} = (psi_j, psi_k)_w
 
     where
@@ -78,11 +78,11 @@ class BNNmat(ShenMatrix):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SN)
         N = test[0].N
-        ShenMatrix.__init__(self, {}, test, trial)
+        SpectralMatrix.__init__(self, {}, test, trial)
 
 
 @inheritdocstrings
-class BBBmat(ShenMatrix):
+class BBBmat(SpectralMatrix):
     """Mass matrix for inner product B_{kj} = (psi_j, psi_k)_w
 
     where
@@ -108,12 +108,12 @@ class BBBmat(ShenMatrix):
              4: gk[:-8]*ek[4:-4]}
         d[-2] = d[2]
         d[-4] = d[4]
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
         self.solve = PDMA(self)
 
 
 @inheritdocstrings
-class ADDmat(ShenMatrix):
+class ADDmat(SpectralMatrix):
     """Stiffness matrix for inner product A_{kj} = (psi'_j, psi'_k)_w
 
     where
@@ -129,7 +129,7 @@ class ADDmat(ShenMatrix):
         N = test[0].N
         k = np.arange(N-2, dtype=np.float)
         d = {0: 4*k+6}
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
 
     def solve(self, b, u=None, axis=0):
         N = self.shape[0] + 2
@@ -165,7 +165,7 @@ class ADDmat(ShenMatrix):
         return u
 
 @inheritdocstrings
-class ANNmat(ShenMatrix):
+class ANNmat(SpectralMatrix):
     """Stiffness matrix for inner product A_{kj} = (psi'_j, psi'_k)_w
 
     where
@@ -181,11 +181,11 @@ class ANNmat(ShenMatrix):
         N = test[0].N
         k = np.arange(N-2, dtype=np.float)
         d = {}
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
 
 
 @inheritdocstrings
-class ABBmat(ShenMatrix):
+class ABBmat(SpectralMatrix):
     """Stiffness matrix for inner product A_{kj} = (psi'_j, psi'_k)_w
 
     where
@@ -204,10 +204,10 @@ class ABBmat(ShenMatrix):
         d = {0: 2*(2*k+3)*(1+gk),
              2: -2*(2*k[:-2]+3)}
         d[-2] = d[2]
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
 
 @inheritdocstrings
-class PBBmat(ShenMatrix):
+class PBBmat(SpectralMatrix):
     """Stiffness matrix for inner product A_{kj} = (psi_j, psi''_k)_w
 
     where
@@ -226,10 +226,10 @@ class PBBmat(ShenMatrix):
         d = {0: -2*(2*k+3)*(1+gk),
              2: 2*(2*k[:-2]+3)}
         d[-2] = d[2]
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
 
 @inheritdocstrings
-class SBBmat(ShenMatrix):
+class SBBmat(SpectralMatrix):
     """Stiffness matrix for inner product A_{kj} = (psi''_j, psi''_k)_w
 
     where
@@ -245,13 +245,13 @@ class SBBmat(ShenMatrix):
         N = test[0].N
         k = np.arange(N-4, dtype=np.float)
         d = {0: 2*(2*k+3)**2*(2*k+5)}
-        ShenMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial)
 
 
 @inheritdocstrings
-class _Legmatrix(ShenMatrix):
+class _Legmatrix(SpectralMatrix):
     def __init__(self, test, trial):
-        ShenMatrix.__init__(self, {}, test, trial)
+        SpectralMatrix.__init__(self, {}, test, trial)
 
 
 class _LegMatDict(dict):

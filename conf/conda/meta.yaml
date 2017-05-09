@@ -1,6 +1,6 @@
 package:
   name: shenfun
-  version: "1.0"
+  version: "1.0.1"
 
 source:
   git_url: ../../
@@ -28,6 +28,10 @@ requirements:
 test:
   source_files:
     - tests
+
+  imports:
+    - mpi4py_fft
+    - shenfun
 
   requires:
     - pytest

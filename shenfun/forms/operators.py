@@ -56,7 +56,7 @@ def grad(test):
     return test
 
 
-def Dx(test, x, k):
+def Dx(test, x, k=1):
     assert isinstance(test, (Expr, BasisFunction))
 
     if isinstance(test, BasisFunction):
@@ -77,9 +77,9 @@ def curl(test):
     assert test.rank() == 2
     assert test.num_components() == test.dim()  # vector
 
-    w0 = Dx(test[1], 2, 1) - Dx(test[2], 1, 1)
-    w1 = Dx(test[2], 0, 1) - Dx(test[0], 2, 1)
-    w2 = Dx(test[0], 1, 1) - Dx(test[1], 0, 1)
+    w0 = Dx(test[2], 1, 1) - Dx(test[1], 2, 1)
+    w1 = Dx(test[0], 2, 1) - Dx(test[2], 0, 1)
+    w2 = Dx(test[1], 0, 1) - Dx(test[0], 1, 1)
     test._terms = np.concatenate((w0.terms(), w1.terms(), w2.terms()), axis=0)
     test._scales = np.concatenate((w0.scales(), w1.scales(), w2.scales()), axis=0)
     test._indices = np.concatenate((w0.indices(), w1.indices(), w2.indices()), axis=0)

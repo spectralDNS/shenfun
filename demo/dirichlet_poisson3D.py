@@ -56,6 +56,8 @@ X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, e
 u = TrialFunction(T)
 v = TestFunction(T)
 
+K = T.local_wavenumbers()
+
 # Get f on quad points
 fj = fl(*X)
 

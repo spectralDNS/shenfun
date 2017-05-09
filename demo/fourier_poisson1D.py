@@ -38,8 +38,8 @@ uj = np.array([ue.subs(x, i) for i in X], dtype=np.float)
 f_hat = inner(v, fj)
 
 # Solve Poisson equation
-A = inner(v, div(grad(u)))
-u_hat = A.solve(f_hat)
+A = inner(grad(v), grad(u))
+u_hat = A.solve(-f_hat)
 
 uq = ST.backward(u_hat)
 

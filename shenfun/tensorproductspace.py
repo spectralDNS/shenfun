@@ -8,7 +8,7 @@ __all__ = ('TensorProductSpace', 'VectorTensorProductSpace')
 
 class TensorProductSpace(object):
 
-    def __init__(self, comm, bases, axes=None, dtype=None, **kw):
+    def __init__(self, comm, bases, axes=None, dtype=None, slab=False, **kw):
         self.comm = comm
         self.bases = bases
         shape = self.shape()
@@ -32,15 +32,15 @@ class TensorProductSpace(object):
         dtype = self.dtype = np.dtype(dtype)
         assert dtype.char in 'fdgFDG'
 
-        slab = False
         if isinstance(comm, Subcomm):
+            assert slab is False
             assert len(comm) == len(shape)
             assert comm[axes[-1]].Get_size() == 1
             self.subcomm = comm
         else:
             if slab:
                 dims = [1] * len(shape)
-                dims[0] = 0
+                dims[axes[0]] = comm.Get_size()
             else:
                 dims = [0] * len(shape)
                 dims[axes[-1]] = 1
@@ -105,15 +105,15 @@ class TensorProductSpace(object):
         for trans in self.transfer:
             trans.destroy()
 
-    def wavenumbers(self):
+    def wavenumbers(self, scaled=False):
         K = []
         N = self.shape()
         for axis, base in enumerate(self):
-            K.append(base.wavenumbers(N, axis))
+            K.append(base.wavenumbers(N, axis, scaled=scaled))
         return K
 
-    def local_wavenumbers(self, broadcast=False):
-        k = self.wavenumbers()
+    def local_wavenumbers(self, broadcast=False, scaled=False):
+        k = self.wavenumbers(scaled=scaled)
         lk = []
         for axis, (n, s) in enumerate(zip(k, self.local_slice(True))):
             ss = [slice(None)]*len(k)
@@ -196,6 +196,9 @@ class MixedTensorProductSpace(object):
 
     def __init__(self, spaces):
         self.spaces = spaces
+        self.forward = VectorTransform([space.forward for space in spaces])
+        self.backward = VectorTransform([space.backward for space in spaces])
+        self.scalar_product = VectorTransform([space.scalar_product for space in spaces])
 
     def ndim(self):
         return self.spaces[0].ndim()
@@ -215,9 +218,6 @@ class VectorTensorProductSpace(MixedTensorProductSpace):
 
     def __init__(self, spaces):
         MixedTensorProductSpace.__init__(self, spaces)
-        self.forward = VectorTransform([space.forward for space in spaces])
-        self.backward = VectorTransform([space.backward for space in spaces])
-        self.scalar_product = VectorTransform([space.scalar_product for space in spaces])
 
     def rank(self):
         return 2

@@ -97,8 +97,9 @@ class SpectralBase(object):
 
     """
 
-    def __init__(self, N, quad, padding_factor=1):
+    def __init__(self, N, quad, padding_factor=1, domain=(-1., 1.)):
         self.N = N
+        self.domain = domain
         self.quad = quad
         self._mass = None # Mass matrix (if needed)
         self.axis = 0
@@ -121,7 +122,7 @@ class SpectralBase(object):
         X = self.broadcast_to_ndims(x, len(N), axis)
         return X
 
-    def wavenumbers(self, N, axis=0):
+    def wavenumbers(self, N, axis=0, scaled=False):
         """Return the wavenumbermesh
 
         All dimensions, except axis, are obtained through broadcasting.
@@ -407,7 +408,7 @@ class SpectralBase(object):
         return slice(0, self.N)
 
     def spectral_shape(self):
-        """Return the shape of current basis used to build a ShenMatrix"""
+        """Return the shape of current basis used to build a SpectralMatrix"""
         s = self.slice()
         return s.stop - s.start
 
@@ -443,7 +444,7 @@ class SpectralBase(object):
                 u.dtype == self.forward.output_array.dtype)
 
     def as_function(self, u):
-        from .arguments import Function
+        from .forms.arguments import Function
         assert isinstance(u, np.ndarray)
         forward_output = self.is_forward_output(u)
         return Function(self, forward_output=forward_output, buffer=u)
@@ -470,6 +471,8 @@ class SpectralBase(object):
             padded_array[su] = trunc_array[su]
             padded_array *= self.padding_factor
 
+
+_matrix_cache = {}
 
 def inner_product(test, trial, out=None, axis=0, fast_transform=False):
     """Return inner product of linear or bilinear form
@@ -518,7 +521,12 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
             raise RuntimeError
 
         mat = test[0]._get_mat()
-        return mat[key](test, trial)
+        if (test, trial) in _matrix_cache:
+            return _matrix_cache[(test, trial)]
+        else:
+            m = mat[key](test, trial)
+            _matrix_cache[(test, trial)] = m
+        return m
 
     else:
         # Linear form

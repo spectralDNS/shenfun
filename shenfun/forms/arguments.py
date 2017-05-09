@@ -60,10 +60,10 @@ class Expr(object):
         self._terms = terms
         self._scales = scales
         self._indices = indices
-        ndim = basis._space.ndim()
+        ndim = self.function_space().ndim()
         if terms is None:
             self._terms = np.zeros((ndim**(basis.rank()-1), 1, ndim),
-                                       dtype=np.int)
+                                    dtype=np.int)
         if scales is None:
             self._scales = np.ones((ndim**(basis.rank()-1), 1))
 
@@ -87,6 +87,9 @@ class Expr(object):
     def argument(self):
         return self._basis.argument()
 
+    def expr_rank(self):
+        return 1 if self._terms.shape[0] == 1 else 2
+
     def rank(self):
         return self._basis.rank()
 
@@ -104,23 +107,58 @@ class Expr(object):
 
     def __getitem__(self, i):
         assert self.num_components() == self.dim()
-        return Expr(self._basis[i],
+        basis = self._basis
+        if self.rank() == 2:
+            basis = self._basis[i]
+        return Expr(basis,
                     self._terms[i][np.newaxis, :, :],
                     self._scales[i][np.newaxis, :],
                     self._indices[i][np.newaxis, :])
 
+
     def __mul__(self, a):
-        assert isinstance(a, (int, float, np.floating, np.integer))
-        sc = self.scales().copy()*a
+        if self.expr_rank() == 1:
+            assert isinstance(a, (int, float, np.floating, np.integer))
+            sc = self.scales().copy()*a
+        elif self.expr_rank() == 2:
+            sc = self.scales().copy()
+            if isinstance(a, tuple):
+                assert len(a) == self.dim()
+                for i in range(self.dim()):
+                    assert isinstance(a[i], (int, float, np.floating, np.integer))
+                    sc[i] = sc[i]*a[i]
+
+            elif isinstance(a, (int, float, np.floating, np.integer)):
+                sc *= a
+
+            elif isinstance(a, np.ndarray):
+                assert len(a) == self.dim() or len(a) == 1
+                sc *= a
+
         return Expr(self._basis, self._terms, sc, self._indices)
 
     def __rmul__(self, a):
         return self.__mul__(a)
 
     def __imul__(self, a):
-        assert isinstance(a, (int, float, np.floating, np.integer))
         sc = self.scales()
-        sc *= a
+        if self.expr_rank() == 1:
+            assert isinstance(a, (int, float, np.floating, np.integer))
+            sc *= a
+        elif self.expr_rank() == 2:
+            if isinstance(a, tuple):
+                assert len(a) == self.dim()
+                for i in range(self.dim()):
+                    assert isinstance(a[i], (int, float, np.floating, np.integer))
+                    sc[i] = sc[i]*a[i]
+
+            elif isinstance(a, (int, float, np.floating, np.integer)):
+                sc *= a
+
+            elif isinstance(a, np.ndarray):
+                assert len(a) == self.dim() or len(a) == 1
+                sc *= a
+
         return self
 
     def __add__(self, a):
@@ -163,14 +201,18 @@ class Expr(object):
         self._indices = np.concatenate((self.indices(), a.indices()), axis=1)
         return self
 
+    def __neg__(self):
+        sc = self.scales()
+        sc *= -1
+        return self
+
 
 class BasisFunction(object):
 
-    def __init__(self, space, argument=0, index=0, subclass=False):
+    def __init__(self, space, argument=0, index=0):
         self._space = space
         self._argument = argument
         self._index = index
-        self._subclass = subclass
 
     def rank(self):
         return self._space.rank()
@@ -185,33 +227,30 @@ class BasisFunction(object):
         """Return index into vector of rank 2"""
         return self._index
 
-    def is_subclass(self):
-        return self._subclass
-
     def __getitem__(self, i):
         assert self.rank() == 2
-        t0 = BasisFunction(self._space[i], self._argument, i, True)
+        t0 = BasisFunction(self._space[i], self._argument, i)
         return t0
 
 
 class TestFunction(BasisFunction):
 
-    def __init__(self, space, index=0, subclass=False):
-        return BasisFunction.__init__(self, space, 0, index, subclass)
+    def __init__(self, space, index=0):
+        return BasisFunction.__init__(self, space, 0, index)
 
     def __getitem__(self, i):
         assert self.rank() == 2
-        t0 = TestFunction(self._space[i], index=i, subclass=True)
+        t0 = TestFunction(self._space[i], index=i)
         return t0
 
 class TrialFunction(BasisFunction):
 
-    def __init__(self, space, index=0, subclass=False):
-        return BasisFunction.__init__(self, space, 1, index, subclass)
+    def __init__(self, space, index=0):
+        return BasisFunction.__init__(self, space, 1, index)
 
     def __getitem__(self, i):
         assert self.rank() == 2
-        t0 = TrialFunction(self._space[i], index=i, subclass=True)
+        t0 = TrialFunction(self._space[i], index=i)
         return t0
 
 
@@ -281,7 +320,7 @@ class Function(np.ndarray, BasisFunction):
                               v0.function_space().is_forward_output(v1),
                               buffer=v1)
                 f0._index = i
-                f0._subclass = True
+                f0._argument = 2
                 return f0
             else:
                 v = np.ndarray.__getitem__(self, i)
@@ -291,3 +330,10 @@ class Function(np.ndarray, BasisFunction):
             v = np.ndarray.__getitem__(self, i)
             return v
 
+
+    def __array_finalize__(self, obj):
+        if obj is None: return
+        if hasattr(obj, '_space'):
+            self._argument = 2
+            self._space = obj._space
+            self._index = obj._index

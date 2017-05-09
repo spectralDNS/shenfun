@@ -174,3 +174,25 @@ class PDMA(object):
         u /= self.mat.scale
         return u
 
+class DiagonalMatrix(object):
+
+    def __init__(self, diagonal_array):
+        self.diagonal_array = diagonal_array
+        self.axis = 0
+
+    def solve(self, b, u=None, axis=0, neglect_zero_wavenumber=True):
+        diagonal_array = self.diagonal_array
+        if neglect_zero_wavenumber:
+            diagonal_array = np.where(diagonal_array==0, 1, diagonal_array)
+
+        if u is not None:
+            u[:] = b / diagonal_array
+            return u
+        else:
+            return b / diagonal_array
+
+    def matvec(self, v, c):
+        assert self.diagonal_array.shape == v.shape
+        c[:] = self.diagonal_array*v
+        return c
+

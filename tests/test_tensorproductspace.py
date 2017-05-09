@@ -23,7 +23,7 @@ def random_like(array):
     dtype = array.dtype
     return np.random.random(shape).astype(dtype)
 
-sizes = (12, 15)
+sizes = (12, 16)
 @pytest.mark.parametrize('typecode', 'fFdD')
 @pytest.mark.parametrize('dim', (2, 3, 4))
 def test_transform(typecode, dim):
@@ -96,11 +96,13 @@ def test_transform(typecode, dim):
         F = fft.forward(U)
 
         if 1:
+            if bases[-1].N % 2 == 0:
+                F[...,-1] = 0  # Remove Nyquist before padding
             Fc = F.copy()
             V = fft.backward(F)
             F = fft.forward(V)
-            print(np.linalg.norm(F-Fc))
-            #assert allclose(F, Fc)
+            #print(np.linalg.norm(F-Fc))
+            assert allclose(F, Fc)
         else:
             fft.backward.input_array[...] = F
             fft.backward()

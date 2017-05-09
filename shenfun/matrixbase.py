@@ -258,8 +258,8 @@ class SparseMatrix(dict):
 
 
 @inheritdocstrings
-class ShenMatrix(SparseMatrix):
-    """Base class for Shen matrices
+class SpectralMatrix(SparseMatrix):
+    """Base class for inner product matrices
 
     args:
         d                            Dictionary, where keys are the diagonal
@@ -276,8 +276,8 @@ class ShenMatrix(SparseMatrix):
         scale  float                 Scale matrix with this constant
 
 
-    Shen matrices are assumed to be sparse diagonal. The matrices are
-    scalar products of trial and test functions from one of eight function
+    The matrices are assumed to be sparse diagonal. The matrices are
+    inner products of trial and test functions from one of eight function
     spaces
 
     Chebyshev basis:
@@ -344,12 +344,12 @@ class ShenMatrix(SparseMatrix):
     The matrices can be automatically created using, e.g., for the mass
     matrix of the Dirichlet space
 
-      M = ShenMatrix({}, (ShenDirichletBasis(18), 0), (ShenDirichletBasis(18), 0))
+      M = SpectralMatrix({}, (ShenDirichletBasis(18), 0), (ShenDirichletBasis(18), 0))
 
     where the first (ShenDirichletBasis(18), 0) represents the trial function and
     the second the test function. The stiffness matrix can be obtained as
 
-      A = ShenMatrix({}, (ShenDirichletBasis(18), 0), (ShenDirichletBasis(18), 2))
+      A = SpectralMatrix({}, (ShenDirichletBasis(18), 0), (ShenDirichletBasis(18), 2))
 
     where (ShenDirichletBasis(18), 2) signals that we use the second derivative
     of this trial function. The number (here 18) is the number of quadrature
@@ -413,7 +413,7 @@ class ShenMatrix(SparseMatrix):
             assert np.allclose(val, Dsp[key])
 
     def matvec(self, v, c, format='csr', axis=0):
-        c = super(ShenMatrix, self).matvec(v, c, format=format, axis=axis)
+        c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
         if self.testfunction[0].__class__.__name__ == 'ShenNeumannBasis':
             ss = [slice(None)]*len(v.shape)
             ss[axis] = 0
@@ -476,3 +476,4 @@ def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-12):
             d[-i] = l
 
     return SparseMatrix(d, M.shape)
+

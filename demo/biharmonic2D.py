@@ -94,5 +94,5 @@ plt.contourf(X[0], X[1], uq-uj)
 plt.colorbar()
 plt.title('Error')
 
-plt.show()
+#plt.show()
 

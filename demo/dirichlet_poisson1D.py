@@ -28,7 +28,8 @@ Basis = shen.bases.ShenDirichletBasis
 
 # Use sympy to compute a rhs, given an analytical solution
 x = symbols("x")
-ue = sin(np.pi*x)*(1-x**2)
+#ue = sin(np.pi*x)*(1-x**2)
+ue = (1-x**2)
 fe = ue.diff(x, 2)
 
 # Lambdify for faster evaluation
@@ -44,7 +45,8 @@ u = TrialFunction(SD)
 v = TestFunction(SD)
 
 # Get f on quad points
-fj = fl(X)
+#fj = fl(X)
+fj = np.array([fe.subs(x, j) for j in X], dtype=np.float)
 
 # Compute right hand side of Poisson equation
 f_hat = inner(v, fj)

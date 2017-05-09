@@ -11,12 +11,16 @@ class FourierBase(SpectralBase):
     """Fourier base class
     """
 
-    def __init__(self, N, padding_factor=1.):
-        SpectralBase.__init__(self, N, '', padding_factor)
+    def __init__(self, N, padding_factor=1., domain=(0, 2*np.pi)):
+        SpectralBase.__init__(self, N, '', padding_factor, domain)
 
     def points_and_weights(self, N):
-        """Return points and weights of quadrature"""
+        """Return points and weights of quadrature
+
+        """
+        a, b = self.domain
         points = np.arange(N, dtype=np.float)*2*np.pi/N
+        points = points*(b-a)/(2*np.pi) + a
         return points, np.array([2*np.pi/N])
 
     def vandermonde(self, x):
@@ -40,7 +44,7 @@ class FourierBase(SpectralBase):
 
         """
         if d > 0:
-            k = self.wavenumbers(self.N, 0)
+            k = self.wavenumbers(self.N, 0, True)
             V = V*((1j*k)**d)[np.newaxis, :]
         return V
 
@@ -91,15 +95,15 @@ class R2CBasis(FourierBase):
     """Fourier basis class for real to complex transforms
     """
 
-    def __init__(self, N, padding_factor=1., plan=False):
-        FourierBase.__init__(self, N, padding_factor)
+    def __init__(self, N, padding_factor=1., plan=False, domain=(0., 2.*np.pi)):
+        FourierBase.__init__(self, N, padding_factor, domain)
         self.N = N
         self._xfftn_fwd = pyfftw.builders.rfft
         self._xfftn_bck = pyfftw.builders.irfft
         if plan:
-            self.plan((int(np.round(padding_factor*N)),), 0, np.float, {})
+            self.plan((int(np.floor(padding_factor*N)),), 0, np.float, {})
 
-    def wavenumbers(self, N, axis=0):
+    def wavenumbers(self, N, axis=0, scaled=False):
         """Return the wavenumbermesh
 
         All dimensions, except axis, are obtained through broadcasting.
@@ -108,6 +112,9 @@ class R2CBasis(FourierBase):
         N = list(N) if np.ndim(N) else [N]
         assert self.N == N[axis]
         k = np.fft.rfftfreq(N[axis], 1./N[axis])
+        if scaled:
+            a, b = self.domain
+            k *= 2.*np.pi/(b-a)
         K = self.broadcast_to_ndims(k, len(N), axis)
         return K
 
@@ -155,8 +162,6 @@ class R2CBasis(FourierBase):
 
             output_array[:] = np.moveaxis(array, 0, self.axis)
 
-        #assert output_array is self.backward.output_array
-        #assert input_array is self.backward.input_array
         return output_array
 
     def _truncation_forward(self, padded_array, trunc_array):
@@ -171,8 +176,12 @@ class R2CBasis(FourierBase):
     def _padding_backward(self, trunc_array, padded_array):
         if self.padding_factor > 1.0+1e-8:
             padded_array.fill(0)
+            N = trunc_array.shape[self.axis]
             s = [slice(0, n) for n in trunc_array.shape]
-            padded_array[s] = trunc_array[:]
+            padded_array[s] = trunc_array[s]
+            #if self.N % 2 == 0:     # This is because some aliasing is observed with N even (not sure why yet). Solution for now is to set Nyquist frequency to zero when padding
+                #s[self.axis] = self.N//2
+                #padded_array[s] = 0.
             padded_array *= self.padding_factor
 
 
@@ -180,15 +189,15 @@ class C2CBasis(FourierBase):
     """Fourier basis class for complex to complex transforms
     """
 
-    def __init__(self, N, padding_factor=1., plan=False):
-        FourierBase.__init__(self, N, padding_factor)
+    def __init__(self, N, padding_factor=1., plan=False, domain=(0., 2.*np.pi)):
+        FourierBase.__init__(self, N, padding_factor, domain)
         self.N = N
         self._xfftn_fwd = pyfftw.builders.fft
         self._xfftn_bck = pyfftw.builders.ifft
         if plan:
-            self.plan((int(np.round(padding_factor*N)),), 0, np.complex, {})
+            self.plan((int(np.floor(padding_factor*N)),), 0, np.complex, {})
 
-    def wavenumbers(self, N, axis=0):
+    def wavenumbers(self, N, axis=0, scaled=False):
         """Return the wavenumbermesh
 
         All dimensions, except axis, are obtained through broadcasting.
@@ -197,6 +206,9 @@ class C2CBasis(FourierBase):
         N = list(N) if np.ndim(N) else [N]
         assert self.N == N[axis]
         k = np.fft.fftfreq(N[axis], 1./N[axis])
+        if scaled:
+            a, b = self.domain
+            k *= 2.*np.pi/(b-a)
         K = self.broadcast_to_ndims(k, len(N), axis)
         return K
 
@@ -230,13 +242,41 @@ class C2CBasis(FourierBase):
         assert input_array is self.backward.input_array
         return output_array
 
+    def _truncation_forward(self, padded_array, trunc_array):
+        if self.padding_factor > 1.0+1e-8:
+            trunc_array.fill(0)
+            N = trunc_array.shape[self.axis]
+            su = [slice(None)]*trunc_array.ndim
+            su[self.axis] = slice(0, N//2+1)
+            trunc_array[su] = padded_array[su]
+            su[self.axis] = slice(-(N//2), None)
+            trunc_array[su] += padded_array[su]
+            trunc_array *= (1./self.padding_factor)
 
-def FourierBasis(N, dtype, padding_factor=1., plan=False):
+    def _padding_backward(self, trunc_array, padded_array):
+        if self.padding_factor > 1.0+1e-8:
+            padded_array.fill(0)
+            N = trunc_array.shape[self.axis]
+            su = [slice(None)]*trunc_array.ndim
+            su[self.axis] = slice(0, np.ceil(N/2.).astype(np.int))
+            padded_array[su] = trunc_array[su]
+            #if N % 2 == 0:
+                #su[self.axis] = N//2
+                #padded_array[su] = 0.5*trunc_array[su]
+            su[self.axis] = slice(-(N//2), None)
+            padded_array[su] = trunc_array[su]
+            #if N % 2 == 0:
+                #su[self.axis] = -(N//2)
+                #padded_array[su] /= 2.
+            padded_array *= self.padding_factor
+
+
+def FourierBasis(N, dtype, padding_factor=1., plan=False, domain=(0., 2.*np.pi)):
     """Fourier basis"""
     dtype = np.dtype(dtype)
     if dtype.char in 'fdg':
-        return R2CBasis(N, padding_factor, plan)
+        return R2CBasis(N, padding_factor, plan, domain)
 
     else:
-        return C2CBasis(N, padding_factor, plan)
+        return C2CBasis(N, padding_factor, plan, domain)
 
