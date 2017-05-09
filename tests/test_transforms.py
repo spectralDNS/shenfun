@@ -100,6 +100,7 @@ def test_massmatrices(test, trial, quad):
     u2 = np.zeros_like(f_hat)
     u2 = BBD.matvec(f_hat, u2)
     assert np.linalg.norm(u2[s]-u0[s])/(N*N*N) < 1e-12
+    del BBD
 
 #test_massmatrices(lBasis[3], lBasis[2], 'LG')
 
@@ -379,14 +380,14 @@ def test_ABBmat(SB, quad):
     uj = ul(points)
     fj = fl(points)
 
+    f_hat = np.zeros(M)
+    f_hat = SB.scalar_product(fj, f_hat)
     if isinstance(SB, shenfun.chebyshev.bases.ChebyshevBase):
         A = inner_product((SB, 0), (SB, 2))
     else:
         A = inner_product((SB, 1), (SB, 1))
-        A *= -1.0
+        f_hat *= -1.0
 
-    f_hat = np.zeros(M)
-    f_hat = SB.scalar_product(fj, f_hat)
     u_hat = np.zeros(M)
     u_hat[:-4] = la.spsolve(A.diags(), f_hat[:-4])
     u_hat = A.solve(f_hat, u_hat)
@@ -429,4 +430,4 @@ def test_ABBmat(SB, quad):
     z0 = SB.backward(z0_hat, z0)
     assert np.allclose(z0, u0)
 
-#test_ABBmat(lbases.ShenBiharmonicBasis, 'LG')
+test_ABBmat(lbases.ShenBiharmonicBasis, 'LG')

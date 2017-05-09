@@ -525,7 +525,7 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
             return _matrix_cache[(test, trial)]
         else:
             m = mat[key](test, trial)
-            _matrix_cache[(test, trial)] = m
+            #_matrix_cache[(test, trial)] = m # Apparently not safe. Need to reconsider
         return m
 
     else:
