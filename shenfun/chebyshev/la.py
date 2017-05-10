@@ -35,7 +35,7 @@ class Helmholtz(object):
         B[2] = np.broadcast_to(B[2], A[2].shape)
         B[-2] = np.broadcast_to(B[-2], A[2].shape)
         neumann = self.neumann = isinstance(A.testfunction[0], bases.ShenNeumannBasis)
-        if local_shape is None:
+        if len(local_shape) == 1:
             N = A.shape[0]+2
             self.u0 = np.zeros(N-2, float)     # Diagonal entries of U
             self.u1 = np.zeros(N-4, float)     # Diagonal+1 entries of U
