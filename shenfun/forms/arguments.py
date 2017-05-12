@@ -1,6 +1,7 @@
 import numpy as np
 
-__all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function')
+__all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',
+           'Array')
 
 
 class Expr(object):
@@ -285,7 +286,6 @@ class Function(np.ndarray, BasisFunction):
     """
 
     # pylint: disable=too-few-public-methods,too-many-arguments
-
     def __new__(cls, space, forward_output=True, val=0, buffer=None):
 
         shape = space.forward.input_array.shape
@@ -316,9 +316,9 @@ class Function(np.ndarray, BasisFunction):
             if self.rank() == 2 and i in (0, 1, 2):
                 v0 = BasisFunction.__getitem__(self, i)
                 v1 = np.ndarray.__getitem__(self, i)
-                f0 = Function(v0.function_space(),
-                              v0.function_space().is_forward_output(v1),
-                              buffer=v1)
+                fun = v0.function_space()
+                forward = fun.is_forward_output(v1)
+                f0 = Function(fun, forward, buffer=v1)
                 f0._index = i
                 f0._argument = 2
                 return f0
@@ -337,3 +337,56 @@ class Function(np.ndarray, BasisFunction):
             self._argument = 2
             self._space = obj._space
             self._index = obj._index
+
+class Array(np.ndarray):
+    """Numpy array for TensorProductSpace
+
+    Parameters
+    ----------
+
+    space : Instance of TensorProductSpace
+    forward_output : boolean.
+        If False then create Array of shape/type for input to PFFT.forward,
+        otherwise create Array of shape/type for output from PFFT.forward
+    val : int or float
+        Value used to initialize array
+    buffer : Numpy array or Array with data. Must be of correct shape
+
+    For more information, see numpy.ndarray
+
+    Examples
+    --------
+    from mpi4py_fft import MPI
+    from shenfun.tensorproductspace import TensorProductSpace, Array
+    from shenfun.fourier.bases import R2CBasis, C2CBasis
+
+    K0 = C2CBasis(8)
+    K1 = R2CBasis(8)
+    FFT = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
+    u = Array(FFT, False)
+    uhat = Array(FFT, True)
+
+    """
+
+    # pylint: disable=too-few-public-methods,too-many-arguments
+    def __new__(cls, space, forward_output=True, val=0, buffer=None):
+
+        shape = space.forward.input_array.shape
+        dtype = space.forward.input_array.dtype
+        if forward_output is True:
+            shape = space.forward.output_array.shape
+            dtype = space.forward.output_array.dtype
+
+        ndim = space.ndim()
+        if space.rank() > 1:
+            shape = (ndim**(space.rank()-1),) + shape
+
+        obj = np.ndarray.__new__(cls,
+                                 shape,
+                                 dtype=dtype,
+                                 buffer=buffer)
+
+        if buffer is None:
+            obj.fill(val)
+        return obj
+

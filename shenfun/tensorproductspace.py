@@ -173,7 +173,7 @@ class TensorProductSpace(object):
         return 1
 
     def ndim(self):
-        return len(self)
+        return len(self.bases)
 
     def __len__(self):
         return len(self.bases)
@@ -182,7 +182,7 @@ class TensorProductSpace(object):
         return self.bases[i]
 
     def is_forward_output(self, u):
-        return (np.all(u.shape == self.forward.output_array.shape) and
+        return (u.shape == self.forward.output_array.shape and
                 u.dtype == self.forward.output_array.dtype)
 
     def as_function(self, u):
