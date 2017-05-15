@@ -24,7 +24,7 @@ fe = ue.diff(x, 2)
 # Size of discretization
 N = 32
 
-ST = FourierBasis(N, np.float, plan=True)
+ST = FourierBasis(N, np.float, plan=True, domain=(-np.pi, np.pi))
 u = TrialFunction(ST)
 v = TestFunction(ST)
 

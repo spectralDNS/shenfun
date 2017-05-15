@@ -288,15 +288,21 @@ class Function(np.ndarray, BasisFunction):
     # pylint: disable=too-few-public-methods,too-many-arguments
     def __new__(cls, space, forward_output=True, val=0, buffer=None):
 
-        shape = space.forward.input_array.shape
-        dtype = space.forward.input_array.dtype
-        if forward_output is True:
-            shape = space.forward.output_array.shape
-            dtype = space.forward.output_array.dtype
+        if isinstance(buffer, np.ndarray):
+            shape = buffer.shape
+            dtype = buffer.dtype
 
-        ndim = space.ndim()
-        if space.rank() > 1:
-            shape = (ndim**(space.rank()-1),) + shape
+        else:
+
+            shape = space.forward.input_array.shape
+            dtype = space.forward.input_array.dtype
+            if forward_output is True:
+                shape = space.forward.output_array.shape
+                dtype = space.forward.output_array.dtype
+
+            ndim = space.ndim()
+            if space.rank() > 1:
+                shape = (ndim**(space.rank()-1),) + shape
 
         obj = np.ndarray.__new__(cls,
                                  shape,
@@ -308,7 +314,8 @@ class Function(np.ndarray, BasisFunction):
         return obj
 
     def __init__(self, space, forward_output=True, val=0, buffer=None):
-        super(Function, self).__init__(space, 2)
+        #super(Function, self).__init__(space, 2)
+        BasisFunction.__init__(self, space, 2)
 
     def __getitem__(self, i):
         # If it's a vector space, then return component, otherwise just return sliced numpy array
@@ -337,6 +344,11 @@ class Function(np.ndarray, BasisFunction):
             self._argument = 2
             self._space = obj._space
             self._index = obj._index
+
+    def as_array(self):
+        fun = self.function_space()
+        return Array(fun, forward_output=fun.is_forward_output(self), buffer=self)
+
 
 class Array(np.ndarray):
     """Numpy array for TensorProductSpace
@@ -386,7 +398,24 @@ class Array(np.ndarray):
                                  dtype=dtype,
                                  buffer=buffer)
 
+        obj._space = space
         if buffer is None:
             obj.fill(val)
         return obj
+
+    def __array_finalize__(self, obj):
+        if obj is None: return
+        if hasattr(obj, '_space'):
+            self._space = obj._space
+
+    def function_space(self):
+        return self._space
+
+    def rank(self):
+        return self._space.rank()
+
+    def as_function(self):
+        space = self.function_space()
+        forward_output = space.is_forward_output(self)
+        return Function(space, forward_output=forward_output, buffer=self)
 

@@ -206,6 +206,10 @@ class MixedTensorProductSpace(object):
     def rank(self):
         raise NotImplementedError
 
+    def is_forward_output(self, u):
+        return (u[0].shape == self.forward.output_array.shape and
+                u[0].dtype == self.forward.output_array.dtype)
+
     def __getitem__(self, i):
         return self.spaces[i]
 
