@@ -5,7 +5,7 @@
 
 Description
 -----------
-Shenfun is a toolbox for automating the spectral Galerkin method.  The user interface to `shenfun` is very similar to FEniCS (fenicsproject.org), but works only for tensor product grids and the spectral Galerking method. The code is parallelized with MPI through the *mpi4py-fft* package (https://bitbucket.org/mpi4py/mpi4py-fft).
+Shenfun is a toolbox for automating the spectral Galerkin method.  The user interface to `shenfun` is very similar to FEniCS (fenicsproject.org), but works only for tensor product grids and the spectral Galerking method. The code is parallelized with MPI through the [*mpi4py-fft*](https://bitbucket.org/mpi4py/mpi4py-fft) package.
 
 The spectral Galerkin method uses the method of weighted residuals, and solves PDEs by first creating variational forms from inner products, 
 <p align="center">
@@ -13,13 +13,15 @@ The spectral Galerkin method uses the method of weighted residuals, and solves P
 </p>
 <p align="center">
 
-where _u_ is a trial function, _v_ a test function (overline indicates a complex conjugate), and _w_ is a weight function. The bold _**x**_ represents (x,y,z) for a 3D inner product, but *shenfun* may be used for any number of dimensions. For example, for the Poisson equation 
+where _omega_ is the computational domain, _u_ is a trial function, _v_ a test function (overline indicates a complex conjugate), and _w_ is a weight function. The bold _**x**_ represents (x,y,z) for a 3D inner product, but *shenfun* may be used for any number of dimensions. 
+
+Consider the Poisson equation 
 <p align="center">
     <img src="https://www.dropbox.com/s/vrvkin9dsw7bq57/poisson_3D_2.png?dl=1" alt="Poisson equation"/>
 </p>
 <p align="center">
 
-we obtain the variational form by multiplying with _vw_ and integrating over the domain
+We obtain a variational form by multiplying with _vw_ and integrating over the domain
 
 <p align="center">
     <img src="https://www.dropbox.com/s/c7zbebj6n9r426q/poisson_3D_var.png?dl=1" alt="Poisson equation variational form"/>
@@ -39,12 +41,12 @@ With *shenfun* a user chooses the appropriate bases for each dimension of the pr
    B2 = fourier.R2CBasis(N(2))
    V = TensorProductSpace(comm, (B0, B1, B2))
 ```
-The tensor product space `V` will be distributed with the *pencil* method and it can here use a maximum of 14*9 CPUs. 
+where `C2CBasis` is a Fourier basis for complex-to-complex transforms, whereas `R2CBasis` is actually the same Fourier basis, but it is used on real input data, and as such it performs real-to-complex transforms. The tensor product space `V` will be distributed with the *pencil* method and it can here use a maximum of 14*9 CPUs. 
 
 To solve a Poisson problem with the above triply periodic tensor product space, one may assemble the coefficient matrix as
 
 ```python
-   from shenfun import TestFunction, TrialFunction
+   from shenfun import TestFunction, TrialFunction, inner, div, grad
    
    u = TrialFunction(V)
    v = TestFunction(V)
@@ -57,11 +59,12 @@ or similarly using integration by parts
 ```
 Note the similarity with FEniCS, and the similarity between code and mathematical problem.
 
-To solve, we need to first assemble a right hand side, for example a random function
+To solve the Poisson equation, we need to first assemble a right hand side, for example a random function
 
 ```python
     import numpy as np
     from shenfun import Function
+    
     f = Function(V)
     f[:] = np.random.random(f.shape)
     f_hat = inner(f, v)
@@ -79,7 +82,7 @@ or in-place using
 
     python setup.py build_ext --inplace
 
-*shenfun* depends on two other modules, one in the [spectralDNS](https://github.com/spectralDNS) organization [mpiFFT4py](https://github.com/spectralDNS/mpiFFT4py) and [mpi4py-fft](https://bitbucket.org/mpi4py/mpi4py-fft). Other than that, it requires [*cython*](http://cython.org), which is used to optimize a few routines and [*pyFFTW*](https://github.com/pyFFTW/pyFFTW). However, since *pyFFTW* is very slow at incorporating new pull requests, you currently need to use the fork by [David Wells](https://github.com/drwells/pyFFTW/tree/r2r-try-two) for fast discrete cosine transforms.
+*shenfun* depends on [mpiFFT4py](https://github.com/spectralDNS/mpiFFT4py) and [mpi4py-fft](https://bitbucket.org/mpi4py/mpi4py-fft). Other than that, it requires [*cython*](http://cython.org), which is used to optimize a few routines and [*pyFFTW*](https://github.com/pyFFTW/pyFFTW) for serial fast Fourier transforms. However, since *pyFFTW* is very slow at incorporating new pull requests, you currently need to use the fork by [David Wells](https://github.com/drwells/pyFFTW/tree/r2r-try-two) for fast discrete cosine transforms.
 
 Probably the easiest installation is achieved though Anaconda, where also the correct dependencies will be pulled in. From the top directory build it with
 
