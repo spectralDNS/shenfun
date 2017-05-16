@@ -87,7 +87,7 @@ or in-place using
 Probably the easiest installation is achieved though Anaconda, where also the correct dependencies will be pulled in. From the top directory build it with
 
     conda build -c conda-forge -c spectralDNS conf/conda
-    conda install shenfun --use-local
+    conda install -c conda-forge -c spectralDNS shenfun --use-local
 
 You may also use precompiled binaries in the [*spectralDNS*](https://anaconda.org/spectralDNS) channel on Anaconda cloud. Use for exampel
 
