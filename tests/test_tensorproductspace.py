@@ -23,7 +23,7 @@ def random_like(array):
     dtype = array.dtype
     return np.random.random(shape).astype(dtype)
 
-sizes = (12, 16)
+sizes = (12, 17)
 @pytest.mark.parametrize('typecode', 'fFdD')
 @pytest.mark.parametrize('dim', (2, 3, 4))
 def test_transform(typecode, dim):
@@ -305,7 +305,7 @@ def test_project2(typecode, dim, ST, quad):
 
 if __name__ == '__main__':
     #test_transform('f', 3)
-    #test_transform('d', 3)
+    test_transform('d', 3)
     #test_shentransform('d', 2, cbases.ShenNeumannBasis, 'GC')
-    test_project('d', 2, cbases.ShenDirichletBasis, 'GL')
-    test_project2('D', 2, lbases.ShenNeumannBasis, 'GL')
+    #test_project('d', 2, cbases.ShenDirichletBasis, 'GL')
+    #test_project2('D', 2, lbases.ShenNeumannBasis, 'GL')

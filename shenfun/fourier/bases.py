@@ -57,13 +57,12 @@ class FourierBase(SpectralBase):
         return mat
 
     def apply_inverse_mass(self, array):
-        """Apply inverse mass, which is identity for Fourier basis
+        """Apply inverse mass, which is 2pi*identity for Fourier basis
 
         args:
             array   (input/output)    Expansion coefficients
 
         """
-        #assert array is self.xfftn_fwd.output_array
         array *= (0.5/np.pi)
         return array
 
@@ -251,6 +250,7 @@ class C2CBasis(FourierBase):
             trunc_array[su] = padded_array[su]
             su[self.axis] = slice(-(N//2), None)
             trunc_array[su] += padded_array[su]
+            #trunc_array[su] = padded_array[su]
             trunc_array *= (1./self.padding_factor)
 
     def _padding_backward(self, trunc_array, padded_array):
@@ -263,6 +263,7 @@ class C2CBasis(FourierBase):
             #if N % 2 == 0:
                 #su[self.axis] = N//2
                 #padded_array[su] = 0.5*trunc_array[su]
+
             su[self.axis] = slice(-(N//2), None)
             padded_array[su] = trunc_array[su]
             #if N % 2 == 0:
