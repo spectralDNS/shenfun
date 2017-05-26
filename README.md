@@ -202,16 +202,19 @@ The `SD` class can also be used to compute the scalar product of an array
     >>> fs = SD.scalar_product(fj, fs)
 ```
 
-The bases can also be used to assemble inner products of bilinear forms, like the mass matrix
+which can also be achieved with the `inner` method, using the `TestFunction` class
 
 ```python
-    >>> from shenfun import inner_product
-    >>> mass = inner_product((SD, 0), (SD, 0))
+    >>> from shenfun import inner, TestFunction
+    >>> v = TestFunction(SD)
+    >>> fs = inner(v, fj)
 ```
 
-This `mass` matrix will be the same as Eq. (2.5) of JS1:
+A `mass` matrix can be assembled with
 
 ```python
+    >>> u = TrialFunction(SD)
+    >>> mass = inner(v, u)
     >>> mass
     {-2: array([-1.57079633]),
       0: array([ 4.71238898,  3.14159265,  3.14159265,  3.14159265,  3.14159265, 3.14159265]),
@@ -223,10 +226,8 @@ You may notice that `mass` takes advantage of the fact that two diagonals are co
 The `inner_product` may be used to compute any bilinear form. For example the stiffness matrix `K`
 
 ```python
-    >>> K = inner_product((SD, 0), (SD, 2))
+    >>> K = inner(v, div(grad(u)))
 ```
-Note that the `inner_product` takes as arguments two bases, where the first represents the test function and the matrix row, whereas the second represents the trial function and the matrix column. The integer in the tuples determines how many times the basis is differentiated.
-
 Square matrices have implemented a solve method that is using fast direct LU decomposition or similar (TDMA/PDMA). For example, to solve the linear system `Ku=b`
 
 ```python
