@@ -163,7 +163,9 @@ class Expr(object):
         return self
 
     def __add__(self, a):
-        assert isinstance(a, Expr)
+        assert isinstance(a, (Expr, BasisFunction))
+        if not isinstance(a, Expr):
+            a = Expr(a)
         assert self.num_components() == a.num_components()
         assert self.function_space() == a.function_space()
         assert self.argument() == a.argument()
@@ -173,7 +175,9 @@ class Expr(object):
                     np.concatenate((self.indices(), a.indices()), axis=1))
 
     def __iadd__(self, a):
-        assert isinstance(a, Expr)
+        assert isinstance(a, (Expr, BasisFunction))
+        if not isinstance(a, Expr):
+            a = Expr(a)
         assert self.num_components() == a.num_components()
         assert self.function_space() == a.function_space()
         assert self.argument() == a.argument()
@@ -183,7 +187,9 @@ class Expr(object):
         return self
 
     def __sub__(self, a):
-        assert isinstance(a, Expr)
+        assert isinstance(a, (Expr, BasisFunction))
+        if not isinstance(a, Expr):
+            a = Expr(a)
         assert self.num_components() == a.num_components()
         assert self.function_space() == a.function_space()
         assert self.argument() == a.argument()
@@ -193,7 +199,9 @@ class Expr(object):
                     np.concatenate((self.indices(), a.indices()), axis=1))
 
     def __isub__(self, a):
-        assert isinstance(a, Expr)
+        assert isinstance(a, (Expr, BasisFunction))
+        if not isinstance(a, Expr):
+            a = Expr(a)
         assert self.num_components() == a.num_components()
         assert self.function_space() == a.function_space()
         assert self.argument() == a.argument()
