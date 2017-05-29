@@ -23,7 +23,7 @@ def random_like(array):
     dtype = array.dtype
     return np.random.random(shape).astype(dtype)
 
-sizes = (12, 17)
+sizes = (12, 13)
 @pytest.mark.parametrize('typecode', 'fFdD')
 @pytest.mark.parametrize('dim', (2, 3, 4))
 def test_transform(typecode, dim):
