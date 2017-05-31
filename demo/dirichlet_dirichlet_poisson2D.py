@@ -29,8 +29,7 @@ from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
 
-# Collect basis and solver from either Chebyshev or Legendre submodules
-basis = sys.argv[-1] if len(sys.argv) == 2 else 'chebyshev'
+basis = 'legendre'
 shen = importlib.import_module('.'.join(('shenfun', basis)))
 Basis = shen.bases.ShenDirichletBasis
 Solver = shen.la.Helmholtz_2dirichlet
@@ -54,23 +53,14 @@ X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, e
 u = TrialFunction(T)
 v = TestFunction(T)
 
-pencilA = T.forward.output_pencil
-pencilB = pencilA.pencil(1)
-transAB = pencilA.transfer(pencilB, 'd')
-
 # Get f on quad points
 fj = fl(*X)
 
 # Compute right hand side of Poisson equation
-f_hat = inner(v, fj)
-if basis == 'legendre':
-    f_hat *= -1.
+f_hat = inner(v, -fj)
 
 # Get left hand side of Poisson equation
-if basis == 'chebyshev':
-    matrices = inner(v, div(grad(u)))
-else:
-    matrices = inner(grad(v), grad(u))
+matrices = inner(grad(v), grad(u))
 
 # Create Helmholtz linear algebra solver
 H = Solver(T, matrices)

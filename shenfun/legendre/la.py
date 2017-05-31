@@ -210,7 +210,6 @@ class Helmholtz_2dirichlet(object):
         pencilB = pencilA.pencil(1)
         self.transAB = pencilA.transfer(pencilB, 'd')
         self.v_hat = np.zeros(self.transAB.subshapeB)
-        print(pencilA.shape, pencilA.subshape)
 
     def __call__(self, u, b):
         s = self.T.local_slice()
