@@ -161,7 +161,7 @@ class Biharmonic(object):
 
 
 class Helmholtz_2dirichlet(object):
-    """Helmholtz solver with variable coefficient
+    """Helmholtz solver for 2-dimensional problems with 2 Dirichlet bases.
 
     """
 
