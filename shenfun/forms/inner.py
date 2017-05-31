@@ -3,7 +3,7 @@ import six
 from shenfun.fourier import FourierBase
 from shenfun.spectralbase import inner_product
 from shenfun.la import DiagonalMatrix
-from .arguments import Expr, TestFunction, TrialFunction, Function, BasisFunction
+from .arguments import Expr, TestFunction, TrialFunction, Function, BasisFunction, Array
 
 __all__ = ('inner', 'project')
 
@@ -20,15 +20,15 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                                       matrix is returned
 
                                       If one of expr0/expr1 is a test function
-                                      and the other one is a Function, then a
-                                      linear form is assumed and an assembled
-                                      vector is returned
+                                      and the other one is a Function/Array,
+                                      then a linear form is assumed and an
+                                      assembled vector is returned
 
     kwargs:
         output_array  Numpy array     Optional return array for linear form.
 
-        uh_hat                        The transform of the Function used for
-                                      linear forms.
+        uh_hat                        The transform of the Function/Array used
+                                      for linear forms.
 
     Example:
         Compute mass matrix of Shen's Chebyshev Dirichlet basis:
@@ -62,8 +62,6 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                 raise RuntimeError
 
     if expr0.rank() + expr1.rank() > 2: # For vector spaces of rank 2 use recursive algorithm
-        #assert expr0.expr_rank() == 2
-        #assert expr1.expr_rank() == 2
         ndim = expr0.function_space().ndim()
 
         t0 = expr0.argument()
@@ -81,12 +79,12 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
 
         uh = uh_hat
         if uh is None and trial.argument() == 2:
-            uh = Function(trial.function_space(), forward_output=True)
+            uh = Array(trial.function_space(), forward_output=True)
             basis = trial if isinstance(trial, np.ndarray) else trial.basis()
             uh = trial.function_space().forward(basis, uh)
 
         if output_array is None and trial.argument() == 2:
-            output_array = Function(test.function_space())
+            output_array = Array(test.function_space())
 
         if trial.argument() == 2:
             # linear form
@@ -152,11 +150,11 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
 
     uh = uh_hat
     if uh is None and trial.argument() == 2:
-        uh = Function(trialspace, forward_output=True)
+        uh = Array(trialspace, forward_output=True)
         uh = trialspace.forward(trial.basis(), uh)
 
     if output_array is None and trial.argument() == 2:
-        output_array = Function(trial.function_space())
+        output_array = Array(trial.function_space())
 
     A = []
     S = []
@@ -173,6 +171,52 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                     A[-1].append(AA)
         vec += 1
 
+    # At this point A contains all matrices of the form. The length of A is
+    # the number of inner products. For each index into A there are ndim 1D
+    # inner products along, e.g., x, y and z-directions, or just x, y for 2D.
+    # The ndim matrices are multiplied with each other, and diagonal matrices
+    # can be eliminated and put in a scale array for the non-diagonal matrices
+    # E.g. (v, div(grad(u))) in 2D
+    #
+    # Here A = [[(v[0], u[0]'')_x, (v[1], u[1])_y,
+    #            (v[0], u[0])_x, (v[1], u[1]'')_y ]]
+    #
+    # where v[0], v[1] are the test functions in x- and y-directions, respectively
+    # For example, v[0] could be a ShenDirichletBasis and v[1] could be a
+    # FourierBasis. Same for u.
+    #
+    # There are now two possibilities, either a linear or a bilinear form.
+    # A linear form has trial.argument() == 2, whereas a bilinear form has
+    # trial.argument() == 1. A linear form should assemble to an array and
+    # return this array. A bilinear form, on the other hand, should return
+    # matrices. Which matrices, and how many, will of course depend on the
+    # form and the number of terms.
+    #
+    # Considering again the tensor product space with ShenDirichlet and Fourier,
+    # the list A will contain matrices as shown above. If Fourier is associated
+    # with index 1, then (v[1], u[1])_y and (v[1], u[1]'')_y will be diagonal
+    # whereas (v[0], u[0]'')_x and (v[0], u[0])_x will in general not. These
+    # two matrices are usually termed the stiffness and mass matrices, and they
+    # have been implemented in chebyshev/matrices.py or legendre/matrices.py,
+    # where they are called ADDmat and BDDmat, respectively.
+    #
+    # The inner product will return a dictionary of a type constructed from the
+    # matrices in A. In this case:
+    #
+    # B = (v[0], u[0]'')_x
+    # B.scale = (v[1], u[1])_y[local_shape]
+    # B.axis = 0
+    # C = (v[0], u[0])_x
+    # C.scale = (v[1], u[1])_y[local_shape]
+    # C.axis = 0
+    # return {'ADDmat': B,
+    #         'BDDmat': C}
+    #
+    # where the name 'ADDmat' is obtained from B.get_key()
+    #
+    # where local_shape is used to indicate that we are only returning the local
+    # values of the scale arrays.
+
     # Strip off diagonal matrices, put contribution in scale array
     B = []
     for sc, matrices in zip(S, A):
@@ -180,7 +224,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
         nonperiodic = {}
         for axis, mat in enumerate(matrices):
             if isinstance(space[axis], FourierBase):
-                mat = mat[0]
+                mat = mat[0]    # get diagonal
                 if np.ndim(mat):
                     mat = space[axis].broadcast_to_ndims(mat, space.ndim(), axis)
 
@@ -208,7 +252,12 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
             nonperiodic['scale'] = scale
             B.append(nonperiodic)
 
-    # Get local matrices
+    # At this point assembled matrices are in the B list. One item per term, same
+    # as A. However, now the Fourier matrices have been contracted into the Numpy
+    # array 'scale', of shape determined by decomposition.
+    # The final step here is to add equal matrices together, and to compute the
+    # output for linear forms.
+
     if np.all([isinstance(b, np.ndarray) for b in B]):
 
         # All Fourier
@@ -229,7 +278,6 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                 return DiagonalMatrix(diagonal_array)
 
             else:
-                #from IPython import embed; embed()
                 if uh.rank() == 2:
                     for i, b in enumerate(B):
                         output_array += b*uh[trial_indices[0, i]]
@@ -242,17 +290,12 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
 
                 return output_array
 
-    else:
+    elif np.all([len(f) == 2 for f in B]):
+        # Only one nonperiodic direction
 
-        # For now only allow one nonperiodic direction
-        assert np.all([len(f) == 2 for f in B])
-        if space.ndim() > 1:
-            for axis, sp in enumerate(space):
-                if not isinstance(sp, FourierBase):
-                    npaxis = axis
-        else:
-            npaxis = 0
+        npaxis = [b for b in B[0].keys() if isinstance(b, int)][0]
 
+        # 1D case for itself, because it is simpler
         if space.ndim() == 1:
             if trial.argument() == 1:
                 b = B[0][npaxis]
@@ -265,7 +308,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                 output_array *= mat.scale
                 return output_array
 
-        if trial.argument() == 1:
+        if trial.argument() == 1:  # bilinear form
             b = B[0][npaxis]
             b.scale = B[0]['scale']
             C = {b.get_key(): b}
@@ -283,21 +326,60 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
             else:
                 return C
 
-        else:
-
+        else: # linear form
             for i, bb in enumerate(B):
                 b = bb[npaxis]
                 b.scale = bb['scale']
                 if uh.rank() == 2:
-                    wh = Function(trialspace[i], forward_output=True)
+                    sp = uh.function_space()
+                    wh = Array(sp[npaxis], forward_output=True)
                     wh = b.matvec(uh[trial_indices[0, i]], wh, axis=b.axis)
+
                 else:
-                    wh = Function(trialspace, forward_output=True)
+                    wh = Array(trialspace, forward_output=True)
                     wh = b.matvec(uh, wh, axis=b.axis)
                 output_array += wh*b.scale
 
             return output_array
 
+    elif np.all([len(f) == 3 for f in B]):
+        # Two nonperiodic directions
+
+        npaxes = [b for b in B[0].keys() if isinstance(b, int)]
+
+        if trial.argument() == 1:  # bilinear form
+            C = {npaxis: {} for npaxis in npaxes}
+            for npaxis in npaxes:
+                b = B[0][npaxis]
+                b.scale = B[0]['scale']
+                C[npaxis][b.get_key()] = b
+                for bb in B[1:]:
+                    b = bb[npaxis]
+                    b.scale = bb['scale']
+                    name = b.get_key()
+                    if name in C[npaxis]:
+                        C[npaxis][name].scale = C[npaxis][name].scale + b.scale
+                    else:
+                        C[npaxis][name] = b
+
+            return C
+
+        else: # linear form
+
+            for npaxis in npaxes:
+                for i, bb in enumerate(B):
+                    b = bb[npaxis]
+                    b.scale = bb['scale']
+                    if uh.rank() == 2:
+                        sp = uh.function_space()
+                        wh = Array(sp[npaxis], forward_output=True)
+                        wh = b.matvec(uh[trial_indices[0, i]], wh, axis=b.axis)
+                    else:
+                        wh = Array(trialspace, forward_output=True)
+                        wh = b.matvec(uh, wh, axis=b.axis)
+                    output_array += wh*b.scale
+
+            return output_array
 
 
 def project(uh, T, output_array=None, uh_hat=None):
@@ -338,7 +420,7 @@ def project(uh, T, output_array=None, uh_hat=None):
     assert isinstance(uh, (Expr, BasisFunction))
 
     if output_array is None:
-        output_array = Function(T)
+        output_array = Array(T)
 
     if isinstance(uh, np.ndarray):
         # Just regular forward transform

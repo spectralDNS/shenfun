@@ -1,5 +1,6 @@
 import numpy as np
 from shenfun.optimization import la
+import scipy.linalg as scipy_la
 from . import bases
 
 class Helmholtz(object):
@@ -157,4 +158,77 @@ class Biharmonic(object):
                                 #self.B[-4], self.B[-2], self.B[0], self.B[2], self.B[4])
         #return c
 
+
+
+class Helmholtz_2dirichlet(object):
+    """Helmholtz solver with variable coefficient
+
+    """
+
+    def __init__(self, T, kwargs):
+
+        self.T = T
+        if len(kwargs) == 2:
+            npaxes = list(kwargs.keys())
+
+            A = kwargs[npaxes[0]]['ADDmat']
+            B = kwargs[npaxes[0]]['BDDmat']
+
+            A0 = kwargs[npaxes[1]]['ADDmat']
+            B0 = kwargs[npaxes[1]]['BDDmat']
+
+            A_scale = A.scale
+            B_scale = B.scale
+            A0_scale = A0.scale
+            B0_scale = B0.scale
+
+        elif len(args) == 8:
+            A = args[0]
+            B = args[1]
+            A_scale = args[2]
+            B_scale = args[3]
+            A0 = args[4]
+            B0 = args[5]
+            A0_scale = args[6]
+            B0_scale = args[7]
+
+        else:
+            raise RuntimeError('Wrong input to Helmholtz solver')
+
+        # A and A0 are the same matrices if dimensions are equal
+        # Assume this to be true for now
+        assert A.testfunction[0].N == A0.testfunction[0].N
+        assert B.testfunction[0].N == B0.testfunction[0].N
+
+        self.V = np.zeros((A.testfunction[0].N, A.testfunction[0].N))
+        self.lmbda = np.ones(A.testfunction[0].N)
+        s = self.s = A.testfunction[0].slice()
+        self.lmbda[s], self.V[s, s] = scipy_la.eigh(A.diags().toarray(), B.diags().toarray())
+
+        # Create transfer object to realign data in y-direction
+        pencilA = T.forward.output_pencil
+        pencilB = pencilA.pencil(1)
+        self.transAB = pencilA.transfer(pencilB, 'd')
+        self.v_hat = np.zeros(self.transAB.subshapeB)
+        print(pencilA.shape, pencilA.subshape)
+
+    def __call__(self, u, b):
+        s = self.T.local_slice()
+
+        # Map the right hand side to eigen space
+        u[:] = (self.V.T).dot(b)
+        self.transAB.forward(u, self.v_hat)
+        self.v_hat[:] = self.v_hat.dot(self.V)
+        self.transAB.backward(self.v_hat, u)
+
+        # Apply the inverse in eigen space
+        u /= (self.lmbda[:, np.newaxis] + self.lmbda[np.newaxis, :])[s]
+
+        # Map back to physical space
+        u[:] = self.V.dot(u)
+        self.transAB.forward(u, self.v_hat)
+        self.v_hat[:] = self.v_hat.dot(self.V.T)
+        self.transAB.backward(self.v_hat, u)
+
+        return u
 

@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from mpi4py import MPI
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    TensorProductSpace
+    TensorProductSpace, Array
 
 comm = MPI.COMM_WORLD
 
@@ -45,13 +45,13 @@ v = TestFunction(T)
 #Tp = T
 
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
-U = Function(T, False)
-Up = Function(Tp, False)
-dU = Function(T)
-U_hat = Function(T)
-U_hat0 = Function(T)
-U_hat1 = Function(T)
-w0 = Function(T)
+U = Array(T, False)
+Up = Array(Tp, False)
+dU = Array(T)
+U_hat = Array(T)
+U_hat0 = Array(T)
+U_hat1 = Array(T)
+w0 = Array(T)
 a = [1./6., 1./3., 1./3., 1./6.]         # Runge-Kutta parameter
 b = [0.5, 0.5, 1.]                       # Runge-Kutta parameter
 

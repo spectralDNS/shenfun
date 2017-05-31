@@ -241,6 +241,32 @@ class BasisFunction(object):
         t0 = BasisFunction(self._space[i], self._argument, i)
         return t0
 
+    def __mul__(self, a):
+        b = Expr(self)
+        return b*a
+
+    def __rmul__(self, a):
+        return self.__mul__(a)
+
+    def __imul__(self, a):
+        raise RuntimeError
+
+    def __add__(self, a):
+        assert isinstance(a, (Expr, BasisFunction))
+        b = Expr(self)
+        return b+a
+
+    def __iadd__(self, a):
+        raise RuntimeError
+
+    def __sub__(self, a):
+        assert isinstance(a, (Expr, BasisFunction))
+        b = Expr(self)
+        return b-a
+
+    def __isub__(self, a):
+        raise RuntimeError
+
 
 class TestFunction(BasisFunction):
 

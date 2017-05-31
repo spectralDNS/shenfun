@@ -38,7 +38,7 @@ Solver = shen.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y, z = symbols("x,y,z")
-ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-x**2)
+ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-y**2)
 fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
 
 # Lambdify for faster evaluation
@@ -51,7 +51,7 @@ N = (32, 32, 32)
 SD = Basis(N[0])
 K1 = C2CBasis(N[1])
 K2 = R2CBasis(N[2])
-T = TensorProductSpace(comm, (SD, K1, K2))
+T = TensorProductSpace(comm, (K1, SD, K2), axes=(1,0,2))
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)
 v = TestFunction(T)
@@ -100,4 +100,53 @@ plt.colorbar()
 plt.title('Error')
 
 #plt.show()
+
+from shenfun import VectorTensorProductSpace, curl, project, Expr
+B = shen.bases.Basis(N[0])
+TT = TensorProductSpace(comm, (K1, B, K2), axes=(1,0,2))
+
+Tk = VectorTensorProductSpace([TT]*3)
+v = TestFunction(Tk)
+#u_ = Function(Tk, False)
+#u_[:] = np.random.random(u_.shape)
+#u_hat = Function(Tk)
+#u_hat = Tk.forward(u_, u_hat)
+#w_hat = inner(v, curl(u_), uh_hat=u_hat)
+
+#u0 = u_[0]
+#inner(v, u_)
+
+uq = T.as_function(uq)
+du_hat = Function(Tk)
+f_hat = T.as_function(f_hat)
+du_hat = project(grad(uq), Tk, output_array=du_hat, uh_hat=f_hat)
+du = Function(Tk, False)
+du = Tk.backward(du_hat, du)
+
+dux = ue.diff(x, 1)
+duxl = lambdify((x, y, z), dux, 'numpy')
+duxj = duxl(*X)
+duy = ue.diff(y, 1)
+duyl = lambdify((x, y, z), duy, 'numpy')
+duyj = duyl(*X)
+duz = ue.diff(z, 1)
+duzl = lambdify((x, y, z), duz, 'numpy')
+duzj = duzl(*X)
+
+
+plt.figure()
+plt.contourf(X[0][:,:,0], X[1][:,:,0], du[0, :, :, 0])
+plt.colorbar()
+
+#plt.show()
+assert np.allclose(duxj, du[0])
+assert np.allclose(duyj, du[1])
+assert np.allclose(duzj, du[2])
+
+vq = Function(Tk, False)
+vq[:] = np.random.random(vq.shape)
+vq_hat = Function(Tk)
+vq_hat = Tk.forward(vq, vq_hat)
+dv_hat = Function(Tk)
+dv_hat = project(Expr(3*vq), Tk, output_array=dv_hat, uh_hat=vq_hat)
 

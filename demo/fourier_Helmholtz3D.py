@@ -47,7 +47,7 @@ fj = fl(*X)
 f_hat = inner(v, fj)
 
 # Solve Poisson equation
-A = inner(v, div(grad(u))+u)
+A = inner(v, u+div(grad(u)))
 f_hat = A.solve(f_hat)
 
 print(fj.shape, f_hat.shape)
