@@ -182,16 +182,6 @@ class Helmholtz_2dirichlet(object):
             A0_scale = A0.scale
             B0_scale = B0.scale
 
-        elif len(args) == 8:
-            A = args[0]
-            B = args[1]
-            A_scale = args[2]
-            B_scale = args[3]
-            A0 = args[4]
-            B0 = args[5]
-            A0_scale = args[6]
-            B0_scale = args[7]
-
         else:
             raise RuntimeError('Wrong input to Helmholtz solver')
 
