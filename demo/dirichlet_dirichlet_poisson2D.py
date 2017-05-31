@@ -1,19 +1,13 @@
 r"""
-Solve Poisson equation in 2D with periodic bcs in one direction
-and homogeneous Dirichlet in the other
+Solve Poisson equation in 2D with homogeneous Dirichlet boundary conditions
 
     \nabla^2 u = f,
 
-Use Fourier basis for the periodic direction and Shen's Dirichlet basis for the
-non-periodic direction.
+Use Shen's Legendre Dirichlet basis
 
-The equation to solve for the Legendre basis is
+The equation to solve is
 
      (\nabla u, \nabla v) = -(f, v)
-
-whereas for Chebyshev we solve
-
-     (\nabla^2 u, v) = (f, v)
 
 """
 import sys
@@ -49,7 +43,7 @@ N = (32, 32)
 SD0 = Basis(N[0])
 SD1 = Basis(N[1])
 T = TensorProductSpace(comm, (SD0, SD1), axes=(0, 1))
-X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
+X = T.local_mesh(True)
 u = TrialFunction(T)
 v = TestFunction(T)
 
@@ -74,7 +68,7 @@ uq = T.backward(u_hat, uq)
 # Compare with analytical solution
 uj = ul(*X)
 print(abs(uj-uq).max())
-#assert np.allclose(uj, uq)
+assert np.allclose(uj, uq)
 
 plt.figure()
 plt.contourf(X[0], X[1], uq)
