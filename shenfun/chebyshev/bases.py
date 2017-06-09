@@ -301,10 +301,13 @@ class ShenDirichletBasis(ChebyshevBase):
 
     """
 
-    def __init__(self, N=0, quad="GC", bc=(0., 0.), plan=False):
-        ChebyshevBase.__init__(self, N, quad)
+    def __init__(self, N=0, quad="GC", bc=(0., 0.), plan=False,
+                 domain=(-1., 1.), scaled=False):
+        ChebyshevBase.__init__(self, N, quad, domain=domain)
         self.bc = bc
         self.CT = Basis(N, quad, plan=plan)
+        self._scaled = scaled
+        self._factor = np.ones(1)
         if plan:
             self.plan(N, 0, np.float, {})
 
@@ -368,7 +371,6 @@ class ShenDirichletBasis(ChebyshevBase):
         output[s] -= np.pi/2*(self.bc[0] + self.bc[1])
         s[self.axis] = 1
         output[s] -= np.pi/4*(self.bc[0] - self.bc[1])
-        assert output is self.forward.output_array
 
         self.apply_inverse_mass(output)
         s[self.axis] = -2

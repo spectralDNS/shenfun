@@ -39,7 +39,7 @@ BiharmonicSolver = shen.la.Biharmonic
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y = symbols("x,y")
-ue = (sin(4*np.pi*x)*cos(4*y))*(1-x**2)
+ue = (sin(4*np.pi*y)*cos(4*x))*(1-y**2)
 fe = ue.diff(x, 4) + ue.diff(y, 4) + 2*ue.diff(x, 2, y, 2)
 
 # Lambdify for faster evaluation
@@ -51,7 +51,7 @@ N = (64, 64)
 
 SD = BiharmonicBasis(N[0])
 K1 = R2CBasis(N[1])
-T = TensorProductSpace(comm, (SD, K1))
+T = TensorProductSpace(comm, (K1, SD), axes=(1, 0))
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)
 v = TestFunction(T)

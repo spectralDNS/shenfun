@@ -1,6 +1,8 @@
 import numpy as np
+from copy import copy
 from shenfun.optimization import la
 import scipy.linalg as scipy_la
+import scipy.sparse.linalg as sparse_la
 from . import bases
 
 class Helmholtz(object):
@@ -32,32 +34,28 @@ class Helmholtz(object):
         else:
             raise RuntimeError('Wrong input to Helmholtz solver')
 
-        local_shape = A.testfunction[0].forward.input_array.shape
         self.s = A.testfunction[0].slice()
-        if local_shape is None:
-            M = A[0].shape[0]
-            self.d0 = A[0]*A_scale + B[0]*B_scale
-            self.d1 = B[2]*B_scale
-            self.L = np.zeros_like(self.d1)
-            la.TDMA_SymLU(self.d0, self.d1, self.L)
 
-        else:
+        if np.ndim(B_scale) > 1:
+            shape = list(B_scale.shape)
             self.axis = A.axis
-            shape = list(local_shape)
             shape[A.axis] = A.shape[0]
             self.d0 = np.zeros(shape)
             shape[A.axis] = A.shape[0]-2
             self.d1 = np.zeros(shape)
             self.L = np.zeros(shape)
 
-            if len(local_shape) == 2:
+            if len(shape) == 2:
                 if (isinstance(A.testfunction[0], bases.ShenNeumannBasis) and
                     B_scale[0, 0] == 0):
                     B_scale[0, 0] = 1.
-                la.TDMA_SymLU_2D(A, B, A.axis, A_scale[0, 0], B_scale,self. d0,
+                if isinstance(A[0], (int, np.integer)):
+                    A[0] = np.ones(A.shape[0])
+
+                la.TDMA_SymLU_2D(A, B, A.axis, A_scale[0, 0], B_scale, self.d0,
                                  self.d1, self.L)
 
-            elif len(local_shape) == 3:
+            elif len(shape) == 3:
                 if (isinstance(A.testfunction[0], bases.ShenNeumannBasis) and
                     B_scale[0, 0, 0] == 0):
                     B_scale[0, 0, 0] = 1.
@@ -67,6 +65,13 @@ class Helmholtz(object):
 
             else:
                 raise NotImplementedError
+
+        else:
+            self.d0 = A[0]*A_scale + B[0]*B_scale
+            self.d1 = B[2]*B_scale
+            self.L = np.zeros_like(self.d1)
+            la.TDMA_SymLU(self.d0, self.d1, self.L)
+
 
     def __call__(self, u, b):
         ss = [slice(None)]*np.ndim(u)
@@ -113,16 +118,15 @@ class Biharmonic(object):
         else:
             raise RuntimeError('Wrong input to Biharmonic solver')
 
-        local_shape = A.testfunction[0].forward.input_array.shape
         if np.ndim(B_scale) > 1:
+            shape = list(B_scale.shape)
             self.axis = S.axis
-            ss = list(local_shape)
-            ss[S.axis] = S[0].shape[0]
-            self.d0 = np.zeros(ss)
-            ss[S.axis] = A[2].shape[0]
-            self.d1 = np.zeros(ss)
-            ss[S.axis] = B[4].shape[0]
-            self.d2 = np.zeros(ss)
+            shape[S.axis] = S[0].shape[0]
+            self.d0 = np.zeros(shape)
+            shape[S.axis] = A[2].shape[0]
+            self.d1 = np.zeros(shape)
+            shape[S.axis] = B[4].shape[0]
+            self.d2 = np.zeros(shape)
             if np.ndim(B_scale) == 3:
                 la.PDMA_SymLU_3D(S, A, B, S.axis, S_scale[0,0,0], A_scale, B_scale, self.d0, self.d1, self.d2)
             elif np.ndim(B_scale) == 2:
@@ -163,61 +167,162 @@ class Biharmonic(object):
 class Helmholtz_2dirichlet(object):
     """Helmholtz solver for 2-dimensional problems with 2 Dirichlet bases.
 
+    a0*BUB + a1*AUB + a2*BUA^T = F
+
     """
 
     def __init__(self, T, kwargs):
 
         self.T = T
-        if len(kwargs) == 2:
-            npaxes = list(kwargs.keys())
+        self.V = np.zeros(0)
+        assert len(kwargs) == 3
 
-            A = kwargs[npaxes[0]]['ADDmat']
-            B = kwargs[npaxes[0]]['BDDmat']
+        # There are three terms, BUB, AUB and BUA
+        # Extract A and B
+        scale = {}
+        for tmp in kwargs:
+            if tmp[0].get_key() == 'BDDmat' and tmp[1].get_key() == 'BDDmat':
+                B = tmp[0]
+                B1 = tmp[1]
+                scale['BUB'] = tmp['scale']
 
-            A0 = kwargs[npaxes[1]]['ADDmat']
-            B0 = kwargs[npaxes[1]]['BDDmat']
+            elif tmp[0].get_key() == 'ADDmat' and tmp[1].get_key() == 'BDDmat':
+                A = tmp[0]
+                scale['AUB'] = tmp['scale']
 
-            A_scale = A.scale
-            B_scale = B.scale
-            A0_scale = A0.scale
-            B0_scale = B0.scale
-
-        else:
-            raise RuntimeError('Wrong input to Helmholtz solver')
-
-        # A and A0 are the same matrices if dimensions are equal
-        # Assume this to be true for now
-        assert A.testfunction[0].N == A0.testfunction[0].N
-        assert B.testfunction[0].N == B0.testfunction[0].N
-
-        self.V = np.zeros((A.testfunction[0].N, A.testfunction[0].N))
-        self.lmbda = np.ones(A.testfunction[0].N)
-        s = self.s = A.testfunction[0].slice()
-        self.lmbda[s], self.V[s, s] = scipy_la.eigh(A.diags().toarray(), B.diags().toarray())
+            else:
+                A1 = tmp[1]
+                scale['BUA'] = tmp['scale']
 
         # Create transfer object to realign data in y-direction
         pencilA = T.forward.output_pencil
         pencilB = pencilA.pencil(1)
+        self.pencilB = pencilB
         self.transAB = pencilA.transfer(pencilB, 'd')
-        self.v_hat = np.zeros(self.transAB.subshapeB)
+        self.u_B = np.zeros(self.transAB.subshapeB)
+        self.rhs_A = np.zeros(self.transAB.subshapeA)
+        self.rhs_B = np.zeros(self.transAB.subshapeB)
 
-    def __call__(self, u, b):
-        s = self.T.local_slice()
+        self.A = A
+        self.B = B
+        self.A1 = A1
+        self.B1 = B1
+        self.scale = scale
 
-        # Map the right hand side to eigen space
-        u[:] = (self.V.T).dot(b)
-        self.transAB.forward(u, self.v_hat)
-        self.v_hat[:] = self.v_hat.dot(self.V)
-        self.transAB.backward(self.v_hat, u)
+    def solve_eigen_problem(self, A, B, solver):
+        N = A.testfunction[0].N
+        s = A.testfunction[0].slice()
+        self.V = np.zeros((N, N))
+        self.lmbda = np.ones(N)
+        if solver == 0:
+            self.lmbda[s], self.V[s, s] = scipy_la.eigh(A.diags().toarray(),
+                                                        B.diags().toarray())
 
-        # Apply the inverse in eigen space
-        u /= (self.lmbda[:, np.newaxis] + self.lmbda[np.newaxis, :])[s]
+        elif solver == 1:
+            #self.lmbda[s], self.V[s, s] = scipy_la.eigh(B.diags().toarray())
+            a = np.zeros((3, N-2))
+            a[0, :] = B[0]
+            a[2, :-2] = B[2]
+            self.lmbda[s], self.V[s, s] = scipy_la.eig_banded(a, lower=True)
 
-        # Map back to physical space
-        u[:] = self.V.dot(u)
-        self.transAB.forward(u, self.v_hat)
-        self.v_hat[:] = self.v_hat.dot(self.V.T)
-        self.transAB.backward(self.v_hat, u)
+    def __call__(self, u, b, solver=1):
+
+        if solver == 0:
+
+            if len(self.V) == 0:
+                self.solve_eigen_problem(self.A, self.B, solver)
+                self.Vx = self.V
+                self.lmbdax = self.lmbda
+                if not self.A.testfunction[0].N == self.A1.testfunction[0].N:
+                    self.Vx = self.V.copy()
+                    self.lmbdax = self.lmbda.copy()
+                    self.solve_eigen_problem(self.A1, self.B1, solver)
+                    self.Vy = self.V
+                    self.lmbday = self.lmbda
+                else:
+                    self.Vy = self.Vx
+                    self.lmbday = self.lmbdax
+
+            # Map the right hand side to eigen space
+            u[:] = (self.Vx.T).dot(b)
+            self.transAB.forward(u, self.u_B)
+            self.u_B[:] = self.u_B.dot(self.Vy)
+            self.transAB.backward(self.u_B, u)
+
+            # Apply the inverse in eigen space
+            ls = self.T.local_slice()
+            u /= (self.scale['BUB'] + self.lmbdax[:, np.newaxis] + self.lmbday[np.newaxis, :])[ls]
+
+            # Map back to physical space
+            u[:] = self.Vx.dot(u)
+            self.transAB.forward(u, self.u_B)
+            self.u_B[:] = self.u_B.dot(self.Vy.T)
+            self.transAB.backward(self.u_B, u)
+
+        if solver == 1:
+
+            assert self.A.testfunction[0].is_scaled()
+
+            if len(self.V) == 0:
+                self.solve_eigen_problem(self.A, self.B, solver)
+
+            ls = [slice(start, start+shape) for start, shape in zip(self.pencilB.substart,
+                                                                    self.pencilB.subshape)]
+
+            self.B1.scale = np.zeros((ls[0].stop-ls[0].start, 1))
+            self.B1.scale[:, 0] = self.scale['BUB'] + 1./self.lmbda[ls[0]]
+            self.A1.scale = np.ones((1, 1))
+            Helmy = Helmholtz(**{'ADDmat': self.A1, 'BDDmat': self.B1})
+
+            # Map the right hand side to eigen space
+            self.rhs_A = (self.V.T).dot(b)
+            self.rhs_A /= self.lmbda[:, np.newaxis]
+            self.transAB.forward(self.rhs_A, self.rhs_B)
+            self.u_B = Helmy(self.u_B, self.rhs_B)
+            self.transAB.backward(self.u_B, u)
+            u[:] = self.V.dot(u)
+
+        elif solver == 2: # iterative
+            N = self.A.testfunction[0].N
+            s = self.A.testfunction[0].slice()
+            AA = np.zeros((N, N))
+            BB = np.zeros((N, N))
+            G = np.zeros((N, N))
+            H = np.zeros((N, N))
+
+            BB[s, s] = self.B.diags().toarray()
+            AA[s, s] = self.A.diags().toarray()
+            G[:] = BB.dot(u)
+            H[:] = u.dot(BB)
+            bc = b.copy()
+            B_scale = copy(self.B.scale)
+            self.B.scale = np.broadcast_to(self.B.scale, (1, u.shape[1])).copy()
+            self.B.scale *= self.scale['BUB']
+            self.A.scale = np.ones((1, 1))
+            Helmx = Helmholtz(**{'ADDmat': self.A, 'BDDmat': self.B})
+            converged = False
+            G_old = G.copy()
+            Hc = H.copy()
+            num_iter = 0
+            # Solve with successive overrelaxation
+            Gc = G.T.copy()
+            omega = 1.6
+            om = 1.
+            while not converged and num_iter < 1000:
+                bc[:] = b - G.dot(AA.T)
+                Hc = Helmx(Hc, bc)
+                H[:] = om*Hc + (1-om)*H[:]
+                bc[:] = b.T - (H.T).dot(AA.T)
+                Gc = Helmx(Gc, bc)
+                G[:] = om*Gc.T + (1-om)*G[:]
+                err = np.linalg.norm(G_old-G)
+                print('Error ', num_iter, err)
+                num_iter += 1
+                G_old[:] = G
+                converged = err < 1e-8
+                om = omega
+
+            self.B.scale = B_scale
+            u = self.B.solve(G, u)
 
         return u
-

@@ -46,7 +46,7 @@ ul = lambdify((x, y, z), ue, 'numpy')
 fl = lambdify((x, y, z), fe, 'numpy')
 
 # Size of discretization
-N = (32, 32, 32)
+N = (14, 15, 16)
 
 SD = Basis(N[0])
 K1 = C2CBasis(N[1])
@@ -150,3 +150,5 @@ vq_hat = Tk.forward(vq, vq_hat)
 dv_hat = Function(Tk)
 dv_hat = project(Expr(3*vq), Tk, output_array=dv_hat, uh_hat=vq_hat)
 
+#p = T.forward.output_pencil
+#print([c.Get_size() for c in p.subcomm])

@@ -30,12 +30,12 @@ ul = lambdify((x, y, z), ue, 'numpy')
 fl = lambdify((x, y, z), fe, 'numpy')
 
 # Size of discretization
-N = 16
+N = (14, 15, 16)
 
-K0 = C2CBasis(N)
-K1 = C2CBasis(N)
-K2 = R2CBasis(N)
-T = TensorProductSpace(comm, (K0, K1, K2), slab=True)
+K0 = C2CBasis(N[0])
+K1 = C2CBasis(N[1])
+K2 = R2CBasis(N[2])
+T = TensorProductSpace(comm, (K0, K1, K2))
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)
 v = TestFunction(T)

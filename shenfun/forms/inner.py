@@ -3,6 +3,7 @@ import six
 from shenfun.fourier import FourierBase
 from shenfun.spectralbase import inner_product
 from shenfun.la import DiagonalMatrix
+from shenfun.tensorproductspace import VectorTensorProductSpace
 from .arguments import Expr, TestFunction, TrialFunction, Function, BasisFunction, Array
 
 __all__ = ('inner', 'project')
@@ -345,39 +346,51 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
     elif np.all([len(f) == 3 for f in B]):
         # Two nonperiodic directions
 
-        npaxes = [b for b in B[0].keys() if isinstance(b, int)]
-
         if trial.argument() == 1:  # bilinear form
-            C = {npaxis: {} for npaxis in npaxes}
-            for npaxis in npaxes:
-                b = B[0][npaxis]
-                b.scale = B[0]['scale']
-                C[npaxis][b.get_key()] = b
-                for bb in B[1:]:
-                    b = bb[npaxis]
-                    b.scale = bb['scale']
-                    name = b.get_key()
-                    if name in C[npaxis]:
-                        C[npaxis][name].scale = C[npaxis][name].scale + b.scale
-                    else:
-                        C[npaxis][name] = b
-
-            return C
+            return B
 
         else: # linear form
+            npaxes = [b for b in B[0].keys() if isinstance(b, int)]
 
-            for npaxis in npaxes:
-                for i, bb in enumerate(B):
-                    b = bb[npaxis]
-                    b.scale = bb['scale']
-                    if uh.rank() == 2:
-                        sp = uh.function_space()
-                        wh = Array(sp[npaxis], forward_output=True)
-                        wh = b.matvec(uh[trial_indices[0, i]], wh, axis=b.axis)
-                    else:
-                        wh = Array(trialspace, forward_output=True)
-                        wh = b.matvec(uh, wh, axis=b.axis)
-                    output_array += wh*b.scale
+            pencilA = space.forward.output_pencil
+            subcomms = [c.Get_size() for c in pencilA.subcomm]
+            axis = pencilA.axis
+            assert subcomms[axis] == 1
+            npaxes.remove(axis)
+            second_axis = npaxes[0]
+            pencilB = pencilA.pencil(second_axis)
+            transAB = pencilA.transfer(pencilB, 'd')
+
+            # Output data is aligned in axis, but may be distributed in all other directions
+
+            if uh.rank() == 2:
+                sp = uh.function_space()
+                wh = Array(sp[axis], forward_output=True)
+                wc = Array(sp[axis], forward_output=True)
+
+            else:
+                wh = Array(trialspace, forward_output=True)
+                wc = Array(trialspace, forward_output=True)
+
+            whB = np.zeros(transAB.subshapeB)
+            wcB = np.zeros(transAB.subshapeB)
+
+            for i, bb in enumerate(B):
+                if uh.rank() == 2:
+                    wc[:] = uh[trial_indices[0, i]]
+                else:
+                    wc[:] = uh
+
+                b = bb[axis]
+                wh = b.matvec(wc, wh, axis=axis)
+
+                # align in second non-periodic axis
+                transAB.forward(wh, whB)
+                b = bb[second_axis]
+                wcB = b.matvec(whB, wcB, axis=second_axis)
+                transAB.backward(wcB, wh)
+                wh *= bb['scale']
+                output_array += wh
 
             return output_array
 
@@ -431,10 +444,31 @@ def project(uh, T, output_array=None, uh_hat=None):
     u = TrialFunction(T)
     u_hat = inner(v, uh, uh_hat=uh_hat)
     B = inner(v, u)
-    if v.rank() == 1:
-        output_array = B.solve(u_hat, output_array, axis=B.axis)
+    if isinstance(B, list) and not isinstance(T, VectorTensorProductSpace):
+        # Means we have two non-periodic directions
+        npaxes = [b for b in B[0].keys() if isinstance(b, int)]
+        assert len(npaxes) == 2
+
+        pencilA = T.forward.output_pencil
+        axis = pencilA.axis
+        npaxes.remove(axis)
+        second_axis = npaxes[0]
+        pencilB = pencilA.pencil(second_axis)
+        transAB = pencilA.transfer(pencilB, 'd')
+        output_arrayB = np.zeros(transAB.subshapeB)
+        output_arrayB2 = np.zeros(transAB.subshapeB)
+        b = B[0][axis]
+        output_array = b.solve(u_hat, output_array, axis=axis)
+        transAB.forward(output_array, output_arrayB)
+        b = B[0][second_axis]
+        output_arrayB2 = b.solve(output_arrayB, output_arrayB2, axis=second_axis)
+        transAB.backward(output_arrayB2, output_array)
+
     else:
-        for i in range(v.function_space().ndim()):
-            output_array[i] = B[i].solve(u_hat[i], output_array[i], axis=B[i].axis)
+        if v.rank() == 1:
+            output_array = B.solve(u_hat, output_array, axis=B.axis)
+        else:
+            for i in range(v.function_space().ndim()):
+                output_array[i] = B[i].solve(u_hat[i], output_array[i], axis=B[i].axis)
     return output_array
 

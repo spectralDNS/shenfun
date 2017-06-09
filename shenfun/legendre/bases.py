@@ -51,6 +51,7 @@ class LegendreBase(SpectralBase):
     args:
         N             int         Number of quadrature points
         quad      ('LG', 'GL')    Legendre-Gauss or Legendre-Gauss-Lobatto
+        domain   (float, float)   The computational domain
 
     """
 
@@ -200,6 +201,10 @@ class Basis(LegendreBase):
     kwargs:
         N             int         Number of quadrature points
         quad        ('LG',)       Legendre-Gauss
+        plan          bool        Plan transforms on __init__ or not. If
+                                  basis is part of a TensorProductSpace,
+                                  then planning needs to be delayed.
+        domain   (float, float)   The computational domain
 
     """
 
@@ -223,19 +228,43 @@ class ShenDirichletBasis(LegendreBase):
         N             int         Number of quadrature points
         quad        ('LG',)       Legendre-Gauss
         bc           (a, b)       Boundary conditions at x=(1,-1)
+        plan          bool        Plan transforms on __init__ or not. If
+                                  basis is part of a TensorProductSpace,
+                                  then planning needs to be delayed.
+        domain   (float, float)   The computational domain
+        scaled        bool        Whether or not to scale test functions
+                                  with 1/sqrt(4k+6). Scaled test functions
+                                  give a stiffness matrix equal to the
+                                  identity matrix.
 
     """
 
-    def __init__(self, N=0, quad="LG", bc=(0., 0.), plan=False, domain=(-1., 1.)):
+    def __init__(self, N=0, quad="LG", bc=(0., 0.), plan=False,
+                 domain=(-1., 1.), scaled=False):
         LegendreBase.__init__(self, N, quad, domain=domain)
         self.bc = bc
         self.LT = Basis(N, quad)
+        self._scaled = scaled
+        self._factor = np.ones(1)
         if plan:
             self.plan(N, 0, np.float, {})
 
+    def set_factor_array(self, v):
+        if self.is_scaled():
+            if not self._factor.shape == v.shape:
+                k = self.wavenumbers(v.shape, self.axis).astype(np.float)
+                self._factor = 1./np.sqrt(4*k+6)
+
+    def is_scaled(self):
+        return self._scaled
+
     def get_vandermonde_basis(self, V):
         P = np.zeros(V.shape)
-        P[:, :-2] = V[:, :-2] - V[:, 2:]
+        if not self.is_scaled():
+            P[:, :-2] = V[:, :-2] - V[:, 2:]
+        else:
+            k = np.arange(self.N-2).astype(np.float)
+            P[:, :-2] = (V[:, :-2] - V[:, 2:])/np.sqrt(4*k+6)
         P[:, -2] = (V[:, 0] + V[:, 1])/2
         P[:, -1] = (V[:, 0] - V[:, 1])/2
         return P
@@ -270,8 +299,9 @@ class ShenDirichletBasis(LegendreBase):
         w_hat = work[(fk, 0)]
         s0 = self.sl(slice(0, -2))
         s1 = self.sl(slice(2, None))
-        w_hat[s0] = fk[s0]
-        w_hat[s1] -= fk[s0]
+        self.set_factor_array(fk)
+        w_hat[s0] = fk[s0]*self._factor
+        w_hat[s1] -= fk[s0]*self._factor
         s0[self.axis] = 0
         s1[self.axis] = 1
         w_hat[s0] += 0.5*(self.bc[0] + self.bc[1])
@@ -289,8 +319,9 @@ class ShenDirichletBasis(LegendreBase):
 
     def eval(self, x, fk):
         w_hat = work[(fk, 0)]
-        f = leg.legval(x, fk[:-2])
-        w_hat[2:] = fk[:-2]
+        self.set_factor_array(fk)
+        f = leg.legval(x, fk[:-2]*self._factor)
+        w_hat[2:] = fk[:-2]*self._factor
         f -= leg.legval(x, w_hat)
         return f + 0.5*(fk[-1]*(1+x)+fk[-2]*(1-x))
 
@@ -319,6 +350,10 @@ class ShenNeumannBasis(LegendreBase):
         N             int         Number of quadrature points
         quad        ('LG')        Legendre-Gauss
         mean         float        Mean value
+        plan          bool        Plan transforms on __init__ or not. If
+                                  basis is part of a TensorProductSpace,
+                                  then planning needs to be delayed.
+        domain   (float, float)   The computational domain
 
     """
 
@@ -412,6 +447,10 @@ class ShenBiharmonicBasis(LegendreBase):
     kwargs:
         N             int         Number of quadrature points
         quad        ('LG',)       Legendre-Gauss
+        plan          bool        Plan transforms on __init__ or not. If
+                                  basis is part of a TensorProductSpace,
+                                  then planning needs to be delayed.
+        domain   (float, float)   The computational domain
 
     """
 

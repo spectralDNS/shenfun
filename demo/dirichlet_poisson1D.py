@@ -18,7 +18,7 @@ from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    project, Dx
+    project, Dx, Array
 
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
@@ -27,9 +27,11 @@ shen = importlib.import_module('.'.join(('shenfun', basis)))
 Basis = shen.bases.ShenDirichletBasis
 
 # Use sympy to compute a rhs, given an analytical solution
+a=-1
+b=1
 x = symbols("x")
-#ue = sin(np.pi*x)*(1-x**2)
-ue = (1-x**2)
+ue = sin(4*np.pi*x)*(1-x**2) + a*(1 + x)/2. + b*(1 - x)/2.
+#ue = (1-x**2)
 fe = ue.diff(x, 2)
 
 # Lambdify for faster evaluation
@@ -37,9 +39,9 @@ ul = lambdify(x, ue, 'numpy')
 fl = lambdify(x, fe, 'numpy')
 
 # Size of discretization
-N = 32
+N = 64
 
-SD = Basis(N, plan=True)
+SD = Basis(N, plan=True, bc=(a, b))
 X = SD.mesh(N)
 u = TrialFunction(SD)
 v = TestFunction(SD)
@@ -49,7 +51,8 @@ v = TestFunction(SD)
 fj = np.array([fe.subs(x, j) for j in X], dtype=np.float)
 
 # Compute right hand side of Poisson equation
-f_hat = inner(v, fj)
+f_hat = Array(SD)
+f_hat = inner(v, fj, output_array=f_hat)
 if basis == 'legendre':
     f_hat *= -1.
 
@@ -60,7 +63,6 @@ else:
     A = inner(grad(v), grad(u))
 
 f_hat = A.solve(f_hat)
-
 uj = SD.backward(f_hat)
 
 # Compare with analytical solution

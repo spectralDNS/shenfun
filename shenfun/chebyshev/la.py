@@ -1,4 +1,5 @@
 import numpy as np
+from copy import copy
 from shenfun.optimization import la, Matvec
 from . import bases
 
@@ -31,11 +32,12 @@ class Helmholtz(object):
         else:
             raise RuntimeError('Wrong input to Helmholtz solver')
 
-        local_shape = A.testfunction[0].forward.input_array.shape
+        #local_shape = A.testfunction[0].forward.input_array.shape
+        shape = list(B_scale.shape)
         B[2] = np.broadcast_to(B[2], A[2].shape)
         B[-2] = np.broadcast_to(B[-2], A[2].shape)
         neumann = self.neumann = isinstance(A.testfunction[0], bases.ShenNeumannBasis)
-        if len(local_shape) == 1:
+        if len(shape) == 1:
             N = A.shape[0]+2
             self.u0 = np.zeros(N-2, float)     # Diagonal entries of U
             self.u1 = np.zeros(N-4, float)     # Diagonal+1 entries of U
@@ -50,8 +52,7 @@ class Helmholtz(object):
             assert B_scale.shape[A.axis] == 1
 
             N = A.shape[0]+2
-            A_scale = np.broadcast_to(A_scale, B_scale.shape)
-            shape = list(local_shape)
+            A_scale = np.broadcast_to(A_scale, shape).copy()
             shape[A.axis] = N-2
             self.u0 = np.zeros(shape, float)     # Diagonal entries of U
             shape[A.axis] = N-4
@@ -60,11 +61,11 @@ class Helmholtz(object):
             shape[A.axis] = N-6
             self.u2 = np.zeros(shape, float)     # Diagonal+4 entries of U
 
-            if len(local_shape) == 2:
+            if len(shape) == 2:
                 la.LU_Helmholtz_2D(A, B, A.axis, A_scale, B_scale, neumann,
                                    self.u0, self.u1, self.u2, self.L)
 
-            elif len(local_shape) == 3:
+            elif len(shape) == 3:
                 la.LU_Helmholtz_3D(A, B, A.axis, A_scale, B_scale, neumann,
                                    self.u0, self.u1, self.u2, self.L)
 
@@ -138,7 +139,6 @@ class Biharmonic(object):
         else:
             raise RuntimeError('Wrong input to Biharmonic solver')
 
-        local_shape = A.testfunction[0].forward.input_array.shape
         self.S_scale = S_scale
         sii, siu, siuu = S[0], S[2], S[4]
         ail, aii, aiu = A[-2], A[0], A[2]
@@ -146,13 +146,14 @@ class Biharmonic(object):
         M = sii[::2].shape[0]
 
         if np.ndim(B_scale) > 1:
+            shape = list(B_scale.shape)
             self.axis = S.axis
-            ss = list(local_shape)
-            ss[S.axis] = M
+            shape[S.axis] = M
+            ss = copy(shape)
             ss.insert(0, 2)
-            S_scale = self.S_scale = np.broadcast_to(S_scale, local_shape)
-            A_scale = np.broadcast_to(A_scale, local_shape)
-            B_scale = np.broadcast_to(B_scale, local_shape)
+            S_scale = self.S_scale = np.broadcast_to(S_scale, shape)
+            A_scale = np.broadcast_to(A_scale, shape)
+            B_scale = np.broadcast_to(B_scale, shape)
 
             self.u0 = np.zeros(ss)
             self.u1 = np.zeros(ss)
