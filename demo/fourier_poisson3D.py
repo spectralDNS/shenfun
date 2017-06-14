@@ -50,9 +50,6 @@ f_hat = inner(v, fj)
 A = inner(v, div(grad(u)))
 f_hat = A.solve(f_hat)
 
-
-print(fj.shape, f_hat.shape)
-
 uq = T.backward(f_hat, fast_transform=True)
 
 uj = ul(*X)

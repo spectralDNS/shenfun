@@ -40,11 +40,11 @@ ul = lambdify((x, y), ue, 'numpy')
 fl = lambdify((x, y), fe, 'numpy')
 
 # Size of discretization
-N = (256, 256)
+N = (64, 64)
 
 SD0 = Basis(N[0], scaled=True)
 SD1 = Basis(N[1], scaled=True)
-T = TensorProductSpace(comm, (SD0, SD1), axes=(0, 1))
+T = TensorProductSpace(comm, (SD0, SD1))
 X = T.local_mesh(True)
 u = TrialFunction(T)
 v = TestFunction(T)
@@ -65,7 +65,7 @@ H = Solver(T, matrices)
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space
 t0 = time()
-u_hat = H(u_hat, f_hat, 1)    # Solve
+u_hat = H(u_hat, f_hat, 0)    # Solve
 print('Time ', time()-t0)
 
 uq = Function(T, False)

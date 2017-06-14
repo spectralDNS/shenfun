@@ -37,8 +37,10 @@ Basis = shen.bases.ShenDirichletBasis
 Solver = shen.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
+a = -1
+b = 1
 x, y, z = symbols("x,y,z")
-ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-y**2)
+ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-y**2) + a*(1 + y)/2. + b*(1 - y)/2.
 fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
 
 # Lambdify for faster evaluation
@@ -48,7 +50,7 @@ fl = lambdify((x, y, z), fe, 'numpy')
 # Size of discretization
 N = (14, 15, 16)
 
-SD = Basis(N[0])
+SD = Basis(N[0], bc=(a, b))
 K1 = C2CBasis(N[1])
 K2 = R2CBasis(N[2])
 T = TensorProductSpace(comm, (K1, SD, K2), axes=(1,0,2))
@@ -116,10 +118,12 @@ v = TestFunction(Tk)
 #u0 = u_[0]
 #inner(v, u_)
 
-uq = T.as_function(uq)
+#uq = T.as_function(uq)
+uu = Function(TT, False)
+uu[:] = uq
 du_hat = Function(Tk)
-f_hat = T.as_function(f_hat)
-du_hat = project(grad(uq), Tk, output_array=du_hat, uh_hat=f_hat)
+u_hat = T.as_function(u_hat)
+du_hat = project(grad(uu), Tk, output_array=du_hat)
 du = Function(Tk, False)
 du = Tk.backward(du_hat, du)
 

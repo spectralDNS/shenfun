@@ -39,7 +39,7 @@ ul = lambdify(x, ue, 'numpy')
 fl = lambdify(x, fe, 'numpy')
 
 # Size of discretization
-N = 64
+N = 32
 
 SD = Basis(N, plan=True, bc=(a, b))
 X = SD.mesh(N)

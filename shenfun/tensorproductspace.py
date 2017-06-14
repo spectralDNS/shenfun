@@ -1,5 +1,6 @@
 import numpy as np
 from shenfun.fourier.bases import FourierBase, R2CBasis, C2CBasis
+from shenfun import chebyshev, legendre
 from mpi4py_fft.mpifft import Transform
 from mpi4py_fft.pencil import Subcomm, Pencil
 
@@ -99,6 +100,20 @@ class TensorProductSpace(object):
             [o.scalar_product for o in self.xfftn],
             [o.forward for o in self.transfer],
             self.pencil)
+
+        self.apply_nonhomogeneous_Dirichlet()
+
+    def apply_nonhomogeneous_Dirichlet(self):
+        for base in self.bases:
+            if isinstance(base, (legendre.bases.ShenDirichletBasis,
+                                 chebyshev.bases.ShenDirichletBasis)):
+                if base.has_nonhomogeneous_bcs():
+                    slices = self.local_slice()
+                    starts = [s.start for s in slices]
+                    if np.all(np.array(starts) == 0):
+                        pass
+                    else:
+                        base.bc = (0., 0.)
 
     def destroy(self):
         self.subcomm.destroy()

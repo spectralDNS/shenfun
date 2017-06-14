@@ -16,7 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun.tensorproductspace import TensorProductSpace
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Function
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, Array
 
 from mpi4py import MPI
 
@@ -52,7 +52,8 @@ f_hat = inner(v, fj)
 A = inner(grad(v), grad(u))
 f_hat = A.solve(-f_hat)
 
-uq = T.backward(f_hat, fast_transform=True)
+uq = Array(T, False)
+uq = T.backward(f_hat, uq, fast_transform=True)
 
 uj = ul(*X)
 assert np.allclose(uj, uq)

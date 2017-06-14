@@ -5,6 +5,7 @@ __all__ = ['mat']
 import numpy as np
 from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
+from .la import TDMA
 from . import bases
 
 # Short names for instances of bases
@@ -50,7 +51,6 @@ class BDDmat(SpectralMatrix):
     def __init__(self, test, trial):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
-        from shenfun.la import TDMA
         N = test[0].N
         k = np.arange(N-2, dtype=np.float)
         d = {-2: -2./(2*k[2:] + 1),

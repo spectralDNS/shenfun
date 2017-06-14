@@ -296,18 +296,22 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
 
         npaxis = [b for b in B[0].keys() if isinstance(b, int)][0]
 
-        # 1D case for itself, because it is simpler
-        if space.ndim() == 1:
-            if trial.argument() == 1:
-                b = B[0][npaxis]
-                b.scale = B[0]['scale']
-                return b
-            else:
-                mat = B[0][npaxis]
-                mat.scale = B[0]['scale']
-                output_array = mat.matvec(uh, output_array, axis=npaxis)
-                output_array *= mat.scale
-                return output_array
+        ## 1D case for itself, because it is simpler
+        #if space.ndim() == 1:
+            #from IPython import embed; embed()
+            #if trial.argument() == 1:
+                #if len(B) == 1:
+                    #b = B[0][npaxis]
+                    #b.scale = B[0]['scale']
+                    #return b
+                #else:
+
+            #else:
+                #mat = B[0][npaxis]
+                #mat.scale = B[0]['scale']
+                #output_array = mat.matvec(uh, output_array, axis=npaxis)
+                #output_array *= mat.scale
+                #return output_array
 
         if trial.argument() == 1:  # bilinear form
             b = B[0][npaxis]
@@ -430,8 +434,6 @@ def project(uh, T, output_array=None, uh_hat=None):
 
     """
 
-    assert isinstance(uh, (Expr, BasisFunction))
-
     if output_array is None:
         output_array = Array(T)
 
@@ -439,6 +441,8 @@ def project(uh, T, output_array=None, uh_hat=None):
         # Just regular forward transform
         output_array = T.forward(uh, output_array)
         return output_array
+
+    assert isinstance(uh, (Expr, BasisFunction))
 
     v = TestFunction(T)
     u = TrialFunction(T)
@@ -465,6 +469,7 @@ def project(uh, T, output_array=None, uh_hat=None):
         transAB.backward(output_arrayB2, output_array)
 
     else:
+        # Just zero or one non-periodic direction
         if v.rank() == 1:
             output_array = B.solve(u_hat, output_array, axis=B.axis)
         else:

@@ -1,7 +1,7 @@
 import numpy as np
 from shenfun.optimization import la
 from shenfun.matrixbase import SparseMatrix
-from shenfun.legendre import bases as lbases
+
 
 class TDMA(object):
     """Tridiagonal matrix solver
@@ -34,13 +34,6 @@ class TDMA(object):
         else:
             assert u.shape == b.shape
             u[:] = b[:]
-
-        if hasattr(v, 'bc'):
-            s = [slice(None)]*u.ndim
-            s[axis] = slice(-2, None)
-            sl = [np.newaxis]*u.ndim
-            sl[axis] = slice(None)
-            u[s] = np.array(v.bc)[sl]
 
         N = u.shape[axis]
         if not N == self.N:

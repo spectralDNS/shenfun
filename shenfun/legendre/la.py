@@ -1,9 +1,65 @@
 import numpy as np
 from copy import copy
-from shenfun.optimization import la
 import scipy.linalg as scipy_la
 import scipy.sparse.linalg as sparse_la
+from shenfun.optimization import la
+from shenfun.la import TDMA as la_TDMA
 from . import bases
+
+
+class TDMA(la_TDMA):
+
+    def __call__(self, b, u=None, axis=0):
+
+        v = self.mat.testfunction[0]
+        bc = v.bc
+
+        if u is None:
+            u = b
+        else:
+            assert u.shape == b.shape
+            u[:] = b[:]
+
+        s = [slice(0, 1)]*u.ndim
+        if v.is_scaled():
+            u[s] -= (bc[0] + bc[1])/np.sqrt(6.)
+        else:
+            u[s] -= (bc[0] + bc[1])
+        s[axis] = slice(1, 2)
+        if v.is_scaled():
+            u[s] -= 1./3.*(bc[0] - bc[1])/np.sqrt(10.)
+        else:
+            u[s] -= 1./3.*(bc[0] - bc[1])
+
+        N = u.shape[axis]
+        if not N == self.N:
+            self.init(N)
+
+        if len(u.shape) == 3:
+            la.TDMA_SymSolve3D(self.dd, self.ud, self.L, u, axis)
+            #la.TDMA_SymSolve3D_ptr(self.dd[self.s], self.ud[self.s], self.L,
+                                   #u[self.s], axis)
+        elif len(u.shape) == 2:
+            la.TDMA_SymSolve2D(self.dd, self.ud, self.L, u, axis)
+
+        elif len(u.shape) == 1:
+            la.TDMA_SymSolve(self.dd, self.ud, self.L, u)
+
+        else:
+            raise NotImplementedError
+
+        s = [slice(None)]*u.ndim
+        s[axis] = slice(-2, None)
+        u[s] = 0
+        s = [slice(0, 1)]*u.ndim
+        s[axis] = slice(-2, -1)
+        u[s] = bc[0]
+        s[axis] = slice(-1, None)
+        u[s] = bc[1]
+
+        u /= self.mat.scale
+        return u
+
 
 class Helmholtz(object):
     """Helmholtz solver with variable coefficient
@@ -22,19 +78,23 @@ class Helmholtz(object):
                 assert 'BNNmat' in kwargs
                 A = kwargs['ANNmat']
                 B = kwargs['BNNmat']
-            A_scale = A.scale
-            B_scale = B.scale
+            A_scale = self.A_scale = A.scale
+            B_scale = self.B_scale = B.scale
 
         elif len(args) == 4:
             A = args[0]
             B = args[1]
-            A_scale = args[2]
-            B_scale = args[3]
+            A_scale = self.A_scale = args[2]
+            B_scale = self.B_scale = args[3]
 
         else:
             raise RuntimeError('Wrong input to Helmholtz solver')
 
         self.s = A.testfunction[0].slice()
+        neumann = self.neumann = isinstance(A.testfunction[0], bases.ShenNeumannBasis)
+        if not neumann:
+            self.bc = A.testfunction[0].bc
+            self.scaled = A.testfunction[0].is_scaled()
 
         if np.ndim(B_scale) > 1:
             shape = list(B_scale.shape)
@@ -46,9 +106,9 @@ class Helmholtz(object):
             self.L = np.zeros(shape)
 
             if len(shape) == 2:
-                if (isinstance(A.testfunction[0], bases.ShenNeumannBasis) and
-                    B_scale[0, 0] == 0):
+                if neumann and B_scale[0, 0] == 0:
                     B_scale[0, 0] = 1.
+
                 if isinstance(A[0], (int, np.integer)):
                     A[0] = np.ones(A.shape[0])
 
@@ -56,8 +116,7 @@ class Helmholtz(object):
                                  self.d1, self.L)
 
             elif len(shape) == 3:
-                if (isinstance(A.testfunction[0], bases.ShenNeumannBasis) and
-                    B_scale[0, 0, 0] == 0):
+                if neumann and B_scale[0, 0, 0] == 0:
                     B_scale[0, 0, 0] = 1.
 
                 la.TDMA_SymLU_3D(A, B, A.axis, A_scale[0, 0], B_scale, self.d0,
@@ -70,6 +129,8 @@ class Helmholtz(object):
             self.d0 = A[0]*A_scale + B[0]*B_scale
             self.d1 = B[2]*B_scale
             self.L = np.zeros_like(self.d1)
+            self.bc = A.testfunction[0].bc
+            self.axis = 0
             la.TDMA_SymLU(self.d0, self.d1, self.L)
 
 
@@ -77,14 +138,41 @@ class Helmholtz(object):
         ss = [slice(None)]*np.ndim(u)
         ss[self.axis] = self.s
         u[ss] = b[ss]
+
+        if not self.neumann:
+            s0 = [slice(0, 1)]*u.ndim
+            if self.scaled:
+                u[s0] -= (self.bc[0] + self.bc[1])*self.B_scale[s0]/np.sqrt(6.)
+            else:
+                u[s0] -= (self.bc[0] + self.bc[1])*self.B_scale[s0]
+            s = copy(s0)
+            s[self.axis] = slice(1, 2)
+            if self.scaled:
+                u[s] -= 1./3.*(self.bc[0] - self.bc[1])*self.B_scale[s0]/np.sqrt(10.)
+            else:
+                u[s] -= 1./3.*(self.bc[0] - self.bc[1])*self.B_scale[s0]
+
         if u.ndim == 3:
+
             la.TDMA_SymSolve3D_VC(self.d0, self.d1, self.L, u, self.axis)
 
         elif u.ndim == 2:
+
             la.TDMA_SymSolve2D_VC(self.d0, self.d1, self.L, u, self.axis)
 
         elif u.ndim == 1:
+
             la.TDMA_SymSolve(self.d0, self.d1, self.L, u)
+
+        if not self.neumann:
+            s = [slice(None)]*u.ndim
+            s[self.axis] = slice(-2, None)
+            u[s] = 0
+            s = [slice(0, 1)]*u.ndim
+            s[self.axis] = slice(-2, -1)
+            u[s] = self.bc[0]
+            s[self.axis] = slice(-1, None)
+            u[s] = self.bc[1]
 
         return u
 
@@ -194,7 +282,7 @@ class Helmholtz_2dirichlet(object):
                 A1 = tmp[1]
                 scale['BUA'] = tmp['scale']
 
-        # Create transfer object to realign data in y-direction
+        # Create transfer object to realign data in second direction
         pencilA = T.forward.output_pencil
         pencilB = pencilA.pencil(1)
         self.pencilB = pencilB

@@ -10,6 +10,7 @@ from shenfun.optimization.Matvec import CDNmat_matvec, BDNmat_matvec, \
 
 from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
+from .la import TDMA
 from . import bases
 
 # Short names for instances of bases
@@ -24,6 +25,7 @@ def get_ck(N, quad):
     if quad == "GL": ck[-1] = 2
     return ck
 
+
 @inheritdocstrings
 class BDDmat(SpectralMatrix):
     """Matrix for inner product B_{kj}=(phi_j, phi_k)_w
@@ -36,7 +38,6 @@ class BDDmat(SpectralMatrix):
 
     """
     def __init__(self, test, trial):
-        from shenfun.la import TDMA
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         ck = get_ck(test[0].N, test[0].quad)

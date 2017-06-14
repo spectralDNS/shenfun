@@ -318,6 +318,12 @@ class ShenDirichletBasis(ChebyshevBase):
         P[:, -1] = (V[:, 0] - V[:, 1])/2
         return P
 
+    def has_nonhomogeneous_bcs(self):
+        return False if self.bc == (0., 0.) else True
+
+    def is_scaled(self):
+        return False
+
     def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
         if input_array is not None:
             self.scalar_product.input_array[...] = input_array
@@ -352,10 +358,10 @@ class ShenDirichletBasis(ChebyshevBase):
         s1 = self.sl(slice(2, None))
         w_hat[s0] = fk[s0]
         w_hat[s1] -= fk[s0]
-        s0[self.axis] = 0
-        s1[self.axis] = 1
+        s0 = [slice(0, 1)]*fk.ndim
         w_hat[s0] += 0.5*(self.bc[0] + self.bc[1])
-        w_hat[s1] += 0.5*(self.bc[0] - self.bc[1])
+        s0[self.axis] = slice(1, 2)
+        w_hat[s0] += 0.5*(self.bc[0] - self.bc[1])
         fj = self.CT.backward(w_hat)
         assert fk is self.xfftn_bck.input_array
         assert fj is self.xfftn_bck.output_array
@@ -367,16 +373,21 @@ class ShenDirichletBasis(ChebyshevBase):
 
         output = self.scalar_product(fast_transform=fast_transform)
         assert output is self.forward.output_array
-        s = self.sl(0)
-        output[s] -= np.pi/2*(self.bc[0] + self.bc[1])
-        s[self.axis] = 1
-        output[s] -= np.pi/4*(self.bc[0] - self.bc[1])
+        #s = [slice(0, 1)]*output.ndim
+        #output[s] -= np.pi/2*(self.bc[0] + self.bc[1])
+        #s[self.axis] = slice(1, 2)
+        #output[s] -= np.pi/4*(self.bc[0] - self.bc[1])
 
         self.apply_inverse_mass(output)
-        s[self.axis] = -2
-        output[s] = self.bc[0]
-        s[self.axis] = -1
-        output[s] = self.bc[1]
+
+        #s = [slice(None)]*output.ndim
+        #s[self.axis] = slice(-2, None)
+        #output[s] = 0
+        #s = [slice(0, 1)]*output.ndim
+        #s[self.axis] = slice(-2, -1)
+        #output[s] = self.bc[0]
+        #s[self.axis] = slice(-1, None)
+        #output[s] = self.bc[1]
 
         assert output is self.forward.output_array
         if output_array is not None:
