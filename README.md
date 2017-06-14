@@ -41,7 +41,7 @@ With *shenfun* a user chooses the appropriate bases for each dimension of the pr
    B2 = fourier.R2CBasis(N(2))
    V = TensorProductSpace(comm, (B0, B1, B2))
 ```
-where `C2CBasis` is a Fourier basis for complex-to-complex transforms, whereas `R2CBasis` is actually the same Fourier basis, but it is used on real input data, and as such it performs real-to-complex transforms. The tensor product space `V` will be distributed with the *pencil* method and it can here use a maximum of 14*9 CPUs. 
+where `C2CBasis` is a Fourier basis for complex-to-complex transforms, whereas `R2CBasis` is actually the same Fourier basis, but it is used on real input data, and as such it performs real-to-complex transforms. The tensor product space `V` will be distributed with the *pencil* method and it can here use a maximum of 14*9 CPUs (14 being the first dimension, and 9 since the last dimension is transformed from 16 real data to 9 complex, using the Hermitian symmetry of real transforms, i.e., the shape of a transformed array in the V space will be (14, 15, 9)). 
 
 To solve a Poisson problem with the above triply periodic tensor product space, one may assemble the coefficient matrix as
 
@@ -223,7 +223,7 @@ A `mass` matrix can be assembled with
 
 You may notice that `mass` takes advantage of the fact that two diagonals are constant.
 
-The `inner_product` may be used to compute any bilinear form. For example the stiffness matrix `K`
+The `inner` method may be used to compute any bilinear form. For example the stiffness matrix `K`
 
 ```python
     >>> K = inner(v, div(grad(u)))
