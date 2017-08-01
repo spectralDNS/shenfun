@@ -1,12 +1,12 @@
 package:
   name: shenfun
-  version: "1.0.1"
+  version: "1.0.2"
 
 source:
   git_url: ../../
 
 build:
-  number: 3
+  number: 4
   #script: python setup.py install --prefix=$PREFIX
 
 requirements:
