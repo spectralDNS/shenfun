@@ -34,15 +34,15 @@ K0 = C2CBasis(N[0], domain=(-50., 50.))
 K1 = C2CBasis(N[1], domain=(-50., 50.))
 T = TensorProductSpace(comm, (K0, K1), **{'planner_effort': 'FFTW_PATIENT'})
 
-Kp0 = C2CBasis(N[0], domain=(-50., 50.))
-Kp1 = C2CBasis(N[1], domain=(-50., 50.))
+Kp0 = C2CBasis(N[0], domain=(-50., 50.), padding_factor=1.5)
+Kp1 = C2CBasis(N[1], domain=(-50., 50.), padding_factor=1.5)
 Tp = TensorProductSpace(comm, (Kp0, Kp1), **{'planner_effort': 'FFTW_PATIENT'})
 
 u = TrialFunction(T)
 v = TestFunction(T)
 
 # Turn on padding by commenting:
-#Tp = T
+Tp = T
 
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 U = Array(T, False)
@@ -74,7 +74,7 @@ def compute_rhs(rhs, u_hat, U, Up, T, Tp, w0):
 
 # Integrate using a 4th order Rung-Kutta method
 t = 0.0
-dt = 0.025
+dt = 4./N[0]
 end_time = 96.
 tstep = 0
 plt.figure()

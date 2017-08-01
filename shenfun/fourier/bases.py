@@ -11,7 +11,8 @@ class FourierBase(SpectralBase):
     """Fourier base class
     """
 
-    def __init__(self, N, padding_factor=1., domain=(0, 2*np.pi)):
+    def __init__(self, N, padding_factor=1., domain=(0, 2*np.pi), dealias_direct=False):
+        self.dealias_direct = dealias_direct
         SpectralBase.__init__(self, N, '', padding_factor, domain)
 
     def points_and_weights(self, N):
@@ -94,8 +95,9 @@ class R2CBasis(FourierBase):
     """Fourier basis class for real to complex transforms
     """
 
-    def __init__(self, N, padding_factor=1., plan=False, domain=(0., 2.*np.pi)):
-        FourierBase.__init__(self, N, padding_factor, domain)
+    def __init__(self, N, padding_factor=1., plan=False, domain=(0., 2.*np.pi),
+                 dealias_direct=False):
+        FourierBase.__init__(self, N, padding_factor, domain, dealias_direct)
         self.N = N
         self._xfftn_fwd = pyfftw.builders.rfft
         self._xfftn_bck = pyfftw.builders.irfft
@@ -183,13 +185,20 @@ class R2CBasis(FourierBase):
                 #padded_array[s] = 0.
             padded_array *= self.padding_factor
 
+        elif self.dealias_direct:
+            N = self.N
+            su = [slice(None)]*padded_array.ndim
+            su[self.axis] = slice(int(np.floor(N/3.)), None)
+            padded_array[su] = 0
+
 
 class C2CBasis(FourierBase):
     """Fourier basis class for complex to complex transforms
     """
 
-    def __init__(self, N, padding_factor=1., plan=False, domain=(0., 2.*np.pi)):
-        FourierBase.__init__(self, N, padding_factor, domain)
+    def __init__(self, N, padding_factor=1., plan=False, domain=(0., 2.*np.pi),
+                 dealias_direct=False):
+        FourierBase.__init__(self, N, padding_factor, domain, dealias_direct)
         self.N = N
         self._xfftn_fwd = pyfftw.builders.fft
         self._xfftn_bck = pyfftw.builders.ifft
@@ -247,6 +256,7 @@ class C2CBasis(FourierBase):
             N = trunc_array.shape[self.axis]
             su = [slice(None)]*trunc_array.ndim
             su[self.axis] = slice(0, N//2+1)
+            #su[self.axis] = slice(0, N//2)
             trunc_array[su] = padded_array[su]
             su[self.axis] = slice(-(N//2), None)
             trunc_array[su] += padded_array[su]
@@ -262,14 +272,23 @@ class C2CBasis(FourierBase):
             padded_array[su] = trunc_array[su]
             #if N % 2 == 0:
                 #su[self.axis] = N//2
-                #padded_array[su] = 0.5*trunc_array[su]
+                ##padded_array[su] = 0.5*trunc_array[su]
+                #padded_array[su] = 0.
 
             su[self.axis] = slice(-(N//2), None)
             padded_array[su] = trunc_array[su]
             #if N % 2 == 0:
                 #su[self.axis] = -(N//2)
-                #padded_array[su] /= 2.
+                ##padded_array[su] /= 2.
+                #padded_array[su] = 0.
+
             padded_array *= self.padding_factor
+
+        elif self.dealias_direct:
+            N = trunc_array.shape[self.axis]
+            su = [slice(None)]*padded_array.ndim
+            su[self.axis] = slice(int(np.floor(N/3.)), int(np.floor(2./3.*N)))
+            padded_array[su] = 0
 
 
 def FourierBasis(N, dtype, padding_factor=1., plan=False, domain=(0., 2.*np.pi)):

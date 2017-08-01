@@ -6,7 +6,8 @@ from shenfun.utilities import inheritdocstrings
 from numpy.polynomial import legendre as leg
 
 __all__ = ['LegendreBase', 'Basis', 'ShenDirichletBasis',
-           'ShenBiharmonicBasis', 'ShenNeumannBasis']
+           'ShenBiharmonicBasis', 'ShenNeumannBasis',
+           'SecondNeumannBasis']
 
 
 class _Wrap(object):
@@ -557,3 +558,105 @@ class ShenBiharmonicBasis(LegendreBase):
         self.backward = _Wrap(self.backward, V, U)
         self.scalar_product = _Wrap(self.scalar_product, U, V)
 
+
+## Experimental!
+@inheritdocstrings
+class SecondNeumannBasis(LegendreBase):
+    """Shen basis for homogeneous second order Neumann boundary conditions
+
+    kwargs:
+        N             int         Number of quadrature points
+        quad        ('LG')        Legendre-Gauss
+        mean         float        Mean value
+        plan          bool        Plan transforms on __init__ or not. If
+                                  basis is part of a TensorProductSpace,
+                                  then planning needs to be delayed.
+        domain   (float, float)   The computational domain
+
+    """
+
+    def __init__(self, N=0, quad="LG", mean=0, plan=False, domain=(-1., 1.)):
+        LegendreBase.__init__(self, N, quad, domain=domain)
+        self.mean = mean
+        self.LT = Basis(N, quad)
+        self._factor = np.zeros(0)
+        if plan:
+            self.plan(N, 0, np.float, {})
+
+    def get_vandermonde_basis(self, V):
+        assert self.N == V.shape[1]
+        P = np.zeros(V.shape)
+        k = np.arange(self.N).astype(np.float)[:-4]
+        a_k = -(k+1)*(k+2)*(2*k+3)/((k+3)*(k+4)*(2*k+7))
+
+        P[:, :-4] = V[:, :-4] + (a_k-1)*V[:, 2:-2] - a_k*V[:, 4:]
+        P[:, -4] = V[:, 0]
+        P[:, -3] = V[:, 1]
+        return P
+
+    def set_factor_array(self, v):
+        if not self._factor.shape == v.shape:
+            k = self.wavenumbers(v.shape, self.axis).astype(np.float)
+            self._factor = -(k+1)*(k+2)*(2*k+3)/((k+3)*(k+4)*(2*k+7))
+
+    def scalar_product(self, input_array=None, output_array=None, fast_transform=False):
+        assert fast_transform is False
+        if input_array is not None:
+            self.scalar_product.input_array[...] = input_array
+
+        self.vandermonde_scalar_product(self.scalar_product.input_array,
+                                        self.scalar_product.output_array)
+
+        fk = self.scalar_product.output_array
+        #s = self.sl(0)
+        #fk[s] = self.mean*np.pi
+        #s[self.axis] = slice(-2, None)
+        #fk[s] = 0
+
+        if output_array is not None:
+            output_array[...] = self.scalar_product.output_array
+            return output_array
+        else:
+            return self.scalar_product.output_array
+
+    #def evaluate_expansion_all(self, fk, fj):
+        #w_hat = work[(fk, 0)]
+        #self.set_factor_array(fk)
+        #s0 = self.sl(slice(0, -4))
+        #s1 = self.sl(slice(2, -2))
+        #s2 = self.sl(slice(4, None))
+        #w_hat[s0] = fk[s0]
+        #w_hat[s1] += (self._factor-1)*fk[s0]
+        #w_hat[s2] -= self._factor*fk[s0]
+        #fj = self.LT.backward(w_hat)
+        #return fj
+
+    def slice(self):
+        return slice(0, self.N-2)
+
+    def spectral_shape(self):
+        return self.N-2
+
+    #def eval(self, x, fk):
+        #w_hat = work[(fk, 0)]
+        #self.set_factor_array(fk)
+        #f = leg.legval(x, fk[:-2])
+        #w_hat[2:] = self._factor*fk[:-2]
+        #f -= leg.legval(x, w_hat)
+        #return f
+
+    def plan(self, shape, axis, dtype, options):
+        if isinstance(axis, tuple):
+            axis = axis[0]
+
+        if isinstance(self.forward, _Wrap):
+            if self.forward.input_array.shape == shape and self.axis == axis:
+                # Already planned
+                return
+
+        self.LT.plan(shape, axis, dtype, options)
+        self.axis = self.LT.axis
+        U, V = self.LT.forward.input_array, self.LT.forward.output_array
+        self.forward = _Wrap(self.forward, U, V)
+        self.backward = _Wrap(self.backward, V, U)
+        self.scalar_product = _Wrap(self.scalar_product, U, V)
