@@ -13,8 +13,10 @@ VxV is a tensor product space.
 """
 from sympy import symbols, exp, lambdify
 import numpy as np
+import pyfftw
 import matplotlib.pyplot as plt
 from mpi4py import MPI
+import _pickle
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
     TensorProductSpace, Array
@@ -27,16 +29,20 @@ x, y = symbols("x,y")
 ue = (x + y)*exp(-0.03*(x**2+y**2))
 ul = lambdify((x, y), ue, 'numpy')
 
+f = open('wisdom128.measure', 'rb')
+wisdom = _pickle.load(f)
+pyfftw.import_wisdom(wisdom)
+
 # Size of discretization
-N = (200, 200)
+N = (128, 128)
 
 K0 = C2CBasis(N[0], domain=(-50., 50.))
 K1 = C2CBasis(N[1], domain=(-50., 50.))
-T = TensorProductSpace(comm, (K0, K1), **{'planner_effort': 'FFTW_PATIENT'})
+T = TensorProductSpace(comm, (K0, K1), **{'planner_effort': 'FFTW_MEASURE'})
 
-Kp0 = C2CBasis(N[0], domain=(-50., 50.))
-Kp1 = C2CBasis(N[1], domain=(-50., 50.))
-Tp = TensorProductSpace(comm, (Kp0, Kp1), **{'planner_effort': 'FFTW_PATIENT'})
+Kp0 = C2CBasis(N[0], domain=(-50., 50.), padding_factor=1.6)
+Kp1 = C2CBasis(N[1], domain=(-50., 50.), padding_factor=1.6)
+Tp = TensorProductSpace(comm, (Kp0, Kp1), **{'planner_effort': 'FFTW_MEASURE'})
 
 u = TrialFunction(T)
 v = TestFunction(T)
@@ -74,7 +80,7 @@ def compute_rhs(rhs, u_hat, U, Up, T, Tp, w0):
 
 # Integrate using a 4th order Rung-Kutta method
 t = 0.0
-dt = 0.025
+dt = 0.05
 end_time = 96.
 tstep = 0
 plt.figure()
@@ -110,5 +116,5 @@ plt.figure()
 plt.contourf(X[0], X[1], U.imag, 100)
 plt.colorbar()
 
-#plt.show()
+plt.show()
 
