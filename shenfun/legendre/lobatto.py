@@ -18,15 +18,14 @@ def legendre_lobatto_nodes_and_weights(N):
     count = 0
     while not converged and count < 10:
         dx[:] = Ld(y)/Ld2(y)
-        y[:] = y - dx
+        y -= dx
         error = np.linalg.norm(dx)
-        converged = abs(error) < 1e-14
+        converged = error < 1e-14
         count += 1
+        print(error)
 
-    if N % 2 == 0:
-        x[M:-1] = -x[1:M][::-1]
-    else:
-        x[M+1:-1] = x[1:M][::-1]
+    MM = M if N % 2 == 0 else M+1
+    x[MM:-1] = -x[1:M][::-1]
     w = 2./(N*(N-1)*Ln(x)**2)
     return x, w
 
