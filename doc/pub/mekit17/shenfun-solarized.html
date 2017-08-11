@@ -1,0 +1,799 @@
+<!--
+Automatically generated HTML file from DocOnce source
+(https://github.com/hplgit/doconce/)
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Shenfun - automating the spectral Galerkin method">
+<meta name="keywords" content="Computational Methods,Spectral,Galerkin,Chebyshev,Legendre">
+
+<title>Shenfun - automating the spectral Galerkin method</title>
+
+
+<link href="https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_styles/style_solarized_box/css/solarized_light_code.css" rel="stylesheet" type="text/css" title="light"/>
+<script src="https://cdn.rawgit.com/hplgit/doconce/master/bundled/html_styles/style_solarized_box/js/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<link href="http://thomasf.github.io/solarized-css/solarized-light.min.css" rel="stylesheet">
+<style type="text/css">
+h1 {color: #b58900;}  /* yellow */
+/* h1 {color: #cb4b16;}  orange */
+/* h1 {color: #d33682;}  magenta, the original choice of thomasf */
+code { padding: 0px; background-color: inherit; }
+pre {
+  border: 0pt solid #93a1a1;
+  box-shadow: none;
+}
+
+div { text-align: justify; text-justify: inter-word; }
+</style>
+
+
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [('Table of contents',
+               1,
+               'table_of_contents',
+               'table_of_contents'),
+              ('Introduction', 1, 'sec:introduction', 'sec:introduction'),
+              ('Spectral Galerkin Method',
+               1,
+               'sec:preliminaries',
+               'sec:preliminaries'),
+              ('Shenfun', 1, 'sec:shenfun', 'sec:shenfun'),
+              ('Classes for basis functions', 2, None, '___sec3'),
+              ('Classes for matrices', 2, 'sec:matrices', 'sec:matrices'),
+              ('Variational forms in 1D', 2, None, '___sec5'),
+              ('Poisson equation implemented in 1D', 2, None, '___sec6'),
+              ('Periodic boundary conditions',
+               3,
+               'sec:fourierpoisson',
+               'sec:fourierpoisson'),
+              ('Dirichlet boundary conditions',
+               3,
+               'sec:dirichletpoisson',
+               'sec:dirichletpoisson'),
+              ('Bibliography', 1, None, '___sec9')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "AMS"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript" async
+ src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+$$
+
+
+
+
+    
+<!-- ------------------- main content ---------------------- -->
+
+
+
+<center><h1>Shenfun - automating the spectral Galerkin method</h1></center>  <!-- document title -->
+
+<p>
+<!-- author(s): Mikael Mortensen -->
+
+<center>
+<b>Mikael Mortensen</b>  (<tt>mikaem at math.uio.no</tt>)
+</center>
+
+<p>
+<!-- institution -->
+
+<center><b>Department of Mathematics, University of Oslo.</b></center>
+<br>
+<p>
+<center><h4>Aug 11, 2017</h4></center> <!-- date -->
+<br>
+<p>
+<b>Summary.</b> With the <code>shenfun</code> Python module (github.com/spectralDNS/shenfun) an effort is made towards automating the implementation of the spectral Galerkin method for simple tensor product domains, consisting of (currently) one non-periodic and any number of periodic directions. The user interface to <code>shenfun</code> is intentionally made very similar to FEniCS (fenicsproject.org). Partial Differential Equations are represented through weak variational forms and solved using efficient direct solvers where available. MPI decomposition is achieved through the <code>mpi4py-fft</code> module (bitbucket.org/mpi4py/mpi4py-fft),  and all developed solvers may, with no additional effort, be run on supercomputers using thousands of processors. Complete solvers are shown for the linear Poisson and biharmonic problems, as well as the nonlinear and time-dependent Ginzburg-Landau equation.
+
+<h1 id="table_of_contents">
+Table of contents</h2>
+
+<p>
+<a href="#sec:introduction"> Introduction </a><br>
+<a href="#sec:preliminaries"> Spectral Galerkin Method </a><br>
+<a href="#sec:shenfun"> Shenfun </a><br>
+&nbsp; &nbsp; &nbsp; <a href="#___sec3"> Classes for basis functions </a><br>
+&nbsp; &nbsp; &nbsp; <a href="#sec:matrices"> Classes for matrices </a><br>
+&nbsp; &nbsp; &nbsp; <a href="#___sec5"> Variational forms in 1D </a><br>
+&nbsp; &nbsp; &nbsp; <a href="#___sec6"> Poisson equation implemented in 1D </a><br>
+<a href="#___sec9"> Bibliography </a><br>
+</p>
+<p>
+<!-- !split -->
+
+<h1 id="sec:introduction">Introduction</h1>
+
+<p>
+The spectral Galerkin method, see, e.g., Shen <a href="#shen95">[1]</a> or Kopriva <a href="#kopriva09">[2]</a>, combines spectral basis functions with the Galerkin method and allows for highly accurate solutions on simple, tensor product domains. Due to its accuracy and efficiency, the method is often favoured in studies of sensitive fundamental physical phenomena, where numerical errors needs to be avoided.
+
+<p>
+In this paper we will describe the <code>shenfun</code> Python module. The purpose of <code>shenfun</code> is to simplify the implementation of the spectral Galerkin method, to make it easily accessible to researchers, and to make it easier to solve advanced PDEs on supercomputers, with MPI, in simple tensor product domains. The package can solve equations for tensor product spaces consisting of any number of periodic directions, but, at the moment of writing, only one non-periodic direction. This configuration may sound trivial, but it occurs surprisingly often in physics, for example in plane shear flows like the channel or pipe. And these simple configurations are used heavily to enhance our understanding of fundamental physical processes, like turbulence, or transition to turbulence, turbulent mixing, and turbulent combustion.
+
+<p>
+The <code>shenfun</code> package is heavily influenced by the FEniCS project <a href="#fenics">[3]</a>, that has made it trivial to solve PDEs in arbitrary complex domains with the finite element method (FEM). FEM also makes use of the Galerin method to set up variational forms. However, where FEM uses basis functions with only local support, the spectral Galerkin method uses basis functions with global support. The local support is one of the many nice features of the FEM, which makes it particularly attractive for unstructured and complex geometries. Spectral methods, on the other hand, are less flexible, but represent the gems of numerical methods, and, whenever possible, when the domain is simple and the solution is smooth, delivers the most accurate approximations.
+
+<p>
+There are many tools available for working with spectral methods. For MATLAB there is the elegant chebfun package <a href="#trefethen13">[4]</a>, with an extensive list of application for, e.g., PDEs, ODEs or eigenvalue problems. However, being implemented in MATLAB, there is no feasible extension to DNS and supercomputers through MPI. Numpy and Scipy have modules for orthogonal polynomials (Jacobi, Chebyshev, Legendre, Hermite), and for Fourier transforms, which are both utilized by <code>shenfun</code>. The orthogonal module makes it easier to work with Chebyshev and Legendre polynomials, as it delivers, for example, quadrature points and weights for different quadrature rules (e.g., Chebyshev-Gauss, Legendre-Gauss).
+
+<p>
+To the author's knowledge, all research codes developed for studying turbulent flows through Direct Numerical Simulations (DNS) on supercomputers have been written in low-level languages like Fortran, C or C++, see, e.g., <a href="#debruynkops15">[5]</a> <a href="#hoyas06">[6]</a> <a href="#leemoser15">[7]</a>, or <a href="#Alfonsi2016">[8]</a> for a list of high performance channel flow solvers. The codes are  highly tuned and tailored to a specific target, and, being low-level, the codes are not easily accessible to a non-expert programmer. Mortensen and Langtangen <a href="#Mortensen2016">[9]</a> describe how a DNS solver can be written in Python in 100 lines of script-like code, and also show that the code, when optimized in the background using Cython, runs as fast as an identical C++ implementation on thousands of processors with MPI. {Shenfun} takes it one step further and aims at providing a generic toolbox for creating high performance, parallel solvers of any PDE, in a very high-level language. And without compromising much on computational efficiency. The key to developing such a high-level code in Python is efficient use of Numpy <a href="#numpy">[10]</a>, with broadcasting and vectorization, and MPI for Python <a href="#mpi4py">[11]</a>, that wraps almost the entire MPI library, and that can transfer Numpy arrays between thousands of processors at the same speed as a low-level C or Fortran code. Similarly, we utilize the pyFFTW module <a href="#pyfftw">[12]</a>, that wraps most of the FFTW library <a href="#libfftw">[13]</a> and makes the FFT as fast when called from Python as it is when used in low-level codes.
+
+<p>
+<!-- This paper is organised as follows: in the section <a href="#sec:preliminaries">Spectral Galerkin Method</a> the spectral Galerkin method is introduced. In the section <a href="#sec:shenfun">Shenfun</a> the basics of the {shenfun} package is described and #implementations are shown for simple 1D Poisson and biharmonic problems. In the section ref{sec:tensorproductspaces} we move to higher dimensions and tensor product spaces before we, in #the sections ref{sec:extended} and ref{sec:ginzburg} end with some extended functionality and an implementation for the time dependent nonlinear Ginzburg-Landau equation in 2D. -->
+
+<p>
+<!-- !split -->
+
+<h1 id="sec:preliminaries">Spectral Galerkin Method</h1>
+The spectral Galerkin method can most easily be described by considering a simple PDE, like the Poisson equation, in a 1D domain \( \Omega \)
+$$
+\begin{equation}
+-u''(x) = f(x), \quad x \in \Omega, \label{eq:poisson}
+\end{equation}
+$$
+
+with appropriate boundary conditions (Dirichlet, Neumann or periodic). To solve this equation, we can define a test function \( v(x) \) that satisfies the boundary conditions, and that comes with an accompanying weight function \( w(x) \). Assuming also that we work with complex valued functions, a weighted continuous inner product of the two functions \( u \) and \( v \) can be defined as
+$$
+\begin{equation}
+(u, v)_w = \int_{\Omega} u(x) \overline{v}(x) w(x) dx,
+\label{_auto1}
+\end{equation}
+$$
+
+where \( \overline{v} \) is the complex conjugate of \( v \). The weighted inner product can now be used to create variational forms. If we multiply Eq. \eqref{eq:poisson} with \( \overline{v}w \) and integrate over the domain we obtain the variational form of the PDE
+$$
+\begin{equation}
+(-u'', v)_w = (f, v)_w. \label{eq:weak_poisson}
+\end{equation}
+$$
+
+The variational form can be solved numerically if \( u \) and \( v \) are approximated using a finite number \( (N) \) of test functions \( \{v_l(x)\}_{l=0}^{N-1} \), and a solution 
+$$
+\begin{equation}
+u(x) = \sum_{l=0}^{N-1} \hat{u}_l v_l(x),
+\label{_auto2}
+\end{equation}
+$$
+
+where \( \bs{\hat{u}} = \{\hat{u}_l\}_{l=0}^{N-1} \) are the expansion coefficients, that are also recognised as the unknowns in the modal spectral Galerkin method.
+
+<p>
+If \( v \) is chosen from a Fourier or Legendre basis, then the weight function used in the inner product is simply constant, and we may integrate \eqref{eq:weak_poisson} further using integration by parts. However, for a Chebyshev basis the weight function will be \( 1/\sqrt{1-x^2} \) and integration by parts is thus usually avoided. The weighted continuous inner product may, depending on the function that is to be integrated, be difficult or costly to evaluate. As such, we will in this work use the weighted \emph{discrete} inner product instead, where the integral is approximated using quadrature
+$$
+\begin{equation}
+(u, v)_w^N = \sum_{j=0}^{N-1} u(x_j) \overline{v}(x_j) w_j  \approx  \int_{\Omega} u(x) \overline{v}(x) w(x) dx.
+\label{eq:quadrature}
+\end{equation}
+$$
+
+Here \( \{w_j\}_{j=0}^{N-1} \) represents the quadrature weights and \( \{x_j\}_{j=0}^{N-1} \) are the quadrature points for the integration.
+
+<p>
+The test functions \( v \) will be chosen based in part on boundary conditions. However, regardless of which space the test functions are chosen from, the procedure for solving a PDE with the spectral Galerkin method is always the same:
+
+<ul>
+  <li> Choose a basis satisfying boundary conditions.</li>
+  <li> Derive variational forms from PDEs using  weighted inner products.</li>
+  <li> Assemble and solve linear systems of equations for expansion coefficients.</li>
+</ul>
+
+In other words it is very much like a finite element method. The major difference is that the basis functions are global, i.e., they all span the entire domain, whereas in FEM the test functions only have local support.
+
+<h1 id="sec:shenfun">Shenfun</h1>
+<code>shenfun</code> is a Python module package containing tools for working with the spectral Galerkin method. Shenfun implements classes for several bases with different boundary conditions, and within each class there are methods for transforms between spectral and real space, inner products, and for computing matrices arising from bilinear forms in the spectral Galerkin method. The Python module is organized as shown in Figure <a href="#fig:directorytree">1</a>.
+
+<p>
+The <code>shenfun</code> language is very simple and closely follows that of FEniCS. A simple form implementation provides operators <code>div, grad, curl</code> and <code>Dx</code>, that act on three different types of basis functions, the <code>TestFunction</code>, <code>TrialFunction</code> and <code>Function</code>. Their usage is very similar to that from FEniCS, but not as general, nor flexible, since we are only conserned with simple tensor product grids and smooth solutions. The usage of these operators and basis functions will become clear in the following subchapters, where we will also describe the <code>inner</code> and <code>project</code> functions, with functionality as suggested by their names.
+
+<p>
+<center> <!-- figure label: --> <div id="fig:directorytree"></div> <!-- FIGURE -->
+<hr class="figure">
+<center><p class="caption">Figure 1:  Directory tree structure of Python package <code>shenfun</code>.  <!-- caption label: fig:directorytree --> </p></center>
+<p><img src="figs/dirtree.png" align="bottom" height=400 width=200></p>
+</center>
+
+<h2 id="___sec3">Classes for basis functions </h2>
+The following bases are defined in submodules
+
+<ul>
+  <li> shenfun.chebyshev.bases</li>
+
+<ul>
+    <li> Basis - Regular Chebyshev</li> 
+    <li> ShenDirichletBasis - Dirichlet boundary conditions</li>
+    <li> ShenNeumannBasis - Neumann boundary conditions (homogeneous)</li>
+    <li> ShenBiharmonicBasis - Homogeneous Dirichlet and Neumann boundary conditions</li>
+</ul>
+
+  <li> shenfun.legendre.bases</li>
+
+<ul>
+    <li> Basis - Regular Legendre</li>
+    <li> ShenDirichletBasis - Dirichlet boundary conditions</li>
+    <li> ShenNeumannBasis - Neumann boundary conditions (homogeneous)</li>
+    <li> ShenBiharmonicBasis - Homogeneous Dirichlet and Neumann boundary conditions</li>
+</ul>
+
+  <li> shenfun.fourier.bases</li>
+
+<ul>
+    <li> R2CBasis - Real to complex Fourier transforms</li>
+    <li> C2CBasis - Complex to complex transforms</li>
+</ul>
+
+</ul>
+
+All bases have methods for transforms and inner products on single- or multidimensional Numpy data arrays. The following code shows how to create a Fourier basis and subsequently perform a forward and an inverse discrete Fourier transform on a random array. The <code>uc</code> array is only used to test that the transform cycle returns the original data.
+<!-- begin verbatim block  pyshell-->
+<pre><code>    &gt;&gt;&gt; from shenfun import *
+    &gt;&gt;&gt; import numpy as np
+    &gt;&gt;&gt; N = 16
+    &gt;&gt;&gt; FFT = fourier.bases.R2CBasis(N, plan=True) 
+    &gt;&gt;&gt; u = np.random.random(N)
+    &gt;&gt;&gt; uc = u.copy()
+    &gt;&gt;&gt; u_hat = FFT.forward(u)
+    &gt;&gt;&gt; u = FFT.backward(u_hat) 
+    &gt;&gt;&gt; assert np.allclose(u, uc)
+</code></pre>
+<!-- end verbatim block -->
+
+<h2 id="sec:matrices">Classes for matrices</h2>
+Matrices that arise with the spectral Galerkin method using Fourier or Shen's modified basis functions (see, e.g., Eqs \eqref{eq:chebdirichlet}, \eqref{eq:legdirichlet}), are typically sparse and diagonal in structure. The sparse structure allows for a very compact storage, and <code>shenfun</code> has its own Matrix-class that is subclassing a Python dictionary, where keys are diagonal offsets, and values are the values along the diagonal. Some of the more important methods of the <em>SparseMatrix</em> class are shown below:
+
+<p>
+<!-- begin verbatim block  pycod-->
+<pre><code>class SparseMatrix(dict):
+    def __init__(self, d, shape):
+        dict.__init__(self, d)
+        self.shape = shape
+        
+    def diags(self, format='dia'):
+        &quot;&quot;&quot;Return Scipy sparse matrix&quot;&quot;&quot;
+
+    def matvec(self, u, x, format='dia', axis=0):
+        &quot;&quot;&quot;Return Matrix vector product self*u in x&quot;&quot;&quot;
+        
+    def solve(self, b, u=None, axis=0):
+        &quot;&quot;&quot;Return solution u to self*u = b&quot;&quot;&quot;
+</code></pre>
+<!-- end verbatim block -->
+
+<p>
+For example, we may declare a tridiagonal matrix of shape N x N as
+<!-- begin verbatim block  pycod-->
+<pre><code>    &gt;&gt;&gt; N = 4
+    &gt;&gt;&gt; d = {-1: 1, 0: -2, 1: 1}
+    &gt;&gt;&gt; A = SparseMatrix(d, (N, N))
+</code></pre>
+<!-- end verbatim block -->
+or similarly as
+<!-- begin verbatim block  pycod-->
+<pre><code>    &gt;&gt;&gt; d = {-1: np.ones(N-1), 0: -2*np.ones(N)}
+    &gt;&gt;&gt; d[1] = d[-1]  # Symmetric, reuse np.ones array
+    &gt;&gt;&gt; A = SparseMatrix(d, (N, N))
+    &gt;&gt;&gt; A
+    {-1: array([ 1.,  1.,  1.]),
+      0: array([-2., -2., -2., -2.]),
+      1: array([ 1.,  1.,  1.])}
+</code></pre>
+<!-- end verbatim block -->
+The matrix is a subclassed dictionary. If you want a regular <em>Scipy</em> sparse matrix instead, with all of its associated methods (solve, matrix-vector, etc.), then it is just a matter of
+<!-- begin verbatim block  pycod-->
+<pre><code>    &gt;&gt;&gt; A.diags()
+    &lt;4x4 sparse matrix of type '&lt;class 'numpy.float64'&gt;'
+        with 10 stored elements (3 diagonals) in DIAgonal format&gt;
+    &gt;&gt;&gt; A.diags().toarray()
+    array([[-2.,  1.,  0.,  0.],
+           [ 1., -2.,  1.,  0.],
+           [ 0.,  1., -2.,  1.],
+           [ 0.,  0.,  1., -2.]])
+</code></pre>
+<!-- end verbatim block -->
+
+<h2 id="___sec5">Variational forms in 1D </h2>
+Weak variational forms are created using test and trial functions, as shown in the section <a href="#sec:preliminaries">Spectral Galerkin Method</a>. Test and trial functions can be created for any basis in <code>shenfun</code>, as shown below for a Chebyshev Dirichlet basis with 8 quadrature points
+<!-- begin verbatim block  pycod-->
+<pre><code>    &gt;&gt;&gt; from shenfun.chebyshev.bases import ShenDirichletBasis
+    &gt;&gt;&gt; from shenfun import inner, TestFunction, TrialFunction    
+    &gt;&gt;&gt; N = 8
+    &gt;&gt;&gt; SD = ShenDirichletBasis(N, plan=True)
+    &gt;&gt;&gt; u = TrialFunction(SD)
+    &gt;&gt;&gt; v = TestFunction(SD)
+</code></pre>
+<!-- end verbatim block -->
+A matrix that is the result of a bilinear form has its own subclass of <em>SparseMatrix</em>, called a <em>SpectralMatrix</em>. A <em>SpectralMatrix</em> is created using <em>inner</em> products on test and trial functions, for example the mass matrix:
+<!-- begin verbatim block  pycod-->
+<pre><code>    &gt;&gt;&gt; mass = inner(u, v)
+    &gt;&gt;&gt; mass
+    {-2: array([-1.57079633]),
+      0: array([ 4.71238898,  3.1415
+                 3.14159265, 3.14159265]),
+      2: array([-1.57079633])}
+</code></pre>
+<!-- end verbatim block -->
+This <em>mass</em> matrix will be the same as Eq. (2.5) of <a href="#shen95">[1]</a>, and it will be an instance of the <em>SpectralMatrix</em> class.
+You may notice that <em>mass</em> takes advantage of the fact that two diagonals are constant and consequently only stores one single value.
+
+<p>
+The <em>inner</em> method may be used to compute any linear or bilinear form. For example the stiffness matrix <em>K</em>
+<!-- begin verbatim block  pycod-->
+<pre><code>    &gt;&gt;&gt; K = inner(v, div(grad(u)))
+</code></pre>
+<!-- end verbatim block -->
+Square matrices have implemented a solve method that is using fast \( \mathcal{O}(N) \) direct LU decomposition or similar, if available, and falls back on using Scipy's solver in CSR format if no better method is found implemented. For example, to solve the linear system <em>Ku=b</em>
+<!-- begin verbatim block  pycod-->
+<pre><code>    &gt;&gt;&gt; fj = np.random.random(N)
+    &gt;&gt;&gt; b = inner(v, fj)
+    &gt;&gt;&gt; u = np.zeros_like(b)
+    &gt;&gt;&gt; u = K.solve(b, u)
+</code></pre>
+<!-- end verbatim block -->
+All methods are designed to work along any dimension of a multidimensional array. Very little differs in the users interface. Consider, for example, the previous example on a three-dimensional cube 
+<!-- begin verbatim block  pycod-->
+<pre><code>    &gt;&gt;&gt; fj = np.random.random((N, N, N))
+    &gt;&gt;&gt; b = inner(v, fj)
+    &gt;&gt;&gt; u = np.zeros_like(b)
+    &gt;&gt;&gt; u = K.solve(b, u)
+</code></pre>
+<!-- end verbatim block -->
+where <em>K</em> is exactly the same as before, from the 1D example. The matrix solve is applied along the first dimension since this is the default behaviour.
+
+<p>
+The bases also have methods for transforming between spectral and real space. For example, one may project a random vector to the <em>SD</em> space using
+<!-- begin verbatim block -->
+<pre><code>    &gt;&gt;&gt; fj = np.random.random(N)
+    &gt;&gt;&gt; fk = np.zeros_like(fj)
+    &gt;&gt;&gt; fk = SD.forward(fj, fk) # Gets expansion coefficients 
+</code></pre>
+<!-- end verbatim block -->
+and back to real physical space again
+<!-- begin verbatim block  pycod-->
+<pre><code>    &gt;&gt;&gt; fj = SD.backward(fk, fj)
+</code></pre>
+<!-- end verbatim block -->
+Note that <em>fj</em> now will be different than the original <em>fj</em> since it now has homogeneous boundary conditions. However, if we transfer back and forth one more time, starting from <em>fj</em> which is in the Dirichlet function space, then we come back to the same array:
+<!-- begin verbatim block  pycod-->
+<pre><code>    &gt;&gt;&gt; fj_copy = fj.copy()
+    &gt;&gt;&gt; fk = SD.forward(fj, fk)
+    &gt;&gt;&gt; fj = SD.backward(fk, fj)
+    &gt;&gt;&gt; assert np.allclose(fj, fj_copy) # Is True
+</code></pre>
+<!-- end verbatim block -->
+
+<h2 id="___sec6">Poisson equation implemented in 1D </h2>
+We have now shown the usage of  \( \bf shenfun \) for single, one-dimensional spaces. It does not become really interesting before we start looking into tensor product grids in higher dimensions, but before we go there we revisit the spectral Galerkin method for a 1D Poisson problem, and show how the implementation of this problem can be performed using \( \bf shenfun \).
+
+<h3 id="sec:fourierpoisson">Periodic boundary conditions</h3>
+
+If the solution to Eq. \eqref{eq:poisson} is periodic with periodic length \( 2 \pi \), then we use \( \Omega \in [0, 2 \pi] \) and it will be natural to choose the test functions from the space consisting of the Fourier basis functions, i.e.,  \( v_l(x)=e^{ilx} \). The mesh \( \boldsymbol{x} = \{x_j\}_{j=0}^{N-1} \) will be uniformly spaced 
+$$
+\begin{equation}
+\boldsymbol{x} = \frac{2 \pi j}{N}  \quad j=0,1,\ldots, N-1,
+\label{_auto3}
+\end{equation}
+$$
+
+and we look for solutions of the form
+$$
+\begin{equation}
+u(x_j) = \sum_{l=-N/2}^{N/2-1} \hat{u}_l e^{ilx_j} \quad  j=0,1,\ldots N-1.
+\label{eq:ufourier}
+\end{equation}
+$$
+
+Note that for Fourier basis functions it is customary (used by both MATLAB and Numpy) to use the wavenumbermesh
+$$
+\begin{equation}
+\boldsymbol{l} = -N/2, -N/2+1, \ldots, N/2-1, \label{eq:wavenumber_even}
+\end{equation}
+$$
+
+where we have assumed that \( N \) is even. Also note that Eq. \eqref{eq:ufourier} naively would be computed in \( \mathcal{O}(N^2) \) operations, but that it can be computed much faster \( \mathcal{O}(N\log N) \) using the discrete inverse Fourier transform
+$$
+\begin{equation}
+\bs{u} = \mathcal{F}^{-1}(\bs{\hat{u}}),
+\label{_auto4}
+\end{equation}
+$$
+
+where we use compact notation \( \bs{u} = \{u(x_j)\}_{j=0}^{N-1} \).
+
+<p>
+To solve Eq. \eqref{eq:poisson} with the discrete spectral Galerkin method, we create the basis \( V^p = \text{span}\{ e^{ilx} , \text{ for } l \in \boldsymbol{l}\}  \) and attempt to find \( u \in V^p \) such that
+$$
+\begin{equation}
+(-u'', v)_w^N = (f, v)_w^N, \quad \forall \, v \in V^p.
+\label{_auto5}
+\end{equation}
+$$
+
+Inserting for Eq. \eqref{eq:ufourier} and using \( e^{imx} \) as test function we obtain
+$$
+\begin{align}
+-(\sum_{l \in \bs{l}} \hat{u}_l (e^{ilx})'', e^{imx})_w^N &= (f(x), e^{imx})_w^N \quad \forall \, m \in \bs{l} 
+\label{_auto6}\\
+\sum_{l \in \bs{l}} l^2( e^{ilx}, e^{imx})_w^N \hat{u}_l &= (f(x), e^{imx})_w ^N\quad \forall \, m \in \bs{l}. \label{eq:utmp}
+\end{align}
+$$
+
+Note that the discrete inner product \eqref{eq:quadrature} is used, and we also need to interpolate the function \( f(x) \) onto the grid \( \boldsymbol{x} \). For Fourier it becomes very simple since the weight functions are constant \( w_j = 2\pi/N \) and we have for the left hand side simply a diagonal matrix
+$$
+\begin{equation}
+( e^{ilx}, e^{imx})^N = 2\pi \delta_{ml} \quad \text{for} \, l, m \in \bs{l} \times \bs{l},
+\label{_auto7}
+\end{equation}
+$$
+
+where \( \delta_{ml} \) is the kronecker delta function.
+For the right hand side we have
+$$
+\begin{align}
+(f(x), e^{imx})^N &= \frac{2 \pi}{N}\sum_{j=0}^{N-1} f(x_j) e^{-imx_j} \quad \text{for } m \in \bs{l}, 
+\label{_auto8}\\
+ &= 2 \pi \mathcal{F}_m(f(\bs{x})), 
+\label{_auto9}\\
+ &= 2 \pi \hat{f}_m,
+\label{_auto10}
+\end{align}
+$$
+
+where \( \mathcal{F} \) represents the discrete Fourier transform that is defined as
+$$
+\begin{equation}
+\hat{u}_l = \frac{1}{N}\sum_{j=0}^{N-1} u(x_j) e^{-ilx_j}, \quad \text{for } l \in \bs{l},
+\label{_auto11}
+\end{equation}
+$$
+
+or simply
+$$
+\begin{equation}
+  \bs{\hat{u}} = \mathcal{F}(\bs{u}).
+\label{_auto12}
+\end{equation}
+$$
+
+Putting it all together we can set up the assembled linear system of equations for \( \hat{u}_l \) in \eqref{eq:utmp}
+$$
+\begin{equation}
+\sum_{l \in \bs{l}}2 \pi l^2 \delta_{ml} \hat{u}_l = 2 \pi \hat{f}_{m} \quad \forall \, m \in \bs{l},
+\label{_auto13}
+\end{equation}
+$$
+
+which is trivially solved since it only involves a diagonal matrix (\( \delta_{ml} \)), and we obtain
+$$
+\begin{equation}
+\hat{u}_l = \frac{1}{l^2} \hat{f}_{l} \quad \forall \,l  \in \bs{l} \setminus{\{0\}}.
+\label{_auto14}
+\end{equation}
+$$
+
+<p>
+So, even though we carefully followed the spectral Galerkin method, we have ended up with the same result that would have been obtained with a Fourier collocation method, where one simply takes the Fourier transform of the Poisson equation and differentiate analytically.
+
+<p>
+With \( \bf shenfun \) the periodic 1D Poisson equation can be trivially computed either with the collocation approach or the spectral Galerkin method. The procedure for the spectral Galerkin method will be shown first, before the entire problem is solved.
+ All \( \bf shenfun \) demos in this paper will contain a similar preample section where some necessary Python classes, modules and functions are imported. We import Numpy since \( \bf shenfun \) arrays are Numpy arrays, and we import from Sympy to construct some exact solution used to verify the code. Note also the similarity to FEniCS with the import of methods and classes \( inner, div, grad, TestFunction, TrialFunction \).  The Fourier spectral Galerkin method in turn requires that the `FourierBasis is imported as well. 
+<!-- begin verbatim block  pycod-->
+<pre><code>from sympy import Symbol, cos
+import numpy as np
+from shenfun import inner, div, grad, TestFunction, TrialFunction
+from shenfun.fourier.bases import FourierBasis
+
+# Use Sympy to compute a rhs, given an analytical solution
+x = Symbol(&quot;x&quot;)
+ue = cos(4*x)
+fe = ue.diff(x, 2)
+
+# Create Fourier basis with N basis functions
+N = 32
+ST = FourierBasis(N, np.float, plan=True)
+u = TrialFunction(ST)
+v = TestFunction(ST)
+X = ST.mesh(N)
+
+# Get f and exact solution on quad points 
+fj = np.array([fe.subs(x, j) for j in X], dtype=np.float)
+uj = np.array([ue.subs(x, i) for i in X], dtype=np.float)
+
+# Assemble right and left hand sides
+f_hat = inner(v, fj)
+A = inner(v, div(grad(u)))
+
+# Solve Poisson equation
+u_hat = A.solve(f_hat)
+
+# Transfer solution back to real space
+uq = ST.backward(u_hat)
+assert np.allclose(uj, uq)
+</code></pre>
+<!-- end verbatim block -->
+
+<p>
+Naturally, this simple problem could be solved easier with a Fourier collocation instead, and  a simple pure 1D Fourier problem does not illuminate the true advantages of  <code>shenfun</code>, that only will become evident when we look at higher dimensional problems with tensor product spaces. To solve with collocation, we could simply do
+<!-- begin verbatim block  pycod-->
+<pre><code># Transform right hand side
+f_hat = ST.forward(fj)
+
+# Wavenumers
+k = ST.wavenumbers(N)
+k[0] = 1
+
+# Solve Poisson equation (solution in f_hat)
+f_hat /= k**2
+</code></pre>
+<!-- end verbatim block -->
+
+<p>
+Note that <em>ST</em> methods <em>forward/backward</em> correspond to forward and inverse discrete Fourier transforms. Furthermore, since the input data <em>fj</em> is of type float (not complex), the transforms make use of the symmetry of the Fourier transform of real data, that \( \hat{u}_k = \overline{\hat{u}}_{N-k} \), and that \( \bs{k}=0,1,\ldots, N/2 \) (index set computed as \( k = ST.wavenumbers(N) \)).
+
+<h3 id="sec:dirichletpoisson">Dirichlet boundary conditions</h3>
+
+If the Poisson equation is subject to Dirichlet boundary conditions on the edge of the domain \( \Omega \in [-1, 1] \), then a natural choice is to use Chebyshev or Legendre polynomials. Two test functions that strongly fixes the boundary condition \( u(\pm 1)=0 \) are
+$$
+\begin{equation}
+v_l(x) = T_l(x) - T_{l+2}(x),
+\label{_auto15}
+\end{equation}
+$$
+
+where \( T_l(x) \) is the l'th order Chebyshev polynomial of the first kind, or
+$$
+\begin{equation}
+v_l(x) = L_l(x) - L_{l+2}(x),
+\label{eq:shen_legendre_basis}
+\end{equation}
+$$
+
+where \( L_l(x) \) is the l'th order Legendre polynomial. The test functions give rise to functionspaces
+$$
+\begin{align}
+V^C &= \text{span}\{T_l-T_{l+2}, l \in \bs{l}^D\}, \label{eq:chebdirichlet} \\
+V^L &= \text{span}\{L_l-L_{l+2}, k \in \bs{l}^D\}, \label{eq:legdirichlet}
+\end{align}
+$$
+
+where
+$$
+\begin{equation}
+\boldsymbol{l}^D = 0, 1, \ldots, N-3.
+\label{_auto16}
+\end{equation}
+$$
+
+The computational mesh and associated weights will be decided by the chosen quadrature rule. Here we will go for Gauss quadrature, which leads to the following points and weights for the Chebyshev basis
+$$
+\begin{align}
+x_j^C &= \cos \left( \frac{2j+1}{2N}\pi \right) \quad &j=0,1,\ldots, N-1, 
+\label{_auto17}\\
+w_j^C &= \frac{\pi}{N},
+\label{_auto18}
+\end{align}
+$$
+
+and
+$$
+\begin{align}
+x_j^L &= \text{ zeros of }L_{N}(x) \quad &j=0,1,\ldots, N-1, 
+\label{_auto19}\\
+w_j^L &= \frac{2}{(1-x_j^2)[L'_{N}(x_j)]^2} \quad &j=0,1,\ldots, N-1,
+\label{_auto20}
+\end{align}
+$$
+
+for the Legendre basis.
+
+<p>
+We now follow the same procedure as in the section <a href="#sec:fourierpoisson">Periodic boundary conditions</a> and solve Eq. \eqref{eq:poisson} with the spectral Galerkin method. Consider first the Chebyshev basis and find \( u \in V^C \) , such that
+$$
+\begin{equation}
+(-u'', v)_w^N = (f, v)_w^N , \quad \forall \, v \in V^C.
+\label{_auto21}
+\end{equation}
+$$
+
+We insert for \( v=v_m \) and \( u=\displaystyle \sum_{l\in \bs{l}^D} \hat{u}_l v_l \) and obtain
+$$
+\begin{align}
+-(\sum_{l\in \bs{l}^D} \hat{u}_l v_l'', v_m)_w^N &= (f, v_m)_w^N  &m \in \bs{l}^D,
+\label{_auto22}\\
+-(v_l'', v_m)_w^N \hat{u}_l &= (f, v_m)_w^N & m \in \bs{l}^D, \label{eq:cheb_poisson}
+\end{align}
+$$
+
+where summation on repeated indices is implied. In Eq. \eqref{eq:cheb_poisson} \( A_{ml} =(v_l'', v_m)_w^N \) are the components of a sparse stiffness matrix, and we will use matrix notation \( \bs{A} = \{A_{ml}\}_{m,l \in \bs{l}^D \times \bs{l}^D} \) to simplify. The right hand side can similarily be assembled to a vector with components \( \tilde{f}_m = (f, v_m)_w^N \) such that \( \bs{\tilde{f}} = \{\tilde{f}_m\}_{m\in \bs{l}^D}  \). Note that a tilde is used since this is not a complete transform. We can now solve for the unknown \( \bs{\hat{u}} = \{\hat{u}_l\}_{l\in \bs{l}^D} \) vector
+$$
+\begin{align}
+-\bs{A} \bs{\hat{u}} &= \bs{\tilde{f}}, 
+\label{_auto23}\\
+   \bs{\hat{u}} &= -\bs{A}^{-1} \bs{\tilde{f}}.
+\label{_auto24}
+\end{align}
+$$
+
+Note that the matrix \( \bs{A} \) is a special kind of upper triangular matrix, and that the solution can be obtained very efficiently in approximately \( 4 N \) arithmetic operations.
+
+<p>
+To get the solution back and forth between real and spectral space we require a transformation pair similar to the Fourier transforms. We do this by projection. Start with
+$$
+\begin{equation}
+u(\bs{x}) = \sum_{l\in \bs{l}^D} \hat{u}_l v_l(\bs{x})
+\label{_auto25}
+\end{equation}
+$$
+
+and take the inner product with \( v_m \)
+$$
+\begin{equation}
+(u, v_m)_w^N  = (\sum_{l\in \bs{l}^D} \hat{u}_l v_l, v_m)_w^N.
+\label{eq:projection}
+\end{equation}
+$$
+
+Introducing now the mass matrix \( B_{ml} = (v_l, v_m)_w^N \) and the \emph{Shen} forward inner product \( \mathcal{S}_m(u) = (u, v_m)_w^N \), Eq. \eqref{eq:projection}  is rewritten as
+$$
+\begin{align}
+\mathcal{S}_m(u) &= B_{ml} \hat{u}_l, 
+\label{_auto26}\\
+\bs{\hat{u}}  =& \bs{B}^{-1} \mathcal{S}(\bs{u}) , 
+\label{_auto27}\\
+\bs{\hat{u}}  =& \mathcal{T}(\bs{u}) ,
+\label{_auto28}
+\end{align}
+$$
+
+where \( \mathcal{T}(\bs{u}) \) represents a forward transform of \( \bs{u} \). Note that \( \mathcal{S} \) is introduced since the inner product \( (u, v_m)_w^N \) may, just like the inner product with the Fourier basis, be computed fast, with \( \mathcal{O}(N \log N) \) operations. And to this end, we need to make use of a discrete cosine transform (DCT), instead of the Fourier transform. The details are left out from this paper, though.
+
+<p>
+A simple Poisson problem with analytical solution \( \sin(\pi x)(1-x^2) \) is implemented below, where we also verify that the correct solution is obtained.
+<!-- begin verbatim block  pycod-->
+<pre><code>from shenfun.chebyshev.bases import ShenDirichletBasis
+
+# Use sympy to compute a rhs, given an analytical solution
+ue = sin(np.pi*x)*(1-x**2)
+fe = ue.diff(x, 2)
+
+# Lambdify for faster evaluation
+ul = lambdify(x, ue, 'numpy')
+fl = lambdify(x, fe, 'numpy')
+
+N = 32
+SD = ShenDirichletBasis(N, plan=True)
+X = SD.mesh(N)
+u = TrialFunction(SD)
+v = TestFunction(SD)
+fj = fl(X)
+
+# Compute right hand side of Poisson equation
+f_hat = inner(v, fj)
+
+# Get left hand side of Poisson equation and solve
+A = inner(v, div(grad(u)))
+f_hat = A.solve(f_hat)
+uj = SD.backward(f_hat)
+
+# Compare with analytical solution
+ue = ul(X)
+assert np.allclose(uj, ue)
+</code></pre>
+<!-- end verbatim block -->
+Note that the inner product <code>f_hat = inner(v, fj)</code> is computed under the hood using the fast DCT.  The inverse transform <code>uj = SD.backward(f_hat)</code> is also computed using a fast DCT, and we use the notation
+$$
+\begin{align}
+u(x_j) &= \sum_{l\in \bs{l}^D} \hat{u}_l v_l(x_j) &j=0,1,\ldots, N-1, \notag 
+\label{_auto29}\\
+\bs{u} &= \mathcal{S}^{-1}(\bs{\hat{u}}). \label{eq:fast_shen}
+\end{align}
+$$
+
+To implement the same problem with the Legendre basis \eqref{eq:shen_legendre_basis}, all that is needed to change is the first line in the Poisson solver to \( from shenfun.legendre.bases import ShenDirichletBasis \). Everything else is exactly the same. However, a fast inner product, like in \eqref{eq:fast_shen}, is only implemented for the Chebyshev basis, since there are no known \( \mathcal{O}(N \log N) \) algorithms for the Legendre basis, and the Legendre basis thus uses straight forward \( \mathcal{O}(N^2) \) algorithms for its transforms.
+
+<h1 id="___sec9">Bibliography </h1>
+
+<p>
+<!-- begin bibliography -->
+
+<ol>
+ <li> <div id="shen95"></div> <b>J. Shen</b>. 
+    Efficient Spectral-Galerkin Method II. Direct Solvers of Second- and Fourth-Order Equations Using Chebyshev Polynomials,
+    <em>SIAM Journal on Scientific Computing</em>,
+    16(1),
+    pp. 74-87,
+    1995.</li>
+ <li> <div id="kopriva09"></div> <b>D. A. Kopriva</b>. 
+    <em>Implementing Spectral Methods for Partial Differential Equations</em>,
+    Springer,
+    2009.</li>
+ <li> <div id="fenics"></div> <b>A. Logg, K.-A. Mardal, G. N. Wells et al.</b>. 
+    <em>Automated Solution of Differential Equations by the Finite Element Method</em>,
+    Springer,
+    2012.</li>
+ <li> <div id="trefethen13"></div> <b>L. N. Trefethen</b>. 
+    <em>Approximation Theory and Approximation Practice</em>,
+    SIAM,
+    2013.</li>
+ <li> <div id="debruynkops15"></div> <b>S. d. B. Kops</b>. 
+    Classical Scaling and Intermittency in Strongly Stratified Boussinesq Turbulence,
+    <em>J. Fluid Mechanics</em>,
+    775,
+    pp. 436-463,
+    2015.</li>
+ <li> <div id="hoyas06"></div> <b>S. Hoyas and J. Jim\'enez</b>. 
+    Scaling of the Velocity Fluctuations in Turbulent Channels Up to \( Re_	au=2003 \),
+    <em>Physics of Fluids</em>,
+    18(1),
+    2006.</li>
+ <li> <div id="leemoser15"></div> <b>M. Lee and R. D. Moser</b>. 
+    Direct Numerical Simulation of Turbulent Channel Flow Up to \( Re_	au pprox 5200 \),
+    <em>J. Fluid Mechanics</em>,
+    774,
+    pp. 395-415,
+    2015.</li>
+ <li> <div id="Alfonsi2016"></div> <b>G. Alfonsi, S. A. Ciliberti, M. Mancini and L. Primavera</b>. 
+    Direct Numerical Simulation of Turbulent Channel Flow on High-Performance GPU Computing System,
+    <em>Computation</em>,
+    4,
+    pp. 13,
+    2016.</li>
+ <li> <div id="Mortensen2016"></div> <b>M. Mortensen and H. P. Langtangen</b>. 
+    High Performance Python for Direct Numerical Simulations of Turbulent Flows,
+    <em>Computer Physics Communications</em>,
+    203,
+    pp. 53-65,
+    2016.</li>
+<li> <div id="numpy"></div> <b>NumPy</b>. 
+    Http://www.numpy.org,
+    2017.</li>
+<li> <div id="mpi4py"></div> <b>MPI for Python</b>. 
+    Https://bitbucket.org/mpi4py/mpi4py/,
+    2017.</li>
+<li> <div id="pyfftw"></div> <b>pyFFTW</b>. 
+    https://pypi.python.org/pypi/pyFFTW,
+    2017.</li>
+<li> <div id="libfftw"></div> <b>M. Frigo and S. G. Johnson</b>. 
+    The Design and Implementation of FFTW3,
+    <em>Proceedings of the IEEE</em>,
+    93(2),
+    pp. 216-231,
+    2005.</li>
+</ol>
+
+<!-- end bibliography -->
+
+<!-- ------------------- end of main content --------------- -->
+
+
+<center style="font-size:80%">
+<!-- copyright --> &copy; 2017, Mikael Mortensen. Released under CC Attribution 4.0 license
+</center>
+
+
+</body>
+</html>
+    
+

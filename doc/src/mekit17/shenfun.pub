@@ -1,0 +1,183 @@
+* articles
+** {The Design and Implementation of FFTW3}
+   key:           libfftw
+   author:        M. Frigo, S. G. Johnson
+   year:          2005
+   journal:       Proceedings of the IEEE
+   volume:        93
+   number:        2
+   pages:         216-231
+   status:        published
+   Bdsk-Url-1:    http://dx.doi.org/10.1109/JPROC.2004.840301
+   Date-Added:    2017-04-28 09:58:28 +0000
+   Date-Modified: 2017-04-28 09:58:28 +0000
+   Doi:           10.1109/JPROC.2004.840301
+   Issn:          0018-9219
+   Month:         Feb
+   entrytype:     article
+   keywords:      discrete Fourier transforms;discrete cosine transforms;mathematics computing;optimising compilers;parallel programming;software libraries;DFT algorithm;FFTW3 design;FFTW3 version;cosine transforms;discrete Fourier transform;hand optimized libraries;machine specific single instruction;multiple data instructions;sine transforms;software structure;Data structures;Discrete Fourier transforms;Discrete cosine transforms;Discrete transforms;Fast Fourier transforms;Fourier transforms;Hardware;Multidimensional systems;Optimizing compilers;Software libraries;Adaptive software;Fourier transform;Hartley transform;I/O tensor;cosine transform;fast Fourier transform (FFT)
+** High Performance {P}ython for Direct Numerical Simulations of Turbulent Flows
+   key:           Mortensen2016
+   author:        M. Mortensen, H. P. Langtangen
+   year:          2016
+   journal:       Computer Physics Communications
+   volume:        203
+   pages:         53-65
+   status:        published
+   Abstract:      Abstract Direct Numerical Simulations (DNS) of the Navier Stokes equations is an invaluable research tool in fluid dynamics. Still, there are few publicly available research codes and, due to the heavy number crunching implied, available codes are usually written in low-level languages such as C/C++ or Fortran. In this paper we describe a pure scientific Python pseudo-spectral \{DNS\} code that nearly matches the performance of C++ for thousands of processors and billions of unknowns. We also describe a version optimized through Cython, that is found to match the speed of C++. The solvers are written from scratch in Python, both the mesh, the \{MPI\} domain decomposition, and the temporal integrators. The solvers have been verified and benchmarked on the Shaheen supercomputer at the \{KAUST\} supercomputing laboratory, and we are able to show very good scaling up to several thousand cores. A very important part of the implementation is the mesh decomposition (we implement both slab and pencil decompositions) and 3D parallel Fast Fourier Transforms (FFT). The mesh decomposition and \{FFT\} routines have been implemented in Python using serial \{FFT\} routines (either NumPy, pyFFTW or any other serial \{FFT\} module), NumPy array manipulations and with \{MPI\} communications handled by \{MPI\} for Python (mpi4py). We show how we are able to execute a 3D parallel \{FFT\} in Python for a slab mesh decomposition using 4 lines of compact Python code, for which the parallel performance on Shaheen is found to be slightly better than similar routines provided through the \{FFTW\} library. For a pencil mesh decomposition 7 lines of code is required to execute a transform.
+   Bdsk-Url-1:    http://www.sciencedirect.com/science/article/pii/S0010465516300200
+   Bdsk-Url-2:    http://dx.doi.org/10.1016/j.cpc.2016.02.005
+   Date-Added:    2017-04-28 09:45:20 +0000
+   Date-Modified: 2017-05-02 10:42:16 +0000
+   Doi:           http://dx.doi.org/10.1016/j.cpc.2016.02.005
+   Issn:          0010-4655
+   Url:           http://www.sciencedirect.com/science/article/pii/S0010465516300200
+   entrytype:     article
+   keywords:      MPI
+** Direct Numerical Simulation of Turbulent Channel Flow on High-Performance {GPU} Computing System
+   key:           Alfonsi2016
+   author:        G. Alfonsi, S. A. Ciliberti, M. Mancini, L. Primavera
+   year:          2016
+   journal:       Computation
+   volume:        4
+   pages:         13
+   status:        published
+   Date-Added:    2017-04-28 09:43:05 +0000
+   Date-Modified: 2017-05-02 10:40:34 +0000
+   entrytype:     article
+** Classical Scaling and Intermittency in Strongly Stratified Boussinesq Turbulence
+   key:           debruynkops15
+   author:        S. de Bruyn Kops
+   year:          2015
+   journal:       J. Fluid Mechanics
+   volume:        775
+   pages:         436-463
+   status:        published
+   Date-Added:    2017-04-28 09:41:42 +0000
+   Date-Modified: 2017-04-28 09:41:42 +0000
+   Owner:         mikael
+   Timestamp:     2016.02.05
+   entrytype:     article
+** {Scaling of the Velocity Fluctuations in Turbulent Channels Up to $Re_{\tau}=2003$}
+   key:           hoyas06
+   author:        S. Hoyas, J. Jim{\'e}nez
+   year:          2006
+   journal:       Physics of Fluids
+   volume:        18
+   number:        1
+   status:        published
+   Bdsk-Url-1:    http://scitation.aip.org/content/aip/journal/pof2/18/1/10.1063/1.2162185
+   Bdsk-Url-2:    http://dx.doi.org/10.1063/1.2162185
+   Date-Added:    2017-04-28 09:40:38 +0000
+   Date-Modified: 2017-05-02 10:41:11 +0000
+   Doi:           http://dx.doi.org/10.1063/1.2162185
+   Eid:           011702
+   Url:           http://scitation.aip.org/content/aip/journal/pof2/18/1/10.1063/1.2162185
+   entrytype:     article
+** {Direct Numerical Simulation of Turbulent Channel Flow Up to $Re_{\tau} \approx 5200$}
+   key:           leemoser15
+   author:        M. Lee, R. D. Moser
+   year:          2015
+   journal:       J. Fluid Mechanics
+   volume:        774
+   pages:         395--415
+   status:        published
+   Bdsk-Url-1:    http://journals.cambridge.org/article_S0022112015002682
+   Bdsk-Url-2:    http://dx.doi.org/10.1017/jfm.2015.268
+   Date-Added:    2017-04-28 09:40:12 +0000
+   Date-Modified: 2017-05-02 10:42:00 +0000
+   Doi:           10.1017/jfm.2015.268
+   Issn:          1469-7645
+   Month:         7
+   Numpages:      21
+   Url:           http://journals.cambridge.org/article_S0022112015002682
+   entrytype:     article
+** Efficient Spectral-Galerkin Method II. Direct Solvers of Second- and Fourth-Order Equations Using Chebyshev Polynomials
+   key:           shen95
+   author:        J. Shen
+   year:          1995
+   journal:       SIAM Journal on Scientific Computing
+   volume:        16
+   number:        1
+   pages:         74-87
+   status:        published
+   Bdsk-Url-1:    http://dx.doi.org/10.1137/0916006
+   Date-Added:    2017-04-26 09:51:18 +0000
+   Date-Modified: 2017-05-02 10:42:23 +0000
+   Doi:           10.1137/0916006
+   Eprint:        http://dx.doi.org/10.1137/0916006
+   Url:           http://dx.doi.org/10.1137/0916006
+   entrytype:     article
+* books
+** Approximation Theory and Approximation Practice
+   key:           trefethen13
+   author:        L. N. Trefethen
+   year:          2013
+   publisher:     SIAM
+   status:        published
+   Date-Added:    2017-05-02 10:37:04 +0000
+   Date-Modified: 2017-05-02 10:42:33 +0000
+   entrytype:     book
+** Automated Solution of Differential Equations by the Finite Element Method
+   key:           fenics
+   author:        A. Logg, K.-A. Mardal, G. N. Wells, others
+   year:          2012
+   publisher:     Springer
+   status:        published
+   Bdsk-Url-1:    http://dx.doi.org/10.1007/978-3-642-23099-8
+   Date-Added:    2017-05-02 06:08:50 +0000
+   Date-Modified: 2017-05-02 10:40:55 +0000
+   Doi:           10.1007/978-3-642-23099-8
+   entrytype:     book
+   isbn:          978-3-642-23098-1
+** Implementing Spectral Methods for Partial Differential Equations
+   key:           kopriva09
+   author:        D. A. Kopriva
+   year:          2009
+   publisher:     Springer
+   status:        published
+   Bdsk-Url-1:    http://dx.doi.org/10.1007/978-90-481-2261-5
+   Date-Added:    2017-04-26 10:00:42 +0000
+   Date-Modified: 2017-05-02 10:41:42 +0000
+   Doi:           10.1007/978-90-481-2261-5
+   Owner:         mikael
+   Timestamp:     2016.09.27
+   entrytype:     book
+* misc
+** {https://pypi.python.org/pypi/pyFFTW}
+   key:           pyfftw
+   author:        pyFFTW
+   year:          2017
+   status:        published
+   Bdsk-Url-1:    https://pypi.python.org/pypi/pyFFTW
+   Date-Added:    2017-04-28 09:57:31 +0000
+   Date-Modified: 2017-08-10 12:39:18 +0000
+   Owner:         mikael
+   Timestamp:     2015.02.09
+   Url:           https://pypi.python.org/pypi/pyFFTW
+   entrytype:     misc
+** Http://www.numpy.org
+   key:           numpy
+   author:        NumPy
+   year:          2017
+   status:        published
+   Bdsk-Url-1:    http://www.numpy.org
+   Date-Added:    2017-04-28 09:56:44 +0000
+   Date-Modified: 2017-08-10 12:39:03 +0000
+   Owner:         mikael
+   Timestamp:     2015.10.06
+   Url:           http://www.numpy.org
+   Urldate:       2017
+   entrytype:     misc
+** Https://bitbucket.org/mpi4py/mpi4py/
+   key:           mpi4py
+   author:        {MPI for Python}
+   year:          2017
+   status:        published
+   Bdsk-Url-1:    https://bitbucket.org/mpi4py/mpi4py/
+   Date-Added:    2017-04-28 09:56:15 +0000
+   Date-Modified: 2017-08-10 12:39:27 +0000
+   Owner:         mikael
+   Timestamp:     2015.10.06
+   Url:           https://bitbucket.org/mpi4py/mpi4py/
+   entrytype:     misc
