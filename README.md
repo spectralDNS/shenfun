@@ -7,6 +7,8 @@ Description
 -----------
 Shenfun is a toolbox for automating the spectral Galerkin method.  The user interface to `shenfun` is very similar to FEniCS (fenicsproject.org), but works only for tensor product grids and the spectral Galerking method. The code is parallelized with MPI through the [*mpi4py-fft*](https://bitbucket.org/mpi4py/mpi4py-fft) package.
 
+The code is described is this [*paper*](https://raw.github.com/spectralDNS/shenfun/master/doc/pub/mekit17/shenfun_bootstrap.html)
+
 The spectral Galerkin method uses the method of weighted residuals, and solves PDEs by first creating variational forms from inner products, 
 <p align="center">
     <img src="https://www.dropbox.com/s/de2s19s0wyb2mi3/inner_product_3D.png?dl=1" alt="Poisson equation"/>
