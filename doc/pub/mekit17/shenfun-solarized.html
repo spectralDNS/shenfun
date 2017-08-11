@@ -57,7 +57,18 @@ div { text-align: justify; text-justify: inter-word; }
                3,
                'sec:dirichletpoisson',
                'sec:dirichletpoisson'),
-              ('Bibliography', 1, None, '___sec9')]}
+              ('Tensor product spaces',
+               1,
+               'sec:tensorproductspaces',
+               'sec:tensorproductspaces'),
+              ('Other functionality of `shenfun`',
+               1,
+               'sec:extended',
+               'sec:extended'),
+              ('Ginzburg-Landau equation', 1, 'sec:ginzburg', 'sec:ginzburg'),
+              ('Conclusions', 1, None, '___sec12'),
+              ('Acknowledgements', 1, None, '___sec13'),
+              ('Bibliography', 1, None, '___sec14')]}
 end of tocinfo -->
 
 <body>
@@ -79,6 +90,7 @@ MathJax.Hub.Config({
 <!-- newcommands_keep.tex -->
 $$
 \newcommand{\bs}[1]{\boldsymbol{#1}}
+\newcommand{\ts}[1]{\bs{\textsf{#1}}}
 $$
 
 
@@ -120,7 +132,12 @@ Table of contents</h2>
 &nbsp; &nbsp; &nbsp; <a href="#sec:matrices"> Classes for matrices </a><br>
 &nbsp; &nbsp; &nbsp; <a href="#___sec5"> Variational forms in 1D </a><br>
 &nbsp; &nbsp; &nbsp; <a href="#___sec6"> Poisson equation implemented in 1D </a><br>
-<a href="#___sec9"> Bibliography </a><br>
+<a href="#sec:tensorproductspaces"> Tensor product spaces </a><br>
+<a href="#sec:extended"> Other functionality of <code>shenfun</code> </a><br>
+<a href="#sec:ginzburg"> Ginzburg-Landau equation </a><br>
+<a href="#___sec12"> Conclusions </a><br>
+<a href="#___sec13"> Acknowledgements </a><br>
+<a href="#___sec14"> Bibliography </a><br>
 </p>
 <p>
 <!-- !split -->
@@ -143,7 +160,7 @@ There are many tools available for working with spectral methods. For MATLAB the
 To the author's knowledge, all research codes developed for studying turbulent flows through Direct Numerical Simulations (DNS) on supercomputers have been written in low-level languages like Fortran, C or C++, see, e.g., <a href="#debruynkops15">[5]</a> <a href="#hoyas06">[6]</a> <a href="#leemoser15">[7]</a>, or <a href="#Alfonsi2016">[8]</a> for a list of high performance channel flow solvers. The codes are  highly tuned and tailored to a specific target, and, being low-level, the codes are not easily accessible to a non-expert programmer. Mortensen and Langtangen <a href="#Mortensen2016">[9]</a> describe how a DNS solver can be written in Python in 100 lines of script-like code, and also show that the code, when optimized in the background using Cython, runs as fast as an identical C++ implementation on thousands of processors with MPI. {Shenfun} takes it one step further and aims at providing a generic toolbox for creating high performance, parallel solvers of any PDE, in a very high-level language. And without compromising much on computational efficiency. The key to developing such a high-level code in Python is efficient use of Numpy <a href="#numpy">[10]</a>, with broadcasting and vectorization, and MPI for Python <a href="#mpi4py">[11]</a>, that wraps almost the entire MPI library, and that can transfer Numpy arrays between thousands of processors at the same speed as a low-level C or Fortran code. Similarly, we utilize the pyFFTW module <a href="#pyfftw">[12]</a>, that wraps most of the FFTW library <a href="#libfftw">[13]</a> and makes the FFT as fast when called from Python as it is when used in low-level codes.
 
 <p>
-<!-- This paper is organised as follows: in the section <a href="#sec:preliminaries">Spectral Galerkin Method</a> the spectral Galerkin method is introduced. In the section <a href="#sec:shenfun">Shenfun</a> the basics of the {shenfun} package is described and #implementations are shown for simple 1D Poisson and biharmonic problems. In the section ref{sec:tensorproductspaces} we move to higher dimensions and tensor product spaces before we, in #the sections ref{sec:extended} and ref{sec:ginzburg} end with some extended functionality and an implementation for the time dependent nonlinear Ginzburg-Landau equation in 2D. -->
+<!-- This paper is organised as follows: in the section <a href="#sec:preliminaries">Spectral Galerkin Method</a> the spectral Galerkin method is introduced. In the section <a href="#sec:shenfun">Shenfun</a> the basics of the {shenfun} package is described and #implementations are shown for simple 1D Poisson and biharmonic problems. In the section <a href="#sec:tensorproductspaces">Tensor product spaces</a> we move to higher dimensions and tensor product spaces before we, in #the sections <a href="#sec:extended">Other functionality of <code>shenfun</code></a> and <a href="#sec:ginzburg">Ginzburg-Landau equation</a> end with some extended functionality and an implementation for the time dependent nonlinear Ginzburg-Landau equation in 2D. -->
 
 <p>
 <!-- !split -->
@@ -713,7 +730,398 @@ $$
 
 To implement the same problem with the Legendre basis \eqref{eq:shen_legendre_basis}, all that is needed to change is the first line in the Poisson solver to \( from shenfun.legendre.bases import ShenDirichletBasis \). Everything else is exactly the same. However, a fast inner product, like in \eqref{eq:fast_shen}, is only implemented for the Chebyshev basis, since there are no known \( \mathcal{O}(N \log N) \) algorithms for the Legendre basis, and the Legendre basis thus uses straight forward \( \mathcal{O}(N^2) \) algorithms for its transforms.
 
-<h1 id="___sec9">Bibliography </h1>
+<h1 id="sec:tensorproductspaces">Tensor product spaces</h1>
+Now that we know how to solve problems in one dimension, it is time to move on to more challenging tasks. Consider again the Poisson equation, but now in possibly more than one dimension
+$$
+\begin{align}
+ -\nabla^2 u(\bs{x}) &= f(\bs{x}) & \bs{x} \in \Omega.
+\label{_auto30}
+\end{align}
+$$
+
+Lets first consider 2 dimensions, with Dirichlet boundary conditions in the first direction and with periodicity in the second. Let \( \Omega \) be the domain $ [-1, 1] \times [0, 2\pi]$, and \( W(x,y) = V^C(x) \times V^p(y) \) be the tensor product function space. We can solve this problem for some suitable function \( f(\bs{x}) \) in <code>shenfun</code> by constructing a few more classes than were required in 1D
+<!-- begin verbatim block  pycod-->
+<pre><code>from shenfun import Function, TensorProductSpace
+from mpi4py import MPI
+</code></pre>
+<!-- end verbatim block -->
+Now the <code>TensorProductSpace</code> class is used to construct \( W \), whereas <code>Function</code> is a subclass of <code>numpy.ndarray</code> used to hold solution arrays. The MPI communicator, on the other hand, is used for distributing the tensor product grids on a given number of processes
+<!-- begin verbatim block  pycod-->
+<pre><code>comm = MPI.COMM_WORLD
+N = (32, 33)
+
+K0 = ShenDirichletBasis(N[0])
+K1 = FourierBasis(N[1], dtype=np.float)
+W = TensorProductSpace(comm, (K0, K1))
+
+# Alternatively, switch order for periodic in first direction instead
+# W = TensorProductSpace(comm, (K1, K0), axes=(1, 0))
+</code></pre>
+<!-- end verbatim block -->
+Under the hood, within the <code>TensorProductSpace</code> class, the mesh is distributed, both in real, physical space, and in spectral space. In the real space the mesh is distributed along the first index, whereas in spectral space the wavenumbermesh is distributed along the second dimension. This is the default behaviour of <code>TensorProductSpace</code>. However, the distribution may also be configured specifically by the user, e.g., as shown in the commented out text, where the Dirichlet basis is found along the second axis. In this case the order of the axes to transform over has been flipped, such that in spectral space the data is distributed along the first dimension and aligned in the second. This is required for solving the linear algebra system that arises for the Dirichlet basis. The arrays created using <code>Function</code> are distributed, and no further attention to MPI is required. However, note that arrays may have different type and shape in real space and in spectral space. For this reason <code>Function</code> has a keyword argument <code>forward_output</code>, that is used as <code>w_hat = Function(W, forward_output=True)</code> to create an array consistent with the output of <code>W.forward</code> (solution in spectral space), and <code>w = Function(W, forward_output=False)</code> to create an array consistent with the input (solution in real space). Furthermore, <code>uh = np.zeros_like(w_hat); w_hat = Function(W, buffer=uh)</code> can be used to wrap a <code>Function</code> instance around a regular Numpy array <code>uh</code>. Note that <code>uh</code> and <code>w_hat</code> now will share the same data, and modifying one will naturally modify also the other.
+
+<p>
+The solution of a complete Poisson problem in 2D is shown below. Very similar code is required to solve the Poisson problem with the Legendre basis. The main difference is that for Legendre it is natural to integrate the weak form by parts and use <code>matrices = inner(grad(v), grad(u))</code>
+<!-- begin verbatim block  pycod-->
+<pre><code>from shenfun.chebyshev.la import Helmholtz as Solver
+
+# Create a solution that satisfies boundary conditions
+x, y = symbols(&quot;x,y&quot;)
+ue = (cos(4*y) + sin(2*x))*(1-x**2)
+fe = ue.diff(x, 2) + ue.diff(y, 2)
+
+# Lambdify for faster evaluation
+ul = lambdify((x, y), ue, 'numpy')
+fl = lambdify((x, y), fe, 'numpy')
+
+X = T.local_mesh(True)
+u = TrialFunction(T)
+v = TestFunction(T)
+
+# Get f on quad points
+fj = fl(X[0], X[1])
+
+# Compute right hand side of Poisson equation
+f_hat = inner(v, fj)
+
+# Get left hand side of Poisson equation
+matrices = inner(v, div(grad(u)))
+
+# Create Helmholtz linear algebra solver
+H = Solver(**matrices)
+
+# Solve and transform to real space
+u_hat = Function(T)           # Solution spectral space
+u_hat = H(u_hat, f_hat)       # Solve
+u = T.backward(u_hat)
+</code></pre>
+<!-- end verbatim block -->
+The test functions and function spaces require a bit more attention. Test functions for space \( W(x, y)=V^C(x) \times V^p(y) \) are given as
+$$
+\begin{equation}
+\phi_{\ts{k}}(x, y) = v_l(x) e^{imy},
+\label{_auto31}
+\end{equation}
+$$
+
+which introduces the sans serif tensor product wavenumber mesh \( \ts{k} = \bs{l}^D \times \bs{l} \)
+$$
+\begin{equation}
+ \ts{k} = \{ (l, m) | l \in \bs{l}^D \text{ and } m \in \bs{l}\}.
+\label{_auto32}
+\end{equation}
+$$
+
+Similarly there is a tensor product grid \( \ts{x} = \bs{x} \times \bs{y} \), where \( \bs{y} = \{y_k\}_{k=0}^{M-1} = 2 \pi k /M \)
+$$
+\begin{equation}
+ \ts{x} = \{ (x_j, y_k) | j=0,1,\ldots, N-1 \text{ and } k=0,1,\ldots, M-1\}.
+\label{_auto33}
+\end{equation}
+$$
+
+Note that for computing on the tensor product grids using Numpy arrays with vectorization, the mesh and wavenumber components need to be represented as 2D arrays. As such we create
+$$
+\begin{equation}
+\bs{\textsf{x}} = (\bs{x}, \bs{y}) = \Big(\{x_i\}_{i=0}^{N-1} \times I^M,  I^N \times \{y_j\}_{j=0}^{M-1} \Big),
+\label{_auto34}
+\end{equation}
+$$
+
+where \( I^N \) is an N-length vector of ones. Similarly
+$$
+\begin{equation}
+\bs{\textsf{k}} = (\bs{l}, \bs{m}) = \Big(\{ l \}_{l=0}^{N-1} \times I^M,  I^N \times \{ m \}_{m=0}^{M/2} \Big). 
+\label{_auto35}
+\end{equation}
+$$
+
+Such tensor product grids can be very efficiently stored with Numpy arrays, using no more space than the two vectors used to create them. The key to this efficiency is broadcasting. We store \( \ts{k} \) as a list of two numpy arrays, \( \bs{l} \) and \( \bs{m} \), corresponding to the two 1D wavenumber meshes \( \{ l \}_{l=0}^{N-1} \) and \( \{ m \}_{m=0}^{M/2} \). 
+However, \( \bs{l} \) and \( \bs{m} \) are now stored as 2D arrays of shape \( (N, 1) \) and \( (1, M/2+1) \), respectively. And broadcasting takes care of the additional dimension, such that the two arrays work just like if they were stored as \( (N, M/2+1) \) arrays. We can look up \( \bs{l}(l, m) \), just like a regular \( (N, M/2+1) \) array, but the storage required is still only one single vector. 
+The same goes for \( \ts{x} \), which is stored as a list of two arrays \( \bs{x} \), \( \bs{y} \) of shape \( (N, 1) \) and \( (1, M) \) respectively. This extends straightforward to even higher dimensions.
+
+<p>
+Assembling a weak form like \( (v, \nabla^2 u)_w^N \) leads to two non-diagonal matrices, both the stiffness and mass matrix, since it expands like
+$$
+\begin{equation}
+(v, \nabla^2 u)_w^N = \left(v, \frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2} \right)_w^N.
+\label{_auto36}
+\end{equation}
+$$
+
+Inserting for test function \( v = \phi_{\ts{k}} (= \phi_{l, m} =v_l(x) e^{imy}) \) and trial function \( u = \sum_{(q,r)\in \ts{k}} \hat{u}_{q, r} \phi_{q,r} \), we obtain
+$$
+\begin{align}
+ (v, \nabla^2 u)_w^N &= \left(\phi_{l, m}, \frac{\partial^2}{\partial x^2} \sum_{(q, r) \in \ts{k}} \hat{u}_{q, r} \phi_{q, r} + \frac{\partial^2}{\partial y^2} \sum_{(q,r) \in \ts{k}} \hat{u}_{q, r} \phi_{q, r} \right)_w^N, 
+\label{_auto37}\\
+ &= 2\pi \left(\sum_{(q, r) \in \ts{k}} A_{lq} \delta_{rm} \hat{u}_{q,r} -  \sum_{(q, r) \in \ts{k}} {r}^2  B_{lq} \delta_{rm} \hat{u}_{q,r}\right), 
+\label{_auto38}\\
+ &= 2\pi \left(\sum_{q\in \bs{l}^D} A_{lq} \hat{u}_{q,m} - {m}^2 \sum_{q\in \bs{l}^D}  B_{lq} \hat{u}_{q,m}\right) \quad \forall (l, m) \in \bs{l}^D \times \bs{l}. \label{eq:laplace}
+\end{align}
+$$
+
+As can be seen from Eq.\eqref{eq:laplace}, the linear system of equations is set up to act along the Dirichlet direction, whereas for the periodic direction the matrices are diagonal and no additional work is required. The system of equations correspond to a series of 1D Helmholtz problems, that need to be solved once for each \( m \in \bs{l} \). This is what goes on under the hood with the Helmholtz solver imported through <code>from shenfun.chebyshev.la import Helmholtz as Solver</code>.
+
+<p>
+The right hand side of the Poisson problem is computed as
+$$
+\begin{align}
+(v, f)_w^N &= 2\pi \underbrace{\sum_{j}\underbrace{\frac{1}{N} \sum_{k} f(x_j, y_k) e^{imy_k} }_{\mathcal{F}_m} v_l(x_j)   w_j}_{\mathcal{S}_l} \quad \forall (l, m) \in \bs{l}^D \times \bs{l}, \notag 
+\label{_auto39}\\
+  &= 2\pi \mathcal{S}(f) = 2 \pi \mathcal{S}_l(\mathcal{F}_m(f)).
+\label{_auto40}
+\end{align}
+$$
+
+The <code>TensorProductSpace</code> class can take any number of Fourier bases. A 3 dimensional tensor product space can be created as
+$$
+N = (32, 33, 34)
+K0 = ShenDirichletBasis(N[0])
+K1 = C2CBasis(N[1])
+K2 = R2CBasis(N[2])
+W = TensorProductSpace(comm, (K0, K1, K2))
+$$
+
+Here the default behaviour of <code>TensorProductSpace</code> is to distribute the first 2 indices in real space using two subcommunicators, with a decomposition often referred to as \emph{pencil} decomposition. In spectral space the last two indices will be distributed. For example, using 4 CPUs, a subprocessor mesh of size \( 2 \times 2 \) will be created, and 2 subprocessors share the first index and the other two share the second index.  If the program is run with 3 processors, then only the first index will be distributed and the subprocessormesh will be \( 3 \times 1 \). It is also possible to configure <code>TensorProductSpace</code> to run with 4 CPUs and a \( 4 \times 1 \) subprocessormesh, or 40,000 CPUs with a \( 200 \times 200 \) processormesh. The latter requires that the mesh is big enough, though, but otherwise it is just a matter of acquiring computing power. The biggest simulations tested thus far used 64,000 CPUs.
+
+<p>
+Solving a biharmonic problem is just as easy as the Poisson problem. Consider the fourth order biharmonic PDE in 3-dimensional space
+$$
+\begin{align}
+\nabla^4 u(\bs{x}) &= f(\bs{x}), \quad \bs{x} \in \Omega 
+\label{_auto41}\\
+ u(x=\pm1, y, z) &= \frac{\partial u}{\partial x} (x=\pm 1, y, z) = 0 
+\label{_auto42}\\
+ u(x, y+2\pi, z) &= u(x, y, z), 
+\label{_auto43}\\
+ u(x, y, z+2\pi) &= u(x, y, z). 
+\label{_auto44}
+\end{align}
+$$
+
+that is periodic in \( y- \) and $z-$directions and with clamped boundary conditions at \( x=\pm 1 \). The problem may be solved using either one of these two bases:
+$$
+\begin{align}
+V^C &= \text{span}\{T_l - \frac{2(l+2)}{l+3}T_{l+2} + \frac{l+1}{l+3}T_{l+4} , l \in \bs{l}^B\}, \label{eq:chebbiharmonic} \\
+V^L &= \text{span}\{L_l - \frac{2(2k+5)}{2k+7}L_{l+2} + \frac{2k+3}{2k+7}, l \in \bs{l}^B\}, \label{eq:legbiharmonic}
+\end{align}
+$$
+
+where \( \bs{l}^B = 0, 1, \ldots, N-5 \). A tensor product space may be constructed as \( W(x,y,z) = V^C(x) \times V^p(y) \times V^p(z) \), and the variational problem 
+$$
+\begin{equation}
+(v, \nabla^4 u)^N_w = (v, f)^N_w,
+\label{_auto45}
+\end{equation}
+$$
+
+where \( u \) and \( v \) are trial and test functions in \( W \), may be implemented in <code>shenfun</code> as shown below
+<!-- begin verbatim block  pycod-->
+<pre><code>from shenfun.chebyshev.bases import ShenBiharmonicBasis
+from shenfun.chebyshev.la import Biharmonic as Solver
+
+N = (32, 33, 34)
+K0 = ShenBiharmonicBasis(N[0])
+K1 = C2CBasis(N[1])
+K2 = R2CBasis(N[2])
+W = TensorProductSpace(comm, (K0, K1, K2))
+u = TrialFunction(W)
+v = TestFunction(W)
+matrices = inner(v, div(grad(div(grad(u)))))
+f_hat = inner(v, fj)  # Some right hand side
+# or for Legendre:
+# matrices = inner(div(grad(v)), div(grad(u)))
+B = Solver(**matrices)
+
+# Solve and transform to real space
+u_hat = Function(T)           # Solution spectral space
+u_hat = B(u_hat, f_hat)       # Solve
+u = T.backward(u_hat)
+</code></pre>
+<!-- end verbatim block -->
+
+<h1 id="sec:extended">Other functionality of <code>shenfun</code></h1>
+In addition to the <code>div</code> and <code>grad</code> operators, there is <code>Dx</code> for a partial derivative
+<!-- begin verbatim block  pycod-->
+<pre><code>from shenfun import Dx
+v = TestFunction(W)
+du = Dx(v, 0, 1)
+</code></pre>
+<!-- end verbatim block -->
+where the first argument is the basis function, the second (integer) is the axis to take the derivative over, and the third (integer) is the number of derivatives, e.g.,
+$$
+\begin{equation}
+\frac{\partial^2 v}{\partial y^2} = \text{Dx(v, 1, 2)}. \notag
+\label{_auto46}
+\end{equation}
+$$
+
+The operator can be nested. To compute \( \frac{\partial^2 u}{\partial x  \partial y}  \) one may do
+<!-- begin verbatim block  pycod-->
+<pre><code>v = TestFunction(W)
+du = Dx(Dx(v, 0, 1), 1, 1)
+</code></pre>
+<!-- end verbatim block -->
+The operators work on <code>TestFunctions, TrialFunctions</code> or <code>Functions</code>, where only the last actually contain any data, because a <code>Function</code> is used to store the solution. Once a solution has been found, one may also manipulate it further using <code>project</code> in combination with operators on <code>Functions</code>. For example, to compute \( \partial u / \partial x \) of the solution to the biharmonic problem, one can do
+<!-- begin verbatim block  pycod-->
+<pre><code>u = T.backward(u_hat)  # The original solution on space T
+K0 = Basis(N[0])
+W0 = TensorProductSpace(comm, (K0, K1, K2))
+du_hat = project(Dx(u, 0, 1), W0, uh_hat=u_hat)
+du = Function(W0)
+du = W0.backward(du_hat, du)
+</code></pre>
+<!-- end verbatim block -->
+Note that we are here using a regular Chebyshev space instead of the biharmonic, to avoid enforcing erroneous boundary conditions on the solution. We could in this case also, with advantage, have chosen a Dirichlet space, since the derivative of the biharmonic problem is known to be zero on the edges of the domain (at \( x=\pm 1 \)).
+
+<p>
+All problems considered thus far have been scalar valued. With <code>shenfun</code> there is also some functionality for working with vector equations. To this end, there is a class called <code>VectorTensorProductSpace</code>, and there is an additional operator, <code>curl</code>, that can only be used on vectors:
+<!-- begin verbatim block  pycod-->
+<pre><code>from shenfun import VectorTensorProductSpace, curl
+T = TensorProductSpace(comm, (K0, K1, K2))
+Tk = VectorTensorProductSpace([T, T, T])
+v = TestFunction(Tk)
+u_ = Function(Tk, False)
+u_[:] = np.random.random(u_.shape)
+u_hat = Tk.forward(u_)
+w_hat = inner(v, curl(u_), uh_hat=u_hat)
+</code></pre>
+<!-- end verbatim block -->
+Vector equations have very similar form as scalar equations, but at the moment of writing the different equation components cannot be implicitly coupled.
+
+<h1 id="sec:ginzburg">Ginzburg-Landau equation</h1>
+We end this paper with the implementation of the complex Ginzburg-Landau equation, which is a  nonlinear time dependent reaction-diffusion problem. The equation to solve is 
+$$
+\begin{equation}
+\frac{\partial u}{\partial t} = \nabla^2u + u - (1 + 1.5i)u |u|^2,
+\label{_auto47}
+\end{equation}
+$$
+
+for the doubly periodic domain \( \Omega = [-50, 50]\times [-50, 50] \) and  \( t \in [0, T] \). The initial condition is chosen as one of the following
+$$
+\begin{align}
+u^0(\boldsymbol{x}, 0) &= (ix + y) \exp {-0.03 (x^2 + y^2)} \label{eq:initial_0}, \\
+u^1(\boldsymbol{x}, 0) &= (x + y) \exp {-0.03 (x^2 + y^2)} \label{eq:initial_1}.
+\end{align}
+$$
+
+This problem is solved with the spectral Galerkin method using Fourier bases in both directions, and a tensor product space \( W(x,y)=V^p(x) \times V^p(y) \), where \( V^p \) is defined as in the section <a href="#sec:fourierpoisson">Periodic boundary conditions</a>, but here mapping the computational domain \( [-50, 50] \) to \( [0, 2\pi] \). Considering only the spatial discretization, the variational problem becomes: find \( u(x, y) \) in \( W \), such that
+$$
+\begin{equation}
+\frac{\partial }{\partial t} (v, u)^N = (v, \nabla^2u)^N + (v, u - (1 + 1.5i)u |u|^2)^N \quad \text{for all} \quad v \in W, \label{eq:Ginz_var}
+\end{equation}
+$$
+
+and we integrate the equations forward in time using an explicit, fourth order Runge-Kutta method, that only requires as input a function that returns the right hand side of \eqref{eq:Ginz_var}. Note that all matrices involved with the Fourier method are diagonal, so there is no need for linear algebra solvers, and the left hand side inner product equals \( (2 \pi)^2 \bs{\hat{u}} \).
+
+<p>
+The initial condition is created using <code>Sympy</code>
+<!-- begin verbatim block  pycod-->
+<pre><code>from sympy import symbols, exp, lambdify
+x, y = symbols(&quot;x,y&quot;)
+#ue = (1j*x + y)*exp(-0.03*(x**2+y**2))
+ue = (x + y)*exp(-0.03*(x**2+y**2))
+ul = lambdify((x, y), ue, 'numpy')
+</code></pre>
+<!-- end verbatim block -->
+We create a regular tensor product space, choosing the <code>fourier.bases.C2CBasis</code> for both directions if the initial condition is complex \eqref{eq:initial_0}, whereas we may choose <code>R2CBasis</code> if the initial condition is real \eqref{eq:initial_1}. Since we are solving a nonlinear equation, the additional issue of aliasing should be considered. Aliasing errors may be handled with different methods, but here we will use the so-called 3/2-rule, that requires padded transforms. We create a tensor product space <code>Tp</code> for padded transforms, using the <code>padding_factor=3/2</code> keyword below. Furthermore, some solution arrays, test and trial functions are also declared.
+<!-- begin verbatim block  pycod-->
+<pre><code># Size of discretization
+N = (201, 201)
+
+# Create tensor product space
+K0 = C2CBasis(N[0], domain=(-50., 50.))
+K1 = C2CBasis(N[1], domain=(-50., 50.))
+T = TensorProductSpace(comm, (K0, K1))
+
+Kp0 = C2CBasis(N[0], domain=(-50., 50.), padding_factor=1.5)
+Kp1 = C2CBasis(N[1], domain=(-50., 50.), padding_factor=1.5)
+Tp = TensorProductSpace(comm, (Kp0, Kp1))
+
+u = TrialFunction(T)
+v = TestFunction(T)
+X = T.local_mesh(True)
+U = Function(T, False)         # Solution
+U_hat = Function(T)            # Solution spectral space
+Up = Function(Tp, False)       # Padded solution for nonlinear term
+dU_hat = Function(T)           # right hand side
+#initialize
+U[:] = ul(*X)
+U_hat = T.forward(U, U_hat)
+</code></pre>
+<!-- end verbatim block -->
+Note that <code>Tp</code> can be used exactly like <code>T</code>, but that a backward transform creates an output that is 3/2 as large in each direction. So a \( (100, 100) \) mesh results in a \( (150, 150) \) output from a backwards transform. This transform is performed by creating a 3/2 times larger padded array in spectral space \( \hat{u}^p_{\textsf{k}^p} \), where \( \textsf{k}^p = \boldsymbol{l}^p \times \boldsymbol{l}^p  \) and
+$$
+\begin{equation}
+\boldsymbol{l}^{p} = -3N/4, -3N/4+1, \ldots, 3N/4-1.
+\label{_auto48}
+\end{equation}
+$$
+
+We then set \( \hat{u}^p_{\textsf{k}} = \hat{u}_{\textsf{k}} \) for \( \textsf{k} \in \boldsymbol{l} \times \boldsymbol{l} \), and for the remaining high frequencies \( \hat{u}^p_{\textsf{k}} \) is set to 0.
+
+<p>
+We will solve the equation with a fourth order Runge-Kutta integrator. To this end we need to declare some work arrays to hold intermediate solutions, and a function for the right hand side of Eq. \eqref{eq:Ginz_var}
+<!-- begin verbatim block  pycod-->
+<pre><code>U_hat0 = Function(T)
+U_hat1 = Function(T)
+w0 = Function(T)
+a = [1./6., 1./3., 1./3., 1./6.]         # Runge-Kutta parameter
+b = [0.5, 0.5, 1.]                       # Runge-Kutta parameter
+def compute_rhs(rhs, u_hat, U, Up, T, Tp, w0):
+    rhs.fill(0)
+    U = T.backward(u_hat, U)
+    rhs = inner(v, div(grad(U)), output_array=rhs, uh_hat=u_hat)
+    rhs += inner(v, U, output_array=w0, uh_hat=u_hat)
+    rhs /= (2*np.pi)**2  # (2pi)**2 represents scaling with inner(u, v)
+    Up = Tp.backward(u_hat, Up)
+    rhs -= Tp.forward((1+1.5j)*Up*abs(Up)**2, w0)
+    return rhs
+</code></pre>
+<!-- end verbatim block -->
+Note the close similarity with \eqref{eq:Ginz_var} and the usage of the padded transform for the nonlinear term.
+Finally, the Runge-Kutta method is implemented as
+<!-- begin verbatim block  pycod-->
+<pre><code>t = 0.0
+dt = 0.025
+end_time = 96.0
+tstep = 0
+while t &lt; end_time-1e-8:
+    t += dt
+    tstep += 1
+    U_hat1[:] = U_hat0[:] = U_hat
+    for rk in range(4):
+        dU_hat = compute_rhs(dU_hat, U_hat, U, Up, T, Tp, w0)
+        if rk &lt; 3:
+            U_hat[:] = U_hat0 + b[rk]*dt*dU_hat
+        U_hat1 += a[rk]*dt*dU_hat
+    U_hat[:] = U_hat1
+</code></pre>
+<!-- end verbatim block -->
+The code that is described here will run in parallel for up to a maximum of \( \text{min}(N[0], N[1]) \) processors. But, being a 2D problem, a single processor is sufficient to solve the problem in reasonable time. The real part of \( u(\boldsymbol{x}, t) \) is shown in Figure <a href="#fig:GL1">2</a> for times \( t=16 \) and \( t=96 \), where the solution is initialized from \eqref{eq:initial_0}. The results starting from the real initial condition in \eqref{eq:initial_1} is shown for the same times in Figure <a href="#fig:GL2">3</a>. There are apparently good agreements with figures published from using <code>chebfun</code> on \emph{www.chebfun.org/examples/pde/GinzburgLandau.html}. In particular, the figures in <a href="#fig:GL1">2</a>  are identical by the eye norm. One interesting feature, though, is seen in the right plot of Figure <a href="#fig:GL2">3</a>, where the results can be seen to have preserved symmetry, as they should. This symmetry is lost with chebfun, as commented in the referenced webpage. An asymmetric solution is also obtained with <code>shenfun</code> if no de-aliasing is applied. However, the simulations are very sensitive to roundoff, and it has also been observed that a de-aliased solution using <code>shenfun</code> may loose symmetry simply if a different FFT algorithm is chosen on runtime by FFTW.
+
+<p>
+<center> <!-- figure label: --> <div id="fig:GL1"></div> <!-- FIGURE -->
+<hr class="figure">
+<center><p class="caption">Figure 2:  Real part of solution to Ginzburg-Landau problem with real initial condition \eqref{eq:initial_0}, at two different times, t=16 and t=96, on left and right, respectively.  <!-- caption label: fig:GL1 --> </p></center>
+<p><img src="figs/Ginzburg_1.png" align="bottom" ></p>
+</center>
+
+<p>
+<center> <!-- figure label: --> <div id="fig:GL2"></div> <!-- FIGURE -->
+<hr class="figure">
+<center><p class="caption">Figure 3:  Real part of solution to Ginzburg-Landau problem with real initial condition \eqref{eq:initial_1}, at two different times, t=16 and t=96, on left and right, respectively.  <!-- caption label: fig:GL2 --> </p></center>
+<p><img src="figs/Ginzburg.png" align="bottom" ></p>
+</center>
+
+<h1 id="___sec12">Conclusions </h1>
+In this paper, the Python module <code>shenfun</code> has been described. Within this module there are tools that greatly simplify the implementation of the spectral Galerkin method for tensor product grids, and parallel solvers may be written with ease and comfort.  <code>Shenfun</code> provides a FEniCS like interface to the spectral Galerkin method, where equations are cast on a weak form, and where the required script-like coding remains very similar to the mathematics. We have verified and shown implementations for simple Poisson or biharmonic problems, as well as the nonlinear complex Ginzburg-Landau equation. On a final note, it  should be mentioned that these tools have also been used to implement various Navier Stokes solvers within the <code>spectralDNS</code> project (github.com/spectralDNS), that has run on the Shaheen II supercomputer at KAUST, on meshes of size up to \( 2048^3 \).
+
+<h1 id="___sec13">Acknowledgements </h1>
+This research is a part of the 4DSpace Strategic Research Initiative at the University of Oslo.
+
+<h1 id="___sec14">Bibliography </h1>
 
 <p>
 <!-- begin bibliography -->
@@ -784,6 +1192,8 @@ To implement the same problem with the Legendre basis \eqref{eq:shen_legendre_ba
 </ol>
 
 <!-- end bibliography -->
+
+<p>
 
 <!-- ------------------- end of main content --------------- -->
 

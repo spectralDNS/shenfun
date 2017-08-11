@@ -11,15 +11,15 @@ Automatically generated HTML file from DocOnce source
 
 <title>Shenfun - automating the spectral Galerkin method</title>
 
-<!-- Bootstrap style: bootswatch_readable -->
-<link href="http://netdna.bootstrapcdn.com/bootswatch/3.1.1/readable/bootstrap.min.css" rel="stylesheet">
+<!-- Bootstrap style: bootstrap -->
+<link href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
 <!-- not necessary
 <link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
 -->
 
 <style type="text/css">
-/* Let inline verbatim have the same color as the surroundings */
-code { color: inherit; background-color: transparent; }
+/* Let pre tags for code blocks have the same color as the surroundings */
+pre { color: inherit; background-color: transparent; }
 
 /* Add scrollbar to dropdown menus in bootstrap navigation bar */
 .dropdown-menu {
@@ -33,8 +33,8 @@ code { color: inherit; background-color: transparent; }
 .anchor::before {
   content:"";
   display:block;
-  height:64px;      /* fixed header height for style bootswatch_readable */
-  margin:-64px 0 0; /* negative fixed header height */
+  height:50px;      /* fixed header height for style bootstrap */
+  margin:-50px 0 0; /* negative fixed header height */
 }
 </style>
 
@@ -86,7 +86,7 @@ end of tocinfo -->
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
   TeX: {
-     equationNumbers: {  autoNumber: "AMS"  },
+     equationNumbers: {  autoNumber: "none"  },
      extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
   }
 });
@@ -113,7 +113,7 @@ $$
       <span class="icon-bar"></span>
       <span class="icon-bar"></span>
     </button>
-    <a class="navbar-brand" href="shenfun.html">Shenfun - automating the spectral Galerkin method</a>
+    <a class="navbar-brand" href="shenfun_bootstrap.html">Shenfun - automating the spectral Galerkin method</a>
   </div>
 
   <div class="navbar-collapse collapse navbar-responsive-collapse">
@@ -121,8 +121,8 @@ $$
       <li class="dropdown">
         <a href="#" class="dropdown-toggle" data-toggle="dropdown">Contents <b class="caret"></b></a>
         <ul class="dropdown-menu">
-     <!-- navigation toc: --> <li><a href="#table_of_contents" style="font-size: 80%;"><b>Table of contents</b></a></li>
-     <!-- navigation toc: --> <li><a href="#sec:introduction" style="font-size: 80%;"><b>Introduction</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap000.html#table_of_contents" style="font-size: 80%;"><b>Table of contents</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap001.html#sec:introduction" style="font-size: 80%;"><b>Introduction</b></a></li>
      <!-- navigation toc: --> <li><a href="#sec:preliminaries" style="font-size: 80%;"><b>Spectral Galerkin Method</b></a></li>
      <!-- navigation toc: --> <li><a href="#sec:shenfun" style="font-size: 80%;"><b>Shenfun</b></a></li>
      <!-- navigation toc: --> <li><a href="#___sec3" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Classes for basis functions</a></li>
@@ -149,83 +149,14 @@ $$
 
 <p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p> <!-- add vertical space -->
 
-<!-- ------------------- main content ---------------------- -->
-
-
-
-<div class="jumbotron">
-<center><h1>Shenfun - automating the spectral Galerkin method</h1></center>  <!-- document title -->
-
-<p>
-<!-- author(s): Mikael Mortensen -->
-
-<center>
-<b>Mikael Mortensen</b>  (<tt>mikaem at math.uio.no</tt>)
-</center>
-
-<p>
-<!-- institution -->
-
-<center><b>Department of Mathematics, University of Oslo.</b></center>
-<br>
-<p>
-<center><h4>Aug 11, 2017</h4></center> <!-- date -->
-<br>
-<p>
-<b>Summary.</b> With the <code>shenfun</code> Python module (github.com/spectralDNS/shenfun) an effort is made towards automating the implementation of the spectral Galerkin method for simple tensor product domains, consisting of (currently) one non-periodic and any number of periodic directions. The user interface to <code>shenfun</code> is intentionally made very similar to FEniCS (fenicsproject.org). Partial Differential Equations are represented through weak variational forms and solved using efficient direct solvers where available. MPI decomposition is achieved through the <code>mpi4py-fft</code> module (bitbucket.org/mpi4py/mpi4py-fft),  and all developed solvers may, with no additional effort, be run on supercomputers using thousands of processors. Complete solvers are shown for the linear Poisson and biharmonic problems, as well as the nonlinear and time-dependent Ginzburg-Landau equation.
-
-<p>
-</div> <!-- end jumbotron -->
-
-<h1 id="table_of_contents">
-Table of contents</h2>
-
-<p>
-<a href="#sec:introduction"> Introduction </a><br>
-<a href="#sec:preliminaries"> Spectral Galerkin Method </a><br>
-<a href="#sec:shenfun"> Shenfun </a><br>
-&nbsp; &nbsp; &nbsp; <a href="#___sec3"> Classes for basis functions </a><br>
-&nbsp; &nbsp; &nbsp; <a href="#sec:matrices"> Classes for matrices </a><br>
-&nbsp; &nbsp; &nbsp; <a href="#___sec5"> Variational forms in 1D </a><br>
-&nbsp; &nbsp; &nbsp; <a href="#___sec6"> Poisson equation implemented in 1D </a><br>
-<a href="#sec:tensorproductspaces"> Tensor product spaces </a><br>
-<a href="#sec:extended"> Other functionality of <code>shenfun</code> </a><br>
-<a href="#sec:ginzburg"> Ginzburg-Landau equation </a><br>
-<a href="#___sec12"> Conclusions </a><br>
-<a href="#___sec13"> Acknowledgements </a><br>
-<a href="#___sec14"> Bibliography </a><br>
-</p>
-<p>
-<!-- !split -->
-
-<h1 id="sec:introduction" class="anchor">Introduction</h1>
-
-<p>
-The spectral Galerkin method, see, e.g., Shen <a href="#shen95">[1]</a> or Kopriva <a href="#kopriva09">[2]</a>, combines spectral basis functions with the Galerkin method and allows for highly accurate solutions on simple, tensor product domains. Due to its accuracy and efficiency, the method is often favoured in studies of sensitive fundamental physical phenomena, where numerical errors needs to be avoided.
-
-<p>
-In this paper we will describe the <code>shenfun</code> Python module. The purpose of <code>shenfun</code> is to simplify the implementation of the spectral Galerkin method, to make it easily accessible to researchers, and to make it easier to solve advanced PDEs on supercomputers, with MPI, in simple tensor product domains. The package can solve equations for tensor product spaces consisting of any number of periodic directions, but, at the moment of writing, only one non-periodic direction. This configuration may sound trivial, but it occurs surprisingly often in physics, for example in plane shear flows like the channel or pipe. And these simple configurations are used heavily to enhance our understanding of fundamental physical processes, like turbulence, or transition to turbulence, turbulent mixing, and turbulent combustion.
-
-<p>
-The <code>shenfun</code> package is heavily influenced by the FEniCS project <a href="#fenics">[3]</a>, that has made it trivial to solve PDEs in arbitrary complex domains with the finite element method (FEM). FEM also makes use of the Galerin method to set up variational forms. However, where FEM uses basis functions with only local support, the spectral Galerkin method uses basis functions with global support. The local support is one of the many nice features of the FEM, which makes it particularly attractive for unstructured and complex geometries. Spectral methods, on the other hand, are less flexible, but represent the gems of numerical methods, and, whenever possible, when the domain is simple and the solution is smooth, delivers the most accurate approximations.
-
-<p>
-There are many tools available for working with spectral methods. For MATLAB there is the elegant chebfun package <a href="#trefethen13">[4]</a>, with an extensive list of application for, e.g., PDEs, ODEs or eigenvalue problems. However, being implemented in MATLAB, there is no feasible extension to DNS and supercomputers through MPI. Numpy and Scipy have modules for orthogonal polynomials (Jacobi, Chebyshev, Legendre, Hermite), and for Fourier transforms, which are both utilized by <code>shenfun</code>. The orthogonal module makes it easier to work with Chebyshev and Legendre polynomials, as it delivers, for example, quadrature points and weights for different quadrature rules (e.g., Chebyshev-Gauss, Legendre-Gauss).
-
-<p>
-To the author's knowledge, all research codes developed for studying turbulent flows through Direct Numerical Simulations (DNS) on supercomputers have been written in low-level languages like Fortran, C or C++, see, e.g., <a href="#debruynkops15">[5]</a> <a href="#hoyas06">[6]</a> <a href="#leemoser15">[7]</a>, or <a href="#Alfonsi2016">[8]</a> for a list of high performance channel flow solvers. The codes are  highly tuned and tailored to a specific target, and, being low-level, the codes are not easily accessible to a non-expert programmer. Mortensen and Langtangen <a href="#Mortensen2016">[9]</a> describe how a DNS solver can be written in Python in 100 lines of script-like code, and also show that the code, when optimized in the background using Cython, runs as fast as an identical C++ implementation on thousands of processors with MPI. {Shenfun} takes it one step further and aims at providing a generic toolbox for creating high performance, parallel solvers of any PDE, in a very high-level language. And without compromising much on computational efficiency. The key to developing such a high-level code in Python is efficient use of Numpy <a href="#numpy">[10]</a>, with broadcasting and vectorization, and MPI for Python <a href="#mpi4py">[11]</a>, that wraps almost the entire MPI library, and that can transfer Numpy arrays between thousands of processors at the same speed as a low-level C or Fortran code. Similarly, we utilize the pyFFTW module <a href="#pyfftw">[12]</a>, that wraps most of the FFTW library <a href="#libfftw">[13]</a> and makes the FFT as fast when called from Python as it is when used in low-level codes.
-
-<p>
-<!-- This paper is organised as follows: in the section <a href="#sec:preliminaries">Spectral Galerkin Method</a> the spectral Galerkin method is introduced. In the section <a href="#sec:shenfun">Shenfun</a> the basics of the {shenfun} package is described and #implementations are shown for simple 1D Poisson and biharmonic problems. In the section <a href="#sec:tensorproductspaces">Tensor product spaces</a> we move to higher dimensions and tensor product spaces before we, in #the sections <a href="#sec:extended">Other functionality of <code>shenfun</code></a> and <a href="#sec:ginzburg">Ginzburg-Landau equation</a> end with some extended functionality and an implementation for the time dependent nonlinear Ginzburg-Landau equation in 2D. -->
-
-<p>
+<a name="part0002"></a>
 <!-- !split -->
 
 <h1 id="sec:preliminaries" class="anchor">Spectral Galerkin Method</h1>
 The spectral Galerkin method can most easily be described by considering a simple PDE, like the Poisson equation, in a 1D domain \( \Omega \)
 $$
 \begin{equation}
--u''(x) = f(x), \quad x \in \Omega, \label{eq:poisson}
+-u''(x) = f(x), \quad x \in \Omega, \tag{1}
 \end{equation}
 $$
 
@@ -233,14 +164,14 @@ with appropriate boundary conditions (Dirichlet, Neumann or periodic). To solve 
 $$
 \begin{equation}
 (u, v)_w = \int_{\Omega} u(x) \overline{v}(x) w(x) dx,
-\label{_auto1}
+\tag{2}
 \end{equation}
 $$
 
-where \( \overline{v} \) is the complex conjugate of \( v \). The weighted inner product can now be used to create variational forms. If we multiply Eq. \eqref{eq:poisson} with \( \overline{v}w \) and integrate over the domain we obtain the variational form of the PDE
+where \( \overline{v} \) is the complex conjugate of \( v \). The weighted inner product can now be used to create variational forms. If we multiply Eq. <a href="#mjx-eqn-1">(1)</a> with \( \overline{v}w \) and integrate over the domain we obtain the variational form of the PDE
 $$
 \begin{equation}
-(-u'', v)_w = (f, v)_w. \label{eq:weak_poisson}
+(-u'', v)_w = (f, v)_w. \tag{3}
 \end{equation}
 $$
 
@@ -248,18 +179,18 @@ The variational form can be solved numerically if \( u \) and \( v \) are approx
 $$
 \begin{equation}
 u(x) = \sum_{l=0}^{N-1} \hat{u}_l v_l(x),
-\label{_auto2}
+\tag{4}
 \end{equation}
 $$
 
 where \( \bs{\hat{u}} = \{\hat{u}_l\}_{l=0}^{N-1} \) are the expansion coefficients, that are also recognised as the unknowns in the modal spectral Galerkin method.
 
 <p>
-If \( v \) is chosen from a Fourier or Legendre basis, then the weight function used in the inner product is simply constant, and we may integrate \eqref{eq:weak_poisson} further using integration by parts. However, for a Chebyshev basis the weight function will be \( 1/\sqrt{1-x^2} \) and integration by parts is thus usually avoided. The weighted continuous inner product may, depending on the function that is to be integrated, be difficult or costly to evaluate. As such, we will in this work use the weighted \emph{discrete} inner product instead, where the integral is approximated using quadrature
+If \( v \) is chosen from a Fourier or Legendre basis, then the weight function used in the inner product is simply constant, and we may integrate <a href="#mjx-eqn-3">(3)</a> further using integration by parts. However, for a Chebyshev basis the weight function will be \( 1/\sqrt{1-x^2} \) and integration by parts is thus usually avoided. The weighted continuous inner product may, depending on the function that is to be integrated, be difficult or costly to evaluate. As such, we will in this work use the weighted \emph{discrete} inner product instead, where the integral is approximated using quadrature
 $$
 \begin{equation}
 (u, v)_w^N = \sum_{j=0}^{N-1} u(x_j) \overline{v}(x_j) w_j  \approx  \int_{\Omega} u(x) \overline{v}(x) w(x) dx.
-\label{eq:quadrature}
+\tag{5}
 \end{equation}
 $$
 
@@ -336,7 +267,7 @@ All bases have methods for transforms and inner products on single- or multidime
 </pre></div>
 
 <h2 id="sec:matrices" class="anchor">Classes for matrices</h2>
-Matrices that arise with the spectral Galerkin method using Fourier or Shen's modified basis functions (see, e.g., Eqs \eqref{eq:chebdirichlet}, \eqref{eq:legdirichlet}), are typically sparse and diagonal in structure. The sparse structure allows for a very compact storage, and <code>shenfun</code> has its own Matrix-class that is subclassing a Python dictionary, where keys are diagonal offsets, and values are the values along the diagonal. Some of the more important methods of the <em>SparseMatrix</em> class are shown below:
+Matrices that arise with the spectral Galerkin method using Fourier or Shen's modified basis functions (see, e.g., Eqs <a href="#mjx-eqn-23">(23)</a>, <a href="#mjx-eqn-24">(24)</a>), are typically sparse and diagonal in structure. The sparse structure allows for a very compact storage, and <code>shenfun</code> has its own Matrix-class that is subclassing a Python dictionary, where keys are diagonal offsets, and values are the values along the diagonal. Some of the more important methods of the <em>SparseMatrix</em> class are shown below:
 
 <p>
 
@@ -482,11 +413,11 @@ We have now shown the usage of  \( \bf shenfun \) for single, one-dimensional sp
 
 <h3 id="sec:fourierpoisson" class="anchor">Periodic boundary conditions</h3>
 
-If the solution to Eq. \eqref{eq:poisson} is periodic with periodic length \( 2 \pi \), then we use \( \Omega \in [0, 2 \pi] \) and it will be natural to choose the test functions from the space consisting of the Fourier basis functions, i.e.,  \( v_l(x)=e^{ilx} \). The mesh \( \boldsymbol{x} = \{x_j\}_{j=0}^{N-1} \) will be uniformly spaced 
+If the solution to Eq. <a href="#mjx-eqn-1">(1)</a> is periodic with periodic length \( 2 \pi \), then we use \( \Omega \in [0, 2 \pi] \) and it will be natural to choose the test functions from the space consisting of the Fourier basis functions, i.e.,  \( v_l(x)=e^{ilx} \). The mesh \( \boldsymbol{x} = \{x_j\}_{j=0}^{N-1} \) will be uniformly spaced 
 $$
 \begin{equation}
 \boldsymbol{x} = \frac{2 \pi j}{N}  \quad j=0,1,\ldots, N-1,
-\label{_auto3}
+\tag{6}
 \end{equation}
 $$
 
@@ -494,50 +425,50 @@ and we look for solutions of the form
 $$
 \begin{equation}
 u(x_j) = \sum_{l=-N/2}^{N/2-1} \hat{u}_l e^{ilx_j} \quad  j=0,1,\ldots N-1.
-\label{eq:ufourier}
+\tag{7}
 \end{equation}
 $$
 
 Note that for Fourier basis functions it is customary (used by both MATLAB and Numpy) to use the wavenumbermesh
 $$
 \begin{equation}
-\boldsymbol{l} = -N/2, -N/2+1, \ldots, N/2-1, \label{eq:wavenumber_even}
+\boldsymbol{l} = -N/2, -N/2+1, \ldots, N/2-1, \tag{8}
 \end{equation}
 $$
 
-where we have assumed that \( N \) is even. Also note that Eq. \eqref{eq:ufourier} naively would be computed in \( \mathcal{O}(N^2) \) operations, but that it can be computed much faster \( \mathcal{O}(N\log N) \) using the discrete inverse Fourier transform
+where we have assumed that \( N \) is even. Also note that Eq. <a href="#mjx-eqn-7">(7)</a> naively would be computed in \( \mathcal{O}(N^2) \) operations, but that it can be computed much faster \( \mathcal{O}(N\log N) \) using the discrete inverse Fourier transform
 $$
 \begin{equation}
 \bs{u} = \mathcal{F}^{-1}(\bs{\hat{u}}),
-\label{_auto4}
+\tag{9}
 \end{equation}
 $$
 
 where we use compact notation \( \bs{u} = \{u(x_j)\}_{j=0}^{N-1} \).
 
 <p>
-To solve Eq. \eqref{eq:poisson} with the discrete spectral Galerkin method, we create the basis \( V^p = \text{span}\{ e^{ilx} , \text{ for } l \in \boldsymbol{l}\}  \) and attempt to find \( u \in V^p \) such that
+To solve Eq. <a href="#mjx-eqn-1">(1)</a> with the discrete spectral Galerkin method, we create the basis \( V^p = \text{span}\{ e^{ilx} , \text{ for } l \in \boldsymbol{l}\}  \) and attempt to find \( u \in V^p \) such that
 $$
 \begin{equation}
 (-u'', v)_w^N = (f, v)_w^N, \quad \forall \, v \in V^p.
-\label{_auto5}
+\tag{10}
 \end{equation}
 $$
 
-Inserting for Eq. \eqref{eq:ufourier} and using \( e^{imx} \) as test function we obtain
+Inserting for Eq. <a href="#mjx-eqn-7">(7)</a> and using \( e^{imx} \) as test function we obtain
 $$
 \begin{align}
 -(\sum_{l \in \bs{l}} \hat{u}_l (e^{ilx})'', e^{imx})_w^N &= (f(x), e^{imx})_w^N \quad \forall \, m \in \bs{l} 
-\label{_auto6}\\
-\sum_{l \in \bs{l}} l^2( e^{ilx}, e^{imx})_w^N \hat{u}_l &= (f(x), e^{imx})_w ^N\quad \forall \, m \in \bs{l}. \label{eq:utmp}
+\tag{11}\\
+\sum_{l \in \bs{l}} l^2( e^{ilx}, e^{imx})_w^N \hat{u}_l &= (f(x), e^{imx})_w ^N\quad \forall \, m \in \bs{l}. \tag{12}
 \end{align}
 $$
 
-Note that the discrete inner product \eqref{eq:quadrature} is used, and we also need to interpolate the function \( f(x) \) onto the grid \( \boldsymbol{x} \). For Fourier it becomes very simple since the weight functions are constant \( w_j = 2\pi/N \) and we have for the left hand side simply a diagonal matrix
+Note that the discrete inner product <a href="#mjx-eqn-5">(5)</a> is used, and we also need to interpolate the function \( f(x) \) onto the grid \( \boldsymbol{x} \). For Fourier it becomes very simple since the weight functions are constant \( w_j = 2\pi/N \) and we have for the left hand side simply a diagonal matrix
 $$
 \begin{equation}
 ( e^{ilx}, e^{imx})^N = 2\pi \delta_{ml} \quad \text{for} \, l, m \in \bs{l} \times \bs{l},
-\label{_auto7}
+\tag{13}
 \end{equation}
 $$
 
@@ -546,11 +477,11 @@ For the right hand side we have
 $$
 \begin{align}
 (f(x), e^{imx})^N &= \frac{2 \pi}{N}\sum_{j=0}^{N-1} f(x_j) e^{-imx_j} \quad \text{for } m \in \bs{l}, 
-\label{_auto8}\\
+\tag{14}\\
  &= 2 \pi \mathcal{F}_m(f(\bs{x})), 
-\label{_auto9}\\
+\tag{15}\\
  &= 2 \pi \hat{f}_m,
-\label{_auto10}
+\tag{16}
 \end{align}
 $$
 
@@ -558,7 +489,7 @@ where \( \mathcal{F} \) represents the discrete Fourier transform that is define
 $$
 \begin{equation}
 \hat{u}_l = \frac{1}{N}\sum_{j=0}^{N-1} u(x_j) e^{-ilx_j}, \quad \text{for } l \in \bs{l},
-\label{_auto11}
+\tag{17}
 \end{equation}
 $$
 
@@ -566,15 +497,15 @@ or simply
 $$
 \begin{equation}
   \bs{\hat{u}} = \mathcal{F}(\bs{u}).
-\label{_auto12}
+\tag{18}
 \end{equation}
 $$
 
-Putting it all together we can set up the assembled linear system of equations for \( \hat{u}_l \) in \eqref{eq:utmp}
+Putting it all together we can set up the assembled linear system of equations for \( \hat{u}_l \) in <a href="#mjx-eqn-12">(12)</a>
 $$
 \begin{equation}
 \sum_{l \in \bs{l}}2 \pi l^2 \delta_{ml} \hat{u}_l = 2 \pi \hat{f}_{m} \quad \forall \, m \in \bs{l},
-\label{_auto13}
+\tag{19}
 \end{equation}
 $$
 
@@ -582,7 +513,7 @@ which is trivially solved since it only involves a diagonal matrix (\( \delta_{m
 $$
 \begin{equation}
 \hat{u}_l = \frac{1}{l^2} \hat{f}_{l} \quad \forall \,l  \in \bs{l} \setminus{\{0\}}.
-\label{_auto14}
+\tag{20}
 \end{equation}
 $$
 
@@ -651,7 +582,7 @@ If the Poisson equation is subject to Dirichlet boundary conditions on the edge 
 $$
 \begin{equation}
 v_l(x) = T_l(x) - T_{l+2}(x),
-\label{_auto15}
+\tag{21}
 \end{equation}
 $$
 
@@ -659,15 +590,15 @@ where \( T_l(x) \) is the l'th order Chebyshev polynomial of the first kind, or
 $$
 \begin{equation}
 v_l(x) = L_l(x) - L_{l+2}(x),
-\label{eq:shen_legendre_basis}
+\tag{22}
 \end{equation}
 $$
 
 where \( L_l(x) \) is the l'th order Legendre polynomial. The test functions give rise to functionspaces
 $$
 \begin{align}
-V^C &= \text{span}\{T_l-T_{l+2}, l \in \bs{l}^D\}, \label{eq:chebdirichlet} \\
-V^L &= \text{span}\{L_l-L_{l+2}, k \in \bs{l}^D\}, \label{eq:legdirichlet}
+V^C &= \text{span}\{T_l-T_{l+2}, l \in \bs{l}^D\}, \tag{23} \\
+V^L &= \text{span}\{L_l-L_{l+2}, k \in \bs{l}^D\}, \tag{24}
 \end{align}
 $$
 
@@ -675,7 +606,7 @@ where
 $$
 \begin{equation}
 \boldsymbol{l}^D = 0, 1, \ldots, N-3.
-\label{_auto16}
+\tag{25}
 \end{equation}
 $$
 
@@ -683,9 +614,9 @@ The computational mesh and associated weights will be decided by the chosen quad
 $$
 \begin{align}
 x_j^C &= \cos \left( \frac{2j+1}{2N}\pi \right) \quad &j=0,1,\ldots, N-1, 
-\label{_auto17}\\
+\tag{26}\\
 w_j^C &= \frac{\pi}{N},
-\label{_auto18}
+\tag{27}
 \end{align}
 $$
 
@@ -693,20 +624,20 @@ and
 $$
 \begin{align}
 x_j^L &= \text{ zeros of }L_{N}(x) \quad &j=0,1,\ldots, N-1, 
-\label{_auto19}\\
+\tag{28}\\
 w_j^L &= \frac{2}{(1-x_j^2)[L'_{N}(x_j)]^2} \quad &j=0,1,\ldots, N-1,
-\label{_auto20}
+\tag{29}
 \end{align}
 $$
 
 for the Legendre basis.
 
 <p>
-We now follow the same procedure as in the section <a href="#sec:fourierpoisson">Periodic boundary conditions</a> and solve Eq. \eqref{eq:poisson} with the spectral Galerkin method. Consider first the Chebyshev basis and find \( u \in V^C \) , such that
+We now follow the same procedure as in the section <a href="#sec:fourierpoisson">Periodic boundary conditions</a> and solve Eq. <a href="#mjx-eqn-1">(1)</a> with the spectral Galerkin method. Consider first the Chebyshev basis and find \( u \in V^C \) , such that
 $$
 \begin{equation}
 (-u'', v)_w^N = (f, v)_w^N , \quad \forall \, v \in V^C.
-\label{_auto21}
+\tag{30}
 \end{equation}
 $$
 
@@ -714,18 +645,18 @@ We insert for \( v=v_m \) and \( u=\displaystyle \sum_{l\in \bs{l}^D} \hat{u}_l 
 $$
 \begin{align}
 -(\sum_{l\in \bs{l}^D} \hat{u}_l v_l'', v_m)_w^N &= (f, v_m)_w^N  &m \in \bs{l}^D,
-\label{_auto22}\\
--(v_l'', v_m)_w^N \hat{u}_l &= (f, v_m)_w^N & m \in \bs{l}^D, \label{eq:cheb_poisson}
+\tag{31}\\
+-(v_l'', v_m)_w^N \hat{u}_l &= (f, v_m)_w^N & m \in \bs{l}^D, \tag{32}
 \end{align}
 $$
 
-where summation on repeated indices is implied. In Eq. \eqref{eq:cheb_poisson} \( A_{ml} =(v_l'', v_m)_w^N \) are the components of a sparse stiffness matrix, and we will use matrix notation \( \bs{A} = \{A_{ml}\}_{m,l \in \bs{l}^D \times \bs{l}^D} \) to simplify. The right hand side can similarily be assembled to a vector with components \( \tilde{f}_m = (f, v_m)_w^N \) such that \( \bs{\tilde{f}} = \{\tilde{f}_m\}_{m\in \bs{l}^D}  \). Note that a tilde is used since this is not a complete transform. We can now solve for the unknown \( \bs{\hat{u}} = \{\hat{u}_l\}_{l\in \bs{l}^D} \) vector
+where summation on repeated indices is implied. In Eq. <a href="#mjx-eqn-32">(32)</a> \( A_{ml} =(v_l'', v_m)_w^N \) are the components of a sparse stiffness matrix, and we will use matrix notation \( \bs{A} = \{A_{ml}\}_{m,l \in \bs{l}^D \times \bs{l}^D} \) to simplify. The right hand side can similarily be assembled to a vector with components \( \tilde{f}_m = (f, v_m)_w^N \) such that \( \bs{\tilde{f}} = \{\tilde{f}_m\}_{m\in \bs{l}^D}  \). Note that a tilde is used since this is not a complete transform. We can now solve for the unknown \( \bs{\hat{u}} = \{\hat{u}_l\}_{l\in \bs{l}^D} \) vector
 $$
 \begin{align}
 -\bs{A} \bs{\hat{u}} &= \bs{\tilde{f}}, 
-\label{_auto23}\\
+\tag{33}\\
    \bs{\hat{u}} &= -\bs{A}^{-1} \bs{\tilde{f}}.
-\label{_auto24}
+\tag{34}
 \end{align}
 $$
 
@@ -736,7 +667,7 @@ To get the solution back and forth between real and spectral space we require a 
 $$
 \begin{equation}
 u(\bs{x}) = \sum_{l\in \bs{l}^D} \hat{u}_l v_l(\bs{x})
-\label{_auto25}
+\tag{35}
 \end{equation}
 $$
 
@@ -744,19 +675,19 @@ and take the inner product with \( v_m \)
 $$
 \begin{equation}
 (u, v_m)_w^N  = (\sum_{l\in \bs{l}^D} \hat{u}_l v_l, v_m)_w^N.
-\label{eq:projection}
+\tag{36}
 \end{equation}
 $$
 
-Introducing now the mass matrix \( B_{ml} = (v_l, v_m)_w^N \) and the \emph{Shen} forward inner product \( \mathcal{S}_m(u) = (u, v_m)_w^N \), Eq. \eqref{eq:projection}  is rewritten as
+Introducing now the mass matrix \( B_{ml} = (v_l, v_m)_w^N \) and the \emph{Shen} forward inner product \( \mathcal{S}_m(u) = (u, v_m)_w^N \), Eq. <a href="#mjx-eqn-36">(36)</a>  is rewritten as
 $$
 \begin{align}
 \mathcal{S}_m(u) &= B_{ml} \hat{u}_l, 
-\label{_auto26}\\
+\tag{37}\\
 \bs{\hat{u}}  =& \bs{B}^{-1} \mathcal{S}(\bs{u}) , 
-\label{_auto27}\\
+\tag{38}\\
 \bs{\hat{u}}  =& \mathcal{T}(\bs{u}) ,
-\label{_auto28}
+\tag{39}
 \end{align}
 $$
 
@@ -801,19 +732,19 @@ Note that the inner product <code>f_hat = inner(v, fj)</code> is computed under 
 $$
 \begin{align}
 u(x_j) &= \sum_{l\in \bs{l}^D} \hat{u}_l v_l(x_j) &j=0,1,\ldots, N-1, \notag 
-\label{_auto29}\\
-\bs{u} &= \mathcal{S}^{-1}(\bs{\hat{u}}). \label{eq:fast_shen}
+\tag{40}\\
+\bs{u} &= \mathcal{S}^{-1}(\bs{\hat{u}}). \tag{41}
 \end{align}
 $$
 
-To implement the same problem with the Legendre basis \eqref{eq:shen_legendre_basis}, all that is needed to change is the first line in the Poisson solver to \( from shenfun.legendre.bases import ShenDirichletBasis \). Everything else is exactly the same. However, a fast inner product, like in \eqref{eq:fast_shen}, is only implemented for the Chebyshev basis, since there are no known \( \mathcal{O}(N \log N) \) algorithms for the Legendre basis, and the Legendre basis thus uses straight forward \( \mathcal{O}(N^2) \) algorithms for its transforms.
+To implement the same problem with the Legendre basis <a href="#mjx-eqn-22">(22)</a>, all that is needed to change is the first line in the Poisson solver to \( from shenfun.legendre.bases import ShenDirichletBasis \). Everything else is exactly the same. However, a fast inner product, like in <a href="#mjx-eqn-41">(41)</a>, is only implemented for the Chebyshev basis, since there are no known \( \mathcal{O}(N \log N) \) algorithms for the Legendre basis, and the Legendre basis thus uses straight forward \( \mathcal{O}(N^2) \) algorithms for its transforms.
 
 <h1 id="sec:tensorproductspaces" class="anchor">Tensor product spaces</h1>
 Now that we know how to solve problems in one dimension, it is time to move on to more challenging tasks. Consider again the Poisson equation, but now in possibly more than one dimension
 $$
 \begin{align}
  -\nabla^2 u(\bs{x}) &= f(\bs{x}) & \bs{x} \in \Omega.
-\label{_auto30}
+\tag{42}
 \end{align}
 $$
 
@@ -884,7 +815,7 @@ The test functions and function spaces require a bit more attention. Test functi
 $$
 \begin{equation}
 \phi_{\ts{k}}(x, y) = v_l(x) e^{imy},
-\label{_auto31}
+\tag{43}
 \end{equation}
 $$
 
@@ -892,7 +823,7 @@ which introduces the sans serif tensor product wavenumber mesh \( \ts{k} = \bs{l
 $$
 \begin{equation}
  \ts{k} = \{ (l, m) | l \in \bs{l}^D \text{ and } m \in \bs{l}\}.
-\label{_auto32}
+\tag{44}
 \end{equation}
 $$
 
@@ -900,7 +831,7 @@ Similarly there is a tensor product grid \( \ts{x} = \bs{x} \times \bs{y} \), wh
 $$
 \begin{equation}
  \ts{x} = \{ (x_j, y_k) | j=0,1,\ldots, N-1 \text{ and } k=0,1,\ldots, M-1\}.
-\label{_auto33}
+\tag{45}
 \end{equation}
 $$
 
@@ -908,7 +839,7 @@ Note that for computing on the tensor product grids using Numpy arrays with vect
 $$
 \begin{equation}
 \bs{\textsf{x}} = (\bs{x}, \bs{y}) = \Big(\{x_i\}_{i=0}^{N-1} \times I^M,  I^N \times \{y_j\}_{j=0}^{M-1} \Big),
-\label{_auto34}
+\tag{46}
 \end{equation}
 $$
 
@@ -916,7 +847,7 @@ where \( I^N \) is an N-length vector of ones. Similarly
 $$
 \begin{equation}
 \bs{\textsf{k}} = (\bs{l}, \bs{m}) = \Big(\{ l \}_{l=0}^{N-1} \times I^M,  I^N \times \{ m \}_{m=0}^{M/2} \Big). 
-\label{_auto35}
+\tag{47}
 \end{equation}
 $$
 
@@ -929,7 +860,7 @@ Assembling a weak form like \( (v, \nabla^2 u)_w^N \) leads to two non-diagonal 
 $$
 \begin{equation}
 (v, \nabla^2 u)_w^N = \left(v, \frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2} \right)_w^N.
-\label{_auto36}
+\tag{48}
 \end{equation}
 $$
 
@@ -937,23 +868,23 @@ Inserting for test function \( v = \phi_{\ts{k}} (= \phi_{l, m} =v_l(x) e^{imy})
 $$
 \begin{align}
  (v, \nabla^2 u)_w^N &= \left(\phi_{l, m}, \frac{\partial^2}{\partial x^2} \sum_{(q, r) \in \ts{k}} \hat{u}_{q, r} \phi_{q, r} + \frac{\partial^2}{\partial y^2} \sum_{(q,r) \in \ts{k}} \hat{u}_{q, r} \phi_{q, r} \right)_w^N, 
-\label{_auto37}\\
+\tag{49}\\
  &= 2\pi \left(\sum_{(q, r) \in \ts{k}} A_{lq} \delta_{rm} \hat{u}_{q,r} -  \sum_{(q, r) \in \ts{k}} {r}^2  B_{lq} \delta_{rm} \hat{u}_{q,r}\right), 
-\label{_auto38}\\
- &= 2\pi \left(\sum_{q\in \bs{l}^D} A_{lq} \hat{u}_{q,m} - {m}^2 \sum_{q\in \bs{l}^D}  B_{lq} \hat{u}_{q,m}\right) \quad \forall (l, m) \in \bs{l}^D \times \bs{l}. \label{eq:laplace}
+\tag{50}\\
+ &= 2\pi \left(\sum_{q\in \bs{l}^D} A_{lq} \hat{u}_{q,m} - {m}^2 \sum_{q\in \bs{l}^D}  B_{lq} \hat{u}_{q,m}\right) \quad \forall (l, m) \in \bs{l}^D \times \bs{l}. \tag{51}
 \end{align}
 $$
 
-As can be seen from Eq.\eqref{eq:laplace}, the linear system of equations is set up to act along the Dirichlet direction, whereas for the periodic direction the matrices are diagonal and no additional work is required. The system of equations correspond to a series of 1D Helmholtz problems, that need to be solved once for each \( m \in \bs{l} \). This is what goes on under the hood with the Helmholtz solver imported through <code>from shenfun.chebyshev.la import Helmholtz as Solver</code>.
+As can be seen from Eq.<a href="#mjx-eqn-51">(51)</a>, the linear system of equations is set up to act along the Dirichlet direction, whereas for the periodic direction the matrices are diagonal and no additional work is required. The system of equations correspond to a series of 1D Helmholtz problems, that need to be solved once for each \( m \in \bs{l} \). This is what goes on under the hood with the Helmholtz solver imported through <code>from shenfun.chebyshev.la import Helmholtz as Solver</code>.
 
 <p>
 The right hand side of the Poisson problem is computed as
 $$
 \begin{align}
 (v, f)_w^N &= 2\pi \underbrace{\sum_{j}\underbrace{\frac{1}{N} \sum_{k} f(x_j, y_k) e^{imy_k} }_{\mathcal{F}_m} v_l(x_j)   w_j}_{\mathcal{S}_l} \quad \forall (l, m) \in \bs{l}^D \times \bs{l}, \notag 
-\label{_auto39}\\
+\tag{52}\\
   &= 2\pi \mathcal{S}(f) = 2 \pi \mathcal{S}_l(\mathcal{F}_m(f)).
-\label{_auto40}
+\tag{53}
 \end{align}
 $$
 
@@ -973,21 +904,21 @@ Solving a biharmonic problem is just as easy as the Poisson problem. Consider th
 $$
 \begin{align}
 \nabla^4 u(\bs{x}) &= f(\bs{x}), \quad \bs{x} \in \Omega 
-\label{_auto41}\\
+\tag{54}\\
  u(x=\pm1, y, z) &= \frac{\partial u}{\partial x} (x=\pm 1, y, z) = 0 
-\label{_auto42}\\
+\tag{55}\\
  u(x, y+2\pi, z) &= u(x, y, z), 
-\label{_auto43}\\
+\tag{56}\\
  u(x, y, z+2\pi) &= u(x, y, z). 
-\label{_auto44}
+\tag{57}
 \end{align}
 $$
 
 that is periodic in \( y- \) and $z-$directions and with clamped boundary conditions at \( x=\pm 1 \). The problem may be solved using either one of these two bases:
 $$
 \begin{align}
-V^C &= \text{span}\{T_l - \frac{2(l+2)}{l+3}T_{l+2} + \frac{l+1}{l+3}T_{l+4} , l \in \bs{l}^B\}, \label{eq:chebbiharmonic} \\
-V^L &= \text{span}\{L_l - \frac{2(2k+5)}{2k+7}L_{l+2} + \frac{2k+3}{2k+7}, l \in \bs{l}^B\}, \label{eq:legbiharmonic}
+V^C &= \text{span}\{T_l - \frac{2(l+2)}{l+3}T_{l+2} + \frac{l+1}{l+3}T_{l+4} , l \in \bs{l}^B\}, \tag{58} \\
+V^L &= \text{span}\{L_l - \frac{2(2k+5)}{2k+7}L_{l+2} + \frac{2k+3}{2k+7}, l \in \bs{l}^B\}, \tag{59}
 \end{align}
 $$
 
@@ -995,7 +926,7 @@ where \( \bs{l}^B = 0, 1, \ldots, N-5 \). A tensor product space may be construc
 $$
 \begin{equation}
 (v, \nabla^4 u)^N_w = (v, f)^N_w,
-\label{_auto45}
+\tag{60}
 \end{equation}
 $$
 
@@ -1039,7 +970,7 @@ where the first argument is the basis function, the second (integer) is the axis
 $$
 \begin{equation}
 \frac{\partial^2 v}{\partial y^2} = \text{Dx(v, 1, 2)}. \notag
-\label{_auto46}
+\tag{61}
 \end{equation}
 $$
 
@@ -1087,26 +1018,26 @@ We end this paper with the implementation of the complex Ginzburg-Landau equatio
 $$
 \begin{equation}
 \frac{\partial u}{\partial t} = \nabla^2u + u - (1 + 1.5i)u |u|^2,
-\label{_auto47}
+\tag{62}
 \end{equation}
 $$
 
 for the doubly periodic domain \( \Omega = [-50, 50]\times [-50, 50] \) and  \( t \in [0, T] \). The initial condition is chosen as one of the following
 $$
 \begin{align}
-u^0(\boldsymbol{x}, 0) &= (ix + y) \exp {-0.03 (x^2 + y^2)} \label{eq:initial_0}, \\
-u^1(\boldsymbol{x}, 0) &= (x + y) \exp {-0.03 (x^2 + y^2)} \label{eq:initial_1}.
+u^0(\boldsymbol{x}, 0) &= (ix + y) \exp {-0.03 (x^2 + y^2)} \tag{63}, \\
+u^1(\boldsymbol{x}, 0) &= (x + y) \exp {-0.03 (x^2 + y^2)} \tag{64}.
 \end{align}
 $$
 
 This problem is solved with the spectral Galerkin method using Fourier bases in both directions, and a tensor product space \( W(x,y)=V^p(x) \times V^p(y) \), where \( V^p \) is defined as in the section <a href="#sec:fourierpoisson">Periodic boundary conditions</a>, but here mapping the computational domain \( [-50, 50] \) to \( [0, 2\pi] \). Considering only the spatial discretization, the variational problem becomes: find \( u(x, y) \) in \( W \), such that
 $$
 \begin{equation}
-\frac{\partial }{\partial t} (v, u)^N = (v, \nabla^2u)^N + (v, u - (1 + 1.5i)u |u|^2)^N \quad \text{for all} \quad v \in W, \label{eq:Ginz_var}
+\frac{\partial }{\partial t} (v, u)^N = (v, \nabla^2u)^N + (v, u - (1 + 1.5i)u |u|^2)^N \quad \text{for all} \quad v \in W, \tag{65}
 \end{equation}
 $$
 
-and we integrate the equations forward in time using an explicit, fourth order Runge-Kutta method, that only requires as input a function that returns the right hand side of \eqref{eq:Ginz_var}. Note that all matrices involved with the Fourier method are diagonal, so there is no need for linear algebra solvers, and the left hand side inner product equals \( (2 \pi)^2 \bs{\hat{u}} \).
+and we integrate the equations forward in time using an explicit, fourth order Runge-Kutta method, that only requires as input a function that returns the right hand side of <a href="#mjx-eqn-65">(65)</a>. Note that all matrices involved with the Fourier method are diagonal, so there is no need for linear algebra solvers, and the left hand side inner product equals \( (2 \pi)^2 \bs{\hat{u}} \).
 
 <p>
 The initial condition is created using <code>Sympy</code>
@@ -1120,7 +1051,7 @@ ue <span style="color: #666666">=</span> (x <span style="color: #666666">+</span
 ul <span style="color: #666666">=</span> lambdify((x, y), ue, <span style="color: #BA2121">&#39;numpy&#39;</span>)
 </pre></div>
 <p>
-We create a regular tensor product space, choosing the <code>fourier.bases.C2CBasis</code> for both directions if the initial condition is complex \eqref{eq:initial_0}, whereas we may choose <code>R2CBasis</code> if the initial condition is real \eqref{eq:initial_1}. Since we are solving a nonlinear equation, the additional issue of aliasing should be considered. Aliasing errors may be handled with different methods, but here we will use the so-called 3/2-rule, that requires padded transforms. We create a tensor product space <code>Tp</code> for padded transforms, using the <code>padding_factor=3/2</code> keyword below. Furthermore, some solution arrays, test and trial functions are also declared.
+We create a regular tensor product space, choosing the <code>fourier.bases.C2CBasis</code> for both directions if the initial condition is complex <a href="#mjx-eqn-63">(63)</a>, whereas we may choose <code>R2CBasis</code> if the initial condition is real <a href="#mjx-eqn-64">(64)</a>. Since we are solving a nonlinear equation, the additional issue of aliasing should be considered. Aliasing errors may be handled with different methods, but here we will use the so-called 3/2-rule, that requires padded transforms. We create a tensor product space <code>Tp</code> for padded transforms, using the <code>padding_factor=3/2</code> keyword below. Furthermore, some solution arrays, test and trial functions are also declared.
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
@@ -1152,14 +1083,14 @@ Note that <code>Tp</code> can be used exactly like <code>T</code>, but that a ba
 $$
 \begin{equation}
 \boldsymbol{l}^{p} = -3N/4, -3N/4+1, \ldots, 3N/4-1.
-\label{_auto48}
+\tag{66}
 \end{equation}
 $$
 
 We then set \( \hat{u}^p_{\textsf{k}} = \hat{u}_{\textsf{k}} \) for \( \textsf{k} \in \boldsymbol{l} \times \boldsymbol{l} \), and for the remaining high frequencies \( \hat{u}^p_{\textsf{k}} \) is set to 0.
 
 <p>
-We will solve the equation with a fourth order Runge-Kutta integrator. To this end we need to declare some work arrays to hold intermediate solutions, and a function for the right hand side of Eq. \eqref{eq:Ginz_var}
+We will solve the equation with a fourth order Runge-Kutta integrator. To this end we need to declare some work arrays to hold intermediate solutions, and a function for the right hand side of Eq. <a href="#mjx-eqn-65">(65)</a>
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
@@ -1179,7 +1110,7 @@ b <span style="color: #666666">=</span> [<span style="color: #666666">0.5</span>
     <span style="color: #008000; font-weight: bold">return</span> rhs
 </pre></div>
 <p>
-Note the close similarity with \eqref{eq:Ginz_var} and the usage of the padded transform for the nonlinear term.
+Note the close similarity with <a href="#mjx-eqn-65">(65)</a> and the usage of the padded transform for the nonlinear term.
 Finally, the Runge-Kutta method is implemented as
 <p>
 
@@ -1200,19 +1131,19 @@ tstep <span style="color: #666666">=</span> <span style="color: #666666">0</span
     U_hat[:] <span style="color: #666666">=</span> U_hat1
 </pre></div>
 <p>
-The code that is described here will run in parallel for up to a maximum of \( \text{min}(N[0], N[1]) \) processors. But, being a 2D problem, a single processor is sufficient to solve the problem in reasonable time. The real part of \( u(\boldsymbol{x}, t) \) is shown in Figure <a href="#fig:GL1">2</a> for times \( t=16 \) and \( t=96 \), where the solution is initialized from \eqref{eq:initial_0}. The results starting from the real initial condition in \eqref{eq:initial_1} is shown for the same times in Figure <a href="#fig:GL2">3</a>. There are apparently good agreements with figures published from using <code>chebfun</code> on \emph{www.chebfun.org/examples/pde/GinzburgLandau.html}. In particular, the figures in <a href="#fig:GL1">2</a>  are identical by the eye norm. One interesting feature, though, is seen in the right plot of Figure <a href="#fig:GL2">3</a>, where the results can be seen to have preserved symmetry, as they should. This symmetry is lost with chebfun, as commented in the referenced webpage. An asymmetric solution is also obtained with <code>shenfun</code> if no de-aliasing is applied. However, the simulations are very sensitive to roundoff, and it has also been observed that a de-aliased solution using <code>shenfun</code> may loose symmetry simply if a different FFT algorithm is chosen on runtime by FFTW.
+The code that is described here will run in parallel for up to a maximum of \( \text{min}(N[0], N[1]) \) processors. But, being a 2D problem, a single processor is sufficient to solve the problem in reasonable time. The real part of \( u(\boldsymbol{x}, t) \) is shown in Figure <a href="#fig:GL1">2</a> for times \( t=16 \) and \( t=96 \), where the solution is initialized from <a href="#mjx-eqn-63">(63)</a>. The results starting from the real initial condition in <a href="#mjx-eqn-64">(64)</a> is shown for the same times in Figure <a href="#fig:GL2">3</a>. There are apparently good agreements with figures published from using <code>chebfun</code> on \emph{www.chebfun.org/examples/pde/GinzburgLandau.html}. In particular, the figures in <a href="#fig:GL1">2</a>  are identical by the eye norm. One interesting feature, though, is seen in the right plot of Figure <a href="#fig:GL2">3</a>, where the results can be seen to have preserved symmetry, as they should. This symmetry is lost with chebfun, as commented in the referenced webpage. An asymmetric solution is also obtained with <code>shenfun</code> if no de-aliasing is applied. However, the simulations are very sensitive to roundoff, and it has also been observed that a de-aliased solution using <code>shenfun</code> may loose symmetry simply if a different FFT algorithm is chosen on runtime by FFTW.
 
 <p>
 <center> <!-- figure label: --> <div id="fig:GL1"></div> <!-- FIGURE -->
 <hr class="figure">
-<center><p class="caption">Figure 2:  Real part of solution to Ginzburg-Landau problem with real initial condition \eqref{eq:initial_0}, at two different times, t=16 and t=96, on left and right, respectively.  <!-- caption label: fig:GL1 --> </p></center>
+<center><p class="caption">Figure 2:  Real part of solution to Ginzburg-Landau problem with real initial condition <a href="#mjx-eqn-63">(63)</a>, at two different times, t=16 and t=96, on left and right, respectively.  <!-- caption label: fig:GL1 --> </p></center>
 <p><img src="figs/Ginzburg_1.png" align="bottom" ></p>
 </center>
 
 <p>
 <center> <!-- figure label: --> <div id="fig:GL2"></div> <!-- FIGURE -->
 <hr class="figure">
-<center><p class="caption">Figure 3:  Real part of solution to Ginzburg-Landau problem with real initial condition \eqref{eq:initial_1}, at two different times, t=16 and t=96, on left and right, respectively.  <!-- caption label: fig:GL2 --> </p></center>
+<center><p class="caption">Figure 3:  Real part of solution to Ginzburg-Landau problem with real initial condition <a href="#mjx-eqn-64">(64)</a>, at two different times, t=16 and t=96, on left and right, respectively.  <!-- caption label: fig:GL2 --> </p></center>
 <p><img src="figs/Ginzburg.png" align="bottom" ></p>
 </center>
 
@@ -1296,6 +1227,14 @@ This research is a part of the 4DSpace Strategic Research Initiative at the Univ
 
 <p>
 
+<p>
+<!-- navigation buttons at the bottom of the page -->
+<ul class="pager">
+\
+  <li class="previous">
+    <a href="._shenfun_bootstrap001.html">&larr; Prev</a>
+  </li>
+</ul>
 <!-- ------------------- end of main content --------------- -->
 
 </div>  <!-- end container -->
@@ -1311,7 +1250,7 @@ This research is a part of the 4DSpace Strategic Research Initiative at the Univ
 
 
 <center style="font-size:80%">
-<!-- copyright --> &copy; 2017, Mikael Mortensen. Released under CC Attribution 4.0 license
+<!-- copyright only on the titlepage -->
 </center>
 
 
