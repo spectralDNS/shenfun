@@ -17,7 +17,7 @@ doconce split_html shenfun_${style}.html
 doconce format sphinx $name
 theme=bloodish
 #theme=uio2
-doconce sphinx_dir dirname=sphinx-rootdir theme=$theme $name
+doconce sphinx_dir conf.py=myconf.py dirname=sphinx-rootdir theme=$theme $name
 
 python automake_sphinx.py
 

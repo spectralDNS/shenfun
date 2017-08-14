@@ -491,21 +491,32 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-latex_documents = [('index', 'doc.tex', project, u'Mikael Mortensen',  'manual'),]
+latex_documents = [
+    (master_doc, 'Shenfun-automatingthespectralGalerkinmethod.tex', u'Shenfun - automating the spectral Galerkin method Documentation',
+     u'Mikael Mortensen', 'manual'),
+]
 
 
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [('index', 'doc', project, [u'Mikael Mortensen'], 1),]
+man_pages = [
+    (master_doc, 'shenfun-automatingthespectralgalerkinmethod', u'Shenfun - automating the spectral Galerkin method Documentation',
+     [author], 1)
+]
+
 
 # -- Options for Texinfo output -------------------------------------------
 
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
-texinfo_documents = [('index', 'doc', project, u'Mikael Mortensen', 'doc', 'One line description of project.', 'Miscellaneous'),]
+texinfo_documents = [
+    (master_doc, 'Shenfun-automatingthespectralGalerkinmethod', u'Shenfun - automating the spectral Galerkin method Documentation',
+     author, 'Shenfun-automatingthespectralGalerkinmethod', 'One line description of project.',
+     'Miscellaneous'),
+]
 
 
 
