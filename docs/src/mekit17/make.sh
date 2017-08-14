@@ -31,5 +31,5 @@ cp ._shenfun_bootstrap* $dest
 cp .shenfun_bootstrap* $dest
 
 # Add to git if new files have been created
-git add $dest
+#git add $dest
 
