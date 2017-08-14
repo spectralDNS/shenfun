@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Shenfun - automating the spectral Galerkin method documentation build configuration file, created by
-# sphinx-quickstart on Mon Aug 14 09:00:54 2017.
+# sphinx-quickstart on Mon Aug 14 09:23:27 2017.
 #
 # This file is execfile()d with the current directory set to its
 # containing dir.

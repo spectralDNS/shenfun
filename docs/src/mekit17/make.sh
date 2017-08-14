@@ -8,7 +8,6 @@ bibtex $name
 bibtex $name
 pdflatex $name
 
-doconce format html $name --html_style=bootswatch_readable --html_code_style=inherit --html_output=shenfun
 doconce format html $name --html_style=solarized3 --html_output=shenfun-solarized
 
 style=bootstrap
@@ -27,7 +26,7 @@ dest=../../
 cp -r sphinx-rootdir/_build/html/ $dest
 cp $name.pdf $dest/shenfun.pdf
 cp -r figs $dest
-cp shenfun*.html $dest
+cp shenfun*.html $dest/
 cp ._shenfun_bootstrap* $dest
 cp .shenfun_bootstrap* $dest
 

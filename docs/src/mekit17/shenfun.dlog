@@ -2420,3 +2420,54 @@ figure file figs/Ginzburg_1:
     table of contents in Sphinx
     (use --sphinx_keep_splits to enforce your own !split commands)
 output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
