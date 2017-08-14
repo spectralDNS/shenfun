@@ -1,0 +1,245 @@
+<!--
+Automatically generated HTML file from DocOnce source
+(https://github.com/hplgit/doconce/)
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Shenfun - automating the spectral Galerkin method">
+<meta name="keywords" content="Computational Methods,Spectral,Galerkin,Chebyshev,Legendre">
+
+<title>Shenfun - automating the spectral Galerkin method</title>
+
+<!-- Bootstrap style: bootstrap -->
+<link href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+<!-- not necessary
+<link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+-->
+
+<style type="text/css">
+/* Let pre tags for code blocks have the same color as the surroundings */
+pre { color: inherit; background-color: transparent; }
+
+/* Add scrollbar to dropdown menus in bootstrap navigation bar */
+.dropdown-menu {
+   height: auto;
+   max-height: 400px;
+   overflow-x: hidden;
+}
+
+/* Adds an invisible element before each target to offset for the navigation
+   bar */
+.anchor::before {
+  content:"";
+  display:block;
+  height:50px;      /* fixed header height for style bootstrap */
+  margin:-50px 0 0; /* negative fixed header height */
+}
+</style>
+
+
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [('Table of contents',
+               1,
+               'table_of_contents',
+               'table_of_contents'),
+              ('Introduction', 1, 'sec:introduction', 'sec:introduction'),
+              ('Spectral Galerkin Method',
+               1,
+               'sec:preliminaries',
+               'sec:preliminaries'),
+              ('Shenfun', 1, 'sec:shenfun', 'sec:shenfun'),
+              ('Classes for basis functions', 2, None, '___sec3'),
+              ('Classes for matrices', 2, 'sec:matrices', 'sec:matrices'),
+              ('Variational forms in 1D', 2, None, '___sec5'),
+              ('Poisson equation implemented in 1D', 2, None, '___sec6'),
+              ('Periodic boundary conditions',
+               3,
+               'sec:fourierpoisson',
+               'sec:fourierpoisson'),
+              ('Dirichlet boundary conditions',
+               3,
+               'sec:dirichletpoisson',
+               'sec:dirichletpoisson'),
+              ('Tensor product spaces',
+               1,
+               'sec:tensorproductspaces',
+               'sec:tensorproductspaces'),
+              ('Other functionality of `shenfun`',
+               1,
+               'sec:extended',
+               'sec:extended'),
+              ('Ginzburg-Landau equation', 1, 'sec:ginzburg', 'sec:ginzburg'),
+              ('Conclusions', 1, None, '___sec12'),
+              ('Acknowledgements', 1, None, '___sec13'),
+              ('Bibliography', 1, None, '___sec14')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "none"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript" async
+ src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+\newcommand{\ts}[1]{\bs{\textsf{#1}}}
+$$
+
+
+
+
+    
+<!-- Bootstrap navigation bar -->
+<div class="navbar navbar-default navbar-fixed-top">
+  <div class="navbar-header">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </button>
+    <a class="navbar-brand" href="shenfun_bootstrap.html">Shenfun - automating the spectral Galerkin method</a>
+  </div>
+
+  <div class="navbar-collapse collapse navbar-responsive-collapse">
+    <ul class="nav navbar-nav navbar-right">
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Contents <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap000.html#table_of_contents" style="font-size: 80%;"><b>Table of contents</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap001.html#sec:introduction" style="font-size: 80%;"><b>Introduction</b></a></li>
+     <!-- navigation toc: --> <li><a href="#sec:preliminaries" style="font-size: 80%;"><b>Spectral Galerkin Method</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap003.html#sec:shenfun" style="font-size: 80%;"><b>Shenfun</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap003.html#___sec3" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Classes for basis functions</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap003.html#sec:matrices" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Classes for matrices</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap003.html#___sec5" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Variational forms in 1D</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap003.html#___sec6" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Poisson equation implemented in 1D</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap003.html#sec:fourierpoisson" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Periodic boundary conditions</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap003.html#sec:dirichletpoisson" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Dirichlet boundary conditions</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap004.html#sec:tensorproductspaces" style="font-size: 80%;"><b>Tensor product spaces</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap005.html#sec:extended" style="font-size: 80%;"><b>Other functionality of <code>shenfun</code></b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap006.html#sec:ginzburg" style="font-size: 80%;"><b>Ginzburg-Landau equation</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap007.html#___sec12" style="font-size: 80%;"><b>Conclusions</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap008.html#___sec13" style="font-size: 80%;"><b>Acknowledgements</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap009.html#___sec14" style="font-size: 80%;"><b>Bibliography</b></a></li>
+
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+</div> <!-- end of navigation bar -->
+
+<div class="container">
+
+<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p> <!-- add vertical space -->
+
+<a name="part0002"></a>
+<!-- !split -->
+
+<h1 id="sec:preliminaries" class="anchor">Spectral Galerkin Method</h1>
+The spectral Galerkin method can most easily be described by considering a simple PDE, like the Poisson equation, in a 1D domain \( \Omega \)
+$$
+\begin{equation}
+-u''(x) = f(x), \quad x \in \Omega, \tag{1}
+\end{equation}
+$$
+
+with appropriate boundary conditions (Dirichlet, Neumann or periodic). To solve this equation, we can define a test function \( v(x) \) that satisfies the boundary conditions, and that comes with an accompanying weight function \( w(x) \). Assuming also that we work with complex valued functions, a weighted continuous inner product of the two functions \( u \) and \( v \) can be defined as
+$$
+\begin{equation}
+(u, v)_w = \int_{\Omega} u(x) \overline{v}(x) w(x) dx,
+\tag{2}
+\end{equation}
+$$
+
+where \( \overline{v} \) is the complex conjugate of \( v \). The weighted inner product can now be used to create variational forms. If we multiply Eq. <a href="#mjx-eqn-1">(1)</a> with \( \overline{v}w \) and integrate over the domain we obtain the variational form of the PDE
+$$
+\begin{equation}
+(-u'', v)_w = (f, v)_w. \tag{3}
+\end{equation}
+$$
+
+The variational form can be solved numerically if \( u \) and \( v \) are approximated using a finite number \( (N) \) of test functions \( \{v_l(x)\}_{l=0}^{N-1} \), and a solution 
+$$
+\begin{equation}
+u(x) = \sum_{l=0}^{N-1} \hat{u}_l v_l(x),
+\tag{4}
+\end{equation}
+$$
+
+where \( \bs{\hat{u}} = \{\hat{u}_l\}_{l=0}^{N-1} \) are the expansion coefficients, that are also recognised as the unknowns in the modal spectral Galerkin method.
+
+<p>
+If \( v \) is chosen from a Fourier or Legendre basis, then the weight function used in the inner product is simply constant, and we may integrate <a href="#mjx-eqn-3">(3)</a> further using integration by parts. However, for a Chebyshev basis the weight function will be \( 1/\sqrt{1-x^2} \) and integration by parts is thus usually avoided. The weighted continuous inner product may, depending on the function that is to be integrated, be difficult or costly to evaluate. As such, we will in this work use the weighted <em>discrete</em> inner product instead, where the integral is approximated using quadrature
+$$
+\begin{equation}
+(u, v)_w^N = \sum_{j=0}^{N-1} u(x_j) \overline{v}(x_j) w_j  \approx  \int_{\Omega} u(x) \overline{v}(x) w(x) dx.
+\tag{5}
+\end{equation}
+$$
+
+Here \( \{w_j\}_{j=0}^{N-1} \) represents the quadrature weights and \( \{x_j\}_{j=0}^{N-1} \) are the quadrature points for the integration.
+
+<p>
+The test functions \( v \) will be chosen based in part on boundary conditions. However, regardless of which space the test functions are chosen from, the procedure for solving a PDE with the spectral Galerkin method is always the same:
+
+<ul>
+  <li> Choose a basis satisfying boundary conditions.</li>
+  <li> Derive variational forms from PDEs using  weighted inner products.</li>
+  <li> Assemble and solve linear systems of equations for expansion coefficients.</li>
+</ul>
+
+In other words it is very much like a finite element method. The major difference is that the basis functions are global, i.e., they all span the entire domain, whereas in FEM the test functions only have local support.
+
+<p>
+<p>
+<!-- navigation buttons at the bottom of the page -->
+<ul class="pager">
+\
+  <li class="previous">
+    <a href="._shenfun_bootstrap001.html">&larr; Prev</a>
+  </li>
+\
+  <li class="next">
+    <a href="._shenfun_bootstrap003.html">Next &rarr;</a>
+  </li>
+</ul>
+<!-- ------------------- end of main content --------------- -->
+
+</div>  <!-- end container -->
+<!-- include javascript, jQuery *first* -->
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+
+<!-- Bootstrap footer
+<footer>
+<a href="http://..."><img width="250" align=right src="http://..."></a>
+</footer>
+-->
+
+
+<center style="font-size:80%">
+<!-- copyright only on the titlepage -->
+</center>
+
+
+</body>
+</html>
+    
+

@@ -1,0 +1,13 @@
+2017.08.14 09:00:54 AM - INFO - copy: shenfun.rst to sphinx-rootdir and reading the content
+2017.08.14 09:00:54 AM - INFO - copy: figs to sphinx-rootdir/figs
+2017.08.14 09:00:54 AM - INFO - copy: figs/dirtree.png to sphinx-rootdir
+2017.08.14 09:00:54 AM - INFO - edit: figure path to dirtree.png
+2017.08.14 09:00:54 AM - INFO - copy: figs/Ginzburg_1.png to sphinx-rootdir
+2017.08.14 09:00:54 AM - INFO - edit: figure path to Ginzburg_1.png
+2017.08.14 09:00:54 AM - INFO - copy: figs/Ginzburg.png to sphinx-rootdir
+2017.08.14 09:00:54 AM - INFO - edit: figure path to Ginzburg.png
+2017.08.14 09:00:54 AM - INFO - running make clean and make html
+2017.08.14 09:00:56 AM - INFO - edit: genindex.html
+2017.08.14 09:00:56 AM - INFO - edit: index.html
+2017.08.14 09:00:56 AM - INFO - edit: search.html
+2017.08.14 09:00:56 AM - INFO - edit: shenfun.html

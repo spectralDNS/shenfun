@@ -1,0 +1,2422 @@
+translating doconce text in shenfun.do.txt to pdflatex
+*** error: figure file "dirtree" does not exist!
+translating doconce text in shenfun.do.txt to pdflatex
+figure file dirtree:
+    can use dirtree.png for format pdflatex
+
+exporting publish database shenfun.pub to shenfun.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to pdflatex
+figure file dirtree:
+    can use dirtree.png for format pdflatex
+
+exporting publish database shenfun.pub to shenfun.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+figure file dirtree:
+    can use dirtree.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+figure file dirtree:
+    can use dirtree.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to sphinx
+figure file dirtree:
+    can use dirtree.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+figure file dirtree:
+    can use dirtree.png for format pdflatex
+
+exporting publish database shenfun.pub to shenfun.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+figure file dirtree:
+    can use dirtree.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+figure file dirtree:
+    can use dirtree.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to sphinx
+figure file dirtree:
+    can use dirtree.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+
+exporting publish database shenfun.pub to shenfun.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to sphinx
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+
+exporting publish database shenfun.pub to shenfun.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to sphinx
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+
+exporting publish database shenfun.pub to shenfun.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to sphinx
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** error: missing blank line between multiple figures/movies
+    figs/Ginzburg_1: [ frac=0.9, ...
+translating doconce text in shenfun.do.txt to html
+*** error: missing blank line between multiple figures/movies
+    figs/Ginzburg_1: [ frac=0.9, ...
+translating doconce text in shenfun.do.txt to html
+*** error: missing blank line between multiple figures/movies
+    figs/Ginzburg_1: [ frac=0.9, ...
+translating doconce text in shenfun.do.txt to sphinx
+*** error: missing blank line between multiple figures/movies
+    figs/Ginzburg_1: [ frac=0.9, ...
+translating doconce text in shenfun.do.txt to pdflatex
+*** error: backtick ` in the middle of text is probably syntax error
+    surrounding text:
+project` in combination with operators on `Function`s. For example, to compute $\partial u / \partia
+translating doconce text in shenfun.do.txt to pdflatex
+ERROR: 47 !bt do not match 48 !et directives
+
+
+Two !et after each other!
+
+!et
+and we integrate the equations forward in time using an explicit, fourth order Runge-Kutta method, that only requires as input a function that returns the right hand side of (ref{eq:Ginz_var}). Note that all matrices involved with the Fourier method are diagonal, so there is no need for linear algebra solvers, and the left hand side inner product equals $(2 \pi)^2 \bs{\hat{u}}$.
+
+The initial condition is created using `Sympy`
+!bc pycod
+from sympy import symbols, exp, lambdify
+x, y = symbols("x,y")
+#ue = (1j*x + y)*exp(-0.03*(x**2+y**2))
+ue = (x + y)*exp(-0.03*(x**2+y**2))
+ul = lambdify((x, y), ue, 'numpy')
+!ec
+We create a regular tensor product space, choosing the `fourier.bases.C2CBasis` for both directions if the initial condition is complex (ref{eq:initial_0}), whereas we may choose `R2CBasis` if the initial condition is real (ref{eq:initial_1}). Since we are solving a nonlinear equation, the additional issue of aliasing should be considered. Aliasing errors may be handled with different methods, but here we will use the so-called 3/2-rule, that requires padded transforms. We create a tensor product space `Tp` for padded transforms, using the `padding_factor=3/2` keyword below. Furthermore, some solution arrays, test and trial functions are also declared.
+!bc pycod
+# Size of discretization
+N = (201, 201)
+
+# Create tensor product space
+K0 = C2CBasis(N[0], domain=(-50., 50.))
+K1 = C2CBasis(N[1], domain=(-50., 50.))
+T = TensorProductSpace(comm, (K0, K1))
+
+Kp0 = C2CBasis(N[0], domain=(-50., 50.), padding_factor=1.5)
+Kp1 = C2CBasis(N[1], domain=(-50., 50.), padding_factor=1.5)
+Tp = TensorProductSpace(comm, (Kp0, Kp1))
+
+u = TrialFunction(T)
+v = TestFunction(T)
+X = T.local_mesh(True)
+U = Function(T, False)         # Solution
+U_hat = Function(T)            # Solution spectral space
+Up = Function(Tp, False)       # Padded solution for nonlinear term
+dU_hat = Function(T)           # right hand side
+#initialize
+U[:] = ul(*X)
+U_hat = T.forward(U, U_hat)
+!ec
+Note that `Tp` can be used exactly like `T`, but that a backward transform creates an output that is 3/2 as large in each direction. So a $(100, 100)$ mesh results in a $(150, 150)$ output from a backwards transform. This transform is performed by creating a 3/2 times larger padded array in spectral space $\hat{u}^p_{\textsf{k}^p}$, where $\textsf{k}^p = \boldsymbol{l}^p \times \boldsymbol{l}^p $ and
+!bT
+\begin{equation}
+\boldsymbol{l}^{p} = -3N/4, -3N/4+1, \ldots, 3N/4-1.
+\end{equation}
+!et
+translating doconce text in shenfun.do.txt to pdflatex
+*** error: reference to equation label "eq:initial_0" is without parentheses
+    the equation reference should be typeset as (ref{eq:initial_0})
+...  initial condition ( \ref{eq:initial_0}).]{
+#        \centering
+#      ...
+*** error: reference to equation label "eq:initial_1" is without parentheses
+    the equation reference should be typeset as (ref{eq:initial_1})
+...  initial condition ( \ref{eq:initial_1}).]{
+#        \centering
+#      ...
+translating doconce text in shenfun.do.txt to pdflatex
+*** error: reference to equation label "eq:initial_0" is without parentheses
+    the equation reference should be typeset as (ref{eq:initial_0})
+...  initial condition ( \ref{eq:initial_0}).]{
+#        \centering
+#      ...
+*** error: reference to equation label "eq:initial_1" is without parentheses
+    the equation reference should be typeset as (ref{eq:initial_1})
+...  initial condition ( \ref{eq:initial_1}).]{
+#        \centering
+#      ...
+translating doconce text in shenfun.do.txt to pdflatex
+*** error: reference ref{fig:poisson2D} to non-defined label
+    run the generated script tmp_missing_labels.sh
+    to search for these missing labels!
+
+Causes of missing labels:
+1: label is defined in another document. Use generalized references
+   ref[][][], or use --allow_refs_to_external_docs (to ignore this error)
+   (if generalized reference and this error occur: syntax of generalized
+   reference is wrong!)
+2: preprocessor if-else has left the label out
+3: forgotten to define the label
+
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+
+*** warning: found \label{...} with backslash
+    (label{...} has no backslash in DocOnce syntax)
+\label{subfig0}
+\label{subfig1}
+\label{subfig2}
+\label{subfig3}
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database shenfun.pub to shenfun.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database shenfun.pub to shenfun.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database shenfun.pub to shenfun.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database shenfun.pub to shenfun.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database shenfun.pub to shenfun.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database shenfun.pub to shenfun.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database shenfun.pub to shenfun.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database shenfun.pub to shenfun.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database shenfun.pub to shenfun.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database shenfun.pub to shenfun.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database shenfun.pub to shenfun.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: latex format will have problem with words
+    containing underscores (this warning is very uncertain, might be wrong too):
+
+w_hat
+
+    typeset these words with `inline verbatim` or escape with backslash
+    First word appears here:
+he input (solution in real space). Furthermore, `; w_hat = Function(W, buffer=uh)` can be used to wrap a insta
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
+translating doconce text in shenfun.do.txt to pdflatex
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format pdflatex
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format pdflatex
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format pdflatex
+
+exporting publish database papers.pub to papers.bib:
+output in shenfun.tex
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun-solarized.html
+translating doconce text in shenfun.do.txt to html
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format html
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format html
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format html
+output in shenfun_bootstrap.html
+translating doconce text in shenfun.do.txt to sphinx
+*** warning: found reference "in ref{fig:GL1}" with unexpected word "in" in front
+
+    (expected Section/Chapter/Figure ref{fig:GL1}, or could it be a reference to an equation, but missing parenthesis in (ref{fig:GL1})?)
+figure file figs/dirtree:
+    can use figs/dirtree.png for format sphinx
+figure file figs/Ginzburg:
+    can use figs/Ginzburg.png for format sphinx
+figure file figs/Ginzburg_1:
+    can use figs/Ginzburg_1.png for format sphinx
+*** warning: new !split inserted (override all existing !split)
+    before every ======= heading =======
+    because this strategy gives a well-functioning
+    table of contents in Sphinx
+    (use --sphinx_keep_splits to enforce your own !split commands)
+output in shenfun.rst
