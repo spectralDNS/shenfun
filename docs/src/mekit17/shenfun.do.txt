@@ -1,12 +1,3 @@
-<%
-def refex(label, capital=False):
-    if FORMAT in ('latex', 'pdflatex'):
-        return 'Code ref{%s}' % label
-    else:
-        s = 'ref{%s}' % label
-        return s
-%>
-
 TITLE: Shenfun - automating the spectral Galerkin method
 AUTHOR: Mikael Mortensen {copyright|CC BY} Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
 DATE: today
