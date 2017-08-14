@@ -1,15 +1,15 @@
 \contentsline {section}{\numberline {1}Introduction}{2}{section.1}
 \contentsline {section}{\numberline {2}Spectral Galerkin Method}{3}{section.2}
 \contentsline {section}{\numberline {3}Shenfun}{4}{section.3}
-\contentsline {subsection}{\numberline {3.1}Classes for basis functions}{5}{subsection.3.1}
-\contentsline {subsection}{\numberline {3.2}Classes for matrices}{6}{subsection.3.2}
-\contentsline {subsection}{\numberline {3.3}Variational forms in 1D}{7}{subsection.3.3}
+\contentsline {subsection}{\numberline {3.1}Classes for basis functions}{6}{subsection.3.1}
+\contentsline {subsection}{\numberline {3.2}Classes for matrices}{7}{subsection.3.2}
+\contentsline {subsection}{\numberline {3.3}Variational forms in 1D}{8}{subsection.3.3}
 \contentsline {subsection}{\numberline {3.4}Poisson equation implemented in 1D}{9}{subsection.3.4}
 \contentsline {paragraph}{Periodic boundary conditions.}{9}{section*.2}
-\contentsline {paragraph}{Dirichlet boundary conditions.}{12}{section*.3}
+\contentsline {paragraph}{Dirichlet boundary conditions.}{13}{section*.3}
 \contentsline {section}{\numberline {4}Tensor product spaces}{15}{section.4}
 \contentsline {section}{\numberline {5}Other functionality of \texttt {shenfun} }{20}{section.5}
 \contentsline {section}{\numberline {6}Ginzburg-Landau equation}{21}{section.6}
-\contentsline {section}{\numberline {7}Conclusions}{24}{section.7}
-\contentsline {section}{\numberline {8}Acknowledgements}{24}{section.8}
-\contentsline {section}{References}{24}{section*.4}
+\contentsline {section}{\numberline {7}Conclusions}{25}{section.7}
+\contentsline {section}{\numberline {8}Acknowledgements}{25}{section.8}
+\contentsline {section}{References}{25}{section*.4}

@@ -39,6 +39,8 @@ pre { color: inherit; background-color: transparent; }
 </style>
 
 
+
+
 </head>
 
 <!-- tocinfo
@@ -408,7 +410,7 @@ Inserting for Eq. <a href="#mjx-eqn-7">(7)</a> and using \( e^{imx} \) as test f
 $$
 \begin{align}
 -(\sum_{l \in \bs{l}} \hat{u}_l (e^{ilx})'', e^{imx})_w^N &= (f(x), e^{imx})_w^N \quad \forall \, m \in \bs{l} 
-\tag{11}\\
+\tag{11}\\ 
 \sum_{l \in \bs{l}} l^2( e^{ilx}, e^{imx})_w^N \hat{u}_l &= (f(x), e^{imx})_w ^N\quad \forall \, m \in \bs{l}. \tag{12}
 \end{align}
 $$
@@ -426,9 +428,9 @@ For the right hand side we have
 $$
 \begin{align}
 (f(x), e^{imx})^N &= \frac{2 \pi}{N}\sum_{j=0}^{N-1} f(x_j) e^{-imx_j} \quad \text{for } m \in \bs{l}, 
-\tag{14}\\
+\tag{14}\\ 
  &= 2 \pi \mathcal{F}_m(f(\bs{x})), 
-\tag{15}\\
+\tag{15}\\ 
  &= 2 \pi \hat{f}_m,
 \tag{16}
 \end{align}
@@ -470,7 +472,10 @@ $$
 So, even though we carefully followed the spectral Galerkin method, we have ended up with the same result that would have been obtained with a Fourier collocation method, where one simply takes the Fourier transform of the Poisson equation and differentiate analytically.
 
 <p>
-With <code>shenfun</code> the periodic 1D Poisson equation can be trivially computed either with the collocation approach or the spectral Galerkin method. The procedure for the spectral Galerkin method will be shown first, before the entire problem is solved. All <code>shenfun</code> demos in this paper will contain a similar preample section where some necessary Python classes, modules and functions are imported. We import Numpy since <code>shenfun</code> arrays are Numpy arrays, and we import from Sympy to construct some exact solution used to verify the code. Note also the similarity to FEniCS with the import of methods and classes <code>inner, div, grad, TestFunction, TrialFunction</code>.  The Fourier spectral Galerkin method in turn requires that the <code>FourierBasis</code> is imported as well. 
+With <code>shenfun</code> the periodic 1D Poisson equation can be trivially computed either with the collocation approach or the spectral Galerkin method. The procedure for the spectral Galerkin method will be shown first, before the entire problem is solved. All <code>shenfun</code> demos in this paper will contain a similar preample section where some necessary Python classes, modules and functions are imported. We import Numpy since <code>shenfun</code> arrays are Numpy arrays, and we import from Sympy to construct some exact solution used to verify the code. Note also the similarity to FEniCS with the import of methods and classes <code>inner, div, grad, TestFunction, TrialFunction</code>.  The Fourier spectral Galerkin method in turn requires that the <code>FourierBasis</code> is imported as well. The following code solves the Poisson equation in 1D with shenfun:
+
+<p>
+<!-- !bu-code Poisson equation with Fourier basis label=fig:poisson1D -->
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
@@ -507,6 +512,10 @@ uq <span style="color: #666666">=</span> ST<span style="color: #666666">.</span>
 <span style="color: #008000; font-weight: bold">assert</span> np<span style="color: #666666">.</span>allclose(uj, uq)
 </pre></div>
 <p>
+<!-- !eu-code -->
+
+<p>
+<!-- ref{fig:poisson1D} -->
 Naturally, this simple problem could be solved easier with a Fourier collocation instead, and  a simple pure 1D Fourier problem does not illuminate the true advantages of  <code>shenfun</code>, that only will become evident when we look at higher dimensional problems with tensor product spaces. To solve with collocation, we could simply do
 <p>
 
@@ -545,7 +554,7 @@ $$
 where \( L_l(x) \) is the l'th order Legendre polynomial. The test functions give rise to functionspaces
 $$
 \begin{align}
-V^C &= \text{span}\{T_l-T_{l+2}, l \in \bs{l}^D\}, \tag{23} \\
+V^C &= \text{span}\{T_l-T_{l+2}, l \in \bs{l}^D\}, \tag{23} \\ 
 V^L &= \text{span}\{L_l-L_{l+2}, l \in \bs{l}^D\}, \tag{24}
 \end{align}
 $$
@@ -562,7 +571,7 @@ The computational mesh and associated weights will be decided by the chosen quad
 $$
 \begin{align}
 x_j^C &= \cos \left( \frac{2j+1}{2N}\pi \right) \quad &j=0,1,\ldots, N-1, 
-\tag{26}\\
+\tag{26}\\ 
 w_j^C &= \frac{\pi}{N},
 \tag{27}
 \end{align}
@@ -572,7 +581,7 @@ and
 $$
 \begin{align}
 x_j^L &= \text{ zeros of }L_{N}(x) \quad &j=0,1,\ldots, N-1, 
-\tag{28}\\
+\tag{28}\\ 
 w_j^L &= \frac{2}{(1-x_j^2)[L'_{N}(x_j)]^2} \quad &j=0,1,\ldots, N-1,
 \tag{29}
 \end{align}
@@ -593,7 +602,7 @@ We insert for \( v=v_m \) and \( u=\displaystyle \sum_{l\in \bs{l}^D} \hat{u}_l 
 $$
 \begin{align}
 -(\sum_{l\in \bs{l}^D} \hat{u}_l v_l'', v_m)_w^N &= (f, v_m)_w^N  &m \in \bs{l}^D,
-\tag{31}\\
+\tag{31}\\ 
 -(v_l'', v_m)_w^N \hat{u}_l &= (f, v_m)_w^N & m \in \bs{l}^D, \tag{32}
 \end{align}
 $$
@@ -602,7 +611,7 @@ where summation on repeated indices is implied. In Eq. <a href="#mjx-eqn-32">(32
 $$
 \begin{align}
 -\bs{A} \bs{\hat{u}} &= \bs{\tilde{f}}, 
-\tag{33}\\
+\tag{33}\\ 
    \bs{\hat{u}} &= -\bs{A}^{-1} \bs{\tilde{f}}.
 \tag{34}
 \end{align}
@@ -631,9 +640,9 @@ Introducing now the mass matrix \( B_{ml} = (v_l, v_m)_w^N \) and the <em>Shen</
 $$
 \begin{align}
 \mathcal{S}_m(u) &= B_{ml} \hat{u}_l, 
-\tag{37}\\
+\tag{37}\\ 
 \bs{\hat{u}}  =& \bs{B}^{-1} \mathcal{S}(\bs{u}) , 
-\tag{38}\\
+\tag{38}\\ 
 \bs{\hat{u}}  =& \mathcal{T}(\bs{u}) ,
 \tag{39}
 \end{align}
@@ -680,7 +689,7 @@ Note that the inner product <code>f_hat = inner(v, fj)</code> is computed under 
 $$
 \begin{align}
 u(x_j) &= \sum_{l\in \bs{l}^D} \hat{u}_l v_l(x_j) \quad j=0,1,\ldots, N-1, \notag 
-\tag{40}\\
+\tag{40}\\ 
 \bs{u} &= \mathcal{S}^{-1}(\bs{\hat{u}}). \tag{41}
 \end{align}
 $$

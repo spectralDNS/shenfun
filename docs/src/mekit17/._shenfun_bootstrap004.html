@@ -39,6 +39,8 @@ pre { color: inherit; background-color: transparent; }
 </style>
 
 
+
+
 </head>
 
 <!-- tocinfo
@@ -281,9 +283,9 @@ Inserting for test function \( v = \phi_{\ts{k}} (= \phi_{l, m} =v_l(x) e^{imy})
 $$
 \begin{align}
  (v, \nabla^2 u)_w^N &= \left(\phi_{l, m}, \frac{\partial^2}{\partial x^2} \sum_{(q, r) \in \ts{k}} \hat{u}_{q, r} \phi_{q, r} + \frac{\partial^2}{\partial y^2} \sum_{(q,r) \in \ts{k}} \hat{u}_{q, r} \phi_{q, r} \right)_w^N, 
-\tag{49}\\
+\tag{49}\\ 
  &= 2\pi \left(\sum_{(q, r) \in \ts{k}} A_{lq} \delta_{rm} \hat{u}_{q,r} -  \sum_{(q, r) \in \ts{k}} {r}^2  B_{lq} \delta_{rm} \hat{u}_{q,r}\right), 
-\tag{50}\\
+\tag{50}\\ 
  &= 2\pi \left(\sum_{q\in \bs{l}^D} A_{lq} \hat{u}_{q,m} - {m}^2 \sum_{q\in \bs{l}^D}  B_{lq} \hat{u}_{q,m}\right) \quad \forall (l, m) \in \bs{l}^D \times \bs{l}. \tag{51}
 \end{align}
 $$
@@ -295,7 +297,7 @@ The right hand side of the Poisson problem is computed as
 $$
 \begin{align}
 (v, f)_w^N &= 2\pi \underbrace{\sum_{j}\underbrace{\frac{1}{N} \sum_{k} f(x_j, y_k) e^{imy_k} }_{\mathcal{F}_m} v_l(x_j)   w_j}_{\mathcal{S}_l} \quad \forall (l, m) \in \bs{l}^D \times \bs{l}, \notag 
-\tag{52}\\
+\tag{52}\\ 
   &= 2\pi \mathcal{S}(f) = 2 \pi \mathcal{S}_l(\mathcal{F}_m(f)).
 \tag{53}
 \end{align}
@@ -319,11 +321,11 @@ Solving a biharmonic problem is just as easy as the Poisson problem. Consider th
 $$
 \begin{align}
 \nabla^4 u(\bs{x}) &= f(\bs{x}), \quad \bs{x} \in \Omega 
-\tag{54}\\
+\tag{54}\\ 
  u(x=\pm1, y, z) &= \frac{\partial u}{\partial x} (x=\pm 1, y, z) = 0 
-\tag{55}\\
+\tag{55}\\ 
  u(x, y+2\pi, z) &= u(x, y, z), 
-\tag{56}\\
+\tag{56}\\ 
  u(x, y, z+2\pi) &= u(x, y, z). 
 \tag{57}
 \end{align}
@@ -332,7 +334,7 @@ $$
 that is periodic in \( y- \) and $z-$directions and with clamped boundary conditions at \( x=\pm 1 \). The problem may be solved using either one of these two bases:
 $$
 \begin{align}
-V^C &= \text{span}\{T_l - \frac{2(l+2)}{l+3}T_{l+2} + \frac{l+1}{l+3}T_{l+4} , l \in \bs{l}^B\}, \tag{58} \\
+V^C &= \text{span}\{T_l - \frac{2(l+2)}{l+3}T_{l+2} + \frac{l+1}{l+3}T_{l+4} , l \in \bs{l}^B\}, \tag{58} \\ 
 V^L &= \text{span}\{L_l - \frac{2(2l+5)}{2l+7}L_{l+2} + \frac{2l+3}{2l+7}, l \in \bs{l}^B\}, \tag{59}
 \end{align}
 $$

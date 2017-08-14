@@ -247,6 +247,15 @@ commentstyle={},
 % --- end of standard preamble for documents ---
 
 
+\usepackage{amsthm}
+\theoremstyle{definition}
+\newtheorem{code}{Code}[section]
+\newtheorem{remark}{Remark}
+\newtheorem{example}{Example}
+\newtheorem{definition}{Definition}
+
+
+
 % insert custom LaTeX commands...
 
 \raggedbottom
@@ -266,6 +275,8 @@ commentstyle={},
 \input{newcommands_keep}
 
 % ------------------- main content ----------------------
+
+
 
 
 
@@ -331,7 +342,7 @@ There are many tools available for working with spectral methods. For MATLAB the
 
 To the author's knowledge, all research codes developed for studying turbulent flows through Direct Numerical Simulations (DNS) on supercomputers have been written in low-level languages like Fortran, C or C++, see, e.g., \cite{debruynkops15,hoyas06,leemoser15}, or \cite{Alfonsi2016} for a list of high performance channel flow solvers. The codes are  highly tuned and tailored to a specific target, and, being low-level, the codes are not easily accessible to a non-expert programmer. Mortensen and Langtangen \cite{Mortensen2016} describe how a DNS solver can be written in Python in 100 lines of script-like code, and also show that the code, when optimized in the background using Cython, runs as fast as an identical C++ implementation on thousands of processors with MPI. {Shenfun} takes it one step further and aims at providing a generic toolbox for creating high performance, parallel solvers of any PDE, in a very high-level language. And without compromising much on computational efficiency. The key to developing such a high-level code in Python is efficient use of Numpy \cite{numpy}, with broadcasting and vectorization, and MPI for Python \cite{mpi4py}, that wraps almost the entire MPI library, and that can transfer Numpy arrays between thousands of processors at the same speed as a low-level C or Fortran code. Similarly, we utilize the pyFFTW module \cite{pyfftw}, that wraps most of the FFTW library \cite{libfftw} and makes the FFT as fast when called from Python as it is when used in low-level codes.
 
-% This paper is organised as follows: in Section~\ref{sec:preliminaries} the spectral Galerkin method is introduced. In Section~\ref{sec:shenfun} the basics of the {shenfun} package is described and #implementations are shown for simple 1D Poisson and biharmonic problems. In Section~\ref{sec:tensorproductspaces} we move to higher dimensions and tensor product spaces before we, in #Sections~\ref{sec:extended} and~\ref{sec:ginzburg} end with some extended functionality and an implementation for the time dependent nonlinear Ginzburg-Landau equation in 2D.
+This paper is organised as follows: in Section~\ref{sec:preliminaries} the spectral Galerkin method is introduced. In Section~\ref{sec:shenfun} the basics of the \texttt{shenfun} package is described and implementations are shown for simple 1D Poisson and biharmonic problems. In Section~\ref{sec:tensorproductspaces} we move to higher dimensions and tensor product spaces before we, in Sections~\ref{sec:extended} and~\ref{sec:ginzburg} end with some extended functionality and an implementation for the time dependent nonlinear Ginzburg-Landau equation in 2D.
 
 % !split
 \section{Spectral Galerkin Method}
@@ -588,7 +599,7 @@ To solve Eq. (\ref{eq:poisson}) with the discrete spectral Galerkin method, we c
 \end{equation}
 Inserting for Eq. (\ref{eq:ufourier}) and using $e^{imx}$ as test function we obtain
 \begin{align}
--(\sum_{l \in \bs{l}} \hat{u}_l (e^{ilx})'', e^{imx})_w^N &= (f(x), e^{imx})_w^N \quad \forall \, m \in \bs{l} \\
+-(\sum_{l \in \bs{l}} \hat{u}_l (e^{ilx})'', e^{imx})_w^N &= (f(x), e^{imx})_w^N \quad \forall \, m \in \bs{l} \\ 
 \sum_{l \in \bs{l}} l^2( e^{ilx}, e^{imx})_w^N \hat{u}_l &= (f(x), e^{imx})_w ^N\quad \forall \, m \in \bs{l}. \label{eq:utmp}
 \end{align}
 Note that the discrete inner product (\ref{eq:quadrature}) is used, and we also need to interpolate the function $f(x)$ onto the grid $\boldsymbol{x}$. For Fourier it becomes very simple since the weight functions are constant $w_j = 2\pi/N$ and we have for the left hand side simply a diagonal matrix
@@ -598,8 +609,8 @@ Note that the discrete inner product (\ref{eq:quadrature}) is used, and we also 
 where $\delta_{ml}$ is the kronecker delta function.
 For the right hand side we have
 \begin{align}
-(f(x), e^{imx})^N &= \frac{2 \pi}{N}\sum_{j=0}^{N-1} f(x_j) e^{-imx_j} \quad \text{for } m \in \bs{l}, \\
- &= 2 \pi \mathcal{F}_m(f(\bs{x})), \\
+(f(x), e^{imx})^N &= \frac{2 \pi}{N}\sum_{j=0}^{N-1} f(x_j) e^{-imx_j} \quad \text{for } m \in \bs{l}, \\ 
+ &= 2 \pi \mathcal{F}_m(f(\bs{x})), \\ 
  &= 2 \pi \hat{f}_m,
 \end{align}
 where $\mathcal{F}$ represents the discrete Fourier transform that is defined as
@@ -621,7 +632,15 @@ which is trivially solved since it only involves a diagonal matrix ($\delta_{ml}
 
 So, even though we carefully followed the spectral Galerkin method, we have ended up with the same result that would have been obtained with a Fourier collocation method, where one simply takes the Fourier transform of the Poisson equation and differentiate analytically.
 
-With \texttt{shenfun} the periodic 1D Poisson equation can be trivially computed either with the collocation approach or the spectral Galerkin method. The procedure for the spectral Galerkin method will be shown first, before the entire problem is solved. All \texttt{shenfun} demos in this paper will contain a similar preample section where some necessary Python classes, modules and functions are imported. We import Numpy since \texttt{shenfun} arrays are Numpy arrays, and we import from Sympy to construct some exact solution used to verify the code. Note also the similarity to FEniCS with the import of methods and classes \texttt{inner, div, grad, TestFunction, TrialFunction}.  The Fourier spectral Galerkin method in turn requires that the \texttt{FourierBasis} is imported as well. 
+With \texttt{shenfun} the periodic 1D Poisson equation can be trivially computed either with the collocation approach or the spectral Galerkin method. The procedure for the spectral Galerkin method will be shown first, before the entire problem is solved. All \texttt{shenfun} demos in this paper will contain a similar preample section where some necessary Python classes, modules and functions are imported. We import Numpy since \texttt{shenfun} arrays are Numpy arrays, and we import from Sympy to construct some exact solution used to verify the code. Note also the similarity to FEniCS with the import of methods and classes \texttt{inner, div, grad, TestFunction, TrialFunction}.  The Fourier spectral Galerkin method in turn requires that the \texttt{FourierBasis} is imported as well. The following code solves the Poisson equation in 1D with shenfun: 
+
+% !bu-code Poisson equation with Fourier basis label=fig:poisson1D
+
+
+\vskip 1ex
+\noindent
+\begin{minipage}[h!]{\columnwidth}
+
 \begin{lstlisting}[language=Python,style=yellow2_fb]
 from sympy import Symbol, cos
 import numpy as np
@@ -655,7 +674,12 @@ u_hat = A.solve(f_hat)
 uq = ST.backward(u_hat)
 assert np.allclose(uj, uq)
 \end{lstlisting}
+% !eu-code
 
+\end{minipage}
+
+
+% Code~\ref{fig:poisson1D}
 Naturally, this simple problem could be solved easier with a Fourier collocation instead, and  a simple pure 1D Fourier problem does not illuminate the true advantages of  \texttt{shenfun}, that only will become evident when we look at higher dimensional problems with tensor product spaces. To solve with collocation, we could simply do
 \begin{lstlisting}[language=Python,style=yellow2_fb]
 # Transform right hand side
@@ -684,7 +708,7 @@ v_l(x) = L_l(x) - L_{l+2}(x),
 \end{equation}
 where $L_l(x)$ is the l'th order Legendre polynomial. The test functions give rise to functionspaces
 \begin{align}
-V^C &= \text{span}\{T_l-T_{l+2}, l \in \bs{l}^D\}, \label{eq:chebdirichlet} \\
+V^C &= \text{span}\{T_l-T_{l+2}, l \in \bs{l}^D\}, \label{eq:chebdirichlet} \\ 
 V^L &= \text{span}\{L_l-L_{l+2}, l \in \bs{l}^D\}, \label{eq:legdirichlet}
 \end{align}
 where
@@ -693,12 +717,12 @@ where
 \end{equation}
 The computational mesh and associated weights will be decided by the chosen quadrature rule. Here we will go for Gauss quadrature, which leads to the following points and weights for the Chebyshev basis
 \begin{align}
-x_j^C &= \cos \left( \frac{2j+1}{2N}\pi \right) \quad &j=0,1,\ldots, N-1, \\
+x_j^C &= \cos \left( \frac{2j+1}{2N}\pi \right) \quad &j=0,1,\ldots, N-1, \\ 
 w_j^C &= \frac{\pi}{N},
 \end{align}
 and
 \begin{align}
-x_j^L &= \text{ zeros of }L_{N}(x) \quad &j=0,1,\ldots, N-1, \\
+x_j^L &= \text{ zeros of }L_{N}(x) \quad &j=0,1,\ldots, N-1, \\ 
 w_j^L &= \frac{2}{(1-x_j^2)[L'_{N}(x_j)]^2} \quad &j=0,1,\ldots, N-1,
 \end{align}
 for the Legendre basis.
@@ -709,12 +733,12 @@ We now follow the same procedure as in Section~\ref{sec:fourierpoisson} and solv
 \end{equation}
 We insert for $v=v_m$ and $u=\displaystyle \sum_{l\in \bs{l}^D} \hat{u}_l v_l$ and obtain
 \begin{align}
--(\sum_{l\in \bs{l}^D} \hat{u}_l v_l'', v_m)_w^N &= (f, v_m)_w^N  &m \in \bs{l}^D,\\
+-(\sum_{l\in \bs{l}^D} \hat{u}_l v_l'', v_m)_w^N &= (f, v_m)_w^N  &m \in \bs{l}^D,\\ 
 -(v_l'', v_m)_w^N \hat{u}_l &= (f, v_m)_w^N & m \in \bs{l}^D, \label{eq:cheb_poisson}
 \end{align}
 where summation on repeated indices is implied. In Eq. (\ref{eq:cheb_poisson}) $A_{ml} =(v_l'', v_m)_w^N$ are the components of a sparse stiffness matrix, and we will use matrix notation $\bs{A} = \{A_{ml}\}_{m,l \in \bs{l}^D \times \bs{l}^D}$ to simplify. The right hand side can similarily be assembled to a vector with components $\tilde{f}_m = (f, v_m)_w^N$ such that $\bs{\tilde{f}} = \{\tilde{f}_m\}_{m\in \bs{l}^D} $. Note that a tilde is used since this is not a complete transform. We can now solve for the unknown $\bs{\hat{u}} = \{\hat{u}_l\}_{l\in \bs{l}^D}$ vector
 \begin{align}
--\bs{A} \bs{\hat{u}} &= \bs{\tilde{f}}, \\
+-\bs{A} \bs{\hat{u}} &= \bs{\tilde{f}}, \\ 
    \bs{\hat{u}} &= -\bs{A}^{-1} \bs{\tilde{f}}.
 \end{align}
 Note that the matrix $\bs{A}$ is a special kind of upper triangular matrix, and that the solution can be obtained very efficiently in approximately $4 N$ arithmetic operations. 
@@ -730,8 +754,8 @@ and take the inner product with $v_m$
 \end{equation}
 Introducing now the mass matrix $B_{ml} = (v_l, v_m)_w^N$ and the \emph{Shen} forward inner product $\mathcal{S}_m(u) = (u, v_m)_w^N$, Eq. (\ref{eq:projection})  is rewritten as
 \begin{align}
-\mathcal{S}_m(u) &= B_{ml} \hat{u}_l, \\
-\bs{\hat{u}}  =& \bs{B}^{-1} \mathcal{S}(\bs{u}) , \\
+\mathcal{S}_m(u) &= B_{ml} \hat{u}_l, \\ 
+\bs{\hat{u}}  =& \bs{B}^{-1} \mathcal{S}(\bs{u}) , \\ 
 \bs{\hat{u}}  =& \mathcal{T}(\bs{u}) ,
 \end{align}
 where $\mathcal{T}(\bs{u})$ represents a forward transform of $\bs{u}$. Note that $\mathcal{S}$ is introduced since the inner product $(u, v_m)_w^N$ may, just like the inner product with the Fourier basis, be computed fast, with $\mathcal{O}(N \log N)$ operations. And to this end, we need to make use of a discrete cosine transform (DCT), instead of the Fourier transform. The details are left out from this paper, though.
@@ -769,7 +793,7 @@ assert np.allclose(uj, ue)
 \end{lstlisting}
 Note that the inner product \Verb!f_hat = inner(v, fj)! is computed under the hood using the fast DCT.  The inverse transform \Verb!uj = SD.backward(f_hat)! is also computed using a fast DCT, and we use the notation
 \begin{align}
-u(x_j) &= \sum_{l\in \bs{l}^D} \hat{u}_l v_l(x_j) \quad j=0,1,\ldots, N-1, \notag \\
+u(x_j) &= \sum_{l\in \bs{l}^D} \hat{u}_l v_l(x_j) \quad j=0,1,\ldots, N-1, \notag \\ 
 \bs{u} &= \mathcal{S}^{-1}(\bs{\hat{u}}). \label{eq:fast_shen}
 \end{align}
 To implement the same problem with the Legendre basis (\ref{eq:shen_legendre_basis}), all that is needed to change is the first line in the Poisson solver to \texttt{from shenfun.legendre.bases import ShenDirichletBasis}. Everything else is exactly the same. However, a fast inner product, like in (\ref{eq:fast_shen}), is only implemented for the Chebyshev basis, since there are no known $\mathcal{O}(N \log N)$ algorithms for the Legendre basis, and the Legendre basis thus uses straight forward $\mathcal{O}(N^2)$ algorithms for its transforms.
@@ -864,15 +888,15 @@ Assembling a weak form like $(v, \nabla^2 u)_w^N$ leads to two non-diagonal matr
 \end{equation}
 Inserting for test function $v = \phi_{\ts{k}} (= \phi_{l, m} =v_l(x) e^{imy})$ and trial function $u = \sum_{(q,r)\in \ts{k}} \hat{u}_{q, r} \phi_{q,r}$, we obtain
 \begin{align}
- (v, \nabla^2 u)_w^N &= \left(\phi_{l, m}, \frac{\partial^2}{\partial x^2} \sum_{(q, r) \in \ts{k}} \hat{u}_{q, r} \phi_{q, r} + \frac{\partial^2}{\partial y^2} \sum_{(q,r) \in \ts{k}} \hat{u}_{q, r} \phi_{q, r} \right)_w^N, \\
- &= 2\pi \left(\sum_{(q, r) \in \ts{k}} A_{lq} \delta_{rm} \hat{u}_{q,r} -  \sum_{(q, r) \in \ts{k}} {r}^2  B_{lq} \delta_{rm} \hat{u}_{q,r}\right), \\
+ (v, \nabla^2 u)_w^N &= \left(\phi_{l, m}, \frac{\partial^2}{\partial x^2} \sum_{(q, r) \in \ts{k}} \hat{u}_{q, r} \phi_{q, r} + \frac{\partial^2}{\partial y^2} \sum_{(q,r) \in \ts{k}} \hat{u}_{q, r} \phi_{q, r} \right)_w^N, \\ 
+ &= 2\pi \left(\sum_{(q, r) \in \ts{k}} A_{lq} \delta_{rm} \hat{u}_{q,r} -  \sum_{(q, r) \in \ts{k}} {r}^2  B_{lq} \delta_{rm} \hat{u}_{q,r}\right), \\ 
  &= 2\pi \left(\sum_{q\in \bs{l}^D} A_{lq} \hat{u}_{q,m} - {m}^2 \sum_{q\in \bs{l}^D}  B_{lq} \hat{u}_{q,m}\right) \quad \forall (l, m) \in \bs{l}^D \times \bs{l}. \label{eq:laplace}
 \end{align}
 As can be seen from Eq.(\ref{eq:laplace}), the linear system of equations is set up to act along the Dirichlet direction, whereas for the periodic direction the matrices are diagonal and no additional work is required. The system of equations correspond to a series of 1D Helmholtz problems, that need to be solved once for each $m \in \bs{l}$. This is what goes on under the hood with the Helmholtz solver imported through \texttt{from shenfun.chebyshev.la import Helmholtz as Solver}.
 
 The right hand side of the Poisson problem is computed as
 \begin{align}
-(v, f)_w^N &= 2\pi \underbrace{\sum_{j}\underbrace{\frac{1}{N} \sum_{k} f(x_j, y_k) e^{imy_k} }_{\mathcal{F}_m} v_l(x_j)   w_j}_{\mathcal{S}_l} \quad \forall (l, m) \in \bs{l}^D \times \bs{l}, \notag \\
+(v, f)_w^N &= 2\pi \underbrace{\sum_{j}\underbrace{\frac{1}{N} \sum_{k} f(x_j, y_k) e^{imy_k} }_{\mathcal{F}_m} v_l(x_j)   w_j}_{\mathcal{S}_l} \quad \forall (l, m) \in \bs{l}^D \times \bs{l}, \notag \\ 
   &= 2\pi \mathcal{S}(f) = 2 \pi \mathcal{S}_l(\mathcal{F}_m(f)).
 \end{align}
 The \texttt{TensorProductSpace} class can take any number of Fourier bases. A 3 dimensional tensor product space can be created as
@@ -887,14 +911,14 @@ Here the default behaviour of \texttt{TensorProductSpace} is to distribute the f
 
 Solving a biharmonic problem is just as easy as the Poisson problem. Consider the fourth order biharmonic PDE in 3-dimensional space
 \begin{align}
-\nabla^4 u(\bs{x}) &= f(\bs{x}), \quad \bs{x} \in \Omega \\
- u(x=\pm1, y, z) &= \frac{\partial u}{\partial x} (x=\pm 1, y, z) = 0 \\
- u(x, y+2\pi, z) &= u(x, y, z), \\
+\nabla^4 u(\bs{x}) &= f(\bs{x}), \quad \bs{x} \in \Omega \\ 
+ u(x=\pm1, y, z) &= \frac{\partial u}{\partial x} (x=\pm 1, y, z) = 0 \\ 
+ u(x, y+2\pi, z) &= u(x, y, z), \\ 
  u(x, y, z+2\pi) &= u(x, y, z). 
 \end{align}
 that is periodic in $y-$ and $z-$directions and with clamped boundary conditions at $x=\pm 1$. The problem may be solved using either one of these two bases:
 \begin{align}
-V^C &= \text{span}\{T_l - \frac{2(l+2)}{l+3}T_{l+2} + \frac{l+1}{l+3}T_{l+4} , l \in \bs{l}^B\}, \label{eq:chebbiharmonic} \\
+V^C &= \text{span}\{T_l - \frac{2(l+2)}{l+3}T_{l+2} + \frac{l+1}{l+3}T_{l+4} , l \in \bs{l}^B\}, \label{eq:chebbiharmonic} \\ 
 V^L &= \text{span}\{L_l - \frac{2(2l+5)}{2l+7}L_{l+2} + \frac{2l+3}{2l+7}, l \in \bs{l}^B\}, \label{eq:legbiharmonic}
 \end{align}
 where $\bs{l}^B = 0, 1, \ldots, N-5$. A tensor product space may be constructed as $W(x,y,z) = V^C(x) \times V^p(y) \times V^p(z)$, and the variational problem 
@@ -976,7 +1000,7 @@ We end this paper with the implementation of the complex Ginzburg-Landau equatio
 \end{equation}
 for the doubly periodic domain $\Omega = [-50, 50]\times [-50, 50]$ and  $t \in [0, T]$. The initial condition is chosen as one of the following
 \begin{align}
-u^0(\boldsymbol{x}, 0) &= (ix + y) \exp {-0.03 (x^2 + y^2)} \label{eq:initial_0}, \\
+u^0(\boldsymbol{x}, 0) &= (ix + y) \exp {-0.03 (x^2 + y^2)} \label{eq:initial_0}, \\ 
 u^1(\boldsymbol{x}, 0) &= (x + y) \exp {-0.03 (x^2 + y^2)} \label{eq:initial_1}.
 \end{align}
 This problem is solved with the spectral Galerkin method using Fourier bases in both directions, and a tensor product space $W(x,y)=V^p(x) \times V^p(y)$, where $V^p$ is defined as in Section~\ref{sec:fourierpoisson}, but here mapping the computational domain $[-50, 50]$ to $[0, 2\pi]$. Considering only the spatial discretization, the variational problem becomes: find $u(x, y)$ in $W$, such that

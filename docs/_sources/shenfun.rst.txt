@@ -38,7 +38,7 @@ There are many tools available for working with spectral methods. For MATLAB the
 
 To the author's knowledge, all research codes developed for studying turbulent flows through Direct Numerical Simulations (DNS) on supercomputers have been written in low-level languages like Fortran, C or C++, see, e.g., [Ref05]_ [Ref06]_ [Ref07]_, or [Ref08]_ for a list of high performance channel flow solvers. The codes are  highly tuned and tailored to a specific target, and, being low-level, the codes are not easily accessible to a non-expert programmer. Mortensen and Langtangen [Ref09]_ describe how a DNS solver can be written in Python in 100 lines of script-like code, and also show that the code, when optimized in the background using Cython, runs as fast as an identical C++ implementation on thousands of processors with MPI. {Shenfun} takes it one step further and aims at providing a generic toolbox for creating high performance, parallel solvers of any PDE, in a very high-level language. And without compromising much on computational efficiency. The key to developing such a high-level code in Python is efficient use of Numpy [Ref10]_, with broadcasting and vectorization, and MPI for Python [Ref11]_, that wraps almost the entire MPI library, and that can transfer Numpy arrays between thousands of processors at the same speed as a low-level C or Fortran code. Similarly, we utilize the pyFFTW module [Ref12]_, that wraps most of the FFTW library [Ref13]_ and makes the FFT as fast when called from Python as it is when used in low-level codes.
 
-.. This paper is organised as follows: in the section :ref:`sec:preliminaries` the spectral Galerkin method is introduced. In the section :ref:`sec:shenfun` the basics of the {shenfun} package is described and #implementations are shown for simple 1D Poisson and biharmonic problems. In the section :ref:`sec:tensorproductspaces` we move to higher dimensions and tensor product spaces before we, in #the sections :ref:`sec:extended` and :ref:`sec:ginzburg` end with some extended functionality and an implementation for the time dependent nonlinear Ginzburg-Landau equation in 2D.
+This paper is organised as follows: in the section :ref:`sec:preliminaries` the spectral Galerkin method is introduced. In the section :ref:`sec:shenfun` the basics of the ``shenfun`` package is described and implementations are shown for simple 1D Poisson and biharmonic problems. In the section :ref:`sec:tensorproductspaces` we move to higher dimensions and tensor product spaces before we, in the sections :ref:`sec:extended` and :ref:`sec:ginzburg` end with some extended functionality and an implementation for the time dependent nonlinear Ginzburg-Landau equation in 2D.
 
 .. !split
 
@@ -376,7 +376,7 @@ Inserting for Eq. :eq:`eq:ufourier` and using :math:`e^{imx}` as test function w
 .. math::
    :label: eq:utmp
 
-         
+          
         \sum_{l \in \boldsymbol{l}} l^2( e^{ilx}, e^{imx})_w^N \hat{u}_l = (f(x), e^{imx})_w ^N\quad \forall \, m \in \boldsymbol{l}. 
         
 
@@ -404,7 +404,7 @@ For the right hand side we have
 .. math::
    :label: _auto9
 
-         
+          
          = 2 \pi \mathcal{F}_m(f(\boldsymbol{x})), 
         
         
@@ -412,7 +412,7 @@ For the right hand side we have
 .. math::
    :label: _auto10
 
-         
+          
          = 2 \pi \hat{f}_m,
         
         
@@ -459,7 +459,9 @@ which is trivially solved since it only involves a diagonal matrix (:math:`\delt
 
 So, even though we carefully followed the spectral Galerkin method, we have ended up with the same result that would have been obtained with a Fourier collocation method, where one simply takes the Fourier transform of the Poisson equation and differentiate analytically.
 
-With ``shenfun`` the periodic 1D Poisson equation can be trivially computed either with the collocation approach or the spectral Galerkin method. The procedure for the spectral Galerkin method will be shown first, before the entire problem is solved. All ``shenfun`` demos in this paper will contain a similar preample section where some necessary Python classes, modules and functions are imported. We import Numpy since ``shenfun`` arrays are Numpy arrays, and we import from Sympy to construct some exact solution used to verify the code. Note also the similarity to FEniCS with the import of methods and classes ``inner, div, grad, TestFunction, TrialFunction``.  The Fourier spectral Galerkin method in turn requires that the ``FourierBasis`` is imported as well. 
+With ``shenfun`` the periodic 1D Poisson equation can be trivially computed either with the collocation approach or the spectral Galerkin method. The procedure for the spectral Galerkin method will be shown first, before the entire problem is solved. All ``shenfun`` demos in this paper will contain a similar preample section where some necessary Python classes, modules and functions are imported. We import Numpy since ``shenfun`` arrays are Numpy arrays, and we import from Sympy to construct some exact solution used to verify the code. Note also the similarity to FEniCS with the import of methods and classes ``inner, div, grad, TestFunction, TrialFunction``.  The Fourier spectral Galerkin method in turn requires that the ``FourierBasis`` is imported as well. The following code solves the Poisson equation in 1D with shenfun: 
+
+.. !bu-code Poisson equation with Fourier basis label=fig:poisson1D
 
 .. code-block:: python
 
@@ -494,6 +496,10 @@ With ``shenfun`` the periodic 1D Poisson equation can be trivially computed eith
     # Transfer solution back to real space
     uq = ST.backward(u_hat)
     assert np.allclose(uj, uq)
+
+.. !eu-code
+
+.. :ref:`fig:poisson1D`
 
 Naturally, this simple problem could be solved easier with a Fourier collocation instead, and  a simple pure 1D Fourier problem does not illuminate the true advantages of  ``shenfun``, that only will become evident when we look at higher dimensional problems with tensor product spaces. To solve with collocation, we could simply do
 
@@ -548,7 +554,7 @@ where :math:`L_l(x)` is the l'th order Legendre polynomial. The test functions g
 .. math::
    :label: eq:legdirichlet
 
-         
+          
         V^L = \text{span}\{L_l-L_{l+2}, l \in \boldsymbol{l}^D\}, 
         
 
@@ -575,7 +581,7 @@ The computational mesh and associated weights will be decided by the chosen quad
 .. math::
    :label: _auto18
 
-         
+          
         w_j^C = \frac{\pi}{N},
         
         
@@ -593,7 +599,7 @@ and
 .. math::
    :label: _auto20
 
-         
+          
         w_j^L = \frac{2}{(1-x_j^2)[L'_{N}(x_j)]^2} \quad j=0,1,\ldots, N-1,
         
         
@@ -623,7 +629,7 @@ We insert for :math:`v=v_m` and :math:`u=\displaystyle \sum_{l\in \boldsymbol{l}
 .. math::
    :label: eq:cheb_poisson
 
-         
+          
         -(v_l'', v_m)_w^N \hat{u}_l = (f, v_m)_w^N  m \in \boldsymbol{l}^D, 
         
 
@@ -640,7 +646,7 @@ where summation on repeated indices is implied. In Eq. :eq:`eq:cheb_poisson` :ma
 .. math::
    :label: _auto24
 
-         
+          
            \boldsymbol{\hat{u}} = -\boldsymbol{A}^{-1} \boldsymbol{\tilde{f}}.
         
         
@@ -680,7 +686,7 @@ Introducing now the mass matrix :math:`B_{ml} = (v_l, v_m)_w^N` and the *Shen* f
 .. math::
    :label: _auto27
 
-         
+          
         \boldsymbol{\hat{u}}  = \boldsymbol{B}^{-1} \mathcal{S}(\boldsymbol{u}) , 
         
         
@@ -688,7 +694,7 @@ Introducing now the mass matrix :math:`B_{ml} = (v_l, v_m)_w^N` and the *Shen* f
 .. math::
    :label: _auto28
 
-         
+          
         \boldsymbol{\hat{u}}  = \mathcal{T}(\boldsymbol{u}) ,
         
         
@@ -741,7 +747,7 @@ Note that the inner product ``f_hat = inner(v, fj)`` is computed under the hood 
 .. math::
    :label: eq:fast_shen
 
-         
+          
         \boldsymbol{u} = \mathcal{S}^{-1}(\boldsymbol{\hat{u}}). 
         
 
@@ -899,7 +905,7 @@ Inserting for test function :math:`v = \phi_{\boldsymbol{\textsf{k}}} (= \phi_{l
 .. math::
    :label: _auto38
 
-         
+          
          = 2\pi \left(\sum_{(q, r) \in \boldsymbol{\textsf{k}}} A_{lq} \delta_{rm} \hat{u}_{q,r} -  \sum_{(q, r) \in \boldsymbol{\textsf{k}}} {r}^2  B_{lq} \delta_{rm} \hat{u}_{q,r}\right), 
         
         
@@ -907,7 +913,7 @@ Inserting for test function :math:`v = \phi_{\boldsymbol{\textsf{k}}} (= \phi_{l
 .. math::
    :label: eq:laplace
 
-         
+          
          = 2\pi \left(\sum_{q\in \boldsymbol{l}^D} A_{lq} \hat{u}_{q,m} - {m}^2 \sum_{q\in \boldsymbol{l}^D}  B_{lq} \hat{u}_{q,m}\right) \quad \forall (l, m) \in \boldsymbol{l}^D \times \boldsymbol{l}. 
         
 
@@ -926,7 +932,7 @@ The right hand side of the Poisson problem is computed as
 .. math::
    :label: _auto40
 
-         
+          
           = 2\pi \mathcal{S}(f) = 2 \pi \mathcal{S}_l(\mathcal{F}_m(f)).
         
         
@@ -956,7 +962,7 @@ Solving a biharmonic problem is just as easy as the Poisson problem. Consider th
 .. math::
    :label: _auto42
 
-         
+          
          u(x=\pm1, y, z) = \frac{\partial u}{\partial x} (x=\pm 1, y, z) = 0 
         
         
@@ -964,7 +970,7 @@ Solving a biharmonic problem is just as easy as the Poisson problem. Consider th
 .. math::
    :label: _auto43
 
-         
+          
          u(x, y+2\pi, z) = u(x, y, z), 
         
         
@@ -972,7 +978,7 @@ Solving a biharmonic problem is just as easy as the Poisson problem. Consider th
 .. math::
    :label: _auto44
 
-         
+          
          u(x, y, z+2\pi) = u(x, y, z). 
         
         
@@ -989,7 +995,7 @@ that is periodic in :math:`y-` and $z-$directions and with clamped boundary cond
 .. math::
    :label: eq:legbiharmonic
 
-         
+          
         V^L = \text{span}\{L_l - \frac{2(2l+5)}{2l+7}L_{l+2} + \frac{2l+3}{2l+7}, l \in \boldsymbol{l}^B\}, 
         
 
@@ -1115,7 +1121,7 @@ for the doubly periodic domain :math:`\Omega = [-50, 50]\times [-50, 50]` and  :
 .. math::
    :label: eq:initial_1
 
-         
+          
         u^1(\boldsymbol{x}, 0) = (x + y) \exp {-0.03 (x^2 + y^2)} .
         
 
