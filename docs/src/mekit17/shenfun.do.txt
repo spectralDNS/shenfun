@@ -208,7 +208,7 @@ All methods are designed to work along any dimension of a multidimensional array
 where `K` is exactly the same as before, from the 1D example. The matrix solve is applied along the first dimension since this is the default behaviour.
 
 The bases also have methods for transforming between spectral and real space. For example, one may project a random vector to the `SD` space using
-!bc
+!bc pycod
     >>> fj = np.random.random(N)
     >>> fk = np.zeros_like(fj)
     >>> fk = SD.forward(fj, fk) # Gets expansion coefficients 
@@ -353,7 +353,6 @@ assert np.allclose(uj, uq)
 #!eu-code
 !eu-minipage
 
-#${refex('fig:poisson1D', capital=True)}
 Naturally, this simple problem could be solved easier with a Fourier collocation instead, and  a simple pure 1D Fourier problem does not illuminate the true advantages of  `shenfun`, that only will become evident when we look at higher dimensional problems with tensor product spaces. To solve with collocation, we could simply do
 !bc pycod
 # Transform right hand side

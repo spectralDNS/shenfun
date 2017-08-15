@@ -1,0 +1,328 @@
+<!--
+Automatically generated HTML file from DocOnce source
+(https://github.com/hplgit/doconce/)
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Shenfun - automating the spectral Galerkin method">
+<meta name="keywords" content="Computational Methods,Spectral,Galerkin,Chebyshev,Legendre">
+
+<title>Shenfun - automating the spectral Galerkin method</title>
+
+<!-- Bootstrap style: bootswatch_cyborg -->
+<link href="https://netdna.bootstrapcdn.com/bootswatch/3.1.1/cyborg/bootstrap.min.css" rel="stylesheet">
+<!-- not necessary
+<link href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+-->
+
+<style type="text/css">
+/* Let inline verbatim have the same color as the surroundings */
+code { color: inherit; background-color: transparent; }
+/* Let pre tags for code blocks have the same color as the surroundings */
+pre { color: inherit; background-color: transparent; }
+
+/* Add scrollbar to dropdown menus in bootstrap navigation bar */
+.dropdown-menu {
+   height: auto;
+   max-height: 400px;
+   overflow-x: hidden;
+}
+
+/* Adds an invisible element before each target to offset for the navigation
+   bar */
+.anchor::before {
+  content:"";
+  display:block;
+  height:50px;      /* fixed header height for style bootswatch_cyborg */
+  margin:-50px 0 0; /* negative fixed header height */
+}
+</style>
+
+
+
+
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [('Table of contents',
+               1,
+               'table_of_contents',
+               'table_of_contents'),
+              ('Introduction', 1, 'sec:introduction', 'sec:introduction'),
+              ('Spectral Galerkin Method',
+               1,
+               'sec:preliminaries',
+               'sec:preliminaries'),
+              ('Shenfun', 1, 'sec:shenfun', 'sec:shenfun'),
+              ('Classes for basis functions', 2, None, '___sec3'),
+              ('Classes for matrices', 2, 'sec:matrices', 'sec:matrices'),
+              ('Variational forms in 1D', 2, None, '___sec5'),
+              ('Poisson equation implemented in 1D', 2, None, '___sec6'),
+              ('Periodic boundary conditions',
+               3,
+               'sec:fourierpoisson',
+               'sec:fourierpoisson'),
+              ('Dirichlet boundary conditions',
+               3,
+               'sec:dirichletpoisson',
+               'sec:dirichletpoisson'),
+              ('Tensor product spaces',
+               1,
+               'sec:tensorproductspaces',
+               'sec:tensorproductspaces'),
+              ('Other functionality of `shenfun`',
+               1,
+               'sec:extended',
+               'sec:extended'),
+              ('Ginzburg-Landau equation', 1, 'sec:ginzburg', 'sec:ginzburg'),
+              ('Conclusions', 1, None, '___sec12'),
+              ('Acknowledgements', 1, None, '___sec13'),
+              ('Bibliography', 1, None, '___sec14')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "none"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript" async
+ src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+\newcommand{\ts}[1]{\bs{\textsf{#1}}}
+$$
+
+
+
+
+    
+<!-- Bootstrap navigation bar -->
+<div class="navbar navbar-default navbar-fixed-top">
+  <div class="navbar-header">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </button>
+    <a class="navbar-brand" href="shenfun_bootswatch_cyborg.html">Shenfun - automating the spectral Galerkin method</a>
+  </div>
+
+  <div class="navbar-collapse collapse navbar-responsive-collapse">
+    <ul class="nav navbar-nav navbar-right">
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Contents <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg000.html#table_of_contents" style="font-size: 80%;"><b>Table of contents</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg001.html#sec:introduction" style="font-size: 80%;"><b>Introduction</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg002.html#sec:preliminaries" style="font-size: 80%;"><b>Spectral Galerkin Method</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg003.html#sec:shenfun" style="font-size: 80%;"><b>Shenfun</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg003.html#___sec3" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Classes for basis functions</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg003.html#sec:matrices" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Classes for matrices</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg003.html#___sec5" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Variational forms in 1D</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg003.html#___sec6" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Poisson equation implemented in 1D</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg003.html#sec:fourierpoisson" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Periodic boundary conditions</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg003.html#sec:dirichletpoisson" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Dirichlet boundary conditions</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg004.html#sec:tensorproductspaces" style="font-size: 80%;"><b>Tensor product spaces</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg005.html#sec:extended" style="font-size: 80%;"><b>Other functionality of <code>shenfun</code></b></a></li>
+     <!-- navigation toc: --> <li><a href="#sec:ginzburg" style="font-size: 80%;"><b>Ginzburg-Landau equation</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg007.html#___sec12" style="font-size: 80%;"><b>Conclusions</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg008.html#___sec13" style="font-size: 80%;"><b>Acknowledgements</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg009.html#___sec14" style="font-size: 80%;"><b>Bibliography</b></a></li>
+
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+</div> <!-- end of navigation bar -->
+
+<div class="container">
+
+<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p> <!-- add vertical space -->
+
+<a name="part0006"></a>
+<!-- !split -->
+
+<h1 id="sec:ginzburg" class="anchor">Ginzburg-Landau equation</h1>
+We end this paper with the implementation of the complex Ginzburg-Landau equation, which is a  nonlinear time dependent reaction-diffusion problem. The equation to solve is 
+$$
+\begin{equation}
+\frac{\partial u}{\partial t} = \nabla^2u + u - (1 + 1.5i)u |u|^2,
+\tag{62}
+\end{equation}
+$$
+
+for the doubly periodic domain \( \Omega = [-50, 50]\times [-50, 50] \) and  \( t \in [0, T] \). The initial condition is chosen as one of the following
+$$
+\begin{align}
+u^0(\boldsymbol{x}, 0) &= (ix + y) \exp {-0.03 (x^2 + y^2)} \tag{63}, \\
+u^1(\boldsymbol{x}, 0) &= (x + y) \exp {-0.03 (x^2 + y^2)} \tag{64}.
+\end{align}
+$$
+
+This problem is solved with the spectral Galerkin method using Fourier bases in both directions, and a tensor product space \( W(x,y)=V^p(x) \times V^p(y) \), where \( V^p \) is defined as in the section <a href="._shenfun_bootswatch_cyborg003.html#sec:fourierpoisson">Periodic boundary conditions</a>, but here mapping the computational domain \( [-50, 50] \) to \( [0, 2\pi] \). Considering only the spatial discretization, the variational problem becomes: find \( u(x, y) \) in \( W \), such that
+$$
+\begin{equation}
+\frac{\partial }{\partial t} (v, u)^N = (v, \nabla^2u)^N + (v, u - (1 + 1.5i)u |u|^2)^N \quad \text{for all} \quad v \in W, \tag{65}
+\end{equation}
+$$
+
+and we integrate the equations forward in time using an explicit, fourth order Runge-Kutta method, that only requires as input a function that returns the right hand side of <a href="#mjx-eqn-65">(65)</a>. Note that all matrices involved with the Fourier method are diagonal, so there is no need for linear algebra solvers, and the left hand side inner product equals \( (2 \pi)^2 \bs{\hat{u}} \).
+
+<p>
+The initial condition is created using <code>Sympy</code>
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "monokai" -->
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span><span style="color: #f92672">from</span> <span style="color: #f8f8f2">sympy</span> <span style="color: #f92672">import</span> <span style="color: #f8f8f2">symbols,</span> <span style="color: #f8f8f2">exp,</span> <span style="color: #f8f8f2">lambdify</span>
+<span style="color: #f8f8f2">x,</span> <span style="color: #f8f8f2">y</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">symbols(</span><span style="color: #e6db74">&quot;x,y&quot;</span><span style="color: #f8f8f2">)</span>
+<span style="color: #75715e">#ue = (1j*x + y)*exp(-0.03*(x**2+y**2))</span>
+<span style="color: #f8f8f2">ue</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">(x</span> <span style="color: #f92672">+</span> <span style="color: #f8f8f2">y)</span><span style="color: #f92672">*</span><span style="color: #f8f8f2">exp(</span><span style="color: #f92672">-</span><span style="color: #ae81ff">0.03</span><span style="color: #f92672">*</span><span style="color: #f8f8f2">(x</span><span style="color: #f92672">**</span><span style="color: #ae81ff">2</span><span style="color: #f92672">+</span><span style="color: #f8f8f2">y</span><span style="color: #f92672">**</span><span style="color: #ae81ff">2</span><span style="color: #f8f8f2">))</span>
+<span style="color: #f8f8f2">ul</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">lambdify((x,</span> <span style="color: #f8f8f2">y),</span> <span style="color: #f8f8f2">ue,</span> <span style="color: #e6db74">&#39;numpy&#39;</span><span style="color: #f8f8f2">)</span>
+</pre></div>
+<p>
+We create a regular tensor product space, choosing the <code>fourier.bases.C2CBasis</code> for both directions if the initial condition is complex <a href="#mjx-eqn-63">(63)</a>, whereas we may choose <code>R2CBasis</code> if the initial condition is real <a href="#mjx-eqn-64">(64)</a>. Since we are solving a nonlinear equation, the additional issue of aliasing should be considered. Aliasing errors may be handled with different methods, but here we will use the so-called 3/2-rule, that requires padded transforms. We create a tensor product space <code>Tp</code> for padded transforms, using the <code>padding_factor=3/2</code> keyword below. Furthermore, some solution arrays, test and trial functions are also declared.
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "monokai" -->
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span><span style="color: #75715e"># Size of discretization</span>
+<span style="color: #f8f8f2">N</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">(</span><span style="color: #ae81ff">201</span><span style="color: #f8f8f2">,</span> <span style="color: #ae81ff">201</span><span style="color: #f8f8f2">)</span>
+
+<span style="color: #75715e"># Create tensor product space</span>
+<span style="color: #f8f8f2">K0</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">C2CBasis(N[</span><span style="color: #ae81ff">0</span><span style="color: #f8f8f2">],</span> <span style="color: #f8f8f2">domain</span><span style="color: #f92672">=</span><span style="color: #f8f8f2">(</span><span style="color: #f92672">-</span><span style="color: #ae81ff">50.</span><span style="color: #f8f8f2">,</span> <span style="color: #ae81ff">50.</span><span style="color: #f8f8f2">))</span>
+<span style="color: #f8f8f2">K1</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">C2CBasis(N[</span><span style="color: #ae81ff">1</span><span style="color: #f8f8f2">],</span> <span style="color: #f8f8f2">domain</span><span style="color: #f92672">=</span><span style="color: #f8f8f2">(</span><span style="color: #f92672">-</span><span style="color: #ae81ff">50.</span><span style="color: #f8f8f2">,</span> <span style="color: #ae81ff">50.</span><span style="color: #f8f8f2">))</span>
+<span style="color: #f8f8f2">T</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">TensorProductSpace(comm,</span> <span style="color: #f8f8f2">(K0,</span> <span style="color: #f8f8f2">K1))</span>
+
+<span style="color: #f8f8f2">Kp0</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">C2CBasis(N[</span><span style="color: #ae81ff">0</span><span style="color: #f8f8f2">],</span> <span style="color: #f8f8f2">domain</span><span style="color: #f92672">=</span><span style="color: #f8f8f2">(</span><span style="color: #f92672">-</span><span style="color: #ae81ff">50.</span><span style="color: #f8f8f2">,</span> <span style="color: #ae81ff">50.</span><span style="color: #f8f8f2">),</span> <span style="color: #f8f8f2">padding_factor</span><span style="color: #f92672">=</span><span style="color: #ae81ff">1.5</span><span style="color: #f8f8f2">)</span>
+<span style="color: #f8f8f2">Kp1</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">C2CBasis(N[</span><span style="color: #ae81ff">1</span><span style="color: #f8f8f2">],</span> <span style="color: #f8f8f2">domain</span><span style="color: #f92672">=</span><span style="color: #f8f8f2">(</span><span style="color: #f92672">-</span><span style="color: #ae81ff">50.</span><span style="color: #f8f8f2">,</span> <span style="color: #ae81ff">50.</span><span style="color: #f8f8f2">),</span> <span style="color: #f8f8f2">padding_factor</span><span style="color: #f92672">=</span><span style="color: #ae81ff">1.5</span><span style="color: #f8f8f2">)</span>
+<span style="color: #f8f8f2">Tp</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">TensorProductSpace(comm,</span> <span style="color: #f8f8f2">(Kp0,</span> <span style="color: #f8f8f2">Kp1))</span>
+
+<span style="color: #f8f8f2">u</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">TrialFunction(T)</span>
+<span style="color: #f8f8f2">v</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">TestFunction(T)</span>
+<span style="color: #f8f8f2">X</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">T</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">local_mesh(True)</span>
+<span style="color: #f8f8f2">U</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">Function(T,</span> <span style="color: #f8f8f2">False)</span>         <span style="color: #75715e"># Solution</span>
+<span style="color: #f8f8f2">U_hat</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">Function(T)</span>            <span style="color: #75715e"># Solution spectral space</span>
+<span style="color: #f8f8f2">Up</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">Function(Tp,</span> <span style="color: #f8f8f2">False)</span>       <span style="color: #75715e"># Padded solution for nonlinear term</span>
+<span style="color: #f8f8f2">dU_hat</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">Function(T)</span>           <span style="color: #75715e"># right hand side</span>
+<span style="color: #75715e">#initialize</span>
+<span style="color: #f8f8f2">U[:]</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">ul(</span><span style="color: #f92672">*</span><span style="color: #f8f8f2">X)</span>
+<span style="color: #f8f8f2">U_hat</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">T</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">forward(U,</span> <span style="color: #f8f8f2">U_hat)</span>
+</pre></div>
+<p>
+Note that <code>Tp</code> can be used exactly like <code>T</code>, but that a backward transform creates an output that is 3/2 as large in each direction. So a \( (100, 100) \) mesh results in a \( (150, 150) \) output from a backwards transform. This transform is performed by creating a 3/2 times larger padded array in spectral space \( \hat{u}^p_{\textsf{k}^p} \), where \( \textsf{k}^p = \boldsymbol{l}^p \times \boldsymbol{l}^p  \) and
+$$
+\begin{equation}
+\boldsymbol{l}^{p} = -3N/4, -3N/4+1, \ldots, 3N/4-1.
+\tag{66}
+\end{equation}
+$$
+
+We then set \( \hat{u}^p_{\textsf{k}} = \hat{u}_{\textsf{k}} \) for \( \textsf{k} \in \boldsymbol{l} \times \boldsymbol{l} \), and for the remaining high frequencies \( \hat{u}^p_{\textsf{k}} \) is set to 0.
+
+<p>
+We will solve the equation with a fourth order Runge-Kutta integrator. To this end we need to declare some work arrays to hold intermediate solutions, and a function for the right hand side of Eq. <a href="#mjx-eqn-65">(65)</a>
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "monokai" -->
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span><span style="color: #f8f8f2">U_hat0</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">Function(T)</span>
+<span style="color: #f8f8f2">U_hat1</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">Function(T)</span>
+<span style="color: #f8f8f2">w0</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">Function(T)</span>
+<span style="color: #f8f8f2">a</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">[</span><span style="color: #ae81ff">1.</span><span style="color: #f92672">/</span><span style="color: #ae81ff">6.</span><span style="color: #f8f8f2">,</span> <span style="color: #ae81ff">1.</span><span style="color: #f92672">/</span><span style="color: #ae81ff">3.</span><span style="color: #f8f8f2">,</span> <span style="color: #ae81ff">1.</span><span style="color: #f92672">/</span><span style="color: #ae81ff">3.</span><span style="color: #f8f8f2">,</span> <span style="color: #ae81ff">1.</span><span style="color: #f92672">/</span><span style="color: #ae81ff">6.</span><span style="color: #f8f8f2">]</span>         <span style="color: #75715e"># Runge-Kutta parameter</span>
+<span style="color: #f8f8f2">b</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">[</span><span style="color: #ae81ff">0.5</span><span style="color: #f8f8f2">,</span> <span style="color: #ae81ff">0.5</span><span style="color: #f8f8f2">,</span> <span style="color: #ae81ff">1.</span><span style="color: #f8f8f2">]</span>                       <span style="color: #75715e"># Runge-Kutta parameter</span>
+<span style="color: #66d9ef">def</span> <span style="color: #a6e22e">compute_rhs</span><span style="color: #f8f8f2">(rhs,</span> <span style="color: #f8f8f2">u_hat,</span> <span style="color: #f8f8f2">U,</span> <span style="color: #f8f8f2">Up,</span> <span style="color: #f8f8f2">T,</span> <span style="color: #f8f8f2">Tp,</span> <span style="color: #f8f8f2">w0):</span>
+    <span style="color: #f8f8f2">rhs</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">fill(</span><span style="color: #ae81ff">0</span><span style="color: #f8f8f2">)</span>
+    <span style="color: #f8f8f2">U</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">T</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">backward(u_hat,</span> <span style="color: #f8f8f2">U)</span>
+    <span style="color: #f8f8f2">rhs</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">inner(v,</span> <span style="color: #f8f8f2">div(grad(U)),</span> <span style="color: #f8f8f2">output_array</span><span style="color: #f92672">=</span><span style="color: #f8f8f2">rhs,</span> <span style="color: #f8f8f2">uh_hat</span><span style="color: #f92672">=</span><span style="color: #f8f8f2">u_hat)</span>
+    <span style="color: #f8f8f2">rhs</span> <span style="color: #f92672">+=</span> <span style="color: #f8f8f2">inner(v,</span> <span style="color: #f8f8f2">U,</span> <span style="color: #f8f8f2">output_array</span><span style="color: #f92672">=</span><span style="color: #f8f8f2">w0,</span> <span style="color: #f8f8f2">uh_hat</span><span style="color: #f92672">=</span><span style="color: #f8f8f2">u_hat)</span>
+    <span style="color: #f8f8f2">rhs</span> <span style="color: #f92672">/=</span> <span style="color: #f8f8f2">(</span><span style="color: #ae81ff">2</span><span style="color: #f92672">*</span><span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">pi)</span><span style="color: #f92672">**</span><span style="color: #ae81ff">2</span>  <span style="color: #75715e"># (2pi)**2 represents scaling with inner(u, v)</span>
+    <span style="color: #f8f8f2">Up</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">Tp</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">backward(u_hat,</span> <span style="color: #f8f8f2">Up)</span>
+    <span style="color: #f8f8f2">rhs</span> <span style="color: #f92672">-=</span> <span style="color: #f8f8f2">Tp</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">forward((</span><span style="color: #ae81ff">1</span><span style="color: #f92672">+</span><span style="color: #ae81ff">1.5j</span><span style="color: #f8f8f2">)</span><span style="color: #f92672">*</span><span style="color: #f8f8f2">Up</span><span style="color: #f92672">*</span><span style="color: #f8f8f2">abs(Up)</span><span style="color: #f92672">**</span><span style="color: #ae81ff">2</span><span style="color: #f8f8f2">,</span> <span style="color: #f8f8f2">w0)</span>
+    <span style="color: #66d9ef">return</span> <span style="color: #f8f8f2">rhs</span>
+</pre></div>
+<p>
+Note the close similarity with <a href="#mjx-eqn-65">(65)</a> and the usage of the padded transform for the nonlinear term.
+Finally, the Runge-Kutta method is implemented as
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "monokai" -->
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span><span style="color: #f8f8f2">t</span> <span style="color: #f92672">=</span> <span style="color: #ae81ff">0.0</span>
+<span style="color: #f8f8f2">dt</span> <span style="color: #f92672">=</span> <span style="color: #ae81ff">0.025</span>
+<span style="color: #f8f8f2">end_time</span> <span style="color: #f92672">=</span> <span style="color: #ae81ff">96.0</span>
+<span style="color: #f8f8f2">tstep</span> <span style="color: #f92672">=</span> <span style="color: #ae81ff">0</span>
+<span style="color: #66d9ef">while</span> <span style="color: #f8f8f2">t</span> <span style="color: #f92672">&lt;</span> <span style="color: #f8f8f2">end_time</span><span style="color: #f92672">-</span><span style="color: #ae81ff">1e-8</span><span style="color: #f8f8f2">:</span>
+    <span style="color: #f8f8f2">t</span> <span style="color: #f92672">+=</span> <span style="color: #f8f8f2">dt</span>
+    <span style="color: #f8f8f2">tstep</span> <span style="color: #f92672">+=</span> <span style="color: #ae81ff">1</span>
+    <span style="color: #f8f8f2">U_hat1[:]</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">U_hat0[:]</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">U_hat</span>
+    <span style="color: #66d9ef">for</span> <span style="color: #f8f8f2">rk</span> <span style="color: #f92672">in</span> <span style="color: #f8f8f2">range(</span><span style="color: #ae81ff">4</span><span style="color: #f8f8f2">):</span>
+        <span style="color: #f8f8f2">dU_hat</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">compute_rhs(dU_hat,</span> <span style="color: #f8f8f2">U_hat,</span> <span style="color: #f8f8f2">U,</span> <span style="color: #f8f8f2">Up,</span> <span style="color: #f8f8f2">T,</span> <span style="color: #f8f8f2">Tp,</span> <span style="color: #f8f8f2">w0)</span>
+        <span style="color: #66d9ef">if</span> <span style="color: #f8f8f2">rk</span> <span style="color: #f92672">&lt;</span> <span style="color: #ae81ff">3</span><span style="color: #f8f8f2">:</span>
+            <span style="color: #f8f8f2">U_hat[:]</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">U_hat0</span> <span style="color: #f92672">+</span> <span style="color: #f8f8f2">b[rk]</span><span style="color: #f92672">*</span><span style="color: #f8f8f2">dt</span><span style="color: #f92672">*</span><span style="color: #f8f8f2">dU_hat</span>
+        <span style="color: #f8f8f2">U_hat1</span> <span style="color: #f92672">+=</span> <span style="color: #f8f8f2">a[rk]</span><span style="color: #f92672">*</span><span style="color: #f8f8f2">dt</span><span style="color: #f92672">*</span><span style="color: #f8f8f2">dU_hat</span>
+    <span style="color: #f8f8f2">U_hat[:]</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">U_hat1</span>
+</pre></div>
+<p>
+The code that is described here will run in parallel for up to a maximum of \( \text{min}(N[0], N[1]) \) processors. But, being a 2D problem, a single processor is sufficient to solve the problem in reasonable time. The real part of \( u(\boldsymbol{x}, t) \) is shown in Figure <a href="#fig:GL1">2</a> for times \( t=16 \) and \( t=96 \), where the solution is initialized from <a href="#mjx-eqn-63">(63)</a>. The results starting from the real initial condition in <a href="#mjx-eqn-64">(64)</a> is shown for the same times in Figure <a href="#fig:GL2">3</a>. There are apparently good agreements with figures published from using <code>chebfun</code> on <em>www.chebfun.org/examples/pde/GinzburgLandau.html</em>. In particular, the figures in <a href="#fig:GL1">2</a>  are identical by the eye norm. One interesting feature, though, is seen in the right plot of Figure <a href="#fig:GL2">3</a>, where the results can be seen to have preserved symmetry, as they should. This symmetry is lost with chebfun, as commented in the referenced webpage. An asymmetric solution is also obtained with <code>shenfun</code> if no de-aliasing is applied. However, the simulations are very sensitive to roundoff, and it has also been observed that a de-aliased solution using <code>shenfun</code> may loose symmetry simply if a different FFT algorithm is chosen on runtime by FFTW.
+
+<p>
+<center> <!-- figure label: --> <div id="fig:GL1"></div> <!-- FIGURE -->
+<hr class="figure">
+<center><p class="caption">Figure 2:  Ginzburg-Landau solution (real) at times 16 and 96, from complex initial condition.  <!-- caption label: fig:GL1 --> </p></center>
+<p><img src="figs/Ginzburg_1.png" align="bottom" ></p>
+</center>
+
+<p>
+<center> <!-- figure label: --> <div id="fig:GL2"></div> <!-- FIGURE -->
+<hr class="figure">
+<center><p class="caption">Figure 3:  Ginzburg-Landau solution (real) at times 16 and 96 from real initial condition.  <!-- caption label: fig:GL2 --> </p></center>
+<p><img src="figs/Ginzburg.png" align="bottom" ></p>
+</center>
+
+<p>
+<p>
+<!-- navigation buttons at the bottom of the page -->
+<ul class="pager">
+\
+  <li class="previous">
+    <a href="._shenfun_bootswatch_cyborg005.html">&larr; Prev</a>
+  </li>
+\
+  <li class="next">
+    <a href="._shenfun_bootswatch_cyborg007.html">Next &rarr;</a>
+  </li>
+</ul>
+<!-- ------------------- end of main content --------------- -->
+
+</div>  <!-- end container -->
+<!-- include javascript, jQuery *first* -->
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+
+<!-- Bootstrap footer
+<footer>
+<a href="http://..."><img width="250" align=right src="http://..."></a>
+</footer>
+-->
+
+
+<center style="font-size:80%">
+<!-- copyright only on the titlepage -->
+</center>
+
+
+</body>
+</html>
+    
+
