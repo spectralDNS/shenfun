@@ -9,7 +9,7 @@ Shenfun is a toolbox for automating the spectral Galerkin method.  The user inte
 
 The spectral Galerkin method uses the method of weighted residuals, and solves PDEs by first creating variational forms from inner products, 
 <p align="center">
-    <img src="https://rawgit.com/spectralDNS/shenfun/gh-pages/doc/readme_figs/inner_product_3D.png" alt="Poisson equation"/>
+    <img src="https://rawgit.com/spectralDNS/spectralutilities/master/figures/shenfun_readme/inner_product_3D.png" alt="Poisson equation"/>
 </p>
 <p align="center">
 
@@ -17,14 +17,14 @@ where _omega_ is the computational domain, _u_ is a trial function, _v_ a test f
 
 Consider the Poisson equation 
 <p align="center">
-    <img src="https://rawgit.com/spectralDNS/shenfun/gh-pages/doc/readme_figs/poisson_3D_2.png" alt="Poisson equation"/>
+    <img src="https://rawgit.com/spectralDNS/spectralutilities/master/figures/shenfun_readme/poisson_3D_2.png" alt="Poisson equation"/>
 </p>
 <p align="center">
 
 We obtain a variational form by multiplying with _vw_ and integrating over the domain
 
 <p align="center">
-    <img src="https://rawgit.com/spectralDNS/shenfun/gh-pages/doc/readme_figs/poisson_3D_var.png" alt="Poisson equation variational form"/>
+    <img src="https://rawgit.com/spectralDNS/spectralutilities/master/figures/shenfun_readme/poisson_3D_var.png" alt="Poisson equation variational form"/>
 </p>
 <p align="center">
 

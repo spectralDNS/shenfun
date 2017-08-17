@@ -1,0 +1,735 @@
+<!--
+Automatically generated HTML file from DocOnce source
+(https://github.com/hplgit/doconce/)
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Shenfun - automating the spectral Galerkin method">
+<meta name="keywords" content="Computational Methods,Spectral,Galerkin,Chebyshev,Legendre">
+
+<title>Shenfun - automating the spectral Galerkin method</title>
+
+<!-- Bootstrap style: bootswatch_cyborg -->
+<link href="https://netdna.bootstrapcdn.com/bootswatch/3.1.1/cyborg/bootstrap.min.css" rel="stylesheet">
+<!-- not necessary
+<link href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+-->
+
+<style type="text/css">
+/* Let inline verbatim have the same color as the surroundings */
+code { color: inherit; background-color: transparent; }
+/* Let pre tags for code blocks have the same color as the surroundings */
+pre { color: inherit; background-color: transparent; }
+
+/* Add scrollbar to dropdown menus in bootstrap navigation bar */
+.dropdown-menu {
+   height: auto;
+   max-height: 400px;
+   overflow-x: hidden;
+}
+
+/* Adds an invisible element before each target to offset for the navigation
+   bar */
+.anchor::before {
+  content:"";
+  display:block;
+  height:50px;      /* fixed header height for style bootswatch_cyborg */
+  margin:-50px 0 0; /* negative fixed header height */
+}
+</style>
+
+
+
+
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [('Table of contents',
+               1,
+               'table_of_contents',
+               'table_of_contents'),
+              ('Introduction', 1, 'sec:introduction', 'sec:introduction'),
+              ('Spectral Galerkin Method',
+               1,
+               'sec:preliminaries',
+               'sec:preliminaries'),
+              ('Shenfun', 1, 'sec:shenfun', 'sec:shenfun'),
+              ('Classes for basis functions', 2, None, '___sec3'),
+              ('Classes for matrices', 2, 'sec:matrices', 'sec:matrices'),
+              ('Variational forms in 1D', 2, None, '___sec5'),
+              ('Poisson equation implemented in 1D', 2, None, '___sec6'),
+              ('Periodic boundary conditions',
+               3,
+               'sec:fourierpoisson',
+               'sec:fourierpoisson'),
+              ('Dirichlet boundary conditions',
+               3,
+               'sec:dirichletpoisson',
+               'sec:dirichletpoisson'),
+              ('Tensor product spaces',
+               1,
+               'sec:tensorproductspaces',
+               'sec:tensorproductspaces'),
+              ('Other functionality of `shenfun`',
+               1,
+               'sec:extended',
+               'sec:extended'),
+              ('Ginzburg-Landau equation', 1, 'sec:ginzburg', 'sec:ginzburg'),
+              ('Conclusions', 1, None, '___sec12'),
+              ('Acknowledgements', 1, None, '___sec13'),
+              ('Bibliography', 1, None, '___sec14')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "none"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript" async
+ src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+\newcommand{\ts}[1]{\bs{\textsf{#1}}}
+$$
+
+
+
+
+    
+<!-- Bootstrap navigation bar -->
+<div class="navbar navbar-default navbar-fixed-top">
+  <div class="navbar-header">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </button>
+    <a class="navbar-brand" href="shenfun_bootswatch_cyborg.html">Shenfun - automating the spectral Galerkin method</a>
+  </div>
+
+  <div class="navbar-collapse collapse navbar-responsive-collapse">
+    <ul class="nav navbar-nav navbar-right">
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Contents <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg000.html#table_of_contents" style="font-size: 80%;"><b>Table of contents</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg001.html#sec:introduction" style="font-size: 80%;"><b>Introduction</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg002.html#sec:preliminaries" style="font-size: 80%;"><b>Spectral Galerkin Method</b></a></li>
+     <!-- navigation toc: --> <li><a href="#sec:shenfun" style="font-size: 80%;"><b>Shenfun</b></a></li>
+     <!-- navigation toc: --> <li><a href="#___sec3" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Classes for basis functions</a></li>
+     <!-- navigation toc: --> <li><a href="#sec:matrices" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Classes for matrices</a></li>
+     <!-- navigation toc: --> <li><a href="#___sec5" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Variational forms in 1D</a></li>
+     <!-- navigation toc: --> <li><a href="#___sec6" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Poisson equation implemented in 1D</a></li>
+     <!-- navigation toc: --> <li><a href="#sec:fourierpoisson" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Periodic boundary conditions</a></li>
+     <!-- navigation toc: --> <li><a href="#sec:dirichletpoisson" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Dirichlet boundary conditions</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg004.html#sec:tensorproductspaces" style="font-size: 80%;"><b>Tensor product spaces</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg005.html#sec:extended" style="font-size: 80%;"><b>Other functionality of <code>shenfun</code></b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg006.html#sec:ginzburg" style="font-size: 80%;"><b>Ginzburg-Landau equation</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg007.html#___sec12" style="font-size: 80%;"><b>Conclusions</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg008.html#___sec13" style="font-size: 80%;"><b>Acknowledgements</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootswatch_cyborg009.html#___sec14" style="font-size: 80%;"><b>Bibliography</b></a></li>
+
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+</div> <!-- end of navigation bar -->
+
+<div class="container">
+
+<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p> <!-- add vertical space -->
+
+<a name="part0003"></a>
+<!-- !split -->
+
+<h1 id="sec:shenfun" class="anchor">Shenfun</h1>
+<code>shenfun</code> is a Python module package containing tools for working with the spectral Galerkin method. Shenfun implements classes for several bases with different boundary conditions, and within each class there are methods for transforms between spectral and real space, inner products, and for computing matrices arising from bilinear forms in the spectral Galerkin method. The Python module is organized as shown in Figure <a href="#fig:directorytree">1</a>.
+
+<p>
+The <code>shenfun</code> language is very simple and closely follows that of FEniCS. A simple form implementation provides operators <code>div, grad, curl</code> and <code>Dx</code>, that act on three different types of basis functions, the <code>TestFunction</code>, <code>TrialFunction</code> and <code>Function</code>. Their usage is very similar to that from FEniCS, but not as general, nor flexible, since we are only conserned with simple tensor product grids and smooth solutions. The usage of these operators and basis functions will become clear in the following subchapters, where we will also describe the <code>inner</code> and <code>project</code> functions, with functionality as suggested by their names.
+
+<p>
+<center> <!-- figure label: --> <div id="fig:directorytree"></div> <!-- FIGURE -->
+<hr class="figure">
+<center><p class="caption">Figure 1:  Directory tree.  <!-- caption label: fig:directorytree --> </p></center>
+<p><img src="figs/dirtree.png" align="bottom" height=400 width=200></p>
+</center>
+
+<h2 id="___sec3" class="anchor">Classes for basis functions </h2>
+
+<p>
+The following bases are defined in submodules
+
+<ul>
+  <li> shenfun.chebyshev.bases</li>
+
+<ul>
+    <li> Basis - Regular Chebyshev</li> 
+    <li> ShenDirichletBasis - Dirichlet boundary conditions</li>
+    <li> ShenNeumannBasis - Neumann boundary conditions (homogeneous)</li>
+    <li> ShenBiharmonicBasis - Homogeneous Dirichlet and Neumann boundary conditions</li>
+</ul>
+
+  <li> shenfun.legendre.bases</li>
+
+<ul>
+    <li> Basis - Regular Legendre</li>
+    <li> ShenDirichletBasis - Dirichlet boundary conditions</li>
+    <li> ShenNeumannBasis - Neumann boundary conditions (homogeneous)</li>
+    <li> ShenBiharmonicBasis - Homogeneous Dirichlet and Neumann boundary conditions</li>
+</ul>
+
+  <li> shenfun.fourier.bases</li>
+
+<ul>
+    <li> R2CBasis - Real to complex Fourier transforms</li>
+    <li> C2CBasis - Complex to complex transforms</li>
+</ul>
+
+</ul>
+
+All bases have methods for transforms and inner products on single- or multidimensional Numpy data arrays. The following code shows how to create a Fourier basis and subsequently perform a forward and an inverse discrete Fourier transform on a random array. The <code>uc</code> array is only used to test that the transform cycle returns the original data.
+<p>
+
+<!-- code=python (!bc pyshell) typeset with pygments style "monokai" -->
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span>    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f92672">from</span> <span style="color: #f8f8f2">shenfun</span> <span style="color: #f92672">import</span> <span style="color: #f92672">*</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f92672">import</span> <span style="color: #f8f8f2">numpy</span> <span style="color: #f92672">as</span> <span style="color: #f8f8f2">np</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">N</span> <span style="color: #f92672">=</span> <span style="color: #ae81ff">16</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">FFT</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">fourier</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">bases</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">R2CBasis(N,</span> <span style="color: #f8f8f2">plan</span><span style="color: #f92672">=</span><span style="color: #f8f8f2">True)</span> 
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">u</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">random</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">random(N)</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">uc</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">u</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">copy()</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">u_hat</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">FFT</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">forward(u)</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">u</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">FFT</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">backward(u_hat)</span> 
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #66d9ef">assert</span> <span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">allclose(u,</span> <span style="color: #f8f8f2">uc)</span>
+</pre></div>
+
+<h2 id="sec:matrices" class="anchor">Classes for matrices</h2>
+Matrices that arise with the spectral Galerkin method using Fourier or Shen's modified basis functions (see, e.g., Eqs <a href="#mjx-eqn-23">(23)</a>, <a href="#mjx-eqn-24">(24)</a>), are typically sparse and diagonal in structure. The sparse structure allows for a very compact storage, and <code>shenfun</code> has its own Matrix-class that is subclassing a Python dictionary, where keys are diagonal offsets, and values are the values along the diagonal. Some of the more important methods of the <code>SparseMatrix</code> class are shown below:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "monokai" -->
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span><span style="color: #66d9ef">class</span> <span style="color: #a6e22e">SparseMatrix</span><span style="color: #f8f8f2">(dict):</span>
+    <span style="color: #66d9ef">def</span> <span style="color: #a6e22e">__init__</span><span style="color: #f8f8f2">(self,</span> <span style="color: #f8f8f2">d,</span> <span style="color: #f8f8f2">shape):</span>
+        <span style="color: #f8f8f2">dict</span><span style="color: #f92672">.</span><span style="color: #a6e22e">__init__</span><span style="color: #f8f8f2">(self,</span> <span style="color: #f8f8f2">d)</span>
+        <span style="color: #f8f8f2">self</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">shape</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">shape</span>
+        
+    <span style="color: #66d9ef">def</span> <span style="color: #a6e22e">diags</span><span style="color: #f8f8f2">(self,</span> <span style="color: #f8f8f2">format</span><span style="color: #f92672">=</span><span style="color: #e6db74">&#39;dia&#39;</span><span style="color: #f8f8f2">):</span>
+        <span style="color: #e6db74">&quot;&quot;&quot;Return Scipy sparse matrix&quot;&quot;&quot;</span>
+
+    <span style="color: #66d9ef">def</span> <span style="color: #a6e22e">matvec</span><span style="color: #f8f8f2">(self,</span> <span style="color: #f8f8f2">u,</span> <span style="color: #f8f8f2">x,</span> <span style="color: #f8f8f2">format</span><span style="color: #f92672">=</span><span style="color: #e6db74">&#39;dia&#39;</span><span style="color: #f8f8f2">,</span> <span style="color: #f8f8f2">axis</span><span style="color: #f92672">=</span><span style="color: #ae81ff">0</span><span style="color: #f8f8f2">):</span>
+        <span style="color: #e6db74">&quot;&quot;&quot;Return Matrix vector product self*u in x&quot;&quot;&quot;</span>
+        
+    <span style="color: #66d9ef">def</span> <span style="color: #a6e22e">solve</span><span style="color: #f8f8f2">(self,</span> <span style="color: #f8f8f2">b,</span> <span style="color: #f8f8f2">u</span><span style="color: #f92672">=</span><span style="color: #f8f8f2">None,</span> <span style="color: #f8f8f2">axis</span><span style="color: #f92672">=</span><span style="color: #ae81ff">0</span><span style="color: #f8f8f2">):</span>
+        <span style="color: #e6db74">&quot;&quot;&quot;Return solution u to self*u = b&quot;&quot;&quot;</span>
+</pre></div>
+<p>
+For example, we may declare a tridiagonal matrix of shape N x N as
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "monokai" -->
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span>    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">N</span> <span style="color: #f92672">=</span> <span style="color: #ae81ff">4</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">d</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">{</span><span style="color: #f92672">-</span><span style="color: #ae81ff">1</span><span style="color: #f8f8f2">:</span> <span style="color: #ae81ff">1</span><span style="color: #f8f8f2">,</span> <span style="color: #ae81ff">0</span><span style="color: #f8f8f2">:</span> <span style="color: #f92672">-</span><span style="color: #ae81ff">2</span><span style="color: #f8f8f2">,</span> <span style="color: #ae81ff">1</span><span style="color: #f8f8f2">:</span> <span style="color: #ae81ff">1</span><span style="color: #f8f8f2">}</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">A</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">SparseMatrix(d,</span> <span style="color: #f8f8f2">(N,</span> <span style="color: #f8f8f2">N))</span>
+</pre></div>
+<p>
+or similarly as
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "monokai" -->
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span>    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">d</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">{</span><span style="color: #f92672">-</span><span style="color: #ae81ff">1</span><span style="color: #f8f8f2">:</span> <span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">ones(N</span><span style="color: #f92672">-</span><span style="color: #ae81ff">1</span><span style="color: #f8f8f2">),</span> <span style="color: #ae81ff">0</span><span style="color: #f8f8f2">:</span> <span style="color: #f92672">-</span><span style="color: #ae81ff">2</span><span style="color: #f92672">*</span><span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">ones(N)}</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">d[</span><span style="color: #ae81ff">1</span><span style="color: #f8f8f2">]</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">d[</span><span style="color: #f92672">-</span><span style="color: #ae81ff">1</span><span style="color: #f8f8f2">]</span>  <span style="color: #75715e"># Symmetric, reuse np.ones array</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">A</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">SparseMatrix(d,</span> <span style="color: #f8f8f2">(N,</span> <span style="color: #f8f8f2">N))</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">A</span>
+    <span style="color: #f8f8f2">{</span><span style="color: #f92672">-</span><span style="color: #ae81ff">1</span><span style="color: #f8f8f2">:</span> <span style="color: #f8f8f2">array([</span> <span style="color: #ae81ff">1.</span><span style="color: #f8f8f2">,</span>  <span style="color: #ae81ff">1.</span><span style="color: #f8f8f2">,</span>  <span style="color: #ae81ff">1.</span><span style="color: #f8f8f2">]),</span>
+      <span style="color: #ae81ff">0</span><span style="color: #f8f8f2">:</span> <span style="color: #f8f8f2">array([</span><span style="color: #f92672">-</span><span style="color: #ae81ff">2.</span><span style="color: #f8f8f2">,</span> <span style="color: #f92672">-</span><span style="color: #ae81ff">2.</span><span style="color: #f8f8f2">,</span> <span style="color: #f92672">-</span><span style="color: #ae81ff">2.</span><span style="color: #f8f8f2">,</span> <span style="color: #f92672">-</span><span style="color: #ae81ff">2.</span><span style="color: #f8f8f2">]),</span>
+      <span style="color: #ae81ff">1</span><span style="color: #f8f8f2">:</span> <span style="color: #f8f8f2">array([</span> <span style="color: #ae81ff">1.</span><span style="color: #f8f8f2">,</span>  <span style="color: #ae81ff">1.</span><span style="color: #f8f8f2">,</span>  <span style="color: #ae81ff">1.</span><span style="color: #f8f8f2">])}</span>
+</pre></div>
+<p>
+The matrix is a subclassed dictionary. If you want a regular <em>Scipy</em> sparse matrix instead, with all of its associated methods (solve, matrix-vector, etc.), then it is just a matter of
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "monokai" -->
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span>    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">A</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">diags()</span>
+    <span style="color: #f92672">&lt;</span><span style="color: #ae81ff">4</span><span style="color: #f8f8f2">x4</span> <span style="color: #f8f8f2">sparse</span> <span style="color: #f8f8f2">matrix</span> <span style="color: #f8f8f2">of</span> <span style="color: #f8f8f2">type</span> <span style="color: #e6db74">&#39;&lt;class &#39;</span><span style="color: #f8f8f2">numpy</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">float64</span><span style="color: #e6db74">&#39;&gt;&#39;</span>
+        <span style="color: #66d9ef">with</span> <span style="color: #ae81ff">10</span> <span style="color: #f8f8f2">stored</span> <span style="color: #f8f8f2">elements</span> <span style="color: #f8f8f2">(</span><span style="color: #ae81ff">3</span> <span style="color: #f8f8f2">diagonals)</span> <span style="color: #f92672">in</span> <span style="color: #f8f8f2">DIAgonal</span> <span style="color: #f8f8f2">format</span><span style="color: #f92672">&gt;</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">A</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">diags()</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">toarray()</span>
+    <span style="color: #f8f8f2">array([[</span><span style="color: #f92672">-</span><span style="color: #ae81ff">2.</span><span style="color: #f8f8f2">,</span>  <span style="color: #ae81ff">1.</span><span style="color: #f8f8f2">,</span>  <span style="color: #ae81ff">0.</span><span style="color: #f8f8f2">,</span>  <span style="color: #ae81ff">0.</span><span style="color: #f8f8f2">],</span>
+           <span style="color: #f8f8f2">[</span> <span style="color: #ae81ff">1.</span><span style="color: #f8f8f2">,</span> <span style="color: #f92672">-</span><span style="color: #ae81ff">2.</span><span style="color: #f8f8f2">,</span>  <span style="color: #ae81ff">1.</span><span style="color: #f8f8f2">,</span>  <span style="color: #ae81ff">0.</span><span style="color: #f8f8f2">],</span>
+           <span style="color: #f8f8f2">[</span> <span style="color: #ae81ff">0.</span><span style="color: #f8f8f2">,</span>  <span style="color: #ae81ff">1.</span><span style="color: #f8f8f2">,</span> <span style="color: #f92672">-</span><span style="color: #ae81ff">2.</span><span style="color: #f8f8f2">,</span>  <span style="color: #ae81ff">1.</span><span style="color: #f8f8f2">],</span>
+           <span style="color: #f8f8f2">[</span> <span style="color: #ae81ff">0.</span><span style="color: #f8f8f2">,</span>  <span style="color: #ae81ff">0.</span><span style="color: #f8f8f2">,</span>  <span style="color: #ae81ff">1.</span><span style="color: #f8f8f2">,</span> <span style="color: #f92672">-</span><span style="color: #ae81ff">2.</span><span style="color: #f8f8f2">]])</span>
+</pre></div>
+
+<h2 id="___sec5" class="anchor">Variational forms in 1D </h2>
+Weak variational forms are created using test and trial functions, as shown in the section <a href="._shenfun_bootswatch_cyborg002.html#sec:preliminaries">Spectral Galerkin Method</a>. Test and trial functions can be created for any basis in <code>shenfun</code>, as shown below for a Chebyshev Dirichlet basis with 8 quadrature points
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "monokai" -->
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span>    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f92672">from</span> <span style="color: #f8f8f2">shenfun.chebyshev.bases</span> <span style="color: #f92672">import</span> <span style="color: #f8f8f2">ShenDirichletBasis</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f92672">from</span> <span style="color: #f8f8f2">shenfun</span> <span style="color: #f92672">import</span> <span style="color: #f8f8f2">inner,</span> <span style="color: #f8f8f2">TestFunction,</span> <span style="color: #f8f8f2">TrialFunction</span>    
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">N</span> <span style="color: #f92672">=</span> <span style="color: #ae81ff">8</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">SD</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">ShenDirichletBasis(N,</span> <span style="color: #f8f8f2">plan</span><span style="color: #f92672">=</span><span style="color: #f8f8f2">True)</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">u</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">TrialFunction(SD)</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">v</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">TestFunction(SD)</span>
+</pre></div>
+<p>
+A matrix that is the result of a bilinear form has its own subclass of <code>SparseMatrix</code>, called a <code>SpectralMatrix</code>. A <code>SpectralMatrix</code> is created using <code>inner</code> products on test and trial functions, for example the mass matrix:
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "monokai" -->
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span>    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">mass</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">inner(u,</span> <span style="color: #f8f8f2">v)</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">mass</span>
+    <span style="color: #f8f8f2">{</span><span style="color: #f92672">-</span><span style="color: #ae81ff">2</span><span style="color: #f8f8f2">:</span> <span style="color: #f8f8f2">array([</span><span style="color: #f92672">-</span><span style="color: #ae81ff">1.57079633</span><span style="color: #f8f8f2">]),</span>
+      <span style="color: #ae81ff">0</span><span style="color: #f8f8f2">:</span> <span style="color: #f8f8f2">array([</span> <span style="color: #ae81ff">4.71238898</span><span style="color: #f8f8f2">,</span>  <span style="color: #ae81ff">3.1415</span>
+                 <span style="color: #ae81ff">3.14159265</span><span style="color: #f8f8f2">,</span> <span style="color: #ae81ff">3.14159265</span><span style="color: #f8f8f2">]),</span>
+      <span style="color: #ae81ff">2</span><span style="color: #f8f8f2">:</span> <span style="color: #f8f8f2">array([</span><span style="color: #f92672">-</span><span style="color: #ae81ff">1.57079633</span><span style="color: #f8f8f2">])}</span>
+</pre></div>
+<p>
+This <code>mass</code> matrix will be the same as Eq. (2.5) of <a href="._shenfun_bootswatch_cyborg009.html#shen95">[1]</a>, and it will be an instance of the <code>SpectralMatrix</code> class.
+You may notice that <code>mass</code> takes advantage of the fact that two diagonals are constant and consequently only stores one single value.
+
+<p>
+The <code>inner</code> method may be used to compute any linear or bilinear form. For example the stiffness matrix <code>K</code>
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "monokai" -->
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span>    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">K</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">inner(v,</span> <span style="color: #f8f8f2">div(grad(u)))</span>
+</pre></div>
+<p>
+Square matrices have implemented a solve method that is using fast \( \mathcal{O}(N) \) direct LU decomposition or similar, if available, and falls back on using Scipy's solver in CSR format if no better method is found implemented. For example, to solve the linear system <code>Ku=b</code>
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "monokai" -->
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span>    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">fj</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">random</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">random(N)</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">b</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">inner(v,</span> <span style="color: #f8f8f2">fj)</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">u</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">zeros_like(b)</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">u</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">K</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">solve(b,</span> <span style="color: #f8f8f2">u)</span>
+</pre></div>
+<p>
+All methods are designed to work along any dimension of a multidimensional array. Very little differs in the users interface. Consider, for example, the previous example on a three-dimensional cube 
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "monokai" -->
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span>    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">fj</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">random</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">random((N,</span> <span style="color: #f8f8f2">N,</span> <span style="color: #f8f8f2">N))</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">b</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">inner(v,</span> <span style="color: #f8f8f2">fj)</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">u</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">zeros_like(b)</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">u</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">K</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">solve(b,</span> <span style="color: #f8f8f2">u)</span>
+</pre></div>
+<p>
+where <code>K</code> is exactly the same as before, from the 1D example. The matrix solve is applied along the first dimension since this is the default behaviour.
+
+<p>
+The bases also have methods for transforming between spectral and real space. For example, one may project a random vector to the <code>SD</code> space using
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "monokai" -->
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span>    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">fj</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">random</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">random(N)</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">fk</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">zeros_like(fj)</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">fk</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">SD</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">forward(fj,</span> <span style="color: #f8f8f2">fk)</span> <span style="color: #75715e"># Gets expansion coefficients </span>
+</pre></div>
+<p>
+and back to real physical space again
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "monokai" -->
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span>    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">fj</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">SD</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">backward(fk,</span> <span style="color: #f8f8f2">fj)</span>
+</pre></div>
+<p>
+Note that <code>fj</code> now will be different than the original <code>fj</code> since it now has homogeneous boundary conditions. However, if we transfer back and forth one more time, starting from <code>fj</code> which is in the Dirichlet function space, then we come back to the same array:
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "monokai" -->
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span>    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">fj_copy</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">fj</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">copy()</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">fk</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">SD</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">forward(fj,</span> <span style="color: #f8f8f2">fk)</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">fj</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">SD</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">backward(fk,</span> <span style="color: #f8f8f2">fj)</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #66d9ef">assert</span> <span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">allclose(fj,</span> <span style="color: #f8f8f2">fj_copy)</span> <span style="color: #75715e"># Is True</span>
+</pre></div>
+
+<h2 id="___sec6" class="anchor">Poisson equation implemented in 1D </h2>
+
+<p>
+We have now shown the usage of <code>shenfun</code> for single, one-dimensional spaces. It does not become really interesting before we start looking into tensor product grids in higher dimensions, but before we go there we revisit the spectral Galerkin method for a 1D Poisson problem, and show how the implementation of this problem can be performed using <code>shenfun</code>.
+
+<h3 id="sec:fourierpoisson" class="anchor">Periodic boundary conditions</h3>
+
+If the solution to Eq. <a href="._shenfun_bootswatch_cyborg002.html#mjx-eqn-1">(1)</a> is periodic with periodic length \( 2 \pi \), then we use \( \Omega \in [0, 2 \pi] \) and it will be natural to choose the test functions from the space consisting of the Fourier basis functions, i.e.,  \( v_l(x)=e^{ilx} \). The mesh \( \boldsymbol{x} = \{x_j\}_{j=0}^{N-1} \) will be uniformly spaced 
+$$
+\begin{equation}
+\boldsymbol{x} = \frac{2 \pi j}{N}  \quad j=0,1,\ldots, N-1,
+\tag{6}
+\end{equation}
+$$
+
+and we look for solutions of the form
+$$
+\begin{equation}
+u(x_j) = \sum_{l=-N/2}^{N/2-1} \hat{u}_l e^{ilx_j} \quad  j=0,1,\ldots N-1.
+\tag{7}
+\end{equation}
+$$
+
+Note that for Fourier basis functions it is customary (used by both MATLAB and Numpy) to use the wavenumbermesh
+$$
+\begin{equation}
+\boldsymbol{l} = -N/2, -N/2+1, \ldots, N/2-1, \tag{8}
+\end{equation}
+$$
+
+where we have assumed that \( N \) is even. Also note that Eq. <a href="#mjx-eqn-7">(7)</a> naively would be computed in \( \mathcal{O}(N^2) \) operations, but that it can be computed much faster \( \mathcal{O}(N\log N) \) using the discrete inverse Fourier transform
+$$
+\begin{equation}
+\bs{u} = \mathcal{F}^{-1}(\bs{\hat{u}}),
+\tag{9}
+\end{equation}
+$$
+
+where we use compact notation \( \bs{u} = \{u(x_j)\}_{j=0}^{N-1} \).
+
+<p>
+To solve Eq. <a href="._shenfun_bootswatch_cyborg002.html#mjx-eqn-1">(1)</a> with the discrete spectral Galerkin method, we create the basis \( V^p = \text{span}\{ e^{ilx} , \text{ for } l \in \boldsymbol{l}\}  \) and attempt to find \( u \in V^p \) such that
+$$
+\begin{equation}
+(-u'', v)_w^N = (f, v)_w^N, \quad \forall \, v \in V^p.
+\tag{10}
+\end{equation}
+$$
+
+Inserting for Eq. <a href="#mjx-eqn-7">(7)</a> and using \( e^{imx} \) as test function we obtain
+$$
+\begin{align}
+-(\sum_{l \in \bs{l}} \hat{u}_l (e^{ilx})'', e^{imx})_w^N &= (f(x), e^{imx})_w^N \quad \forall \, m \in \bs{l} 
+\tag{11}\\
+\sum_{l \in \bs{l}} l^2( e^{ilx}, e^{imx})_w^N \hat{u}_l &= (f(x), e^{imx})_w ^N\quad \forall \, m \in \bs{l}. \tag{12}
+\end{align}
+$$
+
+Note that the discrete inner product <a href="._shenfun_bootswatch_cyborg002.html#mjx-eqn-5">(5)</a> is used, and we also need to interpolate the function \( f(x) \) onto the grid \( \boldsymbol{x} \). For Fourier it becomes very simple since the weight functions are constant \( w_j = 2\pi/N \) and we have for the left hand side simply a diagonal matrix
+$$
+\begin{equation}
+( e^{ilx}, e^{imx})^N = 2\pi \delta_{ml} \quad \text{for} \, l, m \in \bs{l} \times \bs{l},
+\tag{13}
+\end{equation}
+$$
+
+where \( \delta_{ml} \) is the kronecker delta function.
+For the right hand side we have
+$$
+\begin{align}
+(f(x), e^{imx})^N &= \frac{2 \pi}{N}\sum_{j=0}^{N-1} f(x_j) e^{-imx_j} \quad \text{for } m \in \bs{l}, 
+\tag{14}\\
+ &= 2 \pi \mathcal{F}_m(f(\bs{x})), 
+\tag{15}\\
+ &= 2 \pi \hat{f}_m,
+\tag{16}
+\end{align}
+$$
+
+where \( \mathcal{F} \) represents the discrete Fourier transform that is defined as
+$$
+\begin{equation}
+\hat{u}_l = \frac{1}{N}\sum_{j=0}^{N-1} u(x_j) e^{-ilx_j}, \quad \text{for } l \in \bs{l},
+\tag{17}
+\end{equation}
+$$
+
+or simply
+$$
+\begin{equation}
+  \bs{\hat{u}} = \mathcal{F}(\bs{u}).
+\tag{18}
+\end{equation}
+$$
+
+Putting it all together we can set up the assembled linear system of equations for \( \hat{u}_l \) in <a href="#mjx-eqn-12">(12)</a>
+$$
+\begin{equation}
+\sum_{l \in \bs{l}}2 \pi l^2 \delta_{ml} \hat{u}_l = 2 \pi \hat{f}_{m} \quad \forall \, m \in \bs{l},
+\tag{19}
+\end{equation}
+$$
+
+which is trivially solved since it only involves a diagonal matrix (\( \delta_{ml} \)), and we obtain
+$$
+\begin{equation}
+\hat{u}_l = \frac{1}{l^2} \hat{f}_{l} \quad \forall \,l  \in \bs{l} \setminus{\{0\}}.
+\tag{20}
+\end{equation}
+$$
+
+<p>
+So, even though we carefully followed the spectral Galerkin method, we have ended up with the same result that would have been obtained with a Fourier collocation method, where one simply takes the Fourier transform of the Poisson equation and differentiate analytically.
+
+<p>
+With <code>shenfun</code> the periodic 1D Poisson equation can be trivially computed either with the collocation approach or the spectral Galerkin method. The procedure for the spectral Galerkin method will be shown first, before the entire problem is solved. All <code>shenfun</code> demos in this paper will contain a similar preample section where some necessary Python classes, modules and functions are imported. We import Numpy since <code>shenfun</code> arrays are Numpy arrays, and we import from Sympy to construct some exact solution used to verify the code. Note also the similarity to FEniCS with the import of methods and classes <code>inner, div, grad, TestFunction, TrialFunction</code>.  The Fourier spectral Galerkin method in turn requires that the <code>FourierBasis</code> is imported as well. The following code solves the Poisson equation in 1D with shenfun:
+
+<p>
+<!-- !bu-code Poisson equation with Fourier basis label=fig:poisson1D -->
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "monokai" -->
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span><span style="color: #f92672">from</span> <span style="color: #f8f8f2">sympy</span> <span style="color: #f92672">import</span> <span style="color: #f8f8f2">Symbol,</span> <span style="color: #f8f8f2">cos</span>
+<span style="color: #f92672">import</span> <span style="color: #f8f8f2">numpy</span> <span style="color: #f92672">as</span> <span style="color: #f8f8f2">np</span>
+<span style="color: #f92672">from</span> <span style="color: #f8f8f2">shenfun</span> <span style="color: #f92672">import</span> <span style="color: #f8f8f2">inner,</span> <span style="color: #f8f8f2">div,</span> <span style="color: #f8f8f2">grad,</span> <span style="color: #f8f8f2">TestFunction,</span> <span style="color: #f8f8f2">TrialFunction</span>
+<span style="color: #f92672">from</span> <span style="color: #f8f8f2">shenfun.fourier.bases</span> <span style="color: #f92672">import</span> <span style="color: #f8f8f2">FourierBasis</span>
+
+<span style="color: #75715e"># Use Sympy to compute a rhs, given an analytical solution</span>
+<span style="color: #f8f8f2">x</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">Symbol(</span><span style="color: #e6db74">&quot;x&quot;</span><span style="color: #f8f8f2">)</span>
+<span style="color: #f8f8f2">ue</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">cos(</span><span style="color: #ae81ff">4</span><span style="color: #f92672">*</span><span style="color: #f8f8f2">x)</span>
+<span style="color: #f8f8f2">fe</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">ue</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">diff(x,</span> <span style="color: #ae81ff">2</span><span style="color: #f8f8f2">)</span>
+
+<span style="color: #75715e"># Create Fourier basis with N basis functions</span>
+<span style="color: #f8f8f2">N</span> <span style="color: #f92672">=</span> <span style="color: #ae81ff">32</span>
+<span style="color: #f8f8f2">ST</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">FourierBasis(N,</span> <span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">float,</span> <span style="color: #f8f8f2">plan</span><span style="color: #f92672">=</span><span style="color: #f8f8f2">True)</span>
+<span style="color: #f8f8f2">u</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">TrialFunction(ST)</span>
+<span style="color: #f8f8f2">v</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">TestFunction(ST)</span>
+<span style="color: #f8f8f2">X</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">ST</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">mesh(N)</span>
+
+<span style="color: #75715e"># Get f and exact solution on quad points </span>
+<span style="color: #f8f8f2">fj</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">array([fe</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">subs(x,</span> <span style="color: #f8f8f2">j)</span> <span style="color: #66d9ef">for</span> <span style="color: #f8f8f2">j</span> <span style="color: #f92672">in</span> <span style="color: #f8f8f2">X],</span> <span style="color: #f8f8f2">dtype</span><span style="color: #f92672">=</span><span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">float)</span>
+<span style="color: #f8f8f2">uj</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">array([ue</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">subs(x,</span> <span style="color: #f8f8f2">i)</span> <span style="color: #66d9ef">for</span> <span style="color: #f8f8f2">i</span> <span style="color: #f92672">in</span> <span style="color: #f8f8f2">X],</span> <span style="color: #f8f8f2">dtype</span><span style="color: #f92672">=</span><span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">float)</span>
+
+<span style="color: #75715e"># Assemble right and left hand sides</span>
+<span style="color: #f8f8f2">f_hat</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">inner(v,</span> <span style="color: #f8f8f2">fj)</span>
+<span style="color: #f8f8f2">A</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">inner(v,</span> <span style="color: #f8f8f2">div(grad(u)))</span>
+
+<span style="color: #75715e"># Solve Poisson equation</span>
+<span style="color: #f8f8f2">u_hat</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">A</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">solve(f_hat)</span>
+
+<span style="color: #75715e"># Transfer solution back to real space</span>
+<span style="color: #f8f8f2">uq</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">ST</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">backward(u_hat)</span>
+<span style="color: #66d9ef">assert</span> <span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">allclose(uj,</span> <span style="color: #f8f8f2">uq)</span>
+</pre></div>
+<p>
+<!-- !eu-code -->
+
+<p>
+Naturally, this simple problem could be solved easier with a Fourier collocation instead, and  a simple pure 1D Fourier problem does not illuminate the true advantages of  <code>shenfun</code>, that only will become evident when we look at higher dimensional problems with tensor product spaces. To solve with collocation, we could simply do
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "monokai" -->
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span><span style="color: #75715e"># Transform right hand side</span>
+<span style="color: #f8f8f2">f_hat</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">ST</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">forward(fj)</span>
+
+<span style="color: #75715e"># Wavenumers</span>
+<span style="color: #f8f8f2">k</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">ST</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">wavenumbers(N)</span>
+<span style="color: #f8f8f2">k[</span><span style="color: #ae81ff">0</span><span style="color: #f8f8f2">]</span> <span style="color: #f92672">=</span> <span style="color: #ae81ff">1</span>
+
+<span style="color: #75715e"># Solve Poisson equation (solution in f_hat)</span>
+<span style="color: #f8f8f2">f_hat</span> <span style="color: #f92672">/=</span> <span style="color: #f8f8f2">k</span><span style="color: #f92672">**</span><span style="color: #ae81ff">2</span>
+</pre></div>
+<p>
+Note that <code>ST</code> methods <code>forward/backward</code> correspond to forward and inverse discrete Fourier transforms. Furthermore, since the input data <code>fj</code> is of type float (not complex), the transforms make use of the symmetry of the Fourier transform of real data, that \( \hat{u}_k = \overline{\hat{u}}_{N-k} \), and that \( \bs{k}=0,1,\ldots, N/2 \) (index set computed as <code>k = ST.wavenumbers(N)</code>).
+
+<h3 id="sec:dirichletpoisson" class="anchor">Dirichlet boundary conditions</h3>
+
+If the Poisson equation is subject to Dirichlet boundary conditions on the edge of the domain \( \Omega \in [-1, 1] \), then a natural choice is to use Chebyshev or Legendre polynomials. Two test functions that strongly fixes the boundary condition \( u(\pm 1)=0 \) are
+$$
+\begin{equation}
+v_l(x) = T_l(x) - T_{l+2}(x),
+\tag{21}
+\end{equation}
+$$
+
+where \( T_l(x) \) is the l'th order Chebyshev polynomial of the first kind, or
+$$
+\begin{equation}
+v_l(x) = L_l(x) - L_{l+2}(x),
+\tag{22}
+\end{equation}
+$$
+
+where \( L_l(x) \) is the l'th order Legendre polynomial. The test functions give rise to functionspaces
+$$
+\begin{align}
+V^C &= \text{span}\{T_l-T_{l+2}, l \in \bs{l}^D\}, \tag{23} \\
+V^L &= \text{span}\{L_l-L_{l+2}, l \in \bs{l}^D\}, \tag{24}
+\end{align}
+$$
+
+where
+$$
+\begin{equation}
+\boldsymbol{l}^D = 0, 1, \ldots, N-3.
+\tag{25}
+\end{equation}
+$$
+
+The computational mesh and associated weights will be decided by the chosen quadrature rule. Here we will go for Gauss quadrature, which leads to the following points and weights for the Chebyshev basis
+$$
+\begin{align}
+x_j^C &= \cos \left( \frac{2j+1}{2N}\pi \right) \quad &j=0,1,\ldots, N-1, 
+\tag{26}\\
+w_j^C &= \frac{\pi}{N},
+\tag{27}
+\end{align}
+$$
+
+and
+$$
+\begin{align}
+x_j^L &= \text{ zeros of }L_{N}(x) \quad &j=0,1,\ldots, N-1, 
+\tag{28}\\
+w_j^L &= \frac{2}{(1-x_j^2)[L'_{N}(x_j)]^2} \quad &j=0,1,\ldots, N-1,
+\tag{29}
+\end{align}
+$$
+
+for the Legendre basis.
+
+<p>
+We now follow the same procedure as in the section <a href="#sec:fourierpoisson">Periodic boundary conditions</a> and solve Eq. <a href="._shenfun_bootswatch_cyborg002.html#mjx-eqn-1">(1)</a> with the spectral Galerkin method. Consider first the Chebyshev basis and find \( u \in V^C \) , such that
+$$
+\begin{equation}
+(-u'', v)_w^N = (f, v)_w^N , \quad \forall \, v \in V^C.
+\tag{30}
+\end{equation}
+$$
+
+We insert for \( v=v_m \) and \( u=\displaystyle \sum_{l\in \bs{l}^D} \hat{u}_l v_l \) and obtain
+$$
+\begin{align}
+-(\sum_{l\in \bs{l}^D} \hat{u}_l v_l'', v_m)_w^N &= (f, v_m)_w^N  &m \in \bs{l}^D,
+\tag{31}\\
+-(v_l'', v_m)_w^N \hat{u}_l &= (f, v_m)_w^N & m \in \bs{l}^D, \tag{32}
+\end{align}
+$$
+
+where summation on repeated indices is implied. In Eq. <a href="#mjx-eqn-32">(32)</a> \( A_{ml} =(v_l'', v_m)_w^N \) are the components of a sparse stiffness matrix, and we will use matrix notation \( \bs{A} = \{A_{ml}\}_{m,l \in \bs{l}^D \times \bs{l}^D} \) to simplify. The right hand side can similarily be assembled to a vector with components \( \tilde{f}_m = (f, v_m)_w^N \) such that \( \bs{\tilde{f}} = \{\tilde{f}_m\}_{m\in \bs{l}^D}  \). Note that a tilde is used since this is not a complete transform. We can now solve for the unknown \( \bs{\hat{u}} = \{\hat{u}_l\}_{l\in \bs{l}^D} \) vector
+$$
+\begin{align}
+-\bs{A} \bs{\hat{u}} &= \bs{\tilde{f}}, 
+\tag{33}\\
+   \bs{\hat{u}} &= -\bs{A}^{-1} \bs{\tilde{f}}.
+\tag{34}
+\end{align}
+$$
+
+Note that the matrix \( \bs{A} \) is a special kind of upper triangular matrix, and that the solution can be obtained very efficiently in approximately \( 4 N \) arithmetic operations.
+
+<p>
+To get the solution back and forth between real and spectral space we require a transformation pair similar to the Fourier transforms. We do this by projection. Start with
+$$
+\begin{equation}
+u(\bs{x}) = \sum_{l\in \bs{l}^D} \hat{u}_l v_l(\bs{x})
+\tag{35}
+\end{equation}
+$$
+
+and take the inner product with \( v_m \)
+$$
+\begin{equation}
+(u, v_m)_w^N  = (\sum_{l\in \bs{l}^D} \hat{u}_l v_l, v_m)_w^N.
+\tag{36}
+\end{equation}
+$$
+
+Introducing now the mass matrix \( B_{ml} = (v_l, v_m)_w^N \) and the <em>Shen</em> forward inner product \( \mathcal{S}_m(u) = (u, v_m)_w^N \), Eq. <a href="#mjx-eqn-36">(36)</a>  is rewritten as
+$$
+\begin{align}
+\mathcal{S}_m(u) &= B_{ml} \hat{u}_l, 
+\tag{37}\\
+\bs{\hat{u}}  =& \bs{B}^{-1} \mathcal{S}(\bs{u}) , 
+\tag{38}\\
+\bs{\hat{u}}  =& \mathcal{T}(\bs{u}) ,
+\tag{39}
+\end{align}
+$$
+
+where \( \mathcal{T}(\bs{u}) \) represents a forward transform of \( \bs{u} \). Note that \( \mathcal{S} \) is introduced since the inner product \( (u, v_m)_w^N \) may, just like the inner product with the Fourier basis, be computed fast, with \( \mathcal{O}(N \log N) \) operations. And to this end, we need to make use of a discrete cosine transform (DCT), instead of the Fourier transform. The details are left out from this paper, though.
+
+<p>
+A simple Poisson problem with analytical solution \( \sin(\pi x)(1-x^2) \) is implemented below, where we also verify that the correct solution is obtained.
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "monokai" -->
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span><span style="color: #f92672">from</span> <span style="color: #f8f8f2">shenfun.chebyshev.bases</span> <span style="color: #f92672">import</span> <span style="color: #f8f8f2">ShenDirichletBasis</span>
+
+<span style="color: #75715e"># Use sympy to compute a rhs, given an analytical solution</span>
+<span style="color: #f8f8f2">ue</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">sin(np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">pi</span><span style="color: #f92672">*</span><span style="color: #f8f8f2">x)</span><span style="color: #f92672">*</span><span style="color: #f8f8f2">(</span><span style="color: #ae81ff">1</span><span style="color: #f92672">-</span><span style="color: #f8f8f2">x</span><span style="color: #f92672">**</span><span style="color: #ae81ff">2</span><span style="color: #f8f8f2">)</span>
+<span style="color: #f8f8f2">fe</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">ue</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">diff(x,</span> <span style="color: #ae81ff">2</span><span style="color: #f8f8f2">)</span>
+
+<span style="color: #75715e"># Lambdify for faster evaluation</span>
+<span style="color: #f8f8f2">ul</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">lambdify(x,</span> <span style="color: #f8f8f2">ue,</span> <span style="color: #e6db74">&#39;numpy&#39;</span><span style="color: #f8f8f2">)</span>
+<span style="color: #f8f8f2">fl</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">lambdify(x,</span> <span style="color: #f8f8f2">fe,</span> <span style="color: #e6db74">&#39;numpy&#39;</span><span style="color: #f8f8f2">)</span>
+
+<span style="color: #f8f8f2">N</span> <span style="color: #f92672">=</span> <span style="color: #ae81ff">32</span>
+<span style="color: #f8f8f2">SD</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">ShenDirichletBasis(N,</span> <span style="color: #f8f8f2">plan</span><span style="color: #f92672">=</span><span style="color: #f8f8f2">True)</span>
+<span style="color: #f8f8f2">X</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">SD</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">mesh(N)</span>
+<span style="color: #f8f8f2">u</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">TrialFunction(SD)</span>
+<span style="color: #f8f8f2">v</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">TestFunction(SD)</span>
+<span style="color: #f8f8f2">fj</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">fl(X)</span>
+
+<span style="color: #75715e"># Compute right hand side of Poisson equation</span>
+<span style="color: #f8f8f2">f_hat</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">inner(v,</span> <span style="color: #f8f8f2">fj)</span>
+
+<span style="color: #75715e"># Get left hand side of Poisson equation and solve</span>
+<span style="color: #f8f8f2">A</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">inner(v,</span> <span style="color: #f8f8f2">div(grad(u)))</span>
+<span style="color: #f8f8f2">f_hat</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">A</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">solve(f_hat)</span>
+<span style="color: #f8f8f2">uj</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">SD</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">backward(f_hat)</span>
+
+<span style="color: #75715e"># Compare with analytical solution</span>
+<span style="color: #f8f8f2">ue</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">ul(X)</span>
+<span style="color: #66d9ef">assert</span> <span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">allclose(uj,</span> <span style="color: #f8f8f2">ue)</span>
+</pre></div>
+<p>
+Note that the inner product <code>f_hat = inner(v, fj)</code> is computed under the hood using the fast DCT.  The inverse transform <code>uj = SD.backward(f_hat)</code> is also computed using a fast DCT, and we use the notation
+$$
+\begin{align}
+u(x_j) &= \sum_{l\in \bs{l}^D} \hat{u}_l v_l(x_j) \quad j=0,1,\ldots, N-1, \notag 
+\tag{40}\\
+\bs{u} &= \mathcal{S}^{-1}(\bs{\hat{u}}). \tag{41}
+\end{align}
+$$
+
+To implement the same problem with the Legendre basis <a href="#mjx-eqn-22">(22)</a>, all that is needed to change is the first line in the Poisson solver to <code>from shenfun.legendre.bases import ShenDirichletBasis</code>. Everything else is exactly the same. However, a fast inner product, like in <a href="#mjx-eqn-41">(41)</a>, is only implemented for the Chebyshev basis, since there are no known \( \mathcal{O}(N \log N) \) algorithms for the Legendre basis, and the Legendre basis thus uses straight forward \( \mathcal{O}(N^2) \) algorithms for its transforms.
+
+<p>
+<p>
+<!-- navigation buttons at the bottom of the page -->
+<ul class="pager">
+\
+  <li class="previous">
+    <a href="._shenfun_bootswatch_cyborg002.html">&larr; Prev</a>
+  </li>
+\
+  <li class="next">
+    <a href="._shenfun_bootswatch_cyborg004.html">Next &rarr;</a>
+  </li>
+</ul>
+<!-- ------------------- end of main content --------------- -->
+
+</div>  <!-- end container -->
+<!-- include javascript, jQuery *first* -->
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+
+<!-- Bootstrap footer
+<footer>
+<a href="http://..."><img width="250" align=right src="http://..."></a>
+</footer>
+-->
+
+
+<center style="font-size:80%">
+<!-- copyright only on the titlepage -->
+</center>
+
+
+</body>
+</html>
+    
+

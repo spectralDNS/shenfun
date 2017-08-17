@@ -1,0 +1,249 @@
+<!--
+Automatically generated HTML file from DocOnce source
+(https://github.com/hplgit/doconce/)
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Shenfun - automating the spectral Galerkin method">
+<meta name="keywords" content="Computational Methods,Spectral,Galerkin,Chebyshev,Legendre">
+
+<title>Shenfun - automating the spectral Galerkin method</title>
+
+<!-- Bootstrap style: bootstrap -->
+<link href="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+<!-- not necessary
+<link href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+-->
+
+<style type="text/css">
+/* Let pre tags for code blocks have the same color as the surroundings */
+pre { color: inherit; background-color: transparent; }
+
+/* Add scrollbar to dropdown menus in bootstrap navigation bar */
+.dropdown-menu {
+   height: auto;
+   max-height: 400px;
+   overflow-x: hidden;
+}
+
+/* Adds an invisible element before each target to offset for the navigation
+   bar */
+.anchor::before {
+  content:"";
+  display:block;
+  height:50px;      /* fixed header height for style bootstrap */
+  margin:-50px 0 0; /* negative fixed header height */
+}
+</style>
+
+
+
+
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [('Table of contents',
+               1,
+               'table_of_contents',
+               'table_of_contents'),
+              ('Introduction', 1, 'sec:introduction', 'sec:introduction'),
+              ('Spectral Galerkin Method',
+               1,
+               'sec:preliminaries',
+               'sec:preliminaries'),
+              ('Shenfun', 1, 'sec:shenfun', 'sec:shenfun'),
+              ('Classes for basis functions', 2, None, '___sec3'),
+              ('Classes for matrices', 2, 'sec:matrices', 'sec:matrices'),
+              ('Variational forms in 1D', 2, None, '___sec5'),
+              ('Poisson equation implemented in 1D', 2, None, '___sec6'),
+              ('Periodic boundary conditions',
+               3,
+               'sec:fourierpoisson',
+               'sec:fourierpoisson'),
+              ('Dirichlet boundary conditions',
+               3,
+               'sec:dirichletpoisson',
+               'sec:dirichletpoisson'),
+              ('Tensor product spaces',
+               1,
+               'sec:tensorproductspaces',
+               'sec:tensorproductspaces'),
+              ('Other functionality of `shenfun`',
+               1,
+               'sec:extended',
+               'sec:extended'),
+              ('Ginzburg-Landau equation', 1, 'sec:ginzburg', 'sec:ginzburg'),
+              ('Conclusions', 1, None, '___sec12'),
+              ('Acknowledgements', 1, None, '___sec13'),
+              ('Bibliography', 1, None, '___sec14')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "none"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript" async
+ src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+\newcommand{\ts}[1]{\bs{\textsf{#1}}}
+$$
+
+
+
+
+    
+<!-- Bootstrap navigation bar -->
+<div class="navbar navbar-default navbar-fixed-top">
+  <div class="navbar-header">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </button>
+    <a class="navbar-brand" href="shenfun_bootstrap.html">Shenfun - automating the spectral Galerkin method</a>
+  </div>
+
+  <div class="navbar-collapse collapse navbar-responsive-collapse">
+    <ul class="nav navbar-nav navbar-right">
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Contents <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap000.html#table_of_contents" style="font-size: 80%;"><b>Table of contents</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap001.html#sec:introduction" style="font-size: 80%;"><b>Introduction</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap002.html#sec:preliminaries" style="font-size: 80%;"><b>Spectral Galerkin Method</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap003.html#sec:shenfun" style="font-size: 80%;"><b>Shenfun</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap003.html#___sec3" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Classes for basis functions</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap003.html#sec:matrices" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Classes for matrices</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap003.html#___sec5" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Variational forms in 1D</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap003.html#___sec6" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Poisson equation implemented in 1D</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap003.html#sec:fourierpoisson" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Periodic boundary conditions</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap003.html#sec:dirichletpoisson" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Dirichlet boundary conditions</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap004.html#sec:tensorproductspaces" style="font-size: 80%;"><b>Tensor product spaces</b></a></li>
+     <!-- navigation toc: --> <li><a href="#sec:extended" style="font-size: 80%;"><b>Other functionality of <code>shenfun</code></b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap006.html#sec:ginzburg" style="font-size: 80%;"><b>Ginzburg-Landau equation</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap007.html#___sec12" style="font-size: 80%;"><b>Conclusions</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap008.html#___sec13" style="font-size: 80%;"><b>Acknowledgements</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap009.html#___sec14" style="font-size: 80%;"><b>Bibliography</b></a></li>
+
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+</div> <!-- end of navigation bar -->
+
+<div class="container">
+
+<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p> <!-- add vertical space -->
+
+<a name="part0005"></a>
+<!-- !split -->
+
+<h1 id="sec:extended" class="anchor">Other functionality of <code>shenfun</code></h1>
+In addition to the <code>div</code> and <code>grad</code> operators, there is <code>Dx</code> for a partial derivative
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> Dx
+v <span style="color: #666666">=</span> TestFunction(W)
+du <span style="color: #666666">=</span> Dx(v, <span style="color: #666666">0</span>, <span style="color: #666666">1</span>)
+</pre></div>
+<p>
+where the first argument is the basis function, the second (integer) is the axis to take the derivative over, and the third (integer) is the number of derivatives, e.g.,
+$$
+\begin{equation}
+\frac{\partial^2 v}{\partial y^2} = \text{Dx(v, 1, 2)}. \notag
+\tag{61}
+\end{equation}
+$$
+
+The operator can be nested. To compute \( \frac{\partial^2 u}{\partial x  \partial y}  \) one may do
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>v <span style="color: #666666">=</span> TestFunction(W)
+du <span style="color: #666666">=</span> Dx(Dx(v, <span style="color: #666666">0</span>, <span style="color: #666666">1</span>), <span style="color: #666666">1</span>, <span style="color: #666666">1</span>)
+</pre></div>
+<p>
+The operators work on <code>TestFunctions, TrialFunctions</code> or <code>Functions</code>, where only the last actually contain any data, because a <code>Function</code> is used to store the solution. Once a solution has been found, one may also manipulate it further using <code>project</code> in combination with operators on <code>Functions</code>. For example, to compute \( \partial u / \partial x \) of the solution to the biharmonic problem, one can do
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>u <span style="color: #666666">=</span> T<span style="color: #666666">.</span>backward(u_hat)  <span style="color: #408080; font-style: italic"># The original solution on space T</span>
+K0 <span style="color: #666666">=</span> Basis(N[<span style="color: #666666">0</span>])
+W0 <span style="color: #666666">=</span> TensorProductSpace(comm, (K0, K1, K2))
+du_hat <span style="color: #666666">=</span> project(Dx(u, <span style="color: #666666">0</span>, <span style="color: #666666">1</span>), W0, uh_hat<span style="color: #666666">=</span>u_hat)
+du <span style="color: #666666">=</span> Function(W0)
+du <span style="color: #666666">=</span> W0<span style="color: #666666">.</span>backward(du_hat, du)
+</pre></div>
+<p>
+Note that we are here using a regular Chebyshev space instead of the biharmonic, to avoid enforcing erroneous boundary conditions on the solution. We could in this case also, with advantage, have chosen a Dirichlet space, since the derivative of the biharmonic problem is known to be zero on the edges of the domain (at \( x=\pm 1 \)).
+
+<p>
+All problems considered thus far have been scalar valued. With <code>shenfun</code> there is also some functionality for working with vector equations. To this end, there is a class called <code>VectorTensorProductSpace</code>, and there is an additional operator, <code>curl</code>, that can only be used on vectors:
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> VectorTensorProductSpace, curl
+T <span style="color: #666666">=</span> TensorProductSpace(comm, (K0, K1, K2))
+Tk <span style="color: #666666">=</span> VectorTensorProductSpace([T, T, T])
+v <span style="color: #666666">=</span> TestFunction(Tk)
+u_ <span style="color: #666666">=</span> Function(Tk, <span style="color: #008000">False</span>)
+u_[:] <span style="color: #666666">=</span> np<span style="color: #666666">.</span>random<span style="color: #666666">.</span>random(u_<span style="color: #666666">.</span>shape)
+u_hat <span style="color: #666666">=</span> Tk<span style="color: #666666">.</span>forward(u_)
+w_hat <span style="color: #666666">=</span> inner(v, curl(u_), uh_hat<span style="color: #666666">=</span>u_hat)
+</pre></div>
+<p>
+Vector equations have very similar form as scalar equations, but at the moment of writing the different equation components cannot be implicitly coupled.
+
+<p>
+<p>
+<!-- navigation buttons at the bottom of the page -->
+<ul class="pager">
+\
+  <li class="previous">
+    <a href="._shenfun_bootstrap004.html">&larr; Prev</a>
+  </li>
+\
+  <li class="next">
+    <a href="._shenfun_bootstrap006.html">Next &rarr;</a>
+  </li>
+</ul>
+<!-- ------------------- end of main content --------------- -->
+
+</div>  <!-- end container -->
+<!-- include javascript, jQuery *first* -->
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+
+<!-- Bootstrap footer
+<footer>
+<a href="http://..."><img width="250" align=right src="http://..."></a>
+</footer>
+-->
+
+
+<center style="font-size:80%">
+<!-- copyright only on the titlepage -->
+</center>
+
+
+</body>
+</html>
+    
+
