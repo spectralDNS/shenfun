@@ -101,19 +101,14 @@ class TensorProductSpace(object):
             [o.forward for o in self.transfer],
             self.pencil)
 
-        self.apply_nonhomogeneous_Dirichlet()
-
-    def apply_nonhomogeneous_Dirichlet(self):
-        for base in self.bases:
-            if isinstance(base, (legendre.bases.ShenDirichletBasis,
-                                 chebyshev.bases.ShenDirichletBasis)):
-                if base.has_nonhomogeneous_bcs():
-                    slices = self.local_slice()
-                    starts = [s.start for s in slices]
-                    if np.all(np.array(starts) == 0):
-                        pass
-                    else:
-                        base.bc = (0., 0.)
+        if any(isinstance(base, (chebyshev.bases.ShenDirichletBasis,
+                                 legendre.bases.ShenDirichletBasis))
+                                 for base in self.bases):
+            boundary_values = BoundaryValues(self)
+            for base in self.bases:
+                if isinstance(base, (legendre.bases.ShenDirichletBasis,
+                                     chebyshev.bases.ShenDirichletBasis)):
+                    base.bc = boundary_values
 
     def destroy(self):
         self.subcomm.destroy()
@@ -260,6 +255,143 @@ class VectorTransform(object):
             output_array[i] = transform(input_array[i], output_array[i], **kw)
         return output_array
 
+
+class BoundaryValues(object):
+
+    def __init__(self, T, bc=None):
+
+        if isinstance(T, (legendre.bases.ShenDirichletBasis,
+                          chebyshev.bases.ShenDirichletBasis)):
+            self.bc0 = self.bc0_final = bc[0]
+            self.bc1 = self.bc1_final = bc[1]
+            self.sl0 = 0
+            self.sl1 = 1
+            self.slm1 = -1
+            self.slm2 = -2
+            self.axis = 0
+
+        elif any(isinstance(base, (chebyshev.bases.ShenDirichletBasis,
+                                   legendre.bases.ShenDirichletBasis))
+                                   for base in T.bases):
+            from shenfun import Array
+            axis = None
+            dirichlet_base = None
+            number_of_bases_after_dirichlet = 0
+            bases = []
+            for axes in reversed(T.axes):
+                base = T.bases[axes[0]]
+                assert len(axes) == 1
+                assert axes[0] == base.axis
+                if isinstance(base, (legendre.bases.ShenDirichletBasis,
+                                     chebyshev.bases.ShenDirichletBasis)):
+                    axis = self.axis = base.axis
+                    self.sl = base.sl(0)
+                    dirichlet_base = base
+                    bases.append('D')
+
+                else:
+                    if axis is None:
+                        number_of_bases_after_dirichlet += 1
+                    bases.append('F')
+
+            self.set_slices(dirichlet_base)
+
+            if axis is None or dirichlet_base.bc.has_nonhomogeneous_bcs() is False:
+                self.bc0 = self.bc0_final = 0
+                self.bc1 = self.bc1_final = 0
+                return
+
+            # Set boundary values
+            # These are values set at the end of a transform in Dirichlet space,
+            # but before any Fourier transforms
+            # Shape is like real space, since Dirichlet does not alter shape
+            b = Array(T, False)
+            b[self.slm2] = dirichlet_base.bc.bc0
+            b[self.slm1] = dirichlet_base.bc.bc1
+
+            self.number_of_bases_after_dirichlet = number_of_bases_after_dirichlet
+
+            if number_of_bases_after_dirichlet == 0:
+                # Dirichlet base is the first to be transformed
+                b_hat = b
+
+            elif number_of_bases_after_dirichlet == 1:
+                T.forward._xfftn[0].input_array[...] = b
+
+                T.forward._xfftn[0]()
+                arrayA = T.forward._xfftn[0].output_array
+                arrayB = T.forward._xfftn[1].input_array
+                T.forward._transfer[0](arrayA, arrayB)
+                b_hat = arrayB.copy()
+
+            elif number_of_bases_after_dirichlet == 2:
+                #
+                T.forward._xfftn[0].input_array[...] = b
+
+                T.forward._xfftn[0]()
+                arrayA = T.forward._xfftn[0].output_array
+                arrayB = T.forward._xfftn[1].input_array
+                T.forward._transfer[0](arrayA, arrayB)
+
+                T.forward._xfftn[1]()
+                arrayA = T.forward._xfftn[1].output_array
+                arrayB = T.forward._xfftn[2].input_array
+                T.forward._transfer[1](arrayA, arrayB)
+                b_hat = arrayB.copy()
+
+            # Now b_hat contains the correct slices in slm1 and slm2
+            self.bc0 = b_hat[self.slm2].copy()
+            self.bc1 = b_hat[self.slm1].copy()
+
+            # Final
+            T.forward._xfftn[0].input_array[...] = b
+            for i in range(len(T.forward._transfer)):
+                if bases[i] == 'F':
+                    T.forward._xfftn[i]()
+                else:
+                    T.forward._xfftn[i].output_array[...] = T.forward._xfftn[i].input_array
+
+                arrayA = T.forward._xfftn[i].output_array
+                arrayB = T.forward._xfftn[i+1].input_array
+                T.forward._transfer[i](arrayA, arrayB)
+
+            if bases[-1] == 'F':
+                T.forward._xfftn[-1]()
+            else:
+                T.forward._xfftn[-1].output_array[...] = T.forward._xfftn[-1].input_array
+
+            b_hat = T.forward._xfftn[-1].output_array
+            self.bc0_final = b_hat[self.slm2].copy()
+            self.bc1_final = b_hat[self.slm1].copy()
+
+    def set_slices(self, T):
+        self.sl0 = T.sl(0)
+        self.sl1 = T.sl(1)
+        self.slm1 = T.sl(-1)
+        self.slm2 = T.sl(-2)
+
+    def apply_before(self, u, final=False, scales=(0.5, 0.5)):
+        if final is True:
+            u[self.sl0] += scales[0]*(self.bc0_final + self.bc1_final)
+            u[self.sl1] += scales[1]*(self.bc0_final - self.bc1_final)
+
+        else:
+            u[self.sl0] += scales[0]*(self.bc0 + self.bc1)
+            u[self.sl1] += scales[1]*(self.bc0 - self.bc1)
+
+    def apply_after(self, u, final=False):
+        if final is True:
+            u[self.slm2] = self.bc0_final
+            u[self.slm1] = self.bc1_final
+
+        else:
+            u[self.slm2] = self.bc0
+            u[self.slm1] = self.bc1
+
+    def has_nonhomogeneous_bcs(self):
+        if self.bc0 == 0 and self.bc1 == 0:
+            return False
+        return True
 
 if __name__ == '__main__':
     import shenfun

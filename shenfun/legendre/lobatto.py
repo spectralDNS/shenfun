@@ -22,7 +22,7 @@ def legendre_lobatto_nodes_and_weights(N):
         error = np.linalg.norm(dx)
         converged = error < 1e-14
         count += 1
-        print(error)
+        #print(error)
 
     MM = M if N % 2 == 0 else M+1
     x[MM:-1] = -x[1:M][::-1]

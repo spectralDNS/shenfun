@@ -808,8 +808,7 @@ class ADDmat(SpectralMatrix):
                 us[k] = bs[k] - d1[k]*so
             us[k] /= d[k]
 
-        u[-2] = self.testfunction[0].bc[0]
-        u[-1] = self.testfunction[0].bc[1]
+        self.testfunction[0].bc.apply_after(u, True)
         if axis > 0:
             u = np.moveaxis(u, 0, axis)
             if not u is b:

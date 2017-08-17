@@ -36,10 +36,10 @@ Basis = shen.bases.ShenDirichletBasis
 Solver = shen.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
-a = -1
-b = 1
+a = -2
+b = 2
 x, y = symbols("x,y")
-ue = (cos(4*np.pi*x) + sin(2*y))*(1-x**2) + a*(1 + x)/2. + b*(1 - x)/2.
+ue = (cos(4*np.pi*y) + sin(2*x))*(1 - y**2) + a*(1 + y)/2. + b*(1 - y)/2.
 fe = ue.diff(x, 2) + ue.diff(y, 2)
 
 # Lambdify for faster evaluation
@@ -49,9 +49,9 @@ fl = lambdify((x, y), fe, 'numpy')
 # Size of discretization
 N = (64, 64)
 
-SD = Basis(N[0], scaled=True, bc=(a, b))
-K1 = R2CBasis(N[1])
-T = TensorProductSpace(comm, (SD, K1), axes=(0, 1))
+SD = Basis(N[1], scaled=True, bc=(a, b))
+K1 = R2CBasis(N[0])
+T = TensorProductSpace(comm, (K1, SD), axes=(1, 0))
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)
 v = TestFunction(T)
@@ -84,7 +84,12 @@ uq = T.backward(u_hat, uq)
 # Compare with analytical solution
 uj = ul(*X)
 print(abs(uj-uq).max())
-#assert np.allclose(uj, uq)
+assert np.allclose(uj, uq)
+
+#u_hat = T.forward(uq, u_hat)
+#uq2 = Function(T, False)
+#uq2 = T.backward(u_hat, uq2)
+#assert np.allclose(uq2, uq)
 
 plt.figure()
 plt.contourf(X[0], X[1], uq)

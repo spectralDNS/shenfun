@@ -243,12 +243,13 @@ class ShenDirichletBasis(LegendreBase):
     def __init__(self, N=0, quad="LG", bc=(0., 0.), plan=False,
                  domain=(-1., 1.), scaled=False):
         LegendreBase.__init__(self, N, quad, domain=domain)
-        self.bc = bc
+        from shenfun.tensorproductspace import BoundaryValues
         self.LT = Basis(N, quad)
         self._scaled = scaled
         self._factor = np.ones(1)
         if plan:
             self.plan(N, 0, np.float, {})
+        self.bc = BoundaryValues(self, bc=bc)
 
     def set_factor_array(self, v):
         if self.is_scaled():
@@ -270,9 +271,6 @@ class ShenDirichletBasis(LegendreBase):
         P[:, -1] = (V[:, 0] - V[:, 1])/2
         return P
 
-    def has_nonhomogeneous_bcs(self):
-        return False if self.bc == (0., 0.) else True
-
     def forward(self, input_array=None, output_array=None, fast_transform=False):
         assert fast_transform is False
         if input_array is not None:
@@ -280,27 +278,8 @@ class ShenDirichletBasis(LegendreBase):
 
         output = self.scalar_product(fast_transform=fast_transform)
         assert output is self.forward.output_array
-        #s = [slice(0, 1)]*output.ndim
-        #if self.is_scaled():
-            #output[s] -= (self.bc[0] + self.bc[1])/np.sqrt(6.)
-        #else:
-            #output[s] -= (self.bc[0] + self.bc[1])
-        #s[self.axis] = slice(1, 2)
-        #if self.is_scaled():
-            #output[s] -= 1./3.*(self.bc[0] - self.bc[1])/np.sqrt(10.)
-        #else:
-            #output[s] -= 1./3.*(self.bc[0] - self.bc[1])
 
         self.apply_inverse_mass(output)
-
-        #s = [slice(None)]*output.ndim
-        #s[self.axis] = slice(-2, None)
-        #output[s] = 0
-        #s = [slice(0, 1)]*output.ndim
-        #s[self.axis] = slice(-2, -1)
-        #output[s] = self.bc[0]
-        #s[self.axis] = slice(-1, None)
-        #output[s] = self.bc[1]
 
         assert output is self.forward.output_array
         if output_array is not None:
@@ -316,10 +295,8 @@ class ShenDirichletBasis(LegendreBase):
         self.set_factor_array(fk)
         w_hat[s0] = fk[s0]*self._factor
         w_hat[s1] -= fk[s0]*self._factor
-        s0 = [slice(0, 1)]*fk.ndim
-        w_hat[s0] += 0.5*(self.bc[0] + self.bc[1])
-        s0[self.axis] = slice(1, 2)
-        w_hat[s1] += 0.5*(self.bc[0] - self.bc[1])
+        self.bc.apply_before(w_hat, False, (0.5, 0.5))
+
         fj = self.LT.backward(w_hat)
         assert fk is self.backward.input_array
         assert fj is self.backward.output_array

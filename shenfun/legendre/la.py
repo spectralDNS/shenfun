@@ -20,16 +20,10 @@ class TDMA(la_TDMA):
             assert u.shape == b.shape
             u[:] = b[:]
 
-        s = [slice(0, 1)]*u.ndim
         if v.is_scaled():
-            u[s] -= (bc[0] + bc[1])/np.sqrt(6.)
+            bc.apply_before(u, False, scales=(-1./np.sqrt(6.), -1./3./np.sqrt(10.)))
         else:
-            u[s] -= (bc[0] + bc[1])
-        s[axis] = slice(1, 2)
-        if v.is_scaled():
-            u[s] -= 1./3.*(bc[0] - bc[1])/np.sqrt(10.)
-        else:
-            u[s] -= 1./3.*(bc[0] - bc[1])
+            bc.apply_before(u, False, scales=(-1., -1./3.))
 
         N = u.shape[axis]
         if not N == self.N:
@@ -48,14 +42,7 @@ class TDMA(la_TDMA):
         else:
             raise NotImplementedError
 
-        s = [slice(None)]*u.ndim
-        s[axis] = slice(-2, None)
-        u[s] = 0
-        s = [slice(0, 1)]*u.ndim
-        s[axis] = slice(-2, -1)
-        u[s] = bc[0]
-        s[axis] = slice(-1, None)
-        u[s] = bc[1]
+        bc.apply_after(u, False)
 
         u /= self.mat.scale
         return u
@@ -139,18 +126,18 @@ class Helmholtz(object):
         ss[self.axis] = self.s
         u[ss] = b[ss]
 
-        if not self.neumann:
-            s0 = [slice(0, 1)]*u.ndim
-            if self.scaled:
-                u[s0] -= (self.bc[0] + self.bc[1])*self.B_scale[s0]/np.sqrt(6.)
-            else:
-                u[s0] -= (self.bc[0] + self.bc[1])*self.B_scale[s0]
-            s = copy(s0)
-            s[self.axis] = slice(1, 2)
-            if self.scaled:
-                u[s] -= 1./3.*(self.bc[0] - self.bc[1])*self.B_scale[s0]/np.sqrt(10.)
-            else:
-                u[s] -= 1./3.*(self.bc[0] - self.bc[1])*self.B_scale[s0]
+        #if not self.neumann:
+            #s0 = [slice(0, 1)]*u.ndim
+            #if self.scaled:
+                #u[s0] -= (self.bc[0] + self.bc[1])*self.B_scale[s0]/np.sqrt(6.)
+            #else:
+                #u[s0] -= (self.bc[0] + self.bc[1])*self.B_scale[s0]
+            #s = copy(s0)
+            #s[self.axis] = slice(1, 2)
+            #if self.scaled:
+                #u[s] -= 1./3.*(self.bc[0] - self.bc[1])*self.B_scale[s0]/np.sqrt(10.)
+            #else:
+                #u[s] -= 1./3.*(self.bc[0] - self.bc[1])*self.B_scale[s0]
 
         if u.ndim == 3:
 
@@ -165,14 +152,7 @@ class Helmholtz(object):
             la.TDMA_SymSolve(self.d0, self.d1, self.L, u)
 
         if not self.neumann:
-            s = [slice(None)]*u.ndim
-            s[self.axis] = slice(-2, None)
-            u[s] = 0
-            s = [slice(0, 1)]*u.ndim
-            s[self.axis] = slice(-2, -1)
-            u[s] = self.bc[0]
-            s[self.axis] = slice(-1, None)
-            u[s] = self.bc[1]
+            self.bc.apply_after(u, True)
 
         return u
 

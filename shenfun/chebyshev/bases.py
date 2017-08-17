@@ -297,19 +297,20 @@ class ShenDirichletBasis(ChebyshevBase):
     kwargs:
         N             int         Number of quadrature points
         quad        ('GL', 'GC')  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss
-        bc             (a, b)     Boundary conditions at x=(1,-1)
+        bc           (a, b)       Boundary conditions at x=(1,-1)
 
     """
 
-    def __init__(self, N=0, quad="GC", bc=(0., 0.), plan=False,
+    def __init__(self, N=0, quad="GC", bc=(0, 0), plan=False,
                  domain=(-1., 1.), scaled=False):
         ChebyshevBase.__init__(self, N, quad, domain=domain)
-        self.bc = bc
+        from shenfun.tensorproductspace import BoundaryValues
         self.CT = Basis(N, quad, plan=plan)
         self._scaled = scaled
         self._factor = np.ones(1)
         if plan:
             self.plan(N, 0, np.float, {})
+        self.bc = BoundaryValues(self, bc=bc)
 
     def get_vandermonde_basis(self, V):
         P = np.zeros(V.shape)
@@ -317,9 +318,6 @@ class ShenDirichletBasis(ChebyshevBase):
         P[:, -2] = (V[:, 0] + V[:, 1])/2
         P[:, -1] = (V[:, 0] - V[:, 1])/2
         return P
-
-    def has_nonhomogeneous_bcs(self):
-        return False if self.bc == (0., 0.) else True
 
     def is_scaled(self):
         return False
@@ -358,10 +356,15 @@ class ShenDirichletBasis(ChebyshevBase):
         s1 = self.sl(slice(2, None))
         w_hat[s0] = fk[s0]
         w_hat[s1] -= fk[s0]
-        s0 = [slice(0, 1)]*fk.ndim
-        w_hat[s0] += 0.5*(self.bc[0] + self.bc[1])
-        s0[self.axis] = slice(1, 2)
-        w_hat[s0] += 0.5*(self.bc[0] - self.bc[1])
+        self.bc.apply_before(w_hat, False, (0.5, 0.5))
+
+        #else:
+            #s0 = [slice(0, 1)]*fk.ndim
+            ##s0 = self.sl(slice(0, 1))
+            #w_hat[s0] += 0.5*(self.bc[0] + self.bc[1])
+            #s0[self.axis] = slice(1, 2)
+            #w_hat[s0] += 0.5*(self.bc[0] - self.bc[1])
+
         fj = self.CT.backward(w_hat)
         assert fk is self.xfftn_bck.input_array
         assert fj is self.xfftn_bck.output_array
@@ -373,21 +376,8 @@ class ShenDirichletBasis(ChebyshevBase):
 
         output = self.scalar_product(fast_transform=fast_transform)
         assert output is self.forward.output_array
-        #s = [slice(0, 1)]*output.ndim
-        #output[s] -= np.pi/2*(self.bc[0] + self.bc[1])
-        #s[self.axis] = slice(1, 2)
-        #output[s] -= np.pi/4*(self.bc[0] - self.bc[1])
 
         self.apply_inverse_mass(output)
-
-        #s = [slice(None)]*output.ndim
-        #s[self.axis] = slice(-2, None)
-        #output[s] = 0
-        #s = [slice(0, 1)]*output.ndim
-        #s[self.axis] = slice(-2, -1)
-        #output[s] = self.bc[0]
-        #s[self.axis] = slice(-1, None)
-        #output[s] = self.bc[1]
 
         assert output is self.forward.output_array
         if output_array is not None:

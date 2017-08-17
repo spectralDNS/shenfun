@@ -163,8 +163,7 @@ class ADDmat(SpectralMatrix):
             sl = [np.newaxis]*bs.ndim
             sl[0] = slice(None)
             us[:] = bs*d[sl]
-            u[-2] = self.testfunction[0].bc[0]
-            u[-1] = self.testfunction[0].bc[1]
+            self.testfunction[0].bc.apply_after(u, True)
 
             if axis > 0:
                 u = np.moveaxis(u, 0, axis)
@@ -174,10 +173,7 @@ class ADDmat(SpectralMatrix):
             ss = [slice(None)]*b.ndim
             ss[axis] = s
             u[ss] = b[ss]
-            ss[axis] = -2
-            u[ss] = self.testfunction[0].bc[0]
-            ss[axis] = -1
-            u[ss] = self.testfunction[0].bc[1]
+            self.testfunction[0].bc.apply_after(u, True)
 
         u /= self.scale
         return u

@@ -2472,3 +2472,257 @@ def LU_Biharmonic_2D_n(np.int64_t axis,
                         u1[odd, j, kk] = c0[kk+1]
                     if kk < M-2:
                         u2[odd, j, kk] = c0[kk+2]
+
+
+def LU_Helmholtz_Biharmonic_1D(A, B,
+                    np.float_t A_scale,
+                    np.float_t B_scale,
+                    np.ndarray[real_t, ndim=1] l2,
+                    np.ndarray[real_t, ndim=1] l1,
+                    np.ndarray[real_t, ndim=1] d,
+                    np.ndarray[real_t, ndim=1] u1,
+                    np.ndarray[real_t, ndim=1] u2
+                    ):
+    cdef:
+        int i, n, k
+        double lam
+        np.ndarray[real_t, ndim=1] A_0 = A[0].copy()
+        np.ndarray[real_t, ndim=1] A_2 = A[2].copy()
+        np.ndarray[real_t, ndim=1] A_m2 = A[-2].copy()
+        np.ndarray[real_t, ndim=1] B_m4 = B[-4].copy()
+        np.ndarray[real_t, ndim=1] B_m2 = B[-2].copy()
+        np.ndarray[real_t, ndim=1] B_0 = B[0].copy()
+        np.ndarray[real_t, ndim=1] B_2 = B[2].copy()
+        np.ndarray[real_t, ndim=1] B_4 = B[4].copy()
+
+    n = A_0.shape[0]
+    k = 2
+
+    # Set up matrix diagonals
+    l2[:] = B_scale*B_m4
+    l1[:] = A_scale*A_m2 + B_scale*B_m2
+    d[:] =  A_scale*A_0 + B_scale*B_0
+    u1[:] = A_scale*A_2 + B_scale*B_2
+    u2[:] = B_scale*B_4
+
+    for i in range(n-2*k):
+        lam = l1[i]/d[i]
+        d[i+k] -= lam*u1[i]
+        u1[i+k] -= lam*u2[i]
+        l1[i] = lam
+        lam = l2[i]/d[i]
+        l1[i+k] -= lam*u1[i]
+        d[i+2*k] -= lam*u2[i]
+        l2[i] = lam
+
+    i = n-4
+    lam = l1[i]/d[i]
+    d[i+k] -= lam*u1[i]
+    l1[i] = lam
+    i = n-3
+    lam = l1[i]/d[i]
+    d[i+k] -= lam*u1[i]
+    l1[i] = lam
+
+
+def Solve_Helmholtz_Biharmonic_1D(np.ndarray[T, ndim=1] fk,
+                       np.ndarray[T, ndim=1] u_hat,
+                       np.ndarray[real_t, ndim=1] l2,
+                       np.ndarray[real_t, ndim=1] l1,
+                       np.ndarray[real_t, ndim=1] d,
+                       np.ndarray[real_t, ndim=1] u1,
+                       np.ndarray[real_t, ndim=1] u2):
+    cdef:
+        int i, j, n, k
+        vector[T] y
+        np.ndarray[T, ndim=1] bc = fk.copy()
+
+    n = d.shape[0]
+    bc[:] = fk
+
+    bc[2] -= l1[0]*bc[0]
+    bc[3] -= l1[1]*bc[1]
+    for k in range(4, n):
+        bc[k] -= (l1[k-2]*bc[k-2] + l2[k-4]*bc[k-4])
+
+    bc[n-1] /= d[n-1]
+    bc[n-2] /= d[n-2]
+    bc[n-3] /= d[n-3]
+    bc[n-3] -= u1[n-3]*bc[n-1]/d[n-3]
+    bc[n-4] /= d[n-4]
+    bc[n-4] -= u1[n-4]*bc[n-2]/d[n-4]
+    for k in range(n-5,-1,-1):
+        bc[k] /= d[k]
+        bc[k] -= (u1[k]*bc[k+2]/d[k] + u2[k]*bc[k+4]/d[k])
+    u_hat[:] = bc
+
+cdef void Solve_Helmholtz_Biharmonic_1D_ptr(T* fk,
+                                 T* u_hat,
+                                 real_t* l2,
+                                 real_t* l1,
+                                 real_t* d,
+                                 real_t* u1,
+                                 real_t* u2,
+                                 int n,
+                                 int strides) nogil:
+    cdef:
+        int st, k
+
+    st = strides
+    for k in range(n):
+        u_hat[k*st] = fk[k*st]
+
+    u_hat[2*st] -= l1[0]*u_hat[0]
+    u_hat[3*st] -= l1[st]*u_hat[st]
+    for k in range(4, n):
+        u_hat[k*st] -= (l1[(k-2)*st]*u_hat[(k-2)*st] + l2[(k-4)*st]*u_hat[(k-4)*st])
+
+    u_hat[(n-1)*st] /= d[(n-1)*st]
+    u_hat[(n-2)*st] /= d[(n-2)*st]
+    u_hat[(n-3)*st] /= d[(n-3)*st]
+    u_hat[(n-3)*st] -= u1[(n-3)*st]*u_hat[(n-1)*st]/d[(n-3)*st]
+    u_hat[(n-4)*st] /= d[(n-4)*st]
+    u_hat[(n-4)*st] -= u1[(n-4)*st]*u_hat[(n-2)*st]/d[(n-4)*st]
+    for k in range(n-5,-1,-1):
+        u_hat[k*st] /= d[k*st]
+        u_hat[k*st] -= (u1[k*st]*u_hat[(k+2)*st]/d[k*st] + u2[k*st]*u_hat[(k+4)*st]/d[k*st])
+
+
+
+def Solve_Helmholtz_Biharmonic_1D_p(T[::1] fk,
+                           T[::1] u_hat,
+                           real_t[::1] l2,
+                           real_t[::1] l1,
+                           real_t[::1] d,
+                           real_t[::1] u1,
+                           real_t[::1] u2):
+    cdef:
+        T* fk_ptr
+        T* u_hat_ptr
+        real_t* d_ptr
+        real_t* u1_ptr
+        real_t* u2_ptr
+        real_t* l1_ptr
+        real_t* l2_ptr
+        int ii, jj, strides
+
+    strides = fk.strides[0]/fk.itemsize
+    fk_ptr = &fk[0]
+    u_hat_ptr = &u_hat[0]
+    d_ptr = &d[0]
+    u1_ptr = &u1[0]
+    u2_ptr = &u2[0]
+    l1_ptr = &l1[0]
+    l2_ptr = &l2[0]
+    Solve_Helmholtz_Biharmonic_1D_ptr(fk_ptr, u_hat_ptr, l2_ptr, l1_ptr,
+                            d_ptr, u1_ptr, u2_ptr, d.shape[0],
+                            strides)
+
+def Solve_Helmholtz_Biharmonic_3D_ptr(np.int64_t axis,
+                           T[:,:,::1] fk,
+                           T[:,:,::1] u_hat,
+                           real_t[:,:,::1] l2,
+                           real_t[:,:,::1] l1,
+                           real_t[:,:,::1] d,
+                           real_t[:,:,::1] u1,
+                           real_t[:,:,::1] u2):
+    cdef:
+        T* fk_ptr
+        T* u_hat_ptr
+        real_t* d_ptr
+        real_t* u1_ptr
+        real_t* u2_ptr
+        real_t* l1_ptr
+        real_t* l2_ptr
+        int ii, jj, strides
+
+    strides = fk.strides[axis]/fk.itemsize
+    if axis == 0:
+        for ii in range(d.shape[1]):
+            for jj in range(d.shape[2]):
+                fk_ptr = &fk[0,ii,jj]
+                u_hat_ptr = &u_hat[0,ii,jj]
+                d_ptr = &d[0,ii,jj]
+                u1_ptr = &u1[0,ii,jj]
+                u2_ptr = &u2[0,ii,jj]
+                l1_ptr = &l1[0,ii,jj]
+                l2_ptr = &l2[0,ii,jj]
+                Solve_Helmholtz_Biharmonic_1D_ptr(fk_ptr, u_hat_ptr, l2_ptr, l1_ptr,
+                                       d_ptr, u1_ptr, u2_ptr, d.shape[axis],
+                                       strides)
+
+    elif axis == 1:
+        for ii in range(d.shape[0]):
+            for jj in range(d.shape[2]):
+                fk_ptr = &fk[ii,0,jj]
+                u_hat_ptr = &u_hat[ii,0,jj]
+                d_ptr = &d[ii,0,jj]
+                u1_ptr = &u1[ii,0,jj]
+                u2_ptr = &u2[ii,0,jj]
+                l1_ptr = &l1[ii,0,jj]
+                l2_ptr = &l2[ii,0,jj]
+                Solve_Helmholtz_Biharmonic_1D_ptr(fk_ptr, u_hat_ptr, l2_ptr, l1_ptr,
+                                       d_ptr, u1_ptr, u2_ptr, d.shape[axis],
+                                       strides)
+
+    elif axis == 2:
+        for ii in range(d.shape[0]):
+            for jj in range(d.shape[1]):
+                fk_ptr = &fk[ii,jj,0]
+                u_hat_ptr = &u_hat[ii,jj,0]
+                d_ptr = &d[ii,jj,0]
+                u1_ptr = &u1[ii,jj,0]
+                u2_ptr = &u2[ii,jj,0]
+                l1_ptr = &l1[ii,jj,0]
+                l2_ptr = &l2[ii,jj,0]
+                Solve_Helmholtz_Biharmonic_1D_ptr(fk_ptr, u_hat_ptr, l2_ptr, l1_ptr,
+                                       d_ptr, u1_ptr, u2_ptr, d.shape[axis],
+                                       strides)
+
+
+def LU_Helmholtz_Biharmonic_3D(A, B, np.int64_t axis,
+                    np.ndarray[real_t, ndim=3] A_scale,
+                    np.ndarray[real_t, ndim=3] B_scale,
+                    np.ndarray[real_t, ndim=3] l2,
+                    np.ndarray[real_t, ndim=3] l1,
+                    np.ndarray[real_t, ndim=3] d,
+                    np.ndarray[real_t, ndim=3] u1,
+                    np.ndarray[real_t, ndim=3] u2):
+    cdef:
+        unsigned int ii, jj
+
+    if axis == 0:
+        for ii in range(d.shape[1]):
+            for jj in range(d.shape[2]):
+                LU_Helmholtz_Biharmonic_1D(A, B,
+                                A_scale[0, ii, jj],
+                                B_scale[0, ii, jj],
+                                l2[:, ii, jj],
+                                l1[:, ii, jj],
+                                d[:, ii, jj],
+                                u1[:, ii, jj],
+                                u2[:, ii, jj])
+
+    elif axis == 1:
+        for ii in range(d.shape[0]):
+            for jj in range(d.shape[2]):
+                LU_Helmholtz_Biharmonic_1D(A, B,
+                                A_scale[ii, 0, jj],
+                                B_scale[ii, 0, jj],
+                                l2[ii, :, jj],
+                                l1[ii, :, jj],
+                                d[ii, :, jj],
+                                u1[ii, :, jj],
+                                u2[ii, :, jj])
+
+    elif axis == 2:
+        for ii in range(d.shape[0]):
+            for jj in range(d.shape[1]):
+                LU_Helmholtz_Biharmonic_1D(A, B,
+                                A_scale[ii, jj, 0],
+                                B_scale[ii, jj, 0],
+                                l2[ii, jj, :],
+                                l1[ii, jj, :],
+                                d[ii, jj, :],
+                                u1[ii, jj, :],
+                                u2[ii, jj, :])

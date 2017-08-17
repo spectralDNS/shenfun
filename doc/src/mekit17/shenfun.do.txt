@@ -19,13 +19,13 @@ idx{Computational Methods} idx{Spectral} idx{Galerkin} idx{Chebyshev} idx{Legend
 ======= Introduction =======
 label{sec:introduction}
 
-The spectral Galerkin method, see, e.g., Shen cite{shen95} or Kopriva cite{kopriva09}, combines spectral basis functions with the Galerkin method and allows for highly accurate solutions on simple, tensor product domains. Due to its accuracy and efficiency, the method is often favoured in studies of sensitive fundamental physical phenomena, where numerical errors needs to be avoided. 
+The spectral Galerkin method, see, e.g., Shen cite{shen95} or Kopriva cite{kopriva09}, combines spectral basis functions with the Galerkin method and allows for highly accurate solutions on simple, tensor product domains. Due to its accuracy and efficiency, the method is often favoured in studies of sensitive fundamental physical phenomena, where numerical errors needs to be avoided.
 
 In this paper we will describe the `shenfun` Python module. The purpose of `shenfun` is to simplify the implementation of the spectral Galerkin method, to make it easily accessible to researchers, and to make it easier to solve advanced PDEs on supercomputers, with MPI, in simple tensor product domains. The package can solve equations for tensor product spaces consisting of any number of periodic directions, but, at the moment of writing, only one non-periodic direction. This configuration may sound trivial, but it occurs surprisingly often in physics, for example in plane shear flows like the channel or pipe. And these simple configurations are used heavily to enhance our understanding of fundamental physical processes, like turbulence, or transition to turbulence, turbulent mixing, and turbulent combustion.
 
 The `shenfun` package is heavily influenced by the FEniCS project cite{fenics}, that has made it trivial to solve PDEs in arbitrary complex domains with the finite element method (FEM). FEM also makes use of the Galerin method to set up variational forms. However, where FEM uses basis functions with only local support, the spectral Galerkin method uses basis functions with global support. The local support is one of the many nice features of the FEM, which makes it particularly attractive for unstructured and complex geometries. Spectral methods, on the other hand, are less flexible, but represent the gems of numerical methods, and, whenever possible, when the domain is simple and the solution is smooth, delivers the most accurate approximations.
 
-There are many tools available for working with spectral methods. For MATLAB there is the elegant chebfun package cite{trefethen13}, with an extensive list of application for, e.g., PDEs, ODEs or eigenvalue problems. However, being implemented in MATLAB, there is no feasible extension to DNS and supercomputers through MPI. Numpy and Scipy have modules for orthogonal polynomials (Jacobi, Chebyshev, Legendre, Hermite), and for Fourier transforms, which are both utilized by `shenfun`. The orthogonal module makes it easier to work with Chebyshev and Legendre polynomials, as it delivers, for example, quadrature points and weights for different quadrature rules (e.g., Chebyshev-Gauss, Legendre-Gauss). 
+There are many tools available for working with spectral methods. For MATLAB there is the elegant chebfun package cite{trefethen13}, with an extensive list of application for, e.g., PDEs, ODEs or eigenvalue problems. However, being implemented in MATLAB, there is no feasible extension to DNS and supercomputers through MPI. Numpy and Scipy have modules for orthogonal polynomials (Jacobi, Chebyshev, Legendre, Hermite), and for Fourier transforms, which are both utilized by `shenfun`. The orthogonal module makes it easier to work with Chebyshev and Legendre polynomials, as it delivers, for example, quadrature points and weights for different quadrature rules (e.g., Chebyshev-Gauss, Legendre-Gauss).
 
 To the author's knowledge, all research codes developed for studying turbulent flows through Direct Numerical Simulations (DNS) on supercomputers have been written in low-level languages like Fortran, C or C++, see, e.g., cite{debruynkops15,hoyas06,leemoser15}, or cite{Alfonsi2016} for a list of high performance channel flow solvers. The codes are  highly tuned and tailored to a specific target, and, being low-level, the codes are not easily accessible to a non-expert programmer. Mortensen and Langtangen cite{Mortensen2016} describe how a DNS solver can be written in Python in 100 lines of script-like code, and also show that the code, when optimized in the background using Cython, runs as fast as an identical C++ implementation on thousands of processors with MPI. {Shenfun} takes it one step further and aims at providing a generic toolbox for creating high performance, parallel solvers of any PDE, in a very high-level language. And without compromising much on computational efficiency. The key to developing such a high-level code in Python is efficient use of Numpy cite{numpy}, with broadcasting and vectorization, and MPI for Python cite{mpi4py}, that wraps almost the entire MPI library, and that can transfer Numpy arrays between thousands of processors at the same speed as a low-level C or Fortran code. Similarly, we utilize the pyFFTW module cite{pyfftw}, that wraps most of the FFTW library cite{libfftw} and makes the FFT as fast when called from Python as it is when used in low-level codes.
 
@@ -52,7 +52,7 @@ where $\overline{v}$ is the complex conjugate of $v$. The weighted inner product
 (-u'', v)_w = (f, v)_w. label{eq:weak_poisson}
 \end{equation}
 !et
-The variational form can be solved numerically if $u$ and $v$ are approximated using a finite number $(N)$ of test functions $\{v_l(x)\}_{l=0}^{N-1}$, and a solution 
+The variational form can be solved numerically if $u$ and $v$ are approximated using a finite number $(N)$ of test functions $\{v_l(x)\}_{l=0}^{N-1}$, and a solution
 !bt
 \begin{equation}
 u(x) = \sum_{l=0}^{N-1} \hat{u}_l v_l(x),
@@ -67,7 +67,7 @@ If $v$ is chosen from a Fourier or Legendre basis, then the weight function used
 label{eq:quadrature}
 \end{equation}
 !et
-Here $\{w_j\}_{j=0}^{N-1}$ represents the quadrature weights and $\{x_j\}_{j=0}^{N-1}$ are the quadrature points for the integration. 
+Here $\{w_j\}_{j=0}^{N-1}$ represents the quadrature weights and $\{x_j\}_{j=0}^{N-1}$ are the quadrature points for the integration.
 
 The test functions $v$ will be chosen based in part on boundary conditions. However, regardless of which space the test functions are chosen from, the procedure for solving a PDE with the spectral Galerkin method is always the same:
 
@@ -80,17 +80,17 @@ In other words it is very much like a finite element method. The major differenc
 
 ======= Shenfun =======
 label{sec:shenfun}
-`shenfun` is a Python module package containing tools for working with the spectral Galerkin method. Shenfun implements classes for several bases with different boundary conditions, and within each class there are methods for transforms between spectral and real space, inner products, and for computing matrices arising from bilinear forms in the spectral Galerkin method. The Python module is organized as shown in Figure ref{fig:directorytree}. 
+`shenfun` is a Python module package containing tools for working with the spectral Galerkin method. Shenfun implements classes for several bases with different boundary conditions, and within each class there are methods for transforms between spectral and real space, inner products, and for computing matrices arising from bilinear forms in the spectral Galerkin method. The Python module is organized as shown in Figure ref{fig:directorytree}.
 
 The `shenfun` language is very simple and closely follows that of FEniCS. A simple form implementation provides operators `div, grad, curl` and `Dx`, that act on three different types of basis functions, the `TestFunction`, `TrialFunction` and `Function`. Their usage is very similar to that from FEniCS, but not as general, nor flexible, since we are only conserned with simple tensor product grids and smooth solutions. The usage of these operators and basis functions will become clear in the following subchapters, where we will also describe the `inner` and `project` functions, with functionality as suggested by their names.
 
 FIGURE: [figs/dirtree, height=400 width=200 frac=0.5] Directory tree structure of Python package `shenfun`. label{fig:directorytree}
 
 
-===== Classes for basis functions ===== 
+===== Classes for basis functions =====
 The following bases are defined in submodules
   * shenfun.chebyshev.bases
-    * Basis - Regular Chebyshev 
+    * Basis - Regular Chebyshev
     * ShenDirichletBasis - Dirichlet boundary conditions
     * ShenNeumannBasis - Neumann boundary conditions (homogeneous)
     * ShenBiharmonicBasis - Homogeneous Dirichlet and Neumann boundary conditions
@@ -108,11 +108,11 @@ All bases have methods for transforms and inner products on single- or multidime
     >>> from shenfun import *
     >>> import numpy as np
     >>> N = 16
-    >>> FFT = fourier.bases.R2CBasis(N, plan=True) 
+    >>> FFT = fourier.bases.R2CBasis(N, plan=True)
     >>> u = np.random.random(N)
     >>> uc = u.copy()
     >>> u_hat = FFT.forward(u)
-    >>> u = FFT.backward(u_hat) 
+    >>> u = FFT.backward(u_hat)
     >>> assert np.allclose(u, uc)
 !ec
 
@@ -125,13 +125,13 @@ class SparseMatrix(dict):
     def __init__(self, d, shape):
         dict.__init__(self, d)
         self.shape = shape
-        
+
     def diags(self, format='dia'):
         """Return Scipy sparse matrix"""
 
     def matvec(self, u, x, format='dia', axis=0):
         """Return Matrix vector product self*u in x"""
-        
+
     def solve(self, b, u=None, axis=0):
         """Return solution u to self*u = b"""
 !ec
@@ -168,7 +168,7 @@ The matrix is a subclassed dictionary. If you want a regular *Scipy* sparse matr
 Weak variational forms are created using test and trial functions, as shown in Section ref{sec:preliminaries}. Test and trial functions can be created for any basis in `shenfun`, as shown below for a Chebyshev Dirichlet basis with 8 quadrature points
 !bc pycod
     >>> from shenfun.chebyshev.bases import ShenDirichletBasis
-    >>> from shenfun import inner, TestFunction, TrialFunction    
+    >>> from shenfun import inner, TestFunction, TrialFunction
     >>> N = 8
     >>> SD = ShenDirichletBasis(N, plan=True)
     >>> u = TrialFunction(SD)
@@ -197,7 +197,7 @@ Square matrices have implemented a solve method that is using fast $\mathcal{O}(
     >>> u = np.zeros_like(b)
     >>> u = K.solve(b, u)
 !ec
-All methods are designed to work along any dimension of a multidimensional array. Very little differs in the users interface. Consider, for example, the previous example on a three-dimensional cube 
+All methods are designed to work along any dimension of a multidimensional array. Very little differs in the users interface. Consider, for example, the previous example on a three-dimensional cube
 !bc pycod
     >>> fj = np.random.random((N, N, N))
     >>> b = inner(v, fj)
@@ -210,7 +210,7 @@ The bases also have methods for transforming between spectral and real space. Fo
 !bc
     >>> fj = np.random.random(N)
     >>> fk = np.zeros_like(fj)
-    >>> fk = SD.forward(fj, fk) # Gets expansion coefficients 
+    >>> fk = SD.forward(fj, fk) # Gets expansion coefficients
 !ec
 and back to real physical space again
 !bc pycod
@@ -229,7 +229,7 @@ We have now shown the usage of  $\bf shenfun$ for single, one-dimensional spaces
 
 === Periodic boundary conditions ===
 label{sec:fourierpoisson}
-If the solution to Eq. (ref{eq:poisson}) is periodic with periodic length $2 \pi$, then we use $\Omega \in [0, 2 \pi]$ and it will be natural to choose the test functions from the space consisting of the Fourier basis functions, i.e.,  $v_l(x)=e^{ilx}$. The mesh $\boldsymbol{x} = \{x_j\}_{j=0}^{N-1}$ will be uniformly spaced 
+If the solution to Eq. (ref{eq:poisson}) is periodic with periodic length $2 \pi$, then we use $\Omega \in [0, 2 \pi]$ and it will be natural to choose the test functions from the space consisting of the Fourier basis functions, i.e.,  $v_l(x)=e^{ilx}$. The mesh $\boldsymbol{x} = \{x_j\}_{j=0}^{N-1}$ will be uniformly spaced
 !bt
 \begin{equation}
 \boldsymbol{x} = \frac{2 \pi j}{N}  \quad j=0,1,\ldots, N-1,
@@ -312,7 +312,7 @@ which is trivially solved since it only involves a diagonal matrix ($\delta_{ml}
 So, even though we carefully followed the spectral Galerkin method, we have ended up with the same result that would have been obtained with a Fourier collocation method, where one simply takes the Fourier transform of the Poisson equation and differentiate analytically.
 
 With $\bf shenfun$ the periodic 1D Poisson equation can be trivially computed either with the collocation approach or the spectral Galerkin method. The procedure for the spectral Galerkin method will be shown first, before the entire problem is solved.
- All $\bf shenfun$ demos in this paper will contain a similar preample section where some necessary Python classes, modules and functions are imported. We import Numpy since $\bf shenfun$ arrays are Numpy arrays, and we import from Sympy to construct some exact solution used to verify the code. Note also the similarity to FEniCS with the import of methods and classes $inner, div, grad, TestFunction, TrialFunction$.  The Fourier spectral Galerkin method in turn requires that the `FourierBasis is imported as well. 
+ All $\bf shenfun$ demos in this paper will contain a similar preample section where some necessary Python classes, modules and functions are imported. We import Numpy since $\bf shenfun$ arrays are Numpy arrays, and we import from Sympy to construct some exact solution used to verify the code. Note also the similarity to FEniCS with the import of methods and classes $inner, div, grad, TestFunction, TrialFunction$.  The Fourier spectral Galerkin method in turn requires that the `FourierBasis is imported as well.
 !bc pycod
 from sympy import Symbol, cos
 import numpy as np
@@ -331,7 +331,7 @@ u = TrialFunction(ST)
 v = TestFunction(ST)
 X = ST.mesh(N)
 
-# Get f and exact solution on quad points 
+# Get f and exact solution on quad points
 fj = np.array([fe.subs(x, j) for j in X], dtype=np.float)
 uj = np.array([ue.subs(x, i) for i in X], dtype=np.float)
 
@@ -426,7 +426,7 @@ where summation on repeated indices is implied. In Eq. (ref{eq:cheb_poisson}) $A
    \bs{\hat{u}} &= -\bs{A}^{-1} \bs{\tilde{f}}.
 \end{align}
 !et
-Note that the matrix $\bs{A}$ is a special kind of upper triangular matrix, and that the solution can be obtained very efficiently in approximately $4 N$ arithmetic operations. 
+Note that the matrix $\bs{A}$ is a special kind of upper triangular matrix, and that the solution can be obtained very efficiently in approximately $4 N$ arithmetic operations.
 
 To get the solution back and forth between real and spectral space we require a transformation pair similar to the Fourier transforms. We do this by projection. Start with
 !bt
@@ -516,7 +516,7 @@ W = TensorProductSpace(comm, (K0, K1))
 # Alternatively, switch order for periodic in first direction instead
 # W = TensorProductSpace(comm, (K1, K0), axes=(1, 0))
 !ec
-Under the hood, within the `TensorProductSpace` class, the mesh is distributed, both in real, physical space, and in spectral space. In the real space the mesh is distributed along the first index, whereas in spectral space the wavenumbermesh is distributed along the second dimension. This is the default behaviour of `TensorProductSpace`. However, the distribution may also be configured specifically by the user, e.g., as shown in the commented out text, where the Dirichlet basis is found along the second axis. In this case the order of the axes to transform over has been flipped, such that in spectral space the data is distributed along the first dimension and aligned in the second. This is required for solving the linear algebra system that arises for the Dirichlet basis. The arrays created using `Function` are distributed, and no further attention to MPI is required. However, note that arrays may have different type and shape in real space and in spectral space. For this reason `Function` has a keyword argument `forward_output`, that is used as `w_hat = Function(W, forward_output=True)` to create an array consistent with the output of `W.forward` (solution in spectral space), and `w = Function(W, forward_output=False)` to create an array consistent with the input (solution in real space). Furthermore, `uh = np.zeros_like(w_hat); w_hat = Function(W, buffer=uh)` can be used to wrap a `Function` instance around a regular Numpy array `uh`. Note that `uh` and `w_hat` now will share the same data, and modifying one will naturally modify also the other. 
+Under the hood, within the `TensorProductSpace` class, the mesh is distributed, both in real, physical space, and in spectral space. In the real space the mesh is distributed along the first index, whereas in spectral space the wavenumbermesh is distributed along the second dimension. This is the default behaviour of `TensorProductSpace`. However, the distribution may also be configured specifically by the user, e.g., as shown in the commented out text, where the Dirichlet basis is found along the second axis. In this case the order of the axes to transform over has been flipped, such that in spectral space the data is distributed along the first dimension and aligned in the second. This is required for solving the linear algebra system that arises for the Dirichlet basis. The arrays created using `Function` are distributed, and no further attention to MPI is required. However, note that arrays may have different type and shape in real space and in spectral space. For this reason `Function` has a keyword argument `forward_output`, that is used as `w_hat = Function(W, forward_output=True)` to create an array consistent with the output of `W.forward` (solution in spectral space), and `w = Function(W, forward_output=False)` to create an array consistent with the input (solution in real space). Furthermore, `uh = np.zeros_like(w_hat); w_hat = Function(W, buffer=uh)` can be used to wrap a `Function` instance around a regular Numpy array `uh`. Note that `uh` and `w_hat` now will share the same data, and modifying one will naturally modify also the other.
 
 The solution of a complete Poisson problem in 2D is shown below. Very similar code is required to solve the Poisson problem with the Legendre basis. The main difference is that for Legendre it is natural to integrate the weak form by parts and use `matrices = inner(grad(v), grad(u))`
 !bc pycod
@@ -579,12 +579,12 @@ Note that for computing on the tensor product grids using Numpy arrays with vect
 where $I^N$ is an N-length vector of ones. Similarly
 !bt
 \begin{equation}
-\bs{\textsf{k}} = (\bs{l}, \bs{m}) = \Big(\{ l \}_{l=0}^{N-1} \times I^M,  I^N \times \{ m \}_{m=0}^{M/2} \Big). 
+\bs{\textsf{k}} = (\bs{l}, \bs{m}) = \Big(\{ l \}_{l=0}^{N-1} \times I^M,  I^N \times \{ m \}_{m=0}^{M/2} \Big).
 \end{equation}
 !et
-Such tensor product grids can be very efficiently stored with Numpy arrays, using no more space than the two vectors used to create them. The key to this efficiency is broadcasting. We store $\ts{k}$ as a list of two numpy arrays, $\bs{l}$ and $\bs{m}$, corresponding to the two 1D wavenumber meshes $\{ l \}_{l=0}^{N-1}$ and $\{ m \}_{m=0}^{M/2}$. 
-However, $\bs{l}$ and $\bs{m}$ are now stored as 2D arrays of shape $(N, 1)$ and $(1, M/2+1)$, respectively. And broadcasting takes care of the additional dimension, such that the two arrays work just like if they were stored as $(N, M/2+1)$ arrays. We can look up $\bs{l}(l, m)$, just like a regular $(N, M/2+1)$ array, but the storage required is still only one single vector. 
-The same goes for $\ts{x}$, which is stored as a list of two arrays $\bs{x}$, $\bs{y}$ of shape $(N, 1)$ and $(1, M)$ respectively. This extends straightforward to even higher dimensions. 
+Such tensor product grids can be very efficiently stored with Numpy arrays, using no more space than the two vectors used to create them. The key to this efficiency is broadcasting. We store $\ts{k}$ as a list of two numpy arrays, $\bs{l}$ and $\bs{m}$, corresponding to the two 1D wavenumber meshes $\{ l \}_{l=0}^{N-1}$ and $\{ m \}_{m=0}^{M/2}$.
+However, $\bs{l}$ and $\bs{m}$ are now stored as 2D arrays of shape $(N, 1)$ and $(1, M/2+1)$, respectively. And broadcasting takes care of the additional dimension, such that the two arrays work just like if they were stored as $(N, M/2+1)$ arrays. We can look up $\bs{l}(l, m)$, just like a regular $(N, M/2+1)$ array, but the storage required is still only one single vector.
+The same goes for $\ts{x}$, which is stored as a list of two arrays $\bs{x}$, $\bs{y}$ of shape $(N, 1)$ and $(1, M)$ respectively. This extends straightforward to even higher dimensions.
 
 Assembling a weak form like $(v, \nabla^2 u)_w^N$ leads to two non-diagonal matrices, both the stiffness and mass matrix, since it expands like
 !bt
@@ -617,7 +617,7 @@ K1 = C2CBasis(N[1])
 K2 = R2CBasis(N[2])
 W = TensorProductSpace(comm, (K0, K1, K2))
 !et
-Here the default behaviour of `TensorProductSpace` is to distribute the first 2 indices in real space using two subcommunicators, with a decomposition often referred to as \emph{pencil} decomposition. In spectral space the last two indices will be distributed. For example, using 4 CPUs, a subprocessor mesh of size $2 \times 2$ will be created, and 2 subprocessors share the first index and the other two share the second index.  If the program is run with 3 processors, then only the first index will be distributed and the subprocessormesh will be $3 \times 1$. It is also possible to configure `TensorProductSpace` to run with 4 CPUs and a $4 \times 1$ subprocessormesh, or 40,000 CPUs with a $200 \times 200$ processormesh. The latter requires that the mesh is big enough, though, but otherwise it is just a matter of acquiring computing power. The biggest simulations tested thus far used 64,000 CPUs. 
+Here the default behaviour of `TensorProductSpace` is to distribute the first 2 indices in real space using two subcommunicators, with a decomposition often referred to as \emph{pencil} decomposition. In spectral space the last two indices will be distributed. For example, using 4 CPUs, a subprocessor mesh of size $2 \times 2$ will be created, and 2 subprocessors share the first index and the other two share the second index.  If the program is run with 3 processors, then only the first index will be distributed and the subprocessormesh will be $3 \times 1$. It is also possible to configure `TensorProductSpace` to run with 4 CPUs and a $4 \times 1$ subprocessormesh, or 40,000 CPUs with a $200 \times 200$ processormesh. The latter requires that the mesh is big enough, though, but otherwise it is just a matter of acquiring computing power. The biggest simulations tested thus far used 64,000 CPUs.
 
 Solving a biharmonic problem is just as easy as the Poisson problem. Consider the fourth order biharmonic PDE in 3-dimensional space
 !bt
@@ -625,7 +625,7 @@ Solving a biharmonic problem is just as easy as the Poisson problem. Consider th
 \nabla^4 u(\bs{x}) &= f(\bs{x}), \quad \bs{x} \in \Omega \\
  u(x=\pm1, y, z) &= \frac{\partial u}{\partial x} (x=\pm 1, y, z) = 0 \\
  u(x, y+2\pi, z) &= u(x, y, z), \\
- u(x, y, z+2\pi) &= u(x, y, z). 
+ u(x, y, z+2\pi) &= u(x, y, z).
 \end{align}
 !et
 that is periodic in $y-$ and $z-$directions and with clamped boundary conditions at $x=\pm 1$. The problem may be solved using either one of these two bases:
@@ -635,7 +635,7 @@ V^C &= \text{span}\{T_l - \frac{2(l+2)}{l+3}T_{l+2} + \frac{l+1}{l+3}T_{l+4} , l
 V^L &= \text{span}\{L_l - \frac{2(2k+5)}{2k+7}L_{l+2} + \frac{2k+3}{2k+7}, l \in \bs{l}^B\}, \label{eq:legbiharmonic}
 \end{align}
 !et
-where $\bs{l}^B = 0, 1, \ldots, N-5$. A tensor product space may be constructed as $W(x,y,z) = V^C(x) \times V^p(y) \times V^p(z)$, and the variational problem 
+where $\bs{l}^B = 0, 1, \ldots, N-5$. A tensor product space may be constructed as $W(x,y,z) = V^C(x) \times V^p(y) \times V^p(z)$, and the variational problem
 !bt
 \begin{equation}
 (v, \nabla^4 u)^N_w = (v, f)^N_w,
@@ -710,7 +710,7 @@ Vector equations have very similar form as scalar equations, but at the moment o
 
 ======= Ginzburg-Landau equation =======
 label{sec:ginzburg}
-We end this paper with the implementation of the complex Ginzburg-Landau equation, which is a  nonlinear time dependent reaction-diffusion problem. The equation to solve is 
+We end this paper with the implementation of the complex Ginzburg-Landau equation, which is a  nonlinear time dependent reaction-diffusion problem. The equation to solve is
 !bt
 \begin{equation}
 \frac{\partial u}{\partial t} = \nabla^2u + u - (1 + 1.5i)u |u|^2,
@@ -807,7 +807,7 @@ while t < end_time-1e-8:
         U_hat1 += a[rk]*dt*dU_hat
     U_hat[:] = U_hat1
 !ec
-The code that is described here will run in parallel for up to a maximum of $\text{min}(N[0], N[1])$ processors. But, being a 2D problem, a single processor is sufficient to solve the problem in reasonable time. The real part of $u(\boldsymbol{x}, t)$ is shown in Figure ref{fig:GL1} for times $t=16$ and $t=96$, where the solution is initialized from (ref{eq:initial_0}). The results starting from the real initial condition in (ref{eq:initial_1}) is shown for the same times in Figure ref{fig:GL2}. There are apparently good agreements with figures published from using `chebfun` on \emph{www.chebfun.org/examples/pde/GinzburgLandau.html}. In particular, the figures in ref{fig:GL1}  are identical by the eye norm. One interesting feature, though, is seen in the right plot of Figure ref{fig:GL2}, where the results can be seen to have preserved symmetry, as they should. This symmetry is lost with chebfun, as commented in the referenced webpage. An asymmetric solution is also obtained with `shenfun` if no de-aliasing is applied. However, the simulations are very sensitive to roundoff, and it has also been observed that a de-aliased solution using `shenfun` may loose symmetry simply if a different FFT algorithm is chosen on runtime by FFTW.
+The code that is described here will run in parallel for up to a maximum of $\text{min}(N[0], N[1])$ processors. But, being a 2D problem, a single processor is sufficient to solve the problem in reasonable time. The real part of $u(\boldsymbol{x}, t)$ is shown in Figure ref{fig:GL1} for times $t=16$ and $t=96$, where the solution is initialized from (ref{eq:initial_0}). The results starting from the real initial condition in (ref{eq:initial_1}) is shown for the same times in Figure ref{fig:GL2}. There are apparently good agreements with figures published from using `chebfun` on \emph{www.chebfun.org/examples/pde/GinzburgLandau.html}. In particular, the Figures ref{fig:GL1}  are identical by the eye norm. One interesting feature, though, is seen in the right plot of Figure ref{fig:GL2}, where the results can be seen to have preserved symmetry, as they should. This symmetry is lost with chebfun, as commented in the referenced webpage. An asymmetric solution is also obtained with `shenfun` if no de-aliasing is applied. However, the simulations are very sensitive to roundoff, and it has also been observed that a de-aliased solution using `shenfun` may loose symmetry simply if a different FFT algorithm is chosen on runtime by FFTW.
 
 FIGURE: [figs/Ginzburg_1, frac=0.9] Real part of solution to Ginzburg-Landau problem with real initial condition (ref{eq:initial_0}), at two different times, t=16 and t=96, on left and right, respectively. label{fig:GL1}
 
@@ -817,7 +817,7 @@ FIGURE: [figs/Ginzburg, frac=0.9] Real part of solution to Ginzburg-Landau probl
 In this paper, the Python module `shenfun` has been described. Within this module there are tools that greatly simplify the implementation of the spectral Galerkin method for tensor product grids, and parallel solvers may be written with ease and comfort.  `Shenfun` provides a FEniCS like interface to the spectral Galerkin method, where equations are cast on a weak form, and where the required script-like coding remains very similar to the mathematics. We have verified and shown implementations for simple Poisson or biharmonic problems, as well as the nonlinear complex Ginzburg-Landau equation. On a final note, it  should be mentioned that these tools have also been used to implement various Navier Stokes solvers within the `spectralDNS` project (github.com/spectralDNS), that has run on the Shaheen II supercomputer at KAUST, on meshes of size up to $2048^3$.
 
 ======= Acknowledgements =======
-This research is a part of the 4DSpace Strategic Research Initiative at the University of Oslo. 
+This research is a part of the 4DSpace Strategic Research Initiative at the University of Oslo.
 
 
 ======= Bibliography =======

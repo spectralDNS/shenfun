@@ -57,17 +57,17 @@ def test_eval(ST, quad):
     fk = np.zeros(N)
     fj = np.random.random(N)
     fk = ST.forward(fj, fk)
+    #from IPython import embed; embed()
     fj = ST.backward(fk, fj)
     fk = ST.forward(fj, fk)
     f = ST.eval(points, fk)
-    #from IPython import embed; embed()
     assert np.allclose(fj, f)
     fj = ST.backward(fk, fj, fast_transform=False)
     fk = ST.forward(fj, fk, fast_transform=False)
     f = ST.eval(points, fk)
     assert np.allclose(fj, f)
 
-test_eval(lbases.ShenNeumannBasis, 'GL')
+#test_eval(cbases.ShenDirichletBasis, 'GL')
 
 @pytest.mark.parametrize('test, trial, quad', cbases2+lbases2)
 def test_massmatrices(test, trial, quad):
@@ -133,6 +133,9 @@ def test_transforms(ST, quad, axis):
     fj = np.broadcast_to(fj[bc], (N,)*3).copy()
 
     ST.plan((N,)*3, axis, np.float, {})
+    if hasattr(ST, 'bc'):
+        ST.bc.set_slices(ST)  # To set Dirichlet boundary conditions
+
     u00 = np.zeros_like(ST.forward.output_array)
     u11 = np.zeros_like(ST.forward.input_array)
     u00 = ST.forward(fj, u00, fast_transform=False)
@@ -141,7 +144,7 @@ def test_transforms(ST, quad, axis):
     cc[axis] = slice(None)
     assert np.allclose(fj[cc], u11[cc])
 
-#test_transforms(cbases.ShenBiharmonicBasis, 'GC', 0)
+#test_transforms(lbases.ShenDirichletBasis, 'GL', 1)
 
 
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
@@ -160,13 +163,17 @@ def test_axis(ST, quad, axis):
     bc = [np.newaxis,]*3
     bc[axis] = slice(None)
     fk = np.broadcast_to(f_hat[bc], (N,)*3).copy()
+    ST.plan((N,)*3, axis, np.float, {})
+    if hasattr(ST, 'bc'):
+        ST.bc.set_slices(ST)  # To set Dirichlet boundary conditions
+
     ck = np.zeros_like(fk)
     ck = B.solve(fk, ck, axis=axis)
     cc = [0,]*3
     cc[axis] = slice(None)
     assert np.allclose(ck[cc], c)
 
-#test_axis(cbases.ShenBiharmonicBasis, "GC", 2)
+#test_axis(cbases.ShenDirichletBasis, "GC", 2)
 
 @pytest.mark.parametrize('quad', cquads)
 def test_CDDmat(quad):
@@ -430,4 +437,4 @@ def test_ABBmat(SB, quad):
     z0 = SB.backward(z0_hat, z0)
     assert np.allclose(z0, u0)
 
-test_ABBmat(lbases.ShenBiharmonicBasis, 'LG')
+#test_ABBmat(lbases.ShenBiharmonicBasis, 'LG')
