@@ -7,7 +7,7 @@ This is a demonstration of how the Python module "shenfun":
 "https://github.com/spectralDNS/shenfun" can be used to solve the time-dependent,
 nonlinear Klein-Gordon equation, in a triply periodic domain. The demo is implemented in
 a single Python file "KleinGordon.py":
-"https://github.com/spectralDNS/shenfun/demo/KleinGordon.py", and it may be run
+"https://github.com/spectralDNS/shenfun/blob/master/demo/KleinGordon.py", and it may be run
 in parallel using MPI. The Klein-Gordon equation is solved using a mixed
 formulation. The discretization, and some background on the spectral Galerkin
 method is given first, before we turn to the actual details of the `shenfun`
