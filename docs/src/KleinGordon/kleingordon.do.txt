@@ -396,7 +396,7 @@ class. An instance of the `Function` class may be used as a regular array,
 but also as an argument in forms. For example, if you want to compute the
 partial derivative $\partial u/\partial x$, then this may be achieved by
 projection, i.e., find $u_x \in V^N$ such that $(u_x-\partial u/\partial x, v) = 0$,
-for $v \in V^N$. This projection may be easily computed in `shenfun` using
+for all $v \in V^N$. This projection may be easily computed in `shenfun` using
 
 !bc pycod
 v = Function(T, False, buffer=u)
@@ -418,7 +418,8 @@ information required by forms.
 ===== Initialization =====
 
 The solution arrays `uf` and its transform `uf_hat` need to be initialized according to Eq.
-(ref{eq:init}). To this end we use "Sympy":
+(ref{eq:init}). To this end it is convenient (but not required, we could just as
+easily use Numpy for this as well) to use "Sympy":
 "http://www.sympy.org/en/index.html", which is a Python library for symbolic
 mathamatics.
 
