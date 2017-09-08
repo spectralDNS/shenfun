@@ -429,6 +429,9 @@ class SpectralBase(object):
     def ndim(self):
         return 1
 
+    def num_components(self):
+        return 1
+
     def __len__(self):
         return 1
 

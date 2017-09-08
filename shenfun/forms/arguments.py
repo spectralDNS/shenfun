@@ -63,13 +63,13 @@ class Expr(object):
         self._indices = indices
         ndim = self.function_space().ndim()
         if terms is None:
-            self._terms = np.zeros((ndim**(basis.rank()-1), 1, ndim),
+            self._terms = np.zeros((self.function_space().num_components(), 1, ndim),
                                     dtype=np.int)
         if scales is None:
-            self._scales = np.ones((ndim**(basis.rank()-1), 1))
+            self._scales = np.ones((self.function_space().num_components(), 1))
 
         if indices is None:
-            self._indices = np.arange(ndim**(basis.rank()-1))[:, np.newaxis]
+            self._indices = np.arange(self.function_space().num_components())[:, np.newaxis]
 
         assert np.prod(self._scales.shape) == self.num_terms()*self.num_components()
 
@@ -232,6 +232,9 @@ class BasisFunction(object):
     def argument(self):
         return self._argument
 
+    def num_components(self):
+        return self.function_space().num_components()
+
     def index(self):
         """Return index into vector of rank 2"""
         return self._index
@@ -335,8 +338,8 @@ class Function(np.ndarray, BasisFunction):
                 dtype = space.forward.output_array.dtype
 
             ndim = space.ndim()
-            if space.rank() > 1:
-                shape = (ndim**(space.rank()-1),) + shape
+            if not space.num_components() == 1:
+                shape = (space.num_components(),) + shape
 
         obj = np.ndarray.__new__(cls,
                                  shape,
@@ -354,7 +357,7 @@ class Function(np.ndarray, BasisFunction):
     def __getitem__(self, i):
         # If it's a vector space, then return component, otherwise just return sliced numpy array
         if hasattr(self, '_space'):
-            if self.rank() == 2 and i in (0, 1, 2):
+            if self.rank() == 2 and i in range(self.num_components()):
                 v0 = BasisFunction.__getitem__(self, i)
                 v1 = np.ndarray.__getitem__(self, i)
                 fun = v0.function_space()
@@ -424,8 +427,8 @@ class Array(np.ndarray):
             dtype = space.forward.output_array.dtype
 
         ndim = space.ndim()
-        if space.rank() > 1:
-            shape = (ndim**(space.rank()-1),) + shape
+        if not space.num_components() == 1:
+            shape = (space.num_components(),) + shape
 
         obj = np.ndarray.__new__(cls,
                                  shape,

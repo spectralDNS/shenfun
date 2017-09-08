@@ -2,11 +2,12 @@ from __future__ import print_function
 import pytest
 import numpy as np
 from mpi4py import MPI
-from shenfun.tensorproductspace import TensorProductSpace
+from shenfun.tensorproductspace import TensorProductSpace, VectorTensorProductSpace, \
+    MixedTensorProductSpace
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun.chebyshev import bases as cbases
 from shenfun.legendre import bases as lbases
-from shenfun import inner, div, grad, Function, project, Dx
+from shenfun import inner, div, grad, Function, project, Dx, Array
 from sympy import symbols, cos, sin, exp, lambdify
 from itertools import product
 
@@ -65,6 +66,24 @@ def test_transform(typecode, dim):
             fft.backward()
             V = fft.backward.output_array
             assert allclose(V, U)
+
+        TT = VectorTensorProductSpace([fft,]*dim)
+        U = Array(TT, False)
+        V = Array(TT, False)
+        F = Array(TT)
+        U[:] = random_like(U)
+        F = TT.forward(U, F)
+        V = TT.backward(F, V)
+        assert allclose(V, U)
+
+        TM = MixedTensorProductSpace([fft, fft])
+        U = Array(TM, False)
+        V = Array(TM, False)
+        F = Array(TM)
+        U[:] = random_like(U)
+        F = TM.forward(U, F)
+        V = TM.backward(F, V)
+        assert allclose(V, U)
 
         fft.destroy()
 
