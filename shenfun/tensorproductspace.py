@@ -3,8 +3,10 @@ from shenfun.fourier.bases import FourierBase, R2CBasis, C2CBasis
 from shenfun import chebyshev, legendre
 from mpi4py_fft.mpifft import Transform
 from mpi4py_fft.pencil import Subcomm, Pencil
+import sympy
+from copy import copy
 
-__all__ = ('TensorProductSpace', 'VectorTensorProductSpace')
+__all__ = ('TensorProductSpace', 'VectorTensorProductSpace', 'MixedTensorProductSpace')
 
 
 class TensorProductSpace(object):
@@ -104,11 +106,10 @@ class TensorProductSpace(object):
         if any(isinstance(base, (chebyshev.bases.ShenDirichletBasis,
                                  legendre.bases.ShenDirichletBasis))
                                  for base in self.bases):
-            boundary_values = BoundaryValues(self)
             for base in self.bases:
                 if isinstance(base, (legendre.bases.ShenDirichletBasis,
                                      chebyshev.bases.ShenDirichletBasis)):
-                    base.bc = boundary_values
+                    base.bc.set_tensor_bcs(self)
 
     def destroy(self):
         self.subcomm.destroy()
@@ -188,6 +189,9 @@ class TensorProductSpace(object):
     def __len__(self):
         return len(self.bases)
 
+    def num_components(self):
+        return 1
+
     def __getitem__(self, i):
         return self.bases[i]
 
@@ -214,7 +218,11 @@ class MixedTensorProductSpace(object):
         return self.spaces[0].ndim()
 
     def rank(self):
-        raise NotImplementedError
+        #raise NotImplementedError
+        return 2
+
+    def num_components(self):
+        return len(self.spaces)
 
     def is_forward_output(self, u):
         return (u[0].shape == self.forward.output_array.shape and
@@ -232,6 +240,10 @@ class VectorTensorProductSpace(MixedTensorProductSpace):
 
     def __init__(self, spaces):
         MixedTensorProductSpace.__init__(self, spaces)
+
+    def num_components(self):
+        assert len(self.spaces) == self.ndim()
+        return self.ndim()
 
     def rank(self):
         return 2
@@ -258,21 +270,56 @@ class VectorTransform(object):
 
 class BoundaryValues(object):
 
-    def __init__(self, T, bc=None):
+    def __init__(self, T, bc=(0, 0)):
+        self.T = T
+        self.bc = bc            # Containing Data, sympy.Exprs or np.ndarray
+        self.bcs = [0, 0]       # Processed bc
+        self.bcs_final = [0, 0] # Data. May differ from bcs only for TensorProductSpaces
+        self.sl0 = 0
+        self.sl1 = 1
+        self.slm1 = -1
+        self.slm2 = -2
+        self.axis = 0
+        self.update_bcs(bc=bc)
 
-        if isinstance(T, (legendre.bases.ShenDirichletBasis,
-                          chebyshev.bases.ShenDirichletBasis)):
-            self.bc0 = self.bc0_final = bc[0]
-            self.bc1 = self.bc1_final = bc[1]
-            self.sl0 = 0
-            self.sl1 = 1
-            self.slm1 = -1
-            self.slm2 = -2
-            self.axis = 0
+    def update_bcs(self, sympy_params={}, bc=None):
+        if not sympy_params is {}:
+            for i in range(2):
+                if isinstance(self.bc[i], sympy.Expr):
+                    self.bcs[i] = self.bc[i].evalf(subs=sympy_params)
+            self.bcs_final[:] = self.bcs
+
+        if bc is not None:
+            assert isinstance(bc, (list, tuple))
+            assert len(bc) == 2
+            self.bc = list(bc)
+            for i in range(2):
+                if isinstance(bc[i], (float, np.floating, np.int, sympy.Expr, np.ndarray)) :
+                    self.bcs[i] = bc[i]
+                else:
+                    raise NotImplementedError
+
+            self.bcs_final[:] = self.bcs
+
+    def set_tensor_bcs(self, T):
+        self.T = T
+        if isinstance(T, (chebyshev.bases.ShenDirichletBasis,
+                          legendre.bases.ShenDirichletBasis)):
+            # In this case we may be looking at multidimensional data with just one of the bases.
+            # Mainly for testing that solvers and other routines work along any dimension.
+            self.set_slices(T)
+            self.axis = T.axis
 
         elif any(isinstance(base, (chebyshev.bases.ShenDirichletBasis,
                                    legendre.bases.ShenDirichletBasis))
                                    for base in T.bases):
+            # Setting the Dirichlet boundary condition in a TensorProductSpace
+            # is more involved that for a single dimension, and the routine will
+            # depend on the order of the bases. If the Dirichlet space is the last
+            # one, then the boundary condition is applied directly. If there is
+            # one Fourier space to the right, then one Fourier transform needs to
+            # be performed on the bc data first. For two Fourier spaces to the right,
+            # two transforms need to be executed.
             from shenfun import Array
             axis = None
             dirichlet_base = None
@@ -285,7 +332,6 @@ class BoundaryValues(object):
                 if isinstance(base, (legendre.bases.ShenDirichletBasis,
                                      chebyshev.bases.ShenDirichletBasis)):
                     axis = self.axis = base.axis
-                    self.sl = base.sl(0)
                     dirichlet_base = base
                     bases.append('D')
 
@@ -296,9 +342,9 @@ class BoundaryValues(object):
 
             self.set_slices(dirichlet_base)
 
-            if axis is None or dirichlet_base.bc.has_nonhomogeneous_bcs() is False:
-                self.bc0 = self.bc0_final = 0
-                self.bc1 = self.bc1_final = 0
+            if self.has_nonhomogeneous_bcs() is False:
+                self.bcs[0] = self.bcs_final[0] = 0
+                self.bcs[1] = self.bcs_final[1] = 0
                 return
 
             # Set boundary values
@@ -306,8 +352,43 @@ class BoundaryValues(object):
             # but before any Fourier transforms
             # Shape is like real space, since Dirichlet does not alter shape
             b = Array(T, False)
-            b[self.slm2] = dirichlet_base.bc.bc0
-            b[self.slm1] = dirichlet_base.bc.bc1
+            s = T.local_slice(False)[axis]
+
+            if isinstance(self.bc[0], sympy.Expr):
+                bc0 = self.bc[0]
+                bc1 = self.bc[1]
+                X = T.local_mesh(True)
+                x, y, z = sympy.symbols("x,y,z")
+                sym0 = [sym for sym in (x, y, z) if sym in bc0.free_symbols]
+                sym1 = [sym for sym in (x, y, z) if sym in bc1.free_symbols]
+                lbc0 = sympy.lambdify(sym0, bc0, 'numpy')
+                lbc1 = sympy.lambdify(sym1, bc1, 'numpy')
+                Y0 = []
+                Y1 = []
+                for i, ax in enumerate((x, y, z)):
+                    if ax in bc0.free_symbols:
+                        Y0.append(X[i][dirichlet_base.sl(0)])
+                    if ax in bc1.free_symbols:
+                        Y1.append(X[i][dirichlet_base.sl(0)])
+
+                f_bc0 = lbc0(*Y0)
+                f_bc1 = lbc1(*Y1)
+                if s.stop == dirichlet_base.N:
+                    b[self.slm2] = f_bc0
+                    b[self.slm1] = f_bc1
+
+            elif isinstance(self.bc[0], (np.floating, np.int)):
+                if s.stop == dirichlet_base.N:
+                    b[self.slm2] = self.bc[0]
+                    b[self.slm1] = self.bc[1]
+
+            elif isinstance(self.bc[0], np.ndarray):
+                if s.stop == dirichlet_base.N:
+                    b[self.slm2] = self.bc[0][self.sl0]
+                    b[self.slm1] = self.bc[0][self.slm1]
+
+            else:
+                raise NotImplementedError
 
             self.number_of_bases_after_dirichlet = number_of_bases_after_dirichlet
 
@@ -325,7 +406,6 @@ class BoundaryValues(object):
                 b_hat = arrayB.copy()
 
             elif number_of_bases_after_dirichlet == 2:
-                #
                 T.forward._xfftn[0].input_array[...] = b
 
                 T.forward._xfftn[0]()
@@ -340,8 +420,8 @@ class BoundaryValues(object):
                 b_hat = arrayB.copy()
 
             # Now b_hat contains the correct slices in slm1 and slm2
-            self.bc0 = b_hat[self.slm2].copy()
-            self.bc1 = b_hat[self.slm1].copy()
+            self.bcs[0] = b_hat[self.slm2].copy()
+            self.bcs[1] = b_hat[self.slm1].copy()
 
             # Final
             T.forward._xfftn[0].input_array[...] = b
@@ -361,8 +441,8 @@ class BoundaryValues(object):
                 T.forward._xfftn[-1].output_array[...] = T.forward._xfftn[-1].input_array
 
             b_hat = T.forward._xfftn[-1].output_array
-            self.bc0_final = b_hat[self.slm2].copy()
-            self.bc1_final = b_hat[self.slm1].copy()
+            self.bcs_final[0] = b_hat[self.slm2].copy()
+            self.bcs_final[1] = b_hat[self.slm1].copy()
 
     def set_slices(self, T):
         self.sl0 = T.sl(0)
@@ -372,24 +452,24 @@ class BoundaryValues(object):
 
     def apply_before(self, u, final=False, scales=(0.5, 0.5)):
         if final is True:
-            u[self.sl0] += scales[0]*(self.bc0_final + self.bc1_final)
-            u[self.sl1] += scales[1]*(self.bc0_final - self.bc1_final)
+            u[self.sl0] += scales[0]*(self.bcs_final[0] + self.bcs_final[1])
+            u[self.sl1] += scales[1]*(self.bcs_final[0] - self.bcs_final[1])
 
         else:
-            u[self.sl0] += scales[0]*(self.bc0 + self.bc1)
-            u[self.sl1] += scales[1]*(self.bc0 - self.bc1)
+            u[self.sl0] += scales[0]*(self.bcs[0] + self.bcs[1])
+            u[self.sl1] += scales[1]*(self.bcs[0] - self.bcs[1])
 
     def apply_after(self, u, final=False):
         if final is True:
-            u[self.slm2] = self.bc0_final
-            u[self.slm1] = self.bc1_final
+            u[self.slm2] = self.bcs_final[0]
+            u[self.slm1] = self.bcs_final[1]
 
         else:
-            u[self.slm2] = self.bc0
-            u[self.slm1] = self.bc1
+            u[self.slm2] = self.bcs[0]
+            u[self.slm1] = self.bcs[1]
 
     def has_nonhomogeneous_bcs(self):
-        if self.bc0 == 0 and self.bc1 == 0:
+        if self.bcs[0] == 0 and self.bcs[1] == 0:
             return False
         return True
 

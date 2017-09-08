@@ -165,15 +165,14 @@ def test_axis(ST, quad, axis):
     fk = np.broadcast_to(f_hat[bc], (N,)*3).copy()
     ST.plan((N,)*3, axis, np.float, {})
     if hasattr(ST, 'bc'):
-        ST.bc.set_slices(ST)  # To set Dirichlet boundary conditions
-
+        ST.bc.set_tensor_bcs(ST) # To set Dirichlet boundary conditions on multidimensional array
     ck = np.zeros_like(fk)
     ck = B.solve(fk, ck, axis=axis)
     cc = [0,]*3
     cc[axis] = slice(None)
     assert np.allclose(ck[cc], c)
 
-#test_axis(cbases.ShenDirichletBasis, "GC", 2)
+#test_axis(cbases.ShenDirichletBasis, "GC", 1)
 
 @pytest.mark.parametrize('quad', cquads)
 def test_CDDmat(quad):
@@ -324,7 +323,7 @@ def test_ADDmat(ST, quad):
     s = ST.slice()
     assert np.allclose(c[s], f_hat[s])
 
-#test_ADDmat(lbases.ShenBiharmonicBasis, "LG")
+#test_ADDmat(lbases.ShenDirichletBasis, "GL")
 
 biharmonic_with_quads = (list(product([cbases.ShenBiharmonicBasis], cquads)) +
                         list(product([lbases.ShenBiharmonicBasis], lquads)))
