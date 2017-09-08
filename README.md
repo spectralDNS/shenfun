@@ -10,7 +10,7 @@ Shenfun is a toolbox for automating the spectral Galerkin method.  The user inte
 The demo folder contains several examples for the Poisson, Helmholtz and Biharmonic equations. For extended documentation see
 
 * [*Demo for the nonlinear Klein-Gordon equation*](https://rawgit.com/spectralDNS/shenfun/master/docs/src/KleinGordon/kleingordon_bootstrap.html)
-* [*shenfun paper*](https://rawgit.com/spectralDNS/shenfun/master/docs/shenfun_bootswatch_cyborg.html)
+* [*shenfun paper*](https://rawgit.com/spectralDNS/shenfun/master/docs/shenfun_bootstrap.html)
 
 Spectral Galerkin
 -----------------
