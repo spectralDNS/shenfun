@@ -48,9 +48,10 @@ t=0)}{\partial t} = u_t^0. label{eq:init}
 \end{equation}
 !et
 
-The parameter $\gamma=\pm 1$ determines whether the equations are focusing
-($1$) or defocusing ($-1$) (in the movie we have used $\gamma=1$). The domain $\Omega=[-2\pi, 2\pi]^3$ is triply
-periodic and Initial conditions will here be set as
+The spatial coordinates are here denoted as $\boldsymbol{x} = (x, y, z)$, and
+$t$ is time. The parameter $\gamma=\pm 1$ determines whether the equations are focusing
+($+1$) or defocusing ($-1$) (in the movie we have used $\gamma=1$). The domain $\Omega=[-2\pi, 2\pi]^3$ is triply
+periodic and initial conditions will here be set as
 
 !bt
 \begin{align}
@@ -59,7 +60,7 @@ u_t^0 &= 0.
 \end{align}
 !et
 
-with $\boldsymbol{x} = (x, y, z)$. We will solve these equations using a mixed formulation and a spetral Galerkin
+We will solve these equations using a mixed formulation and a spectral Galerkin
 method. The mixed formulation reads
 
 !bt
@@ -90,6 +91,7 @@ code shown in the bottom of Sec. ref{sec:solver}.
 %endif
 
 ===== Spectral Galerkin formulation =====
+label{sec:spectralgalerkin}
 The PDEs in (ref{eq:df}) and (ref{eq:du}) can be solved with many different
 numerical methods. We will here use the "shenfun":
 "https://github.com/spectralDNS/shenfun" software and this software makes use of
@@ -99,7 +101,7 @@ multiplying  (ref{eq:df}) and (ref{eq:du}) with the complex conjugate of proper
 test functions and then integrating
 over the domain. To this end we use testfunction $g\in H^1(\Omega)$ with
 Eq. (ref{eq:df})  and  $v \in
-H^1(\Omega)$ with Eq. (ref{eq:du}), where $H^1(\Omega)$ is the Sobolev space, and we obtain
+H^1(\Omega)$ with Eq. (ref{eq:du}), where $H^1(\Omega)$ is the Hilbert space, and we obtain
 
 !bt
 \begin{align}
@@ -218,7 +220,8 @@ where $\mathcal{F}_i^{-1}$ is the inverse Fourier transform along the direction
 of index $i$, for
 all $(j, k) \in \boldsymbol{j} \times \boldsymbol{k}$. Note that the three
 inverse FFTs are performed sequentially, one direction at the time, and that the factor $N^3$ is due to
-the definition used for the inverse Fourier transform, which is the one used by Numpy:
+the definition used for the inverse Fourier transform, which is the one used
+also by "Numpy": "https://docs.scipy.org/doc/numpy-1.13.0/reference/routines.fft.html":
 
 !bt
 \begin{equation}
@@ -253,8 +256,18 @@ whereas a complete transform requires
 
 From this we see that the variational forms (ref{eq:df_var2}) and (ref{eq:du_var2})
 may be written in terms of the Fourier transformed quantities $\hat{u}$ and
-$\hat{f}$. Expanding the exact derivatives of the nabla operator, the equations
-to be solved can be found directly as
+$\hat{f}$. Expanding the exact derivatives of the nabla operator, we have
+
+!bt
+\begin{align}
+(\nabla u, \nabla v) &=
+(2\pi)^3(\underline{l}^2+\underline{m}^2+\underline{n}^2)\hat{u}_{l,m,n}, \\
+(u, v) &= (2\pi)^3\hat{u}_{l,m,n}, \\
+(u|u|^2, v) &= (2\pi)^3 \widehat{u|u|^2}
+\end{align}
+!et
+
+and as such the equations to be solved can be found directly as
 
 !bt
 \begin{align}
@@ -268,7 +281,9 @@ There is more than one way to arrive at these equations. Taking the 3D Fourier
 transform of both equations  (ref{eq:df}) and (ref{eq:du}) is one obvious way.
 With the Python module "shenfun": "https://github.com/spectralDNS/shenfun", one can work with the
 inner products as seen in (ref{eq:df_var2}) and (ref{eq:du_var2}), or the Fourier
-transforms directly.  In short, `shenfun` contains all the tools required to work with
+transforms directly. See for example Sec. ref{sec:rk} for how $(\nabla u, \nabla
+v)$ can be
+implemented.  In short, `shenfun` contains all the tools required to work with
 the spectral Galerkin method, and we will now see how `shenfun` can be used to solve
 the Klein-Gordon equation. 
 

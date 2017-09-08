@@ -48,7 +48,10 @@ pre { color: inherit; background-color: transparent; }
                'table_of_contents'),
               ('The nonlinear Klein-Gordon equation', 1, None, '___sec0'),
               ('Model equation', 2, None, '___sec1'),
-              ('Spectral Galerkin formulation', 2, None, '___sec2'),
+              ('Spectral Galerkin formulation',
+               2,
+               'sec:spectralgalerkin',
+               'sec:spectralgalerkin'),
               ('Discretization', 2, None, '___sec3'),
               ('Implementation', 1, None, '___sec4'),
               ('Initialization', 2, None, '___sec5'),
@@ -95,7 +98,7 @@ MathJax.Hub.Config({
      <!-- navigation toc: --> <li><a href="#table_of_contents" style="font-size: 80%;"><b>Table of contents</b></a></li>
      <!-- navigation toc: --> <li><a href="#___sec0" style="font-size: 80%;"><b>The nonlinear Klein-Gordon equation</b></a></li>
      <!-- navigation toc: --> <li><a href="#___sec1" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Model equation</a></li>
-     <!-- navigation toc: --> <li><a href="#___sec2" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Spectral Galerkin formulation</a></li>
+     <!-- navigation toc: --> <li><a href="#sec:spectralgalerkin" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Spectral Galerkin formulation</a></li>
      <!-- navigation toc: --> <li><a href="#___sec3" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Discretization</a></li>
      <!-- navigation toc: --> <li><a href="#___sec4" style="font-size: 80%;"><b>Implementation</b></a></li>
      <!-- navigation toc: --> <li><a href="#___sec5" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Initialization</a></li>
@@ -140,7 +143,7 @@ MathJax.Hub.Config({
 <p>
 <b>Summary.</b> This is a demonstration of how the Python module <a href="https://github.com/spectralDNS/shenfun" target="_self">shenfun</a> can be used to solve the time-dependent,
 nonlinear Klein-Gordon equation, in a triply periodic domain. The demo is implemented in
-a single Python file <a href="https://github.com/spectralDNS/shenfun/demo/KleinGordon.py" target="_self">KleinGordon.py</a>, and it may be run
+a single Python file <a href="https://github.com/spectralDNS/shenfun/blob/master/demo/KleinGordon.py" target="_self">KleinGordon.py</a>, and it may be run
 in parallel using MPI. The Klein-Gordon equation is solved using a mixed
 formulation. The discretization, and some background on the spectral Galerkin
 method is given first, before we turn to the actual details of the <code>shenfun</code>
@@ -155,7 +158,7 @@ Table of contents</h2>
 <p>
 <a href="#___sec0"> The nonlinear Klein-Gordon equation </a><br>
 &nbsp; &nbsp; &nbsp; <a href="#___sec1"> Model equation </a><br>
-&nbsp; &nbsp; &nbsp; <a href="#___sec2"> Spectral Galerkin formulation </a><br>
+&nbsp; &nbsp; &nbsp; <a href="#sec:spectralgalerkin"> Spectral Galerkin formulation </a><br>
 &nbsp; &nbsp; &nbsp; <a href="#___sec3"> Discretization </a><br>
 <a href="#___sec4"> Implementation </a><br>
 &nbsp; &nbsp; &nbsp; <a href="#___sec5"> Initialization </a><br>
@@ -195,9 +198,10 @@ t=0)}{\partial t} = u_t^0. \tag{2}
 $$
 
 <p>
-The parameter \( \gamma=\pm 1 \) determines whether the equations are focusing
-(\( 1 \)) or defocusing (\( -1 \)) (in the movie we have used \( \gamma=1 \)). The domain \( \Omega=[-2\pi, 2\pi]^3 \) is triply
-periodic and Initial conditions will here be set as
+The spatial coordinates are here denoted as \( \boldsymbol{x} = (x, y, z) \), and
+\( t \) is time. The parameter \( \gamma=\pm 1 \) determines whether the equations are focusing
+(\( +1 \)) or defocusing (\( -1 \)) (in the movie we have used \( \gamma=1 \)). The domain \( \Omega=[-2\pi, 2\pi]^3 \) is triply
+periodic and initial conditions will here be set as
 
 $$
 \begin{align}
@@ -209,7 +213,7 @@ u_t^0 &= 0.
 $$
 
 <p>
-with \( \boldsymbol{x} = (x, y, z) \). We will solve these equations using a mixed formulation and a spetral Galerkin
+We will solve these equations using a mixed formulation and a spectral Galerkin
 method. The mixed formulation reads
 
 $$
@@ -232,7 +236,7 @@ and it is crucial that this energy remains constant in time.
 The movie (<a href="#mov:kleingordon">mov:kleingordon</a>) is showing the solution \( u \), computed with the
 code shown in the bottom of Sec. <a href="#sec:solver">Complete solver</a>.
 
-<h2 id="___sec2" class="anchor">Spectral Galerkin formulation </h2>
+<h2 id="sec:spectralgalerkin" class="anchor">Spectral Galerkin formulation</h2>
 The PDEs in <a href="#mjx-eqn-5">(5)</a> and <a href="#mjx-eqn-6">(6)</a> can be solved with many different
 numerical methods. We will here use the <a href="https://github.com/spectralDNS/shenfun" target="_self">shenfun</a> software and this software makes use of
 the spectral Galerkin method. Being a Galerkin method, we need to reshape the
@@ -241,7 +245,7 @@ multiplying  <a href="#mjx-eqn-5">(5)</a> and <a href="#mjx-eqn-6">(6)</a> with 
 test functions and then integrating
 over the domain. To this end we use testfunction \( g\in H^1(\Omega) \) with
 Eq. <a href="#mjx-eqn-5">(5)</a>  and  \( v \in
-H^1(\Omega) \) with Eq. <a href="#mjx-eqn-6">(6)</a>, where \( H^1(\Omega) \) is the Sobolev space, and we obtain
+H^1(\Omega) \) with Eq. <a href="#mjx-eqn-6">(6)</a>, where \( H^1(\Omega) \) is the Hilbert space, and we obtain
 
 $$
 \begin{align}
@@ -375,7 +379,8 @@ where \( \mathcal{F}_i^{-1} \) is the inverse Fourier transform along the direct
 of index \( i \), for
 all \( (j, k) \in \boldsymbol{j} \times \boldsymbol{k} \). Note that the three
 inverse FFTs are performed sequentially, one direction at the time, and that the factor \( N^3 \) is due to
-the definition used for the inverse Fourier transform, which is the one used by Numpy:
+the definition used for the inverse Fourier transform, which is the one used
+also by <a href="https://docs.scipy.org/doc/numpy-1.13.0/reference/routines.fft.html" target="_self">Numpy</a>:
 
 $$
 \begin{equation}
@@ -416,14 +421,28 @@ $$
 <p>
 From this we see that the variational forms <a href="#mjx-eqn-9">(9)</a> and <a href="#mjx-eqn-10">(10)</a>
 may be written in terms of the Fourier transformed quantities \( \hat{u} \) and
-\( \hat{f} \). Expanding the exact derivatives of the nabla operator, the equations
-to be solved can be found directly as
+\( \hat{f} \). Expanding the exact derivatives of the nabla operator, we have
+
+$$
+\begin{align}
+(\nabla u, \nabla v) &=
+(2\pi)^3(\underline{l}^2+\underline{m}^2+\underline{n}^2)\hat{u}_{l,m,n}, 
+\tag{24}\\ 
+(u, v) &= (2\pi)^3\hat{u}_{l,m,n}, 
+\tag{25}\\ 
+(u|u|^2, v) &= (2\pi)^3 \widehat{u|u|^2}
+\tag{26}
+\end{align}
+$$
+
+<p>
+and as such the equations to be solved can be found directly as
 
 $$
 \begin{align}
 \frac{\partial \hat{f}}{\partial t}  &=
-\left(-(\underline{l}^2+\underline{m}^2+\underline{n}^2+\gamma)\hat{u} + \gamma \widehat{u|u|^2}\right), \tag{24} \\ 
-\frac{\partial \hat{u}}{\partial t} &= \hat{f}. \tag{25}
+\left(-(\underline{l}^2+\underline{m}^2+\underline{n}^2+\gamma)\hat{u} + \gamma \widehat{u|u|^2}\right), \tag{27} \\ 
+\frac{\partial \hat{u}}{\partial t} &= \hat{f}. \tag{28}
 \end{align}
 $$
 
@@ -432,7 +451,9 @@ There is more than one way to arrive at these equations. Taking the 3D Fourier
 transform of both equations  <a href="#mjx-eqn-5">(5)</a> and <a href="#mjx-eqn-6">(6)</a> is one obvious way.
 With the Python module <a href="https://github.com/spectralDNS/shenfun" target="_self">shenfun</a>, one can work with the
 inner products as seen in <a href="#mjx-eqn-9">(9)</a> and <a href="#mjx-eqn-10">(10)</a>, or the Fourier
-transforms directly.  In short, <code>shenfun</code> contains all the tools required to work with
+transforms directly. See for example Sec. <a href="#sec:rk">Runge-Kutta integrator</a> for how \( (\nabla u, \nabla
+v) \) can be
+implemented.  In short, <code>shenfun</code> contains all the tools required to work with
 the spectral Galerkin method, and we will now see how <code>shenfun</code> can be used to solve
 the Klein-Gordon equation.
 
@@ -602,7 +623,7 @@ calling with <code>X[0], X[1], X[2]</code>.
 
 <h2 id="sec:rk" class="anchor">Runge-Kutta integrator</h2>
 A fourth order explicit Runge-Kutta integrator requires only a function that
-returns the right hand sides of <a href="#mjx-eqn-24">(24)</a> and <a href="#mjx-eqn-25">(25)</a>. Such a
+returns the right hand sides of <a href="#mjx-eqn-27">(27)</a> and <a href="#mjx-eqn-28">(28)</a>. Such a
 function can be implemented as
 
 <p>
@@ -626,10 +647,10 @@ k2 <span style="color: #666666">=</span> <span style="color: #666666">-</span>(i
 </pre></div>
 <p>
 The code is fairly self-explanatory. <code>k2</code> represents the coefficients in front of
-the linear \( \hat{u} \) in <a href="#mjx-eqn-24">(24)</a>. The output array is <code>duf_hat</code>, and
+the linear \( \hat{u} \) in <a href="#mjx-eqn-27">(27)</a>. The output array is <code>duf_hat</code>, and
 the input array is <code>uf_hat</code>, whereas <code>up</code> and <code>w0</code> are work arrays. The array
-<code>duf_hat</code> contains the right hand sides of both <a href="#mjx-eqn-24">(24)</a> and
-<a href="#mjx-eqn-25">(25)</a>, where the linear and nonlinear terms are recognized in the
+<code>duf_hat</code> contains the right hand sides of both <a href="#mjx-eqn-27">(27)</a> and
+<a href="#mjx-eqn-28">(28)</a>, where the linear and nonlinear terms are recognized in the
 code as comments <code>(1)</code> and <code>(2)</code>.
 The array <code>uf_hat</code> contains the solution at initial and intermediate Runge-Kutta steps.
 
