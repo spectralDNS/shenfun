@@ -569,7 +569,7 @@ class. An instance of the <code>Function</code> class may be used as a regular a
 but also as an argument in forms. For example, if you want to compute the
 partial derivative \( \partial u/\partial x \), then this may be achieved by
 projection, i.e., find \( u_x \in V^N \) such that \( (u_x-\partial u/\partial x, v) = 0 \),
-for \( v \in V^N \). This projection may be easily computed in <code>shenfun</code> using
+for all \( v \in V^N \). This projection may be easily computed in <code>shenfun</code> using
 
 <p>
 
@@ -597,7 +597,8 @@ information required by forms.
 
 <p>
 The solution arrays <code>uf</code> and its transform <code>uf_hat</code> need to be initialized according to Eq.
-<a href="#mjx-eqn-2">(2)</a>. To this end we use <a href="http://www.sympy.org/en/index.html" target="_self">Sympy</a>, which is a Python library for symbolic
+<a href="#mjx-eqn-2">(2)</a>. To this end it is convenient (but not required, we could just as
+easily use Numpy for this as well) to use <a href="http://www.sympy.org/en/index.html" target="_self">Sympy</a>, which is a Python library for symbolic
 mathamatics.
 
 <p>
