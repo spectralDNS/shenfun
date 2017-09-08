@@ -355,14 +355,14 @@ e.g., the Runge-Kutta method. Arrays are created as
 
 !bc pycod
 uf = Array(TT, False) # Solution array in physical space
-u, f = uf[:] # Split solution array by creating two views u and f
+u, f = uf[:]          # Split solution array by creating two views u and f
 
-duf = Array(TT) # Array for right hand sides
-du, df = duf[:] # Split into views
+duf = Array(TT)       # Array for right hand sides
+du, df = duf[:]       # Split into views
 
-uf_hat = Array(TT)  # Solution in spectral space
-uf_hat0 = Array(TT) # Work array 1
-uf_hat1 = Array(TT) # Work array 2
+uf_hat = Array(TT)    # Solution in spectral space
+uf_hat0 = Array(TT)   # Work array 1
+uf_hat1 = Array(TT)   # Work array 2
 u_hat, f_hat = uf_hat[:] # Split into views
 !ec
 
@@ -397,7 +397,7 @@ project(Dx(u, 0, 1), T)
 
 Note that `u` and `v` share the same data, and changing one will as such also
 change the other. The reason for having two classes is that regular indexing and
-slicing is faster on a *smaller* `Array` class that is carrying less additional
+slicing is faster on a *smaller* `Array` class that is carrying less of the additional
 information required by forms. 
 
 ===== Initialization =====
@@ -434,11 +434,11 @@ returns the right hand sides of (ref{eq:df_var3}) and (ref{eq:du_var3}). Such a
 function can be implemented as
 
 !bc pycod
-
-gamma = 1            # focusing or defocusing (-1)
+# focusing (+1) or defocusing (-1)
+gamma = 1  
 uh = TrialFunction(T)
 vh = TestFunction(T)
-k2 = -(inner(grad(vh), grad(uh)).diagonal_array / A + gamma)
+k2 = -(inner(grad(vh), grad(uh)).diagonal_array / (2*np.pi)**3 + gamma)
 
 def compute_rhs(duf_hat, uf_hat, up, T, w0):
     duf_hat.fill(0)
@@ -454,8 +454,9 @@ def compute_rhs(duf_hat, uf_hat, up, T, w0):
 The code is fairly self-explanatory. `k2` represents the coefficients in front of
 the linear $\hat{u}$ in (ref{eq:df_var3}). The output array is `duf_hat`, and
 the input array is `uf_hat`, whereas `up` and `w0` are work arrays. The array
-`duf_hat` contains the right hand side of both (ref{eq:df_var3}) and
-(ref{eq:du_var3}), where the linear and nonlinear terms are recognized as `(1)` and `(2)`.
+`duf_hat` contains the right hand sides of both (ref{eq:df_var3}) and
+(ref{eq:du_var3}), where the linear and nonlinear terms are recognized in the
+code as comments `(1)` and `(2)`.
 The array `uf_hat` contains the solution at initial and intermediate Runge-Kutta steps.
 
 With a function that returns the right hand side in place, the actual integrator
@@ -482,7 +483,7 @@ while t < end_time-1e-8:
 label{sec:solver}
 
 A complete solver is given below, with intermediate plotting of the solution and
-intermediate computation of the total energy. The total energy is unchanged to 8
+intermediate computation of the total energy. Note that the total energy is unchanged to 8
 decimal points at $t=100$.
 
 !bc pycod

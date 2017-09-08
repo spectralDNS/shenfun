@@ -526,14 +526,14 @@ e.g., the Runge-Kutta method. Arrays are created as
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>uf <span style="color: #666666">=</span> Array(TT, <span style="color: #008000">False</span>) <span style="color: #408080; font-style: italic"># Solution array in physical space</span>
-u, f <span style="color: #666666">=</span> uf[:] <span style="color: #408080; font-style: italic"># Split solution array by creating two views u and f</span>
+u, f <span style="color: #666666">=</span> uf[:]          <span style="color: #408080; font-style: italic"># Split solution array by creating two views u and f</span>
 
-duf <span style="color: #666666">=</span> Array(TT) <span style="color: #408080; font-style: italic"># Array for right hand sides</span>
-du, df <span style="color: #666666">=</span> duf[:] <span style="color: #408080; font-style: italic"># Split into views</span>
+duf <span style="color: #666666">=</span> Array(TT)       <span style="color: #408080; font-style: italic"># Array for right hand sides</span>
+du, df <span style="color: #666666">=</span> duf[:]       <span style="color: #408080; font-style: italic"># Split into views</span>
 
-uf_hat <span style="color: #666666">=</span> Array(TT)  <span style="color: #408080; font-style: italic"># Solution in spectral space</span>
-uf_hat0 <span style="color: #666666">=</span> Array(TT) <span style="color: #408080; font-style: italic"># Work array 1</span>
-uf_hat1 <span style="color: #666666">=</span> Array(TT) <span style="color: #408080; font-style: italic"># Work array 2</span>
+uf_hat <span style="color: #666666">=</span> Array(TT)    <span style="color: #408080; font-style: italic"># Solution in spectral space</span>
+uf_hat0 <span style="color: #666666">=</span> Array(TT)   <span style="color: #408080; font-style: italic"># Work array 1</span>
+uf_hat1 <span style="color: #666666">=</span> Array(TT)   <span style="color: #408080; font-style: italic"># Work array 2</span>
 u_hat, f_hat <span style="color: #666666">=</span> uf_hat[:] <span style="color: #408080; font-style: italic"># Split into views</span>
 </pre></div>
 <p>
@@ -569,7 +569,7 @@ use the <code>Array u</code> in a form, like <code>Dx(u, 0, 1)</code>
 <p>
 Note that <code>u</code> and <code>v</code> share the same data, and changing one will as such also
 change the other. The reason for having two classes is that regular indexing and
-slicing is faster on a <em>smaller</em> <code>Array</code> class that is carrying less additional
+slicing is faster on a <em>smaller</em> <code>Array</code> class that is carrying less of the additional
 information required by forms.
 
 <h2 id="___sec5" class="anchor">Initialization </h2>
@@ -608,10 +608,11 @@ function can be implemented as
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
-<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>gamma <span style="color: #666666">=</span> <span style="color: #666666">1</span>            <span style="color: #408080; font-style: italic"># focusing or defocusing (-1)</span>
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #408080; font-style: italic"># focusing (+1) or defocusing (-1)</span>
+gamma <span style="color: #666666">=</span> <span style="color: #666666">1</span>  
 uh <span style="color: #666666">=</span> TrialFunction(T)
 vh <span style="color: #666666">=</span> TestFunction(T)
-k2 <span style="color: #666666">=</span> <span style="color: #666666">-</span>(inner(grad(vh), grad(uh))<span style="color: #666666">.</span>diagonal_array <span style="color: #666666">/</span> A <span style="color: #666666">+</span> gamma)
+k2 <span style="color: #666666">=</span> <span style="color: #666666">-</span>(inner(grad(vh), grad(uh))<span style="color: #666666">.</span>diagonal_array <span style="color: #666666">/</span> (<span style="color: #666666">2*</span>np<span style="color: #666666">.</span>pi)<span style="color: #666666">**3</span> <span style="color: #666666">+</span> gamma)
 
 <span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">compute_rhs</span>(duf_hat, uf_hat, up, T, w0):
     duf_hat<span style="color: #666666">.</span>fill(<span style="color: #666666">0</span>)
@@ -627,8 +628,9 @@ k2 <span style="color: #666666">=</span> <span style="color: #666666">-</span>(i
 The code is fairly self-explanatory. <code>k2</code> represents the coefficients in front of
 the linear \( \hat{u} \) in <a href="#mjx-eqn-24">(24)</a>. The output array is <code>duf_hat</code>, and
 the input array is <code>uf_hat</code>, whereas <code>up</code> and <code>w0</code> are work arrays. The array
-<code>duf_hat</code> contains the right hand side of both <a href="#mjx-eqn-24">(24)</a> and
-<a href="#mjx-eqn-25">(25)</a>, where the linear and nonlinear terms are recognized as <code>(1)</code> and <code>(2)</code>.
+<code>duf_hat</code> contains the right hand sides of both <a href="#mjx-eqn-24">(24)</a> and
+<a href="#mjx-eqn-25">(25)</a>, where the linear and nonlinear terms are recognized in the
+code as comments <code>(1)</code> and <code>(2)</code>.
 The array <code>uf_hat</code> contains the solution at initial and intermediate Runge-Kutta steps.
 
 <p>
@@ -658,7 +660,7 @@ tstep <span style="color: #666666">=</span> <span style="color: #666666">0</span
 
 <p>
 A complete solver is given below, with intermediate plotting of the solution and
-intermediate computation of the total energy. The total energy is unchanged to 8
+intermediate computation of the total energy. Note that the total energy is unchanged to 8
 decimal points at \( t=100 \).
 
 <p>
