@@ -101,7 +101,7 @@ You may also use precompiled binaries in the [*spectralDNS*](https://anaconda.or
     conda create --name shenfun -c conda-forge -c spectralDNS shenfun
     source activate shenfun
 
-which installs both spectralDNS, mpiFFT4py and all required dependencies, most of which are pulled in from the conda-forge channel. There are binaries compiled for both OSX and linux, for either Python version 2.7 or 3.6. To specify the Python version as 3.6 instead of default (used above) you can for exampel do
+which installs both shenfun, mpiFFT4py and all required dependencies, most of which are pulled in from the conda-forge channel. There are binaries compiled for both OSX and linux, for either Python version 2.7 or 3.6. To specify the Python version as 3.6 instead of default (used above) you can for exampel do
 
     conda create --name shenfun_py3 -c conda-forge -c spectralDNS python=3.6 shenfun
     source activate shenfun_py3
