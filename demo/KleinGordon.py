@@ -9,10 +9,9 @@ to integrate forward in time
     f_t = div(grad(u)) - u + u*|u|**2         (1)
     u_t = f                                   (2)
 
-with both u(x, y, z, t=0) and f(x, y, z, t=0) given
+with both u(x, y, z, t=0) and f(x, y, z, t=0) given. 
 
-The Fourier basis is span{exp(1jkx)}_{k=-N/2}^{N/2-1} and
-VxVxV is a tensor product space.
+Using the Fourier basis for all three spatial directions.
 
 """
 from sympy import symbols, exp, lambdify
@@ -76,7 +75,10 @@ uh = TrialFunction(T)
 vh = TestFunction(T)
 k2 = -inner(grad(vh), grad(uh)).diagonal_array / A - gamma
 
+count = 0
 def compute_rhs(duf_hat, uf_hat, up, T, Tp, w0):
+    global count
+    count += 1
     duf_hat.fill(0)
     u_hat, f_hat = uf_hat[:]
     du_hat, df_hat = duf_hat[:]
@@ -96,10 +98,10 @@ a = [1./6., 1./3., 1./3., 1./6.]         # Runge-Kutta parameter
 b = [0.5, 0.5, 1.]                       # Runge-Kutta parameter
 t = 0.0
 dt = 0.005
-end_time = 50.
+end_time = 1.
 tstep = 0
 #levels = np.linspace(-0.06, 0.1, 100)/8
-if rank == 0:
+if rank == -1:
     plt.figure()
     image = plt.contourf(X[0][:, :, 0], X[1][:, :, 0], u[:, :, 16], 100)
     plt.draw()
@@ -119,16 +121,15 @@ while t < end_time-1e-8:
         uf_hat1 += a[rk]*dt*duf
     uf_hat[:] = uf_hat1
 
-    if tstep % 5 == 0:
+    if tstep % 5 == -1:
         uf = TT.backward(uf_hat, uf)
         ekin = 0.5*energy_fourier(T.comm, np.array(N), f_hat)
         es = 0.5*energy_fourier(T.comm, np.array(N), 1j*K*u_hat)
         eg = gamma*np.sum(0.5*u**2 - 0.25*u**4)/np.prod(np.array(N))
         eg =  comm.allreduce(eg)
         gradu = TV.backward(1j*K*u_hat, gradu)
-        ep = np.sum(f*gradu)/np.prod(np.array(N))
-
-        ea = np.sum(np.array(X)*(0.5*f**2 + 0.5*gradu**2 - (0.5*u**2 - 0.25*u**4)*f))/np.prod(np.array(N))
+        ep = comm.allreduce(np.sum(f*gradu)/np.prod(np.array(N)))
+        ea = comm.allreduce(np.sum(np.array(X)*(0.5*f**2 + 0.5*gradu**2 - (0.5*u**2 - 0.25*u**4)*f))/np.prod(np.array(N)))
         if rank == 0:
             image.ax.clear()
             image.ax.contourf(X[0][:, :, 0], X[1][:, :, 0], u[:, :, 16], 100)
@@ -137,6 +138,6 @@ while t < end_time-1e-8:
             print("Time = %2.2f Total energy = %2.8e Linear momentum %2.8e Angular momentum %2.8e" %(t, ekin+es+eg, ep, ea))
         comm.barrier()
 
-print("Time ", time()-t0)
+print("Time ", time()-t0, count)
 
 

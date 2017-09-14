@@ -1,0 +1,36 @@
+* articles
+** Efficient Spectral-Galerkin Method I. Direct Solvers of Second- and Fourth-Order Equations Using Legendre Polynomials
+   key:                shen1
+   author:             Jie Shen
+   year:               1994
+   journal:            SIAM Journal on Scientific Computing
+   volume:             15
+   number:             6
+   pages:              1489-1505
+   doi:                10.1137/0915089
+   url:                https://doi.org/10.1137/0915089
+   status:             published
+   allowed_duplicates: shen95 s h e n 9 5
+   bdsk-Url-1:         https://doi.org/10.1137/0915089
+   bdsk-Url-2:         http://dx.doi.org/10.1137/0915089
+   date-Modified:      2017-09-14 12:55:37 +0000
+   entrytype:          article
+   eprint:             https://doi.org/10.1137/0915089
+** Efficient Spectral-Galerkin Method II. Direct Solvers of Second- and Fourth-Order Equations Using Chebyshev Polynomials
+   key:                shen95
+   author:             Jie Shen
+   year:               1995
+   journal:            SIAM Journal on Scientific Computing
+   volume:             16
+   number:             1
+   pages:              74-87
+   doi:                10.1137/0916006
+   url:                https://doi.org/10.1137/0916006
+   status:             published
+   allowed_duplicates: shen1
+   bdsk-Url-1:         https://doi.org/10.1137/0916006
+   bdsk-Url-2:         http://dx.doi.org/10.1137/0916006
+   date-Added:         2017-09-14 13:01:07 +0000
+   date-Modified:      2017-09-14 13:01:16 +0000
+   entrytype:          article
+   eprint:             https://doi.org/10.1137/0916006
