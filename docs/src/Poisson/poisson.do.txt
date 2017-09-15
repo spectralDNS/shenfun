@@ -5,9 +5,12 @@ DATE: today
 __Summary.__
 This is a demonstration of how the Python module "shenfun":
 "https://github.com/spectralDNS/shenfun" can be used to solve the Poisson
-equation with Dirichlet boundary conditions in one dimension. The demo is implemented in
+equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as shown in Figure ref{fig:ct0}, is demonstrated. 
+The demo is implemented in
 a single Python file "dirichlet_poisson1D.py":
-"https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py". The numerical method is is described in more details by J. Shen cite{shen1} and cite{shen95}.
+"https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py", and the numerical method is is described in more detail by J. Shen cite{shen1} and cite{shen95}.
+
+FIGURE: [poisson1D_errornorm.png] Convergence of 1D Poisson solvers for both Legendre and Chebyshev modified basis function. label{fig:ct0}
 
 TOC: on
 
@@ -187,13 +190,53 @@ Finally, solve linear equation system and transform solution from spectral $\{\h
 u_hat = A.solve(f_hat)
 uj = SD.backward(u_hat)
 ue = ul(X)
-print("Error norm = ", np.linalg.norm(uj-ue))
+print("Error=%2.16e" %(np.linalg.norm(uj-ue)))
 assert np.allclose(uj. ue)
 !ec
 
-===== Complete solver =====
+===== Convergence test =====
 
-A complete solver, that can use either Legendre or Chebyshev bases, chosen as a command-line argument, is shown below. Runs with Legendre 
+A complete solver is given in Sec. ref{sec:complete}. This solver is created such that it takes in two commandline arguments and prints out the $l_2$-errornorm of the solution in the end. We can use this to write a short script that performs a convergence test. The solver is run like
+!bc
+>>> python dirichlet_poisson1D.py 32 legendre
+Error=6.5955040031498912e-10
+!ec
+for a discretization of size $N=32$ and for the Legendre basis. Alternatively, change `legendre` to `chebyshev` for the Chebyshev basis.  
+
+We set up the solver to run for a list of $N$s, and collect the errornorms in arrays to be plotted. Such a script can be easily created with the "subprocess": "https://docs.python.org/3/library/subprocess.html" module
+
+!bc pycod
+import subprocess
+
+N = range(12, 50, 4)
+error = {}
+for basis in ('legendre', 'chebyshev'):
+    error[basis] = []
+    for i in range(len(N)):
+        output = subprocess.check_output("python dirichlet_poisson1D.py {} {}".format(N[i], basis), shell=True)
+        exec(output) # Error is printed as "Error=%2.16e"%(np.linalg.norm(uj-ua))
+        error[basis].append(Error)
+!ec
+
+The error can be plotted using "matplotlib": "https://matplotlib.org", and the generated figure is shown in the summary's Fig. ref{fig:ct0}. The spectral convergence is evident and we can see that after $N=40$ roundoff errors dominate as the errornorm trails off.
+
+!bc pycod
+plt.figure(figsize=(6, 4))
+for basis, col in zip(('legendre', 'chebyshev'), ('r', 'b')):
+    plt.semilogy(N, error[basis], col, linewidth=2)
+plt.title('Convergence of Poisson solvers 1D')
+plt.xlabel('N')
+plt.ylabel('Error norm')
+plt.savefig('poisson1D_errornorm.png')
+plt.legend(('Legendre', 'Chebyshev'))
+plt.show()
+!ec
+
+# FIGURE: [poisson1D_errornorm.png] Convergence test of Legendre and Chebyshev 1D Poisson solvers. label{fig:ct}
+
+===== Complete solver =====
+label{sec:complete}
+A complete solver, that can use either Legendre or Chebyshev bases, chosen as a command-line argument, is shown below.
 
 !bc
 >>> python dirichlet_poisson1D.py legendre
@@ -202,13 +245,18 @@ or similarly with `chebyshev` instead of `legendre`.
 
 !bc pycod
 import sys
+import importlib
 from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
     project, Dx, Array
 
+assert len(sys.argv) == 3
+assert sys.argv[-1] in ('legendre', 'chebyshev')
+assert isinstance(eval(sys.argv[-2]), int)
+
 # Collect basis and solver from either Chebyshev or Legendre submodules
-basis = sys.argv[-1] if len(sys.argv) == 2 else 'chebyshev'
+basis = sys.argv[-1]
 shen = importlib.import_module('.'.join(('shenfun', basis)))
 Basis = shen.bases.ShenDirichletBasis
 
@@ -217,6 +265,7 @@ a=-1
 b=1
 x = symbols("x")
 ue = sin(4*np.pi*x)*(1-x**2) + a*(1 + x)/2. + b*(1 - x)/2.
+#ue = (1-x**2)
 fe = ue.diff(x, 2)
 
 # Lambdify for faster evaluation
@@ -224,7 +273,7 @@ ul = lambdify(x, ue, 'numpy')
 fl = lambdify(x, fe, 'numpy')
 
 # Size of discretization
-N = 32
+N = eval(sys.argv[-2])
 
 SD = Basis(N, plan=True, bc=(a, b))
 X = SD.mesh(N)
@@ -252,9 +301,7 @@ uj = SD.backward(f_hat)
 
 # Compare with analytical solution
 ua = ul(X)
-print(abs(uj-ua).max())
-assert np.allclose(uj, ua)
-
+print("Error=%2.16e" %(np.linalg.norm(uj-ua)))
 !ec
 
 ======= Bibliography =======

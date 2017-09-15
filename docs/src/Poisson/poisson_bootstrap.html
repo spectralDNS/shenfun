@@ -55,8 +55,9 @@ pre { color: inherit; background-color: transparent; }
               ('Discretization', 2, None, '___sec6'),
               ('Variational formulation', 2, None, '___sec7'),
               ('Solve linear equations', 2, None, '___sec8'),
-              ('Complete solver', 2, None, '___sec9'),
-              ('Bibliography', 1, None, '___sec10')]}
+              ('Convergence test', 2, None, '___sec9'),
+              ('Complete solver', 2, 'sec:complete', 'sec:complete'),
+              ('Bibliography', 1, None, '___sec11')]}
 end of tocinfo -->
 
 <body>
@@ -104,8 +105,9 @@ MathJax.Hub.Config({
      <!-- navigation toc: --> <li><a href="#___sec6" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Discretization</a></li>
      <!-- navigation toc: --> <li><a href="#___sec7" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Variational formulation</a></li>
      <!-- navigation toc: --> <li><a href="#___sec8" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Solve linear equations</a></li>
-     <!-- navigation toc: --> <li><a href="#___sec9" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Complete solver</a></li>
-     <!-- navigation toc: --> <li><a href="#___sec10" style="font-size: 80%;"><b>Bibliography</b></a></li>
+     <!-- navigation toc: --> <li><a href="#___sec9" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Convergence test</a></li>
+     <!-- navigation toc: --> <li><a href="#sec:complete" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Complete solver</a></li>
+     <!-- navigation toc: --> <li><a href="#___sec11" style="font-size: 80%;"><b>Bibliography</b></a></li>
 
         </ul>
       </li>
@@ -139,12 +141,20 @@ MathJax.Hub.Config({
 <center><b>Department of Mathematics, University of Oslo.</b></center>
 <br>
 <p>
-<center><h4>Sep 14, 2017</h4></center> <!-- date -->
+<center><h4>Sep 15, 2017</h4></center> <!-- date -->
 <br>
 <p>
 <b>Summary.</b> This is a demonstration of how the Python module <a href="https://github.com/spectralDNS/shenfun" target="_self">shenfun</a> can be used to solve the Poisson
-equation with Dirichlet boundary conditions in one dimension. The demo is implemented in
-a single Python file <a href="https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py" target="_self">dirichlet_poisson1D.py</a>. The numerical method is is described in more details by J. Shen <a href="#shen1">[1]</a> and <a href="#shen95">[2]</a>.
+equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as shown in Figure <a href="#fig:ct0">1</a>, is demonstrated. 
+The demo is implemented in
+a single Python file <a href="https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py" target="_self">dirichlet_poisson1D.py</a>, and the numerical method is is described in more detail by J. Shen <a href="#shen1">[1]</a> and <a href="#shen95">[2]</a>.
+
+<p>
+<center> <!-- figure label: --> <div id="fig:ct0"></div> <!-- FIGURE -->
+<hr class="figure">
+<center><p class="caption">Figure 1:  Convergence of 1D Poisson solvers for both Legendre and Chebyshev modified basis function.  <!-- caption label: fig:ct0 --> </p></center>
+<p><img src="poisson1D_errornorm.png" align="bottom" ></p>
+</center>
 
 <p>
 </div> <!-- end jumbotron -->
@@ -162,8 +172,9 @@ Table of contents</h2>
 &nbsp; &nbsp; &nbsp; <a href="#___sec6"> Discretization </a><br>
 &nbsp; &nbsp; &nbsp; <a href="#___sec7"> Variational formulation </a><br>
 &nbsp; &nbsp; &nbsp; <a href="#___sec8"> Solve linear equations </a><br>
-&nbsp; &nbsp; &nbsp; <a href="#___sec9"> Complete solver </a><br>
-<a href="#___sec10"> Bibliography </a><br>
+&nbsp; &nbsp; &nbsp; <a href="#___sec9"> Convergence test </a><br>
+&nbsp; &nbsp; &nbsp; <a href="#sec:complete"> Complete solver </a><br>
+<a href="#___sec11"> Bibliography </a><br>
 </p>
 
 <h1 id="___sec0" class="anchor">Model problem </h1>
@@ -377,14 +388,61 @@ Finally, solve linear equation system and transform solution from spectral \( \{
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>u_hat <span style="color: #666666">=</span> A<span style="color: #666666">.</span>solve(f_hat)
 uj <span style="color: #666666">=</span> SD<span style="color: #666666">.</span>backward(u_hat)
 ue <span style="color: #666666">=</span> ul(X)
-<span style="color: #008000; font-weight: bold">print</span>(<span style="color: #BA2121">&quot;Error norm = &quot;</span>, np<span style="color: #666666">.</span>linalg<span style="color: #666666">.</span>norm(uj<span style="color: #666666">-</span>ue))
+<span style="color: #008000; font-weight: bold">print</span>(<span style="color: #BA2121">&quot;Error=</span><span style="color: #BB6688; font-weight: bold">%2.16e</span><span style="color: #BA2121">&quot;</span> <span style="color: #666666">%</span>(np<span style="color: #666666">.</span>linalg<span style="color: #666666">.</span>norm(uj<span style="color: #666666">-</span>ue)))
 <span style="color: #008000; font-weight: bold">assert</span> np<span style="color: #666666">.</span>allclose(uj<span style="color: #666666">.</span> ue)
 </pre></div>
 
-<h2 id="___sec9" class="anchor">Complete solver </h2>
+<h2 id="___sec9" class="anchor">Convergence test </h2>
 
 <p>
-A complete solver, that can use either Legendre or Chebyshev bases, chosen as a command-line argument, is shown below. Runs with Legendre
+A complete solver is given in Sec. <a href="#sec:complete">Complete solver</a>. This solver is created such that it takes in two commandline arguments and prints out the \( l_2 \)-errornorm of the solution in the end. We can use this to write a short script that performs a convergence test. The solver is run like
+<p>
+
+<!-- code=text typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>&gt;&gt;&gt; python dirichlet_poisson1D.py 32 legendre
+Error=6.5955040031498912e-10
+</pre></div>
+<p>
+for a discretization of size \( N=32 \) and for the Legendre basis. Alternatively, change <code>legendre</code> to <code>chebyshev</code> for the Chebyshev basis.
+
+<p>
+We set up the solver to run for a list of $N$s, and collect the errornorms in arrays to be plotted. Such a script can be easily created with the <a href="https://docs.python.org/3/library/subprocess.html" target="_self">subprocess</a> module
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">subprocess</span>
+
+N <span style="color: #666666">=</span> <span style="color: #008000">range</span>(<span style="color: #666666">12</span>, <span style="color: #666666">50</span>, <span style="color: #666666">4</span>)
+error <span style="color: #666666">=</span> {}
+<span style="color: #008000; font-weight: bold">for</span> basis <span style="color: #AA22FF; font-weight: bold">in</span> (<span style="color: #BA2121">&#39;legendre&#39;</span>, <span style="color: #BA2121">&#39;chebyshev&#39;</span>):
+    error[basis] <span style="color: #666666">=</span> []
+    <span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #008000">len</span>(N)):
+        output <span style="color: #666666">=</span> subprocess<span style="color: #666666">.</span>check_output(<span style="color: #BA2121">&quot;python dirichlet_poisson1D.py {} {}&quot;</span><span style="color: #666666">.</span>format(N[i], basis), shell<span style="color: #666666">=</span><span style="color: #008000">True</span>)
+        <span style="color: #008000; font-weight: bold">exec</span>(output) <span style="color: #408080; font-style: italic"># Error is printed as &quot;Error=%2.16e&quot;%(np.linalg.norm(uj-ua))</span>
+        error[basis]<span style="color: #666666">.</span>append(Error)
+</pre></div>
+<p>
+The error can be plotted using <a href="https://matplotlib.org" target="_self">matplotlib</a>, and the generated figure is shown in the summary's Fig. <a href="#fig:ct0">1</a>. The spectral convergence is evident and we can see that after \( N=40 \) roundoff errors dominate as the errornorm trails off.
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>plt<span style="color: #666666">.</span>figure(figsize<span style="color: #666666">=</span>(<span style="color: #666666">6</span>, <span style="color: #666666">4</span>))
+<span style="color: #008000; font-weight: bold">for</span> basis, col <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">zip</span>((<span style="color: #BA2121">&#39;legendre&#39;</span>, <span style="color: #BA2121">&#39;chebyshev&#39;</span>), (<span style="color: #BA2121">&#39;r&#39;</span>, <span style="color: #BA2121">&#39;b&#39;</span>)):
+    plt<span style="color: #666666">.</span>semilogy(N, error[basis], col, linewidth<span style="color: #666666">=2</span>)
+plt<span style="color: #666666">.</span>title(<span style="color: #BA2121">&#39;Convergence of Poisson solvers 1D&#39;</span>)
+plt<span style="color: #666666">.</span>xlabel(<span style="color: #BA2121">&#39;N&#39;</span>)
+plt<span style="color: #666666">.</span>ylabel(<span style="color: #BA2121">&#39;Error norm&#39;</span>)
+plt<span style="color: #666666">.</span>savefig(<span style="color: #BA2121">&#39;poisson1D_errornorm.png&#39;</span>)
+plt<span style="color: #666666">.</span>legend((<span style="color: #BA2121">&#39;Legendre&#39;</span>, <span style="color: #BA2121">&#39;Chebyshev&#39;</span>))
+plt<span style="color: #666666">.</span>show()
+</pre></div>
+<p>
+<!-- FIGURE: [poisson1D_errornorm.png] Convergence test of Legendre and Chebyshev 1D Poisson solvers. <div id="fig:ct"></div> -->
+
+<h2 id="sec:complete" class="anchor">Complete solver</h2>
+A complete solver, that can use either Legendre or Chebyshev bases, chosen as a command-line argument, is shown below.
 
 <p>
 
@@ -398,13 +456,18 @@ or similarly with <code>chebyshev</code> instead of <code>legendre</code>.
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">sys</span>
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">importlib</span>
 <span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">sympy</span> <span style="color: #008000; font-weight: bold">import</span> symbols, cos, sin, exp, lambdify
 <span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
 <span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> inner, div, grad, TestFunction, TrialFunction, Function, \
     project, Dx, Array
 
+<span style="color: #008000; font-weight: bold">assert</span> <span style="color: #008000">len</span>(sys<span style="color: #666666">.</span>argv) <span style="color: #666666">==</span> <span style="color: #666666">3</span>
+<span style="color: #008000; font-weight: bold">assert</span> sys<span style="color: #666666">.</span>argv[<span style="color: #666666">-1</span>] <span style="color: #AA22FF; font-weight: bold">in</span> (<span style="color: #BA2121">&#39;legendre&#39;</span>, <span style="color: #BA2121">&#39;chebyshev&#39;</span>)
+<span style="color: #008000; font-weight: bold">assert</span> <span style="color: #008000">isinstance</span>(<span style="color: #008000">eval</span>(sys<span style="color: #666666">.</span>argv[<span style="color: #666666">-2</span>]), <span style="color: #008000">int</span>)
+
 <span style="color: #408080; font-style: italic"># Collect basis and solver from either Chebyshev or Legendre submodules</span>
-basis <span style="color: #666666">=</span> sys<span style="color: #666666">.</span>argv[<span style="color: #666666">-1</span>] <span style="color: #008000; font-weight: bold">if</span> <span style="color: #008000">len</span>(sys<span style="color: #666666">.</span>argv) <span style="color: #666666">==</span> <span style="color: #666666">2</span> <span style="color: #008000; font-weight: bold">else</span> <span style="color: #BA2121">&#39;chebyshev&#39;</span>
+basis <span style="color: #666666">=</span> sys<span style="color: #666666">.</span>argv[<span style="color: #666666">-1</span>]
 shen <span style="color: #666666">=</span> importlib<span style="color: #666666">.</span>import_module(<span style="color: #BA2121">&#39;.&#39;</span><span style="color: #666666">.</span>join((<span style="color: #BA2121">&#39;shenfun&#39;</span>, basis)))
 Basis <span style="color: #666666">=</span> shen<span style="color: #666666">.</span>bases<span style="color: #666666">.</span>ShenDirichletBasis
 
@@ -413,6 +476,7 @@ a<span style="color: #666666">=-1</span>
 b<span style="color: #666666">=1</span>
 x <span style="color: #666666">=</span> symbols(<span style="color: #BA2121">&quot;x&quot;</span>)
 ue <span style="color: #666666">=</span> sin(<span style="color: #666666">4*</span>np<span style="color: #666666">.</span>pi<span style="color: #666666">*</span>x)<span style="color: #666666">*</span>(<span style="color: #666666">1-</span>x<span style="color: #666666">**2</span>) <span style="color: #666666">+</span> a<span style="color: #666666">*</span>(<span style="color: #666666">1</span> <span style="color: #666666">+</span> x)<span style="color: #666666">/2.</span> <span style="color: #666666">+</span> b<span style="color: #666666">*</span>(<span style="color: #666666">1</span> <span style="color: #666666">-</span> x)<span style="color: #666666">/2.</span>
+<span style="color: #408080; font-style: italic">#ue = (1-x**2)</span>
 fe <span style="color: #666666">=</span> ue<span style="color: #666666">.</span>diff(x, <span style="color: #666666">2</span>)
 
 <span style="color: #408080; font-style: italic"># Lambdify for faster evaluation</span>
@@ -420,7 +484,7 @@ ul <span style="color: #666666">=</span> lambdify(x, ue, <span style="color: #BA
 fl <span style="color: #666666">=</span> lambdify(x, fe, <span style="color: #BA2121">&#39;numpy&#39;</span>)
 
 <span style="color: #408080; font-style: italic"># Size of discretization</span>
-N <span style="color: #666666">=</span> <span style="color: #666666">32</span>
+N <span style="color: #666666">=</span> <span style="color: #008000">eval</span>(sys<span style="color: #666666">.</span>argv[<span style="color: #666666">-2</span>])
 
 SD <span style="color: #666666">=</span> Basis(N, plan<span style="color: #666666">=</span><span style="color: #008000">True</span>, bc<span style="color: #666666">=</span>(a, b))
 X <span style="color: #666666">=</span> SD<span style="color: #666666">.</span>mesh(N)
@@ -448,11 +512,10 @@ uj <span style="color: #666666">=</span> SD<span style="color: #666666">.</span>
 
 <span style="color: #408080; font-style: italic"># Compare with analytical solution</span>
 ua <span style="color: #666666">=</span> ul(X)
-<span style="color: #008000; font-weight: bold">print</span>(<span style="color: #008000">abs</span>(uj<span style="color: #666666">-</span>ua)<span style="color: #666666">.</span>max())
-<span style="color: #008000; font-weight: bold">assert</span> np<span style="color: #666666">.</span>allclose(uj, ua)
+<span style="color: #008000; font-weight: bold">print</span>(<span style="color: #BA2121">&quot;Error=</span><span style="color: #BB6688; font-weight: bold">%2.16e</span><span style="color: #BA2121">&quot;</span> <span style="color: #666666">%</span>(np<span style="color: #666666">.</span>linalg<span style="color: #666666">.</span>norm(uj<span style="color: #666666">-</span>ua)))
 </pre></div>
 
-<h1 id="___sec10" class="anchor">Bibliography </h1>
+<h1 id="___sec11" class="anchor">Bibliography </h1>
 
 <p>
 <!-- begin bibliography -->
@@ -486,7 +549,7 @@ ua <span style="color: #666666">=</span> ul(X)
 
 </div>  <!-- end container -->
 <!-- include javascript, jQuery *first* -->
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 <script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
 
 <!-- Bootstrap footer
