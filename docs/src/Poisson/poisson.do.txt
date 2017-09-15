@@ -10,7 +10,7 @@ The demo is implemented in
 a single Python file "dirichlet_poisson1D.py":
 "https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py", and the numerical method is is described in more detail by J. Shen cite{shen1} and cite{shen95}.
 
-FIGURE: [poisson1D_errornorm.png] Convergence of 1D Poisson solvers for both Legendre and Chebyshev modified basis function. label{fig:ct0}
+FIGURE: [figs/poisson1D_errornorm.png] Convergence of 1D Poisson solvers for both Legendre and Chebyshev modified basis function. label{fig:ct0}
 
 TOC: on
 
