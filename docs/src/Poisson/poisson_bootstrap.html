@@ -187,7 +187,7 @@ The Poisson equation is given as
 $$
 \begin{align}
 \nabla^2 u(x) &= f(x) \quad \text{for }\, x \in [-1, 1], \tag{1}\\
-u(-1)&=a, u(1)=b,
+u(-1)&=a, u(1)=b, \notag
 \tag{2}
 \end{align}
 $$
@@ -211,16 +211,19 @@ The basis functions can, for example,  be constructed from <a href="https://en.w
 and we use the common notation \( \phi_k(x) \) to represent either one of them. It turns out that 
 it is easiest to use basis functions with homogeneous Dirichlet boundary conditions
 $$
+\begin{equation}
 v_k(x) = \phi_k(x) - \phi_{k+2}(x),
+\tag{4}
+\end{equation}
 $$
 
 for \( k=0, 1, \ldots N-3 \), and then the last two are added as two linear basis functions (that belong to the kernel of the Poisson equation)
 $$
 \begin{align}
 v_{N-2} &= \frac{1}{2}(\phi_0 + \phi_1), 
-\tag{4}\\
+\tag{5}\\
 v_{N-1} &= \frac{1}{2}(\phi_0 - \phi_1).
-\tag{5}
+\tag{6}
 \end{align}
 $$
 
@@ -228,22 +231,25 @@ $$
 We now formulate a variational problem using the Galerkin method: Find \( u \in V^N \) such that
 $$
 \begin{equation}
-\int_{-1}^1 \nabla^2 u \, v \, w\, dx = \int_{-1}^1 f \, v\, w\, dx \quad \forall v \, \in \, V^N. \tag{6} 
+\int_{-1}^1 \nabla^2 u \, v \, w\, dx = \int_{-1}^1 f \, v\, w\, dx \quad \forall v \, \in \, V^N. \tag{7} 
 \end{equation}
 $$
 
 The weighted integrals, weighted by \( w(x) \), are called inner products, and a common notation is
 $$
+\begin{equation}
 \int_{-1}^1 u \, v \, w\, dx = \left( u, v\right)_w. 
+\tag{8}
+\end{equation}
 $$
 
 The integral can either be computed exactly, or with quadrature. The advantage of the latter is that it is generally faster, and that non-linear terms may be computed just as quickly as linear. For a linear problem, it does not make much of a difference, if any at all. Approximating the integral with quadrature, we obtain
 $$
 \begin{align}
 \int_{-1}^1 u \, v \, w\, dx &\approx \left( u, v \right)_w^N,  
-\tag{7}\\
+\tag{9}\\
 &\approx \sum_{j=0}^{N-1} u(x_j) v(x_j) w(x_j),
-\tag{8}
+\tag{10}
 \end{align}
 $$
 
@@ -269,7 +275,7 @@ The linear system of equations to solve for the expansion coefficients of \( u(x
 $$
 \begin{equation}
 A_{jk} \hat{u}_k = \tilde{f}_j.
-\tag{9}
+\tag{11}
 \end{equation}
 $$
 
@@ -285,7 +291,7 @@ this end we choose an analytical function that satisfies the given boundary
 conditions:
 $$
 \begin{equation}
-u_e(x) = \sin(k\pi x)(1-x^2) + a(1+x)/2 + b(1-x)/2, \tag{10}
+u_e(x) = \sin(k\pi x)(1-x^2) + a(1+x)/2 + b(1-x)/2, \tag{12}
 \end{equation}
 $$
 
@@ -295,9 +301,9 @@ in
 $$
 \begin{align}
  \nabla^2 u_e(x) &= \frac{d^2 u_e}{dx^2}, 
-\tag{11}\\
+\tag{13}\\
                   &= -4k \pi x \cos(k\pi x) - 2\sin(k\pi x) - k^2 \pi^2 (1 - x^2) \sin(k \pi x).
-\tag{12}
+\tag{14}
 \end{align}
 $$
 
@@ -364,7 +370,7 @@ Note that we can either choose a Legendre or a Chebyshev basis. The keyword <cod
 <h2 id="___sec7" class="anchor">Variational formulation </h2>
 
 <p>
-The variational problem <a href="#mjx-eqn-6">(6)</a> can be assembled using <code>shenfun</code>'s <code>TrialFunction</code>, <code>TestFunction</code> and <code>inner</code> functions.
+The variational problem <a href="#mjx-eqn-7">(7)</a> can be assembled using <code>shenfun</code>'s <code>TrialFunction</code>, <code>TestFunction</code> and <code>inner</code> functions.
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->

@@ -22,7 +22,7 @@ The Poisson equation is given as
 !bt 
 \begin{align}
 \nabla^2 u(x) &= f(x) \quad \text{for }\, x \in [-1, 1], label{eq:poisson}\\
-u(-1)&=a, u(1)=b,
+u(-1)&=a, u(1)=b, \notag
 \end{align}
 !et
 where $u(x)$ is the solution, $f(x)$ is a function and $a, b$ are two possibly
@@ -42,7 +42,9 @@ The basis functions can, for example,  be constructed from "Chebyshev": "https:/
 and we use the common notation $\phi_k(x)$ to represent either one of them. It turns out that 
 it is easiest to use basis functions with homogeneous Dirichlet boundary conditions
 !bt
+\begin{equation}
 v_k(x) = \phi_k(x) - \phi_{k+2}(x),
+\end{equation}
 !et
 for $k=0, 1, \ldots N-3$, and then the last two are added as two linear basis functions (that belong to the kernel of the Poisson equation)
 !bt
@@ -60,7 +62,9 @@ We now formulate a variational problem using the Galerkin method: Find $u \in V^
 !et
 The weighted integrals, weighted by $w(x)$, are called inner products, and a common notation is
 !bt
+\begin{equation}
 \int_{-1}^1 u \, v \, w\, dx = \left( u, v\right)_w. 
+\end{equation}
 !et
 The integral can either be computed exactly, or with quadrature. The advantage of the latter is that it is generally faster, and that non-linear terms may be computed just as quickly as linear. For a linear problem, it does not make much of a difference, if any at all. Approximating the integral with quadrature, we obtain
 !bt
