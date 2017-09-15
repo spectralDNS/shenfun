@@ -114,7 +114,8 @@ in
 !bt
 \begin{align}
  \nabla^2 u_e(x) &= \frac{d^2 u_e}{dx^2}, \\
-                  &= -4k \pi x \cos(k\pi x) - 2\sin(k\pi x) - k^2 \pi^2 (1 - x^2) \sin(k \pi x).
+                  &= -4k \pi x \cos(k\pi x) - 2\sin(k\pi x) - k^2 \pi^2 (1 -
+x^2) \sin(k \pi x). label{eq:solution}
 \end{align}
 !et
 
@@ -138,7 +139,7 @@ import numpy as np
 from sympy import symbols, cos, sin, exp, lambdify
 !ec
 
-We use `sympy` for the manufactured solution, `matplotlib` for plotting, and `numpy` for testing.
+We use `sympy` for the manufactured solution and `numpy` for testing.
 
 ===== Manufactured solution =====
 
@@ -157,6 +158,11 @@ fl = lambdify(x, fe, 'numpy')
 !ec
 
 These solutions are now valid for a continuous domain. The next step is thus to discretize, using a discrete mesh $\{x_j\}_{j=0}^{N-1}$ and a finite number of basis functions. 
+
+Note that it is not mandatory to use `sympy` for the manufactured solution. Since the
+solution is known (ref{eq:solution}), we could just as well simply use `Numpy`
+to compute $f_e$ at $\{x_j\}_{j=0}^{N-1}$. However, with `Sympy` it is much
+easier to experiment and quickly change the solution.
 
 ===== Discretization =====
 
