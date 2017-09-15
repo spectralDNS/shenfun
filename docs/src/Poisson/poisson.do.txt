@@ -91,7 +91,7 @@ A_{jk} \hat{u}_k = \tilde{f}_j.
 \end{equation}
 !et 
 
-Now, when $\hat{u}$ is found by solving this linear system, it may be transformed to real space $u(x)$ using (ref{eq:u}). Note that the matrix $A_{jk}$ has a very special structure that allows for a solution to be found very efficiently in order of $\mathcal{O}(N)$ operations, see cite{shen1} and cite{shen95}. 
+Now, when $\hat{u}$ is found by solving this linear system, it may be transformed to real space $u(x)$ using (ref{eq:u}). Note that the matrix $A_{jk}$ (different for Legendre or Chebyshev) has a very special structure that allows for a solution to be found very efficiently in order of $\mathcal{O}(N)$ operations, see cite{shen1} and cite{shen95}. These solvers are implemented in `shenfun` for both bases. 
 
 ===== Method of manufactured solutions =====
 
@@ -119,15 +119,13 @@ Now, setting $f_e(x) = \nabla^2 u_e(x)$ and solving for $\nabla^2 u(x) = f_e(x)$
 
 ======= Implementation =======
 
-
-
 ===== Preamble =====
 
 We will solve the Poisson problem using the "shenfun":
 "https://github.com/spectralDNS/shenfun" Python module. The first thing needed
 is then to import some of this module's functionality
-plus some other helper modules, like "Numpy": "https://numpy.org", "Sympy":
-"https://sympy.org" and "Matplotlib": "https://matplotlib.org":
+plus some other helper modules, like "Numpy": "https://numpy.org" and "Sympy":
+"https://sympy.org":
 
 !bc pycod  
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
@@ -154,7 +152,7 @@ ul = lambdify(x, ue, 'numpy')
 fl = lambdify(x, fe, 'numpy')
 !ec
 
-These solutions are now valid for a continuous domain $x$. The next step is thus to discretize, using a discrete mesh $\{x_j\}_{j=0}^{N-1}$ and a finite number of basis functions. 
+These solutions are now valid for a continuous domain. The next step is thus to discretize, using a discrete mesh $\{x_j\}_{j=0}^{N-1}$ and a finite number of basis functions. 
 
 ===== Discretization =====
 
@@ -167,7 +165,7 @@ SD = chebyshev.bases.ShenDirichletBasis(N, plan=True, bc=(a, b))
 X = SD.mesh(N)
 !ec
 
-Note that we can either choose a Legendre or a Chebyshev basis.
+Note that we can either choose a Legendre or a Chebyshev basis. The keyword `plan` is used to tell the class `ShenDirichletBasis` that it can go ahead and plan its transforms with "pyfftw": "https://pyfftw.org", because this basis will not be a part of a tensorproductspace, in which case the planning would need to wait.
 
 ===== Variational formulation =====
 
@@ -191,7 +189,7 @@ u_hat = A.solve(f_hat)
 uj = SD.backward(u_hat)
 ue = ul(X)
 print("Error=%2.16e" %(np.linalg.norm(uj-ue)))
-assert np.allclose(uj. ue)
+assert np.allclose(uj-ue)
 !ec
 
 ===== Convergence test =====
@@ -203,7 +201,7 @@ Error=6.5955040031498912e-10
 !ec
 for a discretization of size $N=32$ and for the Legendre basis. Alternatively, change `legendre` to `chebyshev` for the Chebyshev basis.  
 
-We set up the solver to run for a list of $N$s, and collect the errornorms in arrays to be plotted. Such a script can be easily created with the "subprocess": "https://docs.python.org/3/library/subprocess.html" module
+We set up the solver to run for a list of $N=[12, 16, \ldots, 48]$, and collect the errornorms in arrays to be plotted. Such a script can be easily created with the "subprocess": "https://docs.python.org/3/library/subprocess.html" module
 
 !bc pycod
 import subprocess
@@ -218,7 +216,7 @@ for basis in ('legendre', 'chebyshev'):
         error[basis].append(Error)
 !ec
 
-The error can be plotted using "matplotlib": "https://matplotlib.org", and the generated figure is shown in the summary's Fig. ref{fig:ct0}. The spectral convergence is evident and we can see that after $N=40$ roundoff errors dominate as the errornorm trails off.
+The error can be plotted using "matplotlib": "https://matplotlib.org", and the generated figure is shown in the summary's Fig. ref{fig:ct0}. The spectral convergence is evident and we can see that after $N=40$ roundoff errors dominate as the errornorm trails off around $10^{-14}$.
 
 !bc pycod
 plt.figure(figsize=(6, 4))

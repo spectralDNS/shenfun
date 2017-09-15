@@ -274,7 +274,7 @@ A_{jk} \hat{u}_k = \tilde{f}_j.
 $$
 
 <p>
-Now, when \( \hat{u} \) is found by solving this linear system, it may be transformed to real space \( u(x) \) using <a href="#mjx-eqn-3">(3)</a>. Note that the matrix \( A_{jk} \) has a very special structure that allows for a solution to be found very efficiently in order of \( \mathcal{O}(N) \) operations, see <a href="#shen1">[1]</a> and <a href="#shen95">[2]</a>.
+Now, when \( \hat{u} \) is found by solving this linear system, it may be transformed to real space \( u(x) \) using <a href="#mjx-eqn-3">(3)</a>. Note that the matrix \( A_{jk} \) (different for Legendre or Chebyshev) has a very special structure that allows for a solution to be found very efficiently in order of \( \mathcal{O}(N) \) operations, see <a href="#shen1">[1]</a> and <a href="#shen95">[2]</a>. These solvers are implemented in <code>shenfun</code> for both bases.
 
 <h2 id="___sec2" class="anchor">Method of manufactured solutions </h2>
 
@@ -311,7 +311,7 @@ Now, setting \( f_e(x) = \nabla^2 u_e(x) \) and solving for \( \nabla^2 u(x) = f
 <p>
 We will solve the Poisson problem using the <a href="https://github.com/spectralDNS/shenfun" target="_self">shenfun</a> Python module. The first thing needed
 is then to import some of this module's functionality
-plus some other helper modules, like <a href="https://numpy.org" target="_self">Numpy</a>, <a href="https://sympy.org" target="_self">Sympy</a> and <a href="https://matplotlib.org" target="_self">Matplotlib</a>:
+plus some other helper modules, like <a href="https://numpy.org" target="_self">Numpy</a> and <a href="https://sympy.org" target="_self">Sympy</a>:
 
 <p>
 
@@ -343,7 +343,7 @@ ul <span style="color: #666666">=</span> lambdify(x, ue, <span style="color: #BA
 fl <span style="color: #666666">=</span> lambdify(x, fe, <span style="color: #BA2121">&#39;numpy&#39;</span>)
 </pre></div>
 <p>
-These solutions are now valid for a continuous domain \( x \). The next step is thus to discretize, using a discrete mesh \( \{x_j\}_{j=0}^{N-1} \) and a finite number of basis functions.
+These solutions are now valid for a continuous domain. The next step is thus to discretize, using a discrete mesh \( \{x_j\}_{j=0}^{N-1} \) and a finite number of basis functions.
 
 <h2 id="___sec6" class="anchor">Discretization </h2>
 
@@ -359,7 +359,7 @@ SD <span style="color: #666666">=</span> chebyshev<span style="color: #666666">.
 X <span style="color: #666666">=</span> SD<span style="color: #666666">.</span>mesh(N)
 </pre></div>
 <p>
-Note that we can either choose a Legendre or a Chebyshev basis.
+Note that we can either choose a Legendre or a Chebyshev basis. The keyword <code>plan</code> is used to tell the class <code>ShenDirichletBasis</code> that it can go ahead and plan its transforms with <a href="https://pyfftw.org" target="_self">pyfftw</a>, because this basis will not be a part of a tensorproductspace, in which case the planning would need to wait.
 
 <h2 id="___sec7" class="anchor">Variational formulation </h2>
 
@@ -389,7 +389,7 @@ Finally, solve linear equation system and transform solution from spectral \( \{
 uj <span style="color: #666666">=</span> SD<span style="color: #666666">.</span>backward(u_hat)
 ue <span style="color: #666666">=</span> ul(X)
 <span style="color: #008000; font-weight: bold">print</span>(<span style="color: #BA2121">&quot;Error=</span><span style="color: #BB6688; font-weight: bold">%2.16e</span><span style="color: #BA2121">&quot;</span> <span style="color: #666666">%</span>(np<span style="color: #666666">.</span>linalg<span style="color: #666666">.</span>norm(uj<span style="color: #666666">-</span>ue)))
-<span style="color: #008000; font-weight: bold">assert</span> np<span style="color: #666666">.</span>allclose(uj<span style="color: #666666">.</span> ue)
+<span style="color: #008000; font-weight: bold">assert</span> np<span style="color: #666666">.</span>allclose(uj<span style="color: #666666">-</span>ue)
 </pre></div>
 
 <h2 id="___sec9" class="anchor">Convergence test </h2>
@@ -406,7 +406,7 @@ Error=6.5955040031498912e-10
 for a discretization of size \( N=32 \) and for the Legendre basis. Alternatively, change <code>legendre</code> to <code>chebyshev</code> for the Chebyshev basis.
 
 <p>
-We set up the solver to run for a list of $N$s, and collect the errornorms in arrays to be plotted. Such a script can be easily created with the <a href="https://docs.python.org/3/library/subprocess.html" target="_self">subprocess</a> module
+We set up the solver to run for a list of \( N=[12, 16, \ldots, 48] \), and collect the errornorms in arrays to be plotted. Such a script can be easily created with the <a href="https://docs.python.org/3/library/subprocess.html" target="_self">subprocess</a> module
 
 <p>
 
@@ -423,7 +423,7 @@ error <span style="color: #666666">=</span> {}
         error[basis]<span style="color: #666666">.</span>append(Error)
 </pre></div>
 <p>
-The error can be plotted using <a href="https://matplotlib.org" target="_self">matplotlib</a>, and the generated figure is shown in the summary's Fig. <a href="#fig:ct0">1</a>. The spectral convergence is evident and we can see that after \( N=40 \) roundoff errors dominate as the errornorm trails off.
+The error can be plotted using <a href="https://matplotlib.org" target="_self">matplotlib</a>, and the generated figure is shown in the summary's Fig. <a href="#fig:ct0">1</a>. The spectral convergence is evident and we can see that after \( N=40 \) roundoff errors dominate as the errornorm trails off around \( 10^{-14} \).
 
 <p>
 
