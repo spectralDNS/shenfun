@@ -11,6 +11,7 @@ The demo folder contains several examples for the Poisson, Helmholtz and Biharmo
 
 * [*Demo for the nonlinear Klein-Gordon equation*](https://rawgit.com/spectralDNS/shenfun/master/docs/src/KleinGordon/kleingordon_bootstrap.html)
 * [*Demo for Poisson equation in 1D with inhomogeneous Dirichlet boundary conditions*](https://rawgit.com/spectralDNS/shenfun/master/docs/src/Poisson/poisson_bootstrap.html)
+* [*Demo for Poisson equation in 3D with Dirichlet in one and periodicity in remaining two dimensions*](https://rawgit.com/spectralDNS/shenfun/master/docs/src/Poisson3D/poisson3d_bootstrap.html)
 * [*Shenfun paper*](https://rawgit.com/spectralDNS/shenfun/master/docs/shenfun_bootstrap.html)
 
 Spectral Galerkin
