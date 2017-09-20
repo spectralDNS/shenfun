@@ -2,7 +2,7 @@ TITLE: Demo - Cubic nonlinear Klein-Gordon equation
 AUTHOR: Mikael Mortensen {copyright|CC BY} Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
 DATE: today
 
-__Summary__
+__Summary.__
 This is a demonstration of how the Python module "shenfun":
 "https://github.com/spectralDNS/shenfun" can be used to solve the time-dependent,
 nonlinear Klein-Gordon equation, in a triply periodic domain. The demo is implemented in
