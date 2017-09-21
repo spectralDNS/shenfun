@@ -88,8 +88,8 @@ def compute_rhs(duf_hat, uf_hat, up, T, Tp, w0):
     du_hat[:] = f_hat
     return duf_hat
 
-def energy_fourier(comm, N, a):
-    result = 2*np.sum(abs(a[...,1:-1])**2) + np.sum(abs(a[...,0])**2) + np.sum(abs(a[...,-1])**2)
+def energy_fourier(comm, a):
+    result = 2*np.sum(abs(a[..., 1:-1])**2) + np.sum(abs(a[..., 0])**2) + np.sum(abs(a[..., -1])**2)
     result =  comm.allreduce(result)
     return result
 
@@ -103,7 +103,7 @@ tstep = 0
 #levels = np.linspace(-0.06, 0.1, 100)/8
 if rank == 0:
     plt.figure()
-    image = plt.contourf(X[1][:, :, 0], X[0][:, :, 0], u[:, :, 16], 100)
+    image = plt.contourf(X[1][..., 0], X[0][..., 0], u[..., 16], 100)
     plt.draw()
     plt.pause(1e-4)
 t0 = time()
@@ -123,8 +123,8 @@ while t < end_time-1e-8:
 
     if tstep % 100 == 0:
         uf = TT.backward(uf_hat, uf)
-        ekin = 0.5*energy_fourier(T.comm, np.array(N), f_hat)
-        es = 0.5*energy_fourier(T.comm, np.array(N), 1j*K*u_hat)
+        ekin = 0.5*energy_fourier(T.comm, f_hat)
+        es = 0.5*energy_fourier(T.comm, 1j*K*u_hat)
         eg = gamma*np.sum(0.5*u**2 - 0.25*u**4)/np.prod(np.array(N))
         eg =  comm.allreduce(eg)
         gradu = TV.backward(1j*K*u_hat, gradu)
@@ -132,12 +132,11 @@ while t < end_time-1e-8:
         ea = comm.allreduce(np.sum(np.array(X)*(0.5*f**2 + 0.5*gradu**2 - (0.5*u**2 - 0.25*u**4)*f))/np.prod(np.array(N)))
         if rank == 0:
             image.ax.clear()
-            image.ax.contourf(X[1][:, :, 0], X[0][:, :, 0], u[:, :, 16], 100)
+            image.ax.contourf(X[1][..., 0], X[0][..., 0], u[..., 16], 100)
             plt.pause(1e-6)
             #plt.savefig('Klein_Gordon_{}_real_{}.png'.format(N[0], tstep))
             print("Time = %2.2f Total energy = %2.8e Linear momentum %2.8e Angular momentum %2.8e" %(t, ekin+es+eg, ep, ea))
         comm.barrier()
 
 print("Time ", time()-t0, count)
-
 

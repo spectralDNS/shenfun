@@ -7,7 +7,7 @@ Shenfun - automating the spectral Galerkin method
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 24, 2017
+:Date: Sep 21, 2017
 
 *Summary.* With the ``shenfun`` Python module (github.com/spectralDNS/shenfun) an effort is made towards automating the implementation of the spectral Galerkin method for simple tensor product domains, consisting of (currently) one non-periodic and any number of periodic directions. The user interface to ``shenfun`` is intentionally made very similar to FEniCS (fenicsproject.org). Partial Differential Equations are represented through weak variational forms and solved using efficient direct solvers where available. MPI decomposition is achieved through the ``mpi4py-fft`` module (bitbucket.org/mpi4py/mpi4py-fft),  and all developed solvers may, with no additional effort, be run on supercomputers using thousands of processors. Complete solvers are shown for the linear Poisson and biharmonic problems, as well as the nonlinear and time-dependent Ginzburg-Landau equation.
 

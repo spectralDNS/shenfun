@@ -557,7 +557,7 @@ uh = TrialFunction(T)
 vh = TestFunction(T)
 k2 = -(inner(grad(vh), grad(uh)).diagonal_array / A + gamma)
 
-def compute_rhs(duf_hat, uf_hat, up, T, Tp, w0):
+def compute_rhs(duf_hat, uf_hat, up, Tp, w0):
     duf_hat.fill(0)
     u_hat, f_hat = uf_hat[:]
     du_hat, df_hat = duf_hat[:]
@@ -567,9 +567,9 @@ def compute_rhs(duf_hat, uf_hat, up, T, Tp, w0):
     du_hat[:] = f_hat
     return duf_hat
 
-def energy_fourier(comm, N, a):
-    result = 2*np.sum(abs(a[...,1:-1])**2) + np.sum(abs(a[...,0])**2) \
-             + np.sum(abs(a[...,-1])**2)
+def energy_fourier(comm, a):
+    result = 2*np.sum(abs(a[..., 1:-1])**2) + np.sum(abs(a[..., 0])**2) \
+             + np.sum(abs(a[..., -1])**2)
     result =  comm.allreduce(result)
     return result
 
@@ -582,7 +582,7 @@ end_time = 50.
 tstep = 0
 if rank == 0:
     plt.figure()
-    im = plt.contourf(X[0][..., 0], X[1][..., 0], u[..., 4], 100)
+    im = plt.contourf(X[1][..., 0], X[0][..., 0], u[..., 4], 100)
     plt.draw()
     plt.pause(1e-4)
 t0 = time()
@@ -592,7 +592,7 @@ while t < end_time-1e-8:
     tstep += 1
     uf_hat1[:] = uf_hat0[:] = uf_hat
     for rk in range(4):
-        duf = compute_rhs(duf, uf_hat, up, T, Tp, w0)
+        duf = compute_rhs(duf, uf_hat, up, Tp, w0)
         if rk < 3:
             uf_hat[:] = uf_hat0 + b[rk]*dt*duf
         uf_hat1 += a[rk]*dt*duf
@@ -600,13 +600,13 @@ while t < end_time-1e-8:
 
     if tstep % 50 == 0:
         uf = TT.backward(uf_hat, uf)
-        ekin = 0.5*energy_fourier(T.comm, np.array(N), f_hat)
-        es = 0.5*energy_fourier(T.comm, np.array(N), 1j*K*u_hat)
+        ekin = 0.5*energy_fourier(T.comm, f_hat)
+        es = 0.5*energy_fourier(T.comm, 1j*K*u_hat)
         eg = gamma*np.sum(0.5*u**2 - 0.25*u**4)/np.prod(np.array(N))
         eg =  comm.allreduce(eg)
         if rank == 0:
             im.ax.clear()
-            im.ax.contourf(X[0][..., 0], X[1][..., 0], u[..., 4], 100)
+            im.ax.contourf(X[1][..., 0], X[0][..., 0], u[..., 4], 100)
             plt.pause(1e-6)
             print("Time = %2.2f Total energy = %2.8e" %(t, ekin+es+eg))
         comm.barrier()
