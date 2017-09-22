@@ -76,6 +76,12 @@ MathJax.Hub.Config({
  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
 </script>
 
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+$$
+
+
 
 
     
@@ -138,7 +144,7 @@ MathJax.Hub.Config({
 <center><b>Department of Mathematics, University of Oslo.</b></center>
 <br>
 <p>
-<center><h4>Sep 20, 2017</h4></center> <!-- date -->
+<center><h4>Sep 22, 2017</h4></center> <!-- date -->
 <br>
 <p>
 <b>Summary.</b> This is a demonstration of how the Python module <a href="https://github.com/spectralDNS/shenfun" target="_self">shenfun</a> can be used to solve the time-dependent,
@@ -331,7 +337,14 @@ e^{\imath \underline{n} z} = e^{\imath
 \end{equation}
 $$
 
-and we look for solutions of the form
+where the indices for \( y \)- and \( z \)-direction are \( \underline{m}=\frac{2\pi}{L}m,
+\underline{n}=\frac{2\pi}{L}n \), and \( \bs{m} \) and \( \bs{n} \) are the same as
+\( \bs{l} \) due to using the same number of basis functions for each direction. One
+distinction, though, is that for the \( z \)-direction expansion coefficients are only stored for
+\( n=(0, 1, \ldots, N/2) \) due to Hermitian symmetry (real input data).
+
+<p>
+We now look for solutions of the form
 
 $$
 \begin{equation}
@@ -348,14 +361,14 @@ the solution in quadrature points corresponding to
 
 $$
 \begin{align}
- x_i &= \frac{4 \pi i}{N}-2\pi, \quad \forall \, i \in \boldsymbol{i},
+ x_i &= \frac{4 \pi i}{N}-2\pi \quad \forall \, i \in \boldsymbol{i},
 \text{where}\, \boldsymbol{i}=(0,1,\ldots,N-1), 
 \tag{16}\\ 
- y_j &= \frac{4 \pi j}{N}-2\pi, \quad \forall \, j \in \boldsymbol{j},
-\text{where}\, \boldsymbol{j}=(0,1,\ldots,N-1) 
+ y_j &= \frac{4 \pi j}{N}-2\pi \quad \forall \, j \in \boldsymbol{j},
+\text{where}\, \boldsymbol{j}=(0,1,\ldots,N-1), 
 \tag{17}\\ 
- z_k &= \frac{4 \pi k}{N}-2\pi, \quad \forall \, k \in \boldsymbol{k},
-\text{where}\, \boldsymbol{k}=(0,1,\ldots,N-1) 
+ z_k &= \frac{4 \pi k}{N}-2\pi \quad \forall \, k \in \boldsymbol{k},
+\text{where}\, \boldsymbol{k}=(0,1,\ldots,N-1). 
 \tag{18}\\ 
 \tag{19}
 \end{align}
@@ -369,8 +382,9 @@ $$
 \begin{equation}
 u(x_i, y_j, z_k) =
 N^3
-\mathcal{F}_k^{-1}\left(\mathcal{F}_j^{-1}\left(\mathcal{F}_i^{-1}\left(\hat{u}\right)\right)\right),
-\, \forall\, (i,j,k)\in\boldsymbol{i} \times \boldsymbol{j} \times \boldsymbol{k}
+\mathcal{F}_k^{-1}\left(\mathcal{F}_j^{-1}\left(\mathcal{F}_i^{-1}\left(\hat{u}\right)\right)\right)
+\, \forall\, (i,j,k)\in\boldsymbol{i} \times \boldsymbol{j} \times
+\boldsymbol{k},
 \tag{20}
 \end{equation}
 $$
@@ -742,7 +756,7 @@ uh <span style="color: #666666">=</span> TrialFunction(T)
 vh <span style="color: #666666">=</span> TestFunction(T)
 k2 <span style="color: #666666">=</span> <span style="color: #666666">-</span>(inner(grad(vh), grad(uh))<span style="color: #666666">.</span>diagonal_array <span style="color: #666666">/</span> A <span style="color: #666666">+</span> gamma)
 
-<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">compute_rhs</span>(duf_hat, uf_hat, up, T, Tp, w0):
+<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">compute_rhs</span>(duf_hat, uf_hat, up, Tp, w0):
     duf_hat<span style="color: #666666">.</span>fill(<span style="color: #666666">0</span>)
     u_hat, f_hat <span style="color: #666666">=</span> uf_hat[:]
     du_hat, df_hat <span style="color: #666666">=</span> duf_hat[:]
@@ -752,9 +766,9 @@ k2 <span style="color: #666666">=</span> <span style="color: #666666">-</span>(i
     du_hat[:] <span style="color: #666666">=</span> f_hat
     <span style="color: #008000; font-weight: bold">return</span> duf_hat
 
-<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">energy_fourier</span>(comm, N, a):
-    result <span style="color: #666666">=</span> <span style="color: #666666">2*</span>np<span style="color: #666666">.</span>sum(<span style="color: #008000">abs</span>(a[<span style="color: #666666">...</span>,<span style="color: #666666">1</span>:<span style="color: #666666">-1</span>])<span style="color: #666666">**2</span>) <span style="color: #666666">+</span> np<span style="color: #666666">.</span>sum(<span style="color: #008000">abs</span>(a[<span style="color: #666666">...</span>,<span style="color: #666666">0</span>])<span style="color: #666666">**2</span>) \ 
-             <span style="color: #666666">+</span> np<span style="color: #666666">.</span>sum(<span style="color: #008000">abs</span>(a[<span style="color: #666666">...</span>,<span style="color: #666666">-1</span>])<span style="color: #666666">**2</span>)
+<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">energy_fourier</span>(comm, a):
+    result <span style="color: #666666">=</span> <span style="color: #666666">2*</span>np<span style="color: #666666">.</span>sum(<span style="color: #008000">abs</span>(a[<span style="color: #666666">...</span>, <span style="color: #666666">1</span>:<span style="color: #666666">-1</span>])<span style="color: #666666">**2</span>) <span style="color: #666666">+</span> np<span style="color: #666666">.</span>sum(<span style="color: #008000">abs</span>(a[<span style="color: #666666">...</span>, <span style="color: #666666">0</span>])<span style="color: #666666">**2</span>) \ 
+             <span style="color: #666666">+</span> np<span style="color: #666666">.</span>sum(<span style="color: #008000">abs</span>(a[<span style="color: #666666">...</span>, <span style="color: #666666">-1</span>])<span style="color: #666666">**2</span>)
     result <span style="color: #666666">=</span>  comm<span style="color: #666666">.</span>allreduce(result)
     <span style="color: #008000; font-weight: bold">return</span> result
 
@@ -767,7 +781,7 @@ end_time <span style="color: #666666">=</span> <span style="color: #666666">50.<
 tstep <span style="color: #666666">=</span> <span style="color: #666666">0</span>
 <span style="color: #008000; font-weight: bold">if</span> rank <span style="color: #666666">==</span> <span style="color: #666666">0</span>:
     plt<span style="color: #666666">.</span>figure()
-    im <span style="color: #666666">=</span> plt<span style="color: #666666">.</span>contourf(X[<span style="color: #666666">0</span>][<span style="color: #666666">...</span>, <span style="color: #666666">0</span>], X[<span style="color: #666666">1</span>][<span style="color: #666666">...</span>, <span style="color: #666666">0</span>], u[<span style="color: #666666">...</span>, <span style="color: #666666">4</span>], <span style="color: #666666">100</span>)
+    im <span style="color: #666666">=</span> plt<span style="color: #666666">.</span>contourf(X[<span style="color: #666666">1</span>][<span style="color: #666666">...</span>, <span style="color: #666666">0</span>], X[<span style="color: #666666">0</span>][<span style="color: #666666">...</span>, <span style="color: #666666">0</span>], u[<span style="color: #666666">...</span>, <span style="color: #666666">4</span>], <span style="color: #666666">100</span>)
     plt<span style="color: #666666">.</span>draw()
     plt<span style="color: #666666">.</span>pause(<span style="color: #666666">1e-4</span>)
 t0 <span style="color: #666666">=</span> time()
@@ -777,7 +791,7 @@ K <span style="color: #666666">=</span> np<span style="color: #666666">.</span>a
     tstep <span style="color: #666666">+=</span> <span style="color: #666666">1</span>
     uf_hat1[:] <span style="color: #666666">=</span> uf_hat0[:] <span style="color: #666666">=</span> uf_hat
     <span style="color: #008000; font-weight: bold">for</span> rk <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">4</span>):
-        duf <span style="color: #666666">=</span> compute_rhs(duf, uf_hat, up, T, Tp, w0)
+        duf <span style="color: #666666">=</span> compute_rhs(duf, uf_hat, up, Tp, w0)
         <span style="color: #008000; font-weight: bold">if</span> rk <span style="color: #666666">&lt;</span> <span style="color: #666666">3</span>:
             uf_hat[:] <span style="color: #666666">=</span> uf_hat0 <span style="color: #666666">+</span> b[rk]<span style="color: #666666">*</span>dt<span style="color: #666666">*</span>duf
         uf_hat1 <span style="color: #666666">+=</span> a[rk]<span style="color: #666666">*</span>dt<span style="color: #666666">*</span>duf
@@ -785,13 +799,13 @@ K <span style="color: #666666">=</span> np<span style="color: #666666">.</span>a
 
     <span style="color: #008000; font-weight: bold">if</span> tstep <span style="color: #666666">%</span> <span style="color: #666666">50</span> <span style="color: #666666">==</span> <span style="color: #666666">0</span>:
         uf <span style="color: #666666">=</span> TT<span style="color: #666666">.</span>backward(uf_hat, uf)
-        ekin <span style="color: #666666">=</span> <span style="color: #666666">0.5*</span>energy_fourier(T<span style="color: #666666">.</span>comm, np<span style="color: #666666">.</span>array(N), f_hat)
-        es <span style="color: #666666">=</span> <span style="color: #666666">0.5*</span>energy_fourier(T<span style="color: #666666">.</span>comm, np<span style="color: #666666">.</span>array(N), <span style="color: #666666">1j*</span>K<span style="color: #666666">*</span>u_hat)
+        ekin <span style="color: #666666">=</span> <span style="color: #666666">0.5*</span>energy_fourier(T<span style="color: #666666">.</span>comm, f_hat)
+        es <span style="color: #666666">=</span> <span style="color: #666666">0.5*</span>energy_fourier(T<span style="color: #666666">.</span>comm, <span style="color: #666666">1j*</span>K<span style="color: #666666">*</span>u_hat)
         eg <span style="color: #666666">=</span> gamma<span style="color: #666666">*</span>np<span style="color: #666666">.</span>sum(<span style="color: #666666">0.5*</span>u<span style="color: #666666">**2</span> <span style="color: #666666">-</span> <span style="color: #666666">0.25*</span>u<span style="color: #666666">**4</span>)<span style="color: #666666">/</span>np<span style="color: #666666">.</span>prod(np<span style="color: #666666">.</span>array(N))
         eg <span style="color: #666666">=</span>  comm<span style="color: #666666">.</span>allreduce(eg)
         <span style="color: #008000; font-weight: bold">if</span> rank <span style="color: #666666">==</span> <span style="color: #666666">0</span>:
             im<span style="color: #666666">.</span>ax<span style="color: #666666">.</span>clear()
-            im<span style="color: #666666">.</span>ax<span style="color: #666666">.</span>contourf(X[<span style="color: #666666">0</span>][<span style="color: #666666">...</span>, <span style="color: #666666">0</span>], X[<span style="color: #666666">1</span>][<span style="color: #666666">...</span>, <span style="color: #666666">0</span>], u[<span style="color: #666666">...</span>, <span style="color: #666666">4</span>], <span style="color: #666666">100</span>)
+            im<span style="color: #666666">.</span>ax<span style="color: #666666">.</span>contourf(X[<span style="color: #666666">1</span>][<span style="color: #666666">...</span>, <span style="color: #666666">0</span>], X[<span style="color: #666666">0</span>][<span style="color: #666666">...</span>, <span style="color: #666666">0</span>], u[<span style="color: #666666">...</span>, <span style="color: #666666">4</span>], <span style="color: #666666">100</span>)
             plt<span style="color: #666666">.</span>pause(<span style="color: #666666">1e-6</span>)
             <span style="color: #008000; font-weight: bold">print</span>(<span style="color: #BA2121">&quot;Time = </span><span style="color: #BB6688; font-weight: bold">%2.2f</span><span style="color: #BA2121"> Total energy = </span><span style="color: #BB6688; font-weight: bold">%2.8e</span><span style="color: #BA2121">&quot;</span> <span style="color: #666666">%</span>(t, ekin<span style="color: #666666">+</span>es<span style="color: #666666">+</span>eg))
         comm<span style="color: #666666">.</span>barrier()

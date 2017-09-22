@@ -181,7 +181,13 @@ e^{\imath \underline{n} z} = e^{\imath
 (\underline{l}x + \underline{m}y + \underline{n}z)}
 \end{equation}
 !et
-and we look for solutions of the form
+where the indices for $y$- and $z$-direction are $\underline{m}=\frac{2\pi}{L}m,
+\underline{n}=\frac{2\pi}{L}n$, and $\bs{m}$ and $\bs{n}$ are the same as
+$\bs{l}$ due to using the same number of basis functions for each direction. One
+distinction, though, is that for the $z$-direction expansion coefficients are only stored for
+$n=(0, 1, \ldots, N/2)$ due to Hermitian symmetry (real input data).
+
+We now look for solutions of the form
 
 !bt
 \begin{equation}
@@ -196,12 +202,12 @@ the solution in quadrature points corresponding to
 
 !bt
 \begin{align}
- x_i &= \frac{4 \pi i}{N}-2\pi, \quad \forall \, i \in \boldsymbol{i},
+ x_i &= \frac{4 \pi i}{N}-2\pi \quad \forall \, i \in \boldsymbol{i},
 \text{where}\, \boldsymbol{i}=(0,1,\ldots,N-1), \\
- y_j &= \frac{4 \pi j}{N}-2\pi, \quad \forall \, j \in \boldsymbol{j},
-\text{where}\, \boldsymbol{j}=(0,1,\ldots,N-1) \\
- z_k &= \frac{4 \pi k}{N}-2\pi, \quad \forall \, k \in \boldsymbol{k},
-\text{where}\, \boldsymbol{k}=(0,1,\ldots,N-1) \\
+ y_j &= \frac{4 \pi j}{N}-2\pi \quad \forall \, j \in \boldsymbol{j},
+\text{where}\, \boldsymbol{j}=(0,1,\ldots,N-1), \\
+ z_k &= \frac{4 \pi k}{N}-2\pi \quad \forall \, k \in \boldsymbol{k},
+\text{where}\, \boldsymbol{k}=(0,1,\ldots,N-1). \\
 \end{align}
 !et
 Note that these points are different from the standard (like $2\pi j/N$) since
@@ -212,8 +218,9 @@ is set to $[-2\pi, 2\pi]^3$ and not the more common $[0, 2\pi]^3$. We have
 \begin{equation}
 u(x_i, y_j, z_k) =
 N^3
-\mathcal{F}_k^{-1}\left(\mathcal{F}_j^{-1}\left(\mathcal{F}_i^{-1}\left(\hat{u}\right)\right)\right),
-\, \forall\, (i,j,k)\in\boldsymbol{i} \times \boldsymbol{j} \times \boldsymbol{k}
+\mathcal{F}_k^{-1}\left(\mathcal{F}_j^{-1}\left(\mathcal{F}_i^{-1}\left(\hat{u}\right)\right)\right)
+\, \forall\, (i,j,k)\in\boldsymbol{i} \times \boldsymbol{j} \times
+\boldsymbol{k},
 \end{equation}
 !et
 where $\mathcal{F}_i^{-1}$ is the inverse Fourier transform along the direction
