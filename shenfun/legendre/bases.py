@@ -59,7 +59,7 @@ class LegendreBase(SpectralBase):
     def __init__(self, N=0, quad="LG", domain=(-1., 1.)):
         SpectralBase.__init__(self, N, quad, domain=domain)
 
-    def points_and_weights(self, N):
+    def points_and_weights(self, N, scaled=False):
         if self.quad == "LG":
             points, weights = leg.leggauss(N)
         elif self.quad == "GL":
@@ -67,8 +67,9 @@ class LegendreBase(SpectralBase):
         else:
             raise NotImplementedError
 
-        a, b = self.domain
-        points = a+(b-a)/2+points*(b-a)/2
+        if scaled is True:
+            a, b = self.domain
+            points = a+(b-a)/2+points*(b-a)/2
         return points, weights
 
     def vandermonde(self, x):
@@ -95,7 +96,7 @@ class LegendreBase(SpectralBase):
             D = np.zeros((self.N, self.N))
             D[:-k, :] = leg.legder(np.eye(self.N), k)
             a, b = self.domain
-            V = np.dot(V, D)*(2./(b-a))**k
+            V = np.dot(V, D) #*(2./(b-a))**k
 
         return self.get_vandermonde_basis(V)
 
@@ -106,6 +107,13 @@ class LegendreBase(SpectralBase):
     def _get_mat(self):
         from .matrices import mat
         return mat
+
+    def domain_factor(self):
+        a, b = self.domain
+        if abs(b-a-2) < 1e-12:
+            return 1
+        else:
+            return 2./(b-a)
 
     def forward(self, input_array=None, output_array=None, fast_transform=False):
         """Fast forward transform

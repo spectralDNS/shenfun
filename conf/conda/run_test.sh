@@ -1,2 +1,2 @@
 pushd tests
-py.test
+py.test --cov=./

@@ -1,4 +1,5 @@
 import numpy as np
+from numbers import Number
 
 __all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',
            'Array')
@@ -126,10 +127,10 @@ class Expr(object):
             if isinstance(a, tuple):
                 assert len(a) == self.dim()
                 for i in range(self.dim()):
-                    assert isinstance(a[i], (int, float, np.floating, np.integer))
+                    assert isinstance(a[i], Number)
                     sc[i] = sc[i]*a[i]
 
-            elif isinstance(a, (int, float, np.floating, np.integer)):
+            elif isinstance(a, Number):
                 sc *= a
 
             elif isinstance(a, np.ndarray):
@@ -144,16 +145,16 @@ class Expr(object):
     def __imul__(self, a):
         sc = self.scales()
         if self.expr_rank() == 1:
-            assert isinstance(a, (int, float, np.floating, np.integer))
+            assert isinstance(a, Number)
             sc *= a
         elif self.expr_rank() == 2:
             if isinstance(a, tuple):
                 assert len(a) == self.dim()
                 for i in range(self.dim()):
-                    assert isinstance(a[i], (int, float, np.floating, np.integer))
+                    assert isinstance(a[i], Number)
                     sc[i] = sc[i]*a[i]
 
-            elif isinstance(a, (int, float, np.floating, np.integer)):
+            elif isinstance(a, Number):
                 sc *= a
 
             elif isinstance(a, np.ndarray):

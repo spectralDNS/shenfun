@@ -165,11 +165,15 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
             for trial_j, b1 in enumerate(base_trial):        # second index trial
                 sc = test_scale[vec, test_j]*trial_scale[vec, trial_j]
                 A.append([])
-                S.append(np.array([sc]))
                 assert len(b0) == len(b1)
                 for i, (a, b) in enumerate(zip(b0, b1)): # Third index, one inner for each dimension
                     AA = inner_product((space[i], a), (trialspace[i], b))
                     A[-1].append(AA)
+                    # Take care of domains of not standard size
+                    if not space[i].domain_factor() == 1:
+                        sc *= space[i].domain_factor()**(a+b)
+                S.append(np.array([sc]))
+
         vec += 1
 
     # At this point A contains all matrices of the form. The length of A is
@@ -264,6 +268,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
         # All Fourier
         if space.ndim() == 1:
             if trial.argument() == 1:
+                A[0][0].axis = 0
                 return A[0][0]
 
             else:

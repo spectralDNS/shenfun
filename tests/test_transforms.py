@@ -144,7 +144,7 @@ def test_transforms(ST, quad, axis):
     cc[axis] = slice(None)
     assert np.allclose(fj[cc], u11[cc])
 
-#test_transforms(lbases.ShenDirichletBasis, 'GL', 1)
+#test_transforms(lbases.Basis, 'GL', 1)
 
 
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)

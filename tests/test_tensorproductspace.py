@@ -180,7 +180,7 @@ def test_shentransform(typecode, dim, ST, quad):
             assert allclose(F, Fc)
             bases.pop(axis)
             fft.destroy()
-
+#test_shentransform('d', 2, lBasis[0], 'LG')
 
 bases_and_quads = list(product(lBasis[:2], lquads))+list(product(cBasis[:2], cquads))
 
@@ -251,6 +251,8 @@ def test_project(typecode, dim, ST, quad):
 
             bases.pop(axis)
             fft.destroy()
+
+#test_project('d', 1, lBasis[0], 'LG')
 
 nbases_and_quads = list(product(lBasis[2:3], lquads))+list(product(cBasis[2:3], cquads))
 @pytest.mark.parametrize('typecode', 'dD')

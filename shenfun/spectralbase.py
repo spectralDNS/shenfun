@@ -118,7 +118,7 @@ class SpectralBase(object):
 
         """
         N = list(N) if np.ndim(N) else [N]
-        x = self.points_and_weights(N[axis])[0]
+        x = self.points_and_weights(N[axis], scaled=True)[0]
         X = self.broadcast_to_ndims(x, len(N), axis)
         return X
 
@@ -301,17 +301,17 @@ class SpectralBase(object):
                                       returned.
 
         """
-        B = self.get_mass_matrix()
         if self._mass is None:
             assert self.N == array.shape[self.axis]
+            B = self.get_mass_matrix()
             self._mass = B((self, 0), (self, 0))
 
         if (self._mass.testfunction[0].quad != self.quad or
             self._mass.testfunction[0].N != array.shape[self.axis]):
+            B = self.get_mass_matrix()
             self._mass = B((self, 0), (self, 0))
 
         array = self._mass.solve(array, axis=self.axis)
-
         return array
 
     def plan(self, shape, axis, dtype, options):
@@ -411,6 +411,9 @@ class SpectralBase(object):
         """Return the shape of current basis used to build a SpectralMatrix"""
         s = self.slice()
         return s.stop - s.start
+
+    def domain_factor(self):
+        return 1
 
     def __hash__(self):
         return hash(repr(self.__class__))

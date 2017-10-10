@@ -9,10 +9,7 @@ to integrate forward in time
     f_t = div(grad(u)) - u + u*|u|**2         (1)
     u_t = f                                   (2)
 
-with both u(x, y, z, t=0) and f(x, y, z, t=0) given
-
-The Fourier basis is span{exp(1jkx)}_{k=-N/2}^{N/2-1} and
-VxVxV is a tensor product space.
+with both u(x, y, z, t=0) and f(x, y, z, t=0) given.
 
 """
 from sympy import symbols, exp, lambdify

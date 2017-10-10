@@ -40,7 +40,8 @@ def solve(A, b, u=None, axis=0):
     # Move axis to first
     if axis > 0:
         u = np.moveaxis(u, axis, 0)
-        b = np.moveaxis(b, axis, 0)
+        if not u is b:
+            b = np.moveaxis(b, axis, 0)
 
     assert A.shape[0] == b[s].shape[0]
     if (isinstance(A.testfunction[0], chebyshev.bases.ShenNeumannBasis) or
@@ -71,12 +72,12 @@ def solve(A, b, u=None, axis=0):
             else:
                 u[s] = spsolve(A.diags('csr'), br).reshape(u[s].shape)
         if hasattr(A.testfunction[0], 'bc'):
-            u[-1] = A.testfunction[0].bc[0]
-            u[-2] = A.testfunction[0].bc[1]
+            A.testfunction[0].bc.apply_after(u, True)
 
     if axis > 0:
         u = np.moveaxis(u, 0, axis)
-        b = np.moveaxis(b, 0, axis)
+        if not u is b:
+            b = np.moveaxis(b, 0, axis)
 
     u /= A.scale
 

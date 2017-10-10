@@ -3,6 +3,7 @@ from __future__ import division
 __all__ = ['mat']
 
 import numpy as np
+from numbers import Number
 from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
 from .la import TDMA
@@ -35,6 +36,23 @@ class BLLmat(SpectralMatrix):
         if test[0].quad == 'GL':
             d[0][-1] = 2./(N-1)
         SpectralMatrix.__init__(self, d, test, trial)
+
+    def solve(self, b, u=None, axis=0):
+        N = self.shape[0]
+        assert N == b.shape[axis]
+
+        if u is None:
+            u = b
+        else:
+            assert u.shape == b.shape
+
+        sl = [np.newaxis]*u.ndim
+        sl[axis] = slice(None)
+        d = 1./self[0]
+        d[sl] /= self.scale
+        u[:] = b*d[sl]
+
+        return u
 
 
 @inheritdocstrings
@@ -141,7 +159,7 @@ class ADDmat(SpectralMatrix):
 
     def solve(self, b, u=None, axis=0):
         N = self.shape[0] + 2
-        assert N == b.shape[0]
+        assert N == b.shape[axis]
         s = self.trialfunction[0].slice()
 
         if u is None:
@@ -151,24 +169,24 @@ class ADDmat(SpectralMatrix):
 
         if not self.trialfunction[0].is_scaled():
 
-            # Move axis to first
-            if axis > 0:
-                u = np.moveaxis(u, axis, 0)
-                if not u is b:
-                    b = np.moveaxis(b, axis, 0)
+            ## Move axis to first
+            #if axis > 0:
+                #u = np.moveaxis(u, axis, 0)
+                #if not u is b:
+                    #b = np.moveaxis(b, axis, 0)
 
             bs = b[s]
             us = u[s]
             d = 1./self[0]
             sl = [np.newaxis]*bs.ndim
-            sl[0] = slice(None)
+            sl[axis] = slice(None)
             us[:] = bs*d[sl]
             self.testfunction[0].bc.apply_after(u, True)
 
-            if axis > 0:
-                u = np.moveaxis(u, 0, axis)
-                if not u is b:
-                    b = np.moveaxis(b, axis, 0)
+            #if axis > 0:
+                #u = np.moveaxis(u, 0, axis)
+                #if not u is b:
+                    #b = np.moveaxis(b, axis, 0)
         else:
             ss = [slice(None)]*b.ndim
             ss[axis] = s
@@ -224,8 +242,7 @@ class GDDmat(SpectralMatrix):
             sl = [np.newaxis]*bs.ndim
             sl[0] = slice(None)
             us[:] = bs*d[sl]
-            u[-2] = self.testfunction[0].bc[0]
-            u[-1] = self.testfunction[0].bc[1]
+            self.testfunction[0].bc.apply_after(u, True)
 
             if axis > 0:
                 u = np.moveaxis(u, 0, axis)
@@ -235,10 +252,7 @@ class GDDmat(SpectralMatrix):
             ss = [slice(None)]*b.ndim
             ss[axis] = s
             u[ss] = -b[ss]
-            ss[axis] = -2
-            u[ss] = self.testfunction[0].bc[0]
-            ss[axis] = -1
-            u[ss] = self.testfunction[0].bc[1]
+            self.testfunction[0].bc.apply_after(u, True)
 
         u /= self.scale
         return u
@@ -351,6 +365,68 @@ class SBBmat(SpectralMatrix):
         d = {0: 2*(2*k+3)**2*(2*k+5)}
         SpectralMatrix.__init__(self, d, test, trial)
 
+@inheritdocstrings
+class CLLmat(SpectralMatrix):
+    """Matrix for inner product C_{kj} = (psi_j, psi'_k)_w
+
+    where
+
+        j = 0, 1, ..., N and k = 0, 1, ..., N
+
+    and psi_k is the Shen Legendre basis function.
+
+    """
+    def __init__(self, test, trial):
+        assert isinstance(test[0], LB)
+        assert isinstance(trial[0], LB)
+        N = test[0].N
+        d = {}
+        for i in range(1, N, 2):
+            d[i] = 2.0
+        SpectralMatrix.__init__(self, d, test, trial)
+
+    def matvec(self, v, c, format='self', axis=0):
+        N = self.shape[0]
+        c.fill(0)
+        if format == 'self':
+            if axis > 0:
+                c = np.moveaxis(c, axis, 0)
+                v = np.moveaxis(v, axis, 0)
+            s = (slice(None),) + (np.newaxis,)*(v.ndim-1) # broadcasting
+            ve = v[-2:0:-2].cumsum(axis=0)
+            vo = v[-1:0:-2].cumsum(axis=0)
+            c[-3::-2] = ve*2.0
+            c[-2::-2] = vo*2.0
+            if axis > 0:
+                c = np.moveaxis(c, 0, axis)
+                v = np.moveaxis(v, 0, axis)
+
+        else:
+            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
+
+        return c
+
+
+@inheritdocstrings
+class CLLmatT(SpectralMatrix):
+    """Matrix for inner product C_{kj} = (psi'_j, psi_k)_w
+
+    where
+
+        j = 0, 1, ..., N and k = 0, 1, ..., N
+
+    and psi_k is the Shen Legendre basis function.
+
+    """
+    def __init__(self, test, trial):
+        assert isinstance(test[0], LB)
+        assert isinstance(trial[0], LB)
+        N = test[0].N
+        d = {}
+        for i in range(-1, -N, -2):
+            d[i] = 2.0
+        SpectralMatrix.__init__(self, d, test, trial)
+
 
 @inheritdocstrings
 class _Legmatrix(SpectralMatrix):
@@ -378,6 +454,8 @@ class _LegMatDict(dict):
 
 mat = _LegMatDict({
     ((LB, 0), (LB, 0)): BLLmat,
+    ((LB, 0), (LB, 1)): CLLmat,
+    ((LB, 1), (LB, 0)): CLLmatT,
     ((SD, 0), (SD, 0)): BDDmat,
     ((SB, 0), (SB, 0)): BBBmat,
     ((SN, 0), (SN, 0)): BNNmat,

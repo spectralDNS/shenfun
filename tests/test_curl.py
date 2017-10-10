@@ -13,7 +13,13 @@ M = 4
 N = [2**M, 2**M, 2**M]
 L = np.array([2*np.pi, 4*np.pi, 4*np.pi], dtype=float) # Needs to be (2*int)*pi in all directions (periodic) because of initialization
 
-@pytest.mark.parametrize('typecode', 'fd')
+abstol = dict(f=1e-6, d=1e-10, g=1e-12)
+
+def allclose(a, b):
+    atol = abstol[a.dtype.char.lower()]
+    return np.allclose(a, b, rtol=0, atol=atol)
+
+@pytest.mark.parametrize('typecode', 'fdg')
 def test_curl(typecode):
     K0 = C2CBasis(N[0])
     K1 = C2CBasis(N[1])
@@ -38,7 +44,7 @@ def test_curl(typecode):
     Uc = U_hat.copy()
     U = Tk.backward(U_hat, U)
     U_hat = Tk.forward(U, U_hat)
-    assert np.allclose(U_hat, Uc)
+    assert allclose(U_hat, Uc)
 
     curl_hat[0] = 1j*(K[1]*U_hat[2] - K[2]*U_hat[1])
     curl_hat[1] = 1j*(K[2]*U_hat[0] - K[0]*U_hat[2])
@@ -64,8 +70,8 @@ def test_curl(typecode):
     uu = Function(Tk, False)
     uu = Tk.backward(u_hat, uu)
 
-    assert np.allclose(u_hat, U_hat)
-    assert np.allclose(w, curl_)
+    assert allclose(u_hat, U_hat)
+    assert allclose(w, curl_)
 
 
 def test_curl2():
@@ -97,7 +103,7 @@ def test_curl2():
     Uc = U_hat.copy()
     U = Tk.backward(U_hat, U)
     U_hat = Tk.forward(U, U_hat)
-    assert np.allclose(U_hat, Uc)
+    assert allclose(U_hat, Uc)
 
     # Compute curl first by computing each term individually
     curl_hat[0] = 1j*(K[1]*U_hat[2] - K[2]*U_hat[1])
@@ -120,9 +126,9 @@ def test_curl2():
     w = Function(TTk, False)
     w = TTk.backward(w_hat, w)
 
-    assert np.allclose(w, curl_)
+    assert allclose(w, curl_)
 
 
 if __name__ == '__main__':
-    test_curl('d')
+    test_curl('f')
     test_curl2()

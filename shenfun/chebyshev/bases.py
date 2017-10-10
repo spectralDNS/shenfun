@@ -68,7 +68,7 @@ class ChebyshevBase(SpectralBase):
         assert quad in ('GC', 'GL')
         SpectralBase.__init__(self, N, quad, domain=domain)
 
-    def points_and_weights(self, N):
+    def points_and_weights(self, N, scaled=False):
         if self.quad == "GL":
             points = -(n_cheb.chebpts2(N)).astype(float)
             weights = np.zeros(N)+np.pi/(N-1)
@@ -80,8 +80,10 @@ class ChebyshevBase(SpectralBase):
             points = points.astype(float)
             weights = weights.astype(float)
 
-        a, b = self.domain
-        points = a+(b-a)/2+points*(b-a)/2
+        if scaled is True:
+            a, b = self.domain
+            points = a+(b-a)/2+points*(b-a)/2
+
         return points, weights
 
     def vandermonde(self, x):
@@ -108,7 +110,7 @@ class ChebyshevBase(SpectralBase):
             D = np.zeros((self.N, self.N))
             D[:-k, :] = n_cheb.chebder(np.eye(self.N), k)
             a, b = self.domain
-            V = np.dot(V, D)*(2./(b-a))**k
+            V = np.dot(V, D) # *(2./(b-a))**k
         return self.get_vandermonde_basis(V)
 
     def get_mass_matrix(self):
@@ -118,6 +120,13 @@ class ChebyshevBase(SpectralBase):
     def _get_mat(self):
         from .matrices import mat
         return mat
+
+    def domain_factor(self):
+        a, b = self.domain
+        if abs(b-a-2) < 1e-12:
+            return 1
+        else:
+            return 2./(b-a)
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
@@ -184,8 +193,8 @@ class Basis(ChebyshevBase):
 
     """
 
-    def __init__(self, N=0, quad="GC", plan=False):
-        ChebyshevBase.__init__(self, N, quad)
+    def __init__(self, N=0, quad="GC", plan=False, domain=(-1., 1.)):
+        ChebyshevBase.__init__(self, N, quad, domain)
         if quad == 'GC':
             self._xfftn_fwd = functools.partial(pyfftw.builders.dct, type=2)
             self._xfftn_bck = functools.partial(pyfftw.builders.dct, type=3)
@@ -357,14 +366,6 @@ class ShenDirichletBasis(ChebyshevBase):
         w_hat[s0] = fk[s0]
         w_hat[s1] -= fk[s0]
         self.bc.apply_before(w_hat, False, (0.5, 0.5))
-
-        #else:
-            #s0 = [slice(0, 1)]*fk.ndim
-            ##s0 = self.sl(slice(0, 1))
-            #w_hat[s0] += 0.5*(self.bc[0] + self.bc[1])
-            #s0[self.axis] = slice(1, 2)
-            #w_hat[s0] += 0.5*(self.bc[0] - self.bc[1])
-
         fj = self.CT.backward(w_hat)
         assert fk is self.xfftn_bck.input_array
         assert fj is self.xfftn_bck.output_array
@@ -429,8 +430,8 @@ class ShenNeumannBasis(ChebyshevBase):
 
     """
 
-    def __init__(self, N=0, quad="GC", mean=0, plan=False):
-        ChebyshevBase.__init__(self, N, quad)
+    def __init__(self, N=0, quad="GC", mean=0, plan=False, domain=(-1., 1.)):
+        ChebyshevBase.__init__(self, N, quad, domain=domain)
         self.mean = mean
         self.CT = Basis(N, quad)
         self._factor = np.zeros(0)

@@ -1,10 +1,10 @@
-#cython: boundscheck=False
-#cython: wraparound=False
+#cython: boundscheck=False, wraparound=False, nonecheck=False
 
 import numpy as np
 cimport cython
 cimport numpy as np
 from libcpp.vector cimport vector
+from cython.parallel import prange
 
 ctypedef np.complex128_t complex_t
 ctypedef np.float64_t real_t
@@ -13,6 +13,17 @@ ctypedef np.int64_t int_t
 ctypedef fused T:
     real_t
     complex_t
+
+def imult(T[:, :, ::1] array, real_t scale):
+    cdef int i, j, k
+
+    #for i in prange(array.shape[0], nogil=True, num_threads=1):
+    for i in range(array.shape[0]):
+        for j in range(array.shape[1]):
+            for k in range(array.shape[2]):
+                array[i, j, k] *= scale
+    return array
+
 
 def CDNmat_matvec(np.ndarray[real_t, ndim=1] ud,
                   np.ndarray[real_t, ndim=1] ld,

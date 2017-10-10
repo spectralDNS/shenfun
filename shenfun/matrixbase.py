@@ -232,7 +232,7 @@ class SparseMatrix(dict):
 
         """
         assert self.shape[0] == self.shape[1]
-        assert self.shape[0] == b.shape[0]
+        assert self.shape[0] == b.shape[axis]
 
         if u is None:
             u = b
@@ -241,8 +241,9 @@ class SparseMatrix(dict):
 
         # Roll relevant axis to first
         if axis > 0:
-            b = np.moveaxis(b, axis, 0)
             u = np.moveaxis(u, axis, 0)
+            if not u is b:
+                b = np.moveaxis(b, axis, 0)
 
         if b.ndim == 1:
             u[:] = spsolve(self.diags(), b)
@@ -253,7 +254,8 @@ class SparseMatrix(dict):
 
         if axis > 0:
             u = np.moveaxis(u, 0, axis)
-            b = np.moveaxis(b, 0, axis)
+            if not u is b:
+                b = np.moveaxis(b, 0, axis)
         return u
 
 
@@ -268,6 +270,7 @@ class SpectralMatrix(SparseMatrix):
                                      a class for one of the bases in
                                          - shenfun.legendre.bases
                                          - shenfun.chebyshev.bases
+                                         - shenfun.fourier.bases
                                      derivative is an integer, and represents
                                      the number of times the trial function
                                      should be differentiated. Representing
@@ -328,6 +331,10 @@ class SpectralMatrix(SparseMatrix):
         psi_k = L_k -2*(2*k+5)/(2*k+7)*L_{k+2} + (2*k+3)/(2*k+7)*L_{k+4},
         span(psi_k) for k = 0, 1, ..., N-4
 
+    Fourier basis:
+
+        F_k = exp(ikx)
+        span(F_k, k=-N/2, -N/2+1, ..., N/2-1)
 
     Examples:
 
@@ -418,11 +425,6 @@ class SpectralMatrix(SparseMatrix):
             ss = [slice(None)]*len(v.shape)
             ss[axis] = 0
             c[ss] = 0
-            #if axis > 0:
-                #c = np.moveaxis(c, axis, 0)
-            #c[0] = 0
-            #if axis > 0:
-                #c = np.moveaxis(c, 0, axis)
         return c
 
     def solve(self, b, u=None, axis=0):

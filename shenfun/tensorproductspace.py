@@ -1,4 +1,5 @@
 import numpy as np
+from numbers import Number
 from shenfun.fourier.bases import FourierBase, R2CBasis, C2CBasis
 from shenfun import chebyshev, legendre
 from mpi4py_fft.mpifft import Transform
@@ -10,6 +11,23 @@ __all__ = ('TensorProductSpace', 'VectorTensorProductSpace', 'MixedTensorProduct
 
 
 class TensorProductSpace(object):
+    """Base class for multidimensional tensorproductspaces.
+
+    The tensorproductspaces are created as Cartesian products from a set of 1D
+    bases. The 1D bases are subclassed instances of the SpectralBase class.
+
+    args:
+        comm                 MPI communicator
+        bases                List of 1D bases
+
+    kwargs:
+        axes                 A tuple containing the order of which to perform
+                             transforms. Last item is transformed first. Defaults
+                             to range(len(bases))
+        dtype                Type of input data in real physical space.
+        slab                 Use 1D slab decomposition instead of default pencil.
+
+    """
 
     def __init__(self, comm, bases, axes=None, dtype=None, slab=False, **kw):
         self.comm = comm
@@ -31,7 +49,13 @@ class TensorProductSpace(object):
         assert sorted(axes) == sorted(set(axes))
 
         if dtype is None:
-            dtype = np.complex if isinstance(bases[-1], C2CBasis) else np.float
+            dtype = np.complex if isinstance(bases[axes[-1]], C2CBasis) else np.float
+        else:
+            if isinstance(bases[axes[-1]], C2CBasis):
+                assert np.dtype(dtype).char in 'FDG'
+            elif isinstance(bases[axes[-1]], R2CBasis):
+                assert np.dtype(dtype).char in 'fdg'
+
         dtype = self.dtype = np.dtype(dtype)
         assert dtype.char in 'fdgFDG'
 
@@ -207,6 +231,12 @@ class TensorProductSpace(object):
 
 
 class MixedTensorProductSpace(object):
+    """Class for composite tensorproductspaces.
+
+    args:
+        spaces        List of tensorproductspaces
+
+    """
 
     def __init__(self, spaces):
         self.spaces = spaces
@@ -237,9 +267,21 @@ class MixedTensorProductSpace(object):
 
 
 class VectorTensorProductSpace(MixedTensorProductSpace):
+    """A special MixedTensorProductSpace where the number of spaces must equal
+    the geometrical dimension of the problem.
+
+    For example, a TensorProductSpace created cy a Cartesian product of 2 1D
+    bases, will have vectors of length 2. A TensorProductSpace created from 3
+    1D bases will have vectors of length 3.
+
+    args:
+        spaces        List of tensorproductspaces
+
+    """
 
     def __init__(self, spaces):
         MixedTensorProductSpace.__init__(self, spaces)
+        assert len(self.spaces) == self.ndim()
 
     def num_components(self):
         assert len(self.spaces) == self.ndim()
@@ -269,6 +311,14 @@ class VectorTransform(object):
 
 
 class BoundaryValues(object):
+    """Class for setting nonhomogeneous boundary conditions for a 1D Dirichlet base
+    inside a multidimensional TensorProductSpace.
+
+    args:
+        T               The TensorProductSpace
+        bc              Tuple with physical boundary values at edges of 1D domain
+
+    """
 
     def __init__(self, T, bc=(0, 0)):
         self.T = T
@@ -294,7 +344,7 @@ class BoundaryValues(object):
             assert len(bc) == 2
             self.bc = list(bc)
             for i in range(2):
-                if isinstance(bc[i], (float, np.floating, np.int, sympy.Expr, np.ndarray)) :
+                if isinstance(bc[i], (Number, sympy.Expr, np.ndarray)) :
                     self.bcs[i] = bc[i]
                 else:
                     raise NotImplementedError
@@ -314,7 +364,7 @@ class BoundaryValues(object):
                                    legendre.bases.ShenDirichletBasis))
                                    for base in T.bases):
             # Setting the Dirichlet boundary condition in a TensorProductSpace
-            # is more involved that for a single dimension, and the routine will
+            # is more involved than for a single dimension, and the routine will
             # depend on the order of the bases. If the Dirichlet space is the last
             # one, then the boundary condition is applied directly. If there is
             # one Fourier space to the right, then one Fourier transform needs to
@@ -377,7 +427,7 @@ class BoundaryValues(object):
                     b[self.slm2] = f_bc0
                     b[self.slm1] = f_bc1
 
-            elif isinstance(self.bc[0], (np.floating, np.int)):
+            elif isinstance(self.bc[0], Number):
                 if s.stop == dirichlet_base.N:
                     b[self.slm2] = self.bc[0]
                     b[self.slm1] = self.bc[1]

@@ -83,25 +83,20 @@ uq = T.backward(u_hat, uq)
 
 # Compare with analytical solution
 uj = ul(*X)
-print(abs(uj-uq).max())
+#print(abs(uj-uq).max())
 assert np.allclose(uj, uq)
 
-#u_hat = T.forward(uq, u_hat)
-#uq2 = Function(T, False)
-#uq2 = T.backward(u_hat, uq2)
-#assert np.allclose(uq2, uq)
+#plt.figure()
+#plt.contourf(X[0], X[1], uq)
+#plt.colorbar()
 
-plt.figure()
-plt.contourf(X[0], X[1], uq)
-plt.colorbar()
+#plt.figure()
+#plt.contourf(X[0], X[1], uj)
+#plt.colorbar()
 
-plt.figure()
-plt.contourf(X[0], X[1], uj)
-plt.colorbar()
-
-plt.figure()
-plt.contourf(X[0], X[1], uq-uj)
-plt.colorbar()
-plt.title('Error')
+#plt.figure()
+#plt.contourf(X[0], X[1], uq-uj)
+#plt.colorbar()
+#plt.title('Error')
 
 #plt.show()

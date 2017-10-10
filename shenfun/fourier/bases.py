@@ -15,13 +15,14 @@ class FourierBase(SpectralBase):
         self.dealias_direct = dealias_direct
         SpectralBase.__init__(self, N, '', padding_factor, domain)
 
-    def points_and_weights(self, N):
+    def points_and_weights(self, N, scaled=False):
         """Return points and weights of quadrature
 
         """
         a, b = self.domain
         points = np.arange(N, dtype=np.float)*2*np.pi/N
-        points = points*(b-a)/(2*np.pi) + a
+        if scaled is True:
+            points = points*(b-a)/(2*np.pi) + a
         return points, np.array([2*np.pi/N])
 
     def vandermonde(self, x):
@@ -56,6 +57,48 @@ class FourierBase(SpectralBase):
     def _get_mat(self):
         from .matrices import mat
         return mat
+
+    def domain_factor(self):
+        a, b = self.domain
+        if (b-a) == 2.*np.pi:
+            return 1
+        else:
+            return 2.*np.pi/(b-a)
+
+    # Note. forward is reimplemented here to avoid one array scaling (scalar_product multiplies with 2pi/N, whereas apply_inverse_mass divides by 2pi)
+    def forward(self, input_array=None, output_array=None, fast_transform=True):
+        """Forward transform
+
+        kwargs:
+            input_array    (input)     Function values on quadrature mesh
+            output_array   (output)    Expansion coefficients
+            fast_transform   bool      If True use fast transforms, if False
+                                       use Vandermonde type
+
+        If kwargs input_array/output_array are not given, then use predefined
+        arrays as planned with self.plan
+
+        """
+        if input_array is not None:
+            self.forward.input_array[...] = input_array
+
+        if fast_transform:
+            output = self.xfftn_fwd()
+            output *= (1./self.N)
+
+        else:
+            self.vandermonde_scalar_product(self.xfftn_fwd.input_array,
+                                            self.xfftn_fwd.output_array)
+            self.apply_inverse_mass(output)
+
+        self._truncation_forward(self.xfftn_fwd.output_array,
+                                 self.forward.output_array)
+
+        if output_array is not None:
+            output_array[...] = self.forward.output_array
+            return output_array
+        else:
+            return self.forward.output_array
 
     def apply_inverse_mass(self, array):
         """Apply inverse mass, which is 2pi*identity for Fourier basis
@@ -172,6 +215,9 @@ class R2CBasis(FourierBase):
             s = [slice(None)]*trunc_array.ndim
             s[self.axis] = slice(0, N)
             trunc_array[:] = padded_array[s]
+            if self.N % 2 == 0:
+                s[self.axis] = N-1
+                trunc_array[s] = trunc_array[s].real
             trunc_array *= (1./self.padding_factor)
 
     def _padding_backward(self, trunc_array, padded_array):
@@ -180,9 +226,9 @@ class R2CBasis(FourierBase):
             N = trunc_array.shape[self.axis]
             s = [slice(0, n) for n in trunc_array.shape]
             padded_array[s] = trunc_array[s]
-            #if self.N % 2 == 0:     # This is because some aliasing is observed with N even (not sure why yet). Solution for now is to set Nyquist frequency to zero when padding
-                #s[self.axis] = self.N//2
-                #padded_array[s] = 0.
+            if self.N % 2 == 0:
+                s[self.axis] = self.N//2
+                padded_array[s] = padded_array[s].real
             padded_array *= self.padding_factor
 
         elif self.dealias_direct:

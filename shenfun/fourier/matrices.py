@@ -10,7 +10,7 @@ from .bases import R2CBasis, C2CBasis
 @inheritdocstrings
 class _Fouriermatrix(SpectralMatrix):
     def __init__(self, test, trial):
-        k = test[0].wavenumbers(test[0].N, scaled=True)
+        k = test[0].wavenumbers(test[0].N, scaled=False)
         if isinstance(test[1], (int, np.integer)):
             k_test, k_trial = test[1], trial[1]
         elif isinstance(test[1], np.ndarray):
@@ -40,29 +40,21 @@ class _Fouriermatrix(SpectralMatrix):
         else:
             assert u.shape == b.shape
 
-        # Move axis to first
-        if axis > 0:
-            u = np.moveaxis(u, axis, 0)
-            if not u is b:
-                b = np.moveaxis(b, axis, 0)
+        start = 0
+        if neglect_zero_wavenumber is True:
+            start = 1
 
-        if self[0][0] == 0 and neglect_zero_wavenumber:
-            self[0][0] = 1
-
-        d = 1./self[0]
         sl = [np.newaxis]*u.ndim
-        sl[0] = slice(None)
-        u[:] = b*d[sl]
+        sl[axis] = slice(start, None)
+        su = [slice(None)]*u.ndim
+        su[axis] = slice(start, None)
+        d = np.zeros_like(self[0])
+        d[slice(start, None)] = 1./self[0][slice(start, None)]
+        u[su] = b[su]*d[sl]
 
         if neglect_zero_wavenumber:
-            sl[0] = 0
-            u[sl] = 0
-            self[0][0] = 0
-
-        if axis > 0:
-            u = np.moveaxis(u, 0, axis)
-            if not u is b:
-                b = np.moveaxis(b, axis, 0)
+            su[axis] = 0
+            u[su] = 0
 
         return u
 
