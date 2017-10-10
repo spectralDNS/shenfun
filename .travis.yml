@@ -32,12 +32,15 @@ install:
       conda config --set show_channel_urls true
       conda config --add channels conda-forge
       conda config --add channels spectralDNS
-      pip install codecov pytest-cov python-coveralls
+      pip install codecov pytest-cov pytest
       conda install --yes --quiet conda-forge-build-setup
       source run_conda_forge_build_setup
 
 script:
-    - conda build conf/conda
+    - conda build --no-test conf/conda
+    - conda install shenfun --use-local
+    - py.test --cov=$(python -c "import site; print(site.getsitepackages()[0]+'/shenfun)'") tests/
 
 after_success:
     - upload_or_check_non_existence ./conf/conda spectralDNS --channel main || exit 1
+    - codecov

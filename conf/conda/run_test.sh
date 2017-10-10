@@ -1,2 +1,1 @@
-py.test --cov=shenfun tests/
-codecov
+py.test tests/

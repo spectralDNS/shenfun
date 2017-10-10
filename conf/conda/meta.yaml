@@ -35,7 +35,4 @@ test:
     - shenfun
 
   requires:
-    - codecov
-    - pytest-cov
-    - python-coveralls
     - pytest
