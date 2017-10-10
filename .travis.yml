@@ -32,6 +32,7 @@ install:
       conda config --set show_channel_urls true
       conda config --add channels conda-forge
       conda config --add channels spectralDNS
+      pip install codecov pytest-cov python-coveralls
       conda install --yes --quiet conda-forge-build-setup
       source run_conda_forge_build_setup
 
