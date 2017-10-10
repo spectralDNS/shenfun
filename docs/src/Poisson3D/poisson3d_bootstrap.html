@@ -1,0 +1,857 @@
+<!--
+Automatically generated HTML file from DocOnce source
+(https://github.com/hplgit/doconce/)
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Demo - 3D Poisson equation">
+
+<title>Demo - 3D Poisson equation</title>
+
+<!-- Bootstrap style: bootstrap -->
+<link href="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+<!-- not necessary
+<link href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+-->
+
+<style type="text/css">
+/* Let pre tags for code blocks have the same color as the surroundings */
+pre { color: inherit; background-color: transparent; }
+
+/* Add scrollbar to dropdown menus in bootstrap navigation bar */
+.dropdown-menu {
+   height: auto;
+   max-height: 400px;
+   overflow-x: hidden;
+}
+
+/* Adds an invisible element before each target to offset for the navigation
+   bar */
+.anchor::before {
+  content:"";
+  display:block;
+  height:50px;      /* fixed header height for style bootstrap */
+  margin:-50px 0 0; /* negative fixed header height */
+}
+</style>
+
+
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [('Table of contents',
+               1,
+               'table_of_contents',
+               'table_of_contents'),
+              ('Model problem', 1, None, '___sec0'),
+              ('Poisson equation', 2, None, '___sec1'),
+              ('Method of manufactured solutions', 2, None, '___sec2'),
+              ('Implementation', 1, None, '___sec3'),
+              ('Preamble', 2, None, '___sec4'),
+              ('Manufactured solution', 2, None, '___sec5'),
+              ('Discretization and MPI', 2, None, '___sec6'),
+              ('Variational formulation', 2, None, '___sec7'),
+              ('Solve linear equations', 2, None, '___sec8'),
+              ('Convergence test', 2, None, '___sec9'),
+              ('Complete solver', 2, 'sec:complete', 'sec:complete'),
+              ('Bibliography', 1, None, '___sec11')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "none"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript" async
+ src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+\newcommand{\ts}[1]{\bs{\textsf{#1}}}
+$$
+
+
+
+
+    
+<!-- Bootstrap navigation bar -->
+<div class="navbar navbar-default navbar-fixed-top">
+  <div class="navbar-header">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </button>
+    <a class="navbar-brand" href="poisson3d_bootstrap.html">Demo - 3D Poisson equation</a>
+  </div>
+
+  <div class="navbar-collapse collapse navbar-responsive-collapse">
+    <ul class="nav navbar-nav navbar-right">
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Contents <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+     <!-- navigation toc: --> <li><a href="#table_of_contents" style="font-size: 80%;"><b>Table of contents</b></a></li>
+     <!-- navigation toc: --> <li><a href="#___sec0" style="font-size: 80%;"><b>Model problem</b></a></li>
+     <!-- navigation toc: --> <li><a href="#___sec1" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Poisson equation</a></li>
+     <!-- navigation toc: --> <li><a href="#___sec2" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Method of manufactured solutions</a></li>
+     <!-- navigation toc: --> <li><a href="#___sec3" style="font-size: 80%;"><b>Implementation</b></a></li>
+     <!-- navigation toc: --> <li><a href="#___sec4" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Preamble</a></li>
+     <!-- navigation toc: --> <li><a href="#___sec5" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Manufactured solution</a></li>
+     <!-- navigation toc: --> <li><a href="#___sec6" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Discretization and MPI</a></li>
+     <!-- navigation toc: --> <li><a href="#___sec7" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Variational formulation</a></li>
+     <!-- navigation toc: --> <li><a href="#___sec8" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Solve linear equations</a></li>
+     <!-- navigation toc: --> <li><a href="#___sec9" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Convergence test</a></li>
+     <!-- navigation toc: --> <li><a href="#sec:complete" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Complete solver</a></li>
+     <!-- navigation toc: --> <li><a href="#___sec11" style="font-size: 80%;"><b>Bibliography</b></a></li>
+
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+</div> <!-- end of navigation bar -->
+
+<div class="container">
+
+<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p> <!-- add vertical space -->
+
+<a name="part0000"></a>
+<!-- ------------------- main content ---------------------- -->
+
+
+
+<div class="jumbotron">
+<center><h1>Demo - 3D Poisson equation </h1></center>  <!-- document title -->
+
+<p>
+<!-- author(s): Mikael Mortensen -->
+
+<center>
+<b>Mikael Mortensen</b>  (<tt>mikaem at math.uio.no</tt>)
+</center>
+
+<p>
+<!-- institution -->
+
+<center><b>Department of Mathematics, University of Oslo.</b></center>
+<br>
+<p>
+<center><h4>Sep 20, 2017</h4></center> <!-- date -->
+<br>
+<p>
+<b>Summary.</b> This is a demonstration of how the Python module <a href="https://github.com/spectralDNS/shenfun" target="_self">shenfun</a> can be used to solve a 3D Poisson
+equation in a 3D tensor product domain that has homogeneous Dirichlet boundary 
+conditions in one direction and periodicity in the
+remaining two. The solver described runs with MPI without any further
+considerations required from the user. Spectral convergence, as shown in Figure <a href="#fig:ct0">1</a>, is demonstrated. 
+The demo is implemented in
+a single Python file <a href="https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py" target="_self">dirichlet_poisson3D.py</a>, and the numerical method is is described in more detail by J. Shen <a href="#shen1">[1]</a> and <a href="#shen95">[2]</a>.
+
+<p>
+<center> <!-- figure label: --> <div id="fig:ct0"></div> <!-- FIGURE -->
+<hr class="figure">
+<center><p class="caption">Figure 1:  Convergence of 3D Poisson solvers for both Legendre and Chebyshev modified basis function.  <!-- caption label: fig:ct0 --> </p></center>
+<p><img src="figs/poisson3D_errornorm.png" align="bottom" ></p>
+</center>
+
+<p>
+</div> <!-- end jumbotron -->
+
+<h1 id="table_of_contents">
+Table of contents</h2>
+
+<p>
+<a href="#___sec0"> Model problem </a><br>
+&nbsp; &nbsp; &nbsp; <a href="#___sec1"> Poisson equation </a><br>
+&nbsp; &nbsp; &nbsp; <a href="#___sec2"> Method of manufactured solutions </a><br>
+<a href="#___sec3"> Implementation </a><br>
+&nbsp; &nbsp; &nbsp; <a href="#___sec4"> Preamble </a><br>
+&nbsp; &nbsp; &nbsp; <a href="#___sec5"> Manufactured solution </a><br>
+&nbsp; &nbsp; &nbsp; <a href="#___sec6"> Discretization and MPI </a><br>
+&nbsp; &nbsp; &nbsp; <a href="#___sec7"> Variational formulation </a><br>
+&nbsp; &nbsp; &nbsp; <a href="#___sec8"> Solve linear equations </a><br>
+&nbsp; &nbsp; &nbsp; <a href="#___sec9"> Convergence test </a><br>
+&nbsp; &nbsp; &nbsp; <a href="#sec:complete"> Complete solver </a><br>
+<a href="#___sec11"> Bibliography </a><br>
+</p>
+
+<h1 id="___sec0" class="anchor">Model problem </h1>
+
+<h2 id="___sec1" class="anchor">Poisson equation </h2>
+
+<p>
+The Poisson equation is given as
+
+$$
+\begin{align}
+\nabla^2 u(\bs{x}) &= f(\bs{x}) \quad \text{for }\, \bs{x}=(x, y, z) \in \Omega, \tag{1}\\
+u(\pm 1 ,y, z) &=0, 
+\tag{2}\\
+u(x, 2\pi, z) &= u(x, 0, z), 
+\tag{3}\\
+u(x, y, 2\pi) &= u(x, y, 0),
+\tag{4}
+\end{align}
+$$
+
+where \( u(\bs{x}) \) is the solution and \( f(\bs{x}) \) is a function. The domain
+\( \Omega = [-1, 1]\times [0, 2\pi]^2 \).
+
+<p>
+To solve Eq. <a href="#mjx-eqn-1">(1)</a> with the Galerkin method we need smooth basis
+functions, \( v(\bs{x}) \), that live
+in the Hilbert space \( H^1(\Omega) \) and that satisfy the given boundary
+conditions. To this end we will use one basis function for the \( x \)-direction,
+\( \mathcal{X}(x) \),
+one for the \( y \)-direction, \( \mathcal{Y}(y) \), and one for the \( z \)-direction,
+\( \mathcal{Z}(z) \). And
+then we create three-dimensional basis functions like
+
+$$
+v(x, y, z) = \mathcal{X}(x) \mathcal{Y}(y) \mathcal{Z} (z).
+$$
+
+<p>
+The basis functions \( \mathcal{Y}(y) \) and \( \mathcal{Z}(z) \) are chosen as Fourier exponentials, since these
+functions are periodic. Likewise, the basis functions \( \mathcal{X}(x) \) are chosen as
+modified Legendre or Chebyshev polynomials, using \( \phi_l(x) \) to refer to either
+one
+
+$$
+\begin{align}
+\mathcal{X}_l(x) &= \phi_l(x) - \phi_{l+2}(x), &\forall \, l \in \bs{l}^{N_0},
+\tag{5}\\
+\mathcal{Y}_m(y) &=  e^{\imath m y}, &\forall \, m \in \bs{m}^{N_1}, 
+\tag{6}\\
+\mathcal{Z}_n(z) &= e^{\imath n z}, &\forall \, n \in \bs{n}^{N_2},
+\tag{7}
+\end{align}
+$$
+
+where the size of the discretized problem is \( \bs{N} = (N_0, N_1, N_2) \),
+\( \bs{l}^{N_0} = (0, 1, \ldots, N_0-3) \), \( \bs{m}^{N_1} =
+(-N_1/2, -N_1/2+1, \ldots, N_1/2-1) \) and \( \bs{n}^{N_2} = (-N_2/2, -N_2/2+1,
+\ldots, N_2/2-1) \). However, due to <a href="https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.fft.rfft.html#numpy.fft.rfft" target="_self">Hermitian symmetry</a>, we only store \( N_2/2+1 \)
+wavenumbers in the \( z \)-direction, such that \( \bs{n}^{N_2} = (0, 1, \ldots,
+N_2/2) \). We refer to the Cartesian wavenumber mesh on vector form as
+\( \bs{k} \):
+
+$$
+\bs{k} = \{(l, m, n)  \in \bs{l}^{N_0} \times \bs{m}^{N_1} \times \bs{n}^{N_2}\}. 
+$$
+
+<p>
+We have the bases
+
+$$
+\begin{align}
+V^{N_0} &= \text{span}\{ \mathcal{X}_l \}_{l\in\bs{l}^{N_0}}, 
+\tag{8}\\
+V^{N_1} &= \text{span}\{ \mathcal{Y}_m \}_{m\in\bs{m}^{N_1}}, 
+\tag{9}\\
+V^{N_2} &= \text{span}\{ \mathcal{Z}_n \}_{n\in\bs{n}^{N_2}},
+\tag{10}
+\end{align}
+$$
+
+and from these we create a tensor product space \( W^{\bs{N}}(\bs{x}) \) from
+Cartesian products of the three bases
+$$
+\begin{equation}
+W^{\bs{N}}(\bs{x}) = V^{N_0}(x) \times V^{N_1}(y) \times V^{N_2}(z).
+\tag{11}
+\end{equation}
+$$
+
+<p>
+And then we look for discrete solutions \( u \in W^{\bs{N}} \) like
+$$
+\begin{align}
+u(\bs{x}) &= \sum_{l\in \bs{l}^{N_0}} \sum_{m\in \bs{m}^{N_1}}\sum_{n\in
+\bs{n}^{N_2}}\hat{u}_{l,m,n} \mathcal{X}_l(x) \mathcal{Y}_m(y) \mathcal{Z}_n(z), \tag{12} \\
+ &= \sum_{\ts{k} \in \bs{k}}\hat{u}_{\ts{k}} v_{\ts{k}}(\bs{x}),
+\tag{13}
+\end{align}
+$$
+
+<p>
+where \( \hat{u}_{l,m,n} \) are components of the expansion coefficients for \( u \) and
+the second form, \( \{\hat{u}_{\ts{k}}\}_{\ts{k}\in\bs{k}} \), is a shorter,
+simplified notation, with sans-serif \( \ts{k}=(l, m, n) \).
+The expansion coefficients are the unknowns in the spectral Galerkin method.
+
+<p>
+We now formulate a variational problem using the Galerkin method: Find \( u \in
+W^{\bs{N}} \) such that
+$$
+\begin{equation}
+\int_{\Omega} \nabla^2 u \, \overline{v} \, w\, \bs{dx} = \int_{\Omega} f \,
+\overline{v}\, w\, \bs{dx} \quad
+\forall v \, \in \, W^{\bs{N}}. \tag{14} 
+\end{equation}
+$$
+
+Here \( \bs{dx}=dxdydz \), and the overline represents a complex conjugate, which is needed here because
+the Fourier exponentials are complex functions.
+The weighted integrals, weighted by \( w(\bs{x}) \), are called inner products, and a common notation is
+$$
+\begin{equation}
+\int_{\Omega} u \, \overline{v} \, w\, \bs{dx} = \langle u, v\rangle _w. 
+\tag{15}
+\end{equation}
+$$
+
+The integral can either be computed exactly, or with quadrature. The advantage
+of the latter is that it is generally faster, and that non-linear terms may be
+computed just as quickly as linear. For a linear problem, it does not make much of a difference, if any at all. Approximating the integral with quadrature, we obtain
+$$
+\begin{align}
+\int_{\Omega} u \, \overline{v} \, w\, \bs{dx} &\approx \langle u, v
+\rangle_w^{\bs{N}},  
+\tag{16}\\
+&\approx \sum_{i=0}^{N_0-1} \sum_{j=0}^{N_1-1}\sum_{k=0}^{N_2-1} u(x_i, y_j, z_k) v(x_i, y_j, z_k) w(x_i, y_j, z_k),
+\tag{17}
+\end{align}
+$$
+
+where \( w(\bs{x}) \) now are the quadrature weights. The quadrature points
+\( \{x_i\}_{i=0}^{N_0-1} \) are specific to the chosen basis, and even within basis there
+are two different choices based on which quadrature rule is selected, either
+Gauss or Gauss-Lobatto. The quadrature points for the Fourier bases are the
+uniform \( \{y_j\}_{j=0}^{N_1-1}=2\pi j / N_1 \) and \( \{z_k\}_{k=0}^{N_2-1} = 2 \pi
+k/N_2 \).
+
+<p>
+Inserting for test function <a href="#mjx-eqn-12">(12)</a> and trialfunction
+\( v_{p,q,r} = \mathcal{X}_{p} \mathcal{Y}_q \mathcal{Z}_r \) on the
+left hand side of <a href="#mjx-eqn-14">(14)</a>, we get 
+
+$$
+\begin{align*}
+\langle \nabla^2u, v \rangle_w^{\bs{N}} &= \left\langle \nabla^2\sum_{l\in \bs{l}^{N_0}}
+\sum_{m\in \bs{m}^{N_1}}\sum_{n\in \bs{n}^{N_2}}\hat{u}_{l, m, n}
+\mathcal{X}_{l} \mathcal{Y}_m \mathcal{Z}_n,
+\mathcal{X}_{p} \mathcal{Y}_q \mathcal{Z}_r \right\rangle_w^{\bs{N}}, \\
+    &= \left[\left(\mathcal{X}_l^{''}, \mathcal{X}_p \right)_w^N - (m^2+n^2)\left(\mathcal{X}_l, \mathcal{X}_p \right)_w^N  \right]\delta_{mq} \delta_{nr} (2\pi)^2\hat{u}_{l,m,n}, \\
+    &= (2\pi)^2 \left( A_{pl} - (m^2 + n^2)B_{pl}\right) \hat{u}_{l,q,r},
+\end{align*}
+$$
+
+where the notation \( (\cdot, \cdot)_w^{N_0} \)
+$$
+\begin{equation}
+B_{pl} = \left( \mathcal{X}_l, \mathcal{X}_p \right)_w^{N_0} = \sum_{i=0}^{N_0-1} \mathcal{X}_l(x_i)
+\mathcal{X}_p(x_i) w(x_i),
+\tag{18}
+\end{equation}
+$$
+
+is used to represent an \( l_2 \) inner product along only the first, nonperiodic,
+direction. The factor \( (2\pi)^2 \) above comes from integrating over the two periodic
+directions, since 
+$$
+\begin{align}
+\int_0^{2\pi} \mathcal{Y}_m(y) \overline{\mathcal{Y}}_q(y) dy = 2\pi \delta_{mq},
+\tag{19}\\
+\int_0^{2\pi} \mathcal{Z}_n(y) \overline{\mathcal{Z}}_r(z) dz = 2\pi \delta_{nr},
+\tag{20}
+\end{align}
+$$
+
+where \( \delta_{ij} \) is the Kronecker delta-function, which is one for \( i=j \) and
+zero otherwise.
+
+<p>
+The right hand side of Eq. <a href="#mjx-eqn-14">(14)</a> is computed as
+
+$$
+\begin{equation}
+\tilde{f}_{p,q,r} = \left\langle f, \mathcal{X}_{p}
+\mathcal{Y}_q \mathcal{Z}_r  \right \rangle_w^{\bs{N}},
+\tag{21}
+\end{equation}
+$$
+
+where a tilde is used because this is not a complete transform of the function \( f \), but only an inner product.
+
+<p>
+The linear system of equations to solve for the expansion coefficients can now
+be found as follows
+
+$$
+\begin{equation}
+\left(A_{lj} - (m^2+n^2)B_{lj}\right) \hat{u}_{j,m,n} = \frac{1}{(2\pi)^2}
+\tilde{f}_{l,m,n}\quad \forall \, (l,m,n) \in \bs{k}. \tag{22}
+\end{equation}
+$$
+
+<p>
+Now, when \( \hat{u}_{\ts{k}} \) is found by solving this linear system over the
+entire computational mesh, it may be
+transformed to real space \( u(\bs{x}) \) using <a href="#mjx-eqn-12">(12)</a>. Note that the matrices
+\( A \in \mathbb{R}^{N_0-2, N_0-2} \) and \( B \in \mathbb{R}^{N_0-2, N_0-2} \) differs for Legendre or Chebyshev bases, but
+for either case they have a
+special structure that allows for a solution to be found very efficiently
+in the order of \( \mathcal{O}(N_0-2) \) operations given \( m \) and \( n \), see
+<a href="#shen1">[1]</a> and <a href="#shen95">[2]</a>. Fast solvers for <a href="#mjx-eqn-22">(22)</a> are implemented in <code>shenfun</code> for both bases.
+
+<h2 id="___sec2" class="anchor">Method of manufactured solutions </h2>
+
+<p>
+In this demo we will use the method of manufactured
+solutions to demonstrate spectral accuracy of the <code>shenfun</code> bases. To
+this end we choose a smooth analytical function that satisfies the given boundary
+conditions:
+$$
+\begin{equation}
+u_e(x, y, z) = \left(\cos(4x) + \sin(2y) + \sin(4z)\right)(1-x^2). \tag{23}
+\end{equation}
+$$
+
+Sending \( u_e \) through the Laplace operator, we obtain the right hand side
+$$
+\begin{equation}
+ \nabla^2 u_e(x,y,z) = -16(1 - x^2) \cos(4 x) + 16 x \sin(4 x) - 2 \cos(4 x)
+                  - (1-x^2)(4 \sin(2y) + 16\sin(4z)).  \tag{24}
+\end{equation}
+$$
+
+<p>
+Now, setting \( f_e(\bs{x}) = \nabla^2 u_e(\bs{x}) \) and solving for \( \nabla^2
+u(\bs{x}) = f_e(\bs{x}) \), we can compare the numerical solution \( u(\bs{x}) \) with
+the analytical solution \( u_e(\bs{x}) \) and compute error norms.
+
+<h1 id="___sec3" class="anchor">Implementation </h1>
+
+<h2 id="___sec4" class="anchor">Preamble </h2>
+
+<p>
+We will solve the Poisson problem using the <a href="https://github.com/spectralDNS/shenfun" target="_self">shenfun</a> Python module. The first thing needed
+is then to import some of this module's functionality
+plus some other helper modules, like <a href="https://numpy.org" target="_self">Numpy</a> and <a href="https://sympy.org" target="_self">Sympy</a>:
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">sympy</span> <span style="color: #008000; font-weight: bold">import</span> symbols, cos, sin, exp, lambdify
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun.fourier.bases</span> <span style="color: #008000; font-weight: bold">import</span> R2CBasis, C2CBasis
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun.tensorproductspace</span> <span style="color: #008000; font-weight: bold">import</span> TensorProductSpace
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> inner, div, grad, TestFunction, TrialFunction, Function, \
+    project, Dx
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">mpi4py</span> <span style="color: #008000; font-weight: bold">import</span> MPI
+</pre></div>
+<p>
+We use <code>sympy</code> for the manufactured solution and <code>numpy</code> for testing. MPI for
+Python (<code>mpi4py</code>) is required for running the solver with MPI.
+
+<h2 id="___sec5" class="anchor">Manufactured solution </h2>
+
+<p>
+The exact solution \( u_e(x, y, z) \) and the right hand side \( f_e(x, y, z) \) are created using <code>sympy</code> as follows 
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>x, y, z <span style="color: #666666">=</span> symbols(<span style="color: #BA2121">&quot;x,y,z&quot;</span>)
+ue <span style="color: #666666">=</span> (cos(<span style="color: #666666">4*</span>x) <span style="color: #666666">+</span> sin(<span style="color: #666666">2*</span>y) <span style="color: #666666">+</span> sin(<span style="color: #666666">4*</span>z))<span style="color: #666666">*</span>(<span style="color: #666666">1-</span>x<span style="color: #666666">**2</span>)
+fe <span style="color: #666666">=</span> ue<span style="color: #666666">.</span>diff(x, <span style="color: #666666">2</span>) <span style="color: #666666">+</span> ue<span style="color: #666666">.</span>diff(y, <span style="color: #666666">2</span>) <span style="color: #666666">+</span> ue<span style="color: #666666">.</span>diff(z, <span style="color: #666666">2</span>)
+
+<span style="color: #408080; font-style: italic"># Lambdify for faster evaluation</span>
+ul <span style="color: #666666">=</span> lambdify((x, y, z), ue, <span style="color: #BA2121">&#39;numpy&#39;</span>)
+fl <span style="color: #666666">=</span> lambdify((x, y, z), fe, <span style="color: #BA2121">&#39;numpy&#39;</span>)
+</pre></div>
+<p>
+These solutions are now valid for a continuous domain. The next step is thus to
+discretize, using the computational mesh 
+$$
+(x_i, y_j, z_k)\, \forall \, (i, j, k) \in [0, 1,\ldots, N_0-1] \times [0, 1, \ldots, N_1-1] \times [0, 1, \ldots, N_2-1]
+$$
+
+and a finite number of basis functions.
+
+<p>
+Note that it is not mandatory to use <code>sympy</code> for the manufactured solution. Since the
+solution is known <a href="#mjx-eqn-24">(24)</a>, we could just as well simply use <code>Numpy</code>
+to compute \( f_e \). However, with <code>Sympy</code> it is much
+easier to experiment and quickly change the solution.
+
+<h2 id="___sec6" class="anchor">Discretization and MPI </h2>
+
+<p>
+We create three bases with given size, one for each dimension of the problem.
+From these three bases a <a href="https://github.com/spectralDNS/shenfun/blob/master/shenfun/tensorproductspace.py#L12" target="_self">TensorProductSpace</a>
+is created.
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #408080; font-style: italic"># Size of discretization</span>
+N <span style="color: #666666">=</span> [<span style="color: #666666">14</span>, <span style="color: #666666">15</span>, <span style="color: #666666">16</span>]
+
+SD <span style="color: #666666">=</span> chebyshev<span style="color: #666666">.</span>bases<span style="color: #666666">.</span>ShenDirichletBasis(N[<span style="color: #666666">0</span>])
+<span style="color: #408080; font-style: italic">#SD = legendre.bases.ShenDirichletBasis(N[0])</span>
+K1 <span style="color: #666666">=</span> C2CBasis(N[<span style="color: #666666">1</span>])
+K2 <span style="color: #666666">=</span> R2CBasis(N[<span style="color: #666666">2</span>])
+T <span style="color: #666666">=</span> TensorProductSpace(comm, (SD, K1, K2), axes<span style="color: #666666">=</span>(<span style="color: #666666">0</span>, <span style="color: #666666">1</span>, <span style="color: #666666">2</span>))
+X <span style="color: #666666">=</span> T<span style="color: #666666">.</span>local_mesh()
+</pre></div>
+<p>
+Note that we can either choose a Legendre or a Chebyshev basis for the
+nonperiodic direction. The
+<code>TensorProductSpace</code> class takes an MPI communicator as first argument and the
+computational mesh is distributed internally using the <code>pencil</code> method. The
+<code>T.local_mesh</code> method returns the mesh local to each processor. The <code>axes</code>
+keyword determines the order of transforms going back and forth between real and
+spectral space. With <code>axes=(0, 1, 2)</code> and a forward transform (from real space
+to spectral, i.e., from \( u \) to \( \hat{u} \)) axis 2 is transformed first and then 1
+and 0, respectively.
+
+<p>
+The manufactured solution is created with Dirichlet boundary conditions in the
+\( x \)-direction, and for this reason <code>SD</code> is the first basis in <code>T</code>. We could just
+as well have put the nonperiodic direction along either \( y \)- or \( z \)-direction,
+though, but this would then require that the order of the transformed axes be
+changed as well. For example, putting the Dirichlet direction along \( y \), we
+would need to create the tensorproductspace as
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>T <span style="color: #666666">=</span> TensorProductSpace(comm, (K1, SD, K2), axes<span style="color: #666666">=</span>(<span style="color: #666666">1</span>, <span style="color: #666666">0</span>, <span style="color: #666666">2</span>))
+</pre></div>
+<p>
+such that the Dirichlet direction is the last to be transformed. The reason for
+this is that only the Dirichlet direction leads to matrices that need to be
+inverted (or solved). And for this we need the entire data array along the Dirichlet
+direction to be local to the processor. If the <code>SD</code> basis is the last to be
+transformed, then the data will be aligned in this direction, whereas the other
+two directions may both, or just one of them, be distributed.
+
+<p>
+Note that <code>X</code> is a list containing local values of the arrays \( \{x_i\}_{i=0}^{N_0-1} \),
+\( \{y_j\}_{j=0}^{N_1-0} \) and \( \{z_k\}_{k=0}^{N_2-1} \). For example, using 4
+procesors and a processor mesh of shape \( 2\times 2 \), then the local slices for
+each processor in spectral space are
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #666666">&gt;&gt;&gt;</span> <span style="color: #008000; font-weight: bold">print</span>(comm<span style="color: #666666">.</span>Get_rank(), T<span style="color: #666666">.</span>local_slice())
+<span style="color: #666666">3</span> [<span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">14</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">8</span>, <span style="color: #666666">15</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">5</span>, <span style="color: #666666">9</span>, <span style="color: #008000">None</span>)]
+<span style="color: #666666">1</span> [<span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">14</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">8</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">5</span>, <span style="color: #666666">9</span>, <span style="color: #008000">None</span>)]
+<span style="color: #666666">2</span> [<span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">14</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">8</span>, <span style="color: #666666">15</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">5</span>, <span style="color: #008000">None</span>)]
+<span style="color: #666666">0</span> [<span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">14</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">8</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">5</span>, <span style="color: #008000">None</span>)]
+</pre></div>
+<p>
+where the global shape is \( \bs{N}=(14, 15, 9) \) after taking advantage of
+Hermitian symmetry in the \( z \)-direction. So, all processors have the complete first dimension available locally, as they
+should. Furthermore, processor three owns the slices from \( 8:15 \) and \( 5:9 \) along
+axes \( y \) and \( z \), respectively. Processor 2 owns slices \( 0:8 \) and \( 0:5 \) etc. In
+real space the mesh is distributed differently. First of all the global mesh
+shape is \( \bs{N}=(14, 15, 16) \), and it is distributed along the first two
+dimensions. The local slices can be inspected as
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #666666">&gt;&gt;&gt;</span> <span style="color: #008000; font-weight: bold">print</span>(comm<span style="color: #666666">.</span>Get_rank(), T<span style="color: #666666">.</span>local_slice(<span style="color: #008000">False</span>))
+<span style="color: #666666">0</span> [<span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">7</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">8</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">16</span>, <span style="color: #008000">None</span>)]
+<span style="color: #666666">1</span> [<span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">7</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">8</span>, <span style="color: #666666">15</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">16</span>, <span style="color: #008000">None</span>)]
+<span style="color: #666666">2</span> [<span style="color: #008000">slice</span>(<span style="color: #666666">7</span>, <span style="color: #666666">14</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">8</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">16</span>, <span style="color: #008000">None</span>)]
+<span style="color: #666666">3</span> [<span style="color: #008000">slice</span>(<span style="color: #666666">7</span>, <span style="color: #666666">14</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">8</span>, <span style="color: #666666">15</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">16</span>, <span style="color: #008000">None</span>)]
+</pre></div>
+<p>
+Since two directions are distributed, both in spectral and real space, we say
+that we have a two-dimensional decomposition (here a \( 2\times 2 \) shaped
+processor mesh) and the
+MPI distribution is of type <em>pencil</em>. It is also possible to choose a <em>slab</em>
+decomposition, where only one dimension of the array is distributed. This choice
+needs to be made when creating the tensorproductspace as
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>T <span style="color: #666666">=</span> TensorProductSpace(comm, (SD, K1, K2), axes<span style="color: #666666">=</span>(<span style="color: #666666">0</span>, <span style="color: #666666">1</span>, <span style="color: #666666">2</span>), slab<span style="color: #666666">=</span><span style="color: #008000">True</span>)
+</pre></div>
+<p>
+which will lead to a mesh that is distributed along \( x \)-direction in real space
+and \( y \)-direction in spectral space. The local slices are
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #666666">&gt;&gt;&gt;</span> <span style="color: #008000; font-weight: bold">print</span>(comm<span style="color: #666666">.</span>Get_rank(), T<span style="color: #666666">.</span>local_slice()) <span style="color: #408080; font-style: italic"># spectral space</span>
+<span style="color: #666666">1</span> [<span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">14</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">4</span>, <span style="color: #666666">8</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">9</span>, <span style="color: #008000">None</span>)]
+<span style="color: #666666">2</span> [<span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">14</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">8</span>, <span style="color: #666666">12</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">9</span>, <span style="color: #008000">None</span>)]
+<span style="color: #666666">0</span> [<span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">14</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">4</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">9</span>, <span style="color: #008000">None</span>)]
+<span style="color: #666666">3</span> [<span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">14</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">12</span>, <span style="color: #666666">15</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">9</span>, <span style="color: #008000">None</span>)]
+<span style="color: #666666">&gt;&gt;&gt;</span> <span style="color: #008000; font-weight: bold">print</span>(comm<span style="color: #666666">.</span>Get_rank(), T<span style="color: #666666">.</span>local_slice(<span style="color: #008000">False</span>)) <span style="color: #408080; font-style: italic"># real space</span>
+<span style="color: #666666">3</span> [<span style="color: #008000">slice</span>(<span style="color: #666666">11</span>, <span style="color: #666666">14</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">15</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">16</span>, <span style="color: #008000">None</span>)]
+<span style="color: #666666">0</span> [<span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">4</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">15</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">16</span>, <span style="color: #008000">None</span>)]
+<span style="color: #666666">2</span> [<span style="color: #008000">slice</span>(<span style="color: #666666">8</span>, <span style="color: #666666">11</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">15</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">16</span>, <span style="color: #008000">None</span>)]
+<span style="color: #666666">1</span> [<span style="color: #008000">slice</span>(<span style="color: #666666">4</span>, <span style="color: #666666">8</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">15</span>, <span style="color: #008000">None</span>), <span style="color: #008000">slice</span>(<span style="color: #666666">0</span>, <span style="color: #666666">16</span>, <span style="color: #008000">None</span>)]
+</pre></div>
+<p>
+Note that the <em>slab</em> decomposition is usually the fastest choice. However, the maximum
+number of processors with <em>slab</em> is \( \min \{N_0, N_1\} \), whereas a <em>pencil</em>
+approach can be used with up to \( \min \{N_1(N_2/2+1), N_0 N_1\} \) processors.
+
+<h2 id="___sec7" class="anchor">Variational formulation </h2>
+
+<p>
+The variational problem <a href="#mjx-eqn-14">(14)</a> can be assembled using <code>shenfun</code>'s
+form language, which is perhaps surprisingly similar to FEniCS. 
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>u <span style="color: #666666">=</span> TrialFunction(T)
+v <span style="color: #666666">=</span> TestFunction(T)
+K <span style="color: #666666">=</span> T<span style="color: #666666">.</span>local_wavenumbers()
+<span style="color: #408080; font-style: italic"># Get f on quad points</span>
+fj <span style="color: #666666">=</span> fl(<span style="color: #666666">*</span>X)
+<span style="color: #408080; font-style: italic"># Compute right hand side of Poisson equation</span>
+f_hat <span style="color: #666666">=</span> inner(v, fj)
+<span style="color: #408080; font-style: italic"># Get left hand side of Poisson equation</span>
+matrices <span style="color: #666666">=</span> inner(v, div(grad(u)))
+</pre></div>
+<p>
+The Laplacian operator is recognized as <code>div(grad)</code>. The <code>matrices</code> object is a
+dictionary representing the left hand side of <a href="#mjx-eqn-22">(22)</a>, and there are two
+keys: (<code>ADDmat</code>, <code>BDDmat</code>). The value of <code>matrices[&quot;ADDmat&quot;]</code> is an object of
+type <a href="https://github.com/spectralDNS/shenfun/blob/master/shenfun/matrixbase.py#L261" target="_self">SpectralMatrix</a>,
+which is <code>shenfun</code>'s type for a matrix. This matrix represents \( A_{lj} \), see
+<a href="#mjx-eqn-22">(22)</a>), and it has an attribute <code>scale</code> that is
+equal to \( (2\pi)^2 \) (also see <a href="#mjx-eqn-22">(22)</a>).  The other key in matrices
+is <code>BDDmat</code>, and the value here is a <code>SpectralMatrix</code> representing \( B_{lj} \) from
+<a href="#mjx-eqn-22">(22)</a>. This matrix has an attribute <code>scale</code> that is equal to \( m^2+n^2 \).
+This <code>scale</code> is stored as a numpy array of shape \( (1, 15, 9) \), representing the
+set
+\( \{m^2+n^2: (m, n) \in \bs{m}^{N_1} \times \bs{n}^{N_2}\} \). Note that \( \bs{n}^{N_2} \) is stored
+simply as an array of length \( N_2/2+1 \) (here 9), since the transform in direction \( z \)
+takes a real signal and transforms it taking advantage of Hermitian symmetry,
+see <a href="https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.fft.rfft.html" target="_self">rfft</a>.
+
+<h2 id="___sec8" class="anchor">Solve linear equations </h2>
+
+<p>
+Finally, solve linear equation system and transform solution from spectral
+\( \hat{u}_{\ts{k}} \) vector to the real space \( u(\bs{x}) \) and then check how the solution corresponds with the exact solution \( u_e \).
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #408080; font-style: italic"># Create Helmholtz linear algebra solver</span>
+H <span style="color: #666666">=</span> Solver(<span style="color: #666666">**</span>matrices)
+
+<span style="color: #408080; font-style: italic"># Solve and transform to real space</span>
+u_hat <span style="color: #666666">=</span> Function(T)           <span style="color: #408080; font-style: italic"># Solution spectral space</span>
+u_hat <span style="color: #666666">=</span> H(u_hat, f_hat)       <span style="color: #408080; font-style: italic"># Solve</span>
+uq <span style="color: #666666">=</span> T<span style="color: #666666">.</span>backward(u_hat)
+
+<span style="color: #408080; font-style: italic"># Compare with analytical solution</span>
+uj <span style="color: #666666">=</span> ul(<span style="color: #666666">*</span>X)
+error <span style="color: #666666">=</span> comm<span style="color: #666666">.</span>reduce(np<span style="color: #666666">.</span>linalg<span style="color: #666666">.</span>norm(uj<span style="color: #666666">-</span>uq)<span style="color: #666666">**2</span>)
+<span style="color: #008000; font-weight: bold">if</span> comm<span style="color: #666666">.</span>Get_rank() <span style="color: #666666">==</span> <span style="color: #666666">0</span>:
+    <span style="color: #008000; font-weight: bold">print</span>(<span style="color: #BA2121">&quot;Error=</span><span style="color: #BB6688; font-weight: bold">%2.16e</span><span style="color: #BA2121">&quot;</span> <span style="color: #666666">%</span>(np<span style="color: #666666">.</span>sqrt(error)))
+</pre></div>
+
+<h2 id="___sec9" class="anchor">Convergence test </h2>
+
+<p>
+A complete solver is given in Sec. <a href="#sec:complete">Complete solver</a>. This solver is created such that it takes in two commandline arguments and prints out the \( l_2 \)-errornorm of the solution in the end. We can use this to write a short script that performs a convergence test. The solver is run like
+<p>
+
+<!-- code=text typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>&gt;&gt;&gt; python dirichlet_poisson3D.py 32 legendre
+Error=6.5955040031498912e-10
+</pre></div>
+<p>
+for a discretization of size \( \bs{N}= N^3 = 32^3 \) and for the Legendre basis. Alternatively, change <code>legendre</code> to <code>chebyshev</code> for the Chebyshev basis.
+
+<p>
+We set up the solver to run for a list of \( N=[8, 10, \ldots, 38] \), and collect the errornorms in arrays to be plotted. Such a script can be easily created with the <a href="https://docs.python.org/3/library/subprocess.html" target="_self">subprocess</a> module
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">subprocess</span>
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">import</span> log, array
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">matplotlib</span> <span style="color: #008000; font-weight: bold">import</span> pyplot <span style="color: #008000; font-weight: bold">as</span> plt
+
+N <span style="color: #666666">=</span> <span style="color: #008000">range</span>(<span style="color: #666666">8</span>, <span style="color: #666666">40</span>, <span style="color: #666666">2</span>)
+error <span style="color: #666666">=</span> {}
+<span style="color: #008000; font-weight: bold">for</span> basis <span style="color: #AA22FF; font-weight: bold">in</span> (<span style="color: #BA2121">&#39;legendre&#39;</span>, <span style="color: #BA2121">&#39;chebyshev&#39;</span>):
+    error[basis] <span style="color: #666666">=</span> []
+    <span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #008000">len</span>(N)):
+        output <span style="color: #666666">=</span> subprocess<span style="color: #666666">.</span>check_output(<span style="color: #BA2121">&quot;python dirichlet_poisson3D.py {} {}&quot;</span><span style="color: #666666">.</span>format(N[i], basis), shell<span style="color: #666666">=</span><span style="color: #008000">True</span>)
+        <span style="color: #008000; font-weight: bold">exec</span>(output) <span style="color: #408080; font-style: italic"># Error is printed as &quot;Error=%2.16e&quot;%(np.linalg.norm(uj-ua))</span>
+        error[basis]<span style="color: #666666">.</span>append(Error)
+        <span style="color: #008000; font-weight: bold">if</span> i <span style="color: #666666">==</span> <span style="color: #666666">0</span>:
+            <span style="color: #008000; font-weight: bold">print</span>(<span style="color: #BA2121">&quot;Error          hmin           r       &quot;</span>)
+            <span style="color: #008000; font-weight: bold">print</span>(<span style="color: #BA2121">&quot;</span><span style="color: #BB6688; font-weight: bold">%2.8e</span><span style="color: #BA2121"> </span><span style="color: #BB6688; font-weight: bold">%2.8e</span><span style="color: #BA2121"> </span><span style="color: #BB6688; font-weight: bold">%2.8f</span><span style="color: #BA2121">&quot;</span><span style="color: #666666">%</span>(error[basis][<span style="color: #666666">-1</span>], <span style="color: #666666">1./</span>N[i], <span style="color: #666666">0</span>))
+        <span style="color: #008000; font-weight: bold">if</span> i <span style="color: #666666">&gt;</span> <span style="color: #666666">0</span>:
+            <span style="color: #008000; font-weight: bold">print</span>(<span style="color: #BA2121">&quot;</span><span style="color: #BB6688; font-weight: bold">%2.8e</span><span style="color: #BA2121"> </span><span style="color: #BB6688; font-weight: bold">%2.8e</span><span style="color: #BA2121"> </span><span style="color: #BB6688; font-weight: bold">%2.8f</span><span style="color: #BA2121">&quot;</span><span style="color: #666666">%</span>(error[basis][<span style="color: #666666">-1</span>], <span style="color: #666666">1./</span>N[i], log(error[basis][<span style="color: #666666">-1</span>]<span style="color: #666666">/</span>error[basis][<span style="color: #666666">-2</span>])<span style="color: #666666">/</span>log(N[i<span style="color: #666666">-1</span>]<span style="color: #666666">/</span>N[i])))
+</pre></div>
+<p>
+The error can be plotted using <a href="https://matplotlib.org" target="_self">matplotlib</a>, and the
+generated figure is shown in the summary's Fig. <a href="#fig:ct0">1</a>. The spectral
+convergence is evident and we can see that after \( N=25 \) roundoff errors dominate
+as the errornorm trails off around \( 10^{-13} \).
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>plt<span style="color: #666666">.</span>figure(figsize<span style="color: #666666">=</span>(<span style="color: #666666">6</span>, <span style="color: #666666">4</span>))
+<span style="color: #008000; font-weight: bold">for</span> basis, col <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">zip</span>((<span style="color: #BA2121">&#39;legendre&#39;</span>, <span style="color: #BA2121">&#39;chebyshev&#39;</span>), (<span style="color: #BA2121">&#39;r&#39;</span>, <span style="color: #BA2121">&#39;b&#39;</span>)):
+    plt<span style="color: #666666">.</span>semilogy(N, error[basis], col, linewidth<span style="color: #666666">=2</span>)
+plt<span style="color: #666666">.</span>title(<span style="color: #BA2121">&#39;Convergence of Poisson solvers 3D&#39;</span>)
+plt<span style="color: #666666">.</span>xlabel(<span style="color: #BA2121">&#39;N&#39;</span>)
+plt<span style="color: #666666">.</span>ylabel(<span style="color: #BA2121">&#39;Error norm&#39;</span>)
+plt<span style="color: #666666">.</span>legend((<span style="color: #BA2121">&#39;Legendre&#39;</span>, <span style="color: #BA2121">&#39;Chebyshev&#39;</span>))
+plt<span style="color: #666666">.</span>savefig(<span style="color: #BA2121">&#39;poisson3D_errornorm.png&#39;</span>)
+plt<span style="color: #666666">.</span>show()
+</pre></div>
+<p>
+<!-- FIGURE: [poisson1D_errornorm.png] Convergence test of Legendre and Chebyshev 1D Poisson solvers. <div id="fig:ct"></div> -->
+
+<h2 id="sec:complete" class="anchor">Complete solver</h2>
+A complete solver, that can use either Legendre or Chebyshev bases, chosen as a command-line argument, is shown below.
+
+<p>
+
+<!-- code=text typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>&gt;&gt;&gt; python dirichlet_poisson3D.py legendre
+</pre></div>
+<p>
+or similarly with <code>chebyshev</code> instead of <code>legendre</code>.
+
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">sys</span>
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">importlib</span>
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">sympy</span> <span style="color: #008000; font-weight: bold">import</span> symbols, cos, sin, exp, lambdify
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun.fourier.bases</span> <span style="color: #008000; font-weight: bold">import</span> R2CBasis, C2CBasis
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun.tensorproductspace</span> <span style="color: #008000; font-weight: bold">import</span> TensorProductSpace
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> inner, div, grad, TestFunction, TrialFunction, Function, \
+    project, Dx
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">time</span>
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">mpi4py</span> <span style="color: #008000; font-weight: bold">import</span> MPI
+
+comm <span style="color: #666666">=</span> MPI<span style="color: #666666">.</span>COMM_WORLD
+
+<span style="color: #408080; font-style: italic"># Collect basis and solver from either Chebyshev or Legendre submodules</span>
+basis <span style="color: #666666">=</span> sys<span style="color: #666666">.</span>argv[<span style="color: #666666">-1</span>] <span style="color: #008000; font-weight: bold">if</span> <span style="color: #008000">len</span>(sys<span style="color: #666666">.</span>argv) <span style="color: #666666">==</span> <span style="color: #666666">2</span> <span style="color: #008000; font-weight: bold">else</span> <span style="color: #BA2121">&#39;chebyshev&#39;</span>
+shen <span style="color: #666666">=</span> importlib<span style="color: #666666">.</span>import_module(<span style="color: #BA2121">&#39;.&#39;</span><span style="color: #666666">.</span>join((<span style="color: #BA2121">&#39;shenfun&#39;</span>, basis)))
+Basis <span style="color: #666666">=</span> shen<span style="color: #666666">.</span>bases<span style="color: #666666">.</span>ShenDirichletBasis
+Solver <span style="color: #666666">=</span> shen<span style="color: #666666">.</span>la<span style="color: #666666">.</span>Helmholtz
+
+<span style="color: #408080; font-style: italic"># Use sympy to compute a rhs, given an analytical solution</span>
+x, y, z <span style="color: #666666">=</span> symbols(<span style="color: #BA2121">&quot;x,y,z&quot;</span>)
+ue <span style="color: #666666">=</span> (cos(<span style="color: #666666">4*</span>x) <span style="color: #666666">+</span> sin(<span style="color: #666666">2*</span>y) <span style="color: #666666">+</span> sin(<span style="color: #666666">4*</span>z))<span style="color: #666666">*</span>(<span style="color: #666666">1-</span>y<span style="color: #666666">**2</span>)
+fe <span style="color: #666666">=</span> ue<span style="color: #666666">.</span>diff(x, <span style="color: #666666">2</span>) <span style="color: #666666">+</span> ue<span style="color: #666666">.</span>diff(y, <span style="color: #666666">2</span>) <span style="color: #666666">+</span> ue<span style="color: #666666">.</span>diff(z, <span style="color: #666666">2</span>)
+
+<span style="color: #408080; font-style: italic"># Lambdify for faster evaluation</span>
+ul <span style="color: #666666">=</span> lambdify((x, y, z), ue, <span style="color: #BA2121">&#39;numpy&#39;</span>)
+fl <span style="color: #666666">=</span> lambdify((x, y, z), fe, <span style="color: #BA2121">&#39;numpy&#39;</span>)
+
+<span style="color: #408080; font-style: italic"># Size of discretization</span>
+N <span style="color: #666666">=</span> [<span style="color: #008000">eval</span>(sys<span style="color: #666666">.</span>argv[<span style="color: #666666">-2</span>])]<span style="color: #666666">*3</span>
+
+SD <span style="color: #666666">=</span> Basis(N[<span style="color: #666666">0</span>])
+K1 <span style="color: #666666">=</span> C2CBasis(N[<span style="color: #666666">1</span>])
+K2 <span style="color: #666666">=</span> R2CBasis(N[<span style="color: #666666">2</span>])
+T <span style="color: #666666">=</span> TensorProductSpace(comm, (SD, K1, K2), axes<span style="color: #666666">=</span>(<span style="color: #666666">0</span>, <span style="color: #666666">1</span>, <span style="color: #666666">2</span>))
+X <span style="color: #666666">=</span> T<span style="color: #666666">.</span>local_mesh(<span style="color: #008000">True</span>)
+u <span style="color: #666666">=</span> TrialFunction(T)
+v <span style="color: #666666">=</span> TestFunction(T)
+
+K <span style="color: #666666">=</span> T<span style="color: #666666">.</span>local_wavenumbers()
+
+<span style="color: #408080; font-style: italic"># Get f on quad points</span>
+fj <span style="color: #666666">=</span> fl(<span style="color: #666666">*</span>X)
+
+<span style="color: #408080; font-style: italic"># Compute right hand side of Poisson equation</span>
+f_hat <span style="color: #666666">=</span> inner(v, fj)
+<span style="color: #008000; font-weight: bold">if</span> basis <span style="color: #666666">==</span> <span style="color: #BA2121">&#39;legendre&#39;</span>:
+    f_hat <span style="color: #666666">*=</span> <span style="color: #666666">-1.</span>
+
+<span style="color: #408080; font-style: italic"># Get left hand side of Poisson equation</span>
+<span style="color: #008000; font-weight: bold">if</span> basis <span style="color: #666666">==</span> <span style="color: #BA2121">&#39;chebyshev&#39;</span>:
+    matrices <span style="color: #666666">=</span> inner(v, div(grad(u)))
+<span style="color: #008000; font-weight: bold">else</span>:
+    matrices <span style="color: #666666">=</span> inner(grad(v), grad(u))
+
+<span style="color: #408080; font-style: italic"># Create Helmholtz linear algebra solver</span>
+H <span style="color: #666666">=</span> Solver(<span style="color: #666666">**</span>matrices)
+
+<span style="color: #408080; font-style: italic"># Solve and transform to real space</span>
+u_hat <span style="color: #666666">=</span> Function(T)           <span style="color: #408080; font-style: italic"># Solution spectral space</span>
+t0 <span style="color: #666666">=</span> time<span style="color: #666666">.</span>time()
+u_hat <span style="color: #666666">=</span> H(u_hat, f_hat)       <span style="color: #408080; font-style: italic"># Solve</span>
+uq <span style="color: #666666">=</span> T<span style="color: #666666">.</span>backward(u_hat, fast_transform<span style="color: #666666">=</span><span style="color: #008000">False</span>)
+
+<span style="color: #408080; font-style: italic"># Compare with analytical solution</span>
+uj <span style="color: #666666">=</span> ul(<span style="color: #666666">*</span>X)
+<span style="color: #008000; font-weight: bold">print</span>(<span style="color: #BA2121">&quot;Error=</span><span style="color: #BB6688; font-weight: bold">%2.16e</span><span style="color: #BA2121">&quot;</span> <span style="color: #666666">%</span>(np<span style="color: #666666">.</span>linalg<span style="color: #666666">.</span>norm(uj<span style="color: #666666">-</span>uq)))
+</pre></div>
+
+<h1 id="___sec11" class="anchor">Bibliography </h1>
+
+<p>
+<!-- begin bibliography -->
+
+<ol>
+ <li> <div id="shen1"></div> <b>J. Shen</b>. 
+    Efficient Spectral-Galerkin Method I. Direct Solvers of Second- and Fourth-Order Equations Using Legendre Polynomials,
+    <em>SIAM Journal on Scientific Computing</em>,
+    15(6),
+    pp. 1489-1505,
+    <a href="http://dx.doi.org/10.1137/0915089" target="_self">doi: 10.1137/0915089</a>,
+    1994,
+    <a href="https://doi.org/10.1137/0915089" target="_self"><tt>https://doi.org/10.1137/0915089</tt></a>.</li>
+ <li> <div id="shen95"></div> <b>J. Shen</b>. 
+    Efficient Spectral-Galerkin Method II. Direct Solvers of Second- and Fourth-Order Equations Using Chebyshev Polynomials,
+    <em>SIAM Journal on Scientific Computing</em>,
+    16(1),
+    pp. 74-87,
+    <a href="http://dx.doi.org/10.1137/0916006" target="_self">doi: 10.1137/0916006</a>,
+    1995,
+    <a href="https://doi.org/10.1137/0916006" target="_self"><tt>https://doi.org/10.1137/0916006</tt></a>.</li>
+</ol>
+
+<!-- end bibliography -->
+
+<p>
+<!-- navigation buttons at the bottom of the page -->
+<ul class="pager">
+</ul>
+<!-- ------------------- end of main content --------------- -->
+
+</div>  <!-- end container -->
+<!-- include javascript, jQuery *first* -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+
+<!-- Bootstrap footer
+<footer>
+<a href="http://..."><img width="250" align=right src="http://..."></a>
+</footer>
+-->
+
+
+<center style="font-size:80%">
+<!-- copyright --> &copy; 2017, Mikael Mortensen. Released under CC Attribution 4.0 license
+</center>
+
+
+</body>
+</html>
+    
+

@@ -7,7 +7,7 @@ This is a demonstration of how the Python module "shenfun":
 "https://github.com/spectralDNS/shenfun" can be used to solve the time-dependent,
 nonlinear Klein-Gordon equation, in a triply periodic domain. The demo is implemented in
 a single Python file "KleinGordon.py":
-"https://github.com/spectralDNS/shenfun/demo/KleinGordon.py", and it may be run
+"https://github.com/spectralDNS/shenfun/blob/master/demo/KleinGordon.py", and it may be run
 in parallel using MPI. The Klein-Gordon equation is solved using a mixed
 formulation. The discretization, and some background on the spectral Galerkin
 method is given first, before we turn to the actual details of the `shenfun`
@@ -48,9 +48,10 @@ t=0)}{\partial t} = u_t^0. label{eq:init}
 \end{equation}
 !et
 
-The parameter $\gamma=\pm 1$ determines whether the equations are focusing
-($1$) or defocusing ($-1$) (in the movie we have used $\gamma=1$). The domain $\Omega=[-2\pi, 2\pi]^3$ is triply
-periodic and Initial conditions will here be set as
+The spatial coordinates are here denoted as $\boldsymbol{x} = (x, y, z)$, and
+$t$ is time. The parameter $\gamma=\pm 1$ determines whether the equations are focusing
+($+1$) or defocusing ($-1$) (in the movie we have used $\gamma=1$). The domain $\Omega=[-2\pi, 2\pi]^3$ is triply
+periodic and initial conditions will here be set as
 
 !bt
 \begin{align}
@@ -59,7 +60,7 @@ u_t^0 &= 0.
 \end{align}
 !et
 
-with $\boldsymbol{x} = (x, y, z)$. We will solve these equations using a mixed formulation and a spetral Galerkin
+We will solve these equations using a mixed formulation and a spectral Galerkin
 method. The mixed formulation reads
 
 !bt
@@ -90,6 +91,7 @@ code shown in the bottom of Sec. ref{sec:solver}.
 %endif
 
 ===== Spectral Galerkin formulation =====
+label{sec:spectralgalerkin}
 The PDEs in (ref{eq:df}) and (ref{eq:du}) can be solved with many different
 numerical methods. We will here use the "shenfun":
 "https://github.com/spectralDNS/shenfun" software and this software makes use of
@@ -99,7 +101,7 @@ multiplying  (ref{eq:df}) and (ref{eq:du}) with the complex conjugate of proper
 test functions and then integrating
 over the domain. To this end we use testfunction $g\in H^1(\Omega)$ with
 Eq. (ref{eq:df})  and  $v \in
-H^1(\Omega)$ with Eq. (ref{eq:du}), where $H^1(\Omega)$ is the Sobolev space, and we obtain
+H^1(\Omega)$ with Eq. (ref{eq:du}), where $H^1(\Omega)$ is the Hilbert space, and we obtain
 
 !bt
 \begin{align}
@@ -179,7 +181,13 @@ e^{\imath \underline{n} z} = e^{\imath
 (\underline{l}x + \underline{m}y + \underline{n}z)}
 \end{equation}
 !et
-and we look for solutions of the form
+where the indices for $y$- and $z$-direction are $\underline{m}=\frac{2\pi}{L}m,
+\underline{n}=\frac{2\pi}{L}n$, and $\bs{m}$ and $\bs{n}$ are the same as
+$\bs{l}$ due to using the same number of basis functions for each direction. One
+distinction, though, is that for the $z$-direction expansion coefficients are only stored for
+$n=(0, 1, \ldots, N/2)$ due to Hermitian symmetry (real input data).
+
+We now look for solutions of the form
 
 !bt
 \begin{equation}
@@ -194,12 +202,12 @@ the solution in quadrature points corresponding to
 
 !bt
 \begin{align}
- x_i &= \frac{4 \pi i}{N}-2\pi, \quad \forall \, i \in \boldsymbol{i},
+ x_i &= \frac{4 \pi i}{N}-2\pi \quad \forall \, i \in \boldsymbol{i},
 \text{where}\, \boldsymbol{i}=(0,1,\ldots,N-1), \\
- y_j &= \frac{4 \pi j}{N}-2\pi, \quad \forall \, j \in \boldsymbol{j},
-\text{where}\, \boldsymbol{j}=(0,1,\ldots,N-1) \\
- z_k &= \frac{4 \pi k}{N}-2\pi, \quad \forall \, k \in \boldsymbol{k},
-\text{where}\, \boldsymbol{k}=(0,1,\ldots,N-1) \\
+ y_j &= \frac{4 \pi j}{N}-2\pi \quad \forall \, j \in \boldsymbol{j},
+\text{where}\, \boldsymbol{j}=(0,1,\ldots,N-1), \\
+ z_k &= \frac{4 \pi k}{N}-2\pi \quad \forall \, k \in \boldsymbol{k},
+\text{where}\, \boldsymbol{k}=(0,1,\ldots,N-1). \\
 \end{align}
 !et
 Note that these points are different from the standard (like $2\pi j/N$) since
@@ -210,15 +218,17 @@ is set to $[-2\pi, 2\pi]^3$ and not the more common $[0, 2\pi]^3$. We have
 \begin{equation}
 u(x_i, y_j, z_k) =
 N^3
-\mathcal{F}_k^{-1}\left(\mathcal{F}_j^{-1}\left(\mathcal{F}_i^{-1}\left(\hat{u}\right)\right)\right),
-\, \forall\, (i,j,k)\in\boldsymbol{i} \times \boldsymbol{j} \times \boldsymbol{k}
+\mathcal{F}_k^{-1}\left(\mathcal{F}_j^{-1}\left(\mathcal{F}_i^{-1}\left(\hat{u}\right)\right)\right)
+\, \forall\, (i,j,k)\in\boldsymbol{i} \times \boldsymbol{j} \times
+\boldsymbol{k},
 \end{equation}
 !et
 where $\mathcal{F}_i^{-1}$ is the inverse Fourier transform along the direction
 of index $i$, for
 all $(j, k) \in \boldsymbol{j} \times \boldsymbol{k}$. Note that the three
 inverse FFTs are performed sequentially, one direction at the time, and that the factor $N^3$ is due to
-the definition used for the inverse Fourier transform, which is the one used by Numpy:
+the definition used for the inverse Fourier transform, which is the one used
+also by "Numpy": "https://docs.scipy.org/doc/numpy-1.13.0/reference/routines.fft.html":
 
 !bt
 \begin{equation}
@@ -253,8 +263,18 @@ whereas a complete transform requires
 
 From this we see that the variational forms (ref{eq:df_var2}) and (ref{eq:du_var2})
 may be written in terms of the Fourier transformed quantities $\hat{u}$ and
-$\hat{f}$. Expanding the exact derivatives of the nabla operator, the equations
-to be solved can be found directly as
+$\hat{f}$. Expanding the exact derivatives of the nabla operator, we have
+
+!bt
+\begin{align}
+(\nabla u, \nabla v) &=
+(2\pi)^3(\underline{l}^2+\underline{m}^2+\underline{n}^2)\hat{u}_{l,m,n}, \\
+(u, v) &= (2\pi)^3\hat{u}_{l,m,n}, \\
+(u|u|^2, v) &= (2\pi)^3 \widehat{u|u|^2}
+\end{align}
+!et
+
+and as such the equations to be solved can be found directly as
 
 !bt
 \begin{align}
@@ -268,7 +288,9 @@ There is more than one way to arrive at these equations. Taking the 3D Fourier
 transform of both equations  (ref{eq:df}) and (ref{eq:du}) is one obvious way.
 With the Python module "shenfun": "https://github.com/spectralDNS/shenfun", one can work with the
 inner products as seen in (ref{eq:df_var2}) and (ref{eq:du_var2}), or the Fourier
-transforms directly.  In short, `shenfun` contains all the tools required to work with
+transforms directly. See for example Sec. ref{sec:rk} for how $(\nabla u, \nabla
+v)$ can be
+implemented.  In short, `shenfun` contains all the tools required to work with
 the spectral Galerkin method, and we will now see how `shenfun` can be used to solve
 the Klein-Gordon equation. 
 
@@ -381,7 +403,7 @@ class. An instance of the `Function` class may be used as a regular array,
 but also as an argument in forms. For example, if you want to compute the
 partial derivative $\partial u/\partial x$, then this may be achieved by
 projection, i.e., find $u_x \in V^N$ such that $(u_x-\partial u/\partial x, v) = 0$,
-for $v \in V^N$. This projection may be easily computed in `shenfun` using
+for all $v \in V^N$. This projection may be easily computed in `shenfun` using
 
 !bc pycod
 v = Function(T, False, buffer=u)
@@ -403,7 +425,8 @@ information required by forms.
 ===== Initialization =====
 
 The solution arrays `uf` and its transform `uf_hat` need to be initialized according to Eq.
-(ref{eq:init}). To this end we use "Sympy":
+(ref{eq:init}). To this end it is convenient (but not required, we could just as
+easily use Numpy for this as well) to use "Sympy":
 "http://www.sympy.org/en/index.html", which is a Python library for symbolic
 mathamatics.
 
@@ -541,7 +564,7 @@ uh = TrialFunction(T)
 vh = TestFunction(T)
 k2 = -(inner(grad(vh), grad(uh)).diagonal_array / A + gamma)
 
-def compute_rhs(duf_hat, uf_hat, up, T, Tp, w0):
+def compute_rhs(duf_hat, uf_hat, up, Tp, w0):
     duf_hat.fill(0)
     u_hat, f_hat = uf_hat[:]
     du_hat, df_hat = duf_hat[:]
@@ -551,9 +574,9 @@ def compute_rhs(duf_hat, uf_hat, up, T, Tp, w0):
     du_hat[:] = f_hat
     return duf_hat
 
-def energy_fourier(comm, N, a):
-    result = 2*np.sum(abs(a[...,1:-1])**2) + np.sum(abs(a[...,0])**2) \
-             + np.sum(abs(a[...,-1])**2)
+def energy_fourier(comm, a):
+    result = 2*np.sum(abs(a[..., 1:-1])**2) + np.sum(abs(a[..., 0])**2) \
+             + np.sum(abs(a[..., -1])**2)
     result =  comm.allreduce(result)
     return result
 
@@ -566,7 +589,7 @@ end_time = 50.
 tstep = 0
 if rank == 0:
     plt.figure()
-    im = plt.contourf(X[0][..., 0], X[1][..., 0], u[..., 4], 100)
+    im = plt.contourf(X[1][..., 0], X[0][..., 0], u[..., 4], 100)
     plt.draw()
     plt.pause(1e-4)
 t0 = time()
@@ -576,7 +599,7 @@ while t < end_time-1e-8:
     tstep += 1
     uf_hat1[:] = uf_hat0[:] = uf_hat
     for rk in range(4):
-        duf = compute_rhs(duf, uf_hat, up, T, Tp, w0)
+        duf = compute_rhs(duf, uf_hat, up, Tp, w0)
         if rk < 3:
             uf_hat[:] = uf_hat0 + b[rk]*dt*duf
         uf_hat1 += a[rk]*dt*duf
@@ -584,13 +607,13 @@ while t < end_time-1e-8:
 
     if tstep % 50 == 0:
         uf = TT.backward(uf_hat, uf)
-        ekin = 0.5*energy_fourier(T.comm, np.array(N), f_hat)
-        es = 0.5*energy_fourier(T.comm, np.array(N), 1j*K*u_hat)
+        ekin = 0.5*energy_fourier(T.comm, f_hat)
+        es = 0.5*energy_fourier(T.comm, 1j*K*u_hat)
         eg = gamma*np.sum(0.5*u**2 - 0.25*u**4)/np.prod(np.array(N))
         eg =  comm.allreduce(eg)
         if rank == 0:
             im.ax.clear()
-            im.ax.contourf(X[0][..., 0], X[1][..., 0], u[..., 4], 100)
+            im.ax.contourf(X[1][..., 0], X[0][..., 0], u[..., 4], 100)
             plt.pause(1e-6)
             print("Time = %2.2f Total energy = %2.8e" %(t, ekin+es+eg))
         comm.barrier()

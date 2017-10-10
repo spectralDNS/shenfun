@@ -11,6 +11,8 @@ to integrate forward in time
 
 with both u(x, y, z, t=0) and f(x, y, z, t=0) given.
 
+Using the Fourier basis for all three spatial directions.
+
 """
 from sympy import symbols, exp, lambdify
 import numpy as np
@@ -73,7 +75,10 @@ uh = TrialFunction(T)
 vh = TestFunction(T)
 k2 = -inner(grad(vh), grad(uh)).diagonal_array / A - gamma
 
+count = 0
 def compute_rhs(duf_hat, uf_hat, up, T, Tp, w0):
+    global count
+    count += 1
     duf_hat.fill(0)
     u_hat, f_hat = uf_hat[:]
     du_hat, df_hat = duf_hat[:]
@@ -83,8 +88,8 @@ def compute_rhs(duf_hat, uf_hat, up, T, Tp, w0):
     du_hat[:] = f_hat
     return duf_hat
 
-def energy_fourier(comm, N, a):
-    result = 2*np.sum(abs(a[...,1:-1])**2) + np.sum(abs(a[...,0])**2) + np.sum(abs(a[...,-1])**2)
+def energy_fourier(comm, a):
+    result = 2*np.sum(abs(a[..., 1:-1])**2) + np.sum(abs(a[..., 0])**2) + np.sum(abs(a[..., -1])**2)
     result =  comm.allreduce(result)
     return result
 
@@ -93,12 +98,12 @@ a = [1./6., 1./3., 1./3., 1./6.]         # Runge-Kutta parameter
 b = [0.5, 0.5, 1.]                       # Runge-Kutta parameter
 t = 0.0
 dt = 0.005
-end_time = 50.
+end_time = 10.
 tstep = 0
 #levels = np.linspace(-0.06, 0.1, 100)/8
 if rank == 0:
     plt.figure()
-    image = plt.contourf(X[0][:, :, 0], X[1][:, :, 0], u[:, :, 16], 100)
+    image = plt.contourf(X[1][..., 0], X[0][..., 0], u[..., 16], 100)
     plt.draw()
     plt.pause(1e-4)
 t0 = time()
@@ -116,24 +121,22 @@ while t < end_time-1e-8:
         uf_hat1 += a[rk]*dt*duf
     uf_hat[:] = uf_hat1
 
-    if tstep % 5 == 0:
+    if tstep % 100 == 0:
         uf = TT.backward(uf_hat, uf)
-        ekin = 0.5*energy_fourier(T.comm, np.array(N), f_hat)
-        es = 0.5*energy_fourier(T.comm, np.array(N), 1j*K*u_hat)
+        ekin = 0.5*energy_fourier(T.comm, f_hat)
+        es = 0.5*energy_fourier(T.comm, 1j*K*u_hat)
         eg = gamma*np.sum(0.5*u**2 - 0.25*u**4)/np.prod(np.array(N))
         eg =  comm.allreduce(eg)
         gradu = TV.backward(1j*K*u_hat, gradu)
-        ep = np.sum(f*gradu)/np.prod(np.array(N))
-
-        ea = np.sum(np.array(X)*(0.5*f**2 + 0.5*gradu**2 - (0.5*u**2 - 0.25*u**4)*f))/np.prod(np.array(N))
+        ep = comm.allreduce(np.sum(f*gradu)/np.prod(np.array(N)))
+        ea = comm.allreduce(np.sum(np.array(X)*(0.5*f**2 + 0.5*gradu**2 - (0.5*u**2 - 0.25*u**4)*f))/np.prod(np.array(N)))
         if rank == 0:
             image.ax.clear()
-            image.ax.contourf(X[0][:, :, 0], X[1][:, :, 0], u[:, :, 16], 100)
+            image.ax.contourf(X[1][..., 0], X[0][..., 0], u[..., 16], 100)
             plt.pause(1e-6)
             #plt.savefig('Klein_Gordon_{}_real_{}.png'.format(N[0], tstep))
             print("Time = %2.2f Total energy = %2.8e Linear momentum %2.8e Angular momentum %2.8e" %(t, ekin+es+eg, ep, ea))
         comm.barrier()
 
-print("Time ", time()-t0)
-
+print("Time ", time()-t0, count)
 

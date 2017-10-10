@@ -48,7 +48,10 @@ pre { color: inherit; background-color: transparent; }
                'table_of_contents'),
               ('The nonlinear Klein-Gordon equation', 1, None, '___sec0'),
               ('Model equation', 2, None, '___sec1'),
-              ('Spectral Galerkin formulation', 2, None, '___sec2'),
+              ('Spectral Galerkin formulation',
+               2,
+               'sec:spectralgalerkin',
+               'sec:spectralgalerkin'),
               ('Discretization', 2, None, '___sec3'),
               ('Implementation', 1, None, '___sec4'),
               ('Initialization', 2, None, '___sec5'),
@@ -73,6 +76,12 @@ MathJax.Hub.Config({
  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
 </script>
 
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+$$
+
+
 
 
     
@@ -95,7 +104,7 @@ MathJax.Hub.Config({
      <!-- navigation toc: --> <li><a href="#table_of_contents" style="font-size: 80%;"><b>Table of contents</b></a></li>
      <!-- navigation toc: --> <li><a href="#___sec0" style="font-size: 80%;"><b>The nonlinear Klein-Gordon equation</b></a></li>
      <!-- navigation toc: --> <li><a href="#___sec1" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Model equation</a></li>
-     <!-- navigation toc: --> <li><a href="#___sec2" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Spectral Galerkin formulation</a></li>
+     <!-- navigation toc: --> <li><a href="#sec:spectralgalerkin" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Spectral Galerkin formulation</a></li>
      <!-- navigation toc: --> <li><a href="#___sec3" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Discretization</a></li>
      <!-- navigation toc: --> <li><a href="#___sec4" style="font-size: 80%;"><b>Implementation</b></a></li>
      <!-- navigation toc: --> <li><a href="#___sec5" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Initialization</a></li>
@@ -135,12 +144,12 @@ MathJax.Hub.Config({
 <center><b>Department of Mathematics, University of Oslo.</b></center>
 <br>
 <p>
-<center><h4>Sep 8, 2017</h4></center> <!-- date -->
+<center><h4>Sep 22, 2017</h4></center> <!-- date -->
 <br>
 <p>
 <b>Summary.</b> This is a demonstration of how the Python module <a href="https://github.com/spectralDNS/shenfun" target="_self">shenfun</a> can be used to solve the time-dependent,
 nonlinear Klein-Gordon equation, in a triply periodic domain. The demo is implemented in
-a single Python file <a href="https://github.com/spectralDNS/shenfun/demo/KleinGordon.py" target="_self">KleinGordon.py</a>, and it may be run
+a single Python file <a href="https://github.com/spectralDNS/shenfun/blob/master/demo/KleinGordon.py" target="_self">KleinGordon.py</a>, and it may be run
 in parallel using MPI. The Klein-Gordon equation is solved using a mixed
 formulation. The discretization, and some background on the spectral Galerkin
 method is given first, before we turn to the actual details of the <code>shenfun</code>
@@ -155,7 +164,7 @@ Table of contents</h2>
 <p>
 <a href="#___sec0"> The nonlinear Klein-Gordon equation </a><br>
 &nbsp; &nbsp; &nbsp; <a href="#___sec1"> Model equation </a><br>
-&nbsp; &nbsp; &nbsp; <a href="#___sec2"> Spectral Galerkin formulation </a><br>
+&nbsp; &nbsp; &nbsp; <a href="#sec:spectralgalerkin"> Spectral Galerkin formulation </a><br>
 &nbsp; &nbsp; &nbsp; <a href="#___sec3"> Discretization </a><br>
 <a href="#___sec4"> Implementation </a><br>
 &nbsp; &nbsp; &nbsp; <a href="#___sec5"> Initialization </a><br>
@@ -195,9 +204,10 @@ t=0)}{\partial t} = u_t^0. \tag{2}
 $$
 
 <p>
-The parameter \( \gamma=\pm 1 \) determines whether the equations are focusing
-(\( 1 \)) or defocusing (\( -1 \)) (in the movie we have used \( \gamma=1 \)). The domain \( \Omega=[-2\pi, 2\pi]^3 \) is triply
-periodic and Initial conditions will here be set as
+The spatial coordinates are here denoted as \( \boldsymbol{x} = (x, y, z) \), and
+\( t \) is time. The parameter \( \gamma=\pm 1 \) determines whether the equations are focusing
+(\( +1 \)) or defocusing (\( -1 \)) (in the movie we have used \( \gamma=1 \)). The domain \( \Omega=[-2\pi, 2\pi]^3 \) is triply
+periodic and initial conditions will here be set as
 
 $$
 \begin{align}
@@ -209,7 +219,7 @@ u_t^0 &= 0.
 $$
 
 <p>
-with \( \boldsymbol{x} = (x, y, z) \). We will solve these equations using a mixed formulation and a spetral Galerkin
+We will solve these equations using a mixed formulation and a spectral Galerkin
 method. The mixed formulation reads
 
 $$
@@ -232,7 +242,7 @@ and it is crucial that this energy remains constant in time.
 The movie (<a href="#mov:kleingordon">mov:kleingordon</a>) is showing the solution \( u \), computed with the
 code shown in the bottom of Sec. <a href="#sec:solver">Complete solver</a>.
 
-<h2 id="___sec2" class="anchor">Spectral Galerkin formulation </h2>
+<h2 id="sec:spectralgalerkin" class="anchor">Spectral Galerkin formulation</h2>
 The PDEs in <a href="#mjx-eqn-5">(5)</a> and <a href="#mjx-eqn-6">(6)</a> can be solved with many different
 numerical methods. We will here use the <a href="https://github.com/spectralDNS/shenfun" target="_self">shenfun</a> software and this software makes use of
 the spectral Galerkin method. Being a Galerkin method, we need to reshape the
@@ -241,7 +251,7 @@ multiplying  <a href="#mjx-eqn-5">(5)</a> and <a href="#mjx-eqn-6">(6)</a> with 
 test functions and then integrating
 over the domain. To this end we use testfunction \( g\in H^1(\Omega) \) with
 Eq. <a href="#mjx-eqn-5">(5)</a>  and  \( v \in
-H^1(\Omega) \) with Eq. <a href="#mjx-eqn-6">(6)</a>, where \( H^1(\Omega) \) is the Sobolev space, and we obtain
+H^1(\Omega) \) with Eq. <a href="#mjx-eqn-6">(6)</a>, where \( H^1(\Omega) \) is the Hilbert space, and we obtain
 
 $$
 \begin{align}
@@ -327,7 +337,14 @@ e^{\imath \underline{n} z} = e^{\imath
 \end{equation}
 $$
 
-and we look for solutions of the form
+where the indices for \( y \)- and \( z \)-direction are \( \underline{m}=\frac{2\pi}{L}m,
+\underline{n}=\frac{2\pi}{L}n \), and \( \bs{m} \) and \( \bs{n} \) are the same as
+\( \bs{l} \) due to using the same number of basis functions for each direction. One
+distinction, though, is that for the \( z \)-direction expansion coefficients are only stored for
+\( n=(0, 1, \ldots, N/2) \) due to Hermitian symmetry (real input data).
+
+<p>
+We now look for solutions of the form
 
 $$
 \begin{equation}
@@ -344,14 +361,14 @@ the solution in quadrature points corresponding to
 
 $$
 \begin{align}
- x_i &= \frac{4 \pi i}{N}-2\pi, \quad \forall \, i \in \boldsymbol{i},
+ x_i &= \frac{4 \pi i}{N}-2\pi \quad \forall \, i \in \boldsymbol{i},
 \text{where}\, \boldsymbol{i}=(0,1,\ldots,N-1), 
 \tag{16}\\ 
- y_j &= \frac{4 \pi j}{N}-2\pi, \quad \forall \, j \in \boldsymbol{j},
-\text{where}\, \boldsymbol{j}=(0,1,\ldots,N-1) 
+ y_j &= \frac{4 \pi j}{N}-2\pi \quad \forall \, j \in \boldsymbol{j},
+\text{where}\, \boldsymbol{j}=(0,1,\ldots,N-1), 
 \tag{17}\\ 
- z_k &= \frac{4 \pi k}{N}-2\pi, \quad \forall \, k \in \boldsymbol{k},
-\text{where}\, \boldsymbol{k}=(0,1,\ldots,N-1) 
+ z_k &= \frac{4 \pi k}{N}-2\pi \quad \forall \, k \in \boldsymbol{k},
+\text{where}\, \boldsymbol{k}=(0,1,\ldots,N-1). 
 \tag{18}\\ 
 \tag{19}
 \end{align}
@@ -365,8 +382,9 @@ $$
 \begin{equation}
 u(x_i, y_j, z_k) =
 N^3
-\mathcal{F}_k^{-1}\left(\mathcal{F}_j^{-1}\left(\mathcal{F}_i^{-1}\left(\hat{u}\right)\right)\right),
-\, \forall\, (i,j,k)\in\boldsymbol{i} \times \boldsymbol{j} \times \boldsymbol{k}
+\mathcal{F}_k^{-1}\left(\mathcal{F}_j^{-1}\left(\mathcal{F}_i^{-1}\left(\hat{u}\right)\right)\right)
+\, \forall\, (i,j,k)\in\boldsymbol{i} \times \boldsymbol{j} \times
+\boldsymbol{k},
 \tag{20}
 \end{equation}
 $$
@@ -375,7 +393,8 @@ where \( \mathcal{F}_i^{-1} \) is the inverse Fourier transform along the direct
 of index \( i \), for
 all \( (j, k) \in \boldsymbol{j} \times \boldsymbol{k} \). Note that the three
 inverse FFTs are performed sequentially, one direction at the time, and that the factor \( N^3 \) is due to
-the definition used for the inverse Fourier transform, which is the one used by Numpy:
+the definition used for the inverse Fourier transform, which is the one used
+also by <a href="https://docs.scipy.org/doc/numpy-1.13.0/reference/routines.fft.html" target="_self">Numpy</a>:
 
 $$
 \begin{equation}
@@ -416,14 +435,28 @@ $$
 <p>
 From this we see that the variational forms <a href="#mjx-eqn-9">(9)</a> and <a href="#mjx-eqn-10">(10)</a>
 may be written in terms of the Fourier transformed quantities \( \hat{u} \) and
-\( \hat{f} \). Expanding the exact derivatives of the nabla operator, the equations
-to be solved can be found directly as
+\( \hat{f} \). Expanding the exact derivatives of the nabla operator, we have
+
+$$
+\begin{align}
+(\nabla u, \nabla v) &=
+(2\pi)^3(\underline{l}^2+\underline{m}^2+\underline{n}^2)\hat{u}_{l,m,n}, 
+\tag{24}\\ 
+(u, v) &= (2\pi)^3\hat{u}_{l,m,n}, 
+\tag{25}\\ 
+(u|u|^2, v) &= (2\pi)^3 \widehat{u|u|^2}
+\tag{26}
+\end{align}
+$$
+
+<p>
+and as such the equations to be solved can be found directly as
 
 $$
 \begin{align}
 \frac{\partial \hat{f}}{\partial t}  &=
-\left(-(\underline{l}^2+\underline{m}^2+\underline{n}^2+\gamma)\hat{u} + \gamma \widehat{u|u|^2}\right), \tag{24} \\ 
-\frac{\partial \hat{u}}{\partial t} &= \hat{f}. \tag{25}
+\left(-(\underline{l}^2+\underline{m}^2+\underline{n}^2+\gamma)\hat{u} + \gamma \widehat{u|u|^2}\right), \tag{27} \\ 
+\frac{\partial \hat{u}}{\partial t} &= \hat{f}. \tag{28}
 \end{align}
 $$
 
@@ -432,7 +465,9 @@ There is more than one way to arrive at these equations. Taking the 3D Fourier
 transform of both equations  <a href="#mjx-eqn-5">(5)</a> and <a href="#mjx-eqn-6">(6)</a> is one obvious way.
 With the Python module <a href="https://github.com/spectralDNS/shenfun" target="_self">shenfun</a>, one can work with the
 inner products as seen in <a href="#mjx-eqn-9">(9)</a> and <a href="#mjx-eqn-10">(10)</a>, or the Fourier
-transforms directly.  In short, <code>shenfun</code> contains all the tools required to work with
+transforms directly. See for example Sec. <a href="#sec:rk">Runge-Kutta integrator</a> for how \( (\nabla u, \nabla
+v) \) can be
+implemented.  In short, <code>shenfun</code> contains all the tools required to work with
 the spectral Galerkin method, and we will now see how <code>shenfun</code> can be used to solve
 the Klein-Gordon equation.
 
@@ -548,7 +583,7 @@ class. An instance of the <code>Function</code> class may be used as a regular a
 but also as an argument in forms. For example, if you want to compute the
 partial derivative \( \partial u/\partial x \), then this may be achieved by
 projection, i.e., find \( u_x \in V^N \) such that \( (u_x-\partial u/\partial x, v) = 0 \),
-for \( v \in V^N \). This projection may be easily computed in <code>shenfun</code> using
+for all \( v \in V^N \). This projection may be easily computed in <code>shenfun</code> using
 
 <p>
 
@@ -576,7 +611,8 @@ information required by forms.
 
 <p>
 The solution arrays <code>uf</code> and its transform <code>uf_hat</code> need to be initialized according to Eq.
-<a href="#mjx-eqn-2">(2)</a>. To this end we use <a href="http://www.sympy.org/en/index.html" target="_self">Sympy</a>, which is a Python library for symbolic
+<a href="#mjx-eqn-2">(2)</a>. To this end it is convenient (but not required, we could just as
+easily use Numpy for this as well) to use <a href="http://www.sympy.org/en/index.html" target="_self">Sympy</a>, which is a Python library for symbolic
 mathamatics.
 
 <p>
@@ -602,7 +638,7 @@ calling with <code>X[0], X[1], X[2]</code>.
 
 <h2 id="sec:rk" class="anchor">Runge-Kutta integrator</h2>
 A fourth order explicit Runge-Kutta integrator requires only a function that
-returns the right hand sides of <a href="#mjx-eqn-24">(24)</a> and <a href="#mjx-eqn-25">(25)</a>. Such a
+returns the right hand sides of <a href="#mjx-eqn-27">(27)</a> and <a href="#mjx-eqn-28">(28)</a>. Such a
 function can be implemented as
 
 <p>
@@ -626,10 +662,10 @@ k2 <span style="color: #666666">=</span> <span style="color: #666666">-</span>(i
 </pre></div>
 <p>
 The code is fairly self-explanatory. <code>k2</code> represents the coefficients in front of
-the linear \( \hat{u} \) in <a href="#mjx-eqn-24">(24)</a>. The output array is <code>duf_hat</code>, and
+the linear \( \hat{u} \) in <a href="#mjx-eqn-27">(27)</a>. The output array is <code>duf_hat</code>, and
 the input array is <code>uf_hat</code>, whereas <code>up</code> and <code>w0</code> are work arrays. The array
-<code>duf_hat</code> contains the right hand sides of both <a href="#mjx-eqn-24">(24)</a> and
-<a href="#mjx-eqn-25">(25)</a>, where the linear and nonlinear terms are recognized in the
+<code>duf_hat</code> contains the right hand sides of both <a href="#mjx-eqn-27">(27)</a> and
+<a href="#mjx-eqn-28">(28)</a>, where the linear and nonlinear terms are recognized in the
 code as comments <code>(1)</code> and <code>(2)</code>.
 The array <code>uf_hat</code> contains the solution at initial and intermediate Runge-Kutta steps.
 
@@ -720,7 +756,7 @@ uh <span style="color: #666666">=</span> TrialFunction(T)
 vh <span style="color: #666666">=</span> TestFunction(T)
 k2 <span style="color: #666666">=</span> <span style="color: #666666">-</span>(inner(grad(vh), grad(uh))<span style="color: #666666">.</span>diagonal_array <span style="color: #666666">/</span> A <span style="color: #666666">+</span> gamma)
 
-<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">compute_rhs</span>(duf_hat, uf_hat, up, T, Tp, w0):
+<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">compute_rhs</span>(duf_hat, uf_hat, up, Tp, w0):
     duf_hat<span style="color: #666666">.</span>fill(<span style="color: #666666">0</span>)
     u_hat, f_hat <span style="color: #666666">=</span> uf_hat[:]
     du_hat, df_hat <span style="color: #666666">=</span> duf_hat[:]
@@ -730,9 +766,9 @@ k2 <span style="color: #666666">=</span> <span style="color: #666666">-</span>(i
     du_hat[:] <span style="color: #666666">=</span> f_hat
     <span style="color: #008000; font-weight: bold">return</span> duf_hat
 
-<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">energy_fourier</span>(comm, N, a):
-    result <span style="color: #666666">=</span> <span style="color: #666666">2*</span>np<span style="color: #666666">.</span>sum(<span style="color: #008000">abs</span>(a[<span style="color: #666666">...</span>,<span style="color: #666666">1</span>:<span style="color: #666666">-1</span>])<span style="color: #666666">**2</span>) <span style="color: #666666">+</span> np<span style="color: #666666">.</span>sum(<span style="color: #008000">abs</span>(a[<span style="color: #666666">...</span>,<span style="color: #666666">0</span>])<span style="color: #666666">**2</span>) \ 
-             <span style="color: #666666">+</span> np<span style="color: #666666">.</span>sum(<span style="color: #008000">abs</span>(a[<span style="color: #666666">...</span>,<span style="color: #666666">-1</span>])<span style="color: #666666">**2</span>)
+<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">energy_fourier</span>(comm, a):
+    result <span style="color: #666666">=</span> <span style="color: #666666">2*</span>np<span style="color: #666666">.</span>sum(<span style="color: #008000">abs</span>(a[<span style="color: #666666">...</span>, <span style="color: #666666">1</span>:<span style="color: #666666">-1</span>])<span style="color: #666666">**2</span>) <span style="color: #666666">+</span> np<span style="color: #666666">.</span>sum(<span style="color: #008000">abs</span>(a[<span style="color: #666666">...</span>, <span style="color: #666666">0</span>])<span style="color: #666666">**2</span>) \ 
+             <span style="color: #666666">+</span> np<span style="color: #666666">.</span>sum(<span style="color: #008000">abs</span>(a[<span style="color: #666666">...</span>, <span style="color: #666666">-1</span>])<span style="color: #666666">**2</span>)
     result <span style="color: #666666">=</span>  comm<span style="color: #666666">.</span>allreduce(result)
     <span style="color: #008000; font-weight: bold">return</span> result
 
@@ -745,7 +781,7 @@ end_time <span style="color: #666666">=</span> <span style="color: #666666">50.<
 tstep <span style="color: #666666">=</span> <span style="color: #666666">0</span>
 <span style="color: #008000; font-weight: bold">if</span> rank <span style="color: #666666">==</span> <span style="color: #666666">0</span>:
     plt<span style="color: #666666">.</span>figure()
-    im <span style="color: #666666">=</span> plt<span style="color: #666666">.</span>contourf(X[<span style="color: #666666">0</span>][<span style="color: #666666">...</span>, <span style="color: #666666">0</span>], X[<span style="color: #666666">1</span>][<span style="color: #666666">...</span>, <span style="color: #666666">0</span>], u[<span style="color: #666666">...</span>, <span style="color: #666666">4</span>], <span style="color: #666666">100</span>)
+    im <span style="color: #666666">=</span> plt<span style="color: #666666">.</span>contourf(X[<span style="color: #666666">1</span>][<span style="color: #666666">...</span>, <span style="color: #666666">0</span>], X[<span style="color: #666666">0</span>][<span style="color: #666666">...</span>, <span style="color: #666666">0</span>], u[<span style="color: #666666">...</span>, <span style="color: #666666">4</span>], <span style="color: #666666">100</span>)
     plt<span style="color: #666666">.</span>draw()
     plt<span style="color: #666666">.</span>pause(<span style="color: #666666">1e-4</span>)
 t0 <span style="color: #666666">=</span> time()
@@ -755,7 +791,7 @@ K <span style="color: #666666">=</span> np<span style="color: #666666">.</span>a
     tstep <span style="color: #666666">+=</span> <span style="color: #666666">1</span>
     uf_hat1[:] <span style="color: #666666">=</span> uf_hat0[:] <span style="color: #666666">=</span> uf_hat
     <span style="color: #008000; font-weight: bold">for</span> rk <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #666666">4</span>):
-        duf <span style="color: #666666">=</span> compute_rhs(duf, uf_hat, up, T, Tp, w0)
+        duf <span style="color: #666666">=</span> compute_rhs(duf, uf_hat, up, Tp, w0)
         <span style="color: #008000; font-weight: bold">if</span> rk <span style="color: #666666">&lt;</span> <span style="color: #666666">3</span>:
             uf_hat[:] <span style="color: #666666">=</span> uf_hat0 <span style="color: #666666">+</span> b[rk]<span style="color: #666666">*</span>dt<span style="color: #666666">*</span>duf
         uf_hat1 <span style="color: #666666">+=</span> a[rk]<span style="color: #666666">*</span>dt<span style="color: #666666">*</span>duf
@@ -763,13 +799,13 @@ K <span style="color: #666666">=</span> np<span style="color: #666666">.</span>a
 
     <span style="color: #008000; font-weight: bold">if</span> tstep <span style="color: #666666">%</span> <span style="color: #666666">50</span> <span style="color: #666666">==</span> <span style="color: #666666">0</span>:
         uf <span style="color: #666666">=</span> TT<span style="color: #666666">.</span>backward(uf_hat, uf)
-        ekin <span style="color: #666666">=</span> <span style="color: #666666">0.5*</span>energy_fourier(T<span style="color: #666666">.</span>comm, np<span style="color: #666666">.</span>array(N), f_hat)
-        es <span style="color: #666666">=</span> <span style="color: #666666">0.5*</span>energy_fourier(T<span style="color: #666666">.</span>comm, np<span style="color: #666666">.</span>array(N), <span style="color: #666666">1j*</span>K<span style="color: #666666">*</span>u_hat)
+        ekin <span style="color: #666666">=</span> <span style="color: #666666">0.5*</span>energy_fourier(T<span style="color: #666666">.</span>comm, f_hat)
+        es <span style="color: #666666">=</span> <span style="color: #666666">0.5*</span>energy_fourier(T<span style="color: #666666">.</span>comm, <span style="color: #666666">1j*</span>K<span style="color: #666666">*</span>u_hat)
         eg <span style="color: #666666">=</span> gamma<span style="color: #666666">*</span>np<span style="color: #666666">.</span>sum(<span style="color: #666666">0.5*</span>u<span style="color: #666666">**2</span> <span style="color: #666666">-</span> <span style="color: #666666">0.25*</span>u<span style="color: #666666">**4</span>)<span style="color: #666666">/</span>np<span style="color: #666666">.</span>prod(np<span style="color: #666666">.</span>array(N))
         eg <span style="color: #666666">=</span>  comm<span style="color: #666666">.</span>allreduce(eg)
         <span style="color: #008000; font-weight: bold">if</span> rank <span style="color: #666666">==</span> <span style="color: #666666">0</span>:
             im<span style="color: #666666">.</span>ax<span style="color: #666666">.</span>clear()
-            im<span style="color: #666666">.</span>ax<span style="color: #666666">.</span>contourf(X[<span style="color: #666666">0</span>][<span style="color: #666666">...</span>, <span style="color: #666666">0</span>], X[<span style="color: #666666">1</span>][<span style="color: #666666">...</span>, <span style="color: #666666">0</span>], u[<span style="color: #666666">...</span>, <span style="color: #666666">4</span>], <span style="color: #666666">100</span>)
+            im<span style="color: #666666">.</span>ax<span style="color: #666666">.</span>contourf(X[<span style="color: #666666">1</span>][<span style="color: #666666">...</span>, <span style="color: #666666">0</span>], X[<span style="color: #666666">0</span>][<span style="color: #666666">...</span>, <span style="color: #666666">0</span>], u[<span style="color: #666666">...</span>, <span style="color: #666666">4</span>], <span style="color: #666666">100</span>)
             plt<span style="color: #666666">.</span>pause(<span style="color: #666666">1e-6</span>)
             <span style="color: #008000; font-weight: bold">print</span>(<span style="color: #BA2121">&quot;Time = </span><span style="color: #BB6688; font-weight: bold">%2.2f</span><span style="color: #BA2121"> Total energy = </span><span style="color: #BB6688; font-weight: bold">%2.8e</span><span style="color: #BA2121">&quot;</span> <span style="color: #666666">%</span>(t, ekin<span style="color: #666666">+</span>es<span style="color: #666666">+</span>eg))
         comm<span style="color: #666666">.</span>barrier()
@@ -803,7 +839,7 @@ K <span style="color: #666666">=</span> np<span style="color: #666666">.</span>a
 
 </div>  <!-- end container -->
 <!-- include javascript, jQuery *first* -->
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 <script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
 
 <!-- Bootstrap footer
