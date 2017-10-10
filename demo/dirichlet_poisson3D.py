@@ -20,13 +20,16 @@ import sys
 import importlib
 from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
-import matplotlib.pyplot as plt
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun.tensorproductspace import TensorProductSpace
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
     project, Dx
 import time
 from mpi4py import MPI
+try:
+    import matplotlib.pyplot as plt
+except:
+    plt = None
 
 comm = MPI.COMM_WORLD
 
@@ -97,17 +100,18 @@ if comm.Get_rank() == 0 and regtest == True:
     print("Error=%2.16e" %(np.sqrt(error)))
 assert np.allclose(uj, uq)
 
-#plt.figure()
-#plt.contourf(X[1][0,:,0], X[0][:,0,0], uq[:, :, 2])
-#plt.colorbar()
+if not plt is None:
+    plt.figure()
+    plt.contourf(X[1][0,:,0], X[0][:,0,0], uq[:, :, 2])
+    plt.colorbar()
 
-#plt.figure()
-#plt.contourf(X[0][:,:,0], X[1][:,:,0], uj[:, :, 2])
-#plt.colorbar()
+    plt.figure()
+    plt.contourf(X[0][:,:,0], X[1][:,:,0], uj[:, :, 2])
+    plt.colorbar()
 
-#plt.figure()
-#plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 2]-uj[:, :, 2])
-#plt.colorbar()
-#plt.title('Error')
+    plt.figure()
+    plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 2]-uj[:, :, 2])
+    plt.colorbar()
+    plt.title('Error')
 
-#plt.show()
+    plt.show()
