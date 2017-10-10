@@ -1,7 +1,7 @@
 #/bin/sh
 set -e
 
-pushd ../demo
+pushd $PWD/../demo
 python dirichlet_poisson1D.py 32 chebyshev
 python dirichlet_poisson2D.py 32 chebyshev
 python dirichlet_poisson3D.py 32 chebyshev
@@ -45,4 +45,4 @@ mpirun -np 4 python biharmonic3D.py
 mpirun -np 4 python biharmonic2D.py legendre
 mpirun -np 4 python biharmonic3D.py legendre
 
-pushd ../tests
+pushd $PWD/../tests
