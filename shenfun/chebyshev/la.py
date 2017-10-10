@@ -335,7 +335,7 @@ class PDMA(object):
                                    self.l2, self.l1, self.d, self.u1, self.u2)
 
 
-    def PDMA_LU(self, l2, l1, d, u1, u2):
+    def PDMA_LU(self, l2, l1, d, u1, u2): # pragma: no cover
         n = d.shape[0]
         m = u1.shape[0]
         k = n - m
@@ -360,7 +360,7 @@ class PDMA(object):
         l1[i] = lam
 
 
-    def PDMA_Solve(self, l2, l1, d, u1, u2, b):
+    def PDMA_Solve(self, l2, l1, d, u1, u2, b): # pragma: no cover
         n = d.shape[0]
         bc = np.zeros_like(b)
         bc[:] = b[:]
@@ -391,7 +391,7 @@ class PDMA(object):
 
         else:
 
-            if self.solver == 'python':
+            if self.solver == 'python': # pragma: no cover
                 u[:] = b
                 self.PDMA_Solve(self.l2, self.l1, self.d, self.u1, self.u2, u)
 

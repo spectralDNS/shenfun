@@ -232,7 +232,7 @@ class Biharmonic(object):
 
 
 
-class Helmholtz_2dirichlet(object):
+class Helmholtz_2dirichlet(object): # pragma: no cover
     """Helmholtz solver for 2-dimensional problems with 2 Dirichlet bases.
 
     a0*BUB + a1*AUB + a2*BUA^T = F
