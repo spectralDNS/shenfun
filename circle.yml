@@ -20,6 +20,7 @@ dependencies:
     - conda update -q conda
     - conda config --add channels conda-forge
     - conda config --add channels spectralDNS
+    - pip install codecov pytest-cov python-coveralls
     - conda install -n root conda-build
     - conda install --yes --quiet conda-forge-build-setup
     - source run_conda_forge_build_setup
@@ -34,6 +35,8 @@ deployment:
     branch: master
     commands:
       - upload_or_check_non_existence ./conf/conda spectralDNS --channel main
+      - coverage
+      - coveralls
       - |
         export CONDA_PY=36
         upload_or_check_non_existence ./conf/conda spectralDNS --channel main

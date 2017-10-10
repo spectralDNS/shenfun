@@ -19,13 +19,15 @@ ext = None
 cmdclass = {}
 class build_ext_subclass(build_ext):
     def build_extensions(self):
-        extra_compile_args = ['-w', '-Ofast', '-fopenmp', '-march=native']
+        #extra_compile_args = ['-w', '-Ofast', '-fopenmp', '-march=native']
+        extra_compile_args = ['-w', '-Ofast', '-march=native']
         cmd = "echo | %s -E - %s &>/dev/null" % (
             self.compiler.compiler[0], " ".join(extra_compile_args))
         try:
             subprocess.check_call(cmd, shell=True)
         except:
-            extra_compile_args = ['-w', '-O3', '-ffast-math', '-fopenmp', '-march=native']
+            extra_compile_args = ['-w', '-O3', '-ffast-math', '-march=native']
+            #extra_compile_args = ['-w', '-O3', '-ffast-math', '-fopenmp', '-march=native']
         for e in self.extensions:
             e.extra_compile_args += extra_compile_args
         build_ext.build_extensions(self)
@@ -41,7 +43,8 @@ if not "sdist" in sys.argv:
                                    libraries=['m'],
                                    sources=[os.path.join(cdir, '{0}.pyx'.format(s))],
                                    language="c++"))  # , define_macros=define_macros
-    [e.extra_link_args.extend(["-std=c++11", "-fopenmp"]) for e in ext]
+    [e.extra_link_args.extend(["-std=c++11"]) for e in ext]
+    #[e.extra_link_args.extend(["-std=c++11", "-fopenmp"]) for e in ext]
 
     for s in ("Cheb",):
         ext += cythonize(Extension("shenfun.optimization.{0}".format(s),
