@@ -18,8 +18,11 @@ import sys
 import importlib
 from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
-import matplotlib.pyplot as plt
 from shenfun import inner, div, grad, TestFunction, TrialFunction
+try:
+    import matplotlib.pyplot as plt
+except:
+    plt = None
 
 # Collect basis from either Chebyshev or Legendre submodules
 basis = sys.argv[-1] if len(sys.argv) == 2 else 'chebyshev'
@@ -68,13 +71,14 @@ uj = ul(X)
 print(abs(uj-u).max())
 assert np.allclose(uj, u)
 
-plt.figure()
-plt.plot(X, u)
+if not plt is None:
+    plt.figure()
+    plt.plot(X, u)
 
-plt.figure()
-plt.plot(X, uj)
+    plt.figure()
+    plt.plot(X, uj)
 
-plt.figure()
-plt.plot(X, u-uj)
-plt.title('Error')
-#plt.show()
+    plt.figure()
+    plt.plot(X, u-uj)
+    plt.title('Error')
+    plt.show()

@@ -22,11 +22,14 @@ import sys
 import importlib
 from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
-import matplotlib.pyplot as plt
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun.tensorproductspace import TensorProductSpace
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, Dx, project
 from mpi4py import MPI
+try:
+    import matplotlib.pyplot as plt
+except:
+    plt = None
 
 comm = MPI.COMM_WORLD
 
@@ -81,19 +84,20 @@ uj = ul(*X)
 print(abs(uj-uq).max())
 assert np.allclose(uj, uq)
 
-plt.figure()
-plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 8])
-plt.colorbar()
+if not plt is None:
+    plt.figure()
+    plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 8])
+    plt.colorbar()
 
-plt.figure()
-plt.contourf(X[0][:,:,0], X[1][:,:,0], uj[:, :, 8])
-plt.colorbar()
+    plt.figure()
+    plt.contourf(X[0][:,:,0], X[1][:,:,0], uj[:, :, 8])
+    plt.colorbar()
 
-plt.figure()
-plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 8]-uj[:, :, 8])
-plt.colorbar()
-plt.title('Error')
+    plt.figure()
+    plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 8]-uj[:, :, 8])
+    plt.colorbar()
+    plt.title('Error')
 
-#plt.show()
+    #plt.show()
 
 

@@ -13,12 +13,14 @@ VxV is a tensorproductspace.
 """
 from sympy import Symbol, cos, sin, exp, lambdify
 import numpy as np
-import matplotlib.pyplot as plt
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun.tensorproductspace import TensorProductSpace
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, Array
-
 from mpi4py import MPI
+try:
+    import matplotlib.pyplot as plt
+except:
+    plt = None
 
 comm = MPI.COMM_WORLD
 
@@ -58,17 +60,18 @@ uq = T.backward(f_hat, uq, fast_transform=True)
 uj = ul(*X)
 assert np.allclose(uj, uq)
 
-plt.figure()
-plt.contourf(X[0], X[1], uq)
-plt.colorbar()
+if not plt is None:
+    plt.figure()
+    plt.contourf(X[0], X[1], uq)
+    plt.colorbar()
 
-plt.figure()
-plt.contourf(X[0], X[1], uj)
-plt.colorbar()
+    plt.figure()
+    plt.contourf(X[0], X[1], uj)
+    plt.colorbar()
 
-plt.figure()
-plt.contourf(X[0], X[1], uq-uj)
-plt.colorbar()
-plt.title('Error')
-#plt.show()
+    plt.figure()
+    plt.contourf(X[0], X[1], uq-uj)
+    plt.colorbar()
+    plt.title('Error')
+    plt.show()
 
