@@ -1,2 +1,1 @@
-pushd tests
-py.test --cov=./
+py.test --cov=shenfun tests/
