@@ -29,6 +29,7 @@ requirements:
 test:
   source_files:
     - tests
+    - demo
 
   imports:
     - shenfun
