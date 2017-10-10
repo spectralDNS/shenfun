@@ -196,7 +196,7 @@ axes = {2: {0: [0, 1, 2],
 def test_project(typecode, dim, ST, quad):
     # Using sympy to compute an analytical solution
     x, y, z = symbols("x,y,z")
-    sizes=(32, 32)
+    sizes=(25, 24)
 
     funcs = {
         (1, 0): (cos(4*y)*sin(2*np.pi*x))*(1-x**2),
@@ -261,7 +261,7 @@ nbases_and_quads = list(product(lBasis[2:3], lquads))+list(product(cBasis[2:3], 
 def test_project2(typecode, dim, ST, quad):
     # Using sympy to compute an analytical solution
     x, y, z = symbols("x,y,z")
-    sizes=(32, 32)
+    sizes=(25, 24)
 
     funcx = ((2*np.pi**2*(x**2 - 1) - 1)* cos(2*np.pi*x) - 2*np.pi*x*sin(2*np.pi*x))/(4*np.pi**3)
     funcy = ((2*np.pi**2*(y**2 - 1) - 1)* cos(2*np.pi*y) - 2*np.pi*y*sin(2*np.pi*y))/(4*np.pi**3)
@@ -326,7 +326,7 @@ def test_project2(typecode, dim, ST, quad):
 
 if __name__ == '__main__':
     #test_transform('f', 3)
-    test_transform('d', 3)
+    #test_transform('d', 3)
     #test_shentransform('d', 2, cbases.ShenNeumannBasis, 'GC')
-    #test_project('d', 2, cbases.ShenDirichletBasis, 'GL')
+    test_project('d', 2, cbases.ShenDirichletBasis, 'GL')
     #test_project2('D', 2, lbases.ShenNeumannBasis, 'GL')

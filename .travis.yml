@@ -41,5 +41,3 @@ script:
 
 after_success:
     - upload_or_check_non_existence ./conf/conda spectralDNS --channel main || exit 1
-    - codecov
-    - coveralls
