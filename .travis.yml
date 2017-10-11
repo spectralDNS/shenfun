@@ -37,10 +37,18 @@ install:
       source run_conda_forge_build_setup
 
 script:
-    - conda build --no-test conf/conda
-    - conda install shenfun -c local -c spectralDNS -c conda-forge
-    - py.test --cov=$(python -c "import site; print(site.getsitepackages()[0]+'/shenfun')") tests/
+    - |
+      if [$CONDA_PY == "36"]; then
+          conda build --no-test conf/conda
+          conda install shenfun --use-local
+          py.test --cov=$(python -c "import site; print(site.getsitepackages()[0]+'/shenfun')") tests/
+      else
+         conda build conf/conda
+      fi
 
 after_success:
     - upload_or_check_non_existence ./conf/conda spectralDNS --channel main || exit 1
-    - codecov
+    - |
+      if [$CONDA_PY == "36"]; then
+          codecov
+      fi
