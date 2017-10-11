@@ -38,7 +38,7 @@ install:
 
 script:
     - |
-      if [ $CONDA_PY == "36" ]; then
+      if [ $CONDA_PY == 36 ]; then
           conda build --no-test conf/conda
           conda install shenfun --use-local
           py.test --cov=$(python -c "import site; print(site.getsitepackages()[0]+'/shenfun')") tests/
@@ -49,6 +49,6 @@ script:
 after_success:
     - upload_or_check_non_existence ./conf/conda spectralDNS --channel main || exit 1
     - |
-      if [ $CONDA_PY == "36" ]; then
+      if [ $CONDA_PY == 36 ]; then
           codecov
       fi
