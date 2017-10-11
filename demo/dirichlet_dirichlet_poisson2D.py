@@ -14,10 +14,9 @@ import sys
 import importlib
 from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
-from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun.tensorproductspace import TensorProductSpace
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    project
+    project, Dx
 from mpi4py import MPI
 from time import time
 try:
@@ -67,9 +66,9 @@ H = Solver(T, matrices)
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space
-t0 = time()
+#t0 = time()
 u_hat = H(u_hat, f_hat, 0)    # Solve
-print('Time ', time()-t0)
+#print('Time ', time()-t0)
 
 uq = Function(T, False)
 uq = T.backward(u_hat, uq)
@@ -94,4 +93,4 @@ if plt is not None:
     plt.colorbar()
     plt.title('Error')
 
-    plt.show()
+    #plt.show()

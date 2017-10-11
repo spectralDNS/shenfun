@@ -98,7 +98,7 @@ class PDMA(object):
             self.A[4, :] = self.d0
             self.L = decomp_cholesky.cholesky_banded(self.A)
 
-    def SymLU(self, d, e, f):
+    def SymLU(self, d, e, f): # pragma: no cover
         n = d.shape[0]
         m = e.shape[0]
         k = n - m
@@ -119,7 +119,7 @@ class PDMA(object):
         d[n-1] -= lam*e[n-3]
         e[n-3] = lam
 
-    def SymSolve(self, d, e, f, b):
+    def SymSolve(self, d, e, f, b): # pragma: no cover
         n = d.shape[0]
         #bc = array(map(decimal.Decimal, b))
         bc = b

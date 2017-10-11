@@ -72,4 +72,4 @@ if not plt is None:
     plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 0]-uj[:, :, 0])
     plt.colorbar()
     plt.title('Error')
-    plt.show()
+    #plt.show()

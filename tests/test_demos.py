@@ -1,7 +1,6 @@
 import pytest
 import subprocess
 import os
-from numbers import Number
 
 def test_demos():
     output = subprocess.check_output("/bin/bash rundemos.sh", shell=True,

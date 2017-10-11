@@ -323,10 +323,61 @@ def test_project2(typecode, dim, ST, quad):
             bases.pop(axis)
             fft.destroy()
 
+@pytest.mark.parametrize('quad', lquads)
+def test_project_2dirichlet(quad):
+    x, y, z = symbols("x,y,z")
+    ue = (cos(4*y)*sin(2*x))*(1-x**2)*(1-y**2)
+    sizes = (25, 24)
+
+    D0 = lbases.ShenDirichletBasis(sizes[0], quad=quad)
+    D1 = lbases.ShenDirichletBasis(sizes[1], quad=quad)
+    B0 = lbases.Basis(sizes[0], quad=quad)
+    B1 = lbases.Basis(sizes[1], quad=quad)
+
+    DD = TensorProductSpace(comm, (D0, D1))
+    BD = TensorProductSpace(comm, (B0, D1))
+    DB = TensorProductSpace(comm, (D0, B1))
+    BB = TensorProductSpace(comm, (B0, B1))
+
+    X = DD.local_mesh(True)
+    ul = lambdify((x, y), ue, 'numpy')
+    uq = Function(DD, False)
+    uq[:] = ul(*X)
+
+    dudx_hat = project(Dx(uq, 0, 1), BD)
+    dudx = Function(BD)
+    dudx = BD.backward(dudx_hat, dudx)
+    duedx = ue.diff(x, 1)
+    duxl = lambdify((x, y), duedx, 'numpy')
+    dx = duxl(*X)
+    assert np.allclose(dx, dudx)
+
+    dudy_hat = project(Dx(uq, 1, 1), DB)
+    dudy = Function(DB, False)
+    dudy = DB.backward(dudy_hat, dudy)
+    duedy = ue.diff(y, 1)
+    duyl = lambdify((x, y), duedy, 'numpy')
+    dy = duyl(*X)
+    assert np.allclose(dy, dudy)
+
+    us_hat = project(uq, BB)
+    us = Function(BB, False)
+    us = BB.backward(us_hat, us)
+    assert np.allclose(us, uq)
+
+    dudxy_hat = project(Dx(us, 0, 1) + Dx(us, 1, 1), BB)
+    dudxy = Function(BB)
+    dudxy = BB.backward(dudxy_hat, dudxy)
+    duedxy = ue.diff(x, 1) + ue.diff(y, 1)
+    duxyl = lambdify((x, y), duedxy, 'numpy')
+    dxy = duxyl(*X)
+    assert np.allclose(dxy, dudxy)
+
 
 if __name__ == '__main__':
     #test_transform('f', 3)
     #test_transform('d', 3)
     #test_shentransform('d', 2, cbases.ShenNeumannBasis, 'GC')
-    test_project('d', 2, cbases.ShenDirichletBasis, 'GL')
+    #test_project('d', 2, cbases.ShenDirichletBasis, 'GL')
     #test_project2('D', 2, lbases.ShenNeumannBasis, 'GL')
+    test_project_2dirichlet('GL')

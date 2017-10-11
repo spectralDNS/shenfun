@@ -55,4 +55,4 @@ if not plt is None:
     plt.figure()
     plt.plot(X, uq - uj)
     plt.title("Error")
-    plt.show()
+    #plt.show()

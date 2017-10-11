@@ -232,7 +232,7 @@ class Biharmonic(object):
 
 
 
-class Helmholtz_2dirichlet(object): # pragma: no cover
+class Helmholtz_2dirichlet(object):
     """Helmholtz solver for 2-dimensional problems with 2 Dirichlet bases.
 
     a0*BUB + a1*AUB + a2*BUA^T = F
@@ -295,7 +295,7 @@ class Helmholtz_2dirichlet(object): # pragma: no cover
 
     def __call__(self, u, b, solver=1):
 
-        if solver == 0:
+        if solver == 0: # pragma: no cover
 
             if len(self.V) == 0:
                 self.solve_eigen_problem(self.A, self.B, solver)
@@ -350,7 +350,7 @@ class Helmholtz_2dirichlet(object): # pragma: no cover
             self.transAB.backward(self.u_B, u)
             u[:] = self.V.dot(u)
 
-        elif solver == 2: # iterative
+        elif solver == 2: # pragma: no cover
             N = self.A.testfunction[0].N
             s = self.A.testfunction[0].slice()
             AA = np.zeros((N, N))

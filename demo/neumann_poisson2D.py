@@ -97,5 +97,5 @@ if not plt is None:
     plt.colorbar()
     plt.title('Error')
 
-    plt.show()
+    #plt.show()
 

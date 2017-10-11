@@ -29,7 +29,7 @@ def legendre_lobatto_nodes_and_weights(N):
     w = 2./(N*(N-1)*Ln(x)**2)
     return x, w
 
-if __name__ == '__main__':
+if __name__ == '__main__': # pragma: no cover
     import sys
     from time import time
     import quadpy
