@@ -6,7 +6,7 @@ Solve biharmonic equation in 1D
 Use Shen's Biharmonic basis.
 
 """
-import sys
+import sys, os
 import importlib
 from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
@@ -70,7 +70,7 @@ uj = ul(X)
 print(abs(uj-u).max())
 assert np.allclose(uj, u)
 
-if not plt is None:
+if not plt is None and not 'pytest' in os.environ:
     plt.figure()
     plt.plot(X, u)
 
@@ -80,4 +80,4 @@ if not plt is None:
     plt.figure()
     plt.plot(X, u-uj)
     plt.title('Error')
-    #plt.show()
+    plt.show()

@@ -16,7 +16,7 @@ whereas for Chebyshev we solve
      (\nabla^2 u, v) = (f, v)
 
 """
-import sys
+import sys, os
 import importlib
 from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
@@ -89,7 +89,7 @@ uj = ul(*X)
 #print(abs(uj-uq).max())
 assert np.allclose(uj, uq)
 
-if not plt is None:
+if not plt is None and not 'pytest' in os.environ:
     plt.figure()
     plt.contourf(X[0], X[1], uq)
     plt.colorbar()
@@ -103,4 +103,4 @@ if not plt is None:
     plt.colorbar()
     plt.title('Error')
 
-    #plt.show()
+    plt.show()

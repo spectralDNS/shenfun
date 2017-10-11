@@ -14,10 +14,11 @@ class Expr(object):
     one with a TestFunction and one with either TrialFunction or Function.
 
     args:
-        space:     TensorProductSpace or VectorTensorProductSpace
-        argument:  int  0: Test function
-                        1: Trial function
-                        2: Function
+        basis:     BasisFunction instance
+                      TestFunction
+                      TrialFunction
+                      Function
+
     kwargs:
         terms:     Numpy array of ndim = 3. Describes operations in Expr
 
@@ -26,7 +27,7 @@ class Expr(object):
 
                    Index 1: One for each term in the form. For example
                             div(grad(u)) has three terms in 3D:
-                              d^2u/dx^2 + d^2u/dy^2) + d^2u/dz^2
+                              d^2u/dx^2 + d^2u/dy^2 + d^2u/dz^2
 
                    Index 2: The operations stored as an array of len = dim
                             For example, div(grad(u)) in 3D is represented
@@ -34,13 +35,13 @@ class Expr(object):
                               [[2, 0, 0],
                                [0, 2, 0],
                                [0, 0, 2]]
-                            meaning the first has two derivatives in first
+                            meaning the first term has two derivatives in first
                             direction and none in the others (d^2u/dx^2),
                             the second has two derivatives in second direction,
                             etc.
 
                    The Expr div(grad(u)), where u is a scalar, is as such
-                   represented in as an array of shape (1, 3, 3), 1 meaning
+                   represented as an array of shape (1, 3, 3), 1 meaning
                    it's a scalar, the first 3 because the Expr consists of
                    the sum of three terms, and the last 3 because it is 3D:
                             array([[[2, 0, 0],
@@ -120,7 +121,7 @@ class Expr(object):
 
     def __mul__(self, a):
         if self.expr_rank() == 1:
-            assert isinstance(a, (int, float, np.floating, np.integer))
+            assert isinstance(a, Number)
             sc = self.scales().copy()*a
         elif self.expr_rank() == 2:
             sc = self.scales().copy()
@@ -133,11 +134,13 @@ class Expr(object):
             elif isinstance(a, Number):
                 sc *= a
 
-            elif isinstance(a, np.ndarray):
-                assert len(a) == self.dim() or len(a) == 1
-                sc *= a
+            else:
+                raise NotImplementedError
+            #elif isinstance(a, np.ndarray):
+                #assert len(a) == self.dim() or len(a) == 1
+                #sc *= a
 
-        return Expr(self._basis, self._terms, sc, self._indices)
+        return Expr(self._basis, self._terms.copy(), sc, self._indices.copy())
 
     def __rmul__(self, a):
         return self.__mul__(a)
@@ -157,9 +160,11 @@ class Expr(object):
             elif isinstance(a, Number):
                 sc *= a
 
-            elif isinstance(a, np.ndarray):
-                assert len(a) == self.dim() or len(a) == 1
-                sc *= a
+            else:
+                raise NotImplementedError
+            #elif isinstance(a, np.ndarray):
+                #assert len(a) == self.dim() or len(a) == 1
+                #sc *= a
 
         return self
 
@@ -212,9 +217,8 @@ class Expr(object):
         return self
 
     def __neg__(self):
-        sc = self.scales()
-        sc *= -1
-        return self
+        return Expr(self.basis(), self.terms().copy(), -self.scales().copy(),
+                    self.indices().copy())
 
 
 class BasisFunction(object):

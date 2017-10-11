@@ -10,7 +10,7 @@ The equation to solve is
      a(u, v) + (\nabla u, \nabla v) = (f, v)
 
 """
-import sys
+import os
 import importlib
 from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
@@ -79,7 +79,7 @@ print(abs(uj-uq).max())
 
 assert np.allclose(uj, uq)
 
-if plt is not None:
+if plt is not None and not 'pytest' in os.environ:
     plt.figure()
     plt.contourf(X[0], X[1], uq)
     plt.colorbar()
@@ -93,4 +93,4 @@ if plt is not None:
     plt.colorbar()
     plt.title('Error')
 
-    #plt.show()
+    plt.show()

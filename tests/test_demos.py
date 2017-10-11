@@ -1,6 +1,6 @@
 import pytest
 import subprocess
-import os
+import sys, os
 
 def test_demos():
     output = subprocess.check_output("/bin/bash rundemos.sh", shell=True,

@@ -13,6 +13,7 @@ VxVxV is a tensorproductspace.
 """
 from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
+import os
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun.tensorproductspace import TensorProductSpace
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function
@@ -59,7 +60,7 @@ uj = ul(*X)
 print(abs(uj-uq).max())
 assert np.allclose(uj, uq)
 
-if not plt is None:
+if not plt is None and not 'pytest' in os.environ:
     plt.figure()
     plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 0])
     plt.colorbar()
@@ -72,4 +73,4 @@ if not plt is None:
     plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 0]-uj[:, :, 0])
     plt.colorbar()
     plt.title('Error')
-    #plt.show()
+    plt.show()

@@ -14,6 +14,8 @@ from sympy import Symbol, cos, sin, exp
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction
 from shenfun.fourier.bases import FourierBasis
+import shenfun
+import os
 try:
     import matplotlib.pyplot as plt
 except:
@@ -48,11 +50,11 @@ uq = ST.backward(u_hat)
 
 assert np.allclose(uj, uq)
 
-if not plt is None:
+if not plt is None and not 'pytest' in os.environ:
     plt.figure()
     plt.plot(X, uj)
     plt.title("U")
     plt.figure()
     plt.plot(X, uq - uj)
     plt.title("Error")
-    #plt.show()
+    plt.show()
