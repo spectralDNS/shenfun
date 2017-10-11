@@ -14,13 +14,16 @@ import sys
 import importlib
 from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
-import matplotlib.pyplot as plt
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun.tensorproductspace import TensorProductSpace
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
     project
 from mpi4py import MPI
 from time import time
+try:
+    import matplotlib.pyplot as plt
+except:
+    plt = None
 
 comm = MPI.COMM_WORLD
 
@@ -40,7 +43,7 @@ ul = lambdify((x, y), ue, 'numpy')
 fl = lambdify((x, y), fe, 'numpy')
 
 # Size of discretization
-N = (64, 64)
+N = (32, 32)
 
 SD0 = Basis(N[0], scaled=True)
 SD1 = Basis(N[1], scaled=True)
@@ -75,21 +78,20 @@ uq = T.backward(u_hat, uq)
 uj = ul(*X)
 print(abs(uj-uq).max())
 
-#assert np.allclose(uj, uq)
+assert np.allclose(uj, uq)
 
-plt.figure()
-plt.contourf(X[0], X[1], uq)
-plt.colorbar()
+if plt is not None:
+    plt.figure()
+    plt.contourf(X[0], X[1], uq)
+    plt.colorbar()
 
-plt.figure()
-plt.contourf(X[0], X[1], uj)
-plt.colorbar()
+    plt.figure()
+    plt.contourf(X[0], X[1], uj)
+    plt.colorbar()
 
-plt.figure()
-plt.contourf(X[0], X[1], uq-uj)
-plt.colorbar()
-plt.title('Error')
+    plt.figure()
+    plt.contourf(X[0], X[1], uq-uj)
+    plt.colorbar()
+    plt.title('Error')
 
-#plt.show()
-p = T.forward.output_pencil
-print([c.Get_size() for c in p.subcomm])
+    plt.show()

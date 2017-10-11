@@ -38,7 +38,7 @@ install:
 
 script:
     - conda build --no-test conf/conda
-    - conda install shenfun --use-local
+    - conda install shenfun -c local -c spectralDNS -c conda-forge
     - py.test --cov=$(python -c "import site; print(site.getsitepackages()[0]+'/shenfun')") tests/
 
 after_success:

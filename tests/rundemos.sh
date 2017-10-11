@@ -27,6 +27,8 @@ python biharmonic1D.py legendre
 python biharmonic2D.py legendre
 python biharmonic3D.py legendre
 
+python dirichlet_dirichlet_poisson2D.py
+
 mpirun -np 4 python dirichlet_poisson2D.py 24 chebyshev
 mpirun -np 4 python dirichlet_poisson3D.py 24 chebyshev
 mpirun -np 4 python dirichlet_poisson2D.py 24 legendre
