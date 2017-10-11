@@ -102,15 +102,15 @@ assert np.allclose(uj, uq)
 
 if not plt is None:
     plt.figure()
-    plt.contourf(X[1][0,:,0], X[0][:,0,0], uq[:, :, 2])
+    plt.contourf(X[1][0, :, 0], X[0][:, 0, 0], uq[:, :, 2])
     plt.colorbar()
 
     plt.figure()
-    plt.contourf(X[0][:,:,0], X[1][:,:,0], uj[:, :, 2])
+    plt.contourf(X[1][0, :, 0], X[0][:, 0, 0], uj[:, :, 2])
     plt.colorbar()
 
     plt.figure()
-    plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 2]-uj[:, :, 2])
+    plt.contourf(X[1][0, :, 0], X[0][:, 0, 0], uq[:, :, 2]-uj[:, :, 2])
     plt.colorbar()
     plt.title('Error')
 
