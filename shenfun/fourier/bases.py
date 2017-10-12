@@ -66,6 +66,7 @@ class FourierBase(SpectralBase):
             return 2.*np.pi/(b-a)
 
     # Note. forward is reimplemented here to avoid one array scaling (scalar_product multiplies with 2pi/N, whereas apply_inverse_mass divides by 2pi)
+    #@profile
     def forward(self, input_array=None, output_array=None, fast_transform=True):
         """Forward transform
 
@@ -147,7 +148,7 @@ class R2CBasis(FourierBase):
         if plan:
             self.plan((int(np.floor(padding_factor*N)),), 0, np.float, {})
 
-    def wavenumbers(self, N, axis=0, scaled=False):
+    def wavenumbers(self, N, axis=0, scaled=False, eliminate_highest_freq=False):
         """Return the wavenumbermesh
 
         All dimensions, except axis, are obtained through broadcasting.
@@ -156,6 +157,8 @@ class R2CBasis(FourierBase):
         N = list(N) if np.ndim(N) else [N]
         assert self.N == N[axis]
         k = np.fft.rfftfreq(N[axis], 1./N[axis])
+        if N[axis] % 2 == 0 and eliminate_highest_freq:
+            k[-1] = 0
         if scaled:
             a, b = self.domain
             k *= 2.*np.pi/(b-a)
@@ -218,6 +221,7 @@ class R2CBasis(FourierBase):
             if self.N % 2 == 0:
                 s[self.axis] = N-1
                 trunc_array[s] = trunc_array[s].real
+                #trunc_array[s] = 0
             trunc_array *= (1./self.padding_factor)
 
     def _padding_backward(self, trunc_array, padded_array):
@@ -229,6 +233,7 @@ class R2CBasis(FourierBase):
             if self.N % 2 == 0:
                 s[self.axis] = self.N//2
                 padded_array[s] = padded_array[s].real
+                #padded_array[s] = 0
             padded_array *= self.padding_factor
 
         elif self.dealias_direct:
@@ -251,7 +256,7 @@ class C2CBasis(FourierBase):
         if plan:
             self.plan((int(np.floor(padding_factor*N)),), 0, np.complex, {})
 
-    def wavenumbers(self, N, axis=0, scaled=False):
+    def wavenumbers(self, N, axis=0, scaled=False, eliminate_highest_freq=False):
         """Return the wavenumbermesh
 
         All dimensions, except axis, are obtained through broadcasting.
@@ -260,6 +265,8 @@ class C2CBasis(FourierBase):
         N = list(N) if np.ndim(N) else [N]
         assert self.N == N[axis]
         k = np.fft.fftfreq(N[axis], 1./N[axis])
+        if N[axis] % 2 == 0 and eliminate_highest_freq:
+            k[N[axis]//2] = 0
         if scaled:
             a, b = self.domain
             k *= 2.*np.pi/(b-a)

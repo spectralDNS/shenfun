@@ -122,7 +122,7 @@ class SpectralBase(object):
         X = self.broadcast_to_ndims(x, len(N), axis)
         return X
 
-    def wavenumbers(self, N, axis=0, scaled=False):
+    def wavenumbers(self, N, axis=0, **kw):
         """Return the wavenumbermesh
 
         All dimensions, except axis, are obtained through broadcasting.

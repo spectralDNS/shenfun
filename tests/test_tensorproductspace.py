@@ -30,107 +30,108 @@ sizes = (12, 13)
 def test_transform(typecode, dim):
     from itertools import product
 
-    for shape in product(*([sizes]*dim)):
-        bases = []
-        for s in shape[:-1]:
-            bases.append(C2CBasis(s))
+    s = (True,)
+    if comm.Get_size() > 2 and dim > 2:
+        s = (True, False)
 
-        if typecode in 'fd':
-            bases.append(R2CBasis(shape[-1]))
-        else:
-            bases.append(C2CBasis(shape[-1]))
+    for slab in s:
+        for shape in product(*([sizes]*dim)):
+            bases = []
+            for s in shape[:-1]:
+                bases.append(C2CBasis(s))
 
-        if dim < 3:
-            n = min(shape)
-            if typecode in 'fdg':
-                n //=2; n+=1
-            if n < comm.size:
-                continue
+            if typecode in 'fd':
+                bases.append(R2CBasis(shape[-1]))
+            else:
+                bases.append(C2CBasis(shape[-1]))
 
-        fft = TensorProductSpace(comm, bases, dtype=typecode)
+            if dim < 3:
+                n = min(shape)
+                if typecode in 'fdg':
+                    n //=2; n+=1
+                if n < comm.size:
+                    continue
 
-        if comm.rank == 0:
-            grid = [c.size for c in fft.subcomm]
-            print('grid:{} shape:{} typecode:{}'
-                    .format(grid, shape, typecode))
+            fft = TensorProductSpace(comm, bases, dtype=typecode, slab=slab)
 
-        U = random_like(fft.forward.input_array)
+            if comm.rank == 0:
+                grid = [c.size for c in fft.subcomm]
+                print('grid:{} shape:{} typecode:{}'
+                        .format(grid, shape, typecode))
 
-        if 1:
+            U = random_like(fft.forward.input_array)
+
             F = fft.forward(U)
             V = fft.backward(F)
             assert allclose(V, U)
-        else:
+
+            # Alternative method
             fft.forward.input_array[...] = U
             fft.forward()
             fft.backward()
             V = fft.backward.output_array
             assert allclose(V, U)
 
-        TT = VectorTensorProductSpace([fft,]*dim)
-        U = Array(TT, False)
-        V = Array(TT, False)
-        F = Array(TT)
-        U[:] = random_like(U)
-        F = TT.forward(U, F)
-        V = TT.backward(F, V)
-        assert allclose(V, U)
+            TT = VectorTensorProductSpace([fft,]*dim)
+            U = Array(TT, False)
+            V = Array(TT, False)
+            F = Array(TT)
+            U[:] = random_like(U)
+            F = TT.forward(U, F)
+            V = TT.backward(F, V)
+            assert allclose(V, U)
 
-        TM = MixedTensorProductSpace([fft, fft])
-        U = Array(TM, False)
-        V = Array(TM, False)
-        F = Array(TM)
-        U[:] = random_like(U)
-        F = TM.forward(U, F)
-        V = TM.backward(F, V)
-        assert allclose(V, U)
+            TM = MixedTensorProductSpace([fft, fft])
+            U = Array(TM, False)
+            V = Array(TM, False)
+            F = Array(TM)
+            U[:] = random_like(U)
+            F = TM.forward(U, F)
+            V = TM.backward(F, V)
+            assert allclose(V, U)
 
-        fft.destroy()
+            fft.destroy()
 
-        padding = 1.5
-        bases = []
-        for s in shape[:-1]:
-            bases.append(C2CBasis(s, padding_factor=padding))
+            padding = 1.5
+            bases = []
+            for s in shape[:-1]:
+                bases.append(C2CBasis(s, padding_factor=padding))
 
-        if typecode in 'fd':
-            bases.append(R2CBasis(shape[-1], padding_factor=padding))
-        else:
-            bases.append(C2CBasis(shape[-1], padding_factor=padding))
+            if typecode in 'fd':
+                bases.append(R2CBasis(shape[-1], padding_factor=padding))
+            else:
+                bases.append(C2CBasis(shape[-1], padding_factor=padding))
 
-        if dim < 3:
-            n = min(shape)
-            if typecode in 'fdg':
-                n //=2; n+=1
-            if n < comm.size:
-                continue
+            if dim < 3:
+                n = min(shape)
+                if typecode in 'fdg':
+                    n //=2; n+=1
+                if n < comm.size:
+                    continue
 
-        fft = TensorProductSpace(comm, bases, dtype=typecode)
+            fft = TensorProductSpace(comm, bases, dtype=typecode)
 
-        if comm.rank == 0:
-            grid = [c.size for c in fft.subcomm]
-            print('grid:{} shape:{} typecode:{}'
-                    .format(grid, shape, typecode))
+            if comm.rank == 0:
+                grid = [c.size for c in fft.subcomm]
+                print('grid:{} shape:{} typecode:{}'
+                        .format(grid, shape, typecode))
 
-        U = random_like(fft.forward.input_array)
-        F = fft.forward(U)
+            U = random_like(fft.forward.input_array)
+            F = fft.forward(U)
 
-        if 1:
-            if bases[-1].N % 2 == 0:
-                F[...,-1] = 0  # Remove Nyquist before padding
             Fc = F.copy()
             V = fft.backward(F)
             F = fft.forward(V)
-            #print(np.linalg.norm(F-Fc))
             assert allclose(F, Fc)
-        else:
+
+            # Alternative method
             fft.backward.input_array[...] = F
             fft.backward()
             fft.forward()
             V = fft.forward.output_array
             assert allclose(F, V)
 
-        fft.destroy()
-
+            fft.destroy()
 
 cBasis = (cbases.Basis,
           cbases.ShenDirichletBasis,
@@ -376,8 +377,8 @@ def test_project_2dirichlet(quad):
 
 if __name__ == '__main__':
     #test_transform('f', 3)
-    #test_transform('d', 3)
+    test_transform('d', 2)
     #test_shentransform('d', 2, cbases.ShenNeumannBasis, 'GC')
     #test_project('d', 2, cbases.ShenDirichletBasis, 'GL')
     #test_project2('D', 2, lbases.ShenNeumannBasis, 'GL')
-    test_project_2dirichlet('GL')
+    #test_project_2dirichlet('GL')

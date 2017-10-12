@@ -140,15 +140,17 @@ class TensorProductSpace(object):
         for trans in self.transfer:
             trans.destroy()
 
-    def wavenumbers(self, scaled=False):
+    def wavenumbers(self, scaled=False, eliminate_highest_freq=False):
         K = []
         N = self.shape()
         for axis, base in enumerate(self):
-            K.append(base.wavenumbers(N, axis, scaled=scaled))
+            K.append(base.wavenumbers(N, axis, scaled=scaled,
+                                      eliminate_highest_freq=eliminate_highest_freq))
         return K
 
-    def local_wavenumbers(self, broadcast=False, scaled=False):
-        k = self.wavenumbers(scaled=scaled)
+    def local_wavenumbers(self, broadcast=False, scaled=False,
+                          eliminate_highest_freq=False):
+        k = self.wavenumbers(scaled=scaled, eliminate_highest_freq=eliminate_highest_freq)
         lk = []
         for axis, (n, s) in enumerate(zip(k, self.local_slice(True))):
             ss = [slice(None)]*len(k)
