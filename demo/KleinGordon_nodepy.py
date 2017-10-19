@@ -9,7 +9,7 @@ to integrate forward in time
     f_t = div(grad(u)) - u + u*|u|**2         (2)
     u_t = f                                   (3)
 
-with both u(x, y, z, t=0) and f(x, y, z, t=0) given. 
+with both u(x, y, z, t=0) and f(x, y, z, t=0) given.
 
 Using the Fourier basis for all three spatial directions.
 
@@ -63,7 +63,8 @@ u_hat = T.forward(u, u_hat)
 
 uh = TrialFunction(T)
 vh = TestFunction(T)
-k2 = -inner(grad(vh), grad(uh)).diagonal_array / (2*np.pi)**3 - gamma
+A = inner(uh, vh).diagonal_array
+k2 = -inner(grad(vh), grad(uh)).diagonal_array / A - gamma
 count = 0
 
 K = np.array(T.local_wavenumbers(True, True))
@@ -115,7 +116,7 @@ def rhs(t, fu):
     return dfu
 
 # Integrate using nodepy
-rk4 = nodepy.rk.loadRKM('BS5')
+rk4 = nodepy.rk.loadRKM('RK44')
 dt = 0.005
 end_time = 10.
 ivp = nodepy.ivp.IVP(f=rhs, T=[0., end_time], u0=fu_hat, name="KG")

@@ -48,7 +48,7 @@ Kp1 = C2CBasis(N[1], domain=(-2*np.pi, 2*np.pi), padding_factor=1.5)
 Kp2 = R2CBasis(N[2], domain=(-2*np.pi, 2*np.pi), padding_factor=1.5)
 Tp = TensorProductSpace(comm, (Kp0, Kp1, Kp2), **{'planner_effort': 'FFTW_PATIENT'})
 
-## Turn on padding by commenting:
+# Turn on padding by commenting out:
 Tp = T
 
 X = T.local_mesh(True)
@@ -65,14 +65,13 @@ uf_hat1 = Array(TT)
 w0 = Array(T)
 u_hat, f_hat = uf_hat[:]
 
-A = (2*np.pi)**3  # Equals inner(u, v)
-
 # initialize (f initialized to zero, so all set)
 u[:] = ul(*X)
 u_hat = T.forward(u, u_hat)
 
 uh = TrialFunction(T)
 vh = TestFunction(T)
+A = inner(uh, vh).diagonal_array
 k2 = -inner(grad(vh), grad(uh)).diagonal_array / A - gamma
 
 count = 0
@@ -98,7 +97,7 @@ a = [1./6., 1./3., 1./3., 1./6.]         # Runge-Kutta parameter
 b = [0.5, 0.5, 1.]                       # Runge-Kutta parameter
 t = 0.0
 dt = 0.005
-end_time = 10.
+end_time = 100.
 tstep = 0
 #levels = np.linspace(-0.06, 0.1, 100)/8
 if rank == 0:
@@ -107,7 +106,7 @@ if rank == 0:
     plt.draw()
     plt.pause(1e-4)
 t0 = time()
-K = np.array(T.local_wavenumbers(True, True))
+K = np.array(T.local_wavenumbers(True, True, True))
 TV = VectorTensorProductSpace([T, T, T])
 gradu = Array(TV, False)
 while t < end_time-1e-8:
