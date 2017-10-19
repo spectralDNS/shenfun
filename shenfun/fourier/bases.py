@@ -120,7 +120,7 @@ class FourierBase(SpectralBase):
 
         """
         if fast_transform is False:
-            return SpectralBase.forward(input_array, output_array, False)
+            return SpectralBase.forward(self, input_array, output_array, False)
 
         if input_array is not None:
             self.forward.input_array[...] = input_array
@@ -221,6 +221,7 @@ class R2CBasis(FourierBase):
             output_array   (output)   Function values on quadrature mesh
 
         """
+        assert abs(self.padding_factor-1) < 1e-8
         assert self.N == output_array.shape[self.axis]
         points = self.points_and_weights(self.N)[0]
         P = self.vandermonde(points)
@@ -319,6 +320,7 @@ class C2CBasis(FourierBase):
             output_array   (output)   Function values on quadrature mesh
 
         """
+        assert abs(self.padding_factor-1) < 1e-8
         assert self.N == output_array.shape[self.axis]
         points = self.points_and_weights(self.N)[0]
         V = self.vandermonde(points)
