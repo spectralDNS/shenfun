@@ -252,6 +252,7 @@ class SpectralBase(object):
             output_array   (output)   Expansion coefficients
 
         """
+        assert abs(self.padding_factor-1) < 1e-8
         assert self.N == input_array.shape[self.axis]
         points, weights = self.points_and_weights(self.N)
         V = self.vandermonde(points)
@@ -275,7 +276,10 @@ class SpectralBase(object):
             input_array   (input)    Expansion coefficients
             output_array   (output)   Function values on quadrature mesh
 
+        PS Implemented only for non-padded transforms
+
         """
+        assert abs(self.padding_factor-1) < 1e-8
         assert self.N == output_array.shape[self.axis]
         points = self.points_and_weights(self.N)[0]
         V = self.vandermonde(points)

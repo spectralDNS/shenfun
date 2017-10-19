@@ -123,8 +123,8 @@ def test_transforms(ST, quad, axis):
     u0 = ST.forward(fj, u0)
     u1 = ST.backward(u0, u1)
     assert np.allclose(fj, u1)
-    u0 = ST.forward(fj, u0, fast_transform=False)
-    u1 = ST.backward(u0, u1, fast_transform=False)
+    u0 = ST.forward(fj, u0)
+    u1 = ST.backward(u0, u1)
     assert np.allclose(fj, u1)
 
     # Multidimensional version
@@ -138,13 +138,13 @@ def test_transforms(ST, quad, axis):
 
     u00 = np.zeros_like(ST.forward.output_array)
     u11 = np.zeros_like(ST.forward.input_array)
-    u00 = ST.forward(fj, u00, fast_transform=False)
-    u11 = ST.backward(u00, u11, fast_transform=False)
+    u00 = ST.forward(fj, u00)
+    u11 = ST.backward(u00, u11)
     cc = [0,]*3
     cc[axis] = slice(None)
     assert np.allclose(fj[cc], u11[cc])
 
-#test_transforms(lbases.Basis, 'GL', 1)
+#test_transforms(cbases.Basis, 'GL', 1)
 
 
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
