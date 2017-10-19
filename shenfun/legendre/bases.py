@@ -79,7 +79,8 @@ class LegendreBase(SpectralBase):
             x               points for evaluation
 
         """
-        return leg.legvander(x, self.N-1)
+        V = leg.legvander(x, self.N-1)
+        return V
 
     def get_vandermonde_basis_derivative(self, V, k=0):
         """Return k'th derivatives of basis as a Vandermonde matrix
@@ -217,7 +218,7 @@ class Basis(LegendreBase):
 
     """
 
-    def __init__(self, N=0, quad="LG", plan=False, domain=(-1., 1.)):
+    def __init__(self, N=0, quad="GL", plan=False, domain=(-1., 1.)):
         LegendreBase.__init__(self, N, quad, domain=domain)
         if plan:
             self.plan(N, 0, np.float, {})

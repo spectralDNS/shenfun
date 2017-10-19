@@ -1,19 +1,19 @@
 r"""
-Solve Poisson equation in 2D with periodic bcs in one direction
-and homogeneous Dirichlet in the other
+Solve Helmholtz equation in 2D with periodic bcs in one direction
+and Dirichlet in the other
 
-    \nabla^2 u = f,
+   alpha u - \nabla^2 u = f,
 
 Use Fourier basis for the periodic direction and Shen's Dirichlet basis for the
 non-periodic direction.
 
 The equation to solve for the Legendre basis is
 
-     (\nabla u, \nabla v) = -(f, v)
+     alpha (u, v) + (\nabla u, \nabla v) = (f, v)
 
 whereas for Chebyshev we solve
 
-     (\nabla^2 u, v) = (f, v)
+     alpha (u, v) - (\nabla^2 u, v) = (f, v)
 
 """
 import sys, os
@@ -43,22 +43,21 @@ Basis = shen.bases.ShenDirichletBasis
 Solver = shen.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
-a = -2
-b = 2
+alpha = 2.
 x, y = symbols("x,y")
-ue = (cos(4*np.pi*y) + sin(2*x))*(1 - y**2) + a*(1 + y)/2. + b*(1 - y)/2.
-fe = ue.diff(x, 2) + ue.diff(y, 2)
+ue = (cos(4*np.pi*x) + sin(2*y))*(1-x**2)
+fe = alpha*ue - ue.diff(x, 2) - ue.diff(y, 2)
 
 # Lambdify for faster evaluation
 ul = lambdify((x, y), ue, 'numpy')
 fl = lambdify((x, y), fe, 'numpy')
 
 # Size of discretization
-N = (64, 64)
+N = (eval(sys.argv[-2]),)*2
 
-SD = Basis(N[1], scaled=True, bc=(a, b))
-K1 = R2CBasis(N[0])
-T = TensorProductSpace(comm, (K1, SD), axes=(1, 0))
+SD = Basis(N[0], scaled=True)
+K1 = R2CBasis(N[1])
+T = TensorProductSpace(comm, (SD, K1), axes=(0, 1))
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)
 v = TestFunction(T)
@@ -69,15 +68,14 @@ fj = fl(*X)
 # Compute right hand side of Poisson equation
 f_hat = Array(T)
 f_hat = inner(v, fj, output_array=f_hat)
-if basis == 'legendre':
-    f_hat *= -1.
 
-#from IPython import embed; embed()
-# Get left hand side of Poisson equation
+# Get left hand side of Helmholtz equation
 if basis == 'chebyshev':
-    matrices = inner(v, div(grad(u)))
+    matrices = inner(v, alpha*u - div(grad(u)))
 else:
-    matrices = inner(grad(v), grad(u))
+    matrices = inner(grad(v), grad(u))    # Both ADDmat and BDDmat
+    B = inner(v, alpha*u)
+    matrices['BDDmat'].scale += B.scale   # Same as previous BDDmat, just add scales
 
 # Create Helmholtz linear algebra solver
 H = Solver(**matrices)
@@ -90,6 +88,7 @@ uq = T.backward(u_hat, uq)
 
 # Compare with analytical solution
 uj = ul(*X)
+print("Error=%2.16e" %(np.linalg.norm(uj-uq)))
 assert np.allclose(uj, uq)
 
 if not plt is None and not 'pytest' in os.environ:
