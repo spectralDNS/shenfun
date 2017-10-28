@@ -125,7 +125,7 @@ computed just as quickly as linear. For a linear problem, it does not make much 
 \begin{align}
 \int_{\Omega} u \, \overline{v} \, w\, \bs{dx} &\approx \langle u, v
 \rangle_w^{\bs{N}},  \\
-&\approx \sum_{i=0}^{N_0-1} \sum_{j=0}^{N_1-1}\sum_{k=0}^{N_2-1} u(x_i, y_j, z_k) v(x_i, y_j, z_k) w(x_i, y_j, z_k),
+&\approx \sum_{i=0}^{N_0-1} \sum_{j=0}^{N_1-1}\sum_{k=0}^{N_2-1} u(x_i, y_j, z_k) \overline{v}(x_i, y_j, z_k) w(x_i, y_j, z_k),
 \end{align}
 !et
 where $w(\bs{x})$ now are the quadrature weights. The quadrature points
@@ -386,7 +386,7 @@ keys: (`ADDmat`, `BDDmat`). The value of `matrices["ADDmat"]` is an object of
 type "SpectralMatrix":
 "https://github.com/spectralDNS/shenfun/blob/master/shenfun/matrixbase.py#L261",
 which is `shenfun`'s type for a matrix. This matrix represents $A_{lj}$, see
-(ref{eq:AB})), and it has an attribute `scale` that is
+(ref{eq:AB}), and it has an attribute `scale` that is
 equal to $(2\pi)^2$ (also see (ref{eq:AB})).  The other key in matrices
 is `BDDmat`, and the value here is a `SpectralMatrix` representing $B_{lj}$ from
 (ref{eq:AB}). This matrix has an attribute `scale` that is equal to $m^2+n^2$.

@@ -141,7 +141,7 @@ MathJax.Hub.Config({
 <center><b>Department of Mathematics, University of Oslo.</b></center>
 <br>
 <p>
-<center><h4>Sep 15, 2017</h4></center> <!-- date -->
+<center><h4>Oct 27, 2017</h4></center> <!-- date -->
 <br>
 <p>
 <b>Summary.</b> This is a demonstration of how the Python module <a href="https://github.com/spectralDNS/shenfun" target="_self">shenfun</a> can be used to solve the Poisson
@@ -227,11 +227,23 @@ v_{N-1} &= \frac{1}{2}(\phi_0 - \phi_1).
 \end{align}
 $$
 
-<p>
+With these two final basis functions it is easy to see that the two last degrees
+of freedom, \( \hat{u}_{N-2} \) and \( \hat{u}_{N-1} \), now are given as
+$$
+\begin{align}
+u(-1) &= \sum_{k=0}^{N-1} \hat{u}_k v_k(-1) = \hat{u}_{N-2} = a,
+\tag{7} \\
+u(+1) &= \sum_{k=0}^{N-1} \hat{u}_k v_k(+1) = \hat{u}_{N-1} = b,
+\tag{8}
+\end{align}
+$$
+
+and, as such, we only have to solve for \( \{\hat{u}_k\}_{k=0}^{N-3} \), just like
+for a problem with homogeneous boundary conditions.
 We now formulate a variational problem using the Galerkin method: Find \( u \in V^N \) such that
 $$
 \begin{equation}
-\int_{-1}^1 \nabla^2 u \, v \, w\, dx = \int_{-1}^1 f \, v\, w\, dx \quad \forall v \, \in \, V^N. \tag{7} 
+\int_{-1}^1 \nabla^2 u \, v \, w\, dx = \int_{-1}^1 f \, v\, w\, dx \quad \forall v \, \in \, V^N. \tag{9} 
 \end{equation}
 $$
 
@@ -239,7 +251,7 @@ The weighted integrals, weighted by \( w(x) \), are called inner products, and a
 $$
 \begin{equation}
 \int_{-1}^1 u \, v \, w\, dx = \left( u, v\right)_w. 
-\tag{8}
+\tag{10}
 \end{equation}
 $$
 
@@ -247,27 +259,32 @@ The integral can either be computed exactly, or with quadrature. The advantage o
 $$
 \begin{align}
 \int_{-1}^1 u \, v \, w\, dx &\approx \left( u, v \right)_w^N,  
-\tag{9}\\
+\tag{11}\\
 &\approx \sum_{j=0}^{N-1} u(x_j) v(x_j) w(x_j),
-\tag{10}
+\tag{12}
 \end{align}
 $$
 
 where \( w(x_j) \) are quadrature weights. The quadrature points \( \{x_j\}_{j=0}^N \) are specific to the chosen basis, and even within basis there are two different choices based on which quadrature rule is selected, either Gauss or Gauss-Lobatto.
 
 <p>
-Inserting for test and trialfunctions, we get the following bilinear form and matrix \( A\in\mathbb{R}^{N\times N} \) for the Laplacian (using the summation convention in step 2)
+Inserting for test and trialfunctions, we get the following bilinear form and
+matrix \( A\in\mathbb{R}^{N-2\times N-2} \) for the Laplacian (using the summation convention in step 2)
 
 $$
 \begin{align*}
-\left( \nabla^2u, v \right)_w^N &= \left( \nabla^2\sum_{k=0}^{N-1}\hat{u}_k v_{k}, v_j \right)_w^N, \\
+\left( \nabla^2u, v \right)_w^N &= \left( \nabla^2\sum_{k=0}^{N-3}\hat{u}_k v_{k}, v_j \right)_w^N, \\
     &= \left(\nabla^2 v_{k}, v_j \right)_w^N \hat{u}_k, \\
     &= A_{jk} \hat{u}_k.
 \end{align*}
 $$
 
-<p>
-Likewise, the right hand side linear form and vector \( \tilde{f}_j = (f, v_j)_w^N \), where a tilde is used because this is not a complete transform of the function \( f \), but only an inner product.
+Note that the sum in \( A_{jk} \hat{u}_{k} \) runs over \( k=0, 1, \ldots, N-3 \) since
+the last two degrees of freedom already are known from Eq. <a href="#mjx-eqn-7">(7)</a>
+and <a href="#mjx-eqn-8">(8)</a>, and the second derivatives of \( v_{N-2} \) and \( v_{N-1} \)
+are zero.
+The right hand side linear form and vector is computed as \( \tilde{f}_j = (f,
+v_j)_w^N \), for \( j=0,1,\ldots, N-3 \), where a tilde is used because this is not a complete transform of the function \( f \), but only an inner product.
 
 <p>
 The linear system of equations to solve for the expansion coefficients of \( u(x) \) is given as
@@ -275,12 +292,18 @@ The linear system of equations to solve for the expansion coefficients of \( u(x
 $$
 \begin{equation}
 A_{jk} \hat{u}_k = \tilde{f}_j.
-\tag{11}
+\tag{13}
 \end{equation}
 $$
 
 <p>
-Now, when \( \hat{u} \) is found by solving this linear system, it may be transformed to real space \( u(x) \) using <a href="#mjx-eqn-3">(3)</a>. Note that the matrix \( A_{jk} \) (different for Legendre or Chebyshev) has a very special structure that allows for a solution to be found very efficiently in order of \( \mathcal{O}(N) \) operations, see <a href="#shen1">[1]</a> and <a href="#shen95">[2]</a>. These solvers are implemented in <code>shenfun</code> for both bases.
+Now, when \( \hat{u} \) is found by solving this linear system, it may be
+transformed to real space \( u(x) \) using <a href="#mjx-eqn-3">(3)</a>, and here the contributions
+from \( \hat{u}_{N-2} \) and \( \hat{u}_{N-1} \) must be accounted for. Note that the matrix
+\( A_{jk} \) (different for Legendre or Chebyshev) has a very special structure that
+allows for a solution to be found very efficiently in order of \( \mathcal{O}(N) \)
+operations, see <a href="#shen1">[1]</a> and <a href="#shen95">[2]</a>. These solvers are implemented in
+<code>shenfun</code> for both bases.
 
 <h2 id="___sec2" class="anchor">Method of manufactured solutions </h2>
 
@@ -291,7 +314,7 @@ this end we choose an analytical function that satisfies the given boundary
 conditions:
 $$
 \begin{equation}
-u_e(x) = \sin(k\pi x)(1-x^2) + a(1+x)/2 + b(1-x)/2, \tag{12}
+u_e(x) = \sin(k\pi x)(1-x^2) + a(1+x)/2 + b(1-x)/2, \tag{14}
 \end{equation}
 $$
 
@@ -301,9 +324,9 @@ in
 $$
 \begin{align}
  \nabla^2 u_e(x) &= \frac{d^2 u_e}{dx^2}, 
-\tag{13}\\
-                  &= -4k \pi x \cos(k\pi x) - 2\sin(k\pi x) - k^2 \pi^2 (1 - x^2) \sin(k \pi x).
-\tag{14}
+\tag{15}\\
+                  &= -4k \pi x \cos(k\pi x) - 2\sin(k\pi x) - k^2 \pi^2 (1 -
+x^2) \sin(k \pi x). \tag{16}
 \end{align}
 $$
 
@@ -328,7 +351,7 @@ plus some other helper modules, like <a href="https://numpy.org" target="_self">
 <span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">sympy</span> <span style="color: #008000; font-weight: bold">import</span> symbols, cos, sin, exp, lambdify
 </pre></div>
 <p>
-We use <code>sympy</code> for the manufactured solution, <code>matplotlib</code> for plotting, and <code>numpy</code> for testing.
+We use <code>sympy</code> for the manufactured solution and <code>numpy</code> for testing.
 
 <h2 id="___sec5" class="anchor">Manufactured solution </h2>
 
@@ -351,6 +374,12 @@ fl <span style="color: #666666">=</span> lambdify(x, fe, <span style="color: #BA
 <p>
 These solutions are now valid for a continuous domain. The next step is thus to discretize, using a discrete mesh \( \{x_j\}_{j=0}^{N-1} \) and a finite number of basis functions.
 
+<p>
+Note that it is not mandatory to use <code>sympy</code> for the manufactured solution. Since the
+solution is known <a href="#mjx-eqn-16">(16)</a>, we could just as well simply use <code>Numpy</code>
+to compute \( f_e \) at \( \{x_j\}_{j=0}^{N-1} \). However, with <code>Sympy</code> it is much
+easier to experiment and quickly change the solution.
+
 <h2 id="___sec6" class="anchor">Discretization </h2>
 
 <p>
@@ -370,7 +399,7 @@ Note that we can either choose a Legendre or a Chebyshev basis. The keyword <cod
 <h2 id="___sec7" class="anchor">Variational formulation </h2>
 
 <p>
-The variational problem <a href="#mjx-eqn-7">(7)</a> can be assembled using <code>shenfun</code>'s <code>TrialFunction</code>, <code>TestFunction</code> and <code>inner</code> functions.
+The variational problem <a href="#mjx-eqn-9">(9)</a> can be assembled using <code>shenfun</code>'s <code>TrialFunction</code>, <code>TestFunction</code> and <code>inner</code> functions.
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->

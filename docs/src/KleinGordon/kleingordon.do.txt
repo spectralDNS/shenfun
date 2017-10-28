@@ -414,7 +414,10 @@ where `v` now is an instance of the `Function` class and not the `Array`, like
 use the `Array u` in a form, like `Dx(u, 0, 1)`
 
 !bc pycod
-project(Dx(u, 0, 1), T)
+try: 
+    project(Dx(u, 0, 1), T)
+except AssertionError:
+    print("AssertionError: Dx not for Arrays")
 !ec
 
 Note that `u` and `v` share the same data, and changing one will as such also
@@ -463,13 +466,13 @@ uh = TrialFunction(T)
 vh = TestFunction(T)
 k2 = -(inner(grad(vh), grad(uh)).diagonal_array / (2*np.pi)**3 + gamma)
 
-def compute_rhs(duf_hat, uf_hat, up, T, w0):
+def compute_rhs(duf_hat, uf_hat, up, Tp, w0):
     duf_hat.fill(0)
-    u_hat, f_hat = uf_hat[:]             # Create views
-    du_hat, df_hat = duf_hat[:]          # Create views
-    df_hat[:] = k2*u_hat                 # (1) Linear terms
-    up = T.backward(u_hat, up)
-    df_hat += T.forward(gamma*up**3, w0) # (2) Nonlinear term
+    u_hat, f_hat = uf_hat[:]
+    du_hat, df_hat = duf_hat[:]
+    df_hat[:] = k2*u_hat
+    up = Tp.backward(u_hat, up)
+    df_hat += Tp.forward(gamma*up**3, w0)
     du_hat[:] = f_hat
     return duf_hat
 !ec
@@ -486,16 +489,17 @@ With a function that returns the right hand side in place, the actual integrator
 can be implemented as
 
 !bc pycod
-t = 0.0
-dt = 0.0025
-end_time = 500.
-tstep = 0
+w0 = Array(T)
+a = [1./6., 1./3., 1./3., 1./6.]         # Runge-Kutta parameter
+b = [0.5, 0.5, 1.]                       # Runge-Kutta parameter
+t = 0
+dt = 0.01
+end_time = 1.0
 while t < end_time-1e-8:
     t += dt
-    tstep += 1
     uf_hat1[:] = uf_hat0[:] = uf_hat
     for rk in range(4):
-        duf = compute_rhs(duf, uf_hat, up, T, w0)
+        duf = compute_rhs(duf, uf_hat, u, T, w0)
         if rk < 3:
             uf_hat[:] = uf_hat0 + b[rk]*dt*duf
         uf_hat1 += a[rk]*dt*duf
@@ -527,22 +531,22 @@ ue = 0.1*exp(-(x**2 + y**2 + z**2))
 ul = lambdify((x, y, z), ue, 'numpy')
 
 # Size of discretization
-N = (32, 32, 32)
+N = (64, 64, 64)
 
- # Focusing (+1) or defocusing (-1)
-gamma = 1 
+# Defocusing or focusing
+gamma = 1
 
 K0 = C2CBasis(N[0], domain=(-2*np.pi, 2*np.pi))
 K1 = C2CBasis(N[1], domain=(-2*np.pi, 2*np.pi))
 K2 = R2CBasis(N[2], domain=(-2*np.pi, 2*np.pi))
-T = TensorProductSpace(comm, (K0, K1, K2), **{'planner_effort': 
-                                              'FFTW_MEASURE'})
+T = TensorProductSpace(comm, (K0, K1, K2), slab=False, **{'planner_effort': 'FFTW_MEASURE'})
 
 TT = MixedTensorProductSpace([T, T])
 
+X = T.local_mesh(True)
 uf = Array(TT, False)
 u, f = uf[:]
-up = Array(Tp, False)
+up = Array(T, False)
 
 duf = Array(TT)
 du, df = duf[:]
@@ -553,30 +557,30 @@ uf_hat1 = Array(TT)
 w0 = Array(T)
 u_hat, f_hat = uf_hat[:]
 
-A = (2*np.pi)**3  # Equals inner(u, v)
-
 # initialize (f initialized to zero, so all set)
-X = T.local_mesh(True)
 u[:] = ul(*X)
 u_hat = T.forward(u, u_hat)
 
 uh = TrialFunction(T)
 vh = TestFunction(T)
-k2 = -(inner(grad(vh), grad(uh)).diagonal_array / A + gamma)
+A = inner(uh, vh).diagonal_array
+k2 = -inner(grad(vh), grad(uh)).diagonal_array / A - gamma
 
-def compute_rhs(duf_hat, uf_hat, up, Tp, w0):
+count = 0
+def compute_rhs(duf_hat, uf_hat, up, T, w0):
+    global count
+    count += 1
     duf_hat.fill(0)
     u_hat, f_hat = uf_hat[:]
     du_hat, df_hat = duf_hat[:]
     df_hat[:] = k2*u_hat
-    up = Tp.backward(u_hat, up)
-    df_hat += Tp.forward(gamma*up**3, w0)
+    up = T.backward(u_hat, up)
+    df_hat += T.forward(gamma*up**3, w0)
     du_hat[:] = f_hat
     return duf_hat
 
 def energy_fourier(comm, a):
-    result = 2*np.sum(abs(a[..., 1:-1])**2) + np.sum(abs(a[..., 0])**2) \
-             + np.sum(abs(a[..., -1])**2)
+    result = 2*np.sum(abs(a[..., 1:-1])**2) + np.sum(abs(a[..., 0])**2) + np.sum(abs(a[..., -1])**2)
     result =  comm.allreduce(result)
     return result
 
@@ -584,38 +588,44 @@ def energy_fourier(comm, a):
 a = [1./6., 1./3., 1./3., 1./6.]         # Runge-Kutta parameter
 b = [0.5, 0.5, 1.]                       # Runge-Kutta parameter
 t = 0.0
-dt = 0.0025*4
-end_time = 50.
+dt = 0.005
+end_time = 1.
 tstep = 0
 if rank == 0:
     plt.figure()
-    im = plt.contourf(X[1][..., 0], X[0][..., 0], u[..., 4], 100)
+    image = plt.contourf(X[1][..., 0], X[0][..., 0], u[..., 16], 100)
     plt.draw()
     plt.pause(1e-4)
 t0 = time()
-K = np.array(T.local_wavenumbers(True, True))
+K = np.array(T.local_wavenumbers(True, True, True))
+TV = VectorTensorProductSpace([T, T, T])
+gradu = Array(TV, False)
 while t < end_time-1e-8:
     t += dt
     tstep += 1
     uf_hat1[:] = uf_hat0[:] = uf_hat
     for rk in range(4):
-        duf = compute_rhs(duf, uf_hat, up, Tp, w0)
+        duf = compute_rhs(duf, uf_hat, up, T, w0)
         if rk < 3:
             uf_hat[:] = uf_hat0 + b[rk]*dt*duf
         uf_hat1 += a[rk]*dt*duf
     uf_hat[:] = uf_hat1
 
-    if tstep % 50 == 0:
+    if tstep % 100 == 0:
         uf = TT.backward(uf_hat, uf)
         ekin = 0.5*energy_fourier(T.comm, f_hat)
         es = 0.5*energy_fourier(T.comm, 1j*K*u_hat)
         eg = gamma*np.sum(0.5*u**2 - 0.25*u**4)/np.prod(np.array(N))
         eg =  comm.allreduce(eg)
+        gradu = TV.backward(1j*K*u_hat, gradu)
+        ep = comm.allreduce(np.sum(f*gradu)/np.prod(np.array(N)))
+        ea = comm.allreduce(np.sum(np.array(X)*(0.5*f**2 + 0.5*gradu**2 - (0.5*u**2 - 0.25*u**4)*f))/np.prod(np.array(N)))
         if rank == 0:
-            im.ax.clear()
-            im.ax.contourf(X[1][..., 0], X[0][..., 0], u[..., 4], 100)
+            image.ax.clear()
+            image.ax.contourf(X[1][..., 0], X[0][..., 0], u[..., 16], 100)
             plt.pause(1e-6)
-            print("Time = %2.2f Total energy = %2.8e" %(t, ekin+es+eg))
+            plt.savefig('Klein_Gordon_{}_real_{}.png'.format(N[0], tstep))
+            print("Time = %2.2f Total energy = %2.8e Linear momentum %2.8e Angular momentum %2.8e" %(t, ekin+es+eg, ep, ea))
         comm.barrier()
 
 print("Time ", time()-t0)
