@@ -148,7 +148,7 @@ $$
 <center><b>Department of Mathematics, University of Oslo.</b></center>
 <br>
 <p>
-<center><h4>Sep 20, 2017</h4></center> <!-- date -->
+<center><h4>Oct 28, 2017</h4></center> <!-- date -->
 <br>
 <p>
 <b>Summary.</b> This is a demonstration of how the Python module <a href="https://github.com/spectralDNS/shenfun" target="_self">shenfun</a> can be used to solve a 3D Poisson
@@ -321,7 +321,7 @@ $$
 \int_{\Omega} u \, \overline{v} \, w\, \bs{dx} &\approx \langle u, v
 \rangle_w^{\bs{N}},  
 \tag{16}\\
-&\approx \sum_{i=0}^{N_0-1} \sum_{j=0}^{N_1-1}\sum_{k=0}^{N_2-1} u(x_i, y_j, z_k) v(x_i, y_j, z_k) w(x_i, y_j, z_k),
+&\approx \sum_{i=0}^{N_0-1} \sum_{j=0}^{N_1-1}\sum_{k=0}^{N_2-1} u(x_i, y_j, z_k) \overline{v}(x_i, y_j, z_k) w(x_i, y_j, z_k),
 \tag{17}
 \end{align}
 $$
@@ -626,7 +626,7 @@ dictionary representing the left hand side of <a href="#mjx-eqn-22">(22)</a>, an
 keys: (<code>ADDmat</code>, <code>BDDmat</code>). The value of <code>matrices[&quot;ADDmat&quot;]</code> is an object of
 type <a href="https://github.com/spectralDNS/shenfun/blob/master/shenfun/matrixbase.py#L261" target="_self">SpectralMatrix</a>,
 which is <code>shenfun</code>'s type for a matrix. This matrix represents \( A_{lj} \), see
-<a href="#mjx-eqn-22">(22)</a>), and it has an attribute <code>scale</code> that is
+<a href="#mjx-eqn-22">(22)</a>, and it has an attribute <code>scale</code> that is
 equal to \( (2\pi)^2 \) (also see <a href="#mjx-eqn-22">(22)</a>).  The other key in matrices
 is <code>BDDmat</code>, and the value here is a <code>SpectralMatrix</code> representing \( B_{lj} \) from
 <a href="#mjx-eqn-22">(22)</a>. This matrix has an attribute <code>scale</code> that is equal to \( m^2+n^2 \).
