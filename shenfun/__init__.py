@@ -7,6 +7,7 @@ from .forms.inner import *
 from .forms.operators import *
 from .forms.arguments import *
 from .tensorproductspace import *
+from .utilities import *
 
 from scipy.sparse.linalg import spsolve
 from scipy.linalg import solve as lasolve

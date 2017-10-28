@@ -53,13 +53,13 @@ class Helmholtz(object):
         if 'ADDmat' in kwargs or 'ANNmat' in kwargs:
             if 'ADDmat' in kwargs:
                 assert 'BDDmat' in kwargs
-                A = kwargs['ADDmat']
-                B = kwargs['BDDmat']
+                A = self.A = kwargs['ADDmat']
+                B = self.B = kwargs['BDDmat']
 
             if 'ANNmat' in kwargs:
                 assert 'BNNmat' in kwargs
-                A = kwargs['ANNmat']
-                B = kwargs['BNNmat']
+                A = self.A = kwargs['ANNmat']
+                B = self.B = kwargs['BNNmat']
             A_scale = self.A_scale = A.scale
             B_scale = self.B_scale = B.scale
 
@@ -163,7 +163,7 @@ class Helmholtz(object):
             raise NotImplementedError
             #Matvec.Helmholtz_matvec3D(v, c, 1.0, self.alfa**2, self.A[0], self.A[2], self.B[0])
         else:
-            Matvec.Helmholtz_matvec(v, c, -self.A_scale, self.B_scale, self.A[0], self.A[2], self.B[0])
+            Matvec.Helmholtz_matvec(v, c, self.A_scale, self.B_scale, self.A[0], self.A[2], self.B[0])
         return c
 
 

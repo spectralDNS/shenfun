@@ -16,22 +16,26 @@ try:
 except:
     plt = None
 
+assert len(sys.argv) == 3
+assert sys.argv[-1] in ('legendre', 'chebyshev')
+assert isinstance(eval(sys.argv[-2]), int)
+
 # Collect basis and solver from either Chebyshev or Legendre submodules
-basis = sys.argv[-1] if len(sys.argv) == 2 else 'chebyshev'
+basis = sys.argv[-1]
 shen = importlib.import_module('.'.join(('shenfun', basis)))
 Basis = shen.bases.ShenBiharmonicBasis
 Solver = shen.la.Biharmonic
 
 # Use sympy to compute a rhs, given an analytical solution
 x = symbols("x")
-ue = sin(np.pi*x)*(1-x**2)
+ue = sin(32*np.pi*x)*(1-x**2)
 
 k = 8
 nu = 1./590.
 dt = 5e-5
-a = -(k**2+nu*dt/2*k**4)
-b = 1.0
-c = -nu*dt/2.
+c = -(k**2+nu*dt/2*k**4)
+b = 1.0+nu*dt*k**2
+a = -nu*dt/2.
 fe = a*ue.diff(x, 4) + b*ue.diff(x, 2) + c*ue
 
 # Lambdify for faster evaluation
@@ -39,7 +43,7 @@ ul = lambdify(x, ue, 'numpy')
 fl = lambdify(x, fe, 'numpy')
 
 # Size of discretization
-N = 32
+N = eval(sys.argv[-2])
 
 SD = Basis(N, plan=True)
 X = SD.mesh(N)
@@ -67,8 +71,8 @@ u = SD.backward(u_hat)
 
 # Compare with analytical solution
 uj = ul(X)
-print(abs(uj-u).max())
-assert np.allclose(uj, u)
+print("Error=%2.16e" %(np.linalg.norm(uj-u)))
+#assert np.allclose(uj, u)
 
 if not plt is None and not 'pytest' in os.environ:
     plt.figure()

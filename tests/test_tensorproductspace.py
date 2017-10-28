@@ -13,7 +13,7 @@ from itertools import product
 
 comm = MPI.COMM_WORLD
 
-abstol = dict(f=2e-3, d=1e-10, g=1e-12)
+abstol = dict(f=5e-3, d=1e-10, g=1e-12)
 
 def allclose(a, b):
     atol = abstol[a.dtype.char.lower()]
@@ -67,8 +67,8 @@ def test_transform(typecode, dim):
 
             # Alternative method
             fft.forward.input_array[...] = U
-            fft.forward()
-            fft.backward()
+            fft.forward(fast_transform=False)
+            fft.backward(fast_transform=False)
             V = fft.backward.output_array
             assert allclose(V, U)
 
@@ -376,8 +376,8 @@ def test_project_2dirichlet(quad):
 
 
 if __name__ == '__main__':
-    #test_transform('f', 3)
-    test_transform('d', 2)
+    test_transform('f', 4)
+    #test_transform('d', 2)
     #test_shentransform('d', 2, cbases.ShenNeumannBasis, 'GC')
     #test_project('d', 2, cbases.ShenDirichletBasis, 'GL')
     #test_project2('D', 2, lbases.ShenNeumannBasis, 'GL')

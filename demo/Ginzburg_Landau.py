@@ -29,9 +29,13 @@ x, y = symbols("x,y")
 ue = (x + y)*exp(-0.03*(x**2+y**2))
 ul = lambdify((x, y), ue, 'numpy')
 
-f = open('wisdom128.measure', 'rb')
-wisdom = _pickle.load(f)
-pyfftw.import_wisdom(wisdom)
+try:
+    # Look for wisdom stored using pyfftw.export_wisdom
+    f = open('wisdom128.measure', 'rb')
+    wisdom = _pickle.load(f)
+    pyfftw.import_wisdom(wisdom)
+except:
+    pass
 
 # Size of discretization
 N = (128, 128)
@@ -61,13 +65,13 @@ w0 = Array(T)
 a = [1./6., 1./3., 1./3., 1./6.]         # Runge-Kutta parameter
 b = [0.5, 0.5, 1.]                       # Runge-Kutta parameter
 
-A = (2*np.pi)**2  # Equals inner(u, v)
+A = inner(u, v).diagonal_array
 
 #initialize
 U[:] = ul(*X)
 U_hat = T.forward(U, U_hat)
 
-k2 = inner(grad(v), -grad(u)).diagonal_array/A
+k2 = inner(grad(v), -grad(u)).diagonal_array / A
 
 #@profile
 def compute_rhs(rhs, u_hat, U, Up, T, Tp, w0):

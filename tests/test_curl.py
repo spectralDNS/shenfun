@@ -11,12 +11,11 @@ comm = MPI.COMM_WORLD
 # Set global size of the computational box
 M = 4
 N = [2**M, 2**M, 2**M]
-L = np.array([2*np.pi, 4*np.pi, 4*np.pi], dtype=float) # Needs to be (2*int)*pi in all directions (periodic) because of initialization
-
-abstol = dict(f=1e-6, d=1e-10, g=1e-12)
+L = np.array([2*np.pi, 4*np.pi, 4*np.pi], dtype=float) # Needs to be (2*int)*pi in all directions (periodic) because of initialization4
+tol = dict(f=1e-4, d=1e-10, g=1e-12)
 
 def allclose(a, b):
-    atol = abstol[a.dtype.char.lower()]
+    atol = tol[a.dtype.char.lower()]
     return np.allclose(a, b, rtol=0, atol=atol)
 
 @pytest.mark.parametrize('typecode', 'fdg')
@@ -131,4 +130,4 @@ def test_curl2():
 
 if __name__ == '__main__':
     test_curl('f')
-    test_curl2()
+    #test_curl2()

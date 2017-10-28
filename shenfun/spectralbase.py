@@ -252,6 +252,7 @@ class SpectralBase(object):
             output_array   (output)   Expansion coefficients
 
         """
+        assert abs(self.padding_factor-1) < 1e-8
         assert self.N == input_array.shape[self.axis]
         points, weights = self.points_and_weights(self.N)
         V = self.vandermonde(points)
@@ -275,7 +276,10 @@ class SpectralBase(object):
             input_array   (input)    Expansion coefficients
             output_array   (output)   Function values on quadrature mesh
 
+        PS Implemented only for non-padded transforms
+
         """
+        assert abs(self.padding_factor-1) < 1e-8
         assert self.N == output_array.shape[self.axis]
         points = self.points_and_weights(self.N)[0]
         V = self.vandermonde(points)
@@ -464,7 +468,6 @@ class SpectralBase(object):
             trunc_array[su] = padded_array[su]
             su[self.axis] = slice(-(N//2), None)
             trunc_array[su] += padded_array[su]
-            trunc_array *= (1./self.padding_factor)
 
     def _padding_backward(self, trunc_array, padded_array):
         if self.padding_factor > 1.0+1e-8:
@@ -475,10 +478,7 @@ class SpectralBase(object):
             padded_array[su] = trunc_array[su]
             su[self.axis] = slice(-(N//2), None)
             padded_array[su] = trunc_array[su]
-            padded_array *= self.padding_factor
 
-
-_matrix_cache = {}
 
 def inner_product(test, trial, out=None, axis=0, fast_transform=False):
     """Return inner product of linear or bilinear form
@@ -527,11 +527,7 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
             raise RuntimeError
 
         mat = test[0]._get_mat()
-        if (test, trial) in _matrix_cache:
-            return _matrix_cache[(test, trial)]
-        else:
-            m = mat[key](test, trial)
-            #_matrix_cache[(test, trial)] = m # Apparently not safe. Need to reconsider
+        m = mat[key](test, trial)
         return m
 
     else:

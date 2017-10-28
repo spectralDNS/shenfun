@@ -9,9 +9,49 @@ __all__ = ['FourierBase', 'R2CBasis', 'C2CBasis']
 @inheritdocstrings
 class FourierBase(SpectralBase):
     """Fourier base class
+
+    A basis function phi_k is given as
+
+        phi_k(x) = exp(ikx)
+
+    and an expansion is given as
+
+        u(x) = \sum_k \hat{u}_k exp(ikx)                            (1)
+
+    where
+        k  -N/2, -N/2+1, ..., N/2-1
+
+    However, since exp(ikx) = exp(i(k \pm N)x) this expansion can also be
+    written as an interpolator
+
+        u(x) = \sum_k \hat{u}_k/c_k exp(ikx)                        (2)
+
+    where
+
+        k  -N/2, -N/2+1, ..., N/2-1, N/2
+
+    and c_{N/2} = c_{-N/2} = 2, whereas c_k = 1 for k=-N/2+1, ..., N/2-1
+
+    The interpolator form is used for computing odd derivatives. Otherwise,
+    it makes no difference and therefore (1) is used in transforms, since
+    this is the form expected by pyfftw.
+
+    args:
+        N                int    Number of quadrature points. Should be even
+                                for efficiency, but this is not required.
+
+    kwargs:
+        padding_factor  float   Factor for padding backward transforms.
+                                padding_factor=1.5 corresponds to a 3/2-rule
+                                for dealiasing.
+        domain    (start, stop) Tuple describing the domain.
+        dealias_direct   bool   True for dealiasing using 2/3-rule. Must be
+                                used with padding_factor == 1.
+
     """
 
-    def __init__(self, N, padding_factor=1., domain=(0, 2*np.pi), dealias_direct=False):
+    def __init__(self, N, padding_factor=1., domain=(0, 2*np.pi),
+                 dealias_direct=False):
         self.dealias_direct = dealias_direct
         SpectralBase.__init__(self, N, '', padding_factor, domain)
 
@@ -36,13 +76,13 @@ class FourierBase(SpectralBase):
         return np.exp(1j*x[:, np.newaxis]*k[np.newaxis, :])
 
     def get_vandermonde_basis_derivative(self, V, d=0):
-        """Return k'th derivative of basis as a Vandermonde matrix
+        """Return d'th derivative of basis as a Vandermonde matrix
 
         args:
             V               Chebyshev Vandermonde matrix
 
         kwargs:
-            k    integer    k'th derivative
+            d    integer    d'th derivative
 
         """
         if d > 0:
@@ -66,7 +106,6 @@ class FourierBase(SpectralBase):
             return 2.*np.pi/(b-a)
 
     # Note. forward is reimplemented here to avoid one array scaling (scalar_product multiplies with 2pi/N, whereas apply_inverse_mass divides by 2pi)
-    #@profile
     def forward(self, input_array=None, output_array=None, fast_transform=True):
         """Forward transform
 
@@ -80,20 +119,16 @@ class FourierBase(SpectralBase):
         arrays as planned with self.plan
 
         """
+        if fast_transform is False:
+            return SpectralBase.forward(self, input_array, output_array, False)
+
         if input_array is not None:
             self.forward.input_array[...] = input_array
 
-        if fast_transform:
-            output = self.xfftn_fwd()
-            output *= (1./self.N)
-
-        else:
-            self.vandermonde_scalar_product(self.xfftn_fwd.input_array,
-                                            self.xfftn_fwd.output_array)
-            self.apply_inverse_mass(output)
-
+        output = self.xfftn_fwd()
         self._truncation_forward(self.xfftn_fwd.output_array,
                                  self.forward.output_array)
+        self.forward._output_array *= (1./self.N/self.padding_factor)
 
         if output_array is not None:
             output_array[...] = self.forward.output_array
@@ -108,12 +143,11 @@ class FourierBase(SpectralBase):
             array   (input/output)    Expansion coefficients
 
         """
-        array *= (0.5/np.pi)
+        array *= (1./(2.*np.pi))
         return array
 
     def evaluate_expansion_all(self, input_array, output_array):
-        self.xfftn_bck()
-        output_array *= self.N
+        self.xfftn_bck(normalise_idft=False)
         return output_array
 
     def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
@@ -122,9 +156,10 @@ class FourierBase(SpectralBase):
 
         if fast_transform:
             output = self.xfftn_fwd()
-            output *= (2*np.pi/self.N)
+            output *= (2*np.pi/self.N/self.padding_factor)
 
         else:
+            assert abs(self.padding_factor-1) < 1e-8
             self.vandermonde_scalar_product(self.xfftn_fwd.input_array,
                                             self.xfftn_fwd.output_array)
 
@@ -186,6 +221,7 @@ class R2CBasis(FourierBase):
             output_array   (output)   Function values on quadrature mesh
 
         """
+        assert abs(self.padding_factor-1) < 1e-8
         assert self.N == output_array.shape[self.axis]
         points = self.points_and_weights(self.N)[0]
         P = self.vandermonde(points)
@@ -221,8 +257,6 @@ class R2CBasis(FourierBase):
             if self.N % 2 == 0:
                 s[self.axis] = N-1
                 trunc_array[s] = trunc_array[s].real
-                #trunc_array[s] = 0
-            trunc_array *= (1./self.padding_factor)
 
     def _padding_backward(self, trunc_array, padded_array):
         if self.padding_factor > 1.0+1e-8:
@@ -233,8 +267,6 @@ class R2CBasis(FourierBase):
             if self.N % 2 == 0:
                 s[self.axis] = self.N//2
                 padded_array[s] = padded_array[s].real
-                #padded_array[s] = 0
-            padded_array *= self.padding_factor
 
         elif self.dealias_direct:
             N = self.N
@@ -288,6 +320,7 @@ class C2CBasis(FourierBase):
             output_array   (output)   Function values on quadrature mesh
 
         """
+        assert abs(self.padding_factor-1) < 1e-8
         assert self.N == output_array.shape[self.axis]
         points = self.points_and_weights(self.N)[0]
         V = self.vandermonde(points)
@@ -309,12 +342,9 @@ class C2CBasis(FourierBase):
             N = trunc_array.shape[self.axis]
             su = [slice(None)]*trunc_array.ndim
             su[self.axis] = slice(0, N//2+1)
-            #su[self.axis] = slice(0, N//2)
             trunc_array[su] = padded_array[su]
             su[self.axis] = slice(-(N//2), None)
             trunc_array[su] += padded_array[su]
-            #trunc_array[su] = padded_array[su]
-            trunc_array *= (1./self.padding_factor)
 
     def _padding_backward(self, trunc_array, padded_array):
         if self.padding_factor > 1.0+1e-8:
@@ -323,19 +353,8 @@ class C2CBasis(FourierBase):
             su = [slice(None)]*trunc_array.ndim
             su[self.axis] = slice(0, np.ceil(N/2.).astype(np.int))
             padded_array[su] = trunc_array[su]
-            #if N % 2 == 0:
-                #su[self.axis] = N//2
-                ##padded_array[su] = 0.5*trunc_array[su]
-                #padded_array[su] = 0.
-
             su[self.axis] = slice(-(N//2), None)
             padded_array[su] = trunc_array[su]
-            #if N % 2 == 0:
-                #su[self.axis] = -(N//2)
-                ##padded_array[su] /= 2.
-                #padded_array[su] = 0.
-
-            padded_array *= self.padding_factor
 
         elif self.dealias_direct:
             N = trunc_array.shape[self.axis]
@@ -344,12 +363,12 @@ class C2CBasis(FourierBase):
             padded_array[su] = 0
 
 
-def FourierBasis(N, dtype, padding_factor=1., plan=False, domain=(0., 2.*np.pi)):
+def FourierBasis(N, dtype, padding_factor=1., plan=False, domain=(0., 2.*np.pi),
+                 dealias_direct=False):
     """Fourier basis"""
     dtype = np.dtype(dtype)
     if dtype.char in 'fdg':
-        return R2CBasis(N, padding_factor, plan, domain)
+        return R2CBasis(N, padding_factor, plan, domain, dealias_direct)
 
     else:
-        return C2CBasis(N, padding_factor, plan, domain)
-
+        return C2CBasis(N, padding_factor, plan, domain, dealias_direct)
