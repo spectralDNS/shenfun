@@ -53,7 +53,18 @@ v_{N-2} &= \frac{1}{2}(\phi_0 + \phi_1), \\
 v_{N-1} &= \frac{1}{2}(\phi_0 - \phi_1).
 \end{align}
 !et
-
+With these two final basis functions it is easy to see that the two last degrees
+of freedom, $\hat{u}_{N-2}$ and $\hat{u}_{N-1}$, now are given as
+!bt
+\begin{align}
+u(-1) &= \sum_{k=0}^{N-1} \hat{u}_k v_k(-1) = \hat{u}_{N-2} = a,
+label{eq:dirichleta} \\
+u(+1) &= \sum_{k=0}^{N-1} \hat{u}_k v_k(+1) = \hat{u}_{N-1} = b,
+label{eq:dirichletb}
+\end{align}
+!et
+and, as such, we only have to solve for $\{\hat{u}_k\}_{k=0}^{N-3}$, just like
+for a problem with homogeneous boundary conditions.
 We now formulate a variational problem using the Galerkin method: Find $u \in V^N$ such that
 !bt
 \begin{equation}
@@ -75,17 +86,22 @@ The integral can either be computed exactly, or with quadrature. The advantage o
 !et
 where $w(x_j)$ are quadrature weights. The quadrature points $\{x_j\}_{j=0}^N$ are specific to the chosen basis, and even within basis there are two different choices based on which quadrature rule is selected, either Gauss or Gauss-Lobatto.
 
-Inserting for test and trialfunctions, we get the following bilinear form and matrix $A\in\mathbb{R}^{N\times N}$ for the Laplacian (using the summation convention in step 2)
+Inserting for test and trialfunctions, we get the following bilinear form and
+matrix $A\in\mathbb{R}^{N-2\times N-2}$ for the Laplacian (using the summation convention in step 2)
 
 !bt
 \begin{align*}
-\left( \nabla^2u, v \right)_w^N &= \left( \nabla^2\sum_{k=0}^{N-1}\hat{u}_k v_{k}, v_j \right)_w^N, \\
+\left( \nabla^2u, v \right)_w^N &= \left( \nabla^2\sum_{k=0}^{N-3}\hat{u}_k v_{k}, v_j \right)_w^N, \\
     &= \left(\nabla^2 v_{k}, v_j \right)_w^N \hat{u}_k, \\
     &= A_{jk} \hat{u}_k.
 \end{align*}
 !et 
-
-Likewise, the right hand side linear form and vector $\tilde{f}_j = (f, v_j)_w^N$, where a tilde is used because this is not a complete transform of the function $f$, but only an inner product. 
+Note that the sum in $A_{jk} \hat{u}_{k}$ runs over $k=0, 1, \ldots, N-3$ since
+the last two degrees of freedom already are known from Eq. (ref{eq:dirichleta})
+and (ref{eq:dirichletb}), and the second derivatives of $v_{N-2}$ and $v_{N-1}$
+are zero.
+The right hand side linear form and vector is computed as $\tilde{f}_j = (f,
+v_j)_w^N$, for $j=0,1,\ldots, N-3$, where a tilde is used because this is not a complete transform of the function $f$, but only an inner product. 
 
 The linear system of equations to solve for the expansion coefficients of $u(x)$ is given as
 
@@ -95,7 +111,13 @@ A_{jk} \hat{u}_k = \tilde{f}_j.
 \end{equation}
 !et 
 
-Now, when $\hat{u}$ is found by solving this linear system, it may be transformed to real space $u(x)$ using (ref{eq:u}). Note that the matrix $A_{jk}$ (different for Legendre or Chebyshev) has a very special structure that allows for a solution to be found very efficiently in order of $\mathcal{O}(N)$ operations, see cite{shen1} and cite{shen95}. These solvers are implemented in `shenfun` for both bases. 
+Now, when $\hat{u}$ is found by solving this linear system, it may be
+transformed to real space $u(x)$ using (ref{eq:u}), and here the contributions
+from $\hat{u}_{N-2}$ and $\hat{u}_{N-1}$ must be accounted for. Note that the matrix
+$A_{jk}$ (different for Legendre or Chebyshev) has a very special structure that
+allows for a solution to be found very efficiently in order of $\mathcal{O}(N)$
+operations, see cite{shen1} and cite{shen95}. These solvers are implemented in
+`shenfun` for both bases.
 
 ===== Method of manufactured solutions =====
 
@@ -108,7 +130,7 @@ conditions:
 u_e(x) = \sin(k\pi x)(1-x^2) + a(1+x)/2 + b(1-x)/2, label{eq:u_e}
 \end{equation}
 !et
-where $k$ is an integer. Now, feeding $u_e$ through the Laplace operator, we see
+where $k$ is an integer and $a$ and $b$ are constants. Now, feeding $u_e$ through the Laplace operator, we see
 that the last two linear terms disappear, whereas the first term results in
 in
 !bt
