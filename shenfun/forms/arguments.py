@@ -231,6 +231,9 @@ class BasisFunction(object):
     def rank(self):
         return self._space.rank()
 
+    def expr_rank(self):
+        return self._space.rank()
+
     def function_space(self):
         return self._space
 

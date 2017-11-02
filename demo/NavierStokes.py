@@ -10,7 +10,6 @@ solver in the https://github.com/spectralDNS/spectralDNS repository
 """
 
 import numpy as np
-import nodepy
 from mpi4py import MPI
 from time import time
 from shenfun import *
