@@ -4,6 +4,7 @@ from numpy import pi, float32, dtype
 try:
     import h5py
 except:
+    import warnings
     warnings.warn('h5py not installed')
 
 
