@@ -42,7 +42,7 @@ class ETD(IntegratorBase):
         L = np.atleast_1d(L)
         hL = L*dt
         self.ehL = np.exp(hL)
-        M = 100
+        M = 50
         psi = self.psi = np.zeros(hL.shape, dtype=np.float)
         for k in range(1, M+1):
             ll = hL+np.exp(np.pi*1j*(k-0.5)/M)

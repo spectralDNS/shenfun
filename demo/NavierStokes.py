@@ -59,7 +59,7 @@ def NonlinearRHS(U, U_hat, dU):
     return dU
 
 if __name__ == '__main__':
-    for integrator in (RK4, ETDRK4, ETD):
+    for integrator in (RK4, ETDRK4):
         # Initialization
         U[0] = np.sin(X[0])*np.cos(X[1])*np.cos(X[2])
         U[1] =-np.cos(X[0])*np.sin(X[1])*np.cos(X[2])
@@ -75,5 +75,4 @@ if __name__ == '__main__':
 
         k = comm.reduce(0.5*np.sum(U*U)/np.prod(np.array(N)))
         if comm.Get_rank() == 0:
-            print(k)
             assert np.round(k - 0.124953117517, 7) == 0
