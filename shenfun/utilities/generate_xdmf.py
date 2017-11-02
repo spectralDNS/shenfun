@@ -1,7 +1,11 @@
-import h5py
 import copy
 import six
 from numpy import pi, float32, dtype
+try:
+    import h5py
+except:
+    warnings.warn('h5py not installed')
+
 
 __all__ = ('generate_xdmf',)
 
