@@ -34,6 +34,8 @@ python biharmonic3D.py legendre
 
 python dirichlet_dirichlet_poisson2D.py
 
+python NavierStokes.py
+
 mpirun -np 4 python dirichlet_poisson2D.py 24 chebyshev
 mpirun -np 4 python dirichlet_poisson3D.py 24 chebyshev
 mpirun -np 4 python dirichlet_poisson2D.py 24 legendre
@@ -54,5 +56,6 @@ mpirun -np 4 python biharmonic2D.py
 mpirun -np 4 python biharmonic3D.py
 mpirun -np 4 python biharmonic2D.py legendre
 mpirun -np 4 python biharmonic3D.py legendre
+mpirun -np 4 python NavierStokes.py
 
 pushd $PWD/../tests

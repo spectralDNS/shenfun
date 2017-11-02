@@ -75,7 +75,7 @@ if basis == 'chebyshev':
 else:
     matrices = inner(grad(v), grad(u))    # Both ADDmat and BDDmat
     B = inner(v, alpha*u)
-    matrices['BDDmat'].scale += B.scale   # Same as previous BDDmat, just add scales
+    matrices['BDDmat'] += B
 
 # Create Helmholtz linear algebra solver
 H = Solver(**matrices)

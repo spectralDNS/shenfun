@@ -19,7 +19,7 @@ from mpi4py import MPI
 import _pickle
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    TensorProductSpace, Array
+    TensorProductSpace, Array, ETDRK4, ETD
 
 comm = MPI.COMM_WORLD
 
@@ -52,73 +52,50 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Turn on padding by commenting:
-Tp = T
+#Tp = T
 
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 U = Array(T, False)
 Up = Array(Tp, False)
-dU = Array(T)
 U_hat = Array(T)
-U_hat0 = Array(T)
-U_hat1 = Array(T)
-w0 = Array(T)
-a = [1./6., 1./3., 1./3., 1./6.]         # Runge-Kutta parameter
-b = [0.5, 0.5, 1.]                       # Runge-Kutta parameter
-
-A = inner(u, v).diagonal_array
 
 #initialize
 U[:] = ul(*X)
 U_hat = T.forward(U, U_hat)
 
-k2 = inner(grad(v), -grad(u)).diagonal_array / A
+def LinearRHS():
+    A = inner(u, v)
+    L = inner(grad(v), -grad(u)) / A + 1
+    return L
 
-#@profile
-def compute_rhs(rhs, u_hat, U, Up, T, Tp, w0):
+def NonlinearRHS(u, u_hat, rhs):
+    global Up, Tp
     rhs.fill(0)
-    rhs = k2*u_hat
-    rhs += u_hat
     Up = Tp.backward(u_hat, Up)
-    rhs -= Tp.forward((1+1.5j)*Up*abs(Up)**2, w0)
+    rhs = Tp.forward(-(1+1.5j)*Up*abs(Up)**2, rhs)
     return rhs
 
-# Integrate using a 4th order Rung-Kutta method
-t = 0.0
-dt = 4./N[0]
-end_time = 96.
-tstep = 0
 plt.figure()
 image = plt.contourf(X[0], X[1], U.real, 100)
 plt.draw()
 plt.pause(1e-6)
-while t < end_time-1e-8:
-    t += dt
-    tstep += 1
-    U_hat1[:] = U_hat0[:] = U_hat
-    for rk in range(4):
-        dU = compute_rhs(dU, U_hat, U, Up, T, Tp, w0)
-        if rk < 3:
-            U_hat[:] = U_hat0 + b[rk]*dt*dU
-        U_hat1 += a[rk]*dt*dU
-    U_hat[:] = U_hat1
-
-    if tstep % 100 == 0:
-        U = T.backward(U_hat, U)
+count = 0
+def update(u, u_hat, t, tstep, **params):
+    if tstep % params['plot_step'] == 0 and params['plot_step'] > 0:
+        u = T.backward(u_hat, u)
         image.ax.clear()
-        image.ax.contourf(X[0], X[1], U.real, 100)
+        image.ax.contourf(X[0], X[1], u.real, 100)
         plt.pause(1e-6)
-        #plt.savefig('Ginzburg_Landau_pad_{}_real_{}.png'.format(N[0], int(np.round(t))))
+    if tstep % params['save_png_step'] == 0 and params['save_png_step'] > 0:
+        count += 1
+        plt.savefig('Ginzburg_Landau_{}_{}.png'.format(N[0], count))
 
-
-U = T.backward(U_hat, U)
-
-plt.figure()
-plt.contourf(X[0], X[1], U.real, 100)
-plt.colorbar()
-
-plt.figure()
-plt.contourf(X[0], X[1], U.imag, 100)
-plt.colorbar()
-
-plt.show()
-
+if __name__ == '__main__':
+    par = {'plot_step': 100,
+           'save_png_step': -1}
+    t = 0.0
+    dt = 4./N[0]
+    end_time = 96.
+    integrator = ETDRK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
+    integrator.setup(dt)
+    U_hat = integrator.solve(U, U_hat, dt, (0, end_time))

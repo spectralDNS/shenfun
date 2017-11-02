@@ -19,9 +19,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpi4py import MPI
 from time import time
+import h5py
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun import *
 from spectralDNS.utilities import Timer
+from shenfun.utilities.h5py_writer import HDF5Writer
+from shenfun.utilities.generate_xdmf import generate_xdmf
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -53,6 +56,8 @@ Tp = TensorProductSpace(comm, (Kp0, Kp1, Kp2), slab=False, **{'planner_effort': 
 # Turn on padding by commenting out:
 Tp = T
 
+file0 = HDF5Writer("KleinGordon{}.h5".format(N[0]), ['u', 'f'], TT)
+
 X = T.local_mesh(True)
 uf = Array(TT, False)
 u, f = uf[:]
@@ -73,8 +78,8 @@ u_hat = T.forward(u, u_hat)
 
 uh = TrialFunction(T)
 vh = TestFunction(T)
-A = inner(uh, vh).diagonal_array
-k2 = -inner(grad(vh), grad(uh)).diagonal_array / A - gamma
+A = inner(uh, vh)
+k2 = -inner(grad(vh), grad(uh)) / A - gamma
 
 count = 0
 def compute_rhs(duf_hat, uf_hat, up, T, Tp, w0):
@@ -89,31 +94,14 @@ def compute_rhs(duf_hat, uf_hat, up, T, Tp, w0):
     du_hat[:] = f_hat
     return duf_hat
 
-def energy_fourier(comm, a):
-    if T.forward.output_pencil.subcomm[-1].Get_size() == 1:
-        result = 2*np.sum(abs(a[..., 1:-1])**2) + np.sum(abs(a[..., 0])**2) + np.sum(abs(a[..., -1])**2)
-    else:
-        # Data not aligned along last dimension. Need to check about 0 and -1
-        result = 2*np.sum(abs(a[..., 1:-1])**2)
-        if T.local_slice(True)[-1].start == 0:
-            result += np.sum(abs(a[..., 0])**2)
-        else:
-            result += 2*np.sum(abs(a[..., 0])**2)
-        if T.local_slice(True)[-1].stop == T.spectral_shape()[-1]:
-            result += np.sum(abs(a[..., -1])**2)
-        else:
-            result += 2*np.sum(abs(a[..., -1])**2)
-
-    result =  comm.allreduce(result)
-    return result
-
 # Integrate using a 4th order Rung-Kutta method
 a = [1./6., 1./3., 1./3., 1./6.]         # Runge-Kutta parameter
 b = [0.5, 0.5, 1.]                       # Runge-Kutta parameter
 t = 0.0
 dt = 0.005
-end_time = 1.
+end_time = 0.5
 tstep = 0
+write_x_slice = N[0]//2
 #levels = np.linspace(-0.06, 0.1, 100)/8
 #if rank == 0:
     #plt.figure()
@@ -137,22 +125,30 @@ while t < end_time-1e-8:
 
     timer()
 
+    if tstep % 10 == 0:
+        uf = TT.backward(uf_hat, uf)
+        file0.write_slice_tstep(tstep, [slice(None), slice(None), 16], uf)
+        file0.write_slice_tstep(tstep, [slice(None), slice(None), 12], uf)
+
+    if tstep % 25 == 0:
+        uf = TT.backward(uf_hat, uf)
+        file0.write_tstep(tstep, uf)
+
     if tstep % 100 == 0:
         uf = TT.backward(uf_hat, uf)
-        ekin = 0.5*energy_fourier(T.comm, f_hat)
-        es = 0.5*energy_fourier(T.comm, 1j*K*u_hat)
+        ekin = 0.5*energy_fourier(f_hat, T)
+        es = 0.5*energy_fourier(1j*K*u_hat, T)
         eg = gamma*np.sum(0.5*u**2 - 0.25*u**4)/np.prod(np.array(N))
         eg =  comm.allreduce(eg)
         gradu = TV.backward(1j*K*u_hat, gradu)
         ep = comm.allreduce(np.sum(f*gradu)/np.prod(np.array(N)))
         ea = comm.allreduce(np.sum(np.array(X)*(0.5*f**2 + 0.5*gradu**2 - (0.5*u**2 - 0.25*u**4)*f))/np.prod(np.array(N)))
         if rank == 0:
-            #image.ax.clear()
-            #image.ax.contourf(X[1][..., 0], X[0][..., 0], u[..., 16], 100)
-            #plt.pause(1e-6)
-            #plt.savefig('Klein_Gordon_{}_real_{}.png'.format(N[0], tstep))
             print("Time = %2.2f Total energy = %2.8e Linear momentum %2.8e Angular momentum %2.8e" %(t, ekin+es+eg, ep, ea))
         comm.barrier()
 
+file0.close()
 timer.final(MPI, rank, True)
 
+if rank == 0:
+    generate_xdmf("KleinGordon{}.h5".format(N[0]))

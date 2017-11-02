@@ -167,25 +167,33 @@ class PDMA(object):
         u /= self.mat.scale
         return u
 
-class DiagonalMatrix(object):
+class DiagonalMatrix(np.ndarray):
+    """Matrix type with only diagonal matrices in all dimensions
 
-    def __init__(self, diagonal_array):
-        self.diagonal_array = diagonal_array
-        self.axis = 0
+    Typically used for Fourier spaces
+    """
+
+    def __new__(cls, buffer):
+        assert isinstance(buffer, np.ndarray)
+        obj = np.ndarray.__new__(cls,
+                                 buffer.shape,
+                                 dtype=buffer.dtype,
+                                 buffer=buffer)
+
+        return obj
 
     def solve(self, b, u=None, axis=0, neglect_zero_wavenumber=True):
-        diagonal_array = self.diagonal_array
+        diagonal_array = self
         if neglect_zero_wavenumber:
-            diagonal_array = np.where(diagonal_array==0, 1, diagonal_array)
+            d = np.where(diagonal_array==0, 1, diagonal_array)
 
         if u is not None:
-            u[:] = b / diagonal_array
+            u[:] = b / d
             return u
         else:
-            return b / diagonal_array
+            return b / d
 
-    def matvec(self, v, c):
-        assert self.diagonal_array.shape == v.shape
-        c[:] = self.diagonal_array*v
-        return c
+    #def matvec(self, v, c):
+        #c[:] = self*v
+        #return c
 

@@ -63,8 +63,8 @@ u_hat = T.forward(u, u_hat)
 
 uh = TrialFunction(T)
 vh = TestFunction(T)
-A = inner(uh, vh).diagonal_array
-k2 = -inner(grad(vh), grad(uh)).diagonal_array / A - gamma
+A = inner(uh, vh)
+k2 = -inner(grad(vh), grad(uh)) / A - gamma
 count = 0
 
 K = np.array(T.local_wavenumbers(True, True))

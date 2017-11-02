@@ -400,8 +400,9 @@ class Array(np.ndarray):
 
     space : Instance of TensorProductSpace
     forward_output : boolean.
-        If False then create Array of shape/type for input to PFFT.forward,
-        otherwise create Array of shape/type for output from PFFT.forward
+        If False then create Array of shape/type for input to
+        TensorProductSpace.forward, otherwise create Array of shape/type
+        for output from TensorProductSpace.forward
     val : int or float
         Value used to initialize array
     buffer : Numpy array or Array with data. Must be of correct shape

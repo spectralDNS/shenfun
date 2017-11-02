@@ -86,7 +86,7 @@ def test_cmatvec(b0, b1, quad, format, axis, k):
     cc[axis] = slice(None)
     assert np.allclose(c, d1[cc])
 
-test_cmatvec(cBasis[0], cBasis[0], 'GC', 'csr', 2, 1)
+#test_cmatvec(cBasis[0], cBasis[0], 'GC', 'csr', 2, 1)
 
 @pytest.mark.parametrize('b0,b1', lbases2)
 @pytest.mark.parametrize('quad', lquads)
@@ -128,10 +128,12 @@ def test_imul(key, mat, quad):
               (trial[0](N, quad=quad), trial[1]))
     mc = deepcopy(dict(mat))
     mat *= 2
+    assert mat.scale == 2.0
+
+    mat = shenfun.SparseMatrix(deepcopy(dict(mc)), mat.shape)
+    mat *= 2
     for key, val in six.iteritems(mat):
         assert np.allclose(val, mc[key]*2)
-
-#test_imul('BDNmat', 'GL')
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_mul(key, mat, quad):
@@ -140,9 +142,12 @@ def test_mul(key, mat, quad):
     m = mat((test[0](N, quad=quad), test[1]),
             (trial[0](N, quad=quad), trial[1]))
     mc = 2.*m
+    assert mc.scale == 2.0
+
+    mat = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
+    mc = 2.*mat
     for key, val in six.iteritems(mc):
         assert np.allclose(val, m[key]*2.)
-
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_rmul(key, mat, quad):
@@ -151,9 +156,12 @@ def test_rmul(key, mat, quad):
     m = mat((test[0](N, quad=quad), test[1]),
             (trial[0](N, quad=quad), trial[1]))
     mc = m*2.
+    assert mc.scale == 2.0
+
+    mat = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
+    mc = mat*2.
     for key, val in six.iteritems(mc):
         assert np.allclose(val, m[key]*2.)
-
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_div(key, mat, quad):
@@ -163,6 +171,10 @@ def test_div(key, mat, quad):
             (trial[0](N, quad=quad), trial[1]))
 
     mc = m/2.
+    assert mc.scale == 0.5
+
+    mat = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
+    mc = mat/2.
     for key, val in six.iteritems(mc):
         assert np.allclose(val, m[key]/2.)
 
@@ -173,9 +185,12 @@ def test_add(key, mat, quad):
     m = mat((test[0](N, quad=quad), test[1]),
             (trial[0](N, quad=quad), trial[1]))
     mc = m + m
-    for key, val in six.iteritems(mc):
-        assert np.allclose(val, m[key]*2)
+    assert mc.scale == 2.0
 
+    mat = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
+    mc = mat + mat
+    for key, val in six.iteritems(mc):
+        assert np.allclose(val, 2*m[key])
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_iadd(key, mat, quad):
@@ -185,9 +200,13 @@ def test_iadd(key, mat, quad):
             (trial[0](N, quad=quad), trial[1]))
     mc = deepcopy(m)
     m += mc
-    for key, val in six.iteritems(m):
-        assert np.allclose(val, mc[key]*2)
+    assert m.scale == 2.0
 
+    m1 = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
+    m2 = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
+    m1 += m2
+    for key, val in six.iteritems(m1):
+        assert np.allclose(val, 2*m2[key])
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_isub(key, mat, quad):
@@ -197,9 +216,13 @@ def test_isub(key, mat, quad):
             (trial[0](N, quad=quad), trial[1]))
     mc = deepcopy(m)
     m -= mc
-    for key, val in six.iteritems(m):
-        assert np.allclose(val, 0)
+    assert m.scale == 0.0
 
+    m1 = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
+    m2 = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
+    m1 -= m2
+    for key, val in six.iteritems(m1):
+        assert np.allclose(val, 0.0)
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_sub(key, mat, quad):
@@ -208,6 +231,14 @@ def test_sub(key, mat, quad):
     m = mat((test[0](N, quad=quad), test[1]),
             (trial[0](N, quad=quad), trial[1]))
     mc = m - m
-    for key, val in six.iteritems(mc):
-        assert np.allclose(val, 0)
+    assert mc.scale == 0.0
 
+    m1 = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
+    m2 = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
+
+    mc = m1 - m2
+    for key, val in six.iteritems(mc):
+        assert np.allclose(val, 0.0)
+
+if __name__=='__main__':
+    test_isub(*mats_and_quads[0])

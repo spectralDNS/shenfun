@@ -340,6 +340,7 @@ class Helmholtz_2dirichlet(object):
             self.B1.scale = np.zeros((ls[0].stop-ls[0].start, 1))
             self.B1.scale[:, 0] = self.scale['BUB'] + 1./self.lmbda[ls[0]]
             self.A1.scale = np.ones((1, 1))
+            # Create Helmholtz solver along axis=1
             Helmy = Helmholtz(**{'ADDmat': self.A1, 'BDDmat': self.B1})
 
             # Map the right hand side to eigen space

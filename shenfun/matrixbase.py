@@ -5,8 +5,10 @@ from scipy.sparse.linalg import spsolve
 from scipy.linalg import solve as lasolve
 import six
 from copy import deepcopy
+from numbers import Number
 from .utilities import inheritdocstrings
 
+__all__=['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix']
 
 class SparseMatrix(dict):
     """Base class for sparse matrices
@@ -107,7 +109,7 @@ class SparseMatrix(dict):
 
     def __imul__(self, y):
         """self.__imul__(y) <==> self*=y"""
-        assert isinstance(y, (float, int, np.floating, np.integer))
+        assert isinstance(y, Number)
         for key in self:
             # Check if symmetric
             if key < 0 and (-key) in self:
@@ -120,7 +122,7 @@ class SparseMatrix(dict):
     def __mul__(self, y):
         """Returns copy of self.__mul__(y) <==> self*y"""
         f = SparseMatrix(deepcopy(dict(self)), self.shape)
-        assert isinstance(y, (float, int, np.floating, np.integer))
+        assert isinstance(y, Number)
         for key in f:
             # Check if symmetric
             if key < 0 and (-key) in f:
@@ -136,7 +138,7 @@ class SparseMatrix(dict):
     def __div__(self, y):
         """Returns copy self.__div__(y) <==> self/y"""
         f = SparseMatrix(deepcopy(dict(self)), self.shape)
-        assert isinstance(y, (float, int, np.floating, np.integer))
+        assert isinstance(y, Number)
         for key in f:
             # Check if symmetric
             if key < 0 and (-key) in f:
@@ -389,8 +391,8 @@ class SpectralMatrix(SparseMatrix):
             D = self.get_dense_matrix()[:shape[0], :shape[1]]
             d = extract_diagonal_matrix(D)
         SparseMatrix.__init__(self, d, shape)
-        if not round(scale-1.0, 8) == 0:
-            self *= scale
+        #if not round(scale-1.0, 8) == 0:
+            #self *= scale
 
     def spectral_shape(self):
         """Return shape of matrix"""
@@ -450,6 +452,117 @@ class SpectralMatrix(SparseMatrix):
             return self.__hash__()
         else:
             return self.__class__.__name__
+
+    def __imul__(self, y):
+        """self.__imul__(y) <==> self*=y"""
+        assert isinstance(y, Number)
+        self.scale *= y
+        return self
+
+    def __mul__(self, y):
+        """Returns copy of self.__mul__(y) <==> self*y"""
+        assert isinstance(y, Number)
+        f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
+                           self.trialfunction, self.scale*y)
+        return f
+
+    def __rmul__(self, y):
+        """Returns copy of self.__rmul__(y) <==> y*self"""
+        return self.__mul__(y)
+
+    def __div__(self, y):
+        """Returns copy self.__div__(y) <==> self/y"""
+        assert isinstance(y, Number)
+        f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
+                           self.trialfunction, self.scale/y)
+        return f
+
+    def __truediv__(self, y):
+        """Returns copy self.__div__(y) <==> self/y"""
+        return self.__div__(y)
+
+    def __add__(self, d):
+        """Return copy of self.__add__(y) <==> self+d"""
+        assert isinstance(d, dict)
+        # Check is the same matrix
+        if self.__hash__() == d.__hash__():
+            f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
+                               self.trialfunction, self.scale+d.scale)
+        else:
+            f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
+                               self.trialfunction, 1.0)
+            for key, val in six.iteritems(d):
+                if key in f:
+                    # Check if symmetric and make copy if necessary
+                    if -key in f:
+                        if id(f[key]) == id(f[-key]):
+                            f[-key] = deepcopy(f[key])
+                    f[key] = self.scale*f[key] + d.scale*val
+                else:
+                    f[key] = d.scale*val
+
+        return f
+
+    def __iadd__(self, d):
+        """self.__iadd__(d) <==> self += d"""
+        assert isinstance(d, dict)
+        assert d.shape == self.shape
+        if self.__hash__() == d.__hash__():
+            self.scale += d.scale
+        else:
+            for key, val in six.iteritems(d):
+                if key in self:
+                    # Check if symmetric and make copy if necessary
+                    if -key in self:
+                        if id(self[key]) == id(self[-key]):
+                            self[-key] = deepcopy(self[key])
+                    self[key] += d.scale*val/self.scale
+                else:
+                    self[key] = d.scale*val/self.scale
+
+        return self
+
+    def __sub__(self, d):
+        """Return copy of self.__sub__(y) <==> self-d"""
+        assert isinstance(d, dict)
+        # Check is the same matrix
+        if self.__hash__() == d.__hash__():
+            f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
+                               self.trialfunction, self.scale-d.scale)
+        else:
+            f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
+                               self.trialfunction, 1.0)
+            for key, val in six.iteritems(d):
+                if key in f:
+                    # Check if symmetric and make copy if necessary
+                    if -key in f:
+                        if id(f[key]) == id(f[-key]):
+                            f[-key] = deepcopy(f[key])
+                    f[key] = self.scale*f[key] - d.scale*val
+                else:
+                    f[key] = -d.scale*val
+
+        return f
+
+
+    def __isub__(self, d):
+        """self.__isub__(d) <==> self -= d"""
+        assert isinstance(d, dict)
+        assert d.shape == self.shape
+        if self.__hash__() == d.__hash__():
+            self.scale -= d.scale
+        else:
+            for key, val in six.iteritems(d):
+                if key in self:
+                    # Check if symmetric and make copy if necessary
+                    if -key in self:
+                        if id(self[key]) == id(self[-key]):
+                            self[-key] = deepcopy(self[key])
+                    self[key] -= d.scale*val/self.scale
+                else:
+                    self[key] = -d.scale*val/self.scale
+
+        return self
 
 
 def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-12):

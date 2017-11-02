@@ -42,7 +42,7 @@ ul = lambdify((x, y), ue, 'numpy')
 fl = lambdify((x, y), fe, 'numpy')
 
 # Size of discretization
-N = (32, 32)
+N = (32, 34)
 
 SD0 = Basis(N[0], scaled=True)
 SD1 = Basis(N[1], scaled=True)
@@ -67,7 +67,7 @@ H = Solver(T, matrices)
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space
 #t0 = time()
-u_hat = H(u_hat, f_hat, 0)    # Solve
+u_hat = H(u_hat, f_hat, 1)    # Solve
 #print('Time ', time()-t0)
 
 uq = Function(T, False)
