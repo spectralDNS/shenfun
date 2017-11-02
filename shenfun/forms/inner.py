@@ -61,7 +61,8 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
             except:
                 raise RuntimeError
 
-    if expr0.rank() + expr1.rank() > 2: # For vector spaces of rank 2 use recursive algorithm
+    if expr0.rank() + expr1.rank() > 2 and expr0.expr_rank() + expr1.expr_rank() > 2: # For vector spaces of rank 2 use recursive algorithm
+
         ndim = expr0.function_space().ndim()
 
         t0 = expr0.argument()
