@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from shenfun.chebyshev.bases import ShenDirichletBasis, Basis
 from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun.tensorproductspace import TensorProductSpace, VectorTensorProductSpace
+from shenfun.tensorproductspace import TensorProductSpace, VectorTensorProductSpace, MixedTensorProductSpace
 from shenfun import inner, div, grad, curl, TestFunction, TrialFunction, Function, project, Dx
 from mpi4py import MPI
 from time import time
@@ -45,6 +45,11 @@ def test_curl(typecode):
     U_hat = Tk.forward(U, U_hat)
     assert allclose(U_hat, Uc)
 
+    divu_hat = project(div(U), T)
+    divu = Function(T, False)
+    divu = T.backward(divu_hat, divu)
+    assert allclose(divu, 0)
+
     curl_hat[0] = 1j*(K[1]*U_hat[2] - K[2]*U_hat[1])
     curl_hat[1] = 1j*(K[2]*U_hat[0] - K[0]*U_hat[2])
     curl_hat[2] = 1j*(K[0]*U_hat[1] - K[1]*U_hat[0])
@@ -85,7 +90,7 @@ def test_curl2():
     X = T.local_mesh(True)
     K = T.local_wavenumbers(False)
     Tk = VectorTensorProductSpace([T]*3)
-    TTk = VectorTensorProductSpace([T, T, TT])
+    TTk = MixedTensorProductSpace([T, T, TT])
     u = TrialFunction(Tk)
     v = TestFunction(Tk)
 

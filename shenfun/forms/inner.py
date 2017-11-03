@@ -3,6 +3,7 @@ import six
 from shenfun.fourier import FourierBase
 from shenfun.spectralbase import inner_product
 from shenfun.la import DiagonalMatrix
+from shenfun.tensorproductspace import MixedTensorProductSpace
 from .arguments import Expr, TestFunction, TrialFunction, Function, BasisFunction, Array
 
 __all__ = ('inner',)
@@ -61,22 +62,21 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
             except:
                 raise RuntimeError
 
-    if expr0.rank() + expr1.rank() > 2 and expr0.expr_rank() + expr1.expr_rank() > 2: # For vector spaces of rank 2 use recursive algorithm
+    t0 = expr0.argument()
+    t1 = expr1.argument()
+    if t0 == 0:
+        assert t1 in (1, 2)
+        test = expr0
+        trial = expr1
+    elif t0 == 1:
+        assert t1 == 0
+        test = expr1
+        trial = expr0
+    else:
+        raise RuntimeError
 
-        ndim = expr0.function_space().ndim()
-
-        t0 = expr0.argument()
-        t1 = expr1.argument()
-        if t0 == 0:
-            assert t1 in (1, 2)
-            test = expr0
-            trial = expr1
-        elif t0 == 1:
-            assert t1 == 0
-            test = expr1
-            trial = expr0
-        else:
-            raise RuntimeError
+    if test.rank() == 2: # For vector spaces of rank 2 use recursive algorithm
+        ndim = test.function_space().ndim()
 
         uh = uh_hat
         if uh is None and trial.argument() == 2:
@@ -90,7 +90,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
         if trial.argument() == 2:
             # linear form
             for ii in range(ndim):
-                output_array[ii] = inner(expr0[ii], expr1[ii],
+                output_array[ii] = inner(test[ii], trial[ii],
                                          output_array=output_array[ii],
                                          uh_hat=uh)
             return output_array
@@ -102,45 +102,24 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
             return result
 
 
-    if expr0.argument() + expr1.argument() > 1:
+    if trial.argument() > 1:
         # Linear form
-        if expr0.argument() == 2:
-            fun = expr0
-            test = expr1
-        else:
-            fun = expr1
-            test = expr0
         assert isinstance(test, (Expr, BasisFunction))
         assert test.argument() == 0
         space = test.function_space()
-        if isinstance(fun, np.ndarray):
-            output_array = space.scalar_product(fun, output_array)
+        if isinstance(trial, np.ndarray):
+            output_array = space.scalar_product(trial, output_array)
             return output_array
 
-        # If fun is an Expr with terms, then compute using bilinear form and matvec
-        expr0 = test
-        expr1 = fun
+        # If trial is an Expr with terms, then compute using bilinear form and matvec
 
-    assert isinstance(expr0, (Expr, BasisFunction))
-    assert isinstance(expr1, (Expr, BasisFunction))
+    assert isinstance(trial, (Expr, BasisFunction))
+    assert isinstance(test, (Expr, BasisFunction))
 
-    if isinstance(expr0, BasisFunction):
-        expr0 = Expr(expr0)
-    if isinstance(expr1, BasisFunction):
-        expr1 = Expr(expr1)
-
-    t0 = expr0.argument()
-    t1 = expr1.argument()
-    if t0 == 0:
-        assert t1 in (1, 2)
-        test = expr0
-        trial = expr1
-    elif t0 == 1:
-        assert t1 == 0
-        test = expr1
-        trial = expr0
-    else:
-        raise RuntimeError
+    if isinstance(trial, BasisFunction):
+        trial = Expr(trial)
+    if isinstance(test, BasisFunction):
+        test = Expr(test)
 
     space = test.function_space()
     trialspace = trial.function_space()
@@ -157,8 +136,6 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
     if output_array is None and trial.argument() == 2:
         output_array = Array(trial.function_space())
 
-    #from IPython import embed; embed()
-
     A = []
     S = []
     vec = 0
@@ -169,7 +146,10 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                 A.append([])
                 assert len(b0) == len(b1)
                 for i, (a, b) in enumerate(zip(b0, b1)): # Third index, one inner for each dimension
-                    AA = inner_product((space[i], a), (trialspace[i], b))
+                    ts = trialspace[i]
+                    if isinstance(trialspace, MixedTensorProductSpace): # trial could operate on a vector, e.g., div(u), where u is vector
+                        ts = ts[i]
+                    AA = inner_product((space[i], a), (ts, b))
                     A[-1].append(AA)
                     # Take care of domains of not standard size
                     if not space[i].domain_factor() == 1:

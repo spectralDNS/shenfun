@@ -1,5 +1,5 @@
 import numpy as np
-from shenfun.tensorproductspace import VectorTensorProductSpace
+from shenfun.tensorproductspace import MixedTensorProductSpace
 from .arguments import Expr, TestFunction, TrialFunction, BasisFunction, Array
 from .inner import inner
 
@@ -56,9 +56,9 @@ def project(uh, T, output_array=None, uh_hat=None):
 
     v = TestFunction(T)
     u = TrialFunction(T)
-    u_hat = inner(v, uh, uh_hat=uh_hat)
+    output_array = inner(v, uh, output_array=output_array, uh_hat=uh_hat)
     B = inner(v, u)
-    if isinstance(B, list) and not isinstance(T, VectorTensorProductSpace):
+    if isinstance(B, list) and not isinstance(T, MixedTensorProductSpace):
         # Means we have two non-periodic directions
         npaxes = [b for b in B[0].keys() if isinstance(b, int)]
         assert len(npaxes) == 2
@@ -72,7 +72,7 @@ def project(uh, T, output_array=None, uh_hat=None):
         output_arrayB = np.zeros(transAB.subshapeB)
         output_arrayB2 = np.zeros(transAB.subshapeB)
         b = B[0][axis]
-        output_array = b.solve(u_hat, output_array, axis=axis)
+        output_array = b.solve(output_array, output_array, axis=axis)
         transAB.forward(output_array, output_arrayB)
         b = B[0][second_axis]
         output_arrayB2 = b.solve(output_arrayB, output_arrayB2, axis=second_axis)
@@ -82,9 +82,9 @@ def project(uh, T, output_array=None, uh_hat=None):
         # Just zero or one non-periodic direction
         if v.rank() == 1:
             axis = B.axis if hasattr(B, 'axis') else 0 # if periodic the solve is just an elementwise division not using axis
-            output_array = B.solve(u_hat, output_array, axis=axis)
+            output_array = B.solve(output_array, output_array, axis=axis)
         else:
             for i in range(v.function_space().ndim()):
                 axis = B[i].axis if hasattr(B[i], 'axis') else 0
-                output_array[i] = B[i].solve(u_hat[i], output_array[i], axis=axis)
+                output_array[i] = B[i].solve(output_array[i], output_array[i], axis=axis)
     return output_array
