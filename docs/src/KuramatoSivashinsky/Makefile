@@ -1,6 +1,6 @@
 #
 style=bootstrap
-name=poisson
+name=kuramatosivashinsky
 
 .PHONY: all clean
 
@@ -18,7 +18,7 @@ ${name}.html: ${name}.do.txt
 
 ${name}.ipynb: ${name}.do.txt
 	doconce format ipynb ${name}
-
+  
 view: 
 	open ${name}.pdf &
 

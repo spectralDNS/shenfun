@@ -463,8 +463,9 @@ function can be implemented as
 # focusing (+1) or defocusing (-1)
 gamma = 1  
 uh = TrialFunction(T)
-vh = TestFunction(T)
-k2 = -(inner(grad(vh), grad(uh)).diagonal_array / (2*np.pi)**3 + gamma)
+vh = TestFunction(T)i
+A = inner(vh, uh)
+k2 = -(inner(grad(vh), grad(uh)) / A + gamma)
 
 def compute_rhs(duf_hat, uf_hat, up, Tp, w0):
     duf_hat.fill(0)
@@ -563,8 +564,8 @@ u_hat = T.forward(u, u_hat)
 
 uh = TrialFunction(T)
 vh = TestFunction(T)
-A = inner(uh, vh).diagonal_array
-k2 = -inner(grad(vh), grad(uh)).diagonal_array / A - gamma
+A = inner(uh, vh)
+k2 = -inner(grad(vh), grad(uh)) / A - gamma
 
 count = 0
 def compute_rhs(duf_hat, uf_hat, up, T, w0):
