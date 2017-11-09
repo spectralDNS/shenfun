@@ -1,21 +1,20 @@
 r"""
-Solve Ginzburg-Landau equation on (-50, 50)x(-50, 50) with periodic bcs
+Solve Kuramato-Kuramato_Sivashinsky equation on [-30pi, 30pi]^2
+with periodic bcs
 
-    u_t = div(grad(u)) + u - (1+1.5i)*u*|u|**2         (1)
+    u_t = -div(grad(u)) - div(grad(div(grad(u)))) - |grad(u)|^2    (1)
 
-Use Fourier basis V and find u in VxV such that
+Initial condition is
 
-    (v, div(grad(u))) = (v, f)    for all v in VxV
+    u(x, y) = exp(-0.01*(x^2 + y^2))
 
-The Fourier basis is span{exp(1jkx)}_{k=-N/2}^{N/2-1} and
-VxV is a tensor product space.
+Use Fourier basis V and tensor product space VxV
 
 """
 from sympy import symbols, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
 from mpi4py import MPI
-from time import time
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun import *
 
@@ -67,18 +66,23 @@ cm = plt.get_cmap('hot')
 image = plt.contourf(X[0], X[1], U, 256, cmap=cm)
 plt.draw()
 plt.pause(1e-6)
-def update(U, U_hat, t):
-    U = T.backward(U_hat, U)
-    image.ax.clear()
-    image.ax.contourf(X[0], X[1], U, 256, cmap=cm)
-    plt.pause(1e-6)
-    #plt.savefig('KS/Kuramato_Sivashinsky_{}_{}.png'.format(N[0], int(np.round(t))))
+count = 0
+def update(u, u_hat, t, tstep, **params):
+    global count
+    if tstep % params['plot_step'] == 0 and params['plot_step'] > 0:
+        u = T.backward(u_hat, u)
+        image.ax.clear()
+        image.ax.contourf(X[0], X[1], U, 256, cmap=cm)
+        plt.pause(1e-6)
+        count += 1
+        plt.savefig('Kuramato_Sivashinsky_N_{}_{}.png'.format(N[0], count))
 
-dt = 0.01
-end_time = 100
-integrator = ETDRK4(T, L=LinearRHS, N=NonlinearRHS, update=update, call_update=50)
-#integrator = RK4(T, L=LinearRHS, N=NonlinearRHS, update=update, call_update=50)
+if __name__ == '__main__':
+    par = {'plot_step': 100}
+    dt = 0.01
+    end_time = 100
+    integrator = ETDRK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
+    #integrator = RK4(T, L=LinearRHS, N=NonlinearRHS, update=update, call_update=50)
 
-integrator.setup(dt)
-t0 = time()
-U_hat = integrator.solve(U, U_hat, dt, (0, end_time))
+    integrator.setup(dt)
+    U_hat = integrator.solve(U, U_hat, dt, (0, end_time))

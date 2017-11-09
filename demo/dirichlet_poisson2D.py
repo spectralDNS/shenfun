@@ -54,7 +54,7 @@ ul = lambdify((x, y), ue, 'numpy')
 fl = lambdify((x, y), fe, 'numpy')
 
 # Size of discretization
-N = (64, 64)
+N = (eval(sys.argv[-2]), eval(sys.argv[-2]))
 
 SD = Basis(N[1], scaled=True, bc=(a, b))
 K1 = R2CBasis(N[0])
@@ -90,7 +90,7 @@ uq = T.backward(u_hat, uq)
 
 # Compare with analytical solution
 uj = ul(*X)
-assert np.allclose(uj, uq)
+#assert np.allclose(uj, uq)
 
 if not plt is None and not 'pytest' in os.environ:
     plt.figure()
@@ -105,5 +105,12 @@ if not plt is None and not 'pytest' in os.environ:
     plt.contourf(X[0], X[1], uq-uj)
     plt.colorbar()
     plt.title('Error')
+
+    plt.figure()
+    X = T.local_mesh()
+    for x in np.squeeze(X[0]):
+        plt.plot((x, x), (np.squeeze(X[1])[0], np.squeeze(X[1])[-1]), 'k')
+    for y in np.squeeze(X[1]):
+        plt.plot((np.squeeze(X[0])[0], np.squeeze(X[0])[-1]), (y, y), 'k')
 
     plt.show()

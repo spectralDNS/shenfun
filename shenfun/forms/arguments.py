@@ -109,7 +109,7 @@ class Expr(object):
         return self._terms.shape[2]
 
     def __getitem__(self, i):
-        assert self.num_components() == self.dim()
+        #assert self.num_components() == self.dim()
         basis = self._basis
         if self.rank() == 2:
             basis = self._basis[i]
@@ -117,7 +117,6 @@ class Expr(object):
                     self._terms[i][np.newaxis, :, :],
                     self._scales[i][np.newaxis, :],
                     self._indices[i][np.newaxis, :])
-
 
     def __mul__(self, a):
         if self.expr_rank() == 1:
@@ -306,10 +305,10 @@ class Function(np.ndarray, BasisFunction):
     Parameters
     ----------
 
-    space : Instance of TensorProductSpace
+    space : Instance of TensorProductSpace (T)
     forward_output : boolean.
-        If False then create Function of shape/type for input to PFFT.forward,
-        otherwise create Function of shape/type for output from PFFT.forward
+        If False then create Function of shape/type for input to T.forward,
+        otherwise create Function of shape/type for output from T.forward
     val : int or float
         Value used to initialize array
     buffer : Numpy array or Function with data. Must be of correct shape
