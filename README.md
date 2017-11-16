@@ -6,7 +6,7 @@
 
 Description
 -----------
-Shenfun is a toolbox for automating the spectral Galerkin method.  The user interface to `shenfun` is very similar to FEniCS (fenicsproject.org), but works only for tensor product grids and the spectral Galerking method. The code is parallelized with MPI through the [*mpi4py-fft*](https://bitbucket.org/mpi4py/mpi4py-fft) package.
+Shenfun is a toolbox for automating the spectral Galerkin method.  The user interface to shenfun is very similar to FEniCS (fenicsproject.org), but works only for tensor product grids and the spectral Galerking method. The code is parallelized with MPI through the [*mpi4py-fft*](https://bitbucket.org/mpi4py/mpi4py-fft) package.
 
 The demo folder contains several examples for the Poisson, Helmholtz and Biharmonic equations. For extended documentation see
 
@@ -24,7 +24,7 @@ The spectral Galerkin method uses the method of weighted residuals, and solves P
 </p>
 <p align="center">
 
-where _omega_ is the computational domain, _u_ is a trial function, _v_ a test function (overline indicates a complex conjugate), and _w_ is a weight function. The bold _**x**_ represents (x,y,z) for a 3D inner product, but *shenfun* may be used for any number of dimensions. 
+where _omega_ is the computational domain, _u_ is a trial function, _v_ a test function (overline indicates a complex conjugate), and _w_ is a weight function. The bold _**x**_ represents (x,y,z) for a 3D inner product, but shenfun may be used for any number of dimensions. 
 
 Consider the Poisson equation 
 <p align="center">
@@ -39,7 +39,7 @@ We obtain a variational form by multiplying with _vw_ and integrating over the d
 </p>
 <p align="center">
 
-With *shenfun* a user chooses the appropriate bases for each dimension of the problem, and may then combine these bases into tensor product spaces. For example, to create a basis for a triply periodic domain, a user may proceed as follows
+With shenfun a user chooses the appropriate bases for each dimension of the problem, and may then combine these bases into tensor product spaces. For example, to create a basis for a triply periodic domain, a user may proceed as follows
 
 ```python
    from shenfun import fourier, TensorProductSpace
@@ -85,7 +85,7 @@ Complete examples for the Poisson equation with various boundary conditions are 
 
 Installation
 ------------
-*shenfun* is installed by cloning or forking the repository and then with regular python distutils
+Shenfun is installed by cloning or forking the repository and then with regular python distutils
 
     python setup.py install --prefix="path used for installation. Must be on the PYTHONPATH"
     
@@ -93,7 +93,7 @@ or in-place using
 
     python setup.py build_ext --inplace
 
-*shenfun* depends on [mpiFFT4py](https://github.com/spectralDNS/mpiFFT4py) and [mpi4py-fft](https://bitbucket.org/mpi4py/mpi4py-fft). Other than that, it requires [*cython*](http://cython.org), which is used to optimize a few routines and [*pyFFTW*](https://github.com/pyFFTW/pyFFTW) for serial fast Fourier transforms. However, since *pyFFTW* is very slow at incorporating new pull requests, you currently need to use the fork by [David Wells](https://github.com/drwells/pyFFTW/tree/r2r-try-two) for fast discrete cosine transforms.
+Shenfun depends on [mpiFFT4py](https://github.com/spectralDNS/mpiFFT4py) and [mpi4py-fft](https://bitbucket.org/mpi4py/mpi4py-fft). Other than that, it requires [*cython*](http://cython.org), which is used to optimize a few routines and [*pyFFTW*](https://github.com/pyFFTW/pyFFTW) for serial fast Fourier transforms. However, since *pyFFTW* is very slow at incorporating new pull requests, you currently need to use the fork by [David Wells](https://github.com/drwells/pyFFTW/tree/r2r-try-two) for fast discrete cosine transforms.
 
 Probably the easiest installation is achieved though Anaconda, where also the correct dependencies will be pulled in. From the top directory build it with
 
