@@ -29,6 +29,7 @@ install:
       curl -L -O "${MINICONDA_URL}/${MINICONDA_FILE}"
       bash $MINICONDA_FILE -b
       source /Users/travis/miniconda3/bin/activate root
+      conda config --set always_yes yes
       conda config --set show_channel_urls true
       conda config --add channels conda-forge
       conda config --add channels spectralDNS
