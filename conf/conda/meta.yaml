@@ -6,8 +6,7 @@ source:
   git_url: ../../
 
 build:
-  number: 7
-  #script: python setup.py install --prefix=$PREFIX
+  number: 8
 
 requirements:
   build:
@@ -25,6 +24,7 @@ requirements:
     - mpi4py
     - six
     - sympy
+    - h5py-parallel
 
 test:
   source_files:
