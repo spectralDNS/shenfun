@@ -68,7 +68,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
         assert t1 in (1, 2)
         test = expr0
         trial = expr1
-    elif t0 == 1:
+    elif t0 in (1, 2):
         assert t1 == 0
         test = expr1
         trial = expr0
@@ -98,7 +98,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
         else:
             result = []
             for ii in range(ndim):
-                result.append(inner(expr0[ii], expr1[ii], uh_hat=uh))
+                result.append(inner(test[ii], trial[ii], uh_hat=uh))
             return result
 
 

@@ -19,7 +19,7 @@ from mpi4py import MPI
 import _pickle
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    TensorProductSpace, Array, ETDRK4, ETD
+    TensorProductSpace, Array, ETDRK4, ETD, HDF5Writer
 
 comm = MPI.COMM_WORLD
 
@@ -86,16 +86,20 @@ def update(u, u_hat, t, tstep, **params):
         image.ax.clear()
         image.ax.contourf(X[0], X[1], u.real, 100)
         plt.pause(1e-6)
-    if tstep % params['save_png_step'] == 0 and params['save_png_step'] > 0:
         count += 1
-        plt.savefig('Ginzburg_Landau_{}_{}.png'.format(N[0], count))
+        #plt.savefig('Ginzburg_Landau_{}_{}.png'.format(N[0], count))
+    if tstep % params['write_tstep'] == 0:
+        u = T.backward(u_hat, u)
+        params['file'].write_tstep(tstep, u.real)
 
 if __name__ == '__main__':
+    file0 = HDF5Writer("Ginzburg_Landau_{}.h5".format(N[0]), ['u'], T)
     par = {'plot_step': 100,
-           'save_png_step': -1}
+           'write_tstep': 50,
+           'file': file0}
     t = 0.0
-    dt = 4./N[0]
-    end_time = 96.
+    dt = 0.001
+    end_time = 0.1
     integrator = ETDRK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
     integrator.setup(dt)
     U_hat = integrator.solve(U, U_hat, dt, (0, end_time))

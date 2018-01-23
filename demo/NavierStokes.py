@@ -67,8 +67,6 @@ if __name__ == '__main__':
 
         #integrator = ETDRK4(TV, L=LinearRHS, N=NonlinearRHS)
         integ = integrator(TV, L=LinearRHS, N=NonlinearRHS)
-        if isinstance(integ, ETD):
-            dt = dt/100
         integ.setup(dt)
         U_hat = integ.solve(U, U_hat, dt, (0, end_time))
 
