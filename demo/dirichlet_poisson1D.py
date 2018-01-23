@@ -29,8 +29,8 @@ shen = importlib.import_module('.'.join(('shenfun', basis)))
 Basis = shen.bases.ShenDirichletBasis
 
 # Use sympy to compute a rhs, given an analytical solution
-a = 0.
-b = 0.
+a = -1.
+b = 1.
 x = symbols("x")
 ue = sin(4*np.pi*x)*(1-x**2) + a*(1 + x)/2. + b*(1 - x)/2.
 fe = ue.diff(x, 2)

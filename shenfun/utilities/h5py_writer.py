@@ -56,7 +56,12 @@ class HDF5Writer(object):
                 if not group in self.f:
                     self.f.create_group(group)
                 self.f[group].create_dataset(str(tstep), shape=self.N, dtype=u.dtype)
-                self.f["/".join((group, str(tstep)))][s[0], s[1], s[2]] = u[i]
+                if self.T.ndim() == 3:
+                    self.f["/".join((group, str(tstep)))][s[0],s[1],s[2]] = u[i]
+                elif self.T.ndim() == 2:
+                    self.f["/".join((group, str(tstep)))][s[0],s[1]] = u[i]
+                else:
+                    raise(NotImplementedError)
         else:
             assert len(self.names) == 1
             group = "/".join((self.names[0], "{}D".format(len(u.shape))))
@@ -64,7 +69,12 @@ class HDF5Writer(object):
                 self.f.create_group(group)
             self.f[group].create_dataset(str(tstep), shape=self.N, dtype=u.dtype)
             s = self.T.local_slice(False)
-            self.f["/".join((group, str(tstep)))][s[0], s[1], s[2]] = u[:]
+            if self.T.ndim() == 3:
+                self.f["/".join((group, str(tstep)))][s[0],s[1],s[2]] = u[:]
+            elif self.T.ndim() == 2:
+                self.f["/".join((group, str(tstep)))][s[0],s[1]] = u[:]
+            else:
+                raise(NotImplementedError)
 
     def write_slice_tstep(self, tstep, sl, u):
         """Write slice of field u to HDF5 format at a given time step
