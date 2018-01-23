@@ -769,7 +769,9 @@ $$
 \end{equation}
 $$
 
-Lets first consider 2 dimensions, with Dirichlet boundary conditions in the first direction and with periodicity in the second. Let \( \Omega \) be the domain \( [-1, 1] \times [0, 2 \pi] \), and \( W(x,y) = V^C(x) \times V^p(y) \) be the tensor product function space. We can solve this problem for some suitable function \( f(\bs{x}) \) in <code>shenfun</code> by constructing a few more classes than were required in 1D
+Lets first consider 2 dimensions, with Dirichlet boundary conditions in the
+first direction and with periodicity in the second. Let \( \Omega \) be the domain
+\( [-1, 1] \times [0, 2 \pi] \), and \( T(x,y) = V^C(x) \times V^p(y) \) be the tensor product function space. We can solve this problem for some suitable function \( f(\bs{x}) \) in <code>shenfun</code> by constructing a few more classes than were required in 1D
 <!-- begin verbatim block  pycod-->
 <pre><code>from shenfun.chebyshev.bases import ShenDirichletBasis
 from shenfun.fourier.bases import FourierBasis
@@ -778,20 +780,37 @@ from shenfun import Function, TensorProductSpace
 from mpi4py import MPI
 </code></pre>
 <!-- end verbatim block -->
-Now the <code>TensorProductSpace</code> class is used to construct \( W \), whereas <code>Function</code> is a subclass of <code>numpy.ndarray</code> used to hold solution arrays. The MPI communicator, on the other hand, is used for distributing the tensor product grids on a given number of processes
+Now the <code>TensorProductSpace</code> class is used to construct \( T \), whereas <code>Function</code> is a subclass of <code>numpy.ndarray</code> used to hold solution arrays. The MPI communicator, on the other hand, is used for distributing the tensor product grids on a given number of processes
 <!-- begin verbatim block  pycod-->
 <pre><code>comm = MPI.COMM_WORLD
 N = (32, 33)
 
 K0 = ShenDirichletBasis(N[0])
 K1 = FourierBasis(N[1], dtype=np.float)
-W = TensorProductSpace(comm, (K0, K1))
+T = TensorProductSpace(comm, (K0, K1))
 
 # Alternatively, switch order for periodic in first direction instead
-# W = TensorProductSpace(comm, (K1, K0), axes=(1, 0))
+# T = TensorProductSpace(comm, (K1, K0), axes=(1, 0))
 </code></pre>
 <!-- end verbatim block -->
-Under the hood, within the <code>TensorProductSpace</code> class, the mesh is distributed, both in real, physical space, and in spectral space. In the real space the mesh is distributed along the first index, whereas in spectral space the wavenumbermesh is distributed along the second dimension. This is the default behaviour of <code>TensorProductSpace</code>. However, the distribution may also be configured specifically by the user, e.g., as shown in the commented out text, where the Dirichlet basis is found along the second axis. In this case the order of the axes to transform over has been flipped, such that in spectral space the data is distributed along the first dimension and aligned in the second. This is required for solving the linear algebra system that arises for the Dirichlet basis. The arrays created using <code>Function</code> are distributed, and no further attention to MPI is required. However, note that arrays may have different type and shape in real space and in spectral space. For this reason <code>Function</code> has a keyword argument <code>forward_output</code>, that is used as <code>w_hat = Function(W, forward_output=True)</code> to create an array consistent with the output of <code>W.forward</code> (solution in spectral space), and <code>w = Function(W, forward_output=False)</code> to create an array consistent with the input (solution in real space). Furthermore, <code>uh = np.zeros_like(w_hat)</code> and <code>w_hat = Function(W, buffer=uh)</code> can be used to wrap a <code>Function</code> instance around a regular Numpy array <code>uh</code>. Note that <code>uh</code> and <code>w_hat</code> now will share the same data, and modifying one will naturally modify also the other.
+Under the hood, within the <code>TensorProductSpace</code> class, the mesh is distributed,
+both in real, physical space, and in spectral space. In the real space the mesh
+is distributed along the first index, whereas in spectral space the
+wavenumbermesh is distributed along the second dimension. This is the default
+behaviour of <code>TensorProductSpace</code>. However, the distribution may also be
+configured specifically by the user, e.g., as shown in the commented out text,
+where the Dirichlet basis is found along the second axis. In this case the order
+of the axes to transform over has been flipped, such that in spectral space the
+data is distributed along the first dimension and aligned in the second. This is
+required for solving the linear algebra system that arises for the Dirichlet
+basis. The arrays created using <code>Function</code> are distributed, and no further
+attention to MPI is required. However, note that arrays may have different type
+and shape in real space and in spectral space. For this reason <code>Function</code> has a
+keyword argument <code>forward_output</code>, that is used as <code>w_hat = Function(T,
+forward_output=True)</code> to create an array consistent with the output of
+<code>T.forward</code> (solution in spectral space), and <code>w = Function(T,
+forward_output=False)</code> to create an array consistent with the input (solution in
+real space). Furthermore, <code>uh = np.zeros_like(w_hat)</code> and <code>w_hat = Function(T, buffer=uh)</code> can be used to wrap a <code>Function</code> instance around a regular Numpy array <code>uh</code>. Note that <code>uh</code> and <code>w_hat</code> now will share the same data, and modifying one will naturally modify also the other.
 
 <p>
 The solution of a complete Poisson problem in 2D is shown below. Very similar code is required to solve the Poisson problem with the Legendre basis. The main difference is that for Legendre it is natural to integrate the weak form by parts and use <code>matrices = inner(grad(v), grad(u))</code>
@@ -829,7 +848,8 @@ u_hat = H(u_hat, f_hat)       # Solve
 u = T.backward(u_hat)
 </code></pre>
 <!-- end verbatim block -->
-The test functions and function spaces require a bit more attention. Test functions for space \( W(x, y)=V^C(x) \times V^p(y) \) are given as
+The test functions and function spaces require a bit more attention. Test
+functions for space \( T(x, y)=V^C(x) \times V^p(y) \) are given as
 $$
 \begin{equation}
 \phi_{\ts{k}}(x, y) = v_l(x) e^{imy},
@@ -932,7 +952,7 @@ $$
 \end{align}
 $$
 
-that is periodic in \( y- \) and $z-$directions and with clamped boundary conditions at \( x=\pm 1 \). The problem may be solved using either one of these two bases:
+that is periodic in \( y- \) and \( z- \) directions and with clamped boundary conditions at \( x=\pm 1 \). The problem may be solved using either one of these two bases:
 $$
 \begin{align}
 V^C &= \text{span}\{T_l - \frac{2(l+2)}{l+3}T_{l+2} + \frac{l+1}{l+3}T_{l+4} , l \in \bs{l}^B\}, \label{eq:chebbiharmonic} \\
@@ -950,8 +970,15 @@ $$
 
 where \( u \) and \( v \) are trial and test functions in \( W \), may be implemented in <code>shenfun</code> as shown below
 <!-- begin verbatim block  pycod-->
-<pre><code>from shenfun.chebyshev.bases import ShenBiharmonicBasis
+<pre><code>from shenfun.chebyshev.bases import ShenBiharmonicBasis, Basis
+from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun.chebyshev.la import Biharmonic as Solver
+from shenfun import inner , div , grad , TestFunction, TrialFunction, project, Dx
+from shenfun import Function, TensorProductSpace
+from mpi4py import MPI
+import numpy as np
+
+comm = MPI.COMM_WORLD
 
 N = (32, 33, 34)
 K0 = ShenBiharmonicBasis(N[0])
@@ -961,19 +988,26 @@ W = TensorProductSpace(comm, (K0, K1, K2))
 u = TrialFunction(W)
 v = TestFunction(W)
 matrices = inner(v, div(grad(div(grad(u)))))
-f_hat = inner(v, fj)  # Some right hand side
-# or for Legendre:
-# matrices = inner(div(grad(v)), div(grad(u)))
+fj = Function(W, False)
+fj[:] = np.random.random(fj.shape)
+
+f_hat = inner(v, fj) # Some right hand side
 B = Solver(**matrices)
 
 # Solve and transform to real space
-u_hat = Function(T)           # Solution spectral space
-u_hat = B(u_hat, f_hat)       # Solve
-u = T.backward(u_hat)
+u_hat = Function(W) # Solution spectral space
+u_hat = B(u_hat , f_hat) # Solve
+u = Function(W, False)
+u = W.backward(u_hat, u)
 </code></pre>
 <!-- end verbatim block -->
-
-<p>
+Note that <code>C2CBasis</code> is used for the Fourier basis along axis 1, whereas
+<code>R2CBasis</code> is used for the last axis. This is because the right hand side of the
+Poisson equation, and
+thus the input data, is real and not complex. Yet, taking the Fourier
+transform along the last axis, results in a complex array. Hence we need
+real-to-complex transforms for axis 2 and complex-to-complex (<code>C2CBasis</code>)
+transforms for axis 1. 
 <!-- !split -->
 
 <h1 id="sec:extended">Other functionality of <code>shenfun</code></h1>
@@ -984,7 +1018,7 @@ v = TestFunction(W)
 du = Dx(v, 0, 1)
 </code></pre>
 <!-- end verbatim block -->
-where the first argument is the basis function, the second (integer) is the axis to take the derivative over, and the third (integer) is the number of derivatives, e.g.,
+where the first argument to <code>Dx</code> is a basis function, the second (integer) is the axis to take the derivative over, and the third (integer) is the number of derivatives, e.g.,
 $$
 \begin{equation}
 \frac{\partial^2 v}{\partial y^2} = \text{Dx(v, 1, 2)}. \notag
@@ -1000,26 +1034,39 @@ du = Dx(Dx(v, 0, 1), 1, 1)
 <!-- end verbatim block -->
 The operators work on <code>TestFunctions, TrialFunctions</code> or <code>Functions</code>, where only the last actually contain any data, because a <code>Function</code> is used to store the solution. Once a solution has been found, one may also manipulate it further using <code>project</code> in combination with operators on <code>Functions</code>. For example, to compute \( \partial u / \partial x \) of the solution to the biharmonic problem, one can do
 <!-- begin verbatim block  pycod-->
-<pre><code>u = T.backward(u_hat)  # The original solution on space T
-K0 = Basis(N[0])
+<pre><code>K0 = Basis(N[0])
 W0 = TensorProductSpace(comm, (K0, K1, K2))
 du_hat = project(Dx(u, 0, 1), W0, uh_hat=u_hat)
-du = Function(W0)
-du = W0.backward(du_hat, du)
+du = Function(W0, False)
+du = W0.backward(du_hat , du)
 </code></pre>
 <!-- end verbatim block -->
-Note that we are here using a regular Chebyshev space instead of the biharmonic, to avoid enforcing erroneous boundary conditions on the solution. We could in this case also, with advantage, have chosen a Dirichlet space, since the derivative of the biharmonic problem is known to be zero on the edges of the domain (at \( x=\pm 1 \)).
+Note that we are here using a regular Chebyshev space (<code>Basis</code>) instead of the biharmonic, to avoid enforcing erroneous boundary conditions on the solution. We could in this case also, with advantage, have chosen a Dirichlet space, since the derivative of the biharmonic problem is known to be zero on the edges of the domain (at \( x=\pm 1 \)).
 
 <p>
 All problems considered thus far have been scalar valued. With <code>shenfun</code> there is also some functionality for working with vector equations. To this end, there is a class called <code>VectorTensorProductSpace</code>, and there is an additional operator, <code>curl</code>, that can only be used on vectors:
 <!-- begin verbatim block  pycod-->
-<pre><code>from shenfun import VectorTensorProductSpace, curl
+<pre><code>from shenfun.chebyshev.bases import ShenBiharmonicBasis
+from shenfun.fourier.bases import R2CBasis, C2CBasis
+from shenfun import Function, TensorProductSpace, VectorTensorProductSpace , curl
+from shenfun import inner, curl, TestFunction
+import numpy as np
+from mpi4py import MPI
+comm = MPI.COMM_WORLD
+
+N = (32, 33, 34)
+K0 = ShenBiharmonicBasis(N[0])
+K1 = C2CBasis(N[1])
+K2 = R2CBasis(N[2])
+
 T = TensorProductSpace(comm, (K0, K1, K2))
 Tk = VectorTensorProductSpace([T, T, T])
+
 v = TestFunction(Tk)
 u_ = Function(Tk, False)
 u_[:] = np.random.random(u_.shape)
-u_hat = Tk.forward(u_)
+u_hat = Function(Tk)
+u_hat = Tk.forward(u_, u_hat)
 w_hat = inner(v, curl(u_), uh_hat=u_hat)
 </code></pre>
 <!-- end verbatim block -->
