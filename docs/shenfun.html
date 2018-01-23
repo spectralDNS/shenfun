@@ -62,7 +62,7 @@
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Authors:</th><td class="field-body">Mikael Mortensen (mikaem at math.uio.no)</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">Sep 21, 2017</td>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">Jan 23, 2018</td>
 </tr>
 </tbody>
 </table>
@@ -209,6 +209,9 @@
 <span class="gp">&gt;&gt;&gt; </span><span class="n">v</span> <span class="o">=</span> <span class="n">TestFunction</span><span class="p">(</span><span class="n">SD</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>A bilinear form contains both test- and trialfunctions, whereas a linear form
+contains only the testfunction. Assembling a biliear form results in a matrix,
+whereas assembling a linear form results in a vector.</p>
 <p>A matrix that is the result of a bilinear form has its own subclass of <code class="docutils literal"><span class="pre">SparseMatrix</span></code>, called a <code class="docutils literal"><span class="pre">SpectralMatrix</span></code>. A <code class="docutils literal"><span class="pre">SpectralMatrix</span></code> is created using <code class="docutils literal"><span class="pre">inner</span></code> products on test and trial functions, for example the mass matrix:</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">mass</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">mass</span>
@@ -220,22 +223,25 @@
 </div>
 <p>This <code class="docutils literal"><span class="pre">mass</span></code> matrix will be the same as Eq. (2.5) of <a class="reference internal" href="#ref01" id="id14">[Ref01]</a>, and it will be an instance of the <code class="docutils literal"><span class="pre">SpectralMatrix</span></code> class.
 You may notice that <code class="docutils literal"><span class="pre">mass</span></code> takes advantage of the fact that two diagonals are constant and consequently only stores one single value.</p>
-<p>The <code class="docutils literal"><span class="pre">inner</span></code> method may be used to compute any linear or bilinear form. For example the stiffness matrix <code class="docutils literal"><span class="pre">K</span></code></p>
+<p>The <code class="docutils literal"><span class="pre">inner</span></code> method may be used to compute any linear or bilinear form. For
+example, the stiffness matrix <code class="docutils literal"><span class="pre">K</span></code> may be computed with the bilinear form</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">K</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">div</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">)))</span>
 </pre></div>
 </div>
-<p>Square matrices have implemented a solve method that is using fast <span class="math">\(\mathcal{O}(N)\)</span> direct LU decomposition or similar, if available, and falls back on using Scipy’s solver in CSR format if no better method is found implemented. For example, to solve the linear system <code class="docutils literal"><span class="pre">Ku=b</span></code></p>
+<p>Square matrices have implemented a solve method that is using fast
+<span class="math">\(\mathcal{O}(N)\)</span> direct LU decomposition or similar, if available, and falls
+back on using Scipy’s solver in CSR format if no better method is found
+implemented. For example, to solve the linear system <code class="docutils literal"><span class="pre">Ku_hat=b_hat</span></code></p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">fj</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">fj</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b_hat</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">fj</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u_hat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">b_hat</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u_hat</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">b_hat</span><span class="p">,</span> <span class="n">u_hat</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>All methods are designed to work along any dimension of a multidimensional array. Very little differs in the users interface. Consider, for example, the previous example on a three-dimensional cube</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">fj</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">))</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">fj</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span>
+<p>Most methods are designed to work along any dimension of a multidimensional array. Very little differs in the users interface. Consider, for example, the previous example on a three-dimensional cube</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">f3</span> <span class="o">=</span> <span class="n">fj</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">N</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">N</span><span class="p">))</span> <span class="c1"># Array f3 of shape (N,N,N)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">f3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u3</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">f3</span><span class="p">,</span> <span class="n">u3</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>where <code class="docutils literal"><span class="pre">K</span></code> is exactly the same as before, from the 1D example. The matrix solve is applied along the first dimension since this is the default behaviour.</p>
@@ -351,6 +357,9 @@ For the right hand side we have</p>
 
 <span class="c1"># Solve Poisson equation (solution in f_hat)</span>
 <span class="n">f_hat</span> <span class="o">/=</span> <span class="n">k</span><span class="o">**</span><span class="mi">2</span>
+
+<span class="c1"># Transform to real space</span>
+<span class="n">uq</span> <span class="o">=</span> <span class="n">ST</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">f_hat</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Note that <code class="docutils literal"><span class="pre">ST</span></code> methods <code class="docutils literal"><span class="pre">forward/backward</span></code> correspond to forward and inverse discrete Fourier transforms. Furthermore, since the input data <code class="docutils literal"><span class="pre">fj</span></code> is of type float (not complex), the transforms make use of the symmetry of the Fourier transform of real data, that <span class="math">\(\hat{u}_k = \overline{\hat{u}}_{N-k}\)</span>, and that <span class="math">\(\boldsymbol{k}=0,1,\ldots, N/2\)</span> (index set computed as <code class="docutils literal"><span class="pre">k</span> <span class="pre">=</span> <span class="pre">ST.wavenumbers(N)</span></code>).</p>
@@ -411,9 +420,13 @@ For the right hand side we have</p>
 <span class="eqno">(39)<a class="headerlink" href="#equation-_auto28" title="Permalink to this equation">¶</a></span>\[     \boldsymbol{\hat{u}}  = \mathcal{T}(\boldsymbol{u}) ,\]</div>
 <p>where <span class="math">\(\mathcal{T}(\boldsymbol{u})\)</span> represents a forward transform of <span class="math">\(\boldsymbol{u}\)</span>. Note that <span class="math">\(\mathcal{S}\)</span> is introduced since the inner product <span class="math">\((u, v_m)_w^N\)</span> may, just like the inner product with the Fourier basis, be computed fast, with <span class="math">\(\mathcal{O}(N \log N)\)</span> operations. And to this end, we need to make use of a discrete cosine transform (DCT), instead of the Fourier transform. The details are left out from this paper, though.</p>
 <p>A simple Poisson problem with analytical solution <span class="math">\(\sin(\pi x)(1-x^2)\)</span> is implemented below, where we also verify that the correct solution is obtained.</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">shenfun.chebyshev.bases</span> <span class="kn">import</span> <span class="n">ShenDirichletBasis</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">Symbol</span><span class="p">,</span> <span class="n">sin</span><span class="p">,</span> <span class="n">lambdify</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">shenfun</span> <span class="kn">import</span> <span class="n">inner</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">grad</span><span class="p">,</span> <span class="n">TestFunction</span><span class="p">,</span> <span class="n">TrialFunction</span>
+<span class="kn">from</span> <span class="nn">shenfun.chebyshev.bases</span> <span class="kn">import</span> <span class="n">ShenDirichletBasis</span>
 
 <span class="c1"># Use sympy to compute a rhs, given an analytical solution</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">Symbol</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)</span>
 <span class="n">ue</span> <span class="o">=</span> <span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
 <span class="n">fe</span> <span class="o">=</span> <span class="n">ue</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
 
@@ -456,7 +469,10 @@ For the right hand side we have</p>
 <div class="math" id="equation-_auto30">
 <span class="eqno">(42)<a class="headerlink" href="#equation-_auto30" title="Permalink to this equation">¶</a></span>\[      -\nabla^2 u(\boldsymbol{x}) = f(\boldsymbol{x}) \quad \text{for }\boldsymbol{x} \in \Omega.\]</div>
 <p>Lets first consider 2 dimensions, with Dirichlet boundary conditions in the first direction and with periodicity in the second. Let <span class="math">\(\Omega\)</span> be the domain <span class="math">\([-1, 1] \times [0, 2 \pi]\)</span>, and <span class="math">\(W(x,y) = V^C(x) \times V^p(y)\)</span> be the tensor product function space. We can solve this problem for some suitable function <span class="math">\(f(\boldsymbol{x})\)</span> in <code class="docutils literal"><span class="pre">shenfun</span></code> by constructing a few more classes than were required in 1D</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">shenfun</span> <span class="kn">import</span> <span class="n">Function</span><span class="p">,</span> <span class="n">TensorProductSpace</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">shenfun.chebyshev.bases</span> <span class="kn">import</span> <span class="n">ShenDirichletBasis</span>
+<span class="kn">from</span> <span class="nn">shenfun.fourier.bases</span> <span class="kn">import</span> <span class="n">FourierBasis</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">shenfun</span> <span class="kn">import</span> <span class="n">Function</span><span class="p">,</span> <span class="n">TensorProductSpace</span>
 <span class="kn">from</span> <span class="nn">mpi4py</span> <span class="kn">import</span> <span class="n">MPI</span>
 </pre></div>
 </div>
@@ -871,7 +887,7 @@ pp. 216-231,
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2017, Mikael Mortensen. Released under CC Attribution 4.0 license.
+        &#169; Copyright 2018, Mikael Mortensen. Released under CC Attribution 4.0 license.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
     </div>
   </body>

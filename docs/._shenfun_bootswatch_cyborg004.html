@@ -169,7 +169,10 @@ Lets first consider 2 dimensions, with Dirichlet boundary conditions in the firs
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "monokai" -->
-<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span><span style="color: #f92672">from</span> <span style="color: #f8f8f2">shenfun</span> <span style="color: #f92672">import</span> <span style="color: #f8f8f2">Function,</span> <span style="color: #f8f8f2">TensorProductSpace</span>
+<div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span><span style="color: #f92672">from</span> <span style="color: #f8f8f2">shenfun.chebyshev.bases</span> <span style="color: #f92672">import</span> <span style="color: #f8f8f2">ShenDirichletBasis</span>
+<span style="color: #f92672">from</span> <span style="color: #f8f8f2">shenfun.fourier.bases</span> <span style="color: #f92672">import</span> <span style="color: #f8f8f2">FourierBasis</span>
+<span style="color: #f92672">import</span> <span style="color: #f8f8f2">numpy</span> <span style="color: #f92672">as</span> <span style="color: #f8f8f2">np</span>
+<span style="color: #f92672">from</span> <span style="color: #f8f8f2">shenfun</span> <span style="color: #f92672">import</span> <span style="color: #f8f8f2">Function,</span> <span style="color: #f8f8f2">TensorProductSpace</span>
 <span style="color: #f92672">from</span> <span style="color: #f8f8f2">mpi4py</span> <span style="color: #f92672">import</span> <span style="color: #f8f8f2">MPI</span>
 </pre></div>
 <p>
