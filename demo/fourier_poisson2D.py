@@ -39,7 +39,7 @@ N = (32, 45)
 
 K0 = C2CBasis(N[0])
 K1 = R2CBasis(N[1])
-T = TensorProductSpace(comm, (K0, K1))
+T = TensorProductSpace(comm, (K1, K0), axes=(1,0))
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)
 v = TestFunction(T)

@@ -5,10 +5,8 @@ Solve Ginzburg-Landau equation on (-50, 50)x(-50, 50) with periodic bcs
 
 Use Fourier basis V and find u in VxV such that
 
-    (v, div(grad(u))) = (v, f)    for all v in VxV
+   (v, u_t) = (v, div(grad(u))+ u) - (v, (1+1.5i)*u*|u|**2)     for all v in VxV
 
-The Fourier basis is span{exp(1jkx)}_{k=-N/2}^{N/2-1} and
-VxV is a tensor product space.
 
 """
 from sympy import symbols, exp, lambdify
@@ -63,12 +61,12 @@ U_hat = Array(T)
 U[:] = ul(*X)
 U_hat = T.forward(U, U_hat)
 
-def LinearRHS():
+def LinearRHS(**par):
     A = inner(u, v)
     L = inner(grad(v), -grad(u)) / A + 1
     return L
 
-def NonlinearRHS(u, u_hat, rhs):
+def NonlinearRHS(u, u_hat, rhs, **par):
     global Up, Tp
     rhs.fill(0)
     Up = Tp.backward(u_hat, Up)
@@ -80,26 +78,27 @@ image = plt.contourf(X[0], X[1], U.real, 100)
 plt.draw()
 plt.pause(1e-6)
 count = 0
-def update(u, u_hat, t, tstep, **params):
-    if tstep % params['plot_step'] == 0 and params['plot_step'] > 0:
+def update(u, u_hat, t, tstep, plot_tstep, write_tstep, file, **params):
+    global count
+    if tstep % plot_tstep == 0 and plot_tstep > 0:
         u = T.backward(u_hat, u)
         image.ax.clear()
         image.ax.contourf(X[0], X[1], u.real, 100)
         plt.pause(1e-6)
         count += 1
         #plt.savefig('Ginzburg_Landau_{}_{}.png'.format(N[0], count))
-    if tstep % params['write_tstep'] == 0:
+    if tstep % write_tstep == 0:
         u = T.backward(u_hat, u)
-        params['file'].write_tstep(tstep, u.real)
+        file.write_tstep(tstep, u.real)
 
 if __name__ == '__main__':
     file0 = HDF5Writer("Ginzburg_Landau_{}.h5".format(N[0]), ['u'], T)
-    par = {'plot_step': 100,
+    par = {'plot_tstep': 100,
            'write_tstep': 50,
            'file': file0}
     t = 0.0
     dt = 0.001
-    end_time = 0.1
+    end_time = 1.0
     integrator = ETDRK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
     integrator.setup(dt)
     U_hat = integrator.solve(U, U_hat, dt, (0, end_time))
