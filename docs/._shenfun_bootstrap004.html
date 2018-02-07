@@ -163,15 +163,20 @@ $$
 \end{equation}
 $$
 
-Lets first consider 2 dimensions, with Dirichlet boundary conditions in the first direction and with periodicity in the second. Let \( \Omega \) be the domain \( [-1, 1] \times [0, 2 \pi] \), and \( W(x,y) = V^C(x) \times V^p(y) \) be the tensor product function space. We can solve this problem for some suitable function \( f(\bs{x}) \) in <code>shenfun</code> by constructing a few more classes than were required in 1D
+Lets first consider 2 dimensions, with Dirichlet boundary conditions in the
+first direction and with periodicity in the second. Let \( \Omega \) be the domain
+\( [-1, 1] \times [0, 2 \pi] \), and \( T(x,y) = V^C(x) \times V^p(y) \) be the tensor product function space. We can solve this problem for some suitable function \( f(\bs{x}) \) in <code>shenfun</code> by constructing a few more classes than were required in 1D
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
-<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> Function, TensorProductSpace
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun.chebyshev.bases</span> <span style="color: #008000; font-weight: bold">import</span> ShenDirichletBasis
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun.fourier.bases</span> <span style="color: #008000; font-weight: bold">import</span> FourierBasis
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> Function, TensorProductSpace
 <span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">mpi4py</span> <span style="color: #008000; font-weight: bold">import</span> MPI
 </pre></div>
 <p>
-Now the <code>TensorProductSpace</code> class is used to construct \( W \), whereas <code>Function</code> is a subclass of <code>numpy.ndarray</code> used to hold solution arrays. The MPI communicator, on the other hand, is used for distributing the tensor product grids on a given number of processes
+Now the <code>TensorProductSpace</code> class is used to construct \( T \), whereas <code>Function</code> is a subclass of <code>numpy.ndarray</code> used to hold solution arrays. The MPI communicator, on the other hand, is used for distributing the tensor product grids on a given number of processes
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
@@ -180,13 +185,30 @@ N <span style="color: #666666">=</span> (<span style="color: #666666">32</span>,
 
 K0 <span style="color: #666666">=</span> ShenDirichletBasis(N[<span style="color: #666666">0</span>])
 K1 <span style="color: #666666">=</span> FourierBasis(N[<span style="color: #666666">1</span>], dtype<span style="color: #666666">=</span>np<span style="color: #666666">.</span>float)
-W <span style="color: #666666">=</span> TensorProductSpace(comm, (K0, K1))
+T <span style="color: #666666">=</span> TensorProductSpace(comm, (K0, K1))
 
 <span style="color: #408080; font-style: italic"># Alternatively, switch order for periodic in first direction instead</span>
-<span style="color: #408080; font-style: italic"># W = TensorProductSpace(comm, (K1, K0), axes=(1, 0))</span>
+<span style="color: #408080; font-style: italic"># T = TensorProductSpace(comm, (K1, K0), axes=(1, 0))</span>
 </pre></div>
 <p>
-Under the hood, within the <code>TensorProductSpace</code> class, the mesh is distributed, both in real, physical space, and in spectral space. In the real space the mesh is distributed along the first index, whereas in spectral space the wavenumbermesh is distributed along the second dimension. This is the default behaviour of <code>TensorProductSpace</code>. However, the distribution may also be configured specifically by the user, e.g., as shown in the commented out text, where the Dirichlet basis is found along the second axis. In this case the order of the axes to transform over has been flipped, such that in spectral space the data is distributed along the first dimension and aligned in the second. This is required for solving the linear algebra system that arises for the Dirichlet basis. The arrays created using <code>Function</code> are distributed, and no further attention to MPI is required. However, note that arrays may have different type and shape in real space and in spectral space. For this reason <code>Function</code> has a keyword argument <code>forward_output</code>, that is used as <code>w_hat = Function(W, forward_output=True)</code> to create an array consistent with the output of <code>W.forward</code> (solution in spectral space), and <code>w = Function(W, forward_output=False)</code> to create an array consistent with the input (solution in real space). Furthermore, <code>uh = np.zeros_like(w_hat)</code> and <code>w_hat = Function(W, buffer=uh)</code> can be used to wrap a <code>Function</code> instance around a regular Numpy array <code>uh</code>. Note that <code>uh</code> and <code>w_hat</code> now will share the same data, and modifying one will naturally modify also the other.
+Under the hood, within the <code>TensorProductSpace</code> class, the mesh is distributed,
+both in real, physical space, and in spectral space. In the real space the mesh
+is distributed along the first index, whereas in spectral space the
+wavenumbermesh is distributed along the second dimension. This is the default
+behaviour of <code>TensorProductSpace</code>. However, the distribution may also be
+configured specifically by the user, e.g., as shown in the commented out text,
+where the Dirichlet basis is found along the second axis. In this case the order
+of the axes to transform over has been flipped, such that in spectral space the
+data is distributed along the first dimension and aligned in the second. This is
+required for solving the linear algebra system that arises for the Dirichlet
+basis. The arrays created using <code>Function</code> are distributed, and no further
+attention to MPI is required. However, note that arrays may have different type
+and shape in real space and in spectral space. For this reason <code>Function</code> has a
+keyword argument <code>forward_output</code>, that is used as <code>w_hat = Function(T,
+forward_output=True)</code> to create an array consistent with the output of
+<code>T.forward</code> (solution in spectral space), and <code>w = Function(T,
+forward_output=False)</code> to create an array consistent with the input (solution in
+real space). Furthermore, <code>uh = np.zeros_like(w_hat)</code> and <code>w_hat = Function(T, buffer=uh)</code> can be used to wrap a <code>Function</code> instance around a regular Numpy array <code>uh</code>. Note that <code>uh</code> and <code>w_hat</code> now will share the same data, and modifying one will naturally modify also the other.
 
 <p>
 The solution of a complete Poisson problem in 2D is shown below. Very similar code is required to solve the Poisson problem with the Legendre basis. The main difference is that for Legendre it is natural to integrate the weak form by parts and use <code>matrices = inner(grad(v), grad(u))</code>
@@ -226,7 +248,8 @@ u_hat <span style="color: #666666">=</span> H(u_hat, f_hat)       <span style="c
 u <span style="color: #666666">=</span> T<span style="color: #666666">.</span>backward(u_hat)
 </pre></div>
 <p>
-The test functions and function spaces require a bit more attention. Test functions for space \( W(x, y)=V^C(x) \times V^p(y) \) are given as
+The test functions and function spaces require a bit more attention. Test
+functions for space \( T(x, y)=V^C(x) \times V^p(y) \) are given as
 $$
 \begin{equation}
 \phi_{\ts{k}}(x, y) = v_l(x) e^{imy},
@@ -331,7 +354,7 @@ $$
 \end{align}
 $$
 
-that is periodic in \( y- \) and $z-$directions and with clamped boundary conditions at \( x=\pm 1 \). The problem may be solved using either one of these two bases:
+that is periodic in \( y- \) and \( z- \) directions and with clamped boundary conditions at \( x=\pm 1 \). The problem may be solved using either one of these two bases:
 $$
 \begin{align}
 V^C &= \text{span}\{T_l - \frac{2(l+2)}{l+3}T_{l+2} + \frac{l+1}{l+3}T_{l+4} , l \in \bs{l}^B\}, \tag{58} \\
@@ -351,8 +374,15 @@ where \( u \) and \( v \) are trial and test functions in \( W \), may be implem
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
-<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun.chebyshev.bases</span> <span style="color: #008000; font-weight: bold">import</span> ShenBiharmonicBasis
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun.chebyshev.bases</span> <span style="color: #008000; font-weight: bold">import</span> ShenBiharmonicBasis, Basis
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun.fourier.bases</span> <span style="color: #008000; font-weight: bold">import</span> R2CBasis, C2CBasis
 <span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun.chebyshev.la</span> <span style="color: #008000; font-weight: bold">import</span> Biharmonic <span style="color: #008000; font-weight: bold">as</span> Solver
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> inner , div , grad , TestFunction, TrialFunction, project, Dx
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> Function, TensorProductSpace
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">mpi4py</span> <span style="color: #008000; font-weight: bold">import</span> MPI
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
+
+comm <span style="color: #666666">=</span> MPI<span style="color: #666666">.</span>COMM_WORLD
 
 N <span style="color: #666666">=</span> (<span style="color: #666666">32</span>, <span style="color: #666666">33</span>, <span style="color: #666666">34</span>)
 K0 <span style="color: #666666">=</span> ShenBiharmonicBasis(N[<span style="color: #666666">0</span>])
@@ -362,17 +392,26 @@ W <span style="color: #666666">=</span> TensorProductSpace(comm, (K0, K1, K2))
 u <span style="color: #666666">=</span> TrialFunction(W)
 v <span style="color: #666666">=</span> TestFunction(W)
 matrices <span style="color: #666666">=</span> inner(v, div(grad(div(grad(u)))))
-f_hat <span style="color: #666666">=</span> inner(v, fj)  <span style="color: #408080; font-style: italic"># Some right hand side</span>
-<span style="color: #408080; font-style: italic"># or for Legendre:</span>
-<span style="color: #408080; font-style: italic"># matrices = inner(div(grad(v)), div(grad(u)))</span>
+fj <span style="color: #666666">=</span> Function(W, <span style="color: #008000">False</span>)
+fj[:] <span style="color: #666666">=</span> np<span style="color: #666666">.</span>random<span style="color: #666666">.</span>random(fj<span style="color: #666666">.</span>shape)
+
+f_hat <span style="color: #666666">=</span> inner(v, fj) <span style="color: #408080; font-style: italic"># Some right hand side</span>
 B <span style="color: #666666">=</span> Solver(<span style="color: #666666">**</span>matrices)
 
 <span style="color: #408080; font-style: italic"># Solve and transform to real space</span>
-u_hat <span style="color: #666666">=</span> Function(T)           <span style="color: #408080; font-style: italic"># Solution spectral space</span>
-u_hat <span style="color: #666666">=</span> B(u_hat, f_hat)       <span style="color: #408080; font-style: italic"># Solve</span>
-u <span style="color: #666666">=</span> T<span style="color: #666666">.</span>backward(u_hat)
+u_hat <span style="color: #666666">=</span> Function(W) <span style="color: #408080; font-style: italic"># Solution spectral space</span>
+u_hat <span style="color: #666666">=</span> B(u_hat , f_hat) <span style="color: #408080; font-style: italic"># Solve</span>
+u <span style="color: #666666">=</span> Function(W, <span style="color: #008000">False</span>)
+u <span style="color: #666666">=</span> W<span style="color: #666666">.</span>backward(u_hat, u)
 </pre></div>
 <p>
+Note that <code>C2CBasis</code> is used for the Fourier basis along axis 1, whereas
+<code>R2CBasis</code> is used for the last axis. This is because the right hand side of the
+Poisson equation, and
+thus the input data, is real and not complex. Yet, taking the Fourier
+transform along the last axis, results in a complex array. Hence we need
+real-to-complex transforms for axis 2 and complex-to-complex (<code>C2CBasis</code>)
+transforms for axis 1. 
 <p>
 <!-- navigation buttons at the bottom of the page -->
 <ul class="pager">
