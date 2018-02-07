@@ -3,8 +3,8 @@ Solve Gray-Scott's equations on (-1, 1)x(-1, 1) with periodic bcs.
 
 The equations to solve are
 
-   u_t = e1*div(grad(u)) + b*(1-u) - u*v**2         (1)
-   v_t = e2*div(grad(v)) - d*v + u*v**2             (2)
+   u_t = -e1*(-div(grad(u)))**(alpha/2) + b*(1-u) - u*v**2         (1)
+   v_t = -e2*(-div(grad(v)))**(alpha/2) - (b+kappa)*v + u*v**2             (2)
 
 Using Fourier basis F and a vector tensor product space for u and v
 The tensor product space is FF = FxF, and the vector space is W = [FF, FF]
@@ -12,15 +12,12 @@ The tensor product space is FF = FxF, and the vector space is W = [FF, FF]
 The variational problem reads: Find uv = (u, v) in W such that
 
     (qr, uv_t) = (qr, (e1, e2)*div(grad(uv))) + b*(q, 1-u) \\
-                 -d*(r, v) - (q, u*v**2) + (r, u*v**2)  for all qr = (q, r) in W
-
-We use an explicit fourth order Runge-Kutta method to integrate the
-equations in time.
+                 -(b+kappa)*(r, v) - (q, u*v**2) + (r, u*v**2)  for all qr = (q, r) in W
 
 Initial conditions are given as
 
-    u(t=0) = 1 - exp(-80*((x+0.05)**2+(y+0.02)**2))
-    v(t=0) = exp(-80*((x-0.05)**2+(y-0.02)**2))
+    u(t=0) = 1 for abs(x) > 0.04 and 0.50 for abs(x) < 0.04
+    v(t=0) = 0 for abs(x) > 0.04 and 0.25 for abs(x) < 0.04
 
 """
 from sympy import Symbol, cos, sin, exp, lambdify
@@ -42,10 +39,8 @@ x = Symbol("x")
 y = Symbol("y")
 
 # Initial conditions
-#u0 = 1 - exp(-80*((x+0.55)**2+(y+0.52)**2))
-#v0 = exp(-80*((x+0.45)**2+(y+0.48)**2))
-u0 = 0.5*(1-((0.5*(erf((x-0.46)/0.001)+1) - 0.5*(erf((x-0.54)/0.001)+1))*(0.5*(erf((y-0.46)/0.001)+1) - 0.5*(erf((y-0.54)/0.001)+1))))+0.5
-v0 = 0.25*(0.5*(erf((x-0.46)/0.001)+1) - 0.5*(erf((x-0.54)/0.001)+1))*(0.5*(erf((y-0.46)/0.001)+1) - 0.5*(erf((y-0.54)/0.001)+1))
+u0 = 0.5*(1-((0.5*(erf((x-0.04)/0.0001)+1) - 0.5*(erf((x+0.04)/0.0001)+1))*(0.5*(erf((y-0.04)/0.0001)+1) - 0.5*(erf((y+0.04)/0.001)+1))))+0.5
+v0 = 0.25*(0.5*(erf((x-0.04)/0.0001)+1) - 0.5*(erf((x+0.04)/0.0001)+1))*(0.5*(erf((y-0.04)/0.0001)+1) - 0.5*(erf((y+0.04)/0.001)+1))
 
 ul = lambdify((x, y), u0, modules=['numpy', {'erf': scipy.special.erf}])
 vl = lambdify((x, y), v0, modules=['numpy', {'erf': scipy.special.erf}])
@@ -53,18 +48,19 @@ vl = lambdify((x, y), v0, modules=['numpy', {'erf': scipy.special.erf}])
 # Size of discretization
 N = (200, 200)
 
-K0 = C2CBasis(N[0], domain=(-1., 2.))
-K1 = R2CBasis(N[1], domain=(-1., 2.))
+K0 = C2CBasis(N[0], domain=(-1., 1.))
+K1 = R2CBasis(N[1], domain=(-1., 1.))
 T = TensorProductSpace(comm, (K0, K1))
 X = T.local_mesh(True)
 u = TrialFunction(T)
 v = TestFunction(T)
 
 # For nonlinear term we can use the 3/2-rule with padding
-Kp0 = C2CBasis(N[0], domain=(-1., 2.), padding_factor=1.5)
-Kp1 = R2CBasis(N[1], domain=(-1., 2.), padding_factor=1.5)
+Kp0 = C2CBasis(N[0], domain=(-1., 1.), padding_factor=1.5)
+Kp1 = R2CBasis(N[1], domain=(-1., 1.), padding_factor=1.5)
 Tp = TensorProductSpace(comm, (Kp0, Kp1))
 
+# Turn on padding by commenting
 Tp = T
 
 # Create vector spaces and a test function for the regular vector space
