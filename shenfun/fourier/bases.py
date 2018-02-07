@@ -254,9 +254,10 @@ class R2CBasis(FourierBase):
             s = [slice(None)]*trunc_array.ndim
             s[self.axis] = slice(0, N)
             trunc_array[:] = padded_array[s]
+            s[self.axis] = N-1
+            trunc_array[s].imag = 0
             if self.N % 2 == 0:
-                s[self.axis] = N-1
-                trunc_array[s] = trunc_array[s].real
+                trunc_array[s] *= 2
 
     def _padding_backward(self, trunc_array, padded_array):
         if self.padding_factor > 1.0+1e-8:
@@ -264,9 +265,10 @@ class R2CBasis(FourierBase):
             N = trunc_array.shape[self.axis]
             s = [slice(0, n) for n in trunc_array.shape]
             padded_array[s] = trunc_array[s]
-            if self.N % 2 == 0:
-                s[self.axis] = self.N//2
-                padded_array[s] = padded_array[s].real
+            s[self.axis] = N-1
+            padded_array[s].imag = 0
+            if self.N % 2 == 0:  # Symmetric Fourier interpolator
+                padded_array[s] *= 0.5
 
         elif self.dealias_direct:
             N = self.N
@@ -351,10 +353,15 @@ class C2CBasis(FourierBase):
             padded_array.fill(0)
             N = trunc_array.shape[self.axis]
             su = [slice(None)]*trunc_array.ndim
-            su[self.axis] = slice(0, np.ceil(N/2.).astype(np.int))
+            su[self.axis] = slice(0, N//2+1)
             padded_array[su] = trunc_array[su]
             su[self.axis] = slice(-(N//2), None)
             padded_array[su] = trunc_array[su]
+            if self.N % 2 == 0:  # Use symmetric Fourier interpolator
+                su[self.axis] = N//2
+                padded_array[su] *= 0.5
+                su[self.axis] = -N//2
+                padded_array[su] *= 0.5
 
         elif self.dealias_direct:
             N = trunc_array.shape[self.axis]

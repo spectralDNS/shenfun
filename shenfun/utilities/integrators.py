@@ -38,7 +38,7 @@ class ETD(IntegratorBase):
     def setup(self, dt):
         # Set up ETDRK4 ODE solver
         self.params['dt'] = dt
-        L = self.LinearRHS()
+        L = self.LinearRHS(**self.params)
         L = np.atleast_1d(L)
         hL = L*dt
         self.ehL = np.exp(hL)
@@ -58,7 +58,7 @@ class ETD(IntegratorBase):
         while t < end_time-1e-8:
             t += dt
             tstep += 1
-            self.dU = self.NonlinearRHS(u, u_hat, self.dU)
+            self.dU = self.NonlinearRHS(u, u_hat, self.dU, **self.params)
             u_hat[:] = self.ehL*u_hat + dt*self.psi*self.dU
             self.update(u, u_hat, t, tstep, **self.params)
         return u_hat
@@ -83,7 +83,7 @@ class ETDRK4(IntegratorBase):
     def setup(self, dt):
         # Set up ETDRK4 ODE solver
         self.params['dt'] = dt
-        L = self.LinearRHS()
+        L = self.LinearRHS(**self.params)
         L = np.atleast_1d(L)
         hL = L*dt
         ehL = self.ehL = np.exp(hL)
@@ -117,7 +117,7 @@ class ETDRK4(IntegratorBase):
             self.U_hat0[:] = u_hat*self.ehL_h
             self.U_hat1[:] = u_hat*self.ehL
             for rk in range(4):
-                self.dU = self.NonlinearRHS(u, u_hat, self.dU)
+                self.dU = self.NonlinearRHS(u, u_hat, self.dU, **self.params)
                 if rk < 2:
                     u_hat[:] = self.U_hat0 + self.b[rk]*dt*self.psi[3]*self.dU
                 elif rk == 2:
@@ -155,13 +155,13 @@ class RK4(IntegratorBase):
             self.setup(dt)
         t, end_time = trange
         tstep = 0
-        L = self.LinearRHS()
+        L = self.LinearRHS(**self.params)
         while t < end_time-1e-8:
             t += dt
             tstep += 1
             self.U_hat0[:] = self.U_hat1[:] = u_hat
             for rk in range(4):
-                dU = self.NonlinearRHS(u, u_hat, self.dU)
+                dU = self.NonlinearRHS(u, u_hat, self.dU, **self.params)
                 dU += L*u_hat
                 if rk < 3: u_hat[:] = self.U_hat0 + self.b[rk]*dt*dU
                 self.U_hat1 += self.a[rk]*dt*dU

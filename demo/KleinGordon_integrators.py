@@ -83,7 +83,7 @@ L = -inner(grad(vh), grad(uh)) / A - gamma
 # Coupled equations with no linear terms in their own variables,
 # so place everything in NonlinearRHS
 count = 0
-def NonlinearRHS(fu, fu_hat, dfu_hat):
+def NonlinearRHS(fu, fu_hat, dfu_hat, **par):
     global count, up
     count += 1
     dfu_hat.fill(0)

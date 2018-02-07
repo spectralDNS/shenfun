@@ -42,18 +42,18 @@ U_hat = Array(T)
 gradu = Array(TV, False)
 K = np.array(T.local_wavenumbers(True, True, True))
 
-def LinearRHS():
+def LinearRHS(**params):
     # Assemble diagonal bilinear forms
     A = inner(u, v)
     L = -(inner(div(grad(u)), v) + inner(div(grad(div(grad(u)))), v)) / A
     return L
 
-def NonlinearRHS(U, U_hat, dU):
+def NonlinearRHS(U, U_hat, dU, **params):
     # Assemble nonlinear term
     global gradu
     gradu = TV.backward(1j*K*U_hat, gradu)
     dU = T.forward(0.5*(gradu[0]*gradu[0]+gradu[1]*gradu[1]), dU)
-    return dU
+    return -dU
 
 #initialize
 X = T.local_mesh(True)
@@ -67,9 +67,9 @@ image = plt.contourf(X[0], X[1], U, 256, cmap=cm)
 plt.draw()
 plt.pause(1e-6)
 count = 0
-def update(u, u_hat, t, tstep, **params):
+def update(u, u_hat, t, tstep, plot_step, **params):
     global count
-    if tstep % params['plot_step'] == 0 and params['plot_step'] > 0:
+    if tstep % plot_step == 0 and plot_step > 0:
         u = T.backward(u_hat, u)
         image.ax.clear()
         image.ax.contourf(X[0], X[1], U, 256, cmap=cm)
@@ -81,8 +81,7 @@ if __name__ == '__main__':
     par = {'plot_step': 100}
     dt = 0.01
     end_time = 100
-    integrator = ETDRK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
-    #integrator = RK4(T, L=LinearRHS, N=NonlinearRHS, update=update, call_update=50)
-
+    #integrator = ETDRK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
+    integrator = RK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
     integrator.setup(dt)
     U_hat = integrator.solve(U, U_hat, dt, (0, end_time))
