@@ -285,6 +285,11 @@ Weak variational forms are created using test and trial functions, as shown in t
     <span style="color: #666666">&gt;&gt;&gt;</span> v <span style="color: #666666">=</span> TestFunction(SD)
 </pre></div>
 <p>
+A bilinear form contains both test- and trialfunctions, whereas a linear form
+contains only the testfunction. Assembling a biliear form results in a matrix,
+whereas assembling a linear form results in a vector.
+
+<p>
 A matrix that is the result of a bilinear form has its own subclass of <code>SparseMatrix</code>, called a <code>SpectralMatrix</code>. A <code>SpectralMatrix</code> is created using <code>inner</code> products on test and trial functions, for example the mass matrix:
 <p>
 
@@ -301,31 +306,34 @@ This <code>mass</code> matrix will be the same as Eq. (2.5) of <a href="._shenfu
 You may notice that <code>mass</code> takes advantage of the fact that two diagonals are constant and consequently only stores one single value.
 
 <p>
-The <code>inner</code> method may be used to compute any linear or bilinear form. For example the stiffness matrix <code>K</code>
+The <code>inner</code> method may be used to compute any linear or bilinear form. For
+example, the stiffness matrix <code>K</code> may be computed with the bilinear form
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>    <span style="color: #666666">&gt;&gt;&gt;</span> K <span style="color: #666666">=</span> inner(v, div(grad(u)))
 </pre></div>
 <p>
-Square matrices have implemented a solve method that is using fast \( \mathcal{O}(N) \) direct LU decomposition or similar, if available, and falls back on using Scipy's solver in CSR format if no better method is found implemented. For example, to solve the linear system <code>Ku=b</code>
+Square matrices have implemented a solve method that is using fast
+\( \mathcal{O}(N) \) direct LU decomposition or similar, if available, and falls
+back on using Scipy's solver in CSR format if no better method is found
+implemented. For example, to solve the linear system <code>Ku_hat=b_hat</code>
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>    <span style="color: #666666">&gt;&gt;&gt;</span> fj <span style="color: #666666">=</span> np<span style="color: #666666">.</span>random<span style="color: #666666">.</span>random(N)
-    <span style="color: #666666">&gt;&gt;&gt;</span> b <span style="color: #666666">=</span> inner(v, fj)
-    <span style="color: #666666">&gt;&gt;&gt;</span> u <span style="color: #666666">=</span> np<span style="color: #666666">.</span>zeros_like(b)
-    <span style="color: #666666">&gt;&gt;&gt;</span> u <span style="color: #666666">=</span> K<span style="color: #666666">.</span>solve(b, u)
+    <span style="color: #666666">&gt;&gt;&gt;</span> b_hat <span style="color: #666666">=</span> inner(v, fj)
+    <span style="color: #666666">&gt;&gt;&gt;</span> u_hat <span style="color: #666666">=</span> np<span style="color: #666666">.</span>zeros_like(b_hat)
+    <span style="color: #666666">&gt;&gt;&gt;</span> u_hat <span style="color: #666666">=</span> K<span style="color: #666666">.</span>solve(b_hat, u_hat)
 </pre></div>
 <p>
-All methods are designed to work along any dimension of a multidimensional array. Very little differs in the users interface. Consider, for example, the previous example on a three-dimensional cube 
+Most methods are designed to work along any dimension of a multidimensional array. Very little differs in the users interface. Consider, for example, the previous example on a three-dimensional cube 
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
-<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>    <span style="color: #666666">&gt;&gt;&gt;</span> fj <span style="color: #666666">=</span> np<span style="color: #666666">.</span>random<span style="color: #666666">.</span>random((N, N, N))
-    <span style="color: #666666">&gt;&gt;&gt;</span> b <span style="color: #666666">=</span> inner(v, fj)
-    <span style="color: #666666">&gt;&gt;&gt;</span> u <span style="color: #666666">=</span> np<span style="color: #666666">.</span>zeros_like(b)
-    <span style="color: #666666">&gt;&gt;&gt;</span> u <span style="color: #666666">=</span> K<span style="color: #666666">.</span>solve(b, u)
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>    <span style="color: #666666">&gt;&gt;&gt;</span> f3 <span style="color: #666666">=</span> fj<span style="color: #666666">.</span>repeat(N<span style="color: #666666">**2</span>)<span style="color: #666666">.</span>reshape((N, N, N)) <span style="color: #408080; font-style: italic"># Array f3 of shape (N,N,N)</span>
+    <span style="color: #666666">&gt;&gt;&gt;</span> u3 <span style="color: #666666">=</span> np<span style="color: #666666">.</span>zeros_like(f3)
+    <span style="color: #666666">&gt;&gt;&gt;</span> u3 <span style="color: #666666">=</span> K<span style="color: #666666">.</span>solve(f3, u3)
 </pre></div>
 <p>
 where <code>K</code> is exactly the same as before, from the 1D example. The matrix solve is applied along the first dimension since this is the default behaviour.
@@ -528,6 +536,9 @@ k[<span style="color: #666666">0</span>] <span style="color: #666666">=</span> <
 
 <span style="color: #408080; font-style: italic"># Solve Poisson equation (solution in f_hat)</span>
 f_hat <span style="color: #666666">/=</span> k<span style="color: #666666">**2</span>
+
+<span style="color: #408080; font-style: italic"># Transform to real space</span>
+uq <span style="color: #666666">=</span> ST<span style="color: #666666">.</span>backward(f_hat)
 </pre></div>
 <p>
 Note that <code>ST</code> methods <code>forward/backward</code> correspond to forward and inverse discrete Fourier transforms. Furthermore, since the input data <code>fj</code> is of type float (not complex), the transforms make use of the symmetry of the Fourier transform of real data, that \( \hat{u}_k = \overline{\hat{u}}_{N-k} \), and that \( \bs{k}=0,1,\ldots, N/2 \) (index set computed as <code>k = ST.wavenumbers(N)</code>).
@@ -654,9 +665,13 @@ A simple Poisson problem with analytical solution \( \sin(\pi x)(1-x^2) \) is im
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
-<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun.chebyshev.bases</span> <span style="color: #008000; font-weight: bold">import</span> ShenDirichletBasis
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">sympy</span> <span style="color: #008000; font-weight: bold">import</span> Symbol, sin, lambdify
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> inner, div, grad, TestFunction, TrialFunction
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun.chebyshev.bases</span> <span style="color: #008000; font-weight: bold">import</span> ShenDirichletBasis
 
 <span style="color: #408080; font-style: italic"># Use sympy to compute a rhs, given an analytical solution</span>
+x <span style="color: #666666">=</span> Symbol(<span style="color: #BA2121">&quot;x&quot;</span>)
 ue <span style="color: #666666">=</span> sin(np<span style="color: #666666">.</span>pi<span style="color: #666666">*</span>x)<span style="color: #666666">*</span>(<span style="color: #666666">1-</span>x<span style="color: #666666">**2</span>)
 fe <span style="color: #666666">=</span> ue<span style="color: #666666">.</span>diff(x, <span style="color: #666666">2</span>)
 
