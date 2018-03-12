@@ -9,8 +9,11 @@ Use Fourier basis and find u in V such that
 
 V is the Fourier basis span{exp(1jkx)}_{k=-N/2}^{N/2-1}
 
+Use the method of manufactured solutions, and choose a
+solution that is either real or complex.
+
 """
-from sympy import Symbol, cos, sin, exp
+from sympy import Symbol, cos, sin, exp, lambdify
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction
 from shenfun.fourier.bases import FourierBasis
@@ -23,21 +26,27 @@ except:
 
 # Use sympy to compute a rhs, given an analytical solution
 x = Symbol("x")
-ue = cos(4*x)
+ue = cos(4*x) + 1j*sin(6*x)
+#ue = cos(4*x)
 fe = ue.diff(x, 2)
+
+# Lambdify for faster evaluation
+ul = lambdify(x, ue, 'numpy')
+fl = lambdify(x, fe, 'numpy')
 
 # Size of discretization
 N = 32
 
-ST = FourierBasis(N, np.float, plan=True, domain=(-np.pi, np.pi))
+dtype = {True: np.complex, False: np.float}[ue.has(1j)]
+ST = FourierBasis(N, dtype, plan=True, domain=(-np.pi, np.pi))
 u = TrialFunction(ST)
 v = TestFunction(ST)
 
 X = ST.mesh(N)
 
 # Get f on quad points and exact solution
-fj = np.array([fe.subs(x, j) for j in X], dtype=np.float)
-uj = np.array([ue.subs(x, i) for i in X], dtype=np.float)
+fj = fl(X)
+uj = ul(X)
 
 # Compute right hand side
 f_hat = inner(v, fj)

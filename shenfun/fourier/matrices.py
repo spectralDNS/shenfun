@@ -3,7 +3,6 @@ from __future__ import division
 __all__ = ['mat']
 
 import numpy as np
-from numbers import Number
 from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
 from .bases import R2CBasis, C2CBasis

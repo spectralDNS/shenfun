@@ -3,21 +3,28 @@ Solve Gray-Scott's equations on (-1, 1)x(-1, 1) with periodic bcs.
 
 The equations to solve are
 
-   u_t = -e1*(-div(grad(u)))**(alpha/2) + b*(1-u) - u*v**2         (1)
-   v_t = -e2*(-div(grad(v)))**(alpha/2) - (b+kappa)*v + u*v**2             (2)
+   u_t = -e1*(-div(grad(u)))**(alpha1/2) + b*(1-u) - u*v**2         (1)
+   v_t = -e2*(-div(grad(v)))**(alpha2/2) - (b+kappa)*v + u*v**2             (2)
 
 Using Fourier basis F and a vector tensor product space for u and v
 The tensor product space is FF = FxF, and the vector space is W = [FF, FF]
+The constant diffusion coefficients are e1 and e2. Furthermore, b and
+kappa are two model constants. The parameters alpha1 and alpha2 represent
+coefficients for fractional derivatives on the Laplacian.
 
 The variational problem reads: Find uv = (u, v) in W such that
 
-    (qr, uv_t) = (qr, (e1, e2)*div(grad(uv))) + b*(q, 1-u) \\
-                 -(b+kappa)*(r, v) - (q, u*v**2) + (r, u*v**2)  for all qr = (q, r) in W
+    (qr, uv_t) = (qr, (e1, e2)*(-div(grad(uv)))**((alpha1, alpha2)/2)) \\
+                 + b*(q, 1-u) -(b+kappa)*(r, v) - (q, u*v**2) + (r, u*v**2)
+
+for all qr = (q, r) in W
 
 Initial conditions are given as
 
     u(t=0) = 1 for abs(x) > 0.04 and 0.50 for abs(x) < 0.04
     v(t=0) = 0 for abs(x) > 0.04 and 0.25 for abs(x) < 0.04
+
+and for stability they are approximated using error functions.
 
 """
 from sympy import Symbol, cos, sin, exp, lambdify
@@ -39,8 +46,9 @@ x = Symbol("x")
 y = Symbol("y")
 
 # Initial conditions
-u0 = 0.5*(1-((0.5*(erf((x-0.04)/0.0001)+1) - 0.5*(erf((x+0.04)/0.0001)+1))*(0.5*(erf((y-0.04)/0.0001)+1) - 0.5*(erf((y+0.04)/0.001)+1))))+0.5
-v0 = 0.25*(0.5*(erf((x-0.04)/0.0001)+1) - 0.5*(erf((x+0.04)/0.0001)+1))*(0.5*(erf((y-0.04)/0.0001)+1) - 0.5*(erf((y+0.04)/0.001)+1))
+a = 0.0001
+u0 = 0.5*(1-((0.5*(erf((x-0.04)/a)+1) - 0.5*(erf((x+0.04)/a)+1))*(0.5*(erf((y-0.04)/a)+1) - 0.5*(erf((y+0.04)/a)+1))))+0.5
+v0 = 0.25*(0.5*(erf((x-0.04)/a)+1) - 0.5*(erf((x+0.04)/a)+1))*(0.5*(erf((y-0.04)/a)+1) - 0.5*(erf((y+0.04)/a)+1))
 
 ul = lambdify((x, y), u0, modules=['numpy', {'erf': scipy.special.erf}])
 vl = lambdify((x, y), v0, modules=['numpy', {'erf': scipy.special.erf}])
@@ -88,10 +96,11 @@ UV_hat = TV.forward(UV, UV_hat)
 
 A = inner(u, v) # just (2*pi)**2
 
-def LinearRHS(alpha, **params):
+def LinearRHS(alpha1, alpha2, **params):
     L = inner(vv, (e1, e2)*div(grad(uu)))
-    L = np.array([L[0]/A, L[1]/A])
-    return -(-L)**(alpha/2.)
+    L = np.array([-(-L[0]/A)**(alpha1/2),
+                  -(-L[1]/A)**(alpha2/2)])
+    return L
 
 def NonlinearRHS(uv, uv_hat, rhs, kappa, **params):
     global b0, d0, UVp, w0, w1, TVp
@@ -106,24 +115,31 @@ def NonlinearRHS(uv, uv_hat, rhs, kappa, **params):
 plt.figure()
 image = plt.contourf(X[0], X[1], U.real, 100)
 plt.draw()
-plt.pause(1e-6)
+plt.pause(1)
+uv0 = np.zeros_like(UV)
 def update(uv, uv_hat, t, tstep, **params):
     if tstep % params['plot_step'] == 0 and params['plot_step'] > 0:
         uv = TV.backward(uv_hat, uv)
         image.ax.clear()
         image.ax.contourf(X[0], X[1], uv[0].real, 100)
         plt.pause(1e-6)
+        print(np.linalg.norm(uv[0]-uv0[0]),
+              np.linalg.norm(uv[1]-uv0[1]),
+              np.linalg.norm(uv[0]),
+              np.linalg.norm(uv[1]))
+        uv0[:] = uv
 
 
 if __name__ == '__main__':
     file0 = HDF5Writer("Gray_Scott_{}.h5".format(N[0]), ['u', 'v'], T)
-    par = {'plot_step': 100,
-           'write_tstep': 50,
+    par = {'plot_step': 200,
+           'write_tstep': 200,
            'file': file0,
            'kappa': 0.061,
-           'alpha': 1.7}
+           'alpha1': 1.5,
+           'alpha2': 1.9}
     dt = 10.
-    end_time = 100000
+    end_time = 10000000
     integrator = ETDRK4(TV, L=LinearRHS, N=NonlinearRHS, update=update, **par)
     integrator.setup(dt)
     UV_hat = integrator.solve(UV, UV_hat, dt, (0, end_time))

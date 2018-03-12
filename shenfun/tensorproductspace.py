@@ -1,6 +1,7 @@
 import numpy as np
 from numbers import Number
 from shenfun.fourier.bases import FourierBase, R2CBasis, C2CBasis
+import shenfun
 from shenfun import chebyshev, legendre
 from mpi4py_fft.mpifft import Transform
 from mpi4py_fft.pencil import Subcomm, Pencil
@@ -135,6 +136,122 @@ class TensorProductSpace(object):
                                      chebyshev.bases.ShenDirichletBasis)):
                     base.bc.set_tensor_bcs(self)
 
+    def convolve(self, a_hat, b_hat, ab_hat):
+        """Convolution of a_hat and b_hat
+
+        Note that self should have bases with padding for this method to give
+        a convolution without aliasing. The padding is specified when creating
+        instances of bases for the TensorProductSpace.
+
+        The return array ab_hat is truncated to the shape of a_hat and b_hat.
+
+        FIXME Efficiency due to allocation
+        """
+        a = self.backward.output_array.copy()
+        b = self.backward.output_array.copy()
+        a = self.backward(a_hat, a)
+        b = self.backward(b_hat, b)
+        ab_hat = self.forward(a*b, ab_hat)
+        return ab_hat
+    #@profile
+    def eval(self, points, coefficients, output_array=None):
+        """Evaluate Function at position x, given expansion coefficients
+
+        args:
+            x             (input)  float or array of floats
+            coefficients  (input)  Array of expansion coefficients
+            output_array  (output) Function values at points
+
+        """
+        if output_array is None:
+            output_array = np.zeros(points.shape)
+
+        shape = list(self.local_shape())
+        out = coefficients
+        for base in reversed(self):
+            axis = base.axis
+            shape[axis] = len(points)
+            out2 = np.zeros(shape, dtype=out.dtype)
+            out2 = self.vandermonde_evaluate_local_expansion(base, points[..., axis], out, out2)
+            out = out2
+        # Get the 'diagonals' of out, that is, for 2 points get out[i, i] for i = (0, 1), and same for larger numer of points
+        out = np.array([out[tuple([s]*len(shape))] for s in range(len(points))])
+        out = np.atleast_1d(np.squeeze(out))
+        out = self.comm.allreduce(out)
+        return out
+    #@profile
+    def eval_cython(self, points, coefficients, output_array=None):
+        """Evaluate Function at position x, given expansion coefficients
+
+        args:
+            x             (input)  float or array of floats
+            coefficients  (input)  Array of expansion coefficients
+            output_array  (output) Function values at points
+
+        """
+        if output_array is None:
+            output_array = np.zeros(points.shape)
+
+        shape = list(self.local_shape())
+        out = coefficients
+        P = []
+        r2c = -1
+        last_conj_index = -1
+        sl = -1
+        for base in self:
+            axis = base.axis
+            V = base.vandermonde(points[..., axis])
+            D = base.get_vandermonde_basis(V)
+            P.append(D[..., self.local_slice()[axis]])
+            if isinstance(base, R2CBasis):
+                r2c = axis
+                M = base.N//2+1
+                if base.N % 2 == 0:
+                    last_conj_index = M-1
+                else:
+                    last_conj_index = M
+                sl = self.local_slice()[axis].start
+
+        out = np.zeros(len(points), dtype=coefficients.dtype)
+        if len(self) == 2:
+            out = shenfun.optimization.evaluate.evaluate_2D(out, coefficients, P, r2c=r2c, M=last_conj_index, start=sl)
+
+        elif len(self) == 3:
+            out = shenfun.optimization.evaluate.evaluate_3D(out, coefficients, P, r2c=r2c, M=last_conj_index, start=sl)
+
+        out = np.atleast_1d(out)
+        out = self.comm.allreduce(out)
+        return out
+
+
+    def vandermonde_evaluate_local_expansion(self, base, points, input_array, output_array):
+        """Evaluate expansion at certain points, possibly different from
+        the quadrature points
+
+        args:
+            base          (input)    The base class
+            points        (input)    Points for evaluation
+            input_array   (input)    Expansion coefficients
+            output_array  (output)   Function values on points
+
+        """
+        V = base.vandermonde(points)
+        P = base.get_vandermonde_basis(V)
+        P = P[..., self.local_slice()[base.axis]]
+        last_conj_index = -1
+        sl = -1
+        if isinstance(base, R2CBasis):
+            M = base.N//2+1
+            if base.N % 2 == 0:
+                last_conj_index = M-1
+            else:
+                last_conj_index = M
+            sl = self.local_slice()[base.axis].start
+            base._vandermonde_evaluate_local_expansion(P, input_array, output_array, last_conj_index, sl)
+        else:
+            base._vandermonde_evaluate_local_expansion(P, input_array, output_array)
+        return output_array
+
     def destroy(self):
         self.subcomm.destroy()
         for trans in self.transfer:
@@ -246,6 +363,22 @@ class MixedTensorProductSpace(object):
         self.backward = VectorTransform([space.backward for space in spaces])
         self.scalar_product = VectorTransform([space.scalar_product for space in spaces])
 
+    def convolve(self, a_hat, b_hat, ab_hat):
+        """Convolution of a_hat and b_hat
+
+        Note that self should have bases with padding for this
+        method to give a convolution without aliasing. The
+        padding is specified when creating instances of bases
+        for the TensorProductSpace.
+        """
+        N = list(self.backward.output_array.shape)
+        a = np.zeros([self.ndim()]+N, dtype=self.backward.output_array.dtype)
+        b = np.zeros([self.ndim()]+N, dtype=self.backward.output_array.dtype)
+        a = self.backward(a_hat, a)
+        b = self.backward(b_hat, b)
+        ab_hat = self.forward(a*b, ab_hat)
+        return ab_hat
+
     def ndim(self):
         return self.spaces[0].ndim()
 
@@ -266,6 +399,9 @@ class MixedTensorProductSpace(object):
     def __getattr__(self, name):
         obj = object.__getattribute__(self, 'spaces')
         return getattr(obj[0], name)
+
+    def __len__(self):
+        return self.ndim()
 
 
 class VectorTensorProductSpace(MixedTensorProductSpace):
@@ -310,6 +446,59 @@ class VectorTransform(object):
         for i, transform in enumerate(self._transforms):
             output_array[i] = transform(input_array[i], output_array[i], **kw)
         return output_array
+
+
+class Convolve(object):
+    """Class for convolving without truncation.
+
+    Convolve a_hat and b_hat is computed by first transforming
+    backwards with padding
+
+      a = Tp.backward(a_hat)
+      b = Tp.backward(b_hat)
+
+    and then transforming the product a*b forward without truncation
+
+      ab_hat = T.forward(a*b)
+
+    where Tp is a TensorProductSpace for regular padding, and
+    T is a TensorProductSpace with no padding, but using the shape
+    of the padded a and b arrays.
+
+    For convolve with truncation forward, use just the convolve method
+    of the Tp space instead.
+
+    args:
+        padding_space     TensorProductSpace with padding backward
+                          and truncation forward.
+
+    """
+
+    def __init__(self, padding_space):
+        self.padding_space = padding_space
+        shape = padding_space.shape()
+        bases = []
+        for i, base in enumerate(padding_space.bases):
+            newbase = base.__class__(shape[i], padding_factor=1.0)
+            bases.append(newbase)
+        axes = []
+        for axis in padding_space.axes:
+            axes.append(axis[0])
+        newspace = TensorProductSpace(padding_space.comm, bases, axes=axes)
+        self.newspace = newspace
+
+    def __call__(self, a_hat, b_hat, ab_hat=None):
+        Tp = self.padding_space
+        T = self.newspace
+        if ab_hat is None:
+            ab_hat = shenfun.Array(T)
+
+        a = shenfun.Array(Tp, False)
+        b = shenfun.Array(Tp, False)
+        a = Tp.backward(a_hat, a)
+        b = Tp.backward(b_hat, b)
+        ab_hat = T.forward(a*b, ab_hat)
+        return ab_hat
 
 
 class BoundaryValues(object):

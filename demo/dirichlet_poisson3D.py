@@ -45,10 +45,11 @@ Solver = shen.la.Helmholtz
 regtest = False
 
 # Use sympy to compute a rhs, given an analytical solution
-a = 0
+a = -0
 b = 0
 x, y, z = symbols("x,y,z")
-ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-x**2) + a*(1 + x)/2. + b*(1 - x)/2.
+ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-z**2) + a*(1 + z)/2. + b*(1 - z)/2.
+#ue = (sin(2*x)*cos(4*y))*((2*np.pi**2*(z**2 - 1))* cos(2*np.pi*z) - 2*np.pi*z*sin(2*np.pi*z))/(4*np.pi**3)
 fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
 
 # Lambdify for faster evaluation
@@ -63,7 +64,7 @@ N = [N, N+1, N+2]
 SD = Basis(N[0], bc=(a, b))
 K1 = C2CBasis(N[1])
 K2 = R2CBasis(N[2])
-T = TensorProductSpace(comm, (SD, K1, K2), axes=(0,1,2), slab=True)
+T = TensorProductSpace(comm, (K1, K2, SD), axes=(0, 1, 2), slab=True)
 X = T.local_mesh() # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)
 v = TestFunction(T)
@@ -102,15 +103,15 @@ assert np.allclose(uj, uq)
 
 if not plt is None and not 'pytest' in os.environ:
     plt.figure()
-    plt.contourf(X[1][0, :, 0], X[0][:, 0, 0], uq[:, :, 2])
+    plt.contourf(X[2][0, 0, :], X[0][:, 0, 0], uq[:, 2, :])
     plt.colorbar()
 
     plt.figure()
-    plt.contourf(X[1][0, :, 0], X[0][:, 0, 0], uj[:, :, 2])
+    plt.contourf(X[2][0, 0, :], X[0][:, 0, 0], uj[:, 2, :])
     plt.colorbar()
 
     plt.figure()
-    plt.contourf(X[1][0, :, 0], X[0][:, 0, 0], uq[:, :, 2]-uj[:, :, 2])
+    plt.contourf(X[2][0, 0, :], X[0][:, 0, 0], uq[:, 2, :]-uj[:, 2, :])
     plt.colorbar()
     plt.title('Error')
 

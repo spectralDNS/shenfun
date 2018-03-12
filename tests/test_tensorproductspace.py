@@ -133,6 +133,7 @@ def test_transform(typecode, dim):
 
             fft.destroy()
 
+
 cBasis = (cbases.Basis,
           cbases.ShenDirichletBasis,
           cbases.ShenNeumannBasis,
@@ -374,11 +375,70 @@ def test_project_2dirichlet(quad):
     dxy = duxyl(*X)
     assert np.allclose(dxy, dudxy)
 
+@pytest.mark.parametrize('typecode', 'dD')
+@pytest.mark.parametrize('dim', (1, 2))
+@pytest.mark.parametrize('ST,quad', bases_and_quads)
+def test_eval_tensor(typecode, dim, ST, quad):
+    # Using sympy to compute an analytical solution
+    # Testing for Dirichlet and regular basis
+    x, y, z = symbols("x,y,z")
+    sizes=(25, 24)
+
+    funcx = (x**2 - 1)*cos(2*np.pi*x)
+    funcy = (y**2 - 1)*cos(2*np.pi*y)
+    funcz = (z**2 - 1)*cos(2*np.pi*z)
+
+    funcs = {
+        (1, 0): cos(4*y)*funcx,
+        (1, 1): cos(4*x)*funcy,
+        (2, 0): (sin(6*z) + cos(4*y))*funcx,
+        (2, 1): (sin(2*z) + cos(4*x))*funcy,
+        (2, 2): (sin(2*x) + cos(4*y))*funcz
+        }
+    syms = {1: (x, y), 2:(x, y, z)}
+    xs = {0:x, 1:y, 2:z}
+
+    points = np.array([[0.1]*(dim+1),[0.01]*(dim+1),[0.4]*(dim+1),[0.5]*(dim+1)])
+
+    for shape in product(*([sizes]*dim)):
+        bases = []
+        for s in shape[:-1]:
+            bases.append(C2CBasis(s))
+
+        if typecode in 'fd':
+            bases.append(R2CBasis(shape[-1]))
+        else:
+            bases.append(C2CBasis(shape[-1]))
+
+        if dim < 3:
+            n = min(shape)
+            if typecode in 'fdg':
+                n //=2; n+=1
+            if n < comm.size:
+                continue
+        for axis in range(dim+1):
+            ST0 = ST(shape[-1], quad=quad)
+            bases.insert(axis, ST0)
+            # Spectral space must be aligned in nonperiodic direction, hence axes
+            fft = TensorProductSpace(comm, bases, dtype=typecode, axes=axes[dim][axis])
+            X = fft.local_mesh(True)
+            ue = funcs[(dim, axis)]
+            ul = lambdify(syms[dim], ue, 'numpy')
+            uu = ul(*X).astype(typecode)
+            uq = ul(*points.T).astype(typecode)
+            u_hat = fft.forward(uu)
+            result = fft.eval_cython(points, u_hat)
+            assert np.allclose(uq, result, 0, 1e-6)
+            bases.pop(axis)
+            fft.destroy()
+
 
 if __name__ == '__main__':
-    test_transform('f', 4)
+    #test_transform('f', 4)
     #test_transform('d', 2)
     #test_shentransform('d', 2, cbases.ShenNeumannBasis, 'GC')
     #test_project('d', 2, cbases.ShenDirichletBasis, 'GL')
     #test_project2('D', 2, lbases.ShenNeumannBasis, 'GL')
     #test_project_2dirichlet('GL')
+    test_eval_tensor('d', 2, lbases.ShenDirichletBasis, 'GL')
+

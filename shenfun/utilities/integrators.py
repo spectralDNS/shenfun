@@ -36,7 +36,7 @@ class ETD(IntegratorBase):
         self.psi = None
 
     def setup(self, dt):
-        # Set up ETDRK4 ODE solver
+        # Set up ETD ODE solver
         self.params['dt'] = dt
         L = self.LinearRHS(**self.params)
         L = np.atleast_1d(L)
