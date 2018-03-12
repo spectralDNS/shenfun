@@ -13,6 +13,7 @@ from .utilities.integrators import *
 from .utilities.h5py_writer import *
 from .utilities.generate_xdmf import *
 from .matrixbase import *
+from .optimization import Cheb, la, Matvec, convolve, evaluate
 
 from scipy.sparse.linalg import spsolve
 from scipy.linalg import solve as lasolve

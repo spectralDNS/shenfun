@@ -60,6 +60,14 @@ uj = ul(*X)
 print(abs(uj-uq).max())
 assert np.allclose(uj, uq)
 
+# Test eval at point
+point = np.array([[0.1, 0.2, 0.3], [0.2, 0.3, 0.3], [0.3, 0.4, 0.1]])
+p = T.eval(point, f_hat)
+assert np.allclose(p, ul(*point.T))
+p2 = T.eval_cython(point, f_hat)
+assert np.allclose(p2, ul(*point.T))
+
+
 if not plt is None and not 'pytest' in os.environ:
     plt.figure()
     plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 0])

@@ -296,6 +296,44 @@ class SpectralBase(object):
         assert input_array is self.backward.input_array
         return output_array
 
+    def vandermonde_evaluate_expansion(self, points, input_array, output_array):
+        """Evaluate expansion at certain points, possibly different from
+        the quadrature points
+
+        args:
+            points        (input)    Points for evaluation
+            input_array   (input)    Expansion coefficients
+            output_array  (output)   Function values on points
+
+        """
+        assert abs(self.padding_factor-1) < 1e-8
+        V = self.vandermonde(points)
+        P = self.get_vandermonde_basis(V)
+
+        if output_array.ndim == 1:
+            output_array = np.dot(P, input_array, out=output_array)
+        else:
+            fc = np.moveaxis(input_array, self.axis, -2)
+            array = np.dot(P, fc)
+            output_array[:] = np.moveaxis(array, 0, self.axis)
+
+        return output_array
+
+    def _vandermonde_evaluate_local_expansion(self, P, input_array, output_array):
+        """Evaluate expansion at certain points, possibly different from
+        the quadrature points
+
+        args:
+            P             (input)    Vandermode matrix containing local points only
+            input_array   (input)    Expansion coefficients
+            output_array  (output)   Function values on points
+
+        """
+        fc = np.moveaxis(input_array, self.axis, -2)
+        array = np.dot(P, fc)
+        output_array[:] = np.moveaxis(array, 0, self.axis)
+        return output_array
+
     def apply_inverse_mass(self, array):
         """Apply inverse mass matrix
 
@@ -388,20 +426,23 @@ class SpectralBase(object):
 
         args:
             input_array   (input)     Expansion coefficients
-            output_array   (output)    Function values on quadrature mesh
+            output_array  (output)    Function values on quadrature mesh
 
         """
         raise NotImplementedError
 
-    def eval(self, x, fk):
-        """Evaluate basis at position x
+    def eval(self, x, fk, output_array=None):
+        """Evaluate basis at position x, given expansion coefficients fk
 
         args:
-            x    float or array of floats
-            fk   Array of expansion coefficients
+            x             (input)  float or array of floats
+            fk            (input)  Array of expansion coefficients
+            output_array  (output) Function values at points
 
         """
-        raise NotImplementedError
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        return self.vandermonde_evaluate_expansion(x, fk, output_array)
 
     def get_mass_matrix(self):
         """Return mass matrix associated with current basis"""

@@ -43,10 +43,10 @@ Basis = shen.bases.ShenDirichletBasis
 Solver = shen.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
-a = -2
-b = 2
+a = -0
+b = 0
 x, y = symbols("x,y")
-ue = (cos(4*np.pi*y) + sin(2*x))*(1 - y**2) + a*(1 + y)/2. + b*(1 - y)/2.
+ue = (cos(4*y) + sin(2*x))*(1 - x**2) + a*(1 + x)/2. + b*(1 - x)/2.
 fe = ue.diff(x, 2) + ue.diff(y, 2)
 
 # Lambdify for faster evaluation
@@ -90,7 +90,7 @@ uq = T.backward(u_hat, uq)
 
 # Compare with analytical solution
 uj = ul(*X)
-#assert np.allclose(uj, uq)
+assert np.allclose(uj, uq)
 
 if not plt is None and not 'pytest' in os.environ:
     plt.figure()
@@ -113,4 +113,4 @@ if not plt is None and not 'pytest' in os.environ:
     for y in np.squeeze(X[1]):
         plt.plot((np.squeeze(X[0])[0], np.squeeze(X[0])[-1]), (y, y), 'k')
 
-    plt.show()
+    #plt.show()
