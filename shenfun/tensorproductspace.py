@@ -153,19 +153,17 @@ class TensorProductSpace(object):
         b = self.backward(b_hat, b)
         ab_hat = self.forward(a*b, ab_hat)
         return ab_hat
-    #@profile
+
     def eval(self, points, coefficients, output_array=None):
-        """Evaluate Function at position x, given expansion coefficients
+        """Evaluate Function at points, given expansion coefficients
 
         args:
-            x             (input)  float or array of floats
+            points        (input)  float or array of floats
             coefficients  (input)  Array of expansion coefficients
-            output_array  (output) Function values at points
+        kwargs:
+            output_array  (output) Function values at points. Optional.
 
         """
-        if output_array is None:
-            output_array = np.zeros(points.shape)
-
         shape = list(self.local_shape())
         out = coefficients
         for base in reversed(self):
@@ -178,15 +176,20 @@ class TensorProductSpace(object):
         out = np.array([out[tuple([s]*len(shape))] for s in range(len(points))])
         out = np.atleast_1d(np.squeeze(out))
         out = self.comm.allreduce(out)
-        return out
-    #@profile
+        if not output_array is None:
+            output_array[:] = out
+            return output_array
+        else:
+            return out
+
     def eval_cython(self, points, coefficients, output_array=None):
         """Evaluate Function at position x, given expansion coefficients
 
         args:
-            x             (input)  float or array of floats
+            points        (input)  float or array of floats
             coefficients  (input)  Array of expansion coefficients
-            output_array  (output) Function values at points
+        kwargs:
+            output_array  (output) Function values at points. Optional.
 
         """
         if output_array is None:
@@ -221,7 +224,12 @@ class TensorProductSpace(object):
 
         out = np.atleast_1d(out)
         out = self.comm.allreduce(out)
-        return out
+
+        if not output_array is None:
+            output_array[:] = out
+            return output_array
+        else:
+            return out
 
 
     def vandermonde_evaluate_local_expansion(self, base, points, input_array, output_array):
@@ -229,7 +237,7 @@ class TensorProductSpace(object):
         the quadrature points
 
         args:
-            base          (input)    The base class
+            base          (input)    The base class (SpectralBase)
             points        (input)    Points for evaluation
             input_array   (input)    Expansion coefficients
             output_array  (output)   Function values on points
@@ -258,6 +266,13 @@ class TensorProductSpace(object):
             trans.destroy()
 
     def wavenumbers(self, scaled=False, eliminate_highest_freq=False):
+        """Return list of wavenumbers of TensorProductSpace
+
+        kwargs:
+            scaled                  bool  Scale wavenumbers with size of box
+            eliminate_highest_freq  bool  Set Nyquist frequency to zero for
+                                          evenly shaped axes
+        """
         K = []
         N = self.shape()
         for axis, base in enumerate(self):
@@ -267,6 +282,16 @@ class TensorProductSpace(object):
 
     def local_wavenumbers(self, broadcast=False, scaled=False,
                           eliminate_highest_freq=False):
+        """Return list of local wavenumbers of TensorProductSpace
+
+        kwargs:
+            broadcast               bool  Broadcast returned wavenumber arrays
+                                          to actual dimensions of TensorProductSpace
+            scaled                  bool  Scale wavenumbers with size of box
+            eliminate_highest_freq  bool  Set Nyquist frequency to zero for
+                                          evenly shaped axes
+        """
+
         k = self.wavenumbers(scaled=scaled, eliminate_highest_freq=eliminate_highest_freq)
         lk = []
         for axis, (n, s) in enumerate(zip(k, self.local_slice(True))):
@@ -278,6 +303,9 @@ class TensorProductSpace(object):
         return lk
 
     def mesh(self):
+        """Return list of 1D physical mesh for each dimension of
+        TensorProductSpace
+        """
         X = []
         N = self.shape()
         for axis, base in enumerate(self):
@@ -285,6 +313,13 @@ class TensorProductSpace(object):
         return X
 
     def local_mesh(self, broadcast=False):
+        """Return list of 1D physical mesh for each dimension of
+        TensorProductSpace
+
+        args:
+            broadcast    bool    Broadcast each 1D mesh to real shape of
+                                 TensorProductSpace
+        """
         m = self.mesh()
         lm = []
         for axis, (n, s) in enumerate(zip(m, self.local_slice(False))):
@@ -296,22 +331,45 @@ class TensorProductSpace(object):
         return lm
 
     def shape(self):
+        """Return shape of TensorProductSpace in physical space
+
+        Physical space corresponds to the result of a backward transfer
+        """
         return [int(np.round(base.N*base.padding_factor)) for base in self]
 
     def spectral_shape(self):
+        """Return shape of TensorProductSpace in spectral space
+
+        Spectral space corresponds to the result of a forward transfer
+        """
         return [base.spectral_shape() for base in self]
 
     def __iter__(self):
         return iter(self.bases)
 
     def local_shape(self, spectral=True):
+        """Return local shape of TensorProductSpace
+
+        kwargs:
+            spectral    bool    If True then return local shape of spectral
+                                space, i.e., the input to a backward transfer.
+                                If False then return local shape of physical
+                                space, i.e., the input to a forward transfer.
+        """
         if not spectral:
             return self.forward.input_pencil.subshape
         else:
             return self.backward.input_pencil.subshape
 
     def local_slice(self, spectral=True):
-        """The local view into the global data"""
+        """Return the local view into the global data
+
+        kwargs:
+            spectral    bool    If True then return local slice of spectral
+                                space, i.e., the input to a backward transfer.
+                                If False then return local slice of physical
+                                space, i.e., the input to a forward transfer.
+        """
 
         if not spectral is True:
             ip = self.forward.input_pencil
@@ -324,12 +382,15 @@ class TensorProductSpace(object):
         return s
 
     def rank(self):
+        """Return rank of TensorProductSpace"""
         return 1
 
     def ndim(self):
+        """Return dimension of TensorProductSpace"""
         return len(self.bases)
 
     def __len__(self):
+        """Return dimension of TensorProductSpace"""
         return len(self.bases)
 
     def num_components(self):
@@ -339,10 +400,14 @@ class TensorProductSpace(object):
         return self.bases[i]
 
     def is_forward_output(self, u):
+        """Return whether or not the array u is of type and shape resulting
+        from a forward transform.
+        """
         return (u.shape == self.forward.output_array.shape and
                 u.dtype == self.forward.output_array.dtype)
 
     def as_function(self, u):
+        """Return Numpy array u as a Function."""
         from .forms.arguments import Function
         assert isinstance(u, np.ndarray)
         forward_output = self.is_forward_output(u)
@@ -353,7 +418,7 @@ class MixedTensorProductSpace(object):
     """Class for composite tensorproductspaces.
 
     args:
-        spaces        List of tensorproductspaces
+        spaces        List of TensorProductSpaces
 
     """
 
