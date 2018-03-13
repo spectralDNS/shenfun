@@ -72,8 +72,8 @@ Tp = TensorProductSpace(comm, (Kp0, Kp1))
 Tp = T
 
 # Create vector spaces and a test function for the regular vector space
-TV = VectorTensorProductSpace([T, T])
-TVp = VectorTensorProductSpace([Tp, Tp])
+TV = VectorTensorProductSpace(T)
+TVp = VectorTensorProductSpace(Tp)
 vv = TestFunction(TV)
 uu = TrialFunction(TV)
 

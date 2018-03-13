@@ -43,6 +43,7 @@ script:
           conda build --no-test conf/conda
           conda create --name shenfun --use-local shenfun
           source activate shenfun
+          pip install codecov pytest-cov pytest
           py.test --cov=$(python -c "import site; print(site.getsitepackages()[0]+'/shenfun')") tests/
       else
           conda build conf/conda

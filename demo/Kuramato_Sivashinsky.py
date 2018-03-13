@@ -31,7 +31,7 @@ N = (128, 128)
 K0 = C2CBasis(N[0], domain=(-30*np.pi, 30*np.pi))
 K1 = R2CBasis(N[1], domain=(-30*np.pi, 30*np.pi))
 T = TensorProductSpace(comm, (K0, K1), **{'planner_effort': 'FFTW_MEASURE'})
-TV = VectorTensorProductSpace([T, T])
+TV = VectorTensorProductSpace(T)
 
 u = TrialFunction(T)
 v = TestFunction(T)
