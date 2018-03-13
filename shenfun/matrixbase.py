@@ -155,7 +155,6 @@ class SparseMatrix(dict):
         """Return copy of self.__add__(y) <==> self+d"""
         f = SparseMatrix(deepcopy(dict(self)), self.shape)
         assert isinstance(d, dict)
-        #assert d.shape == self.shape
         for key, val in six.iteritems(d):
             if key in f:
                 # Check if symmetric and make copy if necessary
@@ -282,7 +281,7 @@ class SpectralMatrix(SparseMatrix):
 
 
     The matrices are assumed to be sparse diagonal. The matrices are
-    inner products of trial and test functions from one of eight function
+    inner products of trial and test functions from one of 9 function
     spaces
 
     Chebyshev basis:
