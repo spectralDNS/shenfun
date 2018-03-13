@@ -3,7 +3,7 @@
 language: generic
 
 os: osx
-osx_image: xcode8.1
+osx_image: xcode9.2
 
 sudo: False
 
@@ -37,15 +37,11 @@ install:
       conda install --yes --quiet conda-forge-build-setup
       source run_conda_forge_build_setup
 
-before_script:
+script:
     - |
       if [ $CONDA_PY == 36 ]; then
           conda build --no-test conf/conda
           conda install shenfun --use-local
-      fi
-script:
-    - |
-      if [ $CONDA_PY == 36 ]; then
           py.test --cov=$(python -c "import site; print(site.getsitepackages()[0]+'/shenfun')") tests/
       else
           conda build conf/conda
