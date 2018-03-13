@@ -37,14 +37,18 @@ install:
       conda install --yes --quiet conda-forge-build-setup
       source run_conda_forge_build_setup
 
-script:
+before_script:
     - |
       if [ $CONDA_PY == 36 ]; then
           conda build --no-test conf/conda
           conda install shenfun --use-local
+      fi
+script:
+    - |
+      if [ $CONDA_PY == 36 ]; then
           py.test --cov=$(python -c "import site; print(site.getsitepackages()[0]+'/shenfun')") tests/
       else
-         conda build conf/conda
+          conda build conf/conda
       fi
 
 after_success:
