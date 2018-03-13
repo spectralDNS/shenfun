@@ -74,7 +74,7 @@ plt.title('Error')
 
 #from shenfun import VectorTensorProductSpace, curl, project
 
-#Tk = VectorTensorProductSpace([T]*3)
+#Tk = VectorTensorProductSpace(T)
 #v = TestFunction(Tk)
 ##u_ = Function(Tk, False)
 ##u_[:] = np.random.random(u_.shape)

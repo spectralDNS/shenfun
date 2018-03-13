@@ -110,7 +110,7 @@ write_x_slice = N[0]//2
     #plt.pause(1e-4)
 t0 = time()
 K = np.array(T.local_wavenumbers(True, True, True))
-TV = VectorTensorProductSpace([T, T, T])
+TV = VectorTensorProductSpace(T)
 gradu = Array(TV, False)
 while t < end_time-1e-8:
     t += dt

@@ -24,7 +24,7 @@ V0 = fourier.bases.C2CBasis(N[0])
 V1 = fourier.bases.C2CBasis(N[1])
 V2 = fourier.bases.R2CBasis(N[2])
 T = TensorProductSpace(comm, (V0, V1, V2), **{'planner_effort': 'FFTW_MEASURE'})
-TV = VectorTensorProductSpace([T, T, T])
+TV = VectorTensorProductSpace(T)
 u = TrialFunction(T)
 v = TestFunction(T)
 

@@ -1,4 +1,5 @@
 import numpy as np
+import warnings
 from numbers import Number
 from shenfun.fourier.bases import FourierBase, R2CBasis, C2CBasis
 import shenfun
@@ -183,7 +184,7 @@ class TensorProductSpace(object):
             return out
 
     def eval_cython(self, points, coefficients, output_array=None):
-        """Evaluate Function at position x, given expansion coefficients
+        """Evaluate Function at points, given expansion coefficients
 
         args:
             points        (input)  float or array of floats
@@ -192,9 +193,6 @@ class TensorProductSpace(object):
             output_array  (output) Function values at points. Optional.
 
         """
-        if output_array is None:
-            output_array = np.zeros(points.shape)
-
         shape = list(self.local_shape())
         out = coefficients
         P = []
@@ -435,6 +433,8 @@ class MixedTensorProductSpace(object):
         method to give a convolution without aliasing. The
         padding is specified when creating instances of bases
         for the TensorProductSpace.
+
+        FIXME Efficiency due to allocation
         """
         N = list(self.backward.output_array.shape)
         a = np.zeros([self.ndim()]+N, dtype=self.backward.output_array.dtype)
@@ -473,18 +473,21 @@ class VectorTensorProductSpace(MixedTensorProductSpace):
     """A special MixedTensorProductSpace where the number of spaces must equal
     the geometrical dimension of the problem.
 
-    For example, a TensorProductSpace created cy a Cartesian product of 2 1D
+    For example, a TensorProductSpace created by a Cartesian product of 2 1D
     bases, will have vectors of length 2. A TensorProductSpace created from 3
     1D bases will have vectors of length 3.
 
     args:
-        spaces        List of tensorproductspaces
-
+        space        TensorProductSpace to create vector from
     """
 
-    def __init__(self, spaces):
+    def __init__(self, space):
+        if isinstance(space, list):
+            warnings.warn("Use only the TensorProductSpace as argument", DeprecationWarning)
+            spaces = space
+        else:
+            spaces = [space]*space.ndim()
         MixedTensorProductSpace.__init__(self, spaces)
-        assert len(self.spaces) == self.ndim()
 
     def num_components(self):
         assert len(self.spaces) == self.ndim()
