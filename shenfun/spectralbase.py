@@ -1,7 +1,7 @@
 r"""
 This module contains classes for working with the spectral-Galerkin method
 
-There are classes for 8 bases and corresponding function spaces
+There are currently classes for 9 bases and corresponding function spaces
 
 All bases have expansions
 
@@ -26,6 +26,9 @@ Chebyshev:
 
         Note that there are only N-1 unknown coefficients, \hat{u}_k, since
         \hat{u}_{N-1} and \hat{u}_{N} are determined by boundary conditions.
+        Inhomogeneous boundary conditions are possible for the Poisson
+        equation, because \phi_{N} and \phi_{N-1} are in the kernel of
+        the Poisson operator.
 
     ShenNeumannBasis:
         basis function:                  basis:
@@ -60,8 +63,11 @@ Legendre:
         \hat{u}_{N-1} and \hat{u}_{N} are determined by boundary conditions.
 
     ShenNeumannBasis:
-        basis function:                  basis:
-        \phi_k = L_k-(k(k+1)/(k+2)/(k+3))L_{k+2} span(\phi_k, k=1,2,...,N-2)
+        basis function:
+        \phi_k = L_k-(k(k+1)/(k+2)/(k+3))L_{k+2}
+
+        basis:
+        span(\phi_k, k=1,2,...,N-2)
 
         Homogeneous Neumann boundary conditions, u'(\pm 1) = 0, and
         zero mean: \int_{-1}^{1}u(x)dx = 0
@@ -74,6 +80,20 @@ Legendre:
         span(\phi_k, k=0,1,...,N-4)
 
         Homogeneous Dirichlet and Neumann, u(\pm 1)=0 and u'(\pm 1)=0
+
+Fourier:
+    R2CBasis and C2CBasis:
+        basis function:                  basis:
+        \phi_k = c_k exp(ikx)            span(\phi_k, k=-N/2, -N/2+1, ..., N/2)
+
+        If N is even, then c_{-N/2} and c_{N/2} = 0.5 and c_k = 1 for
+        k=-N/2+1, ..., N/2-1. i is the imaginary unit.
+
+        If N is odd, then c_k = 1 for k=-N/2, ..., N/2
+
+    R2CBasis and C2CBasis are the same, but R2CBasis is used on real physical
+    data and it takes advantage of Hermitian symmetry,
+    \hat{u}_{-k} = conj(\hat{u}_k), for k = 1, ..., N/2
 
 
 Each class has methods for moving fast between spectral and physical space, and
@@ -343,13 +363,8 @@ class SpectralBase(object):
                                       returned.
 
         """
+        assert self.N == array.shape[self.axis]
         if self._mass is None:
-            assert self.N == array.shape[self.axis]
-            B = self.get_mass_matrix()
-            self._mass = B((self, 0), (self, 0))
-
-        if (self._mass.testfunction[0].quad != self.quad or
-            self._mass.testfunction[0].N != array.shape[self.axis]):
             B = self.get_mass_matrix()
             self._mass = B((self, 0), (self, 0))
 
@@ -464,7 +479,8 @@ class SpectralBase(object):
         return hash(repr(self.__class__))
 
     def __eq__(self, other):
-        return self.__class__.__name__ == other.__class__.__name__
+        return (self.__class__.__name__ == other.__class__.__name__ and
+                self.quad == other.quad and self.N == other.N)
 
     def sl(self, a):
         s = [slice(None)]*self.forward.output_array.ndim
@@ -491,10 +507,14 @@ class SpectralBase(object):
         raise NotImplementedError
 
     def is_forward_output(self, u):
+        """Return whether or not the array u is of type and shape resulting
+        from a forward transform.
+        """
         return (np.all(u.shape == self.forward.output_array.shape) and
                 u.dtype == self.forward.output_array.dtype)
 
     def as_function(self, u):
+        """Return Numpy array u as a Function."""
         from .forms.arguments import Function
         assert isinstance(u, np.ndarray)
         forward_output = self.is_forward_output(u)
@@ -515,7 +535,7 @@ class SpectralBase(object):
             padded_array.fill(0)
             N = trunc_array.shape[self.axis]
             su = [slice(None)]*trunc_array.ndim
-            su[self.axis] = slice(0, np.ceil(N/2.).astype(np.int))
+            su[self.axis] = slice(0, N//2+1)
             padded_array[su] = trunc_array[su]
             su[self.axis] = slice(-(N//2), None)
             padded_array[su] = trunc_array[su]

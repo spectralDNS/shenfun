@@ -1,3 +1,68 @@
+r"""
+This module contains specific inner product matrices for the different bases in
+the Chebyshev family.
+
+A naming convention is used for the first three capital letters for all matrices.
+The first letter refers to type of matrix.
+
+    Mass matrices start with 'B'
+    One derivative start with 'C'
+    Two derivatives (Laplace) start with 'A'
+    Four derivatives (Biharmonic) start with 'S'
+
+The next two letters refer to the test and trialfunctions, respectively
+
+    Dirichlet:   'D'
+    Neumann:     'N'
+    Chebyshev:   'T'
+    Biharmonic:  'B'
+
+As such, there are 4 mass matrices, BDDmat, BNNmat, BTTmat and BBBmat,
+corresponding to the four bases above.
+
+A matrix may consist of different types of test and trialfunctions as long as
+they are all in the Chebyshev family. A mass matrix using Dirichlet test and
+Neumann trial is named BDNmat.
+
+All matrices in this module may be looked up using the 'mat' dictionary,
+which takes test and trialfunctions along with the number of derivatives
+to be applied to each. As such the mass matrix BDDmat may be looked up
+as
+
+   >>> from shenfun.chebyshev.matrices import mat
+   >>> from shenfun.chebyshev.bases import ShenDirichletBasis as SD
+   >>> B = mat[((SD, 0), (SD, 0))]
+
+and an instance of the matrix can be created as
+
+   >>> B0 = SD(12)
+   >>> BM = B((B0, 0), (B0, 0))
+   >>> print(BM)
+  {-2: array([-1.57079633]),
+    0: array([ 4.71238898,  3.14159265,  3.14159265,  3.14159265,  3.14159265,
+         3.14159265,  3.14159265,  3.14159265,  3.14159265,  3.14159265]),
+    2: array([-1.57079633])}
+
+However, this way of creating matrices is not reccommended use. It is far
+more elegant to use the TrialFunction/TestFunction interface, and to
+generate the matrix as an inner product:
+
+    >>> from shenfun import TrialFunction, TestFunction, inner
+    >>> u = TrialFunction(B0)
+    >>> v = TestFunction(B0)
+    >>> BM = inner(u, v)
+    >>> print(BM)
+    >>> print(BM)
+  {-2: array([-1.57079633]),
+    0: array([ 4.71238898,  3.14159265,  3.14159265,  3.14159265,  3.14159265,
+         3.14159265,  3.14159265,  3.14159265,  3.14159265,  3.14159265]),
+    2: array([-1.57079633])}
+
+To see that this is in fact the BDDmat:
+    >>> print(BM.__class__)
+    shenfun.chebyshev.matrices.BDDmat
+
+"""
 from __future__ import division
 
 __all__ = ['mat']

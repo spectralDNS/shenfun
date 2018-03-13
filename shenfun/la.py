@@ -1,3 +1,6 @@
+r"""
+This module contains linear algebra solvers for SparseMatrixes
+"""
 import numpy as np
 from shenfun.optimization import la
 from shenfun.matrixbase import SparseMatrix
