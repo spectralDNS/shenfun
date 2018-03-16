@@ -3,7 +3,6 @@ from shenfun.chebyshev.la import PDMA
 from shenfun.chebyshev.bases import ShenBiharmonicBasis
 from shenfun import inner, TestFunction, TrialFunction, div, grad
 from scipy.linalg import solve
-from sympy import cos, pi, lambdify
 import numpy as np
 from itertools import product
 
@@ -37,9 +36,3 @@ def test_PDMA(quad):
     #from IPython import embed; embed()
 
     assert np.allclose(u_hat2, u_hat)
-
-#test_PDMA('GC')
-
-
-
-

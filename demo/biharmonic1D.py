@@ -13,7 +13,7 @@ import numpy as np
 from shenfun import inner, Dx, TestFunction, TrialFunction
 try:
     import matplotlib.pyplot as plt
-except:
+except ImportError:
     plt = None
 
 assert len(sys.argv) == 3
