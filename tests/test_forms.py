@@ -5,7 +5,6 @@ from shenfun.chebyshev import bases as cbases
 #from shenfun.fourier import bases as fbases
 from mpi4py import MPI
 import shenfun
-from itertools import product
 
 N = 8
 comm = MPI.COMM_WORLD
