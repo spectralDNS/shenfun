@@ -27,7 +27,7 @@ Initial conditions are given as
 and for stability they are approximated using error functions.
 
 """
-from sympy import Symbol, sin, exp, lambdify
+from sympy import Symbol, exp, lambdify
 from sympy.functions import erf
 import numpy as np
 import matplotlib.pyplot as plt

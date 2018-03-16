@@ -19,7 +19,6 @@ import six
 import matplotlib.pyplot as plt
 from mpi4py import MPI
 from time import time
-from numbers import Number
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun import *
 from spectralDNS.utilities import Timer

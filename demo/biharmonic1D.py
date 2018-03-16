@@ -8,7 +8,7 @@ Use Shen's Biharmonic basis.
 """
 import sys, os
 import importlib
-from sympy import symbols, sin, exp, lambdify
+from sympy import symbols, sin, lambdify
 import numpy as np
 from shenfun import inner, Dx, TestFunction, TrialFunction
 try:
@@ -18,7 +18,7 @@ except:
 
 assert len(sys.argv) == 3
 assert sys.argv[-1] in ('legendre', 'chebyshev')
-assert isinstance(eval(sys.argv[-2]), int)
+assert isinstance(int(sys.argv[-2]), int)
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 basis = sys.argv[-1]
@@ -28,7 +28,7 @@ Solver = shen.la.Biharmonic
 
 # Use sympy to compute a rhs, given an analytical solution
 x = symbols("x")
-ue = sin(32*np.pi*x)*(1-x**2)
+ue = sin(4*np.pi*x)*(1-x**2)
 
 k = 8
 nu = 1./590.
@@ -43,7 +43,7 @@ ul = lambdify(x, ue, 'numpy')
 fl = lambdify(x, fe, 'numpy')
 
 # Size of discretization
-N = eval(sys.argv[-2])
+N = int(sys.argv[-2])
 
 SD = Basis(N, plan=True)
 X = SD.mesh(N)
@@ -72,7 +72,7 @@ u = SD.backward(u_hat)
 # Compare with analytical solution
 uj = ul(X)
 print("Error=%2.16e" %(np.linalg.norm(uj-u)))
-#assert np.allclose(uj, u)
+assert np.allclose(uj, u)
 
 if not plt is None and not 'pytest' in os.environ:
     plt.figure()

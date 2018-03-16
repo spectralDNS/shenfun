@@ -14,7 +14,7 @@ whereas for Chebyshev we solve
 """
 import sys
 import importlib
-from sympy import symbols, sin, exp, lambdify
+from sympy import symbols, sin, lambdify
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
     Dx, Array
@@ -40,7 +40,7 @@ ul = lambdify(x, ue, 'numpy')
 fl = lambdify(x, fe, 'numpy')
 
 # Size of discretization
-N = eval(sys.argv[-2])
+N = int(sys.argv[-2])
 
 SD = Basis(N, plan=True)
 X = SD.mesh(N)

@@ -3,7 +3,7 @@ from shenfun.chebyshev.la import PDMA
 from shenfun.chebyshev.bases import ShenBiharmonicBasis
 from shenfun import inner, TestFunction, TrialFunction, div, grad
 from scipy.linalg import solve
-from sympy import Symbol, sin, cos, pi, lambdify
+from sympy import sin, cos, pi, lambdify
 import numpy as np
 from itertools import product
 
