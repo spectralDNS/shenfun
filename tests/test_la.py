@@ -4,7 +4,6 @@ from shenfun.chebyshev.bases import ShenBiharmonicBasis
 from shenfun import inner, TestFunction, TrialFunction, div, grad
 from scipy.linalg import solve
 import numpy as np
-from itertools import product
 
 N = 32
 

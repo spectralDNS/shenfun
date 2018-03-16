@@ -22,7 +22,7 @@ from sympy import symbols, cos, sin, lambdify
 import numpy as np
 from shenfun.fourier.bases import R2CBasis
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    Dx, TensorProductSpace
+    TensorProductSpace
 from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt
