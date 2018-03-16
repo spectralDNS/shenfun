@@ -1,5 +1,8 @@
-from numpy.polynomial import chebyshev as n_cheb
+"""
+Module for defining bases in the Chebyshev family
+"""
 import functools
+from numpy.polynomial import chebyshev as n_cheb
 import numpy as np
 import pyfftw
 from shenfun.spectralbase import SpectralBase, work, _func_wrap
@@ -9,10 +12,11 @@ from shenfun.utilities import inheritdocstrings
 __all__ = ['ChebyshevBase', 'Basis', 'ShenDirichletBasis',
            'ShenNeumannBasis', 'ShenBiharmonicBasis']
 
+#pylint: disable=abstract-method, not-callable, method-hidden, no-self-use, cyclic-import
 
 class _dct_wrap(object):
 
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods, missing-docstring
 
     __slots__ = ('_dct', '__doc__', '_input_array', '_output_array')
 
@@ -50,8 +54,7 @@ class _dct_wrap(object):
         if output_array is not None:
             output_array[...] = self.output_array
             return output_array
-        else:
-            return self.output_array
+        return self.output_array
 
 
 @inheritdocstrings
@@ -61,7 +64,7 @@ class ChebyshevBase(SpectralBase):
     kwargs:
         N             int         Number of quadrature points
         quad        ('GL', 'GC')  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss
-
+        domain   (float, float)   The computational domain
     """
 
     def __init__(self, N=0, quad="GC", domain=(-1., 1.)):
@@ -109,8 +112,7 @@ class ChebyshevBase(SpectralBase):
         if k > 0:
             D = np.zeros((self.N, self.N))
             D[:-k, :] = n_cheb.chebder(np.eye(self.N), k)
-            a, b = self.domain
-            V = np.dot(V, D) # *(2./(b-a))**k
+            V = np.dot(V, D)
         return self.get_vandermonde_basis(V)
 
     def get_mass_matrix(self):
@@ -125,8 +127,7 @@ class ChebyshevBase(SpectralBase):
         a, b = self.domain
         if abs(b-a-2) < 1e-12:
             return 1
-        else:
-            return 2./(b-a)
+        return 2./(b-a)
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
@@ -189,8 +190,10 @@ class Basis(ChebyshevBase):
     kwargs:
         N             int         Number of quadrature points
         quad        ('GL', 'GC')  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss
-        plan         boolean      Execute plan assuming 1D
-
+        plan          bool        Plan transforms on __init__ or not. If
+                                  basis is part of a TensorProductSpace,
+                                  then planning needs to be delayed.
+        domain   (float, float)   The computational domain
     """
 
     def __init__(self, N=0, quad="GC", plan=False, domain=(-1., 1.)):
@@ -204,8 +207,8 @@ class Basis(ChebyshevBase):
         if plan:
             self.plan(N, 0, np.float, {})
 
-
-    def derivative_coefficients(self, fk, ck):
+    @staticmethod
+    def derivative_coefficients(fk, ck):
         """Return coefficients of Chebyshev series for c = f'(x)
 
         args:
@@ -235,7 +238,7 @@ class Basis(ChebyshevBase):
         return fd
 
     def apply_inverse_mass(self, array):
-        """Apply inverse BTT_{kj} = c_k 2/pi \delta_{kj}
+        r"""Apply inverse BTT_{kj} = c_k 2/pi \delta_{kj}
 
         args:
             array   (input/output)    Expansion coefficients
@@ -249,27 +252,27 @@ class Basis(ChebyshevBase):
             array[sl] /= 2
         return array
 
-    def evaluate_expansion_all(self, fk, fj):
-        fj = self.xfftn_bck()
+    def evaluate_expansion_all(self, input_array, output_array):
+        output_array = self.xfftn_bck()
 
         s0 = self.sl(slice(0, 1))
         if self.quad == "GC":
-            fj *= 0.5
-            fj += fk[s0]/2
+            output_array *= 0.5
+            output_array += input_array[s0]/2
 
         elif self.quad == "GL":
-            fj *= 0.5
-            fj += fk[s0]/2
+            output_array *= 0.5
+            output_array += input_array[s0]/2
             s0[self.axis] = slice(-1, None)
             s2 = self.sl(slice(0, None, 2))
-            fj[s2] += fk[s0]/2
+            output_array[s2] += input_array[s0]/2
             s2[self.axis] = slice(1, None, 2)
-            fj[s2] -= fk[s0]/2
+            output_array[s2] -= input_array[s0]/2
 
-        assert fk is self.xfftn_bck.input_array
-        assert fj is self.xfftn_bck.output_array
+        assert input_array is self.xfftn_bck.input_array
+        assert output_array is self.xfftn_bck.output_array
 
-        return fj
+        return output_array
 
     def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
         if input_array is not None:
@@ -292,11 +295,13 @@ class Basis(ChebyshevBase):
         if output_array is not None:
             output_array[...] = self.scalar_product.output_array
             return output_array
-        else:
-            return self.scalar_product.output_array
+        return self.scalar_product.output_array
 
-    def eval(self, x, fk):
-        return n_cheb.chebval(x, fk)
+    def eval(self, x, fk, output_array=None):
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        output_array[:] = n_cheb.chebval(x, fk)
+        return output_array
 
 
 @inheritdocstrings
@@ -306,8 +311,12 @@ class ShenDirichletBasis(ChebyshevBase):
     kwargs:
         N             int         Number of quadrature points
         quad        ('GL', 'GC')  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss
-        bc           (a, b)       Boundary conditions at x=(1,-1)
-
+        bc           (a, b)       Boundary conditions at x=(1,-1). For Poisson eq.
+        plan          bool        Plan transforms on __init__ or not. If
+                                  basis is part of a TensorProductSpace,
+                                  then planning needs to be delayed.
+        domain   (float, float)   The computational domain
+        scaled       bool         Whether or not to use scaled basis
     """
 
     def __init__(self, N=0, quad="GC", bc=(0, 0), plan=False,
@@ -329,6 +338,7 @@ class ShenDirichletBasis(ChebyshevBase):
         return P
 
     def is_scaled(self):
+        """Return True if scaled basis is used, otherwise False"""
         return False
 
     def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
@@ -356,20 +366,19 @@ class ShenDirichletBasis(ChebyshevBase):
         if output_array is not None:
             output_array[...] = self.scalar_product.output_array
             return output_array
-        else:
-            return self.scalar_product.output_array
+        return self.scalar_product.output_array
 
-    def evaluate_expansion_all(self, fk, fj):
-        w_hat = work[(fk, 0)]
+    def evaluate_expansion_all(self, input_array, output_array):
+        w_hat = work[(input_array, 0)]
         s0 = self.sl(slice(0, -2))
         s1 = self.sl(slice(2, None))
-        w_hat[s0] = fk[s0]
-        w_hat[s1] -= fk[s0]
+        w_hat[s0] = input_array[s0]
+        w_hat[s1] -= input_array[s0]
         self.bc.apply_before(w_hat, False, (0.5, 0.5))
-        fj = self.CT.backward(w_hat)
-        assert fk is self.xfftn_bck.input_array
-        assert fj is self.xfftn_bck.output_array
-        return fj
+        output_array = self.CT.backward(w_hat)
+        assert input_array is self.xfftn_bck.input_array
+        assert output_array is self.xfftn_bck.output_array
+        return output_array
 
     def forward(self, input_array=None, output_array=None, fast_transform=True):
         if input_array is not None:
@@ -384,18 +393,20 @@ class ShenDirichletBasis(ChebyshevBase):
         if output_array is not None:
             output_array[...] = self.forward.output_array
             return output_array
-        else:
-            return self.forward.output_array
+        return self.forward.output_array
 
     def slice(self):
         return slice(0, self.N-2)
 
-    def eval(self, x, fk):
+    def eval(self, x, fk, output_array=None):
+        if output_array is None:
+            output_array = np.zeros(x.shape)
         w_hat = work[(fk, 0)]
-        f = n_cheb.chebval(x, fk[:-2])
+        output_array[:] = n_cheb.chebval(x, fk[:-2])
         w_hat[2:] = fk[:-2]
-        f -= n_cheb.chebval(x, w_hat)
-        return f + 0.5*(fk[-1]*(1+x)+fk[-2]*(1-x))
+        output_array -= n_cheb.chebval(x, w_hat)
+        output_array += 0.5*(fk[-1]*(1+x)+fk[-2]*(1-x))
+        return output_array
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
@@ -424,10 +435,11 @@ class ShenNeumannBasis(ChebyshevBase):
     kwargs:
         N             int         Number of quadrature points
         quad        ('GL', 'GC')  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss
-        threads          1        Number of threads used by pyfftw
-        planner_effort            Planner effort for FFTs.
-        mean           float      Mean value
-
+        mean          float       Mean value
+        plan          bool        Plan transforms on __init__ or not. If
+                                  basis is part of a TensorProductSpace,
+                                  then planning needs to be delayed.
+        domain   (float, float)   The computational domain
     """
 
     def __init__(self, N=0, quad="GC", mean=0, plan=False, domain=(-1., 1.)):
@@ -446,6 +458,7 @@ class ShenNeumannBasis(ChebyshevBase):
         return P
 
     def set_factor_array(self, v):
+        """Set intermediate factor arrays"""
         if not self._factor.shape == v.shape:
             k = self.wavenumbers(v.shape, self.axis).astype(float)
             self._factor = (k/(k+2))**2
@@ -474,29 +487,30 @@ class ShenNeumannBasis(ChebyshevBase):
         if output_array is not None:
             output_array[...] = self.scalar_product.output_array
             return output_array
-        else:
-            return self.scalar_product.output_array
+        return self.scalar_product.output_array
 
-    def evaluate_expansion_all(self, fk, fj):
-        w_hat = work[(fk, 0)]
-        self.set_factor_array(fk)
+    def evaluate_expansion_all(self, input_array, output_array):
+        w_hat = work[(input_array, 0)]
+        self.set_factor_array(input_array)
         s0 = self.sl(slice(0, -2))
         s1 = self.sl(slice(2, None))
-        w_hat[s0] = fk[s0]
-        w_hat[s1] -= self._factor*fk[s0]
-        fj = self.CT.backward(w_hat)
-        return fj
+        w_hat[s0] = input_array[s0]
+        w_hat[s1] -= self._factor*input_array[s0]
+        output_array = self.CT.backward(w_hat)
+        return output_array
 
     def slice(self):
         return slice(0, self.N-2)
 
-    def eval(self, x, fk):
+    def eval(self, x, fk, output_array=None):
+        if output_array is None:
+            output_array = np.zeros(x.shape)
         w_hat = work[(fk, 0)]
         self.set_factor_array(fk)
-        f = n_cheb.chebval(x, fk[:-2])
+        output_array[:] = n_cheb.chebval(x, fk[:-2])
         w_hat[2:] = self._factor*fk[:-2]
-        f -= n_cheb.chebval(x, w_hat)
-        return f
+        output_array -= n_cheb.chebval(x, w_hat)
+        return output_array
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
@@ -527,6 +541,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
     kwargs:
         N             int         Number of quadrature points
         quad        ('GL', 'GC')  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss
+        plan         bool         Plan transforms or not (allocates work arrays)
 
     """
 
@@ -545,6 +560,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
         return P
 
     def set_factor_arrays(self, v):
+        """Set intermediate factor arrays"""
         s = [slice(None)]*v.ndim
         s[self.axis] = self.slice()
         if not self._factor1.shape == v[s].shape:
@@ -577,11 +593,11 @@ class ShenBiharmonicBasis(ChebyshevBase):
         if output_array is not None:
             output_array[...] = output
             return output_array
-        else:
-            return output
+        return output
 
     #@optimizer
     def set_w_hat(self, w_hat, fk, f1, f2):
+        """Return intermediate w_hat array"""
         s = self.sl(self.slice())
         s2 = self.sl(slice(2, -2))
         s4 = self.sl(slice(4, None))
@@ -590,28 +606,30 @@ class ShenBiharmonicBasis(ChebyshevBase):
         w_hat[s4] += f2*fk[s]
         return w_hat
 
-    def evaluate_expansion_all(self, fk, fj):
-        w_hat = work[(fk, 0)]
-        self.set_factor_arrays(fk)
-        w_hat = self.set_w_hat(w_hat, fk, self._factor1, self._factor2)
-        fj = self.CT.backward(w_hat)
-        assert fk is self.backward.input_array
-        assert fj is self.backward.output_array
-        return fj
+    def evaluate_expansion_all(self, input_array, output_array):
+        w_hat = work[(input_array, 0)]
+        self.set_factor_arrays(input_array)
+        w_hat = self.set_w_hat(w_hat, input_array, self._factor1, self._factor2)
+        output_array = self.CT.backward(w_hat)
+        assert input_array is self.backward.input_array
+        assert output_array is self.backward.output_array
+        return output_array
 
     def slice(self):
         return slice(0, self.N-4)
 
-    def eval(self, x, fk):
+    def eval(self, x, fk, output_array=None):
+        if output_array is None:
+            output_array = np.zeros(x.shape)
         w_hat = work[(fk, 0)]
         self.set_factor_arrays(fk)
-        f = n_cheb.chebval(x, fk[:-4])
+        output_array[:] = n_cheb.chebval(x, fk[:-4])
         w_hat[2:-2] = self._factor1*fk[:-4]
-        f += n_cheb.chebval(x, w_hat[:-2])
+        output_array += n_cheb.chebval(x, w_hat[:-2])
         w_hat[4:] = self._factor2*fk[:-4]
         w_hat[:4] = 0
-        f += n_cheb.chebval(x, w_hat)
-        return f
+        output_array += n_cheb.chebval(x, w_hat)
+        return output_array
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):

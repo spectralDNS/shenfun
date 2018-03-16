@@ -1,9 +1,17 @@
-import numpy as np
+"""
+Module for defining arguments to linear and bilinear forms
+
+Arguments are basisfunctions, test- and trialfunctions, and
+regular functions.
+
+"""
 from numbers import Number
+import numpy as np
 
 __all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',
            'Array')
 
+#pylint: disable=invalid-unary-operand-type, protected-access, unused-argument
 
 class Expr(object):
     """Class for spectral Galerkin forms
@@ -66,7 +74,7 @@ class Expr(object):
         ndim = self.function_space().ndim()
         if terms is None:
             self._terms = np.zeros((self.function_space().num_components(), 1, ndim),
-                                    dtype=np.int)
+                                   dtype=np.int)
         if scales is None:
             self._scales = np.ones((self.function_space().num_components(), 1))
 
@@ -76,39 +84,51 @@ class Expr(object):
         assert np.prod(self._scales.shape) == self.num_terms()*self.num_components()
 
     def basis(self):
+        """Return basis of Expr"""
         return self._basis
 
     def function_space(self):
+        """Return functionspace of Expr"""
         return self._basis.function_space()
 
     def terms(self):
+        """Return terms of Expr"""
         return self._terms
 
     def scales(self):
+        """Return scales of Expr"""
         return self._scales
 
     def argument(self):
+        """Return argument of Expr"""
         return self._basis.argument()
 
     def expr_rank(self):
+        """Return rank of Expr"""
         return 1 if self._terms.shape[0] == 1 else 2
 
     def rank(self):
+        """Return rank of basis in Expr"""
         return self._basis.rank()
 
     def indices(self):
+        """Return indices of Expr"""
         return self._indices
 
     def num_components(self):
+        """Return number of components in Expr"""
         return self._terms.shape[0]
 
     def num_terms(self):
+        """Return number of terms in Expr"""
         return self._terms.shape[1]
 
     def dim(self):
+        """Return dimension of Expr"""
         return self._terms.shape[2]
 
     def __getitem__(self, i):
+        """Return component i of Expr"""
         #assert self.num_components() == self.dim()
         basis = self._basis
         if self.rank() == 2:
@@ -119,6 +139,11 @@ class Expr(object):
                     self._indices[i][np.newaxis, :])
 
     def __mul__(self, a):
+        """Returns copy of self.__mul__(a) <==> self*a
+
+        args:
+            a       A number (float/int) or a tuple of numbers
+        """
         if self.expr_rank() == 1:
             assert isinstance(a, Number)
             sc = self.scales().copy()*a
@@ -142,9 +167,20 @@ class Expr(object):
         return Expr(self._basis, self._terms.copy(), sc, self._indices.copy())
 
     def __rmul__(self, a):
+        """Returns copy of self.__rmul__(a) <==> a*self
+
+        args:
+            a       A number (float/int) or a tuple of numbers
+        """
+
         return self.__mul__(a)
 
     def __imul__(self, a):
+        """Returns self.__imul__(a) <==> self*=a
+
+        args:
+            a       A number (float/int) or a tuple of numbers
+        """
         sc = self.scales()
         if self.expr_rank() == 1:
             assert isinstance(a, Number)
@@ -168,6 +204,11 @@ class Expr(object):
         return self
 
     def __add__(self, a):
+        """Returns copy of self.__add__(a) <==> self+a
+
+        args:
+            a       Expr or BasisFunction
+        """
         assert isinstance(a, (Expr, BasisFunction))
         if not isinstance(a, Expr):
             a = Expr(a)
@@ -180,6 +221,12 @@ class Expr(object):
                     np.concatenate((self.indices(), a.indices()), axis=1))
 
     def __iadd__(self, a):
+        """Returns self.__iadd__(a) <==> self+=a
+
+        args:
+            a       Expr or BasisFunction
+        """
+
         assert isinstance(a, (Expr, BasisFunction))
         if not isinstance(a, Expr):
             a = Expr(a)
@@ -192,6 +239,11 @@ class Expr(object):
         return self
 
     def __sub__(self, a):
+        """Returns copy of self.__sub__(a) <==> self-a
+
+        args:
+            a       Expr or BasisFunction
+        """
         assert isinstance(a, (Expr, BasisFunction))
         if not isinstance(a, Expr):
             a = Expr(a)
@@ -204,6 +256,11 @@ class Expr(object):
                     np.concatenate((self.indices(), a.indices()), axis=1))
 
     def __isub__(self, a):
+        """Returns self.__isub__(a) <==> self-=a
+
+        args:
+            a       Expr or BasisFunction
+        """
         assert isinstance(a, (Expr, BasisFunction))
         if not isinstance(a, Expr):
             a = Expr(a)
@@ -216,11 +273,13 @@ class Expr(object):
         return self
 
     def __neg__(self):
+        """Returns copy of self.__neg__() <==> -self"""
         return Expr(self.basis(), self.terms().copy(), -self.scales().copy(),
                     self.indices().copy())
 
 
 class BasisFunction(object):
+    """Base class for arguments"""
 
     def __init__(self, space, argument=0, index=0):
         self._space = space
@@ -228,18 +287,23 @@ class BasisFunction(object):
         self._index = index
 
     def rank(self):
+        """Return rank of BasisFunction"""
         return self._space.rank()
 
     def expr_rank(self):
+        """Return rank of BasisFunction"""
         return self._space.rank()
 
     def function_space(self):
+        """Return functionspace of BasisFunction"""
         return self._space
 
     def argument(self):
+        """Return argument of BasisFunction"""
         return self._argument
 
     def num_components(self):
+        """Return number of components in BasisFunction"""
         return self.function_space().num_components()
 
     def index(self):
@@ -247,41 +311,78 @@ class BasisFunction(object):
         return self._index
 
     def __getitem__(self, i):
+        """Return component i of BasisFunction"""
         assert self.rank() == 2
         t0 = BasisFunction(self._space[i], self._argument, i)
         return t0
 
     def __mul__(self, a):
+        """Returns copy of self.__mul__(a) <==> self*a
+
+        args:
+            a       A number (float/int) or a tuple of numbers
+        """
         b = Expr(self)
         return b*a
 
     def __rmul__(self, a):
+        """Returns copy of self.__rmul__(a) <==> a*self
+
+        args:
+            a       A number (float/int) or a tuple of numbers
+        """
         return self.__mul__(a)
 
     def __imul__(self, a):
+        """Returns self.__imul__(a) <==> self*=a
+
+        args:
+            a       A number (float/int) or a tuple of numbers
+        """
         raise RuntimeError
 
     def __add__(self, a):
+        """Returns copy of self.__add__(a) <==> self+a
+
+        args:
+            a       Expr or BasisFunction
+        """
         assert isinstance(a, (Expr, BasisFunction))
         b = Expr(self)
         return b+a
 
     def __iadd__(self, a):
+        """Returns self.__iadd__(a) <==> self+=a
+
+        args:
+            a       Expr or BasisFunction
+        """
         raise RuntimeError
 
     def __sub__(self, a):
+        """Returns copy of self.__sub__(a) <==> self-a
+
+        args:
+            a       Expr or BasisFunction
+        """
         assert isinstance(a, (Expr, BasisFunction))
         b = Expr(self)
         return b-a
 
     def __isub__(self, a):
+        """Returns self.__isub__(a) <==> self-=a
+
+        args:
+            a       Expr or BasisFunction
+        """
         raise RuntimeError
 
 
 class TestFunction(BasisFunction):
+    """Argument 0 to form"""
 
     def __init__(self, space, index=0):
-        return BasisFunction.__init__(self, space, 0, index)
+        BasisFunction.__init__(self, space, 0, index)
 
     def __getitem__(self, i):
         assert self.rank() == 2
@@ -289,9 +390,10 @@ class TestFunction(BasisFunction):
         return t0
 
 class TrialFunction(BasisFunction):
+    """Argument 1 to form"""
 
     def __init__(self, space, index=0):
-        return BasisFunction.__init__(self, space, 1, index)
+        BasisFunction.__init__(self, space, 1, index)
 
     def __getitem__(self, i):
         assert self.rank() == 2
@@ -344,7 +446,6 @@ class Function(np.ndarray, BasisFunction):
                 shape = space.forward.output_array.shape
                 dtype = space.forward.output_array.dtype
 
-            ndim = space.ndim()
             if not space.num_components() == 1:
                 shape = (space.num_components(),) + shape
 
@@ -373,23 +474,21 @@ class Function(np.ndarray, BasisFunction):
                 f0._index = i
                 f0._argument = 2
                 return f0
-            else:
-                v = np.ndarray.__getitem__(self, i)
-                return v
-
-        else:
             v = np.ndarray.__getitem__(self, i)
             return v
-
+        v = np.ndarray.__getitem__(self, i)
+        return v
 
     def __array_finalize__(self, obj):
-        if obj is None: return
+        if obj is None:
+            return
         if hasattr(obj, '_space'):
             self._argument = 2
             self._space = obj._space
             self._index = obj._index
 
     def as_array(self):
+        """Return Function self as Array"""
         fun = self.function_space()
         return Array(fun, forward_output=fun.is_forward_output(self), buffer=self)
 
@@ -425,7 +524,6 @@ class Array(np.ndarray):
 
     """
 
-    # pylint: disable=too-few-public-methods,too-many-arguments
     def __new__(cls, space, forward_output=True, val=0, buffer=None):
 
         shape = space.forward.input_array.shape
@@ -434,7 +532,6 @@ class Array(np.ndarray):
             shape = space.forward.output_array.shape
             dtype = space.forward.output_array.dtype
 
-        ndim = space.ndim()
         if not space.num_components() == 1:
             shape = (space.num_components(),) + shape
 
@@ -449,18 +546,21 @@ class Array(np.ndarray):
         return obj
 
     def __array_finalize__(self, obj):
-        if obj is None: return
+        if obj is None:
+            return
         if hasattr(obj, '_space'):
-            self._space = obj._space
+            self._space = obj._space #pylint: disable=attribute-defined-outside-init
 
     def function_space(self):
+        """Return function space of Array"""
         return self._space
 
     def rank(self):
+        """Return rank of Array"""
         return self._space.rank()
 
     def as_function(self):
+        """Return Array self as Function"""
         space = self.function_space()
         forward_output = space.is_forward_output(self)
         return Function(space, forward_output=forward_output, buffer=self)
-

@@ -1,16 +1,19 @@
-import numpy as np
-import warnings
+"""
+Module for implementation of the TensorProductSpace class and related methods.
+"""
 from numbers import Number
-from shenfun.fourier.bases import FourierBase, R2CBasis, C2CBasis
+import warnings
+import sympy
+import numpy as np
 import shenfun
+from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun import chebyshev, legendre
 from mpi4py_fft.mpifft import Transform
 from mpi4py_fft.pencil import Subcomm, Pencil
-import sympy
-from copy import copy
 
 __all__ = ('TensorProductSpace', 'VectorTensorProductSpace', 'MixedTensorProductSpace')
 
+#pylint: disable=line-too-long, redefined-outer-name, len-as-condition, redefined-argument-from-local, no-else-return, no-self-use, no-member, missing-docstring
 
 class TensorProductSpace(object):
     """Base class for multidimensional tensorproductspaces.
@@ -30,12 +33,11 @@ class TensorProductSpace(object):
         slab                 Use 1D slab decomposition instead of default pencil.
 
     """
-
     def __init__(self, comm, bases, axes=None, dtype=None, slab=False, **kw):
         self.comm = comm
         self.bases = bases
         shape = self.shape()
-        assert len(shape) > 0
+        assert shape
         assert min(shape) > 0
 
         if axes is not None:
@@ -129,13 +131,10 @@ class TensorProductSpace(object):
             [o.forward for o in self.transfer],
             self.pencil)
 
-        if any(isinstance(base, (chebyshev.bases.ShenDirichletBasis,
-                                 legendre.bases.ShenDirichletBasis))
-                                 for base in self.bases):
-            for base in self.bases:
-                if isinstance(base, (legendre.bases.ShenDirichletBasis,
-                                     chebyshev.bases.ShenDirichletBasis)):
-                    base.bc.set_tensor_bcs(self)
+        for base in self.bases:
+            if isinstance(base, (legendre.bases.ShenDirichletBasis,
+                                 chebyshev.bases.ShenDirichletBasis)):
+                base.bc.set_tensor_bcs(self)
 
     def convolve(self, a_hat, b_hat, ab_hat):
         """Convolution of a_hat and b_hat
@@ -180,8 +179,7 @@ class TensorProductSpace(object):
         if not output_array is None:
             output_array[:] = out
             return output_array
-        else:
-            return out
+        return out
 
     def eval_cython(self, points, coefficients, output_array=None):
         """Evaluate Function at points, given expansion coefficients
@@ -193,7 +191,6 @@ class TensorProductSpace(object):
             output_array  (output) Function values at points. Optional.
 
         """
-        shape = list(self.local_shape())
         out = coefficients
         P = []
         r2c = -1
@@ -226,8 +223,7 @@ class TensorProductSpace(object):
         if not output_array is None:
             output_array[:] = out
             return output_array
-        else:
-            return out
+        return out
 
 
     def vandermonde_evaluate_local_expansion(self, base, points, input_array, output_array):
@@ -253,12 +249,13 @@ class TensorProductSpace(object):
             else:
                 last_conj_index = M
             sl = self.local_slice()[base.axis].start
-            base._vandermonde_evaluate_local_expansion(P, input_array, output_array, last_conj_index, sl)
+            base.vandermonde_evaluate_local_expansion(P, input_array, output_array, last_conj_index, sl)
         else:
-            base._vandermonde_evaluate_local_expansion(P, input_array, output_array)
+            base.vandermonde_evaluate_local_expansion(P, input_array, output_array)
         return output_array
 
     def destroy(self):
+        """Destructor"""
         self.subcomm.destroy()
         for trans in self.transfer:
             trans.destroy()
@@ -369,7 +366,7 @@ class TensorProductSpace(object):
                                 space, i.e., the input to a forward transfer.
         """
 
-        if not spectral is True:
+        if spectral is not True:
             ip = self.forward.input_pencil
             s = [slice(start, start+shape) for start, shape in zip(ip.substart,
                                                                    ip.subshape)]
@@ -499,7 +496,7 @@ class VectorTensorProductSpace(MixedTensorProductSpace):
 
 class VectorTransform(object):
 
-    __slots__ = ('_transforms')
+    __slots__ = ('_transforms',)
 
     def __init__(self, transforms):
         self._transforms = transforms
@@ -578,6 +575,7 @@ class BoundaryValues(object):
         bc              Tuple with physical boundary values at edges of 1D domain
 
     """
+    # pylint: disable=protected-access, redefined-outer-name, dangerous-default-value, unsubscriptable-object
 
     def __init__(self, T, bc=(0, 0)):
         self.T = T
@@ -591,8 +589,9 @@ class BoundaryValues(object):
         self.axis = 0
         self.update_bcs(bc=bc)
 
-    def update_bcs(self, sympy_params={}, bc=None):
-        if not sympy_params is {}:
+    def update_bcs(self, sympy_params=None, bc=None):
+        if sympy_params:
+            assert isinstance(sympy_params, dict)
             for i in range(2):
                 if isinstance(self.bc[i], sympy.Expr):
                     self.bcs[i] = self.bc[i].evalf(subs=sympy_params)
@@ -603,7 +602,7 @@ class BoundaryValues(object):
             assert len(bc) == 2
             self.bc = list(bc)
             for i in range(2):
-                if isinstance(bc[i], (Number, sympy.Expr, np.ndarray)) :
+                if isinstance(bc[i], (Number, sympy.Expr, np.ndarray)):
                     self.bcs[i] = bc[i]
                 else:
                     raise NotImplementedError
@@ -621,7 +620,7 @@ class BoundaryValues(object):
 
         elif any(isinstance(base, (chebyshev.bases.ShenDirichletBasis,
                                    legendre.bases.ShenDirichletBasis))
-                                   for base in T.bases):
+                 for base in T.bases):
             # Setting the Dirichlet boundary condition in a TensorProductSpace
             # is more involved than for a single dimension, and the routine will
             # depend on the order of the bases. If the Dirichlet space is the last
@@ -698,8 +697,6 @@ class BoundaryValues(object):
 
             else:
                 raise NotImplementedError
-
-            self.number_of_bases_after_dirichlet = number_of_bases_after_dirichlet
 
             if number_of_bases_after_dirichlet == 0:
                 # Dirichlet base is the first to be transformed
@@ -782,8 +779,7 @@ class BoundaryValues(object):
             return False
         return True
 
-if __name__ == '__main__':
-    import shenfun
+def some_basic_tests():
     import pyfftw
     from mpi4py import MPI
 
@@ -836,3 +832,7 @@ if __name__ == '__main__':
     f_hat2 = Tp.forward(f_g_pad)
 
     assert np.allclose(f_hat2, f_hat)
+
+
+if __name__ == '__main__':
+    some_basic_tests()

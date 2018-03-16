@@ -102,10 +102,12 @@ for computing the (weighted) scalar product.
 """
 import numpy as np
 import pyfftw
-from .utilities import inheritdocstrings
 from mpiFFT4py import work_arrays
 
+#pylint: disable=unused-argument, not-callable, no-self-use, protected-access, too-many-public-methods, missing-docstring
+
 work = work_arrays()
+
 
 class SpectralBase(object):
     """Abstract base class for all spectral function spaces
@@ -116,6 +118,7 @@ class SpectralBase(object):
                                    or Legendre-Gauss
 
     """
+    # pylint: disable=method-hidden, too-many-instance-attributes
 
     def __init__(self, N, quad, padding_factor=1, domain=(-1., 1.)):
         self.N = N
@@ -125,10 +128,18 @@ class SpectralBase(object):
         self.axis = 0
         self.xfftn_fwd = None
         self.xfftn_bck = None
+        self._xfftn_fwd = None    # pyfftw forward transform function
+        self._xfftn_bck = None    # pyfftw backward transform function
         self.padding_factor = np.floor(N*padding_factor)/N
 
-    def points_and_weights(self, N):
-        """Return points and weights of quadrature"""
+    def points_and_weights(self, N, scaled=False):
+        """Return points and weights of quadrature
+
+        args:
+            N        (int)   Number of quadrature points
+        kwargs:
+            scaled   (bool)  Whether or not to scale with domain size
+        """
         raise NotImplementedError
 
     def mesh(self, N, axis=0):
@@ -147,6 +158,12 @@ class SpectralBase(object):
 
         All dimensions, except axis, are obtained through broadcasting.
 
+        args:
+            N     int or array    If N is a float then we have a 1D array
+                                  If N is an array, then the wavenumber
+                                  returned is a 1D array broadcasted to
+                                  the shape of N.
+
         """
         N = list(N) if np.ndim(N) else [N]
         assert self.N == N[axis]
@@ -155,7 +172,13 @@ class SpectralBase(object):
         K = self.broadcast_to_ndims(k, len(N), axis)
         return K
 
-    def broadcast_to_ndims(self, x, ndims, axis=0):
+    @staticmethod
+    def broadcast_to_ndims(x, ndims, axis=0):
+        """Return 1D array x as an array of shape ndim
+
+        The returned array has shape one in all ndims-1 dimensions apart
+        from axis.
+        """
         s = [np.newaxis]*ndims
         s[axis] = slice(None)
         return x[s]
@@ -199,8 +222,7 @@ class SpectralBase(object):
         if output_array is not None:
             output_array[...] = self.forward.output_array
             return output_array
-        else:
-            return self.forward.output_array
+        return self.forward.output_array
 
     def backward(self, input_array=None, output_array=None, fast_transform=True):
         """Inverse transform
@@ -231,9 +253,7 @@ class SpectralBase(object):
         if output_array is not None:
             output_array[...] = self.backward.output_array
             return output_array
-        else:
-            return self.backward.output_array
-
+        return self.backward.output_array
 
     def vandermonde(self, x):
         """Return Vandermonde matrix
@@ -339,7 +359,7 @@ class SpectralBase(object):
 
         return output_array
 
-    def _vandermonde_evaluate_local_expansion(self, P, input_array, output_array):
+    def vandermonde_evaluate_local_expansion(self, P, input_array, output_array):
         """Evaluate expansion at certain points, possibly different from
         the quadrature points
 
@@ -464,7 +484,7 @@ class SpectralBase(object):
         raise NotImplementedError
 
     def slice(self):
-        """Return index set of current basis, with N points in real space"""
+        """Return index set of current basis, with N points in physical space"""
         return slice(0, self.N)
 
     def spectral_shape(self):
@@ -473,6 +493,7 @@ class SpectralBase(object):
         return s.stop - s.start
 
     def domain_factor(self):
+        """Return scaling factor for domain"""
         return 1
 
     def __hash__(self):
@@ -574,6 +595,8 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
           2: array([-1.57079633])}
 
     """
+    from .fourier import FourierBase, R2CBasis
+
     if isinstance(test, tuple):
         # Bilinear form
         assert trial[0].__module__ == test[0].__module__
@@ -595,8 +618,8 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
         # Linear form
         if out is None:
             sl = list(trial.shape)
-            if isinstance(test, fourier.FourierBase):
-                if isinstance(test, fourier.R2CBasis):
+            if isinstance(test, FourierBase):
+                if isinstance(test, R2CBasis):
                     sl[axis] = sl[axis]//2+1
                 out = np.zeros(sl, dtype=np.complex)
             else:
@@ -641,6 +664,4 @@ class _func_wrap(object):
         if output_array is not None:
             output_array[...] = self.output_array
             return output_array
-        else:
-            return self.output_array
-
+        return self.output_array

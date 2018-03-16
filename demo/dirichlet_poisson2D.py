@@ -72,7 +72,6 @@ f_hat = inner(v, fj, output_array=f_hat)
 if basis == 'legendre':
     f_hat *= -1.
 
-#from IPython import embed; embed()
 # Get left hand side of Poisson equation
 if basis == 'chebyshev':
     matrices = inner(v, div(grad(u)))
@@ -113,4 +112,4 @@ if not plt is None and not 'pytest' in os.environ:
     for y in np.squeeze(X[1]):
         plt.plot((np.squeeze(X[0])[0], np.squeeze(X[0])[-1]), (y, y), 'k')
 
-    #plt.show()
+    plt.show()

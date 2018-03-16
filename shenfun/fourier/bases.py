@@ -1,3 +1,6 @@
+"""
+Module for defining bases in the Fourier family
+"""
 import numpy as np
 import pyfftw
 from shenfun.spectralbase import SpectralBase
@@ -6,10 +9,11 @@ from shenfun.optimization import convolve
 
 __all__ = ['FourierBase', 'R2CBasis', 'C2CBasis']
 
+#pylint: disable=method-hidden, no-member, line-too-long, arguments-differ
 
 @inheritdocstrings
 class FourierBase(SpectralBase):
-    """Fourier base class
+    r"""Fourier base class
 
     A basis function phi_k is given as
 
@@ -58,9 +62,6 @@ class FourierBase(SpectralBase):
         SpectralBase.__init__(self, N, '', padding_factor, domain)
 
     def points_and_weights(self, N, scaled=False):
-        """Return points and weights of quadrature
-
-        """
         a, b = self.domain
         points = np.arange(N, dtype=np.float)*2*np.pi/N
         if scaled is True:
@@ -78,19 +79,19 @@ class FourierBase(SpectralBase):
         x = np.atleast_1d(x)
         return np.exp(1j*x[:, np.newaxis]*k[np.newaxis, :])
 
-    def get_vandermonde_basis_derivative(self, V, d=0):
-        """Return d'th derivative of basis as a Vandermonde matrix
+    def get_vandermonde_basis_derivative(self, V, k=0):
+        """Return k'th derivative of basis as a Vandermonde matrix
 
         args:
             V               Chebyshev Vandermonde matrix
 
         kwargs:
-            d    integer    d'th derivative
+            k    integer    k'th derivative
 
         """
-        if d > 0:
-            k = self.wavenumbers(self.N, 0, True)
-            V = V*((1j*k)**d)[np.newaxis, :]
+        if k > 0:
+            l = self.wavenumbers(self.N, 0, True)
+            V = V*((1j*l)**k)[np.newaxis, :]
         return V
 
     def get_mass_matrix(self):
@@ -105,10 +106,10 @@ class FourierBase(SpectralBase):
         a, b = self.domain
         if (b-a) == 2.*np.pi:
             return 1
-        else:
-            return 2.*np.pi/(b-a)
+        return 2.*np.pi/(b-a)
 
-    # Note. forward is reimplemented here to avoid one array scaling (scalar_product multiplies with 2pi/N, whereas apply_inverse_mass divides by 2pi)
+    # Note. forward is reimplemented here to avoid one array scaling
+    # (scalar_product multiplies with 2pi/N, whereas apply_inverse_mass divides by 2pi)
     def forward(self, input_array=None, output_array=None, fast_transform=True):
         """Forward transform
 
@@ -128,7 +129,7 @@ class FourierBase(SpectralBase):
         if input_array is not None:
             self.forward.input_array[...] = input_array
 
-        output = self.xfftn_fwd()
+        self.xfftn_fwd()
         self._truncation_forward(self.xfftn_fwd.output_array,
                                  self.forward.output_array)
         self.forward._output_array *= (1./self.N/self.padding_factor)
@@ -136,8 +137,7 @@ class FourierBase(SpectralBase):
         if output_array is not None:
             output_array[...] = self.forward.output_array
             return output_array
-        else:
-            return self.forward.output_array
+        return self.forward.output_array
 
     def apply_inverse_mass(self, array):
         """Apply inverse mass, which is 2pi*identity for Fourier basis
@@ -169,8 +169,7 @@ class FourierBase(SpectralBase):
         if output_array is not None:
             output_array[...] = self.xfftn_fwd.output_array
             return output_array
-        else:
-            return self.xfftn_fwd.output_array
+        return self.xfftn_fwd.output_array
 
 
 class R2CBasis(FourierBase):
@@ -187,11 +186,6 @@ class R2CBasis(FourierBase):
             self.plan((int(np.floor(padding_factor*N)),), 0, np.float, {})
 
     def wavenumbers(self, N, axis=0, scaled=False, eliminate_highest_freq=False):
-        """Return the wavenumbermesh
-
-        All dimensions, except axis, are obtained through broadcasting.
-
-        """
         N = list(N) if np.ndim(N) else [N]
         assert self.N == N[axis]
         k = np.fft.rfftfreq(N[axis], 1./N[axis])
@@ -243,8 +237,8 @@ class R2CBasis(FourierBase):
                 s[-2] = slice(1, -1)
                 array += np.conj(np.dot(P[:, 1:-1], fc[s])).real
             else:
-               s[-2] = slice(1, None)
-               array += np.conj(np.dot(P[:, 1:], fc[s])).real
+                s[-2] = slice(1, None)
+                array += np.conj(np.dot(P[:, 1:], fc[s])).real
 
             output_array[:] = np.moveaxis(array, 0, self.axis)
 
@@ -268,15 +262,15 @@ class R2CBasis(FourierBase):
                 s[-2] = slice(1, -1)
                 array += np.conj(np.dot(P[:, 1:-1], fc[s])).real
             else:
-               s[-2] = slice(1, None)
-               array += np.conj(np.dot(P[:, 1:], fc[s])).real
+                s[-2] = slice(1, None)
+                array += np.conj(np.dot(P[:, 1:], fc[s])).real
 
             output_array[:] = np.moveaxis(array, 0, self.axis)
 
         return output_array
 
-    def _vandermonde_evaluate_local_expansion(self, P, input_array, output_array,
-                                              last_conj_index, offset):
+    def vandermonde_evaluate_local_expansion(self, P, input_array, output_array,
+                                             last_conj_index, offset):
         """Evaluate expansion at certain points, possibly different from
         the quadrature points
 
@@ -428,11 +422,6 @@ class C2CBasis(FourierBase):
             self.plan((int(np.floor(padding_factor*N)),), 0, np.complex, {})
 
     def wavenumbers(self, N, axis=0, scaled=False, eliminate_highest_freq=False):
-        """Return the wavenumbermesh
-
-        All dimensions, except axis, are obtained through broadcasting.
-
-        """
         N = list(N) if np.ndim(N) else [N]
         assert self.N == N[axis]
         k = np.fft.fftfreq(N[axis], 1./N[axis])
@@ -554,6 +543,4 @@ def FourierBasis(N, dtype, padding_factor=1., plan=False, domain=(0., 2.*np.pi),
     dtype = np.dtype(dtype)
     if dtype.char in 'fdg':
         return R2CBasis(N, padding_factor, plan, domain, dealias_direct)
-
-    else:
-        return C2CBasis(N, padding_factor, plan, domain, dealias_direct)
+    return C2CBasis(N, padding_factor, plan, domain, dealias_direct)

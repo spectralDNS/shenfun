@@ -1,9 +1,11 @@
+# pylint: disable=line-too-long, missing-docstring
+
 import copy
 import six
-from numpy import pi, float32, dtype
+from numpy import dtype
 try:
     import h5py
-except:
+except ImportError:
     import warnings
     warnings.warn('h5py not installed')
 
@@ -32,7 +34,7 @@ attribute2D = """
           </DataItem>
         </Attribute>"""
 
-mesh_3d =  """
+mesh_3d = """
         <Geometry Type="VXVYVZ">
           <DataItem Format="HDF" NumberType="Float" Precision="{0}" Dimensions="{3}">
            {4}:/mesh/z
@@ -45,7 +47,7 @@ mesh_3d =  """
           </DataItem>
         </Geometry>"""
 
-mesh_2d =  """
+mesh_2d = """
         <Geometry Type="VXVY">
           <DataItem Format="HDF" NumberType="Float" Precision="{0}" Dimensions="{1}">
            {3}:/mesh/{4}
@@ -68,7 +70,7 @@ def generate_xdmf(h5filename):
     for key in keys:
         if isinstance(f[key], h5py.Dataset):
             if not 'mesh' in key:
-                tstep = eval(key.split("/")[-1])
+                tstep = int(key.split("/")[-1])
                 ndim = len(f[key].shape)
                 ds = datasets[ndim]
                 if tstep in ds:
@@ -79,7 +81,7 @@ def generate_xdmf(h5filename):
     coor = {0:'x', 1:'y', 2:'z'}
     for ndim, dsets in six.iteritems(datasets):
         timesteps = list(dsets.keys())
-        if len(timesteps) == 0:
+        if not timesteps:
             continue
 
         timesteps.sort(key=int)
@@ -103,7 +105,7 @@ def generate_xdmf(h5filename):
                     name = x.split("/")[:-1]
                     if 'slice' in name[-1]:
                         ss = name[-1].split('_')
-                        coors = [coor[i] for i,sx in enumerate(ss) if 'slice' in sx]
+                        coors = [coor[i] for i, sx in enumerate(ss) if 'slice' in sx]
                     else:
                         coors = ['x', 'y']
                     break

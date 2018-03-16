@@ -1,3 +1,6 @@
+"""
+Module for handling Fourier diagonal matrices
+"""
 from __future__ import division
 
 __all__ = ['mat']
@@ -5,7 +8,6 @@ __all__ = ['mat']
 import numpy as np
 from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
-from .bases import R2CBasis, C2CBasis
 
 @inheritdocstrings
 class _Fouriermatrix(SpectralMatrix):
@@ -76,4 +78,3 @@ class _FourierMatDict(dict):
 
 
 mat = _FourierMatDict({})
-

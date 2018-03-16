@@ -1,12 +1,13 @@
-import numpy as np
+#pylint: disable=missing-docstring,consider-using-enumerate
 import warnings
+import numpy as np
 from shenfun import MixedTensorProductSpace
 
 # https://github.com/Unidata/netcdf4-python/blob/master/examples/mpi_example.py
 
 try:
     from netCDF4 import Dataset
-except:
+except ImportError:
     warnings.warn('netcdf not installed')
 
 __all__ = ('NCWriter',)
@@ -32,13 +33,13 @@ class NCWriter(object):
         self._dtype = 'f8'
 
         self.f.createDimension('t', None)
-        self.dims=['t']
+        self.dims = ['t']
         self.nc_t = self.f.createVariable('t', self._dtype, ('t'))
         self.nc_t.set_collective(True)
 
         x = T.mesh()
         s = self.T.local_slice(False)
-        for i, xi in enumerate(x):
+        for i in range(len(x)):
             xyz = {0:'x', 1:'y', 2:'z'}[i]
             self.f.createDimension(xyz, np.squeeze(x[i]).size)
             nc_xyz = self.f.createVariable(xyz, self._dtype, (xyz))
@@ -46,7 +47,7 @@ class NCWriter(object):
             nc_xyz[s[i]] = np.squeeze(x[i][s[i]])
 
         self.handles = dict()
-        for i,name in enumerate(names):
+        for i, name in enumerate(names):
             self.handles[i] = self.f.createVariable(name, self._dtype, self.dims)
             # switch to collective mode, rewrite the data.
             self.handles[i].set_collective(True)
@@ -65,7 +66,6 @@ class NCWriter(object):
 
         # update time
         it = self.nc_t.size
-        print(it)
         self.nc_t[it] = tstep
 
         if isinstance(self.T, MixedTensorProductSpace):
@@ -74,11 +74,11 @@ class NCWriter(object):
             s = self.T.local_slice(False)
             for i in range(u.shape[0]):
                 if self.T.ndim() == 3:
-                    self.handles[i][it,s[0],s[1],s[2]] = u[i]
+                    self.handles[i][it, s[0], s[1], s[2]] = u[i]
                 elif self.T.ndim() == 2:
                     self.handles[i][it, s[0], s[1]] = u[i]
                 else:
-                    raise(NotImplementedError)
+                    raise NotImplementedError
         else:
             assert len(self.names) == 1
             s = self.T.local_slice(False)
@@ -87,10 +87,9 @@ class NCWriter(object):
             elif self.T.ndim() == 2:
                 self.handles[0][it, s[0], s[1]] = u[:]
             else:
-                raise(NotImplementedError)
+                raise NotImplementedError
 
         self.f.sync()
 
     def close(self):
         self.f.close()
-

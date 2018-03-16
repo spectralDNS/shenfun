@@ -1,11 +1,20 @@
+"""
+This module contains the implementation of operators acting on arguments.
+"""
 import numpy as np
-from .arguments import Expr, Function, BasisFunction
+from .arguments import Expr, BasisFunction
 
 __all__ = ('div', 'grad', 'Dx', 'curl')
 
+#pylint: disable=protected-access
 
-# operators
 def div(test):
+    """Return div(test)
+
+    args:
+        test        Instance of Expr or BasisFunction
+                    Must be rank > 0 (cannot take divergence of scalar)
+    """
     assert isinstance(test, (Expr, BasisFunction))
 
     if isinstance(test, BasisFunction):
@@ -34,6 +43,11 @@ def div(test):
 
 
 def grad(test):
+    """Return grad(test)
+
+    args:
+        test        Instance of Expr or BasisFunction
+    """
     assert isinstance(test, (Expr, BasisFunction))
 
     if isinstance(test, BasisFunction):
@@ -57,6 +71,14 @@ def grad(test):
 
 
 def Dx(test, x, k=1):
+    """Return k'th order partial derivative in direction x
+
+    args:
+        test        Instance of Expr or BasisFunction
+        x     int   axis to take derivative over
+    kwargs:
+        k     int   Number of derivatives
+    """
     assert isinstance(test, (Expr, BasisFunction))
 
     if isinstance(test, BasisFunction):
@@ -69,6 +91,11 @@ def Dx(test, x, k=1):
 
 
 def curl(test):
+    """Return curl of test
+
+    args:
+        test        Instance of Expr or BasisFunction
+    """
     assert isinstance(test, (Expr, BasisFunction))
 
     if isinstance(test, BasisFunction):
@@ -84,4 +111,3 @@ def curl(test):
     test._scales = np.concatenate((w0.scales(), w1.scales(), w2.scales()), axis=0)
     test._indices = np.concatenate((w0.indices(), w1.indices(), w2.indices()), axis=0)
     return test
-
