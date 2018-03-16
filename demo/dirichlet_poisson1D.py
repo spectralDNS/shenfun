@@ -12,11 +12,11 @@ whereas for Chebyshev we solve
      (\nabla^2 u, v) = (f, v)
 
 """
-import sys, os
+import sys
 import importlib
-from sympy import symbols, cos, sin, exp, lambdify
+from sympy import symbols, sin, lambdify
 import numpy as np
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
+from shenfun import inner, div, grad, TestFunction, TrialFunction, \
     project, Dx, Array
 
 assert len(sys.argv) == 3, 'Call with two command-line arguments'

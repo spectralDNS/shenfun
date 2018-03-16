@@ -10,12 +10,11 @@ Use Fourier basis V and find u in VxV such that
 
 """
 from sympy import symbols, exp, lambdify
-import numpy as np
 import pyfftw
 import matplotlib.pyplot as plt
 from mpi4py import MPI
 import _pickle
-from shenfun.fourier.bases import R2CBasis, C2CBasis
+from shenfun.fourier.bases import C2CBasis
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
     TensorProductSpace, Array, ETDRK4, ETD, HDF5Writer
 

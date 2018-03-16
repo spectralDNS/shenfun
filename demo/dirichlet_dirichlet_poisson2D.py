@@ -12,16 +12,16 @@ The equation to solve is
 """
 import os
 import importlib
-from sympy import symbols, cos, sin, exp, lambdify
+from sympy import symbols, cos, sin, lambdify
 import numpy as np
 from shenfun.tensorproductspace import TensorProductSpace
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
+from shenfun import inner, grad, TestFunction, TrialFunction, Function, \
     project, Dx
 from mpi4py import MPI
 from time import time
 try:
     import matplotlib.pyplot as plt
-except:
+except ImportError:
     plt = None
 
 comm = MPI.COMM_WORLD

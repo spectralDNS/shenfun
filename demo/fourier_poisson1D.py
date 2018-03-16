@@ -13,15 +13,14 @@ Use the method of manufactured solutions, and choose a
 solution that is either real or complex.
 
 """
-from sympy import Symbol, cos, sin, exp, lambdify
+from sympy import Symbol, cos, sin, lambdify
 import numpy as np
-from shenfun import inner, div, grad, TestFunction, TrialFunction
+from shenfun import inner, grad, TestFunction, TrialFunction
 from shenfun.fourier.bases import FourierBasis
-import shenfun
 import os
 try:
     import matplotlib.pyplot as plt
-except:
+except ImportError:
     plt = None
 
 # Use sympy to compute a rhs, given an analytical solution

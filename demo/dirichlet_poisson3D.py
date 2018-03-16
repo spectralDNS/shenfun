@@ -22,13 +22,12 @@ from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun.tensorproductspace import TensorProductSpace
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    project, Dx
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, Dx
 import time
 from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt
-except:
+except ImportError:
     plt = None
 
 comm = MPI.COMM_WORLD

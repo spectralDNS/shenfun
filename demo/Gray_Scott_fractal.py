@@ -27,7 +27,7 @@ Initial conditions are given as
 and for stability they are approximated using error functions.
 
 """
-from sympy import Symbol, cos, sin, exp, lambdify
+from sympy import Symbol, sin, exp, lambdify
 from sympy.functions import erf
 import numpy as np
 import matplotlib.pyplot as plt
@@ -36,7 +36,6 @@ from shenfun.tensorproductspace import TensorProductSpace, VectorTensorProductSp
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, HDF5Writer,\
     ETDRK4, ETD, RK4
 import scipy
-from time import time
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
@@ -103,7 +102,7 @@ def LinearRHS(alpha1, alpha2, **params):
     return L
 
 def NonlinearRHS(uv, uv_hat, rhs, kappa, **params):
-    global b0, d0, UVp, w0, w1, TVp
+    global b0, UVp, w0, w1, TVp
     rhs.fill(0)
     UVp = TVp.backward(uv_hat, UVp) # 3/2-rule dealiasing for nonlinear term
     w1[0] = b0*(1-UVp[0]) - UVp[0]*UVp[1]**2

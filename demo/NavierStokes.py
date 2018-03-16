@@ -11,7 +11,6 @@ solver in the https://github.com/spectralDNS/spectralDNS repository
 
 import numpy as np
 from mpi4py import MPI
-from time import time
 from shenfun import *
 
 nu = 0.000625

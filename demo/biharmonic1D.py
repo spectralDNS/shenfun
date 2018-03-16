@@ -8,7 +8,7 @@ Use Shen's Biharmonic basis.
 """
 import sys, os
 import importlib
-from sympy import symbols, cos, sin, exp, lambdify
+from sympy import symbols, sin, exp, lambdify
 import numpy as np
 from shenfun import inner, Dx, TestFunction, TrialFunction
 try:

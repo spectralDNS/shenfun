@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys, platform
+import os, sys
 from distutils.core import setup, Extension
 import subprocess
 from numpy import get_include

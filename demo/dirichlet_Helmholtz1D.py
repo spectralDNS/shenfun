@@ -14,15 +14,10 @@ whereas for Chebyshev we solve
 """
 import sys
 import importlib
-from sympy import symbols, cos, sin, exp, lambdify
+from sympy import symbols, sin, exp, lambdify
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    project, Dx, Array
-try:
-    import matplotlib.pyplot as plt
-except:
-    plt = None
-
+    Dx, Array
 
 assert len(sys.argv) == 3
 assert sys.argv[-1] in ('legendre', 'chebyshev')
