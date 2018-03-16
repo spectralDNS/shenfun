@@ -15,8 +15,7 @@ import importlib
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
 from shenfun.tensorproductspace import TensorProductSpace
-from shenfun import inner, grad, TestFunction, TrialFunction, Function, \
-    Dx
+from shenfun import inner, grad, TestFunction, TrialFunction, Function
 from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt
