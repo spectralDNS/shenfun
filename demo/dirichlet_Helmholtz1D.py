@@ -21,7 +21,7 @@ from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
 
 assert len(sys.argv) == 3
 assert sys.argv[-1] in ('legendre', 'chebyshev')
-assert isinstance(eval(sys.argv[-2]), int)
+assert isinstance(int(sys.argv[-2]), int)
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 basis = sys.argv[-1]

@@ -18,7 +18,6 @@ from shenfun.tensorproductspace import TensorProductSpace
 from shenfun import inner, grad, TestFunction, TrialFunction, Function, \
     Dx
 from mpi4py import MPI
-from time import time
 try:
     import matplotlib.pyplot as plt
 except ImportError:

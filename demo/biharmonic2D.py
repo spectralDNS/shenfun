@@ -20,7 +20,7 @@ for the Legendre basis.
 """
 import sys, os
 import importlib
-from sympy import symbols, cos, sin, exp, lambdify
+from sympy import symbols, cos, sin, lambdify
 import numpy as np
 from shenfun.fourier.bases import R2CBasis
 from shenfun.tensorproductspace import TensorProductSpace
