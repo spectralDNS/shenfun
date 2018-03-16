@@ -16,7 +16,7 @@ import numpy as np
 import os
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun.tensorproductspace import TensorProductSpace
-from shenfun import inner, grad, TestFunction, TrialFunction, Function, Array
+from shenfun import inner, grad, TestFunction, TrialFunction, Array
 from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt

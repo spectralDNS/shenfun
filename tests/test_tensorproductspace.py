@@ -7,7 +7,7 @@ from shenfun.tensorproductspace import TensorProductSpace, VectorTensorProductSp
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun.chebyshev import bases as cbases
 from shenfun.legendre import bases as lbases
-from shenfun import div, grad, Function, project, Dx, Array
+from shenfun import grad, Function, project, Dx, Array
 from sympy import symbols, cos, sin, lambdify
 from itertools import product
 

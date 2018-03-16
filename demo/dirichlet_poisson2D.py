@@ -34,7 +34,7 @@ comm = MPI.COMM_WORLD
 
 assert len(sys.argv) == 3, "Call with two command-line arguments"
 assert sys.argv[-1] in ('legendre', 'chebyshev')
-assert isinstance(eval(sys.argv[-2]), int)
+assert isinstance(int(sys.argv[-2]), int)
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 basis = sys.argv[-1]
@@ -54,7 +54,7 @@ ul = lambdify((x, y), ue, 'numpy')
 fl = lambdify((x, y), fe, 'numpy')
 
 # Size of discretization
-N = (eval(sys.argv[-2]), eval(sys.argv[-2]))
+N = (int(sys.argv[-2]), int(sys.argv[-2]))
 
 SD = Basis(N[0], scaled=True, bc=(a, b))
 K1 = R2CBasis(N[1])

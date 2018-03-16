@@ -22,7 +22,7 @@ from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun.tensorproductspace import TensorProductSpace
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, Dx
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Function
 import time
 from mpi4py import MPI
 try:
@@ -34,7 +34,7 @@ comm = MPI.COMM_WORLD
 
 assert len(sys.argv) == 3
 assert sys.argv[-1] in ('legendre', 'chebyshev')
-assert isinstance(eval(sys.argv[-2]), int)
+assert isinstance(int(sys.argv[-2]), int)
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 basis = sys.argv[-1]
@@ -55,7 +55,7 @@ ul = lambdify((x, y, z), ue, 'numpy')
 fl = lambdify((x, y, z), fe, 'numpy')
 
 # Size of discretization
-N = eval(sys.argv[-2])
+N = int(sys.argv[-2])
 N = [N, N+1, N+2]
 #N = (14, 15, 16)
 

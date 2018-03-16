@@ -5,7 +5,6 @@ from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun.tensorproductspace import TensorProductSpace, VectorTensorProductSpace, MixedTensorProductSpace
 from shenfun import inner, div, grad, curl, TestFunction, TrialFunction, Function, project, Dx
 from mpi4py import MPI
-from time import time
 
 comm = MPI.COMM_WORLD
 # Set global size of the computational box

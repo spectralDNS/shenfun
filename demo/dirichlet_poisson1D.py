@@ -17,11 +17,11 @@ import importlib
 from sympy import symbols, sin, lambdify
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    project, Dx, Array
+    Dx, Array
 
 assert len(sys.argv) == 3, 'Call with two command-line arguments'
 assert sys.argv[-1] in ('legendre', 'chebyshev')
-assert isinstance(eval(sys.argv[-2]), int)
+assert isinstance(int(sys.argv[-2]), int)
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 basis = sys.argv[-1]
@@ -40,7 +40,7 @@ ul = lambdify(x, ue, 'numpy')
 fl = lambdify(x, fe, 'numpy')
 
 # Size of discretization
-N = eval(sys.argv[-2])
+N = int(sys.argv[-2])
 
 SD = Basis(N, plan=True, bc=(a, b))
 X = SD.mesh(N)

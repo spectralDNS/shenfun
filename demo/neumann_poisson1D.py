@@ -16,7 +16,7 @@ whereas for Chebyshev we solve
 """
 import sys, os
 import importlib
-from sympy import symbols, sin, exp, lambdify
+from sympy import symbols, sin, lambdify
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction
 try:
