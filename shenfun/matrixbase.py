@@ -1,14 +1,16 @@
+r"""
+This module contains classes for working with sparse matrices
+"""
 from __future__ import division
-import numpy as np
-from scipy.sparse import diags as sp_diags
-from scipy.sparse.linalg import spsolve
-from scipy.linalg import solve as lasolve
-import six
 from copy import deepcopy
 from numbers import Number
+from scipy.sparse import diags as sp_diags
+from scipy.sparse.linalg import spsolve
+import numpy as np
+import six
 from .utilities import inheritdocstrings
 
-__all__=['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix']
+__all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix']
 
 class SparseMatrix(dict):
     """Base class for sparse matrices
@@ -34,6 +36,7 @@ class SparseMatrix(dict):
     >>> SparseMatrix(d, (N, N))
 
     """
+    # pylint: disable=redefined-builtin, missing-docstring
 
     def __init__(self, d, shape):
         dict.__init__(self, d)
@@ -371,6 +374,8 @@ class SpectralMatrix(SparseMatrix):
     value.
 
     """
+    # pylint: disable=redefined-builtin, missing-docstring
+
     def __init__(self, d, test, trial, scale=1.0):
         if isinstance(test[1], (int, np.integer)):
             k_test, k_trial = test[1], trial[1]
@@ -449,8 +454,7 @@ class SpectralMatrix(SparseMatrix):
     def get_key(self):
         if self.__class__.__name__.startswith('_'):
             return self.__hash__()
-        else:
-            return self.__class__.__name__
+        return self.__class__.__name__
 
     def __imul__(self, y):
         """self.__imul__(y) <==> self*=y"""
@@ -581,7 +585,7 @@ def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-12):
     relmax = abs(M).max()
     for i in range(M.shape[1]):
         u = M.diagonal(i).copy()
-        if abs(u).max() > abstol and abs(u).max()/relmax > reltol :
+        if abs(u).max() > abstol and abs(u).max()/relmax > reltol:
             d[i] = u
 
     for i in range(1, M.shape[0]):
@@ -590,4 +594,3 @@ def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-12):
             d[-i] = l
 
     return SparseMatrix(d, M.shape)
-

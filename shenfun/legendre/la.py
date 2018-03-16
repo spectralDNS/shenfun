@@ -1,13 +1,19 @@
-import numpy as np
+#pylint: disable=line-too-long, len-as-condition, missing-docstring, too-many-instance-attributes
+
 from copy import copy
+import numpy as np
 import scipy.linalg as scipy_la
-import scipy.sparse.linalg as sparse_la
 from shenfun.optimization import la
 from shenfun.la import TDMA as la_TDMA
 from . import bases
 
-
 class TDMA(la_TDMA):
+    """Tridiagonal matrix solver
+
+    args:
+        mat    Symmetric tridiagonal matrix with diagonals in offsets -2, 0, 2
+
+    """
 
     def __call__(self, b, u=None, axis=0):
 
@@ -25,9 +31,8 @@ class TDMA(la_TDMA):
         else:
             bc.apply_before(u, False, scales=(-1., -1./3.))
 
-        N = u.shape[axis]
-        if not N == self.N:
-            self.init(N)
+        if not self.dd.shape[0] == self.mat.shape[0]:
+            self.init()
 
         if len(u.shape) == 3:
             la.TDMA_SymSolve3D(self.dd, self.ud, self.L, u, axis)
@@ -49,7 +54,71 @@ class TDMA(la_TDMA):
 
 
 class Helmholtz(object):
-    """Helmholtz solver with variable coefficient
+    r"""Helmholtz solver alfa*u'' + beta*u = b
+
+    where u is the solution, b is the right hand side and alfa and beta are
+    scalars, or arrays of scalars for a multidimensional problem.
+
+    The user must provide mass and stiffness matrices and scale arrays
+    (alfa/beta) to each matrix. The matrices and scales can be provided as
+    either kwargs or args
+
+    Either
+    args:
+        A        SpectralMatrix    Stiffness matrix (Dirichlet or Neumann)
+        B        SpectralMatrix    Mass matrix (Dirichlet or Neumann)
+        alfa     Numpy array
+        beta     Numpy array
+
+    or
+    kwargs:
+        'ADDmat': A    Stiffness matrix (Dirichlet basis)
+        'BDDmat': B    Mass matrix (Dirichlet basis)
+        'ANNmat': A    Stiffness matrix (Neumann basis)
+        'BNNmat': B    Mass matrix (Neumann basis)
+
+        where alfa and beta are avalable as alfa=A.scale, beta=B.scale.
+
+    The solver can be used along any axis of a multidimensional problem. For
+    example, if the Legendre basis (Dirichlet or Neumann) is the last in a
+    3-dimensional TensorProductSpace, where the first two dimensions use Fourier,
+    then the 1D Helmholtz equation arises when one is solving the 3D Poisson
+    equation
+
+        \nabla^2 u = f
+
+    With the spectral Galerkin method we multiply this equation with a test
+    function (v) and integrate (weighted inner product (,)_w) over the domain
+
+        (v, \nabla^2 u)_w = (v, f)_w
+
+    See https://rawgit.com/spectralDNS/shenfun/master/docs/src/Poisson3D/poisson3d_bootstrap.html
+    for details, since it is actually quite involved. But basically, one obtains
+    a linear algebra system to be solved along the z-axis for all combinations
+    of the two Fourier indices k and l
+
+       ((2pi)^2 A_{mj} - (k^2 + l^2) B_{mj}) \hat{u}[k, l, j] = (v, f)_w[k, l, m]
+
+    Note that k only varies along x-direction, whereas l varies along y. To allow for
+    Numpy broadcasting these two variables are stored as arrays of shape
+
+      k: (N, 1, 1)
+      l: (1, M, 1)
+
+    Here it is assumed that the solution array \hat{u} has shape (N, M, P). Now,
+    multiplying k array with \hat{u} is achieved as
+
+      k * \hat{u}
+
+    Numpy will then take care of broadcasting k to an array of shape (N, M, P)
+    before performing the elementwise multiplication. Likewise, the constant
+    scale (2pi)^2 in front of the A_{mj} matrix is stored with shape (1, 1, 1),
+    and multiplying with \hat{u} is performed as if it was a scalar (as it
+    happens to be).
+
+    This is where the scale arrays in the signature to the Helmholt solver comes
+    from. alfa is here (2pi)^2, whereas beta is (k^2+l^2). Note that k+l is an
+    array of shape (N, M, 1).
 
     """
 
@@ -58,19 +127,16 @@ class Helmholtz(object):
         if 'ADDmat' in kwargs or 'ANNmat' in kwargs:
             if 'ADDmat' in kwargs:
                 assert 'BDDmat' in kwargs
-                A = kwargs['ADDmat']
-                B = kwargs['BDDmat']
+                A, B = kwargs['ADDmat'], kwargs['BDDmat']
 
             if 'ANNmat' in kwargs:
                 assert 'BNNmat' in kwargs
-                A = kwargs['ANNmat']
-                B = kwargs['BNNmat']
+                A, B = kwargs['ANNmat'], kwargs['BNNmat']
             A_scale = self.A_scale = A.scale
             B_scale = self.B_scale = B.scale
 
         elif len(args) == 4:
-            A = args[0]
-            B = args[1]
+            A, B = args[0], args[1]
             A_scale = self.A_scale = args[2]
             B_scale = self.B_scale = args[3]
 
@@ -158,10 +224,75 @@ class Helmholtz(object):
 
 
 class Biharmonic(object):
-    """Biharmonic solver
+    r"""Multidimensional Biharmonic solver for
 
       a0*u'''' + alfa*u'' + beta*u = b
 
+    where u is the solution, b is the right hand side and a0, alfa and beta are
+    scalars, or arrays of scalars for a multidimensional problem.
+
+    The user must provide mass, stiffness and biharmonic matrices and scale arrays
+    (a0/alfa/beta) to each matrix. The matrices and scales can be provided as
+    either kwargs or args
+
+    Either
+    args:
+        S        SpectralMatrix    Biharmonic matrix
+        A        SpectralMatrix    Stiffness matrix
+        B        SpectralMatrix    Mass matrix
+        a0       Numpy array
+        alfa     Numpy array
+        beta     Numpy array
+
+    or
+    kwargs:
+        'SBBmat': S    Biharmonic matrix
+        'ABBmat': A    Stiffness matrix
+        'BBBmat': B    Mass matrix
+
+        where a0, alfa and beta must be avalable as a0=S.scale, alfa=A.scale,
+        beta=B.scale.
+
+    The solver can be used along any axis of a multidimensional problem. For
+    example, if the Legendre basis (Biharmonic) is the last in a
+    3-dimensional TensorProductSpace, where the first two dimensions use Fourier,
+    then the 1D equation listed above arises when one is solving the 3D biharmonic
+    equation
+
+        \nabla^4 u = f
+
+    With the spectral Galerkin method we multiply this equation with a test
+    function (v) and integrate (weighted inner product (,)_w) over the domain
+
+        (v, \nabla^4 u)_w = (v, f)_w
+
+    See https://rawgit.com/spectralDNS/shenfun/master/docs/._shenfun_bootstrap004.html#sec:tensorproductspaces
+    for details, since it is actually quite involved. But basically, one obtains
+    a linear algebra system to be solved along the z-axis for all combinations
+    of the two Fourier indices k and l
+
+       ((2pi)^2 S_{mj} - 2(k^2 + l^2) A_{mj}) + (k^2 + l^2)^2 B_{mj}) \hat{u}[k, l, j] = (v, f)_w[k, l, m]
+
+    Note that k only varies along x-direction, whereas l varies along y. To allow for
+    Numpy broadcasting these two variables are stored as arrays of shape
+
+      k: (N, 1, 1)
+      l: (1, M, 1)
+
+    Here it is assumed that the solution array \hat{u} has shape (N, M, P). Now,
+    multiplying k array with \hat{u} is achieved as
+
+      k * \hat{u}
+
+    Numpy will then take care of broadcasting k to an array of shape (N, M, P)
+    before performing the elementwise multiplication. Likewise, the constant
+    scale (2pi)^2 in front of the A_{mj} matrix is stored with shape (1, 1, 1),
+    and multiplying with \hat{u} is performed as if it was a scalar (as it
+    happens to be).
+
+    This is where the scale arrays in the signature to the Helmholt solver comes
+    from. a0 is here (2pi)^2, whereas alfa and beta are -2(k^2+l^2) and
+    (k^2+l^2)^2, respectively. Note that k+l is an array of shape (N, M, 1).
 
     """
 
@@ -196,9 +327,9 @@ class Biharmonic(object):
             shape[S.axis] = B[4].shape[0]
             self.d2 = np.zeros(shape)
             if np.ndim(B_scale) == 3:
-                la.PDMA_SymLU_3D(S, A, B, S.axis, S_scale[0,0,0], A_scale, B_scale, self.d0, self.d1, self.d2)
+                la.PDMA_SymLU_3D(S, A, B, S.axis, S_scale[0, 0, 0], A_scale, B_scale, self.d0, self.d1, self.d2)
             elif np.ndim(B_scale) == 2:
-                la.PDMA_SymLU_2D(S, A, B, S.axis, S_scale[0,0], A_scale, B_scale, self.d0, self.d1, self.d2)
+                la.PDMA_SymLU_2D(S, A, B, S.axis, S_scale[0, 0], A_scale, B_scale, self.d0, self.d1, self.d2)
 
         else:
             self.d0 = S[0]*S_scale + A[0]*A_scale + B[0]*B_scale
@@ -236,6 +367,8 @@ class Helmholtz_2dirichlet(object):
     """Helmholtz solver for 2-dimensional problems with 2 Dirichlet bases.
 
     a0*BUB + a1*AUB + a2*BUA^T = F
+
+    Somewhat experimental.
 
     """
 
@@ -277,7 +410,14 @@ class Helmholtz_2dirichlet(object):
         self.B1 = B1
         self.scale = scale
 
+        self.lmbda = None
+        self.lmbdax = None
+        self.lmbday = None
+        self.Vx = None
+        self.Vy = None
+
     def solve_eigen_problem(self, A, B, solver):
+        """Solve the eigen problem"""
         N = A.testfunction[0].N
         s = A.testfunction[0].slice()
         self.V = np.zeros((N, N))

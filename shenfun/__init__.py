@@ -1,4 +1,11 @@
+"""
+Main module for import from shenfun
+"""
+#pylint: disable=wildcard-import, too-many-branches
+
 import numpy as np
+from scipy.sparse.linalg import spsolve
+from scipy.linalg import solve as lasolve
 from . import chebyshev
 from . import legendre
 from . import fourier
@@ -15,8 +22,6 @@ from .utilities.generate_xdmf import *
 from .matrixbase import *
 from .optimization import Cheb, la, Matvec, convolve, evaluate
 
-from scipy.sparse.linalg import spsolve
-from scipy.linalg import solve as lasolve
 
 def energy_fourier(u, T):
     """Compute the energy of u using Parceval's theorem
@@ -30,7 +35,9 @@ def energy_fourier(u, T):
         # Just a 1D basis
         assert u.ndim == 1
         if isinstance(T, fourier.bases.R2CBasis):
-            result = 2*np.sum(abs(u[1:-1])**2) + np.sum(abs(u[0])**2) + np.sum(abs(u[-1])**2)
+            result = (2*np.sum(abs(u[1:-1])**2) +
+                      np.sum(abs(u[0])**2) +
+                      np.sum(abs(u[-1])**2))
         else:
             result = np.sum(abs(u)**2)
         return result
@@ -39,7 +46,9 @@ def energy_fourier(u, T):
     assert np.all([isinstance(base, fourier.bases.FourierBase) for base in T])
     if isinstance(T.bases[-1], fourier.bases.R2CBasis):
         if T.forward.output_pencil.subcomm[-1].Get_size() == 1:
-            result = 2*np.sum(abs(u[..., 1:-1])**2) + np.sum(abs(u[..., 0])**2) + np.sum(abs(u[..., -1])**2)
+            result = (2*np.sum(abs(u[..., 1:-1])**2) +
+                      np.sum(abs(u[..., 0])**2) +
+                      np.sum(abs(u[..., -1])**2))
 
         else:
             # Data not aligned along last dimension. Need to check about 0 and -1
@@ -55,7 +64,7 @@ def energy_fourier(u, T):
     else:
         result = np.sum(abs(u[...])**2)
 
-    result =  comm.allreduce(result)
+    result = comm.allreduce(result)
     return result
 
 
@@ -91,12 +100,12 @@ def solve(A, b, u=None, axis=0):
             b = np.moveaxis(b, axis, 0)
 
     assert A.shape[0] == b[s].shape[0]
-    if (isinstance(A.testfunction[0], chebyshev.bases.ShenNeumannBasis) or
-        isinstance(A.testfunction[0], legendre.bases.ShenNeumannBasis)):
+    if (isinstance(A.testfunction[0], (chebyshev.bases.ShenNeumannBasis,
+                                       legendre.bases.ShenNeumannBasis))):
         # Handle level by using Dirichlet for dof=0
         Aa = A.diags().toarray()
         Aa[0] = 0
-        Aa[0,0] = 1
+        Aa[0, 0] = 1
         b[0] = A.testfunction[0].mean
         if b.ndim == 1:
             u[s] = lasolve(Aa, b[s])

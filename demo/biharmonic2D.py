@@ -61,16 +61,16 @@ v = TestFunction(T)
 # Get f on quad points
 fj = fl(*X)
 
-# Compute right hand side of Poisson equation
+# Compute right hand side of biharmonic equation
 f_hat = inner(v, fj)
 
-# Get left hand side of Poisson equation
+# Get left hand side of biharmonic equation
 if basis == 'chebyshev': # No integration by parts due to weights
     matrices = inner(v, div(grad(div(grad(u)))))
 else: # Use form with integration by parts.
     matrices = inner(div(grad(v)), div(grad(u)))
 
-# Create Helmholtz linear algebra solver
+# Create linear algebra solver
 H = BiharmonicSolver(**matrices)
 
 # Solve and transform to real space

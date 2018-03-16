@@ -1,7 +1,15 @@
+"""
+Module contains some useful methods for Legendre quadrature.
+"""
 import numpy as np
 from numpy.polynomial import legendre as leg
 
 def legendre_lobatto_nodes_and_weights(N):
+    """Return points and weights for Legendre-Lobatto quadrature
+
+    args:
+        N     int    Number of quadrature points
+    """
     M = N//2
     j = np.arange(1, M)
     x = np.zeros(N)
@@ -31,8 +39,14 @@ def legendre_lobatto_nodes_and_weights(N):
 
 
 def legendre_gauss_nodes_and_weights(N):
+    """Return points and weights for Legendre-Gauss quadrature
+
+    args:
+        N     int    Number of quadrature points
+    """
+    import quadpy
+
     M = N//2
-    j = np.arange(1, M)
     x = np.zeros(N)
     s = quadpy.line_segment.GaussLegendre(N)
     x[:] = s.points
@@ -48,19 +62,20 @@ def legendre_gauss_nodes_and_weights(N):
         error = np.linalg.norm(dx)
         converged = error < 1e-16
         count += 1
-        print(count, error)
+        #print(count, error)
 
     MM = M if N % 2 == 0 else M+1
     x[MM:-1] = -x[1:M][::-1]
     w = 2./(1-x**2)/Ld(x)**2
     return x, w
 
-if __name__ == '__main__': # pragma: no cover
+def some_basic_tests():
+    """Compare with quadpy"""
     import sys
     from time import time
     import quadpy
 
-    N = eval(sys.argv[-1])
+    N = int(sys.argv[-1])
     t0 = time()
     x, w = legendre_lobatto_nodes_and_weights(N)
     print("Time mine {}".format(time()-t0))
@@ -82,3 +97,6 @@ if __name__ == '__main__': # pragma: no cover
 
     assert np.allclose(x, s.points)
     assert np.allclose(w, s.weights)
+
+if __name__ == '__main__': # pragma: no cover
+    some_basic_tests()

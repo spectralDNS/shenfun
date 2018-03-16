@@ -1,9 +1,13 @@
-import numpy as np
-from copy import copy
-from shenfun.optimization import la, Matvec
-from . import bases
-from shenfun.la import TDMA as la_TDMA
+#pylint: disable=line-too-long, missing-docstring
 
+from copy import copy
+import numpy as np
+from shenfun.optimization import la, Matvec
+from shenfun.la import TDMA as la_TDMA
+from shenfun.utilities import inheritdocstrings
+from . import bases
+
+@inheritdocstrings
 class TDMA(la_TDMA):
 
     def __call__(self, b, u=None, axis=0):
@@ -19,9 +23,8 @@ class TDMA(la_TDMA):
 
         bc.apply_before(u, False, scales=(-np.pi/2., -np.pi/4.))
 
-        N = u.shape[axis]
-        if not N == self.N:
-            self.init(N)
+        if not self.dd.shape[0] == self.mat.shape[0]:
+            self.init()
 
         if len(u.shape) == 3:
             la.TDMA_SymSolve3D(self.dd, self.ud, self.L, u, axis)
@@ -43,9 +46,71 @@ class TDMA(la_TDMA):
 
 
 class Helmholtz(object):
-    """Helmholtz solver -u'' + alfa*u = b
+    r"""Helmholtz solver alfa*u'' + beta*u = b
 
+    where u is the solution, b is the right hand side and alfa and beta are
+    scalars, or arrays of scalars for a multidimensional problem.
+
+    The user must provide mass and stiffness matrices and scale arrays
+    (alfa/beta) to each matrix. The matrices and scales can be provided as
+    either kwargs or args
+
+    Either
     args:
+        A        SpectralMatrix    Stiffness matrix (Dirichlet or Neumann)
+        B        SpectralMatrix    Mass matrix (Dirichlet or Neumann)
+        alfa     Numpy array
+        beta     Numpy array
+
+    or
+    kwargs:
+        'ADDmat': A    Stiffness matrix (Dirichlet basis)
+        'BDDmat': B    Mass matrix (Dirichlet basis)
+        'ANNmat': A    Stiffness matrix (Neumann basis)
+        'BNNmat': B    Mass matrix (Neumann basis)
+
+        where alfa and beta are avalable as alfa=A.scale, beta=B.scale.
+
+    The solver can be used along any axis of a multidimensional problem. For
+    example, if the Chebyshev basis (Dirichlet or Neumann) is the last in a
+    3-dimensional TensorProductSpace, where the first two dimensions use Fourier,
+    then the 1D Helmholtz equation arises when one is solving the 3D Poisson
+    equation
+
+        \nabla^2 u = f
+
+    With the spectral Galerkin method we multiply this equation with a test
+    function (v) and integrate (weighted inner product (,)_w) over the domain
+
+        (v, \nabla^2 u)_w = (v, f)_w
+
+    See https://rawgit.com/spectralDNS/shenfun/master/docs/src/Poisson3D/poisson3d_bootstrap.html
+    for details, since it is actually quite involved. But basically, one obtains
+    a linear algebra system to be solved along the z-axis for all combinations
+    of the two Fourier indices k and l
+
+       ((2pi)^2 A_{mj} - (k^2 + l^2) B_{mj}) \hat{u}[k, l, j] = (v, f)_w[k, l, m]
+
+    Note that k only varies along x-direction, whereas l varies along y. To allow for
+    Numpy broadcasting these two variables are stored as arrays of shape
+
+      k: (N, 1, 1)
+      l: (1, M, 1)
+
+    Here it is assumed that the solution array \hat{u} has shape (N, M, P). Now,
+    multiplying k array with \hat{u} is achieved as
+
+      k * \hat{u}
+
+    Numpy will then take care of broadcasting k to an array of shape (N, M, P)
+    before performing the elementwise multiplication. Likewise, the constant
+    scale (2pi)^2 in front of the A_{mj} matrix is stored with shape (1, 1, 1),
+    and multiplying with \hat{u} is performed as if it was a scalar (as it
+    happens to be).
+
+    This is where the scale arrays in the signature to the Helmholt solver comes
+    from. alfa is here (2pi)^2, whereas beta is (k^2+l^2). Note that k+l is an
+    array of shape (N, M, 1).
 
     """
     def __init__(self, *args, **kwargs):
@@ -60,19 +125,18 @@ class Helmholtz(object):
                 assert 'BNNmat' in kwargs
                 A = self.A = kwargs['ANNmat']
                 B = self.B = kwargs['BNNmat']
-            A_scale = self.A_scale = A.scale
-            B_scale = self.B_scale = B.scale
+            alfa = self.alfa = A.scale
+            beta = self.beta = B.scale
 
         elif len(args) == 4:
             A = self.A = args[0]
             B = self.B = args[1]
-            A_scale = self.A_scale = args[2]
-            B_scale = self.B_scale = args[3]
+            alfa = self.alfa = args[2]
+            beta = self.beta = args[3]
         else:
             raise RuntimeError('Wrong input to Helmholtz solver')
 
-        #local_shape = A.testfunction[0].forward.input_array.shape
-        shape = list(B_scale.shape)
+        shape = list(beta.shape)
         B[2] = np.broadcast_to(B[2], A[2].shape)
         B[-2] = np.broadcast_to(B[-2], A[2].shape)
         neumann = self.neumann = isinstance(A.testfunction[0], bases.ShenNeumannBasis)
@@ -84,38 +148,37 @@ class Helmholtz(object):
             self.u0 = np.zeros(N-2, float)     # Diagonal entries of U
             self.u1 = np.zeros(N-4, float)     # Diagonal+1 entries of U
             self.u2 = np.zeros(N-6, float)     # Diagonal+2 entries of U
-            self.L  = np.zeros(N-4, float)     # The single nonzero row of L
+            self.L = np.zeros(N-4, float)      # The single nonzero row of L
             self.axis = 0
-            la.LU_Helmholtz_1D(A, B, A_scale, B_scale, neumann, self.u0,
+            la.LU_Helmholtz_1D(A, B, alfa, beta, neumann, self.u0,
                                self.u1, self.u2, self.L)
 
         else:
             self.axis = A.axis
-            assert A_scale.shape[A.axis] == 1
-            assert B_scale.shape[A.axis] == 1
+            assert alfa.shape[A.axis] == 1 and beta.shape[A.axis] == 1
 
             N = A.shape[0]+2
-            A_scale = np.broadcast_to(A_scale, shape).copy()
+            alfa = np.broadcast_to(alfa, shape).copy()
             shape[A.axis] = N-2
             self.u0 = np.zeros(shape, float)     # Diagonal entries of U
             shape[A.axis] = N-4
             self.u1 = np.zeros(shape, float)     # Diagonal+2 entries of U
-            self.L  = np.zeros(shape, float)     # The single nonzero row of L
+            self.L = np.zeros(shape, float)      # The single nonzero row of L
             shape[A.axis] = N-6
             self.u2 = np.zeros(shape, float)     # Diagonal+4 entries of U
-            self.B_scale = B_scale.copy()
+            self.beta = beta.copy()
 
             if len(shape) == 2:
-                la.LU_Helmholtz_2D(A, B, A.axis, A_scale, B_scale, neumann,
+                la.LU_Helmholtz_2D(A, B, A.axis, alfa, beta, neumann,
                                    self.u0, self.u1, self.u2, self.L)
 
             elif len(shape) == 3:
-                la.LU_Helmholtz_3D(A, B, A.axis, A_scale, B_scale, neumann,
+                la.LU_Helmholtz_3D(A, B, A.axis, alfa, beta, neumann,
                                    self.u0, self.u1, self.u2, self.L)
 
     def __call__(self, u, b):
 
-        # comment since self.B_scale[s0]
+        # comment since self.beta[s0]
         #if not self.neumann:
             #if isinstance(self.bcs, BoundaryValues):
                 ##self.bcs.apply_before(b, True)
@@ -123,10 +186,10 @@ class Helmholtz(object):
 
             #else:
                 #s0 = [slice(0, 1)]*u.ndim
-                #b[s0] -= np.pi/2*(self.bc[0] + self.bc[1])*self.B_scale[s0]
+                #b[s0] -= np.pi/2*(self.bc[0] + self.bc[1])*self.beta[s0]
                 #s = copy(s0)
                 #s[self.axis] = slice(1, 2)
-                #b[s] -= np.pi/4*(self.bc[0] - self.bc[1])*self.B_scale[s0]
+                #b[s] -= np.pi/4*(self.bc[0] - self.bc[1])*self.beta[s0]
 
         if np.ndim(u) == 3:
 
@@ -157,21 +220,96 @@ class Helmholtz(object):
         return u
 
     def matvec(self, v, c):
+        """Matrix vector product
+
+        Returns c = dot(self, v)
+
+        args:
+            v    (input)         Numpy array of ndim>=1
+            c    (output)        Numpy array of same ndim as v
+
+        """
+
         assert self.neumann is False
         c[:] = 0
         if len(v.shape) > 1:
             raise NotImplementedError
             #Matvec.Helmholtz_matvec3D(v, c, 1.0, self.alfa**2, self.A[0], self.A[2], self.B[0])
         else:
-            Matvec.Helmholtz_matvec(v, c, self.A_scale, self.B_scale, self.A[0], self.A[2], self.B[0])
+            Matvec.Helmholtz_matvec(v, c, self.alfa, self.beta, self.A[0], self.A[2], self.B[0])
         return c
 
 
 class Biharmonic(object):
-    """Biharmonic solver
+    r"""Multidimensional Biharmonic solver for
 
       a0*u'''' + alfa*u'' + beta*u = b
 
+    where u is the solution, b is the right hand side and a0, alfa and beta are
+    scalars, or arrays of scalars for a multidimensional problem.
+
+    The user must provide mass, stiffness and biharmonic matrices and scale arrays
+    (a0/alfa/beta). The matrices and scales can be provided as
+    either kwargs or args
+
+    Either
+    args:
+        S        SpectralMatrix    Biharmonic matrix
+        A        SpectralMatrix    Stiffness matrix
+        B        SpectralMatrix    Mass matrix
+        a0       Numpy array
+        alfa     Numpy array
+        beta     Numpy array
+
+    or
+    kwargs:
+        'SBBmat': S    Biharmonic matrix
+        'ABBmat': A    Stiffness matrix
+        'BBBmat': B    Mass matrix
+
+        where a0, alfa and beta must be avalable as a0=S.scale, alfa=A.scale,
+        beta=B.scale.
+
+    The solver can be used along any axis of a multidimensional problem. For
+    example, if the Chebyshev basis (Biharmonic) is the last in a
+    3-dimensional TensorProductSpace, where the first two dimensions use Fourier,
+    then the 1D equation listed above arises when one is solving the 3D biharmonic
+    equation
+
+        \nabla^4 u = f
+
+    With the spectral Galerkin method we multiply this equation with a test
+    function (v) and integrate (weighted inner product (,)_w) over the domain
+
+        (v, \nabla^4 u)_w = (v, f)_w
+
+    See https://rawgit.com/spectralDNS/shenfun/master/docs/._shenfun_bootstrap004.html#sec:tensorproductspaces
+    for details, since it is actually quite involved. But basically, one obtains
+    a linear algebra system to be solved along the z-axis for all combinations
+    of the two Fourier indices k and l
+
+       ((2pi)^2 S_{mj} - 2(k^2 + l^2) A_{mj}) + (k^2 + l^2)^2 B_{mj}) \hat{u}[k, l, j] = (v, f)_w[k, l, m]
+
+    Note that k only varies along x-direction, whereas l varies along y. To allow for
+    Numpy broadcasting these two variables are stored as arrays of shape
+
+      k: (N, 1, 1)
+      l: (1, M, 1)
+
+    Here it is assumed that the solution array \hat{u} has shape (N, M, P). Now,
+    multiplying k array with \hat{u} is achieved as
+
+      k * \hat{u}
+
+    Numpy will then take care of broadcasting k to an array of shape (N, M, P)
+    before performing the elementwise multiplication. Likewise, the constant
+    scale (2pi)^2 in front of the A_{mj} matrix is stored with shape (1, 1, 1),
+    and multiplying with \hat{u} is performed as if it was a scalar (as it
+    happens to be).
+
+    This is where the scale arrays in the signature to the Helmholt solver comes
+    from. a0 is here (2pi)^2, whereas alfa and beta are -2(k^2+l^2) and
+    (k^2+l^2)^2, respectively. Note that k+l is an array of shape (N, M, 1).
 
     """
 
@@ -179,38 +317,30 @@ class Biharmonic(object):
 
         if 'SBBmat' in kwargs:
             assert 'ABBmat' in kwargs and 'BBBmat' in kwargs
-            S = kwargs['SBBmat']
-            A = kwargs['ABBmat']
-            B = kwargs['BBBmat']
-            S_scale = S.scale
-            A_scale = A.scale
-            B_scale = B.scale
+            S, A, B = kwargs['SBBmat'], kwargs['ABBmat'], kwargs['BBBmat']
+            a0, alfa, beta = S.scale, A.scale, B.scale
 
         elif len(args) == 6:
-            S = args[0]
-            A = args[1]
-            B = args[2]
-            S_scale = args[3]
-            A_scale = args[4]
-            B_scale = args[5]
+            S, A, B = args[0], args[1], args[2]
+            a0, alfa, beta = args[3], args[4], args[5]
         else:
             raise RuntimeError('Wrong input to Biharmonic solver')
 
-        self.S_scale = S_scale
+        self.a0 = a0
         sii, siu, siuu = S[0], S[2], S[4]
         ail, aii, aiu = A[-2], A[0], A[2]
         bill, bil, bii, biu, biuu = B[-4], B[-2], B[0], B[2], B[4]
         M = sii[::2].shape[0]
 
-        if np.ndim(B_scale) > 1:
-            shape = list(B_scale.shape)
+        if np.ndim(beta) > 1:
+            shape = list(beta.shape)
             self.axis = S.axis
             shape[S.axis] = M
             ss = copy(shape)
             ss.insert(0, 2)
-            S_scale = self.S_scale = np.broadcast_to(S_scale, shape)
-            A_scale = np.broadcast_to(A_scale, shape)
-            B_scale = np.broadcast_to(B_scale, shape)
+            a0 = self.a0 = np.broadcast_to(a0, shape)
+            alfa = np.broadcast_to(alfa, shape)
+            beta = np.broadcast_to(beta, shape)
 
             self.u0 = np.zeros(ss)
             self.u1 = np.zeros(ss)
@@ -219,12 +349,12 @@ class Biharmonic(object):
             self.l1 = np.zeros(ss)
             self.ak = np.zeros(ss)
             self.bk = np.zeros(ss)
-            if np.ndim(B_scale) == 3:
-                la.LU_Biharmonic_3D_n(S.axis, S_scale, A_scale, B_scale, sii, siu, siuu, ail, aii, aiu, bill, bil, bii, biu, biuu, self.u0, self.u1, self.u2, self.l0, self.l1)
+            if np.ndim(beta) == 3:
+                la.LU_Biharmonic_3D_n(S.axis, a0, alfa, beta, sii, siu, siuu, ail, aii, aiu, bill, bil, bii, biu, biuu, self.u0, self.u1, self.u2, self.l0, self.l1)
                 la.Biharmonic_factor_pr_3D(S.axis, self.ak, self.bk, self.l0, self.l1)
 
-            elif np.ndim(B_scale) == 2:
-                la.LU_Biharmonic_2D_n(S.axis, S_scale, A_scale, B_scale, sii, siu, siuu, ail, aii, aiu, bill, bil, bii, biu, biuu, self.u0, self.u1, self.u2, self.l0, self.l1)
+            elif np.ndim(beta) == 2:
+                la.LU_Biharmonic_2D_n(S.axis, a0, alfa, beta, sii, siu, siuu, ail, aii, aiu, bill, bil, bii, biu, biuu, self.u0, self.u1, self.u2, self.l0, self.l1)
                 la.Biharmonic_factor_pr_2D(S.axis, self.ak, self.bk, self.l0, self.l1)
 
         else:
@@ -235,18 +365,18 @@ class Biharmonic(object):
             self.l1 = np.zeros((2, M))
             self.ak = np.zeros((2, M))
             self.bk = np.zeros((2, M))
-            la.LU_Biharmonic_1D(S_scale, A_scale, B_scale, sii, siu, siuu, ail, aii, aiu, bill, bil, bii, biu, biuu, self.u0, self.u1, self.u2, self.l0, self.l1)
+            la.LU_Biharmonic_1D(a0, alfa, beta, sii, siu, siuu, ail, aii, aiu, bill, bil, bii, biu, biuu, self.u0, self.u1, self.u2, self.l0, self.l1)
             la.Biharmonic_factor_pr(self.ak, self.bk, self.l0, self.l1)
 
     def __call__(self, u, b):
         if np.ndim(u) == 3:
-            la.Solve_Biharmonic_3D_n(self.axis, b, u, self.u0, self.u1, self.u2, self.l0, self.l1, self.ak, self.bk, self.S_scale)
+            la.Solve_Biharmonic_3D_n(self.axis, b, u, self.u0, self.u1, self.u2, self.l0, self.l1, self.ak, self.bk, self.a0)
 
         elif np.ndim(u) == 2:
-            la.Solve_Biharmonic_2D_n(self.axis, b, u, self.u0, self.u1, self.u2, self.l0, self.l1, self.ak, self.bk, self.S_scale)
+            la.Solve_Biharmonic_2D_n(self.axis, b, u, self.u0, self.u1, self.u2, self.l0, self.l1, self.ak, self.bk, self.a0)
 
         else:
-            la.Solve_Biharmonic_1D(b, u, self.u0, self.u1, self.u2, self.l0, self.l1, self.ak, self.bk, self.S_scale)
+            la.Solve_Biharmonic_1D(b, u, self.u0, self.u1, self.u2, self.l0, self.l1, self.ak, self.bk, self.a0)
 
         return u
 
@@ -269,9 +399,25 @@ class PDMA(object):
 
     Pentadiagonal matrix with diagonals in offsets -4, -2, 0, 2, 4
 
+    Arising with Poisson equation and biharmonic basis u
+
+      alfa u'' + beta u = f
+
+    Either
+    args:
+        A        SpectralMatrix    Stiffness matrix
+        B        SpectralMatrix    Mass matrix
+        alfa     Numpy array
+        beta     Numpy array
+
+    or
     kwargs:
-        stiffness and mass matrices with scales
-        solver      ('cython', 'python')     Choose implementation
+        'solver':    ('cython', 'python')     Choose implementation
+        'ABBmat': A    Stiffness matrix
+        'BBBmat': B    Mass matrix
+
+        where alfa and beta must be avalable as alfa=A.scale, beta=B.scale.
+
 
     """
 
@@ -280,25 +426,25 @@ class PDMA(object):
             assert 'BBBmat' in kwargs
             A = self.A = kwargs['ABBmat']
             B = self.B = kwargs['BBBmat']
-            A_scale = self.A_scale = A.scale
-            B_scale = self.B_scale = B.scale
+            alfa = self.alfa = A.scale
+            beta = self.beta = B.scale
 
         elif len(args) == 4:
             A = self.A = args[0]
             B = self.B = args[1]
-            A_scale = self.A_scale = args[2]
-            B_scale = self.B_scale = args[3]
+            alfa = self.alfa = args[2]
+            beta = self.beta = args[3]
         else:
-            raise RuntimeError('Wrong input to Helmholtz solver')
+            raise RuntimeError('Wrong input to PDMA solver')
 
         self.solver = kwargs.get('solver', 'cython')
         self.d, self.u1, self.u2 = np.zeros_like(B[0]), np.zeros_like(B[2]), np.zeros_like(B[4])
         self.l1, self.l2 = np.zeros_like(B[2]), np.zeros_like(B[4])
-        shape = list(B_scale.shape)
+        shape = list(beta.shape)
 
         if len(shape) == 1:
             if self.solver == 'python':
-                H = self.A_scale[0]*self.A + self.B_scale[0]*self.B
+                H = self.alfa[0]*self.A + self.beta[0]*self.B
                 self.d[:] = H[0]
                 self.u1[:] = H[2]
                 self.u2[:] = H[4]
@@ -307,16 +453,16 @@ class PDMA(object):
                 self.PDMA_LU(self.l2, self.l1, self.d, self.u1, self.u2)
 
             elif self.solver == 'cython':
-                la.LU_Helmholtz_Biharmonic_1D(self.A, self.B,
-                        self.A_scale[0], self.B_scale[0],
-                        self.l2, self.l1, self.d, self.u1, self.u2)
+                la.LU_Helmholtz_Biharmonic_1D(self.A, self.B, self.alfa[0],
+                                              self.beta[0], self.l2, self.l1,
+                                              self.d, self.u1, self.u2)
         else:
 
             self.axis = A.axis
-            assert A_scale.shape[A.axis] == 1
-            assert B_scale.shape[A.axis] == 1
+            assert alfa.shape[A.axis] == 1
+            assert beta.shape[A.axis] == 1
             N = A.shape[0]+4
-            A_scale = np.broadcast_to(A_scale, shape).copy()
+            alfa = np.broadcast_to(alfa, shape).copy()
             shape[A.axis] = N-4
             self.d = np.zeros(shape, float)     # Diagonal entries of U
             shape[A.axis] = N-6
@@ -325,17 +471,18 @@ class PDMA(object):
             shape[A.axis] = N-8
             self.u2 = np.zeros(shape, float)     # Diagonal+4 entries of U
             self.l2 = np.zeros(shape, float)     # Diagonal-4 entries of U
-            self.B_scale = B_scale.copy()
+            self.beta = beta.copy()
 
             if len(shape) == 2:
                 raise NotImplementedError
 
             elif len(shape) == 3:
-                la.LU_Helmholtz_Biharmonic_3D(A, B, A.axis, A_scale, B_scale,
-                                   self.l2, self.l1, self.d, self.u1, self.u2)
+                la.LU_Helmholtz_Biharmonic_3D(A, B, A.axis, alfa, beta, self.l2,
+                                              self.l1, self.d, self.u1, self.u2)
 
-
-    def PDMA_LU(self, l2, l1, d, u1, u2): # pragma: no cover
+    @staticmethod
+    def PDMA_LU(l2, l1, d, u1, u2): # pragma: no cover
+        """LU decomposition of PDM (for testing only)"""
         n = d.shape[0]
         m = u1.shape[0]
         k = n - m
@@ -360,7 +507,9 @@ class PDMA(object):
         l1[i] = lam
 
 
-    def PDMA_Solve(self, l2, l1, d, u1, u2, b): # pragma: no cover
+    @staticmethod
+    def PDMA_Solve(l2, l1, d, u1, u2, b): # pragma: no cover
+        """Solve method for PDM (for testing only)"""
         n = d.shape[0]
         bc = np.zeros_like(b)
         bc[:] = b[:]
@@ -376,7 +525,7 @@ class PDMA(object):
         bc[n-3] -= u1[n-3]*bc[n-1]/d[n-3]
         bc[n-4] /= d[n-4]
         bc[n-4] -= u1[n-4]*bc[n-2]/d[n-4]
-        for k in range(n-5,-1,-1):
+        for k in range(n-5, -1, -1):
             bc[k] /= d[k]
             bc[k] -= (u1[k]*bc[k+2]/d[k] + u2[k]*bc[k+4]/d[k])
         b[:] = bc

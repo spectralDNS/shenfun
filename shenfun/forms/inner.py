@@ -1,13 +1,17 @@
+"""
+This module contains the inner function that computes the
+weighted inner product.
+"""
 import numpy as np
-import six
 from shenfun.fourier import FourierBase
 from shenfun.spectralbase import inner_product
 from shenfun.la import DiagonalMatrix
 from shenfun.tensorproductspace import MixedTensorProductSpace
-from .arguments import Expr, TestFunction, TrialFunction, Function, BasisFunction, Array
+from .arguments import Expr, Function, BasisFunction, Array
 
 __all__ = ('inner',)
 
+#pylint: disable=line-too-long,inconsistent-return-statements,too-many-return-statements
 
 def inner(expr0, expr1, output_array=None, uh_hat=None):
     """Return inner product of linear or bilinear form
@@ -95,11 +99,10 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                                          uh_hat=uh)
             return output_array
 
-        else:
-            result = []
-            for ii in range(ndim):
-                result.append(inner(test[ii], trial[ii], uh_hat=uh))
-            return result
+        result = []
+        for ii in range(ndim):
+            result.append(inner(test[ii], trial[ii], uh_hat=uh))
+        return result
 
 
     if trial.argument() > 1:
@@ -253,9 +256,8 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                 A[0][0].axis = 0
                 return A[0][0]
 
-            else:
-                output_array[:] = B[0]*uh
-                return output_array
+            output_array[:] = B[0]*uh
+            return output_array
 
         else:
             if trial.argument() == 1:
@@ -315,8 +317,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
 
             if len(C) == 1:
                 return C[b.get_key()]
-            else:
-                return C
+            return C
 
         else: # linear form
             for i, bb in enumerate(B):
@@ -384,4 +385,3 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                 output_array += wh
 
             return output_array
-

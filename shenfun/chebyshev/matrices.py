@@ -63,6 +63,8 @@ To see that this is in fact the BDDmat:
     shenfun.chebyshev.matrices.BDDmat
 
 """
+#pylint: disable=bad-continuation, redefined-builtin
+
 from __future__ import division
 
 __all__ = ['mat']
@@ -75,6 +77,7 @@ from shenfun.optimization.Matvec import CDNmat_matvec, BDNmat_matvec, \
 
 from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
+from shenfun.la import TDMA as neumann_TDMA
 from .la import TDMA
 from . import bases
 
@@ -85,9 +88,16 @@ SB = bases.ShenBiharmonicBasis
 SN = bases.ShenNeumannBasis
 
 def get_ck(N, quad):
+    """Return array ck
+
+    args:
+        N       int    Number of quadrature points
+        quad:   str    Options: ('GL', 'GC')
+    """
     ck = np.ones(N, int)
     ck[0] = 2
-    if quad == "GL": ck[-1] = 2
+    if quad == "GL":
+        ck[-1] = 2
     return ck
 
 
@@ -167,7 +177,7 @@ class BNDmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='csr', axis=0):
-        c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
+        c = super(BNDmat, self).matvec(v, c, format=format, axis=axis)
         s = [slice(None),]*v.ndim
         s[axis] = 0
         c[s] = 0
@@ -229,7 +239,7 @@ class BNTmat(SpectralMatrix):
         SpectralMatrix.__init__(self, {}, test, trial)
 
     def matvec(self, v, c, format='csr', axis=0):
-        c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
+        c = super(BNTmat, self).matvec(v, c, format=format, axis=axis)
         s = [slice(None),]*v.ndim
         s[axis] = 0
         c[s] = 0
@@ -256,7 +266,7 @@ class BNBmat(SpectralMatrix):
         SpectralMatrix.__init__(self, {}, test, trial)
 
     def matvec(self, v, c, format='csr', axis=0):
-        c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
+        c = super(BNBmat, self).matvec(v, c, format=format, axis=axis)
         s = [slice(None),]*v.ndim
         s[axis] = 0
         c[s] = 0
@@ -287,7 +297,7 @@ class BTTmat(SpectralMatrix):
             s[axis] = slice(None)
             c[:] = self[0][s]*v
         else:
-            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
+            c = super(BTTmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
@@ -308,7 +318,6 @@ class BNNmat(SpectralMatrix):
     def __init__(self, test, trial):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SN)
-        from shenfun.la import TDMA
         N = test[0].N
         ck = get_ck(N, test[0].quad)
         k = np.arange(N-2, dtype=np.float)
@@ -316,10 +325,10 @@ class BNNmat(SpectralMatrix):
              2: -np.pi/2*((k[2:]-2)/(k[2:]))**2}
         d[-2] = d[2]
         SpectralMatrix.__init__(self, d, test, trial)
-        self.solve = TDMA(self)
+        self.solve = neumann_TDMA(self)
 
     def matvec(self, v, c, format='csr', axis=0):
-        c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
+        c = super(BNNmat, self).matvec(v, c, format=format, axis=axis)
         s = [slice(None),]*v.ndim
         s[axis] = 0
         c[s] = 0
@@ -343,7 +352,6 @@ class BDTmat(SpectralMatrix):
         assert isinstance(trial[0], CB)
         N = test[0].N
         ck = get_ck(N, test[0].quad)
-        k = np.arange(N-2, dtype=np.float)
         d = {0: np.pi/2*ck[:N-2],
              2: -np.pi/2*ck[2:]}
         SpectralMatrix.__init__(self, d, test, trial)
@@ -447,7 +455,7 @@ class BBBmat(SpectralMatrix):
             Pentadiagonal_matvec(v, c, self[-4], self[-2], self[0],
                                  self[2], self[4])
         else:
-            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
+            c = super(BBBmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
@@ -499,7 +507,7 @@ class BBDmat(SpectralMatrix):
             BBD_matvec3D(v, c, self[-2], self[0], self[2], self[4], axis)
 
         else:
-            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
+            c = super(BBDmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
@@ -522,7 +530,6 @@ class CDNmat(SpectralMatrix):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SN)
         N = test[0].N
-        ck = get_ck(N, test[0].quad)
         k = np.arange(N-2, dtype=np.float)
         d = {-1: -((k[1:]-1)/(k[1:]+1))**2*(k[1:]+1)*np.pi,
               1: (k[:-1]+1)*np.pi}
@@ -532,7 +539,7 @@ class CDNmat(SpectralMatrix):
         if format == 'cython' and v.ndim == 3:
             CDNmat_matvec(self[1], self[-1], v, c, axis)
         else:
-            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
+            c = super(CDNmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
@@ -575,7 +582,7 @@ class CDDmat(SpectralMatrix):
         elif format == 'cython' and v.ndim == 3:
             CDDmat_matvec(self[1], self[-1], v, c, axis)
         else:
-            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
+            c = super(CDDmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
@@ -606,7 +613,7 @@ class CNDmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='csr', axis=0):
-        c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
+        c = super(CNDmat, self).matvec(v, c, format=format, axis=axis)
         s = [slice(None),]*v.ndim
         s[axis] = 0
         c[s] = 0
@@ -698,7 +705,7 @@ class CBDmat(SpectralMatrix):
         elif format == 'cython' and v.ndim == 1:
             CBD_matvec(v, c, self[-1], self[1], self[3])
         else:
-            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
+            c = super(CBDmat, self).matvec(v, c, format=format, axis=axis)
         return c
 
 
@@ -744,7 +751,7 @@ class CDBmat(SpectralMatrix):
             CDB_matvec3D(v, c, self[-3], self[-1], self[1], axis)
 
         else:
-            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
+            c = super(CDBmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
@@ -793,7 +800,7 @@ class ABBmat(SpectralMatrix):
             Tridiagonal_matvec(v, c, self[-2], self[0], self[2])
 
         else:
-            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
+            c = super(ABBmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
@@ -830,7 +837,7 @@ class ADDmat(SpectralMatrix):
         if format == 'cython' and v.ndim == 1:
             ADDmat_matvec(v, c, self[0])
         else:
-            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
+            c = super(ADDmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
@@ -904,7 +911,7 @@ class ANNmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='csr', axis=0):
-        c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
+        c = super(ANNmat, self).matvec(v, c, format=format, axis=axis)
         s = [slice(None),]*v.ndim
         s[axis] = 0
         c[s] = self.testfunction[0].mean*np.pi
@@ -1016,7 +1023,7 @@ class SBBmat(SpectralMatrix):
             SBBmat_matvec(v, c, self[0])
 
         else:
-            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
+            c = super(SBBmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
