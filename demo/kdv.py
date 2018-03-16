@@ -1,6 +1,5 @@
 import numpy as np
 from matplotlib import pyplot as plt
-import shenfun
 from shenfun import *
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from mpl_toolkits.mplot3d import axes3d
