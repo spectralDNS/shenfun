@@ -28,7 +28,7 @@ from shenfun import inner, div, grad, TestFunction, TrialFunction, Function
 from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt
-except:
+except ImportError:
     plt = None
 
 comm = MPI.COMM_WORLD

@@ -5,7 +5,6 @@ from shenfun import *
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from mpl_toolkits.mplot3d import axes3d
 from matplotlib.collections import PolyCollection
-from time import time
 
 N = 256
 T = R2CBasis(N, plan=True)

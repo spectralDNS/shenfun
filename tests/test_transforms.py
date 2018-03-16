@@ -232,7 +232,6 @@ def test_CDDmat(quad):
 
     uc_hat = np.zeros(M)
     uc_hat = SD.CT.forward(uj, uc_hat)
-    du_hat = np.zeros(M)
     dudx_j = SD.CT.fast_derivative(uj, dudx_j)
 
     Cm = inner_product((SD, 0), (SD, 1))

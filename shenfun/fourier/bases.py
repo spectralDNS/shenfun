@@ -90,7 +90,7 @@ class FourierBase(SpectralBase):
 
         """
         if k > 0:
-            l = self.wavenumbers(self.N, 0, True)
+            l = self.wavenumbers(self.N, 0, scaled=True)
             V = V*((1j*l)**k)[np.newaxis, :]
         return V
 

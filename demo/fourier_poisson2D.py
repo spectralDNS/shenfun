@@ -11,16 +11,16 @@ where V is the Fourier basis span{exp(1jkx)}_{k=-N/2}^{N/2-1} and
 VxV is a tensorproductspace.
 
 """
-from sympy import Symbol, cos, sin, exp, lambdify
+from sympy import Symbol, cos, sin, lambdify
 import numpy as np
 import os
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun.tensorproductspace import TensorProductSpace
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, Array
+from shenfun import inner, grad, TestFunction, TrialFunction, Function, Array
 from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt
-except:
+except ImportError:
     plt = None
 
 comm = MPI.COMM_WORLD

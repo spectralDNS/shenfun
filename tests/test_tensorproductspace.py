@@ -7,8 +7,8 @@ from shenfun.tensorproductspace import TensorProductSpace, VectorTensorProductSp
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun.chebyshev import bases as cbases
 from shenfun.legendre import bases as lbases
-from shenfun import inner, div, grad, Function, project, Dx, Array
-from sympy import symbols, cos, sin, exp, lambdify
+from shenfun import div, grad, Function, project, Dx, Array
+from sympy import symbols, cos, sin, lambdify
 from itertools import product
 
 comm = MPI.COMM_WORLD
@@ -28,8 +28,6 @@ sizes = (12, 13)
 @pytest.mark.parametrize('typecode', 'fFdD')
 @pytest.mark.parametrize('dim', (2, 3, 4))
 def test_transform(typecode, dim):
-    from itertools import product
-
     s = (True,)
     if comm.Get_size() > 2 and dim > 2:
         s = (True, False)
@@ -327,7 +325,7 @@ def test_project2(typecode, dim, ST, quad):
 
 @pytest.mark.parametrize('quad', lquads)
 def test_project_2dirichlet(quad):
-    x, y, z = symbols("x,y,z")
+    x, y = symbols("x,y")
     ue = (cos(4*y)*sin(2*x))*(1-x**2)*(1-y**2)
     sizes = (25, 24)
 
@@ -396,8 +394,6 @@ def test_eval_tensor(typecode, dim, ST, quad):
         (2, 2): (sin(2*x) + cos(4*y))*funcz
         }
     syms = {1: (x, y), 2:(x, y, z)}
-    xs = {0:x, 1:y, 2:z}
-
     points = np.array([[0.1]*(dim+1),[0.01]*(dim+1),[0.4]*(dim+1),[0.5]*(dim+1)])
 
     for shape in product(*([sizes]*dim)):

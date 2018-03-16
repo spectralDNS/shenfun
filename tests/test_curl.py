@@ -58,7 +58,6 @@ def test_curl(typecode):
 
     w = Function(Tk, False)
     w_hat = Function(Tk)
-    t0 = time()
     w_hat = inner(v, curl(U), output_array=w_hat, uh_hat=U_hat)
     A = inner(v, u)
     for i in range(3):
@@ -91,8 +90,6 @@ def test_curl2():
     K = T.local_wavenumbers(False)
     Tk = VectorTensorProductSpace([T]*3)
     TTk = MixedTensorProductSpace([T, T, TT])
-    u = TrialFunction(Tk)
-    v = TestFunction(Tk)
 
     U = Function(Tk, False)
     U_hat = Function(Tk)
