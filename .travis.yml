@@ -14,7 +14,9 @@ env:
 
   global:
     # "travis encrypt BINSTAR_TOKEN=<token> --repo spectralDNS/shenfun"
+    # "travis encrypt CODACY_PROJECT_TOKEN=<token> --repo spectralDNS/shenfun"
     - secure: "IkxAa3D39jrvn1qrcQj48DVWVavL/4WJAb2vRMIkbLYr7dEReKHmdCQ4cIaJJCntTBwqQGDKPaJpZ2D7W+EYHQdkfFh1R0xMo8hpbX6KG0kbhQk7z5rDC99nrhVoBenFoiIQZUa6nRvFfVBJjn4VtrIPcWcAIdMpJbW3fM/crB2EIAh4ei9RSGSyVzj5UrVMlRjN0bq3LIv4hKksF+ipVBJV2MEavuGambO2XlmhwmD7rl20wg49RftsJ6j+LK/dDdA5SVEhSgIMgr7OUk5JMTkO4xNm2MuSq2Bg2HBpMj9AkVO9TUnH1j6KUApzcl/eGGo/0yLowGIDmooog77BTjei3lGGvk3e0qRQEyavbTubFEbUaVdrxp+vIm5PVRb83qpQ09UZuvJeEfNvqDl82VgF+lstClM6etH/js+AV0xlkMIhYAHX+RDAanPMNo+PbTVcjmACGVP2SnHwtD8crQyM/KpmiTUoqj5GH4CaSJR3Gewp3I2meZPhgRU2Yx1HKSmS75NNTJsR80Ln8BDcYtAnsjSGjIzAemyi/PSljdF1Qz4fAdcfYHxD8fmjvQkVZe4azaIfzCVjvsz+q79hUzKMdinhTkS4HrBl/RDehMCyuIdB5R81fIPu0SRqCjL4R7D9byjxLtDZWrzm+I0yqdZPQIA6MG+N03oBrbutrvU="
+    - secure: "i3252oxITpFfgkBZVPa/1/llFGr874jjk/nIH88MQPcLxP0rw6vP4oO1UjQeLKiOfdjIYVAJx6I2dWhui7jW3m32JUVPZmmtUmkHwqAV1FjHiIZxaQju+wI8pDrhKsY27uNzuLwfTWhiW3NXXJY6CC80PHCon2KCW8Uq/q1mJqBqnyQFH5nALYSM23rCdwqOld4M9Dv7F4KjvuDRcHeLe/qyxkdLncz5+CciQaYhotfSZF1E0ir6LotYsfPdt9z1jlVVUxfDFFYGaS2ajX5Ao6jjWDrrdUF2tfyOe/8TOk+y2Tk36NYA/5k4a9v9wleKqDt4NvtHeMTwpPBu7Usk5uw+oai5hoaFJb9TP/8Y+98KpmXdBLZKmXloOyggVKNQ5Ff3ot8pLoszPpheNcpY+qT+n6o0CQludlQBaGBQkf8Y/W+5BHnxWSRNhJ6+FNXvArNk3UaVMVBzuyVWS/PV5NxRkBhb6L3Qk/9E5ByK5sAHOBpYO0yRTeloNzbIbe8ZBTt+iy7OQsoyFsAXuI/IT0hEfjAMSZzLFAarqAFpAf0PG8GF24qDzLkXJE9wrzcgyzqEBzJRPL0qp/QmMqNZtvNTGw+ecKRYKJ1PthMGxXwiHfJEMRrqwzbIwId7BnrdIgW2eEoRIrharXPFDAFt8+TqUXPYcNw7zFVFfjt20hQ="
 
 before_install:
     # Remove homebrew.
@@ -34,7 +36,7 @@ install:
       conda config --set show_channel_urls true
       conda config --add channels conda-forge
       conda config --add channels spectralDNS
-      pip install codecov pytest-cov pytest
+      pip install codecov pytest-cov pytest codacy-coverage
       conda install --yes --quiet conda-forge-build-setup
       source run_conda_forge_build_setup
 
@@ -43,7 +45,7 @@ script:
       if [ $CONDA_PY == 36 ]; then
           conda build --no-test conf/conda
           conda install shenfun --use-local
-          py.test --cov=$(python -c "import site; print(site.getsitepackages()[0]+'/shenfun')") tests/
+          py.test --cov=$(python -c "import site; print(site.getsitepackages()[0]+'/shenfun')") --cov-report=xml tests/
       else
           conda build conf/conda
       fi
@@ -53,4 +55,5 @@ after_success:
     - |
       if [ $CONDA_PY == 36 ]; then
           codecov
+          python-codacy-coverage -r coverage.xml
       fi

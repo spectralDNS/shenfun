@@ -265,7 +265,7 @@ class SparseMatrix(dict):
 
 @inheritdocstrings
 class SpectralMatrix(SparseMatrix):
-    """Base class for inner product matrices
+    r"""Base class for inner product matrices
 
     args:
         d                            Dictionary, where keys are the diagonal
@@ -344,11 +344,11 @@ class SpectralMatrix(SparseMatrix):
 
     Mass matrix for Chebyshev Dirichlet basis:
 
-        (phi_k, phi_j)_w = int_{-1}^{1} phi_k(x) phi_j(x) w(x) dx
+        (phi_k, phi_j)_w = \int_{-1}^{1} phi_k(x) phi_j(x) w(x) dx
 
     Stiffness matrix for Chebyshev Dirichlet basis:
 
-        (phi_k'', phi_j)_w = int_{-1}^{1} phi_k''(x) phi_j(x) w(x) dx
+        (phi_k'', phi_j)_w = \int_{-1}^{1} phi_k''(x) phi_j(x) w(x) dx
 
     etc.
 
@@ -374,8 +374,6 @@ class SpectralMatrix(SparseMatrix):
     value.
 
     """
-    # pylint: disable=redefined-builtin, missing-docstring
-
     def __init__(self, d, test, trial, scale=1.0):
         if isinstance(test[1], (int, np.integer)):
             k_test, k_trial = test[1], trial[1]

@@ -57,13 +57,13 @@ f_hat = inner(v, fj, output_array=f_hat)
 
 # Get left hand side of Poisson equation
 if basis == 'chebyshev':
-    matrices = inner(v, alfa*u - div(grad(u)))
+    A = inner(v, -div(grad(u)))
+    B = inner(v, alfa*u)
 else:
     A = inner(grad(v), grad(u))
     B = inner(v, alfa*u)
-    matrices = {'ADDmat': A, 'BDDmat':B}
 
-H = Solver(**matrices)
+H = Solver(A, B, A.scale, B.scale)
 u_hat = Function(SD)           # Solution spectral space
 u_hat = H(u_hat, f_hat)
 uj = SD.backward(u_hat)
