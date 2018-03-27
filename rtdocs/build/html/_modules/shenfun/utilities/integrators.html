@@ -1,0 +1,252 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>shenfun.utilities.integrators &#8212; shenfun 1.0.2 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for shenfun.utilities.integrators</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">shenfun</span> <span class="k">import</span> <span class="n">Function</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;RK4&#39;</span><span class="p">,</span> <span class="s1">&#39;ETDRK4&#39;</span><span class="p">,</span> <span class="s1">&#39;ETD&#39;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">IntegratorBase</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span>
+                 <span class="n">L</span><span class="o">=</span><span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                 <span class="n">N</span><span class="o">=</span><span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                 <span class="n">update</span><span class="o">=</span><span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="n">_p</span> <span class="o">=</span> <span class="p">{</span>
+             <span class="s1">&#39;call_update&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+             <span class="s1">&#39;dt&#39;</span><span class="p">:</span> <span class="mi">0</span>
+             <span class="p">}</span>
+        <span class="n">_p</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">_p</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">T</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">LinearRHS</span> <span class="o">=</span> <span class="n">L</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">NonlinearRHS</span> <span class="o">=</span> <span class="n">N</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span> <span class="o">=</span> <span class="n">update</span>
+
+    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="ETD"><a class="viewcode-back" href="../../../shenfun.utilities.html#shenfun.utilities.integrators.ETD">[docs]</a><span class="k">class</span> <span class="nc">ETD</span><span class="p">(</span><span class="n">IntegratorBase</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span>
+                 <span class="n">L</span><span class="o">=</span><span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                 <span class="n">N</span><span class="o">=</span><span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                 <span class="n">update</span><span class="o">=</span><span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="n">IntegratorBase</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="n">L</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="n">N</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="n">update</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dU</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">psi</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="ETD.setup"><a class="viewcode-back" href="../../../shenfun.utilities.html#shenfun.utilities.integrators.ETD.setup">[docs]</a>    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
+        <span class="c1"># Set up ETDRK4 ODE solver</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dt</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LinearRHS</span><span class="p">()</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">L</span><span class="p">)</span>
+        <span class="n">hL</span> <span class="o">=</span> <span class="n">L</span><span class="o">*</span><span class="n">dt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ehL</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">hL</span><span class="p">)</span>
+        <span class="n">M</span> <span class="o">=</span> <span class="mi">50</span>
+        <span class="n">psi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">psi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">hL</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">M</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">ll</span> <span class="o">=</span> <span class="n">hL</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="p">(</span><span class="n">k</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span><span class="o">/</span><span class="n">M</span><span class="p">)</span>
+            <span class="n">psi</span> <span class="o">+=</span> <span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">ll</span><span class="p">)</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span><span class="o">/</span><span class="n">ll</span><span class="p">)</span><span class="o">.</span><span class="n">real</span>
+
+        <span class="n">psi</span> <span class="o">/=</span> <span class="n">M</span></div>
+
+<div class="viewcode-block" id="ETD.solve"><a class="viewcode-back" href="../../../shenfun.utilities.html#shenfun.utilities.integrators.ETD.solve">[docs]</a>    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">u_hat</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">trange</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">psi</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">dt</span><span class="p">)</span><span class="o">&gt;</span><span class="mf">1e-12</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+        <span class="n">t</span><span class="p">,</span> <span class="n">end_time</span> <span class="o">=</span> <span class="n">trange</span>
+        <span class="n">tstep</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="n">end_time</span><span class="o">-</span><span class="mf">1e-8</span><span class="p">:</span>
+            <span class="n">t</span> <span class="o">+=</span> <span class="n">dt</span>
+            <span class="n">tstep</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dU</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">NonlinearRHS</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">u_hat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dU</span><span class="p">)</span>
+            <span class="n">u_hat</span><span class="p">[:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ehL</span><span class="o">*</span><span class="n">u_hat</span> <span class="o">+</span> <span class="n">dt</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">psi</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">dU</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">u_hat</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">tstep</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_hat</span></div></div>
+
+<div class="viewcode-block" id="ETDRK4"><a class="viewcode-back" href="../../../shenfun.utilities.html#shenfun.utilities.integrators.ETDRK4">[docs]</a><span class="k">class</span> <span class="nc">ETDRK4</span><span class="p">(</span><span class="n">IntegratorBase</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span>
+                 <span class="n">L</span><span class="o">=</span><span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                 <span class="n">N</span><span class="o">=</span><span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                 <span class="n">update</span><span class="o">=</span><span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="n">IntegratorBase</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="n">L</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="n">N</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="n">update</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">U_hat0</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">U_hat1</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dU</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dU0</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">V2</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">psi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">4</span><span class="p">,)</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">U_hat0</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">]</span>
+
+<div class="viewcode-block" id="ETDRK4.setup"><a class="viewcode-back" href="../../../shenfun.utilities.html#shenfun.utilities.integrators.ETDRK4.setup">[docs]</a>    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
+        <span class="c1"># Set up ETDRK4 ODE solver</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dt</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LinearRHS</span><span class="p">()</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">L</span><span class="p">)</span>
+        <span class="n">hL</span> <span class="o">=</span> <span class="n">L</span><span class="o">*</span><span class="n">dt</span>
+        <span class="n">ehL</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ehL</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">hL</span><span class="p">)</span>
+        <span class="n">ehL_h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ehL_h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">hL</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span>
+
+        <span class="n">M</span> <span class="o">=</span> <span class="mi">50</span>
+        <span class="n">psi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">psi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">4</span><span class="p">,)</span> <span class="o">+</span> <span class="n">hL</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">M</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">ll</span> <span class="o">=</span> <span class="n">hL</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="p">(</span><span class="n">k</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span><span class="o">/</span><span class="n">M</span><span class="p">)</span>
+            <span class="n">psi</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">ll</span><span class="p">)</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span><span class="o">/</span><span class="n">ll</span><span class="p">)</span><span class="o">.</span><span class="n">real</span>
+            <span class="n">psi</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">ll</span><span class="p">)</span><span class="o">-</span><span class="n">ll</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span><span class="o">/</span><span class="n">ll</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">real</span>
+            <span class="n">psi</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+=</span> <span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">ll</span><span class="p">)</span><span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">ll</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="n">ll</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span><span class="o">/</span><span class="n">ll</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">real</span>
+            <span class="n">ll2</span> <span class="o">=</span> <span class="n">hL</span><span class="o">/</span><span class="mf">2.</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="p">(</span><span class="n">k</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span><span class="o">/</span><span class="n">M</span><span class="p">)</span>
+            <span class="n">psi</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">+=</span> <span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">ll2</span><span class="p">)</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">ll2</span><span class="p">))</span><span class="o">.</span><span class="n">real</span>
+
+        <span class="n">psi</span> <span class="o">/=</span> <span class="n">M</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="n">psi</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">3</span><span class="o">*</span><span class="n">psi</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">4</span><span class="o">*</span><span class="n">psi</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+        <span class="n">a</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">psi</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">4</span><span class="o">*</span><span class="n">psi</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">a</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">psi</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">4</span><span class="o">*</span><span class="n">psi</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">a</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="o">-</span><span class="n">psi</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">4</span><span class="o">*</span><span class="n">psi</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">a</span></div>
+
+<div class="viewcode-block" id="ETDRK4.solve"><a class="viewcode-back" href="../../../shenfun.utilities.html#shenfun.utilities.integrators.ETDRK4.solve">[docs]</a>    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">u_hat</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">trange</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">dt</span><span class="p">)</span><span class="o">&gt;</span><span class="mf">1e-12</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+        <span class="n">t</span><span class="p">,</span> <span class="n">end_time</span> <span class="o">=</span> <span class="n">trange</span>
+        <span class="n">tstep</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="n">end_time</span><span class="o">-</span><span class="mf">1e-8</span><span class="p">:</span>
+            <span class="n">t</span> <span class="o">+=</span> <span class="n">dt</span>
+            <span class="n">tstep</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">U_hat0</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">u_hat</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">ehL_h</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">U_hat1</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">u_hat</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">ehL</span>
+            <span class="k">for</span> <span class="n">rk</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">dU</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">NonlinearRHS</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">u_hat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dU</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">rk</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="n">u_hat</span><span class="p">[:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">U_hat0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">rk</span><span class="p">]</span><span class="o">*</span><span class="n">dt</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">psi</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">dU</span>
+                <span class="k">elif</span> <span class="n">rk</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="n">u_hat</span><span class="p">[:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ehL_h</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">V2</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">rk</span><span class="p">]</span><span class="o">*</span><span class="n">dt</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">psi</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">dU</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">dU0</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">rk</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">dU0</span><span class="p">[:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dU</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">V2</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">u_hat</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">U_hat1</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">rk</span><span class="p">]</span><span class="o">*</span><span class="n">dt</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">dU</span>
+            <span class="n">u_hat</span><span class="p">[:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">U_hat1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">u_hat</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">tstep</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_hat</span></div></div>
+
+<div class="viewcode-block" id="RK4"><a class="viewcode-back" href="../../../shenfun.utilities.html#shenfun.utilities.integrators.RK4">[docs]</a><span class="k">class</span> <span class="nc">RK4</span><span class="p">(</span><span class="n">IntegratorBase</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span>
+                 <span class="n">L</span><span class="o">=</span><span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                 <span class="n">N</span><span class="o">=</span><span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                 <span class="n">update</span><span class="o">=</span><span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="n">IntegratorBase</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="n">L</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="n">N</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="n">update</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">U_hat0</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">U_hat1</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dU</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.</span><span class="o">/</span><span class="mf">6.</span><span class="p">,</span> <span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span><span class="p">,</span> <span class="mf">1.</span><span class="o">/</span><span class="mf">3.</span><span class="p">,</span> <span class="mf">1.</span><span class="o">/</span><span class="mf">6.</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.</span><span class="p">])</span>
+
+<div class="viewcode-block" id="RK4.setup"><a class="viewcode-back" href="../../../shenfun.utilities.html#shenfun.utilities.integrators.RK4.setup">[docs]</a>    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
+        <span class="c1"># Set up RK4 ODE solver</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dt</span></div>
+
+<div class="viewcode-block" id="RK4.solve"><a class="viewcode-back" href="../../../shenfun.utilities.html#shenfun.utilities.integrators.RK4.solve">[docs]</a>    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">u_hat</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">trange</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;dt&#39;</span><span class="p">]</span><span class="o">-</span><span class="n">dt</span><span class="p">)</span><span class="o">&gt;</span><span class="mf">1e-12</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+        <span class="n">t</span><span class="p">,</span> <span class="n">end_time</span> <span class="o">=</span> <span class="n">trange</span>
+        <span class="n">tstep</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">LinearRHS</span><span class="p">()</span>
+        <span class="k">while</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="n">end_time</span><span class="o">-</span><span class="mf">1e-8</span><span class="p">:</span>
+            <span class="n">t</span> <span class="o">+=</span> <span class="n">dt</span>
+            <span class="n">tstep</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">U_hat0</span><span class="p">[:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">U_hat1</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">u_hat</span>
+            <span class="k">for</span> <span class="n">rk</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+                <span class="n">dU</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">NonlinearRHS</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">u_hat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dU</span><span class="p">)</span>
+                <span class="n">dU</span> <span class="o">+=</span> <span class="n">L</span><span class="o">*</span><span class="n">u_hat</span>
+                <span class="k">if</span> <span class="n">rk</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span> <span class="n">u_hat</span><span class="p">[:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">U_hat0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">rk</span><span class="p">]</span><span class="o">*</span><span class="n">dt</span><span class="o">*</span><span class="n">dU</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">U_hat1</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="n">rk</span><span class="p">]</span><span class="o">*</span><span class="n">dt</span><span class="o">*</span><span class="n">dU</span>
+            <span class="n">u_hat</span><span class="p">[:]</span> <span class="o">=</span><span class="bp">self</span><span class="o">.</span> <span class="n">U_hat1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">u_hat</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">tstep</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u_hat</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  <li><a href="../../shenfun.html">shenfun</a><ul>
+  <li><a href="../utilities.html">shenfun.utilities</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Mikael Mortensen.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

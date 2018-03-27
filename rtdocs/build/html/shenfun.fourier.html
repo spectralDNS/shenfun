@@ -1,0 +1,338 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>shenfun.fourier package &#8212; shenfun 1.0.2 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="shenfun-fourier-package">
+<h1>shenfun.fourier package<a class="headerlink" href="#shenfun-fourier-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-shenfun.fourier.bases">
+<span id="shenfun-fourier-bases-module"></span><h2>shenfun.fourier.bases module<a class="headerlink" href="#module-shenfun.fourier.bases" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="shenfun.fourier.bases.FourierBase">
+<em class="property">class </em><code class="descclassname">shenfun.fourier.bases.</code><code class="descname">FourierBase</code><span class="sig-paren">(</span><em>N</em>, <em>padding_factor=1.0</em>, <em>domain=(0</em>, <em>6.283185307179586)</em>, <em>dealias_direct=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/fourier/bases.html#FourierBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.fourier.bases.FourierBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="shenfun.html#shenfun.spectralbase.SpectralBase" title="shenfun.spectralbase.SpectralBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">shenfun.spectralbase.SpectralBase</span></code></a></p>
+<p>Fourier base class</p>
+<p>A basis function phi_k is given as</p>
+<blockquote>
+<div>phi_k(x) = exp(ikx)</div></blockquote>
+<p>and an expansion is given as</p>
+<blockquote>
+<div>u(x) = sum_k hat{u}_k exp(ikx)                            (1)</div></blockquote>
+<dl class="docutils">
+<dt>where</dt>
+<dd>k  -N/2, -N/2+1, …, N/2-1</dd>
+</dl>
+<p>However, since exp(ikx) = exp(i(k pm N)x) this expansion can also be
+written as an interpolator</p>
+<blockquote>
+<div>u(x) = sum_k hat{u}_k/c_k exp(ikx)                        (2)</div></blockquote>
+<p>where</p>
+<blockquote>
+<div>k  -N/2, -N/2+1, …, N/2-1, N/2</div></blockquote>
+<p>and c_{N/2} = c_{-N/2} = 2, whereas c_k = 1 for k=-N/2+1, …, N/2-1</p>
+<p>The interpolator form is used for computing odd derivatives. Otherwise,
+it makes no difference and therefore (1) is used in transforms, since
+this is the form expected by pyfftw.</p>
+<dl class="docutils">
+<dt>args:</dt>
+<dd><dl class="first last docutils">
+<dt>N                int    Number of quadrature points. Should be even</dt>
+<dd>for efficiency, but this is not required.</dd>
+</dl>
+</dd>
+<dt>kwargs:</dt>
+<dd><dl class="first docutils">
+<dt>padding_factor  float   Factor for padding backward transforms.</dt>
+<dd>padding_factor=1.5 corresponds to a 3/2-rule
+for dealiasing.</dd>
+</dl>
+<p>domain    (start, stop) Tuple describing the domain.
+dealias_direct   bool   True for dealiasing using 2/3-rule. Must be</p>
+<blockquote class="last">
+<div>used with padding_factor == 1.</div></blockquote>
+</dd>
+</dl>
+<dl class="method">
+<dt id="shenfun.fourier.bases.FourierBase.apply_inverse_mass">
+<code class="descname">apply_inverse_mass</code><span class="sig-paren">(</span><em>array</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/fourier/bases.html#FourierBase.apply_inverse_mass"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.fourier.bases.FourierBase.apply_inverse_mass" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply inverse mass, which is 2pi*identity for Fourier basis</p>
+<dl class="docutils">
+<dt>args:</dt>
+<dd>array   (input/output)    Expansion coefficients</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="shenfun.fourier.bases.FourierBase.domain_factor">
+<code class="descname">domain_factor</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/fourier/bases.html#FourierBase.domain_factor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.fourier.bases.FourierBase.domain_factor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="shenfun.fourier.bases.FourierBase.evaluate_expansion_all">
+<code class="descname">evaluate_expansion_all</code><span class="sig-paren">(</span><em>input_array</em>, <em>output_array</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/fourier/bases.html#FourierBase.evaluate_expansion_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.fourier.bases.FourierBase.evaluate_expansion_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate expansion on entire mesh</p>
+<blockquote>
+<div>f(x_j) = sum_k f_k T_k(x_j)  for all j = 0, 1, …, N</div></blockquote>
+<dl class="docutils">
+<dt>args:</dt>
+<dd>input_array   (input)     Expansion coefficients
+output_array   (output)    Function values on quadrature mesh</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="shenfun.fourier.bases.FourierBase.forward">
+<code class="descname">forward</code><span class="sig-paren">(</span><em>input_array=None</em>, <em>output_array=None</em>, <em>fast_transform=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/fourier/bases.html#FourierBase.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.fourier.bases.FourierBase.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forward transform</p>
+<dl class="docutils">
+<dt>kwargs:</dt>
+<dd><p class="first">input_array    (input)     Function values on quadrature mesh
+output_array   (output)    Expansion coefficients
+fast_transform   bool      If True use fast transforms, if False</p>
+<blockquote class="last">
+<div>use Vandermonde type</div></blockquote>
+</dd>
+</dl>
+<p>If kwargs input_array/output_array are not given, then use predefined
+arrays as planned with self.plan</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="shenfun.fourier.bases.FourierBase.get_mass_matrix">
+<code class="descname">get_mass_matrix</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/fourier/bases.html#FourierBase.get_mass_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.fourier.bases.FourierBase.get_mass_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return mass matrix associated with current basis</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="shenfun.fourier.bases.FourierBase.get_vandermonde_basis_derivative">
+<code class="descname">get_vandermonde_basis_derivative</code><span class="sig-paren">(</span><em>V</em>, <em>d=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/fourier/bases.html#FourierBase.get_vandermonde_basis_derivative"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.fourier.bases.FourierBase.get_vandermonde_basis_derivative" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return d’th derivative of basis as a Vandermonde matrix</p>
+<dl class="docutils">
+<dt>args:</dt>
+<dd>V               Chebyshev Vandermonde matrix</dd>
+<dt>kwargs:</dt>
+<dd>d    integer    d’th derivative</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="shenfun.fourier.bases.FourierBase.points_and_weights">
+<code class="descname">points_and_weights</code><span class="sig-paren">(</span><em>N</em>, <em>scaled=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/fourier/bases.html#FourierBase.points_and_weights"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.fourier.bases.FourierBase.points_and_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return points and weights of quadrature</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="shenfun.fourier.bases.FourierBase.scalar_product">
+<code class="descname">scalar_product</code><span class="sig-paren">(</span><em>input_array=None</em>, <em>output_array=None</em>, <em>fast_transform=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/fourier/bases.html#FourierBase.scalar_product"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.fourier.bases.FourierBase.scalar_product" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scalar product</p>
+<dl class="docutils">
+<dt>kwargs:</dt>
+<dd><p class="first">input_array    (input)     Function values on quadrature mesh
+output_array   (output)    Expansion coefficients
+fast_transform   bool      If True use fast transforms, if False</p>
+<blockquote class="last">
+<div>use Vandermonde type</div></blockquote>
+</dd>
+</dl>
+<p>If kwargs input_array/output_array are not given, then use predefined
+arrays as planned with self.plan</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="shenfun.fourier.bases.FourierBase.vandermonde">
+<code class="descname">vandermonde</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/fourier/bases.html#FourierBase.vandermonde"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.fourier.bases.FourierBase.vandermonde" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return Vandermonde matrix</p>
+<dl class="docutils">
+<dt>args:</dt>
+<dd>x               points for evaluation</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="shenfun.fourier.bases.R2CBasis">
+<em class="property">class </em><code class="descclassname">shenfun.fourier.bases.</code><code class="descname">R2CBasis</code><span class="sig-paren">(</span><em>N</em>, <em>padding_factor=1.0</em>, <em>plan=False</em>, <em>domain=(0.0</em>, <em>6.283185307179586)</em>, <em>dealias_direct=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/fourier/bases.html#R2CBasis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.fourier.bases.R2CBasis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#shenfun.fourier.bases.FourierBase" title="shenfun.fourier.bases.FourierBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">shenfun.fourier.bases.FourierBase</span></code></a></p>
+<p>Fourier basis class for real to complex transforms</p>
+<dl class="method">
+<dt id="shenfun.fourier.bases.R2CBasis.eval">
+<code class="descname">eval</code><span class="sig-paren">(</span><em>x</em>, <em>fk</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/fourier/bases.html#R2CBasis.eval"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.fourier.bases.R2CBasis.eval" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate basis at position x</p>
+<dl class="docutils">
+<dt>args:</dt>
+<dd>x    float or array of floats
+fk   Array of expansion coefficients</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="shenfun.fourier.bases.R2CBasis.slice">
+<code class="descname">slice</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/fourier/bases.html#R2CBasis.slice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.fourier.bases.R2CBasis.slice" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return index set of current basis, with N points in real space</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="shenfun.fourier.bases.R2CBasis.vandermonde_evaluate_expansion_all">
+<code class="descname">vandermonde_evaluate_expansion_all</code><span class="sig-paren">(</span><em>input_array</em>, <em>output_array</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/fourier/bases.html#R2CBasis.vandermonde_evaluate_expansion_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.fourier.bases.R2CBasis.vandermonde_evaluate_expansion_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Naive implementation of evaluate_expansion_all</p>
+<dl class="docutils">
+<dt>args:</dt>
+<dd>input_array    (input)    Expansion coefficients
+output_array   (output)   Function values on quadrature mesh</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="shenfun.fourier.bases.R2CBasis.wavenumbers">
+<code class="descname">wavenumbers</code><span class="sig-paren">(</span><em>N</em>, <em>axis=0</em>, <em>scaled=False</em>, <em>eliminate_highest_freq=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/fourier/bases.html#R2CBasis.wavenumbers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.fourier.bases.R2CBasis.wavenumbers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the wavenumbermesh</p>
+<p>All dimensions, except axis, are obtained through broadcasting.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="shenfun.fourier.bases.C2CBasis">
+<em class="property">class </em><code class="descclassname">shenfun.fourier.bases.</code><code class="descname">C2CBasis</code><span class="sig-paren">(</span><em>N</em>, <em>padding_factor=1.0</em>, <em>plan=False</em>, <em>domain=(0.0</em>, <em>6.283185307179586)</em>, <em>dealias_direct=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/fourier/bases.html#C2CBasis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.fourier.bases.C2CBasis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#shenfun.fourier.bases.FourierBase" title="shenfun.fourier.bases.FourierBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">shenfun.fourier.bases.FourierBase</span></code></a></p>
+<p>Fourier basis class for complex to complex transforms</p>
+<dl class="method">
+<dt id="shenfun.fourier.bases.C2CBasis.eval">
+<code class="descname">eval</code><span class="sig-paren">(</span><em>x</em>, <em>fk</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/fourier/bases.html#C2CBasis.eval"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.fourier.bases.C2CBasis.eval" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate basis at position x</p>
+<dl class="docutils">
+<dt>args:</dt>
+<dd>x    float or array of floats
+fk   Array of expansion coefficients</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="shenfun.fourier.bases.C2CBasis.slice">
+<code class="descname">slice</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/fourier/bases.html#C2CBasis.slice"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.fourier.bases.C2CBasis.slice" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return index set of current basis, with N points in real space</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="shenfun.fourier.bases.C2CBasis.vandermonde_evaluate_expansion_all">
+<code class="descname">vandermonde_evaluate_expansion_all</code><span class="sig-paren">(</span><em>input_array</em>, <em>output_array</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/fourier/bases.html#C2CBasis.vandermonde_evaluate_expansion_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.fourier.bases.C2CBasis.vandermonde_evaluate_expansion_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Naive implementation of evaluate_expansion_all</p>
+<dl class="docutils">
+<dt>args:</dt>
+<dd>input_array    (input)    Expansion coefficients
+output_array   (output)   Function values on quadrature mesh</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="shenfun.fourier.bases.C2CBasis.wavenumbers">
+<code class="descname">wavenumbers</code><span class="sig-paren">(</span><em>N</em>, <em>axis=0</em>, <em>scaled=False</em>, <em>eliminate_highest_freq=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/fourier/bases.html#C2CBasis.wavenumbers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.fourier.bases.C2CBasis.wavenumbers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the wavenumbermesh</p>
+<p>All dimensions, except axis, are obtained through broadcasting.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-shenfun.fourier.matrices">
+<span id="shenfun-fourier-matrices-module"></span><h2>shenfun.fourier.matrices module<a class="headerlink" href="#module-shenfun.fourier.matrices" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-shenfun.fourier">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-shenfun.fourier" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">shenfun.fourier package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-shenfun.fourier.bases">shenfun.fourier.bases module</a></li>
+<li><a class="reference internal" href="#module-shenfun.fourier.matrices">shenfun.fourier.matrices module</a></li>
+<li><a class="reference internal" href="#module-shenfun.fourier">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/shenfun.fourier.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Mikael Mortensen.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/shenfun.fourier.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,713 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>shenfun.chebyshev.bases &#8212; shenfun 1.0.2 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for shenfun.chebyshev.bases</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">numpy.polynomial</span> <span class="k">import</span> <span class="n">chebyshev</span> <span class="k">as</span> <span class="n">n_cheb</span>
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pyfftw</span>
+<span class="kn">from</span> <span class="nn">shenfun.spectralbase</span> <span class="k">import</span> <span class="n">SpectralBase</span><span class="p">,</span> <span class="n">work</span><span class="p">,</span> <span class="n">_func_wrap</span>
+<span class="kn">from</span> <span class="nn">shenfun.optimization</span> <span class="k">import</span> <span class="n">Cheb</span>
+<span class="kn">from</span> <span class="nn">shenfun.utilities</span> <span class="k">import</span> <span class="n">inheritdocstrings</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ChebyshevBase&#39;</span><span class="p">,</span> <span class="s1">&#39;Basis&#39;</span><span class="p">,</span> <span class="s1">&#39;ShenDirichletBasis&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;ShenNeumannBasis&#39;</span><span class="p">,</span> <span class="s1">&#39;ShenBiharmonicBasis&#39;</span><span class="p">]</span>
+
+
+<span class="k">class</span> <span class="nc">_dct_wrap</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="c1"># pylint: disable=too-few-public-methods</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;_dct&#39;</span><span class="p">,</span> <span class="s1">&#39;__doc__&#39;</span><span class="p">,</span> <span class="s1">&#39;_input_array&#39;</span><span class="p">,</span> <span class="s1">&#39;_output_array&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dct</span><span class="p">,</span> <span class="n">in_array</span><span class="p">,</span> <span class="n">out_array</span><span class="p">):</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_dct&#39;</span><span class="p">,</span> <span class="n">dct</span><span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_input_array&#39;</span><span class="p">,</span> <span class="n">in_array</span><span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_output_array&#39;</span><span class="p">,</span> <span class="n">out_array</span><span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;__doc__&#39;</span><span class="p">,</span> <span class="n">dct</span><span class="o">.</span><span class="vm">__doc__</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">input_array</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_input_array&#39;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">output_array</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_output_array&#39;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">dct</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_dct&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_array</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_array</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="n">dct_obj</span> <span class="o">=</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_dct&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">input_array</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">input_array</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_array</span>
+
+        <span class="n">dct_obj</span><span class="o">.</span><span class="n">input_array</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_array</span><span class="o">.</span><span class="n">real</span>
+        <span class="n">dct_obj</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_array</span><span class="o">.</span><span class="n">real</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">dct_obj</span><span class="o">.</span><span class="n">output_array</span>
+        <span class="n">dct_obj</span><span class="o">.</span><span class="n">input_array</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_array</span><span class="o">.</span><span class="n">imag</span>
+        <span class="n">dct_obj</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_array</span><span class="o">.</span><span class="n">imag</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">dct_obj</span><span class="o">.</span><span class="n">output_array</span>
+
+        <span class="k">if</span> <span class="n">output_array</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">output_array</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_array</span>
+            <span class="k">return</span> <span class="n">output_array</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_array</span>
+
+
+<div class="viewcode-block" id="ChebyshevBase"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ChebyshevBase">[docs]</a><span class="nd">@inheritdocstrings</span>
+<span class="k">class</span> <span class="nc">ChebyshevBase</span><span class="p">(</span><span class="n">SpectralBase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Abstract base class for all Chebyshev bases</span>
+
+<span class="sd">    kwargs:</span>
+<span class="sd">        N             int         Number of quadrature points</span>
+<span class="sd">        quad        (&#39;GL&#39;, &#39;GC&#39;)  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">quad</span><span class="o">=</span><span class="s2">&quot;GC&quot;</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)):</span>
+        <span class="k">assert</span> <span class="n">quad</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;GC&#39;</span><span class="p">,</span> <span class="s1">&#39;GL&#39;</span><span class="p">)</span>
+        <span class="n">SpectralBase</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">quad</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">domain</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ChebyshevBase.points_and_weights"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ChebyshevBase.points_and_weights">[docs]</a>    <span class="k">def</span> <span class="nf">points_and_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">scaled</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">quad</span> <span class="o">==</span> <span class="s2">&quot;GL&quot;</span><span class="p">:</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">n_cheb</span><span class="o">.</span><span class="n">chebpts2</span><span class="p">(</span><span class="n">N</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">N</span><span class="p">)</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="p">(</span><span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">weights</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/=</span> <span class="mi">2</span>
+            <span class="n">weights</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">/=</span> <span class="mi">2</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">quad</span> <span class="o">==</span> <span class="s2">&quot;GC&quot;</span><span class="p">:</span>
+            <span class="n">points</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">n_cheb</span><span class="o">.</span><span class="n">chebgauss</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="n">points</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">scaled</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span>
+            <span class="n">points</span> <span class="o">=</span> <span class="n">a</span><span class="o">+</span><span class="p">(</span><span class="n">b</span><span class="o">-</span><span class="n">a</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="o">+</span><span class="n">points</span><span class="o">*</span><span class="p">(</span><span class="n">b</span><span class="o">-</span><span class="n">a</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+
+        <span class="k">return</span> <span class="n">points</span><span class="p">,</span> <span class="n">weights</span></div>
+
+<div class="viewcode-block" id="ChebyshevBase.vandermonde"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ChebyshevBase.vandermonde">[docs]</a>    <span class="k">def</span> <span class="nf">vandermonde</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return Chebyshev Vandermonde matrix</span>
+
+<span class="sd">        args:</span>
+<span class="sd">            x               points for evaluation</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">n_cheb</span><span class="o">.</span><span class="n">chebvander</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ChebyshevBase.get_vandermonde_basis_derivative"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ChebyshevBase.get_vandermonde_basis_derivative">[docs]</a>    <span class="k">def</span> <span class="nf">get_vandermonde_basis_derivative</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return k&#39;th derivative of basis as a Vandermonde matrix</span>
+
+<span class="sd">        args:</span>
+<span class="sd">            V               Chebyshev Vandermonde matrix</span>
+
+<span class="sd">        kwargs:</span>
+<span class="sd">            k    integer    k&#39;th derivative</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span> <span class="o">==</span> <span class="n">V</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">D</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">))</span>
+            <span class="n">D</span><span class="p">[:</span><span class="o">-</span><span class="n">k</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">n_cheb</span><span class="o">.</span><span class="n">chebder</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">),</span> <span class="n">k</span><span class="p">)</span>
+            <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span>
+            <span class="n">V</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="n">D</span><span class="p">)</span> <span class="c1"># *(2./(b-a))**k</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_vandermonde_basis</span><span class="p">(</span><span class="n">V</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ChebyshevBase.get_mass_matrix"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ChebyshevBase.get_mass_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">get_mass_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">.matrices</span> <span class="k">import</span> <span class="n">mat</span>
+        <span class="k">return</span> <span class="n">mat</span><span class="p">[((</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="mi">0</span><span class="p">))]</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_mat</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">.matrices</span> <span class="k">import</span> <span class="n">mat</span>
+        <span class="k">return</span> <span class="n">mat</span>
+
+<div class="viewcode-block" id="ChebyshevBase.domain_factor"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ChebyshevBase.domain_factor">[docs]</a>    <span class="k">def</span> <span class="nf">domain_factor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">b</span><span class="o">-</span><span class="n">a</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-12</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">2.</span><span class="o">/</span><span class="p">(</span><span class="n">b</span><span class="o">-</span><span class="n">a</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ChebyshevBase.plan"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ChebyshevBase.plan">[docs]</a>    <span class="k">def</span> <span class="nf">plan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">axis</span> <span class="o">=</span> <span class="n">axis</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">,</span> <span class="n">_func_wrap</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="o">.</span><span class="n">input_array</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">shape</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">axis</span> <span class="o">==</span> <span class="n">axis</span><span class="p">:</span>
+                <span class="c1"># Already planned</span>
+                <span class="k">return</span>
+
+        <span class="n">opts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">avoid_copy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">overwrite_input</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">auto_align_input</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">auto_contiguous</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">planner_effort</span><span class="o">=</span><span class="s1">&#39;FFTW_MEASURE&#39;</span><span class="p">,</span>
+            <span class="n">threads</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">opts</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+
+        <span class="n">plan_fwd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xfftn_fwd</span>
+        <span class="n">plan_bck</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xfftn_bck</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">axis</span> <span class="o">=</span> <span class="n">axis</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">U</span> <span class="o">=</span> <span class="n">pyfftw</span><span class="o">.</span><span class="n">empty_aligned</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+        <span class="n">xfftn_fwd</span> <span class="o">=</span> <span class="n">plan_fwd</span><span class="p">(</span><span class="n">U</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span>
+        <span class="n">U</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">V</span> <span class="o">=</span> <span class="n">xfftn_fwd</span><span class="o">.</span><span class="n">output_array</span>
+        <span class="n">xfftn_bck</span> <span class="o">=</span> <span class="n">plan_bck</span><span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span>
+        <span class="n">V</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">xfftn_fwd</span><span class="o">.</span><span class="n">update_arrays</span><span class="p">(</span><span class="n">U</span><span class="p">,</span> <span class="n">V</span><span class="p">)</span>
+        <span class="n">xfftn_bck</span><span class="o">.</span><span class="n">update_arrays</span><span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="n">U</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">axis</span> <span class="o">=</span> <span class="n">axis</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="s1">&#39;float64&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_fwd</span> <span class="o">=</span> <span class="n">xfftn_fwd</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_bck</span> <span class="o">=</span> <span class="n">xfftn_bck</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># dct only works on real data, so need to wrap it</span>
+            <span class="n">U</span> <span class="o">=</span> <span class="n">pyfftw</span><span class="o">.</span><span class="n">empty_aligned</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex</span><span class="p">)</span>
+            <span class="n">V</span> <span class="o">=</span> <span class="n">pyfftw</span><span class="o">.</span><span class="n">empty_aligned</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex</span><span class="p">)</span>
+            <span class="n">U</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">V</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_fwd</span> <span class="o">=</span> <span class="n">_dct_wrap</span><span class="p">(</span><span class="n">xfftn_fwd</span><span class="p">,</span> <span class="n">U</span><span class="p">,</span> <span class="n">V</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_bck</span> <span class="o">=</span> <span class="n">_dct_wrap</span><span class="p">(</span><span class="n">xfftn_bck</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">U</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">forward</span> <span class="o">=</span> <span class="n">_func_wrap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_fwd</span><span class="p">,</span> <span class="n">U</span><span class="p">,</span> <span class="n">V</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">backward</span> <span class="o">=</span> <span class="n">_func_wrap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backward</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_bck</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">U</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span> <span class="o">=</span> <span class="n">_func_wrap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_fwd</span><span class="p">,</span> <span class="n">U</span><span class="p">,</span> <span class="n">V</span><span class="p">)</span></div></div>
+
+
+
+<div class="viewcode-block" id="Basis"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.Basis">[docs]</a><span class="nd">@inheritdocstrings</span>
+<span class="k">class</span> <span class="nc">Basis</span><span class="p">(</span><span class="n">ChebyshevBase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Basis for regular Chebyshev series</span>
+
+<span class="sd">    kwargs:</span>
+<span class="sd">        N             int         Number of quadrature points</span>
+<span class="sd">        quad        (&#39;GL&#39;, &#39;GC&#39;)  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss</span>
+<span class="sd">        plan         boolean      Execute plan assuming 1D</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">quad</span><span class="o">=</span><span class="s2">&quot;GC&quot;</span><span class="p">,</span> <span class="n">plan</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)):</span>
+        <span class="n">ChebyshevBase</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">quad</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">quad</span> <span class="o">==</span> <span class="s1">&#39;GC&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_xfftn_fwd</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">pyfftw</span><span class="o">.</span><span class="n">builders</span><span class="o">.</span><span class="n">dct</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_xfftn_bck</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">pyfftw</span><span class="o">.</span><span class="n">builders</span><span class="o">.</span><span class="n">dct</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_xfftn_fwd</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">pyfftw</span><span class="o">.</span><span class="n">builders</span><span class="o">.</span><span class="n">dct</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_xfftn_bck</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">pyfftw</span><span class="o">.</span><span class="n">builders</span><span class="o">.</span><span class="n">dct</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">plan</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plan</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">{})</span>
+
+
+<div class="viewcode-block" id="Basis.derivative_coefficients"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.Basis.derivative_coefficients">[docs]</a>    <span class="k">def</span> <span class="nf">derivative_coefficients</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fk</span><span class="p">,</span> <span class="n">ck</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return coefficients of Chebyshev series for c = f&#39;(x)</span>
+
+<span class="sd">        args:</span>
+<span class="sd">            fk            Coefficients of regular Chebyshev series</span>
+<span class="sd">            ck            Coefficients of derivative of fk-series</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fk</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">ck</span> <span class="o">=</span> <span class="n">Cheb</span><span class="o">.</span><span class="n">derivative_coefficients</span><span class="p">(</span><span class="n">fk</span><span class="p">,</span> <span class="n">ck</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">fk</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">ck</span> <span class="o">=</span> <span class="n">Cheb</span><span class="o">.</span><span class="n">derivative_coefficients_3D</span><span class="p">(</span><span class="n">fk</span><span class="p">,</span> <span class="n">ck</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ck</span></div>
+
+<div class="viewcode-block" id="Basis.fast_derivative"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.Basis.fast_derivative">[docs]</a>    <span class="k">def</span> <span class="nf">fast_derivative</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fj</span><span class="p">,</span> <span class="n">fd</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return derivative of fj = f(x_j) at quadrature points</span>
+
+<span class="sd">        args:</span>
+<span class="sd">            fj   (input)     Function values on quadrature mesh</span>
+<span class="sd">            fd   (output)    Function derivative on quadrature mesh</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">fk</span> <span class="o">=</span> <span class="n">work</span><span class="p">[(</span><span class="n">fj</span><span class="p">,</span> <span class="mi">0</span><span class="p">)]</span>
+        <span class="n">ck</span> <span class="o">=</span> <span class="n">work</span><span class="p">[(</span><span class="n">fj</span><span class="p">,</span> <span class="mi">1</span><span class="p">)]</span>
+        <span class="n">fk</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">fj</span><span class="p">,</span> <span class="n">fk</span><span class="p">)</span>
+        <span class="n">ck</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">derivative_coefficients</span><span class="p">(</span><span class="n">fk</span><span class="p">,</span> <span class="n">ck</span><span class="p">)</span>
+        <span class="n">fd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">ck</span><span class="p">,</span> <span class="n">fd</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">fd</span></div>
+
+<div class="viewcode-block" id="Basis.apply_inverse_mass"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.Basis.apply_inverse_mass">[docs]</a>    <span class="k">def</span> <span class="nf">apply_inverse_mass</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Apply inverse BTT_{kj} = c_k 2/pi \delta_{kj}</span>
+
+<span class="sd">        args:</span>
+<span class="sd">            array   (input/output)    Expansion coefficients</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sl</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">array</span> <span class="o">*=</span> <span class="p">(</span><span class="mi">2</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+        <span class="n">array</span><span class="p">[</span><span class="n">sl</span><span class="p">]</span> <span class="o">/=</span> <span class="mi">2</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">quad</span> <span class="o">==</span> <span class="s1">&#39;GL&#39;</span><span class="p">:</span>
+            <span class="n">sl</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="n">array</span><span class="p">[</span><span class="n">sl</span><span class="p">]</span> <span class="o">/=</span> <span class="mi">2</span>
+        <span class="k">return</span> <span class="n">array</span></div>
+
+<div class="viewcode-block" id="Basis.evaluate_expansion_all"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.Basis.evaluate_expansion_all">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate_expansion_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fk</span><span class="p">,</span> <span class="n">fj</span><span class="p">):</span>
+        <span class="n">fj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_bck</span><span class="p">()</span>
+
+        <span class="n">s0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sl</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">quad</span> <span class="o">==</span> <span class="s2">&quot;GC&quot;</span><span class="p">:</span>
+            <span class="n">fj</span> <span class="o">*=</span> <span class="mf">0.5</span>
+            <span class="n">fj</span> <span class="o">+=</span> <span class="n">fk</span><span class="p">[</span><span class="n">s0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">quad</span> <span class="o">==</span> <span class="s2">&quot;GL&quot;</span><span class="p">:</span>
+            <span class="n">fj</span> <span class="o">*=</span> <span class="mf">0.5</span>
+            <span class="n">fj</span> <span class="o">+=</span> <span class="n">fk</span><span class="p">[</span><span class="n">s0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span>
+            <span class="n">s0</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="p">]</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">s2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sl</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+            <span class="n">fj</span><span class="p">[</span><span class="n">s2</span><span class="p">]</span> <span class="o">+=</span> <span class="n">fk</span><span class="p">[</span><span class="n">s0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span>
+            <span class="n">s2</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="p">]</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="n">fj</span><span class="p">[</span><span class="n">s2</span><span class="p">]</span> <span class="o">-=</span> <span class="n">fk</span><span class="p">[</span><span class="n">s0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span>
+
+        <span class="k">assert</span> <span class="n">fk</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_bck</span><span class="o">.</span><span class="n">input_array</span>
+        <span class="k">assert</span> <span class="n">fj</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_bck</span><span class="o">.</span><span class="n">output_array</span>
+
+        <span class="k">return</span> <span class="n">fj</span></div>
+
+<div class="viewcode-block" id="Basis.scalar_product"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.Basis.scalar_product">[docs]</a>    <span class="k">def</span> <span class="nf">scalar_product</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_array</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_array</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fast_transform</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">input_array</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="o">.</span><span class="n">input_array</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_array</span>
+
+        <span class="k">if</span> <span class="n">fast_transform</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="o">.</span><span class="n">input_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="p">]</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_fwd</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">quad</span> <span class="o">==</span> <span class="s2">&quot;GC&quot;</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">*=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">))</span>
+
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">quad</span> <span class="o">==</span> <span class="s2">&quot;GL&quot;</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">*=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
+            <span class="k">assert</span> <span class="n">out</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="o">.</span><span class="n">output_array</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vandermonde_scalar_product</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="o">.</span><span class="n">input_array</span><span class="p">,</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="o">.</span><span class="n">output_array</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">output_array</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">output_array</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="o">.</span><span class="n">output_array</span>
+            <span class="k">return</span> <span class="n">output_array</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="o">.</span><span class="n">output_array</span></div>
+
+<div class="viewcode-block" id="Basis.eval"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.Basis.eval">[docs]</a>    <span class="k">def</span> <span class="nf">eval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">fk</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">n_cheb</span><span class="o">.</span><span class="n">chebval</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fk</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="ShenDirichletBasis"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenDirichletBasis">[docs]</a><span class="nd">@inheritdocstrings</span>
+<span class="k">class</span> <span class="nc">ShenDirichletBasis</span><span class="p">(</span><span class="n">ChebyshevBase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Shen basis for Dirichlet boundary conditions</span>
+
+<span class="sd">    kwargs:</span>
+<span class="sd">        N             int         Number of quadrature points</span>
+<span class="sd">        quad        (&#39;GL&#39;, &#39;GC&#39;)  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss</span>
+<span class="sd">        bc           (a, b)       Boundary conditions at x=(1,-1)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">quad</span><span class="o">=</span><span class="s2">&quot;GC&quot;</span><span class="p">,</span> <span class="n">bc</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">plan</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">domain</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">),</span> <span class="n">scaled</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">ChebyshevBase</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">quad</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">domain</span><span class="p">)</span>
+        <span class="kn">from</span> <span class="nn">shenfun.tensorproductspace</span> <span class="k">import</span> <span class="n">BoundaryValues</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">CT</span> <span class="o">=</span> <span class="n">Basis</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">quad</span><span class="p">,</span> <span class="n">plan</span><span class="o">=</span><span class="n">plan</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scaled</span> <span class="o">=</span> <span class="n">scaled</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_factor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">plan</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plan</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bc</span> <span class="o">=</span> <span class="n">BoundaryValues</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bc</span><span class="o">=</span><span class="n">bc</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ShenDirichletBasis.get_vandermonde_basis"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenDirichletBasis.get_vandermonde_basis">[docs]</a>    <span class="k">def</span> <span class="nf">get_vandermonde_basis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">V</span><span class="p">):</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">V</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">P</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">V</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">V</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">:]</span>
+        <span class="n">P</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">V</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">V</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">2</span>
+        <span class="n">P</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">V</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">V</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">2</span>
+        <span class="k">return</span> <span class="n">P</span></div>
+
+<div class="viewcode-block" id="ShenDirichletBasis.is_scaled"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenDirichletBasis.is_scaled">[docs]</a>    <span class="k">def</span> <span class="nf">is_scaled</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="ShenDirichletBasis.scalar_product"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenDirichletBasis.scalar_product">[docs]</a>    <span class="k">def</span> <span class="nf">scalar_product</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_array</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_array</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fast_transform</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">input_array</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="o">.</span><span class="n">input_array</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_array</span>
+
+        <span class="k">if</span> <span class="n">fast_transform</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">scalar_product</span><span class="p">(</span><span class="n">fast_transform</span><span class="o">=</span><span class="n">fast_transform</span><span class="p">)</span>
+            <span class="n">s0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sl</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">s1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sl</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">c0</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="n">s0</span><span class="p">]</span> <span class="o">+</span> <span class="n">output</span><span class="p">[</span><span class="n">s1</span><span class="p">])</span>
+            <span class="n">c1</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="n">s0</span><span class="p">]</span> <span class="o">-</span> <span class="n">output</span><span class="p">[</span><span class="n">s1</span><span class="p">])</span>
+            <span class="n">s0</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="p">]</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">s1</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="p">]</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">output</span><span class="p">[</span><span class="n">s0</span><span class="p">]</span> <span class="o">-=</span> <span class="n">output</span><span class="p">[</span><span class="n">s1</span><span class="p">]</span>
+            <span class="n">s0</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">2</span>
+            <span class="n">output</span><span class="p">[</span><span class="n">s0</span><span class="p">]</span> <span class="o">=</span> <span class="n">c0</span>
+            <span class="n">s0</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="n">output</span><span class="p">[</span><span class="n">s0</span><span class="p">]</span> <span class="o">=</span> <span class="n">c1</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vandermonde_scalar_product</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="o">.</span><span class="n">input_array</span><span class="p">,</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="o">.</span><span class="n">output_array</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">output_array</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">output_array</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="o">.</span><span class="n">output_array</span>
+            <span class="k">return</span> <span class="n">output_array</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="o">.</span><span class="n">output_array</span></div>
+
+<div class="viewcode-block" id="ShenDirichletBasis.evaluate_expansion_all"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenDirichletBasis.evaluate_expansion_all">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate_expansion_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fk</span><span class="p">,</span> <span class="n">fj</span><span class="p">):</span>
+        <span class="n">w_hat</span> <span class="o">=</span> <span class="n">work</span><span class="p">[(</span><span class="n">fk</span><span class="p">,</span> <span class="mi">0</span><span class="p">)]</span>
+        <span class="n">s0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sl</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">s1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sl</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+        <span class="n">w_hat</span><span class="p">[</span><span class="n">s0</span><span class="p">]</span> <span class="o">=</span> <span class="n">fk</span><span class="p">[</span><span class="n">s0</span><span class="p">]</span>
+        <span class="n">w_hat</span><span class="p">[</span><span class="n">s1</span><span class="p">]</span> <span class="o">-=</span> <span class="n">fk</span><span class="p">[</span><span class="n">s0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bc</span><span class="o">.</span><span class="n">apply_before</span><span class="p">(</span><span class="n">w_hat</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">))</span>
+        <span class="n">fj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">w_hat</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">fk</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_bck</span><span class="o">.</span><span class="n">input_array</span>
+        <span class="k">assert</span> <span class="n">fj</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_bck</span><span class="o">.</span><span class="n">output_array</span>
+        <span class="k">return</span> <span class="n">fj</span></div>
+
+<div class="viewcode-block" id="ShenDirichletBasis.forward"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenDirichletBasis.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_array</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_array</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fast_transform</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">input_array</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="o">.</span><span class="n">input_array</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_array</span>
+
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="p">(</span><span class="n">fast_transform</span><span class="o">=</span><span class="n">fast_transform</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">output</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="o">.</span><span class="n">output_array</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">apply_inverse_mass</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="n">output</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="o">.</span><span class="n">output_array</span>
+        <span class="k">if</span> <span class="n">output_array</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">output_array</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="o">.</span><span class="n">output_array</span>
+            <span class="k">return</span> <span class="n">output_array</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="o">.</span><span class="n">output_array</span></div>
+
+<div class="viewcode-block" id="ShenDirichletBasis.slice"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenDirichletBasis.slice">[docs]</a>    <span class="k">def</span> <span class="nf">slice</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ShenDirichletBasis.eval"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenDirichletBasis.eval">[docs]</a>    <span class="k">def</span> <span class="nf">eval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">fk</span><span class="p">):</span>
+        <span class="n">w_hat</span> <span class="o">=</span> <span class="n">work</span><span class="p">[(</span><span class="n">fk</span><span class="p">,</span> <span class="mi">0</span><span class="p">)]</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">n_cheb</span><span class="o">.</span><span class="n">chebval</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fk</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">w_hat</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span> <span class="o">=</span> <span class="n">fk</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">f</span> <span class="o">-=</span> <span class="n">n_cheb</span><span class="o">.</span><span class="n">chebval</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">w_hat</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">f</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">fk</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">x</span><span class="p">)</span><span class="o">+</span><span class="n">fk</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">x</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ShenDirichletBasis.plan"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenDirichletBasis.plan">[docs]</a>    <span class="k">def</span> <span class="nf">plan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">axis</span> <span class="o">=</span> <span class="n">axis</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">,</span> <span class="n">_func_wrap</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="o">.</span><span class="n">input_array</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">shape</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">axis</span> <span class="o">==</span> <span class="n">axis</span><span class="p">:</span>
+                <span class="c1"># Already planned</span>
+                <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">plan</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">axis</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_fwd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">xfftn_fwd</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_bck</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">xfftn_bck</span>
+        <span class="n">U</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">xfftn_fwd</span><span class="o">.</span><span class="n">input_array</span>
+        <span class="n">V</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">xfftn_fwd</span><span class="o">.</span><span class="n">output_array</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">forward</span> <span class="o">=</span> <span class="n">_func_wrap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_fwd</span><span class="p">,</span> <span class="n">U</span><span class="p">,</span> <span class="n">V</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">backward</span> <span class="o">=</span> <span class="n">_func_wrap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backward</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_bck</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">U</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span> <span class="o">=</span> <span class="n">_func_wrap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_fwd</span><span class="p">,</span> <span class="n">U</span><span class="p">,</span> <span class="n">V</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="ShenNeumannBasis"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenNeumannBasis">[docs]</a><span class="nd">@inheritdocstrings</span>
+<span class="k">class</span> <span class="nc">ShenNeumannBasis</span><span class="p">(</span><span class="n">ChebyshevBase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Shen basis for homogeneous Neumann boundary conditions</span>
+
+<span class="sd">    kwargs:</span>
+<span class="sd">        N             int         Number of quadrature points</span>
+<span class="sd">        quad        (&#39;GL&#39;, &#39;GC&#39;)  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss</span>
+<span class="sd">        threads          1        Number of threads used by pyfftw</span>
+<span class="sd">        planner_effort            Planner effort for FFTs.</span>
+<span class="sd">        mean           float      Mean value</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">quad</span><span class="o">=</span><span class="s2">&quot;GC&quot;</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">plan</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)):</span>
+        <span class="n">ChebyshevBase</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">quad</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">domain</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mean</span> <span class="o">=</span> <span class="n">mean</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">CT</span> <span class="o">=</span> <span class="n">Basis</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">quad</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_factor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">plan</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plan</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">{})</span>
+
+<div class="viewcode-block" id="ShenNeumannBasis.get_vandermonde_basis"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenNeumannBasis.get_vandermonde_basis">[docs]</a>    <span class="k">def</span> <span class="nf">get_vandermonde_basis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">V</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span> <span class="o">==</span> <span class="n">V</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">V</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)</span>
+        <span class="n">P</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">V</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">k</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="n">k</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="mi">2</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="n">V</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">:]</span>
+        <span class="k">return</span> <span class="n">P</span></div>
+
+<div class="viewcode-block" id="ShenNeumannBasis.set_factor_array"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenNeumannBasis.set_factor_array">[docs]</a>    <span class="k">def</span> <span class="nf">set_factor_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_factor</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wavenumbers</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_factor</span> <span class="o">=</span> <span class="p">(</span><span class="n">k</span><span class="o">/</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="mi">2</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span></div>
+
+<div class="viewcode-block" id="ShenNeumannBasis.scalar_product"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenNeumannBasis.scalar_product">[docs]</a>    <span class="k">def</span> <span class="nf">scalar_product</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_array</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_array</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fast_transform</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">input_array</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="o">.</span><span class="n">input_array</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_array</span>
+
+        <span class="k">if</span> <span class="n">fast_transform</span><span class="p">:</span>
+            <span class="n">fk</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">scalar_product</span><span class="p">(</span><span class="n">fast_transform</span><span class="o">=</span><span class="n">fast_transform</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_factor_array</span><span class="p">(</span><span class="n">fk</span><span class="p">)</span>
+            <span class="n">sm2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sl</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">))</span>
+            <span class="n">s2p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sl</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+            <span class="n">fk</span><span class="p">[</span><span class="n">sm2</span><span class="p">]</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_factor</span> <span class="o">*</span> <span class="n">fk</span><span class="p">[</span><span class="n">s2p</span><span class="p">]</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">vandermonde_scalar_product</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="o">.</span><span class="n">input_array</span><span class="p">,</span>
+                                            <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="o">.</span><span class="n">output_array</span><span class="p">)</span>
+
+        <span class="n">fk</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="o">.</span><span class="n">output_array</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sl</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">fk</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+        <span class="n">s</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="p">]</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">fk</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="n">output_array</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">output_array</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="o">.</span><span class="n">output_array</span>
+            <span class="k">return</span> <span class="n">output_array</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="o">.</span><span class="n">output_array</span></div>
+
+<div class="viewcode-block" id="ShenNeumannBasis.evaluate_expansion_all"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenNeumannBasis.evaluate_expansion_all">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate_expansion_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fk</span><span class="p">,</span> <span class="n">fj</span><span class="p">):</span>
+        <span class="n">w_hat</span> <span class="o">=</span> <span class="n">work</span><span class="p">[(</span><span class="n">fk</span><span class="p">,</span> <span class="mi">0</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_factor_array</span><span class="p">(</span><span class="n">fk</span><span class="p">)</span>
+        <span class="n">s0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sl</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">s1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sl</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+        <span class="n">w_hat</span><span class="p">[</span><span class="n">s0</span><span class="p">]</span> <span class="o">=</span> <span class="n">fk</span><span class="p">[</span><span class="n">s0</span><span class="p">]</span>
+        <span class="n">w_hat</span><span class="p">[</span><span class="n">s1</span><span class="p">]</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_factor</span><span class="o">*</span><span class="n">fk</span><span class="p">[</span><span class="n">s0</span><span class="p">]</span>
+        <span class="n">fj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">w_hat</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">fj</span></div>
+
+<div class="viewcode-block" id="ShenNeumannBasis.slice"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenNeumannBasis.slice">[docs]</a>    <span class="k">def</span> <span class="nf">slice</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ShenNeumannBasis.eval"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenNeumannBasis.eval">[docs]</a>    <span class="k">def</span> <span class="nf">eval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">fk</span><span class="p">):</span>
+        <span class="n">w_hat</span> <span class="o">=</span> <span class="n">work</span><span class="p">[(</span><span class="n">fk</span><span class="p">,</span> <span class="mi">0</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_factor_array</span><span class="p">(</span><span class="n">fk</span><span class="p">)</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">n_cheb</span><span class="o">.</span><span class="n">chebval</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fk</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">w_hat</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_factor</span><span class="o">*</span><span class="n">fk</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">f</span> <span class="o">-=</span> <span class="n">n_cheb</span><span class="o">.</span><span class="n">chebval</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">w_hat</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">f</span></div>
+
+<div class="viewcode-block" id="ShenNeumannBasis.plan"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenNeumannBasis.plan">[docs]</a>    <span class="k">def</span> <span class="nf">plan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">axis</span> <span class="o">=</span> <span class="n">axis</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">,</span> <span class="n">_func_wrap</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="o">.</span><span class="n">input_array</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">shape</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">axis</span> <span class="o">==</span> <span class="n">axis</span><span class="p">:</span>
+                <span class="c1"># Already planned</span>
+                <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">plan</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">axis</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_fwd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">xfftn_fwd</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_bck</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">xfftn_bck</span>
+        <span class="n">U</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">xfftn_fwd</span><span class="o">.</span><span class="n">input_array</span>
+        <span class="n">V</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">xfftn_fwd</span><span class="o">.</span><span class="n">output_array</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">forward</span> <span class="o">=</span> <span class="n">_func_wrap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_fwd</span><span class="p">,</span> <span class="n">U</span><span class="p">,</span> <span class="n">V</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">backward</span> <span class="o">=</span> <span class="n">_func_wrap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backward</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_bck</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">U</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span> <span class="o">=</span> <span class="n">_func_wrap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_fwd</span><span class="p">,</span> <span class="n">U</span><span class="p">,</span> <span class="n">V</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="ShenBiharmonicBasis"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenBiharmonicBasis">[docs]</a><span class="nd">@inheritdocstrings</span>
+<span class="k">class</span> <span class="nc">ShenBiharmonicBasis</span><span class="p">(</span><span class="n">ChebyshevBase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Shen biharmonic basis</span>
+
+<span class="sd">    Homogeneous Dirichlet and Neumann boundary conditions.</span>
+
+<span class="sd">    kwargs:</span>
+<span class="sd">        N             int         Number of quadrature points</span>
+<span class="sd">        quad        (&#39;GL&#39;, &#39;GC&#39;)  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">quad</span><span class="o">=</span><span class="s2">&quot;GC&quot;</span><span class="p">,</span> <span class="n">plan</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">ChebyshevBase</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">quad</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">CT</span> <span class="o">=</span> <span class="n">Basis</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">quad</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_factor1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_factor2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">plan</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plan</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="p">{})</span>
+
+<div class="viewcode-block" id="ShenBiharmonicBasis.get_vandermonde_basis"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenBiharmonicBasis.get_vandermonde_basis">[docs]</a>    <span class="k">def</span> <span class="nf">get_vandermonde_basis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">V</span><span class="p">):</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">V</span><span class="p">)</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">V</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">)[:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span>
+        <span class="n">P</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">V</span><span class="p">[:,</span> <span class="p">:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="mi">3</span><span class="p">))</span><span class="o">*</span><span class="n">V</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="p">((</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="mi">3</span><span class="p">))</span><span class="o">*</span><span class="n">V</span><span class="p">[:,</span> <span class="mi">4</span><span class="p">:]</span>
+        <span class="k">return</span> <span class="n">P</span></div>
+
+<div class="viewcode-block" id="ShenBiharmonicBasis.set_factor_arrays"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenBiharmonicBasis.set_factor_arrays">[docs]</a>    <span class="k">def</span> <span class="nf">set_factor_arrays</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)]</span><span class="o">*</span><span class="n">v</span><span class="o">.</span><span class="n">ndim</span>
+        <span class="n">s</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slice</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_factor1</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">v</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wavenumbers</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_factor1</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="mi">3</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_factor2</span> <span class="o">=</span> <span class="p">((</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="mi">3</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ShenBiharmonicBasis.scalar_product"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenBiharmonicBasis.scalar_product">[docs]</a>    <span class="k">def</span> <span class="nf">scalar_product</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_array</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_array</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fast_transform</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">input_array</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="o">.</span><span class="n">input_array</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_array</span>
+
+        <span class="k">if</span> <span class="n">fast_transform</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">scalar_product</span><span class="p">(</span><span class="n">fast_transform</span><span class="o">=</span><span class="n">fast_transform</span><span class="p">)</span>
+            <span class="n">Tk</span> <span class="o">=</span> <span class="n">work</span><span class="p">[(</span><span class="n">output</span><span class="p">,</span> <span class="mi">0</span><span class="p">)]</span>
+            <span class="n">Tk</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">output</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_factor_arrays</span><span class="p">(</span><span class="n">Tk</span><span class="p">)</span>
+
+            <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sl</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slice</span><span class="p">())</span>
+            <span class="n">s2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sl</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">))</span>
+            <span class="n">output</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_factor1</span> <span class="o">*</span> <span class="n">Tk</span><span class="p">[</span><span class="n">s2</span><span class="p">]</span>
+            <span class="n">s2</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="p">]</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">output</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_factor2</span> <span class="o">*</span> <span class="n">Tk</span><span class="p">[</span><span class="n">s2</span><span class="p">]</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vandermonde_scalar_product</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="o">.</span><span class="n">input_array</span><span class="p">,</span>
+                                                     <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="o">.</span><span class="n">output_array</span><span class="p">)</span>
+
+        <span class="n">output</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">sl</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="kc">None</span><span class="p">))]</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="n">output_array</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">output_array</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">output</span>
+            <span class="k">return</span> <span class="n">output_array</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">output</span></div>
+
+    <span class="c1">#@optimizer</span>
+<div class="viewcode-block" id="ShenBiharmonicBasis.set_w_hat"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenBiharmonicBasis.set_w_hat">[docs]</a>    <span class="k">def</span> <span class="nf">set_w_hat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">w_hat</span><span class="p">,</span> <span class="n">fk</span><span class="p">,</span> <span class="n">f1</span><span class="p">,</span> <span class="n">f2</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sl</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slice</span><span class="p">())</span>
+        <span class="n">s2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sl</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">s4</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sl</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+        <span class="n">w_hat</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="n">fk</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
+        <span class="n">w_hat</span><span class="p">[</span><span class="n">s2</span><span class="p">]</span> <span class="o">+=</span> <span class="n">f1</span><span class="o">*</span><span class="n">fk</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
+        <span class="n">w_hat</span><span class="p">[</span><span class="n">s4</span><span class="p">]</span> <span class="o">+=</span> <span class="n">f2</span><span class="o">*</span><span class="n">fk</span><span class="p">[</span><span class="n">s</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">w_hat</span></div>
+
+<div class="viewcode-block" id="ShenBiharmonicBasis.evaluate_expansion_all"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenBiharmonicBasis.evaluate_expansion_all">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate_expansion_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fk</span><span class="p">,</span> <span class="n">fj</span><span class="p">):</span>
+        <span class="n">w_hat</span> <span class="o">=</span> <span class="n">work</span><span class="p">[(</span><span class="n">fk</span><span class="p">,</span> <span class="mi">0</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_factor_arrays</span><span class="p">(</span><span class="n">fk</span><span class="p">)</span>
+        <span class="n">w_hat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_w_hat</span><span class="p">(</span><span class="n">w_hat</span><span class="p">,</span> <span class="n">fk</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_factor1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_factor2</span><span class="p">)</span>
+        <span class="n">fj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">w_hat</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">fk</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">backward</span><span class="o">.</span><span class="n">input_array</span>
+        <span class="k">assert</span> <span class="n">fj</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">backward</span><span class="o">.</span><span class="n">output_array</span>
+        <span class="k">return</span> <span class="n">fj</span></div>
+
+<div class="viewcode-block" id="ShenBiharmonicBasis.slice"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenBiharmonicBasis.slice">[docs]</a>    <span class="k">def</span> <span class="nf">slice</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="o">-</span><span class="mi">4</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ShenBiharmonicBasis.eval"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenBiharmonicBasis.eval">[docs]</a>    <span class="k">def</span> <span class="nf">eval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">fk</span><span class="p">):</span>
+        <span class="n">w_hat</span> <span class="o">=</span> <span class="n">work</span><span class="p">[(</span><span class="n">fk</span><span class="p">,</span> <span class="mi">0</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_factor_arrays</span><span class="p">(</span><span class="n">fk</span><span class="p">)</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">n_cheb</span><span class="o">.</span><span class="n">chebval</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fk</span><span class="p">[:</span><span class="o">-</span><span class="mi">4</span><span class="p">])</span>
+        <span class="n">w_hat</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_factor1</span><span class="o">*</span><span class="n">fk</span><span class="p">[:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span>
+        <span class="n">f</span> <span class="o">+=</span> <span class="n">n_cheb</span><span class="o">.</span><span class="n">chebval</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">w_hat</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">w_hat</span><span class="p">[</span><span class="mi">4</span><span class="p">:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_factor2</span><span class="o">*</span><span class="n">fk</span><span class="p">[:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span>
+        <span class="n">w_hat</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">f</span> <span class="o">+=</span> <span class="n">n_cheb</span><span class="o">.</span><span class="n">chebval</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">w_hat</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">f</span></div>
+
+<div class="viewcode-block" id="ShenBiharmonicBasis.plan"><a class="viewcode-back" href="../../../shenfun.chebyshev.html#shenfun.chebyshev.bases.ShenBiharmonicBasis.plan">[docs]</a>    <span class="k">def</span> <span class="nf">plan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">options</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">axis</span> <span class="o">=</span> <span class="n">axis</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">,</span> <span class="n">_func_wrap</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="o">.</span><span class="n">input_array</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">shape</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">axis</span> <span class="o">==</span> <span class="n">axis</span><span class="p">:</span>
+                <span class="c1"># Already planned</span>
+                <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">plan</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">axis</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_fwd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">xfftn_fwd</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_bck</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">xfftn_bck</span>
+        <span class="n">U</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">xfftn_fwd</span><span class="o">.</span><span class="n">input_array</span>
+        <span class="n">V</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CT</span><span class="o">.</span><span class="n">xfftn_fwd</span><span class="o">.</span><span class="n">output_array</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">forward</span> <span class="o">=</span> <span class="n">_func_wrap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_fwd</span><span class="p">,</span> <span class="n">U</span><span class="p">,</span> <span class="n">V</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">backward</span> <span class="o">=</span> <span class="n">_func_wrap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backward</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_bck</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">U</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span> <span class="o">=</span> <span class="n">_func_wrap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scalar_product</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xfftn_fwd</span><span class="p">,</span> <span class="n">U</span><span class="p">,</span> <span class="n">V</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  <li><a href="../../shenfun.html">shenfun</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Mikael Mortensen.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
