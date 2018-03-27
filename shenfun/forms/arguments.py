@@ -304,28 +304,27 @@ class Function(np.ndarray, BasisFunction):
 
     Parameters
     ----------
+        space : TensorProductSpace
+        forward_output : boolean.
+            If False then create Function of shape/type for input to T.forward,
+            otherwise create Function of shape/type for output from T.forward
+        val : int or float
+            Value used to initialize array
+        buffer : Numpy array or Function
+            Must be of correct shape
 
-    space : Instance of TensorProductSpace (T)
-    forward_output : boolean.
-        If False then create Function of shape/type for input to T.forward,
-        otherwise create Function of shape/type for output from T.forward
-    val : int or float
-        Value used to initialize array
-    buffer : Numpy array or Function with data. Must be of correct shape
-
-    For more information, see numpy.ndarray
+    .. note:: For more information, see numpy.ndarray
 
     Examples
     --------
-    from mpi4py_fft import MPI
-    from shenfun.tensorproductspace import TensorProductSpace, Function
-    from shenfun.fourier.bases import R2CBasis, C2CBasis
-
-    K0 = C2CBasis(8)
-    K1 = R2CBasis(8)
-    FFT = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
-    u = Function(FFT, False)
-    uhat = Function(FFT, True)
+    >>> from mpi4py_fft import MPI
+    >>> from shenfun.tensorproductspace import TensorProductSpace, Function
+    >>> from shenfun.fourier.bases import R2CBasis, C2CBasis
+    >>> K0 = C2CBasis(8)
+    >>> K1 = R2CBasis(8)
+    >>> FFT = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
+    >>> u = Function(FFT, False)
+    >>> uhat = Function(FFT, True)
 
     """
 
@@ -400,28 +399,28 @@ class Array(np.ndarray):
     Parameters
     ----------
 
-    space : Instance of TensorProductSpace
-    forward_output : boolean.
-        If False then create Array of shape/type for input to
-        TensorProductSpace.forward, otherwise create Array of shape/type
-        for output from TensorProductSpace.forward
-    val : int or float
-        Value used to initialize array
-    buffer : Numpy array or Array with data. Must be of correct shape
+        space : TensorProductSpace
+        forward_output : boolean.
+            If False then create Array of shape/type for input to
+            TensorProductSpace.forward, otherwise create Array of shape/type
+            for output from TensorProductSpace.forward
+        val : int or float
+            Value used to initialize array
+        buffer : Numpy array or Array
+            Must be of correct shape
 
-    For more information, see numpy.ndarray
+    .. note::  For more information, see numpy.ndarray
 
     Examples
     --------
-    from mpi4py_fft import MPI
-    from shenfun.tensorproductspace import TensorProductSpace, Array
-    from shenfun.fourier.bases import R2CBasis, C2CBasis
-
-    K0 = C2CBasis(8)
-    K1 = R2CBasis(8)
-    FFT = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
-    u = Array(FFT, False)
-    uhat = Array(FFT, True)
+    >>> from mpi4py_fft import MPI
+    >>> from shenfun.tensorproductspace import TensorProductSpace, Array
+    >>> from shenfun.fourier.bases import R2CBasis, C2CBasis
+    >>> K0 = C2CBasis(8)
+    >>> K1 = R2CBasis(8)
+    >>> FFT = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
+    >>> u = Array(FFT, False)
+    >>> uhat = Array(FFT, True)
 
     """
 

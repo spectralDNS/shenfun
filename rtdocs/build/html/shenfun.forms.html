@@ -1,0 +1,490 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>shenfun.forms package &#8212; shenfun 1.0.2 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="shenfun-forms-package">
+<h1>shenfun.forms package<a class="headerlink" href="#shenfun-forms-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-shenfun.forms.arguments">
+<span id="shenfun-forms-arguments-module"></span><h2>shenfun.forms.arguments module<a class="headerlink" href="#module-shenfun.forms.arguments" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="shenfun.forms.arguments.Expr">
+<em class="property">class </em><code class="descclassname">shenfun.forms.arguments.</code><code class="descname">Expr</code><span class="sig-paren">(</span><em>basis</em>, <em>terms=None</em>, <em>scales=None</em>, <em>indices=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#Expr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.Expr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class for spectral Galerkin forms</p>
+<p>An Expr instance is a form that is linear in TestFunction (v), TrialFunction
+(u) or Function (c). The Function is a Numpy array evaluated at quadrature
+points. Inner products are constructed from forms consisting of two Exprs,
+one with a TestFunction and one with either TrialFunction or Function.</p>
+<dl class="docutils">
+<dt>args:</dt>
+<dd><dl class="first last docutils">
+<dt>basis:     BasisFunction instance</dt>
+<dd>TestFunction
+TrialFunction
+Function</dd>
+</dl>
+</dd>
+<dt>kwargs:</dt>
+<dd><p class="first">terms:     Numpy array of ndim = 3. Describes operations in Expr</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>Index 0: Vector component. If Expr is rank = 0, then</dt>
+<dd>terms[0] = 1. For vectors it equals dim</dd>
+<dt>Index 1: One for each term in the form. For example</dt>
+<dd><dl class="first last docutils">
+<dt>div(grad(u)) has three terms in 3D:</dt>
+<dd>d^2u/dx^2 + d^2u/dy^2 + d^2u/dz^2</dd>
+</dl>
+</dd>
+<dt>Index 2: The operations stored as an array of len = dim</dt>
+<dd><p class="first">For example, div(grad(u)) in 3D is represented
+with the three arrays</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>[[2, 0, 0],</dt>
+<dd>[0, 2, 0],
+[0, 0, 2]]</dd>
+</dl>
+</div></blockquote>
+<p class="last">meaning the first term has two derivatives in first
+direction and none in the others (d^2u/dx^2),
+the second has two derivatives in second direction,
+etc.</p>
+</dd>
+</dl>
+<p>The Expr div(grad(u)), where u is a scalar, is as such
+represented as an array of shape (1, 3, 3), 1 meaning
+it’s a scalar, the first 3 because the Expr consists of
+the sum of three terms, and the last 3 because it is 3D:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>array([[[2, 0, 0],</dt>
+<dd>[0, 2, 0],
+[0, 0, 2]]])</dd>
+</dl>
+</div></blockquote>
+</div></blockquote>
+<dl class="last docutils">
+<dt>scales:   Representing a scalar multiply of each inner product</dt>
+<dd>Numpy array of shape == terms.shape[:2]</dd>
+<dt>indices:  Index into VectorTensorProductSpace. Only for vector</dt>
+<dd>coefficients
+Numpy array of shape == terms.shape[:2]</dd>
+</dl>
+</dd>
+</dl>
+<dl class="method">
+<dt id="shenfun.forms.arguments.Expr.argument">
+<code class="descname">argument</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#Expr.argument"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.Expr.argument" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="shenfun.forms.arguments.Expr.basis">
+<code class="descname">basis</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#Expr.basis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.Expr.basis" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="shenfun.forms.arguments.Expr.dim">
+<code class="descname">dim</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#Expr.dim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.Expr.dim" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="shenfun.forms.arguments.Expr.expr_rank">
+<code class="descname">expr_rank</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#Expr.expr_rank"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.Expr.expr_rank" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="shenfun.forms.arguments.Expr.function_space">
+<code class="descname">function_space</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#Expr.function_space"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.Expr.function_space" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="shenfun.forms.arguments.Expr.indices">
+<code class="descname">indices</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#Expr.indices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.Expr.indices" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="shenfun.forms.arguments.Expr.num_components">
+<code class="descname">num_components</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#Expr.num_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.Expr.num_components" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="shenfun.forms.arguments.Expr.num_terms">
+<code class="descname">num_terms</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#Expr.num_terms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.Expr.num_terms" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="shenfun.forms.arguments.Expr.rank">
+<code class="descname">rank</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#Expr.rank"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.Expr.rank" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="shenfun.forms.arguments.Expr.scales">
+<code class="descname">scales</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#Expr.scales"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.Expr.scales" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="shenfun.forms.arguments.Expr.terms">
+<code class="descname">terms</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#Expr.terms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.Expr.terms" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="shenfun.forms.arguments.BasisFunction">
+<em class="property">class </em><code class="descclassname">shenfun.forms.arguments.</code><code class="descname">BasisFunction</code><span class="sig-paren">(</span><em>space</em>, <em>argument=0</em>, <em>index=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#BasisFunction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.BasisFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="shenfun.forms.arguments.BasisFunction.argument">
+<code class="descname">argument</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#BasisFunction.argument"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.BasisFunction.argument" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="shenfun.forms.arguments.BasisFunction.expr_rank">
+<code class="descname">expr_rank</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#BasisFunction.expr_rank"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.BasisFunction.expr_rank" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="shenfun.forms.arguments.BasisFunction.function_space">
+<code class="descname">function_space</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#BasisFunction.function_space"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.BasisFunction.function_space" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="shenfun.forms.arguments.BasisFunction.index">
+<code class="descname">index</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#BasisFunction.index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.BasisFunction.index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return index into vector of rank 2</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="shenfun.forms.arguments.BasisFunction.num_components">
+<code class="descname">num_components</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#BasisFunction.num_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.BasisFunction.num_components" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="shenfun.forms.arguments.BasisFunction.rank">
+<code class="descname">rank</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#BasisFunction.rank"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.BasisFunction.rank" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="shenfun.forms.arguments.TestFunction">
+<em class="property">class </em><code class="descclassname">shenfun.forms.arguments.</code><code class="descname">TestFunction</code><span class="sig-paren">(</span><em>space</em>, <em>index=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#TestFunction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.TestFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#shenfun.forms.arguments.BasisFunction" title="shenfun.forms.arguments.BasisFunction"><code class="xref py py-class docutils literal notranslate"><span class="pre">shenfun.forms.arguments.BasisFunction</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="shenfun.forms.arguments.TrialFunction">
+<em class="property">class </em><code class="descclassname">shenfun.forms.arguments.</code><code class="descname">TrialFunction</code><span class="sig-paren">(</span><em>space</em>, <em>index=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#TrialFunction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.TrialFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#shenfun.forms.arguments.BasisFunction" title="shenfun.forms.arguments.BasisFunction"><code class="xref py py-class docutils literal notranslate"><span class="pre">shenfun.forms.arguments.BasisFunction</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="shenfun.forms.arguments.Function">
+<em class="property">class </em><code class="descclassname">shenfun.forms.arguments.</code><code class="descname">Function</code><span class="sig-paren">(</span><em>space</em>, <em>forward_output=True</em>, <em>val=0</em>, <em>buffer=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#Function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.Function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>, <a class="reference internal" href="#shenfun.forms.arguments.BasisFunction" title="shenfun.forms.arguments.BasisFunction"><code class="xref py py-class docutils literal notranslate"><span class="pre">shenfun.forms.arguments.BasisFunction</span></code></a></p>
+<p>Numpy array for TensorProductSpace</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>space</strong> (<em>TensorProductSpace</em>)</li>
+<li><strong>forward_output</strong> (<em>boolean.</em>) – If False then create Function of shape/type for input to T.forward,
+otherwise create Function of shape/type for output from T.forward</li>
+<li><strong>val</strong> (<em>int or float</em>) – Value used to initialize array</li>
+<li><strong>buffer</strong> (<em>Numpy array or Function</em>) – Must be of correct shape</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">For more information, see numpy.ndarray</p>
+</div>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">mpi4py_fft</span> <span class="k">import</span> <span class="n">MPI</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">shenfun.tensorproductspace</span> <span class="k">import</span> <span class="n">TensorProductSpace</span><span class="p">,</span> <span class="n">Function</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">shenfun.fourier.bases</span> <span class="k">import</span> <span class="n">R2CBasis</span><span class="p">,</span> <span class="n">C2CBasis</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">K0</span> <span class="o">=</span> <span class="n">C2CBasis</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">K1</span> <span class="o">=</span> <span class="n">R2CBasis</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">FFT</span> <span class="o">=</span> <span class="n">TensorProductSpace</span><span class="p">(</span><span class="n">MPI</span><span class="o">.</span><span class="n">COMM_WORLD</span><span class="p">,</span> <span class="p">[</span><span class="n">K0</span><span class="p">,</span> <span class="n">K1</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">FFT</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">uhat</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">FFT</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="shenfun.forms.arguments.Function.as_array">
+<code class="descname">as_array</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#Function.as_array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.Function.as_array" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="shenfun.forms.arguments.Array">
+<em class="property">class </em><code class="descclassname">shenfun.forms.arguments.</code><code class="descname">Array</code><a class="reference internal" href="_modules/shenfun/forms/arguments.html#Array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.Array" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></p>
+<p>Numpy array for TensorProductSpace</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>space</strong> (<em>TensorProductSpace</em>)</li>
+<li><strong>forward_output</strong> (<em>boolean.</em>) – If False then create Array of shape/type for input to
+TensorProductSpace.forward, otherwise create Array of shape/type
+for output from TensorProductSpace.forward</li>
+<li><strong>val</strong> (<em>int or float</em>) – Value used to initialize array</li>
+<li><strong>buffer</strong> (<em>Numpy array or Array</em>) – Must be of correct shape</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">For more information, see numpy.ndarray</p>
+</div>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">mpi4py_fft</span> <span class="k">import</span> <span class="n">MPI</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">shenfun.tensorproductspace</span> <span class="k">import</span> <span class="n">TensorProductSpace</span><span class="p">,</span> <span class="n">Array</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">shenfun.fourier.bases</span> <span class="k">import</span> <span class="n">R2CBasis</span><span class="p">,</span> <span class="n">C2CBasis</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">K0</span> <span class="o">=</span> <span class="n">C2CBasis</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">K1</span> <span class="o">=</span> <span class="n">R2CBasis</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">FFT</span> <span class="o">=</span> <span class="n">TensorProductSpace</span><span class="p">(</span><span class="n">MPI</span><span class="o">.</span><span class="n">COMM_WORLD</span><span class="p">,</span> <span class="p">[</span><span class="n">K0</span><span class="p">,</span> <span class="n">K1</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">FFT</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">uhat</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">FFT</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="shenfun.forms.arguments.Array.as_function">
+<code class="descname">as_function</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#Array.as_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.Array.as_function" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="shenfun.forms.arguments.Array.function_space">
+<code class="descname">function_space</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#Array.function_space"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.Array.function_space" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="shenfun.forms.arguments.Array.rank">
+<code class="descname">rank</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/arguments.html#Array.rank"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.arguments.Array.rank" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-shenfun.forms.inner">
+<span id="shenfun-forms-inner-module"></span><h2>shenfun.forms.inner module<a class="headerlink" href="#module-shenfun.forms.inner" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="shenfun.forms.inner.inner">
+<code class="descclassname">shenfun.forms.inner.</code><code class="descname">inner</code><span class="sig-paren">(</span><em>expr0</em>, <em>expr1</em>, <em>output_array=None</em>, <em>uh_hat=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/inner.html#inner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.inner.inner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return inner product of linear or bilinear form</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>expr0, expr1</strong> (<em>Expr</em>) – Test/trial function, or expression involving test/trial
+function, e.g., div, grad. One of expr0 or expr1 need to
+be an expression on a testfunction, and if the second
+then involves a trial function, a matrix is returned.
+If one of expr0/expr1 is a test function and the other
+one is a Function/Array, then a linear form is assumed
+and an assembled vector is returned</li>
+<li><strong>output_array</strong> (<em>Numpy array</em>) – Optional return array for linear form.</li>
+<li><strong>uh_hat</strong> (<em>Numpy array</em>) – The transform of the Function/Array used for linear forms.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Example</p>
+<p>Compute mass matrix of Shen’s Chebyshev Dirichlet basis:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">shenfun.chebyshev.bases</span> <span class="k">import</span> <span class="n">ShenDirichletBasis</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">shenfun.arguments</span> <span class="k">import</span> <span class="n">TestFunction</span><span class="p">,</span> <span class="n">TrialFunction</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">SD</span> <span class="o">=</span> <span class="n">ShenDirichletBasis</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">TrialFunction</span><span class="p">(</span><span class="n">SD</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">v</span> <span class="o">=</span> <span class="n">TestFunction</span><span class="p">(</span><span class="n">SD</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">B</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">B</span>
+<span class="go">{-2: array([-1.57079633]),</span>
+<span class="go">  0: array([ 4.71238898,  3.14159265,  3.14159265,  3.14159265]),</span>
+<span class="go">  2: array([-1.57079633])}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="module-shenfun.forms.operators">
+<span id="shenfun-forms-operators-module"></span><h2>shenfun.forms.operators module<a class="headerlink" href="#module-shenfun.forms.operators" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="shenfun.forms.operators.div">
+<code class="descclassname">shenfun.forms.operators.</code><code class="descname">div</code><span class="sig-paren">(</span><em>test</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/operators.html#div"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.operators.div" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="shenfun.forms.operators.grad">
+<code class="descclassname">shenfun.forms.operators.</code><code class="descname">grad</code><span class="sig-paren">(</span><em>test</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/operators.html#grad"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.operators.grad" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="shenfun.forms.operators.Dx">
+<code class="descclassname">shenfun.forms.operators.</code><code class="descname">Dx</code><span class="sig-paren">(</span><em>test</em>, <em>x</em>, <em>k=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/operators.html#Dx"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.operators.Dx" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="shenfun.forms.operators.curl">
+<code class="descclassname">shenfun.forms.operators.</code><code class="descname">curl</code><span class="sig-paren">(</span><em>test</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/operators.html#curl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.operators.curl" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-shenfun.forms.project">
+<span id="shenfun-forms-project-module"></span><h2>shenfun.forms.project module<a class="headerlink" href="#module-shenfun.forms.project" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="shenfun.forms.project.project">
+<code class="descclassname">shenfun.forms.project.</code><code class="descname">project</code><span class="sig-paren">(</span><em>uh</em>, <em>T</em>, <em>output_array=None</em>, <em>uh_hat=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/shenfun/forms/project.html#project"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#shenfun.forms.project.project" title="Permalink to this definition">¶</a></dt>
+<dd><p>Project uh to tensor product space T</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>uh</strong> (<em>Expr or Function</em>)</li>
+<li><strong>T</strong> (<em>TensorProductSpace instance</em>)</li>
+<li><strong>output_array</strong> (<em>Function(T, True)  Return array</em>)</li>
+<li><strong>uh_hat</strong> (<em>Function(T, True)  The transform of uh in uh’s space,</em>)</li>
+<li><strong>i.e., TK = uh.function_space(); uh_hat = TK.forward(uh)</strong></li>
+<li><strong>This is ok even though uh is part of a form, like div(grad(uh))</strong></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Returns spectral expansion coefficients of projection,
+not the projection in physical space.</p>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">mpi4py</span> <span class="k">import</span> <span class="n">MPI</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">shenfun</span> <span class="k">import</span> <span class="n">chebyshev</span><span class="p">,</span> <span class="n">fourier</span><span class="p">,</span> <span class="n">project</span><span class="p">,</span> <span class="n">TensorProductSpace</span><span class="p">,</span> \
+<span class="go">    Function, Dx</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">N</span> <span class="o">=</span> <span class="mi">16</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">comm</span> <span class="o">=</span> <span class="n">MPI</span><span class="o">.</span><span class="n">COMM_WORLD</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">T0</span> <span class="o">=</span> <span class="n">chebyshev</span><span class="o">.</span><span class="n">bases</span><span class="o">.</span><span class="n">Basis</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">K0</span> <span class="o">=</span> <span class="n">fourier</span><span class="o">.</span><span class="n">bases</span><span class="o">.</span><span class="n">R2CBasis</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">T</span> <span class="o">=</span> <span class="n">TensorProductSpace</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="p">(</span><span class="n">T0</span><span class="p">,</span> <span class="n">K0</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">uj</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">uj</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="n">uj</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u_hat</span> <span class="o">=</span> <span class="n">project</span><span class="p">(</span><span class="n">uj</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>    <span class="c1"># Same as u_hat=Function(T);u_hat = T.forward(uj, u_hat)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">du_hat</span> <span class="o">=</span> <span class="n">project</span><span class="p">(</span><span class="n">Dx</span><span class="p">(</span><span class="n">uj</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">T</span><span class="p">,</span> <span class="n">uh_hat</span><span class="o">=</span><span class="n">u_hat</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="module-shenfun.forms">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-shenfun.forms" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">shenfun.forms package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-shenfun.forms.arguments">shenfun.forms.arguments module</a></li>
+<li><a class="reference internal" href="#module-shenfun.forms.inner">shenfun.forms.inner module</a></li>
+<li><a class="reference internal" href="#module-shenfun.forms.operators">shenfun.forms.operators module</a></li>
+<li><a class="reference internal" href="#module-shenfun.forms.project">shenfun.forms.project module</a></li>
+<li><a class="reference internal" href="#module-shenfun.forms">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/shenfun.forms.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Mikael Mortensen.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/shenfun.forms.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

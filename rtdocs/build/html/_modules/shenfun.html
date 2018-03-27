@@ -1,0 +1,208 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>shenfun &#8212; shenfun 1.0.2 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for shenfun</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">chebyshev</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">legendre</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">fourier</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">matrixbase</span>
+<span class="kn">from</span> <span class="nn">.forms.project</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.forms.inner</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.forms.operators</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.forms.arguments</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.tensorproductspace</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.utilities</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.utilities.integrators</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.utilities.h5py_writer</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.utilities.generate_xdmf</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">.matrixbase</span> <span class="k">import</span> <span class="o">*</span>
+
+<span class="kn">from</span> <span class="nn">scipy.sparse.linalg</span> <span class="k">import</span> <span class="n">spsolve</span>
+<span class="kn">from</span> <span class="nn">scipy.linalg</span> <span class="k">import</span> <span class="n">solve</span> <span class="k">as</span> <span class="n">lasolve</span>
+
+<div class="viewcode-block" id="energy_fourier"><a class="viewcode-back" href="../shenfun.html#shenfun.energy_fourier">[docs]</a><span class="k">def</span> <span class="nf">energy_fourier</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compute the energy of u using Parceval&#39;s theorem</span>
+
+<span class="sd">    args:</span>
+<span class="sd">        u               The Fourier coefficients</span>
+<span class="sd">        T               The function space</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="s1">&#39;comm&#39;</span><span class="p">):</span>
+        <span class="c1"># Just a 1D basis</span>
+        <span class="k">assert</span> <span class="n">u</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">fourier</span><span class="o">.</span><span class="n">bases</span><span class="o">.</span><span class="n">R2CBasis</span><span class="p">):</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">u</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="n">comm</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">comm</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">fourier</span><span class="o">.</span><span class="n">bases</span><span class="o">.</span><span class="n">FourierBase</span><span class="p">)</span> <span class="k">for</span> <span class="n">base</span> <span class="ow">in</span> <span class="n">T</span><span class="p">])</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">bases</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">fourier</span><span class="o">.</span><span class="n">bases</span><span class="o">.</span><span class="n">R2CBasis</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">T</span><span class="o">.</span><span class="n">forward</span><span class="o">.</span><span class="n">output_pencil</span><span class="o">.</span><span class="n">subcomm</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">Get_size</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Data not aligned along last dimension. Need to check about 0 and -1</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">T</span><span class="o">.</span><span class="n">local_slice</span><span class="p">(</span><span class="kc">True</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">start</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">+=</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">T</span><span class="o">.</span><span class="n">local_slice</span><span class="p">(</span><span class="kc">True</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">stop</span> <span class="o">==</span> <span class="n">T</span><span class="o">.</span><span class="n">spectral_shape</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">result</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">+=</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="o">...</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span>  <span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="solve"><a class="viewcode-back" href="../shenfun.html#shenfun.solve">[docs]</a><span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">u</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Solve Au=b and return u</span>
+
+<span class="sd">    The matrix A must be square</span>
+
+<span class="sd">    args:</span>
+<span class="sd">        A                         SparseMatrix</span>
+<span class="sd">        b      (input/output)     Array</span>
+
+<span class="sd">    kwargs:</span>
+<span class="sd">        u      (output)           Array</span>
+<span class="sd">        axis       int            The axis to solve along</span>
+
+<span class="sd">    If u is not provided, then b is overwritten with the solution and returned</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">matrixbase</span><span class="o">.</span><span class="n">SparseMatrix</span><span class="p">)</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">testfunction</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">slice</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">u</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="n">b</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">u</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">b</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="c1"># Move axis to first</span>
+    <span class="k">if</span> <span class="n">axis</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">u</span> <span class="ow">is</span> <span class="n">b</span><span class="p">:</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="n">A</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">b</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">testfunction</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">chebyshev</span><span class="o">.</span><span class="n">bases</span><span class="o">.</span><span class="n">ShenNeumannBasis</span><span class="p">)</span> <span class="ow">or</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">testfunction</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">legendre</span><span class="o">.</span><span class="n">bases</span><span class="o">.</span><span class="n">ShenNeumannBasis</span><span class="p">)):</span>
+        <span class="c1"># Handle level by using Dirichlet for dof=0</span>
+        <span class="n">Aa</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">diags</span><span class="p">()</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
+        <span class="n">Aa</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">Aa</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">testfunction</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span>
+        <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">u</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="n">lasolve</span><span class="p">(</span><span class="n">Aa</span><span class="p">,</span> <span class="n">b</span><span class="p">[</span><span class="n">s</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">N</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+            <span class="n">u</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="n">lasolve</span><span class="p">(</span><span class="n">Aa</span><span class="p">,</span> <span class="n">b</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">P</span><span class="p">)))</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">u</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="n">spsolve</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">diags</span><span class="p">(</span><span class="s1">&#39;csr&#39;</span><span class="p">),</span> <span class="n">b</span><span class="p">[</span><span class="n">s</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">N</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+            <span class="n">br</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">P</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="s1">&#39;complex&#39;</span><span class="p">):</span>
+                <span class="n">u</span><span class="o">.</span><span class="n">real</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="n">spsolve</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">diags</span><span class="p">(</span><span class="s1">&#39;csr&#39;</span><span class="p">),</span> <span class="n">br</span><span class="o">.</span><span class="n">real</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+                <span class="n">u</span><span class="o">.</span><span class="n">imag</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="n">spsolve</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">diags</span><span class="p">(</span><span class="s1">&#39;csr&#39;</span><span class="p">),</span> <span class="n">br</span><span class="o">.</span><span class="n">imag</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">u</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="n">spsolve</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">diags</span><span class="p">(</span><span class="s1">&#39;csr&#39;</span><span class="p">),</span> <span class="n">br</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">testfunction</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;bc&#39;</span><span class="p">):</span>
+            <span class="n">A</span><span class="o">.</span><span class="n">testfunction</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">bc</span><span class="o">.</span><span class="n">apply_after</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">axis</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">u</span> <span class="ow">is</span> <span class="n">b</span><span class="p">:</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>
+
+    <span class="n">u</span> <span class="o">/=</span> <span class="n">A</span><span class="o">.</span><span class="n">scale</span>
+
+    <span class="k">return</span> <span class="n">u</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Mikael Mortensen.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
