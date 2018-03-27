@@ -14,19 +14,14 @@ whereas for Chebyshev we solve
 """
 import sys
 import importlib
-from sympy import symbols, cos, sin, exp, lambdify
+from sympy import symbols, sin, lambdify
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    project, Dx, Array
-try:
-    import matplotlib.pyplot as plt
-except:
-    plt = None
-
+    Array
 
 assert len(sys.argv) == 3
 assert sys.argv[-1] in ('legendre', 'chebyshev')
-assert isinstance(eval(sys.argv[-2]), int)
+assert isinstance(int(sys.argv[-2]), int)
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 basis = sys.argv[-1]
@@ -45,7 +40,7 @@ ul = lambdify(x, ue, 'numpy')
 fl = lambdify(x, fe, 'numpy')
 
 # Size of discretization
-N = eval(sys.argv[-2])
+N = int(sys.argv[-2])
 
 SD = Basis(N, plan=True)
 X = SD.mesh(N)
@@ -62,13 +57,13 @@ f_hat = inner(v, fj, output_array=f_hat)
 
 # Get left hand side of Poisson equation
 if basis == 'chebyshev':
-    matrices = inner(v, alfa*u - div(grad(u)))
+    A = inner(v, -div(grad(u)))
+    B = inner(v, alfa*u)
 else:
     A = inner(grad(v), grad(u))
     B = inner(v, alfa*u)
-    matrices = {'ADDmat': A, 'BDDmat':B}
 
-H = Solver(**matrices)
+H = Solver(A, B, A.scale, B.scale)
 u_hat = Function(SD)           # Solution spectral space
 u_hat = H(u_hat, f_hat)
 uj = SD.backward(u_hat)

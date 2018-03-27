@@ -16,12 +16,12 @@ whereas for Chebyshev we solve
 """
 import sys, os
 import importlib
-from sympy import symbols, cos, sin, exp, lambdify
+from sympy import symbols, sin, lambdify
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction
 try:
     import matplotlib.pyplot as plt
-except:
+except ImportError:
     plt = None
 
 # Collect basis from either Chebyshev or Legendre submodules

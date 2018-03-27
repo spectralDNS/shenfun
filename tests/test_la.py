@@ -3,10 +3,7 @@ from shenfun.chebyshev.la import PDMA
 from shenfun.chebyshev.bases import ShenBiharmonicBasis
 from shenfun import inner, TestFunction, TrialFunction, div, grad
 from scipy.linalg import solve
-from sympy import chebyshevt, Symbol, sin, cos, pi, lambdify
 import numpy as np
-import scipy.sparse.linalg as la
-from itertools import product
 
 N = 32
 
@@ -17,7 +14,6 @@ def test_PDMA(quad):
     SB = ShenBiharmonicBasis(N, quad=quad, plan=True)
     u = TrialFunction(SB)
     v = TestFunction(SB)
-    kx = 12
     points, weights = SB.points_and_weights(N)
     fj = np.random.randn(N)
     f_hat = np.zeros(N)
@@ -39,9 +35,3 @@ def test_PDMA(quad):
     #from IPython import embed; embed()
 
     assert np.allclose(u_hat2, u_hat)
-
-#test_PDMA('GC')
-
-
-
-

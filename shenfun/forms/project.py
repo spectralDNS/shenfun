@@ -1,10 +1,11 @@
+#pylint: disable=line-too-long, missing-docstring
+
 import numpy as np
 from shenfun.tensorproductspace import MixedTensorProductSpace
 from .arguments import Expr, TestFunction, TrialFunction, BasisFunction, Array
 from .inner import inner
 
 __all__ = ('project',)
-
 
 def project(uh, T, output_array=None, uh_hat=None):
     r"""Project uh to tensor product space T

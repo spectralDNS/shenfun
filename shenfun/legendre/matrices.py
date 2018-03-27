@@ -1,9 +1,77 @@
+r"""
+This module contains specific inner product matrices for the different bases in
+the Legendre family.
+
+A naming convention is used for the first three capital letters for all matrices.
+The first letter refers to type of matrix.
+
+    Mass matrices start with 'B'
+    One derivative start with 'C'
+    Two derivatives (Laplace) start with 'A'
+    Four derivatives (Biharmonic) start with 'S'
+
+The next two letters refer to the test and trialfunctions, respectively
+
+    Dirichlet:   'D'
+    Neumann:     'N'
+    Legendre:    'L'
+    Biharmonic:  'B'
+
+As such, there are 4 mass matrices, BDDmat, BNNmat, BLLmat and BBBmat,
+corresponding to the four bases above.
+
+A matrix may consist of different types of test and trialfunctions as long as
+they are all in the Legendre family. A mass matrix using Dirichlet test and
+Neumann trial is named BDNmat.
+
+All matrices in this module may be looked up using the 'mat' dictionary,
+which takes test and trialfunctions along with the number of derivatives
+to be applied to each. As such the mass matrix BDDmat may be looked up
+as
+
+   >>> from shenfun.legendre.matrices import mat
+   >>> from shenfun.legendre.bases import ShenDirichletBasis as SD
+   >>> B = mat[((SD, 0), (SD, 0))]
+
+and an instance of the matrix can be created as
+
+   >>> B0 = SD(12)
+   >>> BM = B((B0, 0), (B0, 0))
+   >>> print(BM)
+{-2: array([-0.4       , -0.28571429, -0.22222222, -0.18181818, -0.15384615,
+        -0.13333333, -0.11764706, -0.10526316]),
+ 0: array([ 2.4       ,  0.95238095,  0.62222222,  0.46753247,  0.37606838,
+         0.31515152,  0.27149321,  0.23859649,  0.21288515,  0.19221968]),
+ 2: array([-0.4       , -0.28571429, -0.22222222, -0.18181818, -0.15384615,
+        -0.13333333, -0.11764706, -0.10526316])}
+
+However, this way of creating matrices is not reccommended use. It is far
+more elegant to use the TrialFunction/TestFunction interface, and to
+generate the matrix as an inner product:
+
+    >>> from shenfun import TrialFunction, TestFunction, inner
+    >>> u = TrialFunction(B0)
+    >>> v = TestFunction(B0)
+    >>> BM = inner(u, v)
+    >>> print(BM)
+    >>> print(BM)
+{-2: array([-0.4       , -0.28571429, -0.22222222, -0.18181818, -0.15384615,
+        -0.13333333, -0.11764706, -0.10526316]),
+ 0: array([ 2.4       ,  0.95238095,  0.62222222,  0.46753247,  0.37606838,
+         0.31515152,  0.27149321,  0.23859649,  0.21288515,  0.19221968]),
+ 2: array([-0.4       , -0.28571429, -0.22222222, -0.18181818, -0.15384615,
+        -0.13333333, -0.11764706, -0.10526316])}
+
+To see that this is in fact the BDDmat:
+    >>> print(BM.__class__)
+<class 'shenfun.legendre.matrices.BDDmat'>
+
+"""
 from __future__ import division
 
 __all__ = ['mat']
 
 import numpy as np
-from numbers import Number
 from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
 from .la import TDMA
@@ -15,6 +83,7 @@ SD = bases.ShenDirichletBasis
 SB = bases.ShenBiharmonicBasis
 SN = bases.ShenNeumannBasis
 
+#pylint: disable=unused-variable, redefined-builtin, bad-continuation
 
 @inheritdocstrings
 class BLLmat(SpectralMatrix):
@@ -402,7 +471,7 @@ class CLLmat(SpectralMatrix):
                 v = np.moveaxis(v, 0, axis)
 
         else:
-            c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
+            c = super(CLLmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
 

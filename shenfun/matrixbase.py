@@ -1,14 +1,16 @@
+r"""
+This module contains classes for working with sparse matrices
+"""
 from __future__ import division
-import numpy as np
-from scipy.sparse import diags as sp_diags
-from scipy.sparse.linalg import spsolve
-from scipy.linalg import solve as lasolve
-import six
 from copy import deepcopy
 from numbers import Number
+from scipy.sparse import diags as sp_diags
+from scipy.sparse.linalg import spsolve
+import numpy as np
+import six
 from .utilities import inheritdocstrings
 
-__all__=['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix']
+__all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix']
 
 class SparseMatrix(dict):
     """Base class for sparse matrices
@@ -34,6 +36,7 @@ class SparseMatrix(dict):
     >>> SparseMatrix(d, (N, N))
 
     """
+    # pylint: disable=redefined-builtin, missing-docstring
 
     def __init__(self, d, shape):
         dict.__init__(self, d)
@@ -155,7 +158,6 @@ class SparseMatrix(dict):
         """Return copy of self.__add__(y) <==> self+d"""
         f = SparseMatrix(deepcopy(dict(self)), self.shape)
         assert isinstance(d, dict)
-        #assert d.shape == self.shape
         for key, val in six.iteritems(d):
             if key in f:
                 # Check if symmetric and make copy if necessary
@@ -263,7 +265,7 @@ class SparseMatrix(dict):
 
 @inheritdocstrings
 class SpectralMatrix(SparseMatrix):
-    """Base class for inner product matrices
+    r"""Base class for inner product matrices
 
     args:
         d                            Dictionary, where keys are the diagonal
@@ -282,7 +284,7 @@ class SpectralMatrix(SparseMatrix):
 
 
     The matrices are assumed to be sparse diagonal. The matrices are
-    inner products of trial and test functions from one of eight function
+    inner products of trial and test functions from one of 9 function
     spaces
 
     Chebyshev basis:
@@ -342,11 +344,11 @@ class SpectralMatrix(SparseMatrix):
 
     Mass matrix for Chebyshev Dirichlet basis:
 
-        (phi_k, phi_j)_w = int_{-1}^{1} phi_k(x) phi_j(x) w(x) dx
+        (phi_k, phi_j)_w = \int_{-1}^{1} phi_k(x) phi_j(x) w(x) dx
 
     Stiffness matrix for Chebyshev Dirichlet basis:
 
-        (phi_k'', phi_j)_w = int_{-1}^{1} phi_k''(x) phi_j(x) w(x) dx
+        (phi_k'', phi_j)_w = \int_{-1}^{1} phi_k''(x) phi_j(x) w(x) dx
 
     etc.
 
@@ -450,8 +452,7 @@ class SpectralMatrix(SparseMatrix):
     def get_key(self):
         if self.__class__.__name__.startswith('_'):
             return self.__hash__()
-        else:
-            return self.__class__.__name__
+        return self.__class__.__name__
 
     def __imul__(self, y):
         """self.__imul__(y) <==> self*=y"""
@@ -582,7 +583,7 @@ def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-12):
     relmax = abs(M).max()
     for i in range(M.shape[1]):
         u = M.diagonal(i).copy()
-        if abs(u).max() > abstol and abs(u).max()/relmax > reltol :
+        if abs(u).max() > abstol and abs(u).max()/relmax > reltol:
             d[i] = u
 
     for i in range(1, M.shape[0]):
@@ -591,4 +592,3 @@ def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-12):
             d[-i] = l
 
     return SparseMatrix(d, M.shape)
-

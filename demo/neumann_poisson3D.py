@@ -18,15 +18,15 @@ whereas for Chebyshev we solve
 """
 import sys, os
 import importlib
-from sympy import symbols, cos, sin, exp, lambdify
+from sympy import symbols, cos, sin, lambdify
 import numpy as np
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    project, Dx, TensorProductSpace
+    TensorProductSpace
 from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt
-except:
+except ImportError:
     plt = None
 
 comm = MPI.COMM_WORLD
@@ -53,7 +53,7 @@ SD = Basis(N[0])
 K1 = C2CBasis(N[1])
 K2 = R2CBasis(N[2])
 T = TensorProductSpace(comm, (SD, K1, K2), dtype='d')
-X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
+X = T.local_mesh(True)
 u = TrialFunction(T)
 v = TestFunction(T)
 

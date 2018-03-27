@@ -3,9 +3,8 @@ import numpy as np
 from shenfun.chebyshev.bases import ShenDirichletBasis, Basis
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun.tensorproductspace import TensorProductSpace, VectorTensorProductSpace, MixedTensorProductSpace
-from shenfun import inner, div, grad, curl, TestFunction, TrialFunction, Function, project, Dx
+from shenfun import inner, div, curl, TestFunction, TrialFunction, Function, project, Dx
 from mpi4py import MPI
-from time import time
 
 comm = MPI.COMM_WORLD
 # Set global size of the computational box
@@ -58,7 +57,6 @@ def test_curl(typecode):
 
     w = Function(Tk, False)
     w_hat = Function(Tk)
-    t0 = time()
     w_hat = inner(v, curl(U), output_array=w_hat, uh_hat=U_hat)
     A = inner(v, u)
     for i in range(3):
@@ -91,8 +89,6 @@ def test_curl2():
     K = T.local_wavenumbers(False)
     Tk = VectorTensorProductSpace([T]*3)
     TTk = MixedTensorProductSpace([T, T, TT])
-    u = TrialFunction(Tk)
-    v = TestFunction(Tk)
 
     U = Function(Tk, False)
     U_hat = Function(Tk)
