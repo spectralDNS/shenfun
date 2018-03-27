@@ -12,3 +12,4 @@ dependencies:
   - scipy
   - dask
   - pyfftw
+  - mpiFFT4py
