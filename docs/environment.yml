@@ -1,0 +1,14 @@
+name: shenfun_doc_env
+
+channels:
+  - conda-forge
+  - spectralDNS
+
+dependencies:
+  - cython
+  - fftw
+  - numpy
+  - python
+  - scipy
+  - dask
+  - pyfftw
