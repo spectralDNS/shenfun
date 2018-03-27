@@ -1,7 +1,7 @@
 r"""
 This module contains classes for working with the spectral-Galerkin method
 
-There are classes for 8 bases and corresponding function spaces
+There are currently classes for 9 bases and corresponding function spaces
 
 All bases have expansions
 
@@ -26,6 +26,9 @@ Chebyshev:
 
         Note that there are only N-1 unknown coefficients, \hat{u}_k, since
         \hat{u}_{N-1} and \hat{u}_{N} are determined by boundary conditions.
+        Inhomogeneous boundary conditions are possible for the Poisson
+        equation, because \phi_{N} and \phi_{N-1} are in the kernel of
+        the Poisson operator.
 
     ShenNeumannBasis:
         basis function:                  basis:
@@ -60,8 +63,11 @@ Legendre:
         \hat{u}_{N-1} and \hat{u}_{N} are determined by boundary conditions.
 
     ShenNeumannBasis:
-        basis function:                  basis:
-        \phi_k = L_k-(k(k+1)/(k+2)/(k+3))L_{k+2} span(\phi_k, k=1,2,...,N-2)
+        basis function:
+        \phi_k = L_k-(k(k+1)/(k+2)/(k+3))L_{k+2}
+
+        basis:
+        span(\phi_k, k=1,2,...,N-2)
 
         Homogeneous Neumann boundary conditions, u'(\pm 1) = 0, and
         zero mean: \int_{-1}^{1}u(x)dx = 0
@@ -75,6 +81,20 @@ Legendre:
 
         Homogeneous Dirichlet and Neumann, u(\pm 1)=0 and u'(\pm 1)=0
 
+Fourier:
+    R2CBasis and C2CBasis:
+        basis function:                  basis:
+        \phi_k = c_k exp(ikx)            span(\phi_k, k=-N/2, -N/2+1, ..., N/2)
+
+        If N is even, then c_{-N/2} and c_{N/2} = 0.5 and c_k = 1 for
+        k=-N/2+1, ..., N/2-1. i is the imaginary unit.
+
+        If N is odd, then c_k = 1 for k=-N/2, ..., N/2
+
+    R2CBasis and C2CBasis are the same, but R2CBasis is used on real physical
+    data and it takes advantage of Hermitian symmetry,
+    \hat{u}_{-k} = conj(\hat{u}_k), for k = 1, ..., N/2
+
 
 Each class has methods for moving fast between spectral and physical space, and
 for computing the (weighted) scalar product.
@@ -82,10 +102,12 @@ for computing the (weighted) scalar product.
 """
 import numpy as np
 import pyfftw
-from .utilities import inheritdocstrings
 from mpiFFT4py import work_arrays
 
+#pylint: disable=unused-argument, not-callable, no-self-use, protected-access, too-many-public-methods, missing-docstring
+
 work = work_arrays()
+
 
 class SpectralBase(object):
     """Abstract base class for all spectral function spaces
@@ -96,6 +118,7 @@ class SpectralBase(object):
                                    or Legendre-Gauss
 
     """
+    # pylint: disable=method-hidden, too-many-instance-attributes
 
     def __init__(self, N, quad, padding_factor=1, domain=(-1., 1.)):
         self.N = N
@@ -105,10 +128,18 @@ class SpectralBase(object):
         self.axis = 0
         self.xfftn_fwd = None
         self.xfftn_bck = None
+        self._xfftn_fwd = None    # pyfftw forward transform function
+        self._xfftn_bck = None    # pyfftw backward transform function
         self.padding_factor = np.floor(N*padding_factor)/N
 
-    def points_and_weights(self, N):
-        """Return points and weights of quadrature"""
+    def points_and_weights(self, N, scaled=False):
+        """Return points and weights of quadrature
+
+        args:
+            N        (int)   Number of quadrature points
+        kwargs:
+            scaled   (bool)  Whether or not to scale with domain size
+        """
         raise NotImplementedError
 
     def mesh(self, N, axis=0):
@@ -127,6 +158,12 @@ class SpectralBase(object):
 
         All dimensions, except axis, are obtained through broadcasting.
 
+        args:
+            N     int or array    If N is a float then we have a 1D array
+                                  If N is an array, then the wavenumber
+                                  returned is a 1D array broadcasted to
+                                  the shape of N.
+
         """
         N = list(N) if np.ndim(N) else [N]
         assert self.N == N[axis]
@@ -135,7 +172,13 @@ class SpectralBase(object):
         K = self.broadcast_to_ndims(k, len(N), axis)
         return K
 
-    def broadcast_to_ndims(self, x, ndims, axis=0):
+    @staticmethod
+    def broadcast_to_ndims(x, ndims, axis=0):
+        """Return 1D array x as an array of shape ndim
+
+        The returned array has shape one in all ndims-1 dimensions apart
+        from axis.
+        """
         s = [np.newaxis]*ndims
         s[axis] = slice(None)
         return x[s]
@@ -179,8 +222,7 @@ class SpectralBase(object):
         if output_array is not None:
             output_array[...] = self.forward.output_array
             return output_array
-        else:
-            return self.forward.output_array
+        return self.forward.output_array
 
     def backward(self, input_array=None, output_array=None, fast_transform=True):
         """Inverse transform
@@ -211,9 +253,7 @@ class SpectralBase(object):
         if output_array is not None:
             output_array[...] = self.backward.output_array
             return output_array
-        else:
-            return self.backward.output_array
-
+        return self.backward.output_array
 
     def vandermonde(self, x):
         """Return Vandermonde matrix
@@ -296,6 +336,44 @@ class SpectralBase(object):
         assert input_array is self.backward.input_array
         return output_array
 
+    def vandermonde_evaluate_expansion(self, points, input_array, output_array):
+        """Evaluate expansion at certain points, possibly different from
+        the quadrature points
+
+        args:
+            points        (input)    Points for evaluation
+            input_array   (input)    Expansion coefficients
+            output_array  (output)   Function values on points
+
+        """
+        assert abs(self.padding_factor-1) < 1e-8
+        V = self.vandermonde(points)
+        P = self.get_vandermonde_basis(V)
+
+        if output_array.ndim == 1:
+            output_array = np.dot(P, input_array, out=output_array)
+        else:
+            fc = np.moveaxis(input_array, self.axis, -2)
+            array = np.dot(P, fc)
+            output_array[:] = np.moveaxis(array, 0, self.axis)
+
+        return output_array
+
+    def vandermonde_evaluate_local_expansion(self, P, input_array, output_array):
+        """Evaluate expansion at certain points, possibly different from
+        the quadrature points
+
+        args:
+            P             (input)    Vandermode matrix containing local points only
+            input_array   (input)    Expansion coefficients
+            output_array  (output)   Function values on points
+
+        """
+        fc = np.moveaxis(input_array, self.axis, -2)
+        array = np.dot(P, fc)
+        output_array[:] = np.moveaxis(array, 0, self.axis)
+        return output_array
+
     def apply_inverse_mass(self, array):
         """Apply inverse mass matrix
 
@@ -305,13 +383,8 @@ class SpectralBase(object):
                                       returned.
 
         """
+        assert self.N == array.shape[self.axis]
         if self._mass is None:
-            assert self.N == array.shape[self.axis]
-            B = self.get_mass_matrix()
-            self._mass = B((self, 0), (self, 0))
-
-        if (self._mass.testfunction[0].quad != self.quad or
-            self._mass.testfunction[0].N != array.shape[self.axis]):
             B = self.get_mass_matrix()
             self._mass = B((self, 0), (self, 0))
 
@@ -388,27 +461,30 @@ class SpectralBase(object):
 
         args:
             input_array   (input)     Expansion coefficients
-            output_array   (output)    Function values on quadrature mesh
+            output_array  (output)    Function values on quadrature mesh
 
         """
         raise NotImplementedError
 
-    def eval(self, x, fk):
-        """Evaluate basis at position x
+    def eval(self, x, fk, output_array=None):
+        """Evaluate basis at position x, given expansion coefficients fk
 
         args:
-            x    float or array of floats
-            fk   Array of expansion coefficients
+            x             (input)  float or array of floats
+            fk            (input)  Array of expansion coefficients
+            output_array  (output) Function values at points
 
         """
-        raise NotImplementedError
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        return self.vandermonde_evaluate_expansion(x, fk, output_array)
 
     def get_mass_matrix(self):
         """Return mass matrix associated with current basis"""
         raise NotImplementedError
 
     def slice(self):
-        """Return index set of current basis, with N points in real space"""
+        """Return index set of current basis, with N points in physical space"""
         return slice(0, self.N)
 
     def spectral_shape(self):
@@ -417,13 +493,15 @@ class SpectralBase(object):
         return s.stop - s.start
 
     def domain_factor(self):
+        """Return scaling factor for domain"""
         return 1
 
     def __hash__(self):
         return hash(repr(self.__class__))
 
     def __eq__(self, other):
-        return self.__class__.__name__ == other.__class__.__name__
+        return (self.__class__.__name__ == other.__class__.__name__ and
+                self.quad == other.quad and self.N == other.N)
 
     def sl(self, a):
         s = [slice(None)]*self.forward.output_array.ndim
@@ -450,10 +528,14 @@ class SpectralBase(object):
         raise NotImplementedError
 
     def is_forward_output(self, u):
+        """Return whether or not the array u is of type and shape resulting
+        from a forward transform.
+        """
         return (np.all(u.shape == self.forward.output_array.shape) and
                 u.dtype == self.forward.output_array.dtype)
 
     def as_function(self, u):
+        """Return Numpy array u as a Function."""
         from .forms.arguments import Function
         assert isinstance(u, np.ndarray)
         forward_output = self.is_forward_output(u)
@@ -474,7 +556,7 @@ class SpectralBase(object):
             padded_array.fill(0)
             N = trunc_array.shape[self.axis]
             su = [slice(None)]*trunc_array.ndim
-            su[self.axis] = slice(0, np.ceil(N/2.).astype(np.int))
+            su[self.axis] = slice(0, N//2+1)
             padded_array[su] = trunc_array[su]
             su[self.axis] = slice(-(N//2), None)
             padded_array[su] = trunc_array[su]
@@ -513,6 +595,8 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
           2: array([-1.57079633])}
 
     """
+    from .fourier import FourierBase, R2CBasis
+
     if isinstance(test, tuple):
         # Bilinear form
         assert trial[0].__module__ == test[0].__module__
@@ -534,8 +618,8 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
         # Linear form
         if out is None:
             sl = list(trial.shape)
-            if isinstance(test, fourier.FourierBase):
-                if isinstance(test, fourier.R2CBasis):
+            if isinstance(test, FourierBase):
+                if isinstance(test, R2CBasis):
                     sl[axis] = sl[axis]//2+1
                 out = np.zeros(sl, dtype=np.complex)
             else:
@@ -580,6 +664,4 @@ class _func_wrap(object):
         if output_array is not None:
             output_array[...] = self.output_array
             return output_array
-        else:
-            return self.output_array
-
+        return self.output_array

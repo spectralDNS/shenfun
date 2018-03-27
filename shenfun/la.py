@@ -1,7 +1,10 @@
+r"""
+This module contains linear algebra solvers for SparseMatrixes
+"""
 import numpy as np
+from scipy.linalg import decomp_cholesky
 from shenfun.optimization import la
 from shenfun.matrixbase import SparseMatrix
-
 
 class TDMA(object):
     """Tridiagonal matrix solver
@@ -10,15 +13,18 @@ class TDMA(object):
         mat    Symmetric tridiagonal matrix with diagonals in offsets -2, 0, 2
 
     """
+    # pylint: disable=too-few-public-methods
 
     def __init__(self, mat):
         assert isinstance(mat, SparseMatrix)
         self.mat = mat
         self.N = 0
         self.dd = np.zeros(0)
+        self.ud = None
+        self.L = None
 
-    def init(self, N):
-        self.N = N
+    def init(self):
+        """Initialize and allocate solver"""
         M = self.mat.shape[0]
         B = self.mat
         self.dd = B[0].copy()*np.ones(M)
@@ -27,17 +33,14 @@ class TDMA(object):
         la.TDMA_SymLU(self.dd, self.ud, self.L)
 
     def __call__(self, b, u=None, axis=0):
-
-        v = self.mat.testfunction[0]
         if u is None:
             u = b
         else:
             assert u.shape == b.shape
             u[:] = b[:]
 
-        N = u.shape[axis]
-        if not N == self.N:
-            self.init(N)
+        if not self.dd.shape[0] == self.mat.shape[0]:
+            self.init()
 
         if len(u.shape) == 3:
             la.TDMA_SymSolve3D(self.dd, self.ud, self.L, u, axis)
@@ -72,9 +75,14 @@ class PDMA(object):
         self.mat = mat
         self.solver = solver
         self.N = 0
+        self.d0 = np.zeros(0)
+        self.d1 = None
+        self.d2 = None
+        self.A = None
+        self.L = None
 
-    def init(self, N):
-        self.N = N
+    def init(self):
+        """Initialize and allocate solver"""
         B = self.mat
         if self.solver == "cython":
             self.d0, self.d1, self.d2 = B[0].copy(), B[2].copy(), B[4].copy()
@@ -86,19 +94,21 @@ class PDMA(object):
         else:
             #self.L = lu_factor(B.diags().toarray())
             self.d0, self.d1, self.d2 = B[0].copy(), B[2].copy(), B[4].copy()
-            #self.A = np.zeros((9, N-4))
+            #self.A = np.zeros((9, B[0].shape[0]))
             #self.A[0, 4:] = self.d2
             #self.A[2, 2:] = self.d1
             #self.A[4, :] = self.d0
             #self.A[6, :-2] = self.d1
             #self.A[8, :-4] = self.d2
-            self.A = np.zeros((5, N-4))
+            self.A = np.zeros((5, B[0].shape[0]))
             self.A[0, 4:] = self.d2
             self.A[2, 2:] = self.d1
             self.A[4, :] = self.d0
             self.L = decomp_cholesky.cholesky_banded(self.A)
 
-    def SymLU(self, d, e, f): # pragma: no cover
+    @staticmethod
+    def SymLU(d, e, f): # pragma: no cover
+        """Symmetric LU decomposition"""
         n = d.shape[0]
         m = e.shape[0]
         k = n - m
@@ -119,7 +129,9 @@ class PDMA(object):
         d[n-1] -= lam*e[n-3]
         e[n-3] = lam
 
-    def SymSolve(self, d, e, f, b): # pragma: no cover
+    @staticmethod
+    def SymSolve(d, e, f, b): # pragma: no cover
+        """Symmetric solve (for testing only)"""
         n = d.shape[0]
         #bc = array(map(decimal.Decimal, b))
         bc = b
@@ -135,7 +147,7 @@ class PDMA(object):
         bc[n-3] -= e[n-3]*bc[n-1]
         bc[n-4] /= d[n-4]
         bc[n-4] -= e[n-4]*bc[n-2]
-        for k in range(n-5,-1,-1):
+        for k in range(n-5, -1, -1):
             bc[k] /= d[k]
             bc[k] -= (e[k]*bc[k+2] + f[k]*bc[k+4])
         b[:] = bc.astype(float)
@@ -148,9 +160,9 @@ class PDMA(object):
             assert u.shape == b.shape
             u[:] = b
 
-        N = u.shape[0]
-        if not N == self.N:
-            self.init(N)
+        if not self.d0.shape[0] == self.mat[0].shape[0]:
+            self.init()
+
         if len(u.shape) == 3:
             #la.PDMA_Symsolve3D(self.d0, self.d1, self.d2, u, axis)
             la.PDMA_Symsolve3D_ptr(self.d0, self.d1, self.d2, u, axis)
@@ -172,6 +184,7 @@ class DiagonalMatrix(np.ndarray):
 
     Typically used for Fourier spaces
     """
+    # pylint: disable=too-few-public-methods, unused-argument
 
     def __new__(cls, buffer):
         assert isinstance(buffer, np.ndarray)
@@ -183,17 +196,16 @@ class DiagonalMatrix(np.ndarray):
         return obj
 
     def solve(self, b, u=None, axis=0, neglect_zero_wavenumber=True):
+        """Solve for diagonal matrix"""
         diagonal_array = self
         if neglect_zero_wavenumber:
-            d = np.where(diagonal_array==0, 1, diagonal_array)
+            d = np.where(diagonal_array == 0, 1, diagonal_array)
 
         if u is not None:
             u[:] = b / d
             return u
-        else:
-            return b / d
+        return b / d
 
     #def matvec(self, v, c):
         #c[:] = self*v
         #return c
-

@@ -18,23 +18,23 @@ whereas for Chebyshev we solve
 """
 import sys, os
 import importlib
-from sympy import symbols, cos, sin, exp, lambdify
+from sympy import symbols, cos, sin, lambdify
 import numpy as np
-from shenfun.fourier.bases import R2CBasis, C2CBasis
+from shenfun.fourier.bases import R2CBasis
 from shenfun.tensorproductspace import TensorProductSpace
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    project, Array
+    Array
 from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt
-except:
+except ImportError:
     plt = None
 
 comm = MPI.COMM_WORLD
 
 assert len(sys.argv) == 3, "Call with two command-line arguments"
 assert sys.argv[-1] in ('legendre', 'chebyshev')
-assert isinstance(eval(sys.argv[-2]), int)
+assert isinstance(int(sys.argv[-2]), int)
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 basis = sys.argv[-1]
@@ -43,10 +43,10 @@ Basis = shen.bases.ShenDirichletBasis
 Solver = shen.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
-a = -2
-b = 2
+a = -0
+b = 0
 x, y = symbols("x,y")
-ue = (cos(4*np.pi*y) + sin(2*x))*(1 - y**2) + a*(1 + y)/2. + b*(1 - y)/2.
+ue = (cos(4*y) + sin(2*x))*(1 - x**2) + a*(1 + x)/2. + b*(1 - x)/2.
 fe = ue.diff(x, 2) + ue.diff(y, 2)
 
 # Lambdify for faster evaluation
@@ -54,7 +54,7 @@ ul = lambdify((x, y), ue, 'numpy')
 fl = lambdify((x, y), fe, 'numpy')
 
 # Size of discretization
-N = (eval(sys.argv[-2]), eval(sys.argv[-2]))
+N = (int(sys.argv[-2]), int(sys.argv[-2]))
 
 SD = Basis(N[0], scaled=True, bc=(a, b))
 K1 = R2CBasis(N[1])
@@ -72,7 +72,6 @@ f_hat = inner(v, fj, output_array=f_hat)
 if basis == 'legendre':
     f_hat *= -1.
 
-#from IPython import embed; embed()
 # Get left hand side of Poisson equation
 if basis == 'chebyshev':
     matrices = inner(v, div(grad(u)))
@@ -90,7 +89,7 @@ uq = T.backward(u_hat, uq)
 
 # Compare with analytical solution
 uj = ul(*X)
-#assert np.allclose(uj, uq)
+assert np.allclose(uj, uq)
 
 if not plt is None and not 'pytest' in os.environ:
     plt.figure()

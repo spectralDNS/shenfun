@@ -1,10 +1,12 @@
-import numpy as np
+#pylint: disable=missing-docstring, consider-using-enumerate
+
 import warnings
+import numpy as np
 from shenfun import MixedTensorProductSpace
 
 try:
     import h5py
-except:
+except ImportError:
     warnings.warn('h5py not installed')
 
 __all__ = ('HDF5Writer',)
@@ -28,7 +30,7 @@ class HDF5Writer(object):
         self.N = T.shape()
         self.names = names
         x = T.mesh()
-        for i, xi in enumerate(x):
+        for i in range(len(x)):
             xyz = {0:'x', 1:'y', 2:'z'}[i]
             self.f["mesh"].create_dataset(xyz, data=np.squeeze(x[i]))
         for name in names:
@@ -53,28 +55,28 @@ class HDF5Writer(object):
             s = self.T.local_slice(False)
             for i in range(u.shape[0]):
                 group = "/".join((self.names[i], "{}D".format(len(u[i].shape))))
-                if not group in self.f:
+                if group not in self.f:
                     self.f.create_group(group)
                 self.f[group].create_dataset(str(tstep), shape=self.N, dtype=u.dtype)
                 if self.T.ndim() == 3:
-                    self.f["/".join((group, str(tstep)))][s[0],s[1],s[2]] = u[i]
+                    self.f["/".join((group, str(tstep)))][s[0], s[1], s[2]] = u[i]
                 elif self.T.ndim() == 2:
-                    self.f["/".join((group, str(tstep)))][s[0],s[1]] = u[i]
+                    self.f["/".join((group, str(tstep)))][s[0], s[1]] = u[i]
                 else:
-                    raise(NotImplementedError)
+                    raise NotImplementedError
         else:
             assert len(self.names) == 1
             group = "/".join((self.names[0], "{}D".format(len(u.shape))))
-            if not group in self.f:
+            if group not in self.f:
                 self.f.create_group(group)
             self.f[group].create_dataset(str(tstep), shape=self.N, dtype=u.dtype)
             s = self.T.local_slice(False)
             if self.T.ndim() == 3:
-                self.f["/".join((group, str(tstep)))][s[0],s[1],s[2]] = u[:]
+                self.f["/".join((group, str(tstep)))][s[0], s[1], s[2]] = u[:]
             elif self.T.ndim() == 2:
-                self.f["/".join((group, str(tstep)))][s[0],s[1]] = u[:]
+                self.f["/".join((group, str(tstep)))][s[0], s[1]] = u[:]
             else:
-                raise(NotImplementedError)
+                raise NotImplementedError
 
     def write_slice_tstep(self, tstep, sl, u):
         """Write slice of field u to HDF5 format at a given time step
@@ -116,7 +118,7 @@ class HDF5Writer(object):
             sl.insert(0, 0)
             for i in range(u.shape[0]):
                 group = "/".join((self.names[i], "2D", slname))
-                if not group in self.f:
+                if group not in self.f:
                     self.f.create_group(group)
                 self.f[group].create_dataset(str(tstep), shape=np.take(self.N, sp), dtype=u.dtype)
                 if si >= sx.start and si < sx.stop:
@@ -126,7 +128,7 @@ class HDF5Writer(object):
         else:
             assert len(self.names) == 1
             group = "/".join((self.names[0], "2D", slname))
-            if not group in self.f:
+            if group not in self.f:
                 self.f.create_group(group)
             self.f[group].create_dataset(str(tstep), shape=np.take(self.N, sp), dtype=u.dtype)
             s = self.T.local_slice(False)
@@ -138,4 +140,3 @@ class HDF5Writer(object):
 
     def close(self):
         self.f.close()
-

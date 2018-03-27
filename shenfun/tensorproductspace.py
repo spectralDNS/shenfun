@@ -1,14 +1,19 @@
-import numpy as np
+"""
+Module for implementation of the TensorProductSpace class and related methods.
+"""
 from numbers import Number
-from shenfun.fourier.bases import FourierBase, R2CBasis, C2CBasis
+import warnings
+import sympy
+import numpy as np
+import shenfun
+from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun import chebyshev, legendre
 from mpi4py_fft.mpifft import Transform
 from mpi4py_fft.pencil import Subcomm, Pencil
-import sympy
-from copy import copy
 
 __all__ = ('TensorProductSpace', 'VectorTensorProductSpace', 'MixedTensorProductSpace')
 
+#pylint: disable=line-too-long, redefined-outer-name, len-as-condition, redefined-argument-from-local, no-else-return, no-self-use, no-member, missing-docstring
 
 class TensorProductSpace(object):
     """Base class for multidimensional tensorproductspaces.
@@ -28,12 +33,11 @@ class TensorProductSpace(object):
         slab                 Use 1D slab decomposition instead of default pencil.
 
     """
-
     def __init__(self, comm, bases, axes=None, dtype=None, slab=False, **kw):
         self.comm = comm
         self.bases = bases
         shape = self.shape()
-        assert len(shape) > 0
+        assert shape
         assert min(shape) > 0
 
         if axes is not None:
@@ -127,20 +131,143 @@ class TensorProductSpace(object):
             [o.forward for o in self.transfer],
             self.pencil)
 
-        if any(isinstance(base, (chebyshev.bases.ShenDirichletBasis,
-                                 legendre.bases.ShenDirichletBasis))
-                                 for base in self.bases):
-            for base in self.bases:
-                if isinstance(base, (legendre.bases.ShenDirichletBasis,
-                                     chebyshev.bases.ShenDirichletBasis)):
-                    base.bc.set_tensor_bcs(self)
+        for base in self.bases:
+            if isinstance(base, (legendre.bases.ShenDirichletBasis,
+                                 chebyshev.bases.ShenDirichletBasis)):
+                base.bc.set_tensor_bcs(self)
+
+    def convolve(self, a_hat, b_hat, ab_hat):
+        """Convolution of a_hat and b_hat
+
+        Note that self should have bases with padding for this method to give
+        a convolution without aliasing. The padding is specified when creating
+        instances of bases for the TensorProductSpace.
+
+        The return array ab_hat is truncated to the shape of a_hat and b_hat.
+
+        FIXME Efficiency due to allocation
+        """
+        a = self.backward.output_array.copy()
+        b = self.backward.output_array.copy()
+        a = self.backward(a_hat, a)
+        b = self.backward(b_hat, b)
+        ab_hat = self.forward(a*b, ab_hat)
+        return ab_hat
+
+    def eval(self, points, coefficients, output_array=None):
+        """Evaluate Function at points, given expansion coefficients
+
+        args:
+            points        (input)  float or array of floats
+            coefficients  (input)  Array of expansion coefficients
+        kwargs:
+            output_array  (output) Function values at points. Optional.
+
+        """
+        shape = list(self.local_shape())
+        out = coefficients
+        for base in reversed(self):
+            axis = base.axis
+            shape[axis] = len(points)
+            out2 = np.zeros(shape, dtype=out.dtype)
+            out2 = self.vandermonde_evaluate_local_expansion(base, points[..., axis], out, out2)
+            out = out2
+        # Get the 'diagonals' of out, that is, for 2 points get out[i, i] for i = (0, 1), and same for larger numer of points
+        out = np.array([out[tuple([s]*len(shape))] for s in range(len(points))])
+        out = np.atleast_1d(np.squeeze(out))
+        out = self.comm.allreduce(out)
+        if not output_array is None:
+            output_array[:] = out
+            return output_array
+        return out
+
+    def eval_cython(self, points, coefficients, output_array=None):
+        """Evaluate Function at points, given expansion coefficients
+
+        args:
+            points        (input)  float or array of floats
+            coefficients  (input)  Array of expansion coefficients
+        kwargs:
+            output_array  (output) Function values at points. Optional.
+
+        """
+        out = coefficients
+        P = []
+        r2c = -1
+        last_conj_index = -1
+        sl = -1
+        for base in self:
+            axis = base.axis
+            V = base.vandermonde(points[..., axis])
+            D = base.get_vandermonde_basis(V)
+            P.append(D[..., self.local_slice()[axis]])
+            if isinstance(base, R2CBasis):
+                r2c = axis
+                M = base.N//2+1
+                if base.N % 2 == 0:
+                    last_conj_index = M-1
+                else:
+                    last_conj_index = M
+                sl = self.local_slice()[axis].start
+
+        out = np.zeros(len(points), dtype=coefficients.dtype)
+        if len(self) == 2:
+            out = shenfun.optimization.evaluate.evaluate_2D(out, coefficients, P, r2c=r2c, M=last_conj_index, start=sl)
+
+        elif len(self) == 3:
+            out = shenfun.optimization.evaluate.evaluate_3D(out, coefficients, P, r2c=r2c, M=last_conj_index, start=sl)
+
+        out = np.atleast_1d(out)
+        out = self.comm.allreduce(out)
+
+        if not output_array is None:
+            output_array[:] = out
+            return output_array
+        return out
+
+
+    def vandermonde_evaluate_local_expansion(self, base, points, input_array, output_array):
+        """Evaluate expansion at certain points, possibly different from
+        the quadrature points
+
+        args:
+            base          (input)    The base class (SpectralBase)
+            points        (input)    Points for evaluation
+            input_array   (input)    Expansion coefficients
+            output_array  (output)   Function values on points
+
+        """
+        V = base.vandermonde(points)
+        P = base.get_vandermonde_basis(V)
+        P = P[..., self.local_slice()[base.axis]]
+        last_conj_index = -1
+        sl = -1
+        if isinstance(base, R2CBasis):
+            M = base.N//2+1
+            if base.N % 2 == 0:
+                last_conj_index = M-1
+            else:
+                last_conj_index = M
+            sl = self.local_slice()[base.axis].start
+            base.vandermonde_evaluate_local_expansion(P, input_array, output_array, last_conj_index, sl)
+        else:
+            base.vandermonde_evaluate_local_expansion(P, input_array, output_array)
+        return output_array
 
     def destroy(self):
+        """Destructor"""
         self.subcomm.destroy()
         for trans in self.transfer:
             trans.destroy()
 
     def wavenumbers(self, scaled=False, eliminate_highest_freq=False):
+        """Return list of wavenumbers of TensorProductSpace
+
+        kwargs:
+            scaled                  bool  Scale wavenumbers with size of box
+            eliminate_highest_freq  bool  Set Nyquist frequency to zero for
+                                          evenly shaped axes
+        """
         K = []
         N = self.shape()
         for axis, base in enumerate(self):
@@ -150,6 +277,16 @@ class TensorProductSpace(object):
 
     def local_wavenumbers(self, broadcast=False, scaled=False,
                           eliminate_highest_freq=False):
+        """Return list of local wavenumbers of TensorProductSpace
+
+        kwargs:
+            broadcast               bool  Broadcast returned wavenumber arrays
+                                          to actual dimensions of TensorProductSpace
+            scaled                  bool  Scale wavenumbers with size of box
+            eliminate_highest_freq  bool  Set Nyquist frequency to zero for
+                                          evenly shaped axes
+        """
+
         k = self.wavenumbers(scaled=scaled, eliminate_highest_freq=eliminate_highest_freq)
         lk = []
         for axis, (n, s) in enumerate(zip(k, self.local_slice(True))):
@@ -161,6 +298,9 @@ class TensorProductSpace(object):
         return lk
 
     def mesh(self):
+        """Return list of 1D physical mesh for each dimension of
+        TensorProductSpace
+        """
         X = []
         N = self.shape()
         for axis, base in enumerate(self):
@@ -168,6 +308,13 @@ class TensorProductSpace(object):
         return X
 
     def local_mesh(self, broadcast=False):
+        """Return list of 1D physical mesh for each dimension of
+        TensorProductSpace
+
+        args:
+            broadcast    bool    Broadcast each 1D mesh to real shape of
+                                 TensorProductSpace
+        """
         m = self.mesh()
         lm = []
         for axis, (n, s) in enumerate(zip(m, self.local_slice(False))):
@@ -179,24 +326,47 @@ class TensorProductSpace(object):
         return lm
 
     def shape(self):
+        """Return shape of TensorProductSpace in physical space
+
+        Physical space corresponds to the result of a backward transfer
+        """
         return [int(np.round(base.N*base.padding_factor)) for base in self]
 
     def spectral_shape(self):
+        """Return shape of TensorProductSpace in spectral space
+
+        Spectral space corresponds to the result of a forward transfer
+        """
         return [base.spectral_shape() for base in self]
 
     def __iter__(self):
         return iter(self.bases)
 
     def local_shape(self, spectral=True):
+        """Return local shape of TensorProductSpace
+
+        kwargs:
+            spectral    bool    If True then return local shape of spectral
+                                space, i.e., the input to a backward transfer.
+                                If False then return local shape of physical
+                                space, i.e., the input to a forward transfer.
+        """
         if not spectral:
             return self.forward.input_pencil.subshape
         else:
             return self.backward.input_pencil.subshape
 
     def local_slice(self, spectral=True):
-        """The local view into the global data"""
+        """Return the local view into the global data
 
-        if not spectral is True:
+        kwargs:
+            spectral    bool    If True then return local slice of spectral
+                                space, i.e., the input to a backward transfer.
+                                If False then return local slice of physical
+                                space, i.e., the input to a forward transfer.
+        """
+
+        if spectral is not True:
             ip = self.forward.input_pencil
             s = [slice(start, start+shape) for start, shape in zip(ip.substart,
                                                                    ip.subshape)]
@@ -207,12 +377,15 @@ class TensorProductSpace(object):
         return s
 
     def rank(self):
+        """Return rank of TensorProductSpace"""
         return 1
 
     def ndim(self):
+        """Return dimension of TensorProductSpace"""
         return len(self.bases)
 
     def __len__(self):
+        """Return dimension of TensorProductSpace"""
         return len(self.bases)
 
     def num_components(self):
@@ -222,10 +395,14 @@ class TensorProductSpace(object):
         return self.bases[i]
 
     def is_forward_output(self, u):
+        """Return whether or not the array u is of type and shape resulting
+        from a forward transform.
+        """
         return (u.shape == self.forward.output_array.shape and
                 u.dtype == self.forward.output_array.dtype)
 
     def as_function(self, u):
+        """Return Numpy array u as a Function."""
         from .forms.arguments import Function
         assert isinstance(u, np.ndarray)
         forward_output = self.is_forward_output(u)
@@ -236,7 +413,7 @@ class MixedTensorProductSpace(object):
     """Class for composite tensorproductspaces.
 
     args:
-        spaces        List of tensorproductspaces
+        spaces        List of TensorProductSpaces
 
     """
 
@@ -245,6 +422,24 @@ class MixedTensorProductSpace(object):
         self.forward = VectorTransform([space.forward for space in spaces])
         self.backward = VectorTransform([space.backward for space in spaces])
         self.scalar_product = VectorTransform([space.scalar_product for space in spaces])
+
+    def convolve(self, a_hat, b_hat, ab_hat):
+        """Convolution of a_hat and b_hat
+
+        Note that self should have bases with padding for this
+        method to give a convolution without aliasing. The
+        padding is specified when creating instances of bases
+        for the TensorProductSpace.
+
+        FIXME Efficiency due to allocation
+        """
+        N = list(self.backward.output_array.shape)
+        a = np.zeros([self.ndim()]+N, dtype=self.backward.output_array.dtype)
+        b = np.zeros([self.ndim()]+N, dtype=self.backward.output_array.dtype)
+        a = self.backward(a_hat, a)
+        b = self.backward(b_hat, b)
+        ab_hat = self.forward(a*b, ab_hat)
+        return ab_hat
 
     def ndim(self):
         return self.spaces[0].ndim()
@@ -267,23 +462,29 @@ class MixedTensorProductSpace(object):
         obj = object.__getattribute__(self, 'spaces')
         return getattr(obj[0], name)
 
+    def __len__(self):
+        return self.ndim()
+
 
 class VectorTensorProductSpace(MixedTensorProductSpace):
     """A special MixedTensorProductSpace where the number of spaces must equal
     the geometrical dimension of the problem.
 
-    For example, a TensorProductSpace created cy a Cartesian product of 2 1D
+    For example, a TensorProductSpace created by a Cartesian product of 2 1D
     bases, will have vectors of length 2. A TensorProductSpace created from 3
     1D bases will have vectors of length 3.
 
     args:
-        spaces        List of tensorproductspaces
-
+        space        TensorProductSpace to create vector from
     """
 
-    def __init__(self, spaces):
+    def __init__(self, space):
+        if isinstance(space, list):
+            warnings.warn("Use only the TensorProductSpace as argument", DeprecationWarning)
+            spaces = space
+        else:
+            spaces = [space]*space.ndim()
         MixedTensorProductSpace.__init__(self, spaces)
-        assert len(self.spaces) == self.ndim()
 
     def num_components(self):
         assert len(self.spaces) == self.ndim()
@@ -295,7 +496,7 @@ class VectorTensorProductSpace(MixedTensorProductSpace):
 
 class VectorTransform(object):
 
-    __slots__ = ('_transforms')
+    __slots__ = ('_transforms',)
 
     def __init__(self, transforms):
         self._transforms = transforms
@@ -312,6 +513,59 @@ class VectorTransform(object):
         return output_array
 
 
+class Convolve(object):
+    """Class for convolving without truncation.
+
+    Convolve a_hat and b_hat is computed by first transforming
+    backwards with padding
+
+      a = Tp.backward(a_hat)
+      b = Tp.backward(b_hat)
+
+    and then transforming the product a*b forward without truncation
+
+      ab_hat = T.forward(a*b)
+
+    where Tp is a TensorProductSpace for regular padding, and
+    T is a TensorProductSpace with no padding, but using the shape
+    of the padded a and b arrays.
+
+    For convolve with truncation forward, use just the convolve method
+    of the Tp space instead.
+
+    args:
+        padding_space     TensorProductSpace with padding backward
+                          and truncation forward.
+
+    """
+
+    def __init__(self, padding_space):
+        self.padding_space = padding_space
+        shape = padding_space.shape()
+        bases = []
+        for i, base in enumerate(padding_space.bases):
+            newbase = base.__class__(shape[i], padding_factor=1.0)
+            bases.append(newbase)
+        axes = []
+        for axis in padding_space.axes:
+            axes.append(axis[0])
+        newspace = TensorProductSpace(padding_space.comm, bases, axes=axes)
+        self.newspace = newspace
+
+    def __call__(self, a_hat, b_hat, ab_hat=None):
+        Tp = self.padding_space
+        T = self.newspace
+        if ab_hat is None:
+            ab_hat = shenfun.Array(T)
+
+        a = shenfun.Array(Tp, False)
+        b = shenfun.Array(Tp, False)
+        a = Tp.backward(a_hat, a)
+        b = Tp.backward(b_hat, b)
+        ab_hat = T.forward(a*b, ab_hat)
+        return ab_hat
+
+
 class BoundaryValues(object):
     """Class for setting nonhomogeneous boundary conditions for a 1D Dirichlet base
     inside a multidimensional TensorProductSpace.
@@ -321,6 +575,7 @@ class BoundaryValues(object):
         bc              Tuple with physical boundary values at edges of 1D domain
 
     """
+    # pylint: disable=protected-access, redefined-outer-name, dangerous-default-value, unsubscriptable-object
 
     def __init__(self, T, bc=(0, 0)):
         self.T = T
@@ -334,8 +589,9 @@ class BoundaryValues(object):
         self.axis = 0
         self.update_bcs(bc=bc)
 
-    def update_bcs(self, sympy_params={}, bc=None):
-        if not sympy_params is {}:
+    def update_bcs(self, sympy_params=None, bc=None):
+        if sympy_params:
+            assert isinstance(sympy_params, dict)
             for i in range(2):
                 if isinstance(self.bc[i], sympy.Expr):
                     self.bcs[i] = self.bc[i].evalf(subs=sympy_params)
@@ -346,7 +602,7 @@ class BoundaryValues(object):
             assert len(bc) == 2
             self.bc = list(bc)
             for i in range(2):
-                if isinstance(bc[i], (Number, sympy.Expr, np.ndarray)) :
+                if isinstance(bc[i], (Number, sympy.Expr, np.ndarray)):
                     self.bcs[i] = bc[i]
                 else:
                     raise NotImplementedError
@@ -364,7 +620,7 @@ class BoundaryValues(object):
 
         elif any(isinstance(base, (chebyshev.bases.ShenDirichletBasis,
                                    legendre.bases.ShenDirichletBasis))
-                                   for base in T.bases):
+                 for base in T.bases):
             # Setting the Dirichlet boundary condition in a TensorProductSpace
             # is more involved than for a single dimension, and the routine will
             # depend on the order of the bases. If the Dirichlet space is the last
@@ -441,8 +697,6 @@ class BoundaryValues(object):
 
             else:
                 raise NotImplementedError
-
-            self.number_of_bases_after_dirichlet = number_of_bases_after_dirichlet
 
             if number_of_bases_after_dirichlet == 0:
                 # Dirichlet base is the first to be transformed
@@ -525,8 +779,7 @@ class BoundaryValues(object):
             return False
         return True
 
-if __name__ == '__main__':
-    import shenfun
+def some_basic_tests():
     import pyfftw
     from mpi4py import MPI
 
@@ -579,3 +832,7 @@ if __name__ == '__main__':
     f_hat2 = Tp.forward(f_g_pad)
 
     assert np.allclose(f_hat2, f_hat)
+
+
+if __name__ == '__main__':
+    some_basic_tests()

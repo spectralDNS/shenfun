@@ -7,7 +7,7 @@ import shenfun
 from shenfun.la import TDMA
 from shenfun.spectralbase import inner_product
 from scipy.linalg import solve
-from sympy import chebyshevt, Symbol, sin, cos, pi, lambdify
+from sympy import Symbol, sin, cos, pi, lambdify
 import numpy as np
 import scipy.sparse.linalg as la
 from itertools import product
@@ -32,6 +32,43 @@ all_bases_and_quads = list(product(lBasis, lquads))+list(product(cBasis, cquads)
 
 cbases2 = list(list(i[0]) + [i[1]] for i in product(list(product(cBasis, cBasis)), cquads))
 lbases2 = list(list(i[0]) + [i[1]] for i in product(list(product(lBasis, lBasis)), lquads))
+
+@pytest.mark.parametrize('basis', (fbases.C2CBasis, fbases.R2CBasis))
+@pytest.mark.parametrize('N', (8, 9))
+def test_convolve(basis, N):
+    """Test convolution"""
+    FFT = basis(N, plan=True)
+    u0 = shenfun.Array(FFT)
+    u1 = shenfun.Array(FFT)
+    M = u0.shape[0]
+    u0[:] = np.random.rand(M) + 1j*np.random.rand(M)
+    u1[:] = np.random.rand(M) + 1j*np.random.rand(M)
+    if isinstance(FFT, fbases.R2CBasis):
+        # Make sure spectral data corresponds to real input
+        u0[0] = u0[0].real
+        u1[0] = u1[0].real
+        if N % 2 == 0:
+            u0[-1] = u0[-1].real
+            u1[-1] = u1[-1].real
+
+    uv1 = FFT.convolve(u0, u1, fast=False)
+
+    # Do convolution with FFT and padding
+    FFT2 = basis(N, padding_factor=(1.5+1.00001/N), plan=True) # Just enough to be perfect
+    uv2 = FFT2.convolve(u0, u1, fast=True)
+
+    # Compare. Should be identical after truncation if no aliasing
+    uv3 = np.zeros_like(uv2)
+    if isinstance(FFT, fbases.R2CBasis):
+        uv3[:] = uv1[:N//2+1]
+        if N % 2 == 0:
+            uv3[-1] *= 2
+            uv3[-1] = uv3[-1].real
+    else:
+        uv3[:N//2+1] = uv1[:N//2+1]
+        uv3[-(N//2):] += uv1[-(N//2):]
+    assert np.allclose(uv3, uv2)
+
 
 @pytest.mark.parametrize('ST,quad', product(cBasis, cquads))
 def test_scalarproduct(ST, quad):
@@ -195,7 +232,6 @@ def test_CDDmat(quad):
 
     uc_hat = np.zeros(M)
     uc_hat = SD.CT.forward(uj, uc_hat)
-    du_hat = np.zeros(M)
     dudx_j = SD.CT.fast_derivative(uj, dudx_j)
 
     Cm = inner_product((SD, 0), (SD, 1))
@@ -437,3 +473,6 @@ def test_ABBmat(SB, quad):
     assert np.allclose(z0, u0)
 
 #test_ABBmat(lbases.ShenBiharmonicBasis, 'LG')
+
+if __name__ == '__main__':
+    test_convolve(fbases.R2CBasis, 8)

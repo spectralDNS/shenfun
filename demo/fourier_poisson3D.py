@@ -11,16 +11,16 @@ where V is the Fourier basis span{exp(1jkx)}_{k=-N/2}^{N/2-1} and
 VxVxV is a tensorproductspace.
 
 """
-from sympy import symbols, cos, sin, exp, lambdify
+from sympy import symbols, cos, sin, lambdify
 import numpy as np
 import os
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun.tensorproductspace import TensorProductSpace
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Function
+from shenfun import inner, div, grad, TestFunction, TrialFunction
 from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt
-except:
+except ImportError:
     plt = None
 
 comm = MPI.COMM_WORLD
@@ -59,6 +59,14 @@ uq = T.backward(f_hat, fast_transform=True)
 uj = ul(*X)
 print(abs(uj-uq).max())
 assert np.allclose(uj, uq)
+
+# Test eval at point
+point = np.array([[0.1, 0.2, 0.3], [0.2, 0.3, 0.3], [0.3, 0.4, 0.1]])
+p = T.eval(point, f_hat)
+assert np.allclose(p, ul(*point.T))
+p2 = T.eval_cython(point, f_hat)
+assert np.allclose(p2, ul(*point.T))
+
 
 if not plt is None and not 'pytest' in os.environ:
     plt.figure()

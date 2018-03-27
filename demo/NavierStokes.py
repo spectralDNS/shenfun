@@ -11,7 +11,6 @@ solver in the https://github.com/spectralDNS/spectralDNS repository
 
 import numpy as np
 from mpi4py import MPI
-from time import time
 from shenfun import *
 
 nu = 0.000625
@@ -24,7 +23,7 @@ V0 = fourier.bases.C2CBasis(N[0])
 V1 = fourier.bases.C2CBasis(N[1])
 V2 = fourier.bases.R2CBasis(N[2])
 T = TensorProductSpace(comm, (V0, V1, V2), **{'planner_effort': 'FFTW_MEASURE'})
-TV = VectorTensorProductSpace([T, T, T])
+TV = VectorTensorProductSpace(T)
 u = TrialFunction(T)
 v = TestFunction(T)
 
@@ -32,20 +31,19 @@ U = Function(TV, False)
 U_hat = Function(TV)
 K = np.array(T.local_wavenumbers(True, True, eliminate_highest_freq=False)) # No elim because used for second order diff
 K2 = np.sum(K*K, 0, dtype=int)
-K = np.array(T.local_wavenumbers(True, True, True))
 K_over_K2 = K.astype(float) / np.where(K2 == 0, 1, K2).astype(float)
 P_hat = Function(T)
 curl_hat = Function(TV)
 curl_ = Function(TV, False)
 X = T.local_mesh(True)
 
-def LinearRHS():
+def LinearRHS(**params):
     A = inner(u, v)
     L = inner(nu*div(grad(u)), v) / A  # L is shape (N[0], N[1], N[2]//2+1), but used as (3, N[0], N[1], N[2]//2+1) due to broadcasting
     #L = -nu*K2  # Or just simply this
     return L
 
-def NonlinearRHS(U, U_hat, dU):
+def NonlinearRHS(U, U_hat, dU, **params):
     global TV, curl_hat, curl_, P_hat, K, K_over_K2
     dU.fill(0)
     U = TV.backward(U_hat, U)
@@ -64,12 +62,11 @@ if __name__ == '__main__':
         U[1] =-np.cos(X[0])*np.sin(X[1])*np.cos(X[2])
         U[2] = 0
         U_hat = TV.forward(U, U_hat)
-
-        #integrator = ETDRK4(TV, L=LinearRHS, N=NonlinearRHS)
+        # Solve
         integ = integrator(TV, L=LinearRHS, N=NonlinearRHS)
         integ.setup(dt)
         U_hat = integ.solve(U, U_hat, dt, (0, end_time))
-
+        # Check accuracy
         k = comm.reduce(0.5*np.sum(U*U)/np.prod(np.array(N)))
         if comm.Get_rank() == 0:
             assert np.round(k - 0.124953117517, 7) == 0

@@ -1,11 +1,10 @@
 import pytest
 import numpy as np
 from shenfun.chebyshev import bases as cbases
-from shenfun.legendre import bases as lbases
-from shenfun.fourier import bases as fbases
+#from shenfun.legendre import bases as lbases
+#from shenfun.fourier import bases as fbases
 from mpi4py import MPI
 import shenfun
-from itertools import product
 
 N = 8
 comm = MPI.COMM_WORLD

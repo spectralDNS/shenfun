@@ -1,14 +1,19 @@
+"""
+Module for defining bases in the Legendre family
+"""
+
 import numpy as np
+from numpy.polynomial import legendre as leg
 import pyfftw
-from .lobatto import legendre_lobatto_nodes_and_weights
 from shenfun.spectralbase import SpectralBase, work
 from shenfun.utilities import inheritdocstrings
-from numpy.polynomial import legendre as leg
+from .lobatto import legendre_lobatto_nodes_and_weights
 
 __all__ = ['LegendreBase', 'Basis', 'ShenDirichletBasis',
            'ShenBiharmonicBasis', 'ShenNeumannBasis',
            'SecondNeumannBasis']
 
+#pylint: disable=missing-docstring, method-hidden, no-else-return, not-callable, abstract-method, no-member, cyclic-import
 
 class _Wrap(object):
 
@@ -41,8 +46,7 @@ class _Wrap(object):
         if output_array is not None:
             output_array[...] = self.output_array
             return output_array
-        else:
-            return self.output_array
+        return self.output_array
 
 
 @inheritdocstrings
@@ -96,7 +100,7 @@ class LegendreBase(SpectralBase):
         if k > 0:
             D = np.zeros((self.N, self.N))
             D[:-k, :] = leg.legder(np.eye(self.N), k)
-            a, b = self.domain
+            #a, b = self.domain
             V = np.dot(V, D) #*(2./(b-a))**k
 
         return self.get_vandermonde_basis(V)
@@ -113,8 +117,7 @@ class LegendreBase(SpectralBase):
         a, b = self.domain
         if abs(b-a-2) < 1e-12:
             return 1
-        else:
-            return 2./(b-a)
+        return 2./(b-a)
 
     def forward(self, input_array=None, output_array=None, fast_transform=False):
         """Fast forward transform
@@ -223,11 +226,11 @@ class Basis(LegendreBase):
         if plan:
             self.plan(N, 0, np.float, {})
 
-    def evaluate_expansion_all(self, fk, fj):
-        raise NotImplementedError
-
-    def eval(self, x, fk):
-        return leg.legval(x, fk)
+    def eval(self, x, fk, output_array=None):
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        output_array[:] = leg.legval(x, fk)
+        return output_array
 
 
 @inheritdocstrings
@@ -297,19 +300,19 @@ class ShenDirichletBasis(LegendreBase):
         else:
             return self.forward.output_array
 
-    def evaluate_expansion_all(self, fk, fj):
-        w_hat = work[(fk, 0)]
+    def evaluate_expansion_all(self, input_array, output_array):
+        w_hat = work[(input_array, 0)]
         s0 = self.sl(slice(0, -2))
         s1 = self.sl(slice(2, None))
-        self.set_factor_array(fk)
-        w_hat[s0] = fk[s0]*self._factor
-        w_hat[s1] -= fk[s0]*self._factor
+        self.set_factor_array(input_array)
+        w_hat[s0] = input_array[s0]*self._factor
+        w_hat[s1] -= input_array[s0]*self._factor
         self.bc.apply_before(w_hat, False, (0.5, 0.5))
 
-        fj = self.LT.backward(w_hat)
-        assert fk is self.backward.input_array
-        assert fj is self.backward.output_array
-        return fj
+        output_array = self.LT.backward(w_hat)
+        assert input_array is self.backward.input_array
+        assert output_array is self.backward.output_array
+        return output_array
 
     def slice(self):
         return slice(0, self.N-2)
@@ -317,13 +320,16 @@ class ShenDirichletBasis(LegendreBase):
     def spectral_shape(self):
         return self.N-2
 
-    def eval(self, x, fk):
+    def eval(self, x, fk, output_array=None):
+        if output_array is None:
+            output_array = np.zeros(x.shape)
         w_hat = work[(fk, 0)]
         self.set_factor_array(fk)
-        f = leg.legval(x, fk[:-2]*self._factor)
+        output_array[:] = leg.legval(x, fk[:-2]*self._factor)
         w_hat[2:] = fk[:-2]*self._factor
-        f -= leg.legval(x, w_hat)
-        return f + 0.5*(fk[-1]*(1+x)+fk[-2]*(1-x))
+        output_array -= leg.legval(x, w_hat)
+        output_array += 0.5*(fk[-1]*(1+x)+fk[-2]*(1-x))
+        return output_array
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
@@ -397,15 +403,15 @@ class ShenNeumannBasis(LegendreBase):
         else:
             return self.scalar_product.output_array
 
-    def evaluate_expansion_all(self, fk, fj):
-        w_hat = work[(fk, 0)]
-        self.set_factor_array(fk)
+    def evaluate_expansion_all(self, input_array, output_array):
+        w_hat = work[(input_array, 0)]
+        self.set_factor_array(input_array)
         s0 = self.sl(slice(0, -2))
         s1 = self.sl(slice(2, None))
-        w_hat[s0] = fk[s0]
-        w_hat[s1] -= self._factor*fk[s0]
-        fj = self.LT.backward(w_hat)
-        return fj
+        w_hat[s0] = input_array[s0]
+        w_hat[s1] -= self._factor*input_array[s0]
+        output_array = self.LT.backward(w_hat)
+        return output_array
 
     def slice(self):
         return slice(0, self.N-2)
@@ -413,13 +419,15 @@ class ShenNeumannBasis(LegendreBase):
     def spectral_shape(self):
         return self.N-2
 
-    def eval(self, x, fk):
+    def eval(self, x, fk, output_array=None):
+        if output_array is None:
+            output_array = np.zeros(x.shape)
         w_hat = work[(fk, 0)]
         self.set_factor_array(fk)
-        f = leg.legval(x, fk[:-2])
+        output_array[:] = leg.legval(x, fk[:-2])
         w_hat[2:] = self._factor*fk[:-2]
-        f -= leg.legval(x, w_hat)
-        return f
+        output_array -= leg.legval(x, w_hat)
+        return output_array
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
@@ -502,14 +510,14 @@ class ShenBiharmonicBasis(LegendreBase):
         w_hat[s4] += f2*fk[s]
         return w_hat
 
-    def evaluate_expansion_all(self, fk, fj):
-        w_hat = work[(fk, 0)]
-        self.set_factor_arrays(fk)
-        w_hat = self.set_w_hat(w_hat, fk, self._factor1, self._factor2)
-        fj = self.LT.backward(w_hat)
-        assert fk is self.backward.input_array
-        assert fj is self.backward.output_array
-        return fj
+    def evaluate_expansion_all(self, input_array, output_array):
+        w_hat = work[(input_array, 0)]
+        self.set_factor_arrays(input_array)
+        w_hat = self.set_w_hat(w_hat, input_array, self._factor1, self._factor2)
+        output_array = self.LT.backward(w_hat)
+        assert input_array is self.backward.input_array
+        assert output_array is self.backward.output_array
+        return output_array
 
     def slice(self):
         return slice(0, self.N-4)
@@ -517,16 +525,18 @@ class ShenBiharmonicBasis(LegendreBase):
     def spectral_shape(self):
         return self.N-4
 
-    def eval(self, x, fk):
+    def eval(self, x, fk, output_array=None):
+        if output_array is None:
+            output_array = np.zeros(x.shape)
         w_hat = work[(fk, 0)]
         self.set_factor_arrays(fk)
-        f = leg.legval(x, fk[:-4])
+        output_array[:] = leg.legval(x, fk[:-4])
         w_hat[2:-2] = self._factor1*fk[:-4]
-        f += leg.legval(x, w_hat[:-2])
+        output_array += leg.legval(x, w_hat[:-2])
         w_hat[4:] = self._factor2*fk[:-4]
         w_hat[:4] = 0
-        f += leg.legval(x, w_hat)
-        return f
+        output_array += leg.legval(x, w_hat)
+        return output_array
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
@@ -593,7 +603,7 @@ class SecondNeumannBasis(LegendreBase):
         self.vandermonde_scalar_product(self.scalar_product.input_array,
                                         self.scalar_product.output_array)
 
-        fk = self.scalar_product.output_array
+        #fk = self.scalar_product.output_array
         #s = self.sl(0)
         #fk[s] = self.mean*np.pi
         #s[self.axis] = slice(-2, None)
@@ -605,7 +615,7 @@ class SecondNeumannBasis(LegendreBase):
         else:
             return self.scalar_product.output_array
 
-    #def evaluate_expansion_all(self, fk, fj):
+    #def evaluate_expansion_all(self, fk, output_array):
         #w_hat = work[(fk, 0)]
         #self.set_factor_array(fk)
         #s0 = self.sl(slice(0, -4))
@@ -614,8 +624,8 @@ class SecondNeumannBasis(LegendreBase):
         #w_hat[s0] = fk[s0]
         #w_hat[s1] += (self._factor-1)*fk[s0]
         #w_hat[s2] -= self._factor*fk[s0]
-        #fj = self.LT.backward(w_hat)
-        #return fj
+        #output_array = self.LT.backward(w_hat)
+        #return output_array
 
     def slice(self):
         return slice(0, self.N-2)
@@ -623,11 +633,11 @@ class SecondNeumannBasis(LegendreBase):
     def spectral_shape(self):
         return self.N-2
 
-    #def eval(self, x, fk):
-        #w_hat = work[(fk, 0)]
-        #self.set_factor_array(fk)
-        #f = leg.legval(x, fk[:-2])
-        #w_hat[2:] = self._factor*fk[:-2]
+    #def eval(self, x, input_array):
+        #w_hat = work[(input_array, 0)]
+        #self.set_factor_array(input_array)
+        #f = leg.legval(x, input_array[:-2])
+        #w_hat[2:] = self._factor*input_array[:-2]
         #f -= leg.legval(x, w_hat)
         #return f
 

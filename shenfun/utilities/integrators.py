@@ -1,19 +1,35 @@
+"""
+Module for some integrators.
+
+RK4:      Runge-Kutta fourth order
+ETD:      Exponential time differencing Euler method
+ETDRK4:   Exponential time differencing Runge-Kutta fourth order
+
+The integrators are set up to accept two methods, one for the linear
+part of the equation, and one for the nonlinear part.
+
+See, e.g.,
+H. Montanelli and N. Bootland "Solving periodic semilinear PDEs in 1D, 2D and
+3D with exponential integrators", https://arxiv.org/pdf/1604.08900.pdf
+
+"""
 import numpy as np
 from shenfun import Function
 
 __all__ = ('RK4', 'ETDRK4', 'ETD')
 
+#pylint: disable=unused-variable
+
 class IntegratorBase(object):
+    """Abstract base class for integrators"""
 
     def __init__(self, T,
                  L=lambda *args, **kwargs: 0,
                  N=lambda *args, **kwargs: 0,
                  update=lambda *args, **kwargs: None,
                  **params):
-        _p = {
-             'call_update': -1,
-             'dt': 0
-             }
+        _p = {'call_update': -1,
+              'dt': 0}
         _p.update(params)
         self.params = _p
         self.T = T
@@ -22,9 +38,27 @@ class IntegratorBase(object):
         self.update = update
 
     def setup(self, dt):
+        """Set up solver"""
+        pass
+
+    def solve(self, u, u_hat, dt, trange):
+        """Integrate forward in end_time
+
+        args:
+            u      Function     The solution array in physical space
+            u_hat  Function     The solution array in spectral space
+            dt     float        Timestep
+            trange two-tuple    Time and end time
+        """
         pass
 
 class ETD(IntegratorBase):
+    """Exponential time differencing Euler method
+
+    H. Montanelli and N. Bootland "Solving periodic semilinear PDEs in 1D, 2D and
+    3D with exponential integrators", https://arxiv.org/pdf/1604.08900.pdf
+
+    """
 
     def __init__(self, T,
                  L=lambda *args, **kwargs: 0,
@@ -34,11 +68,12 @@ class ETD(IntegratorBase):
         IntegratorBase.__init__(self, T, L=L, N=N, update=update, **params)
         self.dU = Function(T)
         self.psi = None
+        self.ehL = None
 
     def setup(self, dt):
-        # Set up ETDRK4 ODE solver
+        """Set up ETD ODE solver"""
         self.params['dt'] = dt
-        L = self.LinearRHS()
+        L = self.LinearRHS(**self.params)
         L = np.atleast_1d(L)
         hL = L*dt
         self.ehL = np.exp(hL)
@@ -51,20 +86,32 @@ class ETD(IntegratorBase):
         psi /= M
 
     def solve(self, u, u_hat, dt, trange):
-        if self.psi is None or abs(self.params['dt']-dt)>1e-12:
+        """Integrate forward in end_time
+
+        args:
+            u      Function     The solution array in physical space
+            u_hat  Function     The solution array in spectral space
+            dt     float        Timestep
+            trange two-tuple    Time and end time
+        """
+        if self.psi is None or abs(self.params['dt']-dt) > 1e-12:
             self.setup(dt)
         t, end_time = trange
         tstep = 0
         while t < end_time-1e-8:
             t += dt
             tstep += 1
-            self.dU = self.NonlinearRHS(u, u_hat, self.dU)
+            self.dU = self.NonlinearRHS(u, u_hat, self.dU, **self.params)
             u_hat[:] = self.ehL*u_hat + dt*self.psi*self.dU
             self.update(u, u_hat, t, tstep, **self.params)
         return u_hat
 
 class ETDRK4(IntegratorBase):
+    """Exponential time differencing Runge-Kutta 4'th order method
 
+    H. Montanelli and N. Bootland "Solving periodic semilinear PDEs in 1D, 2D and
+    3D with exponential integrators", https://arxiv.org/pdf/1604.08900.pdf
+    """
     def __init__(self, T,
                  L=lambda *args, **kwargs: 0,
                  N=lambda *args, **kwargs: 0,
@@ -79,11 +126,13 @@ class ETDRK4(IntegratorBase):
         self.psi = np.zeros((4,)+self.U_hat0.shape, dtype=np.float)
         self.a = None
         self.b = [0.5, 0.5, 0.5]
+        self.ehL = None
+        self.ehL_h = None
 
     def setup(self, dt):
-        # Set up ETDRK4 ODE solver
+        """Set up ETDRK4 ODE solver"""
         self.params['dt'] = dt
-        L = self.LinearRHS()
+        L = self.LinearRHS(**self.params)
         L = np.atleast_1d(L)
         hL = L*dt
         ehL = self.ehL = np.exp(hL)
@@ -107,7 +156,16 @@ class ETDRK4(IntegratorBase):
         self.a = a
 
     def solve(self, u, u_hat, dt, trange):
-        if self.a is None or abs(self.params['dt']-dt)>1e-12:
+        """Integrate forward in end_time
+
+        args:
+            u      Function     The solution array in physical space
+            u_hat  Function     The solution array in spectral space
+            dt     float        Timestep
+            trange two-tuple    Time and end time
+        """
+
+        if self.a is None or abs(self.params['dt']-dt) > 1e-12:
             self.setup(dt)
         t, end_time = trange
         tstep = 0
@@ -117,7 +175,7 @@ class ETDRK4(IntegratorBase):
             self.U_hat0[:] = u_hat*self.ehL_h
             self.U_hat1[:] = u_hat*self.ehL
             for rk in range(4):
-                self.dU = self.NonlinearRHS(u, u_hat, self.dU)
+                self.dU = self.NonlinearRHS(u, u_hat, self.dU, **self.params)
                 if rk < 2:
                     u_hat[:] = self.U_hat0 + self.b[rk]*dt*self.psi[3]*self.dU
                 elif rk == 2:
@@ -133,6 +191,7 @@ class ETDRK4(IntegratorBase):
         return u_hat
 
 class RK4(IntegratorBase):
+    """Regular 4'th order Runge-Kutta integrator."""
 
     def __init__(self, T,
                  L=lambda *args, **kwargs: 0,
@@ -147,24 +206,34 @@ class RK4(IntegratorBase):
         self.b = np.array([0.5, 0.5, 1.])
 
     def setup(self, dt):
-        # Set up RK4 ODE solver
+        """Set up RK4 ODE solver"""
         self.params['dt'] = dt
 
     def solve(self, u, u_hat, dt, trange):
-        if self.a is None or abs(self.params['dt']-dt)>1e-12:
+        """Integrate forward in end_time
+
+        args:
+            u      Function     The solution array in physical space
+            u_hat  Function     The solution array in spectral space
+            dt     float        Timestep
+            trange two-tuple    Time and end time
+        """
+
+        if self.a is None or abs(self.params['dt']-dt) > 1e-12:
             self.setup(dt)
         t, end_time = trange
         tstep = 0
-        L = self.LinearRHS()
+        L = self.LinearRHS(**self.params)
         while t < end_time-1e-8:
             t += dt
             tstep += 1
             self.U_hat0[:] = self.U_hat1[:] = u_hat
             for rk in range(4):
-                dU = self.NonlinearRHS(u, u_hat, self.dU)
+                dU = self.NonlinearRHS(u, u_hat, self.dU, **self.params)
                 dU += L*u_hat
-                if rk < 3: u_hat[:] = self.U_hat0 + self.b[rk]*dt*dU
+                if rk < 3:
+                    u_hat[:] = self.U_hat0 + self.b[rk]*dt*dU
                 self.U_hat1 += self.a[rk]*dt*dU
-            u_hat[:] =self. U_hat1
+            u_hat[:] = self. U_hat1
             self.update(u, u_hat, t, tstep, **self.params)
         return u_hat
