@@ -46,30 +46,45 @@ class TDMA(la_TDMA):
 
 
 class Helmholtz(object):
-    r"""Helmholtz solver alfa*u'' + beta*u = b
+    r"""Helmholtz solver 
 
-    where u is the solution, b is the right hand side and alfa and beta are
-    scalars, or arrays of scalars for a multidimensional problem.
+    .. math::
+
+        \alpha u'' + \beta u = b
+
+    where :math:`u` is the solution, :math:`b` is the right hand side and
+    :math:`\alpha` and :math:`\beta` are scalars, or arrays of scalars for
+    a multidimensional problem.
 
     The user must provide mass and stiffness matrices and scale arrays
-    (alfa/beta) to each matrix. The matrices and scales can be provided as
-    either kwargs or args
+    :math:`(\alpha/\beta)` to each matrix. The matrices and scales can be 
+    provided as either kwargs or args
 
-    Either
-    args:
-        A        SpectralMatrix    Stiffness matrix (Dirichlet or Neumann)
-        B        SpectralMatrix    Mass matrix (Dirichlet or Neumann)
-        alfa     Numpy array
-        beta     Numpy array
+    As 4 arguments
 
-    or
-    kwargs:
-        'ADDmat': A    Stiffness matrix (Dirichlet basis)
-        'BDDmat': B    Mass matrix (Dirichlet basis)
-        'ANNmat': A    Stiffness matrix (Neumann basis)
-        'BNNmat': B    Mass matrix (Neumann basis)
+    Parameters
+    ----------
+        A : SpectralMatrix
+            Stiffness matrix (Dirichlet or Neumann)
+        B : SpectralMatrix
+            Mass matrix (Dirichlet or Neumann)
+        alfa : Numpy array
+        beta : Numpy array
 
-        where alfa and beta are avalable as alfa=A.scale, beta=B.scale.
+    or as a dict with keys
+
+    Parameters
+    ----------
+        ADDmat : A 
+                 Stiffness matrix (Dirichlet basis)
+        BDDmat : B
+                 Mass matrix (Dirichlet basis)
+        ANNmat : A
+                  Stiffness matrix (Neumann basis)
+        BNNmat : B
+                 Mass matrix (Neumann basis)
+
+    where :math:`\alpha` and :math:`\beta` are avalable as A.scale and B.scale.
 
     The solver can be used along any axis of a multidimensional problem. For
     example, if the Chebyshev basis (Dirichlet or Neumann) is the last in a
@@ -77,40 +92,55 @@ class Helmholtz(object):
     then the 1D Helmholtz equation arises when one is solving the 3D Poisson
     equation
 
-        \nabla^2 u = f
+    .. math::
+
+        \nabla^2 u = b
 
     With the spectral Galerkin method we multiply this equation with a test
-    function (v) and integrate (weighted inner product (,)_w) over the domain
+    function (:math:`v`) and integrate (weighted inner product :math:`(\cdot, \cdot)_w`) 
+    over the domain
 
-        (v, \nabla^2 u)_w = (v, f)_w
+    .. math::
+        
+        (v, \nabla^2 u)_w = (v, b)_w
 
+    
     See https://rawgit.com/spectralDNS/shenfun/master/docs/src/Poisson3D/poisson3d_bootstrap.html
-    for details, since it is actually quite involved. But basically, one obtains
-    a linear algebra system to be solved along the z-axis for all combinations
-    of the two Fourier indices k and l
+    for details, since it is actually quite involved. But basically, one 
+    obtains a linear algebra system to be solved along the :math:`z`-axis for
+    all combinations of the two Fourier indices :math:`k` and :math:`l`
 
-       ((2pi)^2 A_{mj} - (k^2 + l^2) B_{mj}) \hat{u}[k, l, j] = (v, f)_w[k, l, m]
+    .. math::
+            
+        ((2\pi)^2 A_{mj} - (k^2 + l^2) B_{mj}) \hat{u}[k, l, j] = (v, b)_w[k, l, m]
 
-    Note that k only varies along x-direction, whereas l varies along y. To allow for
-    Numpy broadcasting these two variables are stored as arrays of shape
+    Note that :math:`k` only varies along :math:`x`-direction, whereas :math:`l`
+    varies along :math:`y`. To allow for Numpy broadcasting these two variables 
+    are stored as arrays of shape
 
-      k: (N, 1, 1)
-      l: (1, M, 1)
+    .. math::
 
-    Here it is assumed that the solution array \hat{u} has shape (N, M, P). Now,
-    multiplying k array with \hat{u} is achieved as
+        k : (N, 1, 1)
+        
+        l : (1, M, 1)
 
-      k * \hat{u}
+    Here it is assumed that the solution array :math:`\hat{u}` has shape 
+    (N, M, P). Now, multiplying k array with :math:`\hat{u}` is achieved as an
+    elementwise multiplication
 
-    Numpy will then take care of broadcasting k to an array of shape (N, M, P)
-    before performing the elementwise multiplication. Likewise, the constant
-    scale (2pi)^2 in front of the A_{mj} matrix is stored with shape (1, 1, 1),
-    and multiplying with \hat{u} is performed as if it was a scalar (as it
-    happens to be).
+    .. math:: 
+
+        k \cdot \hat{u}
+
+    Numpy will then take care of broadcasting :math:`k` to an array of shape 
+    (N, M, P) before performing the elementwise multiplication. Likewise, the 
+    constant scale :math:`(2\pi)^2` in front of the :math:`A_{mj}` matrix is 
+    stored with shape (1, 1, 1), and multiplying with :math:`\hat{u}` is 
+    performed as if it was a scalar (as it here happens to be).
 
     This is where the scale arrays in the signature to the Helmholt solver comes
-    from. alfa is here (2pi)^2, whereas beta is (k^2+l^2). Note that k+l is an
-    array of shape (N, M, 1).
+    from. :math:`\alpha` is here :math:`(2\pi)^2`, whereas :math:`\beta` is
+    :math:`(k^2+l^2)`. Note that :math:`k+l` is an array of shape (N, M, 1).
 
     """
     def __init__(self, *args, **kwargs):
@@ -220,16 +250,17 @@ class Helmholtz(object):
         return u
 
     def matvec(self, v, c):
-        """Matrix vector product
+        """Matrix vector product c = dot(self, v)
 
-        Returns c = dot(self, v)
+        Parameters
+        ----------
+            v : array (input)
+            c : array (output)
 
-        args:
-            v    (input)         Numpy array of ndim>=1
-            c    (output)        Numpy array of same ndim as v
-
+        Returns
+        -------
+        c : array
         """
-
         assert self.neumann is False
         c[:] = 0
         if len(v.shape) > 1:
@@ -243,32 +274,43 @@ class Helmholtz(object):
 class Biharmonic(object):
     r"""Multidimensional Biharmonic solver for
 
-      a0*u'''' + alfa*u'' + beta*u = b
+    .. math:: 
 
-    where u is the solution, b is the right hand side and a0, alfa and beta are
-    scalars, or arrays of scalars for a multidimensional problem.
+        a_0 u'''' + \alpha u'' + \beta u = b
+
+    where :math:`u` is the solution, :math:`b` is the right hand side and :math:`a_0, \alpha` and
+    :math:`\beta` are scalars, or arrays of scalars for a multidimensional problem.
 
     The user must provide mass, stiffness and biharmonic matrices and scale arrays
-    (a0/alfa/beta). The matrices and scales can be provided as
+    :math:`(a_0/\alpha/\beta)`. The matrices and scales can be provided as
     either kwargs or args
 
-    Either
-    args:
-        S        SpectralMatrix    Biharmonic matrix
-        A        SpectralMatrix    Stiffness matrix
-        B        SpectralMatrix    Mass matrix
-        a0       Numpy array
-        alfa     Numpy array
-        beta     Numpy array
+    As 6 arguments
+    
+    Parameters
+    ----------
+        S : SpectralMatrix
+            Biharmonic matrix
+        A : SpectralMatrix
+            Stiffness matrix
+        B : SpectralMatrix 
+            Mass matrix
+        a0 : array
+        alfa : array
+        beta : array
 
-    or
-    kwargs:
-        'SBBmat': S    Biharmonic matrix
-        'ABBmat': A    Stiffness matrix
-        'BBBmat': B    Mass matrix
+    or as dict with key/values
+    
+    Parameters
+    ----------
+        SBBmat : S  
+                 Biharmonic matrix
+        ABBmat : A 
+                 Stiffness matrix
+        BBBmat : B
+                 Mass matrix
 
-        where a0, alfa and beta must be avalable as a0=S.scale, alfa=A.scale,
-        beta=B.scale.
+    where a0, alfa and beta must be avalable as S.scale, A.scale, B.scale.
 
     The solver can be used along any axis of a multidimensional problem. For
     example, if the Chebyshev basis (Biharmonic) is the last in a
@@ -276,43 +318,55 @@ class Biharmonic(object):
     then the 1D equation listed above arises when one is solving the 3D biharmonic
     equation
 
-        \nabla^4 u = f
+    .. math::
+
+        \nabla^4 u = b
 
     With the spectral Galerkin method we multiply this equation with a test
-    function (v) and integrate (weighted inner product (,)_w) over the domain
+    function (:math:`v`) and integrate (weighted inner product :math:`(\cdot, \cdot)_w`)
+    over the domain
 
-        (v, \nabla^4 u)_w = (v, f)_w
+    .. math::
+
+        (v, \nabla^4 u)_w = (v, b)_w
 
     See https://rawgit.com/spectralDNS/shenfun/master/docs/._shenfun_bootstrap004.html#sec:tensorproductspaces
     for details, since it is actually quite involved. But basically, one obtains
     a linear algebra system to be solved along the z-axis for all combinations
     of the two Fourier indices k and l
 
-       ((2pi)^2 S_{mj} - 2(k^2 + l^2) A_{mj}) + (k^2 + l^2)^2 B_{mj}) \hat{u}[k, l, j] = (v, f)_w[k, l, m]
+    .. math::
 
-    Note that k only varies along x-direction, whereas l varies along y. To allow for
-    Numpy broadcasting these two variables are stored as arrays of shape
+        ((2\pi)^2 S_{mj} - 2(k^2 + l^2) A_{mj}) + (k^2 + l^2)^2 B_{mj}) \hat{u}[k, l, j] = (v, b)_w[k, l, m]
 
-      k: (N, 1, 1)
-      l: (1, M, 1)
+    Note that :math:`k` only varies along :math:`x`-direction, whereas :math:`l` varies along :math:`y`. To
+    allow for Numpy broadcasting these two variables are stored as arrays of
+    shape
 
-    Here it is assumed that the solution array \hat{u} has shape (N, M, P). Now,
-    multiplying k array with \hat{u} is achieved as
+    .. math:: 
 
-      k * \hat{u}
+        k : (N, 1, 1)
 
-    Numpy will then take care of broadcasting k to an array of shape (N, M, P)
+        l : (1, M, 1)
+
+    Here it is assumed that the solution array :math:`\hat{u}` has shape 
+    (N, M, P). Now, multiplying :math:`k` array with :math:`\hat{u}` is achieved as
+
+    .. math::
+
+        k \cdot \hat{u}
+
+    Numpy will then take care of broadcasting :math:`k` to an array of shape (N, M, P)
     before performing the elementwise multiplication. Likewise, the constant
-    scale (2pi)^2 in front of the A_{mj} matrix is stored with shape (1, 1, 1),
-    and multiplying with \hat{u} is performed as if it was a scalar (as it
-    happens to be).
+    scale :math:`(2\pi)^2` in front of the :math:`A_{mj}` matrix is stored with
+    shape (1, 1, 1), and multiplying with :math:`\hat{u}` is performed as if it 
+    was a scalar (as it here happens to be).
 
     This is where the scale arrays in the signature to the Helmholt solver comes
-    from. a0 is here (2pi)^2, whereas alfa and beta are -2(k^2+l^2) and
-    (k^2+l^2)^2, respectively. Note that k+l is an array of shape (N, M, 1).
-
+    from. :math:`a_0` is here :math:`(2\pi)^2`, whereas :math:`\alpha` and 
+    :math:`\beta` are :math:`-2(k^2+l^2)` and :math:`(k^2+l^2)^2`, respectively.
+    Note that :math:`k+l` is an array of shape (N, M, 1).
     """
-
     def __init__(self, *args, **kwargs):
 
         if 'SBBmat' in kwargs:
@@ -395,30 +449,39 @@ class Biharmonic(object):
 
 
 class PDMA(object):
-    """Pentadiagonal matrix solver
+    r"""Pentadiagonal matrix solver
 
     Pentadiagonal matrix with diagonals in offsets -4, -2, 0, 2, 4
 
     Arising with Poisson equation and biharmonic basis u
 
-      alfa u'' + beta u = f
+    .. math::
+    
+        \alpha u'' + \beta u = f
 
-    Either
-    args:
-        A        SpectralMatrix    Stiffness matrix
-        B        SpectralMatrix    Mass matrix
-        alfa     Numpy array
-        beta     Numpy array
+    As 4 arguments
+    
+    Parameters
+    ----------
+        A : SpectralMatrix
+            Stiffness matrix
+        B : SpectralMatrix
+            Mass matrix
+        alfa : Numpy array
+        beta : Numpy array
 
-    or
-    kwargs:
-        'solver':    ('cython', 'python')     Choose implementation
-        'ABBmat': A    Stiffness matrix
-        'BBBmat': B    Mass matrix
+    or as dict with key/vals
+    
+    Parameters
+    ----------
+        solver : str
+                 Choose between implementations ('cython', 'python')
+        ABBmat : A
+                 Stiffness matrix
+        BBBmat : B
+                 Mass matrix
 
-        where alfa and beta must be avalable as alfa=A.scale, beta=B.scale.
-
-
+    where alfa and beta must be avalable as A.scale, B.scale.
     """
 
     def __init__(self, *args, **kwargs):
