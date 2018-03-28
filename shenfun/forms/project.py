@@ -1,5 +1,3 @@
-#pylint: disable=line-too-long, missing-docstring
-
 import numpy as np
 from shenfun.tensorproductspace import MixedTensorProductSpace
 from .arguments import Expr, TestFunction, TrialFunction, BasisFunction, Array
@@ -7,17 +5,20 @@ from .inner import inner
 
 __all__ = ('project',)
 
+
 def project(uh, T, output_array=None, uh_hat=None):
     r"""Project uh to tensor product space T
 
     Parameters
     ----------
-        uh :        Expr or Function
-        T :         TensorProductSpace instance
-        output_array :  Function(T, True)  Return array
-        uh_hat :        Function(T, True)  The transform of uh in uh's space,
-        i.e., TK = uh.function_space(); uh_hat = TK.forward(uh) 
-        This is ok even though uh is part of a form, like div(grad(uh))
+        uh :  Expr or Function
+        T :  TensorProductSpace
+        output_array :  Function(T, True)  
+                        Return array
+        uh_hat :  Function(T, True)
+                  The transform of uh in uh's space, i.e., 
+                  TK = uh.function_space(); uh_hat = TK.forward(uh). This is
+                  ok even though uh is part of a form, like div(grad(uh))
 
     .. note:: Returns spectral expansion coefficients of projection, 
               not the projection in physical space.
