@@ -8,8 +8,10 @@ dependencies:
   - cython
   - fftw
   - numpy
+  - sympy
   - python
   - scipy
   - dask
   - pyfftw
   - mpiFFT4py
+  - mpi4py_fft
