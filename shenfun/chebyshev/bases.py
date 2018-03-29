@@ -245,7 +245,8 @@ class Basis(ChebyshevBase):
         return ck
 
     def fast_derivative(self, fj, fd):
-        """Return derivative of fj = f(x_j) at quadrature points
+        """Return derivative of :math:`f_j = f(x_j)` at quadrature points
+        :math:`x_j`
 
         Parameters
         ----------
@@ -269,6 +270,7 @@ class Basis(ChebyshevBase):
             sl[self.axis] = -1
             array[sl] /= 2
         return array
+
 
     def evaluate_expansion_all(self, input_array, output_array):
         output_array = self.xfftn_bck()

@@ -6,18 +6,24 @@ A naming convention is used for the first three capital letters for all matrices
 The first letter refers to type of matrix.
 
     Mass matrices start with 'B'
+
     One derivative start with 'C'
+
     Two derivatives (Laplace) start with 'A'
+
     Four derivatives (Biharmonic) start with 'S'
 
 The next two letters refer to the test and trialfunctions, respectively
 
     Dirichlet:   'D'
+
     Neumann:     'N'
+
     Chebyshev:   'T'
+
     Biharmonic:  'B'
 
-As such, there are 4 mass matrices, BDDmat, BNNmat, BTTmat and BBBmat,
+As such, there are 4 symmetric mass matrices, BDDmat, BNNmat, BTTmat and BBBmat,
 corresponding to the four bases above.
 
 A matrix may consist of different types of test and trialfunctions as long as
@@ -29,45 +35,45 @@ which takes test and trialfunctions along with the number of derivatives
 to be applied to each. As such the mass matrix BDDmat may be looked up
 as
 
-   >>> from shenfun.chebyshev.matrices import mat
-   >>> from shenfun.chebyshev.bases import ShenDirichletBasis as SD
-   >>> B = mat[((SD, 0), (SD, 0))]
+>>> from shenfun.chebyshev.matrices import mat
+>>> from shenfun.chebyshev.bases import ShenDirichletBasis as SD
+>>> B = mat[((SD, 0), (SD, 0))]
 
 and an instance of the matrix can be created as
 
-   >>> B0 = SD(12)
-   >>> BM = B((B0, 0), (B0, 0))
-   >>> print(BM)
-  {-2: array([-1.57079633]),
-    0: array([ 4.71238898,  3.14159265,  3.14159265,  3.14159265,  3.14159265,
-         3.14159265,  3.14159265,  3.14159265,  3.14159265,  3.14159265]),
-    2: array([-1.57079633])}
+>>> B0 = SD(12)
+>>> BM = B((B0, 0), (B0, 0))
+>>> print(BM)
+{-2: array([-1.57079633]),
+  0: array([ 4.71238898,  3.14159265,  3.14159265,  3.14159265,  3.14159265,
+       3.14159265,  3.14159265,  3.14159265,  3.14159265,  3.14159265]),
+  2: array([-1.57079633])}
 
 However, this way of creating matrices is not reccommended use. It is far
 more elegant to use the TrialFunction/TestFunction interface, and to
 generate the matrix as an inner product:
 
-    >>> from shenfun import TrialFunction, TestFunction, inner
-    >>> u = TrialFunction(B0)
-    >>> v = TestFunction(B0)
-    >>> BM = inner(u, v)
-    >>> print(BM)
-    >>> print(BM)
-  {-2: array([-1.57079633]),
-    0: array([ 4.71238898,  3.14159265,  3.14159265,  3.14159265,  3.14159265,
-         3.14159265,  3.14159265,  3.14159265,  3.14159265,  3.14159265]),
-    2: array([-1.57079633])}
+>>> from shenfun import TrialFunction, TestFunction, inner
+>>> u = TrialFunction(B0)
+>>> v = TestFunction(B0)
+>>> BM = inner(u, v)
+>>> print(BM)
+>>> print(BM)
+{-2: array([-1.57079633]),
+  0: array([ 4.71238898,  3.14159265,  3.14159265,  3.14159265,  3.14159265,
+       3.14159265,  3.14159265,  3.14159265,  3.14159265,  3.14159265]),
+  2: array([-1.57079633])}
 
 To see that this is in fact the BDDmat:
-    >>> print(BM.__class__)
-    shenfun.chebyshev.matrices.BDDmat
 
+>>> print(BM.__class__)
+shenfun.chebyshev.matrices.BDDmat
 """
 #pylint: disable=bad-continuation, redefined-builtin
 
 from __future__ import division
 
-__all__ = ['mat']
+#__all__ = ['mat']
 
 import numpy as np
 from shenfun.optimization.Matvec import CDNmat_matvec, BDNmat_matvec, \
@@ -88,11 +94,17 @@ SB = bases.ShenBiharmonicBasis
 SN = bases.ShenNeumannBasis
 
 def get_ck(N, quad):
-    """Return array ck
+    """Return array ck, parameter in Chebyshev expansions
 
-    args:
-        N       int    Number of quadrature points
-        quad:   str    Options: ('GL', 'GC')
+    Parameters
+    ----------
+        N : int
+            Number of quadrature points
+        quad : str
+
+               GL - Chebyshev-Gauss-Lobatto
+               
+               GC - Chebyshev-Gauss
     """
     ck = np.ones(N, int)
     ck[0] = 2
@@ -103,13 +115,19 @@ def get_ck(N, quad):
 
 @inheritdocstrings
 class BDDmat(SpectralMatrix):
-    """Matrix for inner product B_{kj}=(phi_j, phi_k)_w
+    r"""Matrix for inner product 
+
+    .. math::
+
+        B_{kj}=(\phi_j, \phi_k)_w
 
     where
+    
+    .. math::
 
-        j = 0, 1, ..., N-2 and k = 0, 1, ..., N-2
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
 
-    and phi_j is a Shen Dirichlet basis function.
+    and :math:`\phi_j` is a Shen Dirichlet basis function.
 
     """
     def __init__(self, test, trial):
@@ -153,17 +171,23 @@ class BDDmat(SpectralMatrix):
 
 @inheritdocstrings
 class BNDmat(SpectralMatrix):
-    """Mass matrix for inner product B_{kj} = (phi_j, psi_k)_w
+    r"""Mass matrix for inner product 
+
+    .. math::
+
+        B_{kj} = (\phi_j, \psi_k)_w
 
     where
 
-        j = 0, 1, ..., N-2 and k = 1, 2, ..., N-2
+    .. math::
 
-    psi_k is the Shen Dirichlet basis function and phi_j is a Shen Neumann
-    basis function.
+        j = 0, 1, ..., N-2 \text{ and } k = 1, 2, ..., N-2
 
-    For simplicity, the matrix is stored including the zero index row (k=0)
+    :math:`\psi_k` is the Shen Dirichlet basis function and :math:`\phi_j` is a
+    Shen Neumann basis function.
 
+    For simplicity, the matrix is stored including the zero index row
+    (:math:`k=0`)
     """
     def __init__(self, test, trial):
         assert isinstance(test[0], SN)
@@ -186,17 +210,23 @@ class BNDmat(SpectralMatrix):
 
 @inheritdocstrings
 class BDNmat(SpectralMatrix):
-    """Mass matrix for inner product B_{kj} = (psi_j, phi_k)_w
+    r"""Mass matrix for inner product 
+
+    .. math::
+
+        B_{kj} = (psi_j, phi_k)_w
 
     where
 
-        j = 1, 2, ..., N-2 and k = 0, 1, ..., N-2
+    .. math::
 
-    psi_j is the Shen Dirichlet basis function and phi_k is a Shen Neumann
-    basis function.
+        j = 1, 2, ..., N-2 \text{ and } k = 0, 1, ..., N-2
 
-    For simplicity, the matrix is stored including the zero index column (j=0)
+    :math:`\psi_j` is the Shen Dirichlet basis function and :math:`\phi_k` is a
+    Shen Neumann basis function.
 
+    For simplicity, the matrix is stored including the zero index column
+    (:math:`j=0`)
     """
     def __init__(self, test, trial):
         assert isinstance(test[0], SD)
@@ -221,16 +251,23 @@ class BDNmat(SpectralMatrix):
 
 @inheritdocstrings
 class BNTmat(SpectralMatrix):
-    """Mass matrix for inner product B_{kj} = (phi_j, psi_k)_w
+    r"""Mass matrix for inner product 
+
+    .. math::
+
+        B_{kj} = (\phi_j, \psi_k)_w
 
     where
 
-        j = 0, 1, ..., N and k = 1, 2, ..., N-2
+    .. math::
 
-    psi_k is the Shen Neumann basis function and phi_j is a Chebyshev
-    basis function.
+        j = 0, 1, ..., N \text{ and } k = 1, 2, ..., N-2
 
-    For simplicity, the matrix is stored including the zero index row (k=0)
+    :math:`\psi_k` is the Shen Neumann basis function and :math:`\phi_j` is a 
+    Chebyshev basis function.
+
+    For simplicity, the matrix is stored including the zero index row
+    (:math:`k=0`)
 
     """
     def __init__(self, test, trial):
@@ -248,16 +285,23 @@ class BNTmat(SpectralMatrix):
 
 @inheritdocstrings
 class BNBmat(SpectralMatrix):
-    """Mass matrix for inner product B_{kj} = (phi_j, psi_k)_w
+    r"""Mass matrix for inner product 
+
+    .. math::
+
+        B_{kj} = (\phi_j, \psi_k)_w
 
     where
 
-        j = 0, 1, ..., N-4 and k = 1, 2, ..., N-2
+    .. math::
 
-    psi_k is the Shen Neumann basis function and phi_j is a Shen biharmonic
-    basis function.
+        j = 0, 1, ..., N-4 \text{ and } k = 1, 2, ..., N-2
 
-    For simplicity, the matrix is stored including the zero index row (k=0)
+    :math:`\psi_k` is the Shen Neumann basis function and :math:`\phi_j` is a 
+    Shen biharmonic basis function.
+
+    For simplicity, the matrix is stored including the zero index row
+    (:math:`k=0`)
 
     """
     def __init__(self, test, trial):
@@ -275,14 +319,19 @@ class BNBmat(SpectralMatrix):
 
 @inheritdocstrings
 class BTTmat(SpectralMatrix):
-    """Mass matrix for inner product B_{kj} = (T_j, T_k)_w
+    r"""Mass matrix for inner product 
+
+    .. math::
+
+        B_{kj} = (T_j, T_k)_w
 
     where
 
-        j = 0, 1, ..., N and k = 0, 1, ..., N
+    .. math::
 
-    and T_j is the jth order Chebyshev function of the first kind.
+        j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N
 
+    and :math:`T_j` is the jth order Chebyshev function of the first kind.
     """
     def __init__(self, test, trial):
         assert isinstance(test[0], CB)
@@ -304,13 +353,19 @@ class BTTmat(SpectralMatrix):
 
 @inheritdocstrings
 class BNNmat(SpectralMatrix):
-    """Mass matrix for inner product B_{kj} = (phi_j, phi_k)_w
+    r"""Mass matrix for inner product 
+
+    .. math::
+
+        B_{kj} = (\phi_j, \phi_k)_w
 
     where
 
-        j = 1, 2, ..., N-2 and k = 1, 2, ..., N-2
+    .. math::
 
-    and phi_j is the Shen Neumann basis function.
+        j = 1, 2, ..., N-2 \text{ and } k = 1, 2, ..., N-2
+
+    and :math:`\phi_j` is the Shen Neumann basis function.
 
     The matrix is stored including the zero index row and column
 
@@ -337,15 +392,20 @@ class BNNmat(SpectralMatrix):
 
 @inheritdocstrings
 class BDTmat(SpectralMatrix):
-    """Mass matrix for inner product B_{kj} = (T_j, phi_k)_w
+    r"""Mass matrix for inner product
+
+    .. math::
+
+        B_{kj} = (T_j, \phi_k)_w
 
     where
 
-        j = 0, 1, ..., N and k = 0, 1, ..., N-2
+    .. math::
 
-    phi_k is the Shen Dirichlet basis function and T_j is the Chebyshev basis
-    function.
+        j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N-2
 
+    :math:`\phi_k` is the Shen Dirichlet basis function and :math:`T_j` is the
+    Chebyshev basis function.
     """
     def __init__(self, test, trial):
         assert isinstance(test[0], SD)
@@ -359,15 +419,20 @@ class BDTmat(SpectralMatrix):
 
 @inheritdocstrings
 class BTDmat(SpectralMatrix):
-    """Mass matrix for inner product B_{kj} = (phi_j, T_k)_w
+    r"""Mass matrix for inner product
+
+    .. math::
+
+        B_{kj} = (\phi_j, T_k)_w
 
     where
 
-        j = 0, 1, ..., N-2 and k = 0, 1, ..., N
+    .. math::
 
-    phi_j is the Shen Dirichlet basis function and T_k is the Chebyshev basis
-    function.
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N
 
+    :math:`\phi_j` is the Shen Dirichlet basis function and :math:`T_k` is the 
+    Chebyshev basis function.
     """
     def __init__(self, test, trial):
         assert isinstance(test[0], CB)
@@ -381,15 +446,20 @@ class BTDmat(SpectralMatrix):
 
 @inheritdocstrings
 class BTNmat(SpectralMatrix):
-    """Mass matrix for inner product B_{kj} = (phi_j, T_k)_w
+    r"""Mass matrix for inner product 
+
+    .. math::
+
+        B_{kj} = (\phi_j, T_k)_w
 
     where
 
-        j = 1, 2, ..., N-2 and k = 0, 1, ..., N
+    .. math::
 
-    phi_J is the Shen Neumann basis function and T_k is the Chebyshev basis
-    function.
+        j = 1, 2, ..., N-2 \text{ and } k = 0, 1, ..., N
 
+    :math:`\phi_j` is the Shen Neumann basis function and :math:`T_k` is the 
+    Chebyshev basis function.
     """
     def __init__(self, test, trial):
         assert isinstance(test[0], CB)
@@ -404,14 +474,19 @@ class BTNmat(SpectralMatrix):
 
 @inheritdocstrings
 class BBBmat(SpectralMatrix):
-    """Mass matrix for inner product B_{kj} = (psi_j, psi_k)_w
+    r"""Mass matrix for inner product 
+
+    .. math::
+
+        B_{kj} = (\psi_j, \psi_k)_w
 
     where
 
-        j = 0, 1, ..., N-4 and k = 0, 1, ..., N-4
+    .. math::
 
-    and psi_j is the Shen Biharmonic basis function.
+        j = 0, 1, ..., N-4 \text{ and } k = 0, 1, ..., N-4
 
+    and :math:`\psi_j` is the Shen Biharmonic basis function.
     """
     def __init__(self, test, trial):
         assert isinstance(test[0], SB)
@@ -462,15 +537,20 @@ class BBBmat(SpectralMatrix):
 
 @inheritdocstrings
 class BBDmat(SpectralMatrix):
-    """Mass matrix for inner product B_{kj} = (phi_j, psi_k)_w
+    r"""Mass matrix for inner product
+
+    .. math::
+
+        B_{kj} = (\phi_j, \psi_k)_w
 
     where
 
-        j = 0, 1, ..., N-2 and k = 0, 1, ..., N-4
+    .. math::
 
-    and phi_j is the Shen Dirichlet basis function and psi_k the Shen
-    Biharmonic basis function.
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-4
 
+    and :math:`\phi_j` is the Shen Dirichlet basis function and :math:`\psi_k`
+    the Shen Biharmonic basis function.
     """
     def __init__(self, test, trial):
         assert isinstance(test[0], SB)
@@ -514,14 +594,20 @@ class BBDmat(SpectralMatrix):
 
 @inheritdocstrings
 class CDNmat(SpectralMatrix):
-    """Matrix for inner product C_{kj} = (psi'_j, phi_k)_w
+    r"""Matrix for inner product 
+
+    .. math::
+
+        C_{kj} = (\psi'_j, \phi_k)_w
 
     where
 
-        j = 1, 2, ..., N-2 and k = 0, 1, ..., N-2
+    .. math::
 
-    and phi_k is the Shen Dirichlet basis function and psi_j the Shen Neumann
-    basis function.
+        j = 1, 2, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\phi_k` is the Shen Dirichlet basis function and :math:`\psi_j`
+    the Shen Neumann basis function.
 
     For simplicity, the matrix is stored including the zero index row (k=0)
 
@@ -546,14 +632,19 @@ class CDNmat(SpectralMatrix):
 
 @inheritdocstrings
 class CDDmat(SpectralMatrix):
-    """Matrix for inner product C_{kj} = (phi'_j, phi_k)_w
+    r"""Matrix for inner product 
+
+    .. math::
+
+        C_{kj} = (\phi'_j, \phi_k)_w
 
     where
 
-        j = 0, 1, ..., N-2 and k = 0, 1, ..., N-2
+    .. math::
 
-    and phi_k is the Shen Dirichlet basis function.
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
 
+    and :math:`\phi_k` is the Shen Dirichlet basis function.
     """
     def __init__(self, test, trial):
         assert isinstance(test[0], SD)
@@ -589,14 +680,20 @@ class CDDmat(SpectralMatrix):
 
 @inheritdocstrings
 class CNDmat(SpectralMatrix):
-    """Matrix for inner product C_{kj} = (phi'_j, psi_k)_w
+    r"""Matrix for inner product 
+
+    .. math::
+
+        C_{kj} = (\phi'_j, \psi_k)_w
 
     where
 
-        j = 0, 1, ..., N-2 and k = 1, 2, ..., N-2
+    .. math::
 
-    and phi_j is the Shen Dirichlet basis function and psi_k the Shen Neumann
-    basis function.
+        j = 0, 1, ..., N-2 \text{ and } k = 1, 2, ..., N-2
+
+    and :math:`\phi_j` is the Shen Dirichlet basis function and :math:`\psi_k`
+    the Shen Neumann basis function.
 
     For simplicity, the matrix is stored including the zero index coloumn (j=0)
 
@@ -622,15 +719,20 @@ class CNDmat(SpectralMatrix):
 
 @inheritdocstrings
 class CTDmat(SpectralMatrix):
-    """Matrix for inner product C_{kj} = (phi'_j, T_k)_w
+    r"""Matrix for inner product 
+
+    .. math::
+
+        C_{kj} = (\phi'_j, T_k)_w
 
     where
 
-        j = 0, 1, ..., N-2 and k = 0, 1, ..., N
+    .. math::
 
-    phi_j is the Shen Dirichlet basis function and T_k is the Chebyshev basis
-    function.
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N
 
+    :math:`\phi_j` is the Shen Dirichlet basis function and :math:`T_k` is the
+    Chebyshev basis function.
     """
     def __init__(self, test, trial):
         assert isinstance(test[0], CB)
@@ -645,15 +747,20 @@ class CTDmat(SpectralMatrix):
 
 
 class CDTmat(SpectralMatrix):
-    """Matrix for inner product C_{kj} = (T'_j, phi_k)_w
+    r"""Matrix for inner product 
+
+    .. math::
+
+        C_{kj} = (T'_j, \phi_k)_w
 
     where
 
-        j = 0, 1, ..., N and k = 0, 1, ..., N-2
+    .. math::
 
-    phi_k is the Shen Dirichlet basis function and T_j is the Chebyshev basis
-    function.
+        j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N-2
 
+    :math:`\phi_k` is the Shen Dirichlet basis function and :math:`T_j` is the
+    Chebyshev basis function.
     """
     def __init__(self, test, trial):
         assert isinstance(test[0], SD)
@@ -666,15 +773,20 @@ class CDTmat(SpectralMatrix):
 
 @inheritdocstrings
 class CBDmat(SpectralMatrix):
-    """Matrix for inner product C_{kj} = (phi'_j, psi_k)_w
+    r"""Matrix for inner product
+
+    .. math::
+
+        C_{kj} = (\phi'_j, \psi_k)_w
 
     where
 
-        j = 0, 1, ..., N-2 and k = 0, 1, ..., N-4
+    .. math::
 
-    phi_j is the Shen Dirichlet basis and psi_k the Shen Biharmonic basis
-    function.
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-4
 
+    :math:`\phi_j` is the Shen Dirichlet basis and :math:`\psi_k` the Shen
+    Biharmonic basis function.
     """
     def __init__(self, test, trial):
         assert isinstance(test[0], SB)
@@ -711,15 +823,18 @@ class CBDmat(SpectralMatrix):
 
 @inheritdocstrings
 class CDBmat(SpectralMatrix):
-    """Matrix for inner product C_{kj} = (psi'_j, phi_k)_w
+    r"""Matrix for inner product 
+
+    .. math::
+
+        C_{kj} = (\psi'_j, \phi_k)_w
 
     where
 
-        j = 0, 1, ..., N-4 and k = 0, 1, ..., N-2
+        j = 0, 1, ..., N-4 \text{ and } k = 0, 1, ..., N-2
 
-    phi_k is the Shen Dirichlet basis function and psi_j the Shen Biharmonic
-    basis function.
-
+    :math:`\phi_k` is the Shen Dirichlet basis function and :math:`\psi_j` the
+    Shen Biharmonic basis function.
     """
     def __init__(self, test, trial):
         assert isinstance(test[0], SD)
@@ -758,13 +873,19 @@ class CDBmat(SpectralMatrix):
 
 @inheritdocstrings
 class ABBmat(SpectralMatrix):
-    """Stiffness matrix for inner product A_{kj} = (psi''_j, psi_k)_w
+    r"""Stiffness matrix for inner product 
+
+    .. math::
+
+        A_{kj} = (\psi''_j, \psi_k)_w
 
     where
 
-        j = 0, 1, ..., N-4 and k = 0, 1, ..., N-4
+    .. math::
 
-    and psi_k is the Shen Biharmonic basis function.
+        j = 0, 1, ..., N-4 \text{ and } k = 0, 1, ..., N-4
+
+    and :math:`\psi_k` is the Shen Biharmonic basis function.
 
     """
     def __init__(self, test, trial):
@@ -807,13 +928,19 @@ class ABBmat(SpectralMatrix):
 
 @inheritdocstrings
 class ADDmat(SpectralMatrix):
-    """Stiffness matrix for inner product A_{kj} = (psi''_j, psi_k)_w
+    r"""Stiffness matrix for inner product 
+
+    .. math::
+
+        A_{kj} = (\psi''_j, \psi_k)_w
 
     where
 
-        j = 0, 1, ..., N-2 and k = 0, 1, ..., N-2
+    .. math::
 
-    and psi_k is the Shen Dirichlet basis function.
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the Shen Dirichlet basis function.
 
     """
     def __init__(self, test, trial):
@@ -891,13 +1018,19 @@ class ADDmat(SpectralMatrix):
 
 @inheritdocstrings
 class ANNmat(SpectralMatrix):
-    """Stiffness matrix for inner product A_{kj} = (phi''_j, phi_k)_w
+    r"""Stiffness matrix for inner product 
+
+    .. math::
+
+        A_{kj} = (\phi''_j, \phi_k)_w
 
     where
 
-        j = 1, 2, ..., N-2 and k = 1, 2, ..., N-2
+    .. math::
 
-    and phi_k is the Shen Neumann basis function.
+        j = 1, 2, ..., N-2 \text{ and } k = 1, 2, ..., N-2
+
+    and :math:`\phi_k` is the Shen Neumann basis function.
 
     """
     def __init__(self, test, trial):
@@ -970,13 +1103,19 @@ class ANNmat(SpectralMatrix):
 
 @inheritdocstrings
 class ATTmat(SpectralMatrix):
-    """Stiffness matrix for inner product A_{kj} = (psi''_j, psi_k)_w
+    r"""Stiffness matrix for inner product
+
+    .. math::
+
+        A_{kj} = (\psi''_j, \psi_k)_w
 
     where
 
-        j = 0, 1, ..., N and k = 0, 1, ..., N
+    .. math::
 
-    and psi_k is the Chebyshev basis function.
+        j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N
+
+    and :math:`\psi_k` is the Chebyshev basis function.
 
     """
     def __init__(self, test, trial):
@@ -992,14 +1131,19 @@ class ATTmat(SpectralMatrix):
 
 @inheritdocstrings
 class SBBmat(SpectralMatrix):
-    """Biharmonic matrix for inner product S_{kj} = (psi''''_j, psi_k)_w
+    r"""Biharmonic matrix for inner product 
+
+    .. math::
+
+        S_{kj} = (\psi''''_j, \psi_k)_w
 
     where
+    
+    .. math::
 
-        j = 0, 1, ..., N-4 and k = 0, 1, ..., N-4
+        j = 0, 1, ..., N-4 \text{ and } k = 0, 1, ..., N-4
 
-    and psi_k is the Shen Biharmonic basis function.
-
+    and :math:`\psi_k` is the Shen Biharmonic basis function.
     """
     def __init__(self, test, trial):
         assert isinstance(test[0], SB)

@@ -562,13 +562,15 @@ class SpectralBase(object):
     def evaluate_expansion_all(self, input_array, output_array):
         r"""Evaluate expansion on entire mesh
 
-           :math:`f(x_j) = \sum_k f_k T_k(x_j)`  for all j = 0, 1, ..., N
+        .. math::
+
+            f(x_j) = \sum_k f_k T_k(x_j) \quad \text{ for all} \quad j = 0, 1, ..., N
 
         Parameters
         ----------
-            input_array : array
+            input_array : :math:`f_k`
                           Expansion coefficients
-            output_array : array
+            output_array : :math:`f(x_j)`
                            Function values on quadrature mesh
 
         """
