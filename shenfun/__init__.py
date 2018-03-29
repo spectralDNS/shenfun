@@ -69,20 +69,20 @@ def energy_fourier(u, T):
 
 
 def solve(A, b, u=None, axis=0):
-    """Solve Au=b and return u
+    """Solve matrix system Au = b
 
-    The matrix A must be square
-
-    args:
-        A                         SparseMatrix
-        b      (input/output)     Array
-
-    kwargs:
-        u      (output)           Array
-        axis       int            The axis to solve along
+    Parameters
+    ----------
+        A : SparseMatrix
+        b : array
+            Array of right hand side on entry and solution on exit unless
+            u is provided.
+        u : array, optional
+            Output array
+        axis : int, optional
+               The axis over which to solve if b and u are multidimensional
 
     If u is not provided, then b is overwritten with the solution and returned
-
     """
     assert A.shape[0] == A.shape[1]
     assert isinstance(A, matrixbase.SparseMatrix)

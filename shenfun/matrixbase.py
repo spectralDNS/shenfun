@@ -23,7 +23,6 @@ class SparseMatrix(dict):
     >>> d = {-1: 1,
               0: -2,
               1: 1}
-
     >>> SparseMatrix(d, (N, N))
 
     In case of variable values, store the entire diagonal
@@ -32,7 +31,6 @@ class SparseMatrix(dict):
     >>> d = {-1: np.ones(N-1),
               0: -2*np.ones(N),
               1: np.ones(N-1)}
-
     >>> SparseMatrix(d, (N, N))
 
     """
@@ -48,19 +46,26 @@ class SparseMatrix(dict):
 
         Returns c = dot(self, v)
 
-        args:
-            v    (input)         Numpy array of ndim>=1
-            c    (output)        Numpy array of same ndim as v
+        Parameters
+        ----------
+            v : array  
+                Numpy input array of ndim>=1
+            c : array
+                Numpy output array of same ndim as v
+            format : str
+                     Choice for computation
+                    
+                     csr - Compressed sparse row format      
+                    
+                     dia - Sparse matrix with DIAgonal storage
+ 
+                     python - Use numpy and vectorization
 
-        kwargs:
-            format  ('csr',      Choice for computation
-                     'dia',      format = 'csr' or 'dia' uses sparse matrices
-                     'python',   from scipy.sparse and their built in matvec.
-                     'self',     format = 'python' uses numpy and vectorization
-                     'cython')   'self' and 'cython' are keywords reserved for
-                                 methods overloaded in subclasses, and may not
-                                 be implemented for all matrices.
+                     self - To be implemented in subclass
 
+                     cython - Cython implementation that may be implemented in subclass
+        
+        
         """
         assert v.shape == c.shape
         N, M = self.shape
@@ -96,8 +101,14 @@ class SparseMatrix(dict):
     def diags(self, format='dia'):
         """Return a regular sparse matrix of specified format
 
-        kwargs:
-            format  ('dia', 'csr')
+        Parameters
+        ----------
+            format : str, optional
+                     Choice of matrix type (see scipy.sparse.diags)
+ 
+                     dia - Sparse matrix with DIAgonal storage
+            
+                     csr - Compressed sparse row
 
         """
         if self._diags is None:
@@ -227,10 +238,13 @@ class SparseMatrix(dict):
 
         where A is the current matrix (self)
 
-        args:
-            b    (input/output)    Vector of right hand side on entry.
-                                   Solution on exit unless u is provided.
-            u    (output)          Optional output vector
+        Parameters
+        ----------
+            b : array
+                Array of right hand side on entry and solution on exit unless
+                u is provided.
+            u : array, optional
+                Output array
 
         Vectors may be one- or multidimensional.
 
@@ -267,112 +281,141 @@ class SparseMatrix(dict):
 class SpectralMatrix(SparseMatrix):
     r"""Base class for inner product matrices
 
-    args:
-        d                            Dictionary, where keys are the diagonal
-                                     offsets and values the diagonals
-        trial  (basis, derivative)   tuple, where basis is an instance of
-                                     a class for one of the bases in
-                                         - shenfun.legendre.bases
-                                         - shenfun.chebyshev.bases
-                                         - shenfun.fourier.bases
-                                     derivative is an integer, and represents
-                                     the number of times the trial function
-                                     should be differentiated. Representing
-                                     matrix column.
-        test   (basis, derivative)   As trial, but representing matrix row.
-        scale  float                 Scale matrix with this constant
+    Parameters
+    ----------
+        d : dict
+            Dictionary, where keys are the diagonal offsets and values the
+            diagonals
+        trial : 2-tuple of (basis, int)
+                The basis is an instance of a class for one of the bases in
 
+                    - shenfun.legendre.bases
+                    
+                    - shenfun.chebyshev.bases
+
+                    - shenfun.fourier.bases
+
+                The int represents the number of times the trial function
+                should be differentiated. Representing matrix column.
+        test : 2-tuple of (basis, int) 
+               As trial, but representing matrix row.
+        scale : float
+                Scale matrix with this constant or array of constants
 
     The matrices are assumed to be sparse diagonal. The matrices are
     inner products of trial and test functions from one of 9 function
     spaces
 
+    Denoting the :math:`k`'th basis function as :math:`\phi_k` and basis
+    as V we get the following:
+
     Chebyshev basis:
 
-      Chebyshev basis of first kind
+        Chebyshev basis of first kind
 
-        T_k,
-        span(T_k) for k = 0, 1, ..., N
+        .. math::
+ 
+            \phi_k &= T_k \\
+            V &= span\{\phi_k\}_{k=0}^{N}
 
-      For homogeneous Dirichlet boundary conditions:
+        For homogeneous Dirichlet boundary conditions:
+      
+        .. math::
+      
+            \phi_k &= T_k - T_{k+2} \\
+            V &= span\{\phi_k\}_{k=0}^{N-2}
 
-        phi_k = T_k - T_{k+2},
-        span(phi_k) for k = 0, 1, ..., N-2
+        For homogeneous Neumann boundary conditions:
 
-      For homogeneous Neumann boundary conditions:
+        .. math::
 
-        phi_k = T_k - (k/(k+2))**2T_{k+2},
-        span(phi_k) for k = 1, 2, ..., N-2
+            \phi_k &= T_k - \left(\frac{k}{k+2}\right)^2T_{k+2} \\
+            V &= span\{\phi_k\}_{k=1}^{N-2}
 
-      For Biharmonic basis with both homogeneous Dirichlet
-      and Neumann:
+        For Biharmonic basis with both homogeneous Dirichlet and Neumann:
 
-        psi_k = T_k - 2(k+2)/(k+3)*T_{k+2} + (k+1)/(k+3)*T_{k+4},
-        span(psi_k) for k = 0, 1, ..., N-4
+        .. math::
 
-      The scalar product is computed as a weighted inner product with
-      w=1/sqrt(1-x**2) the weights.
+            \phi_k &= T_k - 2 \frac{k+2}{k+3} T_{k+2} + \frac{k+1}{k+3} T_{k+4} \\
+            V &= span\{\phi_k\}_{k=0}^{N-4}
+
+        The scalar product is computed as a weighted inner product with 
+        :math:`w=1/\sqrt{1-x^2}` the weights.
 
     Legendre basis:
 
-      Regular Legendre
+        Regular Legendre
 
-        L_k
-        span(L_k, k=0,1,...,N)
+        .. math::
 
-      Dirichlet boundary conditions
+            \phi_k &= L_k \\
+            V &= span\{\phi_k\}_{k=0}^{N}
 
-        xi_k = L_k-L_{k+2}
-        span(xi_k, k=0,1,...,N-2)
+        Dirichlet boundary conditions
 
-      Homogeneous Neumann boundary conditions:
+        .. math::
 
-        phi_k = L_k - k*(k+1)/(k+2)/(k+3)L_{k+2},
-        span(phi_k) for k = 1, 2, ..., N-2
+            \phi_k &= L_k-L_{k+2} \\
+            V &= span\{\phi_k\}_{k=0}^{N-2}
 
-      Both homogeneous Dirichlet and Neumann:
+        Homogeneous Neumann boundary conditions:
 
-        psi_k = L_k -2*(2*k+5)/(2*k+7)*L_{k+2} + (2*k+3)/(2*k+7)*L_{k+4},
-        span(psi_k) for k = 0, 1, ..., N-4
+        .. math::
+
+            \phi_k &= L_k - \frac{k(k+1)}{(k+2)(k+3)}L_{k+2} \\
+            V &= span\{\phi_k\}_{k=1}^{N-2}
+
+        Both homogeneous Dirichlet and Neumann:
+
+        .. math::
+
+            \psi_k &= L_k - 2 \frac{2k+5}{2k+7} L_{k+2} + \frac{2k+3}{2k+7} L_{k+4} \\
+            V &= span\{\phi_k\}_{k=0}^{N-4}
 
     Fourier basis:
 
-        F_k = exp(ikx)
-        span(F_k, k=-N/2, -N/2+1, ..., N/2-1)
+        .. math::
 
-    Examples:
+            \phi_k &= exp(ikx) \\
+            V &= span\{\phi_k\}_{k=-N/2}^{N/2-1}
+
+    Examples
+    --------
 
     Mass matrix for Chebyshev Dirichlet basis:
 
-        (phi_k, phi_j)_w = \int_{-1}^{1} phi_k(x) phi_j(x) w(x) dx
+    .. math::
+
+        (\phi_k, \phi_j)_w = \int_{-1}^{1} \phi_k(x) \phi_j(x) w(x) dx
 
     Stiffness matrix for Chebyshev Dirichlet basis:
 
-        (phi_k'', phi_j)_w = \int_{-1}^{1} phi_k''(x) phi_j(x) w(x) dx
+    .. math::
 
-    etc.
+        (\phi_k'', \phi_j)_w = \int_{-1}^{1} \phi_k''(x) \phi_j(x) w(x) dx
 
     The matrices can be automatically created using, e.g., for the mass
     matrix of the Dirichlet space
 
-      M = SpectralMatrix({}, (ShenDirichletBasis(18), 0), (ShenDirichletBasis(18), 0))
+    >>> SD = ShenDirichletBasis
+    >>> N = 16
+    >>> M = SpectralMatrix({}, (SD(N), 0), (SD(N), 0))
 
-    where the first (ShenDirichletBasis(18), 0) represents the trial function and
-    the second the test function. The stiffness matrix can be obtained as
+    where the first (SD(N), 0) represents the test function and
+    the second the trial function. The stiffness matrix can be obtained as
 
-      A = SpectralMatrix({}, (ShenDirichletBasis(18), 0), (ShenDirichletBasis(18), 2))
+    >>> A = SpectralMatrix({}, (SD(N), 0), (SD(N), 2))
 
-    where (ShenDirichletBasis(18), 2) signals that we use the second derivative
-    of this trial function. The number (here 18) is the number of quadrature
-    points used for the basis.
+    where (SD(N), 2) signals that we use the second derivative of this trial 
+    function. The number N is the number of quadrature points used for the 
+    basis.
 
     The automatically created matrices may be overloaded with more exactly
     computed diagonals.
 
     Note that matrices with the Neumann basis are stored using index space
-    k = 0, 1, ..., N-2, i.e., including the zero index for a nonzero average
-    value.
-
+    :math:`k = 0, 1, ..., N-2`, i.e., including the zero index for a nonzero 
+    average value.
     """
     def __init__(self, d, test, trial, scale=1.0):
         if isinstance(test[1], (int, np.integer)):
@@ -432,14 +475,21 @@ class SpectralMatrix(SparseMatrix):
         return c
 
     def solve(self, b, u=None, axis=0):
-        """Solve self u = b and return u
+        """Solve matrix system Au = b
 
-        The matrix self must be square
+        where A is the current matrix (self)
 
-        args:
-            u   (output)    Array
-            b   (input)     Array
+        Parameters
+        ----------
+            b : array
+                Array of right hand side on entry and solution on exit unless
+                u is provided.
+            u : array, optional
+                Output array
+            axis : int, optional
+                   The axis over which to solve if b and u are multidimensional
 
+        Vectors may be one- or multidimensional.
         """
         from shenfun import solve as default_solve
         u = default_solve(self, b, u, axis=axis)
@@ -569,15 +619,16 @@ class SpectralMatrix(SparseMatrix):
 def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-12):
     """Return SparseMatrix version of M
 
-    args:
-        M                    Dense matrix. Numpy array of ndim=2
-
-    kwargs:
-        abstol     (float)   Tolerance. Only diagonals with max(|d|) < tol
-                             are kept in the returned SparseMatrix
-        reltol     (float)   Relative tolerance. Only diagonals with
-                             max(|d|)/max(|M|) > reltol are kept in
-                             the returned SparseMatrix
+    Parameters
+    ----------
+        M : Numpy array of ndim=2
+        abstol : float
+                 Tolerance. Only diagonals with max(|d|) < tol are kept in the
+                 returned SparseMatrix
+        reltol : float
+                 Relative tolerance. Only diagonals with 
+                 max(|d|)/max(|M|) > reltol are kept in the returned 
+                 SparseMatrix
     """
     d = {}
     relmax = abs(M).max()
@@ -592,3 +643,4 @@ def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-12):
             d[-i] = l
 
     return SparseMatrix(d, M.shape)
+
