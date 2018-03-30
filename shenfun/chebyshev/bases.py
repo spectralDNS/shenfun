@@ -67,11 +67,8 @@ class ChebyshevBase(SpectralBase):
             Number of quadrature points
         quad : str, optional
                Type of quadrature
-          
-               GL - Chebyshev-Gauss-Lobatto
-      
-               GC - Chebyshev-Gauss
-
+                   - GL - Chebyshev-Gauss-Lobatto
+                   - GC - Chebyshev-Gauss
         domain : 2-tuple of floats, optional
                  The computational domain
     """

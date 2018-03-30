@@ -9,8 +9,10 @@ from shenfun.matrixbase import SparseMatrix
 class TDMA(object):
     """Tridiagonal matrix solver
 
-    args:
-        mat    Symmetric tridiagonal matrix with diagonals in offsets -2, 0, 2
+    Parameters
+    ----------
+        mat : SparseMatrix
+              Symmetric tridiagonal matrix with diagonals in offsets -2, 0, 2
 
     """
     # pylint: disable=too-few-public-methods
@@ -61,12 +63,16 @@ class TDMA(object):
 class PDMA(object):
     """Pentadiagonal matrix solver
 
-    args:
-        mat       Symmetric pentadiagonal matrix with diagonals in offsets
-                  -4, -2, 0, 2, 4
+    Parameters
+    ----------
+        mat : SparseMatrix
+              Symmetric pentadiagonal matrix with diagonals in offsets
+              -4, -2, 0, 2, 4
+        solver : str, optional
+                 Choose implementation
 
-    kwargs:
-        solver      ('cython', 'python')     Choose implementation
+                     - cython - Use efficient cython implementation
+                     - python - Use python/scipy
 
     """
 
@@ -196,7 +202,18 @@ class DiagonalMatrix(np.ndarray):
         return obj
 
     def solve(self, b, u=None, axis=0, neglect_zero_wavenumber=True):
-        """Solve for diagonal matrix"""
+        """Solve for diagonal matrix
+
+        Parameters
+        ----------
+            b : array
+                Right hand side on entry, solution on exit if no u
+            u : array, optional
+                Output array
+            neglect_zero_wavenumber : bool, optional
+                                      Whether or not to neglect zeros on
+                                      diagonal
+        """
         diagonal_array = self
         if neglect_zero_wavenumber:
             d = np.where(diagonal_array == 0, 1, diagonal_array)

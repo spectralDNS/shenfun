@@ -5,17 +5,17 @@ the Legendre family.
 A naming convention is used for the first three capital letters for all matrices.
 The first letter refers to type of matrix.
 
-    Mass matrices start with 'B'
-    One derivative start with 'C'
-    Two derivatives (Laplace) start with 'A'
-    Four derivatives (Biharmonic) start with 'S'
+    - Mass matrices start with 'B'
+    - One derivative start with 'C'
+    - Stiffness - One derivative for test and trial - start with 'A'
+    - Biharmonic - Two derivatives for test and trial - start with 'S'
 
 The next two letters refer to the test and trialfunctions, respectively
 
-    Dirichlet:   'D'
-    Neumann:     'N'
-    Legendre:    'L'
-    Biharmonic:  'B'
+    - Dirichlet:   'D'
+    - Neumann:     'N'
+    - Legendre:    'L'
+    - Biharmonic:  'B'
 
 As such, there are 4 mass matrices, BDDmat, BNNmat, BLLmat and BBBmat,
 corresponding to the four bases above.
@@ -29,15 +29,15 @@ which takes test and trialfunctions along with the number of derivatives
 to be applied to each. As such the mass matrix BDDmat may be looked up
 as
 
-   >>> from shenfun.legendre.matrices import mat
-   >>> from shenfun.legendre.bases import ShenDirichletBasis as SD
-   >>> B = mat[((SD, 0), (SD, 0))]
+>>> from shenfun.legendre.matrices import mat
+>>> from shenfun.legendre.bases import ShenDirichletBasis as SD
+>>> B = mat[((SD, 0), (SD, 0))]
 
 and an instance of the matrix can be created as
 
-   >>> B0 = SD(12)
-   >>> BM = B((B0, 0), (B0, 0))
-   >>> print(BM)
+>>> B0 = SD(12)
+>>> BM = B((B0, 0), (B0, 0))
+>>> print(BM)
 {-2: array([-0.4       , -0.28571429, -0.22222222, -0.18181818, -0.15384615,
         -0.13333333, -0.11764706, -0.10526316]),
  0: array([ 2.4       ,  0.95238095,  0.62222222,  0.46753247,  0.37606838,
@@ -49,12 +49,12 @@ However, this way of creating matrices is not reccommended use. It is far
 more elegant to use the TrialFunction/TestFunction interface, and to
 generate the matrix as an inner product:
 
-    >>> from shenfun import TrialFunction, TestFunction, inner
-    >>> u = TrialFunction(B0)
-    >>> v = TestFunction(B0)
-    >>> BM = inner(u, v)
-    >>> print(BM)
-    >>> print(BM)
+>>> from shenfun import TrialFunction, TestFunction, inner
+>>> u = TrialFunction(B0)
+>>> v = TestFunction(B0)
+>>> BM = inner(u, v)
+>>> print(BM)
+>>> print(BM)
 {-2: array([-0.4       , -0.28571429, -0.22222222, -0.18181818, -0.15384615,
         -0.13333333, -0.11764706, -0.10526316]),
  0: array([ 2.4       ,  0.95238095,  0.62222222,  0.46753247,  0.37606838,
@@ -63,13 +63,14 @@ generate the matrix as an inner product:
         -0.13333333, -0.11764706, -0.10526316])}
 
 To see that this is in fact the BDDmat:
-    >>> print(BM.__class__)
+
+>>> print(BM.__class__)
 <class 'shenfun.legendre.matrices.BDDmat'>
 
 """
 from __future__ import division
 
-__all__ = ['mat']
+#__all__ = ['mat']
 
 import numpy as np
 from shenfun.matrixbase import SpectralMatrix
@@ -87,13 +88,19 @@ SN = bases.ShenNeumannBasis
 
 @inheritdocstrings
 class BLLmat(SpectralMatrix):
-    """Mass matrix for inner product B_{kj} = (L_j, L_k)_w
+    r"""Mass matrix for inner product 
+
+    .. math::
+
+        B_{kj} = (L_j, L_k)_w
 
     where
 
-        j = 0, 1, ..., N and k = 0, 1, ..., N
+    .. math::
 
-    and L_k is the Legendre basis function.
+        j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N
+
+    and :math:`L_k` is the Legendre basis function.
 
     """
     def __init__(self, test, trial):
@@ -126,13 +133,19 @@ class BLLmat(SpectralMatrix):
 
 @inheritdocstrings
 class BDDmat(SpectralMatrix):
-    """Mass matrix for inner product B_{kj} = (psi_j, psi_k)_w
+    r"""Mass matrix for inner product 
+
+    .. math::
+
+        B_{kj} = (\psi_j, \psi_k)_w
 
     where
 
-        j = 0, 1, ..., N-2 and k = 0, 1, ..., N-2
+    .. math::
 
-    and psi_k is the Shen Legendre Dirichlet basis function.
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
 
     """
     def __init__(self, test, trial):
@@ -157,13 +170,19 @@ class BDDmat(SpectralMatrix):
 
 @inheritdocstrings
 class BNNmat(SpectralMatrix):
-    """Mass matrix for inner product B_{kj} = (psi_j, psi_k)_w
+    r"""Mass matrix for inner product 
+
+    .. math::
+
+        B_{kj} = (\psi_j, \psi_k)_w
 
     where
 
-        j = 0, 1, ..., N-2 and k = 0, 1, ..., N-2
+    .. math::
 
-    and psi_k is the Shen Legendre Neumann basis function.
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the Shen Legendre Neumann basis function.
 
     """
     def __init__(self, test, trial):
@@ -175,13 +194,19 @@ class BNNmat(SpectralMatrix):
 
 @inheritdocstrings
 class BBBmat(SpectralMatrix):
-    """Mass matrix for inner product B_{kj} = (psi_j, psi_k)_w
+    r"""Mass matrix for inner product 
+
+    .. math::
+
+        B_{kj} = (\psi_j, \psi_k)_w
 
     where
 
-        j = 0, 1, ..., N-2 and k = 0, 1, ..., N-2
+    .. math::
 
-    and psi_k is the Shen Legendre Biharmonic basis function.
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the Shen Legendre Biharmonic basis function.
 
     """
     def __init__(self, test, trial):
@@ -206,13 +231,19 @@ class BBBmat(SpectralMatrix):
 
 @inheritdocstrings
 class ADDmat(SpectralMatrix):
-    """Stiffness matrix for inner product A_{kj} = (psi'_j, psi'_k)_w
+    r"""Stiffness matrix for inner product 
+
+    .. math::
+
+        A_{kj} = (\psi'_j, \psi'_k)_w
 
     where
 
-        j = 0, 1, ..., N-2 and k = 0, 1, ..., N-2
+    .. math::
 
-    and psi_k is the Shen Legendre Dirichlet basis function.
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
 
     """
     def __init__(self, test, trial):
@@ -267,13 +298,19 @@ class ADDmat(SpectralMatrix):
 
 @inheritdocstrings
 class GDDmat(SpectralMatrix):
-    """Stiffness matrix for inner product G_{kj} = (psi''_j, psi_k)_w
+    r"""Stiffness matrix for inner product 
+
+    .. math::
+
+        G_{kj} = (\psi''_j, \psi_k)_w
 
     where
 
-        j = 0, 1, ..., N-2 and k = 0, 1, ..., N-2
+    .. math::
 
-    and psi_k is the Shen Legendre Dirichlet basis function.
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
 
     """
     def __init__(self, test, trial):
@@ -329,13 +366,19 @@ class GDDmat(SpectralMatrix):
 
 @inheritdocstrings
 class ANNmat(SpectralMatrix):
-    """Stiffness matrix for inner product A_{kj} = (psi'_j, psi'_k)_w
+    r"""Stiffness matrix for inner product 
+
+    .. math::
+
+        A_{kj} = (\psi'_j, \psi'_k)_w
 
     where
 
-        j = 0, 1, ..., N-2 and k = 0, 1, ..., N-2
+    .. math::
 
-    and psi_k is the Shen Legendre Neumann basis function.
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the Shen Legendre Neumann basis function.
 
     """
     def __init__(self, test, trial):
@@ -349,13 +392,19 @@ class ANNmat(SpectralMatrix):
 
 @inheritdocstrings
 class ABBmat(SpectralMatrix):
-    """Stiffness matrix for inner product A_{kj} = (psi'_j, psi'_k)_w
+    r"""Stiffness matrix for inner product 
+
+    .. math::
+
+        A_{kj} = (\psi'_j, \psi'_k)_w
 
     where
+ 
+    .. math::
 
-        j = 0, 1, ..., N-4 and k = 0, 1, ..., N-4
+        j = 0, 1, ..., N-4 \text{ and } k = 0, 1, ..., N-4
 
-    and psi_k is the Shen Legendre Biharmonic basis function.
+    and :math:`\psi_k` is the Shen Legendre Biharmonic basis function.
 
     """
     def __init__(self, test, trial):
@@ -372,13 +421,19 @@ class ABBmat(SpectralMatrix):
 
 @inheritdocstrings
 class GLLmat(SpectralMatrix):
-    """Stiffness matrix for inner product B_{kj} = (L_j'', L_k)_w
+    r"""Stiffness matrix for inner product 
+
+    .. math::
+
+        B_{kj} = (L_j'', L_k)_w
 
     where
+    
+    .. math::
 
-        j = 0, 1, ..., N and k = 0, 1, ..., N
+        j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N
 
-    and L_k is the Legendre basis function.
+    and :math:`L_k` is the Legendre basis function.
 
     """
     def __init__(self, test, trial):
@@ -395,13 +450,19 @@ class GLLmat(SpectralMatrix):
 
 @inheritdocstrings
 class PBBmat(SpectralMatrix):
-    """Stiffness matrix for inner product A_{kj} = (psi_j, psi''_k)_w
+    r"""Stiffness matrix for inner product 
+
+    .. math::
+
+        A_{kj} = (\psi_j, \psi''_k)_w
 
     where
 
-        j = 0, 1, ..., N-4 and k = 0, 1, ..., N-4
+    .. math::
 
-    and psi_k is the Shen Legendre Biharmonic basis function.
+        j = 0, 1, ..., N-4 \text{ and } k = 0, 1, ..., N-4
+
+    and :math:`\psi_k` is the Shen Legendre Biharmonic basis function.
 
     """
     def __init__(self, test, trial):
@@ -417,13 +478,19 @@ class PBBmat(SpectralMatrix):
 
 @inheritdocstrings
 class SBBmat(SpectralMatrix):
-    """Stiffness matrix for inner product A_{kj} = (psi''_j, psi''_k)_w
+    r"""Stiffness matrix for inner product 
+
+    .. math::
+
+        A_{kj} = (\psi''_j, \psi''_k)_w
 
     where
 
-        j = 0, 1, ..., N-4 and k = 0, 1, ..., N-4
+    .. math::
 
-    and psi_k is the Shen Legendre Biharmonic basis function.
+        j = 0, 1, ..., N-4 \text{ and } k = 0, 1, ..., N-4
+
+    and :math:`\psi_k` is the Shen Legendre Biharmonic basis function.
 
     """
     def __init__(self, test, trial):
@@ -436,13 +503,19 @@ class SBBmat(SpectralMatrix):
 
 @inheritdocstrings
 class CLLmat(SpectralMatrix):
-    """Matrix for inner product C_{kj} = (psi_j, psi'_k)_w
+    r"""Matrix for inner product 
+
+    .. math::
+
+        C_{kj} = (\psi_j, \psi'_k)_w
 
     where
 
-        j = 0, 1, ..., N and k = 0, 1, ..., N
+    .. math::
 
-    and psi_k is the Shen Legendre basis function.
+        j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N
+
+    and :math:`\psi_k` is the Shen Legendre basis function.
 
     """
     def __init__(self, test, trial):
@@ -478,13 +551,19 @@ class CLLmat(SpectralMatrix):
 
 @inheritdocstrings
 class CLLmatT(SpectralMatrix):
-    """Matrix for inner product C_{kj} = (psi'_j, psi_k)_w
+    r"""Matrix for inner product 
+
+    .. math::
+
+        C_{kj} = (\psi'_j, \psi_k)_w
 
     where
 
-        j = 0, 1, ..., N and k = 0, 1, ..., N
+    .. math::
 
-    and psi_k is the Shen Legendre basis function.
+        j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N
+
+    and :math:`\psi_k` is the Shen Legendre basis function.
 
     """
     def __init__(self, test, trial):
