@@ -15,8 +15,8 @@ __all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix']
 class SparseMatrix(dict):
     """Base class for sparse matrices
 
-    The data is stored as a dictionary, where keys and values are,
-    respectively, the offsets and values of the diagonal.
+    The data is stored as a dictionary, where keys and values are, respectively,
+    the offsets and values of the diagonal.
 
     A tridiagonal matrix of shape N x N could be created as
 
@@ -25,8 +25,8 @@ class SparseMatrix(dict):
               1: 1}
     >>> SparseMatrix(d, (N, N))
 
-    In case of variable values, store the entire diagonal
-    For an N x N matrix use:
+    In case of variable values, store the entire diagonal. For an N x N matrix
+    use:
 
     >>> d = {-1: np.ones(N-1),
               0: -2*np.ones(N),
@@ -54,17 +54,11 @@ class SparseMatrix(dict):
                 Numpy output array of same ndim as v
             format : str
                      Choice for computation
-                    
-                     csr - Compressed sparse row format      
-                    
-                     dia - Sparse matrix with DIAgonal storage
- 
-                     python - Use numpy and vectorization
-
-                     self - To be implemented in subclass
-
-                     cython - Cython implementation that may be implemented in subclass
-        
+                         - csr - Compressed sparse row format
+                         - dia - Sparse matrix with DIAgonal storage
+                         - python - Use numpy and vectorization
+                         - self - To be implemented in subclass
+                         - cython - Cython implementation that may be implemented in subclass
         
         """
         assert v.shape == c.shape
@@ -105,10 +99,8 @@ class SparseMatrix(dict):
         ----------
             format : str, optional
                      Choice of matrix type (see scipy.sparse.diags)
- 
-                     dia - Sparse matrix with DIAgonal storage
-            
-                     csr - Compressed sparse row
+                         - dia - Sparse matrix with DIAgonal storage
+                         - csr - Compressed sparse row
 
         """
         if self._diags is None:
@@ -288,11 +280,8 @@ class SpectralMatrix(SparseMatrix):
             diagonals
         trial : 2-tuple of (basis, int)
                 The basis is an instance of a class for one of the bases in
-
                     - shenfun.legendre.bases
-                    
                     - shenfun.chebyshev.bases
-
                     - shenfun.fourier.bases
 
                 The int represents the number of times the trial function
@@ -416,6 +405,7 @@ class SpectralMatrix(SparseMatrix):
     Note that matrices with the Neumann basis are stored using index space
     :math:`k = 0, 1, ..., N-2`, i.e., including the zero index for a nonzero 
     average value.
+
     """
     def __init__(self, d, test, trial, scale=1.0):
         if isinstance(test[1], (int, np.integer)):
