@@ -21,17 +21,19 @@ class TensorProductSpace(object):
     The tensorproductspaces are created as Cartesian products from a set of 1D
     bases. The 1D bases are subclassed instances of the SpectralBase class.
 
-    args:
-        comm                 MPI communicator
-        bases                List of 1D bases
-
-    kwargs:
-        axes                 A tuple containing the order of which to perform
-                             transforms. Last item is transformed first. Defaults
-                             to range(len(bases))
-        dtype                Type of input data in real physical space.
-        slab                 Use 1D slab decomposition instead of default pencil.
-
+    Parameters
+    ----------
+        comm : MPI communicator
+        bases : list
+                List of 1D bases
+        axes : int, optional                
+               A tuple containing the order of which to perform transforms. 
+               Last item is transformed first. Defaults to range(len(bases))
+        dtype : data-type, optional
+                Type of input data in real physical space. If not provided it
+                will be inferred from the bases.
+        slab : bool, optional
+               Use 1D slab decomposition instead of default pencil.
     """
     def __init__(self, comm, bases, axes=None, dtype=None, slab=False, **kw):
         self.comm = comm
@@ -139,11 +141,24 @@ class TensorProductSpace(object):
     def convolve(self, a_hat, b_hat, ab_hat):
         """Convolution of a_hat and b_hat
 
-        Note that self should have bases with padding for this method to give
+        Parameters
+        ----------
+            a_hat : array
+                    Input array of shape and type as output array from
+                    self.forward
+            b_hat : array
+                    Input array of shape and type as output array from
+                    self.forward
+            ab_hat : array
+                     Return array of same type and shape as a_hat and b_hat
+
+        Note
+        ----
+        The return array ab_hat is truncated to the shape of a_hat and b_hat.
+        
+        Also note that self should have bases with padding for this method to give
         a convolution without aliasing. The padding is specified when creating
         instances of bases for the TensorProductSpace.
-
-        The return array ab_hat is truncated to the shape of a_hat and b_hat.
 
         FIXME Efficiency due to allocation
         """
@@ -157,11 +172,13 @@ class TensorProductSpace(object):
     def eval(self, points, coefficients, output_array=None):
         """Evaluate Function at points, given expansion coefficients
 
-        args:
-            points        (input)  float or array of floats
-            coefficients  (input)  Array of expansion coefficients
-        kwargs:
-            output_array  (output) Function values at points. Optional.
+        Parameters
+        ----------
+            points : float or array of floats
+            coefficients : array
+                           Expansion coefficients
+            output_array : array, optional
+                           Return array, function values at points
 
         """
         shape = list(self.local_shape())
@@ -184,12 +201,13 @@ class TensorProductSpace(object):
     def eval_cython(self, points, coefficients, output_array=None):
         """Evaluate Function at points, given expansion coefficients
 
-        args:
-            points        (input)  float or array of floats
-            coefficients  (input)  Array of expansion coefficients
-        kwargs:
-            output_array  (output) Function values at points. Optional.
-
+        Parameters
+        ----------
+            points : float or array of floats
+            coefficients : array
+                           Expansion coefficients
+            output_array : array, optional
+                           Return array, function values at points
         """
         out = coefficients
         P = []
@@ -230,11 +248,15 @@ class TensorProductSpace(object):
         """Evaluate expansion at certain points, possibly different from
         the quadrature points
 
-        args:
-            base          (input)    The base class (SpectralBase)
-            points        (input)    Points for evaluation
-            input_array   (input)    Expansion coefficients
-            output_array  (output)   Function values on points
+        Parameters
+        ----------
+            base : SpectralBase
+                   The base class
+            points : float or array of floats
+            coefficients : array
+                           Expansion coefficients
+            output_array : array
+                           Return array, function values at points
 
         """
         V = base.vandermonde(points)
@@ -263,10 +285,13 @@ class TensorProductSpace(object):
     def wavenumbers(self, scaled=False, eliminate_highest_freq=False):
         """Return list of wavenumbers of TensorProductSpace
 
-        kwargs:
-            scaled                  bool  Scale wavenumbers with size of box
-            eliminate_highest_freq  bool  Set Nyquist frequency to zero for
-                                          evenly shaped axes
+        Parameters
+        ----------
+            scaled : bool, optional
+                     Scale wavenumbers with size of box
+            eliminate_highest_freq : bool, optional
+                                     Set Nyquist frequency to zero for evenly
+                                     shaped axes
         """
         K = []
         N = self.shape()
@@ -279,14 +304,17 @@ class TensorProductSpace(object):
                           eliminate_highest_freq=False):
         """Return list of local wavenumbers of TensorProductSpace
 
-        kwargs:
-            broadcast               bool  Broadcast returned wavenumber arrays
-                                          to actual dimensions of TensorProductSpace
-            scaled                  bool  Scale wavenumbers with size of box
-            eliminate_highest_freq  bool  Set Nyquist frequency to zero for
-                                          evenly shaped axes
+        Parameters
+        ----------
+            broadcast : bool, optional
+                        Broadcast returned wavenumber arrays to actual
+                        dimensions of TensorProductSpace
+            scaled : bool, optional
+                     Scale wavenumbers with size of box
+            eliminate_highest_freq : bool, optional
+                                     Set Nyquist frequency to zero for evenly
+                                     shaped axes
         """
-
         k = self.wavenumbers(scaled=scaled, eliminate_highest_freq=eliminate_highest_freq)
         lk = []
         for axis, (n, s) in enumerate(zip(k, self.local_slice(True))):
@@ -311,9 +339,11 @@ class TensorProductSpace(object):
         """Return list of 1D physical mesh for each dimension of
         TensorProductSpace
 
-        args:
-            broadcast    bool    Broadcast each 1D mesh to real shape of
-                                 TensorProductSpace
+        Parameters
+        ----------
+            broadcast : bool, optional
+                        Broadcast each 1D mesh to real shape of
+                        TensorProductSpace
         """
         m = self.mesh()
         lm = []
@@ -328,6 +358,8 @@ class TensorProductSpace(object):
     def shape(self):
         """Return shape of TensorProductSpace in physical space
 
+        Note
+        ----
         Physical space corresponds to the result of a backward transfer
         """
         return [int(np.round(base.N*base.padding_factor)) for base in self]
@@ -335,6 +367,8 @@ class TensorProductSpace(object):
     def spectral_shape(self):
         """Return shape of TensorProductSpace in spectral space
 
+        Note
+        ----
         Spectral space corresponds to the result of a forward transfer
         """
         return [base.spectral_shape() for base in self]
@@ -345,11 +379,13 @@ class TensorProductSpace(object):
     def local_shape(self, spectral=True):
         """Return local shape of TensorProductSpace
 
-        kwargs:
-            spectral    bool    If True then return local shape of spectral
-                                space, i.e., the input to a backward transfer.
-                                If False then return local shape of physical
-                                space, i.e., the input to a forward transfer.
+        Parameters
+        ----------
+            spectral : bool, optional
+                       If True then return local shape of spectral space, i.e.,
+                       the input to a backward transfer. If False then return
+                       local shape of physical space, i.e., the input to a 
+                       forward transfer.
         """
         if not spectral:
             return self.forward.input_pencil.subshape
@@ -359,11 +395,13 @@ class TensorProductSpace(object):
     def local_slice(self, spectral=True):
         """Return the local view into the global data
 
-        kwargs:
-            spectral    bool    If True then return local slice of spectral
-                                space, i.e., the input to a backward transfer.
-                                If False then return local slice of physical
-                                space, i.e., the input to a forward transfer.
+        Parameters
+        ----------
+            spectral : bool, optional
+                       If True then return local slice of spectral pace, i.e.,
+                       the input to a backward transfer. If False then return
+                       local slice of physical space, i.e., the input to a
+                       forward transfer.
         """
 
         if spectral is not True:
@@ -389,20 +427,36 @@ class TensorProductSpace(object):
         return len(self.bases)
 
     def num_components(self):
+        """Return number of spaces in TensorProductSpace"""
         return 1
 
     def __getitem__(self, i):
+        """Return instance of base i
+
+        Parameters
+        ----------
+            i : int
+        """
         return self.bases[i]
 
     def is_forward_output(self, u):
         """Return whether or not the array u is of type and shape resulting
         from a forward transform.
+
+        Parameters
+        ----------
+            u : array
         """
         return (u.shape == self.forward.output_array.shape and
                 u.dtype == self.forward.output_array.dtype)
 
     def as_function(self, u):
-        """Return Numpy array u as a Function."""
+        """Return Numpy array u as a Function
+
+        Parameters
+        ----------
+            u : array
+        """
         from .forms.arguments import Function
         assert isinstance(u, np.ndarray)
         forward_output = self.is_forward_output(u)
@@ -412,9 +466,10 @@ class TensorProductSpace(object):
 class MixedTensorProductSpace(object):
     """Class for composite tensorproductspaces.
 
-    args:
-        spaces        List of TensorProductSpaces
-
+    Parameters
+    ----------
+        spaces : list
+                 List of TensorProductSpaces
     """
 
     def __init__(self, spaces):
@@ -426,10 +481,22 @@ class MixedTensorProductSpace(object):
     def convolve(self, a_hat, b_hat, ab_hat):
         """Convolution of a_hat and b_hat
 
-        Note that self should have bases with padding for this
-        method to give a convolution without aliasing. The
-        padding is specified when creating instances of bases
-        for the TensorProductSpace.
+        Parameters
+        ----------
+            a_hat : array
+                    Input array of shape and type as output array from
+                    self.forward
+            b_hat : array
+                    Input array of shape and type as output array from
+                    self.forward
+            ab_hat : array
+                     Return array of same type and shape as a_hat and b_hat
+
+        Note
+        ----
+        Note that self should have bases with padding for this method to give
+        a convolution without aliasing. The padding is specified when creating
+        instances of bases for the TensorProductSpace.
 
         FIXME Efficiency due to allocation
         """
@@ -442,16 +509,19 @@ class MixedTensorProductSpace(object):
         return ab_hat
 
     def ndim(self):
+        """Return dimension of scalar space"""
         return self.spaces[0].ndim()
 
     def rank(self):
-        #raise NotImplementedError
+        """Return rank of space"""        
         return 2
 
     def num_components(self):
+        """Return number of spaces in mixed space"""
         return len(self.spaces)
 
     def is_forward_output(self, u):
+        """Return whether u array is of forward output type"""
         return (u[0].shape == self.forward.output_array.shape and
                 u[0].dtype == self.forward.output_array.dtype)
 
@@ -474,8 +544,10 @@ class VectorTensorProductSpace(MixedTensorProductSpace):
     bases, will have vectors of length 2. A TensorProductSpace created from 3
     1D bases will have vectors of length 3.
 
-    args:
-        space        TensorProductSpace to create vector from
+    Parameters
+    ----------
+        space : TensorProductSpace
+                Space to create vector from
     """
 
     def __init__(self, space):
@@ -487,10 +559,12 @@ class VectorTensorProductSpace(MixedTensorProductSpace):
         MixedTensorProductSpace.__init__(self, spaces)
 
     def num_components(self):
+        """Return number of spaces in mixed space"""
         assert len(self.spaces) == self.ndim()
         return self.ndim()
 
     def rank(self):
+        """Return rank of space"""
         return 2
 
 
@@ -519,12 +593,13 @@ class Convolve(object):
     Convolve a_hat and b_hat is computed by first transforming
     backwards with padding
 
-      a = Tp.backward(a_hat)
-      b = Tp.backward(b_hat)
+        a = Tp.backward(a_hat)
+        
+        b = Tp.backward(b_hat)
 
     and then transforming the product a*b forward without truncation
 
-      ab_hat = T.forward(a*b)
+        ab_hat = T.forward(a*b)
 
     where Tp is a TensorProductSpace for regular padding, and
     T is a TensorProductSpace with no padding, but using the shape
@@ -533,10 +608,11 @@ class Convolve(object):
     For convolve with truncation forward, use just the convolve method
     of the Tp space instead.
 
-    args:
-        padding_space     TensorProductSpace with padding backward
-                          and truncation forward.
-
+    Parameters
+    ----------
+        padding_space : TensorProductSpace
+                        Space with regular padding backward and truncation
+                        forward.
     """
 
     def __init__(self, padding_space):
@@ -570,10 +646,11 @@ class BoundaryValues(object):
     """Class for setting nonhomogeneous boundary conditions for a 1D Dirichlet base
     inside a multidimensional TensorProductSpace.
 
-    args:
-        T               The TensorProductSpace
-        bc              Tuple with physical boundary values at edges of 1D domain
-
+    Parameters
+    ----------
+        T : TensorProductSpace
+        bc : tuple of numbers
+             Tuple with physical boundary values at edges of 1D domain
     """
     # pylint: disable=protected-access, redefined-outer-name, dangerous-default-value, unsubscriptable-object
 

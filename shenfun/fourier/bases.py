@@ -15,45 +15,61 @@ __all__ = ['FourierBase', 'R2CBasis', 'C2CBasis']
 class FourierBase(SpectralBase):
     r"""Fourier base class
 
-    A basis function phi_k is given as
+    A basis function :math:`\phi_k` is given as
 
-        phi_k(x) = exp(ikx)
+    .. math::
+
+        \phi_k(x) = \exp(ikx)
 
     and an expansion is given as
 
-        u(x) = \sum_k \hat{u}_k exp(ikx)                            (1)
+    .. math::
+       :label: u
 
-    where
-        k  -N/2, -N/2+1, ..., N/2-1
-
-    However, since exp(ikx) = exp(i(k \pm N)x) this expansion can also be
-    written as an interpolator
-
-        u(x) = \sum_k \hat{u}_k/c_k exp(ikx)                        (2)
-
+        u(x) = \sum_k \hat{u}_k \exp(ikx)  
+        
     where
 
-        k  -N/2, -N/2+1, ..., N/2-1, N/2
+    .. math::
 
-    and c_{N/2} = c_{-N/2} = 2, whereas c_k = 1 for k=-N/2+1, ..., N/2-1
-    Furthermore, \hat{u}_{N/2} = \hat{u}_{-N/2}.
+        k = -N/2, -N/2+1, ..., N/2-1
+
+    However, since :math:`\exp(ikx) = \exp(i(k \pm N)x)` this expansion can
+    also be written as an interpolator
+
+    .. math::
+       :label: u2
+ 
+        u(x) = \sum_k \frac{\hat{u}_k}{c_k} \exp(ikx)
+        
+    where
+
+    .. math::
+
+        k = -N/2, -N/2+1, ..., N/2-1, N/2
+
+    and :math:`c_{N/2} = c_{-N/2} = 2`, whereas :math:`c_k = 1` for
+    :math:`k=-N/2+1, ..., N/2-1`. Furthermore,
+    :math:`\hat{u}_{N/2} = \hat{u}_{-N/2}`.
 
     The interpolator form is used for computing odd derivatives. Otherwise,
-    it makes no difference and therefore (1) is used in transforms, since
+    it makes no difference and therefore :eq:`u` is used in transforms, since
     this is the form expected by pyfftw.
 
-    args:
-        N                int    Number of quadrature points. Should be even
-                                for efficiency, but this is not required.
-
-    kwargs:
-        padding_factor  float   Factor for padding backward transforms.
-                                padding_factor=1.5 corresponds to a 3/2-rule
-                                for dealiasing.
-        domain    (start, stop) Tuple describing the domain.
-        dealias_direct   bool   True for dealiasing using 2/3-rule. Must be
-                                used with padding_factor == 1.
-
+    Parameters
+    ----------
+        N : int
+            Number of quadrature points. Should be even for efficiency, but
+            this is not required.
+        padding_factor : float, optional
+                         Factor for padding backward transforms.
+                         padding_factor=1.5 corresponds to a 3/2-rule for
+                         dealiasing.
+        domain : 2-tuple of floats, optional
+                 The computational domain.
+        dealias_direct : bool, optional
+                         True for dealiasing using 2/3-rule. Must be used with
+                         padding_factor == 1.
     """
 
     def __init__(self, N, padding_factor=1., domain=(0, 2*np.pi),
@@ -71,9 +87,10 @@ class FourierBase(SpectralBase):
     def vandermonde(self, x):
         """Return Vandermonde matrix
 
-        args:
-            x               points for evaluation
-
+        Parameters
+        ----------
+            x : array
+                points for evaluation
         """
         k = self.wavenumbers(self.N, 0)
         x = np.atleast_1d(x)
@@ -81,13 +98,13 @@ class FourierBase(SpectralBase):
 
     def get_vandermonde_basis_derivative(self, V, k=0):
         """Return k'th derivative of basis as a Vandermonde matrix
-
-        args:
-            V               Chebyshev Vandermonde matrix
-
-        kwargs:
-            k    integer    k'th derivative
-
+        
+        Parameters
+        ----------
+            V : array of ndim = 2
+                Chebyshev Vandermonde matrix
+            k : int
+                k'th derivative
         """
         if k > 0:
             l = self.wavenumbers(self.N, 0, scaled=True)
@@ -111,18 +128,6 @@ class FourierBase(SpectralBase):
     # Note. forward is reimplemented here to avoid one array scaling
     # (scalar_product multiplies with 2pi/N, whereas apply_inverse_mass divides by 2pi)
     def forward(self, input_array=None, output_array=None, fast_transform=True):
-        """Forward transform
-
-        kwargs:
-            input_array    (input)     Function values on quadrature mesh
-            output_array   (output)    Expansion coefficients
-            fast_transform   bool      If True use fast transforms, if False
-                                       use Vandermonde type
-
-        If kwargs input_array/output_array are not given, then use predefined
-        arrays as planned with self.plan
-
-        """
         if fast_transform is False:
             return SpectralBase.forward(self, input_array, output_array, False)
 
@@ -142,9 +147,11 @@ class FourierBase(SpectralBase):
     def apply_inverse_mass(self, array):
         """Apply inverse mass, which is 2pi*identity for Fourier basis
 
-        args:
-            array   (input/output)    Expansion coefficients
-
+        Parameters
+        ----------
+            array : array (input/output)
+                    Expansion coefficients. Overwritten by applying the inverse
+                    mass matrix, and returned.
         """
         array *= (1./(2.*np.pi))
         return array
@@ -211,13 +218,6 @@ class R2CBasis(FourierBase):
         return slice(0, self.N//2+1)
 
     def vandermonde_evaluate_expansion_all(self, input_array, output_array):
-        """Naive implementation of evaluate_expansion_all
-
-        args:
-            input_array    (input)    Expansion coefficients
-            output_array   (output)   Function values on quadrature mesh
-
-        """
         assert abs(self.padding_factor-1) < 1e-8
         assert self.N == output_array.shape[self.axis]
         points = self.points_and_weights(self.N)[0]
@@ -274,17 +274,24 @@ class R2CBasis(FourierBase):
         """Evaluate expansion at certain points, possibly different from
         the quadrature points
 
+        Parameters
+        ----------
+            P : 2D array
+                Vandermode matrix containing local points only
+            input_array : array
+                          Expansion coefficients
+            output_array : array
+                           Function values on points
+            last_conj_index : int
+                              The last index to sum over for conj part
+                              (R2CBasis only)
+            offset : int
+                     Global offset (MPI)
+
+        Note
+        ----
         This method is complicated by the fact that the data may not be aligned
         in the direction of this base's axis
-
-        args:
-            P               (input)    Vandermode matrix containing local points
-                                       only
-            input_array     (input)    Expansion coefficients
-            output_array    (output)   Function values on points
-            last_conj_index (input)    The last index to sum over for conj part
-                                       (R2CBasis only)
-            offset          (input)    Global offset (MPI)
 
         """
         fc = np.moveaxis(input_array, self.axis, -2)
@@ -337,6 +344,16 @@ class R2CBasis(FourierBase):
     def convolve(self, u, v, uv=None, fast=True):
         """Convolution of u and v.
 
+        Parameters
+        ----------
+            u : array
+            v : array
+            uv : array, optional
+            fast : bool, optional
+                   Whether to use fast transforms in computing convolution
+  
+        Note
+        ----
         Note that this method is only valid for 1D data, and that
         for multidimensional arrays one should use corresponding method
         in the TensorProductSpace class.
@@ -474,6 +491,16 @@ class C2CBasis(FourierBase):
     def convolve(self, u, v, uv=None, fast=True):
         """Convolution of u and v.
 
+        Parameters
+        ----------
+            u : array
+            v : array
+            uv : array, optional
+            fast : bool, optional
+                   Whether to use fast transforms in computing convolution
+  
+        Note
+        ----
         Note that this method is only valid for 1D data, and that
         for multidimensional arrays one should use corresponding method
         in the TensorProductSpace class.

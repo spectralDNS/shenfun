@@ -5,23 +5,17 @@ the Chebyshev family.
 A naming convention is used for the first three capital letters for all matrices.
 The first letter refers to type of matrix.
 
-    Mass matrices start with 'B'
-
-    One derivative start with 'C'
-
-    Two derivatives (Laplace) start with 'A'
-
-    Four derivatives (Biharmonic) start with 'S'
+    - Mass matrices start with 'B'
+    - One derivative start with 'C'
+    - Two derivatives (Laplace) start with 'A'
+    - Four derivatives (Biharmonic) start with 'S'
 
 The next two letters refer to the test and trialfunctions, respectively
 
-    Dirichlet:   'D'
-
-    Neumann:     'N'
-
-    Chebyshev:   'T'
-
-    Biharmonic:  'B'
+    - Dirichlet:   'D'
+    - Neumann:     'N'
+    - Chebyshev:   'T'
+    - Biharmonic:  'B'
 
 As such, there are 4 symmetric mass matrices, BDDmat, BNNmat, BTTmat and BBBmat,
 corresponding to the four bases above.

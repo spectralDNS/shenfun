@@ -7,8 +7,10 @@ from numpy.polynomial import legendre as leg
 def legendre_lobatto_nodes_and_weights(N):
     """Return points and weights for Legendre-Lobatto quadrature
 
-    args:
-        N     int    Number of quadrature points
+    Parameters
+    ----------
+        N : int
+            Number of quadrature points
     """
     M = N//2
     j = np.arange(1, M)
@@ -41,8 +43,10 @@ def legendre_lobatto_nodes_and_weights(N):
 def legendre_gauss_nodes_and_weights(N):
     """Return points and weights for Legendre-Gauss quadrature
 
-    args:
-        N     int    Number of quadrature points
+    Parameters
+    ----------
+        N : int
+            Number of quadrature points
     """
     import quadpy
 

@@ -623,12 +623,14 @@ def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-12):
     ----------
         M : Numpy array of ndim=2
         abstol : float
-                 Tolerance. Only diagonals with max(|d|) < tol are kept in the
-                 returned SparseMatrix
+                 Tolerance. Only diagonals with max(:math:`|d|`) < tol are 
+                 kept in the returned SparseMatrix, where :math:`d` is the
+                 diagonal
         reltol : float
                  Relative tolerance. Only diagonals with 
-                 max(|d|)/max(|M|) > reltol are kept in the returned 
-                 SparseMatrix
+                 max(:math:`|d|`)/max(:math:`|M|`) > reltol are kept in the
+                 returned SparseMatrix
+    
     """
     d = {}
     relmax = abs(M).max()

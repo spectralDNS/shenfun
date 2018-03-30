@@ -53,11 +53,16 @@ class _Wrap(object):
 class LegendreBase(SpectralBase):
     """Base class for all Legendre bases
 
-    args:
-        N             int         Number of quadrature points
-        quad      ('LG', 'GL')    Legendre-Gauss or Legendre-Gauss-Lobatto
-        domain   (float, float)   The computational domain
-
+    Parameters
+    ----------
+        N : int, optional
+            Number of quadrature points
+        quad : str, optional
+               Type of quadrature
+                   - LG - Legendre-Gauss
+                   - GL - Legendre-Gauss-Lobatto
+        domain : 2-tuple of floats, optional
+                 The computational domain
     """
 
     def __init__(self, N=0, quad="LG", domain=(-1., 1.)):
@@ -79,8 +84,10 @@ class LegendreBase(SpectralBase):
     def vandermonde(self, x):
         """Return Legendre Vandermonde matrix
 
-        args:
-            x               points for evaluation
+        Parameters
+        ----------
+            x : array
+                points for evaluation
 
         """
         V = leg.legvander(x, self.N-1)
@@ -89,12 +96,12 @@ class LegendreBase(SpectralBase):
     def get_vandermonde_basis_derivative(self, V, k=0):
         """Return k'th derivatives of basis as a Vandermonde matrix
 
-        args:
-            V               Legendre Vandermonde matrix
-
-        kwargs:
-            k     integer   Use k'th derivative of basis
-
+        Parameters
+        ----------
+            V : array of ndim = 2
+                Chebyshev Vandermonde matrix
+            k : int
+                k'th derivative
         """
         assert self.N == V.shape[1]
         if k > 0:
@@ -120,17 +127,6 @@ class LegendreBase(SpectralBase):
         return 2./(b-a)
 
     def forward(self, input_array=None, output_array=None, fast_transform=False):
-        """Fast forward transform
-
-        args:
-            input_array    (input)     Function values on quadrature mesh
-            output_array   (output)    Expansion coefficients
-
-        kwargs:
-            fast_transform   bool - If True use fast transforms,
-                             if False use Vandermonde type
-
-        """
         assert fast_transform is False
         if input_array is not None:
             self.forward.input_array[...] = input_array
@@ -146,17 +142,6 @@ class LegendreBase(SpectralBase):
 
 
     def backward(self, input_array=None, output_array=None, fast_transform=False):
-        """Fast backward transform
-
-        args:
-            input_array    (input)     Expansion coefficients
-            output_array   (output)    Function values on quadrature mesh
-
-        kwargs:
-            fast_transform   bool - If True use fast transforms,
-                             if False use Vandermonde type
-
-        """
         assert fast_transform is False
         if input_array is not None:
             self.backward.input_array[...] = input_array
@@ -211,14 +196,19 @@ class LegendreBase(SpectralBase):
 class Basis(LegendreBase):
     """Basis for regular Legendre series
 
-    kwargs:
-        N             int         Number of quadrature points
-        quad        ('LG',)       Legendre-Gauss
-        plan          bool        Plan transforms on __init__ or not. If
-                                  basis is part of a TensorProductSpace,
-                                  then planning needs to be delayed.
-        domain   (float, float)   The computational domain
-
+    Parameters
+    ----------
+        N : int, optional
+            Number of quadrature points
+        quad : str, optional
+               Type of quadrature
+                   - LG - Legendre-Gauss
+                   - GL - Legendre-Gauss-Lobatto
+        plan : bool, optional
+               Plan transforms on __init__ or not. If basis is part of a 
+               TensorProductSpace, then planning needs to be delayed.
+        domain : 2-tuple of floats, optional
+                 The computational domain
     """
 
     def __init__(self, N=0, quad="GL", plan=False, domain=(-1., 1.)):
@@ -237,21 +227,26 @@ class Basis(LegendreBase):
 class ShenDirichletBasis(LegendreBase):
     """Shen Legendre basis for Dirichlet boundary conditions
 
-    kwargs:
-        N             int         Number of quadrature points
-        quad        ('LG',)       Legendre-Gauss
-        bc           (a, b)       Boundary conditions at x=(1,-1)
-        plan          bool        Plan transforms on __init__ or not. If
-                                  basis is part of a TensorProductSpace,
-                                  then planning needs to be delayed.
-        domain   (float, float)   The computational domain
-        scaled        bool        Whether or not to scale test functions
-                                  with 1/sqrt(4k+6). Scaled test functions
-                                  give a stiffness matrix equal to the
-                                  identity matrix.
-
+    Parameters
+    ----------
+        N : int, optional
+            Number of quadrature points
+        quad : str, optional
+               Type of quadrature
+                   - LG - Legendre-Gauss
+                   - GL - Legendre-Gauss-Lobatto
+        bc : tuple of numbers
+             Boundary conditions at edges of domain
+        plan : bool, optional
+               Plan transforms on __init__ or not. If basis is part of a 
+               TensorProductSpace, then planning needs to be delayed.
+        domain : 2-tuple of floats, optional
+                 The computational domain
+        scaled : bool, optional
+                 Whether or not to scale test functions with 1/sqrt(4k+6). 
+                 Scaled test functions give a stiffness matrix equal to the
+                 identity matrix.
     """
-
     def __init__(self, N=0, quad="LG", bc=(0., 0.), plan=False,
                  domain=(-1., 1.), scaled=False):
         LegendreBase.__init__(self, N, quad, domain=domain)
@@ -352,15 +347,21 @@ class ShenDirichletBasis(LegendreBase):
 class ShenNeumannBasis(LegendreBase):
     """Shen basis for homogeneous Neumann boundary conditions
 
-    kwargs:
-        N             int         Number of quadrature points
-        quad        ('LG')        Legendre-Gauss
-        mean         float        Mean value
-        plan          bool        Plan transforms on __init__ or not. If
-                                  basis is part of a TensorProductSpace,
-                                  then planning needs to be delayed.
-        domain   (float, float)   The computational domain
-
+    Parameters
+    ----------
+        N : int, optional
+            Number of quadrature points
+        quad : str, optional
+               Type of quadrature
+                   - LG - Legendre-Gauss
+                   - GL - Legendre-Gauss-Lobatto
+        mean : number
+               mean value
+        plan : bool, optional
+               Plan transforms on __init__ or not. If basis is part of a 
+               TensorProductSpace, then planning needs to be delayed.
+        domain : 2-tuple of floats, optional
+                 The computational domain
     """
 
     def __init__(self, N=0, quad="LG", mean=0, plan=False, domain=(-1., 1.)):
@@ -452,16 +453,20 @@ class ShenBiharmonicBasis(LegendreBase):
 
     Homogeneous Dirichlet and Neumann boundary conditions.
 
-    kwargs:
-        N             int         Number of quadrature points
-        quad        ('LG',)       Legendre-Gauss
-        plan          bool        Plan transforms on __init__ or not. If
-                                  basis is part of a TensorProductSpace,
-                                  then planning needs to be delayed.
-        domain   (float, float)   The computational domain
-
+    Parameters
+    ----------
+        N : int, optional
+            Number of quadrature points
+        quad : str, optional
+               Type of quadrature
+                   - LG - Legendre-Gauss
+                   - GL - Legendre-Gauss-Lobatto
+        plan : bool, optional
+               Plan transforms on __init__ or not. If basis is part of a 
+               TensorProductSpace, then planning needs to be delayed.
+        domain : 2-tuple of floats, optional
+                 The computational domain
     """
-
     def __init__(self, N=0, quad="LG", plan=False, domain=(-1., 1.)):
         LegendreBase.__init__(self, N, quad, domain=domain)
         self.LT = Basis(N, quad)
@@ -560,17 +565,22 @@ class ShenBiharmonicBasis(LegendreBase):
 class SecondNeumannBasis(LegendreBase):
     """Shen basis for homogeneous second order Neumann boundary conditions
 
-    kwargs:
-        N             int         Number of quadrature points
-        quad        ('LG')        Legendre-Gauss
-        mean         float        Mean value
-        plan          bool        Plan transforms on __init__ or not. If
-                                  basis is part of a TensorProductSpace,
-                                  then planning needs to be delayed.
-        domain   (float, float)   The computational domain
-
+    Parameters
+    ----------
+        N : int, optional
+            Number of quadrature points
+        quad : str, optional
+               Type of quadrature
+                   - LG - Legendre-Gauss
+                   - GL - Legendre-Gauss-Lobatto
+        mean : number
+               Mean value of solution
+        plan : bool, optional
+               Plan transforms on __init__ or not. If basis is part of a 
+               TensorProductSpace, then planning needs to be delayed.
+        domain : 2-tuple of floats, optional
+                 The computational domain
     """
-
     def __init__(self, N=0, quad="LG", mean=0, plan=False, domain=(-1., 1.)):
         LegendreBase.__init__(self, N, quad, domain=domain)
         self.mean = mean
