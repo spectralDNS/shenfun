@@ -135,9 +135,9 @@ that the last two linear terms disappear, whereas the first term results in
 in
 !bt
 \begin{align}
- \nabla^2 u_e(x) &= \frac{d^2 u_e}{dx^2}, \\
+ \nabla^2 u_e(x) &= \frac{d^2 u_e}{dx^2},  \\
                   &= -4k \pi x \cos(k\pi x) - 2\sin(k\pi x) - k^2 \pi^2 (1 -
-x^2) \sin(k \pi x). label{eq:solution}
+x^2) \sin(k \pi x). label{eq:solution} 
 \end{align}
 !et
 

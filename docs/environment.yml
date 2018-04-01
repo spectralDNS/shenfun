@@ -12,6 +12,7 @@ dependencies:
   - python
   - scipy
   - dask
+  - doconce
   - pyfftw
   - mpiFFT4py
   - mpi4py_fft
