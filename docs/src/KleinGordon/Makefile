@@ -16,6 +16,9 @@ ${name}.html: ${name}.do.txt
 	doconce format html ${name} --html_style=${style} --pygments_html_style=default --html_admon=bootstrap_alert --html_output=${name}_${style} --keep_pygments_html_bg —html_code_style=inherit --html_pre_style=inherit 
 	doconce split_html ${name}_${style}.html
 
+${name}.rst: ${name}.do.txt
+	doconce format sphinx ${name}
+
 ${name}.ipynb: ${name}.do.txt
 	doconce format ipynb ${name}
   

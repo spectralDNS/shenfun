@@ -7,14 +7,19 @@ SPHINXBUILD   = sphinx-build
 SPHINXPROJ    = shenfun
 SOURCEDIR     = source
 BUILDDIR      = build
+DEMO          = Poisson/poisson.rst \
+                KleinGordon/kleingordon.rst \
+                Poisson3D/poisson3d.rst
 
-# Put it first so that "make" without argument is like "make help".
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 .PHONY: help Makefile
 
-# Catch-all target: route all unknown targets to Sphinx using the new
-# "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-%: Makefile
+%.rst:
+	doconce format sphinx src/$(basename $@).do.txt
+	cp src/$(basename $@).rst source/
+	cp src/$(dir $@)figs/*.* source/figs/
+
+html: Makefile $(DEMO)
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

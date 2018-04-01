@@ -10,7 +10,15 @@ Welcome to shenfun's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   intro
+   readme
+
+.. toctree::
+   :caption: Demos:
+   :maxdepth: 1
+   
+   poisson
+   kleingordon
+   poisson3d
 
 Indices and tables
 ==================
