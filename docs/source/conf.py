@@ -177,9 +177,10 @@ if on_rtd:
     print(p)
     os.chdir('../src')
     for demo in demos:
+        path, filename = '/'.split(demo)
         os.system('doconce format sphinx {0}.do.txt'.format(demo))
         os.system('cp {0}.rst ../source/'.format(demo))
-        os.system('cp {0}/figs/*.png ../source/figs/')
+        os.system('cp {0}/figs/*.png ../source/figs/'.format(path))
     os.chdir('../source')
 
 #import sys
