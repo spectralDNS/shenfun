@@ -19,6 +19,7 @@ Welcome to shenfun's documentation!
    poisson
    kleingordon
    poisson3d
+   kuramatosivashinsky
 
 Indices and tables
 ==================

@@ -171,7 +171,7 @@ texinfo_documents = [
 import os
 
 on_rtd = os.environ.get('READTHEDOCS') == 'True'
-demos = ['Poisson/poisson', 'KleinGordon/kleingordon', 'Poisson3D/poisson3d']
+demos = ['Poisson/poisson', 'KleinGordon/kleingordon', 'Poisson3D/poisson3d', 'KuramatoSivashinsky/kuramatosivashinsky']
 if on_rtd:
     p = os.getcwd()
     print(p)
@@ -181,6 +181,8 @@ if on_rtd:
         os.system('doconce format sphinx {0}.do.txt'.format(demo))
         os.system('cp {0}.rst ../source/'.format(demo))
         os.system('cp {0}/figs/*.png ../source/figs/'.format(path))
+        if os.path.exists(os.path.join(path, 'movies')):
+            os.system('cp {0}/movies/*.* ../source/movies/'.format(path))
     os.chdir('../source')
 
 #import sys
