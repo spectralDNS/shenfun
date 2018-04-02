@@ -21,6 +21,12 @@ TOC: on
 
 FIGURE: [figs/Klein_Gordon_32_real_8000.png] The solution $u$ from Eq. (ref{eq:kg}), at $t=40$, in a slice through the center of the domain, computed with the code described in this demo. label{mov:kleingordon}
 
+% elif FORMAT in ("sphinx"):
+
+MOVIE: [https://rawgit.com/spectralDNS/spectralutilities/master/movies/KleinGordon.gif] label{mov:kleingordon}
+
+Movie showing the evolution of the solution $u$ from Eq. (ref{eq:kg}), in a slice through the center of the domain, computed with the code described in this demo. 
+
 % else:
 
 MOVIE: [movies/KleinGordon.gif] Movie showing the evolution of the solution $u$ from Eq. (ref{eq:kg}), in a slice through the center of the domain, computed with the code described in this demo. label{mov:kleingordon}
@@ -182,8 +188,8 @@ e^{\imath \underline{n} z} = e^{\imath
 \end{equation}
 !et
 where the indices for $y$- and $z$-direction are $\underline{m}=\frac{2\pi}{L}m,
-\underline{n}=\frac{2\pi}{L}n$, and $\bs{m}$ and $\bs{n}$ are the same as
-$\bs{l}$ due to using the same number of basis functions for each direction. One
+\underline{n}=\frac{2\pi}{L}n$, and $\boldsymbol{m}$ and $\boldsymbol{n}$ are the same as
+$\boldsymbol{l}$ due to using the same number of basis functions for each direction. One
 distinction, though, is that for the $z$-direction expansion coefficients are only stored for
 $n=(0, 1, \ldots, N/2)$ due to Hermitian symmetry (real input data).
 
