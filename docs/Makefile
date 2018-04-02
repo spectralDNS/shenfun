@@ -21,5 +21,7 @@ help:
 	cp src/$(basename $@).rst source/
 	cp src/$(dir $@)figs/*.* source/figs/
 
-html: Makefile $(DEMO)
+#html: Makefile $(DEMO)
+html: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+

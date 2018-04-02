@@ -168,6 +168,15 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
+import os
+
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+demos = ['Poisson/poisson', 'KleinGordon/kleingordon', 'Poisson3D/poisson3d']
+if on_rtd:
+    for demo in demos:
+        os.system('doconce format sphinx {0}.do.txt'.format(demo))
+        os.system('cp {0}.rst ../../source/')
+
 #import sys
 #from unittest.mock import MagicMock
 #
