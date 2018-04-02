@@ -18,10 +18,15 @@ TOC: on
 
 FIGURE: [figs/Kuramato_Sivashinsky_128_399.png] The solution $u$ from Eq. (ref{eq:ks}), at $t=100$.
 
+% elif FORMAT in ("sphinx"):
+
+MOVIE: [https://rawgit.com/spectralDNS/spectralutilities/master/movies/Kuramato_movie_128.gif]
+
+Movie showing the evolution of the solution $u$ from Eq. (ref{eq:ks}).
+
 % else:
 
-MOVIE: [https://rawgit.com/spectralDNS/spectralutilities/master/movies/Kuramato_movie_128.gif] Movie showing the evolution of the solution $u$ from Eq. (ref{eq:ks}) 
-
+MOVIE: [https://rawgit.com/spectralDNS/spectralutilities/master/movies/Kuramato_movie_128.gif] Movie showing the evolution of the solution $u$ from Eq. (ref{eq:ks}). 
 % endif
 
 ===== Model equation =====
