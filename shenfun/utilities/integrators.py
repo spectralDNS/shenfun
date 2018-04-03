@@ -1,9 +1,9 @@
 """
 Module for some integrators.
 
-RK4:      Runge-Kutta fourth order
-ETD:      Exponential time differencing Euler method
-ETDRK4:   Exponential time differencing Runge-Kutta fourth order
+    - RK4:      Runge-Kutta fourth order
+    - ETD:      Exponential time differencing Euler method
+    - ETDRK4:   Exponential time differencing Runge-Kutta fourth order
 
 The integrators are set up to accept two methods, one for the linear
 part of the equation, and one for the nonlinear part.
@@ -44,11 +44,16 @@ class IntegratorBase(object):
     def solve(self, u, u_hat, dt, trange):
         """Integrate forward in end_time
 
-        args:
-            u      Function     The solution array in physical space
-            u_hat  Function     The solution array in spectral space
-            dt     float        Timestep
-            trange two-tuple    Time and end time
+        Parameters
+        ----------
+            u : array
+                The solution array in physical space
+            u_hat : array
+                    The solution array in spectral space
+            dt : float
+                 Timestep
+            trange : two-tuple
+                     Time and end time
         """
         pass
 
@@ -88,11 +93,16 @@ class ETD(IntegratorBase):
     def solve(self, u, u_hat, dt, trange):
         """Integrate forward in end_time
 
-        args:
-            u      Function     The solution array in physical space
-            u_hat  Function     The solution array in spectral space
-            dt     float        Timestep
-            trange two-tuple    Time and end time
+        Parameters
+        ----------
+            u : array
+                The solution array in physical space
+            u_hat : array
+                    The solution array in spectral space
+            dt : float
+                 Timestep
+            trange : two-tuple
+                     Time and end time
         """
         if self.psi is None or abs(self.params['dt']-dt) > 1e-12:
             self.setup(dt)
@@ -158,11 +168,16 @@ class ETDRK4(IntegratorBase):
     def solve(self, u, u_hat, dt, trange):
         """Integrate forward in end_time
 
-        args:
-            u      Function     The solution array in physical space
-            u_hat  Function     The solution array in spectral space
-            dt     float        Timestep
-            trange two-tuple    Time and end time
+        Parameters
+        ----------
+            u : array
+                The solution array in physical space
+            u_hat : array
+                    The solution array in spectral space
+            dt : float
+                 Timestep
+            trange : two-tuple
+                     Time and end time
         """
 
         if self.a is None or abs(self.params['dt']-dt) > 1e-12:
@@ -212,11 +227,16 @@ class RK4(IntegratorBase):
     def solve(self, u, u_hat, dt, trange):
         """Integrate forward in end_time
 
-        args:
-            u      Function     The solution array in physical space
-            u_hat  Function     The solution array in spectral space
-            dt     float        Timestep
-            trange two-tuple    Time and end time
+        Parameters
+        ----------
+            u : array
+                The solution array in physical space
+            u_hat : array
+                    The solution array in spectral space
+            dt : float
+                 Timestep
+            trange : two-tuple
+                     Time and end time
         """
 
         if self.a is None or abs(self.params['dt']-dt) > 1e-12:
@@ -237,3 +257,4 @@ class RK4(IntegratorBase):
             u_hat[:] = self. U_hat1
             self.update(u, u_hat, t, tstep, **self.params)
         return u_hat
+

@@ -17,6 +17,31 @@ FIGURE: [figs/poisson3D_errornorm.png] Convergence of 3D Poisson solvers for bot
 
 TOC: on
 
+<%
+def mod(x):
+    return '`'+x+'`'
+def cls(x):
+    return '`'+x+'`'
+def func(x):
+    return '`'+x+'`'
+%>
+% if FORMAT in ("sphinx"):
+<%
+def mod(x):
+    if '.' in x:
+        return ':mod:'+'`'+x+'`'
+    return ':mod:'+'`'+'.'+x+'`'
+def cls(x):
+    if '.' in x:
+        return ':class:'+'`'+x+'`'
+    return ':class:'+'`'+'.'+x+'`'
+def func(x):
+    if '.' in x:
+        return ':func:'+'`'+x+'`'
+    return ':func:'+'`'+'.'+x+'`'
+%>
+% endif
+
 ======= Model problem =======
 ===== Poisson equation =====
 
@@ -63,8 +88,7 @@ $\bs{l}^{N_0} = (0, 1, \ldots, N_0-3)$, $\bs{m}^{N_1} =
 (-N_1/2, -N_1/2+1, \ldots, N_1/2-1)$ and $\bs{n}^{N_2} = (-N_2/2, -N_2/2+1,
 \ldots, N_2/2-1)$. However, due to "Hermitian symmetry": "https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.fft.rfft.html#numpy.fft.rfft", we only store $N_2/2+1$
 wavenumbers in the $z$-direction, such that $\bs{n}^{N_2} = (0, 1, \ldots,
-N_2/2)$. We refer to the Cartesian wavenumber mesh on vector form as
-$\bs{k}$:
+N_2/2)$. We refer to the Cartesian wavenumber mesh on vector form as $\bs{k}$:
 
 !bt
 \bs{k} = \{(l, m, n)  \in \bs{l}^{N_0} \times \bs{m}^{N_1} \times \bs{n}^{N_2}\}. 
@@ -156,7 +180,7 @@ B_{pl} = \left( \mathcal{X}_l, \mathcal{X}_p \right)_w^{N_0} = \sum_{i=0}^{N_0-1
 \mathcal{X}_p(x_i) w(x_i),
 \end{equation}
 !et
-is used to represent an $l_2$ inner product along only the first, nonperiodic,
+is used to represent an $L_2$ inner product along only the first, nonperiodic,
 direction. The factor $(2\pi)^2$ above comes from integrating over the two periodic
 directions, since 
 !bt
@@ -240,12 +264,12 @@ from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
 from mpi4py import MPI
 !ec
 
-We use `sympy` for the manufactured solution and `numpy` for testing. MPI for
+We use `Sympy` for the manufactured solution and `Numpy` for testing. MPI for
 Python (`mpi4py`) is required for running the solver with MPI. 
 
 ===== Manufactured solution =====
 
-The exact solution $u_e(x, y, z)$ and the right hand side $f_e(x, y, z)$ are created using `sympy` as follows 
+The exact solution $u_e(x, y, z)$ and the right hand side $f_e(x, y, z)$ are created using `Sympy` as follows 
 !bc pycod
 x, y, z = symbols("x,y,z")
 ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-x**2)
@@ -263,7 +287,7 @@ discretize, using the computational mesh
 !et
 and a finite number of basis functions. 
 
-Note that it is not mandatory to use `sympy` for the manufactured solution. Since the
+Note that it is not mandatory to use `Sympy` for the manufactured solution. Since the
 solution is known (ref{eq:solution}), we could just as well simply use `Numpy`
 to compute $f_e$. However, with `Sympy` it is much
 easier to experiment and quickly change the solution.
@@ -271,9 +295,7 @@ easier to experiment and quickly change the solution.
 ===== Discretization and MPI =====
 
 We create three bases with given size, one for each dimension of the problem.
-From these three bases a "TensorProductSpace":
-"https://github.com/spectralDNS/shenfun/blob/master/shenfun/tensorproductspace.py#L12"
-is created.
+From these three bases a ${cls('TensorProductSpace')} is created.
 !bc pycod
 # Size of discretization
 N = [14, 15, 16]
@@ -288,7 +310,7 @@ X = T.local_mesh()
 
 Note that we can either choose a Legendre or a Chebyshev basis for the
 nonperiodic direction. The
-`TensorProductSpace` class takes an MPI communicator as first argument and the
+${cls('TensorProductSpace')} class takes an MPI communicator as first argument and the
 computational mesh is distributed internally using the `pencil` method. The
 `T.local_mesh` method returns the mesh local to each processor. The `axes`
 keyword determines the order of transforms going back and forth between real and
@@ -383,12 +405,11 @@ matrices = inner(v, div(grad(u)))
 The Laplacian operator is recognized as `div(grad)`. The `matrices` object is a
 dictionary representing the left hand side of (ref{eq:AB}), and there are two
 keys: (`ADDmat`, `BDDmat`). The value of `matrices["ADDmat"]` is an object of
-type "SpectralMatrix":
-"https://github.com/spectralDNS/shenfun/blob/master/shenfun/matrixbase.py#L261",
+type ${cls('SpectralMatrix')},
 which is `shenfun`'s type for a matrix. This matrix represents $A_{lj}$, see
 (ref{eq:AB}), and it has an attribute `scale` that is
 equal to $(2\pi)^2$ (also see (ref{eq:AB})).  The other key in matrices
-is `BDDmat`, and the value here is a `SpectralMatrix` representing $B_{lj}$ from
+is `BDDmat`, and the value here is a ${cls('SpectralMatrix')} representing $B_{lj}$ from
 (ref{eq:AB}). This matrix has an attribute `scale` that is equal to $m^2+n^2$.
 This `scale` is stored as a numpy array of shape $(1, 15, 9)$, representing the
 set
@@ -420,14 +441,20 @@ if comm.Get_rank() == 0:
 
 ===== Convergence test =====
 
-A complete solver is given in Sec. ref{sec:complete}. This solver is created such that it takes in two commandline arguments and prints out the $l_2$-errornorm of the solution in the end. We can use this to write a short script that performs a convergence test. The solver is run like
+A complete solver is given in Sec. ref{sec:complete}. This solver is created 
+such that it takes in two commandline arguments and prints out the 
+$L_2$-errornorm of the solution in the end. We can use this to write a short
+script that performs a convergence test. The solver is run like
 !bc
 >>> python dirichlet_poisson3D.py 32 legendre
 Error=6.5955040031498912e-10
 !ec
-for a discretization of size $\bs{N}= N^3 = 32^3$ and for the Legendre basis. Alternatively, change `legendre` to `chebyshev` for the Chebyshev basis.  
+for a discretization of size $\bs{N}= N^3 = 32^3$ and for the Legendre basis.
+Alternatively, change `legendre` to `chebyshev` for the Chebyshev basis.  
 
-We set up the solver to run for a list of $N=[8, 10, \ldots, 38]$, and collect the errornorms in arrays to be plotted. Such a script can be easily created with the "subprocess": "https://docs.python.org/3/library/subprocess.html" module
+We set up the solver to run for a list of $N=[8, 10, \ldots, 38]$, and collect
+the errornorms in arrays to be plotted. Such a script can be easily created 
+with the "subprocess": "https://docs.python.org/3/library/subprocess.html" module
 
 !bc pycod
 import subprocess

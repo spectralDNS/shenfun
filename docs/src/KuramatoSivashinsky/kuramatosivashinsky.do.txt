@@ -12,6 +12,30 @@ in parallel using MPI.
 
 TOC: on
 
+<%
+def mod(x):
+    return '`'+x+'`'
+def cls(x):
+    return '`'+x+'`'
+def func(x):
+    return '`'+x+'`'
+%>
+% if FORMAT in ("sphinx"):
+<%
+def mod(x):
+    if '.' in x:
+        return ':mod:'+'`'+x+'`'
+    return ':mod:'+'`'+'.'+x+'`'
+def cls(x):
+    if '.' in x:
+        return ':class:'+'`'+x+'`'
+    return ':class:'+'`'+'.'+x+'`'
+def func(x):
+    if '.' in x:
+        return ':func:'+'`'+x+'`'
+    return ':func:'+'`'+'.'+x+'`'
+%>
+% endif
 
 ======= The Kuramato-Sivashinsky equation =======
 % if FORMAT in ("latex", "pdflatex"):
@@ -198,7 +222,8 @@ whereas a complete transform requires
 !et
 
 From this we see that the variational forms 
-may be written in terms of the Fourier transformed $\hat{u}$. Expanding the exact derivatives of the nabla operator, we have
+may be written in terms of the Fourier transformed $\hat{u}$. Expanding the
+exact derivatives of the nabla operator, we have
 
 !bt
 \begin{align}
@@ -225,8 +250,9 @@ label{eq:du_var3}
 
 The model equation (ref{eq:ks}) is implemented in shenfun using Fourier basis functions for
 both $x$ and $y$ directions. We start the solver by implementing necessary
-functionality from required modules like Numpy, Sympy, matplotlib and mpi4py, in
-addition to shenfun: 
+functionality from required modules like "Numpy": "https://numpy.org", "Sympy":"https://sympy.org"
+"matplotlib":"https://matplotlib.org" and "mpi4py":"https://bitbucket.org/mpi4py", in
+addition to "shenfun":"https://github.com/spectralDNS/shenfun": 
 !bc pycod
 from sympy import symbols, exp, lambdify
 import numpy as np
@@ -237,8 +263,8 @@ from shenfun import *
 !ec
 
 The size of the problem (in real space) is then specified, before creating
-the `TensorProductSpace`, which is a Cartesian product of two Fourier bases. We also
-create a `VectorTensorProductSpace`, since this is required for computing the
+the ${cls('TensorProductSpace')}, which is a Cartesian product of two Fourier bases. We also
+create a ${cls('VectorTensorProductSpace')}, since this is required for computing the
 gradient of the scalar field `u`. The gradient is required for the nonlinear
 term.
 !bc pycod
@@ -294,7 +320,7 @@ ue = exp(-0.01*(x**2+y**2))
 ul = lambdify((x, y), ue, 'numpy')
 !ec
 
-Shenfun has a few integrators implemented in the `shenfun.utilities.integrators`
+Shenfun has a few integrators implemented in the ${mod('integrators')}
 submodule. Two such integrators are the 4th order explicit Runge-Kutta method
 `RK4`, and the exponential 4th order Runge-Kutta method `ETDRK4`. Both these
 integrators need two methods provided by the problem being solved, representing
@@ -319,7 +345,7 @@ The code should, hopefully, be self-explanatory.
 All that remains now is to initialize the solution arrays and to setup the
 integrator plus some plotting functionality for visualizing the results. Note
 that visualization is only nice when running the code in serial. For parallel,
-it is recommended to use `HDF5Writer`, to store intermediate results to the HDF5
+it is recommended to use ${cls('HDF5Writer')}, to store intermediate results to the HDF5
 format, for later viewing in, e.g., Paraview. 
 
 The solution is initialized as

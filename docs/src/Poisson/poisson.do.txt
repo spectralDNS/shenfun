@@ -14,6 +14,31 @@ FIGURE: [figs/poisson1D_errornorm.png] Convergence of 1D Poisson solvers for bot
 
 TOC: on
 
+<%
+def mod(x):
+    return '`'+x+'`'
+def cls(x):
+    return '`'+x+'`'
+def func(x):
+    return '`'+x+'`'
+%>
+% if FORMAT in ("sphinx"):
+<%
+def mod(x):
+    if '.' in x:
+        return ':mod:'+'`'+x+'`'
+    return ':mod:'+'`'+'.'+x+'`'
+def cls(x):
+    if '.' in x:
+        return ':class:'+'`'+x+'`'
+    return ':class:'+'`'+'.'+x+'`'
+def func(x):
+    if '.' in x:
+        return ':func:'+'`'+x+'`'
+    return ':func:'+'`'+'.'+x+'`'
+%>
+% endif
+
 ======= Model problem =======
 ===== Poisson equation =====
 
@@ -77,14 +102,20 @@ The weighted integrals, weighted by $w(x)$, are called inner products, and a com
 \int_{-1}^1 u \, v \, w\, dx = \left( u, v\right)_w. 
 \end{equation}
 !et
-The integral can either be computed exactly, or with quadrature. The advantage of the latter is that it is generally faster, and that non-linear terms may be computed just as quickly as linear. For a linear problem, it does not make much of a difference, if any at all. Approximating the integral with quadrature, we obtain
+The integral can either be computed exactly, or with quadrature. The advantage
+of the latter is that it is generally faster, and that non-linear terms may be 
+computed just as quickly as linear. For a linear problem, it does not make much
+of a difference, if any at all. Approximating the integral with quadrature, we
+obtain
 !bt
 \begin{align}
 \int_{-1}^1 u \, v \, w\, dx &\approx \left( u, v \right)_w^N,  \\
 &\approx \sum_{j=0}^{N-1} u(x_j) v(x_j) w(x_j),
 \end{align}
 !et
-where $w(x_j)$ are quadrature weights. The quadrature points $\{x_j\}_{j=0}^N$ are specific to the chosen basis, and even within basis there are two different choices based on which quadrature rule is selected, either Gauss or Gauss-Lobatto.
+where $w(x_j)$ are quadrature weights. The quadrature points $\{x_j\}_{j=0}^N$ 
+are specific to the chosen basis, and even within basis there are two different 
+choices based on which quadrature rule is selected, either Gauss or Gauss-Lobatto.
 
 Inserting for test and trialfunctions, we get the following bilinear form and
 matrix $A\in\mathbb{R}^{N-2\times N-2}$ for the Laplacian (using the summation convention in step 2)
@@ -161,11 +192,12 @@ import numpy as np
 from sympy import symbols, cos, sin, exp, lambdify
 !ec
 
-We use `sympy` for the manufactured solution and `numpy` for testing.
+We use `Sympy` for the manufactured solution and `Numpy` for testing.
 
 ===== Manufactured solution =====
 
-The exact solution $u_e(x)$ and the right hand side $f_e(x)$ are created using `sympy` as follows 
+The exact solution $u_e(x)$ and the right hand side $f_e(x)$ are created using
+`Sympy` as follows 
 !bc pycod
 a = -1
 b = 1
@@ -181,7 +213,7 @@ fl = lambdify(x, fe, 'numpy')
 
 These solutions are now valid for a continuous domain. The next step is thus to discretize, using a discrete mesh $\{x_j\}_{j=0}^{N-1}$ and a finite number of basis functions. 
 
-Note that it is not mandatory to use `sympy` for the manufactured solution. Since the
+Note that it is not mandatory to use `Sympy` for the manufactured solution. Since the
 solution is known (ref{eq:solution}), we could just as well simply use `Numpy`
 to compute $f_e$ at $\{x_j\}_{j=0}^{N-1}$. However, with `Sympy` it is much
 easier to experiment and quickly change the solution.
@@ -197,11 +229,15 @@ SD = chebyshev.bases.ShenDirichletBasis(N, plan=True, bc=(a, b))
 X = SD.mesh(N)
 !ec
 
-Note that we can either choose a Legendre or a Chebyshev basis. The keyword `plan` is used to tell the class `ShenDirichletBasis` that it can go ahead and plan its transforms with "pyfftw": "https://pyfftw.org", because this basis will not be a part of a tensorproductspace, in which case the planning would need to wait.
+Note that we can either choose a Legendre or a Chebyshev basis. The keyword
+`plan` is used to tell the class ${cls('shenfun.chebyshev.bases.ShenDirichletBasis')} that it can 
+go ahead and plan its transforms with "pyfftw": "https://pyfftw.org", because 
+this basis will not be a part of a tensorproductspace, in which case the planning would need to wait.
 
 ===== Variational formulation =====
 
-The variational problem (ref{eq:varform}) can be assembled using `shenfun`'s `TrialFunction`, `TestFunction` and `inner` functions.
+The variational problem (ref{eq:varform}) can be assembled using `shenfun`'s
+${cls('TrialFunction')}, ${cls('TestFunction')} and ${func('inner')} functions.
 !bc pycod
 u = TrialFunction(SD)
 v = TestFunction(SD)
@@ -215,7 +251,9 @@ f_hat = inner(v, fj, output_array=f_hat)
 
 ===== Solve linear equations =====
 
-Finally, solve linear equation system and transform solution from spectral $\{\hat{u}_k\}_{k=0}^{N-1}$ vector to the real space $\{u(x_j)\}_{j=0}^N$ and then check how the solution corresponds with the exact solution $u_e$.
+Finally, solve linear equation system and transform solution from spectral $\{\hat{u}_k\}_{k=0}^{N-1}$ vector to the real space $\{u(x_j)\}_{j=0}^N$ 
+and then check how the solution corresponds with the exact solution $u_e$.
+
 !bc pycod
 u_hat = A.solve(f_hat)
 uj = SD.backward(u_hat)
@@ -226,14 +264,19 @@ assert np.allclose(uj, ue)
 
 ===== Convergence test =====
 
-A complete solver is given in Sec. ref{sec:complete}. This solver is created such that it takes in two commandline arguments and prints out the $l_2$-errornorm of the solution in the end. We can use this to write a short script that performs a convergence test. The solver is run like
+A complete solver is given in Sec. ref{sec:complete}. This solver is created 
+such that it takes in two commandline arguments and prints out the 
+$l_2$-errornorm of the solution in the end. We can use this to write a short 
+script that performs a convergence test. The solver is run like
 !bc
 >>> python dirichlet_poisson1D.py 32 legendre
 Error=6.5955040031498912e-10
 !ec
 for a discretization of size $N=32$ and for the Legendre basis. Alternatively, change `legendre` to `chebyshev` for the Chebyshev basis.  
 
-We set up the solver to run for a list of $N=[12, 16, \ldots, 48]$, and collect the errornorms in arrays to be plotted. Such a script can be easily created with the "subprocess": "https://docs.python.org/3/library/subprocess.html" module
+We set up the solver to run for a list of $N=[12, 16, \ldots, 48]$, and collect
+the errornorms in arrays to be plotted. Such a script can be easily created 
+with the "subprocess": "https://docs.python.org/3/library/subprocess.html" module
 
 !bc pycod
 import subprocess
