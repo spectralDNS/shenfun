@@ -1,6 +1,0 @@
-numpy
-cython
-scipy
-pyfftw
-#git+https://bitbucket.org/mpi4py/mpi4py-fft@master
-#git+https://github.com/spectralDNS/mpiFFT4py.git@master

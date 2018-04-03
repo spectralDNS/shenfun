@@ -15,13 +15,15 @@ __all__ = ('HDF5Writer',)
 class HDF5Writer(object):
     """Class for writing data in shenfun to HDF5 format
 
-    args:
-        h5name      string            Name of hdf5 file to be created
-        names    list of strings      Names of fields to be stored
-        T       TensorProductSpace    Instance of a TensorProductSpace
-                                      Must be the same as the space used
-                                      for storing with 'write_tstep'
-                                      and 'write_slice_tstep'
+    Parameters
+    ----------
+        h5name : str
+                 Name of hdf5 file to be created
+        names : list of str's
+                Names of fields to be stored
+        T : TensorProductSpace
+            Instance of a TensorProductSpace. Must be the same as the space
+            used for storing with 'write_tstep' and 'write_slice_tstep'
     """
     def __init__(self, h5name, names, T):
         self.f = h5py.File(h5name, "w", driver="mpio", comm=T.comm)
@@ -39,12 +41,18 @@ class HDF5Writer(object):
     def write_tstep(self, tstep, u):
         """Write field u to HDF5 format at a given time step
 
-        args:
-            tstep        int          Time step
-            u      Function/Array     The field to be stored
+        Parameters
+        ----------
+            tstep : int
+                    Time step
+            u : array
+                Function or Array. The field to be stored
 
+        Note
+        ----
         Fields with names 'name' will be stored under
-            name/{2,3}D/tstep
+            
+            - name/{2,3}D/tstep
 
         """
         assert isinstance(u, np.ndarray)
@@ -81,13 +89,20 @@ class HDF5Writer(object):
     def write_slice_tstep(self, tstep, sl, u):
         """Write slice of field u to HDF5 format at a given time step
 
-        args:
-            tstep        int          Time step
-            sl     list of slices     The slice to be stored
-            u      Function/Array     The field to be stored
+        Parameters
+        ----------
+            tstep : int
+                    Time step
+            sl : list of slices
+                 The slice to be stored
+            u : array
+                Function or Array. The field to be stored
 
+        Note
+        ----
         Slices of fields with name 'name' will be stored for, e.g.,
         sl = [slice(None), 16, slice(None)], as
+            
             name/2D/slice_16_slice/tstep
 
         """
