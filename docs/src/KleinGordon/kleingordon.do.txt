@@ -40,8 +40,9 @@ def cls(x):
 FIGURE: [figs/Klein_Gordon_32_real_8000.png] The solution $u$ from Eq. (ref{eq:kg}), at $t=40$, in a slice through the center of the domain, computed with the code described in this demo. label{mov:kleingordon}
 
 % elif FORMAT in ("sphinx"):
+label{mov:kleingordon}
 
-MOVIE: [https://rawgit.com/spectralDNS/spectralutilities/master/movies/KleinGordon.gif] label{mov:kleingordon}
+MOVIE: [https://rawgit.com/spectralDNS/spectralutilities/master/movies/KleinGordon.gif] 
 
 Movie showing the evolution of the solution $u$ from Eq. (ref{eq:kg}), in a slice through the center of the domain, computed with the code described in this demo. 
 
@@ -115,7 +116,7 @@ code shown in the bottom of Sec. ref{sec:solver}.
 %endif
 
 ===== Spectral Galerkin formulation =====
-label{sec:spectralgalerkin}
+label{sec:specgal}
 The PDEs in (ref{eq:df}) and (ref{eq:du}) can be solved with many different
 numerical methods. We will here use the "shenfun":
 "https://github.com/spectralDNS/shenfun" software and this software makes use of
@@ -133,7 +134,7 @@ H^1(\Omega)$ with Eq. (ref{eq:du}), where $H^1(\Omega)$ is the Hilbert space, an
 \left(\nabla^2 u \, \overline{g}
 - \gamma( u\, - u|u|^2) \, \overline{g} \right) \,dx, label{eq:df_var} \\
 \frac{\partial }{\partial t} \int_{\Omega} u\, \overline{v} \, dx &=
-\int_{\Omega} f\, \overline{v} \, dx. label{eq:du_var}
+\int_{\Omega} f\, \overline{v} \, dx. label{eq:kg:du_var}
 \end{align}
 !et
 Note that the overline is used to indicate a complex conjugate. The functions $f$ and $u$ are now
@@ -152,7 +153,7 @@ formulated as: Find $(u, f) \in H^1(\Omega) \times H^1(\Omega)$ such that
 \frac{\partial}{\partial t} (f, g) &= -(\nabla u, \nabla g)
 -\gamma \left( u - u|u|^2, g \right), label{eq:df_var2} \\
 \frac{\partial }{\partial t} (u, v) &= (f, v) \quad \forall \, (v,g) \in
-H^1(\Omega) \times H^1(\Omega). label{eq:du_var2}
+H^1(\Omega) \times H^1(\Omega). label{eq:kg:du_var2}
 \end{align}
 !et 
 
@@ -165,7 +166,7 @@ the approach we will follow in Sec. (ref{sec:rk}) is a fully explicit 4th order 
 
 ===== Discretization =====
 To find a numerical solution we need to discretize the continuous problem
-(ref{eq:df_var2}) and (ref{eq:du_var2}) in space as well as time. Since the
+(ref{eq:df_var2}) and (ref{eq:kg:du_var2}) in space as well as time. Since the
 problem is triply periodic, Fourier exponentials are normally the best choice
 for trial and test functions, and as such we use basis functions 
 
@@ -181,7 +182,7 @@ a finite number of test functions. A basis $V^N$ can be defined as
 
 !bt
 \begin{equation}
-V^N(x) = \text{span} \{\phi_l(x)\}_{l\in \boldsymbol{l}}, label{eq:Vn}
+V^N(x) = \text{span} \{\phi_l(x)\}_{l\in \boldsymbol{l}}, label{eq:kg:Vn}
 \end{equation}
 !et
 where $N$ is chosen as an even positive integer and $\boldsymbol{l} = (-N/2,
@@ -191,7 +192,7 @@ e.g., for three dimensions
 
 !bt
 \begin{equation}
-W^{\boldsymbol{N}}(x, y, z) = V^N(x) \times V^N(y) \times V^N(z), label{eq:Wn}
+W^{\boldsymbol{N}}(x, y, z) = V^N(x) \times V^N(y) \times V^N(z), label{eq:kg:Wn}
 \end{equation}
 !et
 where $\boldsymbol{N} = (N, N, N)$. Obviously, it is not necessary to use the
@@ -261,7 +262,7 @@ x_j}, \quad \,\, \forall \, j \in \, \boldsymbol{j}.
 \end{equation}
 !et
 
-The inner products used in Eqs. (ref{eq:df_var2}), (ref{eq:du_var2}) may be
+The inner products used in Eqs. (ref{eq:df_var2}), (ref{eq:kg:du_var2}) may be
 computed using forward FFTs:
 
 !bt
@@ -285,7 +286,7 @@ whereas a complete transform requires
 \end{equation}
 !et
 
-From this we see that the variational forms (ref{eq:df_var2}) and (ref{eq:du_var2})
+From this we see that the variational forms (ref{eq:df_var2}) and (ref{eq:kg:du_var2})
 may be written in terms of the Fourier transformed quantities $\hat{u}$ and
 $\hat{f}$. Expanding the exact derivatives of the nabla operator, we have
 
@@ -304,14 +305,14 @@ and as such the equations to be solved can be found directly as
 \begin{align}
 \frac{\partial \hat{f}}{\partial t}  &=
 \left(-(\underline{l}^2+\underline{m}^2+\underline{n}^2+\gamma)\hat{u} + \gamma \widehat{u|u|^2}\right), label{eq:df_var3} \\
-\frac{\partial \hat{u}}{\partial t} &= \hat{f}. label{eq:du_var3}
+\frac{\partial \hat{u}}{\partial t} &= \hat{f}. label{eq:kg:du_var3}
 \end{align}
 !et
 
 There is more than one way to arrive at these equations. Taking the 3D Fourier
 transform of both equations  (ref{eq:df}) and (ref{eq:du}) is one obvious way.
 With the Python module "shenfun": "https://github.com/spectralDNS/shenfun", one can work with the
-inner products as seen in (ref{eq:df_var2}) and (ref{eq:du_var2}), or the Fourier
+inner products as seen in (ref{eq:df_var2}) and (ref{eq:kg:du_var2}), or the Fourier
 transforms directly. See for example Sec. ref{sec:rk} for how $(\nabla u, \nabla
 v)$ can be
 implemented.  In short, ${mod('shenfun')} contains all the tools required to work with
@@ -365,9 +366,9 @@ K2 = fourier.bases.R2CBasis(N[2], domain=(-2*np.pi, 2*np.pi))
 !ec 
 
 We now have three instances `K0`, `K1` and `K2`, corresponding to the basis
-(ref{eq:Vn}), that each can be used to solve
+(ref{eq:kg:Vn}), that each can be used to solve
 one-dimensional problems. However, we want to solve a 3D problem, and for this
-we need a tensor product basis, like (ref{eq:Wn}), created as a Cartesian product of these three
+we need a tensor product basis, like (ref{eq:kg:Wn}), created as a Cartesian product of these three
 bases
 
 !bc pycod
@@ -477,7 +478,7 @@ calling with `X[0], X[1], X[2]`.
 ===== Runge-Kutta integrator =====
 label{sec:rk}
 A fourth order explicit Runge-Kutta integrator requires only a function that
-returns the right hand sides of (ref{eq:df_var3}) and (ref{eq:du_var3}). Such a
+returns the right hand sides of (ref{eq:df_var3}) and (ref{eq:kg:du_var3}). Such a
 function can be implemented as
 
 !bc pycod
@@ -503,7 +504,7 @@ The code is fairly self-explanatory. `k2` represents the coefficients in front o
 the linear $\hat{u}$ in (ref{eq:df_var3}). The output array is `duf_hat`, and
 the input array is `uf_hat`, whereas `up` and `w0` are work arrays. The array
 `duf_hat` contains the right hand sides of both (ref{eq:df_var3}) and
-(ref{eq:du_var3}), where the linear and nonlinear terms are recognized in the
+(ref{eq:kg:du_var3}), where the linear and nonlinear terms are recognized in the
 code as comments `(1)` and `(2)`.
 The array `uf_hat` contains the solution at initial and intermediate Runge-Kutta steps.
 
@@ -655,10 +656,19 @@ while t < end_time-1e-8:
 print("Time ", time()-t0)
 !ec
 
-======= Bibliography =======
+#======= Bibliography =======
 
 ## Publish (https://bitbucket.org/logg/publish is used to
 ## handle references. The line below specifies the name of
 ## the Publish database file (see the doconce manual for details).
 
-BIBFILE: papers.pub
+% if FORMAT not in ("sphinx"):
+
+BIBFILE: ../papers.pub
+
+% else:
+
+.. bibliography:: papers.bib
+   :notcited:
+
+% endif

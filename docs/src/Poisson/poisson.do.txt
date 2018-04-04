@@ -388,10 +388,20 @@ command-line argument, can be found "here":
 "https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py".
 
 % endif
-======= Bibliography =======
+
+#======= Bibliography =======
 
 ## Publish (https://bitbucket.org/logg/publish is used to
 ## handle references. The line below specifies the name of
 ## the Publish database file (see the doconce manual for details).
 
-BIBFILE: papers.pub
+% if FORMAT not in ("sphinx"):
+
+BIBFILE: ../papers.pub
+
+% else:
+
+.. bibliography:: papers.bib
+   :notcited:
+
+% endif
