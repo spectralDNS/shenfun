@@ -44,6 +44,7 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
+    'sphinxcontrib.bibtex'
 ]
 
 napoleon_google_docstring = False
@@ -146,7 +147,8 @@ latex_documents = [
     (master_doc, 'shenfun.tex', u'shenfun Documentation',
      u'Mikael Mortensen', 'manual'),
 ]
-
+latex_domain_indices = False
+latex_use_modindex = False
 
 # -- Options for manual page output ------------------------------------------
 
@@ -181,19 +183,11 @@ if on_rtd:
         path, filename = demo.split('/')
         os.system('doconce format sphinx {0}.do.txt'.format(demo))
         os.system('cp {0}.rst ../source/'.format(demo))
+        os.system("awk '$0~/key:/{print $2 }' papers.pub | while read -r line ; do \
+          doconce replace '['$line']_' ':cite:'\`$line\` ../source/{0}; done".format(filename))
         os.system('cp {0}/figs/*.png ../source/figs/'.format(path))
         if os.path.exists(os.path.join(path, 'movies')):
             os.system('cp {0}/movies/*.* ../source/movies/'.format(path))
     os.chdir('../source')
 
-#import sys
-#from unittest.mock import MagicMock
-#
-#class Mock(MagicMock):
-#    @classmethod
-#    def __getattr__(cls, name):
-#        return MagicMock()
-#
-#MOCK_MODULES = ['argparse', 'numpy', 'cython']
-#sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 # -- Extension configuration -------------------------------------------------

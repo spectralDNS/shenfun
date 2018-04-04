@@ -16,3 +16,5 @@ dependencies:
   - pyfftw
   - mpiFFT4py
   - mpi4py_fft
+  - sphinxcontrib-bibtex
+

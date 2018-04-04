@@ -20,6 +20,7 @@ Welcome to shenfun's documentation!
    kleingordon
    poisson3d
    kuramatosivashinsky
+   zrefs
 
 Indices and tables
 ==================
