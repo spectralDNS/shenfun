@@ -10,17 +10,6 @@ but works only for tensor product grids and the spectral Galerking
 method. The code is parallelized with MPI through the `mpi4py-fft`_
 package.
 
-The demo folder contains several examples for the Poisson, Helmholtz and
-Biharmonic equations. For extended documentation see
-
--  `Demo for the nonlinear Klein-Gordon equation`_
--  `Demo for the Kuramato-Sivashinsky equation`_
--  `Demo for Poisson equation in 1D with inhomogeneous Dirichlet
-   boundary conditions`_
--  `Demo for Poisson equation in 3D with Dirichlet in one and
-   periodicity in remaining two dimensions`_
--  `Shenfun paper`_
-
 Spectral Galerkin
 -----------------
 
@@ -73,33 +62,19 @@ transformed from 16 real data to 9 complex, using the Hermitian symmetry of
 real transforms, i.e., the shape of a transformed array in the V space will be
 (14, 15, 9)).
 
-To solve a Poisson problem with the above triply periodic tensor product space,
-one may assemble the coefficient matrix as
+Getting started
+---------------
 
->>> from shenfun import TestFunction, TrialFunction, inner, div, grad
->>> u = TrialFunction(V)
->>> v = TestFunction(V)
->>> A = inner(-div(grad(u)), v)
+Shenfun consists of classes and functions that aim at making it easy to implement
+PDE's in tensor product domains. The most important everyday tools are
 
-or similarly using integration by parts
-
->>> A = inner(grad(u), grad(v))
-
-Note the similarity with FEniCS, and the similarity between code and
-mathematical problem.
-
-To solve the Poisson equation, we need to first assemble a right hand side, 
-for example a random function
-
->>> import numpy as np
->>> from shenfun import Function 
->>> f = Function(V)
->>> f[:] = np.random.random(f.shape)
->>> f_hat = inner(f, v)
->>> f_hat = A.solve(f_hat)
-
-Complete examples for the Poisson equation with various boundary conditions 
-are given in the `demo`_ folder.
+	* :class:`TensorProductSpace`
+	* :class:`TrialFunction`
+	* :class:`TestFunction`
+	* :class:`Function`
+	* :func:`div`
+	* :func:`grad`
+	* :func:`project`
 
 Installation
 ------------
