@@ -184,7 +184,7 @@ if on_rtd:
         path, filename = demo.split('/')
         os.system('doconce format sphinx {0}.do.txt'.format(demo))
         os.system('cp {0}.rst ../source/'.format(demo))
-        os.system("""awk '$0~/key:/{print $2 }' papers.pub | while read -r line ; do doconce replace '['$line']_' ':cite:'\`$line\` ../source/%s; done""" % (filename))
+        os.system("""awk '$0~/key:/{print $2 }' papers.pub | while read -r line ; do doconce replace '['$line']_' ':cite:'\`$line\` ../source/%s.rst; done""" % (filename))
         os.system('cp {0}/figs/*.png ../source/figs/'.format(path))
         if os.path.exists(os.path.join(path, 'movies')):
             os.system('cp {0}/movies/*.* ../source/movies/'.format(path))
