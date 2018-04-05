@@ -88,7 +88,7 @@ SN = bases.ShenNeumannBasis
 
 @inheritdocstrings
 class BLLmat(SpectralMatrix):
-    r"""Mass matrix for inner product 
+    r"""Mass matrix for inner product
 
     .. math::
 
@@ -133,7 +133,7 @@ class BLLmat(SpectralMatrix):
 
 @inheritdocstrings
 class BDDmat(SpectralMatrix):
-    r"""Mass matrix for inner product 
+    r"""Mass matrix for inner product
 
     .. math::
 
@@ -170,7 +170,7 @@ class BDDmat(SpectralMatrix):
 
 @inheritdocstrings
 class BNNmat(SpectralMatrix):
-    r"""Mass matrix for inner product 
+    r"""Mass matrix for inner product
 
     .. math::
 
@@ -194,7 +194,7 @@ class BNNmat(SpectralMatrix):
 
 @inheritdocstrings
 class BBBmat(SpectralMatrix):
-    r"""Mass matrix for inner product 
+    r"""Mass matrix for inner product
 
     .. math::
 
@@ -231,7 +231,7 @@ class BBBmat(SpectralMatrix):
 
 @inheritdocstrings
 class ADDmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product 
+    r"""Stiffness matrix for inner product
 
     .. math::
 
@@ -298,7 +298,7 @@ class ADDmat(SpectralMatrix):
 
 @inheritdocstrings
 class GDDmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product 
+    r"""Stiffness matrix for inner product
 
     .. math::
 
@@ -366,7 +366,7 @@ class GDDmat(SpectralMatrix):
 
 @inheritdocstrings
 class ANNmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product 
+    r"""Stiffness matrix for inner product
 
     .. math::
 
@@ -392,14 +392,14 @@ class ANNmat(SpectralMatrix):
 
 @inheritdocstrings
 class ABBmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product 
+    r"""Stiffness matrix for inner product
 
     .. math::
 
         A_{kj} = (\psi'_j, \psi'_k)_w
 
     where
- 
+
     .. math::
 
         j = 0, 1, ..., N-4 \text{ and } k = 0, 1, ..., N-4
@@ -421,14 +421,14 @@ class ABBmat(SpectralMatrix):
 
 @inheritdocstrings
 class GLLmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product 
+    r"""Stiffness matrix for inner product
 
     .. math::
 
         B_{kj} = (L_j'', L_k)_w
 
     where
-    
+
     .. math::
 
         j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N
@@ -450,7 +450,7 @@ class GLLmat(SpectralMatrix):
 
 @inheritdocstrings
 class PBBmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product 
+    r"""Stiffness matrix for inner product
 
     .. math::
 
@@ -478,7 +478,7 @@ class PBBmat(SpectralMatrix):
 
 @inheritdocstrings
 class SBBmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product 
+    r"""Stiffness matrix for inner product
 
     .. math::
 
@@ -503,7 +503,7 @@ class SBBmat(SpectralMatrix):
 
 @inheritdocstrings
 class CLLmat(SpectralMatrix):
-    r"""Matrix for inner product 
+    r"""Matrix for inner product
 
     .. math::
 
@@ -551,7 +551,7 @@ class CLLmat(SpectralMatrix):
 
 @inheritdocstrings
 class CLLmatT(SpectralMatrix):
-    r"""Matrix for inner product 
+    r"""Matrix for inner product
 
     .. math::
 

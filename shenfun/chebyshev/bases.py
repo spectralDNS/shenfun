@@ -201,12 +201,12 @@ class Basis(ChebyshevBase):
             Number of quadrature points
         quad : str, optional
                Type of quadrature
-              
+
                GL - Chebyshev-Gauss-Lobatto
-              
+
                GC - Chebyshev-Gauss
         plan : bool, optional
-               Plan transforms on __init__ or not. If basis is part of a 
+               Plan transforms on __init__ or not. If basis is part of a
                TensorProductSpace, then planning needs to be delayed.
         domain : 2-tuple of floats, optional
                  The computational domain
@@ -330,15 +330,15 @@ class ShenDirichletBasis(ChebyshevBase):
             Number of quadrature points
         quad : str, optional
                Type of quadrature
- 
+
                GL - Chebyshev-Gauss-Lobatto
- 
+
                GC - Chebyshev-Gauss
 
         bc : 2-tuple of floats, optional
              Boundary conditions at x=(1,-1). For Poisson eq.
         plan : bool, optional
-               Plan transforms on __init__ or not. If basis is part of a 
+               Plan transforms on __init__ or not. If basis is part of a
                TensorProductSpace, then planning needs to be delayed.
         domain : 2-tuple of floats, optional
                  The computational domain
@@ -465,15 +465,15 @@ class ShenNeumannBasis(ChebyshevBase):
             Number of quadrature points
         quad : str, optional
                Type of quadrature
- 
+
                GL - Chebyshev-Gauss-Lobatto
- 
+
                GC - Chebyshev-Gauss
 
         mean : float, optional
                Mean value
         plan : bool, optional
-               Plan transforms on __init__ or not. If basis is part of a 
+               Plan transforms on __init__ or not. If basis is part of a
                TensorProductSpace, then planning needs to be delayed.
         domain : 2-tuple of floats, optional
                  The computational domain
@@ -581,13 +581,13 @@ class ShenBiharmonicBasis(ChebyshevBase):
             Number of quadrature points
         quad : str, optional
                Type of quadrature
- 
+
                GL - Chebyshev-Gauss-Lobatto
- 
+
                GC - Chebyshev-Gauss
 
         plan : bool, optional
-               Plan transforms on __init__ or not. If basis is part of a 
+               Plan transforms on __init__ or not. If basis is part of a
                TensorProductSpace, then planning needs to be delayed.
         domain : 2-tuple of floats, optional
                  The computational domain
