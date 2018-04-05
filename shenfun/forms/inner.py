@@ -18,12 +18,12 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
 
     Parameters
     ----------
-        expr0, expr1:  Expr          
+        expr0, expr1:  Expr
                        Test/trial function, or expression involving test/trial
                        function, e.g., div, grad. One of expr0 or expr1 need to
                        be an expression on a testfunction, and if the second
                        then involves a trial function, a matrix is returned.
-                       If one of expr0/expr1 is a test function and the other 
+                       If one of expr0/expr1 is a test function and the other
                        one is a Function/Array, then a linear form is assumed
                        and an assembled vector is returned
 

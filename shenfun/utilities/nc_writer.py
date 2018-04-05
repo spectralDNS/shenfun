@@ -25,7 +25,7 @@ class NCWriter(object):
         T : TensorProductSpace
             Instance of a TensorProductSpace. Must be the same as the space
             used for storing with 'write_tstep' and 'write_slice_tstep'
-        
+
         clobber : bool
     """
     def __init__(self, ncname, names, T, **kwargs):

@@ -20,13 +20,13 @@ Chebyshev:
     ShenDirichletBasis:
         basis functions:
             :math:`\phi_k = T_k-T_{k+2}`
-            
+
             :math:`\phi_{N-1} = 0.5(T_0+T_1)` for Poisson's equation
-            
+
             :math:`\phi_{N} = 0.5(T_0-T_1)` for Poisson's equation
-        
+
         basis: :math:`span(\phi_k, k=0,1,...,N)`
- 
+
         :math:`u(1)=a, u(-1)=b, \hat{u}_{N-1}=a, \hat{u}_{N}=b`
 
         Note that there are only N-1 unknown coefficients, :math:`\hat{u}_k`, since
@@ -56,15 +56,15 @@ Chebyshev:
 
 Legendre:
     LegendreBasis:
-        basis function: 
-            :math:`\phi_k = L_k`                    
+        basis function:
+            :math:`\phi_k = L_k`
 
         basis:
             :math:`span(L_k, k=0,1,...N)`
 
     ShenDirichletBasis:
         basis function:
-            :math:`\phi_k = L_k-L_{k+2}`             
+            :math:`\phi_k = L_k-L_{k+2}`
 
         basis:
             :math:`span(\phi_k, k=0,1,...,N)`
@@ -135,9 +135,9 @@ class SpectralBase(object):
             Number of quadrature points
         quad : str
                Type of quadrature
- 
+
                GL - Chebyshev-Gauss-Lobatto
-         
+
                GC - Chebyshev-Gauss
 
                LG - Legendre-Gauss
@@ -181,7 +181,7 @@ class SpectralBase(object):
         Parameters
         ---------
             N : int or list/array of ints
-                May be a list/array of ints if base is part of a 
+                May be a list/array of ints if base is part of a
                 TensorProductSpace with several dimensions
             axis : int, optional
                    The axis of this base in a TensorProductSpace
@@ -200,7 +200,7 @@ class SpectralBase(object):
         ----------
             N : int or list/array of ints
                 If N is a float then we have a 1D array. If N is an array, then
-                the wavenumber returned is a 1D array broadcasted to the shape 
+                the wavenumber returned is a 1D array broadcasted to the shape
                 of N.
             axis : int, optional
                    The axis of this base in a TensorProductSpace
@@ -228,7 +228,7 @@ class SpectralBase(object):
         ----
         The returned array has shape one in all ndims-1 dimensions apart
         from axis.
-        
+
         Example
         -------
         >>> import numpy as np
@@ -251,7 +251,7 @@ class SpectralBase(object):
             output_array : array, optional
                            Expansion coefficients
             fast_transform : bool, optional
-                             If True use fast transforms, if False use 
+                             If True use fast transforms, if False use
                              Vandermonde type
 
         Note
@@ -272,11 +272,11 @@ class SpectralBase(object):
             output_array : array, optional
                            Expansion coefficients
             fast_transform : bool, optional
-                             If True use fast transforms, if False use 
+                             If True use fast transforms, if False use
                              Vandermonde type
 
         Note
-        ---- 
+        ----
         If input_array/output_array are not given, then use predefined arrays
         as planned with self.plan
 
@@ -304,13 +304,13 @@ class SpectralBase(object):
             output_array : array, optional
                            Expansion coefficients
             fast_transform : bool, optional
-                             If True use fast transforms, if False use 
+                             If True use fast transforms, if False use
                              Vandermonde type
 
         Note
-        ---- 
+        ----
         If input_array/output_array are not given, then use predefined arrays
-        as planned with self.plan 
+        as planned with self.plan
 
         """
         if input_array is not None:
@@ -498,7 +498,7 @@ class SpectralBase(object):
 
         Parameters
         ----------
-            shape : array 
+            shape : array
                     Local shape of global array
             axis : int
                    This base's axis in global TensorProductSpace
@@ -619,7 +619,7 @@ class SpectralBase(object):
     def sl(self, a):
         """Return a list of slices, broadcasted to the shape of a forward
         output array, with 'a' along self.axis
-        
+
         Parameters
         ----------
             a : int or slice object
@@ -691,7 +691,7 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
 
     Parameters
     ----------
-        test : 2-tuple of (Basis, integer)     
+        test : 2-tuple of (Basis, integer)
                Basis is any of the classes from
 
                    shenfun.chebyshev.bases
@@ -700,17 +700,17 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
 
                    shenfun.fourier.bases
 
-               The integer determines the numer of times the basis is 
+               The integer determines the numer of times the basis is
                differentiated. The test represents the matrix row
         trial : 2-tuple of (Basis, integer)
                 Either an basis of argument 1 (trial) or 2 (Function)
-                
+
                     If argument = 1, then a bilinear form is assembled to
                     a matrix. Trial represents matrix column
 
                     If argument = 2, then a linear form is assembled and the
                     'trial' represents a Function evaluated at quadrature nodes
-        out : array, optional 
+        out : array, optional
               Return array
         axis : int
                Axis to take the inner product over

@@ -51,7 +51,7 @@ class HDF5Writer(object):
         Note
         ----
         Fields with names 'name' will be stored under
-            
+
             - name/{2,3}D/tstep
 
         """
@@ -102,7 +102,7 @@ class HDF5Writer(object):
         ----
         Slices of fields with name 'name' will be stored for, e.g.,
         sl = [slice(None), 16, slice(None)], as
-            
+
             name/2D/slice_16_slice/tstep
 
         """

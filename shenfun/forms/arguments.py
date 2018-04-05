@@ -36,14 +36,14 @@ class Expr(object):
                    >>>         [0, 0, 2]]
 
                             meaning the first term has two derivatives in first
-                            direction and none in the others, the second has two 
+                            direction and none in the others, the second has two
                             derivatives in second direction, etc.
 
                    The Expr div(grad(u)), where u is a scalar, is as such
                    represented as an array of shape (1, 3, 3), 1 meaning
                    it's a scalar, the first 3 because the Expr consists of
                    the sum of three terms, and the last 3 because it is 3D:
-                   
+
                    >>>        array([[[2, 0, 0],
                    >>>                [0, 2, 0],
                    >>>                [0, 0, 2]]])
@@ -237,7 +237,7 @@ class BasisFunction(object):
     ----------
         space: TensorProductSpace
         argument: int
-                  Argument to Expr form. 
+                  Argument to Expr form.
 
                   0 - TestFunction
 
@@ -311,7 +311,7 @@ class BasisFunction(object):
 
 class TestFunction(BasisFunction):
     """Test function - BasisFunction with argument = 0
-    
+
     Parameters
     ----------
         space: TensorProductSpace
@@ -329,7 +329,7 @@ class TestFunction(BasisFunction):
 
 class TrialFunction(BasisFunction):
     """Trial function - BasisFunction with argument = 1
-    
+
     Parameters
     ----------
         space: TensorProductSpace

@@ -57,7 +57,7 @@ class TDMA(la_TDMA):
 
 
 class Helmholtz(object):
-    r"""Helmholtz solver 
+    r"""Helmholtz solver
 
     .. math::
 
@@ -68,7 +68,7 @@ class Helmholtz(object):
     a multidimensional problem.
 
     The user must provide mass and stiffness matrices and scale arrays
-    :math:`(\alpha/\beta)` to each matrix. The matrices and scales can be 
+    :math:`(\alpha/\beta)` to each matrix. The matrices and scales can be
     provided as either kwargs or args
 
     As 4 arguments
@@ -86,7 +86,7 @@ class Helmholtz(object):
 
     Parameters
     ----------
-        ADDmat : A 
+        ADDmat : A
                  Stiffness matrix (Dirichlet basis)
         BDDmat : B
                  Mass matrix (Dirichlet basis)
@@ -108,45 +108,45 @@ class Helmholtz(object):
         \nabla^2 u = b
 
     With the spectral Galerkin method we multiply this equation with a test
-    function (:math:`v`) and integrate (weighted inner product :math:`(\cdot, \cdot)_w`) 
+    function (:math:`v`) and integrate (weighted inner product :math:`(\cdot, \cdot)_w`)
     over the domain
 
     .. math::
-        
+
         (v, \nabla^2 u)_w = (v, b)_w
 
-    
+
     See https://rawgit.com/spectralDNS/shenfun/master/docs/src/Poisson3D/poisson3d_bootstrap.html
-    for details, since it is actually quite involved. But basically, one 
+    for details, since it is actually quite involved. But basically, one
     obtains a linear algebra system to be solved along the :math:`z`-axis for
     all combinations of the two Fourier indices :math:`k` and :math:`l`
 
     .. math::
-            
+
         ((2\pi)^2 A_{mj} - (k^2 + l^2) B_{mj}) \hat{u}[k, l, j] = (v, b)_w[k, l, m]
 
     Note that :math:`k` only varies along :math:`x`-direction, whereas :math:`l`
-    varies along :math:`y`. To allow for Numpy broadcasting these two variables 
+    varies along :math:`y`. To allow for Numpy broadcasting these two variables
     are stored as arrays of shape
 
     .. math::
 
         k : (N, 1, 1)
-        
+
         l : (1, M, 1)
 
-    Here it is assumed that the solution array :math:`\hat{u}` has shape 
+    Here it is assumed that the solution array :math:`\hat{u}` has shape
     (N, M, P). Now, multiplying k array with :math:`\hat{u}` is achieved as an
     elementwise multiplication
 
-    .. math:: 
+    .. math::
 
         k \cdot \hat{u}
 
-    Numpy will then take care of broadcasting :math:`k` to an array of shape 
-    (N, M, P) before performing the elementwise multiplication. Likewise, the 
-    constant scale :math:`(2\pi)^2` in front of the :math:`A_{mj}` matrix is 
-    stored with shape (1, 1, 1), and multiplying with :math:`\hat{u}` is 
+    Numpy will then take care of broadcasting :math:`k` to an array of shape
+    (N, M, P) before performing the elementwise multiplication. Likewise, the
+    constant scale :math:`(2\pi)^2` in front of the :math:`A_{mj}` matrix is
+    stored with shape (1, 1, 1), and multiplying with :math:`\hat{u}` is
     performed as if it was a scalar (as it here happens to be).
 
     This is where the scale arrays in the signature to the Helmholt solver comes
@@ -259,11 +259,11 @@ class Helmholtz(object):
 class Biharmonic(object):
     r"""Multidimensional Biharmonic solver for
 
-    .. math:: 
+    .. math::
 
         a_0 u'''' + \alpha u'' + \beta u = b
 
-    where :math:`u` is the solution, :math:`b` is the right hand side and 
+    where :math:`u` is the solution, :math:`b` is the right hand side and
     :math:`a_0, \alpha` and :math:`\beta` are scalars, or arrays of scalars for
     a multidimensional problem.
 
@@ -272,26 +272,26 @@ class Biharmonic(object):
     as either kwargs or args
 
     As 6 arguments
-    
+
     Parameters
     ----------
         S : SpectralMatrix
             Biharmonic matrix
         A : SpectralMatrix
             Stiffness matrix
-        B : SpectralMatrix 
+        B : SpectralMatrix
             Mass matrix
         a0 : array
         alfa : array
         beta : array
 
     or as dict with key/values
-    
+
     Parameters
     ----------
-        SBBmat : S  
+        SBBmat : S
                  Biharmonic matrix
-        ABBmat : A 
+        ABBmat : A
                  Stiffness matrix
         BBBmat : B
                  Mass matrix
@@ -309,7 +309,7 @@ class Biharmonic(object):
         \nabla^4 u = b
 
     With the spectral Galerkin method we multiply this equation with a test
-    function (:math:`v`) and integrate (weighted inner product 
+    function (:math:`v`) and integrate (weighted inner product
     :math:`(\cdot, \cdot)_w`) over the domain
 
     .. math::
@@ -329,13 +329,13 @@ class Biharmonic(object):
     varies along :math:`y`. To allow for Numpy broadcasting these two variables
     are stored as arrays of shape
 
-    .. math:: 
+    .. math::
 
         k : (N, 1, 1)
 
         l : (1, M, 1)
 
-    Here it is assumed that the solution array :math:`\hat{u}` has shape 
+    Here it is assumed that the solution array :math:`\hat{u}` has shape
     (N, M, P). Now, multiplying :math:`k` array with :math:`\hat{u}` is
     achieved as
 
@@ -343,14 +343,14 @@ class Biharmonic(object):
 
         k \cdot \hat{u}
 
-    Numpy will then take care of broadcasting :math:`k` to an array of shape 
+    Numpy will then take care of broadcasting :math:`k` to an array of shape
     (N, M, P) before performing the elementwise multiplication. Likewise, the
-    constant scale :math:`(2\pi)^2` in front of the :math:`A_{mj}` matrix is 
+    constant scale :math:`(2\pi)^2` in front of the :math:`A_{mj}` matrix is
     stored with shape (1, 1, 1), and multiplying with :math:`\hat{u}` is
     performed as if it was a scalar (as it here happens to be).
 
     This is where the scale arrays in the signature to the Helmholt solver comes
-    from. :math:`a_0` is here :math:`(2\pi)^2`, whereas :math:`\alpha` and 
+    from. :math:`a_0` is here :math:`(2\pi)^2`, whereas :math:`\alpha` and
     :math:`\beta` are :math:`-2(k^2+l^2)` and :math:`(k^2+l^2)^2`, respectively.
     Note that :math:`k+l` is an array of shape (N, M, 1).
     """

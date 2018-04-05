@@ -205,7 +205,7 @@ class Basis(LegendreBase):
                    - LG - Legendre-Gauss
                    - GL - Legendre-Gauss-Lobatto
         plan : bool, optional
-               Plan transforms on __init__ or not. If basis is part of a 
+               Plan transforms on __init__ or not. If basis is part of a
                TensorProductSpace, then planning needs to be delayed.
         domain : 2-tuple of floats, optional
                  The computational domain
@@ -238,12 +238,12 @@ class ShenDirichletBasis(LegendreBase):
         bc : tuple of numbers
              Boundary conditions at edges of domain
         plan : bool, optional
-               Plan transforms on __init__ or not. If basis is part of a 
+               Plan transforms on __init__ or not. If basis is part of a
                TensorProductSpace, then planning needs to be delayed.
         domain : 2-tuple of floats, optional
                  The computational domain
         scaled : bool, optional
-                 Whether or not to scale test functions with 1/sqrt(4k+6). 
+                 Whether or not to scale test functions with 1/sqrt(4k+6).
                  Scaled test functions give a stiffness matrix equal to the
                  identity matrix.
     """
@@ -358,7 +358,7 @@ class ShenNeumannBasis(LegendreBase):
         mean : number
                mean value
         plan : bool, optional
-               Plan transforms on __init__ or not. If basis is part of a 
+               Plan transforms on __init__ or not. If basis is part of a
                TensorProductSpace, then planning needs to be delayed.
         domain : 2-tuple of floats, optional
                  The computational domain
@@ -462,7 +462,7 @@ class ShenBiharmonicBasis(LegendreBase):
                    - LG - Legendre-Gauss
                    - GL - Legendre-Gauss-Lobatto
         plan : bool, optional
-               Plan transforms on __init__ or not. If basis is part of a 
+               Plan transforms on __init__ or not. If basis is part of a
                TensorProductSpace, then planning needs to be delayed.
         domain : 2-tuple of floats, optional
                  The computational domain
@@ -576,7 +576,7 @@ class SecondNeumannBasis(LegendreBase):
         mean : number
                Mean value of solution
         plan : bool, optional
-               Plan transforms on __init__ or not. If basis is part of a 
+               Plan transforms on __init__ or not. If basis is part of a
                TensorProductSpace, then planning needs to be delayed.
         domain : 2-tuple of floats, optional
                  The computational domain
