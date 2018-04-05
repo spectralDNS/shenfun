@@ -113,6 +113,8 @@ html_static_path = ['_static']
 #
 # html_sidebars = {}
 
+#html_split_index = True
+#html_use_index=False
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
