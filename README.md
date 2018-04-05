@@ -23,7 +23,7 @@ For comments, issues, bug-reports and requests, please use the issue tracker of 
 
     Mikael Mortensen
     mikaem at math.uio.no
-    folk.uio.no/mikaem
+    http://folk.uio.no/mikaem
     Department of Mathematics
     University of Oslo
     Norway
