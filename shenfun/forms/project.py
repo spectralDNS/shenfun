@@ -13,14 +13,14 @@ def project(uh, T, output_array=None, uh_hat=None):
     ----------
         uh :  Expr or Function
         T :  TensorProductSpace
-        output_array :  Function(T, True)  
+        output_array :  Function(T, True)
                         Return array
         uh_hat :  Function(T, True)
-                  The transform of uh in uh's space, i.e., 
+                  The transform of uh in uh's space, i.e.,
                   TK = uh.function_space(); uh_hat = TK.forward(uh). This is
                   ok even though uh is part of a form, like div(grad(uh))
 
-    .. note:: Returns spectral expansion coefficients of projection, 
+    .. note:: Returns spectral expansion coefficients of projection,
               not the projection in physical space.
 
     Example

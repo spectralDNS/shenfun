@@ -48,7 +48,7 @@ class SparseMatrix(dict):
 
         Parameters
         ----------
-            v : array  
+            v : array
                 Numpy input array of ndim>=1
             c : array
                 Numpy output array of same ndim as v
@@ -59,7 +59,7 @@ class SparseMatrix(dict):
                          - python - Use numpy and vectorization
                          - self - To be implemented in subclass
                          - cython - Cython implementation that may be implemented in subclass
-        
+
         """
         assert v.shape == c.shape
         N, M = self.shape
@@ -286,7 +286,7 @@ class SpectralMatrix(SparseMatrix):
 
                 The int represents the number of times the trial function
                 should be differentiated. Representing matrix column.
-        test : 2-tuple of (basis, int) 
+        test : 2-tuple of (basis, int)
                As trial, but representing matrix row.
         scale : float
                 Scale matrix with this constant or array of constants
@@ -303,14 +303,14 @@ class SpectralMatrix(SparseMatrix):
         Chebyshev basis of first kind
 
         .. math::
- 
+
             \phi_k &= T_k \\
             V &= span\{\phi_k\}_{k=0}^{N}
 
         For homogeneous Dirichlet boundary conditions:
-      
+
         .. math::
-      
+
             \phi_k &= T_k - T_{k+2} \\
             V &= span\{\phi_k\}_{k=0}^{N-2}
 
@@ -328,7 +328,7 @@ class SpectralMatrix(SparseMatrix):
             \phi_k &= T_k - 2 \frac{k+2}{k+3} T_{k+2} + \frac{k+1}{k+3} T_{k+4} \\
             V &= span\{\phi_k\}_{k=0}^{N-4}
 
-        The scalar product is computed as a weighted inner product with 
+        The scalar product is computed as a weighted inner product with
         :math:`w=1/\sqrt{1-x^2}` the weights.
 
     Legendre basis:
@@ -395,15 +395,15 @@ class SpectralMatrix(SparseMatrix):
 
     >>> A = SpectralMatrix({}, (SD(N), 0), (SD(N), 2))
 
-    where (SD(N), 2) signals that we use the second derivative of this trial 
-    function. The number N is the number of quadrature points used for the 
+    where (SD(N), 2) signals that we use the second derivative of this trial
+    function. The number N is the number of quadrature points used for the
     basis.
 
     The automatically created matrices may be overloaded with more exactly
     computed diagonals.
 
     Note that matrices with the Neumann basis are stored using index space
-    :math:`k = 0, 1, ..., N-2`, i.e., including the zero index for a nonzero 
+    :math:`k = 0, 1, ..., N-2`, i.e., including the zero index for a nonzero
     average value.
 
     """
@@ -613,14 +613,14 @@ def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-12):
     ----------
         M : Numpy array of ndim=2
         abstol : float
-                 Tolerance. Only diagonals with max(:math:`|d|`) < tol are 
+                 Tolerance. Only diagonals with max(:math:`|d|`) < tol are
                  kept in the returned SparseMatrix, where :math:`d` is the
                  diagonal
         reltol : float
-                 Relative tolerance. Only diagonals with 
+                 Relative tolerance. Only diagonals with
                  max(:math:`|d|`)/max(:math:`|M|`) > reltol are kept in the
                  returned SparseMatrix
-    
+
     """
     d = {}
     relmax = abs(M).max()

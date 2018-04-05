@@ -26,8 +26,8 @@ class TensorProductSpace(object):
         comm : MPI communicator
         bases : list
                 List of 1D bases
-        axes : int, optional                
-               A tuple containing the order of which to perform transforms. 
+        axes : int, optional
+               A tuple containing the order of which to perform transforms.
                Last item is transformed first. Defaults to range(len(bases))
         dtype : data-type, optional
                 Type of input data in real physical space. If not provided it
@@ -155,7 +155,7 @@ class TensorProductSpace(object):
         Note
         ----
         The return array ab_hat is truncated to the shape of a_hat and b_hat.
-        
+
         Also note that self should have bases with padding for this method to give
         a convolution without aliasing. The padding is specified when creating
         instances of bases for the TensorProductSpace.
@@ -384,7 +384,7 @@ class TensorProductSpace(object):
             spectral : bool, optional
                        If True then return local shape of spectral space, i.e.,
                        the input to a backward transfer. If False then return
-                       local shape of physical space, i.e., the input to a 
+                       local shape of physical space, i.e., the input to a
                        forward transfer.
         """
         if not spectral:
@@ -513,7 +513,7 @@ class MixedTensorProductSpace(object):
         return self.spaces[0].ndim()
 
     def rank(self):
-        """Return rank of space"""        
+        """Return rank of space"""
         return 2
 
     def num_components(self):
@@ -594,7 +594,7 @@ class Convolve(object):
     backwards with padding
 
         a = Tp.backward(a_hat)
-        
+
         b = Tp.backward(b_hat)
 
     and then transforming the product a*b forward without truncation
