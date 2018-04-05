@@ -8,14 +8,39 @@ This is a demonstration of how the Python module "shenfun":
 equation in a 3D tensor product domain that has homogeneous Dirichlet boundary 
 conditions in one direction and periodicity in the
 remaining two. The solver described runs with MPI without any further
-considerations required from the user. Spectral convergence, as shown in Figure ref{fig:ct0}, is demonstrated. 
+considerations required from the user. Spectral convergence, as shown in Figure ref{fig:3d:ct0}, is demonstrated. 
 The demo is implemented in
 a single Python file "dirichlet_poisson3D.py":
 "https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py", and the numerical method is is described in more detail by J. Shen cite{shen1} and cite{shen95}.
 
-FIGURE: [figs/poisson3D_errornorm.png] Convergence of 3D Poisson solvers for both Legendre and Chebyshev modified basis function. label{fig:ct0}
+FIGURE: [figs/poisson3D_errornorm.png] Convergence of 3D Poisson solvers for both Legendre and Chebyshev modified basis function. label{fig:3d:ct0}
 
 TOC: on
+
+<%
+def mod(x):
+    return '`'+x+'`'
+def cls(x):
+    return '`'+x+'`'
+def func(x):
+    return '`'+x+'`'
+%>
+% if FORMAT in ("sphinx"):
+<%
+def mod(x):
+    if '.' in x:
+        return ':mod:'+'`'+x+'`'
+    return ':mod:'+'`'+'.'+x+'`'
+def cls(x):
+    if '.' in x:
+        return ':class:'+'`'+x+'`'
+    return ':class:'+'`'+'.'+x+'`'
+def func(x):
+    if '.' in x:
+        return ':func:'+'`'+x+'`'
+    return ':func:'+'`'+'.'+x+'`'
+%>
+% endif
 
 ======= Model problem =======
 ===== Poisson equation =====
@@ -24,7 +49,7 @@ The Poisson equation is given as
 
 !bt 
 \begin{align}
-\nabla^2 u(\bs{x}) &= f(\bs{x}) \quad \text{for }\, \bs{x}=(x, y, z) \in \Omega, label{eq:poisson}\\
+\nabla^2 u(\bs{x}) &= f(\bs{x}) \quad \text{for }\, \bs{x}=(x, y, z) \in \Omega, label{eq:3d:poisson}\\
 u(\pm 1 ,y, z) &=0, \\
 u(x, 2\pi, z) &= u(x, 0, z), \\
 u(x, y, 2\pi) &= u(x, y, 0),
@@ -33,7 +58,7 @@ u(x, y, 2\pi) &= u(x, y, 0),
 where $u(\bs{x})$ is the solution and $f(\bs{x})$ is a function. The domain
 $\Omega = [-1, 1]\times [0, 2\pi]^2$.
 
-To solve Eq. (ref{eq:poisson}) with the Galerkin method we need smooth basis
+To solve Eq. (ref{eq:3d:poisson}) with the Galerkin method we need smooth basis
 functions, $v(\bs{x})$, that live
 in the Hilbert space $H^1(\Omega)$ and that satisfy the given boundary
 conditions. To this end we will use one basis function for the $x$-direction,
@@ -63,8 +88,7 @@ $\bs{l}^{N_0} = (0, 1, \ldots, N_0-3)$, $\bs{m}^{N_1} =
 (-N_1/2, -N_1/2+1, \ldots, N_1/2-1)$ and $\bs{n}^{N_2} = (-N_2/2, -N_2/2+1,
 \ldots, N_2/2-1)$. However, due to "Hermitian symmetry": "https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.fft.rfft.html#numpy.fft.rfft", we only store $N_2/2+1$
 wavenumbers in the $z$-direction, such that $\bs{n}^{N_2} = (0, 1, \ldots,
-N_2/2)$. We refer to the Cartesian wavenumber mesh on vector form as
-$\bs{k}$:
+N_2/2)$. We refer to the Cartesian wavenumber mesh on vector form as $\bs{k}$:
 
 !bt
 \bs{k} = \{(l, m, n)  \in \bs{l}^{N_0} \times \bs{m}^{N_1} \times \bs{n}^{N_2}\}. 
@@ -91,7 +115,7 @@ And then we look for discrete solutions $u \in W^{\bs{N}}$ like
 !bt
 \begin{align}
 u(\bs{x}) &= \sum_{l\in \bs{l}^{N_0}} \sum_{m\in \bs{m}^{N_1}}\sum_{n\in
-\bs{n}^{N_2}}\hat{u}_{l,m,n} \mathcal{X}_l(x) \mathcal{Y}_m(y) \mathcal{Z}_n(z), label{eq:u} \\
+\bs{n}^{N_2}}\hat{u}_{l,m,n} \mathcal{X}_l(x) \mathcal{Y}_m(y) \mathcal{Z}_n(z), label{eq:3d:u} \\
  &= \sum_{\ts{k} \in \bs{k}}\hat{u}_{\ts{k}} v_{\ts{k}}(\bs{x}),
 \end{align}
 !et
@@ -107,7 +131,7 @@ W^{\bs{N}}$ such that
 \begin{equation}
 \int_{\Omega} \nabla^2 u \, \overline{v} \, w\, \bs{dx} = \int_{\Omega} f \,
 \overline{v}\, w\, \bs{dx} \quad
-\forall v \, \in \, W^{\bs{N}}. label{eq:varform} 
+\forall v \, \in \, W^{\bs{N}}. label{eq:3d:varform} 
 \end{equation}
 !et
 Here $\bs{dx}=dxdydz$, and the overline represents a complex conjugate, which is needed here because
@@ -135,9 +159,9 @@ Gauss or Gauss-Lobatto. The quadrature points for the Fourier bases are the
 uniform $\{y_j\}_{j=0}^{N_1-1}=2\pi j / N_1$ and $\{z_k\}_{k=0}^{N_2-1} = 2 \pi
 k/N_2$.
 
-Inserting for test function (ref{eq:u}) and trialfunction
+Inserting for test function (ref{eq:3d:u}) and trialfunction
 $v_{p,q,r} = \mathcal{X}_{p} \mathcal{Y}_q \mathcal{Z}_r$ on the
-left hand side of (ref{eq:varform}), we get 
+left hand side of (ref{eq:3d:varform}), we get 
 
 !bt
 \begin{align*}
@@ -156,7 +180,7 @@ B_{pl} = \left( \mathcal{X}_l, \mathcal{X}_p \right)_w^{N_0} = \sum_{i=0}^{N_0-1
 \mathcal{X}_p(x_i) w(x_i),
 \end{equation}
 !et
-is used to represent an $l_2$ inner product along only the first, nonperiodic,
+is used to represent an $L_2$ inner product along only the first, nonperiodic,
 direction. The factor $(2\pi)^2$ above comes from integrating over the two periodic
 directions, since 
 !bt
@@ -168,7 +192,7 @@ directions, since
 where $\delta_{ij}$ is the Kronecker delta-function, which is one for $i=j$ and
 zero otherwise. 
 
-The right hand side of Eq. (ref{eq:varform}) is computed as
+The right hand side of Eq. (ref{eq:3d:varform}) is computed as
 
 !bt
 \begin{equation}
@@ -190,7 +214,7 @@ be found as follows
 
 Now, when $\hat{u}_{\ts{k}}$ is found by solving this linear system over the
 entire computational mesh, it may be
-transformed to real space $u(\bs{x})$ using (ref{eq:u}). Note that the matrices
+transformed to real space $u(\bs{x})$ using (ref{eq:3d:u}). Note that the matrices
 $A \in \mathbb{R}^{N_0-2, N_0-2}$ and $B \in \mathbb{R}^{N_0-2, N_0-2}$ differs for Legendre or Chebyshev bases, but
 for either case they have a
 special structure that allows for a solution to be found very efficiently
@@ -205,14 +229,14 @@ this end we choose a smooth analytical function that satisfies the given boundar
 conditions:
 !bt
 \begin{equation}
-u_e(x, y, z) = \left(\cos(4x) + \sin(2y) + \sin(4z)\right)(1-x^2). label{eq:u_e}
+u_e(x, y, z) = \left(\cos(4x) + \sin(2y) + \sin(4z)\right)(1-x^2). label{eq:3d:u_e}
 \end{equation}
 !et
 Sending $u_e$ through the Laplace operator, we obtain the right hand side
 !bt
 \begin{equation}
  \nabla^2 u_e(x,y,z) = -16(1 - x^2) \cos(4 x) + 16 x \sin(4 x) - 2 \cos(4 x)
-                  - (1-x^2)(4 \sin(2y) + 16\sin(4z)).  label{eq:solution}
+                  - (1-x^2)(4 \sin(2y) + 16\sin(4z)).  label{eq:3d:solution}
 \end{equation}
 !et
 
@@ -240,12 +264,12 @@ from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
 from mpi4py import MPI
 !ec
 
-We use `sympy` for the manufactured solution and `numpy` for testing. MPI for
+We use `Sympy` for the manufactured solution and `Numpy` for testing. MPI for
 Python (`mpi4py`) is required for running the solver with MPI. 
 
 ===== Manufactured solution =====
 
-The exact solution $u_e(x, y, z)$ and the right hand side $f_e(x, y, z)$ are created using `sympy` as follows 
+The exact solution $u_e(x, y, z)$ and the right hand side $f_e(x, y, z)$ are created using `Sympy` as follows 
 !bc pycod
 x, y, z = symbols("x,y,z")
 ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-x**2)
@@ -263,17 +287,15 @@ discretize, using the computational mesh
 !et
 and a finite number of basis functions. 
 
-Note that it is not mandatory to use `sympy` for the manufactured solution. Since the
-solution is known (ref{eq:solution}), we could just as well simply use `Numpy`
+Note that it is not mandatory to use `Sympy` for the manufactured solution. Since the
+solution is known (ref{eq:3d:solution}), we could just as well simply use `Numpy`
 to compute $f_e$. However, with `Sympy` it is much
 easier to experiment and quickly change the solution.
 
 ===== Discretization and MPI =====
 
 We create three bases with given size, one for each dimension of the problem.
-From these three bases a "TensorProductSpace":
-"https://github.com/spectralDNS/shenfun/blob/master/shenfun/tensorproductspace.py#L12"
-is created.
+From these three bases a ${cls('TensorProductSpace')} is created.
 !bc pycod
 # Size of discretization
 N = [14, 15, 16]
@@ -288,7 +310,7 @@ X = T.local_mesh()
 
 Note that we can either choose a Legendre or a Chebyshev basis for the
 nonperiodic direction. The
-`TensorProductSpace` class takes an MPI communicator as first argument and the
+${cls('TensorProductSpace')} class takes an MPI communicator as first argument and the
 computational mesh is distributed internally using the `pencil` method. The
 `T.local_mesh` method returns the mesh local to each processor. The `axes`
 keyword determines the order of transforms going back and forth between real and
@@ -367,7 +389,7 @@ approach can be used with up to $\min \{N_1(N_2/2+1), N_0 N_1\}$ processors.
 
 ===== Variational formulation =====
 
-The variational problem (ref{eq:varform}) can be assembled using `shenfun`'s
+The variational problem (ref{eq:3d:varform}) can be assembled using `shenfun`'s
 form language, which is perhaps surprisingly similar to FEniCS. 
 !bc pycod
 u = TrialFunction(T)
@@ -383,12 +405,11 @@ matrices = inner(v, div(grad(u)))
 The Laplacian operator is recognized as `div(grad)`. The `matrices` object is a
 dictionary representing the left hand side of (ref{eq:AB}), and there are two
 keys: (`ADDmat`, `BDDmat`). The value of `matrices["ADDmat"]` is an object of
-type "SpectralMatrix":
-"https://github.com/spectralDNS/shenfun/blob/master/shenfun/matrixbase.py#L261",
+type ${cls('SpectralMatrix')},
 which is `shenfun`'s type for a matrix. This matrix represents $A_{lj}$, see
 (ref{eq:AB}), and it has an attribute `scale` that is
 equal to $(2\pi)^2$ (also see (ref{eq:AB})).  The other key in matrices
-is `BDDmat`, and the value here is a `SpectralMatrix` representing $B_{lj}$ from
+is `BDDmat`, and the value here is a ${cls('SpectralMatrix')} representing $B_{lj}$ from
 (ref{eq:AB}). This matrix has an attribute `scale` that is equal to $m^2+n^2$.
 This `scale` is stored as a numpy array of shape $(1, 15, 9)$, representing the
 set
@@ -420,14 +441,20 @@ if comm.Get_rank() == 0:
 
 ===== Convergence test =====
 
-A complete solver is given in Sec. ref{sec:complete}. This solver is created such that it takes in two commandline arguments and prints out the $l_2$-errornorm of the solution in the end. We can use this to write a short script that performs a convergence test. The solver is run like
+A complete solver is given in Sec. ref{sec:3d:complete}. This solver is created 
+such that it takes in two commandline arguments and prints out the 
+$L_2$-errornorm of the solution in the end. We can use this to write a short
+script that performs a convergence test. The solver is run like
 !bc
 >>> python dirichlet_poisson3D.py 32 legendre
 Error=6.5955040031498912e-10
 !ec
-for a discretization of size $\bs{N}= N^3 = 32^3$ and for the Legendre basis. Alternatively, change `legendre` to `chebyshev` for the Chebyshev basis.  
+for a discretization of size $\bs{N}= N^3 = 32^3$ and for the Legendre basis.
+Alternatively, change `legendre` to `chebyshev` for the Chebyshev basis.  
 
-We set up the solver to run for a list of $N=[8, 10, \ldots, 38]$, and collect the errornorms in arrays to be plotted. Such a script can be easily created with the "subprocess": "https://docs.python.org/3/library/subprocess.html" module
+We set up the solver to run for a list of $N=[8, 10, \ldots, 38]$, and collect
+the errornorms in arrays to be plotted. Such a script can be easily created 
+with the "subprocess": "https://docs.python.org/3/library/subprocess.html" module
 
 !bc pycod
 import subprocess
@@ -451,7 +478,7 @@ for basis in ('legendre', 'chebyshev'):
 !ec
 
 The error can be plotted using "matplotlib": "https://matplotlib.org", and the
-generated figure is shown in the summary's Fig. ref{fig:ct0}. The spectral
+generated figure is shown in the summary's Fig. ref{fig:3d:ct0}. The spectral
 convergence is evident and we can see that after $N=25$ roundoff errors dominate
 as the errornorm trails off around $10^{-13}$.
 
@@ -471,7 +498,7 @@ plt.show()
 # FIGURE: [poisson1D_errornorm.png] Convergence test of Legendre and Chebyshev 1D Poisson solvers. label{fig:ct}
 
 ===== Complete solver =====
-label{sec:complete}
+label{sec:3d:complete}
 A complete solver, that can use either Legendre or Chebyshev bases, chosen as a command-line argument, is shown below.
 
 !bc
@@ -549,10 +576,19 @@ uj = ul(*X)
 print("Error=%2.16e" %(np.linalg.norm(uj-uq)))
 !ec
 
-======= Bibliography =======
+#======= Bibliography =======
 
 ## Publish (https://bitbucket.org/logg/publish is used to
 ## handle references. The line below specifies the name of
 ## the Publish database file (see the doconce manual for details).
 
+% if FORMAT not in ("sphinx"):
+
 BIBFILE: papers.pub
+
+% else:
+
+.. bibliography:: papers.bib
+   :notcited:
+
+% endif
