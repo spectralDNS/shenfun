@@ -1,5 +1,3 @@
-#pylint: disable=line-too-long, missing-docstring
-
 import numpy as np
 from shenfun.tensorproductspace import MixedTensorProductSpace
 from .arguments import Expr, TestFunction, TrialFunction, BasisFunction, Array
@@ -7,41 +5,40 @@ from .inner import inner
 
 __all__ = ('project',)
 
+
 def project(uh, T, output_array=None, uh_hat=None):
-    """Project uh to tensor product space T
+    r"""Project uh to tensor product space T
 
-    args:
-        uh        Expr or Function
-        T         TensorProductSpace instance
+    Parameters
+    ----------
+        uh :  Expr or Function
+        T :  TensorProductSpace
+        output_array :  Function(T, True)
+                        Return array
+        uh_hat :  Function(T, True)
+                  The transform of uh in uh's space, i.e.,
+                  TK = uh.function_space(); uh_hat = TK.forward(uh). This is
+                  ok even though uh is part of a form, like div(grad(uh))
 
-    kwargs:
-        output_array  Function(T, True)  Return array
-        uh_hat        Function(T, True)  The transform of uh in uh's space,
-                                         i.e.,
-                                           TK = uh.function_space()
-                                           uh_hat = TK.forward(uh)
-                                         This is ok even though uh is part of
-                                         a form, like div(grad(uh))
+    .. note:: Returns spectral expansion coefficients of projection,
+              not the projection in physical space.
 
-    Note: Returns spectral expansion coefficients of projection, not the
-          projection in physical space.
+    Example
+    -------
 
-    Example:
-
-    import numpy as np
-    from mpi4py import MPI
-    from shenfun import chebyshev, fourier, project, TensorProductSpace, \
+    >>> import numpy as np
+    >>> from mpi4py import MPI
+    >>> from shenfun import chebyshev, fourier, project, TensorProductSpace, \
         Function, Dx
-
-    N = 16
-    comm = MPI.COMM_WORLD
-    T0 = chebyshev.bases.Basis(N)
-    K0 = fourier.bases.R2CBasis(N)
-    T = TensorProductSpace(comm, (T0, K0))
-    uj = Function(T, False)
-    uj[:] = np.random.random(uj.shape)
-    u_hat = project(uj, T)    # Same as u_hat=Function(T);u_hat = T.forward(uj, u_hat)
-    du_hat = project(Dx(uj, 0, 1), T, uh_hat=u_hat)
+    >>> N = 16
+    >>> comm = MPI.COMM_WORLD
+    >>> T0 = chebyshev.bases.Basis(N)
+    >>> K0 = fourier.bases.R2CBasis(N)
+    >>> T = TensorProductSpace(comm, (T0, K0))
+    >>> uj = Function(T, False)
+    >>> uj[:] = np.random.random(uj.shape)
+    >>> u_hat = project(uj, T)    # Same as u_hat=Function(T);u_hat = T.forward(uj, u_hat)
+    >>> du_hat = project(Dx(uj, 0, 1), T, uh_hat=u_hat)
 
     """
 

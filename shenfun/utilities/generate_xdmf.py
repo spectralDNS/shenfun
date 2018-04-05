@@ -1,5 +1,4 @@
-# pylint: disable=line-too-long, missing-docstring
-
+# pylint: disable=line-too-long
 import copy
 import six
 from numpy import dtype
