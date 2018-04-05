@@ -511,8 +511,7 @@ class PDMA(object):
     def PDMA_Solve(l2, l1, d, u1, u2, b): # pragma: no cover
         """Solve method for PDM (for testing only)"""
         n = d.shape[0]
-        bc = np.zeros_like(b)
-        bc[:] = b[:]
+        bc = np.full_like(b, b)
 
         bc[2] -= l1[0]*bc[0]
         bc[3] -= l1[1]*bc[1]

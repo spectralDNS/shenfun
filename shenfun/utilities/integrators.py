@@ -156,7 +156,7 @@ class ETDRK4(IntegratorBase):
         self.a = a
 
     def solve(self, u, u_hat, dt, trange):
-        """Integrate forward in end_time
+        """Integrate forward in time
 
         args:
             u      Function     The solution array in physical space
