@@ -1,8 +1,8 @@
 name: shenfun_doc_env
 
 channels:
-  - conda-forge
   - spectralDNS
+  - conda-forge
 
 dependencies:
   - cython
