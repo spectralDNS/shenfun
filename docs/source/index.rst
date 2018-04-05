@@ -6,13 +6,30 @@
 Welcome to shenfun's documentation!
 ===================================
 
+`Shenfun`_ is a toolbox for automating the spectral Galerkin method. The
+user interface to shenfun is very similar to `FEniCS`_,
+but works only for tensor product grids and the spectral Galerking
+method. The code is parallelized with MPI through the `mpi4py-fft`_
+package.
+
+Document build status
+---------------------
+
+.. image:: https://readthedocs.org/projects/shenfun/badge/?version=latest
+   :target: http://shenfun.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
+
 .. toctree::
+   :hidden:
    :maxdepth: 2
    :caption: Contents:
 
-   readme
+   introduction
+   gettingstarted
+   installation
 
 .. toctree::
+   :hidden:
    :caption: Demos:
    :maxdepth: 1
    
@@ -22,9 +39,12 @@ Welcome to shenfun's documentation!
    kuramatosivashinsky
    zrefs
 
-Indices and tables
-==================
+.. toctree::
+   :hidden:
+   :caption: Indices and tables
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   indices
+
+.. _shenfun: https:/github.com/spectralDNS/shenfun
+.. _mpi4py-fft: https://bitbucket.org/mpi4py/mpi4py-fft
+.. _Fenics: https://fenicsproject.org
