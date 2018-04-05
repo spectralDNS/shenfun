@@ -15,11 +15,36 @@ implementation.
 
 TOC: on
 
+<%
+def mod(x):
+    return '`'+x+'`'
+def cls(x):
+    return '`'+x+'`'
+%>
+% if FORMAT in ("sphinx"):
+<%
+def mod(x):
+    if '.' in x:
+        return ':mod:'+'`'+x+'`'
+    return ':mod:'+'`'+'.'+x+'`'
+def cls(x):
+    if '.' in x:
+        return ':class:'+'`'+x+'`'
+    return ':class:'+'`'+'.'+x+'`'
+%>
+% endif
 
 ======= The nonlinear Klein-Gordon equation =======
 % if FORMAT in ("latex", "pdflatex"):
 
 FIGURE: [figs/Klein_Gordon_32_real_8000.png] The solution $u$ from Eq. (ref{eq:kg}), at $t=40$, in a slice through the center of the domain, computed with the code described in this demo. label{mov:kleingordon}
+
+% elif FORMAT in ("sphinx"):
+label{mov:kleingordon}
+
+MOVIE: [https://rawgit.com/spectralDNS/spectralutilities/master/movies/KleinGordon.gif] 
+
+Movie showing the evolution of the solution $u$ from Eq. (ref{eq:kg}), in a slice through the center of the domain, computed with the code described in this demo. 
 
 % else:
 
@@ -59,7 +84,6 @@ u^0 &= 0.1 \exp \left( -\boldsymbol{x} \cdot \boldsymbol{x} \right), \\
 u_t^0 &= 0.
 \end{align}
 !et
-
 We will solve these equations using a mixed formulation and a spectral Galerkin
 method. The mixed formulation reads
 
@@ -69,11 +93,12 @@ method. The mixed formulation reads
 \frac{\partial u}{\partial t} &= f. label{eq:du}
 \end{align}
 !et
-
 The energy of the solution can be computed as
+
 !bt
-E(u) = \int_{\Omega} \left( \frac{1}{2} f^2 + \frac{1}{2}|\nabla u|^2 +
-\gamma(\frac{1}{2}u^2 - \frac{1}{4}u^4) \right)
+\begin{equation}
+E(u) = \int_{\Omega} \left( \frac{1}{2} f^2 + \frac{1}{2}|\nabla u|^2 + \gamma(\frac{1}{2}u^2 - \frac{1}{4}u^4) \right)
+\end{equation}
 !et
 and it is crucial that this energy remains constant in time.
 
@@ -91,7 +116,7 @@ code shown in the bottom of Sec. ref{sec:solver}.
 %endif
 
 ===== Spectral Galerkin formulation =====
-label{sec:spectralgalerkin}
+label{sec:specgal}
 The PDEs in (ref{eq:df}) and (ref{eq:du}) can be solved with many different
 numerical methods. We will here use the "shenfun":
 "https://github.com/spectralDNS/shenfun" software and this software makes use of
@@ -109,7 +134,7 @@ H^1(\Omega)$ with Eq. (ref{eq:du}), where $H^1(\Omega)$ is the Hilbert space, an
 \left(\nabla^2 u \, \overline{g}
 - \gamma( u\, - u|u|^2) \, \overline{g} \right) \,dx, label{eq:df_var} \\
 \frac{\partial }{\partial t} \int_{\Omega} u\, \overline{v} \, dx &=
-\int_{\Omega} f\, \overline{v} \, dx. label{eq:du_var}
+\int_{\Omega} f\, \overline{v} \, dx. label{eq:kg:du_var}
 \end{align}
 !et
 Note that the overline is used to indicate a complex conjugate. The functions $f$ and $u$ are now
@@ -128,7 +153,7 @@ formulated as: Find $(u, f) \in H^1(\Omega) \times H^1(\Omega)$ such that
 \frac{\partial}{\partial t} (f, g) &= -(\nabla u, \nabla g)
 -\gamma \left( u - u|u|^2, g \right), label{eq:df_var2} \\
 \frac{\partial }{\partial t} (u, v) &= (f, v) \quad \forall \, (v,g) \in
-H^1(\Omega) \times H^1(\Omega). label{eq:du_var2}
+H^1(\Omega) \times H^1(\Omega). label{eq:kg:du_var2}
 \end{align}
 !et 
 
@@ -141,7 +166,7 @@ the approach we will follow in Sec. (ref{sec:rk}) is a fully explicit 4th order 
 
 ===== Discretization =====
 To find a numerical solution we need to discretize the continuous problem
-(ref{eq:df_var2}) and (ref{eq:du_var2}) in space as well as time. Since the
+(ref{eq:df_var2}) and (ref{eq:kg:du_var2}) in space as well as time. Since the
 problem is triply periodic, Fourier exponentials are normally the best choice
 for trial and test functions, and as such we use basis functions 
 
@@ -157,7 +182,7 @@ a finite number of test functions. A basis $V^N$ can be defined as
 
 !bt
 \begin{equation}
-V^N(x) = \text{span} \{\phi_l(x)\}_{l\in \boldsymbol{l}}, label{eq:Vn}
+V^N(x) = \text{span} \{\phi_l(x)\}_{l\in \boldsymbol{l}}, label{eq:kg:Vn}
 \end{equation}
 !et
 where $N$ is chosen as an even positive integer and $\boldsymbol{l} = (-N/2,
@@ -167,7 +192,7 @@ e.g., for three dimensions
 
 !bt
 \begin{equation}
-W^{\boldsymbol{N}}(x, y, z) = V^N(x) \times V^N(y) \times V^N(z), label{eq:Wn}
+W^{\boldsymbol{N}}(x, y, z) = V^N(x) \times V^N(y) \times V^N(z), label{eq:kg:Wn}
 \end{equation}
 !et
 where $\boldsymbol{N} = (N, N, N)$. Obviously, it is not necessary to use the
@@ -182,8 +207,8 @@ e^{\imath \underline{n} z} = e^{\imath
 \end{equation}
 !et
 where the indices for $y$- and $z$-direction are $\underline{m}=\frac{2\pi}{L}m,
-\underline{n}=\frac{2\pi}{L}n$, and $\bs{m}$ and $\bs{n}$ are the same as
-$\bs{l}$ due to using the same number of basis functions for each direction. One
+\underline{n}=\frac{2\pi}{L}n$, and $\boldsymbol{m}$ and $\boldsymbol{n}$ are the same as
+$\boldsymbol{l}$ due to using the same number of basis functions for each direction. One
 distinction, though, is that for the $z$-direction expansion coefficients are only stored for
 $n=(0, 1, \ldots, N/2)$ due to Hermitian symmetry (real input data).
 
@@ -237,7 +262,7 @@ x_j}, \quad \,\, \forall \, j \in \, \boldsymbol{j}.
 \end{equation}
 !et
 
-The inner products used in Eqs. (ref{eq:df_var2}), (ref{eq:du_var2}) may be
+The inner products used in Eqs. (ref{eq:df_var2}), (ref{eq:kg:du_var2}) may be
 computed using forward FFTs:
 
 !bt
@@ -261,7 +286,7 @@ whereas a complete transform requires
 \end{equation}
 !et
 
-From this we see that the variational forms (ref{eq:df_var2}) and (ref{eq:du_var2})
+From this we see that the variational forms (ref{eq:df_var2}) and (ref{eq:kg:du_var2})
 may be written in terms of the Fourier transformed quantities $\hat{u}$ and
 $\hat{f}$. Expanding the exact derivatives of the nabla operator, we have
 
@@ -280,18 +305,18 @@ and as such the equations to be solved can be found directly as
 \begin{align}
 \frac{\partial \hat{f}}{\partial t}  &=
 \left(-(\underline{l}^2+\underline{m}^2+\underline{n}^2+\gamma)\hat{u} + \gamma \widehat{u|u|^2}\right), label{eq:df_var3} \\
-\frac{\partial \hat{u}}{\partial t} &= \hat{f}. label{eq:du_var3}
+\frac{\partial \hat{u}}{\partial t} &= \hat{f}. label{eq:kg:du_var3}
 \end{align}
 !et
 
 There is more than one way to arrive at these equations. Taking the 3D Fourier
 transform of both equations  (ref{eq:df}) and (ref{eq:du}) is one obvious way.
 With the Python module "shenfun": "https://github.com/spectralDNS/shenfun", one can work with the
-inner products as seen in (ref{eq:df_var2}) and (ref{eq:du_var2}), or the Fourier
+inner products as seen in (ref{eq:df_var2}) and (ref{eq:kg:du_var2}), or the Fourier
 transforms directly. See for example Sec. ref{sec:rk} for how $(\nabla u, \nabla
 v)$ can be
-implemented.  In short, `shenfun` contains all the tools required to work with
-the spectral Galerkin method, and we will now see how `shenfun` can be used to solve
+implemented.  In short, ${mod('shenfun')} contains all the tools required to work with
+the spectral Galerkin method, and we will now see how ${mod('shenfun')} can be used to solve
 the Klein-Gordon equation. 
 
 #We simplify notation by writing three-dimensional inner products as
@@ -314,16 +339,15 @@ the Klein-Gordon equation.
 ======= Implementation =======
 
 To solve the Klein-Gordon equations we need to make use of the Fourier bases in
-`shenfun`, and these base are found in submodule `shenfun.fourier.bases`.
+${mod('shenfun')}, and these base are found in submodule
+${mod('shenfun.fourier.bases')}.
 The triply periodic domain allows for Fourier in all three directions, and we
-can as such
-create one instance of the base class "C2CBasis":
-"https://github.com/spectralDNS/shenfun/blob/49170fe03ee5b3aa989d7c2387f825707d17c62e/shenfun/fourier/bases.py#L195"
+can as such create one instance of the base class ${cls('C2CBasis')}
 for each direction (`C2C` here meaning complex to complex). However, since the initial data are real, we
-can take advantage of Hermitian symmetries and thus make use of the "R2CBasis":
-"https://github.com/spectralDNS/shenfun/blob/49170fe03ee5b3aa989d7c2387f825707d17c62e/shenfun/fourier/bases.py#L94"
+can take advantage of Hermitian symmetries and thus make use of the
+${cls('R2CBasis')}
 (real to complex) class for one (but only one) of the directions. We can only make use of the
-`R2CBasis` for the direction that we choose to transform first with the forward
+${cls('R2CBasis')} for the direction that we choose to transform first with the forward
 FFT, and the reason is obviously that the output from a forward transform of
 real data is now complex. We may start implementing the solver as follows 
 
@@ -342,9 +366,9 @@ K2 = fourier.bases.R2CBasis(N[2], domain=(-2*np.pi, 2*np.pi))
 !ec 
 
 We now have three instances `K0`, `K1` and `K2`, corresponding to the basis
-(ref{eq:Vn}), that each can be used to solve
+(ref{eq:kg:Vn}), that each can be used to solve
 one-dimensional problems. However, we want to solve a 3D problem, and for this
-we need a tensor product basis, like (ref{eq:Wn}), created as a Cartesian product of these three
+we need a tensor product basis, like (ref{eq:kg:Wn}), created as a Cartesian product of these three
 bases
 
 !bc pycod
@@ -363,10 +387,10 @@ for the current platform. Note that it is also possible to use FFTW "wisdom": "h
 `shenfun`, and as such, for production, one may perform exhaustive planning once
 and then simply import the result of that planning later, as wisdom.
 
-The `TensorProductSpace` instance `T` contains pretty much all we need for
+The ${cls('TensorProductSpace')} instance `T` contains pretty much all we need for
 computing inner products or fast transforms between real and wavenumber space.
 However, since we are going to solve for a mixed system, it is convenient to also use the
-`MixedTensorProductSpace` class
+${cls('MixedTensorProductSpace')} class
 
 !bc pycod
 TT = MixedTensorProductSpace([T, T])
@@ -388,28 +412,25 @@ uf_hat1 = Array(TT)   # Work array 2
 u_hat, f_hat = uf_hat[:] # Split into views
 !ec
 
-The "Array":
-"https://github.com/spectralDNS/shenfun/blob/49170fe03ee5b3aa989d7c2387f825707d17c62e/shenfun/forms/arguments.py#L387"
-class is a subclass of Numpy's "ndarray":
+The ${cls('Array')} class is a subclass of Numpy's "ndarray":
 "https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html",
 without much more functionality than constructors that return arrays of the
 correct shape according to the basis used in the construction. A different type
-of array is returned by the "Function":
-"https://github.com/spectralDNS/shenfun/blob/49170fe03ee5b3aa989d7c2387f825707d17c62e/shenfun/forms/arguments.py#L292"
+of array is returned by the ${cls('Function')}
 class, that subclasses both Nympy's ndarray as well as an internal
-"BasisFunction":
-"https://github.com/spectralDNS/shenfun/blob/49170fe03ee5b3aa989d7c2387f825707d17c62e/shenfun/forms/arguments.py#L219"
-class. An instance of the `Function` class may be used as a regular array,
+${cls('BasisFunction')}
+class. An instance of the ${cls('Function')} class may be used as a regular array,
 but also as an argument in forms. For example, if you want to compute the
 partial derivative $\partial u/\partial x$, then this may be achieved by
 projection, i.e., find $u_x \in V^N$ such that $(u_x-\partial u/\partial x, v) = 0$,
-for all $v \in V^N$. This projection may be easily computed in `shenfun` using
+for all $v \in V^N$. This projection may be easily computed in ${mod('shenfun')} using
 
 !bc pycod
 v = Function(T, False, buffer=u)
 ux = project(Dx(v, 0, 1), T)
 !ec
-where `v` now is an instance of the `Function` class and not the `Array`, like
+where `v` now is an instance of the ${cls('Function')} class and not the
+${cls('Array')}, like
 `u`. The following code, on the other hand, will raise an error since you cannot
 use the `Array u` in a form, like `Dx(u, 0, 1)`
 
@@ -422,7 +443,7 @@ except AssertionError:
 
 Note that `u` and `v` share the same data, and changing one will as such also
 change the other. The reason for having two classes is that regular indexing and
-slicing is faster on a *smaller* `Array` class that is carrying less of the additional
+slicing is faster on a *smaller* ${cls('Array')} class that is carrying less of the additional
 information required by forms. 
 
 ===== Initialization =====
@@ -446,7 +467,8 @@ u_hat = T.forward(u, u_hat)
 
 Here `X` is a list of the three mesh coordinates `(x, y, z)` local to the
 current processor. Each processor has its own part of the computational mesh,
-and the distribution is handled during the creation of the `TensorProductSpace`
+and the distribution is handled during the creation of the
+${cls('TensorProductSpace')}
 class instance `T`. There is no need
 to do anything about the `f/f_hat` arrays since they are already initialized by default to
 zero. Note that calling the `ul` function with the argument `*X` is the same as
@@ -456,7 +478,7 @@ calling with `X[0], X[1], X[2]`.
 ===== Runge-Kutta integrator =====
 label{sec:rk}
 A fourth order explicit Runge-Kutta integrator requires only a function that
-returns the right hand sides of (ref{eq:df_var3}) and (ref{eq:du_var3}). Such a
+returns the right hand sides of (ref{eq:df_var3}) and (ref{eq:kg:du_var3}). Such a
 function can be implemented as
 
 !bc pycod
@@ -482,7 +504,7 @@ The code is fairly self-explanatory. `k2` represents the coefficients in front o
 the linear $\hat{u}$ in (ref{eq:df_var3}). The output array is `duf_hat`, and
 the input array is `uf_hat`, whereas `up` and `w0` are work arrays. The array
 `duf_hat` contains the right hand sides of both (ref{eq:df_var3}) and
-(ref{eq:du_var3}), where the linear and nonlinear terms are recognized in the
+(ref{eq:kg:du_var3}), where the linear and nonlinear terms are recognized in the
 code as comments `(1)` and `(2)`.
 The array `uf_hat` contains the solution at initial and intermediate Runge-Kutta steps.
 
@@ -540,7 +562,8 @@ gamma = 1
 K0 = C2CBasis(N[0], domain=(-2*np.pi, 2*np.pi))
 K1 = C2CBasis(N[1], domain=(-2*np.pi, 2*np.pi))
 K2 = R2CBasis(N[2], domain=(-2*np.pi, 2*np.pi))
-T = TensorProductSpace(comm, (K0, K1, K2), slab=False, **{'planner_effort': 'FFTW_MEASURE'})
+T = TensorProductSpace(comm, (K0, K1, K2), slab=False, 
+                       **{'planner_effort': 'FFTW_MEASURE'})
 
 TT = MixedTensorProductSpace([T, T])
 
@@ -620,7 +643,8 @@ while t < end_time-1e-8:
         eg =  comm.allreduce(eg)
         gradu = TV.backward(1j*K*u_hat, gradu)
         ep = comm.allreduce(np.sum(f*gradu)/np.prod(np.array(N)))
-        ea = comm.allreduce(np.sum(np.array(X)*(0.5*f**2 + 0.5*gradu**2 - (0.5*u**2 - 0.25*u**4)*f))/np.prod(np.array(N)))
+        ea = comm.allreduce(np.sum(np.array(X)*(0.5*f**2 + 0.5*gradu**2 
+                            - (0.5*u**2 - 0.25*u**4)*f))/np.prod(np.array(N)))
         if rank == 0:
             image.ax.clear()
             image.ax.contourf(X[1][..., 0], X[0][..., 0], u[..., 16], 100)
@@ -632,10 +656,19 @@ while t < end_time-1e-8:
 print("Time ", time()-t0)
 !ec
 
-======= Bibliography =======
+#======= Bibliography =======
 
 ## Publish (https://bitbucket.org/logg/publish is used to
 ## handle references. The line below specifies the name of
 ## the Publish database file (see the doconce manual for details).
 
-BIBFILE: papers.pub
+% if FORMAT not in ("sphinx"):
+
+BIBFILE: ../papers.pub
+
+% else:
+
+.. bibliography:: papers.bib
+   :notcited:
+
+% endif

@@ -16,14 +16,17 @@ __all__ = ('NCWriter',)
 class NCWriter(object):
     """Class for writing data in shenfun to netcdf format
 
-    args:
-        ncname   string               Name of netcdf file to be created
-        names    list of strings      Names of fields to be stored
-        T        TensorProductSpace   Instance of a TensorProductSpace
-                                      Must be the same as the space used
-                                      for storing with 'write_tstep'
-                                      and 'write_slice_tstep'
-        clobber  boolean
+    Parameters
+    ----------
+        ncname : str
+                 Name of netcdf file to be created
+        names : list of strings
+                Names of fields to be stored
+        T : TensorProductSpace
+            Instance of a TensorProductSpace. Must be the same as the space
+            used for storing with 'write_tstep' and 'write_slice_tstep'
+
+        clobber : bool
     """
     def __init__(self, ncname, names, T, **kwargs):
         self.f = Dataset(ncname, "w", parallel=True, comm=T.comm, **kwargs)
@@ -57,10 +60,12 @@ class NCWriter(object):
     def write_tstep(self, tstep, u):
         """Write field u to netcdf format at a given time step
 
-        args:
-            tstep        int          Time step
-            u      Function/Array     The field to be stored
-
+        Parameters
+        ----------
+            tstep : int
+                    Time step
+            u : array
+                Function or Array. The field to be stored
         """
         assert isinstance(u, np.ndarray)
 

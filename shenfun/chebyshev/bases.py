@@ -61,10 +61,16 @@ class _dct_wrap(object):
 class ChebyshevBase(SpectralBase):
     """Abstract base class for all Chebyshev bases
 
-    kwargs:
-        N             int         Number of quadrature points
-        quad        ('GL', 'GC')  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss
-        domain   (float, float)   The computational domain
+    Parameters
+    ----------
+        N : int, optional
+            Number of quadrature points
+        quad : str, optional
+               Type of quadrature
+                   - GL - Chebyshev-Gauss-Lobatto
+                   - GC - Chebyshev-Gauss
+        domain : 2-tuple of floats, optional
+                 The computational domain
     """
 
     def __init__(self, N=0, quad="GC", domain=(-1., 1.)):
@@ -92,8 +98,10 @@ class ChebyshevBase(SpectralBase):
     def vandermonde(self, x):
         """Return Chebyshev Vandermonde matrix
 
-        args:
-            x               points for evaluation
+        Parameters
+        ----------
+            x : array
+                points for evaluation
 
         """
         return n_cheb.chebvander(x, self.N-1)
@@ -101,12 +109,12 @@ class ChebyshevBase(SpectralBase):
     def get_vandermonde_basis_derivative(self, V, k=0):
         """Return k'th derivative of basis as a Vandermonde matrix
 
-        args:
-            V               Chebyshev Vandermonde matrix
-
-        kwargs:
-            k    integer    k'th derivative
-
+        Parameters
+        ----------
+            V : array of ndim = 2
+                Chebyshev Vandermonde matrix
+            k : int
+                k'th derivative
         """
         assert self.N == V.shape[1]
         if k > 0:
@@ -187,13 +195,21 @@ class ChebyshevBase(SpectralBase):
 class Basis(ChebyshevBase):
     """Basis for regular Chebyshev series
 
-    kwargs:
-        N             int         Number of quadrature points
-        quad        ('GL', 'GC')  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss
-        plan          bool        Plan transforms on __init__ or not. If
-                                  basis is part of a TensorProductSpace,
-                                  then planning needs to be delayed.
-        domain   (float, float)   The computational domain
+    Parameters
+    ----------
+        N : int, optional
+            Number of quadrature points
+        quad : str, optional
+               Type of quadrature
+
+               GL - Chebyshev-Gauss-Lobatto
+
+               GC - Chebyshev-Gauss
+        plan : bool, optional
+               Plan transforms on __init__ or not. If basis is part of a
+               TensorProductSpace, then planning needs to be delayed.
+        domain : 2-tuple of floats, optional
+                 The computational domain
     """
 
     def __init__(self, N=0, quad="GC", plan=False, domain=(-1., 1.)):
@@ -211,9 +227,12 @@ class Basis(ChebyshevBase):
     def derivative_coefficients(fk, ck):
         """Return coefficients of Chebyshev series for c = f'(x)
 
-        args:
-            fk            Coefficients of regular Chebyshev series
-            ck            Coefficients of derivative of fk-series
+        Parameters
+        ----------
+            fk : input array
+                 Coefficients of regular Chebyshev series
+            ck : output array
+                 Coefficients of derivative of fk-series
 
         """
         if len(fk.shape) == 1:
@@ -223,12 +242,15 @@ class Basis(ChebyshevBase):
         return ck
 
     def fast_derivative(self, fj, fd):
-        """Return derivative of fj = f(x_j) at quadrature points
+        """Return derivative of :math:`f_j = f(x_j)` at quadrature points
+        :math:`x_j`
 
-        args:
-            fj   (input)     Function values on quadrature mesh
-            fd   (output)    Function derivative on quadrature mesh
-
+        Parameters
+        ----------
+            fj : input array
+                 Function values on quadrature mesh
+            fd : output array
+                 Function derivative on quadrature mesh
         """
         fk = work[(fj, 0)]
         ck = work[(fj, 1)]
@@ -238,12 +260,6 @@ class Basis(ChebyshevBase):
         return fd
 
     def apply_inverse_mass(self, array):
-        r"""Apply inverse BTT_{kj} = c_k 2/pi \delta_{kj}
-
-        args:
-            array   (input/output)    Expansion coefficients
-
-        """
         sl = self.sl(0)
         array *= (2/np.pi)
         array[sl] /= 2
@@ -252,9 +268,9 @@ class Basis(ChebyshevBase):
             array[sl] /= 2
         return array
 
+
     def evaluate_expansion_all(self, input_array, output_array):
         output_array = self.xfftn_bck()
-
         s0 = self.sl(slice(0, 1))
         if self.quad == "GC":
             output_array *= 0.5
@@ -308,15 +324,26 @@ class Basis(ChebyshevBase):
 class ShenDirichletBasis(ChebyshevBase):
     """Shen basis for Dirichlet boundary conditions
 
-    kwargs:
-        N             int         Number of quadrature points
-        quad        ('GL', 'GC')  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss
-        bc           (a, b)       Boundary conditions at x=(1,-1). For Poisson eq.
-        plan          bool        Plan transforms on __init__ or not. If
-                                  basis is part of a TensorProductSpace,
-                                  then planning needs to be delayed.
-        domain   (float, float)   The computational domain
-        scaled       bool         Whether or not to use scaled basis
+    Parameters
+    ----------
+        N : int, optional
+            Number of quadrature points
+        quad : str, optional
+               Type of quadrature
+
+               GL - Chebyshev-Gauss-Lobatto
+
+               GC - Chebyshev-Gauss
+
+        bc : 2-tuple of floats, optional
+             Boundary conditions at x=(1,-1). For Poisson eq.
+        plan : bool, optional
+               Plan transforms on __init__ or not. If basis is part of a
+               TensorProductSpace, then planning needs to be delayed.
+        domain : 2-tuple of floats, optional
+                 The computational domain
+        scaled : bool, optional
+                 Whether or not to use scaled basis
     """
 
     def __init__(self, N=0, quad="GC", bc=(0, 0), plan=False,
@@ -432,14 +459,24 @@ class ShenDirichletBasis(ChebyshevBase):
 class ShenNeumannBasis(ChebyshevBase):
     """Shen basis for homogeneous Neumann boundary conditions
 
-    kwargs:
-        N             int         Number of quadrature points
-        quad        ('GL', 'GC')  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss
-        mean          float       Mean value
-        plan          bool        Plan transforms on __init__ or not. If
-                                  basis is part of a TensorProductSpace,
-                                  then planning needs to be delayed.
-        domain   (float, float)   The computational domain
+    Parameters
+    ----------
+        N : int, optional
+            Number of quadrature points
+        quad : str, optional
+               Type of quadrature
+
+               GL - Chebyshev-Gauss-Lobatto
+
+               GC - Chebyshev-Gauss
+
+        mean : float, optional
+               Mean value
+        plan : bool, optional
+               Plan transforms on __init__ or not. If basis is part of a
+               TensorProductSpace, then planning needs to be delayed.
+        domain : 2-tuple of floats, optional
+                 The computational domain
     """
 
     def __init__(self, N=0, quad="GC", mean=0, plan=False, domain=(-1., 1.)):
@@ -538,15 +575,27 @@ class ShenBiharmonicBasis(ChebyshevBase):
 
     Homogeneous Dirichlet and Neumann boundary conditions.
 
-    kwargs:
-        N             int         Number of quadrature points
-        quad        ('GL', 'GC')  Chebyshev-Gauss-Lobatto or Chebyshev-Gauss
-        plan         bool         Plan transforms or not (allocates work arrays)
+    Parameters
+    ----------
+        N : int, optional
+            Number of quadrature points
+        quad : str, optional
+               Type of quadrature
+
+               GL - Chebyshev-Gauss-Lobatto
+
+               GC - Chebyshev-Gauss
+
+        plan : bool, optional
+               Plan transforms on __init__ or not. If basis is part of a
+               TensorProductSpace, then planning needs to be delayed.
+        domain : 2-tuple of floats, optional
+                 The computational domain
 
     """
 
-    def __init__(self, N=0, quad="GC", plan=False):
-        ChebyshevBase.__init__(self, N, quad)
+    def __init__(self, N=0, quad="GC", plan=False, domain=(-1., 1.)):
+        ChebyshevBase.__init__(self, N, quad, domain=domain)
         self.CT = Basis(N, quad)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)

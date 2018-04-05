@@ -141,7 +141,7 @@ MathJax.Hub.Config({
 <center><b>Department of Mathematics, University of Oslo.</b></center>
 <br>
 <p>
-<center><h4>Oct 27, 2017</h4></center> <!-- date -->
+<center><h4>Apr 3, 2018</h4></center> <!-- date -->
 <br>
 <p>
 <b>Summary.</b> This is a demonstration of how the Python module <a href="https://github.com/spectralDNS/shenfun" target="_self">shenfun</a> can be used to solve the Poisson
@@ -186,7 +186,7 @@ The Poisson equation is given as
 
 $$
 \begin{align}
-\nabla^2 u(x) &= f(x) \quad \text{for }\, x \in [-1, 1], \tag{1}\\
+\nabla^2 u(x) &= f(x) \quad \text{for }\, x \in [-1, 1], \tag{1}\\ 
 u(-1)&=a, u(1)=b, \notag
 \tag{2}
 \end{align}
@@ -221,7 +221,7 @@ for \( k=0, 1, \ldots N-3 \), and then the last two are added as two linear basi
 $$
 \begin{align}
 v_{N-2} &= \frac{1}{2}(\phi_0 + \phi_1), 
-\tag{5}\\
+\tag{5}\\ 
 v_{N-1} &= \frac{1}{2}(\phi_0 - \phi_1).
 \tag{6}
 \end{align}
@@ -232,7 +232,7 @@ of freedom, \( \hat{u}_{N-2} \) and \( \hat{u}_{N-1} \), now are given as
 $$
 \begin{align}
 u(-1) &= \sum_{k=0}^{N-1} \hat{u}_k v_k(-1) = \hat{u}_{N-2} = a,
-\tag{7} \\
+\tag{7} \\ 
 u(+1) &= \sum_{k=0}^{N-1} \hat{u}_k v_k(+1) = \hat{u}_{N-1} = b,
 \tag{8}
 \end{align}
@@ -255,17 +255,23 @@ $$
 \end{equation}
 $$
 
-The integral can either be computed exactly, or with quadrature. The advantage of the latter is that it is generally faster, and that non-linear terms may be computed just as quickly as linear. For a linear problem, it does not make much of a difference, if any at all. Approximating the integral with quadrature, we obtain
+The integral can either be computed exactly, or with quadrature. The advantage
+of the latter is that it is generally faster, and that non-linear terms may be 
+computed just as quickly as linear. For a linear problem, it does not make much
+of a difference, if any at all. Approximating the integral with quadrature, we
+obtain
 $$
 \begin{align}
 \int_{-1}^1 u \, v \, w\, dx &\approx \left( u, v \right)_w^N,  
-\tag{11}\\
+\tag{11}\\ 
 &\approx \sum_{j=0}^{N-1} u(x_j) v(x_j) w(x_j),
 \tag{12}
 \end{align}
 $$
 
-where \( w(x_j) \) are quadrature weights. The quadrature points \( \{x_j\}_{j=0}^N \) are specific to the chosen basis, and even within basis there are two different choices based on which quadrature rule is selected, either Gauss or Gauss-Lobatto.
+where \( w(x_j) \) are quadrature weights. The quadrature points \( \{x_j\}_{j=0}^N \) 
+are specific to the chosen basis, and even within basis there are two different 
+choices based on which quadrature rule is selected, either Gauss or Gauss-Lobatto.
 
 <p>
 Inserting for test and trialfunctions, we get the following bilinear form and
@@ -273,8 +279,8 @@ matrix \( A\in\mathbb{R}^{N-2\times N-2} \) for the Laplacian (using the summati
 
 $$
 \begin{align*}
-\left( \nabla^2u, v \right)_w^N &= \left( \nabla^2\sum_{k=0}^{N-3}\hat{u}_k v_{k}, v_j \right)_w^N, \\
-    &= \left(\nabla^2 v_{k}, v_j \right)_w^N \hat{u}_k, \\
+\left( \nabla^2u, v \right)_w^N &= \left( \nabla^2\sum_{k=0}^{N-3}\hat{u}_k v_{k}, v_j \right)_w^N, \\ 
+    &= \left(\nabla^2 v_{k}, v_j \right)_w^N \hat{u}_k, \\ 
     &= A_{jk} \hat{u}_k.
 \end{align*}
 $$
@@ -318,15 +324,15 @@ u_e(x) = \sin(k\pi x)(1-x^2) + a(1+x)/2 + b(1-x)/2, \tag{14}
 \end{equation}
 $$
 
-where \( k \) is an integer. Now, feeding \( u_e \) through the Laplace operator, we see
+where \( k \) is an integer and \( a \) and \( b \) are constants. Now, feeding \( u_e \) through the Laplace operator, we see
 that the last two linear terms disappear, whereas the first term results in
 in
 $$
 \begin{align}
- \nabla^2 u_e(x) &= \frac{d^2 u_e}{dx^2}, 
-\tag{15}\\
+ \nabla^2 u_e(x) &= \frac{d^2 u_e}{dx^2},  
+\tag{15}\\ 
                   &= -4k \pi x \cos(k\pi x) - 2\sin(k\pi x) - k^2 \pi^2 (1 -
-x^2) \sin(k \pi x). \tag{16}
+x^2) \sin(k \pi x). \tag{16} 
 \end{align}
 $$
 
@@ -345,18 +351,19 @@ plus some other helper modules, like <a href="https://numpy.org" target="_self">
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
-<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> inner, div, grad, TestFunction, TrialFunction, Function, \
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> inner, div, grad, TestFunction, TrialFunction, Function, \ 
     project, Dx, Array, chebyshev, legendre
 <span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
 <span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">sympy</span> <span style="color: #008000; font-weight: bold">import</span> symbols, cos, sin, exp, lambdify
 </pre></div>
 <p>
-We use <code>sympy</code> for the manufactured solution and <code>numpy</code> for testing.
+We use <code>Sympy</code> for the manufactured solution and <code>Numpy</code> for testing.
 
 <h2 id="___sec5" class="anchor">Manufactured solution </h2>
 
 <p>
-The exact solution \( u_e(x) \) and the right hand side \( f_e(x) \) are created using <code>sympy</code> as follows 
+The exact solution \( u_e(x) \) and the right hand side \( f_e(x) \) are created using
+<code>Sympy</code> as follows 
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
@@ -375,7 +382,7 @@ fl <span style="color: #666666">=</span> lambdify(x, fe, <span style="color: #BA
 These solutions are now valid for a continuous domain. The next step is thus to discretize, using a discrete mesh \( \{x_j\}_{j=0}^{N-1} \) and a finite number of basis functions.
 
 <p>
-Note that it is not mandatory to use <code>sympy</code> for the manufactured solution. Since the
+Note that it is not mandatory to use <code>Sympy</code> for the manufactured solution. Since the
 solution is known <a href="#mjx-eqn-16">(16)</a>, we could just as well simply use <code>Numpy</code>
 to compute \( f_e \) at \( \{x_j\}_{j=0}^{N-1} \). However, with <code>Sympy</code> it is much
 easier to experiment and quickly change the solution.
@@ -394,12 +401,16 @@ SD <span style="color: #666666">=</span> chebyshev<span style="color: #666666">.
 X <span style="color: #666666">=</span> SD<span style="color: #666666">.</span>mesh(N)
 </pre></div>
 <p>
-Note that we can either choose a Legendre or a Chebyshev basis. The keyword <code>plan</code> is used to tell the class <code>ShenDirichletBasis</code> that it can go ahead and plan its transforms with <a href="https://pyfftw.org" target="_self">pyfftw</a>, because this basis will not be a part of a tensorproductspace, in which case the planning would need to wait.
+Note that we can either choose a Legendre or a Chebyshev basis. The keyword
+<code>plan</code> is used to tell the class <code>ShenDirichletBasis</code> that it can 
+go ahead and plan its transforms with <a href="https://pyfftw.org" target="_self">pyfftw</a>, because 
+this basis will not be a part of a tensorproductspace, in which case the planning would need to wait.
 
 <h2 id="___sec7" class="anchor">Variational formulation </h2>
 
 <p>
-The variational problem <a href="#mjx-eqn-9">(9)</a> can be assembled using <code>shenfun</code>'s <code>TrialFunction</code>, <code>TestFunction</code> and <code>inner</code> functions.
+The variational problem <a href="#mjx-eqn-9">(9)</a> can be assembled using <code>shenfun</code>'s
+<code>TrialFunction</code>, <code>TestFunction</code> and `inner` functions.
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
@@ -416,7 +427,9 @@ f_hat <span style="color: #666666">=</span> inner(v, fj, output_array<span style
 <h2 id="___sec8" class="anchor">Solve linear equations </h2>
 
 <p>
-Finally, solve linear equation system and transform solution from spectral \( \{\hat{u}_k\}_{k=0}^{N-1} \) vector to the real space \( \{u(x_j)\}_{j=0}^N \) and then check how the solution corresponds with the exact solution \( u_e \).
+Finally, solve linear equation system and transform solution from spectral
+ \( \{\hat{u}_k\}_{k=0}^{N-1} \) vector to the real space \( \{u(x_j)\}_{j=0}^N \) 
+and then check how the solution corresponds with the exact solution \( u_e \).
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
@@ -424,13 +437,16 @@ Finally, solve linear equation system and transform solution from spectral \( \{
 uj <span style="color: #666666">=</span> SD<span style="color: #666666">.</span>backward(u_hat)
 ue <span style="color: #666666">=</span> ul(X)
 <span style="color: #008000; font-weight: bold">print</span>(<span style="color: #BA2121">&quot;Error=</span><span style="color: #BB6688; font-weight: bold">%2.16e</span><span style="color: #BA2121">&quot;</span> <span style="color: #666666">%</span>(np<span style="color: #666666">.</span>linalg<span style="color: #666666">.</span>norm(uj<span style="color: #666666">-</span>ue)))
-<span style="color: #008000; font-weight: bold">assert</span> np<span style="color: #666666">.</span>allclose(uj<span style="color: #666666">-</span>ue)
+<span style="color: #008000; font-weight: bold">assert</span> np<span style="color: #666666">.</span>allclose(uj, ue)
 </pre></div>
 
 <h2 id="___sec9" class="anchor">Convergence test </h2>
 
 <p>
-A complete solver is given in Sec. <a href="#sec:complete">Complete solver</a>. This solver is created such that it takes in two commandline arguments and prints out the \( l_2 \)-errornorm of the solution in the end. We can use this to write a short script that performs a convergence test. The solver is run like
+A complete solver is given in Sec. <a href="#sec:complete">Complete solver</a>. This solver is created 
+such that it takes in two commandline arguments and prints out the 
+\( l_2 \)-errornorm of the solution in the end. We can use this to write a short 
+script that performs a convergence test. The solver is run like
 <p>
 
 <!-- code=text typeset with pygments style "default" -->
@@ -441,7 +457,9 @@ Error=6.5955040031498912e-10
 for a discretization of size \( N=32 \) and for the Legendre basis. Alternatively, change <code>legendre</code> to <code>chebyshev</code> for the Chebyshev basis.
 
 <p>
-We set up the solver to run for a list of \( N=[12, 16, \ldots, 48] \), and collect the errornorms in arrays to be plotted. Such a script can be easily created with the <a href="https://docs.python.org/3/library/subprocess.html" target="_self">subprocess</a> module
+We set up the solver to run for a list of \( N=[12, 16, \ldots, 48] \), and collect
+the errornorms in arrays to be plotted. Such a script can be easily created 
+with the <a href="https://docs.python.org/3/library/subprocess.html" target="_self">subprocess</a> module
 
 <p>
 
@@ -463,7 +481,8 @@ The error can be plotted using <a href="https://matplotlib.org" target="_self">m
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
-<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>plt<span style="color: #666666">.</span>figure(figsize<span style="color: #666666">=</span>(<span style="color: #666666">6</span>, <span style="color: #666666">4</span>))
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">matplotlib.pyplot</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">plt</span>
+plt<span style="color: #666666">.</span>figure(figsize<span style="color: #666666">=</span>(<span style="color: #666666">6</span>, <span style="color: #666666">4</span>))
 <span style="color: #008000; font-weight: bold">for</span> basis, col <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">zip</span>((<span style="color: #BA2121">&#39;legendre&#39;</span>, <span style="color: #BA2121">&#39;chebyshev&#39;</span>), (<span style="color: #BA2121">&#39;r&#39;</span>, <span style="color: #BA2121">&#39;b&#39;</span>)):
     plt<span style="color: #666666">.</span>semilogy(N, error[basis], col, linewidth<span style="color: #666666">=2</span>)
 plt<span style="color: #666666">.</span>title(<span style="color: #BA2121">&#39;Convergence of Poisson solvers 1D&#39;</span>)
@@ -494,7 +513,7 @@ or similarly with <code>chebyshev</code> instead of <code>legendre</code>.
 <span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">importlib</span>
 <span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">sympy</span> <span style="color: #008000; font-weight: bold">import</span> symbols, cos, sin, exp, lambdify
 <span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
-<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> inner, div, grad, TestFunction, TrialFunction, Function, \
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> inner, div, grad, TestFunction, TrialFunction, Function, \ 
     project, Dx, Array
 
 <span style="color: #008000; font-weight: bold">assert</span> <span style="color: #008000">len</span>(sys<span style="color: #666666">.</span>argv) <span style="color: #666666">==</span> <span style="color: #666666">3</span>
@@ -595,7 +614,7 @@ ua <span style="color: #666666">=</span> ul(X)
 
 
 <center style="font-size:80%">
-<!-- copyright --> &copy; 2017, Mikael Mortensen. Released under CC Attribution 4.0 license
+<!-- copyright --> &copy; 2018, Mikael Mortensen. Released under CC Attribution 4.0 license
 </center>
 
 

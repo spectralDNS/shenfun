@@ -1,0 +1,19 @@
+name: shenfun_doc_env
+
+channels:
+  - spectralDNS
+  - conda-forge
+
+dependencies:
+  - cython
+  - fftw
+  - numpy
+  - sympy
+  - python
+  - scipy
+  - doconce
+  - pyfftw
+  - mpiFFT4py
+  - mpi4py_fft
+  - sphinxcontrib-bibtex
+

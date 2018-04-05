@@ -76,12 +76,6 @@ MathJax.Hub.Config({
  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
 </script>
 
-<!-- newcommands_keep.tex -->
-$$
-\newcommand{\bs}[1]{\boldsymbol{#1}}
-$$
-
-
 
 
     
@@ -144,7 +138,7 @@ $$
 <center><b>Department of Mathematics, University of Oslo.</b></center>
 <br>
 <p>
-<center><h4>Oct 30, 2017</h4></center> <!-- date -->
+<center><h4>Apr 3, 2018</h4></center> <!-- date -->
 <br>
 <p>
 <b>Summary.</b> This is a demonstration of how the Python module <a href="https://github.com/spectralDNS/shenfun" target="_self">shenfun</a> can be used to solve the time-dependent,
@@ -338,8 +332,8 @@ e^{\imath \underline{n} z} = e^{\imath
 $$
 
 where the indices for \( y \)- and \( z \)-direction are \( \underline{m}=\frac{2\pi}{L}m,
-\underline{n}=\frac{2\pi}{L}n \), and \( \bs{m} \) and \( \bs{n} \) are the same as
-\( \bs{l} \) due to using the same number of basis functions for each direction. One
+\underline{n}=\frac{2\pi}{L}n \), and \( \boldsymbol{m} \) and \( \boldsymbol{n} \) are the same as
+\( \boldsymbol{l} \) due to using the same number of basis functions for each direction. One
 distinction, though, is that for the \( z \)-direction expansion coefficients are only stored for
 \( n=(0, 1, \ldots, N/2) \) due to Hermitian symmetry (real input data).
 
@@ -492,12 +486,13 @@ the Klein-Gordon equation.
 
 <p>
 To solve the Klein-Gordon equations we need to make use of the Fourier bases in
-<code>shenfun</code>, and these base are found in submodule <code>shenfun.fourier.bases</code>.
+<code>shenfun</code>, and these base are found in submodule
+<code>shenfun.fourier.bases</code>.
 The triply periodic domain allows for Fourier in all three directions, and we
-can as such
-create one instance of the base class <a href="https://github.com/spectralDNS/shenfun/blob/49170fe03ee5b3aa989d7c2387f825707d17c62e/shenfun/fourier/bases.py#L195" target="_self">C2CBasis</a>
+can as such create one instance of the base class <code>C2CBasis</code>
 for each direction (<code>C2C</code> here meaning complex to complex). However, since the initial data are real, we
-can take advantage of Hermitian symmetries and thus make use of the <a href="https://github.com/spectralDNS/shenfun/blob/49170fe03ee5b3aa989d7c2387f825707d17c62e/shenfun/fourier/bases.py#L94" target="_self">R2CBasis</a>
+can take advantage of Hermitian symmetries and thus make use of the
+<code>R2CBasis</code>
 (real to complex) class for one (but only one) of the directions. We can only make use of the
 <code>R2CBasis</code> for the direction that we choose to transform first with the forward
 FFT, and the reason is obviously that the output from a forward transform of
@@ -572,13 +567,12 @@ uf_hat1 <span style="color: #666666">=</span> Array(TT)   <span style="color: #4
 u_hat, f_hat <span style="color: #666666">=</span> uf_hat[:] <span style="color: #408080; font-style: italic"># Split into views</span>
 </pre></div>
 <p>
-The <a href="https://github.com/spectralDNS/shenfun/blob/49170fe03ee5b3aa989d7c2387f825707d17c62e/shenfun/forms/arguments.py#L387" target="_self">Array</a>
-class is a subclass of Numpy's <a href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html" target="_self">ndarray</a>,
+The <code>Array</code> class is a subclass of Numpy's <a href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html" target="_self">ndarray</a>,
 without much more functionality than constructors that return arrays of the
 correct shape according to the basis used in the construction. A different type
-of array is returned by the <a href="https://github.com/spectralDNS/shenfun/blob/49170fe03ee5b3aa989d7c2387f825707d17c62e/shenfun/forms/arguments.py#L292" target="_self">Function</a>
+of array is returned by the <code>Function</code>
 class, that subclasses both Nympy's ndarray as well as an internal
-<a href="https://github.com/spectralDNS/shenfun/blob/49170fe03ee5b3aa989d7c2387f825707d17c62e/shenfun/forms/arguments.py#L219" target="_self">BasisFunction</a>
+<code>BasisFunction</code>
 class. An instance of the <code>Function</code> class may be used as a regular array,
 but also as an argument in forms. For example, if you want to compute the
 partial derivative \( \partial u/\partial x \), then this may be achieved by
@@ -592,7 +586,8 @@ for all \( v \in V^N \). This projection may be easily computed in <code>shenfun
 ux <span style="color: #666666">=</span> project(Dx(v, <span style="color: #666666">0</span>, <span style="color: #666666">1</span>), T)
 </pre></div>
 <p>
-where <code>v</code> now is an instance of the <code>Function</code> class and not the <code>Array</code>, like
+where <code>v</code> now is an instance of the <code>Function</code> class and not the
+<code>Array</code>, like
 <code>u</code>. The following code, on the other hand, will raise an error since you cannot
 use the <code>Array u</code> in a form, like <code>Dx(u, 0, 1)</code>
 
@@ -633,7 +628,8 @@ u_hat <span style="color: #666666">=</span> T<span style="color: #666666">.</spa
 <p>
 Here <code>X</code> is a list of the three mesh coordinates <code>(x, y, z)</code> local to the
 current processor. Each processor has its own part of the computational mesh,
-and the distribution is handled during the creation of the <code>TensorProductSpace</code>
+and the distribution is handled during the creation of the
+<code>TensorProductSpace</code>
 class instance <code>T</code>. There is no need
 to do anything about the <code>f/f_hat</code> arrays since they are already initialized by default to
 zero. Note that calling the <code>ul</code> function with the argument <code>*X</code> is the same as
@@ -861,7 +857,7 @@ gradu <span style="color: #666666">=</span> Array(TV, <span style="color: #00800
 
 
 <center style="font-size:80%">
-<!-- copyright --> &copy; 2017, Mikael Mortensen. Released under CC Attribution 4.0 license
+<!-- copyright --> &copy; 2018, Mikael Mortensen. Released under CC Attribution 4.0 license
 </center>
 
 
