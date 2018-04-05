@@ -26,8 +26,8 @@ class FourierBase(SpectralBase):
     .. math::
        :label: u
 
-        u(x) = \sum_k \hat{u}_k \exp(ikx)  
-        
+        u(x) = \sum_k \hat{u}_k \exp(ikx)
+
     where
 
     .. math::
@@ -39,9 +39,9 @@ class FourierBase(SpectralBase):
 
     .. math::
        :label: u2
- 
+
         u(x) = \sum_k \frac{\hat{u}_k}{c_k} \exp(ikx)
-        
+
     where
 
     .. math::
@@ -98,7 +98,7 @@ class FourierBase(SpectralBase):
 
     def get_vandermonde_basis_derivative(self, V, k=0):
         """Return k'th derivative of basis as a Vandermonde matrix
-        
+
         Parameters
         ----------
             V : array of ndim = 2
@@ -351,7 +351,7 @@ class R2CBasis(FourierBase):
             uv : array, optional
             fast : bool, optional
                    Whether to use fast transforms in computing convolution
-  
+
         Note
         ----
         Note that this method is only valid for 1D data, and that
@@ -498,7 +498,7 @@ class C2CBasis(FourierBase):
             uv : array, optional
             fast : bool, optional
                    Whether to use fast transforms in computing convolution
-  
+
         Note
         ----
         Note that this method is only valid for 1D data, and that
