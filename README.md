@@ -19,11 +19,11 @@ Shenfun is developed by
 
 Contact
 -------
-For comments, issues, bug-reports and requests, please use the issue tracker of the current repository. Otherwise I can be reached at
+For comments, issues, bug-reports and requests, please use the issue tracker of the current repository. Otherwise I can be reached at http://folk.uio.no/mikaem/contact.html
 
     Mikael Mortensen
     mikaem at math.uio.no
-    [*Homepage*](http://folk.uio.no/mikaem)
+    http://folk.uio.no/mikaem/
     Department of Mathematics
     University of Oslo
     Norway
