@@ -16,26 +16,25 @@ __all__ = ('inner',)
 def inner(expr0, expr1, output_array=None, uh_hat=None):
     """Return inner product of linear or bilinear form
 
-    args:
-        expr0/expr1     Expr          Test/trial function, or expression
-                                      involving test/trial function, e.g., div,
-                                      grad. One of expr0 or expr1 need to be an
-                                      expression on a testfunction, and if the
-                                      second then involves a trial function, a
-                                      matrix is returned
+    Parameters
+    ----------
+        expr0, expr1:  Expr
+                       Test/trial function, or expression involving test/trial
+                       function, e.g., div, grad. One of expr0 or expr1 need to
+                       be an expression on a testfunction, and if the second
+                       then involves a trial function, a matrix is returned.
+                       If one of expr0/expr1 is a test function and the other
+                       one is a Function/Array, then a linear form is assumed
+                       and an assembled vector is returned
 
-                                      If one of expr0/expr1 is a test function
-                                      and the other one is a Function/Array,
-                                      then a linear form is assumed and an
-                                      assembled vector is returned
+        output_array:  Numpy array
+                       Optional return array for linear form.
 
-    kwargs:
-        output_array  Numpy array     Optional return array for linear form.
+        uh_hat:        Numpy array
+                       The transform of the Function/Array used for linear forms.
 
-        uh_hat                        The transform of the Function/Array used
-                                      for linear forms.
-
-    Example:
+    Example
+    -------
         Compute mass matrix of Shen's Chebyshev Dirichlet basis:
 
         >>> from shenfun.chebyshev.bases import ShenDirichletBasis
