@@ -8,7 +8,7 @@ from .inner import inner
 __all__ = ('project',)
 
 def project(uh, T, output_array=None, uh_hat=None):
-    """Project uh to tensor product space T
+    r"""Project uh to tensor product space T
 
     args:
         uh        Expr or Function

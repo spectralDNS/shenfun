@@ -74,7 +74,7 @@ class ChebyshevBase(SpectralBase):
     def points_and_weights(self, N, scaled=False):
         if self.quad == "GL":
             points = -(n_cheb.chebpts2(N)).astype(float)
-            weights = np.zeros(N)+np.pi/(N-1)
+            weights = np.full(N, np.pi/(N-1))
             weights[0] /= 2
             weights[-1] /= 2
 

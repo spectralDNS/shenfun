@@ -13,7 +13,7 @@ __all__ = ['LegendreBase', 'Basis', 'ShenDirichletBasis',
            'ShenBiharmonicBasis', 'ShenNeumannBasis',
            'SecondNeumannBasis']
 
-#pylint: disable=missing-docstring, method-hidden, no-else-return, not-callable, abstract-method, no-member, cyclic-import
+#pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
 class _Wrap(object):
 
