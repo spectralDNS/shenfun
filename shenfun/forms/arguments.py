@@ -387,7 +387,6 @@ class Function(np.ndarray, BasisFunction):
                 shape = space.forward.output_array.shape
                 dtype = space.forward.output_array.dtype
 
-            ndim = space.ndim()
             if not space.num_components() == 1:
                 shape = (space.num_components(),) + shape
 
