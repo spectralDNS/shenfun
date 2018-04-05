@@ -320,7 +320,7 @@ class TestFunction(BasisFunction):
     """
 
     def __init__(self, space, index=0):
-        return BasisFunction.__init__(self, space, 0, index)
+        BasisFunction.__init__(self, space, 0, index)
 
     def __getitem__(self, i):
         assert self.rank() == 2
@@ -337,7 +337,7 @@ class TrialFunction(BasisFunction):
                Component of basis with rank > 1
     """
     def __init__(self, space, index=0):
-        return BasisFunction.__init__(self, space, 1, index)
+        BasisFunction.__init__(self, space, 1, index)
 
     def __getitem__(self, i):
         assert self.rank() == 2
@@ -477,7 +477,6 @@ class Array(np.ndarray):
             shape = space.forward.output_array.shape
             dtype = space.forward.output_array.dtype
 
-        ndim = space.ndim()
         if not space.num_components() == 1:
             shape = (space.num_components(),) + shape
 
