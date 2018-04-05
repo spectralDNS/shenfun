@@ -97,7 +97,7 @@ def get_ck(N, quad):
         quad : str
 
                GL - Chebyshev-Gauss-Lobatto
-               
+
                GC - Chebyshev-Gauss
     """
     ck = np.ones(N, int)
@@ -109,14 +109,14 @@ def get_ck(N, quad):
 
 @inheritdocstrings
 class BDDmat(SpectralMatrix):
-    r"""Matrix for inner product 
+    r"""Matrix for inner product
 
     .. math::
 
         B_{kj}=(\phi_j, \phi_k)_w
 
     where
-    
+
     .. math::
 
         j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
@@ -165,7 +165,7 @@ class BDDmat(SpectralMatrix):
 
 @inheritdocstrings
 class BNDmat(SpectralMatrix):
-    r"""Mass matrix for inner product 
+    r"""Mass matrix for inner product
 
     .. math::
 
@@ -204,7 +204,7 @@ class BNDmat(SpectralMatrix):
 
 @inheritdocstrings
 class BDNmat(SpectralMatrix):
-    r"""Mass matrix for inner product 
+    r"""Mass matrix for inner product
 
     .. math::
 
@@ -245,7 +245,7 @@ class BDNmat(SpectralMatrix):
 
 @inheritdocstrings
 class BNTmat(SpectralMatrix):
-    r"""Mass matrix for inner product 
+    r"""Mass matrix for inner product
 
     .. math::
 
@@ -257,7 +257,7 @@ class BNTmat(SpectralMatrix):
 
         j = 0, 1, ..., N \text{ and } k = 1, 2, ..., N-2
 
-    :math:`\psi_k` is the Shen Neumann basis function and :math:`\phi_j` is a 
+    :math:`\psi_k` is the Shen Neumann basis function and :math:`\phi_j` is a
     Chebyshev basis function.
 
     For simplicity, the matrix is stored including the zero index row
@@ -279,7 +279,7 @@ class BNTmat(SpectralMatrix):
 
 @inheritdocstrings
 class BNBmat(SpectralMatrix):
-    r"""Mass matrix for inner product 
+    r"""Mass matrix for inner product
 
     .. math::
 
@@ -291,7 +291,7 @@ class BNBmat(SpectralMatrix):
 
         j = 0, 1, ..., N-4 \text{ and } k = 1, 2, ..., N-2
 
-    :math:`\psi_k` is the Shen Neumann basis function and :math:`\phi_j` is a 
+    :math:`\psi_k` is the Shen Neumann basis function and :math:`\phi_j` is a
     Shen biharmonic basis function.
 
     For simplicity, the matrix is stored including the zero index row
@@ -313,7 +313,7 @@ class BNBmat(SpectralMatrix):
 
 @inheritdocstrings
 class BTTmat(SpectralMatrix):
-    r"""Mass matrix for inner product 
+    r"""Mass matrix for inner product
 
     .. math::
 
@@ -347,7 +347,7 @@ class BTTmat(SpectralMatrix):
 
 @inheritdocstrings
 class BNNmat(SpectralMatrix):
-    r"""Mass matrix for inner product 
+    r"""Mass matrix for inner product
 
     .. math::
 
@@ -425,7 +425,7 @@ class BTDmat(SpectralMatrix):
 
         j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N
 
-    :math:`\phi_j` is the Shen Dirichlet basis function and :math:`T_k` is the 
+    :math:`\phi_j` is the Shen Dirichlet basis function and :math:`T_k` is the
     Chebyshev basis function.
     """
     def __init__(self, test, trial):
@@ -440,7 +440,7 @@ class BTDmat(SpectralMatrix):
 
 @inheritdocstrings
 class BTNmat(SpectralMatrix):
-    r"""Mass matrix for inner product 
+    r"""Mass matrix for inner product
 
     .. math::
 
@@ -452,7 +452,7 @@ class BTNmat(SpectralMatrix):
 
         j = 1, 2, ..., N-2 \text{ and } k = 0, 1, ..., N
 
-    :math:`\phi_j` is the Shen Neumann basis function and :math:`T_k` is the 
+    :math:`\phi_j` is the Shen Neumann basis function and :math:`T_k` is the
     Chebyshev basis function.
     """
     def __init__(self, test, trial):
@@ -468,7 +468,7 @@ class BTNmat(SpectralMatrix):
 
 @inheritdocstrings
 class BBBmat(SpectralMatrix):
-    r"""Mass matrix for inner product 
+    r"""Mass matrix for inner product
 
     .. math::
 
@@ -588,7 +588,7 @@ class BBDmat(SpectralMatrix):
 
 @inheritdocstrings
 class CDNmat(SpectralMatrix):
-    r"""Matrix for inner product 
+    r"""Matrix for inner product
 
     .. math::
 
@@ -626,7 +626,7 @@ class CDNmat(SpectralMatrix):
 
 @inheritdocstrings
 class CDDmat(SpectralMatrix):
-    r"""Matrix for inner product 
+    r"""Matrix for inner product
 
     .. math::
 
@@ -674,7 +674,7 @@ class CDDmat(SpectralMatrix):
 
 @inheritdocstrings
 class CNDmat(SpectralMatrix):
-    r"""Matrix for inner product 
+    r"""Matrix for inner product
 
     .. math::
 
@@ -713,7 +713,7 @@ class CNDmat(SpectralMatrix):
 
 @inheritdocstrings
 class CTDmat(SpectralMatrix):
-    r"""Matrix for inner product 
+    r"""Matrix for inner product
 
     .. math::
 
@@ -741,7 +741,7 @@ class CTDmat(SpectralMatrix):
 
 
 class CDTmat(SpectralMatrix):
-    r"""Matrix for inner product 
+    r"""Matrix for inner product
 
     .. math::
 
@@ -817,7 +817,7 @@ class CBDmat(SpectralMatrix):
 
 @inheritdocstrings
 class CDBmat(SpectralMatrix):
-    r"""Matrix for inner product 
+    r"""Matrix for inner product
 
     .. math::
 
@@ -867,7 +867,7 @@ class CDBmat(SpectralMatrix):
 
 @inheritdocstrings
 class ABBmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product 
+    r"""Stiffness matrix for inner product
 
     .. math::
 
@@ -922,7 +922,7 @@ class ABBmat(SpectralMatrix):
 
 @inheritdocstrings
 class ADDmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product 
+    r"""Stiffness matrix for inner product
 
     .. math::
 
@@ -1012,7 +1012,7 @@ class ADDmat(SpectralMatrix):
 
 @inheritdocstrings
 class ANNmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product 
+    r"""Stiffness matrix for inner product
 
     .. math::
 
@@ -1125,14 +1125,14 @@ class ATTmat(SpectralMatrix):
 
 @inheritdocstrings
 class SBBmat(SpectralMatrix):
-    r"""Biharmonic matrix for inner product 
+    r"""Biharmonic matrix for inner product
 
     .. math::
 
         S_{kj} = (\psi''''_j, \psi_k)_w
 
     where
-    
+
     .. math::
 
         j = 0, 1, ..., N-4 \text{ and } k = 0, 1, ..., N-4
