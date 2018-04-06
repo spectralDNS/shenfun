@@ -18,8 +18,8 @@ doconce format html $name --html_style=${style} --pygments_html_style=monokai --
 doconce split_html ${name}_${style}.html
 
 doconce format sphinx $name
-theme=bloodish
-#theme=uio2
+#theme=bloodish
+theme=uio2
 doconce sphinx_dir dirname=sphinx-rootdir theme=$theme $name
 
 python automake_sphinx.py

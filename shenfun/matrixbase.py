@@ -54,11 +54,12 @@ class SparseMatrix(dict):
                 Numpy output array of same ndim as v
             format : str
                      Choice for computation
-                         - csr - Compressed sparse row format
-                         - dia - Sparse matrix with DIAgonal storage
-                         - python - Use numpy and vectorization
-                         - self - To be implemented in subclass
-                         - cython - Cython implementation that may be implemented in subclass
+
+                     - csr - Compressed sparse row format
+                     - dia - Sparse matrix with DIAgonal storage
+                     - python - Use numpy and vectorization
+                     - self - To be implemented in subclass
+                     - cython - Cython implementation that may be implemented in subclass
 
         """
         assert v.shape == c.shape
@@ -99,8 +100,9 @@ class SparseMatrix(dict):
         ----------
             format : str, optional
                      Choice of matrix type (see scipy.sparse.diags)
-                         - dia - Sparse matrix with DIAgonal storage
-                         - csr - Compressed sparse row
+
+                     - dia - Sparse matrix with DIAgonal storage
+                     - csr - Compressed sparse row
 
         """
         if self._diags is None:
@@ -280,9 +282,10 @@ class SpectralMatrix(SparseMatrix):
             diagonals
         trial : 2-tuple of (basis, int)
                 The basis is an instance of a class for one of the bases in
-                    - shenfun.legendre.bases
-                    - shenfun.chebyshev.bases
-                    - shenfun.fourier.bases
+
+                - shenfun.legendre.bases
+                - shenfun.chebyshev.bases
+                - shenfun.fourier.bases
 
                 The int represents the number of times the trial function
                 should be differentiated. Representing matrix column.

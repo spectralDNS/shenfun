@@ -136,11 +136,10 @@ class SpectralBase(object):
         quad : str
                Type of quadrature
 
-               GL - Chebyshev-Gauss-Lobatto
+               - GL - Chebyshev-Gauss-Lobatto
+               - GC - Chebyshev-Gauss
+               - LG - Legendre-Gauss
 
-               GC - Chebyshev-Gauss
-
-               LG - Legendre-Gauss
         padding_factor : float, optional
                          For padding backward transform (for dealiasing)
         domain : 2-tuple of floats, optional
@@ -694,22 +693,20 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
         test : 2-tuple of (Basis, integer)
                Basis is any of the classes from
 
-                   shenfun.chebyshev.bases
-
-                   shenfun.legendre.bases
-
-                   shenfun.fourier.bases
+               - shenfun.chebyshev.bases
+               - shenfun.legendre.bases
+               - shenfun.fourier.bases
 
                The integer determines the numer of times the basis is
                differentiated. The test represents the matrix row
         trial : 2-tuple of (Basis, integer)
                 Either an basis of argument 1 (trial) or 2 (Function)
 
-                    If argument = 1, then a bilinear form is assembled to
-                    a matrix. Trial represents matrix column
+                - If argument = 1, then a bilinear form is assembled to
+                  a matrix. Trial represents matrix column
+                - If argument = 2, then a linear form is assembled and the
+                  'trial' represents a Function evaluated at quadrature nodes
 
-                    If argument = 2, then a linear form is assembled and the
-                    'trial' represents a Function evaluated at quadrature nodes
         out : array, optional
               Return array
         axis : int

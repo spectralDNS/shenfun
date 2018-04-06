@@ -1190,7 +1190,10 @@ for the doubly periodic domain :math:`\Omega = [-50, 50]\times [-50, 50]` and  :
         u^1(\boldsymbol{x}, 0) = (x + y) \exp {-0.03 (x^2 + y^2)} .
         
 
-This problem is solved with the spectral Galerkin method using Fourier bases in both directions, and a tensor product space :math:`W(x,y)=V^p(x) \times V^p(y)`, where :math:`V^p` is defined as in the section :ref:`sec:fourierpoisson`, but here mapping the computational domain :math:`[-50, 50]` to :math:`[0, 2\pi]`. Considering only the spatial discretization, the variational problem becomes: find :math:`u(x, y)` in :math:`W`, such that
+This problem is solved with the spectral Galerkin method using Fourier bases in both directions, and a tensor product
+space :math:`W(x,y)=V^p(x) \times V^p(y)`, where :math:`V^p` is defined as in the section :ref:`sec:fourierpoisson`, but here mapping 
+the computational domain :math:`[-50, 50]` to :math:`[0, 2\pi]`. Considering only the spatial discretization, the variational
+problem becomes: find :math:`u(x, y)` in :math:`W`, such that
 
 .. math::
    :label: eq:Ginz_var
@@ -1199,7 +1202,10 @@ This problem is solved with the spectral Galerkin method using Fourier bases in 
         \frac{\partial }{\partial t} (v, u)^N = (v, \nabla^2u)^N + (v, u - (1 + 1.5i)u |u|^2)^N \quad \text{for all} \quad v \in W, 
         
 
-and we integrate the equations forward in time using an explicit, fourth order Runge-Kutta method, that only requires as input a function that returns the right hand side of :eq:`eq:Ginz_var`. Note that all matrices involved with the Fourier method are diagonal, so there is no need for linear algebra solvers, and the left hand side inner product equals :math:`(2 \pi)^2 \boldsymbol{\hat{u}}`.
+and we integrate the equations forward in time using an explicit, fourth order Runge-Kutta method, that only requires
+as input a function that returns the right hand side of :eq:`eq:Ginz_var`. Note that all matrices involved with the
+Fourier method are diagonal, so there is no need for linear algebra solvers, and the left hand side inner product
+equals :math:`(2 \pi)^2 \boldsymbol{\hat{u}}`.
 
 The initial condition is created using ``Sympy``
 
@@ -1211,7 +1217,12 @@ The initial condition is created using ``Sympy``
     ue = (x + y)*exp(-0.03*(x**2+y**2))
     ul = lambdify((x, y), ue, 'numpy')
 
-We create a regular tensor product space, choosing the ``fourier.bases.C2CBasis`` for both directions if the initial condition is complex :eq:`eq:initial_0`, whereas we may choose ``R2CBasis`` if the initial condition is real :eq:`eq:initial_1`. Since we are solving a nonlinear equation, the additional issue of aliasing should be considered. Aliasing errors may be handled with different methods, but here we will use the so-called 3/2-rule, that requires padded transforms. We create a tensor product space ``Tp`` for padded transforms, using the ``padding_factor=3/2`` keyword below. Furthermore, some solution arrays, test and trial functions are also declared.
+We create a regular tensor product space, choosing the ``fourier.bases.C2CBasis`` for both directions if the initial
+condition is complex :eq:`eq:initial_0`, whereas we may choose ``R2CBasis`` if the initial condition is real
+:eq:`eq:initial_1`. Since we are solving a nonlinear equation, the additional issue of aliasing should be
+considered. Aliasing errors may be handled with different methods, but here we will use the so-called 3/2-rule,
+that requires padded transforms. We create a tensor product space ``Tp`` for padded transforms, using the
+``padding_factor=3/2`` keyword below. Furthermore, some solution arrays, test and trial functions are also declared.
 
 .. code-block:: python
 
@@ -1289,7 +1300,7 @@ Finally, the Runge-Kutta method is implemented as
             U_hat1 += a[rk]*dt*dU_hat
         U_hat[:] = U_hat1
 
-The code that is described here will run in parallel for up to a maximum of :math:`\text{min}(N[0], N[1])` processors. But, being a 2D problem, a single processor is sufficient to solve the problem in reasonable time. The real part of :math:`u(\boldsymbol{x}, t)` is shown in Figure :ref:`fig:GL1` for times :math:`t=16` and :math:`t=96`, where the solution is initialized from :eq:`eq:initial_0`. The results starting from the real initial condition in :eq:`eq:initial_1` is shown for the same times in Figure :ref:`fig:GL2`. There are apparently good agreements with figures published from using ``chebfun`` on *www.chebfun.org/examples/pde/GinzburgLandau.html*. In particular, the figures in :ref:`fig:GL1`  are identical by the eye norm. One interesting feature, though, is seen in the right plot of Figure :ref:`fig:GL2`, where the results can be seen to have preserved symmetry, as they should. This symmetry is lost with chebfun, as commented in the referenced webpage. An asymmetric solution is also obtained with ``shenfun`` if no de-aliasing is applied. However, the simulations are very sensitive to roundoff, and it has also been observed that a de-aliased solution using ``shenfun`` may loose symmetry simply if a different FFT algorithm is chosen on runtime by FFTW.
+The code that is described here will run in parallel for up to a maximum of :math:`\text{min}(N[0], N[1])` processors. But, being a 2D problem, a single processor is sufficient to solve the problem in reasonable time. The real part of :math:`u(\boldsymbol{x}, t)` is shown in Figure :ref:`fig:GL1` for times :math:`t=16` and :math:`t=96`, where the solution is initialized from :eq:`eq:initial_0`. The results starting from the real initial condition in :eq:`eq:initial_1` is shown for the same times in Figure :ref:`fig:GL2`. There are apparently good agreements with figures published from using ``chebfun`` on *www.chebfun.org/examples/pde/GinzburgLandau.html*. In particular, the subfigures in Figure :ref:`fig:GL1`  are identical by the eye norm. One interesting feature, though, is seen in the right plot of Figure :ref:`fig:GL2`, where the results can be seen to have preserved symmetry, as they should. This symmetry is lost with chebfun, as commented in the referenced webpage. An asymmetric solution is also obtained with ``shenfun`` if no de-aliasing is applied. However, the simulations are very sensitive to roundoff, and it has also been observed that a de-aliased solution using ``shenfun`` may loose symmetry simply if a different FFT algorithm is chosen on runtime by FFTW.
 
 .. _fig:GL1:
 

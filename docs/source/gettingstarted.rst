@@ -1,8 +1,8 @@
 Getting started
 ===============
 
-Shenfun consists of classes and functions that aim at making it easy to implement
-PDE's in tensor product domains. The most important everyday tools are
+Shenfun consists of classes and functions whoose purpose are to make it easy to implement
+PDE's in simple tensor product domains. The most important everyday tools are
 
 	* :class:`.TensorProductSpace`
 	* :class:`.TrialFunction`
@@ -11,4 +11,5 @@ PDE's in tensor product domains. The most important everyday tools are
 	* :func:`.div`
 	* :func:`.grad`
 	* :func:`.project`
+
 

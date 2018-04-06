@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -8,17 +7,53 @@
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Shenfun - automating the spectral Galerkin method &#8212; Shenfun - automating the spectral Galerkin method 1.0 documentation</title>
-    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/basic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
     <script type="text/javascript" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/javascript" src="_static/sidebar.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Shenfun - automating the spectral Galerkin method" href="index.html" /> 
+    <link rel="prev" title="Shenfun - automating the spectral Galerkin method" href="index.html" />
+  <meta charset='utf-8'>
+  <meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
+  <!-- Default Bootstrap-->
+  <link rel="stylesheet" href="_static/css/bootstrap.min.css"/>
+  <link rel="shortcut icon" href="_static/fenics.ico" />
+  <!-- Template styles CSS-->
+  <link rel="stylesheet" href="_static/css/main.css"/>
+  <link rel="stylesheet" href="_static/css/custom.css"/>
+  <link rel="stylesheet" href="_static/css/font-awesome.min.css"/>
+  <link rel="stylesheet" href="_static/css/animate.min.css"/>
+  <link rel="stylesheet" href="_static/css/responsive.css"/>
+
+  <!-- Template styles JS-->
+  <script src="_static/slides.min.jquery.js"></script>
+  <script type="text/javascript" src="_static/js/jquery-1.11.0.min.js"></script>
+  <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
+  <script type="text/javascript" src="_static/js/bootstrap.js"></script>
+  <script type="text/javascript" src="_static/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="_static/js/wow.min.js"></script>
+  <script type="text/javascript" src="_static/js/main.js"></script>
+  <script type="text/javascript" src="_static/js/jquery.bcSwipe.js"></script>
+  <script>
+    $(document).ready(function() {
+         $("#mycarousel").swiperight(function() {
+            $(this).carousel('prev');
+            });
+         $("#mycarousel").swipeleft(function() {
+            $(this).carousel('next');
+       });
+    });
+  </script>
+
   
        <style type="text/css">
          div.admonition {
@@ -28,23 +63,37 @@
        </style>
       </head>
     <body>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="index.html" title="Shenfun - automating the spectral Galerkin method"
-             accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Shenfun - automating the spectral Galerkin method 1.0 documentation</a> &#187;</li> 
-      </ul>
-    </div>  
+<header id="header">
+      <div class="navbar navbar-inverse" role="banner">
+          <div class="container">
+              <div class="navbar-header">
+                  <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#headernavbar">
+                      <span class="sr-only">Toggle navigation</span>
+                      <span class="icon-bar"></span>
+                      <span class="icon-bar"></span>
+                      <span class="icon-bar"></span>
+                  </button>
 
-    <div class="document">
-      <div class="documentwrapper">
-          <div class="body" role="main">
-            
+                  <a class="navbar-brand" href="http/www.uio.no">
+                      <h1><img src="_static/uio_logo.png" alt="UiO Logo" class="img-responsive center-block banner-image"></h1>
+                  </a>
+
+              </div>
+              <div class="collapse navbar-collapse" id="headernavbar">
+                  <ul class="nav navbar-nav navbar-right">
+                    <li><a href="index.html" title="Previous page">
+                    Previous page</a></li>
+                    <li class="page_item"><a href="index.html">Home</a></li>
+		  </ul>
+              </div>
+          </div>
+      </div>
+  </header>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12">
+      
   <div class="section" id="shenfun-automating-the-spectral-galerkin-method">
 <h1>Shenfun - automating the spectral Galerkin method<a class="headerlink" href="#shenfun-automating-the-spectral-galerkin-method" title="Permalink to this headline">¶</a></h1>
 <table class="docutils field-list" frame="void" rules="none">
@@ -696,10 +745,16 @@ transforms for axis 1.</p>
 <span class="eqno">(63)<a class="headerlink" href="#equation-eq-initial-0" title="Permalink to this equation">¶</a></span>\[     u^0(\boldsymbol{x}, 0) = (ix + y) \exp {-0.03 (x^2 + y^2)} ,\]</div>
 <div class="math notranslate" id="equation-eq-initial-1">
 <span class="eqno">(64)<a class="headerlink" href="#equation-eq-initial-1" title="Permalink to this equation">¶</a></span>\[     u^1(\boldsymbol{x}, 0) = (x + y) \exp {-0.03 (x^2 + y^2)} .\]</div>
-<p>This problem is solved with the spectral Galerkin method using Fourier bases in both directions, and a tensor product space <span class="math notranslate">\(W(x,y)=V^p(x) \times V^p(y)\)</span>, where <span class="math notranslate">\(V^p\)</span> is defined as in the section <a class="reference internal" href="#sec-fourierpoisson"><span class="std std-ref">Periodic boundary conditions</span></a>, but here mapping the computational domain <span class="math notranslate">\([-50, 50]\)</span> to <span class="math notranslate">\([0, 2\pi]\)</span>. Considering only the spatial discretization, the variational problem becomes: find <span class="math notranslate">\(u(x, y)\)</span> in <span class="math notranslate">\(W\)</span>, such that</p>
+<p>This problem is solved with the spectral Galerkin method using Fourier bases in both directions, and a tensor product
+space <span class="math notranslate">\(W(x,y)=V^p(x) \times V^p(y)\)</span>, where <span class="math notranslate">\(V^p\)</span> is defined as in the section <a class="reference internal" href="#sec-fourierpoisson"><span class="std std-ref">Periodic boundary conditions</span></a>, but here mapping
+the computational domain <span class="math notranslate">\([-50, 50]\)</span> to <span class="math notranslate">\([0, 2\pi]\)</span>. Considering only the spatial discretization, the variational
+problem becomes: find <span class="math notranslate">\(u(x, y)\)</span> in <span class="math notranslate">\(W\)</span>, such that</p>
 <div class="math notranslate" id="equation-eq-ginz-var">
 <span class="eqno">(65)<a class="headerlink" href="#equation-eq-ginz-var" title="Permalink to this equation">¶</a></span>\[     \frac{\partial }{\partial t} (v, u)^N = (v, \nabla^2u)^N + (v, u - (1 + 1.5i)u |u|^2)^N \quad \text{for all} \quad v \in W,\]</div>
-<p>and we integrate the equations forward in time using an explicit, fourth order Runge-Kutta method, that only requires as input a function that returns the right hand side of <a class="reference internal" href="#equation-eq-ginz-var">(65)</a>. Note that all matrices involved with the Fourier method are diagonal, so there is no need for linear algebra solvers, and the left hand side inner product equals <span class="math notranslate">\((2 \pi)^2 \boldsymbol{\hat{u}}\)</span>.</p>
+<p>and we integrate the equations forward in time using an explicit, fourth order Runge-Kutta method, that only requires
+as input a function that returns the right hand side of <a class="reference internal" href="#equation-eq-ginz-var">(65)</a>. Note that all matrices involved with the
+Fourier method are diagonal, so there is no need for linear algebra solvers, and the left hand side inner product
+equals <span class="math notranslate">\((2 \pi)^2 \boldsymbol{\hat{u}}\)</span>.</p>
 <p>The initial condition is created using <code class="docutils literal notranslate"><span class="pre">Sympy</span></code></p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">symbols</span><span class="p">,</span> <span class="n">exp</span><span class="p">,</span> <span class="n">lambdify</span>
 <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">(</span><span class="s2">&quot;x,y&quot;</span><span class="p">)</span>
@@ -708,7 +763,12 @@ transforms for axis 1.</p>
 <span class="n">ul</span> <span class="o">=</span> <span class="n">lambdify</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="n">ue</span><span class="p">,</span> <span class="s1">&#39;numpy&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>We create a regular tensor product space, choosing the <code class="docutils literal notranslate"><span class="pre">fourier.bases.C2CBasis</span></code> for both directions if the initial condition is complex <a class="reference internal" href="#equation-eq-initial-0">(63)</a>, whereas we may choose <code class="docutils literal notranslate"><span class="pre">R2CBasis</span></code> if the initial condition is real <a class="reference internal" href="#equation-eq-initial-1">(64)</a>. Since we are solving a nonlinear equation, the additional issue of aliasing should be considered. Aliasing errors may be handled with different methods, but here we will use the so-called 3/2-rule, that requires padded transforms. We create a tensor product space <code class="docutils literal notranslate"><span class="pre">Tp</span></code> for padded transforms, using the <code class="docutils literal notranslate"><span class="pre">padding_factor=3/2</span></code> keyword below. Furthermore, some solution arrays, test and trial functions are also declared.</p>
+<p>We create a regular tensor product space, choosing the <code class="docutils literal notranslate"><span class="pre">fourier.bases.C2CBasis</span></code> for both directions if the initial
+condition is complex <a class="reference internal" href="#equation-eq-initial-0">(63)</a>, whereas we may choose <code class="docutils literal notranslate"><span class="pre">R2CBasis</span></code> if the initial condition is real
+<a class="reference internal" href="#equation-eq-initial-1">(64)</a>. Since we are solving a nonlinear equation, the additional issue of aliasing should be
+considered. Aliasing errors may be handled with different methods, but here we will use the so-called 3/2-rule,
+that requires padded transforms. We create a tensor product space <code class="docutils literal notranslate"><span class="pre">Tp</span></code> for padded transforms, using the
+<code class="docutils literal notranslate"><span class="pre">padding_factor=3/2</span></code> keyword below. Furthermore, some solution arrays, test and trial functions are also declared.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Size of discretization</span>
 <span class="n">N</span> <span class="o">=</span> <span class="p">(</span><span class="mi">201</span><span class="p">,</span> <span class="mi">201</span><span class="p">)</span>
 
@@ -772,7 +832,7 @@ Finally, the Runge-Kutta method is implemented as</p>
     <span class="n">U_hat</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">U_hat1</span>
 </pre></div>
 </div>
-<p>The code that is described here will run in parallel for up to a maximum of <span class="math notranslate">\(\text{min}(N[0], N[1])\)</span> processors. But, being a 2D problem, a single processor is sufficient to solve the problem in reasonable time. The real part of <span class="math notranslate">\(u(\boldsymbol{x}, t)\)</span> is shown in Figure <a class="reference internal" href="#fig-gl1"><span class="std std-ref">Ginzburg-Landau solution (real) at times 16 and 96, from complex initial condition</span></a> for times <span class="math notranslate">\(t=16\)</span> and <span class="math notranslate">\(t=96\)</span>, where the solution is initialized from <a class="reference internal" href="#equation-eq-initial-0">(63)</a>. The results starting from the real initial condition in <a class="reference internal" href="#equation-eq-initial-1">(64)</a> is shown for the same times in Figure <a class="reference internal" href="#fig-gl2"><span class="std std-ref">Ginzburg-Landau solution (real) at times 16 and 96 from real initial condition</span></a>. There are apparently good agreements with figures published from using <code class="docutils literal notranslate"><span class="pre">chebfun</span></code> on <em>www.chebfun.org/examples/pde/GinzburgLandau.html</em>. In particular, the figures in <a class="reference internal" href="#fig-gl1"><span class="std std-ref">Ginzburg-Landau solution (real) at times 16 and 96, from complex initial condition</span></a>  are identical by the eye norm. One interesting feature, though, is seen in the right plot of Figure <a class="reference internal" href="#fig-gl2"><span class="std std-ref">Ginzburg-Landau solution (real) at times 16 and 96 from real initial condition</span></a>, where the results can be seen to have preserved symmetry, as they should. This symmetry is lost with chebfun, as commented in the referenced webpage. An asymmetric solution is also obtained with <code class="docutils literal notranslate"><span class="pre">shenfun</span></code> if no de-aliasing is applied. However, the simulations are very sensitive to roundoff, and it has also been observed that a de-aliased solution using <code class="docutils literal notranslate"><span class="pre">shenfun</span></code> may loose symmetry simply if a different FFT algorithm is chosen on runtime by FFTW.</p>
+<p>The code that is described here will run in parallel for up to a maximum of <span class="math notranslate">\(\text{min}(N[0], N[1])\)</span> processors. But, being a 2D problem, a single processor is sufficient to solve the problem in reasonable time. The real part of <span class="math notranslate">\(u(\boldsymbol{x}, t)\)</span> is shown in Figure <a class="reference internal" href="#fig-gl1"><span class="std std-ref">Ginzburg-Landau solution (real) at times 16 and 96, from complex initial condition</span></a> for times <span class="math notranslate">\(t=16\)</span> and <span class="math notranslate">\(t=96\)</span>, where the solution is initialized from <a class="reference internal" href="#equation-eq-initial-0">(63)</a>. The results starting from the real initial condition in <a class="reference internal" href="#equation-eq-initial-1">(64)</a> is shown for the same times in Figure <a class="reference internal" href="#fig-gl2"><span class="std std-ref">Ginzburg-Landau solution (real) at times 16 and 96 from real initial condition</span></a>. There are apparently good agreements with figures published from using <code class="docutils literal notranslate"><span class="pre">chebfun</span></code> on <em>www.chebfun.org/examples/pde/GinzburgLandau.html</em>. In particular, the subfigures in Figure <a class="reference internal" href="#fig-gl1"><span class="std std-ref">Ginzburg-Landau solution (real) at times 16 and 96, from complex initial condition</span></a>  are identical by the eye norm. One interesting feature, though, is seen in the right plot of Figure <a class="reference internal" href="#fig-gl2"><span class="std std-ref">Ginzburg-Landau solution (real) at times 16 and 96 from real initial condition</span></a>, where the results can be seen to have preserved symmetry, as they should. This symmetry is lost with chebfun, as commented in the referenced webpage. An asymmetric solution is also obtained with <code class="docutils literal notranslate"><span class="pre">shenfun</span></code> if no de-aliasing is applied. However, the simulations are very sensitive to roundoff, and it has also been observed that a de-aliased solution using <code class="docutils literal notranslate"><span class="pre">shenfun</span></code> may loose symmetry simply if a different FFT algorithm is chosen on runtime by FFTW.</p>
 <div class="figure" id="id16">
 <span id="fig-gl1"></span><img alt="_images/Ginzburg_1.png" src="_images/Ginzburg_1.png" />
 <p class="caption"><span class="caption-text"><em>Ginzburg-Landau solution (real) at times 16 and 96, from complex initial condition</em></span></p>
@@ -910,25 +970,25 @@ pp. 216-231,
 </div>
 
 
-          </div>
+    </div>
+  </div>
+</div>
+<footer id="footer">
+  <div class="container">
+      <div class="row">
+            
+              
+<form class="navbar-form navbar-right" action="/search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+            
       </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related" role="navigation" aria-label="related navigation">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="index.html" title="Shenfun - automating the spectral Galerkin method"
-             >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Shenfun - automating the spectral Galerkin method 1.0 documentation</a> &#187;</li> 
-      </ul>
-    </div>
-    <div class="footer" role="contentinfo">
-        &#169; Copyright 2018, Mikael Mortensen.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.2.
-    </div>
+  </div>
+</footer>
+
   </body>
 </html>

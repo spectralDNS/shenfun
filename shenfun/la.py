@@ -71,8 +71,8 @@ class PDMA(object):
         solver : str, optional
                  Choose implementation
 
-                     - cython - Use efficient cython implementation
-                     - python - Use python/scipy
+                 - cython - Use efficient cython implementation
+                 - python - Use python/scipy
 
     """
 

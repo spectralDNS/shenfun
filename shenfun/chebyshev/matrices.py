@@ -95,10 +95,10 @@ def get_ck(N, quad):
         N : int
             Number of quadrature points
         quad : str
+               Type of quadrature
 
-               GL - Chebyshev-Gauss-Lobatto
-
-               GC - Chebyshev-Gauss
+               - GL - Chebyshev-Gauss-Lobatto
+               - GC - Chebyshev-Gauss
     """
     ck = np.ones(N, int)
     ck[0] = 2
