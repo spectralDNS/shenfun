@@ -10,10 +10,10 @@ __all__ = ['inheritdocstrings', 'clenshaw_curtis1D']
 def inheritdocstrings(cls):
     """Method used for inheriting docstrings from parent class
 
-    Use as decorator:
+    Use as decorator::
 
-    @inheritdocstrings
-    class Child(Parent):
+         @inheritdocstrings
+         class Child(Parent):
 
     and Child will use the same docstrings as parent even if
     a method is overloaded. The Child class may overload the

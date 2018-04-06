@@ -59,8 +59,10 @@ class LegendreBase(SpectralBase):
             Number of quadrature points
         quad : str, optional
                Type of quadrature
-                   - LG - Legendre-Gauss
-                   - GL - Legendre-Gauss-Lobatto
+
+               - LG - Legendre-Gauss
+               - GL - Legendre-Gauss-Lobatto
+
         domain : 2-tuple of floats, optional
                  The computational domain
     """
@@ -202,8 +204,10 @@ class Basis(LegendreBase):
             Number of quadrature points
         quad : str, optional
                Type of quadrature
-                   - LG - Legendre-Gauss
-                   - GL - Legendre-Gauss-Lobatto
+
+               - LG - Legendre-Gauss
+               - GL - Legendre-Gauss-Lobatto
+
         plan : bool, optional
                Plan transforms on __init__ or not. If basis is part of a
                TensorProductSpace, then planning needs to be delayed.
@@ -233,8 +237,10 @@ class ShenDirichletBasis(LegendreBase):
             Number of quadrature points
         quad : str, optional
                Type of quadrature
-                   - LG - Legendre-Gauss
-                   - GL - Legendre-Gauss-Lobatto
+
+               - LG - Legendre-Gauss
+               - GL - Legendre-Gauss-Lobatto
+
         bc : tuple of numbers
              Boundary conditions at edges of domain
         plan : bool, optional
@@ -353,8 +359,10 @@ class ShenNeumannBasis(LegendreBase):
             Number of quadrature points
         quad : str, optional
                Type of quadrature
-                   - LG - Legendre-Gauss
-                   - GL - Legendre-Gauss-Lobatto
+
+               - LG - Legendre-Gauss
+               - GL - Legendre-Gauss-Lobatto
+
         mean : number
                mean value
         plan : bool, optional
@@ -459,8 +467,10 @@ class ShenBiharmonicBasis(LegendreBase):
             Number of quadrature points
         quad : str, optional
                Type of quadrature
-                   - LG - Legendre-Gauss
-                   - GL - Legendre-Gauss-Lobatto
+
+               - LG - Legendre-Gauss
+               - GL - Legendre-Gauss-Lobatto
+
         plan : bool, optional
                Plan transforms on __init__ or not. If basis is part of a
                TensorProductSpace, then planning needs to be delayed.
@@ -571,8 +581,10 @@ class SecondNeumannBasis(LegendreBase):
             Number of quadrature points
         quad : str, optional
                Type of quadrature
-                   - LG - Legendre-Gauss
-                   - GL - Legendre-Gauss-Lobatto
+
+               - LG - Legendre-Gauss
+               - GL - Legendre-Gauss-Lobatto
+
         mean : number
                Mean value of solution
         plan : bool, optional

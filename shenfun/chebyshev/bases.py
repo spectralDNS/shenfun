@@ -67,8 +67,9 @@ class ChebyshevBase(SpectralBase):
             Number of quadrature points
         quad : str, optional
                Type of quadrature
-                   - GL - Chebyshev-Gauss-Lobatto
-                   - GC - Chebyshev-Gauss
+
+               - GL - Chebyshev-Gauss-Lobatto
+               - GC - Chebyshev-Gauss
         domain : 2-tuple of floats, optional
                  The computational domain
     """
@@ -202,9 +203,8 @@ class Basis(ChebyshevBase):
         quad : str, optional
                Type of quadrature
 
-               GL - Chebyshev-Gauss-Lobatto
-
-               GC - Chebyshev-Gauss
+               - GL - Chebyshev-Gauss-Lobatto
+               - GC - Chebyshev-Gauss
         plan : bool, optional
                Plan transforms on __init__ or not. If basis is part of a
                TensorProductSpace, then planning needs to be delayed.
@@ -331,9 +331,8 @@ class ShenDirichletBasis(ChebyshevBase):
         quad : str, optional
                Type of quadrature
 
-               GL - Chebyshev-Gauss-Lobatto
-
-               GC - Chebyshev-Gauss
+               - GL - Chebyshev-Gauss-Lobatto
+               - GC - Chebyshev-Gauss
 
         bc : 2-tuple of floats, optional
              Boundary conditions at x=(1,-1). For Poisson eq.
@@ -466,9 +465,8 @@ class ShenNeumannBasis(ChebyshevBase):
         quad : str, optional
                Type of quadrature
 
-               GL - Chebyshev-Gauss-Lobatto
-
-               GC - Chebyshev-Gauss
+               - GL - Chebyshev-Gauss-Lobatto
+               - GC - Chebyshev-Gauss
 
         mean : float, optional
                Mean value
@@ -582,10 +580,8 @@ class ShenBiharmonicBasis(ChebyshevBase):
         quad : str, optional
                Type of quadrature
 
-               GL - Chebyshev-Gauss-Lobatto
-
-               GC - Chebyshev-Gauss
-
+               - GL - Chebyshev-Gauss-Lobatto
+               - GC - Chebyshev-Gauss
         plan : bool, optional
                Plan transforms on __init__ or not. If basis is part of a
                TensorProductSpace, then planning needs to be delayed.

@@ -171,14 +171,20 @@ u^1(\boldsymbol{x}, 0) &= (x + y) \exp {-0.03 (x^2 + y^2)} \tag{64}.
 \end{align}
 $$
 
-This problem is solved with the spectral Galerkin method using Fourier bases in both directions, and a tensor product space \( W(x,y)=V^p(x) \times V^p(y) \), where \( V^p \) is defined as in the section <a href="._shenfun_bootstrap003.html#sec:fourierpoisson">Periodic boundary conditions</a>, but here mapping the computational domain \( [-50, 50] \) to \( [0, 2\pi] \). Considering only the spatial discretization, the variational problem becomes: find \( u(x, y) \) in \( W \), such that
+This problem is solved with the spectral Galerkin method using Fourier bases in both directions, and a tensor product
+space \( W(x,y)=V^p(x) \times V^p(y) \), where \( V^p \) is defined as in the section <a href="._shenfun_bootstrap003.html#sec:fourierpoisson">Periodic boundary conditions</a>, but here mapping 
+the computational domain \( [-50, 50] \) to \( [0, 2\pi] \). Considering only the spatial discretization, the variational
+problem becomes: find \( u(x, y) \) in \( W \), such that
 $$
 \begin{equation}
 \frac{\partial }{\partial t} (v, u)^N = (v, \nabla^2u)^N + (v, u - (1 + 1.5i)u |u|^2)^N \quad \text{for all} \quad v \in W, \tag{65}
 \end{equation}
 $$
 
-and we integrate the equations forward in time using an explicit, fourth order Runge-Kutta method, that only requires as input a function that returns the right hand side of <a href="#mjx-eqn-65">(65)</a>. Note that all matrices involved with the Fourier method are diagonal, so there is no need for linear algebra solvers, and the left hand side inner product equals \( (2 \pi)^2 \bs{\hat{u}} \).
+and we integrate the equations forward in time using an explicit, fourth order Runge-Kutta method, that only requires
+as input a function that returns the right hand side of <a href="#mjx-eqn-65">(65)</a>. Note that all matrices involved with the
+Fourier method are diagonal, so there is no need for linear algebra solvers, and the left hand side inner product
+equals \( (2 \pi)^2 \bs{\hat{u}} \).
 
 <p>
 The initial condition is created using <code>Sympy</code>
@@ -192,7 +198,12 @@ ue <span style="color: #666666">=</span> (x <span style="color: #666666">+</span
 ul <span style="color: #666666">=</span> lambdify((x, y), ue, <span style="color: #BA2121">&#39;numpy&#39;</span>)
 </pre></div>
 <p>
-We create a regular tensor product space, choosing the <code>fourier.bases.C2CBasis</code> for both directions if the initial condition is complex <a href="#mjx-eqn-63">(63)</a>, whereas we may choose <code>R2CBasis</code> if the initial condition is real <a href="#mjx-eqn-64">(64)</a>. Since we are solving a nonlinear equation, the additional issue of aliasing should be considered. Aliasing errors may be handled with different methods, but here we will use the so-called 3/2-rule, that requires padded transforms. We create a tensor product space <code>Tp</code> for padded transforms, using the <code>padding_factor=3/2</code> keyword below. Furthermore, some solution arrays, test and trial functions are also declared.
+We create a regular tensor product space, choosing the <code>fourier.bases.C2CBasis</code> for both directions if the initial
+condition is complex <a href="#mjx-eqn-63">(63)</a>, whereas we may choose <code>R2CBasis</code> if the initial condition is real
+<a href="#mjx-eqn-64">(64)</a>. Since we are solving a nonlinear equation, the additional issue of aliasing should be
+considered. Aliasing errors may be handled with different methods, but here we will use the so-called 3/2-rule,
+that requires padded transforms. We create a tensor product space <code>Tp</code> for padded transforms, using the
+<code>padding_factor=3/2</code> keyword below. Furthermore, some solution arrays, test and trial functions are also declared.
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
@@ -272,7 +283,7 @@ tstep <span style="color: #666666">=</span> <span style="color: #666666">0</span
     U_hat[:] <span style="color: #666666">=</span> U_hat1
 </pre></div>
 <p>
-The code that is described here will run in parallel for up to a maximum of \( \text{min}(N[0], N[1]) \) processors. But, being a 2D problem, a single processor is sufficient to solve the problem in reasonable time. The real part of \( u(\boldsymbol{x}, t) \) is shown in Figure <a href="#fig:GL1">2</a> for times \( t=16 \) and \( t=96 \), where the solution is initialized from <a href="#mjx-eqn-63">(63)</a>. The results starting from the real initial condition in <a href="#mjx-eqn-64">(64)</a> is shown for the same times in Figure <a href="#fig:GL2">3</a>. There are apparently good agreements with figures published from using <code>chebfun</code> on <em>www.chebfun.org/examples/pde/GinzburgLandau.html</em>. In particular, the figures in <a href="#fig:GL1">2</a>  are identical by the eye norm. One interesting feature, though, is seen in the right plot of Figure <a href="#fig:GL2">3</a>, where the results can be seen to have preserved symmetry, as they should. This symmetry is lost with chebfun, as commented in the referenced webpage. An asymmetric solution is also obtained with <code>shenfun</code> if no de-aliasing is applied. However, the simulations are very sensitive to roundoff, and it has also been observed that a de-aliased solution using <code>shenfun</code> may loose symmetry simply if a different FFT algorithm is chosen on runtime by FFTW.
+The code that is described here will run in parallel for up to a maximum of \( \text{min}(N[0], N[1]) \) processors. But, being a 2D problem, a single processor is sufficient to solve the problem in reasonable time. The real part of \( u(\boldsymbol{x}, t) \) is shown in Figure <a href="#fig:GL1">2</a> for times \( t=16 \) and \( t=96 \), where the solution is initialized from <a href="#mjx-eqn-63">(63)</a>. The results starting from the real initial condition in <a href="#mjx-eqn-64">(64)</a> is shown for the same times in Figure <a href="#fig:GL2">3</a>. There are apparently good agreements with figures published from using <code>chebfun</code> on <em>www.chebfun.org/examples/pde/GinzburgLandau.html</em>. In particular, the subfigures in Figure <a href="#fig:GL1">2</a>  are identical by the eye norm. One interesting feature, though, is seen in the right plot of Figure <a href="#fig:GL2">3</a>, where the results can be seen to have preserved symmetry, as they should. This symmetry is lost with chebfun, as commented in the referenced webpage. An asymmetric solution is also obtained with <code>shenfun</code> if no de-aliasing is applied. However, the simulations are very sensitive to roundoff, and it has also been observed that a de-aliased solution using <code>shenfun</code> may loose symmetry simply if a different FFT algorithm is chosen on runtime by FFTW.
 
 <p>
 <center> <!-- figure label: --> <div id="fig:GL1"></div> <!-- FIGURE -->

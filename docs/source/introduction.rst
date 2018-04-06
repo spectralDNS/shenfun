@@ -1,12 +1,6 @@
 Introduction
 ============
 
-`Shenfun`_ is a toolbox for automating the spectral Galerkin method. The
-user interface to shenfun is very similar to FEniCS (fenicsproject.org),
-but works only for tensor product grids and the spectral Galerking
-method. The code is parallelized with MPI through the `mpi4py-fft`_
-package.
-
 Spectral Galerkin
 -----------------
 

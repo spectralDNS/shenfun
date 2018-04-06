@@ -20,11 +20,9 @@ import sys, os
 import importlib
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
-from shenfun.fourier.bases import R2CBasis
-from shenfun.tensorproductspace import TensorProductSpace
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    Array
 from mpi4py import MPI
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
+    Array, Basis, TensorProductSpace
 try:
     import matplotlib.pyplot as plt
 except ImportError:
@@ -36,15 +34,14 @@ assert len(sys.argv) == 3, "Call with two command-line arguments"
 assert sys.argv[-1] in ('legendre', 'chebyshev')
 assert isinstance(int(sys.argv[-2]), int)
 
-# Collect basis and solver from either Chebyshev or Legendre submodules
-basis = sys.argv[-1]
-shen = importlib.import_module('.'.join(('shenfun', basis)))
-Basis = shen.bases.ShenDirichletBasis
+# Collect solver from either Chebyshev or Legendre submodules
+family = sys.argv[-1]
+shen = importlib.import_module('.'.join(('shenfun', family)))
 Solver = shen.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
-a = -0
-b = 0
+a = -1
+b = 1
 x, y = symbols("x,y")
 ue = (cos(4*y) + sin(2*x))*(1 - x**2) + a*(1 + x)/2. + b*(1 - x)/2.
 fe = ue.diff(x, 2) + ue.diff(y, 2)
@@ -56,8 +53,8 @@ fl = lambdify((x, y), fe, 'numpy')
 # Size of discretization
 N = (int(sys.argv[-2]), int(sys.argv[-2]))
 
-SD = Basis(N[0], scaled=True, bc=(a, b))
-K1 = R2CBasis(N[1])
+SD = Basis(N[0], family=family, scaled=True, bc=(a, b))
+K1 = Basis(N[1], family='F', dtype='d')
 T = TensorProductSpace(comm, (SD, K1), axes=(0, 1))
 X = T.local_mesh(True)
 u = TrialFunction(T)
@@ -69,11 +66,11 @@ fj = fl(*X)
 # Compute right hand side of Poisson equation
 f_hat = Array(T)
 f_hat = inner(v, fj, output_array=f_hat)
-if basis == 'legendre':
+if family == 'legendre':
     f_hat *= -1.
 
 # Get left hand side of Poisson equation
-if basis == 'chebyshev':
+if family == 'chebyshev':
     matrices = inner(v, div(grad(u)))
 else:
     matrices = inner(grad(v), grad(u))

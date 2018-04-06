@@ -2,7 +2,130 @@ import numpy as np
 from numbers import Number
 
 __all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',
-           'Array')
+           'Array', 'Basis')
+
+def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
+          scaled=None, plan=False, padding_factor=1.0, dealias_direct=False):
+    """Return basis for one dimension
+
+    Parameters
+    ----------
+
+        N : int
+            Number of quadrature points
+        family : str, optional
+                 Choose one of ('Chebyshev', 'C', 'Legendre', 'L', 'Fourier',
+                 'F'), where 'C', 'L' and 'F' are short-forms
+        bc : str or tuple, optional
+             Choose one of
+
+             - (a, b) - Dirichlet boundary condition with v(-1) = a and
+               v(1) = b. For solving Poisson equation.
+             - Dirichlet - Homogeneous Dirichlet
+             - Neumann - Homogeneous Neumann
+             - Biharmonic - Homogeneous Dirichlet and Neumann at both ends
+        dtype : str or np.dtype, optional
+                The datatype of physical space (input to forward transforms)
+        quad : str, optional
+               Type of quadrature
+
+               * For family=Chebyshev:
+
+                 - GL - Chebyshev-Gauss-Lobatto
+                 - GC - Chebyshev-Gauss
+
+               * For family=Legendre:
+
+                 - LG - Legendre-Gauss
+                 - GL - Legendre-Gauss-Lobatto
+        domain : two-tuple of floats, optional
+                 The computational domain
+        scaled : bool
+                 Whether to use scaled basis (only Legendre)
+        plan : bool, optional
+               Plan transforms on __init__ or not. If basis is part of a
+               TensorProductSpace, then planning needs to be delayed.
+        padding_factor : float, optional
+                         For padding backward transform (for dealiasing, and
+                         only for Fourier)
+        dealias_direct : bool, optional
+                         Use 2/3-rule dealiasing (only Fourier)
+
+    """
+    par = {'plan': plan}
+    if domain is not None:
+        par['domain'] = domain
+    if family.lower() in ('fourier', 'f'):
+        from shenfun import fourier
+        par.update({'padding_factor': padding_factor,
+                    'dealias_direct': dealias_direct})
+        if np.dtype(dtype).char in 'FDG':
+            B = fourier.bases.C2CBasis
+        else:
+            B = fourier.bases.R2CBasis
+        return B(N, **par)
+    elif family.lower() in ('chebyshev', 'c'):
+        from shenfun import chebyshev
+        if quad is not None:
+            assert quad in ('GC', 'GL')
+            par['quad'] = quad
+
+        if bc is None:
+            B = chebyshev.bases.Basis
+
+        elif isinstance(bc, tuple):
+            assert len(bc) == 2
+            if isinstance(bc, tuple):
+                par['bc'] = bc
+            B = chebyshev.bases.ShenDirichletBasis
+
+        elif isinstance(bc, str):
+            if bc.lower() == 'dirichlet':
+                B = chebyshev.bases.ShenDirichletBasis
+            elif bc.lower() == 'neumann':
+                B = chebyshev.bases.ShenNeumannBasis
+            elif bc.lower() == 'biharmonic':
+                B = chebyshev.bases.ShenBiharmonicBasis
+
+        else:
+            raise NotImplementedError
+
+        return B(N, **par)
+
+    elif family.lower() in ('legendre', 'l'):
+        from shenfun import legendre
+        if quad is not None:
+            assert quad in ('LG', 'GL')
+            par['quad'] = quad
+
+        if scaled is not None:
+            assert isinstance(scaled, bool)
+            par['scaled'] = scaled
+
+        if bc is None:
+            B = legendre.bases.Basis
+
+        elif isinstance(bc, tuple):
+            assert len(bc) == 2
+            if isinstance(bc, tuple):
+                par['bc'] = bc
+            B = legendre.bases.ShenDirichletBasis
+
+        elif isinstance(bc, str):
+            if bc.lower() == 'dirichlet':
+                B = legendre.bases.ShenDirichletBasis
+            elif bc.lower() == 'neumann':
+                B = legendre.bases.ShenNeumannBasis
+            elif bc.lower() == 'biharmonic':
+                B = legendre.bases.ShenBiharmonicBasis
+
+        else:
+            raise NotImplementedError
+
+        return B(N, **par)
+
+    else:
+        raise NotImplementedError
 
 
 class Expr(object):
@@ -15,31 +138,35 @@ class Expr(object):
 
     Parameters
     ----------
-        basis:     BasisFunction
+        basis :    BasisFunction
                    TestFunction, TrialFunction or Function
-        terms:     Numpy array of ndim = 3
+        terms :    Numpy array of ndim = 3
                    Describes operations in Expr
 
-                   Index 0: Vector component. If Expr is rank = 0, then
-                            terms[0] = 1. For vectors it equals dim
+                   - Index 0: Vector component. If Expr is rank = 0, then
+                     terms[0] = 1. For vectors it equals dim
 
-                   Index 1: One for each term in the form. For example
-                            div(grad(u)) has three terms in 3D:
+                   - Index 1: One for each term in the form. For example
+                     `div(grad(u))` has three terms in 3D:
 
-                   :math:`\partial^2u/\partial x^2 + \partial^2u/\partial y^2 + \partial^2u/\partial z^2`
+                   .. math::
 
-                   Index 2: The operations stored as an array of len = dim
-                            For example, div(grad(u)) in 3D is represented
-                            with the three arrays
+                       \partial^2u/\partial x^2 + \partial^2u/\partial y^2 + \partial^2u/\partial z^2
+
+                   - Index 2: The operations stored as an array of length = dim
+
+                   For example, `div(grad(u))` in 3D is represented
+                   with the array
+
                    >>>        [[2, 0, 0],
                    >>>         [0, 2, 0],
                    >>>         [0, 0, 2]]
 
-                            meaning the first term has two derivatives in first
-                            direction and none in the others, the second has two
-                            derivatives in second direction, etc.
+                   meaning the first term has two derivatives in first
+                   direction and none in the others, the second has two
+                   derivatives in second direction, etc.
 
-                   The Expr div(grad(u)), where u is a scalar, is as such
+                   The `Expr` `div(grad(u))`, where u is a scalar, is as such
                    represented as an array of shape (1, 3, 3), 1 meaning
                    it's a scalar, the first 3 because the Expr consists of
                    the sum of three terms, and the last 3 because it is 3D:
@@ -48,10 +175,10 @@ class Expr(object):
                    >>>                [0, 2, 0],
                    >>>                [0, 0, 2]]])
 
-        scales:   Numpy array of shape == terms.shape[:2]
+        scales :  Numpy array of shape == terms.shape[:2]
                   Representing a scalar multiply of each inner product
 
-        indices:  Numpy array of shape == terms.shape[:2]
+        indices : Numpy array of shape == terms.shape[:2]
                   Index into VectorTensorProductSpace. Only for vector
                   coefficients
 
@@ -236,14 +363,14 @@ class BasisFunction(object):
     Parameters
     ----------
         space: TensorProductSpace
+
         argument: int
                   Argument to Expr form.
 
-                  0 - TestFunction
+                  - 0 - TestFunction
+                  - 1 - TrialFunction
+                  - 2 - Function
 
-                  1 - TrialFunction
-
-                  2 - Function
         index: int
                Component of basis with rank > 1
     """
