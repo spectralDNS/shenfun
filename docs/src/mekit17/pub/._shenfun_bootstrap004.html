@@ -1,0 +1,449 @@
+<!--
+Automatically generated HTML file from DocOnce source
+(https://github.com/hplgit/doconce/)
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="description" content="Shenfun - automating the spectral Galerkin method">
+<meta name="keywords" content="Computational Methods,Spectral,Galerkin,Chebyshev,Legendre">
+
+<title>Shenfun - automating the spectral Galerkin method</title>
+
+<!-- Bootstrap style: bootstrap -->
+<link href="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+<!-- not necessary
+<link href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+-->
+
+<style type="text/css">
+/* Let pre tags for code blocks have the same color as the surroundings */
+pre { color: inherit; background-color: transparent; }
+
+/* Add scrollbar to dropdown menus in bootstrap navigation bar */
+.dropdown-menu {
+   height: auto;
+   max-height: 400px;
+   overflow-x: hidden;
+}
+
+/* Adds an invisible element before each target to offset for the navigation
+   bar */
+.anchor::before {
+  content:"";
+  display:block;
+  height:50px;      /* fixed header height for style bootstrap */
+  margin:-50px 0 0; /* negative fixed header height */
+}
+</style>
+
+
+
+
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [('Table of contents',
+               1,
+               'table_of_contents',
+               'table_of_contents'),
+              ('Introduction', 1, 'sec:introduction', 'sec:introduction'),
+              ('Spectral Galerkin Method',
+               1,
+               'sec:preliminaries',
+               'sec:preliminaries'),
+              ('Shenfun', 1, 'sec:shenfun', 'sec:shenfun'),
+              ('Classes for basis functions', 2, None, '___sec3'),
+              ('Classes for matrices', 2, 'sec:matrices', 'sec:matrices'),
+              ('Variational forms in 1D', 2, None, '___sec5'),
+              ('Poisson equation implemented in 1D', 2, None, '___sec6'),
+              ('Periodic boundary conditions',
+               3,
+               'sec:fourierpoisson',
+               'sec:fourierpoisson'),
+              ('Dirichlet boundary conditions',
+               3,
+               'sec:dirichletpoisson',
+               'sec:dirichletpoisson'),
+              ('Tensor product spaces',
+               1,
+               'sec:tensorproductspaces',
+               'sec:tensorproductspaces'),
+              ('Other functionality of `shenfun`',
+               1,
+               'sec:extended',
+               'sec:extended'),
+              ('Ginzburg-Landau equation', 1, 'sec:ginzburg', 'sec:ginzburg'),
+              ('Conclusions', 1, None, '___sec12'),
+              ('Acknowledgements', 1, None, '___sec13'),
+              ('Bibliography', 1, None, '___sec14')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "none"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript" async
+ src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+<!-- newcommands_keep.tex -->
+$$
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+\newcommand{\ts}[1]{\bs{\textsf{#1}}}
+$$
+
+
+
+
+    
+<!-- Bootstrap navigation bar -->
+<div class="navbar navbar-default navbar-fixed-top">
+  <div class="navbar-header">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </button>
+    <a class="navbar-brand" href="shenfun_bootstrap.html">Shenfun - automating the spectral Galerkin method</a>
+  </div>
+
+  <div class="navbar-collapse collapse navbar-responsive-collapse">
+    <ul class="nav navbar-nav navbar-right">
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Contents <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap000.html#table_of_contents" style="font-size: 80%;"><b>Table of contents</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap001.html#sec:introduction" style="font-size: 80%;"><b>Introduction</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap002.html#sec:preliminaries" style="font-size: 80%;"><b>Spectral Galerkin Method</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap003.html#sec:shenfun" style="font-size: 80%;"><b>Shenfun</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap003.html#___sec3" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Classes for basis functions</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap003.html#sec:matrices" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Classes for matrices</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap003.html#___sec5" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Variational forms in 1D</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap003.html#___sec6" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;Poisson equation implemented in 1D</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap003.html#sec:fourierpoisson" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Periodic boundary conditions</a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap003.html#sec:dirichletpoisson" style="font-size: 80%;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Dirichlet boundary conditions</a></li>
+     <!-- navigation toc: --> <li><a href="#sec:tensorproductspaces" style="font-size: 80%;"><b>Tensor product spaces</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap005.html#sec:extended" style="font-size: 80%;"><b>Other functionality of <code>shenfun</code></b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap006.html#sec:ginzburg" style="font-size: 80%;"><b>Ginzburg-Landau equation</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap007.html#___sec12" style="font-size: 80%;"><b>Conclusions</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap008.html#___sec13" style="font-size: 80%;"><b>Acknowledgements</b></a></li>
+     <!-- navigation toc: --> <li><a href="._shenfun_bootstrap009.html#___sec14" style="font-size: 80%;"><b>Bibliography</b></a></li>
+
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+</div> <!-- end of navigation bar -->
+
+<div class="container">
+
+<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p> <!-- add vertical space -->
+
+<a name="part0004"></a>
+<!-- !split -->
+
+<h1 id="sec:tensorproductspaces" class="anchor">Tensor product spaces</h1>
+Now that we know how to solve problems in one dimension, it is time to move on to more challenging tasks. Consider again the Poisson equation, but now in possibly more than one dimension
+$$
+\begin{equation}
+ -\nabla^2 u(\bs{x}) = f(\bs{x}) \quad \text{for }\bs{x} \in \Omega.
+\tag{42}
+\end{equation}
+$$
+
+Lets first consider 2 dimensions, with Dirichlet boundary conditions in the
+first direction and with periodicity in the second. Let \( \Omega \) be the domain
+\( [-1, 1] \times [0, 2 \pi] \), and \( T(x,y) = V^C(x) \times V^p(y) \) be the tensor product function space. We can solve this problem for some suitable function \( f(\bs{x}) \) in <code>shenfun</code> by constructing a few more classes than were required in 1D
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun.chebyshev.bases</span> <span style="color: #008000; font-weight: bold">import</span> ShenDirichletBasis
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun.fourier.bases</span> <span style="color: #008000; font-weight: bold">import</span> FourierBasis
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> Function, TensorProductSpace
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">mpi4py</span> <span style="color: #008000; font-weight: bold">import</span> MPI
+</pre></div>
+<p>
+Now the <code>TensorProductSpace</code> class is used to construct \( T \), whereas <code>Function</code> is a subclass of <code>numpy.ndarray</code> used to hold solution arrays. The MPI communicator, on the other hand, is used for distributing the tensor product grids on a given number of processes
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>comm <span style="color: #666666">=</span> MPI<span style="color: #666666">.</span>COMM_WORLD
+N <span style="color: #666666">=</span> (<span style="color: #666666">32</span>, <span style="color: #666666">33</span>)
+
+K0 <span style="color: #666666">=</span> ShenDirichletBasis(N[<span style="color: #666666">0</span>])
+K1 <span style="color: #666666">=</span> FourierBasis(N[<span style="color: #666666">1</span>], dtype<span style="color: #666666">=</span>np<span style="color: #666666">.</span>float)
+T <span style="color: #666666">=</span> TensorProductSpace(comm, (K0, K1))
+
+<span style="color: #408080; font-style: italic"># Alternatively, switch order for periodic in first direction instead</span>
+<span style="color: #408080; font-style: italic"># T = TensorProductSpace(comm, (K1, K0), axes=(1, 0))</span>
+</pre></div>
+<p>
+Under the hood, within the <code>TensorProductSpace</code> class, the mesh is distributed,
+both in real, physical space, and in spectral space. In the real space the mesh
+is distributed along the first index, whereas in spectral space the
+wavenumbermesh is distributed along the second dimension. This is the default
+behaviour of <code>TensorProductSpace</code>. However, the distribution may also be
+configured specifically by the user, e.g., as shown in the commented out text,
+where the Dirichlet basis is found along the second axis. In this case the order
+of the axes to transform over has been flipped, such that in spectral space the
+data is distributed along the first dimension and aligned in the second. This is
+required for solving the linear algebra system that arises for the Dirichlet
+basis. The arrays created using <code>Function</code> are distributed, and no further
+attention to MPI is required. However, note that arrays may have different type
+and shape in real space and in spectral space. For this reason <code>Function</code> has a
+keyword argument <code>forward_output</code>, that is used as <code>w_hat = Function(T,
+forward_output=True)</code> to create an array consistent with the output of
+<code>T.forward</code> (solution in spectral space), and <code>w = Function(T,
+forward_output=False)</code> to create an array consistent with the input (solution in
+real space). Furthermore, <code>uh = np.zeros_like(w_hat)</code> and <code>w_hat = Function(T, buffer=uh)</code> can be used to wrap a <code>Function</code> instance around a regular Numpy array <code>uh</code>. Note that <code>uh</code> and <code>w_hat</code> now will share the same data, and modifying one will naturally modify also the other.
+
+<p>
+The solution of a complete Poisson problem in 2D is shown below. Very similar code is required to solve the Poisson problem with the Legendre basis. The main difference is that for Legendre it is natural to integrate the weak form by parts and use <code>matrices = inner(grad(v), grad(u))</code>
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun.chebyshev.la</span> <span style="color: #008000; font-weight: bold">import</span> Helmholtz <span style="color: #008000; font-weight: bold">as</span> Solver
+
+<span style="color: #408080; font-style: italic"># Create a solution that satisfies boundary conditions</span>
+x, y <span style="color: #666666">=</span> symbols(<span style="color: #BA2121">&quot;x,y&quot;</span>)
+ue <span style="color: #666666">=</span> (cos(<span style="color: #666666">4*</span>y) <span style="color: #666666">+</span> sin(<span style="color: #666666">2*</span>x))<span style="color: #666666">*</span>(<span style="color: #666666">1-</span>x<span style="color: #666666">**2</span>)
+fe <span style="color: #666666">=</span> ue<span style="color: #666666">.</span>diff(x, <span style="color: #666666">2</span>) <span style="color: #666666">+</span> ue<span style="color: #666666">.</span>diff(y, <span style="color: #666666">2</span>)
+
+<span style="color: #408080; font-style: italic"># Lambdify for faster evaluation</span>
+ul <span style="color: #666666">=</span> lambdify((x, y), ue, <span style="color: #BA2121">&#39;numpy&#39;</span>)
+fl <span style="color: #666666">=</span> lambdify((x, y), fe, <span style="color: #BA2121">&#39;numpy&#39;</span>)
+
+X <span style="color: #666666">=</span> T<span style="color: #666666">.</span>local_mesh(<span style="color: #008000">True</span>)
+u <span style="color: #666666">=</span> TrialFunction(T)
+v <span style="color: #666666">=</span> TestFunction(T)
+
+<span style="color: #408080; font-style: italic"># Get f on quad points</span>
+fj <span style="color: #666666">=</span> fl(X[<span style="color: #666666">0</span>], X[<span style="color: #666666">1</span>])
+
+<span style="color: #408080; font-style: italic"># Compute right hand side of Poisson equation</span>
+f_hat <span style="color: #666666">=</span> inner(v, fj)
+
+<span style="color: #408080; font-style: italic"># Get left hand side of Poisson equation</span>
+matrices <span style="color: #666666">=</span> inner(v, div(grad(u)))
+
+<span style="color: #408080; font-style: italic"># Create Helmholtz linear algebra solver</span>
+H <span style="color: #666666">=</span> Solver(<span style="color: #666666">**</span>matrices)
+
+<span style="color: #408080; font-style: italic"># Solve and transform to real space</span>
+u_hat <span style="color: #666666">=</span> Function(T)           <span style="color: #408080; font-style: italic"># Solution spectral space</span>
+u_hat <span style="color: #666666">=</span> H(u_hat, f_hat)       <span style="color: #408080; font-style: italic"># Solve</span>
+u <span style="color: #666666">=</span> T<span style="color: #666666">.</span>backward(u_hat)
+</pre></div>
+<p>
+The test functions and function spaces require a bit more attention. Test
+functions for space \( T(x, y)=V^C(x) \times V^p(y) \) are given as
+$$
+\begin{equation}
+\phi_{\ts{k}}(x, y) = v_l(x) e^{imy},
+\tag{43}
+\end{equation}
+$$
+
+which introduces the sans serif tensor product wavenumber mesh \( \ts{k} = \bs{l}^D \times \bs{l} \)
+$$
+\begin{equation}
+ \ts{k} = \{ (l, m) | l \in \bs{l}^D \text{ and } m \in \bs{l}\}.
+\tag{44}
+\end{equation}
+$$
+
+Similarly there is a tensor product grid \( \ts{x} = \bs{x} \times \bs{y} \), where \( \bs{y} = \{y_k\}_{k=0}^{M-1} = 2 \pi k /M \)
+$$
+\begin{equation}
+ \ts{x} = \{ (x_j, y_k) | j=0,1,\ldots, N-1 \text{ and } k=0,1,\ldots, M-1\}.
+\tag{45}
+\end{equation}
+$$
+
+Note that for computing on the tensor product grids using Numpy arrays with vectorization, the mesh and wavenumber components need to be represented as 2D arrays. As such we create
+$$
+\begin{equation}
+\bs{\textsf{x}} = (\bs{x}, \bs{y}) = \Big(\{x_i\}_{i=0}^{N-1} \times I^M,  I^N \times \{y_j\}_{j=0}^{M-1} \Big),
+\tag{46}
+\end{equation}
+$$
+
+where \( I^N \) is an N-length vector of ones. Similarly
+$$
+\begin{equation}
+\bs{\textsf{k}} = (\bs{l}, \bs{m}) = \Big(\{ l \}_{l=0}^{N-1} \times I^M,  I^N \times \{ m \}_{m=0}^{M/2} \Big). 
+\tag{47}
+\end{equation}
+$$
+
+Such tensor product grids can be very efficiently stored with Numpy arrays, using no more space than the two vectors used to create them. The key to this efficiency is broadcasting. We store \( \ts{k} \) as a list of two numpy arrays, \( \bs{l} \) and \( \bs{m} \), corresponding to the two 1D wavenumber meshes \( \{ l \}_{l=0}^{N-1} \) and \( \{ m \}_{m=0}^{M/2} \). 
+However, \( \bs{l} \) and \( \bs{m} \) are now stored as 2D arrays of shape \( (N, 1) \) and \( (1, M/2+1) \), respectively. And broadcasting takes care of the additional dimension, such that the two arrays work just like if they were stored as \( (N, M/2+1) \) arrays. We can look up \( \bs{l}(l, m) \), just like a regular \( (N, M/2+1) \) array, but the storage required is still only one single vector. 
+The same goes for \( \ts{x} \), which is stored as a list of two arrays \( \bs{x} \), \( \bs{y} \) of shape \( (N, 1) \) and \( (1, M) \) respectively. This extends straightforward to even higher dimensions.
+
+<p>
+Assembling a weak form like \( (v, \nabla^2 u)_w^N \) leads to two non-diagonal matrices, both the stiffness and mass matrix, since it expands like
+$$
+\begin{equation}
+(v, \nabla^2 u)_w^N = \left(v, \frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2} \right)_w^N.
+\tag{48}
+\end{equation}
+$$
+
+Inserting for test function \( v = \phi_{\ts{k}} (= \phi_{l, m} =v_l(x) e^{imy}) \) and trial function \( u = \sum_{(q,r)\in \ts{k}} \hat{u}_{q, r} \phi_{q,r} \), we obtain
+$$
+\begin{align}
+ (v, \nabla^2 u)_w^N &= \left(\phi_{l, m}, \frac{\partial^2}{\partial x^2} \sum_{(q, r) \in \ts{k}} \hat{u}_{q, r} \phi_{q, r} + \frac{\partial^2}{\partial y^2} \sum_{(q,r) \in \ts{k}} \hat{u}_{q, r} \phi_{q, r} \right)_w^N, 
+\tag{49}\\
+ &= 2\pi \left(\sum_{(q, r) \in \ts{k}} A_{lq} \delta_{rm} \hat{u}_{q,r} -  \sum_{(q, r) \in \ts{k}} {r}^2  B_{lq} \delta_{rm} \hat{u}_{q,r}\right), 
+\tag{50}\\
+ &= 2\pi \left(\sum_{q\in \bs{l}^D} A_{lq} \hat{u}_{q,m} - {m}^2 \sum_{q\in \bs{l}^D}  B_{lq} \hat{u}_{q,m}\right) \quad \forall (l, m) \in \bs{l}^D \times \bs{l}. \tag{51}
+\end{align}
+$$
+
+As can be seen from Eq.<a href="#mjx-eqn-51">(51)</a>, the linear system of equations is set up to act along the Dirichlet direction, whereas for the periodic direction the matrices are diagonal and no additional work is required. The system of equations correspond to a series of 1D Helmholtz problems, that need to be solved once for each \( m \in \bs{l} \). This is what goes on under the hood with the Helmholtz solver imported through <code>from shenfun.chebyshev.la import Helmholtz as Solver</code>.
+
+<p>
+The right hand side of the Poisson problem is computed as
+$$
+\begin{align}
+(v, f)_w^N &= 2\pi \underbrace{\sum_{j}\underbrace{\frac{1}{N} \sum_{k} f(x_j, y_k) e^{imy_k} }_{\mathcal{F}_m} v_l(x_j)   w_j}_{\mathcal{S}_l} \quad \forall (l, m) \in \bs{l}^D \times \bs{l}, \notag 
+\tag{52}\\
+  &= 2\pi \mathcal{S}(f) = 2 \pi \mathcal{S}_l(\mathcal{F}_m(f)).
+\tag{53}
+\end{align}
+$$
+
+The <code>TensorProductSpace</code> class can take any number of Fourier bases. A 3 dimensional tensor product space can be created as
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>N <span style="color: #666666">=</span> (<span style="color: #666666">32</span>, <span style="color: #666666">33</span>, <span style="color: #666666">34</span>)
+K0 <span style="color: #666666">=</span> ShenDirichletBasis(N[<span style="color: #666666">0</span>])
+K1 <span style="color: #666666">=</span> C2CBasis(N[<span style="color: #666666">1</span>])
+K2 <span style="color: #666666">=</span> R2CBasis(N[<span style="color: #666666">2</span>])
+W <span style="color: #666666">=</span> TensorProductSpace(comm, (K0, K1, K2))
+</pre></div>
+<p>
+Here the default behaviour of <code>TensorProductSpace</code> is to distribute the first 2 indices in real space using two subcommunicators, with a decomposition often referred to as <em>pencil</em> decomposition. In spectral space the last two indices will be distributed. For example, using 4 CPUs, a subprocessor mesh of size \( 2 \times 2 \) will be created, and 2 subprocessors share the first index and the other two share the second index.  If the program is run with 3 processors, then only the first index will be distributed and the subprocessormesh will be \( 3 \times 1 \). It is also possible to configure <code>TensorProductSpace</code> to run with 4 CPUs and a \( 4 \times 1 \) subprocessormesh, or 40,000 CPUs with a \( 200 \times 200 \) processormesh. The latter requires that the mesh is big enough, though, but otherwise it is just a matter of acquiring computing power. The biggest simulations tested thus far used 64,000 CPUs.
+
+<p>
+Solving a biharmonic problem is just as easy as the Poisson problem. Consider the fourth order biharmonic PDE in 3-dimensional space
+$$
+\begin{align}
+\nabla^4 u(\bs{x}) &= f(\bs{x}), \quad \bs{x} \in \Omega 
+\tag{54}\\
+ u(x=\pm1, y, z) &= \frac{\partial u}{\partial x} (x=\pm 1, y, z) = 0 
+\tag{55}\\
+ u(x, y+2\pi, z) &= u(x, y, z), 
+\tag{56}\\
+ u(x, y, z+2\pi) &= u(x, y, z). 
+\tag{57}
+\end{align}
+$$
+
+that is periodic in \( y- \) and \( z- \) directions and with clamped boundary conditions at \( x=\pm 1 \). The problem may be solved using either one of these two bases:
+$$
+\begin{align}
+V^C &= \text{span}\{T_l - \frac{2(l+2)}{l+3}T_{l+2} + \frac{l+1}{l+3}T_{l+4} , l \in \bs{l}^B\}, \tag{58} \\
+V^L &= \text{span}\{L_l - \frac{2(2l+5)}{2l+7}L_{l+2} + \frac{2l+3}{2l+7}, l \in \bs{l}^B\}, \tag{59}
+\end{align}
+$$
+
+where \( \bs{l}^B = 0, 1, \ldots, N-5 \). A tensor product space may be constructed as \( W(x,y,z) = V^C(x) \times V^p(y) \times V^p(z) \), and the variational problem 
+$$
+\begin{equation}
+(v, \nabla^4 u)^N_w = (v, f)^N_w,
+\tag{60}
+\end{equation}
+$$
+
+where \( u \) and \( v \) are trial and test functions in \( W \), may be implemented in <code>shenfun</code> as shown below
+<p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun.chebyshev.bases</span> <span style="color: #008000; font-weight: bold">import</span> ShenBiharmonicBasis, Basis
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun.fourier.bases</span> <span style="color: #008000; font-weight: bold">import</span> R2CBasis, C2CBasis
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun.chebyshev.la</span> <span style="color: #008000; font-weight: bold">import</span> Biharmonic <span style="color: #008000; font-weight: bold">as</span> Solver
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> inner , div , grad , TestFunction, TrialFunction, project, Dx
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> Function, TensorProductSpace
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">mpi4py</span> <span style="color: #008000; font-weight: bold">import</span> MPI
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
+
+comm <span style="color: #666666">=</span> MPI<span style="color: #666666">.</span>COMM_WORLD
+
+N <span style="color: #666666">=</span> (<span style="color: #666666">32</span>, <span style="color: #666666">33</span>, <span style="color: #666666">34</span>)
+K0 <span style="color: #666666">=</span> ShenBiharmonicBasis(N[<span style="color: #666666">0</span>])
+K1 <span style="color: #666666">=</span> C2CBasis(N[<span style="color: #666666">1</span>])
+K2 <span style="color: #666666">=</span> R2CBasis(N[<span style="color: #666666">2</span>])
+W <span style="color: #666666">=</span> TensorProductSpace(comm, (K0, K1, K2))
+u <span style="color: #666666">=</span> TrialFunction(W)
+v <span style="color: #666666">=</span> TestFunction(W)
+matrices <span style="color: #666666">=</span> inner(v, div(grad(div(grad(u)))))
+fj <span style="color: #666666">=</span> Function(W, <span style="color: #008000">False</span>)
+fj[:] <span style="color: #666666">=</span> np<span style="color: #666666">.</span>random<span style="color: #666666">.</span>random(fj<span style="color: #666666">.</span>shape)
+
+f_hat <span style="color: #666666">=</span> inner(v, fj) <span style="color: #408080; font-style: italic"># Some right hand side</span>
+B <span style="color: #666666">=</span> Solver(<span style="color: #666666">**</span>matrices)
+
+<span style="color: #408080; font-style: italic"># Solve and transform to real space</span>
+u_hat <span style="color: #666666">=</span> Function(W) <span style="color: #408080; font-style: italic"># Solution spectral space</span>
+u_hat <span style="color: #666666">=</span> B(u_hat , f_hat) <span style="color: #408080; font-style: italic"># Solve</span>
+u <span style="color: #666666">=</span> Function(W, <span style="color: #008000">False</span>)
+u <span style="color: #666666">=</span> W<span style="color: #666666">.</span>backward(u_hat, u)
+</pre></div>
+<p>
+Note that <code>C2CBasis</code> is used for the Fourier basis along axis 1, whereas
+<code>R2CBasis</code> is used for the last axis. This is because the right hand side of the
+Poisson equation, and
+thus the input data, is real and not complex. Yet, taking the Fourier
+transform along the last axis, results in a complex array. Hence we need
+real-to-complex transforms for axis 2 and complex-to-complex (<code>C2CBasis</code>)
+transforms for axis 1. 
+<p>
+<!-- navigation buttons at the bottom of the page -->
+<ul class="pager">
+\
+  <li class="previous">
+    <a href="._shenfun_bootstrap003.html">&larr; Prev</a>
+  </li>
+\
+  <li class="next">
+    <a href="._shenfun_bootstrap005.html">Next &rarr;</a>
+  </li>
+</ul>
+<!-- ------------------- end of main content --------------- -->
+
+</div>  <!-- end container -->
+<!-- include javascript, jQuery *first* -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+
+<!-- Bootstrap footer
+<footer>
+<a href="http://..."><img width="250" align=right src="http://..."></a>
+</footer>
+-->
+
+
+<center style="font-size:80%">
+<!-- copyright only on the titlepage -->
+</center>
+
+
+</body>
+</html>
+    
+

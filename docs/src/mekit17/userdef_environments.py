@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 #
 # Modified from doconce/doc/src/userdef_envirs/enumerated_envs/userdef_environments.py
-# 
+#
 # (c) Ilya V. Schurov <ilya@schurov.com>, 2016
 # Based on example_and_colorbox example by Hans Petter Langtangen
 # Licensed under BSD 3-Clause License (like the rest of DocOnce, see LICENSE)
 #
 # -*- coding: utf-8 -*-
 from mako.template import Template
-import re
+import regex as re
 
 envir2format = {
     'intro': {
@@ -49,7 +49,7 @@ def latex_env(env, text, titleline, counter, format):
     """LaTeX typesetting of theorem-style environment."""
     label, titleline = get_label(titleline)
     titleline = titleline.strip()
-    template = ur"""
+    template = r"""
 \begin{${env}}
 % if label:
 label{${label}}
@@ -68,7 +68,7 @@ def do_env(env, text, titleline, counter, format):
     titleline = titleline.strip()
     if titleline:
         titleline = ": "+titleline
-    template = ur"""
+    template = r"""
 ===== ${env.capitalize()} ${counter} ${titleline} =====
 % if label:
 label{${label}}
@@ -82,11 +82,11 @@ def html_env(env, text, titleline, counter, format):
     """HTML typesetting of theorem-style environment."""
     label, titleline = get_label(titleline)
     titleline = titleline.strip()
-    template = ur"""
+    template = r"""
 % if label:
 <!-- custom environment: label=${label}, number=${counter} -->
 % endif
-<p class='env-${env}'><strong>${env.capitalize()} ${counter} ${titleline}.</strong> 
+<p class='env-${env}'><strong>${env.capitalize()} ${counter} ${titleline}.</strong>
 ${text}
 </p>
 """
