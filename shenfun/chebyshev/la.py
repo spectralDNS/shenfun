@@ -105,7 +105,7 @@ class Helmholtz(object):
         (v, \nabla^2 u)_w = (v, b)_w
 
 
-    See https://rawgit.com/spectralDNS/shenfun/master/docs/src/Poisson3D/poisson3d_bootstrap.html
+    See :ref:`demo:poisson3d`
     for details, since it is actually quite involved. But basically, one
     obtains a linear algebra system to be solved along the :math:`z`-axis for
     all combinations of the two Fourier indices :math:`k` and :math:`l`
@@ -330,7 +330,7 @@ class Biharmonic(object):
 
         (v, \nabla^4 u)_w = (v, b)_w
 
-    See https://rawgit.com/spectralDNS/shenfun/master/docs/._shenfun_bootstrap004.html#sec:tensorproductspaces
+    See https://rawgit.com/spectralDNS/shenfun/master/docs/src/mekit17/pub/._shenfun_bootstrap004.html#sec:tensorproductspaces
     for details, since it is actually quite involved. But basically, one obtains
     a linear algebra system to be solved along the z-axis for all combinations
     of the two Fourier indices k and l
