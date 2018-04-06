@@ -25,7 +25,7 @@ doconce sphinx_dir dirname=sphinx-rootdir theme=$theme $name
 python automake_sphinx.py
 
 # Publish
-dest=../..
+dest=pub
 cp -r sphinx-rootdir/_build/html/ $dest
 cp $name.pdf $dest/shenfun.pdf
 cp -r figs $dest

@@ -584,7 +584,7 @@ print("Error=%2.16e" %(np.linalg.norm(uj-uq)))
 
 % if FORMAT not in ("sphinx"):
 
-BIBFILE: papers.pub
+BIBFILE: ../papers.pub
 
 % else:
 
