@@ -43,7 +43,9 @@ def func(x):
 % endif
 
 ======= Model problem =======
+
 ===== Poisson equation =====
+label{demo:poisson3d}
 
 The Poisson equation is given as
 
