@@ -20,10 +20,8 @@ import sys, os
 import importlib
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
-from shenfun.fourier.bases import R2CBasis
-from shenfun.tensorproductspace import TensorProductSpace
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    Array
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis, \
+    Array, TensorProductSpace
 from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt
@@ -33,14 +31,13 @@ except ImportError:
 comm = MPI.COMM_WORLD
 
 assert len(sys.argv) == 3, "Call with two command-line arguments"
-assert sys.argv[-1] in ('legendre', 'chebyshev')
+assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
 assert isinstance(int(sys.argv[-2]), int)
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
-basis = sys.argv[-1]
-shen = importlib.import_module('.'.join(('shenfun', basis)))
-Basis = shen.bases.ShenDirichletBasis
-Solver = shen.la.Helmholtz
+family = sys.argv[-1]
+base = importlib.import_module('.'.join(('shenfun', family)))
+Solver = base.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
 alpha = 2.
@@ -55,8 +52,8 @@ fl = lambdify((x, y), fe, 'numpy')
 # Size of discretization
 N = (int(sys.argv[-2]),)*2
 
-SD = Basis(N[0], scaled=True)
-K1 = R2CBasis(N[1])
+SD = Basis(N[0], family, bc=(0, 0), scaled=True)
+K1 = Basis(N[1], 'F', dtype='d')
 T = TensorProductSpace(comm, (SD, K1), axes=(0, 1))
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)
@@ -70,7 +67,7 @@ f_hat = Array(T)
 f_hat = inner(v, fj, output_array=f_hat)
 
 # Get left hand side of Helmholtz equation
-if basis == 'chebyshev':
+if family == 'chebyshev':
     matrices = inner(v, alpha*u - div(grad(u)))
 else:
     matrices = inner(grad(v), grad(u))    # Both ADDmat and BDDmat
@@ -81,9 +78,9 @@ else:
 H = Solver(**matrices)
 
 # Solve and transform to real space
-u_hat = Function(T)           # Solution spectral space
+u_hat = Array(T)           # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
-uq = Function(T, False)
+uq = Array(T, False)
 uq = T.backward(u_hat, uq)
 
 # Compare with analytical solution
@@ -91,7 +88,7 @@ uj = ul(*X)
 print("Error=%2.16e" %(np.linalg.norm(uj-uq)))
 assert np.allclose(uj, uq)
 
-if not plt is None and not 'pytest' in os.environ:
+if plt is not None and not 'pytest' in os.environ:
     plt.figure()
     plt.contourf(X[0], X[1], uq)
     plt.colorbar()

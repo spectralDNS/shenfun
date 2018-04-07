@@ -15,7 +15,6 @@ from sympy import symbols, exp, lambdify
 import numpy as np
 import matplotlib.pyplot as plt
 from mpi4py import MPI
-from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun import *
 
 comm = MPI.COMM_WORLD
@@ -28,8 +27,8 @@ ul = lambdify((x, y), ue, 'numpy')
 # Size of discretization
 N = (128, 128)
 
-K0 = C2CBasis(N[0], domain=(-30*np.pi, 30*np.pi))
-K1 = R2CBasis(N[1], domain=(-30*np.pi, 30*np.pi))
+K0 = Basis(N[0], 'F', dtype='D', domain=(-30*np.pi, 30*np.pi))
+K1 = Basis(N[1], 'F', dtype='d', domain=(-30*np.pi, 30*np.pi))
 T = TensorProductSpace(comm, (K0, K1), **{'planner_effort': 'FFTW_MEASURE'})
 TV = VectorTensorProductSpace(T)
 

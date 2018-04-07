@@ -16,18 +16,17 @@ import sys
 import importlib
 from sympy import symbols, sin, lambdify
 import numpy as np
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    Array
+from shenfun import inner, div, grad, TestFunction, TrialFunction, \
+    Array, Basis
 
 assert len(sys.argv) == 3
-assert sys.argv[-1] in ('legendre', 'chebyshev')
+assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
 assert isinstance(int(sys.argv[-2]), int)
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
-basis = sys.argv[-1]
-shen = importlib.import_module('.'.join(('shenfun', basis)))
-Basis = shen.bases.ShenDirichletBasis
-Solver = shen.la.Helmholtz
+family = sys.argv[-1].lower()
+base = importlib.import_module('.'.join(('shenfun', family)))
+Solver = base.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
 alfa = 1.
@@ -42,7 +41,7 @@ fl = lambdify(x, fe, 'numpy')
 # Size of discretization
 N = int(sys.argv[-2])
 
-SD = Basis(N, plan=True)
+SD = Basis(N, family=family, bc='Dirichlet', plan=True)
 X = SD.mesh(N)
 u = TrialFunction(SD)
 v = TestFunction(SD)
@@ -56,7 +55,7 @@ f_hat = Array(SD)
 f_hat = inner(v, fj, output_array=f_hat)
 
 # Get left hand side of Poisson equation
-if basis == 'chebyshev':
+if family == 'chebyshev':
     A = inner(v, -div(grad(u)))
     B = inner(v, alfa*u)
 else:
@@ -64,14 +63,14 @@ else:
     B = inner(v, alfa*u)
 
 H = Solver(A, B, A.scale, B.scale)
-u_hat = Function(SD)           # Solution spectral space
+u_hat = Array(SD)           # Solution spectral space
 u_hat = H(u_hat, f_hat)
 uj = SD.backward(u_hat)
 
 # Compare with analytical solution
 ua = ul(X)
 
-if sys.argv[-1] == 'chebyshev':
+if family == 'chebyshev':
     # Compute L2 error norm using Clenshaw-Curtis integration
     from shenfun import clenshaw_curtis1D
     error = clenshaw_curtis1D((uj-ua)**2, quad=SD.quad)

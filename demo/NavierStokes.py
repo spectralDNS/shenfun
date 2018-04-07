@@ -19,9 +19,9 @@ dt = 0.01
 comm = MPI.COMM_WORLD
 N = (2**5, 2**5, 2**5)
 
-V0 = fourier.bases.C2CBasis(N[0])
-V1 = fourier.bases.C2CBasis(N[1])
-V2 = fourier.bases.R2CBasis(N[2])
+V0 = Basis(N[0], 'F', dtype='D')
+V1 = Basis(N[1], 'F', dtype='D')
+V2 = Basis(N[2], 'F', dtype='d')
 T = TensorProductSpace(comm, (V0, V1, V2), **{'planner_effort': 'FFTW_MEASURE'})
 TV = VectorTensorProductSpace(T)
 u = TrialFunction(T)

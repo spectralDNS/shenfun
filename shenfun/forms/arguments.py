@@ -16,11 +16,11 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
         family : str, optional
                  Choose one of ('Chebyshev', 'C', 'Legendre', 'L', 'Fourier',
                  'F'), where 'C', 'L' and 'F' are short-forms
-        bc : str or tuple, optional
+        bc : str or two-tuple, optional
              Choose one of
 
-             - (a, b) - Dirichlet boundary condition with v(-1) = a and
-               v(1) = b. For solving Poisson equation.
+             - two-tuple (a, b) - Dirichlet boundary condition with
+               :math:`v(-1)=a` and :math:`v(1)=b`. For solving Poisson equation.
              - Dirichlet - Homogeneous Dirichlet
              - Neumann - Homogeneous Neumann
              - Biharmonic - Homogeneous Dirichlet and Neumann at both ends

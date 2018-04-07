@@ -22,9 +22,8 @@ import sys, os
 import importlib
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
-from shenfun.fourier.bases import R2CBasis
-from shenfun.tensorproductspace import TensorProductSpace
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Function
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
+    TensorProductSpace, Basis
 from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt
@@ -34,10 +33,9 @@ except ImportError:
 comm = MPI.COMM_WORLD
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
-basis = sys.argv[-1] if len(sys.argv) == 2 else 'chebyshev'
-shen = importlib.import_module('.'.join(('shenfun', basis)))
-BiharmonicBasis = shen.bases.ShenBiharmonicBasis
-BiharmonicSolver = shen.la.Biharmonic
+family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
+base = importlib.import_module('.'.join(('shenfun', family)))
+BiharmonicSolver = base.la.Biharmonic
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y = symbols("x,y")
@@ -51,8 +49,8 @@ fl = lambdify((x, y), fe, 'numpy')
 # Size of discretization
 N = (64, 64)
 
-SD = BiharmonicBasis(N[0])
-K1 = R2CBasis(N[1])
+SD = Basis(N[0], family=family, bc='Biharmonic')
+K1 = Basis(N[1], family='F')
 T = TensorProductSpace(comm, (K1, SD), axes=(1, 0))
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)
@@ -65,7 +63,7 @@ fj = fl(*X)
 f_hat = inner(v, fj)
 
 # Get left hand side of biharmonic equation
-if basis == 'chebyshev': # No integration by parts due to weights
+if family == 'chebyshev': # No integration by parts due to weights
     matrices = inner(v, div(grad(div(grad(u)))))
 else: # Use form with integration by parts.
     matrices = inner(div(grad(v)), div(grad(u)))
@@ -74,7 +72,7 @@ else: # Use form with integration by parts.
 H = BiharmonicSolver(**matrices)
 
 # Solve and transform to real space
-u_hat = Function(T)           # Solution spectral space
+u_hat = Array(T)           # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
 uq = T.backward(u_hat)
 
@@ -83,7 +81,7 @@ uj = ul(*X)
 print(abs(uj-uq).max())
 assert np.allclose(uj, uq)
 
-if not plt is None and not 'pytest' in os.environ:
+if plt is not None and not 'pytest' in os.environ:
     plt.figure()
     plt.contourf(X[0], X[1], uq)
     plt.colorbar()

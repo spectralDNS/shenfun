@@ -10,21 +10,20 @@ import sys, os
 import importlib
 from sympy import symbols, sin, lambdify
 import numpy as np
-from shenfun import inner, Dx, TestFunction, TrialFunction
+from shenfun import inner, Dx, TestFunction, TrialFunction, Basis, Array
 try:
     import matplotlib.pyplot as plt
 except ImportError:
     plt = None
 
 assert len(sys.argv) == 3
-assert sys.argv[-1] in ('legendre', 'chebyshev')
+assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
 assert isinstance(int(sys.argv[-2]), int)
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
-basis = sys.argv[-1]
-shen = importlib.import_module('.'.join(('shenfun', basis)))
-Basis = shen.bases.ShenBiharmonicBasis
-Solver = shen.la.Biharmonic
+family = sys.argv[-1]
+base = importlib.import_module('.'.join(('shenfun', family)))
+Solver = base.la.Biharmonic
 
 # Use sympy to compute a rhs, given an analytical solution
 x = symbols("x")
@@ -45,7 +44,7 @@ fl = lambdify(x, fe, 'numpy')
 # Size of discretization
 N = int(sys.argv[-2])
 
-SD = Basis(N, plan=True)
+SD = Basis(N, family=family, bc='Biharmonic', plan=True)
 X = SD.mesh(N)
 u = TrialFunction(SD)
 v = TestFunction(SD)
@@ -65,7 +64,7 @@ B = inner(v, u)
 H = Solver(S, A, B, a, b, c)
 
 # Solve and transform to real space
-u_hat = np.zeros(N)           # Solution spectral space
+u_hat = Array(SD)             # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
 u = SD.backward(u_hat)
 
@@ -74,7 +73,7 @@ uj = ul(X)
 print("Error=%2.16e" %(np.linalg.norm(uj-u)))
 assert np.allclose(uj, u)
 
-if not plt is None and not 'pytest' in os.environ:
+if plt is not None and not 'pytest' in os.environ:
     plt.figure()
     plt.plot(X, u)
 

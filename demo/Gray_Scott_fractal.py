@@ -31,10 +31,8 @@ from sympy import Symbol, lambdify
 from sympy.functions import erf
 import numpy as np
 import matplotlib.pyplot as plt
-from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun.tensorproductspace import TensorProductSpace, VectorTensorProductSpace
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, HDF5Writer,\
-    ETDRK4, ETD, RK4
+    ETDRK4, ETD, RK4, TensorProductSpace, VectorTensorProductSpace, Basis
 import scipy
 from mpi4py import MPI
 
@@ -55,16 +53,16 @@ vl = lambdify((x, y), v0, modules=['numpy', {'erf': scipy.special.erf}])
 # Size of discretization
 N = (200, 200)
 
-K0 = C2CBasis(N[0], domain=(-1., 1.))
-K1 = R2CBasis(N[1], domain=(-1., 1.))
+K0 = Basis(N[0], 'F', dtype='D', domain=(-1., 1.))
+K1 = Basis(N[1], 'F', dtype='d', domain=(-1., 1.))
 T = TensorProductSpace(comm, (K0, K1))
 X = T.local_mesh(True)
 u = TrialFunction(T)
 v = TestFunction(T)
 
 # For nonlinear term we can use the 3/2-rule with padding
-Kp0 = C2CBasis(N[0], domain=(-1., 1.), padding_factor=1.5)
-Kp1 = R2CBasis(N[1], domain=(-1., 1.), padding_factor=1.5)
+Kp0 = Basis(N[0], 'F', dtype='D', domain=(-1., 1.), padding_factor=1.5)
+Kp1 = Basis(N[1], 'F', dtype='d', domain=(-1., 1.), padding_factor=1.5)
 Tp = TensorProductSpace(comm, (Kp0, Kp1))
 
 # Turn on padding by commenting

@@ -14,8 +14,8 @@ import os
 import importlib
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
-from shenfun.tensorproductspace import TensorProductSpace
-from shenfun import inner, grad, TestFunction, TrialFunction, Function
+from shenfun import inner, grad, TestFunction, TrialFunction, Function, Basis, \
+    TensorProductSpace
 from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt
@@ -25,9 +25,8 @@ except ImportError:
 comm = MPI.COMM_WORLD
 
 basis = 'legendre'
-shen = importlib.import_module('.'.join(('shenfun', basis)))
-Basis = shen.bases.ShenDirichletBasis
-Solver = shen.la.Helmholtz_2dirichlet
+base = importlib.import_module('.'.join(('shenfun', basis)))
+Solver = base.la.Helmholtz_2dirichlet
 
 # Use sympy to compute a rhs, given an analytical solution
 a = 2.
@@ -42,8 +41,8 @@ fl = lambdify((x, y), fe, 'numpy')
 # Size of discretization
 N = (32, 34)
 
-SD0 = Basis(N[0], scaled=True)
-SD1 = Basis(N[1], scaled=True)
+SD0 = Basis(N[0], 'L', bc=(0, 0), scaled=True)
+SD1 = Basis(N[1], 'L', bc=(0, 0), scaled=True)
 T = TensorProductSpace(comm, (SD0, SD1))
 X = T.local_mesh(True)
 u = TrialFunction(T)
@@ -65,7 +64,7 @@ H = Solver(T, matrices)
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space
 #t0 = time()
-u_hat = H(u_hat, f_hat, 1)    # Solve
+u_hat = H(u_hat, f_hat, 0)    # Solve
 #print('Time ', time()-t0)
 
 uq = Function(T, False)

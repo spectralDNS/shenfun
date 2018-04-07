@@ -14,9 +14,8 @@ VxVxV is a tensorproductspace.
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
 import os
-from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun.tensorproductspace import TensorProductSpace
-from shenfun import inner, div, grad, TestFunction, TrialFunction
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis, \
+    TensorProductSpace
 from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt
@@ -36,9 +35,9 @@ fl = lambdify((x, y, z), fe, 'numpy')
 # Size of discretization
 N = (14, 15, 16)
 
-K0 = C2CBasis(N[0])
-K1 = C2CBasis(N[1])
-K2 = R2CBasis(N[2])
+K0 = Basis(N[0], 'F', dtype='D')
+K1 = Basis(N[1], 'F', dtype='D')
+K2 = Basis(N[2], 'F', dtype='d')
 T = TensorProductSpace(comm, (K0, K1, K2))
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)
@@ -68,7 +67,7 @@ p2 = T.eval_cython(point, f_hat)
 assert np.allclose(p2, ul(*point.T))
 
 
-if not plt is None and not 'pytest' in os.environ:
+if plt is not None and not 'pytest' in os.environ:
     plt.figure()
     plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 0])
     plt.colorbar()

@@ -14,9 +14,8 @@ VxV is a tensorproductspace.
 from sympy import Symbol, cos, sin, lambdify
 import numpy as np
 import os
-from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun.tensorproductspace import TensorProductSpace
-from shenfun import inner, grad, TestFunction, TrialFunction, Array
+from shenfun import inner, grad, TestFunction, TrialFunction, Array, Basis, \
+    TensorProductSpace
 from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt
@@ -37,8 +36,8 @@ fl = lambdify((x, y), fe, 'numpy')
 # Size of discretization
 N = (33, 46)
 
-K0 = C2CBasis(N[0])
-K1 = R2CBasis(N[1])
+K0 = Basis(N[0], family='F', dtype='D')
+K1 = Basis(N[1], family='F', dtype='d')
 T = TensorProductSpace(comm, (K0, K1), axes=(0, 1))
 X = T.local_mesh(True)
 u = TrialFunction(T)
@@ -63,9 +62,9 @@ assert np.allclose(uj, uq)
 
 from shenfun.tensorproductspace import Convolve
 
-S0 = C2CBasis(N[0], padding_factor=2.0)
-S1 = R2CBasis(N[1], padding_factor=2.0)
-Tp = TensorProductSpace(comm, (S0,S1), axes=(0,1))
+S0 = Basis(N[0], family='F', dtype='D', padding_factor=2.0)
+S1 = Basis(N[1], family='F', dtype='d', padding_factor=2.0)
+Tp = TensorProductSpace(comm, (S0, S1), axes=(0, 1))
 C0 = Convolve(Tp)
 ff_hat = C0(f_hat, f_hat)
 
@@ -76,7 +75,7 @@ assert np.allclose(p, ul(*point.T))
 p2 = T.eval_cython(point, f_hat)
 assert np.allclose(p2, ul(*point.T))
 
-if not plt is None and not 'pytest' in os.environ:
+if plt is not None and not 'pytest' in os.environ:
     plt.figure()
     plt.contourf(X[0], X[1], uq)
     plt.colorbar()

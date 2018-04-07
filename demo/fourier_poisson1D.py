@@ -15,8 +15,7 @@ solution that is either real or complex.
 """
 from sympy import Symbol, cos, sin, lambdify
 import numpy as np
-from shenfun import inner, grad, TestFunction, TrialFunction
-from shenfun.fourier.bases import FourierBasis
+from shenfun import inner, grad, TestFunction, TrialFunction, Basis
 import os
 try:
     import matplotlib.pyplot as plt
@@ -37,7 +36,7 @@ fl = lambdify(x, fe, 'numpy')
 N = 32
 
 dtype = {True: np.complex, False: np.float}[ue.has(1j)]
-ST = FourierBasis(N, dtype, plan=True, domain=(-np.pi, np.pi))
+ST = Basis(N, dtype=dtype, plan=True, domain=(-np.pi, np.pi))
 u = TrialFunction(ST)
 v = TestFunction(ST)
 
@@ -58,7 +57,7 @@ uq = ST.backward(u_hat)
 
 assert np.allclose(uj, uq)
 
-if not plt is None and not 'pytest' in os.environ:
+if plt is not None and not 'pytest' in os.environ:
     plt.figure()
     plt.plot(X, uj)
     plt.title("U")

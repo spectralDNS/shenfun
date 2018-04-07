@@ -1,14 +1,13 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from shenfun import *
-from shenfun.fourier.bases import R2CBasis, C2CBasis
 from mpl_toolkits.mplot3d import axes3d
 from matplotlib.collections import PolyCollection
 
 N = 256
-T = R2CBasis(N, plan=True)
+T = Basis(N, 'F', dtype='d', plan=True)
 #Tp = T
-Tp = R2CBasis(N, plan=True, padding_factor=1.5)
+Tp = Basis(N, 'F', dtype='d', plan=True, padding_factor=1.5)
 x = T.points_and_weights(N)[0]
 u = TrialFunction(T)
 v = TestFunction(T)
