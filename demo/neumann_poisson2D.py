@@ -20,7 +20,7 @@ import sys, os
 import importlib
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
+from shenfun import inner, div, grad, TestFunction, TrialFunction, \
     TensorProductSpace, Basis, Array
 from mpi4py import MPI
 try:
