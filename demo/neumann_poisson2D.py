@@ -20,9 +20,8 @@ import sys, os
 import importlib
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
-from shenfun.fourier.bases import R2CBasis
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    TensorProductSpace
+    TensorProductSpace, Basis, Array
 from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt
@@ -32,10 +31,9 @@ except ImportError:
 comm = MPI.COMM_WORLD
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
-basis = sys.argv[-1] if len(sys.argv) == 2 else 'chebyshev'
-shen = importlib.import_module('.'.join(('shenfun', basis)))
-Basis = shen.bases.ShenNeumannBasis
-Solver = shen.la.Helmholtz
+family = sys.argv[-1].lower()
+base = importlib.import_module('.'.join(('shenfun', family)))
+Solver = base.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y = symbols("x,y")
@@ -49,8 +47,8 @@ fl = lambdify((x, y), fe, 'numpy')
 # Size of discretization
 N = (31, 32)
 
-SD = Basis(N[0])
-K1 = R2CBasis(N[1])
+SD = Basis(N[0], family=family, bc='Neumann')
+K1 = Basis(N[1], family='F', dtype='d')
 T = TensorProductSpace(comm, (SD, K1))
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)
@@ -61,11 +59,11 @@ fj = fl(*X)
 
 # Compute right hand side of Poisson equation
 f_hat = inner(v, fj)
-if basis == 'legendre':
+if family == 'legendre':
     f_hat *= -1.
 
 # Get left hand side of Poisson equation
-if basis == 'chebyshev':
+if family == 'chebyshev':
     matrices = inner(v, div(grad(u)))
 else:
     matrices = inner(grad(v), grad(u))
@@ -74,7 +72,7 @@ else:
 H = Solver(**matrices)
 
 # Solve and transform to real space
-u_hat = Function(T)           # Solution spectral space
+u_hat = Array(T)              # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
 uq = T.backward(u_hat)
 
@@ -83,7 +81,7 @@ uj = ul(*X)
 print(abs(uj-uq).max())
 assert np.allclose(uj, uq)
 
-if not plt is None and not 'pytest' in os.environ:
+if plt is not None and not 'pytest' in os.environ:
     plt.figure()
     plt.contourf(X[0], X[1], uq)
     plt.colorbar()

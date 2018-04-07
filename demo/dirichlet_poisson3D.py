@@ -20,9 +20,8 @@ import sys, os
 import importlib
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
-from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun.tensorproductspace import TensorProductSpace
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Function
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
+    Basis, TensorProductSpace
 import time
 from mpi4py import MPI
 try:
@@ -33,14 +32,13 @@ except ImportError:
 comm = MPI.COMM_WORLD
 
 assert len(sys.argv) == 3
-assert sys.argv[-1] in ('legendre', 'chebyshev')
+assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
 assert isinstance(int(sys.argv[-2]), int)
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
-basis = sys.argv[-1]
-shen = importlib.import_module('.'.join(('shenfun', basis)))
-Basis = shen.bases.ShenDirichletBasis
-Solver = shen.la.Helmholtz
+family = sys.argv[-1].lower()
+base = importlib.import_module('.'.join(('shenfun', family)))
+Solver = base.la.Helmholtz
 regtest = False
 
 # Use sympy to compute a rhs, given an analytical solution
@@ -59,9 +57,9 @@ N = int(sys.argv[-2])
 N = [N, N+1, N+2]
 #N = (14, 15, 16)
 
-SD = Basis(N[0], bc=(a, b))
-K1 = C2CBasis(N[1])
-K2 = R2CBasis(N[2])
+SD = Basis(N[0], family=family, bc=(a, b))
+K1 = Basis(N[1], family='F', dtype='D')
+K2 = Basis(N[2], family='F', dtype='d')
 T = TensorProductSpace(comm, (K1, K2, SD), axes=(0, 1, 2), slab=True)
 X = T.local_mesh()
 u = TrialFunction(T)
@@ -74,11 +72,11 @@ fj = fl(*X)
 
 # Compute right hand side of Poisson equation
 f_hat = inner(v, fj)
-if basis == 'legendre':
+if family == 'legendre':
     f_hat *= -1.
 
 # Get left hand side of Poisson equation
-if basis == 'chebyshev':
+if family == 'chebyshev':
     matrices = inner(v, div(grad(u)))
 else:
     matrices = inner(grad(v), grad(u))
@@ -87,7 +85,7 @@ else:
 H = Solver(**matrices)
 
 # Solve and transform to real space
-u_hat = Function(T)           # Solution spectral space
+u_hat = Array(T)           # Solution spectral space
 t0 = time.time()
 u_hat = H(u_hat, f_hat)       # Solve
 uq = T.backward(u_hat, fast_transform=False)
@@ -99,7 +97,7 @@ if comm.Get_rank() == 0 and regtest == True:
     print("Error=%2.16e" %(np.sqrt(error)))
 assert np.allclose(uj, uq)
 
-if not plt is None and not 'pytest' in os.environ:
+if plt is not None and not 'pytest' in os.environ:
     plt.figure()
     plt.contourf(X[2][0, 0, :], X[0][:, 0, 0], uq[:, 2, :])
     plt.colorbar()

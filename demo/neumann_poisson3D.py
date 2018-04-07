@@ -20,9 +20,8 @@ import sys, os
 import importlib
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
-from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    TensorProductSpace
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
+    TensorProductSpace, Basis
 from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt
@@ -32,10 +31,9 @@ except ImportError:
 comm = MPI.COMM_WORLD
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
-basis = sys.argv[-1] if len(sys.argv) == 2 else 'chebyshev'
-shen = importlib.import_module('.'.join(('shenfun', basis)))
-Basis = shen.bases.ShenNeumannBasis
-Solver = shen.la.Helmholtz
+family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
+base = importlib.import_module('.'.join(('shenfun', family)))
+Solver = base.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y, z = symbols("x,y,z")
@@ -49,10 +47,10 @@ fl = lambdify((x, y, z), fe, 'numpy')
 # Size of discretization
 N = (32, 32, 32)
 
-SD = Basis(N[0])
-K1 = C2CBasis(N[1])
-K2 = R2CBasis(N[2])
-T = TensorProductSpace(comm, (SD, K1, K2), dtype='d')
+SD = Basis(N[0], family=family, bc='Neumann')
+K1 = Basis(N[1], family='F', dtype='D')
+K2 = Basis(N[2], family='F', dtype='d')
+T = TensorProductSpace(comm, (SD, K1, K2))
 X = T.local_mesh(True)
 u = TrialFunction(T)
 v = TestFunction(T)
@@ -62,11 +60,11 @@ fj = fl(*X)
 
 # Compute right hand side of Poisson equation
 f_hat = inner(v, fj)
-if basis == 'legendre':
+if family == 'legendre':
     f_hat *= -1.
 
 # Get left hand side of Poisson equation
-if basis == 'chebyshev':
+if family == 'chebyshev':
     matrices = inner(v, div(grad(u)))
 else:
     matrices = inner(grad(v), grad(u))
@@ -75,7 +73,7 @@ else:
 H = Solver(**matrices)
 
 # Solve and transform to real space
-u_hat = Function(T)           # Solution spectral space
+u_hat = Array(T)           # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
 u = T.backward(u_hat)
 
@@ -84,7 +82,7 @@ uj = ul(*X)
 print(abs(uj-u).max())
 assert np.allclose(uj, u)
 
-if not plt is None and not 'pytest' in os.environ:
+if plt is not None and not 'pytest' in os.environ:
     plt.figure()
     plt.contourf(X[0][:,:,0], X[1][:,:,0], u[:, :, 2])
     plt.colorbar()

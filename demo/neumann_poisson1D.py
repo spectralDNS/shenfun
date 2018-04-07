@@ -18,16 +18,15 @@ import sys, os
 import importlib
 from sympy import symbols, sin, lambdify
 import numpy as np
-from shenfun import inner, div, grad, TestFunction, TrialFunction
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis
 try:
     import matplotlib.pyplot as plt
 except ImportError:
     plt = None
 
 # Collect basis from either Chebyshev or Legendre submodules
-basis = sys.argv[-1] if len(sys.argv) == 2 else 'chebyshev'
-shen = importlib.import_module('.'.join(('shenfun', basis)))
-Basis = shen.bases.ShenNeumannBasis
+family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
+shen = importlib.import_module('.'.join(('shenfun', family)))
 
 # Use sympy to compute a rhs, given an analytical solution
 x = symbols("x")
@@ -41,7 +40,7 @@ fl = lambdify(x, fe, 'numpy')
 # Size of discretization
 N = 32
 
-SD = Basis(N, plan=True)
+SD = Basis(N, family=family, bc='Neumann', plan=True)
 X = SD.mesh(N)
 u = TrialFunction(SD)
 v = TestFunction(SD)
@@ -51,11 +50,11 @@ fj = fl(X)
 
 # Compute right hand side of Poisson equation
 f_hat = inner(v, fj)
-if basis == 'legendre':
+if family == 'legendre':
     f_hat *= -1.
 
 # Get left hand side of Poisson equation
-if basis == 'chebyshev':
+if family == 'chebyshev':
     A = inner(v, div(grad(u)))
 else:
     A = inner(grad(v), grad(u))

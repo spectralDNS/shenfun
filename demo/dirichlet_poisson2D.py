@@ -31,13 +31,13 @@ except ImportError:
 comm = MPI.COMM_WORLD
 
 assert len(sys.argv) == 3, "Call with two command-line arguments"
-assert sys.argv[-1] in ('legendre', 'chebyshev')
+assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
 assert isinstance(int(sys.argv[-2]), int)
 
 # Collect solver from either Chebyshev or Legendre submodules
-family = sys.argv[-1]
-shen = importlib.import_module('.'.join(('shenfun', family)))
-Solver = shen.la.Helmholtz
+family = sys.argv[-1].lower()
+base = importlib.import_module('.'.join(('shenfun', family)))
+Solver = base.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
 a = -1
@@ -79,16 +79,16 @@ else:
 H = Solver(**matrices)
 
 # Solve and transform to real space
-u_hat = Function(T)           # Solution spectral space
+u_hat = Array(T)           # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
-uq = Function(T, False)
+uq = Array(T, False)
 uq = T.backward(u_hat, uq)
 
 # Compare with analytical solution
 uj = ul(*X)
 assert np.allclose(uj, uq)
 
-if not plt is None and not 'pytest' in os.environ:
+if plt is not None and not 'pytest' in os.environ:
     plt.figure()
     plt.contourf(X[0], X[1], uq)
     plt.colorbar()

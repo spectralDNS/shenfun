@@ -330,10 +330,10 @@ class Biharmonic(object):
 
         (v, \nabla^4 u)_w = (v, b)_w
 
-    See https://rawgit.com/spectralDNS/shenfun/master/docs/src/mekit17/pub/._shenfun_bootstrap004.html#sec:tensorproductspaces
+    See `the Poisson problem <https://rawgit.com/spectralDNS/shenfun/master/docs/src/mekit17/pub/._shenfun_bootstrap004.html#sec:tensorproductspaces>`_
     for details, since it is actually quite involved. But basically, one obtains
-    a linear algebra system to be solved along the z-axis for all combinations
-    of the two Fourier indices k and l
+    a linear algebra system to be solved along the :math:`z`-axis for all combinations
+    of the two Fourier indices :math:`k` and :math:`l`
 
     .. math::
 

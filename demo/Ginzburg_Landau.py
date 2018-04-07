@@ -14,9 +14,8 @@ import pyfftw
 import matplotlib.pyplot as plt
 from mpi4py import MPI
 import _pickle
-from shenfun.fourier.bases import C2CBasis
 from shenfun import inner, grad, TestFunction, TrialFunction, \
-    TensorProductSpace, Array, ETDRK4, HDF5Writer
+    TensorProductSpace, Array, ETDRK4, HDF5Writer, Basis
 
 comm = MPI.COMM_WORLD
 
@@ -37,12 +36,12 @@ except:
 # Size of discretization
 N = (128, 128)
 
-K0 = C2CBasis(N[0], domain=(-50., 50.))
-K1 = C2CBasis(N[1], domain=(-50., 50.))
+K0 = Basis(N[0], 'F', dtype='D', domain=(-50., 50.))
+K1 = Basis(N[1], 'F', dtype='D', domain=(-50., 50.))
 T = TensorProductSpace(comm, (K0, K1), **{'planner_effort': 'FFTW_MEASURE'})
 
-Kp0 = C2CBasis(N[0], domain=(-50., 50.), padding_factor=1.5)
-Kp1 = C2CBasis(N[1], domain=(-50., 50.), padding_factor=1.5)
+Kp0 = Basis(N[0], 'F', dtype='D', domain=(-50., 50.), padding_factor=1.5)
+Kp1 = Basis(N[1], 'F', dtype='D', domain=(-50., 50.), padding_factor=1.5)
 Tp = TensorProductSpace(comm, (Kp0, Kp1), **{'planner_effort': 'FFTW_PATIENT'})
 
 u = TrialFunction(T)
