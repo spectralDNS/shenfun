@@ -792,10 +792,10 @@ We end this paper with the implementation of the complex Ginzburg-Landau equatio
 !et
 for the doubly periodic domain $\Omega = [-50, 50]\times [-50, 50]$ and  $t \in [0, T]$. The initial condition is chosen as one of the following
 !bt
-\begin{align}
+\begin{align*}
 u^0(\boldsymbol{x}, 0) &= (ix + y) \exp {-0.03 (x^2 + y^2)} label{eq:initial_0}, \\
 u^1(\boldsymbol{x}, 0) &= (x + y) \exp {-0.03 (x^2 + y^2)} label{eq:initial_1}.
-\end{align}
+\end{align*}
 !et
 This problem is solved with the spectral Galerkin method using Fourier bases in both directions, and a tensor product
 space $W(x,y)=V^p(x) \times V^p(y)$, where $V^p$ is defined as in Section ref{sec:fourierpoisson}, but here mapping 
@@ -814,7 +814,7 @@ equals $(2 \pi)^2 \bs{\hat{u}}$.
 The initial condition is created using `Sympy`
 !bc pycod
 from sympy import symbols, exp, lambdify
-x, y = symbols("x,y")
+x, y = symbols("x,i y")
 #ue = (1j*x + y)*exp(-0.03*(x**2+y**2))
 ue = (x + y)*exp(-0.03*(x**2+y**2))
 ul = lambdify((x, y), ue, 'numpy')
