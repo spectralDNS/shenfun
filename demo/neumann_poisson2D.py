@@ -31,7 +31,7 @@ except ImportError:
 comm = MPI.COMM_WORLD
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
-family = sys.argv[-1].lower()
+family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
 base = importlib.import_module('.'.join(('shenfun', family)))
 Solver = base.la.Helmholtz
 
