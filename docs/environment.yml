@@ -11,9 +11,10 @@ dependencies:
   - sympy
   - python
   - scipy
-  - doconce
+  #- doconce
   - pyfftw
   - mpiFFT4py
   - mpi4py_fft
-  - sphinxcontrib-bibtex
+  - pip:
+    - sphinxcontrib-bibtex
 
