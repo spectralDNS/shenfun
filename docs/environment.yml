@@ -17,6 +17,7 @@ dependencies:
   - pyfftw
   - mpiFFT4py
   - mpi4py_fft
+  - sphinx_rtd_theme == 0.2.4
   - pip:
     - sphinxcontrib-bibtex
 
