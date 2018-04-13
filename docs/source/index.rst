@@ -20,7 +20,6 @@ Document build status
    :alt: Documentation Status
 
 .. toctree::
-   :hidden:
    :maxdepth: 2
    :caption: Contents:
 
@@ -29,7 +28,6 @@ Document build status
    installation
 
 .. toctree::
-   :hidden:
    :caption: Demos:
    :maxdepth: 1
    
@@ -40,7 +38,6 @@ Document build status
    zrefs
 
 .. toctree::
-   :hidden:
    :caption: Indices and tables
 
    indices

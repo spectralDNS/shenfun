@@ -18,15 +18,13 @@ help:
 .PHONY: help Makefile
 
 %.rst:
-	doconce format sphinx src/$(basename $@).do.txt
-	cp src/$(basename $@).rst source/
+	doconce format sphinx demos/$(basename $@).do.txt
+	cp demos/$(basename $@).rst source/
 	./recite.sh $(notdir $@)
-	if [ -d src/$(dir $@)figs ]; then cp src/$(dir $@)figs/*.* source/figs/; fi
-	if [ -d src/$(dir $@)movies ]; then cp src/$(dir $@)movies/*.* source/movies/; fi
 
 publish:	
-	cd src && publish export papers.bib && cd ..
-	cp src/papers.bib source/
+	cd demos && publish export papers.bib && cd ..
+	cp demos/papers.bib source/
 
 demos: $(DEMO)
 
