@@ -376,30 +376,5 @@ command-line argument, can be found `here <https://github.com/spectralDNS/shenfu
 
 .. ======= Bibliography =======
 
-.. % if FORMAT not in ("sphinx"):
-
-.. [shen1]
-   **J. Shen**. Efficient Spectral-Galerkin Method I. Direct Solvers of Second- and Fourth-Order Equations Using Legendre Polynomials,
-   *SIAM Journal on Scientific Computing*,
-   15(6),
-   pp. 1489-1505,
-   `doi: 10.1137/0915089 <http://dx.doi.org/10.1137/0915089>`__,
-   1994,
-   `https://doi.org/10.1137/0915089 <https://doi.org/10.1137/0915089>`_.
-
-.. [shen95]
-   **J. Shen**. Efficient Spectral-Galerkin Method II. Direct Solvers of Second- and Fourth-Order Equations Using Chebyshev Polynomials,
-   *SIAM Journal on Scientific Computing*,
-   16(1),
-   pp. 74-87,
-   `doi: 10.1137/0916006 <http://dx.doi.org/10.1137/0916006>`__,
-   1995,
-   `https://doi.org/10.1137/0916006 <https://doi.org/10.1137/0916006>`_.
-
-.. % else:
-
-.. .. bibliography:: ../papers.bib
-
-.. :notcited:
-
-.. % endif
+.. bibliography:: ../papers.bib
+   :notcited:
