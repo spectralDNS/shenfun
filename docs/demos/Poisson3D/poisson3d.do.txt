@@ -584,13 +584,13 @@ print("Error=%2.16e" %(np.linalg.norm(uj-uq)))
 ## handle references. The line below specifies the name of
 ## the Publish database file (see the doconce manual for details).
 
-% if FORMAT not in ("sphinx"):
+#% if FORMAT not in ("sphinx"):
 
 BIBFILE: ../papers.pub
 
-% else:
+#% else:
 
-.. bibliography:: papers.bib
-   :notcited:
+#.. bibliography:: papers.bib
+#   :notcited:
 
-% endif
+#% endif

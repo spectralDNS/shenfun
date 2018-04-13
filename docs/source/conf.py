@@ -173,20 +173,20 @@ texinfo_documents = [
      'Miscellaneous'),
 ]
 
-import os
-
-on_rtd = os.environ.get('READTHEDOCS') == 'True'
-demos = ['Poisson/poisson', 'KleinGordon/kleingordon', 'Poisson3D/poisson3d', 'KuramatoSivashinsky/kuramatosivashinsky']
-if on_rtd:
-    p = os.getcwd()
-    print(p)
-    os.chdir('../demos')
-    os.system('publish export papers.bib && cp papers.bib ../source/')
-    for demo in demos:
-        path, filename = demo.split('/')
-        os.system('doconce format sphinx {0}.do.txt'.format(demo))
-        os.system('cp {0}.rst ../source/'.format(demo))
-        os.system("""awk '$0~/key:/{print $2 }' papers.pub | while read -r line ; do doconce replace '['$line']_' ':cite:'\`$line\` ../source/%s.rst; done""" % (filename))
-    os.chdir('../source')
+#import os
+#
+#on_rtd = os.environ.get('READTHEDOCS') == 'True'
+#demos = ['Poisson/poisson', 'KleinGordon/kleingordon', 'Poisson3D/poisson3d', 'KuramatoSivashinsky/kuramatosivashinsky']
+#if on_rtd:
+#    p = os.getcwd()
+#    print(p)
+#    os.chdir('../demos')
+#    os.system('publish export papers.bib && cp papers.bib ../source/')
+#    for demo in demos:
+#        path, filename = demo.split('/')
+#        os.system('doconce format sphinx {0}.do.txt'.format(demo))
+#        os.system('cp {0}.rst ../source/'.format(demo))
+#        os.system("""awk '$0~/key:/{print $2 }' papers.pub | while read -r line ; do doconce replace '['$line']_' ':cite:'\`$line\` ../source/%s.rst; done""" % (filename))
+#    os.chdir('../source')
 
 # -- Extension configuration -------------------------------------------------
