@@ -8,6 +8,7 @@ The spectral Galerkin method uses the method of weighted residuals, and
 solves PDEs by first creating variational forms from inner products,
 
 .. math::
+    :label: intro:varform
 
     (u, v)_w = \int_{\Omega} u(\boldsymbol{x}) \overline{v}(\boldsymbol{x}) w(\boldsymbol{x}) d\boldsymbol{x} 
 
