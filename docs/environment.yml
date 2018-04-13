@@ -2,9 +2,11 @@ name: shenfun_doc_env
 
 channels:
   - spectralDNS
+  - defaults
   #- conda-forge
 
 dependencies:
+  - python=3.6
   - cython
   - fftw
   - numpy
