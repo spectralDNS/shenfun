@@ -14,8 +14,9 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
         N : int
             Number of quadrature points
         family : str, optional
-                 Choose one of ('Chebyshev', 'C', 'Legendre', 'L', 'Fourier',
-                 'F'), where 'C', 'L' and 'F' are short-forms
+                 Choose one of (``Chebyshev``, ``C``, ``Legendre``, ``L``,
+                 ``Fourier``, ``F``), where ``C``, ``L`` and ``F`` are short-
+                 forms
         bc : str or two-tuple, optional
              Choose one of
 
@@ -51,6 +52,12 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
         dealias_direct : bool, optional
                          Use 2/3-rule dealiasing (only Fourier)
 
+    Examples
+    --------
+    >>> from shenfun import Basis
+    >>> F0 = Basis(16, 'F')
+    >>> C1 = Basis(32, 'C', quad='GC')
+
     """
     par = {'plan': plan}
     if domain is not None:
@@ -75,8 +82,7 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
 
         elif isinstance(bc, tuple):
             assert len(bc) == 2
-            if isinstance(bc, tuple):
-                par['bc'] = bc
+            par['bc'] = bc
             B = chebyshev.bases.ShenDirichletBasis
 
         elif isinstance(bc, str):
@@ -107,8 +113,7 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
 
         elif isinstance(bc, tuple):
             assert len(bc) == 2
-            if isinstance(bc, tuple):
-                par['bc'] = bc
+            par['bc'] = bc
             B = legendre.bases.ShenDirichletBasis
 
         elif isinstance(bc, str):
@@ -155,25 +160,19 @@ class Expr(object):
 
                    - Index 2: The operations stored as an array of length = dim
 
-                   For example, `div(grad(u))` in 3D is represented
-                   with the array
-
-                   >>>        [[2, 0, 0],
-                   >>>         [0, 2, 0],
-                   >>>         [0, 0, 2]]
-
-                   meaning the first term has two derivatives in first
-                   direction and none in the others, the second has two
-                   derivatives in second direction, etc.
-
-                   The `Expr` `div(grad(u))`, where u is a scalar, is as such
+                   The :class:`.Expr` `div(grad(u))`, where u is a scalar, is as such
                    represented as an array of shape (1, 3, 3), 1 meaning
                    it's a scalar, the first 3 because the Expr consists of
-                   the sum of three terms, and the last 3 because it is 3D:
+                   the sum of three terms, and the last 3 because it is 3D. The
+                   entire representation is::
 
-                   >>>        array([[[2, 0, 0],
-                   >>>                [0, 2, 0],
-                   >>>                [0, 0, 2]]])
+                       array([[[2, 0, 0],
+                               [0, 2, 0],
+                               [0, 0, 2]]])
+
+                   where the first [2, 0, 0] term has two derivatives in first
+                   direction and none in the others, the second [0, 2, 0] has
+                   two derivatives in second direction, etc.
 
         scales :  Numpy array of shape == terms.shape[:2]
                   Representing a scalar multiply of each inner product
@@ -182,6 +181,32 @@ class Expr(object):
                   Index into VectorTensorProductSpace. Only for vector
                   coefficients
 
+    Examples
+    --------
+    >>> from shenfun import *
+    >>> from mpi4py import MPI
+    >>> comm = MPI.COMM_WORLD
+    >>> C0 = Basis(16, 'F', dtype='D')
+    >>> C1 = Basis(16, 'F', dtype='D')
+    >>> R0 = Basis(16, 'F', dtype='d')
+    >>> T = TensorProductSpace(comm, (C0, C1, R0))
+    >>> v = TestFunction(T)
+    >>> e = div(grad(v))
+    >>> e.terms()
+    array([[[2, 0, 0],
+            [0, 2, 0],
+            [0, 0, 2]]])
+    >>> e2 = grad(v)
+    >>> e2.terms()
+    array([[[1, 0, 0]],
+    <BLANKLINE>
+           [[0, 1, 0]],
+    <BLANKLINE>
+           [[0, 0, 1]]])
+
+    Note that `e2` in the example has shape (3, 1, 3). The first 3 because it
+    is a vector, the 1 because each vector item contains one term, and the
+    final 3 since it is a 3-dimensional tensor product space.
     """
 
     def __init__(self, basis, terms=None, scales=None, indices=None):
@@ -489,11 +514,10 @@ class Function(np.ndarray, BasisFunction):
 
     Examples
     --------
-    >>> from mpi4py_fft import MPI
-    >>> from shenfun.tensorproductspace import TensorProductSpace, Function
-    >>> from shenfun.fourier.bases import R2CBasis, C2CBasis
-    >>> K0 = C2CBasis(8)
-    >>> K1 = R2CBasis(8)
+    >>> from mpi4py import MPI
+    >>> from shenfun import Basis, TensorProductSpace, Function
+    >>> K0 = Basis(8, 'F', dtype='D')
+    >>> K1 = Basis(8, 'F', dtype='d')
     >>> FFT = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
     >>> u = Function(FFT, False)
     >>> uhat = Function(FFT, True)
@@ -584,11 +608,10 @@ class Array(np.ndarray):
 
     Examples
     --------
-    >>> from mpi4py_fft import MPI
-    >>> from shenfun.tensorproductspace import TensorProductSpace, Array
-    >>> from shenfun.fourier.bases import R2CBasis, C2CBasis
-    >>> K0 = C2CBasis(8)
-    >>> K1 = R2CBasis(8)
+    >>> from mpi4py import MPI
+    >>> from shenfun import Basis, TensorProductSpace, Function
+    >>> K0 = Basis(8, 'F', dtype='D')
+    >>> K1 = Basis(8, 'F', dtype='d')
     >>> FFT = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
     >>> u = Array(FFT, False)
     >>> uhat = Array(FFT, True)

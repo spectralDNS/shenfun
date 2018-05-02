@@ -35,13 +35,14 @@ as
 
 and an instance of the matrix can be created as
 
->>> B0 = SD(12)
+>>> B0 = SD(10)
 >>> BM = B((B0, 0), (B0, 0))
->>> print(BM)
-{-2: array([-1.57079633]),
-  0: array([ 4.71238898,  3.14159265,  3.14159265,  3.14159265,  3.14159265,
-       3.14159265,  3.14159265,  3.14159265,  3.14159265,  3.14159265]),
-  2: array([-1.57079633])}
+>>> d = {-2: np.array([-np.pi/2]),
+...       0: np.array([ 1.5*np.pi, np.pi, np.pi, np.pi, np.pi, np.pi, np.pi, np.pi]),
+...       2: np.array([-np.pi/2])}
+>>> import six
+>>> [np.all(BM[k] == v) for k, v in six.iteritems(d)]
+[True, True, True]
 
 However, this way of creating matrices is not reccommended use. It is far
 more elegant to use the TrialFunction/TestFunction interface, and to
@@ -51,17 +52,14 @@ generate the matrix as an inner product:
 >>> u = TrialFunction(B0)
 >>> v = TestFunction(B0)
 >>> BM = inner(u, v)
->>> print(BM)
->>> print(BM)
-{-2: array([-1.57079633]),
-  0: array([ 4.71238898,  3.14159265,  3.14159265,  3.14159265,  3.14159265,
-       3.14159265,  3.14159265,  3.14159265,  3.14159265,  3.14159265]),
-  2: array([-1.57079633])}
+>>> [np.all(BM[k] == v) for k, v in six.iteritems(d)]
+[True, True, True]
 
 To see that this is in fact the BDDmat:
 
 >>> print(BM.__class__)
-shenfun.chebyshev.matrices.BDDmat
+<class 'shenfun.chebyshev.matrices.BDDmat'>
+
 """
 #pylint: disable=bad-continuation, redefined-builtin
 
@@ -208,7 +206,7 @@ class BDNmat(SpectralMatrix):
 
     .. math::
 
-        B_{kj} = (psi_j, phi_k)_w
+        B_{kj} = (\psi_j, \phi_k)_w
 
     where
 
@@ -249,7 +247,7 @@ class BNTmat(SpectralMatrix):
 
     .. math::
 
-        B_{kj} = (\phi_j, \psi_k)_w
+        B_{kj} = (T_j, \phi_k)_w
 
     where
 
@@ -257,7 +255,7 @@ class BNTmat(SpectralMatrix):
 
         j = 0, 1, ..., N \text{ and } k = 1, 2, ..., N-2
 
-    :math:`\psi_k` is the Shen Neumann basis function and :math:`\phi_j` is a
+    :math:`\phi_k` is the Shen Neumann basis function and :math:`T_j` is a
     Chebyshev basis function.
 
     For simplicity, the matrix is stored including the zero index row

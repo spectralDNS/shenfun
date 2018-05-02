@@ -38,16 +38,17 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
         Compute mass matrix of Shen's Chebyshev Dirichlet basis:
 
         >>> from shenfun.chebyshev.bases import ShenDirichletBasis
-        >>> from shenfun.arguments import TestFunction, TrialFunction
-        >>>
+        >>> from shenfun.forms.arguments import TestFunction, TrialFunction
+        >>> import six
         >>> SD = ShenDirichletBasis(6)
         >>> u = TrialFunction(SD)
         >>> v = TestFunction(SD)
         >>> B = inner(v, u)
-        >>> B
-        {-2: array([-1.57079633]),
-          0: array([ 4.71238898,  3.14159265,  3.14159265,  3.14159265]),
-          2: array([-1.57079633])}
+        >>> d = {-2: np.array([-np.pi/2]),
+        ...       0: np.array([ 1.5*np.pi, np.pi, np.pi, np.pi]),
+        ...       2: np.array([-np.pi/2])}
+        >>> [np.all(abs(B[k]-v) < 1e-7) for k, v in six.iteritems(d)]
+        [True, True, True]
 
     """
     # Wrap numpy array in Function

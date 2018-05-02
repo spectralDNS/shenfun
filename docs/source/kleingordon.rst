@@ -7,7 +7,7 @@ Demo - Cubic nonlinear Klein-Gordon equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Apr 13, 2018
+:Date: Apr 30, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Klein-Gordon equation, in a triply periodic domain. The demo is implemented in
@@ -435,12 +435,13 @@ To solve the Klein-Gordon equations we need to make use of the Fourier bases in
 :mod:`.shenfun`, and these base are found in submodule
 :mod:`shenfun.fourier.bases`.
 The triply periodic domain allows for Fourier in all three directions, and we
-can as such create one instance of the base class :class:`.C2CBasis`
-for each direction (``C2C`` here meaning complex to complex). However, since the initial data are real, we
-can take advantage of Hermitian symmetries and thus make use of the
-:class:`.R2CBasis`
-(real to complex) class for one (but only one) of the directions. We can only make use of the
-:class:`.R2CBasis` for the direction that we choose to transform first with the forward
+can as such create one instance of this base class using :func:`.Basis` with 
+family ``Fourier``
+for each direction. However, since the initial data are real, we
+can take advantage of Hermitian symmetries and thus make use of a
+real to complex class for one (but only one) of the directions, by specifying
+``dtype='d'``. We can only make use of the
+real-to-complex class for the direction that we choose to transform first with the forward
 FFT, and the reason is obviously that the output from a forward transform of
 real data is now complex. We may start implementing the solver as follows 
 
@@ -454,9 +455,9 @@ real data is now complex. We may start implementing the solver as follows
     N = (32, 32, 32)
     
     # Create bases
-    K0 = fourier.bases.C2CBasis(N[0], domain=(-2*np.pi, 2*np.pi))
-    K1 = fourier.bases.C2CBasis(N[1], domain=(-2*np.pi, 2*np.pi))
-    K2 = fourier.bases.R2CBasis(N[2], domain=(-2*np.pi, 2*np.pi))
+    K0 = Basis(N[0], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
+    K1 = Basis(N[1], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
+    K2 = Basis(N[2], 'F', domain=(-2*np.pi, 2*np.pi), dtype='d')
 
 We now have three instances ``K0``, ``K1`` and ``K2``, corresponding to the basis
 :eq:`eq:kg:Vn`, that each can be used to solve
@@ -638,7 +639,6 @@ decimal points at :math:`t=100`.
     import matplotlib.pyplot as plt
     from mpi4py import MPI
     from time import time
-    from shenfun.fourier.bases import R2CBasis, C2CBasis
     from shenfun import *
     
     comm = MPI.COMM_WORLD
@@ -655,9 +655,9 @@ decimal points at :math:`t=100`.
     # Defocusing or focusing
     gamma = 1
     
-    K0 = C2CBasis(N[0], domain=(-2*np.pi, 2*np.pi))
-    K1 = C2CBasis(N[1], domain=(-2*np.pi, 2*np.pi))
-    K2 = R2CBasis(N[2], domain=(-2*np.pi, 2*np.pi))
+    K0 = Basis(N[0], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
+    K1 = Basis(N[1], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
+    K2 = Basis(N[2], 'F', domain=(-2*np.pi, 2*np.pi), dtype='d')
     T = TensorProductSpace(comm, (K0, K1, K2), slab=False, 
                            **{'planner_effort': 'FFTW_MEASURE'})
     

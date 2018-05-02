@@ -3,7 +3,9 @@ This module contains linear algebra solvers for SparseMatrixes
 """
 import numpy as np
 from scipy.linalg import decomp_cholesky
-from shenfun.optimization import la
+from scipy.sparse.linalg import spsolve
+from scipy.linalg import solve as lasolve
+from shenfun.optimization import la as cython_la
 from shenfun.matrixbase import SparseMatrix
 
 class TDMA(object):
@@ -32,7 +34,7 @@ class TDMA(object):
         self.dd = B[0].copy()*np.ones(M)
         self.ud = B[2].copy()*np.ones(M-2)
         self.L = np.zeros(M-2)
-        la.TDMA_SymLU(self.dd, self.ud, self.L)
+        cython_la.TDMA_SymLU(self.dd, self.ud, self.L)
 
     def __call__(self, b, u=None, axis=0):
         if u is None:
@@ -45,14 +47,14 @@ class TDMA(object):
             self.init()
 
         if len(u.shape) == 3:
-            la.TDMA_SymSolve3D(self.dd, self.ud, self.L, u, axis)
-            #la.TDMA_SymSolve3D_ptr(self.dd[self.s], self.ud[self.s], self.L,
+            cython_la.TDMA_SymSolve3D(self.dd, self.ud, self.L, u, axis)
+            #cython_la.TDMA_SymSolve3D_ptr(self.dd[self.s], self.ud[self.s], self.L,
                                    #u[self.s], axis)
         elif len(u.shape) == 2:
-            la.TDMA_SymSolve2D(self.dd, self.ud, self.L, u, axis)
+            cython_la.TDMA_SymSolve2D(self.dd, self.ud, self.L, u, axis)
 
         elif len(u.shape) == 1:
-            la.TDMA_SymSolve(self.dd, self.ud, self.L, u)
+            cython_la.TDMA_SymSolve(self.dd, self.ud, self.L, u)
 
         else:
             raise NotImplementedError
@@ -92,7 +94,7 @@ class PDMA(object):
         B = self.mat
         if self.solver == "cython":
             self.d0, self.d1, self.d2 = B[0].copy(), B[2].copy(), B[4].copy()
-            la.PDMA_SymLU(self.d0, self.d1, self.d2)
+            cython_la.PDMA_SymLU(self.d0, self.d1, self.d2)
             #self.SymLU(self.d0, self.d1, self.d2)
             ##self.d0 = self.d0.astype(float)
             ##self.d1 = self.d1.astype(float)
@@ -170,14 +172,14 @@ class PDMA(object):
             self.init()
 
         if len(u.shape) == 3:
-            #la.PDMA_Symsolve3D(self.d0, self.d1, self.d2, u, axis)
-            la.PDMA_Symsolve3D_ptr(self.d0, self.d1, self.d2, u, axis)
+            #cython_la.PDMA_Symsolve3D(self.d0, self.d1, self.d2, u, axis)
+            cython_la.PDMA_Symsolve3D_ptr(self.d0, self.d1, self.d2, u, axis)
 
         elif len(u.shape) == 2:
-            la.PDMA_Symsolve2D(self.d0, self.d1, self.d2, u, axis)
+            cython_la.PDMA_Symsolve2D(self.d0, self.d1, self.d2, u, axis)
 
         elif len(u.shape) == 1:
-            la.PDMA_Symsolve(self.d0, self.d1, self.d2, u[:-4])
+            cython_la.PDMA_Symsolve(self.d0, self.d1, self.d2, u[:-4])
 
         else:
             raise NotImplementedError
@@ -226,3 +228,77 @@ class DiagonalMatrix(np.ndarray):
     #def matvec(self, v, c):
         #c[:] = self*v
         #return c
+
+def solve(A, b, u=None, axis=0):
+    """Solve matrix system Au = b
+
+    Parameters
+    ----------
+        A : SparseMatrix
+        b : array
+            Array of right hand side on entry and solution on exit unless
+            u is provided.
+        u : array, optional
+            Output array
+        axis : int, optional
+               The axis over which to solve if b and u are multidimensional
+
+    If u is not provided, then b is overwritten with the solution and returned
+    """
+    from . import chebyshev, legendre
+
+    assert A.shape[0] == A.shape[1]
+    assert isinstance(A, SparseMatrix)
+    s = A.testfunction[0].slice()
+
+    if u is None:
+        u = b
+    else:
+        assert u.shape == b.shape
+
+    # Move axis to first
+    if axis > 0:
+        u = np.moveaxis(u, axis, 0)
+        if not u is b:
+            b = np.moveaxis(b, axis, 0)
+
+    assert A.shape[0] == b[s].shape[0]
+    if (isinstance(A.testfunction[0], (chebyshev.bases.ShenNeumannBasis,
+                                       legendre.bases.ShenNeumannBasis))):
+        # Handle level by using Dirichlet for dof=0
+        Aa = A.diags().toarray()
+        Aa[0] = 0
+        Aa[0, 0] = 1
+        b[0] = A.testfunction[0].mean
+        if b.ndim == 1:
+            u[s] = lasolve(Aa, b[s])
+        else:
+            N = b[s].shape[0]
+            P = np.prod(b[s].shape[1:])
+            u[s] = lasolve(Aa, b[s].reshape((N, P))).reshape(b[s].shape)
+
+    else:
+        if b.ndim == 1:
+            u[s] = spsolve(A.diags('csr'), b[s])
+        else:
+            N = b[s].shape[0]
+            P = np.prod(b[s].shape[1:])
+            br = b[s].reshape((N, P))
+
+            if b.dtype is np.dtype('complex'):
+                u.real[s] = spsolve(A.diags('csr'), br.real).reshape(u[s].shape)
+                u.imag[s] = spsolve(A.diags('csr'), br.imag).reshape(u[s].shape)
+            else:
+                u[s] = spsolve(A.diags('csr'), br).reshape(u[s].shape)
+        if hasattr(A.testfunction[0], 'bc'):
+            A.testfunction[0].bc.apply_after(u, True)
+
+    if axis > 0:
+        u = np.moveaxis(u, 0, axis)
+        if not u is b:
+            b = np.moveaxis(b, 0, axis)
+
+    u /= A.scale
+
+    return u
+

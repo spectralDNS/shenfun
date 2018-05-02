@@ -1,27 +1,48 @@
-"""
+r"""
 Module for some integrators.
 
     - RK4:      Runge-Kutta fourth order
     - ETD:      Exponential time differencing Euler method
     - ETDRK4:   Exponential time differencing Runge-Kutta fourth order
 
-The integrators are set up to accept two methods, one for the linear
-part of the equation, and one for the nonlinear part.
-
 See, e.g.,
 H. Montanelli and N. Bootland "Solving periodic semilinear PDEs in 1D, 2D and
 3D with exponential integrators", https://arxiv.org/pdf/1604.08900.pdf
 
+Integrators are set up to solve equations like
+
+.. math::
+
+    \frac{\partial u}{\partial t} = L u + N(u)
+
+where :math:`u` is the solution, :math:`L` is a linear operator and
+:math:`N(u)` is the nonlinear part of the right hand side.
+
 """
 import numpy as np
 from shenfun import Function
+from shenfun import inheritdocstrings
 
 __all__ = ('RK4', 'ETDRK4', 'ETD')
 
 #pylint: disable=unused-variable
 
 class IntegratorBase(object):
-    """Abstract base class for integrators"""
+    """Abstract base class for integrators
+
+    Parameters
+    ----------
+    T : TensorProductSpace
+    L : function
+        To compute linear part of right hand side
+    N : function
+        To compute nonlinear part of right hand side
+    update : function
+             To be called at the end of a timestep
+    params : dictionary
+             Any relevant keyword arguments
+
+    """
 
     def __init__(self, T,
                  L=lambda *args, **kwargs: 0,
@@ -57,12 +78,24 @@ class IntegratorBase(object):
         """
         pass
 
+@inheritdocstrings
 class ETD(IntegratorBase):
     """Exponential time differencing Euler method
 
     H. Montanelli and N. Bootland "Solving periodic semilinear PDEs in 1D, 2D and
     3D with exponential integrators", https://arxiv.org/pdf/1604.08900.pdf
 
+    Parameters
+    ----------
+    T : TensorProductSpace
+    L : function
+        To compute linear part of right hand side
+    N : function
+        To compute nonlinear part of right hand side
+    update : function
+             To be called at the end of a timestep
+    params : dictionary
+             Any relevant keyword arguments
     """
 
     def __init__(self, T,
@@ -116,11 +149,24 @@ class ETD(IntegratorBase):
             self.update(u, u_hat, t, tstep, **self.params)
         return u_hat
 
+@inheritdocstrings
 class ETDRK4(IntegratorBase):
     """Exponential time differencing Runge-Kutta 4'th order method
 
     H. Montanelli and N. Bootland "Solving periodic semilinear PDEs in 1D, 2D and
     3D with exponential integrators", https://arxiv.org/pdf/1604.08900.pdf
+
+    Parameters
+    ----------
+    T : TensorProductSpace
+    L : function
+        To compute linear part of right hand side
+    N : function
+        To compute nonlinear part of right hand side
+    update : function
+             To be called at the end of a timestep
+    params : dictionary
+             Any relevant keyword arguments
     """
     def __init__(self, T,
                  L=lambda *args, **kwargs: 0,
@@ -205,9 +251,22 @@ class ETDRK4(IntegratorBase):
             self.update(u, u_hat, t, tstep, **self.params)
         return u_hat
 
+@inheritdocstrings
 class RK4(IntegratorBase):
-    """Regular 4'th order Runge-Kutta integrator."""
+    """Regular 4'th order Runge-Kutta integrator
 
+    Parameters
+    ----------
+    T : TensorProductSpace
+    L : function
+        To compute linear part of right hand side
+    N : function
+        To compute nonlinear part of right hand side
+    update : function
+             To be called at the end of a timestep
+    params : dictionary
+             Any relevant keyword arguments
+    """
     def __init__(self, T,
                  L=lambda *args, **kwargs: 0,
                  N=lambda *args, **kwargs: 0,

@@ -18,20 +18,21 @@ class SparseMatrix(dict):
     The data is stored as a dictionary, where keys and values are, respectively,
     the offsets and values of the diagonal.
 
-    A tridiagonal matrix of shape N x N could be created as
+    A tridiagonal matrix of shape N x N could be created as::
 
-    >>> d = {-1: 1,
-              0: -2,
-              1: 1}
+    >>> N = 4
+    >>> d = {-1: 1, 0: -2, 1: 1}
     >>> SparseMatrix(d, (N, N))
+    {-1: 1, 0: -2, 1: 1}
 
     In case of variable values, store the entire diagonal. For an N x N matrix
-    use:
+    use::
 
     >>> d = {-1: np.ones(N-1),
-              0: -2*np.ones(N),
-              1: np.ones(N-1)}
+    ...       0: -2*np.ones(N),
+    ...       1: np.ones(N-1)}
     >>> SparseMatrix(d, (N, N))
+    {-1: array([1., 1., 1.]), 0: array([-2., -2., -2., -2.]), 1: array([1., 1., 1.])}
 
     """
     # pylint: disable=redefined-builtin, missing-docstring
@@ -52,7 +53,7 @@ class SparseMatrix(dict):
                 Numpy input array of ndim>=1
             c : array
                 Numpy output array of same ndim as v
-            format : str
+            format : str, optional
                      Choice for computation
 
                      - csr - Compressed sparse row format
@@ -60,6 +61,8 @@ class SparseMatrix(dict):
                      - python - Use numpy and vectorization
                      - self - To be implemented in subclass
                      - cython - Cython implementation that may be implemented in subclass
+            axis : int, optional
+                   The axis over which to take the matrix vector product
 
         """
         assert v.shape == c.shape
@@ -387,16 +390,16 @@ class SpectralMatrix(SparseMatrix):
         (\phi_k'', \phi_j)_w = \int_{-1}^{1} \phi_k''(x) \phi_j(x) w(x) dx
 
     The matrices can be automatically created using, e.g., for the mass
-    matrix of the Dirichlet space
+    matrix of the Dirichlet space::
 
-    >>> SD = ShenDirichletBasis
-    >>> N = 16
-    >>> M = SpectralMatrix({}, (SD(N), 0), (SD(N), 0))
+        SD = ShenDirichletBasis
+        N = 16
+        M = SpectralMatrix({}, (SD(N), 0), (SD(N), 0))
 
     where the first (SD(N), 0) represents the test function and
-    the second the trial function. The stiffness matrix can be obtained as
+    the second the trial function. The stiffness matrix can be obtained as::
 
-    >>> A = SpectralMatrix({}, (SD(N), 0), (SD(N), 2))
+        A = SpectralMatrix({}, (SD(N), 0), (SD(N), 2))
 
     where (SD(N), 2) signals that we use the second derivative of this trial
     function. The number N is the number of quadrature points used for the
@@ -484,7 +487,7 @@ class SpectralMatrix(SparseMatrix):
 
         Vectors may be one- or multidimensional.
         """
-        from shenfun import solve as default_solve
+        from .la import solve as default_solve
         u = default_solve(self, b, u, axis=axis)
         return u
 

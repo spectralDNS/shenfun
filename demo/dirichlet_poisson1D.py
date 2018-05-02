@@ -17,16 +17,14 @@ import importlib
 from sympy import symbols, sin, lambdify
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    Array
+    Array, Basis
 
 assert len(sys.argv) == 3, 'Call with two command-line arguments'
 assert sys.argv[-1] in ('legendre', 'chebyshev')
 assert isinstance(int(sys.argv[-2]), int)
 
-# Collect basis and solver from either Chebyshev or Legendre submodules
-basis = sys.argv[-1]
-shen = importlib.import_module('.'.join(('shenfun', basis)))
-Basis = shen.bases.ShenDirichletBasis
+# Get family from args
+family = sys.argv[-1].lower()
 
 # Use sympy to compute a rhs, given an analytical solution
 a = 0.
@@ -42,7 +40,7 @@ fl = lambdify(x, fe, 'numpy')
 # Size of discretization
 N = int(sys.argv[-2])
 
-SD = Basis(N, plan=True, bc=(a, b))
+SD = Basis(N, family=family, plan=True, bc=(a, b))
 X = SD.mesh(N)
 u = TrialFunction(SD)
 v = TestFunction(SD)
@@ -53,11 +51,11 @@ fj = fl(X)
 # Compute right hand side of Poisson equation
 f_hat = Array(SD)
 f_hat = inner(v, fj, output_array=f_hat)
-if basis == 'legendre':
+if family == 'legendre':
     f_hat *= -1.
 
 # Get left hand side of Poisson equation
-if basis == 'chebyshev':
+if family == 'chebyshev':
     A = inner(v, div(grad(u)))
 else:
     A = inner(grad(v), grad(u))
@@ -69,5 +67,3 @@ uj = SD.backward(f_hat)
 ua = ul(X)
 print("Error=%2.16e" %(np.linalg.norm(uj-ua)))
 #assert np.allclose(uj, ua)
-
-
