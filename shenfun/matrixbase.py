@@ -414,26 +414,17 @@ class SpectralMatrix(SparseMatrix):
 
     """
     def __init__(self, d, test, trial, scale=1.0):
-        if isinstance(test[1], (int, np.integer)):
-            k_test, k_trial = test[1], trial[1]
-        elif isinstance(test[1], np.ndarray):
-            assert len(test[1]) == 1
-            k_test = test[1][(0,)*np.ndim(test[1])]
-            k_trial = trial[1][(0,)*np.ndim(trial[1])]
-        else:
-            raise RuntimeError
-
+        assert isinstance(test[1], (int, np.integer))
+        assert isinstance(trial[1], (int, np.integer))
+        k_test, k_trial = test[1], trial[1]
         self.testfunction = (test[0], k_test)
         self.trialfunction = (trial[0], k_trial)
-
         self.scale = scale
         shape = self.spectral_shape()
         if d == {}:
             D = self.get_dense_matrix()[:shape[0], :shape[1]]
             d = extract_diagonal_matrix(D)
         SparseMatrix.__init__(self, d, shape)
-        #if not round(scale-1.0, 8) == 0:
-            #self *= scale
 
     def spectral_shape(self):
         """Return shape of matrix"""
