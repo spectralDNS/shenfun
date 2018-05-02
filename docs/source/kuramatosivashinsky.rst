@@ -7,7 +7,7 @@ Demo - Kuramato-Sivashinsky equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Apr 13, 2018
+:Date: Apr 30, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Kuramato-Sivashinsky equation, in a doubly periodic domain. The demo is implemented in
@@ -295,7 +295,6 @@ addition to `shenfun <https://github.com/spectralDNS/shenfun>`__:
     import numpy as np
     import matplotlib.pyplot as plt
     from mpi4py import MPI
-    from shenfun.fourier.bases import R2CBasis, C2CBasis
     from shenfun import *
 
 The size of the problem (in real space) is then specified, before creating
@@ -310,8 +309,8 @@ term.
     N = (128, 128)
     
     comm = MPI.COMM_WORLD
-    K0 = C2CBasis(N[0], domain=(-30*np.pi, 30*np.pi))
-    K1 = R2CBasis(N[1], domain=(-30*np.pi, 30*np.pi))
+    K0 = Basis(N[0], 'F', domain=(-30*np.pi, 30*np.pi), dtype='D')
+    K1 = Basis(N[1], 'F', domain=(-30*np.pi, 30*np.pi), dtype='d')
     T = TensorProductSpace(comm, (K0, K1), **{'planner_effort': 'FFTW_MEASURE'})
     TV = VectorTensorProductSpace([T, T])
 

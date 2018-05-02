@@ -7,7 +7,7 @@ Demo - 3D Poisson equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Apr 13, 2018
+:Date: Apr 30, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve a 3D Poisson
 equation in a 3D tensor product domain that has homogeneous Dirichlet boundary 
@@ -354,10 +354,9 @@ plus some other helper modules, like `Numpy <https://numpy.org>`__ and `Sympy <h
 
     from sympy import symbols, cos, sin, exp, lambdify
     import numpy as np
-    from shenfun.fourier.bases import R2CBasis, C2CBasis
     from shenfun.tensorproductspace import TensorProductSpace
     from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \ 
-        project, Dx
+        project, Dx, Basis
     from mpi4py import MPI
 
 We use ``Sympy`` for the manufactured solution and ``Numpy`` for testing. MPI for
@@ -402,10 +401,10 @@ From these three bases a :class:`.TensorProductSpace` is created.
     # Size of discretization
     N = [14, 15, 16]
     
-    SD = chebyshev.bases.ShenDirichletBasis(N[0])
-    #SD = legendre.bases.ShenDirichletBasis(N[0])
-    K1 = C2CBasis(N[1])
-    K2 = R2CBasis(N[2])
+    SD = Basis(N[0], 'Chebyshev', bc=(0, 0))
+    #SD = Basis(N[0], 'Legendre', bc=(0, 0))
+    K1 = Basis(N[1], 'Fourier', dtype='D')
+    K2 = Basis(N[2], 'Fourier', dtype='d')
     T = TensorProductSpace(comm, (SD, K1, K2), axes=(0, 1, 2))
     X = T.local_mesh()
 
@@ -631,20 +630,18 @@ or similarly with ``chebyshev`` instead of ``legendre``.
     import importlib
     from sympy import symbols, cos, sin, exp, lambdify
     import numpy as np
-    from shenfun.fourier.bases import R2CBasis, C2CBasis
     from shenfun.tensorproductspace import TensorProductSpace
     from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \ 
-        project, Dx
+        project, Dx, Basis
     import time
     from mpi4py import MPI
     
     comm = MPI.COMM_WORLD
     
     # Collect basis and solver from either Chebyshev or Legendre submodules
-    basis = sys.argv[-1] if len(sys.argv) == 2 else 'chebyshev'
-    shen = importlib.import_module('.'.join(('shenfun', basis)))
-    Basis = shen.bases.ShenDirichletBasis
-    Solver = shen.la.Helmholtz
+    family = sys.argv[-1] if len(sys.argv) == 2 else 'chebyshev'
+    base = importlib.import_module('.'.join(('shenfun', family)))
+    Solver = base.la.Helmholtz
     
     # Use sympy to compute a rhs, given an analytical solution
     x, y, z = symbols("x,y,z")
@@ -658,9 +655,9 @@ or similarly with ``chebyshev`` instead of ``legendre``.
     # Size of discretization
     N = [eval(sys.argv[-2])]*3
     
-    SD = Basis(N[0])
-    K1 = C2CBasis(N[1])
-    K2 = R2CBasis(N[2])
+    SD = Basis(N[0], family)
+    K1 = Basis(N[1], 'F', dtype='D')
+    K2 = Basis(N[2], 'F', dtype='d')
     T = TensorProductSpace(comm, (SD, K1, K2), axes=(0, 1, 2))
     X = T.local_mesh(True)
     u = TrialFunction(T)
@@ -673,11 +670,11 @@ or similarly with ``chebyshev`` instead of ``legendre``.
     
     # Compute right hand side of Poisson equation
     f_hat = inner(v, fj)
-    if basis == 'legendre':
+    if family == 'legendre':
         f_hat *= -1.
     
     # Get left hand side of Poisson equation
-    if basis == 'chebyshev':
+    if family == 'chebyshev':
         matrices = inner(v, div(grad(u)))
     else:
         matrices = inner(grad(v), grad(u))

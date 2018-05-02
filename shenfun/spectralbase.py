@@ -118,6 +118,7 @@ for computing the (weighted) scalar product.
 
 """
 import numpy as np
+import six
 import pyfftw
 from mpiFFT4py import work_arrays
 
@@ -232,7 +233,7 @@ class SpectralBase(object):
         -------
         >>> import numpy as np
         >>> x = np.arange(4)
-        >>> y = broadcast_to_ndims(x, 4, axis=2)
+        >>> y = SpectralBase.broadcast_to_ndims(x, 4, axis=2)
         >>> print(y.shape)
         (1, 1, 4, 1)
         """
@@ -721,11 +722,11 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
     >>> from shenfun.chebyshev.bases import ShenDirichletBasis
     >>> SD = ShenDirichletBasis(6)
     >>> B = inner_product((SD, 0), (SD, 0))
-    >>> B
-    {-2: array([-1.57079633]),
-      0: array([ 4.71238898,  3.14159265,  3.14159265,  3.14159265]),
-      2: array([-1.57079633])}
-
+    >>> d = {-2: np.array([-np.pi/2]),
+    ...       0: np.array([1.5*np.pi, np.pi, np.pi, np.pi]),
+    ...       2: np.array([-np.pi/2])}
+    >>> [np.all(B[k] == v) for k, v in six.iteritems(d)]
+    [True, True, True]
     """
     from .fourier import FourierBase, R2CBasis
 

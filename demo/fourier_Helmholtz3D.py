@@ -1,21 +1,24 @@
 r"""
 Solve Helmholtz equation on (0, 2pi)x(0, 2pi)x(0, 2pi) with periodic bcs
 
+.. math::
+
     \nabla^2 u + u = f,
 
-Use Fourier basis and find u in VxVxV such that
+Use Fourier basis and find :math:`u` in :math:`V^3` such that
 
-    (v, div(grad(u))+u) = (v, f)    for all v in VxVxV
+.. math::
 
-where V is the Fourier basis span{exp(1jkx)}_{k=-N/2}^{N/2-1} and
-VxVxV is a tensorproductspace.
+    (v, \nabla^2 u + u) = (v, f), \quad \forall v \in V^3
+
+where V is the Fourier basis :math:`span{exp(1jkx)}_{k=-N/2}^{N/2-1}` and
+:math:`V^3` is a tensorproductspace.
 
 """
 from sympy import symbols, cos, sin, lambdify
 import matplotlib.pyplot as plt
-from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun.tensorproductspace import TensorProductSpace
-from shenfun import inner, div, grad, TestFunction, TrialFunction
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis, \
+    TensorProductSpace
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
@@ -31,9 +34,9 @@ fl = lambdify((x, y, z), fe, 'numpy')
 # Size of discretization
 N = 16
 
-K0 = C2CBasis(N)
-K1 = C2CBasis(N)
-K2 = R2CBasis(N)
+K0 = Basis(N, 'F', dtype='D')
+K1 = Basis(N, 'F', dtype='D')
+K2 = Basis(N, 'F', dtype='d')
 T = TensorProductSpace(comm, (K0, K1, K2), slab=True)
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)
@@ -48,8 +51,6 @@ f_hat = inner(v, fj)
 # Solve Poisson equation
 A = inner(v, u+div(grad(u)))
 f_hat = A.solve(f_hat)
-
-print(fj.shape, f_hat.shape)
 
 uq = T.backward(f_hat, fast_transform=True)
 

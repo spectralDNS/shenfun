@@ -98,13 +98,13 @@ If we now have a problem with Dirichlet in :math:`x`-direction and periodic in
    v_{k, l}(x, y) = (T_k(x) - T_{k+2}(x)) \exp(\imath l y)
 
 In other words, we choose one test function per dimension and create
-global basis functions by taking the products of these individual
+global basis functions by taking the outer products of these individual
 test functions. Moving to even more dimensions is then trivial, as
 global basis functions simply are the products of one-dimensional basis
 functions. Combining one-dimensional bases like this results in
 tensor product spaces, with tensor product meshes. If the one-dimensional
-meshes in :math:`x`- and :math:`y`-directions are :math:`x = \{x_m\}_{m=0}^{m=N-1}`
-and :math:`y = \{y_n\}_{n=0}^{n=M-1}`, then a tensor product mesh :math:`X` is
+meshes in :math:`x`- and :math:`y`-directions are :math:`x = \{x_m\}_{m=0}^{N-1}`
+and :math:`y = \{y_n\}_{n=0}^{M-1}`, then a tensor product mesh :math:`X` is
 the outer product of these two vectors
 
 .. math::
@@ -119,15 +119,22 @@ example, to create a basis for the aforementioned domain, with Dirichlet in
 :math:`x`- and periodic in :math:`y`-direction, a user may proceed
 as follows
 
->>> from shenfun import fourier, chebyshev, TensorProductSpace
+>>> from shenfun import Basis, TensorProductSpace
 >>> from mpi4py import MPI
 >>> comm = MPI.COMM_WORLD
 >>> N = (14, 16)
->>> B0 = chebyshev.bases.ShenDirichletBasis(N[0])
->>> B1 = fourier.bases.R2CBasis(N[1])
+>>> B0 = Basis(N[0], 'Chebyshev', bc=(0, 0))
+>>> B1 = Basis(N[1], 'Fourier', dtype='d')
 >>> V = TensorProductSpace(comm, (B0, B1))
 
-where R2CBasis is a Fourier basis for real-to-complex transforms.
+where the Fourier basis ``B1`` is for real-to-complex transforms, which is
+ensured by the ``dtype`` keyword being set to ``d`` for double. ``dtype``
+specifies the data type that is input to the ``forward`` method, or the
+data type of the solution in physical space. Setting
+``dtype='D'`` indicates that this datatype will be complex. Note that it
+will not trigger an error, or even lead to wrong results, if ``dtype`` is
+by mistake set to ``D``. It is merely less efficient to work with complex data
+arrays where double precision is sufficient. 
 
 The tensor product space ``V`` will be distributed with the *slab* method and it
 can here use a maximum of 9 CPUs (9 since the last dimension is

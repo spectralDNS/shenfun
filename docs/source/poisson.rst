@@ -7,7 +7,7 @@ Demo - 1D Poisson equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Apr 13, 2018
+:Date: Apr 30, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the Poisson
 equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as shown in Figure :ref:`fig:ct0`, is demonstrated. 
@@ -238,7 +238,7 @@ plus some other helper modules, like `Numpy <https://numpy.org>`__ and `Sympy <h
 .. code-block:: python
 
     from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \ 
-        project, Dx, Array, chebyshev, legendre
+        project, Dx, Array, Basis
     import numpy as np
     from sympy import symbols, cos, sin, exp, lambdify
 
@@ -278,14 +278,15 @@ We create a basis with a given number of basis functions, and extract the comput
 .. code-block:: python
 
     N = 32
-    SD = chebyshev.bases.ShenDirichletBasis(N, plan=True, bc=(a, b))
-    #SD = legendre.bases.ShenDirichletBasis(N, plan=True, bc=(a, b))
+    SD = Basis(N, 'Chebyshev', plan=True, bc=(a, b))
+    #SD = Basis(N, 'Legendre', plan=True, bc=(a, b))
     X = SD.mesh(N)
 
 Note that we can either choose a Legendre or a Chebyshev basis. The keyword
-``plan`` is used to tell the class :class:`shenfun.chebyshev.bases.ShenDirichletBasis` that it can 
+``plan`` is used to tell the class created in :func:`.Basis` that it can 
 go ahead and plan its transforms with `pyfftw <https://pyfftw.org>`__, because 
-this basis will not be a part of a tensorproductspace, in which case the planning would need to wait.
+this basis will not be a part of a tensorproductspace, in which case the 
+planning would need to wait.
 
 Variational formulation
 -----------------------
@@ -376,5 +377,5 @@ command-line argument, can be found `here <https://github.com/spectralDNS/shenfu
 
 .. ======= Bibliography =======
 
-.. bibliography:: ../papers.bib
+.. bibliography:: papers.bib
    :notcited:

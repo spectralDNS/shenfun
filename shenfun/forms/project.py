@@ -10,14 +10,18 @@ def project(uh, T, output_array=None, uh_hat=None):
 
     Parameters
     ----------
-        uh :  Expr or Function
-        T :  TensorProductSpace
-        output_array :  Function(T, True)
-                        Return array
-        uh_hat :  Function(T, True)
-                  The transform of uh in uh's space, i.e.,
-                  TK = uh.function_space(); uh_hat = TK.forward(uh). This is
-                  ok even though uh is part of a form, like div(grad(uh))
+        uh : Expr or Function
+        T : TensorProductSpace
+        output_array : Function(T, True)
+                       Return array
+        uh_hat : Function(T, True)
+                 The transform of uh in uh's space, i.e.::
+
+                    TK = uh.function_space()
+                    uh_hat = TK.forward(uh)
+
+                 This is
+                 ok even though uh is part of a form, like ``div(grad(uh))``
 
     .. note:: Returns spectral expansion coefficients of projection,
               not the projection in physical space.
@@ -28,7 +32,7 @@ def project(uh, T, output_array=None, uh_hat=None):
     >>> import numpy as np
     >>> from mpi4py import MPI
     >>> from shenfun import chebyshev, fourier, project, TensorProductSpace, \
-        Function, Dx
+    ...   Function, Dx
     >>> N = 16
     >>> comm = MPI.COMM_WORLD
     >>> T0 = chebyshev.bases.Basis(N)
