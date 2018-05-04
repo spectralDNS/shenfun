@@ -214,9 +214,9 @@ class R2CBasis(FourierBase):
         shape[self.axis] = shape[self.axis]//2 + 1
         return pyfftw.empty_aligned(shape, dtype=dtype)
 
-    def eval(self, x, fk):
-        V = self.vandermonde(x)
-        return np.dot(V, fk) + np.conj(np.dot(V[:, 1:-1], fk[1:-1]))
+    #def eval(self, x, fk):
+    #    V = self.vandermonde(x)
+    #    return np.dot(V, fk) + np.conj(np.dot(V[:, 1:-1], fk[1:-1]))
 
     def slice(self):
         return slice(0, self.N//2+1)
@@ -249,6 +249,32 @@ class R2CBasis(FourierBase):
         return output_array
 
     def vandermonde_evaluate_expansion(self, points, input_array, output_array):
+        """Evaluate expansion at certain points, possibly different from
+        the quadrature points
+
+        This method assumes the array is locally available in full, i.e., the
+        multidimensional arrays are aligned along the axis of this basis.
+
+        Parameters
+        ----------
+            P : 2D array
+                Vandermode matrix containing local points only
+            input_array : array
+                          Expansion coefficients
+            output_array : array
+                           Function values on points
+            last_conj_index : int
+                              The last index to sum over for conj part
+                              (R2CBasis only)
+            offset : int
+                     Global offset (MPI)
+
+        Note
+        ----
+        This method is complicated by the fact that the data may not be aligned
+        along the axis of this basis.
+
+        """
         assert abs(self.padding_factor-1) < 1e-8
         P = self.vandermonde(points)
         if output_array.ndim == 1:
@@ -277,6 +303,9 @@ class R2CBasis(FourierBase):
                                              last_conj_index, offset):
         """Evaluate expansion at certain points, possibly different from
         the quadrature points
+
+        This method does not assume that the multidimensional arrays are aligned
+        along the axis of this basis.
 
         Parameters
         ----------
