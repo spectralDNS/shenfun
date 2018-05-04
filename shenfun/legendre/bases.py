@@ -70,6 +70,9 @@ class LegendreBase(SpectralBase):
     def __init__(self, N=0, quad="LG", domain=(-1., 1.)):
         SpectralBase.__init__(self, N, quad, domain=domain)
 
+    def family(self):
+        return 'legendre'
+
     def points_and_weights(self, N, scaled=False):
         if self.quad == "LG":
             points, weights = leg.leggauss(N)

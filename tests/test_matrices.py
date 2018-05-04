@@ -119,7 +119,6 @@ def test_lmatvec(b0, b1, quad, format, axis, k0, k1):
     cc[axis] = slice(None)
     assert np.allclose(c, d1[cc])
 
-
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_imul(key, mat, quad):
     test = key[0]
@@ -132,8 +131,7 @@ def test_imul(key, mat, quad):
 
     mat = shenfun.SparseMatrix(deepcopy(dict(mc)), mat.shape)
     mat *= 2
-    for key, val in six.iteritems(mat):
-        assert np.allclose(val, mc[key]*2)
+    assert mat.scale == 2.0
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_mul(key, mat, quad):
@@ -146,8 +144,7 @@ def test_mul(key, mat, quad):
 
     mat = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
     mc = 2.*mat
-    for key, val in six.iteritems(mc):
-        assert np.allclose(val, m[key]*2.)
+    assert mc.scale == 2.0
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_rmul(key, mat, quad):
@@ -160,8 +157,7 @@ def test_rmul(key, mat, quad):
 
     mat = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
     mc = mat*2.
-    for key, val in six.iteritems(mc):
-        assert np.allclose(val, m[key]*2.)
+    assert mc.scale == 2.0
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_div(key, mat, quad):
@@ -175,8 +171,7 @@ def test_div(key, mat, quad):
 
     mat = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
     mc = mat/2.
-    for key, val in six.iteritems(mc):
-        assert np.allclose(val, m[key]/2.)
+    assert mc.scale == 0.5
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_add(key, mat, quad):
@@ -189,8 +184,7 @@ def test_add(key, mat, quad):
 
     mat = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
     mc = mat + mat
-    for key, val in six.iteritems(mc):
-        assert np.allclose(val, 2*m[key])
+    assert mc.scale == 2.0
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_iadd(key, mat, quad):
@@ -205,8 +199,7 @@ def test_iadd(key, mat, quad):
     m1 = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
     m2 = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
     m1 += m2
-    for key, val in six.iteritems(m1):
-        assert np.allclose(val, 2*m2[key])
+    assert m1.scale == 2.0
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_isub(key, mat, quad):
@@ -221,8 +214,7 @@ def test_isub(key, mat, quad):
     m1 = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
     m2 = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
     m1 -= m2
-    for key, val in six.iteritems(m1):
-        assert np.allclose(val, 0.0)
+    assert m1.scale == 0.0
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_sub(key, mat, quad):
@@ -237,8 +229,7 @@ def test_sub(key, mat, quad):
     m2 = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
 
     mc = m1 - m2
-    for key, val in six.iteritems(mc):
-        assert np.allclose(val, 0.0)
+    assert mc.scale == 0.0
 
 if __name__=='__main__':
-    test_isub(*mats_and_quads[0])
+    test_add(*mats_and_quads[0])
