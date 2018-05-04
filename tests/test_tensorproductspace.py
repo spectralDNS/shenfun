@@ -425,6 +425,8 @@ def test_eval_tensor(typecode, dim, ST, quad):
             u_hat = fft.forward(uu)
             result = fft.eval_cython(points, u_hat)
             assert np.allclose(uq, result, 0, 1e-6)
+            result = fft.eval(points, u_hat)
+            assert np.allclose(uq, result, 0, 1e-6)
             bases.pop(axis)
             fft.destroy()
 
