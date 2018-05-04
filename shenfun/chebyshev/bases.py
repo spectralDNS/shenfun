@@ -78,7 +78,8 @@ class ChebyshevBase(SpectralBase):
         assert quad in ('GC', 'GL')
         SpectralBase.__init__(self, N, quad, domain=domain)
 
-    def family(self):
+    @staticmethod
+    def family():
         return 'chebyshev'
 
     def points_and_weights(self, N, scaled=False):

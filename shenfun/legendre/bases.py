@@ -70,7 +70,8 @@ class LegendreBase(SpectralBase):
     def __init__(self, N=0, quad="LG", domain=(-1., 1.)):
         SpectralBase.__init__(self, N, quad, domain=domain)
 
-    def family(self):
+    @staticmethod
+    def family():
         return 'legendre'
 
     def points_and_weights(self, N, scaled=False):
