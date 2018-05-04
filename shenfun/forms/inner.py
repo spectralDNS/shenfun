@@ -322,7 +322,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
         else: # linear form
             for i, bb in enumerate(B):
                 b = bb[npaxis]
-                b.scale = bb['scale']
+                #b.scale = bb['scale']
                 if uh.rank() == 2:
                     sp = uh.function_space()
                     wh = Array(sp[npaxis], forward_output=True)
@@ -331,7 +331,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                 else:
                     wh = Array(trialspace, forward_output=True)
                     wh = b.matvec(uh, wh, axis=b.axis)
-                output_array += wh*b.scale
+                output_array += wh*bb['scale']
 
             return output_array
 

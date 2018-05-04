@@ -299,6 +299,5 @@ def solve(A, b, u=None, axis=0):
             b = np.moveaxis(b, 0, axis)
 
     u /= A.scale
-
     return u
 

@@ -469,6 +469,7 @@ class PBBmat(SpectralMatrix):
         d[-2] = d[2]
         SpectralMatrix.__init__(self, d, test, trial)
 
+
 @inheritdocstrings
 class SBBmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
