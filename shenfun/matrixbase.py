@@ -10,13 +10,14 @@ import numpy as np
 import six
 from .utilities import inheritdocstrings
 
-__all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix']
+__all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix', 'test_sanity']
 
 class SparseMatrix(dict):
     r"""Base class for sparse matrices
 
     The data is stored as a dictionary, where keys and values are, respectively,
-    the offsets and values of the diagonal.
+    the offsets and values of the diagonal. In addition, each matrix is stored
+    with a coefficient that is used as a scalar multiple of the matrix.
 
     Parameters
     ----------
@@ -285,6 +286,8 @@ class SparseMatrix(dict):
                 u is provided.
             u : array, optional
                 Output array
+            axis : int, optional
+                   The axis over which to solve if b and u are multidimensional
 
         Vectors may be one- or multidimensional.
 
@@ -468,19 +471,6 @@ class SpectralMatrix(SparseMatrix):
             d = extract_diagonal_matrix(D)
         SparseMatrix.__init__(self, d, shape, scale)
 
-    def test_sanity(self):
-        """Sanity test for matrix.
-
-        Test that automatically created matrix agrees with overloaded one
-
-        """
-        N, M = self.shape
-        D = get_dense_matrix(self.testfunction, self.trialfunction)[:N, :M]
-        Dsp = extract_diagonal_matrix(D)
-        Dsp *= self.scale
-        for key, val in six.iteritems(self):
-            assert np.allclose(val, Dsp[key])
-
     def matvec(self, v, c, format='csr', axis=0):
         c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
         if self.testfunction[0].__class__.__name__ == 'ShenNeumannBasis':
@@ -541,18 +531,7 @@ class SpectralMatrix(SparseMatrix):
             f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
                                self.trialfunction, self.scale+d.scale)
         else:
-            f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
-                               self.trialfunction, 1.0)
-            for key, val in six.iteritems(d):
-                if key in f:
-                    # Check if symmetric and make copy if necessary
-                    if -key in f:
-                        if id(f[key]) == id(f[-key]):
-                            f[-key] = deepcopy(f[key])
-                    f[key] = self.scale*f[key] + d.scale*val
-                else:
-                    f[key] = d.scale*val
-
+            f = SparseMatrix.__add__(self, d)
         return f
 
     def __sub__(self, d):
@@ -563,19 +542,36 @@ class SpectralMatrix(SparseMatrix):
             f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
                                self.trialfunction, self.scale-d.scale)
         else:
-            f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
-                               self.trialfunction, 1.0)
-            for key, val in six.iteritems(d):
-                if key in f:
-                    # Check if symmetric and make copy if necessary
-                    if -key in f:
-                        if id(f[key]) == id(f[-key]):
-                            f[-key] = deepcopy(f[key])
-                    f[key] = self.scale*f[key] - d.scale*val
-                else:
-                    f[key] = -d.scale*val
-
+            f = SparseMatrix.__sub__(self, d)
         return f
+
+
+def test_sanity(A, test, trial):
+    """Sanity test for matrix.
+
+    Test that automatically created matrix agrees with overloaded one
+
+    Parameters
+    ----------
+        A : matrix
+        test : 2-tuple of (basis, int)
+                The basis is an instance of a class for one of the bases in
+
+                - shenfun.legendre.bases
+                - shenfun.chebyshev.bases
+                - shenfun.fourier.bases
+
+                The int represents the number of times the test function
+                should be differentiated. Representing matrix row.
+        trial : 2-tuple of (basis, int)
+                As test, but representing matrix column.
+    """
+    N, M = A.shape
+    D = get_dense_matrix(test, trial)[:N, :M]
+    Dsp = extract_diagonal_matrix(D)
+    Dsp *= A.scale
+    for key, val in six.iteritems(A):
+        assert np.allclose(val, Dsp[key])
 
 
 def get_dense_matrix(test, trial):
@@ -583,17 +579,17 @@ def get_dense_matrix(test, trial):
 
     Parameters
     ----------
-        trial : 2-tuple of (basis, int)
+        test : 2-tuple of (basis, int)
                 The basis is an instance of a class for one of the bases in
 
                 - shenfun.legendre.bases
                 - shenfun.chebyshev.bases
                 - shenfun.fourier.bases
 
-                The int represents the number of times the trial function
-                should be differentiated. Representing matrix column.
-        test : 2-tuple of (basis, int)
-               As trial, but representing matrix row.
+                The int represents the number of times the test function
+                should be differentiated. Representing matrix row.
+        trial : 2-tuple of (basis, int)
+                As test, but representing matrix column.
     """
     N = test[0].N
     x, w = test[0].points_and_weights(N)

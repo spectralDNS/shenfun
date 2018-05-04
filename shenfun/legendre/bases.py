@@ -305,7 +305,8 @@ class ShenDirichletBasis(LegendreBase):
         else:
             return self.forward.output_array
 
-    def evaluate_expansion_all(self, input_array, output_array):
+    def evaluate_expansion_all(self, input_array, output_array): # pragma: no cover
+        # Not used since there are no fast transforms for Legendre
         w_hat = work[(input_array, 0)]
         s0 = self.sl(slice(0, -2))
         s1 = self.sl(slice(2, None))
@@ -416,7 +417,8 @@ class ShenNeumannBasis(LegendreBase):
         else:
             return self.scalar_product.output_array
 
-    def evaluate_expansion_all(self, input_array, output_array):
+    def evaluate_expansion_all(self, input_array, output_array): # pragma: no cover
+        # Not used since there are no fast transforms for Legendre
         w_hat = work[(input_array, 0)]
         self.set_factor_array(input_array)
         s0 = self.sl(slice(0, -2))
@@ -460,7 +462,7 @@ class ShenNeumannBasis(LegendreBase):
 
 
 @inheritdocstrings
-class ShenBiharmonicBasis(LegendreBase):
+class ShenBiharmonicBasis(LegendreBase): # pragma: no cover
     """Shen biharmonic basis
 
     Homogeneous Dirichlet and Neumann boundary conditions.
@@ -529,7 +531,8 @@ class ShenBiharmonicBasis(LegendreBase):
         w_hat[s4] += f2*fk[s]
         return w_hat
 
-    def evaluate_expansion_all(self, input_array, output_array):
+    def evaluate_expansion_all(self, input_array, output_array): # pragma: no cover
+        # Not used since there are no fast transforms for Legendre
         w_hat = work[(input_array, 0)]
         self.set_factor_arrays(input_array)
         w_hat = self.set_w_hat(w_hat, input_array, self._factor1, self._factor2)
@@ -576,7 +579,7 @@ class ShenBiharmonicBasis(LegendreBase):
 
 ## Experimental!
 @inheritdocstrings
-class SecondNeumannBasis(LegendreBase):
+class SecondNeumannBasis(LegendreBase): # pragma: no cover
     """Shen basis for homogeneous second order Neumann boundary conditions
 
     Parameters
