@@ -49,11 +49,10 @@ def test_mat(key, mat, quad):
     """Test that matrices built by hand equals those automatically generated"""
     test = key[0]
     trial = key[1]
-    mat = mat((test[0](N, quad=quad), test[1]),
-              (trial[0](N, quad=quad), trial[1]))
-    mat.test_sanity()
-
-#test_mat(((cBasis[0], 0), (cBasis[0], 0)), 'GC')
+    testfunction = (test[0](N, quad=quad), test[1])
+    trialfunction = (trial[0](N, quad=quad), trial[1])
+    mat = mat(testfunction, trialfunction)
+    shenfun.test_sanity(mat, testfunction, trialfunction)
 
 @pytest.mark.parametrize('b0,b1', cbases2)
 @pytest.mark.parametrize('quad', cquads)
@@ -85,8 +84,6 @@ def test_cmatvec(b0, b1, quad, format, axis, k):
     cc = [0,]*3
     cc[axis] = slice(None)
     assert np.allclose(c, d1[cc])
-
-#test_cmatvec(cBasis[0], cBasis[0], 'GC', 'csr', 2, 1)
 
 @pytest.mark.parametrize('b0,b1', lbases2)
 @pytest.mark.parametrize('quad', lquads)
@@ -183,8 +180,9 @@ def test_add(key, mat, quad):
     assert mc.scale == 2.0
 
     mat = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
-    mc = mat + mat
-    assert mc.scale == 2.0
+    mc = m + mat
+    for key, val in six.iteritems(mc):
+        assert np.allclose(val, m[key]*2)
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_iadd(key, mat, quad):

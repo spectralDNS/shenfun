@@ -25,15 +25,18 @@ lBasis = (lbases.Basis,
           lbases.ShenBiharmonicBasis,
           lbases.ShenNeumannBasis)
 
+fBasis = (fbases.R2CBasis,
+          fbases.C2CBasis)
+
 cquads = ('GC', 'GL')
 lquads = ('LG', 'GL')
 
-all_bases_and_quads = list(product(lBasis, lquads))+list(product(cBasis, cquads))
+all_bases_and_quads = list(product(lBasis, lquads))+list(product(cBasis, cquads))+list(product(fBasis, ("",)))
 
 cbases2 = list(list(i[0]) + [i[1]] for i in product(list(product(cBasis, cBasis)), cquads))
 lbases2 = list(list(i[0]) + [i[1]] for i in product(list(product(lBasis, lBasis)), lquads))
 
-@pytest.mark.parametrize('basis', (fbases.C2CBasis, fbases.R2CBasis))
+@pytest.mark.parametrize('basis', fBasis)
 @pytest.mark.parametrize('N', (8, 9))
 def test_convolve(basis, N):
     """Test convolution"""
@@ -70,16 +73,19 @@ def test_convolve(basis, N):
     assert np.allclose(uv3, uv2)
 
 
-@pytest.mark.parametrize('ST,quad', product(cBasis, cquads))
+@pytest.mark.parametrize('ST,quad', list(product(cBasis, cquads)) + list(product(fBasis, [""])))
 def test_scalarproduct(ST, quad):
     """Test fast scalar product against Vandermonde computed version"""
-    ST = ST(N, quad=quad, plan=True)
+    kwargs = {'plan': True}
+    if not ST.family() == 'fourier':
+        kwargs['quad'] = quad
+    ST = ST(N, **kwargs)
     points, weights = ST.points_and_weights(N)
     f = x*x+cos(pi*x)
     fl = lambdify(x, f, 'numpy')
     fj = fl(points)
-    u0 = np.zeros(N)
-    u1 = np.zeros(N)
+    u0 = shenfun.Array(ST)
+    u1 = shenfun.Array(ST)
     u0 = ST.scalar_product(fj, u0, fast_transform=True)
     u1 = ST.scalar_product(fj, u1, fast_transform=False)
     assert np.allclose(u1, u0)
@@ -89,10 +95,14 @@ def test_scalarproduct(ST, quad):
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
 def test_eval(ST, quad):
     """Test eval agains fast inverse"""
-    ST = ST(N, quad=quad, plan=True)
+    kwargs = {'plan': True}
+    if not ST.family() == 'fourier':
+        kwargs['quad'] = quad
+    ST = ST(N, **kwargs)
     points, weights = ST.points_and_weights(N)
-    fk = np.zeros(N)
-    fj = np.random.random(N)
+    fk = shenfun.Array(ST)
+    fj = shenfun.Array(ST, False)
+    fj[:] = np.random.random(fj.shape[0])
     fk = ST.forward(fj, fk)
     #from IPython import embed; embed()
     fj = ST.backward(fk, fj)
@@ -144,19 +154,22 @@ def test_massmatrices(test, trial, quad):
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
 @pytest.mark.parametrize('axis', (0,1,2))
 def test_transforms(ST, quad, axis):
-    #N = 11
-    ST = ST(N, quad=quad, plan=True)
+    kwargs = {'plan': True}
+    if not ST.family() == 'fourier':
+        kwargs['quad'] = quad
+    ST = ST(N, **kwargs)
     points, weights = ST.points_and_weights(N)
-    fj = np.random.random(N)
+    fj = shenfun.Array(ST, False)
+    fj[:] = np.random.random(fj.shape[0])
 
     # Project function to space first
-    f_hat = np.zeros_like(ST.forward.output_array)
+    f_hat = shenfun.Array(ST)
     f_hat = ST.forward(fj, f_hat)
     fj = ST.backward(f_hat, fj)
 
     # Then check if transformations work as they should
-    u0 = np.zeros_like(f_hat)
-    u1 = np.zeros(N)
+    u0 = shenfun.Array(ST)
+    u1 = shenfun.Array(ST, False)
     u0 = ST.forward(fj, u0)
     u1 = ST.backward(u0, u1)
     assert np.allclose(fj, u1)
@@ -169,12 +182,12 @@ def test_transforms(ST, quad, axis):
     bc[axis] = slice(None)
     fj = np.broadcast_to(fj[bc], (N,)*3).copy()
 
-    ST.plan((N,)*3, axis, np.float, {})
+    ST.plan((N,)*3, axis, fj.dtype, {})
     if hasattr(ST, 'bc'):
         ST.bc.set_slices(ST)  # To set Dirichlet boundary conditions
 
-    u00 = np.zeros_like(ST.forward.output_array)
-    u11 = np.zeros_like(ST.forward.input_array)
+    u00 = shenfun.Array(ST)
+    u11 = shenfun.Array(ST, False)
     u00 = ST.forward(fj, u00)
     u11 = ST.backward(u00, u11)
     cc = [0,]*3
@@ -187,23 +200,27 @@ def test_transforms(ST, quad, axis):
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
 @pytest.mark.parametrize('axis', (0,1,2))
 def test_axis(ST, quad, axis):
-    ST = ST(N, quad=quad, plan=True)
+    kwargs = {'plan': True}
+    if not ST.family() == 'fourier':
+        kwargs['quad'] = quad
+    ST = ST(N, **kwargs)
     points, weights = ST.points_and_weights(N)
-    f_hat = np.random.random(N)
+    f_hat = shenfun.Array(ST)
+    f_hat[:] = np.random.random(f_hat.shape[0])
 
     B = inner_product((ST, 0), (ST, 0))
-
-    c = np.zeros_like(f_hat)
+    c = shenfun.Array(ST)
     c = B.solve(f_hat, c)
 
     # Multidimensional version
+    f0 = shenfun.Array(ST, False)
     bc = [np.newaxis,]*3
     bc[axis] = slice(None)
-    fk = np.broadcast_to(f_hat[bc], (N,)*3).copy()
-    ST.plan((N,)*3, axis, np.float, {})
+    ST.plan((N,)*3, axis, f0.dtype, {})
     if hasattr(ST, 'bc'):
         ST.bc.set_tensor_bcs(ST) # To set Dirichlet boundary conditions on multidimensional array
-    ck = np.zeros_like(fk)
+    ck = shenfun.Array(ST)
+    fk = np.broadcast_to(f_hat[bc], ck.shape).copy()
     ck = B.solve(fk, ck, axis=axis)
     cc = [0,]*3
     cc[axis] = slice(None)

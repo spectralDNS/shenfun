@@ -77,6 +77,10 @@ class FourierBase(SpectralBase):
         self.dealias_direct = dealias_direct
         SpectralBase.__init__(self, N, '', padding_factor, domain)
 
+    @staticmethod
+    def family():
+        return 'fourier'
+
     def points_and_weights(self, N, scaled=False):
         a, b = self.domain
         points = np.arange(N, dtype=np.float)*2*np.pi/N
@@ -563,11 +567,3 @@ class C2CBasis(FourierBase):
 
         return uv
 
-
-def FourierBasis(N, dtype, padding_factor=1., plan=False, domain=(0., 2.*np.pi),
-                 dealias_direct=False):
-    """Fourier basis"""
-    dtype = np.dtype(dtype)
-    if dtype.char in 'fdg':
-        return R2CBasis(N, padding_factor, plan, domain, dealias_direct)
-    return C2CBasis(N, padding_factor, plan, domain, dealias_direct)

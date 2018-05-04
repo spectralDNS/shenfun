@@ -136,7 +136,7 @@ class SpectralBase(object):
         quad : str
                Type of quadrature
 
-               - GL - Chebyshev-Gauss-Lobatto
+               - GL - Chebyshev-Gauss-Lobatto or Legendre-Gauss-Lobatto
                - GC - Chebyshev-Gauss
                - LG - Legendre-Gauss
 
