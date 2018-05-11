@@ -52,7 +52,7 @@ def test_mat(key, mat, quad):
     testfunction = (test[0](N, quad=quad), test[1])
     trialfunction = (trial[0](N, quad=quad), trial[1])
     mat = mat(testfunction, trialfunction)
-    shenfun.test_sanity(mat, testfunction, trialfunction)
+    shenfun.check_sanity(mat, testfunction, trialfunction)
 
 @pytest.mark.parametrize('b0,b1', cbases2)
 @pytest.mark.parametrize('quad', cquads)

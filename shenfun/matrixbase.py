@@ -10,13 +10,13 @@ import numpy as np
 import six
 from .utilities import inheritdocstrings
 
-__all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix', 'test_sanity']
+__all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix', 'check_sanity', 'get_dense_matrix']
 
 class SparseMatrix(dict):
     r"""Base class for sparse matrices
 
     The data is stored as a dictionary, where keys and values are, respectively,
-    the offsets and values of the diagonal. In addition, each matrix is stored
+    the offsets and values of the diagonals. In addition, each matrix is stored
     with a coefficient that is used as a scalar multiple of the matrix.
 
     Parameters
@@ -287,7 +287,8 @@ class SparseMatrix(dict):
             u : array, optional
                 Output array
             axis : int, optional
-                   The axis over which to solve if b and u are multidimensional
+                   The axis over which to solve for if b and u are multi-
+                   dimensional
 
         Vectors may be one- or multidimensional.
 
@@ -470,6 +471,13 @@ class SpectralMatrix(SparseMatrix):
             D = get_dense_matrix(test, trial)[:shape[0], :shape[1]]
             d = extract_diagonal_matrix(D)
         SparseMatrix.__init__(self, d, shape, scale)
+        if shape[0] == shape[1]:
+            if test[0].__class__.__name__ == 'ShenNeumannBasis':
+                from shenfun.la import NeumannSolve
+                self.solver = NeumannSolve(self, test[0])
+            else:
+                from shenfun.la import Solve
+                self.solver = Solve(self, test[0])
 
     def matvec(self, v, c, format='csr', axis=0):
         c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
@@ -492,12 +500,11 @@ class SpectralMatrix(SparseMatrix):
             u : array, optional
                 Output array
             axis : int, optional
-                   The axis over which to solve if b and u are multidimensional
+                   The axis over which to solve for if b and u are multidimensional
 
         Vectors may be one- or multidimensional.
         """
-        from .la import solve as default_solve
-        u = default_solve(self, b, u, axis=axis)
+        u = self.solver(b, u=u, axis=axis)
         return u
 
     def __hash__(self):
@@ -546,8 +553,8 @@ class SpectralMatrix(SparseMatrix):
         return f
 
 
-def test_sanity(A, test, trial):
-    """Sanity test for matrix.
+def check_sanity(A, test, trial):
+    """Sanity check for matrix.
 
     Test that automatically created matrix agrees with overloaded one
 

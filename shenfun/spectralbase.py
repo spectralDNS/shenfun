@@ -8,8 +8,8 @@ All bases have expansions
    :math:`u(x_j) = \sum_k \hat{u}_k \phi_k`
 
 where j = 0, 1, ..., N and k = indexset(basis), and the indexset differs from
-base to base, see function space definitions below. :math:`\phi_k` is the k't basis
-function of the basis span(:math:`\phi_k`, k=indexset(basis)).
+base to base, see function space definitions below. :math:`\phi_k` is the k't
+basis function of the basis span(:math:`\phi_k`, k=indexset(basis)).
 
 Chebyshev:
     ChebyshevBasis:
@@ -27,13 +27,14 @@ Chebyshev:
 
         basis: :math:`span(\phi_k, k=0,1,...,N)`
 
-        :math:`u(1)=a, u(-1)=b, \hat{u}_{N-1}=a, \hat{u}_{N}=b`
+        where :math:`u(1)=a, u(-1)=b`, such that :math:`\hat{u}_{N-1}=a,
+        \hat{u}_{N}=b`.
 
-        Note that there are only N-1 unknown coefficients, :math:`\hat{u}_k`, since
-        :math:`\hat{u}_{N-1}` and :math:`\hat{u}_{N}` are determined by boundary conditions.
-        Inhomogeneous boundary conditions are possible for the Poisson
-        equation, because :math:`\phi_{N}` and :math:`\phi_{N-1}` are in the kernel of
-        the Poisson operator.
+        Note that there are only N-1 unknown coefficients, :math:`\hat{u}_k`,
+        since :math:`\hat{u}_{N-1}` and :math:`\hat{u}_{N}` are determined by
+        boundary conditions. Inhomogeneous boundary conditions are possible for
+        the Poisson equation, because :math:`\phi_{N}` and :math:`\phi_{N-1}`
+        are in the kernel of the Poisson operator.
 
     ShenNeumannBasis:
         basis function:
@@ -43,7 +44,7 @@ Chebyshev:
             :math:`span(\phi_k, k=1,2,...,N-2)`
 
         Homogeneous Neumann boundary conditions, :math:`u'(\pm 1) = 0`, and
-        zero weighted mean: :math:`\int_{-1}^{1}u(x)w(x)dx = 0`
+        zero weighted mean: :math:`\int_{-1}^{1}u(x)w(x)dx = 0`.
 
     ShenBiharmonicBasis:
         basis function:
@@ -52,7 +53,8 @@ Chebyshev:
         basis:
             :math:`span(\phi_k, k=0,1,...,N-4)`
 
-        Homogeneous Dirichlet and Neumann, :math:`u(\pm 1)=0` and :math:`u'(\pm 1)=0`
+        Homogeneous Dirichlet and Neumann, :math:`u(\pm 1)=0` and
+        :math:`u'(\pm 1)=0`.
 
 Legendre:
     LegendreBasis:
@@ -66,15 +68,21 @@ Legendre:
         basis function:
             :math:`\phi_k = L_k-L_{k+2}`
 
+            :math:`\phi_{N-1} = 0.5(L_0+L_1)`, for Poisson's equation
+
+            :math:`\phi_{N} = 0.5(L_0-L_1)`, for Poisson's equation
+
         basis:
             :math:`span(\phi_k, k=0,1,...,N)`
-            :math:`\phi_{N-1} = 0.5(L_0+L_1)`
-            :math:`\phi_{N} = 0.5(L_0-L_1)`
 
-        :math:`u(1)=a, u(-1)=b, \hat{u}_{N-1}=a, \hat{u}_{N}=b`
+        where :math:`u(1)=a, u(-1)=b`, such that
+        :math:`\hat{u}_{N-1}=a, \hat{u}_{N}=b`
 
-        Note that there are only N-1 unknown coefficients, :math:`\hat{u}_k`, since
-        :math:`\hat{u}_{N-1}` and :math:`\hat{u}_{N}` are determined by boundary conditions.
+        Note that there are only N-1 unknown coefficients, :math:`\hat{u}_k`,
+        since :math:`\hat{u}_{N-1}` and :math:`\hat{u}_{N}` are determined by
+        boundary conditions. Inhomogeneous boundary conditions are possible for
+        the Poisson equation, because :math:`\phi_{N}` and :math:`\phi_{N-1}`
+        are in the kernel of the Poisson operator.
 
     ShenNeumannBasis:
         basis function:
@@ -84,7 +92,7 @@ Legendre:
             :math:`span(\phi_k, k=1,2,...,N-2)`
 
         Homogeneous Neumann boundary conditions, :math:`u'(\pm 1) = 0`, and
-        zero mean: :math:`\int_{-1}^{1}u(x)dx = 0`
+        zero mean: :math:`\int_{-1}^{1}u(x)dx = 0`.
 
     ShenBiharmonicBasis:
         basis function:
@@ -93,7 +101,8 @@ Legendre:
         basis:
             :math:`span(\phi_k, k=0,1,...,N-4)`
 
-        Homogeneous Dirichlet and Neumann, :math:`u(\pm 1)=0` and :math:`u'(\pm 1)=0`
+        Homogeneous Dirichlet and Neumann, :math:`u(\pm 1)=0` and
+        :math:`u'(\pm 1)=0`.
 
 Fourier:
     R2CBasis and C2CBasis:
@@ -103,10 +112,11 @@ Fourier:
         basis:
             :math:`span(\phi_k, k=-N/2, -N/2+1, ..., N/2)`
 
-        If N is even, then :math:`c_{-N/2}` and :math:`c_{N/2} = 0.5` and :math:`c_k = 1` for
-        :math:`k=-N/2+1, ..., N/2-1`. :math:`i` is the imaginary unit.
+        If N is even, then :math:`c_{-N/2}` and :math:`c_{N/2} = 0.5` and
+        :math:`c_k = 1` for :math:`k=-N/2+1, ..., N/2-1`. :math:`i` is the
+        imaginary unit.
 
-        If N is odd, then :math:`c_k = 1` for :math:`k=-N/2, ..., N/2`
+        If N is odd, then :math:`c_k = 1` for :math:`k=-N/2, ..., N/2`.
 
     R2CBasis and C2CBasis are the same, but R2CBasis is used on real physical
     data and it takes advantage of Hermitian symmetry,

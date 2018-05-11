@@ -1,15 +1,12 @@
 import pytest
 import numpy as np
-from shenfun.chebyshev import bases as cbases
-#from shenfun.legendre import bases as lbases
-#from shenfun.fourier import bases as fbases
 from mpi4py import MPI
 import shenfun
 
 N = 8
 comm = MPI.COMM_WORLD
 
-V = cbases.Basis(N, plan=True)
+V = shenfun.Basis(N, 'C', plan=True)
 u0 = shenfun.TrialFunction(V)
 
 T = shenfun.TensorProductSpace(comm, (V, V))

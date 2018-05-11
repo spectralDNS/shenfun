@@ -68,6 +68,7 @@ from __future__ import division
 import numpy as np
 from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
+from shenfun.la import TDMA as neumann_TDMA
 from .la import TDMA
 from . import bases
 
@@ -182,7 +183,16 @@ class BNNmat(SpectralMatrix):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SN)
         N = test[0].N
-        SpectralMatrix.__init__(self, {}, test, trial)
+        k = np.arange(N-2, dtype=np.float)
+        alpha = k*(k+1)/(k+2)/(k+3)
+        d0 = 2./(2*k+1)
+        d = {0: d0 + alpha**2*2./(2*(k+2)+1),
+             2: -d0[2:]*alpha[:-2]}
+        if test[0].quad == 'GL':
+            d[0][-1] = d0[-1] + alpha[-1]**2*2./(N-1)
+        d[-2] = d[2]
+        SpectralMatrix.__init__(self, d, test, trial)
+        #self.solve = neumann_TDMA(self)
 
 
 @inheritdocstrings
@@ -262,24 +272,24 @@ class ADDmat(SpectralMatrix):
 
         if not self.trialfunction[0].is_scaled():
 
-            ## Move axis to first
-            #if axis > 0:
-                #u = np.moveaxis(u, axis, 0)
-                #if not u is b:
-                    #b = np.moveaxis(b, axis, 0)
+            # Move axis to first
+            if axis > 0:
+                u = np.moveaxis(u, axis, 0)
+                if not u is b:
+                    b = np.moveaxis(b, axis, 0)
 
             bs = b[s]
             us = u[s]
             d = 1./self[0]
             sl = [np.newaxis]*bs.ndim
-            sl[axis] = slice(None)
+            sl[0] = slice(None)
             us[:] = bs*d[sl]
             self.testfunction[0].bc.apply_after(u, True)
 
-            #if axis > 0:
-                #u = np.moveaxis(u, 0, axis)
-                #if not u is b:
-                    #b = np.moveaxis(b, axis, 0)
+            if axis > 0:
+                u = np.moveaxis(u, 0, axis)
+                if not u is b:
+                    b = np.moveaxis(b, axis, 0)
         else:
             ss = [slice(None)]*b.ndim
             ss[axis] = s
@@ -379,7 +389,9 @@ class ANNmat(SpectralMatrix):
         assert isinstance(trial[0], SN)
         N = test[0].N
         k = np.arange(N-2, dtype=np.float)
-        d = {}
+        alpha = k*(k+1)/(k+2)/(k+3)
+        d0 = 2./(2*k+1)
+        d = {0: d0*alpha*(k+0.5)*((k+2)*(k+3)-k*(k+1))}
         SpectralMatrix.__init__(self, d, test, trial)
 
 

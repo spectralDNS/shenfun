@@ -277,25 +277,12 @@ class R2CBasis(FourierBase):
         """
         assert abs(self.padding_factor-1) < 1e-8
         P = self.vandermonde(points)
-        if output_array.ndim == 1:
-            output_array[:] = np.dot(P, input_array).real
-            if self.N % 2 == 0:
-                output_array += np.conj(np.dot(P[:, 1:-1], input_array[1:-1])).real
-            else:
-                output_array += np.conj(np.dot(P[:, 1:], input_array[1:])).real
-
+        assert output_array.ndim == 1 # Multidimensional should use vandermonde_evaluate_local_expansion
+        output_array[:] = np.dot(P, input_array).real
+        if self.N % 2 == 0:
+            output_array += np.conj(np.dot(P[:, 1:-1], input_array[1:-1])).real
         else:
-            fc = np.moveaxis(input_array, self.axis, -2)
-            array = np.dot(P, fc).real
-            s = [slice(None)]*fc.ndim
-            if self.N % 2 == 0:
-                s[-2] = slice(1, -1)
-                array += np.conj(np.dot(P[:, 1:-1], fc[s])).real
-            else:
-                s[-2] = slice(1, None)
-                array += np.conj(np.dot(P[:, 1:], fc[s])).real
-
-            output_array[:] = np.moveaxis(array, 0, self.axis)
+            output_array += np.conj(np.dot(P[:, 1:], input_array[1:])).real
 
         return output_array
 

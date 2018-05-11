@@ -17,6 +17,7 @@ shenfun.legendre.la module
 
 .. automodule:: shenfun.legendre.la
     :members:
+    :special-members: __call__
     :undoc-members:
     :show-inheritance:
 

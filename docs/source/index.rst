@@ -25,6 +25,8 @@ Document build status
 
    introduction
    gettingstarted
+   mpi
+   postprocessing
    installation
 
 .. toctree::

@@ -5,17 +5,17 @@ the Chebyshev family.
 A naming convention is used for the first three capital letters for all matrices.
 The first letter refers to type of matrix.
 
-    - Mass matrices start with 'B'
-    - One derivative start with 'C'
-    - Two derivatives (Laplace) start with 'A'
-    - Four derivatives (Biharmonic) start with 'S'
+    - Mass matrices start with `B`
+    - One derivative start with `C`
+    - Two derivatives (Laplace) start with `A`
+    - Four derivatives (Biharmonic) start with `S`
 
 The next two letters refer to the test and trialfunctions, respectively
 
-    - Dirichlet:   'D'
-    - Neumann:     'N'
-    - Chebyshev:   'T'
-    - Biharmonic:  'B'
+    - Dirichlet:   `D`
+    - Neumann:     `N`
+    - Chebyshev:   `T`
+    - Biharmonic:  `B`
 
 As such, there are 4 symmetric mass matrices, BDDmat, BNNmat, BTTmat and BBBmat,
 corresponding to the four bases above.
@@ -1076,16 +1076,15 @@ class ANNmat(SpectralMatrix):
 
         # Move axis to first
         if axis > 0:
-            b = np.moveaxis(b, axis, 0)
             u = np.moveaxis(u, axis, 0)
+            if not u is b:
+                b = np.moveaxis(b, axis, 0)
 
         bs = b[s]
         us = u[s]
         j2 = np.arange(self.shape[0])**2
         j2[0] = 1
         j2 = 1./j2
-        d = self[0]*j2
-        d1 = self[2]*j2[2:]
         if len(b.shape) == 1:
             se = 0.0
             so = 0.0
@@ -1093,6 +1092,8 @@ class ANNmat(SpectralMatrix):
             se = np.zeros(u.shape[1:])
             so = np.zeros(u.shape[1:])
             j2.repeat(np.prod(bs.shape[1:])).reshape(bs.shape)
+        d = self[0]*j2
+        d1 = self[2]*j2[2:]
 
         M = us.shape
         us[-1] = bs[-1] / d[-1]
@@ -1106,7 +1107,9 @@ class ANNmat(SpectralMatrix):
                 us[k] = bs[k] - d1[k]*so
             us[k] /= d[k]
         us[0] = self.testfunction[0].mean
-        us *= j2
+        sl = [np.newaxis]*b.ndim
+        sl[0] = slice(None)
+        us *= j2[sl]
 
         if axis > 0:
             u = np.moveaxis(u, 0, axis)

@@ -2,12 +2,10 @@ from __future__ import print_function
 import pytest
 import numpy as np
 from mpi4py import MPI
-from shenfun.tensorproductspace import TensorProductSpace, VectorTensorProductSpace, \
-    MixedTensorProductSpace
-from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun.chebyshev import bases as cbases
 from shenfun.legendre import bases as lbases
-from shenfun import Function, project, Dx, Array
+from shenfun import Function, project, Dx, Array, Basis, TensorProductSpace, \
+   VectorTensorProductSpace, MixedTensorProductSpace
 from sympy import symbols, cos, sin, lambdify
 from itertools import product
 
@@ -35,13 +33,9 @@ def test_transform(typecode, dim):
     for slab in s:
         for shape in product(*([sizes]*dim)):
             bases = []
-            for s in shape[:-1]:
-                bases.append(C2CBasis(s))
-
-            if typecode in 'fd':
-                bases.append(R2CBasis(shape[-1]))
-            else:
-                bases.append(C2CBasis(shape[-1]))
+            for n in shape[:-1]:
+                bases.append(Basis(n, 'F', dtype=typecode.upper()))
+            bases.append(Basis(shape[-1], 'F', dtype=typecode))
 
             if dim < 3:
                 n = min(shape)
@@ -92,13 +86,9 @@ def test_transform(typecode, dim):
 
             padding = 1.5
             bases = []
-            for s in shape[:-1]:
-                bases.append(C2CBasis(s, padding_factor=padding))
-
-            if typecode in 'fd':
-                bases.append(R2CBasis(shape[-1], padding_factor=padding))
-            else:
-                bases.append(C2CBasis(shape[-1], padding_factor=padding))
+            for n in shape[:-1]:
+                bases.append(Basis(n, 'F', dtype=typecode.upper(), padding_factor=padding))
+            bases.append(Basis(shape[-1], 'F', dtype=typecode, padding_factor=padding))
 
             if dim < 3:
                 n = min(shape)
@@ -154,13 +144,9 @@ def test_shentransform(typecode, dim, ST, quad):
 
     for shape in product(*([sizes]*dim)):
         bases = []
-        for s in shape[:-1]:
-            bases.append(C2CBasis(s))
-
-        if typecode in 'fd':
-            bases.append(R2CBasis(shape[-1]))
-        else:
-            bases.append(C2CBasis(shape[-1]))
+        for n in shape[:-1]:
+            bases.append(Basis(n, 'F', dtype=typecode.upper()))
+        bases.append(Basis(shape[-1], 'F', dtype=typecode))
 
         if dim < 3:
             n = min(shape)
@@ -210,13 +196,9 @@ def test_project(typecode, dim, ST, quad):
 
     for shape in product(*([sizes]*dim)):
         bases = []
-        for s in shape[:-1]:
-            bases.append(C2CBasis(s))
-
-        if typecode in 'fd':
-            bases.append(R2CBasis(shape[-1]))
-        else:
-            bases.append(C2CBasis(shape[-1]))
+        for n in shape[:-1]:
+            bases.append(Basis(n, 'F', dtype=typecode.upper()))
+        bases.append(Basis(shape[-1], 'F', dtype=typecode))
 
         if dim < 3:
             n = min(shape)
@@ -279,13 +261,9 @@ def test_project2(typecode, dim, ST, quad):
 
     for shape in product(*([sizes]*dim)):
         bases = []
-        for s in shape[:-1]:
-            bases.append(C2CBasis(s))
-
-        if typecode in 'fd':
-            bases.append(R2CBasis(shape[-1]))
-        else:
-            bases.append(C2CBasis(shape[-1]))
+        for n in shape[:-1]:
+            bases.append(Basis(n, 'F', dtype=typecode.upper()))
+        bases.append(Basis(shape[-1], 'F', dtype=typecode))
 
         if dim < 3:
             n = min(shape)
@@ -398,13 +376,9 @@ def test_eval_tensor(typecode, dim, ST, quad):
 
     for shape in product(*([sizes]*dim)):
         bases = []
-        for s in shape[:-1]:
-            bases.append(C2CBasis(s))
-
-        if typecode in 'fd':
-            bases.append(R2CBasis(shape[-1]))
-        else:
-            bases.append(C2CBasis(shape[-1]))
+        for n in shape[:-1]:
+            bases.append(Basis(n, 'F', dtype=typecode.upper()))
+        bases.append(Basis(shape[-1], 'F', dtype=typecode))
 
         if dim < 3:
             n = min(shape)
@@ -436,7 +410,7 @@ if __name__ == '__main__':
     #test_transform('d', 2)
     #test_shentransform('d', 2, cbases.ShenNeumannBasis, 'GC')
     #test_project('d', 2, cbases.ShenDirichletBasis, 'GL')
-    #test_project2('D', 2, lbases.ShenNeumannBasis, 'GL')
+    test_project2('d', 1, lbases.ShenNeumannBasis, 'GL')
     #test_project_2dirichlet('GL')
-    test_eval_tensor('d', 2, lbases.ShenDirichletBasis, 'GL')
+    #test_eval_tensor('d', 2, lbases.ShenDirichletBasis, 'GL')
 

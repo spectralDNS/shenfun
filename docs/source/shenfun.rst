@@ -21,6 +21,7 @@ shenfun.la module
 
 .. automodule:: shenfun.la
     :members:
+    :special-members: __call__
     :undoc-members:
     :show-inheritance:
 
@@ -45,9 +46,9 @@ shenfun.tensorproductspace module
 
 .. automodule:: shenfun.tensorproductspace
     :members:
+    :special-members: __call__
     :undoc-members:
     :show-inheritance:
-
 
 Module contents
 ---------------
