@@ -104,7 +104,6 @@ def test_eval(ST, quad):
     fj = shenfun.Array(ST, False)
     fj[:] = np.random.random(fj.shape[0])
     fk = ST.forward(fj, fk)
-    #from IPython import embed; embed()
     fj = ST.backward(fk, fj)
     fk = ST.forward(fj, fk)
     f = ST.eval(points, fk)
@@ -148,8 +147,6 @@ def test_massmatrices(test, trial, quad):
     u2 = BBD.matvec(f_hat, u2)
     assert np.linalg.norm(u2[s]-u0[s])/(N*N*N) < 1e-12
     del BBD
-
-#test_massmatrices(lBasis[3], lBasis[2], 'LG')
 
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
 @pytest.mark.parametrize('axis', (0,1,2))
@@ -195,7 +192,6 @@ def test_transforms(ST, quad, axis):
     assert np.allclose(fj[cc], u11[cc])
 
 #test_transforms(cbases.Basis, 'GL', 1)
-
 
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
 @pytest.mark.parametrize('axis', (0,1,2))
@@ -346,14 +342,14 @@ def test_ADDmat(ST, quad):
     fj = fl(points)
     s = ST.slice()
 
-    if isinstance(ST, shenfun.chebyshev.bases.ChebyshevBase):
+    if ST.family() == 'chebyshev':
         A = inner_product((ST, 0), (ST, 2))
     else:
         A = inner_product((ST, 1), (ST, 1))
 
     f_hat = np.zeros(M)
     f_hat = ST.scalar_product(fj, f_hat)
-    if isinstance(ST, shenfun.legendre.bases.LegendreBase):
+    if ST.family() == 'legendre':
         f_hat *= -1
 
     # Test both solve interfaces
@@ -375,6 +371,12 @@ def test_ADDmat(ST, quad):
     c = A.matvec(u1, c)
     s = ST.slice()
     assert np.allclose(c[s], f_hat[s])
+
+    # Multidimensional
+    c_hat = f_hat.copy()
+    c_hat = c_hat.repeat(M).reshape((M, M)).transpose()
+    c_hat = A.solve(c_hat, axis=1)
+    assert np.allclose(c_hat[0, s], u_hat[s])
 
 #test_ADDmat(lbases.ShenDirichletBasis, "GL")
 
@@ -448,7 +450,7 @@ def test_ABBmat(SB, quad):
         f_hat *= -1.0
 
     u_hat = np.zeros(M)
-    u_hat[:-4] = la.spsolve(A.diags(), f_hat[:-4])
+    u_hat[:-4] = la.spsolve(A.diags('csr'), f_hat[:-4])
     u_hat = A.solve(f_hat, u_hat)
 
     u0 = np.zeros(M)
@@ -492,4 +494,7 @@ def test_ABBmat(SB, quad):
 #test_ABBmat(lbases.ShenBiharmonicBasis, 'LG')
 
 if __name__ == '__main__':
-    test_convolve(fbases.R2CBasis, 8)
+    #test_convolve(fbases.R2CBasis, 8)
+    test_ADDmat(lbases.ShenNeumannBasis, "GL")
+    #test_massmatrices(lBasis[3], lBasis[3], 'LG')
+

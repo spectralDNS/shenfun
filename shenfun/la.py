@@ -37,6 +37,21 @@ class TDMA(object):
         cython_la.TDMA_SymLU(self.dd, self.ud, self.L)
 
     def __call__(self, b, u=None, axis=0):
+        """Solve matrix problem self u = b
+
+        Parameters
+        ----------
+            b : array
+                Array of right hand side on entry and solution on exit unless
+                u is provided.
+            u : array, optional
+                Output array
+            axis : int, optional
+                   The axis over which to solve for if b and u are multidimensional
+
+        If u is not provided, then b is overwritten with the solution and returned
+        """
+
         if u is None:
             u = b
         else:
@@ -161,6 +176,20 @@ class PDMA(object):
         b[:] = bc.astype(float)
 
     def __call__(self, b, u=None, axis=0):
+        """Solve matrix problem self u = b
+
+        Parameters
+        ----------
+            b : array
+                Array of right hand side on entry and solution on exit unless
+                u is provided.
+            u : array, optional
+                Output array
+            axis : int, optional
+                   The axis over which to solve for if b and u are multidimensional
+
+        If u is not provided, then b is overwritten with the solution and returned
+        """
 
         if u is None:
             u = b
@@ -229,75 +258,144 @@ class DiagonalMatrix(np.ndarray):
         #c[:] = self*v
         #return c
 
-def solve(A, b, u=None, axis=0):
-    """Solve matrix system Au = b
+class Solve(object):
+    """Solver class for matrix created by Dirichlet bases
+
+    Possibly with inhomogeneous boundary values
 
     Parameters
     ----------
         A : SparseMatrix
+        test : BasisFunction
+
+   """
+    def __init__(self, A, test):
+        assert A.shape[0] == A.shape[1]
+        assert isinstance(A, SparseMatrix)
+        self.s = test.slice()
+        self.A = A
+        if hasattr(test, 'bc'):
+            self.bc = test.bc
+
+    def __call__(self, b, u=None, axis=0):
+        """Solve matrix problem Au = b
+
+        Parameters
+        ----------
         b : array
             Array of right hand side on entry and solution on exit unless
             u is provided.
         u : array, optional
             Output array
         axis : int, optional
-               The axis over which to solve if b and u are multidimensional
+               The axis over which to solve for if b and u are multidimensional
 
-    If u is not provided, then b is overwritten with the solution and returned
-    """
-    from . import chebyshev, legendre
+        If u is not provided, then b is overwritten with the solution and returned
 
-    assert A.shape[0] == A.shape[1]
-    assert isinstance(A, SparseMatrix)
-    s = A.testfunction[0].slice()
-
-    if u is None:
-        u = b
-    else:
-        assert u.shape == b.shape
-
-    # Move axis to first
-    if axis > 0:
-        u = np.moveaxis(u, axis, 0)
-        if not u is b:
-            b = np.moveaxis(b, axis, 0)
-
-    assert A.shape[0] == b[s].shape[0]
-    if (isinstance(A.testfunction[0], (chebyshev.bases.ShenNeumannBasis,
-                                       legendre.bases.ShenNeumannBasis))):
-        # Handle level by using Dirichlet for dof=0
-        Aa = A.diags().toarray()
-        Aa[0] = 0
-        Aa[0, 0] = 1
-        b[0] = A.testfunction[0].mean
-        if b.ndim == 1:
-            u[s] = lasolve(Aa, b[s])
+        """
+        if u is None:
+            u = b
         else:
-            N = b[s].shape[0]
-            P = np.prod(b[s].shape[1:])
-            u[s] = lasolve(Aa, b[s].reshape((N, P))).reshape(b[s].shape)
+            assert u.shape == b.shape
 
-    else:
+        # Move axis to first
+        if axis > 0:
+            u = np.moveaxis(u, axis, 0)
+            if not u is b:
+                b = np.moveaxis(b, axis, 0)
+
+        s = self.s
+        assert self.A.shape[0] == b[s].shape[0]
+        A = self.A.diags('csr')
         if b.ndim == 1:
-            u[s] = spsolve(A.diags('csr'), b[s])
+            u[s] = spsolve(A, b[s])
         else:
             N = b[s].shape[0]
             P = np.prod(b[s].shape[1:])
             br = b[s].reshape((N, P))
 
             if b.dtype is np.dtype('complex'):
-                u.real[s] = spsolve(A.diags('csr'), br.real).reshape(u[s].shape)
-                u.imag[s] = spsolve(A.diags('csr'), br.imag).reshape(u[s].shape)
+                u.real[s] = spsolve(A, br.real).reshape(u[s].shape)
+                u.imag[s] = spsolve(A, br.imag).reshape(u[s].shape)
             else:
-                u[s] = spsolve(A.diags('csr'), br).reshape(u[s].shape)
-        if hasattr(A.testfunction[0], 'bc'):
-            A.testfunction[0].bc.apply_after(u, True)
+                u[s] = spsolve(A, br).reshape(u[s].shape)
+        if hasattr(self, 'bc'):
+            self.bc.apply_after(u, True)
 
-    if axis > 0:
-        u = np.moveaxis(u, 0, axis)
-        if not u is b:
-            b = np.moveaxis(b, 0, axis)
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
+            if not u is b:
+                b = np.moveaxis(b, 0, axis)
 
-    u /= A.scale
-    return u
+        u /= self.A.scale
+        return u
+
+class NeumannSolve(object):
+    """Solver class for matrix created by Neumann bases
+
+    Assuming Neumann test- and trialfunction, where index k=0 is used only
+    to fix the mean value.
+
+    Parameters
+    ----------
+        A : SparseMatrix
+        test : BasisFunction
+
+    """
+    def __init__(self, A, test):
+        assert A.shape[0] == A.shape[1]
+        assert isinstance(A, SparseMatrix)
+        self.mean = test.mean
+        self.s = test.slice()
+        self.A = A
+
+    def __call__(self, b, u=None, axis=0):
+        """Solve matrix problem A u = b
+
+        Parameters
+        ----------
+            b : array
+                Array of right hand side on entry and solution on exit unless
+                u is provided.
+            u : array, optional
+                Output array
+            axis : int, optional
+                   The axis over which to solve for if b and u are multidimensional
+
+        If u is not provided, then b is overwritten with the solution and returned
+        """
+        if u is None:
+            u = b
+        else:
+            assert u.shape == b.shape
+
+        # Move axis to first
+        if axis > 0:
+            u = np.moveaxis(u, axis, 0)
+            if not u is b:
+                b = np.moveaxis(b, axis, 0)
+
+        b[0] = self.mean
+        s = self.s
+        self.A[0][0] = 1
+        A = self.A.diags('csr')
+        if b.ndim == 1:
+            u[s] = spsolve(A, b[s])
+        else:
+            N = b[s].shape[0]
+            P = np.prod(b[s].shape[1:])
+            br = b[s].reshape((N, P))
+
+            if b.dtype is np.dtype('complex'):
+                u.real[s] = spsolve(A, br.real).reshape(u[s].shape)
+                u.imag[s] = spsolve(A, br.imag).reshape(u[s].shape)
+            else:
+                u[s] = spsolve(A, br).reshape(u[s].shape)
+
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
+            if not u is b:
+                b = np.moveaxis(b, 0, axis)
+        u /= self.A.scale
+        return u
 

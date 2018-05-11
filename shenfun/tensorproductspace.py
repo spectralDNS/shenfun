@@ -11,7 +11,8 @@ from shenfun import chebyshev, legendre
 from mpi4py_fft.mpifft import Transform
 from mpi4py_fft.pencil import Subcomm, Pencil
 
-__all__ = ('TensorProductSpace', 'VectorTensorProductSpace', 'MixedTensorProductSpace')
+__all__ = ('TensorProductSpace', 'VectorTensorProductSpace',
+           'MixedTensorProductSpace', 'Convolve')
 
 #pylint: disable=line-too-long, redefined-outer-name, len-as-condition, redefined-argument-from-local, no-else-return, no-self-use, no-member, missing-docstring
 
@@ -330,7 +331,7 @@ class TensorProductSpace(object):
         TensorProductSpace
         """
         X = []
-        N = self.shape()
+        N = self.shape(False)
         for axis, base in enumerate(self):
             X.append(base.mesh(N, axis))
         return X
@@ -355,14 +356,20 @@ class TensorProductSpace(object):
             return [np.broadcast_to(m, self.local_shape(False)) for m in lm]
         return lm
 
-    def shape(self):
+    def shape(self, spectral=False):
         """Return shape of TensorProductSpace in physical space
 
-        Note
-        ----
-        Physical space corresponds to the result of a backward transfer
+        Parameters
+        ----------
+            spectral : bool, optional
+                       If True then return shape of spectral space, i.e.,
+                       the input to a backward transfer. If False then return
+                       shape of physical space, i.e., the input to a
+                       forward transfer.
         """
-        return [int(np.round(base.N*base.padding_factor)) for base in self]
+        if spectral == False:
+            return [int(np.round(base.N*base.padding_factor)) for base in self]
+        return self.spectral_shape()
 
     def spectral_shape(self):
         """Return shape of TensorProductSpace in spectral space
@@ -590,18 +597,17 @@ class VectorTransform(object):
 class Convolve(object):
     """Class for convolving without truncation.
 
-    Convolve a_hat and b_hat is computed by first transforming
-    backwards with padding
+    The convolution of :math:`\hat{a}` and :math:`\hat{b}` is computed by first
+    transforming backwards with padding::
 
         a = Tp.backward(a_hat)
-
         b = Tp.backward(b_hat)
 
-    and then transforming the product a*b forward without truncation
+    and then transforming the product `a*b` forward without truncation::
 
         ab_hat = T.forward(a*b)
 
-    where Tp is a TensorProductSpace for regular padding, and
+    where Tp is a :class:`.TensorProductSpace` for regular padding, and
     T is a TensorProductSpace with no padding, but using the shape
     of the padded a and b arrays.
 
@@ -629,6 +635,14 @@ class Convolve(object):
         self.newspace = newspace
 
     def __call__(self, a_hat, b_hat, ab_hat=None):
+        """Compute convolution of a_hat and b_hat without truncation
+
+        Parameters
+        ----------
+            a_hat : Function/Array
+            b_hat : Function/Array
+            ab_hat : Function/Array
+        """
         Tp = self.padding_space
         T = self.newspace
         if ab_hat is None:

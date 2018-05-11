@@ -17,6 +17,7 @@ shenfun.chebyshev.la module
 
 .. automodule:: shenfun.chebyshev.la
     :members:
+    :special-members: __call__
     :undoc-members:
     :show-inheritance:
 

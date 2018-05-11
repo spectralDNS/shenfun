@@ -1,9 +1,8 @@
 import pytest
 import numpy as np
-from shenfun.chebyshev.bases import ShenDirichletBasis, Basis
-from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun.tensorproductspace import TensorProductSpace, VectorTensorProductSpace, MixedTensorProductSpace
-from shenfun import inner, div, curl, TestFunction, TrialFunction, Function, project, Dx
+from shenfun import inner, div, curl, TestFunction, TrialFunction, Function, \
+    project, Dx, Basis, TensorProductSpace, VectorTensorProductSpace, \
+    MixedTensorProductSpace
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
@@ -19,11 +18,11 @@ def allclose(a, b):
 
 @pytest.mark.parametrize('typecode', 'fdg')
 def test_curl(typecode):
-    K0 = C2CBasis(N[0])
-    K1 = C2CBasis(N[1])
-    K2 = R2CBasis(N[2])
+    K0 = Basis(N[0], 'F', dtype=typecode.upper())
+    K1 = Basis(N[1], 'F', dtype=typecode.upper())
+    K2 = Basis(N[2], 'F', dtype=typecode)
     T = TensorProductSpace(comm, (K0, K1, K2), dtype=typecode)
-    X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
+    X = T.local_mesh(True)
     K = T.local_wavenumbers(True)
     Tk = VectorTensorProductSpace([T]*3)
     u = TrialFunction(Tk)
@@ -79,10 +78,11 @@ def test_curl(typecode):
 def test_curl2():
     # Test projection of curl
 
-    K0 = ShenDirichletBasis(N[0])
-    K1 = C2CBasis(N[1])
-    K2 = R2CBasis(N[2])
-    K3 = Basis(N[0])
+    K0 = Basis(N[0], 'C', bc=(0, 0))
+    K1 = Basis(N[1], 'F', dtype='D')
+    K2 = Basis(N[2], 'F', dtype='d')
+    K3 = Basis(N[0], 'C')
+
     T = TensorProductSpace(comm, (K0, K1, K2))
     TT = TensorProductSpace(comm, (K3, K1, K2))
     X = T.local_mesh(True)
@@ -127,7 +127,6 @@ def test_curl2():
     w = TTk.backward(w_hat, w)
 
     assert allclose(w, curl_)
-
 
 if __name__ == '__main__':
     test_curl('f')

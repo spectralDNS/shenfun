@@ -86,6 +86,17 @@ class Helmholtz(object):
 
     where :math:`\alpha` and :math:`\beta` are avalable as A.scale and B.scale.
 
+    Attributes
+    ----------
+        axis : int
+               The axis over which to solve for
+        neumann : bool
+                  Whether or not bases are Neumann
+        bc : BoundaryValues
+             For Dirichlet problem with inhomogeneous boundary values
+
+    Variables are extracted from the matrices
+
     The solver can be used along any axis of a multidimensional problem. For
     example, if the Chebyshev basis (Dirichlet or Neumann) is the last in a
     3-dimensional TensorProductSpace, where the first two dimensions use Fourier,
@@ -207,6 +218,20 @@ class Helmholtz(object):
                                    self.u0, self.u1, self.u2, self.L)
 
     def __call__(self, u, b):
+        """Solve matrix problem
+
+        Parameters
+        ----------
+            b : array
+                Array of right hand side on entry and solution on exit unless
+                u is provided.
+            u : array
+                Output array
+
+        If b and u are multidimensional, then the axis over which to solve for is
+        determined on creation of the class.
+
+        """
 
         # comment since self.beta[s0]
         #if not self.neumann:
@@ -254,12 +279,12 @@ class Helmholtz(object):
 
         Parameters
         ----------
-            v : array (input)
-            c : array (output)
+            v : array
+            c : array
 
         Returns
         -------
-        c : array
+            c : array
         """
         assert self.neumann is False
         c[:] = 0
@@ -311,6 +336,13 @@ class Biharmonic(object):
                  Mass matrix
 
     where a0, alfa and beta must be avalable as S.scale, A.scale, B.scale.
+
+    Attributes
+    ----------
+        axis : int
+               The axis over which to solve for
+
+    Variables are extracted from the matrices
 
     The solver can be used along any axis of a multidimensional problem. For
     example, if the Chebyshev basis (Biharmonic) is the last in a
@@ -404,12 +436,20 @@ class Biharmonic(object):
             self.ak = np.zeros(ss)
             self.bk = np.zeros(ss)
             if np.ndim(beta) == 3:
-                la.LU_Biharmonic_3D_n(S.axis, a0, alfa, beta, sii, siu, siuu, ail, aii, aiu, bill, bil, bii, biu, biuu, self.u0, self.u1, self.u2, self.l0, self.l1)
-                la.Biharmonic_factor_pr_3D(S.axis, self.ak, self.bk, self.l0, self.l1)
+                la.LU_Biharmonic_3D_n(S.axis, a0, alfa, beta, sii, siu, siuu,
+                                      ail, aii, aiu, bill, bil, bii, biu, biuu,
+                                      self.u0, self.u1, self.u2, self.l0,
+                                      self.l1)
+                la.Biharmonic_factor_pr_3D(S.axis, self.ak, self.bk, self.l0,
+                                           self.l1)
 
             elif np.ndim(beta) == 2:
-                la.LU_Biharmonic_2D_n(S.axis, a0, alfa, beta, sii, siu, siuu, ail, aii, aiu, bill, bil, bii, biu, biuu, self.u0, self.u1, self.u2, self.l0, self.l1)
-                la.Biharmonic_factor_pr_2D(S.axis, self.ak, self.bk, self.l0, self.l1)
+                la.LU_Biharmonic_2D_n(S.axis, a0, alfa, beta, sii, siu, siuu,
+                                      ail, aii, aiu, bill, bil, bii, biu, biuu,
+                                      self.u0, self.u1, self.u2, self.l0,
+                                      self.l1)
+                la.Biharmonic_factor_pr_2D(S.axis, self.ak, self.bk, self.l0,
+                                           self.l1)
 
         else:
             self.u0 = np.zeros((2, M))
@@ -419,18 +459,40 @@ class Biharmonic(object):
             self.l1 = np.zeros((2, M))
             self.ak = np.zeros((2, M))
             self.bk = np.zeros((2, M))
-            la.LU_Biharmonic_1D(a0, alfa, beta, sii, siu, siuu, ail, aii, aiu, bill, bil, bii, biu, biuu, self.u0, self.u1, self.u2, self.l0, self.l1)
+            la.LU_Biharmonic_1D(a0, alfa, beta, sii, siu, siuu, ail, aii, aiu,
+                                bill, bil, bii, biu, biuu, self.u0, self.u1,
+                                self.u2, self.l0, self.l1)
             la.Biharmonic_factor_pr(self.ak, self.bk, self.l0, self.l1)
 
     def __call__(self, u, b):
+        """Solve matrix problem
+
+        Parameters
+        ----------
+            b : array
+                Array of right hand side on entry and solution on exit unless
+                u is provided.
+            u : array
+                Output array
+
+        If b and u are multidimensional, then the axis over which to solve for is
+        determined on creation of the class.
+
+        """
+
         if np.ndim(u) == 3:
-            la.Solve_Biharmonic_3D_n(self.axis, b, u, self.u0, self.u1, self.u2, self.l0, self.l1, self.ak, self.bk, self.a0)
+            la.Solve_Biharmonic_3D_n(self.axis, b, u, self.u0, self.u1,
+                                     self.u2, self.l0, self.l1, self.ak,
+                                     self.bk, self.a0)
 
         elif np.ndim(u) == 2:
-            la.Solve_Biharmonic_2D_n(self.axis, b, u, self.u0, self.u1, self.u2, self.l0, self.l1, self.ak, self.bk, self.a0)
+            la.Solve_Biharmonic_2D_n(self.axis, b, u, self.u0, self.u1,
+                                     self.u2, self.l0, self.l1, self.ak,
+                                     self.bk, self.a0)
 
         else:
-            la.Solve_Biharmonic_1D(b, u, self.u0, self.u1, self.u2, self.l0, self.l1, self.ak, self.bk, self.a0)
+            la.Solve_Biharmonic_1D(b, u, self.u0, self.u1, self.u2, self.l0,
+                                   self.l1, self.ak, self.bk, self.a0)
 
         return u
 
@@ -467,8 +529,8 @@ class PDMA(object):
             Stiffness matrix
         B : SpectralMatrix
             Mass matrix
-        alfa : Numpy array
-        beta : Numpy array
+        alfa : array
+        beta : array
 
     or as dict with key/vals
 
@@ -482,6 +544,14 @@ class PDMA(object):
                  Mass matrix
 
     where alfa and beta must be avalable as A.scale, B.scale.
+
+    Attributes
+    ----------
+        axis : int
+               The axis over which to solve for
+
+    Variables are extracted from the matrices
+
     """
 
     def __init__(self, *args, **kwargs):
@@ -501,7 +571,8 @@ class PDMA(object):
             raise RuntimeError('Wrong input to PDMA solver')
 
         self.solver = kwargs.get('solver', 'cython')
-        self.d, self.u1, self.u2 = np.zeros_like(B[0]), np.zeros_like(B[2]), np.zeros_like(B[4])
+        self.d, self.u1, self.u2 = (np.zeros_like(B[0]), np.zeros_like(B[2]),
+                                    np.zeros_like(B[4]))
         self.l1, self.l2 = np.zeros_like(B[2]), np.zeros_like(B[4])
         shape = list(beta.shape)
 
@@ -593,15 +664,25 @@ class PDMA(object):
         b[:] = bc
 
     def __call__(self, u, b):
+        """Solve matrix problem
 
+        Parameters
+        ----------
+            b : array
+                Array of right hand side on entry and solution on exit unless
+                u is provided.
+            u : array
+                Output array
+
+        If b and u are multidimensional, then the axis over which to solve for is
+        determined on creation of the class.
+
+        """
         if np.ndim(u) == 3:
-
             la.Solve_Helmholtz_Biharmonic_3D_ptr(self.A.axis, b, u, self.l2,
-                                                 self.l1, self.d, self.u1, self.u2)
-
-
+                                                 self.l1, self.d, self.u1,
+                                                 self.u2)
         else:
-
             if self.solver == 'python': # pragma: no cover
                 u[:] = b
                 self.PDMA_Solve(self.l2, self.l1, self.d, self.u1, self.u2, u)
@@ -609,8 +690,10 @@ class PDMA(object):
             elif self.solver == 'cython':
                 if u is b:
                     u = np.zeros_like(b)
-                #la.Solve_Helmholtz_Biharmonic_1D(b, u, self.l2, self.l1, self.d, self.u1, self.u2)
-                la.Solve_Helmholtz_Biharmonic_1D_p(b, u, self.l2, self.l1, self.d, self.u1, self.u2)
+                #la.Solve_Helmholtz_Biharmonic_1D(b, u, self.l2, self.l1,
+                #                                 self.d, self.u1, self.u2)
+                la.Solve_Helmholtz_Biharmonic_1D_p(b, u, self.l2, self.l1,
+                                                   self.d, self.u1, self.u2)
 
         #u /= self.mat.scale
         return u
