@@ -159,7 +159,8 @@ class HDF5Writer(object):
         group = "/".join((name, "{}D".format(ndims), slname))
         if group not in self.f:
             self.f.create_group(group)
-        self.f[group].create_dataset(str(tstep), shape=np.take(self.N, sp), dtype=u.dtype)
+        N = self.T.shape()
+        self.f[group].create_dataset(str(tstep), shape=np.take(N, sp), dtype=u.dtype)
         if inside == 1:
             if len(sf) == 3:
                 self.f["/".join((group, str(tstep)))][sf[0], sf[1], sf[2]] = u[sl]
