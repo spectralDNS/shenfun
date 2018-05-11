@@ -91,11 +91,11 @@ fortunate, because this axis will be the first to be transformed in, e.g.,
 
 .. image:: datastructures0.png
     :width: 250px
-    :height: 1250px
+    :height: 125px
 
 .. image:: datastructures1.png
     :width: 250px
-    :height: 1250px
+    :height: 125px
 
 We can now decide to distribute not just one, but the first two axes using 
 a pencil decomposition instead. This is achieved simply by dropping the
@@ -114,7 +114,7 @@ Running again with 4 CPUs the array ``u2`` will look like:
 
 .. image:: datastructures_pencil0.png
     :width: 250px
-    :height: 1250px
+    :height: 125px
 
 The local slices into the global array may be obtained through::
 
