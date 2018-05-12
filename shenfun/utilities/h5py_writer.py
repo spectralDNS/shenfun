@@ -96,7 +96,6 @@ class HDF5Writer(object):
         ndims = sl.count(slice(None))
         sl = list(sl)
         ii = [isinstance(s, int) for s in sl].index(True)
-        si = sl[ii]
         sp = []
         for i, j in enumerate(sl):
             if isinstance(j, slice):

@@ -4,7 +4,6 @@ This module contains linear algebra solvers for SparseMatrixes
 import numpy as np
 from scipy.linalg import decomp_cholesky
 from scipy.sparse.linalg import spsolve
-from scipy.linalg import solve as lasolve
 from shenfun.optimization import la as cython_la
 from shenfun.matrixbase import SparseMatrix
 
