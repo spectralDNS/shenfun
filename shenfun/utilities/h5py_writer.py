@@ -95,7 +95,6 @@ class HDF5Writer(object):
         assert isinstance(u, np.ndarray)
         ndims = sl.count(slice(None))
         sl = list(sl)
-        ii = [isinstance(s, int) for s in sl].index(True)
         sp = []
         for i, j in enumerate(sl):
             if isinstance(j, slice):
