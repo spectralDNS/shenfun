@@ -66,7 +66,8 @@ we have not yet computed the array :math:`\hat{u}`. We could get :math:`\hat{u}`
 Now, ``u0`` and ``u1`` have been created on the same mesh, which is a structured
 mesh of shape :math:`(20, 40, 60)`. However, since they have different MPI
 decomposition, the values used to fill them on creation will differ. We can
-visualize the arrays in Paraview using::
+visualize the arrays in Paraview using some postprocessing tools, to be further
+described in Sec :ref:`Postprocessing`::
 
 
     h5file0 = HDF5Writer('my0file.h5', ['u0'], T0)
@@ -91,11 +92,11 @@ fortunate, because this axis will be the first to be transformed in, e.g.,
 
 .. image:: datastructures0.png
     :width: 250px
-    :height: 125px
+    :height: 200px
 
 .. image:: datastructures1.png
     :width: 250px
-    :height: 125px
+    :height: 200px
 
 We can now decide to distribute not just one, but the first two axes using 
 a pencil decomposition instead. This is achieved simply by dropping the
@@ -114,7 +115,7 @@ Running again with 4 CPUs the array ``u2`` will look like:
 
 .. image:: datastructures_pencil0.png
     :width: 250px
-    :height: 125px
+    :height: 200px
 
 The local slices into the global array may be obtained through::
 
