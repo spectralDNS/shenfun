@@ -64,7 +64,7 @@ we have not yet computed the array :math:`\hat{u}`. We could get :math:`\hat{u}`
     u0_hat = T0.forward(u0, u0_hat)
 
 Now, ``u0`` and ``u1`` have been created on the same mesh, which is a structured
-mesh of shape :math:`(20, 30, 40)`. However, since they have different MPI
+mesh of shape :math:`(20, 40, 60)`. However, since they have different MPI
 decomposition, the values used to fill them on creation will differ. We can
 visualize the arrays in Paraview using::
 
