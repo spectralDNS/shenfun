@@ -462,7 +462,7 @@ class ShenNeumannBasis(LegendreBase):
 
 
 @inheritdocstrings
-class ShenBiharmonicBasis(LegendreBase): # pragma: no cover
+class ShenBiharmonicBasis(LegendreBase):
     """Shen biharmonic basis
 
     Homogeneous Dirichlet and Neumann boundary conditions.

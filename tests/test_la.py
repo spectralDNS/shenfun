@@ -1,6 +1,6 @@
 import pytest
 from shenfun.chebyshev.la import PDMA
-from shenfun.chebyshev.bases import ShenBiharmonicBasis
+from shenfun import Basis
 from shenfun import inner, TestFunction, TrialFunction, div, grad, \
     SparseMatrix, Basis, Function
 from scipy.linalg import solve
@@ -13,7 +13,7 @@ quads = ('GC', 'GL')
 
 @pytest.mark.parametrize('quad', quads)
 def test_PDMA(quad):
-    SB = ShenBiharmonicBasis(N, quad=quad, plan=True)
+    SB = Basis(N, 'C', bc='Biharmonic', quad=quad, plan=True)
     u = TrialFunction(SB)
     v = TestFunction(SB)
     points, weights = SB.points_and_weights(N)
@@ -34,12 +34,12 @@ def test_PDMA(quad):
 
     u_hat2 = np.zeros_like(f_hat)
     u_hat2 = P(u_hat2, f_hat)
-    #from IPython import embed; embed()
 
     assert np.allclose(u_hat2, u_hat)
 
-def test_solve():
-    SD = Basis(N, "C", bc=(0, 0), plan=True)
+@pytest.mark.parametrize('quad', quads)
+def test_solve(quad):
+    SD = Basis(N, 'C', bc=(0, 0), quad=quad, plan=True)
     u = TrialFunction(SD)
     v = TestFunction(SD)
     A = inner(div(grad(u)), v)

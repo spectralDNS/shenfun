@@ -323,7 +323,7 @@ def test_project_2dirichlet(quad):
     uq[:] = ul(*X)
 
     dudx_hat = project(Dx(uq, 0, 1), BD)
-    dudx = Function(BD)
+    dudx = Function(BD, False)
     dudx = BD.backward(dudx_hat, dudx)
     duedx = ue.diff(x, 1)
     duxl = lambdify((x, y), duedx, 'numpy')
@@ -344,7 +344,7 @@ def test_project_2dirichlet(quad):
     assert np.allclose(us, uq)
 
     dudxy_hat = project(Dx(us, 0, 1) + Dx(us, 1, 1), BB)
-    dudxy = Function(BB)
+    dudxy = Function(BB, False)
     dudxy = BB.backward(dudxy_hat, dudxy)
     duedxy = ue.diff(x, 1) + ue.diff(y, 1)
     duxyl = lambdify((x, y), duedxy, 'numpy')
@@ -375,6 +375,7 @@ def test_eval_tensor(typecode, dim, ST, quad):
     points = np.array([[0.1]*(dim+1),[0.01]*(dim+1),[0.4]*(dim+1),[0.5]*(dim+1)])
 
     for shape in product(*([sizes]*dim)):
+        print(shape)
         bases = []
         for n in shape[:-1]:
             bases.append(Basis(n, 'F', dtype=typecode.upper()))
@@ -410,7 +411,7 @@ if __name__ == '__main__':
     #test_transform('d', 2)
     #test_shentransform('d', 2, cbases.ShenNeumannBasis, 'GC')
     #test_project('d', 2, cbases.ShenDirichletBasis, 'GL')
-    test_project2('d', 1, lbases.ShenNeumannBasis, 'GL')
+    #test_project2('d', 1, lbases.ShenNeumannBasis, 'GL')
     #test_project_2dirichlet('GL')
-    #test_eval_tensor('d', 2, lbases.ShenDirichletBasis, 'GL')
+    test_eval_tensor('d', 2, lbases.ShenDirichletBasis, 'GL')
 

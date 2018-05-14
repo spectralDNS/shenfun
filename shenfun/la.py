@@ -113,7 +113,7 @@ class PDMA(object):
             ##self.d0 = self.d0.astype(float)
             ##self.d1 = self.d1.astype(float)
             ##self.d2 = self.d2.astype(float)
-        else:
+        else: # pragma: no cover
             #self.L = lu_factor(B.diags().toarray())
             self.d0, self.d1, self.d2 = B[0].copy(), B[2].copy(), B[4].copy()
             #self.A = np.zeros((9, B[0].shape[0]))
