@@ -29,7 +29,7 @@ def inheritdocstrings(cls):
                     break
     return cls
 
-def clenshaw_curtis1D(u, quad="GC"):
+def clenshaw_curtis1D(u, quad="GC"):  # pragma: no cover
     """Clenshaw-Curtis integration in 1D"""
     assert u.ndim == 1
     N = u.shape[0]

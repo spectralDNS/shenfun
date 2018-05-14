@@ -136,7 +136,8 @@ will not trigger an error, or even lead to wrong results, if ``dtype`` is
 by mistake set to ``D``. It is merely less efficient to work with complex data
 arrays where double precision is sufficient. 
 
-The tensor product space ``V`` will be distributed with the *slab* method and it
+The tensor product space ``V`` will here be distributed with the *slab* method
+(since the problem is 2D) and it
 can here use a maximum of 9 CPUs (9 since the last dimension is
 transformed from 16 real data to 9 complex, using the Hermitian symmetry of
 real transforms, i.e., the shape of a transformed array in the V space will be
