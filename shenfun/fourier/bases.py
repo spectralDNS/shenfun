@@ -56,6 +56,15 @@ class FourierBase(SpectralBase):
     it makes no difference and therefore :eq:`u` is used in transforms, since
     this is the form expected by pyfftw.
 
+    The inner product is defined as
+
+    .. math::
+
+        (u, v) = \frac{1}{L} \int_{0}^{L} u \overline{v} dx
+
+    where :math:`\overline{v}` is the complex conjugate of :math:`v`, and
+    :math:`L` is the length of the (periodic) domain.
+
     Parameters
     ----------
         N : int
