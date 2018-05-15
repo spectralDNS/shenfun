@@ -372,10 +372,10 @@ def test_eval_tensor(typecode, dim, ST, quad):
         (2, 2): (sin(2*x) + cos(4*y))*funcz
         }
     syms = {1: (x, y), 2:(x, y, z)}
-    points = np.array([[0.1]*(dim+1),[0.01]*(dim+1),[0.4]*(dim+1),[0.5]*(dim+1)])
+    points = np.array([[0.1]*(dim+1), [0.01]*(dim+1), [0.4]*(dim+1),
+                       [0.5]*(dim+1)])
 
     for shape in product(*([sizes]*dim)):
-        print(shape)
         bases = []
         for n in shape[:-1]:
             bases.append(Basis(n, 'F', dtype=typecode.upper()))

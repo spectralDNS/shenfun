@@ -25,6 +25,7 @@ Document build status
 
    introduction
    gettingstarted
+   integrators
    mpi
    postprocessing
    installation
