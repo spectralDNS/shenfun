@@ -1,6 +1,5 @@
 import pytest
 from shenfun.chebyshev.la import PDMA
-from shenfun import Basis
 from shenfun import inner, TestFunction, TrialFunction, div, grad, \
     SparseMatrix, Basis, Function
 from scipy.linalg import solve
@@ -62,5 +61,5 @@ def test_solve(quad):
     assert np.all(abs(ww-u_hat[:-2].repeat(N-2).reshape((N-2, N-2)).transpose()) < 1e-8)
 
 if __name__ == "__main__":
-    test_solve()
+    test_solve('GC')
 

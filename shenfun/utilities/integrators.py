@@ -32,15 +32,15 @@ class IntegratorBase(object):
 
     Parameters
     ----------
-    T : TensorProductSpace
-    L : function
-        To compute linear part of right hand side
-    N : function
-        To compute nonlinear part of right hand side
-    update : function
-             To be called at the end of a timestep
-    params : dictionary
-             Any relevant keyword arguments
+        T : TensorProductSpace
+        L : function
+            To compute linear part of right hand side
+        N : function
+            To compute nonlinear part of right hand side
+        update : function
+                 To be called at the end of a timestep
+        params : dictionary
+                 Any relevant keyword arguments
 
     """
 
@@ -87,15 +87,15 @@ class ETD(IntegratorBase):
 
     Parameters
     ----------
-    T : TensorProductSpace
-    L : function
-        To compute linear part of right hand side
-    N : function
-        To compute nonlinear part of right hand side
-    update : function
-             To be called at the end of a timestep
-    params : dictionary
-             Any relevant keyword arguments
+        T : TensorProductSpace
+        L : function
+            To compute linear part of right hand side
+        N : function
+            To compute nonlinear part of right hand side
+        update : function
+                 To be called at the end of a timestep
+        params : dictionary
+                 Any relevant keyword arguments
     """
 
     def __init__(self, T,
@@ -158,15 +158,15 @@ class ETDRK4(IntegratorBase):
 
     Parameters
     ----------
-    T : TensorProductSpace
-    L : function
-        To compute linear part of right hand side
-    N : function
-        To compute nonlinear part of right hand side
-    update : function
-             To be called at the end of a timestep
-    params : dictionary
-             Any relevant keyword arguments
+        T : TensorProductSpace
+        L : function
+            To compute linear part of right hand side
+        N : function
+            To compute nonlinear part of right hand side
+        update : function
+                 To be called at the end of a timestep
+        params : dictionary
+                 Any relevant keyword arguments
     """
     def __init__(self, T,
                  L=lambda *args, **kwargs: 0,
@@ -257,15 +257,15 @@ class RK4(IntegratorBase):
 
     Parameters
     ----------
-    T : TensorProductSpace
-    L : function
-        To compute linear part of right hand side
-    N : function
-        To compute nonlinear part of right hand side
-    update : function
-             To be called at the end of a timestep
-    params : dictionary
-             Any relevant keyword arguments
+        T : TensorProductSpace
+        L : function
+            To compute linear part of right hand side
+        N : function
+            To compute nonlinear part of right hand side
+        update : function
+                 To be called at the end of a timestep
+        params : dictionary
+                 Any relevant keyword arguments
     """
     def __init__(self, T,
                  L=lambda *args, **kwargs: 0,
