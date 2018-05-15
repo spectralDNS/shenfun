@@ -15,7 +15,7 @@ solution that is either real or complex.
 """
 from sympy import Symbol, cos, sin, lambdify
 import numpy as np
-from shenfun import inner, grad, TestFunction, TrialFunction, Basis
+from shenfun import inner, grad, TestFunction, TrialFunction, Basis, Function
 import os
 try:
     import matplotlib.pyplot as plt
@@ -51,7 +51,8 @@ f_hat = inner(v, fj)
 
 # Solve Poisson equation
 A = inner(grad(v), grad(u))
-u_hat = A.solve(-f_hat)
+u_hat = Function(ST)
+u_hat = A.solve(-f_hat, u_hat)
 
 uq = ST.backward(u_hat)
 
