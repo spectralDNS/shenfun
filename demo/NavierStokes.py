@@ -38,9 +38,8 @@ curl_ = Function(TV, False)
 X = T.local_mesh(True)
 
 def LinearRHS(**params):
-    A = inner(u, v)
-    L = inner(nu*div(grad(u)), v) / A  # L is shape (N[0], N[1], N[2]//2+1), but used as (3, N[0], N[1], N[2]//2+1) due to broadcasting
-    #L = -nu*K2  # Or just simply this
+    #L = inner(nu*div(grad(u)), v)  # L is shape (N[0], N[1], N[2]//2+1), but used as (3, N[0], N[1], N[2]//2+1) due to broadcasting
+    L = -nu*K2  # Or just simply this
     return L
 
 def NonlinearRHS(U, U_hat, dU, **params):
@@ -50,7 +49,8 @@ def NonlinearRHS(U, U_hat, dU, **params):
     curl_hat = project(curl(U), TV, output_array=curl_hat, uh_hat=U_hat) # Linear. Does not actually use U, only U_hat
     curl_ = TV.backward(curl_hat, curl_)
     W = np.cross(U, curl_, axis=0)                  # Nonlinear term in physical space
-    dU = project(W, TV, output_array=dU)            # dU = TV.forward(W, dU)
+    #dU = project(W, TV, output_array=dU)            # dU = TV.forward(W, dU)
+    dU = TV.forward(W, dU)
     P_hat = np.sum(dU*K_over_K2, 0, out=P_hat)
     dU -= P_hat*K
     return dU
@@ -67,6 +67,7 @@ if __name__ == '__main__':
         integ.setup(dt)
         U_hat = integ.solve(U, U_hat, dt, (0, end_time))
         # Check accuracy
+        U = TV.backward(U_hat, U)
         k = comm.reduce(0.5*np.sum(U*U)/np.prod(np.array(N)))
         if comm.Get_rank() == 0:
             assert np.round(k - 0.124953117517, 7) == 0

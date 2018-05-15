@@ -47,7 +47,8 @@ fj = fl(X)
 uj = ul(X)
 
 # Compute right hand side
-f_hat = inner(v, fj)
+f_hat = Function(ST)
+f_hat = inner(v, fj, output_array=f_hat)
 
 # Solve Poisson equation
 A = inner(grad(v), grad(u))

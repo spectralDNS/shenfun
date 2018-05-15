@@ -163,10 +163,8 @@ class FourierBase(SpectralBase):
         Parameters
         ----------
             array : array (input/output)
-                    Expansion coefficients. Overwritten by applying the inverse
-                    mass matrix, and returned.
+                    Expansion coefficients.
         """
-        array *= (1./(2.*np.pi))
         return array
 
     def evaluate_expansion_all(self, input_array, output_array):
@@ -179,7 +177,7 @@ class FourierBase(SpectralBase):
 
         if fast_transform:
             output = self.xfftn_fwd()
-            output *= (2*np.pi/self.N/self.padding_factor)
+            output *= (1./self.N/self.padding_factor)
 
         else:
             assert abs(self.padding_factor-1) < 1e-8
