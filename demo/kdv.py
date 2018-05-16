@@ -18,11 +18,12 @@ Up = Function(Tp, False)
 u_hat = Function(T)
 
 def LinearRHS(**params):
-    return -inner(Dx(u, 0, 3), v)[0] / (2*np.pi)
+    return -inner(Dx(u, 0, 3), v) / (2*np.pi)
 
 def NonlinearRHS(u, u_hat, rhs, **params):
     rhs.fill(0)
     Up[:] = Tp.backward(u_hat, Up)
+    #return inner(grad(-0.5*Up**2), v) / (2*np.pi)
     rhs = Tp.forward(-0.5*Up**2, rhs)
     return rhs*1j*k
 
@@ -110,5 +111,5 @@ for i in range(N):
     offset = (N-i-1)*200
     ax5.plot(x, ddata[N-i-1]+offset, 'w', lw=2, zorder=(i+1)*2)
     ax5.fill_between(x, ddata[N-i-1]+offset, offset, facecolor='k', lw=0, zorder=(i+1)*2-1)
-plt.show()
-
+fig5.savefig('KdV.png')
+#plt.show()
