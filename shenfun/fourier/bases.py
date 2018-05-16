@@ -189,6 +189,12 @@ class FourierBase(SpectralBase):
             return output_array
         return self.xfftn_fwd.output_array
 
+    def vandermonde_scalar_product(self, input_array, output_array):
+        output_array = SpectralBase.vandermonde_scalar_product(self, input_array,
+                                                               output_array)
+        output_array *= 0.5/np.pi
+        return output_array
+
 
 class R2CBasis(FourierBase):
     """Fourier basis class for real to complex transforms

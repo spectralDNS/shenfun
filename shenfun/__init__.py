@@ -8,6 +8,7 @@ from . import chebyshev
 from . import legendre
 from . import fourier
 from . import matrixbase
+from .fourier import energy_fourier
 from .forms.project import *
 from .forms.inner import *
 from .forms.operators import *

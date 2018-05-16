@@ -7,7 +7,7 @@ Demo - 3D Poisson equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 8, 2018
+:Date: May 15, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve a 3D Poisson
 equation in a 3D tensor product domain that has homogeneous Dirichlet boundary 
@@ -240,8 +240,8 @@ left hand side of :eq:`eq:3d:varform`, we get
         \sum_{m\in \boldsymbol{m}^{N_1}}\sum_{n\in \boldsymbol{n}^{N_2}}\hat{u}_{l, m, n}
         \mathcal{X}_{l} \mathcal{Y}_m \mathcal{Z}_n,
         \mathcal{X}_{p} \mathcal{Y}_q \mathcal{Z}_r \right\rangle_w^{\boldsymbol{N}}, \\ 
-            &= \left[\left(\mathcal{X}_l^{''}, \mathcal{X}_p \right)_w^N - (m^2+n^2)\left(\mathcal{X}_l, \mathcal{X}_p \right)_w^N  \right]\delta_{mq} \delta_{nr} (2\pi)^2\hat{u}_{l,m,n}, \\ 
-            &= (2\pi)^2 \left( A_{pl} - (m^2 + n^2)B_{pl}\right) \hat{u}_{l,q,r},
+            &= \left[\left(\mathcal{X}_l^{''}, \mathcal{X}_p \right)_w^N - (m^2+n^2)\left(\mathcal{X}_l, \mathcal{X}_p \right)_w^N  \right]\delta_{mq} \delta_{nr} \hat{u}_{l,m,n}, \\ 
+            &= \left( A_{pl} - (m^2 + n^2)B_{pl}\right) \hat{u}_{l,q,r},
         \end{align*}
 
 where the notation :math:`(\cdot, \cdot)_w^{N_0}`
@@ -256,14 +256,15 @@ where the notation :math:`(\cdot, \cdot)_w^{N_0}`
         
 
 is used to represent an :math:`L_2` inner product along only the first, nonperiodic,
-direction. The factor :math:`(2\pi)^2` above comes from integrating over the two periodic
-directions, since 
+direction. The delta functions above come from integrating over the two periodic
+directions, where we use constant weight functions :math:`w=1/(2\pi)` in the 
+inner products
 
 .. math::
    :label: _auto16
 
         
-        \int_0^{2\pi} \mathcal{Y}_m(y) \overline{\mathcal{Y}}_q(y) dy = 2\pi \delta_{mq},
+        \int_0^{2\pi} \mathcal{Y}_m(y) \overline{\mathcal{Y}}_q(y) \frac{1}{2\pi} dy = \delta_{mq},
         
         
 
@@ -271,11 +272,11 @@ directions, since
    :label: _auto17
 
           
-        \int_0^{2\pi} \mathcal{Z}_n(y) \overline{\mathcal{Z}}_r(z) dz = 2\pi \delta_{nr},
+        \int_0^{2\pi} \mathcal{Z}_n(y) \overline{\mathcal{Z}}_r(z) \frac{1}{2\pi} dz = \delta_{nr},
         
         
 
-where :math:`\delta_{ij}` is the Kronecker delta-function, which is one for :math:`i=j` and
+The Kronecker delta-function :math:`\delta_{ij}` is one for :math:`i=j` and
 zero otherwise. 
 
 The right hand side of Eq. :eq:`eq:3d:varform` is computed as
@@ -289,7 +290,8 @@ The right hand side of Eq. :eq:`eq:3d:varform` is computed as
         
         
 
-where a tilde is used because this is not a complete transform of the function :math:`f`, but only an inner product. 
+where a tilde is used because this is not a complete transform of the function
+:math:`f`, but only an inner product. 
 
 The linear system of equations to solve for the expansion coefficients can now
 be found as follows
@@ -298,7 +300,7 @@ be found as follows
    :label: eq:AB
 
         
-        \left(A_{lj} - (m^2+n^2)B_{lj}\right) \hat{u}_{j,m,n} = \frac{1}{(2\pi)^2}
+        \left(A_{lj} - (m^2+n^2)B_{lj}\right) \hat{u}_{j,m,n} =
         \tilde{f}_{l,m,n}\quad \forall \, (l,m,n) \in \boldsymbol{k}. 
         
 

@@ -27,7 +27,7 @@ and a right hand side function :math:`f(\boldsymbol{x})`
     -\nabla^2 u(\boldsymbol{x}) &= f(\boldsymbol{x}) \quad \text{for } \, \boldsymbol{x} \in \Omega \\
               u(\boldsymbol{x}) &= 0\, \text{for }\, \boldsymbol{x} \in \Gamma
 
-To solve this problem with the spectral Galerking method we need to create a 
+To solve this problem with the spectral Galerkin method we need to create a 
 variational form by first multiplying the entire equation by a test function 
 :math:`\overline{v}` that satisfies the boundary conditions: :math:`v(\boldsymbol{x}) = 0`
 for :math:`\boldsymbol{x} \, \in \Gamma`. We also multiply by an associated 
@@ -35,8 +35,8 @@ weight function :math:`w`, which is chosen on basis on obtaining orthogonal
 inner products. For basis functions composed of Fourier or Legendre polynomials
 the weight function is simply a constant, but for Chebyshev the required weight
 function is :math:`1/\sqrt{1-x^2}`. After multiplying :eq:`eq:poisson1` with 
-:math:`v(\boldsymbol{x}) w(\boldsymbol{x})` we then integrate over the domain 
-to obtain the variational form
+:math:`\overline{v(\boldsymbol{x})} w(\boldsymbol{x})` we then integrate over 
+the domain to obtain the variational form
 
 .. math::
    :label: eq:poisson2

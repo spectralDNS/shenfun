@@ -18,7 +18,7 @@ Up = Function(Tp, False)
 u_hat = Function(T)
 
 def LinearRHS(**params):
-    return -inner(Dx(u, 0, 3), v)[0] / (2*np.pi)
+    return -inner(Dx(u, 0, 3), v)[0]
 
 def NonlinearRHS(u, u_hat, rhs, **params):
     rhs.fill(0)

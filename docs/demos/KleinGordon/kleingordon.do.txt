@@ -20,6 +20,8 @@ def mod(x):
     return '`'+x+'`'
 def cls(x):
     return '`'+x+'`'
+def func(x):
+    return '`'+x+'`'
 %>
 % if FORMAT in ("sphinx"):
 <%
@@ -101,7 +103,7 @@ The energy of the solution can be computed as
 
 !bt
 \begin{equation}
-E(u) = \int_{\Omega} \left( \frac{1}{2} f^2 + \frac{1}{2}|\nabla u|^2 + \gamma(\frac{1}{2}u^2 - \frac{1}{4}u^4) \right)
+E(u) = \int_{\Omega} \left( \frac{1}{2} f^2 + \frac{1}{2}|\nabla u|^2 + \gamma(\frac{1}{2}u^2 - \frac{1}{4}u^4) \right) dx
 \end{equation}
 !et
 and it is crucial that this energy remains constant in time.
@@ -134,24 +136,26 @@ H^1(\Omega)$ with Eq. (ref{eq:du}), where $H^1(\Omega)$ is the Hilbert space, an
 
 !bt
 \begin{align}
-\frac{\partial}{\partial t} \int_{\Omega} f\, \overline{g} \,dx &= \int_{\Omega}
-\left(\nabla^2 u \, \overline{g}
-- \gamma( u\, - u|u|^2) \, \overline{g} \right) \,dx, label{eq:df_var} \\
-\frac{\partial }{\partial t} \int_{\Omega} u\, \overline{v} \, dx &=
-\int_{\Omega} f\, \overline{v} \, dx. label{eq:kg:du_var}
+\frac{\partial}{\partial t} \int_{\Omega} f\, \overline{g}\, w \,dx &= \int_{\Omega}
+\left(\nabla^2 u - \gamma( u\, - u|u|^2) \right) \overline{g} \, w \,dx, label{eq:df_var} \\
+\frac{\partial }{\partial t} \int_{\Omega} u\, \overline{v}\, w \, dx &=
+\int_{\Omega} f\, \overline{v} \, w \, dx. label{eq:kg:du_var}
 \end{align}
 !et
-Note that the overline is used to indicate a complex conjugate. The functions $f$ and $u$ are now
+Note that the overline is used to indicate a complex conjugate, and
+$w$ is a weight function associated with the test functions. The functions 
+$f$ and $u$ are now
 to be considered as trial functions, and the integrals over the
 domain are often referred to as inner products. With inner product notation
 
 !bt
 \[
-\left(u, v\right) = \int_{\Omega} u \, \overline{v} \, dx.
+\left(u, v\right) = \int_{\Omega} u \, \overline{v} \, w\, dx.
 \]
 !et
-and an integration by parts on the Laplacian, the spatially discretized variational problem can be
-formulated as: Find $(u, f) \in H^1(\Omega) \times H^1(\Omega)$ such that
+and an integration by parts on the Laplacian, the spatially discretized 
+variational problem can be formulated as:
+find $(u, f) \in H^1(\Omega) \times H^1(\Omega)$ such that
 !bt
 \begin{align}
 \frac{\partial}{\partial t} (f, g) &= -(\nabla u, \nabla g)
@@ -267,26 +271,32 @@ x_j}, \quad \,\, \forall \, j \in \, \boldsymbol{j}.
 !et
 
 The inner products used in Eqs. (ref{eq:df_var2}), (ref{eq:kg:du_var2}) may be
-computed using forward FFTs:
+computed using forward FFTs. However, there is a tiny detail that deserves
+a comment. The regular Fourier inner product is given as
+
+!bt
+\int_{0}^{L} e^{\imath \underline{k}x} e^{- \imath \underline{l}x} dx = L\, \delta_{kl}
+!et
+
+where a weight function is chosen as $w(x) = 1$ and $\delta_{kl}$ equals unity 
+for $k=l$ and zero otherwise. In Shenfun we choose instead to use a weight 
+function $w(x)=1/L$, such that the weighted inner product integrates to 
+unity:
+
+!bt
+\int_{0}^{L} e^{\imath \underline{k}x} e^{- \imath \underline{l}x} \frac{1}{L} dx = \delta_{kl}.
+!et
+
+With this weight function the scalar product and the forward transform
+are the same and we obtain:
 
 !bt
 \begin{equation}
-\left(u, \Phi_{l,m,n}\right) =
-\left(\frac{2\pi}{N}\right)^3
+\left(u, \Phi_{l,m,n}\right) = \hat{u}_{l,m,n} =
+\left(\frac{1}{N}\right)^3
 \mathcal{F}_l\left(\mathcal{F}_m\left(\mathcal{F}_n\left({u}\right)\right)\right)
 \quad \forall (l,m,n) \in \boldsymbol{l} \times \boldsymbol{m} \times
 \boldsymbol{n},
-\end{equation}
-!et
-
-whereas a complete transform requires
-!bt
-\begin{equation}
-\hat{u}_{l,m,n} =
-\left(\frac{1}{N}\right)^3
-\mathcal{F}_l\left(\mathcal{F}_m\left(\mathcal{F}_n\left(u\right)\right)\right)
-\quad \forall (l,m,n) \in \boldsymbol{l} \times \boldsymbol{m} \times
-\boldsymbol{n}.
 \end{equation}
 !et
 
@@ -297,9 +307,9 @@ $\hat{f}$. Expanding the exact derivatives of the nabla operator, we have
 !bt
 \begin{align}
 (\nabla u, \nabla v) &=
-(2\pi)^3(\underline{l}^2+\underline{m}^2+\underline{n}^2)\hat{u}_{l,m,n}, \\
-(u, v) &= (2\pi)^3\hat{u}_{l,m,n}, \\
-(u|u|^2, v) &= (2\pi)^3 \widehat{u|u|^2}
+(\underline{l}^2+\underline{m}^2+\underline{n}^2)\hat{u}_{l,m,n}, \\
+(u, v) &= \hat{u}_{l,m,n}, \\
+(u|u|^2, v) &= \widehat{u|u|^2}
 \end{align}
 !et
 
@@ -373,8 +383,8 @@ K2 = Basis(N[2], 'F', domain=(-2*np.pi, 2*np.pi), dtype='d')
 We now have three instances `K0`, `K1` and `K2`, corresponding to the basis
 (ref{eq:kg:Vn}), that each can be used to solve
 one-dimensional problems. However, we want to solve a 3D problem, and for this
-we need a tensor product basis, like (ref{eq:kg:Wn}), created as a Cartesian product of these three
-bases
+we need a tensor product basis, like (ref{eq:kg:Wn}), created as a Cartesian 
+product of these three bases
 
 !bc pycod
 # Create communicator
@@ -491,8 +501,7 @@ function can be implemented as
 gamma = 1  
 uh = TrialFunction(T)
 vh = TestFunction(T)i
-A = inner(vh, uh)
-k2 = -(inner(grad(vh), grad(uh)) / A + gamma)
+k2 = -(inner(grad(vh), grad(uh))  + gamma)
 
 def compute_rhs(duf_hat, uf_hat, up, Tp, w0):
     duf_hat.fill(0)
@@ -591,8 +600,7 @@ u_hat = T.forward(u, u_hat)
 
 uh = TrialFunction(T)
 vh = TestFunction(T)
-A = inner(uh, vh)
-k2 = -inner(grad(vh), grad(uh)) / A - gamma
+k2 = -inner(grad(vh), grad(uh)) - gamma
 
 count = 0
 def compute_rhs(duf_hat, uf_hat, up, T, w0):
