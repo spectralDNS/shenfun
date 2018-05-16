@@ -78,7 +78,7 @@ the spectral Galerkin method. Being a Galerkin method, we need to reshape the
 governing equations into proper variational forms, and this is done by
 multiplying  (ref{eq:ks}) with the complex conjugate of a proper
 test function and then integrating
-over the domain. To this end we use testfunction $v\in H^1(\Omega)$, where $H^1(\Omega)$ is the Hilbert space, and we obtain
+over the domain. To this end we use testfunction $v\in H^s(\Omega)$, where $H^s(\Omega)$ is the Sobolev space of order $s$, and we obtain
 
 !bt
 \begin{equation}
@@ -97,23 +97,23 @@ domain are often referred to as inner products. With inner product notation
 \left(u, v\right) = \int_{\Omega} u \, \overline{v} \, w \, dx.
 \]
 !et
-the spatially discretized variational problem can be
-formulated as: find $u \in H^1(\Omega)$ such that
+the variational problem can be formulated as
 !bt
 \begin{equation}
 \frac{\partial}{\partial t} (u, v) = -\left(\nabla^2 u + \nabla^4 u + |\nabla u|^2,
-v \right) \quad \forall v \in H^1(\Omega). label{eq:du_var2}
+v \right). label{eq:du_var2}
 \end{equation}
 !et 
 
-The time discretization is
+The space and time discretizations are
 still left open. There are numerous different approaches that one could take for
 discretizing in time. Here we will use a fourth order exponential Runge-Kutta
 method.
 
 ===== Discretization =====
 
-We discretize the model equation in space using Fourier basis functions
+We discretize the model equation in space using continuously differentiable 
+Fourier basis functions
 
 !bt
 \begin{equation}

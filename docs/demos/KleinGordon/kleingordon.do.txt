@@ -130,9 +130,9 @@ the spectral Galerkin method. Being a Galerkin method, we need to reshape the
 governing equations into proper variational forms, and this is done by
 multiplying  (ref{eq:df}) and (ref{eq:du}) with the complex conjugate of proper
 test functions and then integrating
-over the domain. To this end we use testfunction $g\in H^1(\Omega)$ with
-Eq. (ref{eq:df})  and  $v \in
-H^1(\Omega)$ with Eq. (ref{eq:du}), where $H^1(\Omega)$ is the Hilbert space, and we obtain
+over the domain. To this end we use continuously differentiable 
+testfunctions $g\in C(\Omega)$ with Eq. (ref{eq:df})  and  $v \in
+C(\Omega)$ with Eq. (ref{eq:du}), and we obtain
 
 !bt
 \begin{align}
@@ -153,19 +153,18 @@ domain are often referred to as inner products. With inner product notation
 \left(u, v\right) = \int_{\Omega} u \, \overline{v} \, w\, dx.
 \]
 !et
-and an integration by parts on the Laplacian, the spatially discretized 
-variational problem can be formulated as:
-find $(u, f) \in H^1(\Omega) \times H^1(\Omega)$ such that
+and an integration by parts on the Laplacian, the variational problem can be 
+formulated as:
+
 !bt
 \begin{align}
 \frac{\partial}{\partial t} (f, g) &= -(\nabla u, \nabla g)
 -\gamma \left( u - u|u|^2, g \right), label{eq:df_var2} \\
-\frac{\partial }{\partial t} (u, v) &= (f, v) \quad \forall \, (v,g) \in
-H^1(\Omega) \times H^1(\Omega). label{eq:kg:du_var2}
+\frac{\partial }{\partial t} (u, v) &= (f, v). label{eq:kg:du_var2}
 \end{align}
 !et 
 
-The time discretization is
+The time and space discretizations are
 still left open. There are numerous different approaches that one could take for
 discretizing in time, and the first two terms on the right hand side of
 (ref{eq:df_var2}) can easily be treated implicitly as well as explicitly. However,
@@ -224,13 +223,13 @@ We now look for solutions of the form
 
 !bt
 \begin{equation}
-u(x, y, z) = \sum_{n=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{l=-N/2}^{N/2-1}
-\hat{u}_{l,m,n} \Phi_{l,m,n}(x,y,z). 
+u(x, y, z, t) = \sum_{n=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{l=-N/2}^{N/2-1}
+\hat{u}_{l,m,n} (t)\Phi_{l,m,n}(x,y,z). 
 \end{equation}
 !et
 
-The expansion coefficients $\hat{u}_{l,m,n}$ can be related directly to the solution $u(x,
-y, z)$ using Fast Fourier Transforms (FFTs) if we are satisfied with obtaining
+The expansion coefficients $\hat{u}_{l,m,n}(t)$ can be related directly to the solution $u(x,
+y, z, t)$ using Fast Fourier Transforms (FFTs) if we are satisfied with obtaining
 the solution in quadrature points corresponding to
 
 !bt
@@ -333,22 +332,19 @@ implemented.  In short, ${mod('shenfun')} contains all the tools required to wor
 the spectral Galerkin method, and we will now see how ${mod('shenfun')} can be used to solve
 the Klein-Gordon equation. 
 
-#We simplify notation by writing three-dimensional inner products as
-#!bt
-#\begin{align}
-# (u, v) &= \mathcal{S}(u), \\
-#        &= \left(\frac{2\pi}{N}\right)^3 \mathcal{F}(u)
-#\end{align}
-#!et
-#and three-dimensional transforms as
-#!bt
-#\begin{align}
-#\hat{u} &= \mathcal{T}(u), \\
-#        &= \left(\frac{1}{N}\right)^3 \mathcal{F}(u)
-#\end{align}
-#!et
-#with inverse $u = \mathcal{T}^{-1}(\hat{u})$.
+For completion, we note that the discretized problem to solve can be formulated
+with the Galerkin method as: 
+for all $t>0$, find $(f, u) \in W^N \times W^N$  such that
 
+!bt
+\begin{align}
+\frac{\partial}{\partial t} (f, g) &= -(\nabla u, \nabla g)
+-\gamma \left( u - u|u|^2, g \right), label{eq:dff} \\
+\frac{\partial }{\partial t} (u, v) &= (f, v) \quad \forall \, (g, v) \in W^N \times W^N. label{eq:kg:duu}
+\end{align}
+!et 
+where $u(x, y, z, 0)$ and $f(x, y, z, 0)$ are given as the initial conditions
+according to Eq. (ref{eq:init}).
 
 ======= Implementation =======
 

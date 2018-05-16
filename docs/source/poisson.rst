@@ -7,7 +7,7 @@ Demo - 1D Poisson equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 15, 2018
+:Date: May 16, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the Poisson
 equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as shown in Figure :ref:`fig:ct0`, is demonstrated. 
@@ -45,8 +45,9 @@ The Poisson equation is given as
 where :math:`u(x)` is the solution, :math:`f(x)` is a function and :math:`a, b` are two possibly
 non-zero constants. 
 
-To solve Eq. :eq:`eq:poisson` with the Galerkin method we need smooth basis functions, :math:`v_k`, that live
-in the Hilbert space :math:`H^1(x)` and that satisfy the given boundary conditions. And then we look for solutions
+To solve Eq. :eq:`eq:poisson` with the Galerkin method we need smooth continuously 
+differentiable basis functions, :math:`v_k`, that satisfy the given boundary conditions. 
+And then we look for solutions
 like
 
 .. math::
@@ -56,8 +57,11 @@ like
         u(x) = \sum_{k=0}^{N-1} \hat{u}_k v_k(x), 
         
 
-where :math:`N` is the size of the discretized problem and the basis is :math:`V^N=\text{span}\{v_k\}_{k=0}^{N-1}`.
-The basis functions can, for example,  be constructed from `Chebyshev <https://en.wikipedia.org/wiki/Chebyshev_polynomials>`__, :math:`T_k(x)`, or `Legendre <https://en.wikipedia.org/wiki/Legendre_polynomials>`__, :math:`L_k(x)`, functions 
+where :math:`N` is the size of the discretized problem and the basis is 
+:math:`V^N=\text{span}\{v_k\}_{k=0}^{N-1}`.
+The basis functions can, for example,  be constructed from 
+`Chebyshev <https://en.wikipedia.org/wiki/Chebyshev_polynomials>`__, :math:`T_k(x)`, or 
+`Legendre <https://en.wikipedia.org/wiki/Legendre_polynomials>`__, :math:`L_k(x)`, functions 
 and we use the common notation :math:`\phi_k(x)` to represent either one of them. It turns out that 
 it is easiest to use basis functions with homogeneous Dirichlet boundary conditions
 

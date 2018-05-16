@@ -53,8 +53,9 @@ u(-1)&=a, u(1)=b, \notag
 where $u(x)$ is the solution, $f(x)$ is a function and $a, b$ are two possibly
 non-zero constants. 
 
-To solve Eq. (ref{eq:poisson}) with the Galerkin method we need smooth basis functions, $v_k$, that live
-in the Hilbert space $H^1(x)$ and that satisfy the given boundary conditions. And then we look for solutions
+To solve Eq. (ref{eq:poisson}) with the Galerkin method we need smooth continuously 
+differentiable basis functions, $v_k$, that satisfy the given boundary conditions. 
+And then we look for solutions
 like
 !bt
 \begin{equation}
@@ -62,8 +63,11 @@ u(x) = \sum_{k=0}^{N-1} \hat{u}_k v_k(x), label{eq:u}
 \end{equation}
 !et
 
-where $N$ is the size of the discretized problem and the basis is $V^N=\text{span}\{v_k\}_{k=0}^{N-1}$.
-The basis functions can, for example,  be constructed from "Chebyshev": "https://en.wikipedia.org/wiki/Chebyshev_polynomials", $T_k(x)$, or "Legendre": "https://en.wikipedia.org/wiki/Legendre_polynomials", $L_k(x)$, functions 
+where $N$ is the size of the discretized problem and the basis is 
+$V^N=\text{span}\{v_k\}_{k=0}^{N-1}$.
+The basis functions can, for example,  be constructed from 
+"Chebyshev": "https://en.wikipedia.org/wiki/Chebyshev_polynomials", $T_k(x)$, or 
+"Legendre": "https://en.wikipedia.org/wiki/Legendre_polynomials", $L_k(x)$, functions 
 and we use the common notation $\phi_k(x)$ to represent either one of them. It turns out that 
 it is easiest to use basis functions with homogeneous Dirichlet boundary conditions
 !bt

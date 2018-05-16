@@ -14,7 +14,7 @@ The helper classes are
     * :class:`.HDF5Writer`
     * :class:`.NCWriter`
 
-An instance of either class is created with a name of the HDF5-file that is going
+An instance of either class is created with a name of the file that is going
 to store the data, names of the arrays to store, and an instance of a
 :class:`.TensorProductSpace`. For example, to create an HDF5 writer for a 3D
 TensorProductSpace with Fourier bases in all directions::
