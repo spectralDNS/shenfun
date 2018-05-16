@@ -56,6 +56,15 @@ class FourierBase(SpectralBase):
     it makes no difference and therefore :eq:`u` is used in transforms, since
     this is the form expected by pyfftw.
 
+    The inner product is defined as
+
+    .. math::
+
+        (u, v) = \frac{1}{L} \int_{0}^{L} u \overline{v} dx
+
+    where :math:`\overline{v}` is the complex conjugate of :math:`v`, and
+    :math:`L` is the length of the (periodic) domain.
+
     Parameters
     ----------
         N : int
@@ -154,10 +163,8 @@ class FourierBase(SpectralBase):
         Parameters
         ----------
             array : array (input/output)
-                    Expansion coefficients. Overwritten by applying the inverse
-                    mass matrix, and returned.
+                    Expansion coefficients.
         """
-        array *= (1./(2.*np.pi))
         return array
 
     def evaluate_expansion_all(self, input_array, output_array):
@@ -170,7 +177,7 @@ class FourierBase(SpectralBase):
 
         if fast_transform:
             output = self.xfftn_fwd()
-            output *= (2*np.pi/self.N/self.padding_factor)
+            output *= (1./self.N/self.padding_factor)
 
         else:
             assert abs(self.padding_factor-1) < 1e-8
@@ -181,6 +188,12 @@ class FourierBase(SpectralBase):
             output_array[...] = self.xfftn_fwd.output_array
             return output_array
         return self.xfftn_fwd.output_array
+
+    def vandermonde_scalar_product(self, input_array, output_array):
+        output_array = SpectralBase.vandermonde_scalar_product(self, input_array,
+                                                               output_array)
+        output_array *= 0.5/np.pi
+        return output_array
 
 
 class R2CBasis(FourierBase):

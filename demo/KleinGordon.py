@@ -74,8 +74,7 @@ u_hat = T.forward(u, u_hat)
 uh = TrialFunction(T)
 vh = TestFunction(T)
 
-A = inner(uh, vh)
-L = -inner(grad(vh), grad(uh)) / A - gamma
+L = -inner(grad(vh), grad(uh)) - gamma
 
 # Coupled equations with no linear terms in their own variables,
 # so place everything in NonlinearRHS

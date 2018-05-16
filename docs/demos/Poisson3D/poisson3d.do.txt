@@ -171,8 +171,8 @@ left hand side of (ref{eq:3d:varform}), we get
 \sum_{m\in \bs{m}^{N_1}}\sum_{n\in \bs{n}^{N_2}}\hat{u}_{l, m, n}
 \mathcal{X}_{l} \mathcal{Y}_m \mathcal{Z}_n,
 \mathcal{X}_{p} \mathcal{Y}_q \mathcal{Z}_r \right\rangle_w^{\bs{N}}, \\
-    &= \left[\left(\mathcal{X}_l^{''}, \mathcal{X}_p \right)_w^N - (m^2+n^2)\left(\mathcal{X}_l, \mathcal{X}_p \right)_w^N  \right]\delta_{mq} \delta_{nr} (2\pi)^2\hat{u}_{l,m,n}, \\
-    &= (2\pi)^2 \left( A_{pl} - (m^2 + n^2)B_{pl}\right) \hat{u}_{l,q,r},
+    &= \left[\left(\mathcal{X}_l^{''}, \mathcal{X}_p \right)_w^N - (m^2+n^2)\left(\mathcal{X}_l, \mathcal{X}_p \right)_w^N  \right]\delta_{mq} \delta_{nr} \hat{u}_{l,m,n}, \\
+    &= \left( A_{pl} - (m^2 + n^2)B_{pl}\right) \hat{u}_{l,q,r},
 \end{align*}
 !et 
 where the notation $(\cdot, \cdot)_w^{N_0}$
@@ -183,15 +183,16 @@ B_{pl} = \left( \mathcal{X}_l, \mathcal{X}_p \right)_w^{N_0} = \sum_{i=0}^{N_0-1
 \end{equation}
 !et
 is used to represent an $L_2$ inner product along only the first, nonperiodic,
-direction. The factor $(2\pi)^2$ above comes from integrating over the two periodic
-directions, since 
+direction. The delta functions above come from integrating over the two periodic
+directions, where we use constant weight functions $w=1/(2\pi)$ in the 
+inner products
 !bt
 \begin{align}
-\int_0^{2\pi} \mathcal{Y}_m(y) \overline{\mathcal{Y}}_q(y) dy = 2\pi \delta_{mq},\\
-\int_0^{2\pi} \mathcal{Z}_n(y) \overline{\mathcal{Z}}_r(z) dz = 2\pi \delta_{nr},
+\int_0^{2\pi} \mathcal{Y}_m(y) \overline{\mathcal{Y}}_q(y) \frac{1}{2\pi} dy = \delta_{mq},\\
+\int_0^{2\pi} \mathcal{Z}_n(y) \overline{\mathcal{Z}}_r(z) \frac{1}{2\pi} dz = \delta_{nr},
 \end{align}
 !et
-where $\delta_{ij}$ is the Kronecker delta-function, which is one for $i=j$ and
+The Kronecker delta-function $\delta_{ij}$ is one for $i=j$ and
 zero otherwise. 
 
 The right hand side of Eq. (ref{eq:3d:varform}) is computed as
@@ -202,14 +203,15 @@ The right hand side of Eq. (ref{eq:3d:varform}) is computed as
 \mathcal{Y}_q \mathcal{Z}_r  \right \rangle_w^{\bs{N}},
 \end{equation}
 !et
-where a tilde is used because this is not a complete transform of the function $f$, but only an inner product. 
+where a tilde is used because this is not a complete transform of the function
+$f$, but only an inner product. 
 
 The linear system of equations to solve for the expansion coefficients can now
 be found as follows
 
 !bt
 \begin{equation}
-\left(A_{lj} - (m^2+n^2)B_{lj}\right) \hat{u}_{j,m,n} = \frac{1}{(2\pi)^2}
+\left(A_{lj} - (m^2+n^2)B_{lj}\right) \hat{u}_{j,m,n} =
 \tilde{f}_{l,m,n}\quad \forall \, (l,m,n) \in \bs{k}. label{eq:AB}
 \end{equation}
 !et 

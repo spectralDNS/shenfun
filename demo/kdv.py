@@ -18,12 +18,12 @@ Up = Function(Tp, False)
 u_hat = Function(T)
 
 def LinearRHS(**params):
-    return -inner(Dx(u, 0, 3), v) / (2*np.pi)
+    return -inner(Dx(u, 0, 3), v)
 
 def NonlinearRHS(u, u_hat, rhs, **params):
     rhs.fill(0)
     Up[:] = Tp.backward(u_hat, Up)
-    #return inner(grad(-0.5*Up**2), v) / (2*np.pi)
+    #return inner(grad(-0.5*Up**2), v)
     rhs = Tp.forward(-0.5*Up**2, rhs)
     return rhs*1j*k
 

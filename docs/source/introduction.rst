@@ -131,15 +131,15 @@ With shenfun a user chooses the appropriate bases for each dimension of the
 problem, and may then combine these bases into tensor product spaces. For
 example, to create a basis for the aforementioned domain, with Dirichlet in
 :math:`x`- and periodic in :math:`y`-direction, a user may proceed
-as follows
+as follows::
 
->>> from shenfun import Basis, TensorProductSpace
->>> from mpi4py import MPI
->>> comm = MPI.COMM_WORLD
->>> N = (14, 16)
->>> B0 = Basis(N[0], 'Chebyshev', bc=(0, 0))
->>> B1 = Basis(N[1], 'Fourier', dtype='d')
->>> V = TensorProductSpace(comm, (B0, B1))
+    from shenfun import Basis, TensorProductSpace
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    N = (14, 16)
+    B0 = Basis(N[0], 'Chebyshev', bc=(0, 0))
+    B1 = Basis(N[1], 'Fourier', dtype='d')
+    V = TensorProductSpace(comm, (B0, B1))
 
 where the Fourier basis ``B1`` is for real-to-complex transforms, which is
 ensured by the ``dtype`` keyword being set to ``d`` for double. ``dtype``

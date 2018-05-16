@@ -26,12 +26,12 @@ class _Fouriermatrix(SpectralMatrix):
         if abs(k_trial) + abs(k_test) > 0:
             if N % 2 == 0 and (k_trial + k_test) % 2 == 1:
                 k[N//2] = 0
-            val = 2*np.pi*(1j*k)**(k_trial)*(-1j*k)**k_test
+            val = (1j*k)**(k_trial)*(-1j*k)**k_test
             if (k_trial + k_test) % 2 == 0:
                 val = val.real
             d = {0: val}
         else:
-            d = {0: 2*np.pi}
+            d = {0: 1.0}
         SpectralMatrix.__init__(self, d, test, trial)
 
     def solve(self, b, u=None, axis=0):

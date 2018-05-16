@@ -7,7 +7,7 @@ Demo - Cubic nonlinear Klein-Gordon equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 8, 2018
+:Date: May 15, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Klein-Gordon equation, in a triply periodic domain. The demo is implemented in
@@ -98,7 +98,7 @@ The energy of the solution can be computed as
    :label: _auto3
 
         
-        E(u) = \int_{\Omega} \left( \frac{1}{2} f^2 + \frac{1}{2}|\nabla u|^2 + \gamma(\frac{1}{2}u^2 - \frac{1}{4}u^4) \right)
+        E(u) = \int_{\Omega} \left( \frac{1}{2} f^2 + \frac{1}{2}|\nabla u|^2 + \gamma(\frac{1}{2}u^2 - \frac{1}{4}u^4) \right) dx
         
         
 
@@ -125,30 +125,32 @@ H^1(\Omega)` with Eq. :eq:`eq:du`, where :math:`H^1(\Omega)` is the Hilbert spac
    :label: eq:df_var
 
         
-        \frac{\partial}{\partial t} \int_{\Omega} f\, \overline{g} \,dx = \int_{\Omega}
-        \left(\nabla^2 u \, \overline{g}
-        - \gamma( u\, - u|u|^2) \, \overline{g} \right) \,dx,  
+        \frac{\partial}{\partial t} \int_{\Omega} f\, \overline{g}\, w \,dx = \int_{\Omega}
+        \left(\nabla^2 u - \gamma( u\, - u|u|^2) \right) \overline{g} \, w \,dx,  
         
 
 .. math::
    :label: eq:kg:du_var
 
           
-        \frac{\partial }{\partial t} \int_{\Omega} u\, \overline{v} \, dx =
-        \int_{\Omega} f\, \overline{v} \, dx. 
+        \frac{\partial }{\partial t} \int_{\Omega} u\, \overline{v}\, w \, dx =
+        \int_{\Omega} f\, \overline{v} \, w \, dx. 
         
 
-Note that the overline is used to indicate a complex conjugate. The functions :math:`f` and :math:`u` are now
+Note that the overline is used to indicate a complex conjugate, and
+:math:`w` is a weight function associated with the test functions. The functions 
+:math:`f` and :math:`u` are now
 to be considered as trial functions, and the integrals over the
 domain are often referred to as inner products. With inner product notation
 
 .. math::
         
-        \left(u, v\right) = \int_{\Omega} u \, \overline{v} \, dx.
+        \left(u, v\right) = \int_{\Omega} u \, \overline{v} \, w\, dx.
         
 
-and an integration by parts on the Laplacian, the spatially discretized variational problem can be
-formulated as: Find :math:`(u, f) \in H^1(\Omega) \times H^1(\Omega)` such that
+and an integration by parts on the Laplacian, the spatially discretized 
+variational problem can be formulated as:
+find :math:`(u, f) \in H^1(\Omega) \times H^1(\Omega)` such that
 
 .. math::
    :label: eq:df_var2
@@ -313,31 +315,32 @@ also by `Numpy <https://docs.scipy.org/doc/numpy-1.13.0/reference/routines.fft.h
         
 
 The inner products used in Eqs. :eq:`eq:df_var2`, :eq:`eq:kg:du_var2` may be
-computed using forward FFTs:
+computed using forward FFTs. However, there is a tiny detail that deserves
+a comment. The regular Fourier inner product is given as
+
+.. math::
+        \int_{0}^{L} e^{\imath \underline{k}x} e^{- \imath \underline{l}x} dx = L\, \delta_{kl}
+
+where a weight function is chosen as :math:`w(x) = 1` and :math:`\delta_{kl}` equals unity 
+for :math:`k=l` and zero otherwise. In Shenfun we choose instead to use a weight 
+function :math:`w(x)=1/L`, such that the weighted inner product integrates to 
+unity:
+
+.. math::
+        \int_{0}^{L} e^{\imath \underline{k}x} e^{- \imath \underline{l}x} \frac{1}{L} dx = \delta_{kl}.
+
+With this weight function the scalar product and the forward transform
+are the same and we obtain:
 
 .. math::
    :label: _auto13
 
         
-        \left(u, \Phi_{l,m,n}\right) =
-        \left(\frac{2\pi}{N}\right)^3
+        \left(u, \Phi_{l,m,n}\right) = \hat{u}_{l,m,n} =
+        \left(\frac{1}{N}\right)^3
         \mathcal{F}_l\left(\mathcal{F}_m\left(\mathcal{F}_n\left({u}\right)\right)\right)
         \quad \forall (l,m,n) \in \boldsymbol{l} \times \boldsymbol{m} \times
         \boldsymbol{n},
-        
-        
-
-whereas a complete transform requires
-
-.. math::
-   :label: _auto14
-
-        
-        \hat{u}_{l,m,n} =
-        \left(\frac{1}{N}\right)^3
-        \mathcal{F}_l\left(\mathcal{F}_m\left(\mathcal{F}_n\left(u\right)\right)\right)
-        \quad \forall (l,m,n) \in \boldsymbol{l} \times \boldsymbol{m} \times
-        \boldsymbol{n}.
         
         
 
@@ -346,11 +349,19 @@ may be written in terms of the Fourier transformed quantities :math:`\hat{u}` an
 :math:`\hat{f}`. Expanding the exact derivatives of the nabla operator, we have
 
 .. math::
-   :label: _auto15
+   :label: _auto14
 
         
         (\nabla u, \nabla v) =
-        (2\pi)^3(\underline{l}^2+\underline{m}^2+\underline{n}^2)\hat{u}_{l,m,n}, 
+        (\underline{l}^2+\underline{m}^2+\underline{n}^2)\hat{u}_{l,m,n}, 
+        
+        
+
+.. math::
+   :label: _auto15
+
+          
+        (u, v) = \hat{u}_{l,m,n}, 
         
         
 
@@ -358,15 +369,7 @@ may be written in terms of the Fourier transformed quantities :math:`\hat{u}` an
    :label: _auto16
 
           
-        (u, v) = (2\pi)^3\hat{u}_{l,m,n}, 
-        
-        
-
-.. math::
-   :label: _auto17
-
-          
-        (u|u|^2, v) = (2\pi)^3 \widehat{u|u|^2}
+        (u|u|^2, v) = \widehat{u|u|^2}
         
         
 
@@ -461,8 +464,8 @@ real data is now complex. We may start implementing the solver as follows
 We now have three instances ``K0``, ``K1`` and ``K2``, corresponding to the basis
 :eq:`eq:kg:Vn`, that each can be used to solve
 one-dimensional problems. However, we want to solve a 3D problem, and for this
-we need a tensor product basis, like :eq:`eq:kg:Wn`, created as a Cartesian product of these three
-bases
+we need a tensor product basis, like :eq:`eq:kg:Wn`, created as a Cartesian 
+product of these three bases
 
 .. code-block:: python
 
@@ -580,8 +583,7 @@ function can be implemented as
     gamma = 1  
     uh = TrialFunction(T)
     vh = TestFunction(T)i
-    A = inner(vh, uh)
-    k2 = -(inner(grad(vh), grad(uh)) / A + gamma)
+    k2 = -(inner(grad(vh), grad(uh))  + gamma)
     
     def compute_rhs(duf_hat, uf_hat, up, Tp, w0):
         duf_hat.fill(0)
@@ -682,8 +684,7 @@ decimal points at :math:`t=100`.
     
     uh = TrialFunction(T)
     vh = TestFunction(T)
-    A = inner(uh, vh)
-    k2 = -inner(grad(vh), grad(uh)) / A - gamma
+    k2 = -inner(grad(vh), grad(uh)) - gamma
     
     count = 0
     def compute_rhs(duf_hat, uf_hat, up, T, w0):
