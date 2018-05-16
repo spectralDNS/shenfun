@@ -7,7 +7,7 @@ Demo - Cubic nonlinear Klein-Gordon equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 15, 2018
+:Date: May 16, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Klein-Gordon equation, in a triply periodic domain. The demo is implemented in
@@ -42,6 +42,7 @@ quantum field theory :cite:`abdul08`. The equation is given as
         
         \frac{\partial^2 u}{\partial t^2} = \nabla^2 u - \gamma(u - u|u|^2) \quad
         \text{for} \, u \in
+        \Omega, 
         
 
 with initial conditions
@@ -117,9 +118,9 @@ the spectral Galerkin method. Being a Galerkin method, we need to reshape the
 governing equations into proper variational forms, and this is done by
 multiplying  :eq:`eq:df` and :eq:`eq:du` with the complex conjugate of proper
 test functions and then integrating
-over the domain. To this end we use testfunction :math:`g\in H^1(\Omega)` with
-Eq. :eq:`eq:df`  and  :math:`v \in
-H^1(\Omega)` with Eq. :eq:`eq:du`, where :math:`H^1(\Omega)` is the Hilbert space, and we obtain
+over the domain. To this end we use continuously differentiable 
+testfunctions :math:`g\in C(\Omega)` with Eq. :eq:`eq:df`  and  :math:`v \in
+C(\Omega)` with Eq. :eq:`eq:du`, and we obtain
 
 .. math::
    :label: eq:df_var
@@ -148,9 +149,8 @@ domain are often referred to as inner products. With inner product notation
         \left(u, v\right) = \int_{\Omega} u \, \overline{v} \, w\, dx.
         
 
-and an integration by parts on the Laplacian, the spatially discretized 
-variational problem can be formulated as:
-find :math:`(u, f) \in H^1(\Omega) \times H^1(\Omega)` such that
+and an integration by parts on the Laplacian, the variational problem can be 
+formulated as:
 
 .. math::
    :label: eq:df_var2
@@ -164,11 +164,10 @@ find :math:`(u, f) \in H^1(\Omega) \times H^1(\Omega)` such that
    :label: eq:kg:du_var2
 
           
-        \frac{\partial }{\partial t} (u, v) = (f, v) \quad \forall \, (v,g) \in
-        H^1(\Omega) \times H^1(\Omega). 
+        \frac{\partial }{\partial t} (u, v) = (f, v). 
         
 
-The time discretization is
+The time and space discretizations are
 still left open. There are numerous different approaches that one could take for
 discretizing in time, and the first two terms on the right hand side of
 :eq:`eq:df_var2` can easily be treated implicitly as well as explicitly. However,
@@ -239,13 +238,13 @@ We now look for solutions of the form
    :label: _auto6
 
         
-        u(x, y, z) = \sum_{n=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{l=-N/2}^{N/2-1}
-        \hat{u}_{l,m,n} \Phi_{l,m,n}(x,y,z). 
+        u(x, y, z, t) = \sum_{n=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{l=-N/2}^{N/2-1}
+        \hat{u}_{l,m,n} (t)\Phi_{l,m,n}(x,y,z). 
         
         
 
-The expansion coefficients :math:`\hat{u}_{l,m,n}` can be related directly to the solution :math:`u(x,
-y, z)` using Fast Fourier Transforms (FFTs) if we are satisfied with obtaining
+The expansion coefficients :math:`\hat{u}_{l,m,n}(t)` can be related directly to the solution :math:`u(x,
+y, z, t)` using Fast Fourier Transforms (FFTs) if we are satisfied with obtaining
 the solution in quadrature points corresponding to
 
 .. math::
@@ -400,35 +399,27 @@ implemented.  In short, :mod:`.shenfun` contains all the tools required to work 
 the spectral Galerkin method, and we will now see how :mod:`.shenfun` can be used to solve
 the Klein-Gordon equation. 
 
-.. We simplify notation by writing three-dimensional inner products as
+For completion, we note that the discretized problem to solve can be formulated
+with the Galerkin method as: 
+for all :math:`t>0`, find :math:`(f, u) \in W^N \times W^N`  such that
 
-.. !bt
+.. math::
+   :label: eq:dff
 
-.. \begin{align}
+        
+        \frac{\partial}{\partial t} (f, g) = -(\nabla u, \nabla g)
+        -\gamma \left( u - u|u|^2, g \right),  
+        
 
-.. (u, v) &= \mathcal{S}(u), \\
+.. math::
+   :label: eq:kg:duu
 
-.. &= \left(\frac{2\pi}{N}\right)^3 \mathcal{F}(u)
+          
+        \frac{\partial }{\partial t} (u, v) = (f, v) \quad \forall (g, v) \in W^N \times W^N. 
+        
 
-.. \end{align}
-
-.. !et
-
-.. and three-dimensional transforms as
-
-.. !bt
-
-.. \begin{align}
-
-.. \hat{u} &= \mathcal{T}(u), \\
-
-.. &= \left(\frac{1}{N}\right)^3 \mathcal{F}(u)
-
-.. \end{align}
-
-.. !et
-
-.. with inverse :math:`u = \mathcal{T}^{-1}(\hat{u})`.
+where :math:`u(x, y, z, 0)` and :math:`f(x, y, z, 0)` are given as the initial conditions
+according to Eq. :eq:`eq:init`.
 
 Implementation
 ==============

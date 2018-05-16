@@ -7,7 +7,7 @@ Demo - Kuramato-Sivashinsky equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 15, 2018
+:Date: May 16, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Kuramato-Sivashinsky equation, in a doubly periodic domain. The demo is implemented in
@@ -59,7 +59,7 @@ the spectral Galerkin method. Being a Galerkin method, we need to reshape the
 governing equations into proper variational forms, and this is done by
 multiplying  :eq:`eq:ks` with the complex conjugate of a proper
 test function and then integrating
-over the domain. To this end we use testfunction :math:`v\in H^1(\Omega)`, where :math:`H^1(\Omega)` is the Hilbert space, and we obtain
+over the domain. To this end we use testfunction :math:`v\in H^s(\Omega)`, where :math:`H^s(\Omega)` is the Sobolev space of order :math:`s`, and we obtain
 
 .. math::
    :label: eq:du_var
@@ -80,18 +80,17 @@ domain are often referred to as inner products. With inner product notation
         \left(u, v\right) = \int_{\Omega} u \, \overline{v} \, w \, dx.
         
 
-the spatially discretized variational problem can be
-formulated as: find :math:`u \in H^1(\Omega)` such that
+the variational problem can be formulated as
 
 .. math::
    :label: eq:du_var2
 
         
         \frac{\partial}{\partial t} (u, v) = -\left(\nabla^2 u + \nabla^4 u + |\nabla u|^2,
-        v \right) \quad \forall v \in H^1(\Omega). 
+        v \right). 
         
 
-The time discretization is
+The space and time discretizations are
 still left open. There are numerous different approaches that one could take for
 discretizing in time. Here we will use a fourth order exponential Runge-Kutta
 method.
@@ -99,7 +98,8 @@ method.
 Discretization
 --------------
 
-We discretize the model equation in space using Fourier basis functions
+We discretize the model equation in space using continuously differentiable 
+Fourier basis functions
 
 .. math::
    :label: _auto2
