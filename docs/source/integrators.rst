@@ -111,7 +111,7 @@ forward with a given timestep
     integrator.setup(dt)
     u_hat = integrator.solve(u_, u_hat, dt, (0, end_time))
 
-The solution is two waves travelling through eachother, seemingly unchanged
+The solution is two waves travelling through eachother, seemingly undisturbed.
 
 .. image:: KdV.png
     :width: 600px
