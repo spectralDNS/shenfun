@@ -55,16 +55,15 @@ non-zero constants.
 
 To solve Eq. (ref{eq:poisson}) with the Galerkin method we need smooth continuously 
 differentiable basis functions, $v_k$, that satisfy the given boundary conditions. 
-And then we look for solutions
-like
+And then we look for solutions like
 !bt
 \begin{equation}
-u(x) = \sum_{k=0}^{N-1} \hat{u}_k v_k(x), label{eq:u}
+u(x) = \sum_{k=0}^{N} \hat{u}_k v_k(x), label{eq:u}
 \end{equation}
 !et
 
-where $N$ is the size of the discretized problem and the basis is 
-$V^N=\text{span}\{v_k\}_{k=0}^{N-1}$.
+where $N+1$ is the size of the discretized problem and the basis is 
+$V^N=\text{span}\{v_k\}_{k=0}^{N}$.
 The basis functions can, for example,  be constructed from 
 "Chebyshev": "https://en.wikipedia.org/wiki/Chebyshev_polynomials", $T_k(x)$, or 
 "Legendre": "https://en.wikipedia.org/wiki/Legendre_polynomials", $L_k(x)$, functions 
@@ -75,25 +74,26 @@ it is easiest to use basis functions with homogeneous Dirichlet boundary conditi
 v_k(x) = \phi_k(x) - \phi_{k+2}(x),
 \end{equation}
 !et
-for $k=0, 1, \ldots N-3$, and then the last two are added as two linear basis functions (that belong to the kernel of the Poisson equation)
+for $k=0, 1, \ldots N-2$, and then the last two are added as two linear basis functions (that belong to the kernel of the Poisson equation)
 !bt
 \begin{align}
-v_{N-2} &= \frac{1}{2}(\phi_0 + \phi_1), \\
-v_{N-1} &= \frac{1}{2}(\phi_0 - \phi_1).
+v_{N-1} &= \frac{1}{2}(\phi_0 + \phi_1), \\
+v_{N} &= \frac{1}{2}(\phi_0 - \phi_1).
 \end{align}
 !et
 With these two final basis functions it is easy to see that the two last degrees
-of freedom, $\hat{u}_{N-2}$ and $\hat{u}_{N-1}$, now are given as
+of freedom, $\hat{u}_{N-1}$ and $\hat{u}_{N}$, now are given as
 !bt
 \begin{align}
-u(-1) &= \sum_{k=0}^{N-1} \hat{u}_k v_k(-1) = \hat{u}_{N-2} = a,
+u(-1) &= \sum_{k=0}^{N} \hat{u}_k v_k(-1) = \hat{u}_{N-1} = a,
 label{eq:dirichleta} \\
-u(+1) &= \sum_{k=0}^{N-1} \hat{u}_k v_k(+1) = \hat{u}_{N-1} = b,
+u(+1) &= \sum_{k=0}^{N} \hat{u}_k v_k(+1) = \hat{u}_{N} = b,
 label{eq:dirichletb}
 \end{align}
 !et
-and, as such, we only have to solve for $\{\hat{u}_k\}_{k=0}^{N-3}$, just like
-for a problem with homogeneous boundary conditions.
+and, as such, we only have to solve for $\{\hat{u}_k\}_{k=0}^{N-2}$, just like
+for a problem with homogeneous boundary conditions (for homogeneous boundary condition
+we simply have $\hat{u}_{N-1} = \hat{u}_N = 0$). 
 We now formulate a variational problem using the Galerkin method: Find $u \in V^N$ such that
 !bt
 \begin{equation}
@@ -114,7 +114,7 @@ obtain
 !bt
 \begin{align}
 \int_{-1}^1 u \, v \, w\, dx &\approx \left( u, v \right)_w^N,  \\
-&\approx \sum_{j=0}^{N-1} u(x_j) v(x_j) w(x_j),
+&\approx \sum_{j=0}^{N} u(x_j) v(x_j) w(x_j),
 \end{align}
 !et
 where $w(x_j)$ are quadrature weights. The quadrature points $\{x_j\}_{j=0}^N$ 
@@ -122,7 +122,7 @@ are specific to the chosen basis, and even within basis there are two different
 choices based on which quadrature rule is selected, either Gauss or Gauss-Lobatto.
 
 Inserting for test and trialfunctions, we get the following bilinear form and
-matrix $A\in\mathbb{R}^{N-2\times N-2}$ for the Laplacian (using the summation convention in step 2)
+matrix $A\in\mathbb{R}^{N-1\times N-1}$ for the Laplacian (using the summation convention in step 2)
 
 !bt
 \begin{align*}
@@ -131,12 +131,13 @@ matrix $A\in\mathbb{R}^{N-2\times N-2}$ for the Laplacian (using the summation c
     &= A_{jk} \hat{u}_k.
 \end{align*}
 !et 
-Note that the sum in $A_{jk} \hat{u}_{k}$ runs over $k=0, 1, \ldots, N-3$ since
+Note that the sum in $A_{jk} \hat{u}_{k}$ runs over $k=0, 1, \ldots, N-2$ since
 the last two degrees of freedom already are known from Eq. (ref{eq:dirichleta})
-and (ref{eq:dirichletb}), and the second derivatives of $v_{N-2}$ and $v_{N-1}$
+and (ref{eq:dirichletb}), and the second derivatives of $v_{N-1}$ and $v_{N}$
 are zero.
 The right hand side linear form and vector is computed as $\tilde{f}_j = (f,
-v_j)_w^N$, for $j=0,1,\ldots, N-3$, where a tilde is used because this is not a complete transform of the function $f$, but only an inner product. 
+v_j)_w^N$, for $j=0,1,\ldots, N-2$, where a tilde is used because this is not 
+a complete transform of the function $f$, but only an inner product. 
 
 The linear system of equations to solve for the expansion coefficients of $u(x)$ is given as
 
@@ -148,11 +149,11 @@ A_{jk} \hat{u}_k = \tilde{f}_j.
 
 Now, when $\hat{u}$ is found by solving this linear system, it may be
 transformed to real space $u(x)$ using (ref{eq:u}), and here the contributions
-from $\hat{u}_{N-2}$ and $\hat{u}_{N-1}$ must be accounted for. Note that the matrix
+from $\hat{u}_{N-1}$ and $\hat{u}_{N}$ must be accounted for. Note that the matrix
 $A_{jk}$ (different for Legendre or Chebyshev) has a very special structure that
 allows for a solution to be found very efficiently in order of $\mathcal{O}(N)$
 operations, see cite{shen1} and cite{shen95}. These solvers are implemented in
-`shenfun` for both bases.
+${'shenfun'} for both bases.
 
 ===== Method of manufactured solutions =====
 
@@ -165,9 +166,9 @@ conditions:
 u_e(x) = \sin(k\pi x)(1-x^2) + a(1+x)/2 + b(1-x)/2, label{eq:u_e}
 \end{equation}
 !et
-where $k$ is an integer and $a$ and $b$ are constants. Now, feeding $u_e$ through the Laplace operator, we see
-that the last two linear terms disappear, whereas the first term results in
-in
+where $k$ is an integer and $a$ and $b$ are constants. Now, feeding $u_e$ through 
+the Laplace operator, we see that the last two linear terms disappear, whereas the 
+first term results in
 !bt
 \begin{align}
  \nabla^2 u_e(x) &= \frac{d^2 u_e}{dx^2},  \\
@@ -176,8 +177,9 @@ x^2) \sin(k \pi x). label{eq:solution}
 \end{align}
 !et
 
-Now, setting $f_e(x) = \nabla^2 u_e(x)$ and solving for $\nabla^2 u(x) = f_e(x)$, we can compare the numerical solution $u(x)$ with the analytical solution $u_e(x)$ and compute error norms.
-
+Now, setting $f_e(x) = \nabla^2 u_e(x)$ and solving for $\nabla^2 u(x) = f_e(x)$, 
+we can compare the numerical solution $u(x)$ with the analytical solution $u_e(x)$ 
+and compute error norms.
 
 ======= Implementation =======
 
