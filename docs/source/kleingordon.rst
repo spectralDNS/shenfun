@@ -42,7 +42,6 @@ quantum field theory :cite:`abdul08`. The equation is given as
         
         \frac{\partial^2 u}{\partial t^2} = \nabla^2 u - \gamma(u - u|u|^2) \quad
         \text{for} \, u \in
-        \Omega, 
         
 
 with initial conditions

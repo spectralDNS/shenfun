@@ -20,7 +20,7 @@ where :math:`u` is the solution, :math:`L` is a linear operator and
 
 """
 import numpy as np
-from shenfun import Function
+from shenfun import Function, SparseMatrix
 from shenfun import inheritdocstrings
 
 __all__ = ('RK4', 'ETDRK4', 'ETD')
@@ -189,6 +189,9 @@ class ETDRK4(IntegratorBase):
         """Set up ETDRK4 ODE solver"""
         self.params['dt'] = dt
         L = self.LinearRHS(**self.params)
+        if isinstance(L, SparseMatrix):
+            assert 0 in L.keys() and len(L.keys()) == 1
+            L = L[0]*L.scale
         L = np.atleast_1d(L)
         hL = L*dt
         ehL = self.ehL = np.exp(hL)

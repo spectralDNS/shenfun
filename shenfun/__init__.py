@@ -9,6 +9,7 @@ from . import legendre
 from . import fourier
 from . import matrixbase
 from .fourier import energy_fourier
+from .matrixbase import *
 from .forms.project import *
 from .forms.inner import *
 from .forms.operators import *
@@ -19,6 +20,5 @@ from .utilities.integrators import *
 from .utilities.h5py_writer import *
 from .utilities.nc_writer import *
 from .utilities.generate_xdmf import *
-from .matrixbase import *
 from .optimization import Cheb, la, Matvec, convolve, evaluate
 

@@ -153,16 +153,13 @@ class SparseMatrix(dict):
 
     def __mul__(self, y):
         """Returns copy of self.__mul__(y) <==> self*y"""
-        assert isinstance(y, Number)
-        return SparseMatrix(deepcopy(dict(self)), self.shape,
-                            scale=self.scale*y)
-#        for key in f:
-#            # Check if symmetric
-#            if key < 0 and (-key) in f:
-#                if id(f[key]) == id(f[-key]):
-#                    continue
-#            f[key] *= y
-#        return f
+        if isinstance(y, Number):
+            return SparseMatrix(deepcopy(dict(self)), self.shape,
+                                scale=self.scale*y)
+        elif isinstance(y, np.ndarray):
+            c = np.zeros_like(y)
+            c = self.matvec(y, c)
+            return c
 
     def __rmul__(self, y):
         """Returns copy of self.__rmul__(y) <==> y*self"""
@@ -170,16 +167,15 @@ class SparseMatrix(dict):
 
     def __div__(self, y):
         """Returns copy self.__div__(y) <==> self/y"""
-        assert isinstance(y, Number)
-        return SparseMatrix(deepcopy(dict(self)), self.shape,
-                            scale=self.scale/y)
-#        for key in f:
-#            # Check if symmetric
-#            if key < 0 and (-key) in f:
-#                if id(f[key]) == id(f[-key]):
-#                    continue
-#            f[key] /= y
-#        return f
+        if isinstance(y, Number):
+            return SparseMatrix(deepcopy(dict(self)), self.shape,
+                                scale=self.scale/y)
+        elif isinstance(y, np.ndarray):
+            b = np.zeros_like(y)
+            b = self.solve(y, b)
+            return b
+        else:
+            raise NotImplementedError
 
     def __truediv__(self, y):
         """Returns copy self.__div__(y) <==> self/y"""
@@ -262,6 +258,10 @@ class SparseMatrix(dict):
                 else:
                     self[key] = -d.scale*val/self.scale
 
+        return self
+
+    def __neg__(self):
+        self.scale *= -1
         return self
 
     def __hash__(self):

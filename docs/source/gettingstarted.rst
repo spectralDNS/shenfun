@@ -1,3 +1,5 @@
+.. _sec:gettingstarted:
+
 Getting started
 ===============
 
