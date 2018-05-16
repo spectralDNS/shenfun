@@ -4,77 +4,90 @@ Introduction
 Spectral Galerkin
 -----------------
 
-The spectral Galerkin method uses the method of weighted residuals, and
-solves PDEs by first creating variational forms from inner products,
+The spectral Galerkin method solves partial differential equations through
+a special form of the `method of weighted residuals <https://en.wikiversity.org/wiki/Introduction_to_finite_elements/Weighted_residual_methods>`_ (WRM). As a Galerkin method it
+is very similar to the `finite element method <https://en.wikipedia.org/wiki/Finite_element_method>`_ (FEM). The most distinguishable
+feature is that it uses global shape functions, where FEM uses local. This
+feature leads to highly accurate results with very few shape functions, but
+the downside is much less flexibility when it comes to computational
+geometry than FEM. 
 
-.. math::
-    :label: intro:varform
-
-    (u, v)_w = \int_{\Omega} u(\boldsymbol{x}) \overline{v}(\boldsymbol{x}) w(\boldsymbol{x}) d\boldsymbol{x} 
-
-where :math:`\Omega` is the computational domain, :math:`u` is a trial 
-function, :math:`v` a test function (overline indicates a complex conjugate),
-and :math:`w` is a weight function. The bold :math:`\boldsymbol{x}` represents 
-:math:`(x,y,z)` for a 3D inner product, but shenfun may be used for any number 
-of dimensions.
-
-Consider the Poisson equation with homogeneous Dirichlet boundary conditions
-and a right hand side function :math:`f(\boldsymbol{x})`
+Consider the Poisson equation with a right hand side function :math:`f(\boldsymbol{x})`
 
 .. math::
    :label: eq:poisson1
 
-    -\nabla^2 u(\boldsymbol{x}) &= f(\boldsymbol{x}) \quad \text{for } \, \boldsymbol{x} \in \Omega \\
-              u(\boldsymbol{x}) &= 0\, \text{for }\, \boldsymbol{x} \in \Gamma
+    -\nabla^2 u(\boldsymbol{x}) = f(\boldsymbol{x}) \quad \text{for } \, \boldsymbol{x} \in \Omega.
 
-To solve this problem with the spectral Galerkin method we need to create a 
-variational form by first multiplying the entire equation by a test function 
-:math:`\overline{v}` that satisfies the boundary conditions: :math:`v(\boldsymbol{x}) = 0`
-for :math:`\boldsymbol{x} \, \in \Gamma`. We also multiply by an associated 
-weight function :math:`w`, which is chosen on basis on obtaining orthogonal
-inner products. For basis functions composed of Fourier or Legendre polynomials
-the weight function is simply a constant, but for Chebyshev the required weight
-function is :math:`1/\sqrt{1-x^2}`. After multiplying :eq:`eq:poisson1` with 
-:math:`\overline{v(\boldsymbol{x})} w(\boldsymbol{x})` we then integrate over 
-the domain to obtain the variational form
+To solve this equation, we will eventually need to supplement 
+appropriate boundary conditions. However, for now just assume that any boundary
+conditions are possible (Dirichlet, Neumann, periodic).
+
+With the method of weighted residuals we attempt to find :math:`u(\boldsymbol{x})`
+using an approximation, :math:`u_N`, to the solution 
 
 .. math::
-   :label: eq:poisson2
+   :label: eq:mwr_u
 
-    (-\nabla^2 u, v)_w = (f, v)_w   
+    u(\boldsymbol{x}) \approx u_N(\boldsymbol{x}) = \sum_{k=0}^{N} \hat{u}_k \phi_k(\boldsymbol{x}).
 
-The solution to the Poisson equation is found in the Hilbert space :math:`H^1(\Omega)`
-and the variational problem is solved as: find :math:`u \in H^1` such that
-
-.. math::
-   :label: eq:poisson3
-
-    (-\nabla^2 u, v)_w = (f, v)_w \quad \forall v \, \in H^1_0   
-
-where :math:`H^1_0` represents :math:`H^1` restricted to the homogeneous Dirichlet
-boundary condition.
-
-Equation :eq:`eq:poisson3` is formulated in continuous space. To solve this
-equation on a computer we need to discretize using a finite number of test
-functions :math:`v`, and we need to evaluate the inner products numerically
-using quadrature. 
-
-The choice of :math:`v(\boldsymbol{x})` is highly sentral to the method. 
-In one spatial dimension typical choices for :math:`v` are
+Here the :math:`N+1` expansion coefficients :math:`\hat{u}_k` are unknown
+and :math:`\{\phi_k\}_{k\in \mathcal{I}}, \mathcal{I} = 0, 1, \ldots, N` are
+*trial* functions. Inserting for :math:`u_N` in Eq. :eq:`eq:poisson1` we get
+a residual
 
 .. math::
+   :label: eq:residual
 
-   v_k(x) &= T_k(x) \\
-   v_k(x) &= T_k(x) - T_{k+2}(x) \\
-   v_k(x) &= L_k(x) \\
-   v_k(x) &= L_k(x) - L_{k+2}(x) \\ 
-   v_k(x) &= \exp(\imath k x)
+    R_N(\boldsymbol{x}) = -\nabla^2 u_N(\boldsymbol{x}) - f(\boldsymbol{x}) \neq 0.
+
+With the WRM we now force this residual to zero in an average sense using 
+*test* function :math:`v(\boldsymbol{x})` and *weight* function 
+:math:`w(\boldsymbol{x})`
+
+.. math::
+   :label: eq:wrm_test
+
+    \left(R_N, v \right)_w := \int_{\Omega} R_N(\boldsymbol{x}) \, \overline{v}(\boldsymbol{x}) \, w(\boldsymbol{x}) d\boldsymbol{x} = 0,
+
+where :math:`\overline{v}` is the complex conjugate of :math:`v`. If we
+now choose the test functions from the basis :math:`v \in V_N=span\{\phi_k\}_{k\in \mathcal{I}}`, 
+then the WRM becomes the Galerkin method, and we get :math:`N+1` equations for 
+:math:`N+1` unknowns :math:`\{\hat{u}_k\}_{k\in \mathcal{I}}`
+
+.. math::
+   :label: eq:galerkin
+
+    \sum_{j\in \mathcal{I}}\left(-\nabla^2 \phi_j, \phi_k \right)_w \hat{u}_j = \left( f, \phi_k \right), \text{ for } k \in \mathcal{I}.
+
+The choice of basis for :math:`v(\boldsymbol{x})` is highly central to the method. 
+For the Galerkin method to be *spectral*, the basis is usually chosen as linear 
+combinations of Chebyshev, Legendre, Laguerre, Hermite or trigonometric functions.
+In one spatial dimension typical choices for :math:`\phi_k` are
+
+.. math::
+
+   \phi_k(x) &= T_k(x) \\
+   \phi_k(x) &= T_k(x) - T_{k+2}(x) \\
+   \phi_k(x) &= L_k(x) \\
+   \phi_k(x) &= L_k(x) - L_{k+2}(x) \\ 
+   \phi_k(x) &= \exp(\imath k x)
    
-where :math:`T_k, L_k` are the :math:`k`'th Chebyshev polynomial of the first kind
-and the :math:`k`'th Legendre polynomial, respectively. Note that the second
-and fourth functions above satisfy the homogeneous Dirichlet boundary conditions 
-:math:`v(\pm 1) = 0`, and as such these basis functions may be used to solve
-the Poisson equation :eq:`eq:poisson1`.
+where :math:`T_k, L_k` are the :math:`k`'th Chebyshev polynomial of the first 
+kind and the :math:`k`'th Legendre polynomial, respectively. Note that the 
+second and fourth functions above satisfy the homogeneous Dirichlet boundary 
+conditions :math:`\phi_k(\pm 1) = 0`, and as such these basis functions may be 
+used to solve the Poisson equation :eq:`eq:poisson1` with homogeneous Dirichlet 
+boundary conditions. Similarly, two basis functions that satisfy homogeneous 
+Neumann boundary condition :math:`u'(\pm 1)=0` are
+
+.. math::
+
+    \phi_k &= T_k-\left(\frac{k}{k+2}\right)^2T_{k+2} \\
+    \phi_k &= L_k-\frac{k(k+1)}{(k+2)(k+3)}L_{k+2}
+
+Shenfun contains classes for working with several such bases, to be used for 
+different equations and boundary conditions.
 
 Tensor products
 ---------------
@@ -90,7 +103,8 @@ computed as
 
 If we now have a problem with Dirichlet in :math:`x`-direction and periodic in
 :math:`y`-direction, then we can choose :math:`\mathcal{X}_k(x) = T_k-T_{k+2}`,
-:math:`\mathcal{Y}_l(y) = \exp(\imath l y)` and a test function is then
+:math:`\mathcal{Y}_l(y) = \exp(\imath l y)` and a tensor product test function
+is then
 
 .. math::
    :label: eq:v2D
@@ -117,15 +131,15 @@ With shenfun a user chooses the appropriate bases for each dimension of the
 problem, and may then combine these bases into tensor product spaces. For
 example, to create a basis for the aforementioned domain, with Dirichlet in
 :math:`x`- and periodic in :math:`y`-direction, a user may proceed
-as follows
+as follows::
 
->>> from shenfun import Basis, TensorProductSpace
->>> from mpi4py import MPI
->>> comm = MPI.COMM_WORLD
->>> N = (14, 16)
->>> B0 = Basis(N[0], 'Chebyshev', bc=(0, 0))
->>> B1 = Basis(N[1], 'Fourier', dtype='d')
->>> V = TensorProductSpace(comm, (B0, B1))
+    from shenfun import Basis, TensorProductSpace
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+    N = (14, 16)
+    B0 = Basis(N[0], 'Chebyshev', bc=(0, 0))
+    B1 = Basis(N[1], 'Fourier', dtype='d')
+    V = TensorProductSpace(comm, (B0, B1))
 
 where the Fourier basis ``B1`` is for real-to-complex transforms, which is
 ensured by the ``dtype`` keyword being set to ``d`` for double. ``dtype``
@@ -134,7 +148,8 @@ data type of the solution in physical space. Setting
 ``dtype='D'`` indicates that this datatype will be complex. Note that it
 will not trigger an error, or even lead to wrong results, if ``dtype`` is
 by mistake set to ``D``. It is merely less efficient to work with complex data
-arrays where double precision is sufficient. 
+arrays where double precision is sufficient. See Sec :ref:`sec:gettingstarted`
+for more information on getting started with using bases.
 
 The tensor product space ``V`` will here be distributed with the *slab* method
 (since the problem is 2D) and it
