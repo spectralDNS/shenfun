@@ -385,7 +385,6 @@ product of these three bases
 !bc pycod
 # Create communicator
 comm = MPI.COMM_WORLD
-
 T = TensorProductSpace(comm, (K0, K1, K2), **{'planner_effort': 
                                               'FFTW_MEASURE'})
 !ec
@@ -413,10 +412,8 @@ e.g., the Runge-Kutta method. Arrays are created as
 !bc pycod
 uf = Array(TT, False) # Solution array in physical space
 u, f = uf[:]          # Split solution array by creating two views u and f
-
 duf = Array(TT)       # Array for right hand sides
 du, df = duf[:]       # Split into views
-
 uf_hat = Array(TT)    # Solution in spectral space
 uf_hat0 = Array(TT)   # Work array 1
 uf_hat1 = Array(TT)   # Work array 2
@@ -580,7 +577,6 @@ X = T.local_mesh(True)
 uf = Array(TT, False)
 u, f = uf[:]
 up = Array(T, False)
-
 duf = Array(TT)
 du, df = duf[:]
 

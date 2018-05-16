@@ -31,8 +31,8 @@ TensorProductSpace with Fourier bases in all directions::
 The instance `h5file` will now have two methods that can be used to dump
 dataarrays, either the complete array, or slices into the domain
 
-    * `write_tstep`
-    * `write_slice_tstep`
+    * :meth:`.HDF5Writer.write_tstep`
+    * :meth:`.HDF5Writer.write_slice_tstep`
 
 These methods assume, as their names suggest, that the problem to be solved is
 timedependent. As such it is easy to use for a transient problem. 
