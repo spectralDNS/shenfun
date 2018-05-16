@@ -45,6 +45,7 @@ def LinearRHS(**params):
 def NonlinearRHS(U, U_hat, dU, **params):
     global TV, curl_hat, curl_, P_hat, K, K_over_K2
     dU.fill(0)
+    curl_hat.fill(0)
     U = TV.backward(U_hat, U)
     curl_hat = project(curl(U), TV, output_array=curl_hat, uh_hat=U_hat) # Linear. Does not actually use U, only U_hat
     curl_ = TV.backward(curl_hat, curl_)

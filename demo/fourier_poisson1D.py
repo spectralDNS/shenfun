@@ -24,8 +24,8 @@ except ImportError:
 
 # Use sympy to compute a rhs, given an analytical solution
 x = Symbol("x")
-ue = cos(4*x) + 1j*sin(6*x)
-#ue = cos(4*x)
+#ue = cos(4*x) + 1j*sin(6*x)
+ue = cos(4*x)
 fe = ue.diff(x, 2)
 
 # Lambdify for faster evaluation
@@ -55,7 +55,10 @@ A = inner(grad(v), grad(u))
 u_hat = Function(ST)
 u_hat = A.solve(-f_hat, u_hat)
 
-uq = ST.backward(u_hat)
+uq = ST.backward(u_hat, fast_transform=True)
+
+u_hat = ST.forward(uq, u_hat, fast_transform=True)
+uq = ST.backward(u_hat, uq, fast_transform=True)
 
 assert np.allclose(uj, uq)
 
