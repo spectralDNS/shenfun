@@ -1,5 +1,6 @@
 #pylint: disable=missing-docstring
 
+import numpy as np
 from .bases import *
 from .matrices import *
 
@@ -25,8 +26,8 @@ def energy_fourier(u, T):
         return result
 
     comm = T.comm
-    assert np.all([isinstance(base, fourier.bases.FourierBase) for base in T.bases])
-    if isinstance(T.bases[-1], fourier.bases.R2CBasis):
+    assert np.all([isinstance(base, FourierBase) for base in T.bases])
+    if isinstance(T.bases[-1], R2CBasis):
         if T.forward.output_pencil.subcomm[-1].Get_size() == 1:
             result = (2*np.sum(abs(u[..., 1:-1])**2) +
                       np.sum(abs(u[..., 0])**2) +
@@ -48,6 +49,4 @@ def energy_fourier(u, T):
 
     result = comm.allreduce(result)
     return result
-
-
 

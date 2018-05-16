@@ -43,8 +43,7 @@ K = np.array(T.local_wavenumbers(True, True, True))
 
 def LinearRHS(**params):
     # Assemble diagonal bilinear forms
-    A = inner(u, v)
-    L = -(inner(div(grad(u)), v) + inner(div(grad(div(grad(u)))), v)) / A
+    L = -(inner(div(grad(u)), v) + inner(div(grad(div(grad(u)))), v))
     return L
 
 def NonlinearRHS(U, U_hat, dU, **params):

@@ -7,7 +7,7 @@ Demo - Kuramato-Sivashinsky equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 8, 2018
+:Date: May 15, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Kuramato-Sivashinsky equation, in a doubly periodic domain. The demo is implemented in
@@ -65,22 +65,23 @@ over the domain. To this end we use testfunction :math:`v\in H^1(\Omega)`, where
    :label: eq:du_var
 
         
-        \frac{\partial}{\partial t} \int_{\Omega} u\, \overline{v} \,dx = -\int_{\Omega}
-        \left(\nabla^2 u + \nabla^4 u \ + |\nabla u|^2 \right) \overline{v} \,dx.
+        \frac{\partial}{\partial t} \int_{\Omega} u\, \overline{v}\, w \,dx = -\int_{\Omega}
+        \left(\nabla^2 u + \nabla^4 u \ + |\nabla u|^2 \right) \overline{v} \, w \,dx.
         
         
 
-Note that the overline is used to indicate a complex conjugate. The function :math:`u`
+Note that the overline is used to indicate a complex conjugate, whereas :math:`w`
+is a weight function. The function :math:`u`
 is now to be considered a trial function, and the integrals over the
 domain are often referred to as inner products. With inner product notation
 
 .. math::
         
-        \left(u, v\right) = \int_{\Omega} u \, \overline{v} \, dx.
+        \left(u, v\right) = \int_{\Omega} u \, \overline{v} \, w \, dx.
         
 
 the spatially discretized variational problem can be
-formulated as: Find :math:`u \in H^1(\Omega)` such that
+formulated as: find :math:`u \in H^1(\Omega)` such that
 
 .. math::
    :label: eq:du_var2
@@ -213,29 +214,16 @@ also by `Numpy <https://docs.scipy.org/doc/numpy-1.13.0/reference/routines.fft.h
         
 
 The inner products used in Eq. :eq:`eq:du_var2` may be
-computed using forward FFTs:
+computed using forward FFTs (using weight functions :math:`w=1/L`):
 
 .. math::
    :label: _auto9
 
         
-        \left(u, \Phi_{lm}\right) =
-        \left(\frac{2\pi}{N}\right)^2
+        \left(u, \Phi_{lm}\right) = \hat{u}_{lm} =
+        \frac{1}{N^2}
         \mathcal{F}_l\left(\mathcal{F}_m\left({u}\right)\right)
         \quad \forall (l,m) \in \boldsymbol{l} \times \boldsymbol{m},
-        
-        
-
-whereas a complete transform requires
-
-.. math::
-   :label: _auto10
-
-        
-        \hat{u}_{lm} =
-        \left(\frac{1}{N}\right)^2
-        \mathcal{F}_l\left(\mathcal{F}_m\left(u\right)\right)
-        \quad \forall (l,m) \in \boldsymbol{l} \times \boldsymbol{m}.
         
         
 
@@ -244,11 +232,19 @@ may be written in terms of the Fourier transformed :math:`\hat{u}`. Expanding th
 exact derivatives of the nabla operator, we have
 
 .. math::
-   :label: _auto11
+   :label: _auto10
 
         
         (\nabla^2 u, v) =
-        -(2\pi)^2(\underline{l}^2+\underline{m}^2)\hat{u}_{l,m}, 
+        -(\underline{l}^2+\underline{m}^2)\hat{u}_{l,m}, 
+        
+        
+
+.. math::
+   :label: _auto11
+
+          
+        (\nabla^4 u, v) = (\underline{l}^2+\underline{m}^2)^2\hat{u}_{l,m}, 
         
         
 
@@ -256,15 +252,7 @@ exact derivatives of the nabla operator, we have
    :label: _auto12
 
           
-        (\nabla^4 u, v) = (2\pi)^2(\underline{l}^2+\underline{m}^2)^2\hat{u}_{l,m}, 
-        
-        
-
-.. math::
-   :label: _auto13
-
-          
-        (|\nabla u|^2, v) = (2\pi)^2 \widehat{|\nabla u|^2}
+        (|\nabla u|^2, v) = \widehat{|\nabla u|^2}
         
         
 
@@ -341,18 +329,18 @@ achieved by symmetrizing the Fourier series by replacing the first sum below
 with the second when computing odd derivatives.
 
 .. math::
-   :label: _auto14
+   :label: _auto13
 
         
-        u  = \sum_{k=-N/2}^{N/2-1} \hat{u} \exp(\imath k x)
+        u  = \sum_{k=-N/2}^{N/2-1} \hat{u} e^{\imath k x}
         
         
 
 .. math::
-   :label: _auto15
+   :label: _auto14
 
           
-        u  = \sideset{}{'}\sum_{k=-N/2}^{N/2} \hat{u} \exp(\imath k x)
+        u  = \sideset{}{'}\sum_{k=-N/2}^{N/2} \hat{u} e^{\imath k x}
         
         
 
@@ -381,8 +369,7 @@ below, called ``LinearRHS`` and ``NonlinearRHS``
 
     def LinearRHS():
         # Assemble diagonal bilinear forms
-        A = inner(u, v)
-        L = -(inner(div(grad(u)), v) + inner(div(grad(div(grad(u)))), v)) / A
+        L = -(inner(div(grad(u)), v) + inner(div(grad(div(grad(u)))), v))
         return L
     
     def NonlinearRHS(U, U_hat, dU):

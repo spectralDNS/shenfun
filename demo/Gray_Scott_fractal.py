@@ -91,12 +91,10 @@ U[:] = ul(*X)
 V[:] = vl(*X)
 UV_hat = TV.forward(UV, UV_hat)
 
-A = inner(u, v) # just (2*pi)**2
-
 def LinearRHS(alpha1, alpha2, **params):
     L = inner(vv, (e1, e2)*div(grad(uu)))
-    L = np.array([-(-L[0]/A)**(alpha1/2),
-                  -(-L[1]/A)**(alpha2/2)])
+    L = np.array([-(-L[0])**(alpha1/2),
+                  -(-L[1])**(alpha2/2)])
     return L
 
 def NonlinearRHS(uv, uv_hat, rhs, kappa, **params):
@@ -140,3 +138,4 @@ if __name__ == '__main__':
     integrator = ETDRK4(TV, L=LinearRHS, N=NonlinearRHS, update=update, **par)
     integrator.setup(dt)
     UV_hat = integrator.solve(UV, UV_hat, dt, (0, end_time))
+
