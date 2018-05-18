@@ -241,6 +241,7 @@ class SpectralBase(object):
         Example
         -------
         >>> import numpy as np
+        >>> from shenfun.spectralbase import SpectralBase
         >>> x = np.arange(4)
         >>> y = SpectralBase.broadcast_to_ndims(x, 4, axis=2)
         >>> print(y.shape)
@@ -728,7 +729,9 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
     -------
     Compute mass matrix of Shen's Chebyshev Dirichlet basis:
 
+    >>> from shenfun.spectralbase import inner_product
     >>> from shenfun.chebyshev.bases import ShenDirichletBasis
+    >>> import six
     >>> SD = ShenDirichletBasis(6)
     >>> B = inner_product((SD, 0), (SD, 0))
     >>> d = {-2: np.array([-np.pi/2]),

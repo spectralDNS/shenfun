@@ -1,5 +1,5 @@
 MPI
-===
+---
 
 Shenfun makes use of the Message Passing Interface (MPI) to solve problems on
 distributed memory architectures. OpenMP is also possible to enable for FFTs.
