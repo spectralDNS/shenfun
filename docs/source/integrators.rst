@@ -1,5 +1,5 @@
 Integrators
-===========
+-----------
 
 The :mod:`.integrators` module contains some interator classes that can be
 used to integrate a solution forward in time. However, for now these integrators

@@ -37,6 +37,7 @@ and an instance of the matrix can be created as
 
 >>> B0 = SD(10)
 >>> BM = B((B0, 0), (B0, 0))
+>>> import numpy as np
 >>> d = {-2: np.array([-np.pi/2]),
 ...       0: np.array([ 1.5*np.pi, np.pi, np.pi, np.pi, np.pi, np.pi, np.pi, np.pi]),
 ...       2: np.array([-np.pi/2])}

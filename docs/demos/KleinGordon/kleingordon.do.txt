@@ -493,7 +493,7 @@ function can be implemented as
 # focusing (+1) or defocusing (-1)
 gamma = 1  
 uh = TrialFunction(T)
-vh = TestFunction(T)i
+vh = TestFunction(T)
 k2 = -(inner(grad(vh), grad(uh))  + gamma)
 
 def compute_rhs(duf_hat, uf_hat, up, Tp, w0):

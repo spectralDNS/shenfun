@@ -1,7 +1,7 @@
 .. _Postprocessing:
 
 Post processing
-===============
+---------------
 
 MPI is great because it means that you can run Shenfun on pretty much
 as many CPUs as you can get your hands on. However, MPI makes it more
@@ -132,7 +132,7 @@ all 1D arrays, representing the domain for each basis in the TensorProductSpace.
 Also note that these routines work with any number of CPUs and dimensions.
 
 ParaView
---------
+********
 
 The stored datafiles can be visualized in `ParaView <www.paraview.org>`_. 
 However, ParaView cannot understand the content of these HDF5-files without

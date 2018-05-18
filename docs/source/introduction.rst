@@ -10,7 +10,7 @@ is very similar to the `finite element method <https://en.wikipedia.org/wiki/Fin
 feature is that it uses global shape functions, where FEM uses local. This
 feature leads to highly accurate results with very few shape functions, but
 the downside is much less flexibility when it comes to computational
-geometry than FEM. 
+domain than FEM. 
 
 Consider the Poisson equation with a right hand side function :math:`f(\boldsymbol{x})`
 
@@ -20,8 +20,8 @@ Consider the Poisson equation with a right hand side function :math:`f(\boldsymb
     -\nabla^2 u(\boldsymbol{x}) = f(\boldsymbol{x}) \quad \text{for } \, \boldsymbol{x} \in \Omega.
 
 To solve this equation, we will eventually need to supplement 
-appropriate boundary conditions. However, for now just assume that any boundary
-conditions are possible (Dirichlet, Neumann, periodic).
+appropriate boundary conditions. However, for now just assume that any valid
+boundary conditions (Dirichlet, Neumann, periodic).
 
 With the method of weighted residuals we attempt to find :math:`u(\boldsymbol{x})`
 using an approximation, :math:`u_N`, to the solution 
@@ -39,7 +39,7 @@ a residual
 .. math::
    :label: eq:residual
 
-    R_N(\boldsymbol{x}) = -\nabla^2 u_N(\boldsymbol{x}) - f(\boldsymbol{x}) \neq 0.
+    R_N(\boldsymbol{x}) = \nabla^2 u_N(\boldsymbol{x}) + f(\boldsymbol{x}) \neq 0.
 
 With the WRM we now force this residual to zero in an average sense using 
 *test* function :math:`v(\boldsymbol{x})` and *weight* function 
@@ -58,7 +58,7 @@ then the WRM becomes the Galerkin method, and we get :math:`N+1` equations for
 .. math::
    :label: eq:galerkin
 
-    \sum_{j\in \mathcal{I}}\left(-\nabla^2 \phi_j, \phi_k \right)_w \hat{u}_j = \left( f, \phi_k \right), \text{ for } k \in \mathcal{I}.
+    \sum_{j\in \mathcal{I}}\left(-\nabla^2 \phi_j, \phi_k \right)_w \hat{u}_j = \left( f, \phi_k \right)_w, \text{ for } k \in \mathcal{I}.
 
 The choice of basis for :math:`v(\boldsymbol{x})` is highly central to the method. 
 For the Galerkin method to be *spectral*, the basis is usually chosen as linear 
@@ -117,13 +117,13 @@ test functions. Moving to even more dimensions is then trivial, as
 global basis functions simply are the products of one-dimensional basis
 functions. Combining one-dimensional bases like this results in
 tensor product spaces, with tensor product meshes. If the one-dimensional
-meshes in :math:`x`- and :math:`y`-directions are :math:`x = \{x_m\}_{m=0}^{N-1}`
-and :math:`y = \{y_n\}_{n=0}^{M-1}`, then a tensor product mesh :math:`X` is
+meshes in :math:`x`- and :math:`y`-directions are :math:`x = \{x_m\}_{m=0}^{N}`
+and :math:`y = \{y_n\}_{n=0}^{M}`, then a tensor product mesh :math:`X` is
 the outer product of these two vectors
 
 .. math::
 
-    X_{m, n} = x_m y_n, \text{for } m=0,1,\ldots, N-1, \, n=0,1,\ldots,M-1
+    X_{m, n} = x_m y_n, \text{for } (m, n) \in \mathcal{I} \times \mathcal{I}.
 
 Likewise, a tensor product basis is given in :eq:`eq:v2D`. 
 

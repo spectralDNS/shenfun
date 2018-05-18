@@ -32,6 +32,8 @@ class SparseMatrix(dict):
     --------
     A tridiagonal matrix of shape N x N could be created as
 
+    >>> from shenfun import SparseMatrix
+    >>> import numpy as np
     >>> N = 4
     >>> d = {-1: 1, 0: -2, 1: 1}
     >>> SparseMatrix(d, (N, N))

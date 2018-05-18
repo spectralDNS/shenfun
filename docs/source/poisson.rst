@@ -7,7 +7,7 @@ Demo - 1D Poisson equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 16, 2018
+:Date: May 18, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the Poisson
 equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as shown in Figure :ref:`fig:ct0`, is demonstrated. 
@@ -47,18 +47,17 @@ non-zero constants.
 
 To solve Eq. :eq:`eq:poisson` with the Galerkin method we need smooth continuously 
 differentiable basis functions, :math:`v_k`, that satisfy the given boundary conditions. 
-And then we look for solutions
-like
+And then we look for solutions like
 
 .. math::
    :label: eq:u
 
         
-        u(x) = \sum_{k=0}^{N-1} \hat{u}_k v_k(x), 
+        u(x) = \sum_{k=0}^{N} \hat{u}_k v_k(x), 
         
 
-where :math:`N` is the size of the discretized problem and the basis is 
-:math:`V^N=\text{span}\{v_k\}_{k=0}^{N-1}`.
+where :math:`N+1` is the size of the discretized problem and the basis is 
+:math:`V^N=\text{span}\{v_k\}_{k=0}^{N}`.
 The basis functions can, for example,  be constructed from 
 `Chebyshev <https://en.wikipedia.org/wiki/Chebyshev_polynomials>`__, :math:`T_k(x)`, or 
 `Legendre <https://en.wikipedia.org/wiki/Legendre_polynomials>`__, :math:`L_k(x)`, functions 
@@ -73,13 +72,13 @@ it is easiest to use basis functions with homogeneous Dirichlet boundary conditi
         
         
 
-for :math:`k=0, 1, \ldots N-3`, and then the last two are added as two linear basis functions (that belong to the kernel of the Poisson equation)
+for :math:`k=0, 1, \ldots N-2`, and then the last two are added as two linear basis functions (that belong to the kernel of the Poisson equation)
 
 .. math::
    :label: _auto3
 
         
-        v_{N-2} = \frac{1}{2}(\phi_0 + \phi_1), 
+        v_{N-1} = \frac{1}{2}(\phi_0 + \phi_1), 
         
         
 
@@ -87,18 +86,18 @@ for :math:`k=0, 1, \ldots N-3`, and then the last two are added as two linear ba
    :label: _auto4
 
           
-        v_{N-1} = \frac{1}{2}(\phi_0 - \phi_1).
+        v_{N} = \frac{1}{2}(\phi_0 - \phi_1).
         
         
 
 With these two final basis functions it is easy to see that the two last degrees
-of freedom, :math:`\hat{u}_{N-2}` and :math:`\hat{u}_{N-1}`, now are given as
+of freedom, :math:`\hat{u}_{N-1}` and :math:`\hat{u}_{N}`, now are given as
 
 .. math::
    :label: eq:dirichleta
 
         
-        u(-1) = \sum_{k=0}^{N-1} \hat{u}_k v_k(-1) = \hat{u}_{N-2} = a,
+        u(-1) = \sum_{k=0}^{N} \hat{u}_k v_k(-1) = \hat{u}_{N-1} = a,
          
         
 
@@ -106,12 +105,13 @@ of freedom, :math:`\hat{u}_{N-2}` and :math:`\hat{u}_{N-1}`, now are given as
    :label: eq:dirichletb
 
           
-        u(+1) = \sum_{k=0}^{N-1} \hat{u}_k v_k(+1) = \hat{u}_{N-1} = b,
+        u(+1) = \sum_{k=0}^{N} \hat{u}_k v_k(+1) = \hat{u}_{N} = b,
         
         
 
-and, as such, we only have to solve for :math:`\{\hat{u}_k\}_{k=0}^{N-3}`, just like
-for a problem with homogeneous boundary conditions.
+and, as such, we only have to solve for :math:`\{\hat{u}_k\}_{k=0}^{N-2}`, just like
+for a problem with homogeneous boundary conditions (for homogeneous boundary condition
+we simply have :math:`\hat{u}_{N-1} = \hat{u}_N = 0`). 
 We now formulate a variational problem using the Galerkin method: Find :math:`u \in V^N` such that
 
 .. math::
@@ -149,7 +149,7 @@ obtain
    :label: _auto7
 
           
-        \approx \sum_{j=0}^{N-1} u(x_j) v(x_j) w(x_j),
+        \approx \sum_{j=0}^{N} u(x_j) v(x_j) w(x_j),
         
         
 
@@ -158,7 +158,7 @@ are specific to the chosen basis, and even within basis there are two different
 choices based on which quadrature rule is selected, either Gauss or Gauss-Lobatto.
 
 Inserting for test and trialfunctions, we get the following bilinear form and
-matrix :math:`A\in\mathbb{R}^{N-2\times N-2}` for the Laplacian (using the summation convention in step 2)
+matrix :math:`A\in\mathbb{R}^{N-1\times N-1}` for the Laplacian (using the summation convention in step 2)
 
 .. math::
         \begin{align*}
@@ -167,12 +167,13 @@ matrix :math:`A\in\mathbb{R}^{N-2\times N-2}` for the Laplacian (using the summa
             &= A_{jk} \hat{u}_k.
         \end{align*}
 
-Note that the sum in :math:`A_{jk} \hat{u}_{k}` runs over :math:`k=0, 1, \ldots, N-3` since
+Note that the sum in :math:`A_{jk} \hat{u}_{k}` runs over :math:`k=0, 1, \ldots, N-2` since
 the last two degrees of freedom already are known from Eq. :eq:`eq:dirichleta`
-and :eq:`eq:dirichletb`, and the second derivatives of :math:`v_{N-2}` and :math:`v_{N-1}`
+and :eq:`eq:dirichletb`, and the second derivatives of :math:`v_{N-1}` and :math:`v_{N}`
 are zero.
 The right hand side linear form and vector is computed as :math:`\tilde{f}_j = (f,
-v_j)_w^N`, for :math:`j=0,1,\ldots, N-3`, where a tilde is used because this is not a complete transform of the function :math:`f`, but only an inner product. 
+v_j)_w^N`, for :math:`j=0,1,\ldots, N-2`, where a tilde is used because this is not 
+a complete transform of the function :math:`f`, but only an inner product. 
 
 The linear system of equations to solve for the expansion coefficients of :math:`u(x)` is given as
 
@@ -186,11 +187,11 @@ The linear system of equations to solve for the expansion coefficients of :math:
 
 Now, when :math:`\hat{u}` is found by solving this linear system, it may be
 transformed to real space :math:`u(x)` using :eq:`eq:u`, and here the contributions
-from :math:`\hat{u}_{N-2}` and :math:`\hat{u}_{N-1}` must be accounted for. Note that the matrix
+from :math:`\hat{u}_{N-1}` and :math:`\hat{u}_{N}` must be accounted for. Note that the matrix
 :math:`A_{jk}` (different for Legendre or Chebyshev) has a very special structure that
 allows for a solution to be found very efficiently in order of :math:`\mathcal{O}(N)`
 operations, see :cite:`shen1` and :cite:`shen95`. These solvers are implemented in
-``shenfun`` for both bases.
+shenfun for both bases.
 
 Method of manufactured solutions
 --------------------------------
@@ -207,9 +208,9 @@ conditions:
         u_e(x) = \sin(k\pi x)(1-x^2) + a(1+x)/2 + b(1-x)/2, 
         
 
-where :math:`k` is an integer and :math:`a` and :math:`b` are constants. Now, feeding :math:`u_e` through the Laplace operator, we see
-that the last two linear terms disappear, whereas the first term results in
-in
+where :math:`k` is an integer and :math:`a` and :math:`b` are constants. Now, feeding :math:`u_e` through 
+the Laplace operator, we see that the last two linear terms disappear, whereas the 
+first term results in
 
 .. math::
    :label: _auto9
@@ -227,7 +228,9 @@ in
         x^2) \sin(k \pi x).  
         
 
-Now, setting :math:`f_e(x) = \nabla^2 u_e(x)` and solving for :math:`\nabla^2 u(x) = f_e(x)`, we can compare the numerical solution :math:`u(x)` with the analytical solution :math:`u_e(x)` and compute error norms.
+Now, setting :math:`f_e(x) = \nabla^2 u_e(x)` and solving for :math:`\nabla^2 u(x) = f_e(x)`, 
+we can compare the numerical solution :math:`u(x)` with the analytical solution :math:`u_e(x)` 
+and compute error norms.
 
 Implementation
 ==============

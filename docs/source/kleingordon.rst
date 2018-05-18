@@ -7,7 +7,7 @@ Demo - Cubic nonlinear Klein-Gordon equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 16, 2018
+:Date: May 18, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Klein-Gordon equation, in a triply periodic domain. The demo is implemented in
@@ -415,7 +415,7 @@ for all :math:`t>0`, find :math:`(f, u) \in W^N \times W^N`  such that
    :label: eq:kg:duu
 
           
-        \frac{\partial }{\partial t} (u, v) = (f, v) \quad \forall (g, v) \in W^N \times W^N. 
+        \frac{\partial }{\partial t} (u, v) = (f, v) \quad \forall \, (g, v) \in W^N \times W^N. 
         
 
 where :math:`u(x, y, z, 0)` and :math:`f(x, y, z, 0)` are given as the initial conditions
@@ -462,7 +462,6 @@ product of these three bases
 
     # Create communicator
     comm = MPI.COMM_WORLD
-    
     T = TensorProductSpace(comm, (K0, K1, K2), **{'planner_effort': 
                                                   'FFTW_MEASURE'})
 
@@ -489,10 +488,8 @@ e.g., the Runge-Kutta method. Arrays are created as
 
     uf = Array(TT, False) # Solution array in physical space
     u, f = uf[:]          # Split solution array by creating two views u and f
-    
     duf = Array(TT)       # Array for right hand sides
     du, df = duf[:]       # Split into views
-    
     uf_hat = Array(TT)    # Solution in spectral space
     uf_hat0 = Array(TT)   # Work array 1
     uf_hat1 = Array(TT)   # Work array 2
@@ -573,7 +570,7 @@ function can be implemented as
     # focusing (+1) or defocusing (-1)
     gamma = 1  
     uh = TrialFunction(T)
-    vh = TestFunction(T)i
+    vh = TestFunction(T)
     k2 = -(inner(grad(vh), grad(uh))  + gamma)
     
     def compute_rhs(duf_hat, uf_hat, up, Tp, w0):
@@ -659,7 +656,6 @@ decimal points at :math:`t=100`.
     uf = Array(TT, False)
     u, f = uf[:]
     up = Array(T, False)
-    
     duf = Array(TT)
     du, df = duf[:]
     

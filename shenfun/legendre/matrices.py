@@ -29,6 +29,7 @@ which takes test and trialfunctions along with the number of derivatives
 to be applied to each. As such the mass matrix BDDmat may be looked up
 as
 
+>>> import numpy as np
 >>> from shenfun.legendre.matrices import mat
 >>> from shenfun.legendre.bases import ShenDirichletBasis as SD
 >>> B = mat[((SD, 0), (SD, 0))]

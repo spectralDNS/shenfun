@@ -41,6 +41,7 @@ release = u'1.0.2'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
+    'sphinx.ext.doctest',
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
@@ -145,7 +146,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'shenfun.tex', u'shenfun Documentation',
+    ('index_pdf', 'shenfun.tex', u'Shenfun Documentation',
      u'Mikael Mortensen', 'manual'),
 ]
 latex_domain_indices = False
@@ -156,7 +157,7 @@ latex_use_modindex = False
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'shenfun', u'shenfun Documentation',
+    (master_doc, 'shenfun', u'Shenfun Documentation',
      [author], 1)
 ]
 
@@ -167,8 +168,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'shenfun', u'shenfun Documentation',
-     author, 'shenfun', 'One line description of project.',
+    (master_doc, 'shenfun', u'Shenfun Documentation',
+     author, 'shenfun', 'Automating the spectral Galerkin method',
      'Miscellaneous'),
 ]
 

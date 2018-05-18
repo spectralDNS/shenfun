@@ -3,6 +3,9 @@
 Getting started
 ===============
 
+Basic usage
+-----------
+
 Shenfun consists of classes and functions whoose purpose are to make it easier
 to implement PDE's with spectral methods in simple tensor product domains. The
 most important everyday tools are
@@ -95,7 +98,7 @@ The projection is mathematically: find :math:`u_h \in T`, such that
     (u_h - u, v)_w = 0 \quad \forall v \in T
 
 where :math:`v` is a test function, :math:`u_h` is a trial function and the
-notation :math:`(\cdot, \cdot)_w` was introduced in :eq:`intro:varform`. Using
+notation :math:`(\cdot, \cdot)_w` was introduced in :eq:`eq:wrm_test`. Using
 now :math:`v=T_k` and :math:`u_h=\sum_{j=0}^7 \hat{u}_j T_j`, we get
 
 .. math::
@@ -150,3 +153,6 @@ through::
 which obviously is exactly the same as we found using :func:`.project`
 or the `T.forward` function.
 
+.. include:: integrators.rst
+.. include:: mpi.rst
+.. include:: postprocessing.rst
