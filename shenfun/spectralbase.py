@@ -230,7 +230,7 @@ class SpectralBase(object):
             x : 1D array
             ndims : int
                     The number of dimensions to broadcast to
-            axis : int
+            axis : int, optional
                    The axis over which x is changing
 
         Note
@@ -370,7 +370,7 @@ class SpectralBase(object):
         ----------
             V : 2D array
                 Vandermonde matrix
-            k : int
+            k : int, optional
                 k'th derivative
 
         """
@@ -594,7 +594,7 @@ class SpectralBase(object):
             x : float or array of floats
             fk : array
                  Expansion coefficients
-            output_array : array
+            output_array : array, optional
                            Function values at points
 
         """
@@ -720,7 +720,7 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
 
         out : array, optional
               Return array
-        axis : int
+        axis : int, optional
                Axis to take the inner product over
         fast_transform : bool, optional
                          Use fast transform method if True
