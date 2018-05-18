@@ -14,6 +14,7 @@ most important everyday tools are
 	* :class:`.TrialFunction`
 	* :class:`.TestFunction`
 	* :class:`.Function`
+        * :class:`.Array`
 	* :func:`.inner`
 	* :func:`.div`
 	* :func:`.grad`
@@ -153,6 +154,65 @@ through::
 which obviously is exactly the same as we found using :func:`.project`
 or the `T.forward` function.
 
-.. include:: integrators.rst
+The :class:`.Function` and :class:`.Array` classes are subclasses of Numpy's
+`ndarray <https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.ndarray.html>`_. 
+They are both generated with a :class:`.TensorProductSpace` as argument,
+which determines theirs size. The main difference between :class:`.Function`
+and :class:`.Array` is that the latter is *lighter*, in that it carries less
+information, and as such, when possible one should use :class:`.Array`
+for optimal speed. You can get an :class:`.Array` from a 
+:class:`.Function` at any time as::
+
+    u = Function(T, False)
+    ua = u.as_array()
+
+Also::
+
+    uf = ua.as_function()
+
+The additional weight comes from the :class:`.Function` being a subclass
+of both Numpy's ``ndarray`` *and* the :class:`.BasisFunction` class. The 
+latter is used as a base class for arguments to bilinear and linear forms,
+and is as such a base class also for :class:`.TrialFunction` and
+:class:`.TestFunction`. An instance of the :class:`.Array` class cannot
+be used in forms, except from regular inner products of test function
+vs an :class:`.Array`. To illustrate, lets create some forms, where
+all except the last one is ok::
+
+    K0 = Basis(12, 'F', dtype='D')
+    K1 = Basis(12, 'F', dtype='d')
+    T = TensorProductSpace(comm, (K0, K1))
+    u = TrialFunction(T)
+    v = TestFunction(T)
+    uf = Function(T, False)
+    ua = uf.as_array()
+    
+    A = inner(v, u)
+    b = inner(v, uf)  # ok, a scalar product
+    c = inner(v, ua)  # ok, a scalar product
+    df = Dx(uf, 0, 1) # ok
+    da = Dx(ua, 0, 1) # Not ok
+
+    AssertionError                            Traceback (most recent call last)
+    <ipython-input-35-de4aac99d23b> in <module>()
+    ----> 1 da = Dx(ua, 0, 1)
+
+    ~/MySoftware/shenfun/shenfun/forms/operators.py in Dx(test, x, k)
+         85             Number of derivatives
+         86     """
+    ---> 87     assert isinstance(test, (Expr, BasisFunction))
+         88 
+         89     if isinstance(test, BasisFunction):
+
+So it is not possible to perform operations that involve differentiation on an 
+:class:`.Array` instance. This is because the ``ua`` does not contain more
+information than its values and its TensorProductSpace. A :class:`.BasisFunction`
+instance, on the other hand, can be manipulated with operators like :func:`.div`
+:func:`.grad` in creating instances of the :class:`.Expr` class.
+
+Any rules for efficient use of Numpy ``ndarrays``, like vectorization, also 
+applies to :class:`.Function` and :class:`.Array` instances.
+
 .. include:: mpi.rst
 .. include:: postprocessing.rst
+.. include:: integrators.rst

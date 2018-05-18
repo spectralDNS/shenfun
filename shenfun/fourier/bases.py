@@ -158,7 +158,11 @@ class FourierBase(SpectralBase):
         return self.forward.output_array
 
     def apply_inverse_mass(self, array):
-        """Apply inverse mass, which is 2pi*identity for Fourier basis
+        """Apply inverse mass
+
+        Note
+        ----
+        Mass matrix is identity, so do nothing
 
         Parameters
         ----------
