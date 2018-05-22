@@ -47,8 +47,8 @@ u = TrialFunction(SD)
 v = TestFunction(SD)
 
 # Get f on quad points
-#fj = fl(X)
-fj = np.array([fe.subs(x, j) for j in X], dtype=np.float)
+fj = Array(SD, False, buffer=fl(X))
+#fj = np.array([fe.subs(x, j) for j in X], dtype=np.float)
 
 # Compute right hand side of Poisson equation
 f_hat = Array(SD)

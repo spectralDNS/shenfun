@@ -60,7 +60,7 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = fl(*X)
+fj = Array(T, False, buffer=fl(*X))
 
 # Compute right hand side of Poisson equation
 f_hat = Array(T)

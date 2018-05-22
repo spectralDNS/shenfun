@@ -32,7 +32,7 @@ from sympy.functions import erf
 import numpy as np
 import matplotlib.pyplot as plt
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, HDF5Writer,\
-    ETDRK4, ETD, RK4, TensorProductSpace, VectorTensorProductSpace, Basis
+    ETDRK4, ETD, RK4, TensorProductSpace, VectorTensorProductSpace, Basis, Array
 import scipy
 from mpi4py import MPI
 
@@ -75,12 +75,12 @@ vv = TestFunction(TV)
 uu = TrialFunction(TV)
 
 # Declare solution arrays and work arrays
-UV = Function(TV, False)
-UVp = Function(TVp, False)
+UV = Array(TV, False)
+UVp = Array(TVp, False)
 U, V = UV  # views into vector components
 UV_hat = Function(TV)
-w0 = Function(TV)                        # Work array
-w1 = Function(TVp, False)                # Work array
+w0 = Array(TV)              # Work array spectral space
+w1 = Array(TVp, False)      # Work array physical space
 
 e1 = 0.00002
 e2 = 0.00001

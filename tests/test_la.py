@@ -1,7 +1,7 @@
 import pytest
 from shenfun.chebyshev.la import PDMA
 from shenfun import inner, TestFunction, TrialFunction, div, grad, \
-    SparseMatrix, Basis, Function
+    SparseMatrix, Basis, Function, Array
 from scipy.linalg import solve
 import numpy as np
 np.warnings.filterwarnings('ignore')
@@ -16,8 +16,8 @@ def test_PDMA(quad):
     u = TrialFunction(SB)
     v = TestFunction(SB)
     points, weights = SB.points_and_weights(N)
-    fj = np.random.randn(N)
-    f_hat = np.zeros(N)
+    fj = Array(SB, False, buffer=np.random.randn(N))
+    f_hat = Function(SB)
     f_hat = inner(v, fj, output_array=f_hat)
 
     A = inner(v, div(grad(u)))
@@ -28,10 +28,10 @@ def test_PDMA(quad):
 
     P = PDMA(A, B, A.scale, B.scale, solver='cython')
 
-    u_hat = np.zeros_like(f_hat)
+    u_hat = Function(SB)
     u_hat[s] = solve(H.diags().toarray()[s, s], f_hat[s])
 
-    u_hat2 = np.zeros_like(f_hat)
+    u_hat2 = Function(SB)
     u_hat2 = P(u_hat2, f_hat)
 
     assert np.allclose(u_hat2, u_hat)

@@ -56,7 +56,7 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = fl(*X)
+fj = Array(T, False, buffer=fl(*X))
 
 # Compute right hand side of Poisson equation
 f_hat = inner(v, fj)
@@ -73,7 +73,7 @@ else:
 H = Solver(**matrices)
 
 # Solve and transform to real space
-u_hat = Array(T)           # Solution spectral space
+u_hat = Array(T)              # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
 u = T.backward(u_hat)
 

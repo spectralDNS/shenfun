@@ -48,6 +48,7 @@ def inner(expr0, expr1, output_array=None):
         [True, True, True]
 
     """
+    assert np.all([hasattr(e, 'argument') for e in (expr0, expr1)])
     t0 = expr0.argument()
     t1 = expr1.argument()
     if t0 == 0:
@@ -65,7 +66,7 @@ def inner(expr0, expr1, output_array=None):
         ndim = test.function_space().ndim()
 
         if output_array is None and trial.argument() == 2:
-            output_array = Function(test.function_space())
+            output_array = Array(test.function_space())
 
         if trial.argument() == 2:
             # linear form
@@ -101,17 +102,16 @@ def inner(expr0, expr1, output_array=None):
 
     space = test.function_space()
     trialspace = trial.function_space()
-    assert test.num_components() == trial.num_components()
     test_scale = test.scales()
     trial_scale = trial.scales()
     trial_indices = trial.indices()
 
     uh = None
     if trial.argument() == 2:
-        uh = trial.basis()
+        uh = trial.base()
 
     if output_array is None and trial.argument() == 2:
-        output_array = Function(trial.function_space())
+        output_array = Array(trial.function_space())
 
     A = []
     S = []
@@ -245,7 +245,6 @@ def inner(expr0, expr1, output_array=None):
                 if uh.rank() == 2:
                     for i, b in enumerate(B):
                         output_array += b*uh[trial_indices[0, i]]
-
                 else:
                     diagonal_array = B[0]
                     for ci in B[1:]:
@@ -298,11 +297,11 @@ def inner(expr0, expr1, output_array=None):
                 b = bb[npaxis]
                 if uh.rank() == 2:
                     sp = uh.function_space()
-                    wh = Function(sp[npaxis], forward_output=True)
+                    wh = Array(sp[npaxis], forward_output=True)
                     wh = b.matvec(uh[trial_indices[0, i]], wh, axis=b.axis)
 
                 else:
-                    wh = Function(trialspace, forward_output=True)
+                    wh = Array(trialspace, forward_output=True)
                     wh = b.matvec(uh, wh, axis=b.axis)
                 output_array += wh*bb['scale']
 

@@ -182,6 +182,20 @@ class TensorProductSpace(object):
                            Return array, function values at points
 
         """
+        return self._eval_cython(points, coefficients, output_array)
+
+    def _eval_python(self, points, coefficients, output_array=None): # pragma : no cover
+        """Evaluate Function at points, given expansion coefficients
+
+        Parameters
+        ----------
+            points : float or array of floats
+            coefficients : array
+                           Expansion coefficients
+            output_array : array, optional
+                           Return array, function values at points
+
+        """
         shape = list(self.local_shape())
         out = coefficients
         for base in reversed(self):
@@ -199,7 +213,7 @@ class TensorProductSpace(object):
             return output_array
         return out
 
-    def eval_cython(self, points, coefficients, output_array=None):
+    def _eval_cython(self, points, coefficients, output_array=None):
         """Evaluate Function at points, given expansion coefficients
 
         Parameters
@@ -228,7 +242,6 @@ class TensorProductSpace(object):
                 else:
                     last_conj_index = M
                 sl = self.local_slice()[axis].start
-
         out = np.zeros(len(points), dtype=coefficients.dtype)
         if len(self) == 2:
             out = shenfun.optimization.evaluate.evaluate_2D(out, coefficients, P, r2c=r2c, M=last_conj_index, start=sl)
@@ -243,7 +256,6 @@ class TensorProductSpace(object):
             output_array[:] = out
             return output_array
         return out
-
 
     def vandermonde_evaluate_local_expansion(self, base, points, input_array, output_array):
         """Evaluate expansion at certain points, possibly different from
