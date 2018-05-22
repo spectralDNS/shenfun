@@ -7,7 +7,7 @@ Demo - Cubic nonlinear Klein-Gordon equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 18, 2018
+:Date: May 22, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Klein-Gordon equation, in a triply periodic domain. The demo is implemented in
@@ -235,12 +235,11 @@ distinction, though, is that for the :math:`z`-direction expansion coefficients 
 We now look for solutions of the form
 
 .. math::
-   :label: _auto6
+   :label: eq:usg
 
         
         u(x, y, z, t) = \sum_{n=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{l=-N/2}^{N/2-1}
         \hat{u}_{l,m,n} (t)\Phi_{l,m,n}(x,y,z). 
-        
         
 
 The expansion coefficients :math:`\hat{u}_{l,m,n}(t)` can be related directly to the solution :math:`u(x,
@@ -248,7 +247,7 @@ y, z, t)` using Fast Fourier Transforms (FFTs) if we are satisfied with obtainin
 the solution in quadrature points corresponding to
 
 .. math::
-   :label: _auto7
+   :label: _auto6
 
         
          x_i = \frac{4 \pi i}{N}-2\pi \quad \forall \, i \in \boldsymbol{i},
@@ -257,7 +256,7 @@ the solution in quadrature points corresponding to
         
 
 .. math::
-   :label: _auto8
+   :label: _auto7
 
           
          y_j = \frac{4 \pi j}{N}-2\pi \quad \forall \, j \in \boldsymbol{j},
@@ -266,7 +265,7 @@ the solution in quadrature points corresponding to
         
 
 .. math::
-   :label: _auto9
+   :label: _auto8
 
           
          z_k = \frac{4 \pi k}{N}-2\pi \quad \forall \, k \in \boldsymbol{k},
@@ -275,7 +274,7 @@ the solution in quadrature points corresponding to
         
 
 .. math::
-   :label: _auto10
+   :label: _auto9
 
           
         
@@ -286,7 +285,7 @@ the domain
 is set to :math:`[-2\pi, 2\pi]^3` and not the more common :math:`[0, 2\pi]^3`. We have
 
 .. math::
-   :label: _auto11
+   :label: _auto10
 
         
         u(x_i, y_j, z_k) =
@@ -305,7 +304,7 @@ the definition used for the inverse Fourier transform, which is the one used
 also by `Numpy <https://docs.scipy.org/doc/numpy-1.13.0/reference/routines.fft.html>`__:
 
 .. math::
-   :label: _auto12
+   :label: _auto11
 
         
         u(x_j) = \frac{1}{N}\sum_{l=-N/2}^{N/2-1} \hat{u}_l e^{\imath \underline{l}
@@ -332,7 +331,7 @@ With this weight function the scalar product and the forward transform
 are the same and we obtain:
 
 .. math::
-   :label: _auto13
+   :label: _auto12
 
         
         \left(u, \Phi_{l,m,n}\right) = \hat{u}_{l,m,n} =
@@ -348,7 +347,7 @@ may be written in terms of the Fourier transformed quantities :math:`\hat{u}` an
 :math:`\hat{f}`. Expanding the exact derivatives of the nabla operator, we have
 
 .. math::
-   :label: _auto14
+   :label: _auto13
 
         
         (\nabla u, \nabla v) =
@@ -357,7 +356,7 @@ may be written in terms of the Fourier transformed quantities :math:`\hat{u}` an
         
 
 .. math::
-   :label: _auto15
+   :label: _auto14
 
           
         (u, v) = \hat{u}_{l,m,n}, 
@@ -365,7 +364,7 @@ may be written in terms of the Fourier transformed quantities :math:`\hat{u}` an
         
 
 .. math::
-   :label: _auto16
+   :label: _auto15
 
           
         (u|u|^2, v) = \widehat{u|u|^2}
@@ -509,12 +508,11 @@ for all :math:`v \in V^N`. This projection may be easily computed in :mod:`.shen
 
 .. code-block:: python
 
-    v = Function(T, False, buffer=u)
+    v = Function(T, buffer=u_hat)
     ux = project(Dx(v, 0, 1), T)
 
-where ``v`` now is an instance of the :class:`.Function` class and not the
-:class:`.Array`, like
-``u``. The following code, on the other hand, will raise an error since you cannot
+where ``v`` now is an instance of the :class:`.Function` class.
+The following code, on the other hand, will raise an error since you cannot
 use the ``Array u`` in a form, like ``Dx(u, 0, 1)``
 
 .. code-block:: python
@@ -526,8 +524,10 @@ use the ``Array u`` in a form, like ``Dx(u, 0, 1)``
 
 Note that ``u`` and ``v`` share the same data, and changing one will as such also
 change the other. The reason for having two classes is that regular indexing and
-slicing is faster on a *smaller* :class:`.Array` class that is carrying less of the additional
-information required by forms. 
+slicing is faster on a *smaller* :class:`.Array` class that is carrying less of 
+the additional information required by forms. The :class:`.Function` class
+also have more methods than an :class:`.Array`. For example, it can be evaluated
+at any points since it is a spectral Galerkin function, see :eq:`eq:usg`.
 
 Initialization
 --------------
@@ -545,7 +545,7 @@ mathamatics.
     ue = 0.1*exp(-(x**2 + y**2 + z**2))
     ul = lambdify((x, y, z), ue, 'numpy')
     X = T.local_mesh(True)
-    u[:] = ul(*X)
+    u[:] = Array(T, False, buffer=ul(*X))
     u_hat = T.forward(u, u_hat)
 
 Here ``X`` is a list of the three mesh coordinates ``(x, y, z)`` local to the
