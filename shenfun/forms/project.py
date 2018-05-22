@@ -1,6 +1,6 @@
 import numpy as np
 from shenfun.tensorproductspace import MixedTensorProductSpace
-from .arguments import Expr, TestFunction, TrialFunction, BasisFunction, Array
+from .arguments import Expr, TestFunction, TrialFunction, BasisFunction, Function
 from .inner import inner
 
 __all__ = ('project',)
@@ -10,9 +10,9 @@ def project(uh, T, output_array=None):
 
     Parameters
     ----------
-        uh : Expr or Array
+        uh : Expr, Function or Array
         T : TensorProductSpace
-        output_array : Function(T, True)
+        output_array : Function(T)
                        Return array
 
     .. note:: Returns spectral expansion coefficients of projection,
