@@ -13,7 +13,7 @@ __all__ = ('inner',)
 
 #pylint: disable=line-too-long,inconsistent-return-statements,too-many-return-statements
 
-def inner(expr0, expr1, output_array=None, uh_hat=None):
+def inner(expr0, expr1, output_array=None):
     """Return inner product of linear or bilinear form
 
     Parameters
@@ -29,9 +29,6 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
 
         output_array:  Numpy array
                        Optional return array for linear form.
-
-        uh_hat:        Numpy array
-                       The transform of the Function/Array used for linear forms.
 
     Example
     -------
@@ -51,21 +48,6 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
         [True, True, True]
 
     """
-    # Wrap numpy array in Function
-    if not hasattr(expr0, 'argument'):
-        if isinstance(expr0, np.ndarray):
-            try:
-                expr0 = Function(expr1.function_space(), forward_output=False, buffer=expr0)
-            except:
-                raise RuntimeError
-
-    if not hasattr(expr1, 'argument'):
-        if isinstance(expr1, np.ndarray):
-            try:
-                expr1 = Function(expr0.function_space(), forward_output=False, buffer=expr1)
-            except:
-                raise RuntimeError
-
     t0 = expr0.argument()
     t1 = expr1.argument()
     if t0 == 0:
@@ -82,12 +64,6 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
     if test.rank() == 2: # For vector spaces of rank 2 use recursive algorithm
         ndim = test.function_space().ndim()
 
-        uh = uh_hat
-        if uh is None and trial.argument() == 2:
-            uh = Array(trial.function_space(), forward_output=True)
-            basis = trial if isinstance(trial, np.ndarray) else trial.basis()
-            uh = trial.function_space().forward(basis, uh)
-
         if output_array is None and trial.argument() == 2:
             output_array = Array(test.function_space())
 
@@ -95,13 +71,12 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
             # linear form
             for ii in range(ndim):
                 output_array[ii] = inner(test[ii], trial[ii],
-                                         output_array=output_array[ii],
-                                         uh_hat=uh)
+                                         output_array=output_array[ii])
             return output_array
 
         result = []
         for ii in range(ndim):
-            result.append(inner(test[ii], trial[ii], uh_hat=uh))
+            result.append(inner(test[ii], trial[ii]))
         return result
 
 
@@ -114,7 +89,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
             output_array = space.scalar_product(trial, output_array)
             return output_array
 
-        # If trial is an Expr with terms, then compute using bilinear form and matvec
+    # If trial is an Expr with terms, then compute using bilinear form and matvec
 
     assert isinstance(trial, (Expr, BasisFunction))
     assert isinstance(test, (Expr, BasisFunction))
@@ -131,10 +106,9 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
     trial_scale = trial.scales()
     trial_indices = trial.indices()
 
-    uh = uh_hat
-    if uh is None and trial.argument() == 2:
-        uh = Array(trialspace, forward_output=True)
-        uh = trialspace.forward(trial.basis(), uh)
+    uh = None
+    if trial.argument() == 2:
+        uh = trial.basis()
 
     if output_array is None and trial.argument() == 2:
         output_array = Array(trial.function_space())
