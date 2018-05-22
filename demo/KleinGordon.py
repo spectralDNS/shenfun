@@ -157,7 +157,7 @@ if __name__ == '__main__':
     fu_hat = integrator.solve(fu, fu_hat, dt, (0, end_time))
 
     file0.close()
-    timer.final(MPI, rank, True)
+    timer.final(True)
 
     if rank == 0:
         generate_xdmf("KleinGordon{}.h5".format(N[0]))

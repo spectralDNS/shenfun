@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from shenfun import inner, div, curl, TestFunction, TrialFunction, Function, \
     Array, project, Dx, Basis, TensorProductSpace, VectorTensorProductSpace, \
-    MixedTensorProductSpace
+    MixedTensorProductSpace, Expr
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
@@ -43,10 +43,10 @@ def test_curl(typecode):
     U_hat = Tk.forward(U, U_hat)
     assert allclose(U_hat, Uc)
 
-    #divu_hat = project(div(U_hat), T)
-    #divu = Array(T, False)
-    #divu = T.backward(divu_hat, divu)
-    #assert allclose(divu, 0)
+    divu_hat = project(div(U_hat), T)
+    divu = Array(T, False)
+    divu = T.backward(divu_hat, divu)
+    assert allclose(divu, 0)
 
     curl_hat[0] = 1j*(K[1]*U_hat[2] - K[2]*U_hat[1])
     curl_hat[1] = 1j*(K[2]*U_hat[0] - K[0]*U_hat[2])
@@ -56,13 +56,13 @@ def test_curl(typecode):
 
     w_hat = Function(Tk)
     w_hat = inner(v, curl(U_hat), output_array=w_hat)
-    #A = inner(v, u)
-    #for i in range(3):
-    #    w_hat[i] = A[i].solve(w_hat[i])
+    A = inner(v, u)
+    for i in range(3):
+        w_hat[i] = A[i].solve(w_hat[i])
 
     w = Array(Tk, False)
     w = Tk.backward(w_hat, w)
-    from IPython import embed; embed()
+    #from IPython import embed; embed()
     assert allclose(w, curl_)
 
     u_hat = Function(Tk)
@@ -126,9 +126,8 @@ def test_curl2():
     w_hat = project(curl(U_hat), TTk)
     w = Array(TTk, False)
     w = TTk.backward(w_hat, w)
-    from IPython import embed; embed()
     assert allclose(w, curl_)
 
 if __name__ == '__main__':
-    test_curl('d')
-    #test_curl2()
+    #test_curl('d')
+    test_curl2()

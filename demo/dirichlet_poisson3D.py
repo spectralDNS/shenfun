@@ -68,7 +68,7 @@ v = TestFunction(T)
 K = T.local_wavenumbers()
 
 # Get f on quad points
-fj = fl(*X)
+fj = Array(T, False, buffer=fl(*X))
 
 # Compute right hand side of Poisson equation
 f_hat = inner(v, fj)

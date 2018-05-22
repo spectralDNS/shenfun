@@ -599,7 +599,7 @@ class SpectralBase(object):
 
         """
         if output_array is None:
-            output_array = np.zeros(x.shape)
+            output_array = np.zeros(x.shape, dtype=self.forward.input_array.dtype)
         return self.vandermonde_evaluate_expansion(x, fk, output_array)
 
     def get_mass_matrix(self):

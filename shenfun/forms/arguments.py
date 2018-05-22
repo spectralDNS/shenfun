@@ -210,6 +210,7 @@ class Expr(object):
     """
 
     def __init__(self, basis, terms=None, scales=None, indices=None):
+        #assert isinstance(basis, BasisFunction)
         self._basis = basis
         self._terms = terms
         self._scales = scales
@@ -223,11 +224,20 @@ class Expr(object):
 
         if indices is None:
             self._indices = np.arange(self.function_space().num_components())[:, np.newaxis]
+            if isinstance(basis, BasisFunction) and self._indices.shape == (1, 1):
+                self._indices[0, 0] = basis.index()
 
         assert np.prod(self._scales.shape) == self.num_terms()*self.num_components()
 
     def basis(self):
         """Return basis of Expr"""
+        return self._basis
+
+    def base(self):
+        """Return base array used in Expr"""
+        # basis is always the non-sliced parent array
+        if isinstance(self._basis, np.ndarray):
+            return self._basis if self._basis.base is None else self._basis.base
         return self._basis
 
     def function_space(self):
@@ -425,6 +435,10 @@ class BasisFunction(object):
         """Return number of components in basis"""
         return self.function_space().num_components()
 
+    def ndim(self):
+        """Return dimensions of function space"""
+        return self.function_space().ndim()
+
     def index(self):
         """Return index into vector of rank 2"""
         return self._index
@@ -529,14 +543,13 @@ class Function(np.ndarray, BasisFunction):
 
     .. math::
 
-        u(x, y, z) = \sum_{l \in \mathcal{K}_0}\sum_{m \in \mathcal{K}_1} \sum_{n \in \mathcal{K}_2} \hat{u}_{l, m, n} \psi_{l}(x) \psi_{m}(y) \psi_{n}(z),
+        u(x, y, z) = \sum_{l \in \mathcal{K}_0}\sum_{m \in \mathcal{K}_1} \sum_{n \in \mathcal{K}_2} \hat{u}_{l, m, n} \psi_{l}(x) \psi_{m}(y) \psi_{n}(z).
+
+    The Function's values (the Numpy array) represent the :math:`\hat{u}` array.
 
     Parameters
     ----------
         space : TensorProductSpace
-        forward_output : boolean.
-            If False then create Function of shape/type for input to T.forward,
-            otherwise create Function of shape/type for output from T.forward
         val : int or float
             Value used to initialize array
         buffer : Numpy array or Function
@@ -551,8 +564,7 @@ class Function(np.ndarray, BasisFunction):
     >>> K0 = Basis(8, 'F', dtype='D')
     >>> K1 = Basis(8, 'F', dtype='d')
     >>> FFT = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
-    >>> u = Function(FFT, False)
-    >>> uhat = Function(FFT, True)
+    >>> u = Function(FFT)
 
     """
     # pylint: disable=too-few-public-methods,too-many-arguments
@@ -564,11 +576,8 @@ class Function(np.ndarray, BasisFunction):
 
         else:
 
-            shape = space.forward.input_array.shape
-            dtype = space.forward.input_array.dtype
-            if forward_output is True:
-                shape = space.forward.output_array.shape
-                dtype = space.forward.output_array.dtype
+            shape = space.forward.output_array.shape
+            dtype = space.forward.output_array.dtype
 
             if not space.num_components() == 1:
                 shape = (space.num_components(),) + shape
@@ -582,7 +591,7 @@ class Function(np.ndarray, BasisFunction):
             obj.fill(val)
         return obj
 
-    def __init__(self, space, forward_output=True, val=0, buffer=None):
+    def __init__(self, space, val=0, buffer=None):
         #super(Function, self).__init__(space, 2)
         BasisFunction.__init__(self, space, 2)
 
@@ -593,8 +602,7 @@ class Function(np.ndarray, BasisFunction):
                 v0 = BasisFunction.__getitem__(self, i)
                 v1 = np.ndarray.__getitem__(self, i)
                 fun = v0.function_space()
-                forward = fun.is_forward_output(v1)
-                f0 = Function(fun, forward, buffer=v1)
+                f0 = Function(fun, buffer=v1)
                 f0._index = i
                 f0._argument = 2
                 return f0
@@ -617,11 +625,38 @@ class Function(np.ndarray, BasisFunction):
     def as_array(self):
         """Return Function as Array"""
         fun = self.function_space()
-        return Array(fun, forward_output=fun.is_forward_output(self), buffer=self)
+        return Array(fun, forward_output=True, buffer=self)
 
+    def eval(self, x, output_array=None):
+        """Evaluate Function at points
+
+        Parameters
+        ----------
+            points : float or array of floats
+            coefficients : array
+                           Expansion coefficients
+            output_array : array, optional
+                           Return array, function values at points
+        """
+        if output_array is None:
+            output_array = np.zeros(len(x), dtype=self.dtype)
+        self.function_space().eval(x, self, output_array=output_array)
+        return output_array
+
+    def backward(self, output_array=None):
+        """Return Function evaluated on quadrature mesh"""
+        space = self.function_space()
+        if output_array is None:
+            output_array = Array(space, False)
+        output_array = space.backward(self, output_array)
+        return output_array
 
 class Array(np.ndarray):
     """Numpy array for TensorProductSpace
+
+    The Array is simply a Numpy array created with the shape determined by the
+    TensorProductSpace. The Array cannot be used in Exprs. The Array can be
+    either the Function evaluated on the mesh, or the expansion coefficients.
 
     Parameters
     ----------
@@ -692,6 +727,6 @@ class Array(np.ndarray):
     def as_function(self):
         """Return Array as Function"""
         space = self.function_space()
-        forward_output = space.is_forward_output(self)
-        return Function(space, forward_output=forward_output, buffer=self)
+        assert space.is_forward_output(self) is True
+        return Function(space, buffer=self)
 
