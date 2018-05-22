@@ -224,7 +224,7 @@ We now look for solutions of the form
 !bt
 \begin{equation}
 u(x, y, z, t) = \sum_{n=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{l=-N/2}^{N/2-1}
-\hat{u}_{l,m,n} (t)\Phi_{l,m,n}(x,y,z). 
+\hat{u}_{l,m,n} (t)\Phi_{l,m,n}(x,y,z). label{eq:usg}
 \end{equation}
 !et
 
@@ -434,12 +434,11 @@ projection, i.e., find $u_x \in V^N$ such that $(u_x-\partial u/\partial x, v) =
 for all $v \in V^N$. This projection may be easily computed in ${mod('shenfun')} using
 
 !bc pycod
-v = Function(T, False, buffer=u)
+v = Function(T, buffer=u_hat)
 ux = project(Dx(v, 0, 1), T)
 !ec
-where `v` now is an instance of the ${cls('Function')} class and not the
-${cls('Array')}, like
-`u`. The following code, on the other hand, will raise an error since you cannot
+where `v` now is an instance of the ${cls('Function')} class.
+The following code, on the other hand, will raise an error since you cannot
 use the `Array u` in a form, like `Dx(u, 0, 1)`
 
 !bc pycod
@@ -451,8 +450,10 @@ except AssertionError:
 
 Note that `u` and `v` share the same data, and changing one will as such also
 change the other. The reason for having two classes is that regular indexing and
-slicing is faster on a *smaller* ${cls('Array')} class that is carrying less of the additional
-information required by forms. 
+slicing is faster on a *smaller* ${cls('Array')} class that is carrying less of 
+the additional information required by forms. The ${cls('Function')} class
+also have more methods than an ${cls('Array')}. For example, it can be evaluated
+at any points since it is a spectral Galerkin function, see (ref{eq:usg}).
 
 ===== Initialization =====
 
@@ -469,7 +470,7 @@ x, y, z = symbols("x,y,z")
 ue = 0.1*exp(-(x**2 + y**2 + z**2))
 ul = lambdify((x, y, z), ue, 'numpy')
 X = T.local_mesh(True)
-u[:] = ul(*X)
+u[:] = Array(T, False, buffer=ul(*X))
 u_hat = T.forward(u, u_hat)
 !ec
 

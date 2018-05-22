@@ -7,7 +7,7 @@ Demo - 1D Poisson equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 18, 2018
+:Date: May 22, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the Poisson
 equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as shown in Figure :ref:`fig:ct0`, is demonstrated. 
@@ -308,14 +308,21 @@ The variational problem :eq:`eq:varform` can be assembled using ``shenfun``'s
     # Assemble left hand side matrix
     A = inner(v, div(grad(u)))
     # Assemble right hand side
-    fj = fl(X)
+    fj = Array(SD, False, buffer=fl(X))
     f_hat = Array(SD)
     f_hat = inner(v, fj, output_array=f_hat)
+
+Note that ``fl(X)`` returns a Numpy array of the correct shape and type of
+the left hand side of :eq:`eq:u`, evaluated on all quadrature points ``X``.
+We wrap this Numpy array in an :class:`.Array` class 
+(``fj = Array(SD, False, buffer=fl(X))``), because an Array
+is required for input to the :func:`.inner` function.
 
 Solve linear equations
 ----------------------
 
-Finally, solve linear equation system and transform solution from spectral :math:`\{\hat{u}_k\}_{k=0}^{N-1}` vector to the real space :math:`\{u(x_j)\}_{j=0}^N` 
+Finally, solve linear equation system and transform solution from spectral 
+:math:`\{\hat{u}_k\}_{k=0}^{N-1}` vector to the real space :math:`\{u(x_j)\}_{j=0}^N` 
 and then check how the solution corresponds with the exact solution :math:`u_e`.
 
 .. code-block:: python
@@ -339,7 +346,8 @@ script that performs a convergence test. The solver is run like
     >>> python dirichlet_poisson1D.py 32 legendre
     Error=6.5955040031498912e-10
 
-for a discretization of size :math:`N=32` and for the Legendre basis. Alternatively, change ``legendre`` to ``chebyshev`` for the Chebyshev basis.  
+for a discretization of size :math:`N=32` and for the Legendre basis. Alternatively,
+change ``legendre`` to ``chebyshev`` for the Chebyshev basis.  
 
 We set up the solver to run for a list of :math:`N=[12, 16, \ldots, 48]`, and collect
 the errornorms in arrays to be plotted. Such a script can be easily created 

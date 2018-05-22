@@ -39,7 +39,7 @@ def project(uh, T, output_array=None):
     """
 
     if output_array is None:
-        output_array = Array(T)
+        output_array = Function(T)
 
     if isinstance(uh, np.ndarray):
         # Just regular forward transform

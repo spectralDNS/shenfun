@@ -86,7 +86,7 @@ def inner(expr0, expr1, output_array=None):
         assert isinstance(test, (Expr, BasisFunction))
         assert test.argument() == 0
         space = test.function_space()
-        if isinstance(trial, np.ndarray):
+        if isinstance(trial, Array):
             output_array = space.scalar_product(trial, output_array)
             return output_array
 
