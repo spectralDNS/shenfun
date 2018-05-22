@@ -497,7 +497,39 @@ class TrialFunction(BasisFunction):
         return t0
 
 class Function(np.ndarray, BasisFunction):
-    """Numpy array for TensorProductSpace
+    r"""Spectral Galerkin function for a given TensorProductSpace or Basis
+
+    The Function is the product of all 1D basis expansions, that for each
+    dimension is defined like
+
+    .. math::
+
+        u(x) = \sum_{k \in \mathcal{K}} \hat{u}_k \psi_k(x),
+
+    where :math:`\psi_k(x)` are the trial functions and
+    :math:`\{\hat{u}_k\}_{k\in\mathcal{K}}` are the expansion coefficients.
+    Here an index set :math:`\mathcal{K}=0, 1, \ldots, N` is used
+    to simplify notation.
+
+    For an M+1-dimensional TensorProductSpace with Cartesian tensor
+    product mesh :math:`x_0 \times x_1 \times \ldots \times x_M`,
+    where all the :math:`x_j = \{x_i\}_{i=0}^{N_j}` are the 1D meshes
+    along axis :math:`j`, we get
+
+    .. math::
+
+        u(x_{0}, x_{1}, \ldots, x_{M}) = \sum_{k_0 \in \mathcal{K}_0}\sum_{k_1 \in \mathcal{K}_1} \ldots \sum_{k_M \in \mathcal{K}_M} \hat{u}_{k_0, k_1, \ldots k_M} \psi_{k_0}(x_0) \psi_{k_1}(x_1) \ldots \psi_{k_M}(x_M),
+
+    where :math:`\mathcal{K}_j` is the index set for the wavenumber mesh
+    along axis :math:`j`.
+
+    Note that for a Cartesian mesh in 3D it would be natural to use coordinates
+    :math:`(x, y, z) = (x_0, x_1, x_2)` and the expansion would be the
+    simpler and somewhat more intuitive
+
+    .. math::
+
+        u(x, y, z) = \sum_{l \in \mathcal{K}_0}\sum_{m \in \mathcal{K}_1} \sum_{n \in \mathcal{K}_2} \hat{u}_{l, m, n} \psi_{l}(x) \psi_{m}(y) \psi_{n}(z),
 
     Parameters
     ----------
@@ -652,6 +684,10 @@ class Array(np.ndarray):
     def rank(self):
         """Return rank of basis"""
         return self._space.rank()
+
+    def argument(self):
+        """Return argument of basis"""
+        return 2
 
     def as_function(self):
         """Return Array as Function"""
