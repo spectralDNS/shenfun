@@ -65,7 +65,7 @@ def inner(expr0, expr1, output_array=None):
         ndim = test.function_space().ndim()
 
         if output_array is None and trial.argument() == 2:
-            output_array = Array(test.function_space())
+            output_array = Function(test.function_space())
 
         if trial.argument() == 2:
             # linear form
@@ -111,7 +111,7 @@ def inner(expr0, expr1, output_array=None):
         uh = trial.basis()
 
     if output_array is None and trial.argument() == 2:
-        output_array = Array(trial.function_space())
+        output_array = Function(trial.function_space())
 
     A = []
     S = []
@@ -298,11 +298,11 @@ def inner(expr0, expr1, output_array=None):
                 b = bb[npaxis]
                 if uh.rank() == 2:
                     sp = uh.function_space()
-                    wh = Array(sp[npaxis], forward_output=True)
+                    wh = Function(sp[npaxis], forward_output=True)
                     wh = b.matvec(uh[trial_indices[0, i]], wh, axis=b.axis)
 
                 else:
-                    wh = Array(trialspace, forward_output=True)
+                    wh = Function(trialspace, forward_output=True)
                     wh = b.matvec(uh, wh, axis=b.axis)
                 output_array += wh*bb['scale']
 
