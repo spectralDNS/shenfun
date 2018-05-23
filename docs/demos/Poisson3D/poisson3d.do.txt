@@ -399,7 +399,7 @@ u = TrialFunction(T)
 v = TestFunction(T)
 K = T.local_wavenumbers()
 # Get f on quad points
-fj = fl(*X)
+fj = Array(T, buffer=fl(*X))
 # Compute right hand side of Poisson equation
 f_hat = inner(v, fj)
 # Get left hand side of Poisson equation
@@ -502,7 +502,8 @@ plt.show()
 
 ===== Complete solver =====
 label{sec:3d:complete}
-A complete solver, that can use either Legendre or Chebyshev bases, chosen as a command-line argument, is shown below.
+A complete solver, that can use either Legendre or Chebyshev bases, and any quadrature size
+chosen as a command-line argument, is shown below.
 
 !bc
 >>> python dirichlet_poisson3D.py legendre
@@ -510,26 +511,35 @@ A complete solver, that can use either Legendre or Chebyshev bases, chosen as a 
 or similarly with `chebyshev` instead of `legendre`.
 
 !bc pycod
-import sys
+import sys, os
 import importlib
-from sympy import symbols, cos, sin, exp, lambdify
+from sympy import symbols, cos, sin, lambdify
 import numpy as np
-from shenfun.tensorproductspace import TensorProductSpace
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    project, Dx, Basis
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
+    Function, Basis, TensorProductSpace
 import time
 from mpi4py import MPI
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
 
 comm = MPI.COMM_WORLD
 
+assert len(sys.argv) == 3
+assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
+assert isinstance(int(sys.argv[-2]), int)
+
 # Collect basis and solver from either Chebyshev or Legendre submodules
-family = sys.argv[-1] if len(sys.argv) == 2 else 'chebyshev'
+family = sys.argv[-1].lower()
 base = importlib.import_module('.'.join(('shenfun', family)))
 Solver = base.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
+a = -0
+b = 0
 x, y, z = symbols("x,y,z")
-ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-y**2)
+ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-z**2) + a*(1 + z)/2. + b*(1 - z)/2.
 fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
 
 # Lambdify for faster evaluation
@@ -537,20 +547,21 @@ ul = lambdify((x, y, z), ue, 'numpy')
 fl = lambdify((x, y, z), fe, 'numpy')
 
 # Size of discretization
-N = [eval(sys.argv[-2])]*3
+N = int(sys.argv[-2])
+N = [N, N, N]
 
-SD = Basis(N[0], family)
-K1 = Basis(N[1], 'F', dtype='D')
-K2 = Basis(N[2], 'F', dtype='d')
-T = TensorProductSpace(comm, (SD, K1, K2), axes=(0, 1, 2))
-X = T.local_mesh(True)
+SD = Basis(N[0], family=family, bc=(a, b))
+K1 = Basis(N[1], family='F', dtype='D')
+K2 = Basis(N[2], family='F', dtype='d')
+T = TensorProductSpace(comm, (K1, K2, SD), axes=(0, 1, 2), slab=True)
+X = T.local_mesh()
 u = TrialFunction(T)
 v = TestFunction(T)
 
 K = T.local_wavenumbers()
 
 # Get f on quad points
-fj = fl(*X)
+fj = Array(T, buffer=fl(*X))
 
 # Compute right hand side of Poisson equation
 f_hat = inner(v, fj)
@@ -574,7 +585,8 @@ uq = T.backward(u_hat, fast_transform=False)
 
 # Compare with analytical solution
 uj = ul(*X)
-print("Error=%2.16e" %(np.linalg.norm(uj-uq)))
+error = comm.reduce(np.linalg.norm(uj-uq)**2)
+print("Error=%2.16e" %(np.sqrt(error)))
 !ec
 
 #======= Bibliography =======

@@ -10,7 +10,7 @@ from Cython.Compiler.Options import get_directive_defaults
 
 # Version number
 major = 1
-minor = 0
+minor = 1
 
 cwd = os.path.abspath(os.path.dirname(__file__))
 cdir = os.path.join(cwd, "shenfun", "optimization")
@@ -59,7 +59,7 @@ else:
 
 setup(name = "shenfun",
       version = "%d.%d" % (major, minor),
-      description = "shenfun -- Modal Spectral-Galerkin framework",
+      description = "Shenfun -- Automated Spectral-Galerkin framework",
       long_description = "",
       author = "Mikael Mortensen",
       author_email = "mikaem@math.uio.no",

@@ -18,7 +18,8 @@ import sys, os
 import importlib
 from sympy import symbols, sin, lambdify
 import numpy as np
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis, \
+    Array, Function
 try:
     import matplotlib.pyplot as plt
 except ImportError:
@@ -46,10 +47,11 @@ u = TrialFunction(SD)
 v = TestFunction(SD)
 
 # Get f on quad points
-fj = fl(X)
+fj = Array(SD, buffer=fl(X))
 
 # Compute right hand side of Poisson equation
-f_hat = inner(v, fj)
+f_hat = Function(SD, buffer=inner(v, fj))
+
 if family == 'legendre':
     f_hat *= -1.
 

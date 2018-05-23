@@ -41,13 +41,19 @@ a regular Legendre basis (i.e., :math:`\{L_k\}_{k=0}^{N-1}`, where :math:`L_k` i
 ``Chebyshev`` with ``Legendre`` above. And to create a Fourier basis, just use 
 ``Fourier``.
 
-The basis :math:`T` has many useful methods associated with it, and we may
-experiment a little. A function using basis :math:`T` has expansion
+The basis :math:`T = \{T_k\}_{k=0}^{N-1}` has many useful methods associated 
+with it, and we may experiment a little. A :class:`.Function` ``u`` using basis 
+:math:`T` has expansion
 
 .. math::
    :label: eq:sum8
 
-    u(x) = \sum_{k=0}^{7} \hat{u}_k T_k
+    u(x) = \sum_{k=0}^{7} \hat{u}_k T_k(x)
+
+and an instance of this function (initialized with :math:`\{\hat{u}_k\}_{k=0}^7=0`) 
+is created in shenfun as::
+
+    u = Function(T)
 
 Consider now for exampel the polynomial :math:`2x^2-1`, which happens to be
 exactly equal to :math:`T_2(x)`. We
@@ -57,11 +63,11 @@ can create this polynomial using `sympy <www.sympy.org>`_ ::
     x = Symbol('x')
     u = 2*x**2 - 1
 
-The Sympy function `u` can now be evaluated on the quadrature points of basis
-`T`::
+The Sympy function ``u`` can now be evaluated on the quadrature points of basis
+:math:`T`::
 
     xj = T.mesh(N)
-    ue = Function(T, False)
+    ue = Array(T)
     ue[:] = [u.subs(x, xx) for xx in xj]
     print(xj)
       [ 0.98078528  0.83146961  0.55557023  0.19509032 -0.19509032 -0.55557023
@@ -70,23 +76,31 @@ The Sympy function `u` can now be evaluated on the quadrature points of basis
       [ 0.92387953  0.38268343 -0.38268343 -0.92387953 -0.92387953 -0.38268343
         0.38268343  0.92387953]
 
-We see that `ue` is a :class:`.Function` on the basis `T`, and the `False` is there
-to indicate that this function lives in the real physical space. That is, it is
-the left hand side :math:`u(x)` of :eq:`eq:sum8`. If we change from `False` to `True`,
-the we get an array :math:`\hat{u}` with shape matching the right hand side::
+We see that ``ue`` is an :class:`.Array` on the basis ``T``, and not a 
+:class:`.Function`. The :class:`.Array` and :class:`Function` classes
+are both subclassed Numpy's `ndarray <https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.ndarray.html>`_, and represent the two arrays associated 
+with the spectral Galerkin function, like :eq:`eq:sum8`. 
+The :class:`.Function` represent the entire spectral Galerkin function, with 
+array values corresponding to the expansion coefficients :math:`\hat{u}`. 
+The :class:`.Array` represent the spectral Galerkin function evaluated
+on the quadrature mesh of the basis ``T``, i.e., here 
+:math:`u(x_i), \forall \, i \in 0, 1, \ldots, 7`. 
+ 
+We now want to find the :class:`.Function` ``uh`` corresponding to
+:class:`.Array` ``ue``. Considering :eq:`eq:sum8`, this corresponds to finding 
+:math:`\hat{u}_k` if the left hand side :math:`u(x_j)` is known for 
+all quadrature points :math:`x_j`. 
 
-    u_hat = Function(T, True)
+Since we already know that ``ue`` is
+equal to the second Chebyshev polynomial, we should get an array of
+expansion coefficients equal to :math:`\hat{u} = (0, 0, 1, 0, 0, 0, 0, 0)`. 
+We can compute ``uh`` either by using :func:`project` or a forward transform::
 
-We now want the expansion of :class:`.Function` `ue` in `T`, i.e., we want to
-compute the :math:`\hat{u}` corresponding to `ue`. Since we know that `ue` is
-equal to the second Chebyshev polynomial, we should get
-:math:`\hat{u} = (0, 0, 1, 0, 0, 0, 0, 0)`. We can compute `u_hat` either
-by using :func:`project` or a forward transform::
-
-    u_hat = T.forward(ue, u_hat)
+    uh = Function(T)
+    uh = T.forward(ue, uh)
     # or
-    # u_hat = project(ue, T, output_array=u_hat)
-    print(u_hat)
+    # uh = project(ue, T)
+    print(uh)
       [-1.38777878e-17  6.72002101e-17  1.00000000e+00 -1.95146303e-16
         1.96261557e-17  1.15426347e-16 -1.11022302e-16  1.65163507e-16]
 
@@ -146,6 +160,7 @@ The matrix :math:`B` is seen to have only one diagonal (the principal)
 With the matrix comes a `solve` method and we can solve for :math:`\hat{u}`
 through::
 
+    u_hat = Function(T)
     u_hat = B.solve(u_tilde, u=u_hat)
     print(u_hat)
       [-1.38777878e-17  6.72002101e-17  1.00000000e+00 -1.95146303e-16
@@ -154,23 +169,8 @@ through::
 which obviously is exactly the same as we found using :func:`.project`
 or the `T.forward` function.
 
-The :class:`.Function` and :class:`.Array` classes are subclasses of Numpy's
-`ndarray <https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.ndarray.html>`_. 
-They are both generated with a :class:`.TensorProductSpace` as argument,
-which determines theirs size. The main difference between :class:`.Function`
-and :class:`.Array` is that the latter is *lighter*, in that it carries less
-information, and as such, when possible one should use :class:`.Array`
-for optimal speed. You can get an :class:`.Array` from a 
-:class:`.Function` at any time as::
-
-    u = Function(T, False)
-    ua = u.as_array()
-
-Also::
-
-    uf = ua.as_function()
-
-The additional weight comes from the :class:`.Function` being a subclass
+Note that :class:`.Array` merely is a subclass of Numpy's ``ndarray``, 
+whereas :class:`.Function` is a subclass
 of both Numpy's ``ndarray`` *and* the :class:`.BasisFunction` class. The 
 latter is used as a base class for arguments to bilinear and linear forms,
 and is as such a base class also for :class:`.TrialFunction` and
@@ -184,25 +184,25 @@ all except the last one is ok::
     T = TensorProductSpace(comm, (K0, K1))
     u = TrialFunction(T)
     v = TestFunction(T)
-    uf = Function(T, False)
-    ua = uf.as_array()
-    
-    A = inner(v, u)
-    b = inner(v, uf)  # ok, a scalar product
+    uf = Function(T)    
+    ua = Array(T)
+
+    A = inner(v, u)   # Mass matrix
     c = inner(v, ua)  # ok, a scalar product
+    d = inner(v, uf)  # ok, a scalar product (slower than above)
     df = Dx(uf, 0, 1) # ok
     da = Dx(ua, 0, 1) # Not ok
 
-    AssertionError                            Traceback (most recent call last)
-    <ipython-input-35-de4aac99d23b> in <module>()
-    ----> 1 da = Dx(ua, 0, 1)
+        AssertionError                            Traceback (most recent call last)
+        <ipython-input-35-de4aac99d23b> in <module>()
+        ----> 1 da = Dx(ua, 0, 1)
 
-    ~/MySoftware/shenfun/shenfun/forms/operators.py in Dx(test, x, k)
-         85             Number of derivatives
-         86     """
-    ---> 87     assert isinstance(test, (Expr, BasisFunction))
-         88 
-         89     if isinstance(test, BasisFunction):
+        ~/MySoftware/shenfun/shenfun/forms/operators.py in Dx(test, x, k)
+             85             Number of derivatives
+             86     """
+        ---> 87     assert isinstance(test, (Expr, BasisFunction))
+             88 
+             89     if isinstance(test, BasisFunction):
 
 So it is not possible to perform operations that involve differentiation on an 
 :class:`.Array` instance. This is because the ``ua`` does not contain more

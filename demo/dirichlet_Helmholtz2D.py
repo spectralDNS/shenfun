@@ -21,7 +21,7 @@ import importlib
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis, \
-    Array, TensorProductSpace
+    Array, Function, TensorProductSpace
 from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt
@@ -60,10 +60,10 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = fl(*X)
+fj = Array(T, buffer=fl(*X))
 
 # Compute right hand side of Poisson equation
-f_hat = Array(T)
+f_hat = Function(T)
 f_hat = inner(v, fj, output_array=f_hat)
 
 # Get left hand side of Helmholtz equation
@@ -78,9 +78,9 @@ else:
 H = Solver(**matrices)
 
 # Solve and transform to real space
-u_hat = Array(T)           # Solution spectral space
+u_hat = Function(T)           # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
-uq = Array(T, False)
+uq = Array(T)
 uq = T.backward(u_hat, uq)
 
 # Compare with analytical solution

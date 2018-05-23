@@ -1,30 +1,28 @@
 import numpy as np
 from shenfun.tensorproductspace import MixedTensorProductSpace
-from .arguments import Expr, TestFunction, TrialFunction, BasisFunction, Array
+from .arguments import Expr, TestFunction, TrialFunction, BasisFunction, Function
 from .inner import inner
 
 __all__ = ('project',)
 
-def project(uh, T, output_array=None, uh_hat=None):
+def project(uh, T, output_array=None):
     r"""Project uh to tensor product space T
+
+    Find :math:`u \in T`, such that
+
+    .. math::
+
+        (u - u_h, v)_w = 0 \quad \forall v \in T
 
     Parameters
     ----------
-        uh : Expr or Function
-        T : TensorProductSpace
-        output_array : Function(T, True)
+        uh : :class:`.Expr` on :class:`BasisFunction` or :class:`.Array`
+        T : :class:`.TensorProductSpace`
+        output_array : :class:`.Function`
                        Return array
-        uh_hat : Function(T, True)
-                 The transform of uh in uh's space, i.e.::
 
-                    TK = uh.function_space()
-                    uh_hat = TK.forward(uh)
-
-                 This is
-                 ok even though uh is part of a form, like ``div(grad(uh))``
-
-    .. note:: Returns spectral expansion coefficients of projection,
-              not the projection in physical space.
+    .. note:: Returns a :class:`.Function`, i.e., the spectral expansion
+              coefficients of projection, not the solution in physical space.
 
     Example
     -------
@@ -32,21 +30,22 @@ def project(uh, T, output_array=None, uh_hat=None):
     >>> import numpy as np
     >>> from mpi4py import MPI
     >>> from shenfun import chebyshev, fourier, project, TensorProductSpace, \
-    ...   Function, Dx
+    ...     Array, Function, Dx
     >>> N = 16
     >>> comm = MPI.COMM_WORLD
     >>> T0 = chebyshev.bases.Basis(N)
     >>> K0 = fourier.bases.R2CBasis(N)
     >>> T = TensorProductSpace(comm, (T0, K0))
-    >>> uj = Function(T, False)
+    >>> uj = Array(T)
     >>> uj[:] = np.random.random(uj.shape)
-    >>> u_hat = project(uj, T)    # Same as u_hat=Function(T);u_hat = T.forward(uj, u_hat)
-    >>> du_hat = project(Dx(uj, 0, 1), T, uh_hat=u_hat)
+    >>> u = Function(T)
+    >>> u = project(uj, T, output_array=u) # Same as u = T.forward(uj, u)
+    >>> du = project(Dx(u, 0, 1), T)
 
     """
 
     if output_array is None:
-        output_array = Array(T)
+        output_array = Function(T)
 
     if isinstance(uh, np.ndarray):
         # Just regular forward transform
@@ -57,7 +56,7 @@ def project(uh, T, output_array=None, uh_hat=None):
 
     v = TestFunction(T)
     u = TrialFunction(T)
-    output_array = inner(v, uh, output_array=output_array, uh_hat=uh_hat)
+    output_array = inner(v, uh, output_array=output_array)
     B = inner(v, u)
     if isinstance(B, list) and not isinstance(T, MixedTensorProductSpace):
         # Means we have two non-periodic directions
@@ -89,3 +88,4 @@ def project(uh, T, output_array=None, uh_hat=None):
                 axis = B[i].axis if hasattr(B[i], 'axis') else 0
                 output_array[i] = B[i].solve(output_array[i], output_array[i], axis=axis)
     return output_array
+

@@ -22,12 +22,11 @@ def div(test):
     if isinstance(test, BasisFunction):
         test = Expr(test)
 
-    space = test.function_space()
     v = test.terms().copy()
     sc = test.scales().copy()
     ind = test.indices().copy()
 
-    ndim = space.ndim()
+    ndim = test.dim()
     if ndim == 1:      # 1D
         v += 1
 
@@ -56,13 +55,11 @@ def grad(test):
     if isinstance(test, BasisFunction):
         test = Expr(test)
 
-    space = test.function_space()
     terms = test.terms()
     sc = test.scales()
     ind = test.indices()
 
-    ndim = space.ndim()
-    assert test.dim() == ndim
+    ndim = test.dim()
     #assert test.num_components() == 1       # allow only gradient of scalar
     test._terms = np.repeat(terms, ndim, axis=0)       # Create vector
     test._scales = np.repeat(sc, ndim, axis=0)

@@ -13,8 +13,8 @@ u = TrialFunction(T)
 v = TestFunction(T)
 k = T.wavenumbers(N, scaled=True, eliminate_highest_freq=True)
 
-u_ = Function(T, False)
-Up = Function(Tp, False)
+u_ = Array(T)
+Up = Array(Tp)
 u_hat = Function(T)
 
 def LinearRHS(**params):
@@ -23,7 +23,6 @@ def LinearRHS(**params):
 def NonlinearRHS(u, u_hat, rhs, **params):
     rhs.fill(0)
     Up[:] = Tp.backward(u_hat, Up)
-    #return inner(grad(-0.5*Up**2), v)
     rhs = Tp.forward(-0.5*Up**2, rhs)
     return rhs*1j*k
 

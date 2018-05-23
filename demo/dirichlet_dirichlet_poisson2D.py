@@ -15,7 +15,7 @@ import importlib
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
 from shenfun import inner, grad, TestFunction, TrialFunction, Function, Basis, \
-    TensorProductSpace
+    TensorProductSpace, Array
 from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt
@@ -49,7 +49,7 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = fl(*X)
+fj = Array(T, buffer=fl(*X))
 
 # Compute right hand side of Poisson equation
 f_hat = inner(v, fj)
@@ -67,7 +67,7 @@ u_hat = Function(T)           # Solution spectral space
 u_hat = H(u_hat, f_hat, 0)    # Solve
 #print('Time ', time()-t0)
 
-uq = Function(T, False)
+uq = Array(T)
 uq = T.backward(u_hat, uq)
 
 # Compare with analytical solution
