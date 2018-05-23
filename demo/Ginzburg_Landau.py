@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from mpi4py import MPI
 import _pickle
 from shenfun import inner, grad, TestFunction, TrialFunction, \
-    TensorProductSpace, Array, ETDRK4, HDF5Writer, Basis
+    TensorProductSpace, Array, Function, ETDRK4, HDF5Writer, Basis
 
 comm = MPI.COMM_WORLD
 
@@ -51,9 +51,9 @@ v = TestFunction(T)
 #Tp = T
 
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
-U = Array(T, False)
-Up = Array(Tp, False)
-U_hat = Array(T)
+U = Array(T)
+Up = Array(Tp)
+U_hat = Function(T)
 
 #initialize
 U[:] = ul(*X)

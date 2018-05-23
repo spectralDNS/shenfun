@@ -661,20 +661,6 @@ class SpectralBase(object):
     def _get_mat(self):
         raise NotImplementedError
 
-    def is_forward_output(self, u):
-        """Return whether or not the array u is of type and shape resulting
-        from a forward transform.
-        """
-        return (np.all(u.shape == self.forward.output_array.shape) and
-                u.dtype == self.forward.output_array.dtype)
-
-    def as_function(self, u):
-        """Return Numpy array u as a Function."""
-        from .forms.arguments import Function
-        assert isinstance(u, np.ndarray)
-        forward_output = self.is_forward_output(u)
-        return Function(self, forward_output=forward_output, buffer=u)
-
     def _truncation_forward(self, padded_array, trunc_array):
         if self.padding_factor > 1.0+1e-8:
             trunc_array.fill(0)

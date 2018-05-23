@@ -7,7 +7,7 @@ Demo - 3D Poisson equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 22, 2018
+:Date: May 23, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve a 3D Poisson
 equation in a 3D tensor product domain that has homogeneous Dirichlet boundary 
@@ -510,7 +510,7 @@ form language, which is perhaps surprisingly similar to FEniCS.
     v = TestFunction(T)
     K = T.local_wavenumbers()
     # Get f on quad points
-    fj = Array(T, False, buffer=fl(*X))
+    fj = Array(T, buffer=fl(*X))
     # Compute right hand side of Poisson equation
     f_hat = inner(v, fj)
     # Get left hand side of Poisson equation
@@ -634,7 +634,7 @@ or similarly with ``chebyshev`` instead of ``legendre``.
     from sympy import symbols, cos, sin, lambdify
     import numpy as np
     from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \ 
-        Basis, TensorProductSpace
+        Function, Basis, TensorProductSpace
     import time
     from mpi4py import MPI
     try:
@@ -679,7 +679,7 @@ or similarly with ``chebyshev`` instead of ``legendre``.
     K = T.local_wavenumbers()
     
     # Get f on quad points
-    fj = Array(T, False, buffer=fl(*X))
+    fj = Array(T, buffer=fl(*X))
     
     # Compute right hand side of Poisson equation
     f_hat = inner(v, fj)
@@ -696,7 +696,7 @@ or similarly with ``chebyshev`` instead of ``legendre``.
     H = Solver(**matrices)
     
     # Solve and transform to real space
-    u_hat = Array(T)              # Solution spectral space
+    u_hat = Function(T)           # Solution spectral space
     t0 = time.time()
     u_hat = H(u_hat, f_hat)       # Solve
     uq = T.backward(u_hat, fast_transform=False)

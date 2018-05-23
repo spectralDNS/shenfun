@@ -44,7 +44,7 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = Array(T, False, buffer=fl(*X))
+fj = Array(T, buffer=fl(*X))
 
 # Compute right hand side
 f_hat = Function(T)
@@ -55,7 +55,7 @@ f_hat = inner(v, fj, output_array=f_hat)
 A = inner(grad(v), grad(u))
 f_hat = A.solve(-f_hat)
 
-uq = Array(T, False)
+uq = Array(T)
 uq = T.backward(f_hat, uq, fast_transform=True)
 
 uj = ul(*X)

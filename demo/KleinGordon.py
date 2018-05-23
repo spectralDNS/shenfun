@@ -54,18 +54,18 @@ Tp = TensorProductSpace(comm, (Kp0, Kp1, Kp2), slab=False, **{'planner_effort': 
 Tp = T
 
 X = T.local_mesh(True)
-fu = Array(TT, False)
+fu = Array(TT)
 f, u = fu[:]
-up = Array(Tp, False)
+up = Array(Tp)
 K = np.array(T.local_wavenumbers(True, True, True))
 
-dfu = Array(TT)
+dfu = Function(TT)
 df, du = dfu[:]
 
-fu_hat = Array(TT)
+fu_hat = Function(TT)
 f_hat, u_hat = fu_hat[:]
 
-gradu = Array(TV, False)
+gradu = Array(TV)
 
 # initialize (f initialized to zero, so all set)
 u[:] = ul(*X)

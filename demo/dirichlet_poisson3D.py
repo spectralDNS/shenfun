@@ -21,7 +21,7 @@ import importlib
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
-    Basis, TensorProductSpace
+    Function, Basis, TensorProductSpace
 import time
 from mpi4py import MPI
 try:
@@ -68,7 +68,7 @@ v = TestFunction(T)
 K = T.local_wavenumbers()
 
 # Get f on quad points
-fj = Array(T, False, buffer=fl(*X))
+fj = Array(T, buffer=fl(*X))
 
 # Compute right hand side of Poisson equation
 f_hat = inner(v, fj)
@@ -85,7 +85,7 @@ else:
 H = Solver(**matrices)
 
 # Solve and transform to real space
-u_hat = Array(T)           # Solution spectral space
+u_hat = Function(T)           # Solution spectral space
 t0 = time.time()
 u_hat = H(u_hat, f_hat)       # Solve
 uq = T.backward(u_hat, fast_transform=False)

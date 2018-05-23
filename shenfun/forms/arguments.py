@@ -224,8 +224,9 @@ class Expr(object):
 
         if indices is None:
             self._indices = np.arange(self.function_space().num_components())[:, np.newaxis]
-            if isinstance(basis, BasisFunction) and self._indices.shape == (1, 1):
-                self._indices[0, 0] = basis.index()
+            if basis.index() is not None:
+                if isinstance(basis, BasisFunction) and self._indices.shape == (1, 1):
+                    self._indices[0, 0] = basis.index()
 
         assert np.prod(self._scales.shape) == self.num_terms()*self.num_components()
 
@@ -233,9 +234,10 @@ class Expr(object):
         """Return basis of Expr"""
         return self._basis
 
+    @property
     def base(self):
         """Return base array used in Expr"""
-        # basis is always the non-sliced parent array
+        # base is always the non-sliced parent array
         if isinstance(self._basis, np.ndarray):
             return self._basis if self._basis.base is None else self._basis.base
         return self._basis
@@ -252,9 +254,10 @@ class Expr(object):
         """Return scales of Expr"""
         return self._scales
 
+    @property
     def argument(self):
         """Return argument of Expr's basis"""
-        return self._basis.argument()
+        return self._basis.argument
 
     def expr_rank(self):
         """Return rank of Expr"""
@@ -345,7 +348,7 @@ class Expr(object):
             a = Expr(a)
         assert self.num_components() == a.num_components()
         assert self.function_space() == a.function_space()
-        assert self.argument() == a.argument()
+        assert self.argument == a.argument
         return Expr(self._basis,
                     np.concatenate((self.terms(), a.terms()), axis=1),
                     np.concatenate((self.scales(), a.scales()), axis=1),
@@ -357,7 +360,7 @@ class Expr(object):
             a = Expr(a)
         assert self.num_components() == a.num_components()
         assert self.function_space() == a.function_space()
-        assert self.argument() == a.argument()
+        assert self.argument == a.argument
         self._terms = np.concatenate((self.terms(), a.terms()), axis=1)
         self._scales = np.concatenate((self.scales(), a.scales()), axis=1)
         self._indices = np.concatenate((self.indices(), a.indices()), axis=1)
@@ -369,7 +372,7 @@ class Expr(object):
             a = Expr(a)
         assert self.num_components() == a.num_components()
         assert self.function_space() == a.function_space()
-        assert self.argument() == a.argument()
+        assert self.argument == a.argument
         return Expr(self._basis,
                     np.concatenate((self.terms(), a.terms()), axis=1),
                     np.concatenate((self.scales(), -a.scales()), axis=1),
@@ -381,7 +384,7 @@ class Expr(object):
             a = Expr(a)
         assert self.num_components() == a.num_components()
         assert self.function_space() == a.function_space()
-        assert self.argument() == a.argument()
+        assert self.argument == a.argument
         self._terms = np.concatenate((self.terms(), a.terms()), axis=1)
         self._scales = np.concatenate((self.scales(), -a.scales()), axis=1)
         self._indices = np.concatenate((self.indices(), a.indices()), axis=1)
@@ -410,26 +413,26 @@ class BasisFunction(object):
                Component of basis with rank > 1
     """
 
-    def __init__(self, space, argument=0, index=0):
+    def __init__(self, space, index=0):
         self._space = space
-        self._argument = argument
         self._index = index
 
     def rank(self):
         """Return rank of basis"""
-        return self._space.rank()
+        return self.function_space().rank()
 
     def expr_rank(self):
         """Return rank of expression involving basis"""
-        return self._space.rank()
+        return self.function_space().rank()
 
     def function_space(self):
-        """Return function space of basis"""
+        """Return function space of BasisFunction"""
         return self._space
 
+    @property
     def argument(self):
         """Return argument of basis"""
-        return self._argument
+        raise NotImplementedError
 
     def num_components(self):
         """Return number of components in basis"""
@@ -441,11 +444,11 @@ class BasisFunction(object):
 
     def index(self):
         """Return index into vector of rank 2"""
-        return self._index
+        return None
 
     def __getitem__(self, i):
         assert self.rank() == 2
-        t0 = BasisFunction(self._space[i], self._argument, i)
+        t0 = BasisFunction(self._space[i], i)
         return t0
 
     def __mul__(self, a):
@@ -486,12 +489,16 @@ class TestFunction(BasisFunction):
     """
 
     def __init__(self, space, index=0):
-        BasisFunction.__init__(self, space, 0, index)
+        BasisFunction.__init__(self, space, index)
 
     def __getitem__(self, i):
         assert self.rank() == 2
         t0 = TestFunction(self._space[i], index=i)
         return t0
+
+    @property
+    def argument(self):
+        return 0
 
 class TrialFunction(BasisFunction):
     """Trial function - BasisFunction with argument = 1
@@ -503,12 +510,16 @@ class TrialFunction(BasisFunction):
                Component of basis with rank > 1
     """
     def __init__(self, space, index=0):
-        BasisFunction.__init__(self, space, 1, index)
+        BasisFunction.__init__(self, space, index)
 
     def __getitem__(self, i):
         assert self.rank() == 2
         t0 = TrialFunction(self._space[i], index=i)
         return t0
+
+    @property
+    def argument(self):
+        return 1
 
 class Function(np.ndarray, BasisFunction):
     r"""Spectral Galerkin function for a given TensorProductSpace or Basis
@@ -525,10 +536,8 @@ class Function(np.ndarray, BasisFunction):
     Here an index set :math:`\mathcal{K}=0, 1, \ldots, N` is used
     to simplify notation.
 
-    For an M+1-dimensional TensorProductSpace with Cartesian tensor
-    product mesh :math:`x_0 \times x_1 \times \ldots \times x_M`,
-    where all the :math:`x_j = \{x_i\}_{i=0}^{N_j}` are the 1D meshes
-    along axis :math:`j`, we get
+    For an M+1-dimensional TensorProductSpace with coordinates
+    :math:`x_0, x_1, \ldots, x_M` we get
 
     .. math::
 
@@ -592,40 +601,36 @@ class Function(np.ndarray, BasisFunction):
         return obj
 
     def __init__(self, space, val=0, buffer=None):
-        #super(Function, self).__init__(space, 2)
-        BasisFunction.__init__(self, space, 2)
+        #super(Function, self).__init__(space)
+        BasisFunction.__init__(self, space)
 
-    def __getitem__(self, i):
-        # If it's a vector space, then return component, otherwise just return sliced numpy array
-        if hasattr(self, '_space'):
-            if self.rank() == 2 and i in range(self.num_components()):
-                v0 = BasisFunction.__getitem__(self, i)
-                v1 = np.ndarray.__getitem__(self, i)
-                fun = v0.function_space()
-                f0 = Function(fun, buffer=v1)
-                f0._index = i
-                f0._argument = 2
-                return f0
-            else:
-                v = np.ndarray.__getitem__(self, i)
-                return v
+    def index(self):
+        if self.base is None:
+            return None
 
-        else:
-            v = np.ndarray.__getitem__(self, i)
-            return v
+        if self.base.shape == self.shape:
+            return None
 
+        data_self = self.__array_interface__['data'][0]
+        data_base = self.base.__array_interface__['data'][0]
+        itemsize = self.itemsize
+        return (data_self - data_base) // (itemsize*np.prod(self.shape))
+
+    @property
+    def argument(self):
+        return 2
+
+    def function_space(self):
+        if self.base is None:
+            return self._space
+        if self.base.shape == self.shape:
+            return self._space
+        return self._space[self.index()]
 
     def __array_finalize__(self, obj):
         if obj is None: return
         if hasattr(obj, '_space'):
-            self._argument = 2
             self._space = obj._space
-            self._index = obj._index
-
-    def as_array(self):
-        """Return Function as Array"""
-        fun = self.function_space()
-        return Array(fun, forward_output=True, buffer=self)
 
     def eval(self, x, output_array=None):
         """Evaluate Function at points
@@ -647,25 +652,62 @@ class Function(np.ndarray, BasisFunction):
         """Return Function evaluated on quadrature mesh"""
         space = self.function_space()
         if output_array is None:
-            output_array = Array(space, False)
+            output_array = Array(space)
         output_array = space.backward(self, output_array)
         return output_array
 
 class Array(np.ndarray):
-    """Numpy array for TensorProductSpace
+    r"""Numpy array for TensorProductSpace
 
-    The Array is simply a Numpy array created with the shape determined by the
-    TensorProductSpace. The Array cannot be used in Exprs. The Array can be
-    either the Function evaluated on the mesh, or the expansion coefficients.
+    The Array is a Function evaluated on its quadrature mesh.
+
+    The Function is the product of all 1D basis expansions, that for each
+    dimension is defined like
+
+    .. math::
+
+        u(x) = \sum_{k \in \mathcal{K}} \hat{u}_k \psi_k(x),
+
+    where :math:`\psi_k(x)` are the trial functions and
+    :math:`\{\hat{u}_k\}_{k\in\mathcal{K}}` are the expansion coefficients.
+    Here an index set :math:`\mathcal{K}=0, 1, \ldots, N` is used
+    to simplify notation.
+
+    For an M+1-dimensional TensorProductSpace with coordinates
+    :math:`x_0, x_1, \ldots, x_M` we get
+
+    .. math::
+
+        u(x_{0}, x_{1}, \ldots, x_{M}) = \sum_{k_0 \in \mathcal{K}_0}\sum_{k_1 \in \mathcal{K}_1} \ldots \sum_{k_M \in \mathcal{K}_M} \hat{u}_{k_0, k_1, \ldots k_M} \psi_{k_0}(x_0) \psi_{k_1}(x_1) \ldots \psi_{k_M}(x_M),
+
+    where :math:`\mathcal{K}_j` is the index set for the wavenumber mesh
+    along axis :math:`j`.
+
+    Note that for a Cartesian mesh in 3D it would be natural to use coordinates
+    :math:`(x, y, z) = (x_0, x_1, x_2)` and the expansion would be the
+    simpler and somewhat more intuitive
+
+    .. math::
+
+        u(x, y, z) = \sum_{l \in \mathcal{K}_0}\sum_{m \in \mathcal{K}_1} \sum_{n \in \mathcal{K}_2} \hat{u}_{l, m, n} \psi_{l}(x) \psi_{m}(y) \psi_{n}(z).
+
+    The Array's values (the Numpy array) represent the left hand side,
+    evaluated on the Cartesian quadrature mesh. With this we mean the
+    :math:`u(x_i, y_j, z_k)` array, where :math:`\{x_i\}_{i=0}^{N_0}`,
+    :math:`\{y_j\}_{j=0}^{N_1}` and :math:`\{z_k\}_{k=0}^{N_2}` represent
+    the mesh along the three directions. The quadrature mesh is then
+
+    .. math::
+
+        (x_i, y_j, z_k) \quad \forall \, (i, j, k) \in [0, 1, \ldots, N_0] \times [0, 1, \ldots, N_1] \times [0, 1, \ldots, N_2]
+
+    The entire spectral Galerkin function can be obtained using the
+    :class:`.Function` class.
 
     Parameters
     ----------
 
         space : TensorProductSpace
-        forward_output : boolean.
-            If False then create Array of shape/type for input to
-            TensorProductSpace.forward, otherwise create Array of shape/type
-            for output from TensorProductSpace.forward
         val : int or float
             Value used to initialize array
         buffer : Numpy array or Array
@@ -680,19 +722,15 @@ class Array(np.ndarray):
     >>> K0 = Basis(8, 'F', dtype='D')
     >>> K1 = Basis(8, 'F', dtype='d')
     >>> FFT = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
-    >>> u = Array(FFT, False)
-    >>> uhat = Array(FFT, True)
+    >>> u = Array(FFT)
 
     """
 
     # pylint: disable=too-few-public-methods,too-many-arguments
-    def __new__(cls, space, forward_output=True, val=0, buffer=None):
+    def __new__(cls, space, val=0, buffer=None):
 
         shape = space.forward.input_array.shape
         dtype = space.forward.input_array.dtype
-        if forward_output is True:
-            shape = space.forward.output_array.shape
-            dtype = space.forward.output_array.dtype
 
         if not space.num_components() == 1:
             shape = (space.num_components(),) + shape
@@ -713,20 +751,39 @@ class Array(np.ndarray):
             self._space = obj._space
 
     def function_space(self):
-        """Return function space of basis"""
-        return self._space
+        """Return function space of Array"""
+        if self.base is None:
+            return self._space
+        if self.base.shape == self.shape:
+            return self._space
+        return self._space[self.index()]
 
     def rank(self):
         """Return rank of basis"""
-        return self._space.rank()
+        return self.function_space().rank()
 
+    def index(self):
+        if self.base is None:
+            return None
+
+        if self.base.shape == self.shape:
+            return None
+
+        data_self = self.__array_interface__['data'][0]
+        data_base = self.base.__array_interface__['data'][0]
+        itemsize = self.itemsize
+        return (data_self - data_base) // (itemsize*np.prod(self.shape))
+
+    @property
     def argument(self):
         """Return argument of basis"""
         return 2
 
-    def as_function(self):
-        """Return Array as Function"""
+    def forward(self, output_array=None):
+        """Return Function used to evaluate Array"""
         space = self.function_space()
-        assert space.is_forward_output(self) is True
-        return Function(space, buffer=self)
+        if output_array is None:
+            output_array = Function(space)
+        output_array = space.forward(self, output_array)
+        return output_array
 

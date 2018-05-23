@@ -36,9 +36,9 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Create solution and work arrays
-U = Array(T, False)
-U_hat = Array(T)
-gradu = Array(TV, False)
+U = Array(T)
+U_hat = Function(T)
+gradu = Array(TV)
 K = np.array(T.local_wavenumbers(True, True, True))
 
 def LinearRHS(**params):

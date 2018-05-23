@@ -55,7 +55,6 @@ def grad(test):
     if isinstance(test, BasisFunction):
         test = Expr(test)
 
-    space = test.function_space()
     terms = test.terms()
     sc = test.scales()
     ind = test.indices()

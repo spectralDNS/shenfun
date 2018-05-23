@@ -24,13 +24,13 @@ def project(uh, T, output_array=None):
     >>> import numpy as np
     >>> from mpi4py import MPI
     >>> from shenfun import chebyshev, fourier, project, TensorProductSpace, \
-    ...   Function, Dx
+    ...     Array, Function, Dx
     >>> N = 16
     >>> comm = MPI.COMM_WORLD
     >>> T0 = chebyshev.bases.Basis(N)
     >>> K0 = fourier.bases.R2CBasis(N)
     >>> T = TensorProductSpace(comm, (T0, K0))
-    >>> uj = Array(T, False)
+    >>> uj = Array(T)
     >>> uj[:] = np.random.random(uj.shape)
     >>> u = Function(T)
     >>> u = project(uj, T, output_array=u) # Same as u = T.forward(uj, u)
@@ -46,7 +46,7 @@ def project(uh, T, output_array=None):
         output_array = T.forward(uh, output_array)
         return output_array
 
-    #assert isinstance(uh, (Expr, BasisFunction))
+    assert isinstance(uh, (Expr, BasisFunction))
 
     v = TestFunction(T)
     u = TrialFunction(T)

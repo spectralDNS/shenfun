@@ -251,16 +251,16 @@ v = TestFunction(SD)
 # Assemble left hand side matrix
 A = inner(v, div(grad(u)))
 # Assemble right hand side
-fj = Array(SD, False, buffer=fl(X))
-f_hat = Array(SD)
+fj = Array(SD, buffer=fl(X))
+f_hat = Function(SD)
 f_hat = inner(v, fj, output_array=f_hat)
 !ec
 
 Note that `fl(X)` returns a Numpy array of the correct shape and type of
 the left hand side of (ref{eq:u}), evaluated on all quadrature points `X`.
 We wrap this Numpy array in an ${cls('Array')} class 
-(`fj = Array(SD, False, buffer=fl(X))`), because an Array
-is required for input to the ${func('inner')} function.
+(`fj = Array(SD, buffer=fl(X))`), because an Array
+is required as input to the ${func('inner')} function.
 
 ===== Solve linear equations =====
 
@@ -370,11 +370,10 @@ u = TrialFunction(SD)
 v = TestFunction(SD)
 
 # Get f on quad points
-#fj = fl(X)
-fj = np.array([fe.subs(x, j) for j in X], dtype=np.float)
+fj = Array(SD, buffer=fl(X))
 
 # Compute right hand side of Poisson equation
-f_hat = Array(SD)
+f_hat = Function(SD)
 f_hat = inner(v, fj, output_array=f_hat)
 if family == 'legendre':
     f_hat *= -1.

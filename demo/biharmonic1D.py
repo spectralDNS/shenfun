@@ -10,7 +10,7 @@ import sys, os
 import importlib
 from sympy import symbols, sin, lambdify
 import numpy as np
-from shenfun import inner, Dx, TestFunction, TrialFunction, Basis, Array
+from shenfun import inner, Dx, TestFunction, TrialFunction, Basis, Array, Function
 try:
     import matplotlib.pyplot as plt
 except ImportError:
@@ -50,7 +50,7 @@ u = TrialFunction(SD)
 v = TestFunction(SD)
 
 # Get f on quad points
-fj = Array(SD, False, buffer=fl(X))
+fj = Array(SD, buffer=fl(X))
 
 # Compute right hand side of biharmonic equation
 f_hat = inner(v, fj)
@@ -64,7 +64,7 @@ B = inner(v, u)
 H = Solver(S, A, B, a, b, c)
 
 # Solve and transform to real space
-u_hat = Array(SD)             # Solution spectral space
+u_hat = Function(SD)             # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
 u = SD.backward(u_hat)
 
