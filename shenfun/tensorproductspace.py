@@ -182,6 +182,20 @@ class TensorProductSpace(object):
                            Return array, function values at points
 
         """
+        return self._eval_cython(points, coefficients, output_array)
+
+    def _eval_python(self, points, coefficients, output_array=None): # pragma : no cover
+        """Evaluate Function at points, given expansion coefficients
+
+        Parameters
+        ----------
+            points : float or array of floats
+            coefficients : array
+                           Expansion coefficients
+            output_array : array, optional
+                           Return array, function values at points
+
+        """
         shape = list(self.local_shape())
         out = coefficients
         for base in reversed(self):
@@ -199,7 +213,7 @@ class TensorProductSpace(object):
             return output_array
         return out
 
-    def eval_cython(self, points, coefficients, output_array=None):
+    def _eval_cython(self, points, coefficients, output_array=None):
         """Evaluate Function at points, given expansion coefficients
 
         Parameters
@@ -228,7 +242,6 @@ class TensorProductSpace(object):
                 else:
                     last_conj_index = M
                 sl = self.local_slice()[axis].start
-
         out = np.zeros(len(points), dtype=coefficients.dtype)
         if len(self) == 2:
             out = shenfun.optimization.evaluate.evaluate_2D(out, coefficients, P, r2c=r2c, M=last_conj_index, start=sl)
@@ -243,7 +256,6 @@ class TensorProductSpace(object):
             output_array[:] = out
             return output_array
         return out
-
 
     def vandermonde_evaluate_local_expansion(self, base, points, input_array, output_array):
         """Evaluate expansion at certain points, possibly different from
@@ -446,29 +458,6 @@ class TensorProductSpace(object):
         """
         return self.bases[i]
 
-    def is_forward_output(self, u):
-        """Return whether or not the array u is of type and shape resulting
-        from a forward transform.
-
-        Parameters
-        ----------
-            u : array
-        """
-        return (u.shape == self.forward.output_array.shape and
-                u.dtype == self.forward.output_array.dtype)
-
-    def as_function(self, u):
-        """Return Numpy array u as a Function
-
-        Parameters
-        ----------
-            u : array
-        """
-        from .forms.arguments import Function
-        assert isinstance(u, np.ndarray)
-        forward_output = self.is_forward_output(u)
-        return Function(self, forward_output=forward_output, buffer=u)
-
 
 class MixedTensorProductSpace(object):
     """Class for composite tensorproductspaces.
@@ -526,11 +515,6 @@ class MixedTensorProductSpace(object):
     def num_components(self):
         """Return number of spaces in mixed space"""
         return len(self.spaces)
-
-    def is_forward_output(self, u):
-        """Return whether u array is of forward output type"""
-        return (u[0].shape == self.forward.output_array.shape and
-                u[0].dtype == self.forward.output_array.dtype)
 
     def __getitem__(self, i):
         return self.spaces[i]
@@ -639,17 +623,17 @@ class Convolve(object):
 
         Parameters
         ----------
-            a_hat : Function/Array
-            b_hat : Function/Array
-            ab_hat : Function/Array
+            a_hat : Function
+            b_hat : Function
+            ab_hat : Function
         """
         Tp = self.padding_space
         T = self.newspace
         if ab_hat is None:
-            ab_hat = shenfun.Array(T)
+            ab_hat = shenfun.Function(T)
 
-        a = shenfun.Array(Tp, False)
-        b = shenfun.Array(Tp, False)
+        a = shenfun.Array(Tp)
+        b = shenfun.Array(Tp)
         a = Tp.backward(a_hat, a)
         b = Tp.backward(b_hat, b)
         ab_hat = T.forward(a*b, ab_hat)
@@ -750,7 +734,7 @@ class BoundaryValues(object):
             # These are values set at the end of a transform in Dirichlet space,
             # but before any Fourier transforms
             # Shape is like real space, since Dirichlet does not alter shape
-            b = Array(T, False)
+            b = Array(T)
             s = T.local_slice(False)[axis]
 
             if isinstance(self.bc[0], sympy.Expr):
@@ -895,7 +879,7 @@ def some_basic_tests():
     comm.Bcast(f_g_hat, root=0)
 
     # Create a function in real space to hold the test data
-    fj = shenfun.Function(T, False)
+    fj = shenfun.Array(T)
     fj[:] = f_g[T.local_slice(False)]
 
     # Perform forward transformation
@@ -904,7 +888,7 @@ def some_basic_tests():
     assert np.allclose(f_g_hat[T.local_slice(True)], f_hat*N**4)
 
     # Perform backward transformation
-    fj2 = shenfun.Function(T, False)
+    fj2 = shenfun.Array(T)
     fj2 = T.backward(f_hat)
 
     assert np.allclose(fj, fj2)

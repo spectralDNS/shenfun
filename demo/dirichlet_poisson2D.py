@@ -22,7 +22,7 @@ from sympy import symbols, cos, sin, lambdify
 import numpy as np
 from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    Array, Basis, TensorProductSpace
+    Array, Function, Basis, TensorProductSpace
 try:
     import matplotlib.pyplot as plt
 except ImportError:
@@ -61,10 +61,10 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = fl(*X)
+fj = Array(T, buffer=fl(*X))
 
 # Compute right hand side of Poisson equation
-f_hat = Array(T)
+f_hat = Function(T)
 f_hat = inner(v, fj, output_array=f_hat)
 if family == 'legendre':
     f_hat *= -1.
@@ -79,9 +79,9 @@ else:
 H = Solver(**matrices)
 
 # Solve and transform to real space
-u_hat = Array(T)           # Solution spectral space
+u_hat = Function(T)           # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
-uq = Array(T, False)
+uq = Array(T)
 uq = T.backward(u_hat, uq)
 
 # Compare with analytical solution

@@ -251,14 +251,21 @@ v = TestFunction(SD)
 # Assemble left hand side matrix
 A = inner(v, div(grad(u)))
 # Assemble right hand side
-fj = fl(X)
-f_hat = Array(SD)
+fj = Array(SD, buffer=fl(X))
+f_hat = Function(SD)
 f_hat = inner(v, fj, output_array=f_hat)
 !ec
 
+Note that `fl(X)` returns a Numpy array of the correct shape and type of
+the left hand side of (ref{eq:u}), evaluated on all quadrature points `X`.
+We wrap this Numpy array in an ${cls('Array')} class 
+(`fj = Array(SD, buffer=fl(X))`), because an Array
+is required as input to the ${func('inner')} function.
+
 ===== Solve linear equations =====
 
-Finally, solve linear equation system and transform solution from spectral $\{\hat{u}_k\}_{k=0}^{N-1}$ vector to the real space $\{u(x_j)\}_{j=0}^N$ 
+Finally, solve linear equation system and transform solution from spectral 
+$\{\hat{u}_k\}_{k=0}^{N-1}$ vector to the real space $\{u(x_j)\}_{j=0}^N$ 
 and then check how the solution corresponds with the exact solution $u_e$.
 
 !bc pycod
@@ -279,7 +286,8 @@ script that performs a convergence test. The solver is run like
 >>> python dirichlet_poisson1D.py 32 legendre
 Error=6.5955040031498912e-10
 !ec
-for a discretization of size $N=32$ and for the Legendre basis. Alternatively, change `legendre` to `chebyshev` for the Chebyshev basis.  
+for a discretization of size $N=32$ and for the Legendre basis. Alternatively,
+change `legendre` to `chebyshev` for the Chebyshev basis.  
 
 We set up the solver to run for a list of $N=[12, 16, \ldots, 48]$, and collect
 the errornorms in arrays to be plotted. Such a script can be easily created 
@@ -362,11 +370,10 @@ u = TrialFunction(SD)
 v = TestFunction(SD)
 
 # Get f on quad points
-#fj = fl(X)
-fj = np.array([fe.subs(x, j) for j in X], dtype=np.float)
+fj = Array(SD, buffer=fl(X))
 
 # Compute right hand side of Poisson equation
-f_hat = Array(SD)
+f_hat = Function(SD)
 f_hat = inner(v, fj, output_array=f_hat)
 if family == 'legendre':
     f_hat *= -1.

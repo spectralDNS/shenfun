@@ -15,7 +15,7 @@ from sympy import symbols, cos, sin, lambdify
 import numpy as np
 import os
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis, \
-    TensorProductSpace
+    TensorProductSpace, Array, Function
 from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt
@@ -44,10 +44,11 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = fl(*X)
+fj = Array(T, buffer=fl(*X))
 
 # Compute right hand side
-f_hat = inner(v, fj)
+f_hat = Function(T)
+f_hat = inner(v, fj, output_array=f_hat)
 
 # Solve Poisson equation
 A = inner(v, div(grad(u)))
@@ -63,7 +64,7 @@ assert np.allclose(uj, uq)
 point = np.array([[0.1, 0.2, 0.3], [0.2, 0.3, 0.3], [0.3, 0.4, 0.1]])
 p = T.eval(point, f_hat)
 assert np.allclose(p, ul(*point.T))
-p2 = T.eval_cython(point, f_hat)
+p2 = f_hat.eval(point)
 assert np.allclose(p2, ul(*point.T))
 
 

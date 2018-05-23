@@ -15,7 +15,8 @@ solution that is either real or complex.
 """
 from sympy import Symbol, cos, sin, lambdify
 import numpy as np
-from shenfun import inner, grad, TestFunction, TrialFunction, Basis, Function
+from shenfun import inner, grad, TestFunction, TrialFunction, Basis, Function, \
+    Array
 import os
 try:
     import matplotlib.pyplot as plt
@@ -43,8 +44,8 @@ v = TestFunction(ST)
 X = ST.mesh(N)
 
 # Get f on quad points and exact solution
-fj = fl(X)
-uj = ul(X)
+fj = Array(ST, buffer=fl(X))
+uj = Array(ST, buffer=ul(X))
 
 # Compute right hand side
 f_hat = Function(ST)
@@ -55,10 +56,9 @@ A = inner(grad(v), grad(u))
 u_hat = Function(ST)
 u_hat = A.solve(-f_hat, u_hat)
 
-uq = ST.backward(u_hat, fast_transform=True)
-
-u_hat = ST.forward(uq, u_hat, fast_transform=True)
-uq = ST.backward(u_hat, uq, fast_transform=True)
+uq = ST.backward(u_hat)
+u_hat = ST.forward(uq, u_hat, fast_transform=False)
+uq = ST.backward(u_hat, uq, fast_transform=False)
 
 assert np.allclose(uj, uq)
 

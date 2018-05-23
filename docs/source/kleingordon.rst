@@ -7,7 +7,7 @@ Demo - Cubic nonlinear Klein-Gordon equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 18, 2018
+:Date: May 23, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Klein-Gordon equation, in a triply periodic domain. The demo is implemented in
@@ -235,12 +235,11 @@ distinction, though, is that for the :math:`z`-direction expansion coefficients 
 We now look for solutions of the form
 
 .. math::
-   :label: _auto6
+   :label: eq:usg
 
         
         u(x, y, z, t) = \sum_{n=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{l=-N/2}^{N/2-1}
         \hat{u}_{l,m,n} (t)\Phi_{l,m,n}(x,y,z). 
-        
         
 
 The expansion coefficients :math:`\hat{u}_{l,m,n}(t)` can be related directly to the solution :math:`u(x,
@@ -248,7 +247,7 @@ y, z, t)` using Fast Fourier Transforms (FFTs) if we are satisfied with obtainin
 the solution in quadrature points corresponding to
 
 .. math::
-   :label: _auto7
+   :label: _auto6
 
         
          x_i = \frac{4 \pi i}{N}-2\pi \quad \forall \, i \in \boldsymbol{i},
@@ -257,7 +256,7 @@ the solution in quadrature points corresponding to
         
 
 .. math::
-   :label: _auto8
+   :label: _auto7
 
           
          y_j = \frac{4 \pi j}{N}-2\pi \quad \forall \, j \in \boldsymbol{j},
@@ -266,7 +265,7 @@ the solution in quadrature points corresponding to
         
 
 .. math::
-   :label: _auto9
+   :label: _auto8
 
           
          z_k = \frac{4 \pi k}{N}-2\pi \quad \forall \, k \in \boldsymbol{k},
@@ -275,7 +274,7 @@ the solution in quadrature points corresponding to
         
 
 .. math::
-   :label: _auto10
+   :label: _auto9
 
           
         
@@ -286,7 +285,7 @@ the domain
 is set to :math:`[-2\pi, 2\pi]^3` and not the more common :math:`[0, 2\pi]^3`. We have
 
 .. math::
-   :label: _auto11
+   :label: _auto10
 
         
         u(x_i, y_j, z_k) =
@@ -305,7 +304,7 @@ the definition used for the inverse Fourier transform, which is the one used
 also by `Numpy <https://docs.scipy.org/doc/numpy-1.13.0/reference/routines.fft.html>`__:
 
 .. math::
-   :label: _auto12
+   :label: _auto11
 
         
         u(x_j) = \frac{1}{N}\sum_{l=-N/2}^{N/2-1} \hat{u}_l e^{\imath \underline{l}
@@ -332,7 +331,7 @@ With this weight function the scalar product and the forward transform
 are the same and we obtain:
 
 .. math::
-   :label: _auto13
+   :label: _auto12
 
         
         \left(u, \Phi_{l,m,n}\right) = \hat{u}_{l,m,n} =
@@ -348,7 +347,7 @@ may be written in terms of the Fourier transformed quantities :math:`\hat{u}` an
 :math:`\hat{f}`. Expanding the exact derivatives of the nabla operator, we have
 
 .. math::
-   :label: _auto14
+   :label: _auto13
 
         
         (\nabla u, \nabla v) =
@@ -357,7 +356,7 @@ may be written in terms of the Fourier transformed quantities :math:`\hat{u}` an
         
 
 .. math::
-   :label: _auto15
+   :label: _auto14
 
           
         (u, v) = \hat{u}_{l,m,n}, 
@@ -365,7 +364,7 @@ may be written in terms of the Fourier transformed quantities :math:`\hat{u}` an
         
 
 .. math::
-   :label: _auto16
+   :label: _auto15
 
           
         (u|u|^2, v) = \widehat{u|u|^2}
@@ -486,36 +485,37 @@ e.g., the Runge-Kutta method. Arrays are created as
 
 .. code-block:: python
 
-    uf = Array(TT, False) # Solution array in physical space
-    u, f = uf[:]          # Split solution array by creating two views u and f
-    duf = Array(TT)       # Array for right hand sides
-    du, df = duf[:]       # Split into views
-    uf_hat = Array(TT)    # Solution in spectral space
-    uf_hat0 = Array(TT)   # Work array 1
-    uf_hat1 = Array(TT)   # Work array 2
+    uf = Array(TT)           # Solution array in physical space
+    u, f = uf[:]             # Split solution array by creating two views u and f
+    duf = Function(TT)       # Array for right hand sides
+    du, df = duf[:]          # Split into views
+    uf_hat = Function(TT)    # Solution in spectral space
+    uf_hat0 = Function(TT)   # Work array 1
+    uf_hat1 = Function(TT)   # Work array 2
     u_hat, f_hat = uf_hat[:] # Split into views
 
 The :class:`.Array` class is a subclass of Numpy's `ndarray <https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html>`__,
 without much more functionality than constructors that return arrays of the
-correct shape according to the basis used in the construction. A different type
+correct shape according to the basis used in the construction. The 
+:class:`.Array` represents the left hand side of :eq:`eq:usg`, 
+evaluated on the quadrature mesh. A different type
 of array is returned by the :class:`.Function`
 class, that subclasses both Nympy's ndarray as well as an internal
 :class:`.BasisFunction`
-class. An instance of the :class:`.Function` class may be used as a regular array,
-but also as an argument in forms. For example, if you want to compute the
-partial derivative :math:`\partial u/\partial x`, then this may be achieved by
-projection, i.e., find :math:`u_x \in V^N` such that :math:`(u_x-\partial u/\partial x, v) = 0`,
-for all :math:`v \in V^N`. This projection may be easily computed in :mod:`.shenfun` using
+class. An instance of the :class:`.Function` represents the entire
+spectral Galerkin function :eq:`eq:usg`. As such, it can
+be used in complex variational linear forms. For example, if you want 
+to compute the partial derivative :math:`\partial u/\partial x`, then this 
+may be achieved by projection, i.e., find :math:`u_x \in V^N` such that 
+:math:`(u_x-\partial u/\partial x, v) = 0`, for all :math:`v \in V^N`. This 
+projection may be easily computed in :mod:`.shenfun` using
 
 .. code-block:: python
 
-    v = Function(T, False, buffer=u)
-    ux = project(Dx(v, 0, 1), T)
+    ux = project(Dx(u_hat, 0, 1), T)
 
-where ``v`` now is an instance of the :class:`.Function` class and not the
-:class:`.Array`, like
-``u``. The following code, on the other hand, will raise an error since you cannot
-use the ``Array u`` in a form, like ``Dx(u, 0, 1)``
+The following code, on the other hand, will raise an error since you cannot
+take the derivative of an interpolated ``Array u``, only a ``Function``
 
 .. code-block:: python
 
@@ -524,15 +524,10 @@ use the ``Array u`` in a form, like ``Dx(u, 0, 1)``
     except AssertionError:
         print("AssertionError: Dx not for Arrays")
 
-Note that ``u`` and ``v`` share the same data, and changing one will as such also
-change the other. The reason for having two classes is that regular indexing and
-slicing is faster on a *smaller* :class:`.Array` class that is carrying less of the additional
-information required by forms. 
-
 Initialization
 --------------
 
-The solution arrays ``uf`` and its transform ``uf_hat`` need to be initialized according to Eq.
+The solution array ``uf`` and its transform ``uf_hat`` need to be initialized according to Eq.
 :eq:`eq:init`. To this end it is convenient (but not required, we could just as
 easily use Numpy for this as well) to use `Sympy <http://www.sympy.org/en/index.html>`__, which is a Python library for symbolic
 mathamatics.
@@ -545,7 +540,7 @@ mathamatics.
     ue = 0.1*exp(-(x**2 + y**2 + z**2))
     ul = lambdify((x, y, z), ue, 'numpy')
     X = T.local_mesh(True)
-    u[:] = ul(*X)
+    u[:] = Array(T, buffer=ul(*X))
     u_hat = T.forward(u, u_hat)
 
 Here ``X`` is a list of the three mesh coordinates ``(x, y, z)`` local to the
@@ -596,7 +591,7 @@ can be implemented as
 
 .. code-block:: python
 
-    w0 = Array(T)
+    w0 = Function(T)
     a = [1./6., 1./3., 1./3., 1./6.]         # Runge-Kutta parameter
     b = [0.5, 0.5, 1.]                       # Runge-Kutta parameter
     t = 0
@@ -653,16 +648,16 @@ decimal points at :math:`t=100`.
     TT = MixedTensorProductSpace([T, T])
     
     X = T.local_mesh(True)
-    uf = Array(TT, False)
+    uf = Array(TT)
     u, f = uf[:]
-    up = Array(T, False)
-    duf = Array(TT)
+    up = Array(T)
+    duf = Function(TT)
     du, df = duf[:]
     
-    uf_hat = Array(TT)
-    uf_hat0 = Array(TT)
-    uf_hat1 = Array(TT)
-    w0 = Array(T)
+    uf_hat = Function(TT)
+    uf_hat0 = Function(TT)
+    uf_hat1 = Function(TT)
+    w0 = Function(T)
     u_hat, f_hat = uf_hat[:]
     
     # initialize (f initialized to zero, so all set)
@@ -706,7 +701,7 @@ decimal points at :math:`t=100`.
     t0 = time()
     K = np.array(T.local_wavenumbers(True, True, True))
     TV = VectorTensorProductSpace([T, T, T])
-    gradu = Array(TV, False)
+    gradu = Array(TV)
     while t < end_time-1e-8:
         t += dt
         tstep += 1

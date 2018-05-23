@@ -13,34 +13,49 @@ __all__ = ('inner',)
 
 #pylint: disable=line-too-long,inconsistent-return-statements,too-many-return-statements
 
-def inner(expr0, expr1, output_array=None, uh_hat=None):
-    """Return inner product of linear or bilinear form
+def inner(expr0, expr1, output_array=None):
+    r"""Return weighted inner product of linear or bilinear form
+
+    .. math::
+
+        (f, g)_w = \int_{\Omega} g\, \overline{f}\, w\, dx
+
+    where :math:`f` is an expression linear in a :class:`.TestFunction`, and
+    :math:`g` is an expression that is linear in :class:`.TrialFunction` or
+    :class:`.Function`, or it is simply an :class:`.Array` (a solution
+    interpolated on the quadrature mesh in physical space). :math:`w` is
+    a weight associated with chosen basis.
 
     Parameters
     ----------
-        expr0, expr1:  Expr
-                       Test/trial function, or expression involving test/trial
-                       function, e.g., div, grad. One of expr0 or expr1 need to
-                       be an expression on a testfunction, and if the second
-                       then involves a trial function, a matrix is returned.
-                       If one of expr0/expr1 is a test function and the other
-                       one is a Function/Array, then a linear form is assumed
-                       and an assembled vector is returned
+        expr0, expr1:  :class:`.Expr`, :class:`.BasisFunction`, :class:`.Array`
 
-        output_array:  Numpy array
+                       Either one can be an expression involving a
+                       :class:`.BasisFunction` (:class:`.TestFunction`,
+                       :class:`.TrialFunction` or :class:`.Function`) or an
+                       :class:`.Array`. With expressions (:class:`.Expr`) on a
+                       :class:`.BasisFunction` we typically mean terms like
+                       div(u) or grad(u), where u is any one of the different
+                       types of :class:`.BasisFunction`.
+                       One of *expr0* or *expr1* need to be an expression on a
+                       :class:`.TestFunction`. If the second then involves a
+                       :class:`.TrialFunction`, a matrix is returned. If one of
+                       *expr0*/*expr1* involves a :class:`.TestFunction` and the
+                       other one is an expression on a :class:`.Function`,
+                       or a plain :class:`.Array`, then a linear form is
+                       assembled and a :class:`.Function` is returned.
+
+        output_array:  Function
                        Optional return array for linear form.
-
-        uh_hat:        Numpy array
-                       The transform of the Function/Array used for linear forms.
 
     Example
     -------
         Compute mass matrix of Shen's Chebyshev Dirichlet basis:
 
-        >>> from shenfun.chebyshev.bases import ShenDirichletBasis
-        >>> from shenfun.forms.arguments import TestFunction, TrialFunction
+        >>> from shenfun import Basis
+        >>> from shenfun import TestFunction, TrialFunction
         >>> import six
-        >>> SD = ShenDirichletBasis(6)
+        >>> SD = Basis(6, 'Chebyshev', bc=(0, 0))
         >>> u = TrialFunction(SD)
         >>> v = TestFunction(SD)
         >>> B = inner(v, u)
@@ -51,23 +66,9 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
         [True, True, True]
 
     """
-    # Wrap numpy array in Function
-    if not hasattr(expr0, 'argument'):
-        if isinstance(expr0, np.ndarray):
-            try:
-                expr0 = Function(expr1.function_space(), forward_output=False, buffer=expr0)
-            except:
-                raise RuntimeError
-
-    if not hasattr(expr1, 'argument'):
-        if isinstance(expr1, np.ndarray):
-            try:
-                expr1 = Function(expr0.function_space(), forward_output=False, buffer=expr1)
-            except:
-                raise RuntimeError
-
-    t0 = expr0.argument()
-    t1 = expr1.argument()
+    assert np.all([hasattr(e, 'argument') for e in (expr0, expr1)])
+    t0 = expr0.argument
+    t1 = expr1.argument
     if t0 == 0:
         assert t1 in (1, 2)
         test = expr0
@@ -82,39 +83,32 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
     if test.rank() == 2: # For vector spaces of rank 2 use recursive algorithm
         ndim = test.function_space().ndim()
 
-        uh = uh_hat
-        if uh is None and trial.argument() == 2:
-            uh = Array(trial.function_space(), forward_output=True)
-            basis = trial if isinstance(trial, np.ndarray) else trial.basis()
-            uh = trial.function_space().forward(basis, uh)
+        if output_array is None and trial.argument == 2:
+            output_array = Function(test.function_space())
 
-        if output_array is None and trial.argument() == 2:
-            output_array = Array(test.function_space())
-
-        if trial.argument() == 2:
+        if trial.argument == 2:
             # linear form
             for ii in range(ndim):
                 output_array[ii] = inner(test[ii], trial[ii],
-                                         output_array=output_array[ii],
-                                         uh_hat=uh)
+                                         output_array=output_array[ii])
             return output_array
 
         result = []
         for ii in range(ndim):
-            result.append(inner(test[ii], trial[ii], uh_hat=uh))
+            result.append(inner(test[ii], trial[ii]))
         return result
 
 
-    if trial.argument() > 1:
+    if trial.argument > 1:
         # Linear form
         assert isinstance(test, (Expr, BasisFunction))
-        assert test.argument() == 0
+        assert test.argument == 0
         space = test.function_space()
-        if isinstance(trial, np.ndarray):
+        if isinstance(trial, Array):
             output_array = space.scalar_product(trial, output_array)
             return output_array
 
-        # If trial is an Expr with terms, then compute using bilinear form and matvec
+    # If trial is an Expr with terms, then compute using bilinear form and matvec
 
     assert isinstance(trial, (Expr, BasisFunction))
     assert isinstance(test, (Expr, BasisFunction))
@@ -126,18 +120,16 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
 
     space = test.function_space()
     trialspace = trial.function_space()
-    assert test.num_components() == trial.num_components()
     test_scale = test.scales()
     trial_scale = trial.scales()
     trial_indices = trial.indices()
 
-    uh = uh_hat
-    if uh is None and trial.argument() == 2:
-        uh = Array(trialspace, forward_output=True)
-        uh = trialspace.forward(trial.basis(), uh)
+    uh = None
+    if trial.argument == 2:
+        uh = trial.base
 
-    if output_array is None and trial.argument() == 2:
-        output_array = Array(trial.function_space())
+    if output_array is None and trial.argument == 2:
+        output_array = Function(trial.function_space())
 
     A = []
     S = []
@@ -176,8 +168,8 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
     # FourierBasis. Same for u.
     #
     # There are now two possibilities, either a linear or a bilinear form.
-    # A linear form has trial.argument() == 2, whereas a bilinear form has
-    # trial.argument() == 1. A linear form should assemble to an array and
+    # A linear form has trial.argument == 2, whereas a bilinear form has
+    # trial.argument == 1. A linear form should assemble to an array and
     # return this array. A bilinear form, on the other hand, should return
     # matrices. Which matrices, and how many, will of course depend on the
     # form and the number of terms.
@@ -252,7 +244,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
 
         # All Fourier
         if space.ndim() == 1:
-            if trial.argument() == 1:
+            if trial.argument == 1:
                 A[0][0].axis = 0
                 return A[0][0]
 
@@ -260,7 +252,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
             return output_array
 
         else:
-            if trial.argument() == 1:
+            if trial.argument == 1:
                 diagonal_array = B[0]
                 for ci in B[1:]:
                     diagonal_array = diagonal_array + ci
@@ -271,7 +263,6 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                 if uh.rank() == 2:
                     for i, b in enumerate(B):
                         output_array += b*uh[trial_indices[0, i]]
-
                 else:
                     diagonal_array = B[0]
                     for ci in B[1:]:
@@ -288,7 +279,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
         ## 1D case for itself, because it is simpler
         #if space.ndim() == 1:
             #from IPython import embed; embed()
-            #if trial.argument() == 1:
+            #if trial.argument == 1:
                 #if len(B) == 1:
                     #b = B[0][npaxis]
                     #b.scale = B[0]['scale']
@@ -302,7 +293,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                 #output_array *= mat.scale
                 #return output_array
 
-        if trial.argument() == 1:  # bilinear form
+        if trial.argument == 1:  # bilinear form
             b = B[0][npaxis]
             b.scale = B[0]['scale']
             C = {b.get_key(): b}
@@ -324,11 +315,11 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
                 b = bb[npaxis]
                 if uh.rank() == 2:
                     sp = uh.function_space()
-                    wh = Array(sp[npaxis], forward_output=True)
+                    wh = Function(sp[npaxis])
                     wh = b.matvec(uh[trial_indices[0, i]], wh, axis=b.axis)
 
                 else:
-                    wh = Array(trialspace, forward_output=True)
+                    wh = Function(trialspace)
                     wh = b.matvec(uh, wh, axis=b.axis)
                 output_array += wh*bb['scale']
 
@@ -337,7 +328,7 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
     elif np.all([len(f) == 3 for f in B]):
         # Two nonperiodic directions
 
-        if trial.argument() == 1:  # bilinear form
+        if trial.argument == 1:  # bilinear form
             return B
 
         else: # linear form
@@ -356,12 +347,12 @@ def inner(expr0, expr1, output_array=None, uh_hat=None):
 
             if uh.rank() == 2:
                 sp = uh.function_space()
-                wh = Array(sp[axis], forward_output=True)
-                wc = Array(sp[axis], forward_output=True)
+                wh = Function(sp[axis])
+                wc = Function(sp[axis])
 
             else:
-                wh = Array(trialspace, forward_output=True)
-                wc = Array(trialspace, forward_output=True)
+                wh = Function(trialspace)
+                wc = Function(trialspace)
 
             whB = np.zeros(transAB.subshapeB)
             wcB = np.zeros(transAB.subshapeB)

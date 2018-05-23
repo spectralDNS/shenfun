@@ -27,14 +27,14 @@ TV = VectorTensorProductSpace(T)
 u = TrialFunction(T)
 v = TestFunction(T)
 
-U = Function(TV, False)
+U = Array(TV)
 U_hat = Function(TV)
 K = np.array(T.local_wavenumbers(True, True, eliminate_highest_freq=False)) # No elim because used for second order diff
 K2 = np.sum(K*K, 0, dtype=int)
 K_over_K2 = K.astype(float) / np.where(K2 == 0, 1, K2).astype(float)
 P_hat = Function(T)
 curl_hat = Function(TV)
-curl_ = Function(TV, False)
+curl_ = Array(TV)
 X = T.local_mesh(True)
 
 def LinearRHS(**params):
@@ -46,10 +46,10 @@ def NonlinearRHS(U, U_hat, dU, **params):
     global TV, curl_hat, curl_, P_hat, K, K_over_K2
     dU.fill(0)
     curl_hat.fill(0)
-    U = TV.backward(U_hat, U)
-    curl_hat = project(curl(U), TV, output_array=curl_hat, uh_hat=U_hat) # Linear. Does not actually use U, only U_hat
+    curl_hat = project(curl(U_hat), TV, output_array=curl_hat)
     curl_ = TV.backward(curl_hat, curl_)
-    W = np.cross(U, curl_, axis=0)                  # Nonlinear term in physical space
+    U = U_hat.backward(U)
+    W = np.cross(U, curl_, axis=0)                   # Nonlinear term in physical space
     #dU = project(W, TV, output_array=dU)            # dU = TV.forward(W, dU)
     dU = TV.forward(W, dU)
     P_hat = np.sum(dU*K_over_K2, 0, out=P_hat)

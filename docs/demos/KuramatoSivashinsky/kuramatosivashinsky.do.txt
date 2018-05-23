@@ -281,9 +281,9 @@ However, since this is an odd derivative, and we are using an even number `N`
 for the size of the domain, the highest wavenumber must be set to zero. This is
 the purpose of the last keyword argument to `local_wavenumbers` below. 
 !bc pycod
-U = Array(T, False)
-U_hat = Array(T)
-gradu = Array(TV, False)
+U = Array(T)
+U_hat = Function(T)
+gradu = Array(TV)
 K = np.array(T.local_wavenumbers(True, True, eliminate_highest_freq=True))
 !ec
 Note that using this `K` in computing derivatives has the same effect as

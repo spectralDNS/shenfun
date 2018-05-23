@@ -16,7 +16,7 @@ import sys
 from sympy import symbols, sin, lambdify
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    Array, Basis
+    Array, Function, Basis
 
 assert len(sys.argv) == 3, 'Call with two command-line arguments'
 assert sys.argv[-1] in ('legendre', 'chebyshev')
@@ -45,10 +45,10 @@ u = TrialFunction(SD)
 v = TestFunction(SD)
 
 # Get f on quad points
-fj = fl(X)
+fj = Array(SD, buffer=fl(X))
 
 # Compute right hand side of Poisson equation
-f_hat = Array(SD)
+f_hat = Function(SD)
 f_hat = inner(v, fj, output_array=f_hat)
 if family == 'legendre':
     f_hat *= -1.
