@@ -401,14 +401,6 @@ class BasisFunction(object):
     Parameters
     ----------
         space: TensorProductSpace
-
-        argument: int
-                  Argument to Expr form.
-
-                  - 0 - TestFunction
-                  - 1 - TrialFunction
-                  - 2 - Function
-
         index: int
                Component of basis with rank > 1
     """

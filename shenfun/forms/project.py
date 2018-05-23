@@ -8,15 +8,21 @@ __all__ = ('project',)
 def project(uh, T, output_array=None):
     r"""Project uh to tensor product space T
 
+    Find :math:`u \in T`, such that
+
+    .. math::
+
+        (u - u_h, v)_w = 0 \quad \forall v \in T
+
     Parameters
     ----------
-        uh : Expr, Function or Array
-        T : TensorProductSpace
-        output_array : Function(T)
+        uh : :class:`.Expr` on :class:`BasisFunction` or :class:`.Array`
+        T : :class:`.TensorProductSpace`
+        output_array : :class:`.Function`
                        Return array
 
-    .. note:: Returns spectral expansion coefficients of projection,
-              not the projection in physical space.
+    .. note:: Returns a :class:`.Function`, i.e., the spectral expansion
+              coefficients of projection, not the solution in physical space.
 
     Example
     -------
