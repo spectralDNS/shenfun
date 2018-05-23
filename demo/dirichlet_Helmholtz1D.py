@@ -17,7 +17,7 @@ import importlib
 from sympy import symbols, sin, lambdify
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    Array, Basis
+    Array, Function, Basis
 
 assert len(sys.argv) == 3
 assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
@@ -47,8 +47,7 @@ u = TrialFunction(SD)
 v = TestFunction(SD)
 
 # Get f on quad points
-fj = Array(SD, False, buffer=fl(X))
-#fj = np.array([fe.subs(x, j) for j in X], dtype=np.float)
+fj = Array(SD, buffer=fl(X))
 
 # Compute right hand side of Poisson equation
 f_hat = Array(SD)
@@ -63,7 +62,7 @@ else:
     B = inner(v, alfa*u)
 
 H = Solver(A, B, A.scale, B.scale)
-u_hat = Array(SD)           # Solution spectral space
+u_hat = Function(SD)           # Solution spectral space
 u_hat = H(u_hat, f_hat)
 uj = SD.backward(u_hat)
 

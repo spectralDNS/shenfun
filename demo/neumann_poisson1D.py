@@ -47,7 +47,7 @@ u = TrialFunction(SD)
 v = TestFunction(SD)
 
 # Get f on quad points
-fj = Array(SD, False, buffer=fl(X))
+fj = Array(SD, buffer=fl(X))
 
 # Compute right hand side of Poisson equation
 f_hat = Function(SD, buffer=inner(v, fj))

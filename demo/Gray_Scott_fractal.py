@@ -75,12 +75,12 @@ vv = TestFunction(TV)
 uu = TrialFunction(TV)
 
 # Declare solution arrays and work arrays
-UV = Array(TV, False)
-UVp = Array(TVp, False)
+UV = Array(TV)
+UVp = Array(TVp)
 U, V = UV  # views into vector components
 UV_hat = Function(TV)
-w0 = Array(TV)              # Work array spectral space
-w1 = Array(TVp, False)      # Work array physical space
+w0 = Function(TV)         # Work array spectral space
+w1 = Array(TVp)           # Work array physical space
 
 e1 = 0.00002
 e2 = 0.00001

@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from shenfun import inner, div, curl, TestFunction, TrialFunction, Function, \
     Array, project, Dx, Basis, TensorProductSpace, VectorTensorProductSpace, \
-    MixedTensorProductSpace, Expr
+    MixedTensorProductSpace
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
@@ -28,10 +28,10 @@ def test_curl(typecode):
     u = TrialFunction(Tk)
     v = TestFunction(Tk)
 
-    U = Array(Tk, False)
+    U = Array(Tk)
     U_hat = Function(Tk)
     curl_hat = Function(Tk)
-    curl_ = Array(Tk, False)
+    curl_ = Array(Tk)
 
     # Initialize a Taylor Green vortex
     U[0] = np.sin(X[0])*np.cos(X[1])*np.cos(X[2])
@@ -44,7 +44,7 @@ def test_curl(typecode):
     assert allclose(U_hat, Uc)
 
     divu_hat = project(div(U_hat), T)
-    divu = Array(T, False)
+    divu = Array(T)
     divu = T.backward(divu_hat, divu)
     assert allclose(divu, 0)
 
@@ -60,7 +60,7 @@ def test_curl(typecode):
     for i in range(3):
         w_hat[i] = A[i].solve(w_hat[i])
 
-    w = Array(Tk, False)
+    w = Array(Tk)
     w = Tk.backward(w_hat, w)
     #from IPython import embed; embed()
     assert allclose(w, curl_)
@@ -70,7 +70,7 @@ def test_curl(typecode):
     for i in range(3):
         u_hat[i] = A[i].solve(u_hat[i])
 
-    uu = Array(Tk, False)
+    uu = Array(Tk)
     uu = Tk.backward(u_hat, uu)
 
     assert allclose(u_hat, U_hat)
@@ -91,10 +91,10 @@ def test_curl2():
     Tk = VectorTensorProductSpace(T)
     TTk = MixedTensorProductSpace([T, T, TT])
 
-    U = Array(Tk, False)
+    U = Array(Tk)
     U_hat = Function(Tk)
     curl_hat = Function(TTk)
-    curl_ = Array(TTk, False)
+    curl_ = Array(TTk)
 
     # Initialize a Taylor Green vortex
     U[0] = np.sin(X[0])*np.cos(X[1])*np.cos(X[2])*(1-X[0]**2)
@@ -111,8 +111,8 @@ def test_curl2():
     curl_[0] = T.backward(curl_hat[0], curl_[0])  # No x-derivatives, still in Dirichlet space
     dwdx_hat = project(Dx(U_hat[2], 0, 1), TT) # Need to use space without bc
     dvdx_hat = project(Dx(U_hat[1], 0, 1), TT) # Need to use space without bc
-    dwdx = Array(TT, False)
-    dvdx = Array(TT, False)
+    dwdx = Array(TT)
+    dvdx = Array(TT)
     dwdx = TT.backward(dwdx_hat, dwdx)
     dvdx = TT.backward(dvdx_hat, dvdx)
     curl_hat[1] = 1j*K[2]*U_hat[0]
@@ -124,7 +124,7 @@ def test_curl2():
 
     # Now do it with project
     w_hat = project(curl(U_hat), TTk)
-    w = Array(TTk, False)
+    w = Array(TTk)
     w = TTk.backward(w_hat, w)
     assert allclose(w, curl_)
 

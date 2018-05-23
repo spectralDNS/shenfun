@@ -27,14 +27,14 @@ TV = VectorTensorProductSpace(T)
 u = TrialFunction(T)
 v = TestFunction(T)
 
-U = Array(TV, False)
+U = Array(TV)
 U_hat = Function(TV)
 K = np.array(T.local_wavenumbers(True, True, eliminate_highest_freq=False)) # No elim because used for second order diff
 K2 = np.sum(K*K, 0, dtype=int)
 K_over_K2 = K.astype(float) / np.where(K2 == 0, 1, K2).astype(float)
 P_hat = Function(T)
 curl_hat = Function(TV)
-curl_ = Array(TV, False)
+curl_ = Array(TV)
 X = T.local_mesh(True)
 
 def LinearRHS(**params):

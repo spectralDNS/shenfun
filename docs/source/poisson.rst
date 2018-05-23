@@ -7,7 +7,7 @@ Demo - 1D Poisson equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 22, 2018
+:Date: May 23, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the Poisson
 equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as shown in Figure :ref:`fig:ct0`, is demonstrated. 
@@ -308,15 +308,15 @@ The variational problem :eq:`eq:varform` can be assembled using ``shenfun``'s
     # Assemble left hand side matrix
     A = inner(v, div(grad(u)))
     # Assemble right hand side
-    fj = Array(SD, False, buffer=fl(X))
-    f_hat = Array(SD)
+    fj = Array(SD, buffer=fl(X))
+    f_hat = Function(SD)
     f_hat = inner(v, fj, output_array=f_hat)
 
 Note that ``fl(X)`` returns a Numpy array of the correct shape and type of
 the left hand side of :eq:`eq:u`, evaluated on all quadrature points ``X``.
 We wrap this Numpy array in an :class:`.Array` class 
-(``fj = Array(SD, False, buffer=fl(X))``), because an Array
-is required for input to the :func:`.inner` function.
+(``fj = Array(SD, buffer=fl(X))``), because an Array
+is required as input to the :func:`.inner` function.
 
 Solve linear equations
 ----------------------

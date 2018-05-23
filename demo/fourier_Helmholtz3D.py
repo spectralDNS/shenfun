@@ -48,7 +48,7 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = Array(T, False, buffer=fl(*X))
+fj = Array(T, buffer=fl(*X))
 
 # Compute right hand side
 f_hat = Function(T)

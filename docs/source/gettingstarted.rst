@@ -67,7 +67,7 @@ The Sympy function ``u`` can now be evaluated on the quadrature points of basis
 :math:`T`::
 
     xj = T.mesh(N)
-    ue = Array(T, False)
+    ue = Array(T)
     ue[:] = [u.subs(x, xx) for xx in xj]
     print(xj)
       [ 0.98078528  0.83146961  0.55557023  0.19509032 -0.19509032 -0.55557023
@@ -77,27 +77,14 @@ The Sympy function ``u`` can now be evaluated on the quadrature points of basis
         0.38268343  0.92387953]
 
 We see that ``ue`` is an :class:`.Array` on the basis ``T``, and not a 
-:class:`.Function`. The :class:`.Array` and :class:`Function` classes are
-very similar. The major difference is that the :class:`.Function` can be 
-thought of as representing the spectral Galerkin expansion, 
-like :eq:`eq:sum8`, whereas
-the :class:`.Array` class is simply a Numpy array holding the values of
-either the left hand side (:math:`u(x_j)` on quadrature points) or the 
-expansion coefficients  :math:`\hat{u}_k` on the right hand side. 
-The `False/True` is there in the
-creation of the :class:`.Array` to determine whether to create an array 
-corresponding to physical space (:math:`u(x_i)`, `False`) or spectral space 
-(:math:`\hat{u}_k`, `True`). Above we see that ``ue`` lives in the physical space.
-If we change from `False` to `True`, the we get an array :math:`\hat{u}` 
-with shape and type matching the right hand side::
-
-    u_hat = Array(T, True)
-
-However, this array is not a full-blown spectral Galerkin :class:`.Function`,
-it is simply a Numpy array of shape the same size as :math:`\hat{u}`. The
-:class:`.Function` class has more methods associated with it. For example,
-it can be used to evaluate the expansion at any point, see 
-:meth:`.Function.eval`. 
+:class:`.Function`. The :class:`.Array` and :class:`Function` classes
+are both subclassed Numpy's `ndarray <https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.ndarray.html>`_, and represent the two arrays associated 
+with the spectral Galerkin function, like :eq:`eq:sum8`. 
+The :class:`.Function` represent the entire spectral Galerkin function, with 
+array values corresponding to the expansion coefficients :math:`\hat{u}`. 
+The :class:`.Array` represent the spectral Galerkin function evaluated
+on the quadrature mesh of the basis ``T``, i.e., here 
+:math:`u(x_i), \forall \, i \in 0, 1, \ldots, 7`. 
  
 We now want to find the :class:`.Function` ``uh`` corresponding to
 :class:`.Array` ``ue``. Considering :eq:`eq:sum8`, this corresponds to finding 
@@ -173,6 +160,7 @@ The matrix :math:`B` is seen to have only one diagonal (the principal)
 With the matrix comes a `solve` method and we can solve for :math:`\hat{u}`
 through::
 
+    u_hat = Function(T)
     u_hat = B.solve(u_tilde, u=u_hat)
     print(u_hat)
       [-1.38777878e-17  6.72002101e-17  1.00000000e+00 -1.95146303e-16
@@ -180,23 +168,6 @@ through::
 
 which obviously is exactly the same as we found using :func:`.project`
 or the `T.forward` function.
-
-The :class:`.Function` and :class:`.Array` classes are used extensively in 
-shenfun. They are both subclasses of Numpy's
-`ndarray <https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.ndarray.html>`_,
-and are both generated with a :class:`.TensorProductSpace` as argument,
-which determines theirs size. You can also get an :class:`.Array` from a 
-:class:`.Function` at any time as::
-
-    u = Function(T)
-    ua = u.as_array()
-
-Also::
-
-    uf = ua.as_function()
-
-but the latter only works if ``ua`` is an array representing the
-expansion coefficients :math:`\hat{u}`.
 
 Note that :class:`.Array` merely is a subclass of Numpy's ``ndarray``, 
 whereas :class:`.Function` is a subclass
@@ -214,7 +185,7 @@ all except the last one is ok::
     u = TrialFunction(T)
     v = TestFunction(T)
     uf = Function(T)    
-    ua = Array(T, False)
+    ua = Array(T)
 
     A = inner(v, u)   # Mass matrix
     c = inner(v, ua)  # ok, a scalar product

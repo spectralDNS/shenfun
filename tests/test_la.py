@@ -16,7 +16,7 @@ def test_PDMA(quad):
     u = TrialFunction(SB)
     v = TestFunction(SB)
     points, weights = SB.points_and_weights(N)
-    fj = Array(SB, False, buffer=np.random.randn(N))
+    fj = Array(SB, buffer=np.random.randn(N))
     f_hat = Function(SB)
     f_hat = inner(v, fj, output_array=f_hat)
 

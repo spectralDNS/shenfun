@@ -7,7 +7,7 @@ Demo - Cubic nonlinear Klein-Gordon equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 22, 2018
+:Date: May 23, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Klein-Gordon equation, in a triply periodic domain. The demo is implemented in
@@ -485,35 +485,37 @@ e.g., the Runge-Kutta method. Arrays are created as
 
 .. code-block:: python
 
-    uf = Array(TT, False) # Solution array in physical space
-    u, f = uf[:]          # Split solution array by creating two views u and f
-    duf = Array(TT)       # Array for right hand sides
-    du, df = duf[:]       # Split into views
-    uf_hat = Array(TT)    # Solution in spectral space
-    uf_hat0 = Array(TT)   # Work array 1
-    uf_hat1 = Array(TT)   # Work array 2
+    uf = Array(TT)           # Solution array in physical space
+    u, f = uf[:]             # Split solution array by creating two views u and f
+    duf = Function(TT)       # Array for right hand sides
+    du, df = duf[:]          # Split into views
+    uf_hat = Function(TT)    # Solution in spectral space
+    uf_hat0 = Function(TT)   # Work array 1
+    uf_hat1 = Function(TT)   # Work array 2
     u_hat, f_hat = uf_hat[:] # Split into views
 
 The :class:`.Array` class is a subclass of Numpy's `ndarray <https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html>`__,
 without much more functionality than constructors that return arrays of the
-correct shape according to the basis used in the construction. A different type
+correct shape according to the basis used in the construction. The 
+:class:`.Array` represents the left hand side of :eq:`eq:usg`, 
+evaluated on the quadrature mesh. A different type
 of array is returned by the :class:`.Function`
 class, that subclasses both Nympy's ndarray as well as an internal
 :class:`.BasisFunction`
-class. An instance of the :class:`.Function` class may be used as a regular array,
-but also as an argument in forms. For example, if you want to compute the
-partial derivative :math:`\partial u/\partial x`, then this may be achieved by
-projection, i.e., find :math:`u_x \in V^N` such that :math:`(u_x-\partial u/\partial x, v) = 0`,
-for all :math:`v \in V^N`. This projection may be easily computed in :mod:`.shenfun` using
+class. An instance of the :class:`.Function` represents the entire
+spectral Galerkin function :eq:`eq:usg`. As such, it can
+be used in complex variational linear forms. For example, if you want 
+to compute the partial derivative :math:`\partial u/\partial x`, then this 
+may be achieved by projection, i.e., find :math:`u_x \in V^N` such that 
+:math:`(u_x-\partial u/\partial x, v) = 0`, for all :math:`v \in V^N`. This 
+projection may be easily computed in :mod:`.shenfun` using
 
 .. code-block:: python
 
-    v = Function(T, buffer=u_hat)
-    ux = project(Dx(v, 0, 1), T)
+    ux = project(Dx(u_hat, 0, 1), T)
 
-where ``v`` now is an instance of the :class:`.Function` class.
 The following code, on the other hand, will raise an error since you cannot
-use the ``Array u`` in a form, like ``Dx(u, 0, 1)``
+take the derivative of an interpolated ``Array u``, only a ``Function``
 
 .. code-block:: python
 
@@ -522,17 +524,10 @@ use the ``Array u`` in a form, like ``Dx(u, 0, 1)``
     except AssertionError:
         print("AssertionError: Dx not for Arrays")
 
-Note that ``u`` and ``v`` share the same data, and changing one will as such also
-change the other. The reason for having two classes is that regular indexing and
-slicing is faster on a *smaller* :class:`.Array` class that is carrying less of 
-the additional information required by forms. The :class:`.Function` class
-also have more methods than an :class:`.Array`. For example, it can be evaluated
-at any points since it is a spectral Galerkin function, see :eq:`eq:usg`.
-
 Initialization
 --------------
 
-The solution arrays ``uf`` and its transform ``uf_hat`` need to be initialized according to Eq.
+The solution array ``uf`` and its transform ``uf_hat`` need to be initialized according to Eq.
 :eq:`eq:init`. To this end it is convenient (but not required, we could just as
 easily use Numpy for this as well) to use `Sympy <http://www.sympy.org/en/index.html>`__, which is a Python library for symbolic
 mathamatics.
@@ -545,7 +540,7 @@ mathamatics.
     ue = 0.1*exp(-(x**2 + y**2 + z**2))
     ul = lambdify((x, y, z), ue, 'numpy')
     X = T.local_mesh(True)
-    u[:] = Array(T, False, buffer=ul(*X))
+    u[:] = Array(T, buffer=ul(*X))
     u_hat = T.forward(u, u_hat)
 
 Here ``X`` is a list of the three mesh coordinates ``(x, y, z)`` local to the
@@ -596,7 +591,7 @@ can be implemented as
 
 .. code-block:: python
 
-    w0 = Array(T)
+    w0 = Function(T)
     a = [1./6., 1./3., 1./3., 1./6.]         # Runge-Kutta parameter
     b = [0.5, 0.5, 1.]                       # Runge-Kutta parameter
     t = 0
@@ -653,16 +648,16 @@ decimal points at :math:`t=100`.
     TT = MixedTensorProductSpace([T, T])
     
     X = T.local_mesh(True)
-    uf = Array(TT, False)
+    uf = Array(TT)
     u, f = uf[:]
-    up = Array(T, False)
-    duf = Array(TT)
+    up = Array(T)
+    duf = Function(TT)
     du, df = duf[:]
     
-    uf_hat = Array(TT)
-    uf_hat0 = Array(TT)
-    uf_hat1 = Array(TT)
-    w0 = Array(T)
+    uf_hat = Function(TT)
+    uf_hat0 = Function(TT)
+    uf_hat1 = Function(TT)
+    w0 = Function(T)
     u_hat, f_hat = uf_hat[:]
     
     # initialize (f initialized to zero, so all set)
@@ -706,7 +701,7 @@ decimal points at :math:`t=100`.
     t0 = time()
     K = np.array(T.local_wavenumbers(True, True, True))
     TV = VectorTensorProductSpace([T, T, T])
-    gradu = Array(TV, False)
+    gradu = Array(TV)
     while t < end_time-1e-8:
         t += dt
         tstep += 1

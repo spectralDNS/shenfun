@@ -7,7 +7,7 @@ Demo - Kuramato-Sivashinsky equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 22, 2018
+:Date: May 23, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Kuramato-Sivashinsky equation, in a doubly periodic domain. The demo is implemented in
@@ -319,9 +319,9 @@ the purpose of the last keyword argument to ``local_wavenumbers`` below.
 
 .. code-block:: python
 
-    U = Array(T, False)
-    U_hat = Array(T)
-    gradu = Array(TV, False)
+    U = Array(T)
+    U_hat = Function(T)
+    gradu = Array(TV)
     K = np.array(T.local_wavenumbers(True, True, eliminate_highest_freq=True))
 
 Note that using this ``K`` in computing derivatives has the same effect as

@@ -13,8 +13,8 @@ u = TrialFunction(T)
 v = TestFunction(T)
 k = T.wavenumbers(N, scaled=True, eliminate_highest_freq=True)
 
-u_ = Array(T, False)
-Up = Array(Tp, False)
+u_ = Array(T)
+Up = Array(Tp)
 u_hat = Function(T)
 
 def LinearRHS(**params):

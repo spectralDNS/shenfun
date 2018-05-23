@@ -44,8 +44,8 @@ v = TestFunction(ST)
 X = ST.mesh(N)
 
 # Get f on quad points and exact solution
-fj = Array(ST, False, buffer=fl(X))
-uj = Array(ST, False, buffer=ul(X))
+fj = Array(ST, buffer=fl(X))
+uj = Array(ST, buffer=ul(X))
 
 # Compute right hand side
 f_hat = Function(ST)

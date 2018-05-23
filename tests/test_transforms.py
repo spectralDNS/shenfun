@@ -41,8 +41,8 @@ lbases2 = list(list(i[0]) + [i[1]] for i in product(list(product(lBasis, lBasis)
 def test_convolve(basis, N):
     """Test convolution"""
     FFT = basis(N, plan=True)
-    u0 = shenfun.Array(FFT)
-    u1 = shenfun.Array(FFT)
+    u0 = shenfun.Function(FFT)
+    u1 = shenfun.Function(FFT)
     M = u0.shape[0]
     u0[:] = np.random.rand(M) + 1j*np.random.rand(M)
     u1[:] = np.random.rand(M) + 1j*np.random.rand(M)
@@ -84,8 +84,8 @@ def test_scalarproduct(ST, quad):
     f = x*x+cos(pi*x)
     fl = lambdify(x, f, 'numpy')
     fj = fl(points)
-    u0 = shenfun.Array(ST)
-    u1 = shenfun.Array(ST)
+    u0 = shenfun.Function(ST)
+    u1 = shenfun.Function(ST)
     u0 = ST.scalar_product(fj, u0, fast_transform=True)
     u1 = ST.scalar_product(fj, u1, fast_transform=False)
     assert np.allclose(u1, u0)
@@ -100,8 +100,8 @@ def test_eval(ST, quad):
         kwargs['quad'] = quad
     ST = ST(N, **kwargs)
     points, weights = ST.points_and_weights(N)
-    fk = shenfun.Array(ST)
-    fj = shenfun.Array(ST, False)
+    fk = shenfun.Function(ST)
+    fj = shenfun.Array(ST)
     fj[:] = np.random.random(fj.shape[0])
     fk = ST.forward(fj, fk)
     fj = ST.backward(fk, fj)
@@ -156,17 +156,17 @@ def test_transforms(ST, quad, axis):
         kwargs['quad'] = quad
     ST = ST(N, **kwargs)
     points, weights = ST.points_and_weights(N)
-    fj = shenfun.Array(ST, False)
+    fj = shenfun.Array(ST)
     fj[:] = np.random.random(fj.shape[0])
 
     # Project function to space first
-    f_hat = shenfun.Array(ST)
+    f_hat = shenfun.Function(ST)
     f_hat = ST.forward(fj, f_hat)
     fj = ST.backward(f_hat, fj)
 
     # Then check if transformations work as they should
-    u0 = shenfun.Array(ST)
-    u1 = shenfun.Array(ST, False)
+    u0 = shenfun.Function(ST)
+    u1 = shenfun.Array(ST)
     u0 = ST.forward(fj, u0)
     u1 = ST.backward(u0, u1)
     assert np.allclose(fj, u1)
@@ -183,8 +183,8 @@ def test_transforms(ST, quad, axis):
     if hasattr(ST, 'bc'):
         ST.bc.set_slices(ST)  # To set Dirichlet boundary conditions
 
-    u00 = shenfun.Array(ST)
-    u11 = shenfun.Array(ST, False)
+    u00 = shenfun.Function(ST)
+    u11 = shenfun.Array(ST)
     u00 = ST.forward(fj, u00)
     u11 = ST.backward(u00, u11)
     cc = [0,]*3
@@ -201,21 +201,21 @@ def test_axis(ST, quad, axis):
         kwargs['quad'] = quad
     ST = ST(N, **kwargs)
     points, weights = ST.points_and_weights(N)
-    f_hat = shenfun.Array(ST)
+    f_hat = shenfun.Function(ST)
     f_hat[:] = np.random.random(f_hat.shape[0])
 
     B = inner_product((ST, 0), (ST, 0))
-    c = shenfun.Array(ST)
+    c = shenfun.Function(ST)
     c = B.solve(f_hat, c)
 
     # Multidimensional version
-    f0 = shenfun.Array(ST, False)
+    f0 = shenfun.Array(ST)
     bc = [np.newaxis,]*3
     bc[axis] = slice(None)
     ST.plan((N,)*3, axis, f0.dtype, {})
     if hasattr(ST, 'bc'):
         ST.bc.set_tensor_bcs(ST) # To set Dirichlet boundary conditions on multidimensional array
-    ck = shenfun.Array(ST)
+    ck = shenfun.Function(ST)
     fk = np.broadcast_to(f_hat[bc], ck.shape).copy()
     ck = B.solve(fk, ck, axis=axis)
     cc = [0,]*3
