@@ -14,30 +14,48 @@ __all__ = ('inner',)
 #pylint: disable=line-too-long,inconsistent-return-statements,too-many-return-statements
 
 def inner(expr0, expr1, output_array=None):
-    """Return inner product of linear or bilinear form
+    r"""Return weighted inner product of linear or bilinear form
+
+    .. math::
+
+        (f, g)_w = \int_{\Omega} g\, \overline{f}\, w\, dx
+
+    where :math:`f` is an expression linear in a :class:`.TestFunction`, and
+    :math:`g` is an expression that is linear in :class:`.TrialFunction` or
+    :class:`.Function`, or it is simply an :class:`.Array` (a solution
+    interpolated on the quadrature mesh in physical space). :math:`w` is
+    a weight associated with chosen basis.
 
     Parameters
     ----------
-        expr0, expr1:  Expr
-                       Test/trial function, or expression involving test/trial
-                       function, e.g., div, grad. One of expr0 or expr1 need to
-                       be an expression on a testfunction, and if the second
-                       then involves a trial function, a matrix is returned.
-                       If one of expr0/expr1 is a test function and the other
-                       one is a Function/Array, then a linear form is assumed
-                       and an assembled vector is returned
+        expr0, expr1:  :class:`.Expr`, :class:`.BasisFunction`, :class:`.Array`
 
-        output_array:  Numpy array
+                       Either one can be an expression involving a
+                       :class:`.BasisFunction` (:class:`.TestFunction`,
+                       :class:`.TrialFunction` or :class:`.Function`) or an
+                       :class:`.Array`. With expressions (:class:`.Expr`) on a
+                       :class:`.BasisFunction` we typically mean terms like
+                       div(u) or grad(u), where u is any one of the different
+                       types of :class:`.BasisFunction`.
+                       One of *expr0* or *expr1* need to be an expression on a
+                       :class:`.TestFunction`. If the second then involves a
+                       :class:`.TrialFunction`, a matrix is returned. If one of
+                       *expr0*/*expr1* involves a :class:`.TestFunction` and the
+                       other one is an expression on a :class:`.Function`,
+                       or a plain :class:`.Array`, then a linear form is
+                       assembled and a :class:`.Function` is returned.
+
+        output_array:  Function
                        Optional return array for linear form.
 
     Example
     -------
         Compute mass matrix of Shen's Chebyshev Dirichlet basis:
 
-        >>> from shenfun.chebyshev.bases import ShenDirichletBasis
-        >>> from shenfun.forms.arguments import TestFunction, TrialFunction
+        >>> from shenfun import Basis
+        >>> from shenfun import TestFunction, TrialFunction
         >>> import six
-        >>> SD = ShenDirichletBasis(6)
+        >>> SD = Basis(6, 'Chebyshev', bc=(0, 0))
         >>> u = TrialFunction(SD)
         >>> v = TestFunction(SD)
         >>> B = inner(v, u)
