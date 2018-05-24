@@ -570,6 +570,7 @@ class Function(np.ndarray, BasisFunction):
     >>> u = Function(T)
     >>> K2 = Basis(8, 'C', bc=(0, 0))
     >>> T2 = TensorProductSpace(MPI.COMM_WORLD, [K0, K1, K2])
+    >>> v = Function(T2)
 
     """
     # pylint: disable=too-few-public-methods,too-many-arguments
@@ -633,14 +634,33 @@ class Function(np.ndarray, BasisFunction):
 
         Parameters
         ----------
-            points : float or array of floats
-            coefficients : array
-                           Expansion coefficients
-            output_array : array, optional
-                           Return array, function values at points
+        points : float or array of floats
+        coefficients : array
+            Expansion coefficients
+        output_array : array, optional
+            Return array, function values at points
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> import sympy as sp
+        >>> from shenfun import Basis, TensorProductSpace, Function, Array
+        >>> from mpi4py import MPI
+        >>> K0 = Basis(9, 'F', dtype='D')
+        >>> K1 = Basis(8, 'F', dtype='d')
+        >>> T = TensorProductSpace(MPI.COMM_WORLD, [K0, K1], axes=(0, 1))
+        >>> X = T.local_mesh()
+        >>> x, y = sp.symbols("x,y")
+        >>> ue = sp.sin(2*x) + sp.cos(3*y)
+        >>> ul = sp.lambdify((x, y), ue, 'numpy')
+        >>> ua = Array(T, buffer=ul(*X))
+        >>> points = np.array([[0.1, 0.2], [0.2, 0.3], [0.3, 0.4], [0.1, 0.3]])
+        >>> u = ua.forward()
+        >>> u0 = u.eval(points).real
+        >>> assert np.allclose(u0, ul(*points.T))
         """
         if output_array is None:
-            output_array = np.zeros(len(x), dtype=self.dtype)
+            output_array = np.zeros(len(x), dtype=self.function_space().forward.input_array.dtype)
         self.function_space().eval(x, self, output_array=output_array)
         return output_array
 

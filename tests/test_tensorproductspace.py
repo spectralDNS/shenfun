@@ -427,5 +427,5 @@ if __name__ == '__main__':
     #test_project('d', 2, cbases.ShenDirichletBasis, 'GC')
     #test_project2('d', 1, lbases.ShenNeumannBasis, 'LG')
     #test_project_2dirichlet('GL')
-    test_eval_tensor('d', 2, lbases.ShenDirichletBasis, 'GL')
+    test_eval_tensor('D', 2, lbases.ShenDirichletBasis, 'GL')
 

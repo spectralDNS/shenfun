@@ -694,7 +694,7 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
                - shenfun.legendre.bases
                - shenfun.fourier.bases
 
-               The integer determines the numer of times the basis is
+               The integer determines the number of times the basis is
                differentiated. The test represents the matrix row
         trial : 2-tuple of (Basis, integer)
                 Either an basis of argument 1 (trial) or 2 (Function)
