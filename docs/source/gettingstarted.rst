@@ -78,7 +78,7 @@ The Sympy function ``u`` can now be evaluated on the quadrature points of basis
 
 We see that ``ue`` is an :class:`.Array` on the basis ``T``, and not a 
 :class:`.Function`. The :class:`.Array` and :class:`Function` classes
-are both subclassed Numpy's `ndarray <https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.ndarray.html>`_, and represent the two arrays associated 
+are both subclasses of Numpy's `ndarray <https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.ndarray.html>`_, and represent the two arrays associated 
 with the spectral Galerkin function, like :eq:`eq:sum8`. 
 The :class:`.Function` represent the entire spectral Galerkin function, with 
 array values corresponding to the expansion coefficients :math:`\hat{u}`. 
@@ -99,12 +99,14 @@ We can compute ``uh`` either by using :func:`project` or a forward transform::
     uh = Function(T)
     uh = T.forward(ue, uh)
     # or
+    # uh = ue.forward(uh)
+    # or
     # uh = project(ue, T)
     print(uh)
       [-1.38777878e-17  6.72002101e-17  1.00000000e+00 -1.95146303e-16
         1.96261557e-17  1.15426347e-16 -1.11022302e-16  1.65163507e-16]
 
-So we see that the projection works to machince precision.
+So we see that the projection works to machine precision.
 
 The projection is mathematically: find :math:`u_h \in T`, such that 
 

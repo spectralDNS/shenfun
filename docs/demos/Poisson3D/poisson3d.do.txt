@@ -189,7 +189,7 @@ inner products
 !bt
 \begin{align}
 \int_0^{2\pi} \mathcal{Y}_m(y) \overline{\mathcal{Y}}_q(y) \frac{1}{2\pi} dy = \delta_{mq},\\
-\int_0^{2\pi} \mathcal{Z}_n(y) \overline{\mathcal{Z}}_r(z) \frac{1}{2\pi} dz = \delta_{nr},
+\int_0^{2\pi} \mathcal{Z}_n(z) \overline{\mathcal{Z}}_r(z) \frac{1}{2\pi} dz = \delta_{nr},
 \end{align}
 !et
 The Kronecker delta-function $\delta_{ij}$ is one for $i=j$ and

@@ -66,7 +66,7 @@ we start by creating the necessary basis and test and trial functions
     T = Basis(N, 'F', dtype='d', plan=True)
     u = TrialFunction(T)
     v = TestFunction(T)
-    u_ = Function(T, False)
+    u_ = Array(T)
     u_hat = Function(T)
 
 We then create two functions representing the linear and nonlinear part of 
