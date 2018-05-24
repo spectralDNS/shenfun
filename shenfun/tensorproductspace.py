@@ -183,6 +183,8 @@ class TensorProductSpace(object):
 
         """
         return self._eval_cython(points, coefficients, output_array)
+        #return self._eval_python(points, coefficients, output_array)
+
 
     def _eval_python(self, points, coefficients, output_array=None): # pragma : no cover
         """Evaluate Function at points, given expansion coefficients
@@ -242,7 +244,7 @@ class TensorProductSpace(object):
                 else:
                     last_conj_index = M
                 sl = self.local_slice()[axis].start
-        out = np.zeros(len(points), dtype=coefficients.dtype)
+        out = np.zeros(len(points), dtype=self.forward.input_array.dtype)
         if len(self) == 2:
             out = shenfun.optimization.evaluate.evaluate_2D(out, coefficients, P, r2c=r2c, M=last_conj_index, start=sl)
 
