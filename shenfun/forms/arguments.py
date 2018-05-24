@@ -642,10 +642,7 @@ class Function(np.ndarray, BasisFunction):
 
         Examples
         --------
-        >>> import numpy as np
         >>> import sympy as sp
-        >>> from shenfun import Basis, TensorProductSpace, Function, Array
-        >>> from mpi4py import MPI
         >>> K0 = Basis(9, 'F', dtype='D')
         >>> K1 = Basis(8, 'F', dtype='d')
         >>> T = TensorProductSpace(MPI.COMM_WORLD, [K0, K1], axes=(0, 1))
