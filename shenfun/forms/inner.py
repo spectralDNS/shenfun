@@ -14,56 +14,80 @@ __all__ = ('inner',)
 #pylint: disable=line-too-long,inconsistent-return-statements,too-many-return-statements
 
 def inner(expr0, expr1, output_array=None):
-    r"""Return weighted inner product of linear or bilinear form
+    r"""
+    Return weighted discrete inner product of linear or bilinear form
 
     .. math::
 
-        (f, g)_w = \int_{\Omega} g\, \overline{f}\, w\, dx
+        (f, g)_w^N = \sum_{i\in\mathcal{I}}f(x_i) \overline{g}(x_i) w_i \approx \int_{\Omega} g\, \overline{f}\, w\, dx
 
-    where :math:`f` is an expression linear in a :class:`.TestFunction`, and
-    :math:`g` is an expression that is linear in :class:`.TrialFunction` or
-    :class:`.Function`, or it is simply an :class:`.Array` (a solution
-    interpolated on the quadrature mesh in physical space). :math:`w` is
-    a weight associated with chosen basis.
+    where :math:`\mathcal{I}=0, 1, \ldots, N, N \in \mathbb{Z}^+`, :math:`f`
+    is an expression linear in a :class:`.TestFunction`, and :math:`g` is an
+    expression that is linear in :class:`.TrialFunction` or :class:`.Function`,
+    or it is simply an :class:`.Array` (a solution interpolated on the
+    quadrature mesh in physical space). :math:`w` is a weight associated with
+    chosen basis, and :math:`w_i` are quadrature weights.
+
+    If the expressions are created in a multidimensional :class:`.TensorProductSpace`,
+    then the sum above is over all dimensions. In 2D it becomes:
+
+    .. math::
+
+        (f, g)_w^N = \sum_{i\in\mathcal{I}}\sum_{j\in\mathcal{J}} f(x_i, y_j) \overline{g}(x_i, y_j) w_j w_i
+
+    where :math:`\mathcal{J}=0, 1, \ldots, M, M \in \mathbb{Z}^+`.
 
     Parameters
     ----------
-        expr0, expr1:  :class:`.Expr`, :class:`.BasisFunction`, :class:`.Array`
+    expr0, expr1 : :class:`.Expr`, :class:`.BasisFunction` or :class:`.Array`
+        Either one can be an expression involving a
+        BasisFunction (:class:`.TestFunction`, :class:`.TrialFunction` or
+        :class:`.Function`) or an Array. With expressions (Expr) on a
+        BasisFunction we typically mean terms like div(u) or grad(u), where
+        u is any one of the different types of BasisFunction.
+        One of ``expr0`` or ``expr1`` need to be an expression on a
+        TestFunction. If the second then involves a TrialFunction, a matrix is
+        returned. If one of ``expr0``/``expr1`` involves a TestFunction and the
+        other one is an expression on a Function, or a plain Array, then a
+        linear form is assembled and a Function is returned.
 
-                       Either one can be an expression involving a
-                       :class:`.BasisFunction` (:class:`.TestFunction`,
-                       :class:`.TrialFunction` or :class:`.Function`) or an
-                       :class:`.Array`. With expressions (:class:`.Expr`) on a
-                       :class:`.BasisFunction` we typically mean terms like
-                       div(u) or grad(u), where u is any one of the different
-                       types of :class:`.BasisFunction`.
-                       One of *expr0* or *expr1* need to be an expression on a
-                       :class:`.TestFunction`. If the second then involves a
-                       :class:`.TrialFunction`, a matrix is returned. If one of
-                       *expr0*/*expr1* involves a :class:`.TestFunction` and the
-                       other one is an expression on a :class:`.Function`,
-                       or a plain :class:`.Array`, then a linear form is
-                       assembled and a :class:`.Function` is returned.
+    output_array:  Function
+        Optional return array for linear form.
 
-        output_array:  Function
-                       Optional return array for linear form.
+    Returns
+    -------
+    Function
+        For linear forms involving one :class:`.TestFunction` and one
+        :class:`.BasisFunction` or :class:`.Array`.
+
+    SparseMatrix
+        For bilinear forms involving both :class:`.TestFunction` and
+        :class:`.TrialFunction`.
+
+    dict
+        For bilinear forms with many terms. Each item has a
+        :class:`.SparseMatrix` as value.
+
+    See Also
+    --------
+    :func:`.project`
 
     Example
     -------
-        Compute mass matrix of Shen's Chebyshev Dirichlet basis:
+    Compute mass matrix of Shen's Chebyshev Dirichlet basis:
 
-        >>> from shenfun import Basis
-        >>> from shenfun import TestFunction, TrialFunction
-        >>> import six
-        >>> SD = Basis(6, 'Chebyshev', bc=(0, 0))
-        >>> u = TrialFunction(SD)
-        >>> v = TestFunction(SD)
-        >>> B = inner(v, u)
-        >>> d = {-2: np.array([-np.pi/2]),
-        ...       0: np.array([ 1.5*np.pi, np.pi, np.pi, np.pi]),
-        ...       2: np.array([-np.pi/2])}
-        >>> [np.all(abs(B[k]-v) < 1e-7) for k, v in six.iteritems(d)]
-        [True, True, True]
+    >>> from shenfun import Basis
+    >>> from shenfun import TestFunction, TrialFunction
+    >>> import six
+    >>> SD = Basis(6, 'Chebyshev', bc=(0, 0))
+    >>> u = TrialFunction(SD)
+    >>> v = TestFunction(SD)
+    >>> B = inner(v, u)
+    >>> d = {-2: np.array([-np.pi/2]),
+    ...       0: np.array([ 1.5*np.pi, np.pi, np.pi, np.pi]),
+    ...       2: np.array([-np.pi/2])}
+    >>> [np.all(abs(B[k]-v) < 1e-7) for k, v in six.iteritems(d)]
+    [True, True, True]
 
     """
     assert np.all([hasattr(e, 'argument') for e in (expr0, expr1)])

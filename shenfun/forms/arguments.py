@@ -134,52 +134,50 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
 
 
 class Expr(object):
-    r"""Class for spectral Galerkin forms
+    r"""
+    Class for spectral Galerkin forms
 
-    An Expr instance is a form that is linear in TestFunction (v), TrialFunction
-    (u) or Function (c). The Function is a Numpy array evaluated at quadrature
-    points. Inner products are constructed from forms consisting of two Exprs,
-    one with a TestFunction and one with either TrialFunction or Function.
+    An Expression that is linear in :class:`.TestFunction`,
+    :class:`.TrialFunction` or :class:`.Function`. Exprs are used as input
+    to :func:`.inner` or :func:`.project`.
 
     Parameters
     ----------
-        basis :    BasisFunction
-                   TestFunction, TrialFunction or Function
-        terms :    Numpy array of ndim = 3
-                   Describes operations in Expr
+    basis : :class:`.BasisFunction`
+        :class:`.TestFunction`, :class:`.TrialFunction` or :class:`.Function`
+    terms : Numpy array of ndim = 3
+        Describes operations performed in Expr
 
-                   - Index 0: Vector component. If Expr is rank = 0, then
-                     terms[0] = 1. For vectors it equals dim
+        - Index 0: Vector component. If Expr is rank = 0, then terms[0] = 1.
+          For vectors it equals dim
 
-                   - Index 1: One for each term in the form. For example
-                     `div(grad(u))` has three terms in 3D:
+        - Index 1: One for each term in the form. For example `div(grad(u))`
+          has three terms in 3D:
 
-                   .. math::
+        .. math::
 
-                       \partial^2u/\partial x^2 + \partial^2u/\partial y^2 + \partial^2u/\partial z^2
+           \partial^2u/\partial x^2 + \partial^2u/\partial y^2 + \partial^2u/\partial z^2
 
-                   - Index 2: The operations stored as an array of length = dim
+        - Index 2: The operations stored as an array of length = dim
 
-                   The :class:`.Expr` `div(grad(u))`, where u is a scalar, is as such
-                   represented as an array of shape (1, 3, 3), 1 meaning
-                   it's a scalar, the first 3 because the Expr consists of
-                   the sum of three terms, and the last 3 because it is 3D. The
-                   entire representation is::
+        The Expr `div(grad(u))`, where u is a scalar, is as such represented
+        as an array of shape (1, 3, 3), 1 meaning it's a scalar, the first 3
+        because the Expr consists of the sum of three terms, and the last 3
+        because it is 3D. The entire representation is::
 
-                       array([[[2, 0, 0],
-                               [0, 2, 0],
-                               [0, 0, 2]]])
+           array([[[2, 0, 0],
+                   [0, 2, 0],
+                   [0, 0, 2]]])
 
-                   where the first [2, 0, 0] term has two derivatives in first
-                   direction and none in the others, the second [0, 2, 0] has
-                   two derivatives in second direction, etc.
+        where the first [2, 0, 0] term has two derivatives in first direction
+        and none in the others, the second [0, 2, 0] has two derivatives in
+        second direction, etc.
 
-        scales :  Numpy array of shape == terms.shape[:2]
-                  Representing a scalar multiply of each inner product
+    scales :  Numpy array of shape == terms.shape[:2]
+        Representing a scalar multiply of each inner product
 
-        indices : Numpy array of shape == terms.shape[:2]
-                  Index into VectorTensorProductSpace. Only for vector
-                  coefficients
+    indices : Numpy array of shape == terms.shape[:2]
+        Index into VectorTensorProductSpace. Only for vector coefficients
 
     Examples
     --------
@@ -400,9 +398,9 @@ class BasisFunction(object):
 
     Parameters
     ----------
-        space: TensorProductSpace
-        index: int
-               Component of basis with rank > 1
+    space: TensorProductSpace
+    index: int
+        Component of basis with rank > 1
     """
 
     def __init__(self, space, index=0):
@@ -475,9 +473,9 @@ class TestFunction(BasisFunction):
 
     Parameters
     ----------
-        space: TensorProductSpace
-        index: int
-               Component of basis with rank > 1
+    space: TensorProductSpace
+    index: int, optional
+        Component of basis with rank > 1
     """
 
     def __init__(self, space, index=0):
@@ -497,9 +495,9 @@ class TrialFunction(BasisFunction):
 
     Parameters
     ----------
-        space: TensorProductSpace
-        index: int
-               Component of basis with rank > 1
+    space: TensorProductSpace
+    index: int, optional
+        Component of basis with rank > 1
     """
     def __init__(self, space, index=0):
         BasisFunction.__init__(self, space, index)
@@ -514,7 +512,8 @@ class TrialFunction(BasisFunction):
         return 1
 
 class Function(np.ndarray, BasisFunction):
-    r"""Spectral Galerkin function for a given TensorProductSpace or Basis
+    r"""
+    Spectral Galerkin function for given :class:`.TensorProductSpace` or :func:`.Basis`
 
     The Function is the product of all 1D basis expansions, that for each
     dimension is defined like
@@ -547,16 +546,19 @@ class Function(np.ndarray, BasisFunction):
         u(x, y, z) = \sum_{l \in \mathcal{K}_0}\sum_{m \in \mathcal{K}_1} \sum_{n \in \mathcal{K}_2} \hat{u}_{l, m, n} \psi_{l}(x) \psi_{m}(y) \psi_{n}(z).
 
     The Function's values (the Numpy array) represent the :math:`\hat{u}` array.
+    The trial functions :math:`\psi` may differ in the different directions.
+    They are chosen when creating the TensorProductSpace.
 
     Parameters
     ----------
-        space : TensorProductSpace
-        val : int or float
-            Value used to initialize array
-        buffer : Numpy array or Function
-            Must be of correct shape
+    space : :class:`.TensorProductSpace`
+    val : int or float
+        Value used to initialize array
+    buffer : Numpy array or :class:`.Function`
+        Must be of correct shape
 
-    .. note:: For more information, see numpy.ndarray
+
+    .. note:: For more information, see `numpy.ndarray <https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html>`_
 
     Examples
     --------
@@ -564,8 +566,10 @@ class Function(np.ndarray, BasisFunction):
     >>> from shenfun import Basis, TensorProductSpace, Function
     >>> K0 = Basis(8, 'F', dtype='D')
     >>> K1 = Basis(8, 'F', dtype='d')
-    >>> FFT = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
-    >>> u = Function(FFT)
+    >>> T = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
+    >>> u = Function(T)
+    >>> K2 = Basis(8, 'C', bc=(0, 0))
+    >>> T2 = TensorProductSpace(MPI.COMM_WORLD, [K0, K1, K2])
 
     """
     # pylint: disable=too-few-public-methods,too-many-arguments
@@ -649,9 +653,11 @@ class Function(np.ndarray, BasisFunction):
         return output_array
 
 class Array(np.ndarray):
-    r"""Numpy array for TensorProductSpace
+    r"""
+    Numpy array for :class:`.TensorProductSpace`
 
-    The Array is a Function evaluated on its quadrature mesh.
+    The Array is the result of a :class:`.Function` evaluated on its quadrature
+    mesh.
 
     The Function is the product of all 1D basis expansions, that for each
     dimension is defined like
@@ -662,8 +668,8 @@ class Array(np.ndarray):
 
     where :math:`\psi_k(x)` are the trial functions and
     :math:`\{\hat{u}_k\}_{k\in\mathcal{K}}` are the expansion coefficients.
-    Here an index set :math:`\mathcal{K}=0, 1, \ldots, N` is used
-    to simplify notation.
+    Here an index set :math:`\mathcal{K}=0, 1, \ldots, N` is used to
+    simplify notation.
 
     For an M+1-dimensional TensorProductSpace with coordinates
     :math:`x_0, x_1, \ldots, x_M` we get
@@ -699,13 +705,14 @@ class Array(np.ndarray):
     Parameters
     ----------
 
-        space : TensorProductSpace
-        val : int or float
-            Value used to initialize array
-        buffer : Numpy array or Array
-            Must be of correct shape
+    space : :class:`.TensorProductSpace`
+    val : int or float
+        Value used to initialize array
+    buffer : Numpy array or Array
+        Must be of correct shape
 
-    .. note::  For more information, see numpy.ndarray
+
+    .. note:: For more information, see `numpy.ndarray <https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html>`_
 
     Examples
     --------
@@ -715,9 +722,7 @@ class Array(np.ndarray):
     >>> K1 = Basis(8, 'F', dtype='d')
     >>> FFT = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
     >>> u = Array(FFT)
-
     """
-
     # pylint: disable=too-few-public-methods,too-many-arguments
     def __new__(cls, space, val=0, buffer=None):
 

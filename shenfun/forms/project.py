@@ -6,23 +6,30 @@ from .inner import inner
 __all__ = ('project',)
 
 def project(uh, T, output_array=None):
-    r"""Project uh to tensor product space T
+    r"""
+    Project uh to tensor product space T
 
     Find :math:`u \in T`, such that
 
     .. math::
 
-        (u - u_h, v)_w = 0 \quad \forall v \in T
+        (u - u_h, v)_w^N = 0 \quad \forall v \in T
 
     Parameters
     ----------
-        uh : :class:`.Expr` on :class:`BasisFunction` or :class:`.Array`
-        T : :class:`.TensorProductSpace`
-        output_array : :class:`.Function`
-                       Return array
+    uh : :class:`.Expr`, :class:`.BasisFunction` or :class:`.Array`
+    T : :class:`.TensorProductSpace` or :class:`.MixedTensorProductSpace`
+    output_array : :class:`.Function`
+        Return array
 
-    .. note:: Returns a :class:`.Function`, i.e., the spectral expansion
-              coefficients of projection, not the solution in physical space.
+    Returns
+    -------
+    Function
+        The projection of uh in T
+
+    See Also
+    --------
+    :func:`.inner`
 
     Example
     -------
