@@ -31,7 +31,7 @@ space that are distributed in the first index, whereas ``T1`` will give arrays
 that are distributed in the second. This is because 0 and
 1 are the first items in the tuples given to ``axes``.
 
-We can now create some :class:`.Function` s on these spaces::
+We can now create some Functions on these spaces::
 
     u0 = Function(T0, False, val=comm.Get_rank())
     u1 = Function(T1, False, val=comm.Get_rank())
@@ -39,7 +39,7 @@ We can now create some :class:`.Function` s on these spaces::
 such that ``u0`` and ``u1`` have values corresponding to their communicating 
 processors rank in the ``COMM_WORLD`` group (the group of all CPUs).
 
-Note that both the :class:`.TensorProductSpace` s have functions with expansion
+Note that both the TensorProductSpaces have functions with expansion
 
 .. math::
    :label: u_fourier

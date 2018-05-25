@@ -54,7 +54,7 @@ fl = lambdify((x, y), fe, 'numpy')
 N = (int(sys.argv[-2]), int(sys.argv[-2]))
 
 SD = Basis(N[0], family=family, scaled=True, bc=(a, b))
-K1 = Basis(N[1], family='F', dtype='d')
+K1 = Basis(N[1], family='F', dtype='d', domain=(-2*np.pi, 2*np.pi))
 T = TensorProductSpace(comm, (SD, K1), axes=(0, 1))
 X = T.local_mesh(True)
 u = TrialFunction(T)

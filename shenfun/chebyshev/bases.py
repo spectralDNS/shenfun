@@ -95,8 +95,7 @@ class ChebyshevBase(SpectralBase):
             weights = weights.astype(float)
 
         if scaled is True:
-            a, b = self.domain
-            points = a+(b-a)/2+points*(b-a)/2
+            points = self.map_true_domain(points)
 
         return points, weights
 
@@ -135,6 +134,9 @@ class ChebyshevBase(SpectralBase):
     def _get_mat(self):
         from .matrices import mat
         return mat
+
+    def reference_domain(self):
+        return (-1., 1.)
 
     def domain_factor(self):
         a, b = self.domain
@@ -272,7 +274,6 @@ class Basis(ChebyshevBase):
             array[sl] /= 2
         return array
 
-
     def evaluate_expansion_all(self, input_array, output_array):
         output_array = self.xfftn_bck()
         s0 = self.sl(slice(0, 1))
@@ -320,6 +321,7 @@ class Basis(ChebyshevBase):
     def eval(self, x, fk, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape)
+        x = self.map_reference_domain(x)
         output_array[:] = n_cheb.chebval(x, fk)
         return output_array
 
@@ -431,6 +433,7 @@ class ShenDirichletBasis(ChebyshevBase):
     def eval(self, x, fk, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape)
+        x = self.map_reference_domain(x)
         w_hat = work[(fk, 0)]
         output_array[:] = n_cheb.chebval(x, fk[:-2])
         w_hat[2:] = fk[:-2]
@@ -544,6 +547,7 @@ class ShenNeumannBasis(ChebyshevBase):
     def eval(self, x, fk, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape)
+        x = self.map_reference_domain(x)
         w_hat = work[(fk, 0)]
         self.set_factor_array(fk)
         output_array[:] = n_cheb.chebval(x, fk[:-2])
@@ -670,6 +674,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
     def eval(self, x, fk, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape)
+        x = self.map_reference_domain(x)
         w_hat = work[(fk, 0)]
         self.set_factor_arrays(fk)
         output_array[:] = n_cheb.chebval(x, fk[:-4])
@@ -698,3 +703,4 @@ class ShenBiharmonicBasis(ChebyshevBase):
         self.forward = _func_wrap(self.forward, self.xfftn_fwd, U, V)
         self.backward = _func_wrap(self.backward, self.xfftn_bck, V, U)
         self.scalar_product = _func_wrap(self.scalar_product, self.xfftn_fwd, U, V)
+

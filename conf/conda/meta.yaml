@@ -6,7 +6,7 @@ source:
   git_url: ../../
 
 build:
-  number: 0
+  number: 2
 
 requirements:
   build:
@@ -25,6 +25,8 @@ requirements:
     - six
     - sympy
     - h5py-parallel
+    - libnetcdf-parallel
+    - netcdf4-parallel
 
 test:
   source_files:

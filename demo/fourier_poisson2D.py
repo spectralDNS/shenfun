@@ -27,17 +27,17 @@ comm = MPI.COMM_WORLD
 # Use sympy to compute a rhs, given an analytical solution
 x = Symbol("x")
 y = Symbol("y")
-ue = cos(4*x) + sin(16*y)
+ue = cos(4*x) + sin(8*y)
 fe = ue.diff(x, 2) + ue.diff(y, 2)
 
 ul = lambdify((x, y), ue, 'numpy')
 fl = lambdify((x, y), fe, 'numpy')
 
 # Size of discretization
-N = (33, 46)
+N = (64, 64)
 
-K0 = Basis(N[0], family='F', dtype='D')
-K1 = Basis(N[1], family='F', dtype='d')
+K0 = Basis(N[0], family='F', dtype='D', domain=(-2*np.pi, 2*np.pi))
+K1 = Basis(N[1], family='F', dtype='d', domain=(-2*np.pi, 2*np.pi))
 T = TensorProductSpace(comm, (K0, K1), axes=(0, 1))
 X = T.local_mesh(True)
 u = TrialFunction(T)
@@ -51,29 +51,29 @@ f_hat = Function(T)
 f_hat = inner(v, fj, output_array=f_hat)
 
 # Solve Poisson equation
+u_hat = Function(T)
 #A = inner(v, div(grad(u)))
 A = inner(grad(v), grad(u))
-f_hat = A.solve(-f_hat)
+u_hat = A.solve(-f_hat, u_hat)
 
 uq = Array(T)
-uq = T.backward(f_hat, uq, fast_transform=True)
+uq = T.backward(u_hat, uq, fast_transform=True)
 
 uj = ul(*X)
 assert np.allclose(uj, uq)
 
-from shenfun.tensorproductspace import Convolve
-
-S0 = Basis(N[0], family='F', dtype='D', padding_factor=2.0)
-S1 = Basis(N[1], family='F', dtype='d', padding_factor=2.0)
-Tp = TensorProductSpace(comm, (S0, S1), axes=(0, 1))
-C0 = Convolve(Tp)
-ff_hat = C0(f_hat, f_hat)
+#from shenfun.tensorproductspace import Convolve
+#S0 = Basis(N[0], family='F', dtype='D', padding_factor=2.0)
+#S1 = Basis(N[1], family='F', dtype='d', padding_factor=2.0)
+#Tp = TensorProductSpace(comm, (S0, S1), axes=(0, 1))
+#C0 = Convolve(Tp)
+#ff_hat = C0(f_hat, f_hat)
 
 # Test eval at point
 point = np.array([[0.1, 0.2], [0.2, 0.3], [0.3, 0.4], [0.1, 0.3]])
-p = T.eval(point, f_hat)
+p = T.eval(point, u_hat)
 assert np.allclose(p, ul(*point.T))
-p2 = f_hat.eval(point)
+p2 = u_hat.eval(point)
 assert np.allclose(p2, ul(*point.T))
 
 if plt is not None and not 'pytest' in os.environ:
