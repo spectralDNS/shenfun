@@ -270,6 +270,7 @@ def inner(expr0, expr1, output_array=None):
         if space.ndim() == 1:
             if trial.argument == 1:
                 A[0][0].axis = 0
+                A[0][0].scale = S[0]
                 return A[0][0]
 
             output_array[:] = B[0]*uh

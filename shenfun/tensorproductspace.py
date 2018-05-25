@@ -182,8 +182,8 @@ class TensorProductSpace(object):
                            Return array, function values at points
 
         """
-        return self._eval_cython(points, coefficients, output_array)
-        #return self._eval_python(points, coefficients, output_array)
+        #return self._eval_cython(points, coefficients, output_array)
+        return self._eval_python(points, coefficients, output_array)
 
 
     def _eval_python(self, points, coefficients, output_array=None): # pragma : no cover
@@ -204,10 +204,12 @@ class TensorProductSpace(object):
             axis = base.axis
             shape[axis] = len(points)
             out2 = np.zeros(shape, dtype=out.dtype)
-            out2 = self.vandermonde_evaluate_local_expansion(base, points[..., axis], out, out2)
+            x = base.map_reference_domain(points[..., axis])
+            out2 = self.vandermonde_evaluate_local_expansion(base, x, out, out2)
             out = out2
         # Get the 'diagonals' of out, that is, for 2 points get out[i, i] for i = (0, 1), and same for larger numer of points
-        out = np.array([out[tuple([s]*len(shape))] for s in range(len(points))])
+        out = np.array([out[tuple([s]*len(shape))] for s in range(len(points))],
+                       dtype=self.forward.input_array.dtype)
         out = np.atleast_1d(np.squeeze(out))
         out = self.comm.allreduce(out)
         if not output_array is None:
@@ -233,7 +235,8 @@ class TensorProductSpace(object):
         sl = -1
         for base in self:
             axis = base.axis
-            V = base.vandermonde(points[..., axis])
+            x = base.map_reference_domain(points[..., axis])
+            V = base.vandermonde(x)
             D = base.get_vandermonde_basis(V)
             P.append(D[..., self.local_slice()[axis]])
             if isinstance(base, R2CBasis):

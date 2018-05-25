@@ -74,6 +74,9 @@ class LegendreBase(SpectralBase):
     def family():
         return 'legendre'
 
+    def reference_domain(self):
+        return (-1., 1.)
+
     def points_and_weights(self, N, scaled=False):
         if self.quad == "LG":
             points, weights = leg.leggauss(N)
@@ -83,8 +86,8 @@ class LegendreBase(SpectralBase):
             raise NotImplementedError
 
         if scaled is True:
-            a, b = self.domain
-            points = a+(b-a)/2+points*(b-a)/2
+            points = self.map_true_domain(points)
+
         return points, weights
 
     def vandermonde(self, x):
@@ -145,7 +148,6 @@ class LegendreBase(SpectralBase):
             return output_array
         else:
             return self.forward.output_array
-
 
     def backward(self, input_array=None, output_array=None, fast_transform=False):
         assert fast_transform is False
@@ -227,6 +229,7 @@ class Basis(LegendreBase):
     def eval(self, x, fk, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape)
+        x = self.map_reference_domain(x)
         output_array[:] = leg.legval(x, fk)
         return output_array
 
@@ -329,6 +332,7 @@ class ShenDirichletBasis(LegendreBase):
     def eval(self, x, fk, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape)
+        x = self.map_reference_domain(x)
         w_hat = work[(fk, 0)]
         self.set_factor_array(fk)
         output_array[:] = leg.legval(x, fk[:-2]*self._factor)
@@ -437,6 +441,7 @@ class ShenNeumannBasis(LegendreBase):
     def eval(self, x, fk, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape)
+        x = self.map_reference_domain(x)
         w_hat = work[(fk, 0)]
         self.set_factor_array(fk)
         output_array[:] = leg.legval(x, fk[:-2])
@@ -550,6 +555,7 @@ class ShenBiharmonicBasis(LegendreBase):
     def eval(self, x, fk, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape)
+        x = self.map_reference_domain(x)
         w_hat = work[(fk, 0)]
         self.set_factor_arrays(fk)
         output_array[:] = leg.legval(x, fk[:-4])

@@ -600,7 +600,26 @@ class SpectralBase(object):
         """
         if output_array is None:
             output_array = np.zeros(x.shape, dtype=self.forward.input_array.dtype)
+        x = self.map_reference_domain(x)
         return self.vandermonde_evaluate_expansion(x, fk, output_array)
+
+    def map_reference_domain(self, x):
+        if not self.domain == self.reference_domain():
+            a, b = self.domain
+            c, d = self.reference_domain()
+            x = c + (x-a)*self.domain_factor()
+        return x
+
+    def map_true_domain(self, x):
+        if not self.domain == self.reference_domain():
+            a, b = self.domain
+            c, d = self.reference_domain()
+            x = a + (x-c)/self.domain_factor()
+        return x
+
+    def reference_domain(self):
+        """Return reference domain of basis"""
+        return (0., 2*np.pi)
 
     def get_mass_matrix(self):
         """Return mass matrix associated with current basis"""

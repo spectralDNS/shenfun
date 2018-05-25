@@ -1,9 +1,11 @@
 r"""
-Solve Poisson equation on (0, 2pi) with periodic bcs
+Solve Poisson equation on (-2\pi, 2\pi) with periodic bcs
 
-    \nabla^2 u = f, u(2pi) = u(0)
+.. math::
 
-Use Fourier basis and find u in V such that
+    \nabla^2 u = f, u(2\pi) = u(-2\pi)
+
+Use Fourier basis and find u in V such that::
 
     (v, div(grad(u))) = (v, f)    for all v in V
 
@@ -25,8 +27,8 @@ except ImportError:
 
 # Use sympy to compute a rhs, given an analytical solution
 x = Symbol("x")
-#ue = cos(4*x) + 1j*sin(6*x)
-ue = cos(4*x)
+ue = cos(4*x) + 1j*sin(6*x)
+#ue = cos(4*x)
 fe = ue.diff(x, 2)
 
 # Lambdify for faster evaluation
@@ -34,10 +36,10 @@ ul = lambdify(x, ue, 'numpy')
 fl = lambdify(x, fe, 'numpy')
 
 # Size of discretization
-N = 32
+N = 40
 
 dtype = {True: np.complex, False: np.float}[ue.has(1j)]
-ST = Basis(N, dtype=dtype, plan=True, domain=(-np.pi, np.pi))
+ST = Basis(N, dtype=dtype, plan=True, domain=(-2*np.pi, 2*np.pi))
 u = TrialFunction(ST)
 v = TestFunction(ST)
 
@@ -61,6 +63,10 @@ u_hat = ST.forward(uq, u_hat, fast_transform=False)
 uq = ST.backward(u_hat, uq, fast_transform=False)
 
 assert np.allclose(uj, uq)
+
+point = np.array([0.1, 0.2])
+p = ST.eval(point, u_hat)
+assert np.allclose(p, ul(point))
 
 if plt is not None and not 'pytest' in os.environ:
     plt.figure()

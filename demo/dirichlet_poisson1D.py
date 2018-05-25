@@ -26,10 +26,11 @@ assert isinstance(int(sys.argv[-2]), int)
 family = sys.argv[-1].lower()
 
 # Use sympy to compute a rhs, given an analytical solution
+domain = (-1., 2.)
 a = 0.
 b = 0.
 x = symbols("x")
-ue = sin(4*np.pi*x)*(1-x**2) + a*(1 + x)/2. + b*(1 - x)/2.
+ue = sin(4*np.pi*x)*(x+domain[0])*(x+domain[1]) + a*(x-domain[0])/2. + b*(domain[1] - x)/2.
 fe = ue.diff(x, 2)
 
 # Lambdify for faster evaluation
@@ -39,7 +40,7 @@ fl = lambdify(x, fe, 'numpy')
 # Size of discretization
 N = int(sys.argv[-2])
 
-SD = Basis(N, family=family, plan=True, bc=(a, b))
+SD = Basis(N, family=family, plan=True, bc=(a, b), domain=domain)
 X = SD.mesh(N)
 u = TrialFunction(SD)
 v = TestFunction(SD)
@@ -65,4 +66,8 @@ uj = SD.backward(f_hat)
 # Compare with analytical solution
 ua = ul(X)
 print("Error=%2.16e" %(np.linalg.norm(uj-ua)))
-#assert np.allclose(uj, ua)
+assert np.allclose(uj, ua)
+
+point = np.array([0.1, 0.2])
+p = SD.eval(point, f_hat)
+assert np.allclose(p, ul(point))

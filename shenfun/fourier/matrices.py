@@ -56,6 +56,7 @@ class _Fouriermatrix(SpectralMatrix):
         else:
             u[:] = b*d
 
+        u /= self.scale
         return u
 
 

@@ -94,7 +94,7 @@ class FourierBase(SpectralBase):
         a, b = self.domain
         points = np.arange(N, dtype=np.float)*2*np.pi/N
         if scaled is True:
-            points = points*(b-a)/(2*np.pi) + a
+            points = self.map_true_domain(points)
         return points, np.array([2*np.pi/N])
 
     def vandermonde(self, x):
@@ -104,6 +104,7 @@ class FourierBase(SpectralBase):
         ----------
             x : array
                 points for evaluation
+
         """
         k = self.wavenumbers(self.N, 0)
         x = np.atleast_1d(x)
@@ -138,8 +139,8 @@ class FourierBase(SpectralBase):
             return 1
         return 2.*np.pi/(b-a)
 
-    # Note. forward is reimplemented here to avoid one array scaling
-    # (scalar_product multiplies with 2pi/N, whereas apply_inverse_mass divides by 2pi)
+    # Note. forward is reimplemented here for efficiency (the array forward._output_array
+    # is smaller than the output array from xfftn_fwd)
     def forward(self, input_array=None, output_array=None, fast_transform=True):
         if fast_transform is False:
             return SpectralBase.forward(self, input_array, output_array, False)
@@ -220,8 +221,7 @@ class R2CBasis(FourierBase):
         if N[axis] % 2 == 0 and eliminate_highest_freq:
             k[-1] = 0
         if scaled:
-            a, b = self.domain
-            k *= 2.*np.pi/(b-a)
+            k *= self.domain_factor()
         K = self.broadcast_to_ndims(k, len(N), axis)
         return K
 
@@ -232,6 +232,7 @@ class R2CBasis(FourierBase):
         return pyfftw.empty_aligned(shape, dtype=dtype)
 
     #def eval(self, x, fk):
+    #    x = self.map_reference_domain(x)
     #    V = self.vandermonde(x)
     #    return np.dot(V, fk) + np.conj(np.dot(V[:, 1:-1], fk[1:-1]))
 
@@ -293,6 +294,7 @@ class R2CBasis(FourierBase):
 
         """
         assert abs(self.padding_factor-1) < 1e-8
+        points = self.map_reference_domain(points)
         P = self.vandermonde(points)
         assert output_array.ndim == 1 # Multidimensional should use vandermonde_evaluate_local_expansion
         output_array[:] = np.dot(P, input_array).real
@@ -482,12 +484,12 @@ class C2CBasis(FourierBase):
         if N[axis] % 2 == 0 and eliminate_highest_freq:
             k[N[axis]//2] = 0
         if scaled:
-            a, b = self.domain
-            k *= 2.*np.pi/(b-a)
+            k *= self.domain_factor()
         K = self.broadcast_to_ndims(k, len(N), axis)
         return K
 
     def eval(self, x, fk):
+        x = self.map_reference_domain(x)
         V = self.vandermonde(x)
         return np.dot(V, fk)
 
