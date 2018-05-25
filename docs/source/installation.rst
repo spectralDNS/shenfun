@@ -31,7 +31,8 @@ be pulled in. From the top directory, after cloning, build shenfun yourself with
 ::
 
     conda build -c conda-forge -c spectralDNS conf/conda
-    conda install -c conda-forge -c spectralDNS shenfun --use-local
+    conda create --name shenfun -c conda-forge -c spectralDNS shenfun --use-local
+    source activate shenfun
 
 You may also use precompiled binaries in the `spectralDNS channel`_. Use for exampel
 
