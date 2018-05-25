@@ -503,8 +503,8 @@ class SpectralBase(object):
     def plan(self, shape, axis, dtype, options):
         """Plan transform
 
-        Allocate work arrays for transforms and set up methods 'forward',
-        'backward' and 'scalar_product' with or without padding
+        Allocate work arrays for transforms and set up methods `forward`,
+        `backward` and `scalar_product` with or without padding
 
         Parameters
         ----------
@@ -587,7 +587,7 @@ class SpectralBase(object):
         raise NotImplementedError
 
     def eval(self, x, fk, output_array=None):
-        """Evaluate basis at position x, given expansion coefficients fk
+        """Evaluate basis at position `x`, given expansion coefficients `fk`
 
         Parameters
         ----------
@@ -647,7 +647,7 @@ class SpectralBase(object):
 
     def sl(self, a):
         """Return a list of slices, broadcasted to the shape of a forward
-        output array, with 'a' along self.axis
+        output array, with `a` along self.axis
 
         Parameters
         ----------
@@ -709,9 +709,9 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
         test : 2-tuple of (Basis, integer)
                Basis is any of the classes from
 
-               - shenfun.chebyshev.bases
-               - shenfun.legendre.bases
-               - shenfun.fourier.bases
+               - :mod:`.chebyshev.bases`
+               - :mod:`.legendre.bases`
+               - :mod:`.fourier.bases`
 
                The integer determines the number of times the basis is
                differentiated. The test represents the matrix row
@@ -721,7 +721,7 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
                 - If argument = 1, then a bilinear form is assembled to
                   a matrix. Trial represents matrix column
                 - If argument = 2, then a linear form is assembled and the
-                  'trial' represents a Function evaluated at quadrature nodes
+                  trial represents a Function evaluated at quadrature nodes
 
         out : array, optional
               Return array
