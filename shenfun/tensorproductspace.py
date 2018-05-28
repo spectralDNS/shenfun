@@ -182,8 +182,8 @@ class TensorProductSpace(object):
                            Return array, function values at points
 
         """
-        #return self._eval_cython(points, coefficients, output_array)
-        return self._eval_python(points, coefficients, output_array)
+        return self._eval_cython(points, coefficients, output_array)
+        #return self._eval_python(points, coefficients, output_array)
 
 
     def _eval_python(self, points, coefficients, output_array=None): # pragma : no cover

@@ -1,15 +1,32 @@
 r"""
 Solve Helmholtz equation in 1D with Dirichlet bcs
 
-    alfa u - \nabla^2 u = f,
+.. math::
+
+    \alpha u - \nabla^2 u = f, \quad u(\pm 1) = 0
 
 The equation to solve for Legendre basis is
 
-    alfa (u, v) + (\nabla u, \nabla v) = (f, v)
+.. math::
+
+    \alpha (u, v)_w + (\nabla u, \nabla v)_w = (f, v)_w
 
 whereas for Chebyshev we solve
 
-    alfa (u, v) - (\nabla^2 u, v) = (f, v)
+.. math::
+
+    \alpha (u, v)_w - (\nabla^2 u, v)_w = (f, v)_w
+
+The weighted inner product over the domain :math:`\Omega` is defined as
+
+.. math::
+
+    (u, v)_w = \int_{\Omega} u v w dx
+
+where :math:`w(x)` is a weight function.
+
+For either Chebyshev or Legendre we choose a basis that satsifies the boundary
+conditions.
 
 """
 import sys

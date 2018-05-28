@@ -91,7 +91,6 @@ class FourierBase(SpectralBase):
         return 'fourier'
 
     def points_and_weights(self, N, scaled=False):
-        a, b = self.domain
         points = np.arange(N, dtype=np.float)*2*np.pi/N
         if scaled is True:
             points = self.map_true_domain(points)
@@ -149,7 +148,7 @@ class FourierBase(SpectralBase):
             self.forward.input_array[...] = input_array
 
         self.xfftn_fwd()
-        self._truncation_forward(self.xfftn_fwd.output_array,
+        self._truncation_forward(self.forward.tmp_array,
                                  self.forward.output_array)
         self.forward._output_array *= (1./self.N/self.padding_factor)
 
@@ -157,6 +156,24 @@ class FourierBase(SpectralBase):
             output_array[...] = self.forward.output_array
             return output_array
         return self.forward.output_array
+
+    def backward(self, input_array=None, output_array=None, fast_transform=True):
+        if fast_transform is False:
+            return SpectralBase.backward(self, input_array, output_array, False)
+
+        if input_array is not None:
+            self.backward.input_array[...] = input_array
+
+        self._padding_backward(self.backward.input_array,
+                               self.backward.tmp_array)
+
+        self.evaluate_expansion_all(self.backward.tmp_array,
+                                    self.backward.output_array)
+
+        if output_array is not None:
+            output_array[...] = self.backward.output_array
+            return output_array
+        return self.backward.output_array
 
     def apply_inverse_mass(self, array):
         """Apply inverse mass
@@ -177,22 +194,20 @@ class FourierBase(SpectralBase):
         return output_array
 
     def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
+        if fast_transform is False:
+            assert abs(self.padding_factor-1) < 1e-8
+            return SpectralBase.scalar_product(self, input_array, output_array, False)
+
         if input_array is not None:
             self.xfftn_fwd.input_array[...] = input_array
 
-        if fast_transform:
-            output = self.xfftn_fwd()
-            output *= (1./self.N/self.padding_factor)
-
-        else:
-            assert abs(self.padding_factor-1) < 1e-8
-            self.vandermonde_scalar_product(self.xfftn_fwd.input_array,
-                                            self.xfftn_fwd.output_array)
+        output = self.xfftn_fwd()
+        output *= (1./self.N/self.padding_factor)
 
         if output_array is not None:
-            output_array[...] = self.xfftn_fwd.output_array
+            output_array[...] = output
             return output_array
-        return self.xfftn_fwd.output_array
+        return output
 
     def vandermonde_scalar_product(self, input_array, output_array):
         output_array = SpectralBase.vandermonde_scalar_product(self, input_array,
