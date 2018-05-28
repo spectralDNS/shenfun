@@ -17,12 +17,13 @@ __all__ = ['LegendreBase', 'Basis', 'ShenDirichletBasis',
 
 class _Wrap(object):
 
-    __slots__ = ('_func', '__doc__', '_input_array', '_output_array')
+    __slots__ = ('_func', '__doc__', '_input_array', '_output_array', '_tmp_array')
 
-    def __init__(self, func, input_array, output_array):
+    def __init__(self, func, input_array, tmp_array, output_array):
         object.__setattr__(self, '_func', func)
         object.__setattr__(self, '_input_array', input_array)
         object.__setattr__(self, '_output_array', output_array)
+        object.__setattr__(self, '_tmp_array', tmp_array)
         object.__setattr__(self, '__doc__', func.__doc__)
 
     @property
@@ -32,6 +33,10 @@ class _Wrap(object):
     @property
     def output_array(self):
         return object.__getattribute__(self, '_output_array')
+
+    @property
+    def tmp_array(self):
+        return object.__getattribute__(self, '_tmp_array')
 
     @property
     def func(self):
@@ -136,46 +141,13 @@ class LegendreBase(SpectralBase):
         return 2./(b-a)
 
     def forward(self, input_array=None, output_array=None, fast_transform=False):
-        assert fast_transform is False
-        if input_array is not None:
-            self.forward.input_array[...] = input_array
-
-        self.scalar_product(fast_transform=fast_transform)
-        self.apply_inverse_mass(self.forward.output_array)
-
-        if output_array is not None:
-            output_array[...] = self.forward.output_array
-            return output_array
-        else:
-            return self.forward.output_array
+        return SpectralBase.forward(self, input_array, output_array, False)
 
     def backward(self, input_array=None, output_array=None, fast_transform=False):
-        assert fast_transform is False
-        if input_array is not None:
-            self.backward.input_array[...] = input_array
-
-        self.vandermonde_evaluate_expansion_all(self.backward.input_array,
-                                                self.backward.output_array)
-
-        if output_array is not None:
-            output_array[...] = self.backward.output_array
-            return output_array
-        else:
-            return self.backward.output_array
+        return SpectralBase.backward(self, input_array, output_array, False)
 
     def scalar_product(self, input_array=None, output_array=None, fast_transform=False):
-        assert fast_transform is False
-        if input_array is not None:
-            self.scalar_product.input_array[...] = input_array
-
-        self.vandermonde_scalar_product(self.scalar_product.input_array,
-                                        self.scalar_product.output_array)
-
-        if output_array is not None:
-            output_array[...] = self.scalar_product.output_array
-            return output_array
-        else:
-            return self.scalar_product.output_array
+        return SpectralBase.scalar_product(self, input_array, output_array, False)
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
@@ -195,9 +167,9 @@ class LegendreBase(SpectralBase):
         V.fill(0)
 
         self.axis = axis
-        self.forward = _Wrap(self.forward, U, V)
-        self.backward = _Wrap(self.backward, V, U)
-        self.scalar_product = _Wrap(self.scalar_product, U, V)
+        self.forward = _Wrap(self.forward, U, V, V)
+        self.backward = _Wrap(self.backward, V, V, U)
+        self.scalar_product = _Wrap(self.scalar_product, U, V, V)
 
 
 @inheritdocstrings
@@ -291,23 +263,6 @@ class ShenDirichletBasis(LegendreBase):
         P[:, -1] = (V[:, 0] - V[:, 1])/2
         return P
 
-    def forward(self, input_array=None, output_array=None, fast_transform=False):
-        assert fast_transform is False
-        if input_array is not None:
-            self.forward.input_array[...] = input_array
-
-        output = self.scalar_product(fast_transform=fast_transform)
-        assert output is self.forward.output_array
-
-        self.apply_inverse_mass(output)
-
-        assert output is self.forward.output_array
-        if output_array is not None:
-            output_array[...] = self.forward.output_array
-            return output_array
-        else:
-            return self.forward.output_array
-
     def evaluate_expansion_all(self, input_array, output_array): # pragma: no cover
         # Not used since there are no fast transforms for Legendre
         w_hat = work[(input_array, 0)]
@@ -317,7 +272,6 @@ class ShenDirichletBasis(LegendreBase):
         w_hat[s0] = input_array[s0]*self._factor
         w_hat[s1] -= input_array[s0]*self._factor
         self.bc.apply_before(w_hat, False, (0.5, 0.5))
-
         output_array = self.LT.backward(w_hat)
         assert input_array is self.backward.input_array
         assert output_array is self.backward.output_array
@@ -353,9 +307,9 @@ class ShenDirichletBasis(LegendreBase):
         self.LT.plan(shape, axis, dtype, options)
         self.axis = self.LT.axis
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self.forward = _Wrap(self.forward, U, V)
-        self.backward = _Wrap(self.backward, V, U)
-        self.scalar_product = _Wrap(self.scalar_product, U, V)
+        self.forward = _Wrap(self.forward, U, V, V)
+        self.backward = _Wrap(self.backward, V, V, U)
+        self.scalar_product = _Wrap(self.scalar_product, U, V, V)
 
 
 @inheritdocstrings
@@ -402,24 +356,13 @@ class ShenNeumannBasis(LegendreBase):
             self._factor = k*(k+1)/(k+2)/(k+3)
 
     def scalar_product(self, input_array=None, output_array=None, fast_transform=False):
-        assert fast_transform is False
-        if input_array is not None:
-            self.scalar_product.input_array[...] = input_array
+        output = SpectralBase.scalar_product(self, input_array, output_array, False)
 
-        self.vandermonde_scalar_product(self.scalar_product.input_array,
-                                        self.scalar_product.output_array)
-
-        fk = self.scalar_product.output_array
         s = self.sl(0)
-        fk[s] = self.mean*np.pi
+        output[s] = self.mean*np.pi
         s[self.axis] = slice(-2, None)
-        fk[s] = 0
-
-        if output_array is not None:
-            output_array[...] = self.scalar_product.output_array
-            return output_array
-        else:
-            return self.scalar_product.output_array
+        output[s] = 0
+        return output
 
     def evaluate_expansion_all(self, input_array, output_array): # pragma: no cover
         # Not used since there are no fast transforms for Legendre
@@ -461,9 +404,9 @@ class ShenNeumannBasis(LegendreBase):
         self.LT.plan(shape, axis, dtype, options)
         self.axis = self.LT.axis
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self.forward = _Wrap(self.forward, U, V)
-        self.backward = _Wrap(self.backward, V, U)
-        self.scalar_product = _Wrap(self.scalar_product, U, V)
+        self.forward = _Wrap(self.forward, U, V, V)
+        self.backward = _Wrap(self.backward, V, V, U)
+        self.scalar_product = _Wrap(self.scalar_product, U, V, V)
 
 
 @inheritdocstrings
@@ -511,23 +454,12 @@ class ShenBiharmonicBasis(LegendreBase):
             self._factor2 = ((2*k+3)/(2*k+7)).astype(float)
 
     def scalar_product(self, input_array=None, output_array=None, fast_transform=False):
-        assert fast_transform is False
-        if input_array is not None:
-            self.scalar_product.input_array[...] = input_array
-
-        output = self.vandermonde_scalar_product(self.scalar_product.input_array,
-                                                 self.scalar_product.output_array)
-
+        output = LegendreBase.scalar_product(self, input_array, output_array, False)
         output[self.sl(slice(-4, None))] = 0
-
-        if output_array is not None:
-            output_array[...] = output
-            return output_array
-        else:
-            return output
+        return output
 
     #@optimizer
-    def set_w_hat(self, w_hat, fk, f1, f2):
+    def set_w_hat(self, w_hat, fk, f1, f2): # pragma : no cover
         s = self.sl(self.slice())
         s2 = self.sl(slice(2, -2))
         s4 = self.sl(slice(4, None))
@@ -536,14 +468,12 @@ class ShenBiharmonicBasis(LegendreBase):
         w_hat[s4] += f2*fk[s]
         return w_hat
 
-    def evaluate_expansion_all(self, input_array, output_array): # pragma: no cover
+    def evaluate_expansion_all(self, input_array, output_array): # pragma : no cover
         # Not used since there are no fast transforms for Legendre
         w_hat = work[(input_array, 0)]
         self.set_factor_arrays(input_array)
         w_hat = self.set_w_hat(w_hat, input_array, self._factor1, self._factor2)
         output_array = self.LT.backward(w_hat)
-        assert input_array is self.backward.input_array
-        assert output_array is self.backward.output_array
         return output_array
 
     def slice(self):
@@ -578,9 +508,9 @@ class ShenBiharmonicBasis(LegendreBase):
         self.LT.plan(shape, axis, dtype, options)
         self.axis = self.LT.axis
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self.forward = _Wrap(self.forward, U, V)
-        self.backward = _Wrap(self.backward, V, U)
-        self.scalar_product = _Wrap(self.scalar_product, U, V)
+        self.forward = _Wrap(self.forward, U, V, V)
+        self.backward = _Wrap(self.backward, V, V, U)
+        self.scalar_product = _Wrap(self.scalar_product, U, V, V)
 
 
 ## Experimental!
@@ -630,26 +560,6 @@ class SecondNeumannBasis(LegendreBase): # pragma: no cover
             k = self.wavenumbers(v.shape, self.axis).astype(np.float)
             self._factor = -(k+1)*(k+2)*(2*k+3)/((k+3)*(k+4)*(2*k+7))
 
-    def scalar_product(self, input_array=None, output_array=None, fast_transform=False):
-        assert fast_transform is False
-        if input_array is not None:
-            self.scalar_product.input_array[...] = input_array
-
-        self.vandermonde_scalar_product(self.scalar_product.input_array,
-                                        self.scalar_product.output_array)
-
-        #fk = self.scalar_product.output_array
-        #s = self.sl(0)
-        #fk[s] = self.mean*np.pi
-        #s[self.axis] = slice(-2, None)
-        #fk[s] = 0
-
-        if output_array is not None:
-            output_array[...] = self.scalar_product.output_array
-            return output_array
-        else:
-            return self.scalar_product.output_array
-
     #def evaluate_expansion_all(self, fk, output_array):
         #w_hat = work[(fk, 0)]
         #self.set_factor_array(fk)
@@ -688,6 +598,6 @@ class SecondNeumannBasis(LegendreBase): # pragma: no cover
         self.LT.plan(shape, axis, dtype, options)
         self.axis = self.LT.axis
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self.forward = _Wrap(self.forward, U, V)
-        self.backward = _Wrap(self.backward, V, U)
-        self.scalar_product = _Wrap(self.scalar_product, U, V)
+        self.forward = _Wrap(self.forward, U, V, V)
+        self.backward = _Wrap(self.backward, V, V, U)
+        self.scalar_product = _Wrap(self.scalar_product, U, V, V)

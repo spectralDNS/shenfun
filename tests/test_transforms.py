@@ -494,7 +494,7 @@ def test_ABBmat(SB, quad):
 #test_ABBmat(lbases.ShenBiharmonicBasis, 'LG')
 
 if __name__ == '__main__':
-    #test_convolve(fbases.R2CBasis, 8)
-    test_ADDmat(lbases.ShenNeumannBasis, "GL")
+    test_convolve(fbases.R2CBasis, 8)
+    #test_ADDmat(lbases.ShenNeumannBasis, "GL")
     #test_massmatrices(lBasis[3], lBasis[3], 'LG')
 
