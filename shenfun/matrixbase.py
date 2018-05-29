@@ -520,16 +520,22 @@ class SpectralMatrix(SparseMatrix):
 
     def __mul__(self, y):
         """Returns copy of self.__mul__(y) <==> self*y"""
-        assert isinstance(y, Number)
-        f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
-                           self.trialfunction, self.scale*y)
+        if isinstance(y, Number):
+            f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
+                               self.trialfunction, self.scale*y)
+        elif isinstance(y, np.ndarray):
+            f = SparseMatrix.__mul__(self, y)
+
         return f
 
     def __div__(self, y):
         """Returns copy self.__div__(y) <==> self/y"""
-        assert isinstance(y, Number)
-        f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
-                           self.trialfunction, self.scale/y)
+        if isinstance(y, Number):
+            f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
+                               self.trialfunction, self.scale/y)
+        elif isinstance(y, np.ndarray):
+            f = SparseMatrix.__div__(self, y)
+
         return f
 
     def __add__(self, d):
