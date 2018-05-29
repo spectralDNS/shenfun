@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+from scipy.sparse.linalg import spsolve
 import shenfun
 from shenfun.chebyshev import matrices as cmatrices
 from shenfun.chebyshev import bases as cbases
@@ -143,6 +144,22 @@ def test_mul(key, mat, quad):
     mc = 2.*mat
     assert mc.scale == 2.0
 
+def test_mul2():
+    mat = shenfun.SparseMatrix({0: 1}, (3, 3))
+    v = np.ones(3)
+    c = mat * v
+    assert np.allclose(c, 1)
+    mat = shenfun.SparseMatrix({-2:1, -1:1, 0: 1, 1:1, 2:1}, (3, 3))
+    c = mat * v
+    assert np.allclose(c, 3)
+    SD = shenfun.Basis(8, "L", bc=(0, 0), plan=True, scaled=True)
+    u = shenfun.TrialFunction(SD)
+    v = shenfun.TestFunction(SD)
+    mat = shenfun.inner(shenfun.grad(u), shenfun.grad(v))
+    z = shenfun.Function(SD, val=1)
+    c = mat * z
+    assert np.allclose(c[:6], 1)
+
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_rmul(key, mat, quad):
     test = key[0]
@@ -169,6 +186,19 @@ def test_div(key, mat, quad):
     mat = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
     mc = mat/2.
     assert mc.scale == 0.5
+
+@pytest.mark.parametrize('basis, quad', list(product(cBasis, cquads))+
+                         list(product(lBasis, lquads)))
+def test_div2(basis, quad):
+    B = basis(8, quad=quad, plan=True)
+    u = shenfun.TrialFunction(B)
+    v = shenfun.TestFunction(B)
+    m = shenfun.inner(u, v)
+    z = shenfun.Function(B, val=1)
+    c = m / z
+    m2 = m.diags('csr')
+    c2 = spsolve(m2, z[B.slice()])
+    assert np.allclose(c2, c[B.slice()])
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_add(key, mat, quad):
@@ -230,4 +260,6 @@ def test_sub(key, mat, quad):
     assert mc.scale == 0.0
 
 if __name__=='__main__':
-    test_add(*mats_and_quads[0])
+    #test_add(*mats_and_quads[0])
+    #test_mul2()
+    test_div2(cBasis[0], 'GC')

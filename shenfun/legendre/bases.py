@@ -400,7 +400,7 @@ class ShenBiharmonicBasis(LegendreBase):
         return output
 
     #@optimizer
-    def set_w_hat(self, w_hat, fk, f1, f2): # pragma : no cover
+    def set_w_hat(self, w_hat, fk, f1, f2): # pragma: no cover
         s = self.sl(self.slice())
         s2 = self.sl(slice(2, -2))
         s4 = self.sl(slice(4, None))
@@ -409,7 +409,7 @@ class ShenBiharmonicBasis(LegendreBase):
         w_hat[s4] += f2*fk[s]
         return w_hat
 
-    #def evaluate_expansion_all(self, input_array, output_array): # pragma : no cover
+    #def evaluate_expansion_all(self, input_array, output_array): # pragma: no cover
     #    # Not used since there are no fast transforms for Legendre
     #    w_hat = work[(input_array, 0)]
     #    self.set_factor_arrays(input_array)
