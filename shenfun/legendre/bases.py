@@ -87,8 +87,7 @@ class LegendreBase(SpectralBase):
         if k > 0:
             D = np.zeros((self.N, self.N))
             D[:-k, :] = leg.legder(np.eye(self.N), k)
-            #a, b = self.domain
-            V = np.dot(V, D) #*(2./(b-a))**k
+            V = np.dot(V, D)
 
         return self.get_vandermonde_basis(V)
 

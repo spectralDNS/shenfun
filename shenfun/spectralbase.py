@@ -625,6 +625,7 @@ class SpectralBase(object):
         return self.vandermonde_evaluate_expansion(x, fk, output_array)
 
     def map_reference_domain(self, x):
+        """Return true point `x` mapped to reference domain"""
         if not self.domain == self.reference_domain():
             a = self.domain[0]
             c = self.reference_domain()[0]
@@ -632,6 +633,7 @@ class SpectralBase(object):
         return x
 
     def map_true_domain(self, x):
+        """Return reference point `x` mapped to true domain"""
         if not self.domain == self.reference_domain():
             a = self.domain[0]
             c = self.reference_domain()[0]
@@ -640,10 +642,10 @@ class SpectralBase(object):
 
     def reference_domain(self):
         """Return reference domain of basis"""
-        return (0., 2*np.pi)
+        raise NotImplementedError
 
     def slice(self):
-        """Return index set of current basis, with N points in physical space"""
+        """Return index set of current basis"""
         return slice(0, self.N)
 
     def spectral_shape(self):
@@ -709,25 +711,10 @@ class SpectralBase(object):
         return self
 
     def _truncation_forward(self, padded_array, trunc_array):
-        if self.padding_factor > 1.0+1e-8:
-            trunc_array.fill(0)
-            N = trunc_array.shape[self.axis]
-            su = [slice(None)]*trunc_array.ndim
-            su[self.axis] = slice(0, N//2+1)
-            trunc_array[su] = padded_array[su]
-            su[self.axis] = slice(-(N//2), None)
-            trunc_array[su] += padded_array[su]
+        pass
 
     def _padding_backward(self, trunc_array, padded_array):
-        if self.padding_factor > 1.0+1e-8:
-            padded_array.fill(0)
-            N = trunc_array.shape[self.axis]
-            su = [slice(None)]*trunc_array.ndim
-            su[self.axis] = slice(0, N//2+1)
-            padded_array[su] = trunc_array[su]
-            su[self.axis] = slice(-(N//2), None)
-            padded_array[su] = trunc_array[su]
-
+        pass
 
 def inner_product(test, trial, out=None, axis=0, fast_transform=False):
     """Return inner product of linear or bilinear form
