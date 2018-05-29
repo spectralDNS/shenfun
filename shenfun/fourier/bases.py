@@ -124,20 +124,6 @@ class FourierBase(SpectralBase):
             V = V*((1j*l)**k)[np.newaxis, :]
         return V
 
-    def get_mass_matrix(self):
-        from .matrices import mat
-        return mat[(self.__class__, 0), (self.__class__, 0)]
-
-    def _get_mat(self):
-        from .matrices import mat
-        return mat
-
-    def domain_factor(self):
-        a, b = self.domain
-        if (b-a) == 2.*np.pi:
-            return 1
-        return 2.*np.pi/(b-a)
-
     # Reimplemented for efficiency (smaller array in *= when truncated)
     def forward(self, input_array=None, output_array=None, fast_transform=True):
         if fast_transform is False:
