@@ -5,7 +5,8 @@ Module for defining bases in the Legendre family
 import numpy as np
 from numpy.polynomial import legendre as leg
 import pyfftw
-from shenfun.spectralbase import SpectralBase, work
+import functools
+from shenfun.spectralbase import SpectralBase, work, Transform
 from shenfun.utilities import inheritdocstrings
 from .lobatto import legendre_lobatto_nodes_and_weights
 
@@ -14,44 +15,6 @@ __all__ = ['LegendreBase', 'Basis', 'ShenDirichletBasis',
            'SecondNeumannBasis']
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
-
-class _Wrap(object):
-
-    __slots__ = ('_func', '__doc__', '_input_array', '_output_array', '_tmp_array')
-
-    def __init__(self, func, input_array, tmp_array, output_array):
-        object.__setattr__(self, '_func', func)
-        object.__setattr__(self, '_input_array', input_array)
-        object.__setattr__(self, '_output_array', output_array)
-        object.__setattr__(self, '_tmp_array', tmp_array)
-        object.__setattr__(self, '__doc__', func.__doc__)
-
-    @property
-    def input_array(self):
-        return object.__getattribute__(self, '_input_array')
-
-    @property
-    def output_array(self):
-        return object.__getattribute__(self, '_output_array')
-
-    @property
-    def tmp_array(self):
-        return object.__getattribute__(self, '_tmp_array')
-
-    @property
-    def func(self):
-        return object.__getattribute__(self, '_func')
-
-    def __call__(self, input_array=None, output_array=None, **kw):
-        if input_array is not None:
-            self.input_array[...] = input_array
-
-        self.func(None, None, **kw)
-
-        if output_array is not None:
-            output_array[...] = self.output_array
-            return output_array
-        return self.output_array
 
 
 @inheritdocstrings
@@ -74,6 +37,9 @@ class LegendreBase(SpectralBase):
 
     def __init__(self, N=0, quad="LG", domain=(-1., 1.)):
         SpectralBase.__init__(self, N, quad, domain=domain)
+        self.forward = functools.partial(self.forward, fast_transform=False)
+        self.backward = functools.partial(self.backward, fast_transform=False)
+        self.scalar_product = functools.partial(self.scalar_product, fast_transform=False)
 
     @staticmethod
     def family():
@@ -140,20 +106,11 @@ class LegendreBase(SpectralBase):
             return 1
         return 2./(b-a)
 
-    def forward(self, input_array=None, output_array=None, fast_transform=False):
-        return SpectralBase.forward(self, input_array, output_array, False)
-
-    def backward(self, input_array=None, output_array=None, fast_transform=False):
-        return SpectralBase.backward(self, input_array, output_array, False)
-
-    def scalar_product(self, input_array=None, output_array=None, fast_transform=False):
-        return SpectralBase.scalar_product(self, input_array, output_array, False)
-
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
             axis = axis[0]
 
-        if isinstance(self.forward, _Wrap):
+        if isinstance(self.forward, Transform):
             if self.forward.input_array.shape == shape and self.axis == axis:
                 # Already planned
                 return
@@ -167,9 +124,9 @@ class LegendreBase(SpectralBase):
         V.fill(0)
 
         self.axis = axis
-        self.forward = _Wrap(self.forward, U, V, V)
-        self.backward = _Wrap(self.backward, V, V, U)
-        self.scalar_product = _Wrap(self.scalar_product, U, V, V)
+        self.forward = Transform(self.forward, None, U, V, V)
+        self.backward = Transform(self.backward, None, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
 
 
 @inheritdocstrings
@@ -263,19 +220,19 @@ class ShenDirichletBasis(LegendreBase):
         P[:, -1] = (V[:, 0] - V[:, 1])/2
         return P
 
-    def evaluate_expansion_all(self, input_array, output_array): # pragma: no cover
-        # Not used since there are no fast transforms for Legendre
-        w_hat = work[(input_array, 0)]
-        s0 = self.sl(slice(0, -2))
-        s1 = self.sl(slice(2, None))
-        self.set_factor_array(input_array)
-        w_hat[s0] = input_array[s0]*self._factor
-        w_hat[s1] -= input_array[s0]*self._factor
-        self.bc.apply_before(w_hat, False, (0.5, 0.5))
-        output_array = self.LT.backward(w_hat)
-        assert input_array is self.backward.input_array
-        assert output_array is self.backward.output_array
-        return output_array
+    #def evaluate_expansion_all(self, input_array, output_array,
+    #                           fast_transform=False): # pragma: no cover
+    #    # Not used since there are no fast transforms for Legendre
+    #    w_hat = work[(input_array, 0)]
+    #    s0 = self.sl(slice(0, -2))
+    #    s1 = self.sl(slice(2, None))
+    #    self.set_factor_array(input_array)
+    #    w_hat[s0] = input_array[s0]*self._factor
+    #    w_hat[s1] -= input_array[s0]*self._factor
+    #    self.bc.apply_before(w_hat, False, (0.5, 0.5))
+    #    output_array = self.LT.backward(w_hat)
+    #    assert input_array is self.backward.input_array
+    #    assert output_array is self.backward.output_array
 
     def slice(self):
         return slice(0, self.N-2)
@@ -299,7 +256,7 @@ class ShenDirichletBasis(LegendreBase):
         if isinstance(axis, tuple):
             axis = axis[0]
 
-        if isinstance(self.forward, _Wrap):
+        if isinstance(self.forward, Transform):
             if self.forward.input_array.shape == shape and self.axis == axis:
                 # Already planned
                 return
@@ -307,9 +264,9 @@ class ShenDirichletBasis(LegendreBase):
         self.LT.plan(shape, axis, dtype, options)
         self.axis = self.LT.axis
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self.forward = _Wrap(self.forward, U, V, V)
-        self.backward = _Wrap(self.backward, V, V, U)
-        self.scalar_product = _Wrap(self.scalar_product, U, V, V)
+        self.forward = Transform(self.forward, None, U, V, V)
+        self.backward = Transform(self.backward, None, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
 
 
 @inheritdocstrings
@@ -364,16 +321,15 @@ class ShenNeumannBasis(LegendreBase):
         output[s] = 0
         return output
 
-    def evaluate_expansion_all(self, input_array, output_array): # pragma: no cover
-        # Not used since there are no fast transforms for Legendre
-        w_hat = work[(input_array, 0)]
-        self.set_factor_array(input_array)
-        s0 = self.sl(slice(0, -2))
-        s1 = self.sl(slice(2, None))
-        w_hat[s0] = input_array[s0]
-        w_hat[s1] -= self._factor*input_array[s0]
-        output_array = self.LT.backward(w_hat)
-        return output_array
+    #def evaluate_expansion_all(self, input_array, output_array): # pragma: no cover
+    #    # Not used since there are no fast transforms for Legendre
+    #    w_hat = work[(input_array, 0)]
+    #    self.set_factor_array(input_array)
+    #    s0 = self.sl(slice(0, -2))
+    #    s1 = self.sl(slice(2, None))
+    #    w_hat[s0] = input_array[s0]
+    #    w_hat[s1] -= self._factor*input_array[s0]
+    #    output_array = self.LT.backward(w_hat)
 
     def slice(self):
         return slice(0, self.N-2)
@@ -396,7 +352,7 @@ class ShenNeumannBasis(LegendreBase):
         if isinstance(axis, tuple):
             axis = axis[0]
 
-        if isinstance(self.forward, _Wrap):
+        if isinstance(self.forward, Transform):
             if self.forward.input_array.shape == shape and self.axis == axis:
                 # Already planned
                 return
@@ -404,9 +360,9 @@ class ShenNeumannBasis(LegendreBase):
         self.LT.plan(shape, axis, dtype, options)
         self.axis = self.LT.axis
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self.forward = _Wrap(self.forward, U, V, V)
-        self.backward = _Wrap(self.backward, V, V, U)
-        self.scalar_product = _Wrap(self.scalar_product, U, V, V)
+        self.forward = Transform(self.forward, None, U, V, V)
+        self.backward = Transform(self.backward, None, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
 
 
 @inheritdocstrings
@@ -468,13 +424,12 @@ class ShenBiharmonicBasis(LegendreBase):
         w_hat[s4] += f2*fk[s]
         return w_hat
 
-    def evaluate_expansion_all(self, input_array, output_array): # pragma : no cover
-        # Not used since there are no fast transforms for Legendre
-        w_hat = work[(input_array, 0)]
-        self.set_factor_arrays(input_array)
-        w_hat = self.set_w_hat(w_hat, input_array, self._factor1, self._factor2)
-        output_array = self.LT.backward(w_hat)
-        return output_array
+    #def evaluate_expansion_all(self, input_array, output_array): # pragma : no cover
+    #    # Not used since there are no fast transforms for Legendre
+    #    w_hat = work[(input_array, 0)]
+    #    self.set_factor_arrays(input_array)
+    #    w_hat = self.set_w_hat(w_hat, input_array, self._factor1, self._factor2)
+    #    output_array = self.LT.backward(w_hat)
 
     def slice(self):
         return slice(0, self.N-4)
@@ -500,7 +455,7 @@ class ShenBiharmonicBasis(LegendreBase):
         if isinstance(axis, tuple):
             axis = axis[0]
 
-        if isinstance(self.forward, _Wrap):
+        if isinstance(self.forward, Transform):
             if self.forward.input_array.shape == shape and self.axis == axis:
                 # Already planned
                 return
@@ -508,9 +463,9 @@ class ShenBiharmonicBasis(LegendreBase):
         self.LT.plan(shape, axis, dtype, options)
         self.axis = self.LT.axis
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self.forward = _Wrap(self.forward, U, V, V)
-        self.backward = _Wrap(self.backward, V, V, U)
-        self.scalar_product = _Wrap(self.scalar_product, U, V, V)
+        self.forward = Transform(self.forward, None, U, V, V)
+        self.backward = Transform(self.backward, None, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
 
 
 ## Experimental!
@@ -590,7 +545,7 @@ class SecondNeumannBasis(LegendreBase): # pragma: no cover
         if isinstance(axis, tuple):
             axis = axis[0]
 
-        if isinstance(self.forward, _Wrap):
+        if isinstance(self.forward, Transform):
             if self.forward.input_array.shape == shape and self.axis == axis:
                 # Already planned
                 return
@@ -598,6 +553,6 @@ class SecondNeumannBasis(LegendreBase): # pragma: no cover
         self.LT.plan(shape, axis, dtype, options)
         self.axis = self.LT.axis
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self.forward = _Wrap(self.forward, U, V, V)
-        self.backward = _Wrap(self.backward, V, V, U)
-        self.scalar_product = _Wrap(self.scalar_product, U, V, V)
+        self.forward = Transform(self.forward, None, U, V, V)
+        self.backward = Transform(self.backward, None, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, None, U, V, V)

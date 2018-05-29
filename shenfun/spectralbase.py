@@ -270,12 +270,12 @@ class SpectralBase(object):
         as planned with self.plan
 
         """
-        assert fast_transform is False # fast transform uses overloaded method
         if input_array is not None:
             self.scalar_product.input_array[...] = input_array
 
-        self.vandermonde_scalar_product(self.scalar_product.input_array,
-                                        self.scalar_product.output_array)
+        self.evaluate_scalar_product(self.scalar_product.input_array,
+                                     self.scalar_product.output_array,
+                                     fast_transform=fast_transform)
 
         if output_array is not None:
             output_array[...] = self.scalar_product.output_array
@@ -324,8 +324,8 @@ class SpectralBase(object):
             output_array : array, optional
                            Expansion coefficients
             fast_transform : bool, optional
-                             If True use fast transforms, if False use
-                             Vandermonde type
+                             If True use fast transforms (if implemented), if
+                             False use Vandermonde type
 
         Note
         ----
@@ -339,8 +339,9 @@ class SpectralBase(object):
         self._padding_backward(self.backward.input_array,
                                self.backward.tmp_array)
 
-        self.vandermonde_evaluate_expansion_all(self.backward.tmp_array,
-                                                self.backward.output_array)
+        self.evaluate_expansion_all(self.backward.tmp_array,
+                                    self.backward.output_array,
+                                    fast_transform=fast_transform)
 
         if output_array is not None:
             output_array[...] = self.backward.output_array
@@ -382,6 +383,23 @@ class SpectralBase(object):
         """
         raise NotImplementedError
 
+    def evaluate_scalar_product(self, input_array, output_array,
+                                fast_transform=False):
+        """Evaluate scalar product
+
+        Parameters
+        ----------
+            input_array : array, optional
+                          Function values on quadrature mesh
+            output_array : array, optional
+                           Expansion coefficients
+            fast_transform : bool, optional
+                             If True use fast transforms (if implemented), if
+                             False use Vandermonde type
+        """
+        assert fast_transform is False
+        self.vandermonde_scalar_product(input_array, output_array)
+
     def vandermonde_scalar_product(self, input_array, output_array):
         """Naive implementation of scalar product
 
@@ -408,7 +426,6 @@ class SpectralBase(object):
             output_array[:] = np.moveaxis(np.dot(fc, np.conj(P)), -1, self.axis)
 
         assert output_array is self.forward.output_array
-        return output_array
 
     def vandermonde_evaluate_expansion_all(self, input_array, output_array):
         """Naive implementation of evaluate_expansion_all
@@ -437,8 +454,6 @@ class SpectralBase(object):
             fc = np.moveaxis(input_array, self.axis, -2)
             array = np.dot(P, fc)
             output_array[:] = np.moveaxis(array, 0, self.axis)
-
-        return output_array
 
     def vandermonde_evaluate_expansion(self, points, input_array, output_array):
         """Evaluate expansion at certain points, possibly different from
@@ -524,7 +539,7 @@ class SpectralBase(object):
         if isinstance(axis, tuple):
             axis = axis[0]
 
-        if isinstance(self.forward, _func_wrap):
+        if isinstance(self.forward, Transform):
             if self.forward.input_array.shape == shape and self.axis == axis:
                 # Already planned
                 return
@@ -554,26 +569,25 @@ class SpectralBase(object):
         xfftn_bck.update_arrays(V, U)
 
         self.axis = axis
-        self.xfftn_fwd = xfftn_fwd
-        self.xfftn_bck = xfftn_bck
 
         if self.padding_factor > 1.+1e-8:
             trunc_array = self._get_truncarray(shape, V.dtype)
-            self.forward = _func_wrap(self.forward, xfftn_fwd, U, V, trunc_array)
-            self.backward = _func_wrap(self.backward, xfftn_bck, trunc_array, V, U)
+            self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
+            self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
         else:
-            self.forward = _func_wrap(self.forward, xfftn_fwd, U, V, V)
-            self.backward = _func_wrap(self.backward, xfftn_bck, V, V, U)
+            self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
+            self.backward = Transform(self.backward, xfftn_bck, V, V, U)
 
         # scalar_product is not padded, just the forward/backward
-        self.scalar_product = _func_wrap(self.scalar_product, xfftn_fwd, U, V, V)
+        self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
 
     def _get_truncarray(self, shape, dtype):
         shape = list(shape)
         shape[self.axis] = int(np.round(shape[self.axis] / self.padding_factor))
         return pyfftw.empty_aligned(shape, dtype=dtype)
 
-    def evaluate_expansion_all(self, input_array, output_array):
+    def evaluate_expansion_all(self, input_array, output_array,
+                               fast_transform=False):
         r"""Evaluate expansion on entire mesh
 
         .. math::
@@ -586,9 +600,11 @@ class SpectralBase(object):
                           Expansion coefficients
             output_array : :math:`f(x_j)`
                            Function values on quadrature mesh
+            fast_transform : bool, optional
+                             Whether to use fast transforms (if implemented)
 
         """
-        raise NotImplementedError
+        self.vandermonde_evaluate_expansion_all(input_array, output_array)
 
     def eval(self, x, fk, output_array=None):
         """Evaluate basis at position `x`, given expansion coefficients `fk`
@@ -781,20 +797,16 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
         out = test.scalar_product(trial, out, fast_transform=fast_transform)
         return out
 
+class FuncWrap(object):
 
-class _func_wrap(object):
+    # pylint: disable=too-few-public-methods, missing-docstring
 
-    # pylint: disable=too-few-public-methods
+    __slots__ = ('_func', '__doc__', '_input_array', '_output_array')
 
-    __slots__ = ('_func', '_xfftn', '__doc__', '_input_array', '_output_array',
-                 '_tmp_array')
-
-    def __init__(self, func, xfftn, input_array, tmp_array, output_array):
-        object.__setattr__(self, '_xfftn', xfftn)
+    def __init__(self, func, input_array, output_array):
         object.__setattr__(self, '_func', func)
         object.__setattr__(self, '_input_array', input_array)
         object.__setattr__(self, '_output_array', output_array)
-        object.__setattr__(self, '_tmp_array', tmp_array)
         object.__setattr__(self, '__doc__', func.__doc__)
 
     @property
@@ -804,14 +816,6 @@ class _func_wrap(object):
     @property
     def output_array(self):
         return object.__getattribute__(self, '_output_array')
-
-    @property
-    def tmp_array(self):
-        return object.__getattribute__(self, '_tmp_array')
-
-    @property
-    def xfftn(self):
-        return object.__getattribute__(self, '_xfftn')
 
     @property
     def func(self):
@@ -825,3 +829,25 @@ class _func_wrap(object):
             output_array[...] = self.output_array
             return output_array
         return self.output_array
+
+
+class Transform(FuncWrap):
+
+    # pylint: disable=too-few-public-methods
+
+    __slots__ = ('_xfftn', '__doc__', '_input_array', '_output_array',
+                 '_tmp_array')
+
+    def __init__(self, func, xfftn, input_array, tmp_array, output_array):
+        FuncWrap.__init__(self, func, input_array, output_array)
+        object.__setattr__(self, '_xfftn', xfftn)
+        object.__setattr__(self, '_tmp_array', tmp_array)
+
+    @property
+    def tmp_array(self):
+        return object.__getattribute__(self, '_tmp_array')
+
+    @property
+    def xfftn(self):
+        return object.__getattribute__(self, '_xfftn')
+

@@ -5,7 +5,7 @@ import functools
 from numpy.polynomial import chebyshev as n_cheb
 import numpy as np
 import pyfftw
-from shenfun.spectralbase import SpectralBase, work, _func_wrap
+from shenfun.spectralbase import SpectralBase, work, Transform, FuncWrap
 from shenfun.optimization import Cheb
 from shenfun.utilities import inheritdocstrings
 
@@ -14,37 +14,14 @@ __all__ = ['ChebyshevBase', 'Basis', 'ShenDirichletBasis',
 
 #pylint: disable=abstract-method, not-callable, method-hidden, no-self-use, cyclic-import
 
-class _dct_wrap(object):
-
-    # pylint: disable=too-few-public-methods, missing-docstring
-
-    __slots__ = ('_dct', '__doc__', '_input_array', '_output_array', '_tmp_array')
-
-    def __init__(self, dct, in_array, tmp_array, out_array):
-        object.__setattr__(self, '_dct', dct)
-        object.__setattr__(self, '_input_array', in_array)
-        object.__setattr__(self, '_output_array', out_array)
-        object.__setattr__(self, '_tmp_array', tmp_array)
-        object.__setattr__(self, '__doc__', dct.__doc__)
-
-    @property
-    def input_array(self):
-        return object.__getattribute__(self, '_input_array')
-
-    @property
-    def output_array(self):
-        return object.__getattribute__(self, '_output_array')
-
-    @property
-    def tmp_array(self):
-        return object.__getattribute__(self, '_tmp_array')
+class DCTWrap(FuncWrap):
 
     @property
     def dct(self):
-        return object.__getattribute__(self, '_dct')
+        return object.__getattribute__(self, '_func')
 
     def __call__(self, input_array=None, output_array=None, **kw):
-        dct_obj = object.__getattribute__(self, '_dct')
+        dct_obj = self.dct
 
         if input_array is not None:
             self.input_array[...] = input_array
@@ -153,7 +130,7 @@ class ChebyshevBase(SpectralBase):
         if isinstance(axis, tuple):
             axis = axis[0]
 
-        if isinstance(self.forward, _func_wrap):
+        if isinstance(self.forward, Transform):
             if self.forward.input_array.shape == shape and self.axis == axis:
                 # Already planned
                 return
@@ -184,22 +161,18 @@ class ChebyshevBase(SpectralBase):
         xfftn_bck.update_arrays(V, U)
 
         self.axis = axis
-        if np.dtype(dtype) is np.dtype('float64'):
-            self.xfftn_fwd = xfftn_fwd
-            self.xfftn_bck = xfftn_bck
-
-        else:
+        if np.dtype(dtype) is np.dtype('complex'):
             # dct only works on real data, so need to wrap it
             U = pyfftw.empty_aligned(shape, dtype=np.complex)
             V = pyfftw.empty_aligned(shape, dtype=np.complex)
             U.fill(0)
             V.fill(0)
-            self.xfftn_fwd = _dct_wrap(xfftn_fwd, U, V, V)
-            self.xfftn_bck = _dct_wrap(xfftn_bck, V, V, U)
+            xfftn_fwd = DCTWrap(xfftn_fwd, U, V)
+            xfftn_bck = DCTWrap(xfftn_bck, V, U)
 
-        self.forward = _func_wrap(self.forward, self.xfftn_fwd, U, V, V)
-        self.backward = _func_wrap(self.backward, self.xfftn_bck, V, V, U)
-        self.scalar_product = _func_wrap(self.scalar_product, self.xfftn_fwd, U, V, V)
+        self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
+        self.backward = Transform(self.backward, xfftn_bck, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
 
 
 @inheritdocstrings
@@ -278,8 +251,12 @@ class Basis(ChebyshevBase):
             array[sl] /= 2
         return array
 
-    def evaluate_expansion_all(self, input_array, output_array):
-        output_array = self.xfftn_bck()
+    def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
+        if fast_transform is False:
+            SpectralBase.evaluate_expansion_all(self, input_array, output_array, False)
+            return
+
+        output_array = self.backward.xfftn()
         s0 = self.sl(slice(0, 1))
         if self.quad == "GC":
             output_array *= 0.5
@@ -294,46 +271,17 @@ class Basis(ChebyshevBase):
             s2[self.axis] = slice(1, None, 2)
             output_array[s2] -= input_array[s0]/2
 
-        return output_array
-
-    def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
+    def evaluate_scalar_product(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
-            return SpectralBase.scalar_product(self, input_array, output_array, False)
-
-        if input_array is not None:
-            self.scalar_product.input_array[...] = input_array
-
+            self.vandermonde_scalar_product(input_array, output_array)
+            return
         assert self.N == self.scalar_product.input_array.shape[self.axis]
-        out = self.xfftn_fwd()
+        out = self.scalar_product.xfftn()
         if self.quad == "GC":
             out *= (np.pi/(2*self.N))
 
         elif self.quad == "GL":
             out *= (np.pi/(2*(self.N-1)))
-
-        assert out is self.scalar_product.output_array
-        if output_array is not None:
-            output_array[...] = out
-            return output_array
-        return out
-
-    def backward(self, input_array=None, output_array=None, fast_transform=True):
-        if fast_transform is False:
-            return SpectralBase.backward(self, input_array, output_array, False)
-
-        if input_array is not None:
-            self.backward.input_array[...] = input_array
-
-        self._padding_backward(self.backward.input_array,
-                               self.backward.tmp_array)
-
-        self.evaluate_expansion_all(self.backward.tmp_array,
-                                    self.backward.output_array)
-
-        if output_array is not None:
-            output_array[...] = self.backward.output_array
-            return output_array
-        return self.backward.output_array
 
     def eval(self, x, fk, output_array=None):
         if output_array is None:
@@ -390,13 +338,10 @@ class ShenDirichletBasis(ChebyshevBase):
         """Return True if scaled basis is used, otherwise False"""
         return False
 
-    def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
+    def evaluate_scalar_product(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
-            return SpectralBase.scalar_product(self, input_array, output_array, False)
-
-        if input_array is not None:
-            self.scalar_product.input_array[...] = input_array
-
+            self.vandermonde_scalar_product(input_array, output_array)
+            return
         output = self.CT.scalar_product(fast_transform=fast_transform)
         s0 = self.sl(0)
         s1 = self.sl(1)
@@ -410,12 +355,10 @@ class ShenDirichletBasis(ChebyshevBase):
         s0[self.axis] = -1
         output[s0] = c1
 
-        if output_array is not None:
-            output_array[...] = output
-            return output_array
-        return output
-
-    def evaluate_expansion_all(self, input_array, output_array):
+    def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
+        if fast_transform is False:
+            SpectralBase.evaluate_expansion_all(self, input_array, output_array, False)
+            return
         w_hat = work[(input_array, 0)]
         s0 = self.sl(slice(0, -2))
         s1 = self.sl(slice(2, None))
@@ -423,7 +366,6 @@ class ShenDirichletBasis(ChebyshevBase):
         w_hat[s1] -= input_array[s0]
         self.bc.apply_before(w_hat, False, (0.5, 0.5))
         output_array = self.CT.backward(w_hat)
-        return output_array
 
     def slice(self):
         return slice(0, self.N-2)
@@ -443,20 +385,20 @@ class ShenDirichletBasis(ChebyshevBase):
         if isinstance(axis, tuple):
             axis = axis[0]
 
-        if isinstance(self.forward, _func_wrap):
+        if isinstance(self.forward, Transform):
             if self.forward.input_array.shape == shape and self.axis == axis:
                 # Already planned
                 return
 
         self.CT.plan(shape, axis, dtype, options)
         self.axis = self.CT.axis
-        self.xfftn_fwd = self.CT.xfftn_fwd
-        self.xfftn_bck = self.CT.xfftn_bck
-        U = self.CT.xfftn_fwd.input_array
-        V = self.CT.xfftn_fwd.output_array
-        self.forward = _func_wrap(self.forward, self.xfftn_fwd, U, V, V)
-        self.backward = _func_wrap(self.backward, self.xfftn_bck, V, V, U)
-        self.scalar_product = _func_wrap(self.scalar_product, self.xfftn_fwd, U, V, V)
+        xfftn_fwd = self.CT.forward.xfftn
+        xfftn_bck = self.CT.backward.xfftn
+        U = xfftn_fwd.input_array
+        V = xfftn_fwd.output_array
+        self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
+        self.backward = Transform(self.backward, xfftn_bck, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
 
 
 @inheritdocstrings
@@ -503,20 +445,25 @@ class ShenNeumannBasis(ChebyshevBase):
             k = self.wavenumbers(v.shape, self.axis).astype(float)
             self._factor = (k/(k+2))**2
 
-    def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
+    def evaluate_scalar_product(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
-            output = SpectralBase.scalar_product(self, input_array, output_array, False)
+            self.vandermonde_scalar_product(input_array, output_array)
+            return
+        output = self.CT.scalar_product(fast_transform=True)
+        self.set_factor_array(output)
+        sm2 = self.sl(slice(0, -2))
+        s2p = self.sl(slice(2, None))
+        output[sm2] -= self._factor * output[s2p]
 
-        else:
-            if input_array is not None:
-                self.scalar_product.input_array[...] = input_array
+    def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
+        if input_array is not None:
+            self.scalar_product.input_array[...] = input_array
 
-            output = self.CT.scalar_product(fast_transform=True)
-            self.set_factor_array(output)
-            sm2 = self.sl(slice(0, -2))
-            s2p = self.sl(slice(2, None))
-            output[sm2] -= self._factor * output[s2p]
+        self.evaluate_scalar_product(self.scalar_product.input_array,
+                                     self.scalar_product.output_array,
+                                     fast_transform=fast_transform)
 
+        output = self.scalar_product.output_array
         s = self.sl(0)
         output[s] = self.mean*np.pi
         s[self.axis] = slice(-2, None)
@@ -527,7 +474,10 @@ class ShenNeumannBasis(ChebyshevBase):
             return output_array
         return output
 
-    def evaluate_expansion_all(self, input_array, output_array):
+    def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
+        if fast_transform is False:
+            SpectralBase.evaluate_expansion_all(self, input_array, output_array, False)
+            return
         w_hat = work[(input_array, 0)]
         self.set_factor_array(input_array)
         s0 = self.sl(slice(0, -2))
@@ -535,7 +485,6 @@ class ShenNeumannBasis(ChebyshevBase):
         w_hat[s0] = input_array[s0]
         w_hat[s1] -= self._factor*input_array[s0]
         output_array = self.CT.backward(w_hat)
-        return output_array
 
     def slice(self):
         return slice(0, self.N-2)
@@ -555,20 +504,20 @@ class ShenNeumannBasis(ChebyshevBase):
         if isinstance(axis, tuple):
             axis = axis[0]
 
-        if isinstance(self.forward, _func_wrap):
+        if isinstance(self.forward, Transform):
             if self.forward.input_array.shape == shape and self.axis == axis:
                 # Already planned
                 return
 
         self.CT.plan(shape, axis, dtype, options)
         self.axis = self.CT.axis
-        self.xfftn_fwd = self.CT.xfftn_fwd
-        self.xfftn_bck = self.CT.xfftn_bck
-        U = self.CT.xfftn_fwd.input_array
-        V = self.CT.xfftn_fwd.output_array
-        self.forward = _func_wrap(self.forward, self.xfftn_fwd, U, V, V)
-        self.backward = _func_wrap(self.backward, self.xfftn_bck, V, V, U)
-        self.scalar_product = _func_wrap(self.scalar_product, self.xfftn_fwd, U, V, V)
+        xfftn_fwd = self.CT.forward.xfftn
+        xfftn_bck = self.CT.backward.xfftn
+        U = xfftn_fwd.input_array
+        V = xfftn_fwd.output_array
+        self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
+        self.backward = Transform(self.backward, xfftn_bck, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
 
 
 @inheritdocstrings
@@ -617,30 +566,34 @@ class ShenBiharmonicBasis(ChebyshevBase):
             self._factor1 = (-2*(k+2)/(k+3)).astype(float)
             self._factor2 = ((k+1)/(k+3)).astype(float)
 
-    def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
+    def evaluate_scalar_product(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
-            output = SpectralBase.scalar_product(self, input_array, output_array, False)
+            self.vandermonde_scalar_product(input_array, output_array)
+            return
+        output = self.CT.scalar_product(fast_transform=fast_transform)
+        Tk = work[(output, 0)]
+        Tk[...] = output
+        self.set_factor_arrays(Tk)
+        s = self.sl(self.slice())
+        s2 = self.sl(slice(2, -2))
+        output[s] += self._factor1 * Tk[s2]
+        s2[self.axis] = slice(4, None)
+        output[s] += self._factor2 * Tk[s2]
 
-        else:
-            if input_array is not None:
-                self.scalar_product.input_array[...] = input_array
+    def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
+        if input_array is not None:
+            self.scalar_product.input_array[...] = input_array
 
-            output = self.CT.scalar_product(fast_transform=fast_transform)
-            Tk = work[(output, 0)]
-            Tk[...] = output
-            self.set_factor_arrays(Tk)
-            s = self.sl(self.slice())
-            s2 = self.sl(slice(2, -2))
-            output[s] += self._factor1 * Tk[s2]
-            s2[self.axis] = slice(4, None)
-            output[s] += self._factor2 * Tk[s2]
+        self.evaluate_scalar_product(self.scalar_product.input_array,
+                                     self.scalar_product.output_array,
+                                     fast_transform=fast_transform)
 
-        output[self.sl(slice(-4, None))] = 0
+        self.scalar_product.output_array[self.sl(slice(-4, None))] = 0
 
         if output_array is not None:
-            output_array[...] = output
+            output_array[...] = self.scalar_product.output_array
             return output_array
-        return output
+        return self.scalar_product.output_array
 
     #@optimizer
     def set_w_hat(self, w_hat, fk, f1, f2):
@@ -653,14 +606,16 @@ class ShenBiharmonicBasis(ChebyshevBase):
         w_hat[s4] += f2*fk[s]
         return w_hat
 
-    def evaluate_expansion_all(self, input_array, output_array):
+    def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
+        if fast_transform is False:
+            SpectralBase.evaluate_expansion_all(self, input_array, output_array, False)
+            return
         w_hat = work[(input_array, 0)]
         self.set_factor_arrays(input_array)
         w_hat = self.set_w_hat(w_hat, input_array, self._factor1, self._factor2)
         output_array = self.CT.backward(w_hat)
         assert input_array is self.backward.input_array
         assert output_array is self.backward.output_array
-        return output_array
 
     def slice(self):
         return slice(0, self.N-4)
@@ -683,18 +638,18 @@ class ShenBiharmonicBasis(ChebyshevBase):
         if isinstance(axis, tuple):
             axis = axis[0]
 
-        if isinstance(self.forward, _func_wrap):
+        if isinstance(self.forward, Transform):
             if self.forward.input_array.shape == shape and self.axis == axis:
                 # Already planned
                 return
 
         self.CT.plan(shape, axis, dtype, options)
         self.axis = self.CT.axis
-        self.xfftn_fwd = self.CT.xfftn_fwd
-        self.xfftn_bck = self.CT.xfftn_bck
-        U = self.CT.xfftn_fwd.input_array
-        V = self.CT.xfftn_fwd.output_array
-        self.forward = _func_wrap(self.forward, self.xfftn_fwd, U, V, V)
-        self.backward = _func_wrap(self.backward, self.xfftn_bck, V, V, U)
-        self.scalar_product = _func_wrap(self.scalar_product, self.xfftn_fwd, U, V, V)
+        xfftn_fwd = self.CT.forward.xfftn
+        xfftn_bck = self.CT.backward.xfftn
+        U = xfftn_fwd.input_array
+        V = xfftn_fwd.output_array
+        self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
+        self.backward = Transform(self.backward, xfftn_bck, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
 

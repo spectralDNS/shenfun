@@ -17,17 +17,18 @@ __all__ = ('TensorProductSpace', 'VectorTensorProductSpace',
 #pylint: disable=line-too-long, redefined-outer-name, len-as-condition, redefined-argument-from-local, no-else-return, no-self-use, no-member, missing-docstring
 
 class TensorProductSpace(object):
-    """Base class for multidimensional tensorproductspaces.
+    """Class for multidimensional tensorproductspaces.
 
     The tensorproductspaces are created as Cartesian products from a set of 1D
-    bases. The 1D bases are subclassed instances of the SpectralBase class.
+    bases. The 1D bases are subclassed instances of the :class:`.SpectralBase`
+    class.
 
     Parameters
     ----------
         comm : MPI communicator
         bases : list
                 List of 1D bases
-        axes : int, optional
+        axes : tuple of ints, optional
                A tuple containing the order of which to perform transforms.
                Last item is transformed first. Defaults to range(len(bases))
         dtype : data-type, optional
@@ -35,6 +36,10 @@ class TensorProductSpace(object):
                 will be inferred from the bases.
         slab : bool, optional
                Use 1D slab decomposition instead of default pencil.
+        kw : dict, optional
+             Dictionary that can be used to plan transforms. Input to method
+             `plan` for the bases.
+
     """
     def __init__(self, comm, bases, axes=None, dtype=None, slab=False, **kw):
         self.comm = comm
