@@ -138,8 +138,7 @@ class FourierBase(SpectralBase):
             return 1
         return 2.*np.pi/(b-a)
 
-    # Note. forward is reimplemented here for efficiency (the array forward._output_array
-    # is smaller than the output array from xfftn_fwd)
+    # Reimplemented for efficiency (smaller array in *= when truncated)
     def forward(self, input_array=None, output_array=None, fast_transform=True):
         if fast_transform is False:
             return SpectralBase.forward(self, input_array, output_array, False)
@@ -147,7 +146,7 @@ class FourierBase(SpectralBase):
         if input_array is not None:
             self.forward.input_array[...] = input_array
 
-        self.xfftn_fwd()
+        self.forward.xfftn()
         self._truncation_forward(self.forward.tmp_array,
                                  self.forward.output_array)
         self.forward._output_array *= (1./self.N/self.padding_factor)
@@ -156,24 +155,6 @@ class FourierBase(SpectralBase):
             output_array[...] = self.forward.output_array
             return output_array
         return self.forward.output_array
-
-    def backward(self, input_array=None, output_array=None, fast_transform=True):
-        if fast_transform is False:
-            return SpectralBase.backward(self, input_array, output_array, False)
-
-        if input_array is not None:
-            self.backward.input_array[...] = input_array
-
-        self._padding_backward(self.backward.input_array,
-                               self.backward.tmp_array)
-
-        self.evaluate_expansion_all(self.backward.tmp_array,
-                                    self.backward.output_array)
-
-        if output_array is not None:
-            output_array[...] = self.backward.output_array
-            return output_array
-        return self.backward.output_array
 
     def apply_inverse_mass(self, array):
         """Apply inverse mass
@@ -189,31 +170,22 @@ class FourierBase(SpectralBase):
         """
         return array
 
-    def evaluate_expansion_all(self, input_array, output_array):
-        self.xfftn_bck(normalise_idft=False)
-        return output_array
-
-    def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
+    def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
-            assert abs(self.padding_factor-1) < 1e-8
-            return SpectralBase.scalar_product(self, input_array, output_array, False)
+            SpectralBase.evaluate_expansion_all(self, input_array, output_array, False)
+        else:
+            self.backward.xfftn(normalise_idft=False)
 
-        if input_array is not None:
-            self.xfftn_fwd.input_array[...] = input_array
-
-        output = self.xfftn_fwd()
+    def evaluate_scalar_product(self, input_array, output_array, fast_transform=True):
+        if fast_transform is False:
+            self.vandermonde_scalar_product(input_array, output_array)
+            return
+        output = self.scalar_product.xfftn()
         output *= (1./self.N/self.padding_factor)
 
-        if output_array is not None:
-            output_array[...] = output
-            return output_array
-        return output
-
     def vandermonde_scalar_product(self, input_array, output_array):
-        output_array = SpectralBase.vandermonde_scalar_product(self, input_array,
-                                                               output_array)
+        SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
         output_array *= 0.5/np.pi
-        return output_array
 
 
 class R2CBasis(FourierBase):
@@ -278,8 +250,6 @@ class R2CBasis(FourierBase):
                 array += np.conj(np.dot(P[:, 1:], fc[s])).real
 
             output_array[:] = np.moveaxis(array, 0, self.axis)
-
-        return output_array
 
     def vandermonde_evaluate_expansion(self, points, input_array, output_array):
         """Evaluate expansion at certain points, possibly different from

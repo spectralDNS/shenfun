@@ -89,6 +89,7 @@ def test_scalarproduct(ST, quad):
     u0 = ST.scalar_product(fj, u0, fast_transform=True)
     u1 = ST.scalar_product(fj, u1, fast_transform=False)
     assert np.allclose(u1, u0)
+    assert not np.all(u1==u0) # Check that fast is not the same as slow
 
 #test_scalarproduct(cbases.ShenDirichletBasis, 'GC')
 
@@ -494,7 +495,8 @@ def test_ABBmat(SB, quad):
 #test_ABBmat(lbases.ShenBiharmonicBasis, 'LG')
 
 if __name__ == '__main__':
-    test_convolve(fbases.R2CBasis, 8)
+    #test_convolve(fbases.R2CBasis, 8)
     #test_ADDmat(lbases.ShenNeumannBasis, "GL")
-    #test_massmatrices(lBasis[3], lBasis[3], 'LG')
+    #test_massmatrices(cBasis[3], cBasis[3], 'GC')
+    test_scalarproduct(cBasis[2], 'GC')
 
