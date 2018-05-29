@@ -175,21 +175,24 @@ class TensorProductSpace(object):
         ab_hat = self.forward(a*b, ab_hat)
         return ab_hat
 
-    def eval(self, points, coefficients, output_array=None):
+    def eval(self, points, coefficients, output_array=None, cython=True):
         """Evaluate Function at points, given expansion coefficients
 
         Parameters
         ----------
             points : float or array of floats
             coefficients : array
-                           Expansion coefficients
+                Expansion coefficients
             output_array : array, optional
-                           Return array, function values at points
+                Return array, function values at points
+            cython : bool, optional
+                Whether to use optimized cython implementation or not
 
         """
-        return self._eval_cython(points, coefficients, output_array)
-        #return self._eval_python(points, coefficients, output_array)
-
+        if cython:
+            return self._eval_cython(points, coefficients, output_array)
+        else:
+            return self._eval_python(points, coefficients, output_array)
 
     def _eval_python(self, points, coefficients, output_array=None): # pragma : no cover
         """Evaluate Function at points, given expansion coefficients

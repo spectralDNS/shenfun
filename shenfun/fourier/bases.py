@@ -173,6 +173,9 @@ class FourierBase(SpectralBase):
         SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
         output_array *= 0.5/np.pi
 
+    def reference_domain(self):
+        return (0., 2*np.pi)
+
 
 class R2CBasis(FourierBase):
     """Fourier basis class for real to complex transforms
@@ -458,11 +461,6 @@ class C2CBasis(FourierBase):
             k *= self.domain_factor()
         K = self.broadcast_to_ndims(k, len(N), axis)
         return K
-
-    def eval(self, x, fk):
-        x = self.map_reference_domain(x)
-        V = self.vandermonde(x)
-        return np.dot(V, fk)
 
     def slice(self):
         return slice(0, self.N)
