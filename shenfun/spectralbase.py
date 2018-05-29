@@ -127,6 +127,7 @@ Each class has methods for moving fast between spectral and physical space, and
 for computing the (weighted) scalar product.
 
 """
+import importlib
 import numpy as np
 import pyfftw
 from mpiFFT4py import work_arrays
@@ -641,10 +642,6 @@ class SpectralBase(object):
         """Return reference domain of basis"""
         return (0., 2*np.pi)
 
-    def get_mass_matrix(self):
-        """Return mass matrix associated with current basis"""
-        raise NotImplementedError
-
     def slice(self):
         """Return index set of current basis, with N points in physical space"""
         return slice(0, self.N)
@@ -656,7 +653,13 @@ class SpectralBase(object):
 
     def domain_factor(self):
         """Return scaling factor for domain"""
-        return 1
+        a, b = self.domain
+        c, d = self.reference_domain()
+        L = b-a
+        R = d-c
+        if abs(L-R) < 1e-12:
+            return 1
+        return R/L
 
     def __hash__(self):
         return hash(repr(self.__class__))
@@ -690,15 +693,20 @@ class SpectralBase(object):
         """Return number of components for basis"""
         return 1
 
+    def get_mass_matrix(self):
+        mat = self._get_mat()
+        return mat[((self.__class__, 0), (self.__class__, 0))]
+
+    def _get_mat(self):
+        mod = importlib.import_module('shenfun.'+self.family())
+        return mod.matrices.mat
+
     def __len__(self):
         return 1
 
     def __getitem__(self, i):
         assert i == 0
         return self
-
-    def _get_mat(self):
-        raise NotImplementedError
 
     def _truncation_forward(self, padded_array, trunc_array):
         if self.padding_factor > 1.0+1e-8:

@@ -92,20 +92,6 @@ class LegendreBase(SpectralBase):
 
         return self.get_vandermonde_basis(V)
 
-    def get_mass_matrix(self):
-        from .matrices import mat
-        return mat[(self.__class__, 0), (self.__class__, 0)]
-
-    def _get_mat(self):
-        from .matrices import mat
-        return mat
-
-    def domain_factor(self):
-        a, b = self.domain
-        if abs(b-a-2) < 1e-12:
-            return 1
-        return 2./(b-a)
-
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
             axis = axis[0]
