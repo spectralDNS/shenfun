@@ -67,6 +67,7 @@ class CachedArrayDict(MutableMapping):
     [[0 0 0 0]
      [0 0 0 0]
      [0 0 0 0]]
+    >>> w2 = work[(a, 1)] # Get different(note 1!) array of same shape/dtype
     """
     def __init__(self):
         self._data = {}
@@ -79,6 +80,7 @@ class CachedArrayDict(MutableMapping):
             shape, dtype, i = newkey
             value = np.zeros(shape, dtype=np.dtype(dtype, align=True))
             self._data[newkey] = value
+        value.fill(0)
         return value
 
     def __keytransform__(self, key):
