@@ -487,7 +487,7 @@ class C2CBasis(FourierBase):
             if self.N % 2 == 0:  # Use symmetric Fourier interpolator
                 su[self.axis] = N//2
                 padded_array[su] *= 0.5
-                su[self.axis] = -N//2
+                su[self.axis] = -(N//2)
                 padded_array[su] *= 0.5
 
         elif self.dealias_direct:

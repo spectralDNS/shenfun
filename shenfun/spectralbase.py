@@ -127,15 +127,13 @@ Each class has methods for moving fast between spectral and physical space, and
 for computing the (weighted) scalar product.
 
 """
+#pylint: disable=unused-argument, not-callable, no-self-use, protected-access, too-many-public-methods, missing-docstring
+
 import importlib
 import numpy as np
 import pyfftw
-from mpiFFT4py import work_arrays
-
-#pylint: disable=unused-argument, not-callable, no-self-use, protected-access, too-many-public-methods, missing-docstring
-
-work = work_arrays()
-
+from .utilities import CachedArrayDict
+work = CachedArrayDict()
 
 class SpectralBase(object):
     """Abstract base class for all spectral function spaces

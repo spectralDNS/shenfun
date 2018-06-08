@@ -238,7 +238,6 @@ def test_CDDmat(quad):
     dudx_j = dudx_l(points)
     uj = ul(points)
 
-    dudx_j = np.zeros(M)
     u_hat = np.zeros(M)
     u_hat = SD.forward(uj, u_hat)
     uj = SD.backward(u_hat, uj)
@@ -246,7 +245,7 @@ def test_CDDmat(quad):
 
     uc_hat = np.zeros(M)
     uc_hat = SD.CT.forward(uj, uc_hat)
-    dudx_j = SD.CT.fast_derivative(uj, dudx_j)
+    dudx_j = SD.CT.fast_derivative(uj)
 
     Cm = inner_product((SD, 0), (SD, 1))
     B = inner_product((SD, 0), (SD, 0))
@@ -307,8 +306,7 @@ def test_CXXmat(test, trial):
     f_hat = S2.forward(fj, f_hat)
     cs = np.zeros_like(f_hat)
     cs = Cm.matvec(f_hat, cs)
-    df = np.zeros(N)
-    df = CT.fast_derivative(fj, df)
+    df = CT.fast_derivative(fj)
     cs2 = np.zeros(N)
     cs2 = S1.scalar_product(df, cs2)
     s = S1.slice()
