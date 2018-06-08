@@ -6,7 +6,7 @@ import numpy as np
 from scipy.fftpack import dct
 from collections import MutableMapping
 
-__all__ = ['inheritdocstrings', 'clenshaw_curtis1D']
+__all__ = ['inheritdocstrings', 'clenshaw_curtis1D', 'CachedArrayDict']
 
 def inheritdocstrings(cls):
     """Method used for inheriting docstrings from parent class
