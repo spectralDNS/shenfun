@@ -3,7 +3,7 @@ Installation
 
 Shenfun has quite a few dependencies and as such it is not completely
 straight-forward to install. For example, it depends on the non-standard
-`mpiFFT4py`_  and `mpi4py-fft`_, and it requires `cython`_ to optimize a
+and `mpi4py-fft`_, and it requires `cython`_ to optimize a
 few routines. However, most problematic is `pyFFTW`_ for the serial fast 
 Fourier transforms. Here it is not possible to use a standard installation,
 because *pyFFTW* is very slow at incorporating new pull requests. Currently
@@ -41,7 +41,7 @@ You may also use precompiled binaries in the `spectralDNS channel`_. Use for exa
     conda create --name shenfun -c conda-forge -c spectralDNS shenfun
     source activate shenfun
 
-which installs both shenfun, mpiFFT4py and all required dependencies,
+which installs both shenfun, and all required dependencies,
 most of which are pulled in from the conda-forge channel. There are
 binaries compiled for both OSX and linux, for either Python version 2.7
 or 3.6. To specify the Python version as 3.6 instead of default (used
@@ -53,7 +53,6 @@ above) you can for exampel do
     source activate shenfun_py3
 
 .. _github: https://github.com/spectralDNS/shenfun
-.. _mpiFFT4py: https://github.com/spectralDNS/mpiFFT4py
 .. _mpi4py-fft: https://bitbucket.org/mpi4py/mpi4py-fft
 .. _cython: http://cython.org
 .. _pyFFTW: https://github.com/pyFFTW/pyFFTW
