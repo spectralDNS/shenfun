@@ -3,7 +3,6 @@ name: shenfun_doc_env
 channels:
   - spectralDNS
   - defaults
-  #- conda-forge
 
 dependencies:
   - python=3.6
@@ -13,9 +12,7 @@ dependencies:
   - sympy
   - python
   - scipy
-  #- doconce
   - pyfftw
-  - mpiFFT4py
   - mpi4py_fft
   - pip:
     - sphinxcontrib-bibtex

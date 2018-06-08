@@ -57,15 +57,16 @@ class CachedArrayDict(MutableMapping):
     -------
 
     >>> import numpy as np
+    >>> from shenfun.utilities import CachedArrayDict
     >>> work = CachedArrayDict()
     >>> a = np.ones((3, 4), dtype=int)
     >>> w = work[(a, 0)] # create work array with shape as a
     >>> print(w.shape)
-    (4, 4)
+    (3, 4)
     >>> print(w)
-    array([[0, 0, 0, 0],
-           [0, 0, 0, 0],
-           [0, 0, 0, 0]])
+    [[0 0 0 0]
+     [0 0 0 0]
+     [0 0 0 0]]
     """
     def __init__(self):
         self._data = {}
