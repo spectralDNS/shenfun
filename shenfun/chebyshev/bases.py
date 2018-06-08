@@ -193,24 +193,28 @@ class Basis(ChebyshevBase):
             self.plan(N, 0, np.float, {})
 
     @staticmethod
-    def derivative_coefficients(fk, ck):
+    def derivative_coefficients(fk):
         """Return coefficients of Chebyshev series for c = f'(x)
 
         Parameters
         ----------
             fk : input array
                  Coefficients of regular Chebyshev series
-            ck : output array
-                 Coefficients of derivative of fk-series
+
+        Returns
+        -------
+        array
+            Coefficients of derivative of fk-series
 
         """
+        ck = np.zeros_like(fk)
         if len(fk.shape) == 1:
             ck = Cheb.derivative_coefficients(fk, ck)
         elif len(fk.shape) == 3:
             ck = Cheb.derivative_coefficients_3D(fk, ck)
         return ck
 
-    def fast_derivative(self, fj, fd):
+    def fast_derivative(self, fj):
         """Return derivative of :math:`f_j = f(x_j)` at quadrature points
         :math:`x_j`
 
@@ -218,15 +222,16 @@ class Basis(ChebyshevBase):
         ----------
             fj : input array
                  Function values on quadrature mesh
-            fd : output array
-                 Function derivative on quadrature mesh
+
+        Returns
+        -------
+        array
+             Array with derivatives on quadrature mesh
         """
-        fk = work[(fj, 0)]
-        ck = work[(fj, 1)]
-        fk = self.forward(fj, fk)
-        ck = self.derivative_coefficients(fk, ck)
-        fd = self.backward(ck, fd)
-        return fd
+        fk = self.forward(fj)
+        ck = self.derivative_coefficients(fk)
+        fd = self.backward(ck)
+        return fd.copy()
 
     def apply_inverse_mass(self, array):
         sl = self.sl(0)
@@ -351,7 +356,8 @@ class ShenDirichletBasis(ChebyshevBase):
         w_hat[s0] = input_array[s0]
         w_hat[s1] -= input_array[s0]
         self.bc.apply_before(w_hat, False, (0.5, 0.5))
-        output_array = self.CT.backward(w_hat)
+        self.CT.backward(w_hat)
+        assert output_array is self.CT.backward.output_array
 
     def slice(self):
         return slice(0, self.N-2)
@@ -470,7 +476,8 @@ class ShenNeumannBasis(ChebyshevBase):
         s1 = self.sl(slice(2, None))
         w_hat[s0] = input_array[s0]
         w_hat[s1] -= self._factor*input_array[s0]
-        output_array = self.CT.backward(w_hat)
+        self.CT.backward(w_hat)
+        assert output_array is self.CT.backward.output_array
 
     def slice(self):
         return slice(0, self.N-2)
@@ -599,7 +606,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
         w_hat = work[(input_array, 0)]
         self.set_factor_arrays(input_array)
         w_hat = self.set_w_hat(w_hat, input_array, self._factor1, self._factor2)
-        output_array = self.CT.backward(w_hat)
+        self.CT.backward(w_hat)
         assert input_array is self.backward.input_array
         assert output_array is self.backward.output_array
 

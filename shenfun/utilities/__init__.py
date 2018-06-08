@@ -4,6 +4,7 @@ Module for implementing helper functions.
 import types
 import numpy as np
 from scipy.fftpack import dct
+from collections import MutableMapping
 
 __all__ = ['inheritdocstrings', 'clenshaw_curtis1D']
 
@@ -48,3 +49,59 @@ def clenshaw_curtis1D(u, quad="GC"):  # pragma: no cover
     d[::2] = (2./N)/np.hstack((1., 1.-k*k))
     w = dct(d, type=3)
     return np.sqrt(np.sum(u*w))
+
+class CachedArrayDict(MutableMapping):
+    """Dictionary for caching Numpy arrays (work arrays)
+
+    Example
+    -------
+
+    >>> import numpy as np
+    >>> work = CachedArrayDict()
+    >>> a = np.ones((3, 4), dtype=int)
+    >>> w = work[(a, 0)] # create work array with shape as a
+    >>> print(w.shape)
+    (4, 4)
+    >>> print(w)
+    array([[0, 0, 0, 0],
+           [0, 0, 0, 0],
+           [0, 0, 0, 0]])
+    """
+    def __init__(self):
+        self._data = {}
+
+    def __getitem__(self, key):
+        newkey = self.__keytransform__(key)
+        try:
+            value = self._data[newkey]
+        except KeyError:
+            shape, dtype, i = newkey
+            value = np.zeros(shape, dtype=np.dtype(dtype, align=True))
+            self._data[newkey] = value
+        return value
+
+    def __keytransform__(self, key):
+        assert len(key) == 2
+        assert isinstance(key[0], np.ndarray)
+        shape = key[0].shape
+        dtype = key[0].dtype
+        i = key[1]
+        return (shape, np.dtype(dtype), i)
+
+    def __len__(self):
+        return len(self._data)
+
+    def __setitem__(self, key, value):
+        self._data[self.__keytransform__(key)] = value
+
+    def __delitem__(self, key):
+        del self._data[self.__keytransform__(key)]
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __len__(self):
+        return len(self._data)
+
+    def values(self):
+        raise TypeError('Cached work arrays not iterable')

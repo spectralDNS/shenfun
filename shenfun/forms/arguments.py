@@ -608,8 +608,8 @@ class Function(np.ndarray, BasisFunction):
         if self.base.shape == self.shape:
             return None
 
-        data_self = self.__array_interface__['data'][0]
-        data_base = self.base.__array_interface__['data'][0]
+        data_self = self.ctypes.data
+        data_base = self.base.ctypes.data
         itemsize = self.itemsize
         return (data_self - data_base) // (itemsize*np.prod(self.shape))
 
@@ -783,8 +783,8 @@ class Array(np.ndarray):
         if self.base.shape == self.shape:
             return None
 
-        data_self = self.__array_interface__['data'][0]
-        data_base = self.base.__array_interface__['data'][0]
+        data_self = self.ctypes.data
+        data_base = self.base.ctypes.data
         itemsize = self.itemsize
         return (data_self - data_base) // (itemsize*np.prod(self.shape))
 
