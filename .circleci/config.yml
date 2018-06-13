@@ -6,7 +6,7 @@ jobs:
       - checkout
 
       - restore_cache:
-        key: v1-shenfun-{{ .Branch }}
+          key: v1-shenfun-{{ .Branch }}
 
       - run:
           name: install miniconda
