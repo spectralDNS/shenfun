@@ -4,6 +4,10 @@ jobs:
     machine: true
     steps:
       - checkout
+
+      - restore_cache:
+        key: v1-shenfun-{{ .Branch }}
+
       - run:
           name: install miniconda
           command: |
@@ -21,6 +25,11 @@ jobs:
             conda install -n root conda-build
             conda install --yes --quiet conda-forge-build-setup
             source run_conda_forge_build_setup
+
+      - save_cache:
+          key: v1-shenfun-{{ .Branch }}
+          paths:
+            - ~/shenfun
 
       - run:
           name: Build and test
