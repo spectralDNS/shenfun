@@ -238,12 +238,12 @@ def test_CDDmat(quad):
     dudx_j = dudx_l(points)
     uj = ul(points)
 
-    u_hat = Function(SD)
+    u_hat = shenfun.Function(SD)
     u_hat = SD.forward(uj, u_hat)
     uj = SD.backward(u_hat, uj)
     u_hat = SD.forward(uj, u_hat)
 
-    uc_hat = Function(SD)
+    uc_hat = shenfun.Function(SD)
     uc_hat = SD.CT.forward(uj, uc_hat)
     dudx_j = SD.CT.fast_derivative(uj)
 
