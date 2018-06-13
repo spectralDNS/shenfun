@@ -6,7 +6,7 @@ jobs:
       - checkout
 
       - restore_cache:
-          key: v1-shenfun-{{ .Branch }}
+          key: v1-miniconda-{{ .Branch }}
 
       - run:
           name: install miniconda
@@ -27,7 +27,7 @@ jobs:
             source run_conda_forge_build_setup
 
       - save_cache:
-          key: v1-shenfun-{{ .Branch }}
+          key: v1-miniconda-{{ .Branch }}
           paths:
             - /home/circleci/miniconda
 
