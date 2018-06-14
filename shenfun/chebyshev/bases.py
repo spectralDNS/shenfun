@@ -5,6 +5,7 @@ import functools
 from numpy.polynomial import chebyshev as n_cheb
 import numpy as np
 import pyfftw
+from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, FuncWrap
 from shenfun.optimization import Cheb
 from shenfun.utilities import inheritdocstrings
@@ -121,30 +122,51 @@ class ChebyshevBase(SpectralBase):
                 # Already planned
                 return
 
-        opts = dict(
-            avoid_copy=True,
-            overwrite_input=True,
-            auto_align_input=True,
-            auto_contiguous=True,
-            planner_effort='FFTW_MEASURE',
-            threads=1,
-        )
-        opts.update(options)
-
         plan_fwd = self._xfftn_fwd
         plan_bck = self._xfftn_bck
+
         if isinstance(axis, tuple):
             axis = axis[0]
 
-        U = pyfftw.empty_aligned(shape, dtype=np.float)
-        xfftn_fwd = plan_fwd(U, axis=axis, **opts)
-        U.fill(0)
-        V = xfftn_fwd.output_array
-        xfftn_bck = plan_bck(V, axis=axis, **opts)
-        V.fill(0)
+        if 'builders' in self._xfftn_fwd.func.__module__:
+            opts = dict(
+                avoid_copy=True,
+                overwrite_input=True,
+                auto_align_input=True,
+                auto_contiguous=True,
+                planner_effort='FFTW_MEASURE',
+                threads=1,
+            )
+            opts.update(options)
 
-        xfftn_fwd.update_arrays(U, V)
-        xfftn_bck.update_arrays(V, U)
+            U = pyfftw.empty_aligned(shape, dtype=np.float)
+            xfftn_fwd = plan_fwd(U, axis=axis, **opts)
+            U.fill(0)
+            V = xfftn_fwd.output_array
+            xfftn_bck = plan_bck(V, axis=axis, **opts)
+            V.fill(0)
+
+            xfftn_fwd.update_arrays(U, V)
+            xfftn_bck.update_arrays(V, U)
+        else: # fftw wrapped with mpi4py-fft
+            opts = dict(
+                overwrite_input='FFTW_DESTROY_INPUT',
+                planner_effort='FFTW_MEASURE',
+                threads=1,
+            )
+            opts.update(options)
+            flags = (fftw.flag_dict[opts['planner_effort']],
+                     fftw.flag_dict[opts['overwrite_input']])
+            threads = opts['threads']
+
+            U = pyfftw.empty_aligned(shape, dtype=np.float)
+            V = pyfftw.empty_aligned(shape, dtype=np.float)
+
+            xfftn_fwd = plan_fwd(U, V, (axis,), threads=threads, flags=flags)
+            U.fill(0)
+            V.fill(0)
+
+            xfftn_bck = plan_bck(V, U, (axis,), threads=threads, flags=flags)
 
         self.axis = axis
         if np.dtype(dtype) is np.dtype('complex'):
@@ -184,11 +206,11 @@ class Basis(ChebyshevBase):
     def __init__(self, N=0, quad="GC", plan=False, domain=(-1., 1.)):
         ChebyshevBase.__init__(self, N, quad, domain)
         if quad == 'GC':
-            self._xfftn_fwd = functools.partial(pyfftw.builders.dct, type=2)
-            self._xfftn_bck = functools.partial(pyfftw.builders.dct, type=3)
+            self._xfftn_fwd = functools.partial(fftw.dct, type=2)
+            self._xfftn_bck = functools.partial(fftw.dct, type=3)
         else:
-            self._xfftn_fwd = functools.partial(pyfftw.builders.dct, type=1)
-            self._xfftn_bck = functools.partial(pyfftw.builders.dct, type=1)
+            self._xfftn_fwd = functools.partial(fftw.dct, type=1)
+            self._xfftn_bck = functools.partial(fftw.dct, type=1)
         if plan:
             self.plan(N, 0, np.float, {})
 
