@@ -132,6 +132,7 @@ for computing the (weighted) scalar product.
 import importlib
 import numpy as np
 import pyfftw
+from mpi4py_fft import fftw
 from .utilities import CachedArrayDict
 work = CachedArrayDict()
 
@@ -543,29 +544,57 @@ class SpectralBase(object):
                 # Already planned
                 return
 
-        opts = dict(
-            avoid_copy=True,
-            overwrite_input=True,
-            auto_align_input=True,
-            auto_contiguous=True,
-            planner_effort='FFTW_MEASURE',
-            threads=1,
-        )
-        opts.update(options)
-
         plan_fwd = self._xfftn_fwd
         plan_bck = self._xfftn_bck
 
-        n = shape[axis]
-        U = pyfftw.empty_aligned(shape, dtype=dtype)
-        xfftn_fwd = plan_fwd(U, n=n, axis=axis, **opts)
-        U.fill(0)
-        V = xfftn_fwd.output_array
-        xfftn_bck = plan_bck(V, n=n, axis=axis, **opts)
-        V.fill(0)
+        if 'builders' in self._xfftn_fwd.__module__:
 
-        xfftn_fwd.update_arrays(U, V)
-        xfftn_bck.update_arrays(V, U)
+            opts = dict(
+                avoid_copy=True,
+                overwrite_input=True,
+                auto_align_input=True,
+                auto_contiguous=True,
+                planner_effort='FFTW_MEASURE',
+                threads=1,
+            )
+            opts.update(options)
+
+            n = shape[axis]
+            U = pyfftw.empty_aligned(shape, dtype=dtype)
+            xfftn_fwd = plan_fwd(U, n=n, axis=axis, **opts)
+            U.fill(0)
+            V = xfftn_fwd.output_array
+            xfftn_bck = plan_bck(V, n=n, axis=axis, **opts)
+            V.fill(0)
+
+            xfftn_fwd.update_arrays(U, V)
+            xfftn_bck.update_arrays(V, U)
+        else:
+            opts = dict(
+                overwrite_input='FFTW_DESTROY_INPUT',
+                planner_effort='FFTW_MEASURE',
+                threads=1,
+            )
+            opts.update(options)
+            flags = (fftw.flag_dict[opts['planner_effort']],
+                     fftw.flag_dict[opts['overwrite_input']])
+            threads = opts['threads']
+
+            outshape = list(shape)
+            if np.issubdtype(dtype, np.floating):
+                outshape[axis] = shape[axis]//2 + 1
+
+            U = pyfftw.empty_aligned(shape, dtype=dtype)
+            V = pyfftw.empty_aligned(outshape, dtype=U.dtype.char.upper())
+
+            xfftn_fwd = plan_fwd(U, V, (axis,), threads=threads, flags=flags)
+            U.fill(0)
+            V.fill(0)
+
+            if np.issubdtype(dtype, np.floating):
+                flags = (fftw.flag_dict[opts['planner_effort']])
+
+            xfftn_bck = plan_bck(V, U, (axis,), threads=threads, flags=flags)
 
         self.axis = axis
 

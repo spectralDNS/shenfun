@@ -3,6 +3,7 @@ Module for defining bases in the Fourier family
 """
 import numpy as np
 import pyfftw
+from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase
 from shenfun.utilities import inheritdocstrings
 from shenfun.optimization import convolve
@@ -185,8 +186,10 @@ class R2CBasis(FourierBase):
                  dealias_direct=False):
         FourierBase.__init__(self, N, padding_factor, domain, dealias_direct)
         self.N = N
-        self._xfftn_fwd = pyfftw.builders.rfft
-        self._xfftn_bck = pyfftw.builders.irfft
+        #self._xfftn_fwd = pyfftw.builders.rfft
+        #self._xfftn_bck = pyfftw.builders.irfft
+        self._xfftn_fwd = fftw.rfftn
+        self._xfftn_bck = fftw.irfftn
         if plan:
             self.plan((int(np.floor(padding_factor*N)),), 0, np.float, {})
 
@@ -446,8 +449,11 @@ class C2CBasis(FourierBase):
                  dealias_direct=False):
         FourierBase.__init__(self, N, padding_factor, domain, dealias_direct)
         self.N = N
-        self._xfftn_fwd = pyfftw.builders.fft
-        self._xfftn_bck = pyfftw.builders.ifft
+        #self._xfftn_fwd = pyfftw.builders.fft
+        #self._xfftn_bck = pyfftw.builders.ifft
+        self._xfftn_fwd = fftw.fftn
+        self._xfftn_bck = fftw.ifftn
+
         if plan:
             self.plan((int(np.floor(padding_factor*N)),), 0, np.complex, {})
 
