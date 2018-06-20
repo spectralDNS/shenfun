@@ -13,7 +13,7 @@ jobs:
           command: |
             if [[ ! -d /home/circleci/miniconda ]]; then
                 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh &&
-                bash miniconda.sh -b -f -p $MINICONDA;
+                bash miniconda.sh -b -f -p /home/circleci/miniconda;
             else
                 echo "Using cached miniconda";
             fi
@@ -36,7 +36,7 @@ jobs:
           command: |
             source ~/miniconda/bin/activate root
             cd /home/circleci/project
-            conda build ./conf/conda
+            conda build --python 2.7 ./conf/conda
             conda build --python 3.6 ./conf/conda
         
       - run:

@@ -77,13 +77,14 @@ class CachedArrayDict(MutableMapping):
         try:
             value = self._data[newkey]
         except KeyError:
-            shape, dtype, i = newkey
+            shape, dtype, _ = newkey
             value = np.zeros(shape, dtype=np.dtype(dtype, align=True))
             self._data[newkey] = value
         value.fill(0)
         return value
 
-    def __keytransform__(self, key):
+    @staticmethod
+    def __keytransform__(key):
         assert len(key) == 2
         assert isinstance(key[0], np.ndarray)
         shape = key[0].shape
@@ -102,9 +103,6 @@ class CachedArrayDict(MutableMapping):
 
     def __iter__(self):
         return iter(self._data)
-
-    def __len__(self):
-        return len(self._data)
 
     def values(self):
         raise TypeError('Cached work arrays not iterable')

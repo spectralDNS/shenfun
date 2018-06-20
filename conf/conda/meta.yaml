@@ -6,7 +6,7 @@ source:
   git_url: ../../
 
 build:
-  number: 3
+  number: 4
 
 requirements:
   build:
@@ -21,7 +21,7 @@ requirements:
     - numpy
     - scipy
     - cython
-    - pyfftw 0.10.0
+    - pyfftw
     - mpi4py
     - six
     - sympy

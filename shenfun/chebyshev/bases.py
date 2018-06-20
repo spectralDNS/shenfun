@@ -141,10 +141,10 @@ class ChebyshevBase(SpectralBase):
 
             U = pyfftw.empty_aligned(shape, dtype=np.float)
             xfftn_fwd = plan_fwd(U, axis=axis, **opts)
-            U.fill(0)
             V = xfftn_fwd.output_array
             xfftn_bck = plan_bck(V, axis=axis, **opts)
             V.fill(0)
+            U.fill(0)
 
             xfftn_fwd.update_arrays(U, V)
             xfftn_bck.update_arrays(V, U)
@@ -160,13 +160,12 @@ class ChebyshevBase(SpectralBase):
             threads = opts['threads']
 
             U = pyfftw.empty_aligned(shape, dtype=np.float)
-            V = pyfftw.empty_aligned(shape, dtype=np.float)
 
-            xfftn_fwd = plan_fwd(U, V, (axis,), threads=threads, flags=flags)
-            U.fill(0)
+            xfftn_fwd = plan_fwd(U, axes=(axis,), threads=threads, flags=flags)
+            V = xfftn_fwd.output_array
+            xfftn_bck = plan_bck(V, axes=(axis,), threads=threads, flags=flags, output_array=U)
             V.fill(0)
-
-            xfftn_bck = plan_bck(V, U, (axis,), threads=threads, flags=flags)
+            U.fill(0)
 
         self.axis = axis
         if np.dtype(dtype) is np.dtype('complex'):
