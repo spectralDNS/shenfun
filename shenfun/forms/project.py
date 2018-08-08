@@ -1,4 +1,5 @@
 import numpy as np
+import sympy as sp
 from shenfun.tensorproductspace import MixedTensorProductSpace
 from .arguments import Expr, TestFunction, TrialFunction, BasisFunction, Function
 from .inner import inner
@@ -58,6 +59,9 @@ def project(uh, T, output_array=None):
         # Just regular forward transform
         output_array = T.forward(uh, output_array)
         return output_array
+
+    #if hasattr(uh, '__call__'):
+    #    ux = uh(T.map_reference_domain(T.mesh()))
 
     assert isinstance(uh, (Expr, BasisFunction))
 

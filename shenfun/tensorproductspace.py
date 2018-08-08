@@ -600,7 +600,7 @@ class Convolve(object):
         a = Tp.backward(a_hat)
         b = Tp.backward(b_hat)
 
-    and then transforming the product `a*b` forward without truncation::
+    and then transforming the product ``a*b`` forward without truncation::
 
         ab_hat = T.forward(a*b)
 
