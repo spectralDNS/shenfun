@@ -2,13 +2,9 @@ Installation
 ============
 
 Shenfun has quite a few dependencies and as such it is not completely
-straight-forward to install. For example, it depends on the non-standard
-and `mpi4py-fft`_, and it requires `cython`_ to optimize a
-few routines. However, most problematic is `pyFFTW`_ for the serial fast 
-Fourier transforms. Here it is not possible to use a standard installation,
-because *pyFFTW* is very slow at incorporating new pull requests. Currently
-we need to use the fork by `David Wells`_ to get to the fast discrete 
-cosine transforms.
+straight-forward to install. For example, it depends on `mpi4py-fft`_, 
+`pyFFTW`_, and it requires `cython`_ to optimize a
+few routines. 
 
 If all dependencies are in place, then shenfun can be installed by cloning 
 or forking the repository at `github`_ and then with regular python distutils
@@ -23,7 +19,7 @@ or in-place using
 
     python setup.py build_ext --inplace
 
-However, due to the non-standard dependencies, a much easier installation is 
+However, due to the dependencies, a much easier installation is 
 achieved by going through `conda`_ and the `spectralDNS channel`_ on Anaconda
 Cloud. When you build with conda, all the correct dependencies will automatically
 be pulled in. From the top directory, after cloning, build shenfun yourself with
@@ -56,7 +52,6 @@ above) you can for exampel do
 .. _mpi4py-fft: https://bitbucket.org/mpi4py/mpi4py-fft
 .. _cython: http://cython.org
 .. _pyFFTW: https://github.com/pyFFTW/pyFFTW
-.. _David Wells: https://github.com/drwells/pyFFTW/tree/r2r-try-two
 .. _spectralDNS channel: https://anaconda.org/spectralDNS
 .. _conda: https://conda.io/docs/
 

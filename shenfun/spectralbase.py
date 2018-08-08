@@ -413,9 +413,11 @@ class SpectralBase(object):
         """
         assert abs(self.padding_factor-1) < 1e-8
         assert self.N == input_array.shape[self.axis]
+
         points, weights = self.points_and_weights(self.N)
         V = self.vandermonde(points)
         P = self.get_vandermonde_basis(V)
+
         if input_array.ndim == 1:
             output_array[:] = np.dot(input_array*weights, np.conj(P))
 

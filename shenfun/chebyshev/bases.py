@@ -205,11 +205,11 @@ class Basis(ChebyshevBase):
     def __init__(self, N=0, quad="GC", plan=False, domain=(-1., 1.)):
         ChebyshevBase.__init__(self, N, quad, domain)
         if quad == 'GC':
-            self._xfftn_fwd = functools.partial(fftw.dct, type=2)
-            self._xfftn_bck = functools.partial(fftw.dct, type=3)
+            self._xfftn_fwd = functools.partial(fftw.dctn, type=2)
+            self._xfftn_bck = functools.partial(fftw.dctn, type=3)
         else:
-            self._xfftn_fwd = functools.partial(fftw.dct, type=1)
-            self._xfftn_bck = functools.partial(fftw.dct, type=1)
+            self._xfftn_fwd = functools.partial(fftw.dctn, type=1)
+            self._xfftn_bck = functools.partial(fftw.dctn, type=1)
         if plan:
             self.plan(N, 0, np.float, {})
 
