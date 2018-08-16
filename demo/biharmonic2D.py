@@ -39,7 +39,7 @@ BiharmonicSolver = base.la.Biharmonic
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y = symbols("x,y")
-ue = (sin(4*np.pi*y)*cos(4*x))*(1-y**2)
+ue = (sin(2*np.pi*x)*cos(0*y))*(1-x**2)
 fe = ue.diff(x, 4) + ue.diff(y, 4) + 2*ue.diff(x, 2, y, 2)
 
 # Lambdify for faster evaluation
@@ -47,11 +47,14 @@ ul = lambdify((x, y), ue, 'numpy')
 fl = lambdify((x, y), fe, 'numpy')
 
 # Size of discretization
-N = (64, 64)
+N = (30, 30)
+
+if family == 'chebyshev':
+    assert N[0] % 2 == 0, "Biharmonic solver only implemented for even numbers"
 
 SD = Basis(N[0], family=family, bc='Biharmonic')
 K1 = Basis(N[1], family='F')
-T = TensorProductSpace(comm, (K1, SD), axes=(1, 0))
+T = TensorProductSpace(comm, (SD, K1), axes=(0, 1))
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)
 v = TestFunction(T)
@@ -72,14 +75,21 @@ else: # Use form with integration by parts.
 H = BiharmonicSolver(**matrices)
 
 # Solve and transform to real space
-u_hat = Function(T)              # Solution spectral space
+u_hat = Function(T)           # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
 uq = u_hat.backward()
+uqc = uq.copy()
+u_hat = T.forward(uqc, u_hat)
+uqc = T.backward(u_hat, uqc)
 
 # Compare with analytical solution
 uj = ul(*X)
 print(abs(uj-uq).max())
 assert np.allclose(uj, uq)
+
+points = np.array([[0.2, 0.3], [0.1, 0.5]])
+p = T.eval(points, u_hat)
+assert np.allclose(p, ul(*points))
 
 if plt is not None and not 'pytest' in os.environ:
     plt.figure()

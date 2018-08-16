@@ -651,15 +651,12 @@ class Function(np.ndarray, BasisFunction):
         >>> ue = sp.sin(2*x) + sp.cos(3*y)
         >>> ul = sp.lambdify((x, y), ue, 'numpy')
         >>> ua = Array(T, buffer=ul(*X))
-        >>> points = np.array([[0.1, 0.2], [0.2, 0.3], [0.3, 0.4], [0.1, 0.3]])
+        >>> points = np.random.random((2, 4))
         >>> u = ua.forward()
         >>> u0 = u.eval(points).real
-        >>> assert np.allclose(u0, ul(*points.T))
+        >>> assert np.allclose(u0, ul(*points))
         """
-        if output_array is None:
-            output_array = np.zeros(len(x), dtype=self.function_space().forward.input_array.dtype)
-        self.function_space().eval(x, self, output_array=output_array)
-        return output_array
+        return self.function_space().eval(x, self, output_array)
 
     def backward(self, output_array=None):
         """Return Function evaluated on quadrature mesh"""

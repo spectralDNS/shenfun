@@ -49,6 +49,9 @@ fl = lambdify((x, y, z), fe, 'numpy')
 # Size of discretization
 N = (64, 64, 64)
 
+if family == 'chebyshev':
+    assert N[0] % 2 == 0, "Biharmonic solver only implemented for even numbers"
+
 SD = Basis(N[0], family=family, bc='Biharmonic')
 K1 = Basis(N[1], family='F', dtype='D')
 K2 = Basis(N[2], family='F', dtype='d')

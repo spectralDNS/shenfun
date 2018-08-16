@@ -12,7 +12,7 @@ import numpy as np
 import scipy.sparse.linalg as la
 from itertools import product
 
-N = 32
+N = 33
 x = Symbol("x")
 
 cBasis = (cbases.Basis,
@@ -108,6 +108,7 @@ def test_eval(ST, quad):
     fj = ST.backward(fk, fj)
     fk = ST.forward(fj, fk)
     f = ST.eval(points, fk)
+    #from IPython import embed; embed()
     assert np.allclose(fj, f)
     fj = ST.backward(fk, fj, fast_transform=False)
     fk = ST.forward(fj, fk, fast_transform=False)
@@ -150,49 +151,51 @@ def test_massmatrices(test, trial, quad):
     del BBD
 
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
-@pytest.mark.parametrize('axis', (0,1,2))
-def test_transforms(ST, quad, axis):
+@pytest.mark.parametrize('dim', (2, 3))
+def test_transforms(ST, quad, dim):
     kwargs = {'plan': True}
     if not ST.family() == 'fourier':
         kwargs['quad'] = quad
-    ST = ST(N, **kwargs)
-    points, weights = ST.points_and_weights(N)
-    fj = shenfun.Array(ST)
+    ST0 = ST(N, **kwargs)
+    points, weights = ST0.points_and_weights(N)
+    fj = shenfun.Array(ST0)
     fj[:] = np.random.random(fj.shape[0])
 
     # Project function to space first
-    f_hat = shenfun.Function(ST)
-    f_hat = ST.forward(fj, f_hat)
-    fj = ST.backward(f_hat, fj)
+    f_hat = shenfun.Function(ST0)
+    f_hat = ST0.forward(fj, f_hat)
+    fj = ST0.backward(f_hat, fj)
 
     # Then check if transformations work as they should
-    u0 = shenfun.Function(ST)
-    u1 = shenfun.Array(ST)
-    u0 = ST.forward(fj, u0)
-    u1 = ST.backward(u0, u1)
+    u0 = shenfun.Function(ST0)
+    u1 = shenfun.Array(ST0)
+    u0 = ST0.forward(fj, u0)
+    u1 = ST0.backward(u0, u1)
     assert np.allclose(fj, u1)
-    u0 = ST.forward(fj, u0)
-    u1 = ST.backward(u0, u1)
+    u0 = ST0.forward(fj, u0)
+    u1 = ST0.backward(u0, u1)
     assert np.allclose(fj, u1)
 
     # Multidimensional version
-    bc = [np.newaxis,]*3
-    bc[axis] = slice(None)
-    fj = np.broadcast_to(fj[bc], (N,)*3).copy()
+    for axis in range(dim):
+        bc = [np.newaxis,]*dim
+        bc[axis] = slice(None)
+        fij = np.broadcast_to(fj[bc], (N,)*dim).copy()
 
-    ST.plan((N,)*3, axis, fj.dtype, {})
-    if hasattr(ST, 'bc'):
-        ST.bc.set_slices(ST)  # To set Dirichlet boundary conditions
+        ST1 = ST(N, **kwargs)
+        ST1.plan((N,)*dim, axis, fij.dtype, {})
+        if hasattr(ST1, 'bc'):
+            ST1.bc.set_slices(ST1)  # To set Dirichlet boundary conditions
 
-    u00 = shenfun.Function(ST)
-    u11 = shenfun.Array(ST)
-    u00 = ST.forward(fj, u00)
-    u11 = ST.backward(u00, u11)
-    cc = [0,]*3
-    cc[axis] = slice(None)
-    assert np.allclose(fj[cc], u11[cc])
+        u00 = shenfun.Function(ST1)
+        u11 = shenfun.Array(ST1)
+        u00 = ST1.forward(fij, u00)
+        u11 = ST1.backward(u00, u11)
+        cc = [0,]*dim
+        cc[axis] = slice(None)
+        assert np.allclose(fij[cc], u11[cc])
 
-#test_transforms(cbases.Basis, 'GL', 1)
+#test_transforms(cbases.ShenBiharmonicBasis, 'GC', 2)
 
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
 @pytest.mark.parametrize('axis', (0,1,2))
@@ -496,5 +499,6 @@ if __name__ == '__main__':
     #test_convolve(fbases.R2CBasis, 8)
     #test_ADDmat(lbases.ShenNeumannBasis, "GL")
     #test_massmatrices(cBasis[3], cBasis[3], 'GC')
-    test_scalarproduct(cBasis[2], 'GC')
+    #test_scalarproduct(cBasis[2], 'GC')
+    test_eval(cBasis[0], 'GC')
 

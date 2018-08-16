@@ -8,6 +8,7 @@ from shenfun import Function, project, Dx, Array, Basis, TensorProductSpace, \
    VectorTensorProductSpace, MixedTensorProductSpace
 from sympy import symbols, cos, sin, lambdify
 from itertools import product
+from time import time
 
 comm = MPI.COMM_WORLD
 
@@ -174,7 +175,7 @@ axes = {2: {0: [0, 1, 2],
             1: [1, 0, 2],
             2: [2, 0, 1]},
         1: {0: [0, 1],
-            1: [1,0]}}
+            1: [1, 0]}}
 
 @pytest.mark.parametrize('typecode', 'dD')
 @pytest.mark.parametrize('dim', (1, 2))
@@ -358,28 +359,39 @@ def test_project_2dirichlet(quad):
 
 @pytest.mark.parametrize('typecode', 'dD')
 @pytest.mark.parametrize('dim', (1, 2))
-@pytest.mark.parametrize('ST,quad', bases_and_quads)
+@pytest.mark.parametrize('ST,quad', all_bases_and_quads)
 def test_eval_tensor(typecode, dim, ST, quad):
     # Using sympy to compute an analytical solution
     # Testing for Dirichlet and regular basis
     x, y, z = symbols("x,y,z")
-    sizes=(25, 24)
+    sizes=(30, 28)
 
-    funcx = (x**2 - 1)*cos(2*np.pi*x)
-    funcy = (y**2 - 1)*cos(2*np.pi*y)
-    funcz = (z**2 - 1)*cos(2*np.pi*z)
+    funcx = {'': (1-x**2)*sin(np.pi*x),
+             'Dirichlet': (1-x**2)*sin(np.pi*x),
+             'Neumann': (1-x**2)*sin(np.pi*x),
+             'Biharmonic': (1-x**2)*sin(2*np.pi*x)}
+    funcy = {'': (1-y**2)*sin(np.pi*y),
+             'Dirichlet': (1-y**2)*sin(np.pi*y),
+             'Neumann': (1-y**2)*sin(np.pi*y),
+             'Biharmonic': (1-y**2)*sin(2*np.pi*y)}
+    funcz = {'': (1-z**2)*sin(np.pi*z),
+             'Dirichlet': (1-z**2)*sin(np.pi*z),
+             'Neumann': (1-z**2)*sin(np.pi*z),
+             'Biharmonic': (1-z**2)*sin(2*np.pi*z)}
 
     funcs = {
-        (1, 0): cos(4*y)*funcx,
-        (1, 1): cos(4*x)*funcy,
-        (2, 0): (sin(6*z) + cos(4*y))*funcx,
-        (2, 1): (sin(2*z) + cos(4*x))*funcy,
-        (2, 2): (sin(2*x) + cos(4*y))*funcz
+        (1, 0): cos(2*y)*funcx[ST.boundary_condition()],
+        (1, 1): cos(2*x)*funcy[ST.boundary_condition()],
+        (2, 0): sin(6*z)*cos(4*y)*funcx[ST.boundary_condition()],
+        (2, 1): sin(2*z)*cos(4*x)*funcy[ST.boundary_condition()],
+        (2, 2): sin(2*x)*cos(4*y)*funcz[ST.boundary_condition()]
         }
     syms = {1: (x, y), 2:(x, y, z)}
-    points = np.array([[0.1]*(dim+1), [0.01]*(dim+1), [0.4]*(dim+1),
-                       [0.5]*(dim+1)])
-
+    xs = {0:x, 1:y, 2:z}
+    points = np.random.random((dim+1, 4))
+    t_0 = 0
+    t_1 = 0
+    t_2 = 0
     for shape in product(*([sizes]*dim)):
         bases = []
         for n in shape[:-1]:
@@ -401,13 +413,22 @@ def test_eval_tensor(typecode, dim, ST, quad):
             ue = funcs[(dim, axis)]
             ul = lambdify(syms[dim], ue, 'numpy')
             uu = ul(*X).astype(typecode)
-            uq = ul(*points.T).astype(typecode)
+            uq = ul(*points).astype(typecode)
             u_hat = Function(fft)
             u_hat = fft.forward(uu, u_hat)
-            result = fft.eval(points, u_hat, cython=True)
+            t0 = time()
+            result = fft.eval(points, u_hat, method=0)
+            t_0 += time()-t0
             assert np.allclose(uq, result, 0, 1e-6)
-            result = fft.eval(points, u_hat, cython=False)
+            t0 = time()
+            result = fft.eval(points, u_hat, method=1)
+            t_1 += time()-t0
             assert np.allclose(uq, result, 0, 1e-6)
+            t0 = time()
+            result = fft.eval(points, u_hat, method=2)
+            t_2 += time()-t0
+            assert np.allclose(uq, result, 0, 1e-6)
+
             result = u_hat.eval(points)
             assert np.allclose(uq, result, 0, 1e-6)
             ua = u_hat.backward()
@@ -418,7 +439,49 @@ def test_eval_tensor(typecode, dim, ST, quad):
 
             bases.pop(axis)
             fft.destroy()
+    print('method=0', t_0)
+    print('method=1', t_1)
+    print('method=2', t_2)
 
+@pytest.mark.parametrize('typecode', 'dD')
+@pytest.mark.parametrize('dim', (2, 3))
+def test_eval_fourier(typecode, dim):
+    # Using sympy to compute an analytical solution
+    x, y, z = symbols("x,y,z")
+    sizes=(25, 24)
+
+    funcs = {
+        2: cos(4*x) + sin(6*y),
+        3: sin(6*x) + cos(4*y) + sin(8*z)
+        }
+    syms = {2: (x, y), 3:(x, y, z)}
+    points = np.random.random((dim, 3))
+    t_0 = 0
+    t_1 = 0
+    for shape in product(*([sizes]*dim)):
+        bases = []
+        for n in shape[:-1]:
+            bases.append(Basis(n, 'F', dtype=typecode.upper()))
+        bases.append(Basis(shape[-1], 'F', dtype=typecode))
+        for axis in range(dim):
+            fft = TensorProductSpace(comm, bases, dtype=typecode)
+            X = fft.local_mesh(True)
+            ue = funcs[dim]
+            ul = lambdify(syms[dim], ue, 'numpy')
+            uu = ul(*X).astype(typecode)
+            uq = ul(*points).astype(typecode)
+            u_hat = Function(fft)
+            u_hat = fft.forward(uu, u_hat)
+            t0 = time()
+            result = fft.eval(points, u_hat, method=0)
+            t_0 += time() - t0
+            assert allclose(uq, result), print(uq-result)
+            t0 = time()
+            result = fft.eval(points, u_hat, method=1)
+            t_1 += time() - t0
+            assert allclose(uq, result)
+    print('New', t_0)
+    print('Old', t_1)
 
 if __name__ == '__main__':
     #test_transform('f', 4)
@@ -427,5 +490,6 @@ if __name__ == '__main__':
     #test_project('d', 2, cbases.ShenDirichletBasis, 'GC')
     #test_project2('d', 1, lbases.ShenNeumannBasis, 'LG')
     #test_project_2dirichlet('GL')
-    test_eval_tensor('D', 2, lbases.ShenDirichletBasis, 'GL')
+    test_eval_tensor('D', 2, cbases.ShenDirichletBasis, 'GC')
+    #test_eval_fourier('D', 2)
 

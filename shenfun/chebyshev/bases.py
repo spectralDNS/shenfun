@@ -3,6 +3,7 @@ Module for defining bases in the Chebyshev family
 """
 import functools
 from numpy.polynomial import chebyshev as n_cheb
+from scipy.special import eval_chebyt
 import numpy as np
 import pyfftw
 from mpi4py_fft import fftw
@@ -92,6 +93,14 @@ class ChebyshevBase(SpectralBase):
 
         """
         return n_cheb.chebvander(x, self.N-1)
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        #output_array[:] = np.cos(i*np.arccos(x))
+        output_array[:] = eval_chebyt(i, x)
+        return output_array
 
     def get_vandermonde_basis_derivative(self, V, k=0):
         """Return k'th derivative of basis as a Vandermonde matrix
@@ -207,6 +216,7 @@ class Basis(ChebyshevBase):
         if quad == 'GC':
             self._xfftn_fwd = functools.partial(fftw.dctn, type=2)
             self._xfftn_bck = functools.partial(fftw.dctn, type=3)
+
         else:
             self._xfftn_fwd = functools.partial(fftw.dctn, type=1)
             self._xfftn_bck = functools.partial(fftw.dctn, type=1)
@@ -339,12 +349,24 @@ class ShenDirichletBasis(ChebyshevBase):
             self.plan(N, 0, np.float, {})
         self.bc = BoundaryValues(self, bc=bc)
 
+    @staticmethod
+    def boundary_condition():
+        return 'Dirichlet'
+
     def get_vandermonde_basis(self, V):
         P = np.zeros(V.shape)
         P[:, :-2] = V[:, :-2] - V[:, 2:]
         P[:, -2] = (V[:, 0] + V[:, 1])/2
         P[:, -1] = (V[:, 0] - V[:, 1])/2
         return P
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        w = np.arccos(x)
+        output_array[:] = np.cos(i*w) - np.cos((i+2)*w)
+        return output_array
 
     def is_scaled(self):
         """Return True if scaled basis is used, otherwise False"""
@@ -445,12 +467,24 @@ class ShenNeumannBasis(ChebyshevBase):
         if plan:
             self.plan(N, 0, np.float, {})
 
+    @staticmethod
+    def boundary_condition():
+        return 'Neumann'
+
     def get_vandermonde_basis(self, V):
         assert self.N == V.shape[1]
         P = np.zeros(V.shape)
         k = np.arange(self.N).astype(np.float)
         P[:, :-2] = V[:, :-2] - (k[:-2]/(k[:-2]+2))**2*V[:, 2:]
         return P
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        w = np.arccos(x)
+        output_array[:] = np.cos(i*w) - (i*1./(i+2))**2*np.cos((i+2)*w)
+        return output_array
 
     def set_factor_array(self, v):
         """Set intermediate factor arrays"""
@@ -565,11 +599,23 @@ class ShenBiharmonicBasis(ChebyshevBase):
         if plan:
             self.plan(N, 0, np.float, {})
 
+    @staticmethod
+    def boundary_condition():
+        return 'Biharmonic'
+
     def get_vandermonde_basis(self, V):
         P = np.zeros_like(V)
         k = np.arange(V.shape[1]).astype(np.float)[:-4]
         P[:, :-4] = V[:, :-4] - (2*(k+2)/(k+3))*V[:, 2:-2] + ((k+1)/(k+3))*V[:, 4:]
         return P
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        w = np.arccos(x)
+        output_array[:] = np.cos(i*w) - (2*(i+2.)/(i+3.))*np.cos((i+2)*w) + ((i+1.)/(i+3.))*np.cos((i+4)*w)
+        return output_array
 
     def set_factor_arrays(self, v):
         """Set intermediate factor arrays"""
