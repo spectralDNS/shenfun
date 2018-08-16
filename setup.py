@@ -38,7 +38,7 @@ if not "sdist" in sys.argv:
         args = "build_ext --inplace"
 
     ext = []
-    for s in ("Matvec", "la"):
+    for s in ("Matvec", "la", "evaluate"):
         ext += cythonize(Extension("shenfun.optimization.{0}".format(s),
                                    libraries=['m'],
                                    sources=[os.path.join(cdir, '{0}.pyx'.format(s))],
@@ -46,7 +46,7 @@ if not "sdist" in sys.argv:
     [e.extra_link_args.extend(["-std=c++11"]) for e in ext]
     #[e.extra_link_args.extend(["-std=c++11", "-fopenmp"]) for e in ext]
 
-    for s in ("Cheb", "convolve", "evaluate"):
+    for s in ("Cheb", "convolve"):
         ext += cythonize(Extension("shenfun.optimization.{0}".format(s),
                                    libraries=['m'],
                                    sources = [os.path.join(cdir, '{0}.pyx'.format(s))]))

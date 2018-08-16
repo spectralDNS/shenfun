@@ -4,6 +4,7 @@ Module for defining bases in the Legendre family
 
 import numpy as np
 from numpy.polynomial import legendre as leg
+from scipy.special import eval_legendre
 import pyfftw
 import functools
 from shenfun.spectralbase import SpectralBase, work, Transform
@@ -72,6 +73,13 @@ class LegendreBase(SpectralBase):
         """
         V = leg.legvander(x, self.N-1)
         return V
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        output_array = eval_legendre(i, x, out=output_array)
+        return output_array
 
     def get_vandermonde_basis_derivative(self, V, k=0):
         """Return k'th derivatives of basis as a Vandermonde matrix
@@ -185,6 +193,10 @@ class ShenDirichletBasis(LegendreBase):
             self.plan(N, 0, np.float, {})
         self.bc = BoundaryValues(self, bc=bc)
 
+    @staticmethod
+    def boundary_condition():
+        return 'Dirichlet'
+
     def set_factor_array(self, v):
         if self.is_scaled():
             if not self._factor.shape == v.shape:
@@ -224,6 +236,13 @@ class ShenDirichletBasis(LegendreBase):
 
     def spectral_shape(self):
         return self.N-2
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        output_array[:] = eval_legendre(i, x) - eval_legendre(i+2, x)
+        return output_array
 
     def eval(self, x, fk, output_array=None):
         if output_array is None:
@@ -285,6 +304,10 @@ class ShenNeumannBasis(LegendreBase):
         if plan:
             self.plan(N, 0, np.float, {})
 
+    @staticmethod
+    def boundary_condition():
+        return 'Neumann'
+
     def get_vandermonde_basis(self, V):
         assert self.N == V.shape[1]
         P = np.zeros(V.shape)
@@ -305,6 +328,13 @@ class ShenNeumannBasis(LegendreBase):
         s[self.axis] = slice(-2, None)
         output[s] = 0
         return output
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        output_array[:] = eval_legendre(i, x) - i*(i+1.)/(i+2.)/(i+3.)*eval_legendre(i+2, x)
+        return output_array
 
     #def evaluate_expansion_all(self, input_array, output_array): # pragma: no cover
     #    # Not used since there are no fast transforms for Legendre
@@ -380,6 +410,10 @@ class ShenBiharmonicBasis(LegendreBase):
         if plan:
             self.plan(N, 0, np.float, {})
 
+    @staticmethod
+    def boundary_condition():
+        return 'Biharmonic'
+
     def get_vandermonde_basis(self, V):
         P = np.zeros_like(V)
         k = np.arange(V.shape[1]).astype(np.float)[:-4]
@@ -408,6 +442,13 @@ class ShenBiharmonicBasis(LegendreBase):
         w_hat[s2] += f1*fk[s]
         w_hat[s4] += f2*fk[s]
         return w_hat
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        output_array[:] = eval_legendre(i, x) - 2*(2*i+5.)/(2*i+7.)*eval_legendre(i+2, x) + ((2*i+3.)/(2*i+7.))*eval_legendre(i+4, x)
+        return output_array
 
     #def evaluate_expansion_all(self, input_array, output_array): # pragma: no cover
     #    # Not used since there are no fast transforms for Legendre

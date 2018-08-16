@@ -351,7 +351,7 @@ def PDMA_Symsolve2D(real_t [::1] d,
                     T [:, ::1] b,
                     np.int64_t axis):
     cdef:
-        int i, j
+        int i, j, k
         int n = d.shape[0]
 
     if axis == 0:
@@ -372,7 +372,7 @@ def PDMA_Symsolve2D(real_t [::1] d,
             b[n-4, j] -= e[n-4]*b[n-2, j]
 
         for k in xrange(n-5,-1,-1):
-            for i in xrange(b.shape[1]):
+            for j in xrange(b.shape[1]):
                 b[k, j] /= d[k]
                 b[k, j] -= (e[k]*b[k+2, j] + f[k]*b[k+4, j])
 
@@ -469,6 +469,24 @@ def PDMA_Symsolve3D_ptr(real_t[::1] d,
         for i in range(x.shape[0]):
             for j in range(x.shape[1]):
                 PDMA_SymSolve_ptr(&d[0], &e[0], &f[0], &x[i,j,0], n, strides)
+
+def PDMA_Symsolve2D_ptr(real_t[::1] d,
+                        real_t[::1] e,
+                        real_t[::1] f,
+                        T[:, ::1] x,
+                        np.int64_t axis):
+    cdef:
+        int n = d.shape[0]
+        int i, j, strides
+
+    strides = x.strides[axis]/x.itemsize
+    if axis == 0:
+        for j in range(x.shape[1]):
+            PDMA_SymSolve_ptr(&d[0], &e[0], &f[0], &x[0,j], n, strides)
+
+    elif axis == 1:
+        for i in range(x.shape[0]):
+            PDMA_SymSolve_ptr(&d[0], &e[0], &f[0], &x[i,0], n, strides)
 
 def TDMA_SymLU(real_t[::1] d,
                real_t[::1] ud,

@@ -144,16 +144,16 @@ class SpectralBase(object):
         N : int
             Number of quadrature points
         quad : str
-               Type of quadrature
+            Type of quadrature
 
-               - GL - Chebyshev-Gauss-Lobatto or Legendre-Gauss-Lobatto
-               - GC - Chebyshev-Gauss
-               - LG - Legendre-Gauss
+            - GL - Chebyshev-Gauss-Lobatto or Legendre-Gauss-Lobatto
+            - GC - Chebyshev-Gauss
+            - LG - Legendre-Gauss
 
         padding_factor : float, optional
-                         For padding backward transform (for dealiasing)
+            For padding backward transform (for dealiasing)
         domain : 2-tuple of floats, optional
-                 The computational domain
+            The computational domain
 
     """
     # pylint: disable=method-hidden, too-many-instance-attributes
@@ -178,7 +178,7 @@ class SpectralBase(object):
             N : int
                 Number of quadrature points
             scaled : bool, optional
-                     Whether or not to scale with domain size
+                Whether or not to scale with domain size
         """
         raise NotImplementedError
 
@@ -193,7 +193,7 @@ class SpectralBase(object):
                 May be a list/array of ints if base is part of a
                 TensorProductSpace with several dimensions
             axis : int, optional
-                   The axis of this base in a TensorProductSpace
+                The axis of this base in a TensorProductSpace
         """
         N = list(N) if np.ndim(N) else [N]
         x = self.points_and_weights(N[axis], scaled=True)[0]
@@ -212,7 +212,7 @@ class SpectralBase(object):
                 the wavenumber returned is a 1D array broadcasted to the shape
                 of N.
             axis : int, optional
-                   The axis of this base in a TensorProductSpace
+                The axis of this base in a TensorProductSpace
         """
         N = list(N) if np.ndim(N) else [N]
         assert self.N == N[axis]
@@ -229,9 +229,9 @@ class SpectralBase(object):
         ----------
             x : 1D array
             ndims : int
-                    The number of dimensions to broadcast to
+                The number of dimensions to broadcast to
             axis : int, optional
-                   The axis over which x is changing
+                The axis over which x is changing
 
         Note
         ----
@@ -257,12 +257,12 @@ class SpectralBase(object):
         Parameters
         ----------
             input_array : array, optional
-                          Function values on quadrature mesh
+                Function values on quadrature mesh
             output_array : array, optional
-                           Expansion coefficients
+                Expansion coefficients
             fast_transform : bool, optional
-                             If True use fast transforms, if False use
-                             Vandermonde type
+                If True use fast transforms, if False use
+                Vandermonde type
 
         Note
         ----
@@ -288,12 +288,12 @@ class SpectralBase(object):
         Parameters
         ----------
             input_array : array, optional
-                          Function values on quadrature mesh
+                Function values on quadrature mesh
             output_array : array, optional
-                           Expansion coefficients
+                Expansion coefficients
             fast_transform : bool, optional
-                             If True use fast transforms, if False use
-                             Vandermonde type
+                If True use fast transforms, if False use
+                Vandermonde type
 
         Note
         ----
@@ -320,12 +320,12 @@ class SpectralBase(object):
         Parameters
         ----------
             input_array : array, optional
-                          Function values on quadrature mesh
+                Function values on quadrature mesh
             output_array : array, optional
-                           Expansion coefficients
+                Expansion coefficients
             fast_transform : bool, optional
-                             If True use fast transforms (if implemented), if
-                             False use Vandermonde type
+                If True use fast transforms (if implemented), if
+                False use Vandermonde type
 
         Note
         ----
@@ -349,7 +349,20 @@ class SpectralBase(object):
         return self.backward.output_array
 
     def vandermonde(self, x):
-        """Return Vandermonde matrix
+        r"""Return Vandermonde matrix
+
+        Evaluates basis :math:`\psi_k(x)` for all wavenumbers :math:`k`, and
+        all ``x``. Returned Vandermonde matrix is an N x M matrix with N the length
+        of ``x`` and M the number of bases.
+
+        .. math::
+
+            \begin{bmatrix}
+                \psi_0(x_0) & \psi_1(x_0) & \ldots & \psi_{M-1}(x_0)\\
+                \psi_0(x_1) & \psi_1(x_1) & \ldots & \psi_{M-1}(x_1)\\
+                \vdots & \ldots \\
+                \psi_{0}(x_{N-1}) & \psi_1(x_{N-1}) & \ldots & \psi_{M-1}(x_{N-1})
+            \end{bmatrix}
 
         Parameters
         ----------
@@ -390,12 +403,12 @@ class SpectralBase(object):
         Parameters
         ----------
             input_array : array, optional
-                          Function values on quadrature mesh
+                Function values on quadrature mesh
             output_array : array, optional
-                           Expansion coefficients
+                Expansion coefficients
             fast_transform : bool, optional
-                             If True use fast transforms (if implemented), if
-                             False use Vandermonde type
+                If True use fast transforms (if implemented), if
+                False use Vandermonde type
         """
         assert fast_transform is False
         self.vandermonde_scalar_product(input_array, output_array)
@@ -406,9 +419,9 @@ class SpectralBase(object):
         Parameters
         ----------
             input_array : array
-                          Function values on quadrature mesh
+                Function values on quadrature mesh
             output_array : array
-                           Expansion coefficients
+                Expansion coefficients
 
         """
         assert abs(self.padding_factor-1) < 1e-8
@@ -435,9 +448,9 @@ class SpectralBase(object):
         Parameters
         ----------
             input_array : array
-                          Expansion coefficients
+                Expansion coefficients
             output_array : array
-                           Function values on quadrature mesh
+                Function values on quadrature mesh
 
         Note
         ----
@@ -464,11 +477,11 @@ class SpectralBase(object):
         Parameters
         ----------
             points : array
-                     Points for evaluation
+                Points for evaluation
             input_array : array
-                          Expansion coefficients
+                Expansion coefficients
             output_array : array
-                           Function values on points
+                Function values on points
 
         """
         assert abs(self.padding_factor-1) < 1e-8
@@ -493,9 +506,9 @@ class SpectralBase(object):
             P : 2D array
                 Vandermode matrix containing local points only
             input_array : array
-                          Expansion coefficients
+                Expansion coefficients
             output_array : array
-                           Function values on points
+                Function values on points
 
         """
         fc = np.moveaxis(input_array, self.axis, -2)
@@ -509,8 +522,8 @@ class SpectralBase(object):
         Parameters
         ----------
             array : array (input/output)
-                    Expansion coefficients. Overwritten by applying the inverse
-                    mass matrix, and returned.
+                Expansion coefficients. Overwritten by applying the inverse
+                mass matrix, and returned.
 
         """
         assert self.N == array.shape[self.axis]
@@ -530,13 +543,13 @@ class SpectralBase(object):
         Parameters
         ----------
             shape : array
-                    Local shape of global array
+                Local shape of global array
             axis : int
-                   This base's axis in global TensorProductSpace
+                This base's axis in global TensorProductSpace
             dtype : numpy.dtype
-                    Type of array
+                Type of array
             options : dict
-                      Options for planning transforms
+                Options for planning transforms
         """
         if isinstance(axis, tuple):
             axis = axis[0]
@@ -623,31 +636,45 @@ class SpectralBase(object):
         Parameters
         ----------
             input_array : :math:`f_k`
-                          Expansion coefficients
+                Expansion coefficients
             output_array : :math:`f(x_j)`
-                           Function values on quadrature mesh
+                Function values on quadrature mesh
             fast_transform : bool, optional
-                             Whether to use fast transforms (if implemented)
+                Whether to use fast transforms (if implemented)
 
         """
         self.vandermonde_evaluate_expansion_all(input_array, output_array)
 
     def eval(self, x, fk, output_array=None):
-        """Evaluate basis at position `x`, given expansion coefficients `fk`
+        """Evaluate function at position `x`, given expansion coefficients `fk`
 
         Parameters
         ----------
             x : float or array of floats
             fk : array
-                 Expansion coefficients
+                Expansion coefficients
             output_array : array, optional
-                           Function values at points
+                Function values at points
 
         """
         if output_array is None:
             output_array = np.zeros(x.shape, dtype=self.forward.input_array.dtype)
         x = self.map_reference_domain(x)
         return self.vandermonde_evaluate_expansion(x, fk, output_array)
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        """Evaluate basis ``i`` at points x
+
+        Parameters
+        ----------
+            x : float or array of floats
+            i : int, optional
+                Basis number
+            output_array : array, optional
+                Return result in output_array if provided
+
+        """
+        raise NotImplementedError
 
     def map_reference_domain(self, x):
         """Return true point `x` mapped to reference domain"""
@@ -719,6 +746,10 @@ class SpectralBase(object):
     def num_components(self):
         """Return number of components for basis"""
         return 1
+
+    @staticmethod
+    def boundary_condition():
+        return ''
 
     def get_mass_matrix(self):
         mat = self._get_mat()

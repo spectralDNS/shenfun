@@ -175,21 +175,29 @@ class TensorProductSpace(object):
         ab_hat = self.forward(a*b, ab_hat)
         return ab_hat
 
-    def eval(self, points, coefficients, output_array=None, cython=True):
+    def eval(self, points, coefficients, output_array=None, method=0):
         """Evaluate Function at points, given expansion coefficients
 
         Parameters
         ----------
             points : float or array of floats
+                Array must be of shape (D, N), for  N points in D dimensions
             coefficients : array
                 Expansion coefficients
             output_array : array, optional
                 Return array, function values at points
-            cython : bool, optional
-                Whether to use optimized cython implementation or not
-
+            method : int, optional
+                Chooses implementation. The default 0 is a low-memory cython
+                version. Using method = 1 leads to a faster cython
+                implementation that, on the downside, uses more memory.
+                The final, method = 2, is a python implementation used only
+                for verification.
         """
-        if cython:
+        if output_array is None:
+            output_array = np.zeros(points.shape[1], dtype=self.forward.input_array.dtype)
+        if method == 0:
+            return self._eval_lm_cython(points, coefficients, output_array)
+        elif method == 1:
             return self._eval_cython(points, coefficients, output_array)
         else:
             return self._eval_python(points, coefficients, output_array)
@@ -210,13 +218,13 @@ class TensorProductSpace(object):
         out = coefficients
         for base in reversed(self):
             axis = base.axis
-            shape[axis] = len(points)
+            shape[axis] = points.shape[-1]
             out2 = np.zeros(shape, dtype=out.dtype)
-            x = base.map_reference_domain(points[..., axis])
+            x = base.map_reference_domain(points[axis])
             out2 = self.vandermonde_evaluate_local_expansion(base, x, out, out2)
             out = out2
         # Get the 'diagonals' of out, that is, for 2 points get out[i, i] for i = (0, 1), and same for larger numer of points
-        out = np.array([out[tuple([s]*len(shape))] for s in range(len(points))],
+        out = np.array([out[tuple([s]*len(shape))] for s in range(points.shape[-1])],
                        dtype=self.forward.input_array.dtype)
         out = np.atleast_1d(np.squeeze(out))
         out = self.comm.allreduce(out)
@@ -225,7 +233,7 @@ class TensorProductSpace(object):
             return output_array
         return out
 
-    def _eval_cython(self, points, coefficients, output_array=None):
+    def _eval_lm_cython(self, points, coefficients, output_array):
         """Evaluate Function at points, given expansion coefficients
 
         Parameters
@@ -233,17 +241,55 @@ class TensorProductSpace(object):
             points : float or array of floats
             coefficients : array
                            Expansion coefficients
-            output_array : array, optional
+            output_array : array
                            Return array, function values at points
         """
-        out = coefficients
+        r2c = -1
+        last_conj_index = -1
+        sl = -1
+        x = []
+        w = []
+        for base in self:
+            axis = base.axis
+            if isinstance(base, R2CBasis):
+                r2c = axis
+                M = base.N//2+1
+                if base.N % 2 == 0:
+                    last_conj_index = M-1
+                else:
+                    last_conj_index = M
+                sl = self.local_slice()[axis].start
+            x.append(base.map_reference_domain(points[axis]))
+            w.append(base.wavenumbers(base.N, 0)[self.local_slice()[axis]].astype(np.float))
+
+        if len(self) == 2:
+            output_array = shenfun.optimization.evaluate.evaluate_lm_2D(list(self.bases), output_array, coefficients, x[0], x[1], w[0], w[1], r2c, last_conj_index, sl)
+
+        elif len(self) == 3:
+            output_array = shenfun.optimization.evaluate.evaluate_lm_3D(list(self.bases), output_array, coefficients,  x[0], x[1], x[2], w[0], w[1], w[2], r2c, last_conj_index, sl)
+
+        output_array = np.atleast_1d(output_array)
+        output_array = self.comm.allreduce(output_array)
+        return output_array
+
+    def _eval_cython(self, points, coefficients, output_array):
+        """Evaluate Function at points, given expansion coefficients
+
+        Parameters
+        ----------
+            points : float or array of floats
+            coefficients : array
+                           Expansion coefficients
+            output_array : array
+                           Return array, function values at points
+        """
         P = []
         r2c = -1
         last_conj_index = -1
         sl = -1
         for base in self:
             axis = base.axis
-            x = base.map_reference_domain(points[..., axis])
+            x = base.map_reference_domain(points[axis])
             V = base.vandermonde(x)
             D = base.get_vandermonde_basis(V)
             P.append(D[..., self.local_slice()[axis]])
@@ -255,20 +301,15 @@ class TensorProductSpace(object):
                 else:
                     last_conj_index = M
                 sl = self.local_slice()[axis].start
-        out = np.zeros(len(points), dtype=self.forward.input_array.dtype)
         if len(self) == 2:
-            out = shenfun.optimization.evaluate.evaluate_2D(out, coefficients, P, r2c=r2c, M=last_conj_index, start=sl)
+            output_array = shenfun.optimization.evaluate.evaluate_2D(output_array, coefficients, P, r2c, last_conj_index, sl)
 
         elif len(self) == 3:
-            out = shenfun.optimization.evaluate.evaluate_3D(out, coefficients, P, r2c=r2c, M=last_conj_index, start=sl)
+            output_array = shenfun.optimization.evaluate.evaluate_3D(output_array, coefficients, P, r2c, last_conj_index, sl)
 
-        out = np.atleast_1d(out)
-        out = self.comm.allreduce(out)
-
-        if not output_array is None:
-            output_array[:] = out
-            return output_array
-        return out
+        output_array = np.atleast_1d(output_array)
+        output_array = self.comm.allreduce(output_array)
+        return output_array
 
     def vandermonde_evaluate_local_expansion(self, base, points, input_array, output_array):
         """Evaluate expansion at certain points, possibly different from
@@ -486,6 +527,30 @@ class MixedTensorProductSpace(object):
         self.forward = VectorTransform([space.forward for space in spaces])
         self.backward = VectorTransform([space.backward for space in spaces])
         self.scalar_product = VectorTransform([space.scalar_product for space in spaces])
+
+    def eval(self, points, coefficients, output_array=None, method=0):
+        """Evaluate Function at points, given expansion coefficients
+
+        Parameters
+        ----------
+            points : float or array of floats
+            coefficients : array
+                Expansion coefficients
+            output_array : array, optional
+                Return array, function values at points
+            method : int, optional
+                Chooses implementation. The default 0 is a low-memory cython
+                version. Using method = 1 leads to a faster cython
+                implementation that, on the downside, uses more memory.
+                The final, method = 2, is a python implementation used only
+                for verification.
+        """
+
+        if output_array is None:
+            output_array = np.zeros((len(self.spaces), points.shape[-1]), dtype=self.forward.input_array.dtype)
+        for i, space in enumerate(self.spaces):
+            output_array[i] = space.eval(points, coefficients[i], output_array[i], method)
+        return output_array
 
     def convolve(self, a_hat, b_hat, ab_hat):
         """Convolution of a_hat and b_hat

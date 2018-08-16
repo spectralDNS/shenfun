@@ -70,11 +70,11 @@ assert np.allclose(uj, uq)
 #ff_hat = C0(f_hat, f_hat)
 
 # Test eval at point
-point = np.array([[0.1, 0.2], [0.2, 0.3], [0.3, 0.4], [0.1, 0.3]])
+point = np.array([[0.1, 0.5], [0.5, 0.6]])
 p = T.eval(point, u_hat)
-assert np.allclose(p, ul(*point.T))
+assert np.allclose(p, ul(*point))
 p2 = u_hat.eval(point)
-assert np.allclose(p2, ul(*point.T))
+assert np.allclose(p2, ul(*point))
 
 if plt is not None and not 'pytest' in os.environ:
     plt.figure()
@@ -89,5 +89,5 @@ if plt is not None and not 'pytest' in os.environ:
     plt.contourf(X[0], X[1], uq-uj)
     plt.colorbar()
     plt.title('Error')
-    plt.show()
+    #plt.show()
 

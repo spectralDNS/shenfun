@@ -61,12 +61,11 @@ print(abs(uj-uq).max())
 assert np.allclose(uj, uq)
 
 # Test eval at point
-point = np.array([[0.1, 0.2, 0.3], [0.2, 0.3, 0.3], [0.3, 0.4, 0.1]])
+point = np.array([[0.1, 0.5], [0.5, 0.6], [0.1, 0.2]])
 p = T.eval(point, f_hat)
-assert np.allclose(p, ul(*point.T))
+assert np.allclose(p, ul(*point))
 p2 = f_hat.eval(point)
-assert np.allclose(p2, ul(*point.T))
-
+assert np.allclose(p2, ul(*point))
 
 if plt is not None and not 'pytest' in os.environ:
     plt.figure()

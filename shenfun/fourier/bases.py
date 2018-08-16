@@ -6,7 +6,7 @@ import pyfftw
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase
 from shenfun.utilities import inheritdocstrings
-from shenfun.optimization import convolve
+from shenfun.optimization import convolve, evaluate
 
 __all__ = ['FourierBase', 'R2CBasis', 'C2CBasis']
 
@@ -85,17 +85,33 @@ class FourierBase(SpectralBase):
     def __init__(self, N, padding_factor=1., domain=(0, 2*np.pi),
                  dealias_direct=False):
         self.dealias_direct = dealias_direct
+        self._k = None
         SpectralBase.__init__(self, N, '', padding_factor, domain)
 
     @staticmethod
     def family():
         return 'fourier'
 
+    @staticmethod
+    def boundary_condition():
+        return 'Periodic'
+
     def points_and_weights(self, N, scaled=False):
         points = np.arange(N, dtype=np.float)*2*np.pi/N
         if scaled is True:
             points = self.map_true_domain(points)
         return points, np.array([2*np.pi/N])
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape, dtype=np.complex)
+
+        if self._k is None:
+            self._k = self.wavenumbers(self.N, 0)
+        k = self._k[i]
+        output_array[:] = np.exp(1j*x*k)
+        return output_array
 
     def vandermonde(self, x):
         """Return Vandermonde matrix
@@ -209,11 +225,6 @@ class R2CBasis(FourierBase):
         shape[self.axis] = int(shape[self.axis] / self.padding_factor)
         shape[self.axis] = shape[self.axis]//2 + 1
         return pyfftw.empty_aligned(shape, dtype=dtype)
-
-    #def eval(self, x, fk):
-    #    x = self.map_reference_domain(x)
-    #    V = self.vandermonde(x)
-    #    return np.dot(V, fk) + np.conj(np.dot(V[:, 1:-1], fk[1:-1]))
 
     def slice(self):
         return slice(0, self.N//2+1)
@@ -372,7 +383,7 @@ class R2CBasis(FourierBase):
         ----
         Note that this method is only valid for 1D data, and that
         for multidimensional arrays one should use corresponding method
-        in the TensorProductSpace class.
+        in the :class:`.TensorProductSpace` class.
 
         """
         N = self.N
