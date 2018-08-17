@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 
 comm = MPI.COMM_WORLD
 
+__all__ = ['LagrangianParticles']
+
 class LagrangianParticles(object):
     """Class for tracking Lagrangian particles
 

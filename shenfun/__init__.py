@@ -16,6 +16,7 @@ from .forms.operators import *
 from .forms.arguments import *
 from .tensorproductspace import *
 from .utilities import *
+from .utilities.lagrangian_particles import *
 from .utilities.integrators import *
 from .utilities.h5py_writer import *
 from .utilities.nc_writer import *
