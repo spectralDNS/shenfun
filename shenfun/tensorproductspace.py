@@ -195,6 +195,8 @@ class TensorProductSpace(object):
         """
         if output_array is None:
             output_array = np.zeros(points.shape[1], dtype=self.forward.input_array.dtype)
+        else:
+            output_array[:] = 0
         if method == 0:
             return self._eval_lm_cython(points, coefficients, output_array)
         elif method == 1:
