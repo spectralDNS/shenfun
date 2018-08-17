@@ -215,6 +215,8 @@ class TensorProductSpace(object):
             output_array : array, optional
                            Return array, function values at points
 
+        FIXME Not working for all spaces (but is not needed due to cython)
+
         """
         shape = list(self.local_shape())
         out = coefficients
