@@ -425,9 +425,9 @@ def test_eval_tensor(typecode, dim, ST, quad):
             t_1 += time()-t0
             assert np.allclose(uq, result, 0, 1e-6)
             t0 = time()
-            result = fft.eval(points, u_hat, method=2)
-            t_2 += time()-t0
-            assert np.allclose(uq, result, 0, 1e-6)
+            #result = fft.eval(points, u_hat, method=2)
+            #t_2 += time()-t0
+            #assert np.allclose(uq, result, 0, 1e-6)
 
             result = u_hat.eval(points)
             assert np.allclose(uq, result, 0, 1e-6)
@@ -490,6 +490,6 @@ if __name__ == '__main__':
     #test_project('d', 2, cbases.ShenDirichletBasis, 'GC')
     #test_project2('d', 1, lbases.ShenNeumannBasis, 'LG')
     #test_project_2dirichlet('GL')
-    test_eval_tensor('D', 2, cbases.ShenDirichletBasis, 'GC')
+    test_eval_tensor('d', 2, cbases.ShenDirichletBasis, 'GC')
     #test_eval_fourier('D', 2)
 
