@@ -1,6 +1,5 @@
 import numpy as np
 from mpi4py import MPI
-import matplotlib.pyplot as plt
 
 comm = MPI.COMM_WORLD
 
@@ -36,6 +35,7 @@ class LagrangianParticles(object):
 if __name__ == '__main__':
     from shenfun import *
     import sympy as sp
+    import matplotlib.pyplot as plt
 
     N = (20, 20)
     F0 = Basis(N[0], 'F', dtype='D', domain=(0., 1.))
