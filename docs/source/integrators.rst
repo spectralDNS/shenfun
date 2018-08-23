@@ -63,7 +63,7 @@ we start by creating the necessary basis and test and trial functions
     from shenfun import *
 
     N = 256
-    T = Basis(N, 'F', dtype='d', plan=True)
+    T = Basis(N, 'F', dtype='d')
     u = TrialFunction(T)
     v = TestFunction(T)
     u_ = Array(T)

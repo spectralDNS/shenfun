@@ -40,7 +40,7 @@ lbases2 = list(list(i[0]) + [i[1]] for i in product(list(product(lBasis, lBasis)
 @pytest.mark.parametrize('N', (8, 9))
 def test_convolve(basis, N):
     """Test convolution"""
-    FFT = basis(N, plan=True)
+    FFT = basis(N)
     u0 = shenfun.Function(FFT)
     u1 = shenfun.Function(FFT)
     M = u0.shape[0]
@@ -57,7 +57,7 @@ def test_convolve(basis, N):
     uv1 = FFT.convolve(u0, u1, fast=False)
 
     # Do convolution with FFT and padding
-    FFT2 = basis(N, padding_factor=(1.5+1.00001/N), plan=True) # Just enough to be perfect
+    FFT2 = basis(N, padding_factor=(1.5+1.00001/N)) # Just enough to be perfect
     uv2 = FFT2.convolve(u0, u1, fast=True)
 
     # Compare. Should be identical after truncation if no aliasing
@@ -76,7 +76,7 @@ def test_convolve(basis, N):
 @pytest.mark.parametrize('ST,quad', list(product(cBasis, cquads)) + list(product(fBasis, [""])))
 def test_scalarproduct(ST, quad):
     """Test fast scalar product against Vandermonde computed version"""
-    kwargs = {'plan': True}
+    kwargs = {}
     if not ST.family() == 'fourier':
         kwargs['quad'] = quad
     ST = ST(N, **kwargs)
@@ -96,7 +96,7 @@ def test_scalarproduct(ST, quad):
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
 def test_eval(ST, quad):
     """Test eval agains fast inverse"""
-    kwargs = {'plan': True}
+    kwargs = {}
     if not ST.family() == 'fourier':
         kwargs['quad'] = quad
     ST = ST(N, **kwargs)
@@ -119,8 +119,8 @@ def test_eval(ST, quad):
 
 @pytest.mark.parametrize('test, trial, quad', cbases2+lbases2)
 def test_massmatrices(test, trial, quad):
-    test = test(N, quad=quad, plan=True)
-    trial = trial(N, quad=quad, plan=True)
+    test = test(N, quad=quad)
+    trial = trial(N, quad=quad)
 
     f_hat = np.zeros(N)
     fj = np.random.random(N)
@@ -153,7 +153,7 @@ def test_massmatrices(test, trial, quad):
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
 @pytest.mark.parametrize('dim', (2, 3))
 def test_transforms(ST, quad, dim):
-    kwargs = {'plan': True}
+    kwargs = {}
     if not ST.family() == 'fourier':
         kwargs['quad'] = quad
     ST0 = ST(N, **kwargs)
@@ -200,7 +200,7 @@ def test_transforms(ST, quad, dim):
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
 @pytest.mark.parametrize('axis', (0,1,2))
 def test_axis(ST, quad, axis):
-    kwargs = {'plan': True}
+    kwargs = {}
     if not ST.family() == 'fourier':
         kwargs['quad'] = quad
     ST = ST(N, **kwargs)
@@ -231,7 +231,7 @@ def test_axis(ST, quad, axis):
 @pytest.mark.parametrize('quad', cquads)
 def test_CDDmat(quad):
     M = 128
-    SD = cbases.ShenDirichletBasis(M, quad=quad, plan=True)
+    SD = cbases.ShenDirichletBasis(M, quad=quad)
     u = (1-x**2)*sin(np.pi*6*x)
     dudx = u.diff(x, 1)
     points, weights = SD.points_and_weights(M)
@@ -290,10 +290,10 @@ def test_CDDmat(quad):
 
 @pytest.mark.parametrize('test,trial', product(cBasis, cBasis))
 def test_CXXmat(test, trial):
-    test = test(N, plan=True)
-    trial = trial(N, plan=True)
+    test = test(N)
+    trial = trial(N)
 
-    CT = cBasis[0](N, plan=True)
+    CT = cBasis[0](N)
 
     Cm = inner_product((test, 0), (trial, 1))
     S2 = Cm.trialfunction[0]
@@ -334,7 +334,7 @@ dirichlet_with_quads = (list(product([cbases.ShenNeumannBasis, cbases.ShenDirich
 @pytest.mark.parametrize('ST,quad', dirichlet_with_quads)
 def test_ADDmat(ST, quad):
     M = 2*N
-    ST = ST(M, quad=quad, plan=True)
+    ST = ST(M, quad=quad)
     u = (1-x**2)*sin(np.pi*x)
     f = u.diff(x, 2)
     ul = lambdify(x, u, 'numpy')
@@ -388,7 +388,7 @@ biharmonic_with_quads = (list(product([cbases.ShenBiharmonicBasis], cquads)) +
 @pytest.mark.parametrize('SB,quad', biharmonic_with_quads)
 def test_SBBmat(SB, quad):
     M = 72
-    SB = SB(M, quad=quad, plan=True)
+    SB = SB(M, quad=quad)
     u = sin(4*pi*x)**2
     f = u.diff(x, 4)
     ul = lambdify(x, u, 'numpy')
@@ -433,7 +433,7 @@ def test_SBBmat(SB, quad):
 @pytest.mark.parametrize('SB,quad', biharmonic_with_quads)
 def test_ABBmat(SB, quad):
     M = 4*N
-    SB = SB(M, quad=quad, plan=True)
+    SB = SB(M, quad=quad)
     u = sin(6*pi*x)**2
     f = u.diff(x, 2)
     fl = lambdify(x, f, "numpy")

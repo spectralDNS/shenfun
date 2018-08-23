@@ -27,18 +27,18 @@ class TensorProductSpace(object):
     ----------
         comm : MPI communicator
         bases : list
-                List of 1D bases
+            List of 1D bases
         axes : tuple of ints, optional
-               A tuple containing the order of which to perform transforms.
-               Last item is transformed first. Defaults to range(len(bases))
+            A tuple containing the order of which to perform transforms.
+            Last item is transformed first. Defaults to range(len(bases))
         dtype : data-type, optional
-                Type of input data in real physical space. If not provided it
-                will be inferred from the bases.
+            Type of input data in real physical space. If not provided it
+            will be inferred from the bases.
         slab : bool, optional
-               Use 1D slab decomposition instead of default pencil.
+            Use 1D slab decomposition.
         kw : dict, optional
-             Dictionary that can be used to plan transforms. Input to method
-             `plan` for the bases.
+            Dictionary that can be used to plan transforms. Input to method
+            `plan` for the bases.
 
     """
     def __init__(self, comm, bases, axes=None, dtype=None, slab=False, **kw):
@@ -85,18 +85,7 @@ class TensorProductSpace(object):
                 dims[axes[-1]] = 1
             self.subcomm = Subcomm(comm, dims)
 
-        collapse = False # kw.pop('collapse', True)
-        if collapse:
-            groups = [[]]
-            for axis in reversed(axes):
-                if self.subcomm[axis].Get_size() == 1:
-                    groups[0].insert(0, axis)
-                else:
-                    groups.insert(0, [axis])
-            self.axes = tuple(map(tuple, groups))
-        else:
-            self.axes = tuple((axis,) for axis in axes)
-
+        self.axes = tuple((axis,) for axis in axes)
         self.xfftn = []
         self.transfer = []
         self.pencil = [None, None]
@@ -204,7 +193,7 @@ class TensorProductSpace(object):
         else:
             return self._eval_python(points, coefficients, output_array)
 
-    def _eval_python(self, points, coefficients, output_array=None): # pragma : no cover
+    def _eval_python(self, points, coefficients, output_array):
         """Evaluate Function at points, given expansion coefficients
 
         Parameters
@@ -212,30 +201,70 @@ class TensorProductSpace(object):
             points : float or array of floats
             coefficients : array
                            Expansion coefficients
-            output_array : array, optional
+            output_array : array
                            Return array, function values at points
-
-        FIXME Not working for all spaces (but is not needed due to cython)
-
         """
-        shape = list(self.local_shape())
-        out = coefficients
-        for base in reversed(self):
-            axis = base.axis
-            shape[axis] = points.shape[-1]
-            out2 = np.zeros(shape, dtype=out.dtype)
+        P = []
+        r2c = -1
+        last_conj_index = -1
+        sl = -1
+        out = None
+        previous_axes = []
+        for i, axes in enumerate(self.axes):
+            assert len(axes) == 1
+            base = self.bases[axes[-1]]
+            axis = axes[-1]
             x = base.map_reference_domain(points[axis])
-            out2 = self.vandermonde_evaluate_local_expansion(base, x, out, out2)
-            out = out2
-        # Get the 'diagonals' of out, that is, for 2 points get out[i, i] for i = (0, 1), and same for larger numer of points
-        out = np.array([out[tuple([s]*len(shape))] for s in range(points.shape[-1])],
-                       dtype=self.forward.input_array.dtype)
-        out = np.atleast_1d(np.squeeze(out))
-        out = self.comm.allreduce(out)
-        if not output_array is None:
-            output_array[:] = out
-            return output_array
-        return out
+            V = base.vandermonde(x)
+            D = base.get_vandermonde_basis(V)
+            P = D[..., self.local_slice()[axis]]
+            if isinstance(base, R2CBasis):
+                r2c = axis
+                M = base.N//2+1
+                if base.N % 2 == 0:
+                    last_conj_index = M-1
+                else:
+                    last_conj_index = M
+                sl = self.local_slice()[axis].start
+                st = self.local_slice()[axis].stop
+                if sl == 0: sl = 1
+                st == min(last_conj_index, st)
+                sp = [slice(None), slice(sl, st)]
+
+            if out is None:
+                out = np.tensordot(P, coefficients, (1, axis))
+                if isinstance(base, R2CBasis):
+                    ss = [slice(None)]*len(self)
+                    ss[axis] = slice(sl, st)
+                    out += np.conj(np.tensordot(P[sp], coefficients[ss], (1, axis)))
+
+            else:
+                k = np.count_nonzero([m < axis for m in previous_axes])
+                if len(self) == 2:
+                    if not isinstance(base, R2CBasis):
+                        out2 = np.sum(P*out, axis=-1)
+                    else:
+                        out2 = np.sum(P.real*out.real - P.imag*out.imag, axis=-1)
+                        out2 += np.sum(np.conj(P[sp].real*out[sp].real - P[sp].imag*out[sp].imag), axis=-1)
+
+                elif len(self) == 3:
+                    if len(out.shape) == 3:
+                        sx = [slice(None)]*3
+                        kk = 1 if axis-k == 1 else 2
+                        sx[kk] = np.newaxis
+                    else:
+                        sx = [slice(None), slice(None)]
+                    if not isinstance(base, R2CBasis):
+                        out2 = np.sum(P[sx]*out, axis=1+axis-k)
+                    else:
+                        out2 = np.sum(P[sx].real*out.real - P[sx].imag*out.imag, axis=1+axis-k)
+                        sx[1+axis-k] = slice(sl, st)
+                        out2 += np.sum(np.conj(P[sx].real*out[sx].real - P[sx].imag*out[sx].imag), axis=1+axis-k)
+                out = out2
+            previous_axes.append(axis)
+        output_array[:] = out
+        output_array = self.comm.allreduce(output_array)
+        return output_array
 
     def _eval_lm_cython(self, points, coefficients, output_array):
         """Evaluate Function at points, given expansion coefficients
@@ -313,38 +342,6 @@ class TensorProductSpace(object):
 
         output_array = np.atleast_1d(output_array)
         output_array = self.comm.allreduce(output_array)
-        return output_array
-
-    def vandermonde_evaluate_local_expansion(self, base, points, input_array, output_array):
-        """Evaluate expansion at certain points, possibly different from
-        the quadrature points
-
-        Parameters
-        ----------
-            base : SpectralBase
-                   The base class
-            points : float or array of floats
-            coefficients : array
-                           Expansion coefficients
-            output_array : array
-                           Return array, function values at points
-
-        """
-        V = base.vandermonde(points)
-        P = base.get_vandermonde_basis(V)
-        P = P[..., self.local_slice()[base.axis]]
-        last_conj_index = -1
-        sl = -1
-        if isinstance(base, R2CBasis):
-            M = base.N//2+1
-            if base.N % 2 == 0:
-                last_conj_index = M-1
-            else:
-                last_conj_index = M
-            sl = self.local_slice()[base.axis].start
-            base.vandermonde_evaluate_local_expansion(P, input_array, output_array, last_conj_index, sl)
-        else:
-            base.vandermonde_evaluate_local_expansion(P, input_array, output_array)
         return output_array
 
     def destroy(self):
@@ -932,7 +929,7 @@ class BoundaryValues(object):
             u[self.slm1] = self.bcs[1]
 
     def has_nonhomogeneous_bcs(self):
-        if self.bcs[0] == 0 and self.bcs[1] == 0:
+        if self.bc[0] == 0 and self.bc[1] == 0:
             return False
         return True
 

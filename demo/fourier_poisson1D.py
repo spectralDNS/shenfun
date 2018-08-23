@@ -39,7 +39,7 @@ fl = lambdify(x, fe, 'numpy')
 N = 40
 
 dtype = {True: np.complex, False: np.float}[ue.has(1j)]
-ST = Basis(N, dtype=dtype, plan=True, domain=(-2*np.pi, 2*np.pi))
+ST = Basis(N, dtype=dtype, domain=(-2*np.pi, 2*np.pi))
 u = TrialFunction(ST)
 v = TestFunction(ST)
 

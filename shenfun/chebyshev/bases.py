@@ -204,14 +204,11 @@ class Basis(ChebyshevBase):
 
                - GL - Chebyshev-Gauss-Lobatto
                - GC - Chebyshev-Gauss
-        plan : bool, optional
-               Plan transforms on __init__ or not. If basis is part of a
-               TensorProductSpace, then planning needs to be delayed.
         domain : 2-tuple of floats, optional
                  The computational domain
     """
 
-    def __init__(self, N=0, quad="GC", plan=False, domain=(-1., 1.)):
+    def __init__(self, N=0, quad="GC", domain=(-1., 1.)):
         ChebyshevBase.__init__(self, N, quad, domain)
         if quad == 'GC':
             self._xfftn_fwd = functools.partial(fftw.dctn, type=2)
@@ -220,8 +217,7 @@ class Basis(ChebyshevBase):
         else:
             self._xfftn_fwd = functools.partial(fftw.dctn, type=1)
             self._xfftn_bck = functools.partial(fftw.dctn, type=1)
-        if plan:
-            self.plan(N, 0, np.float, {})
+        self.plan(N, 0, np.float, {})
 
     @staticmethod
     def derivative_coefficients(fk):
@@ -265,12 +261,11 @@ class Basis(ChebyshevBase):
         return fd.copy()
 
     def apply_inverse_mass(self, array):
-        sl = self.sl(0)
+        sl = self.sl
         array *= (2/np.pi)
-        array[sl] /= 2
+        array[sl(0)] /= 2
         if self.quad == 'GL':
-            sl[self.axis] = -1
-            array[sl] /= 2
+            array[sl(-1)] /= 2
         return array
 
     def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
@@ -279,18 +274,18 @@ class Basis(ChebyshevBase):
             return
 
         output_array = self.backward.xfftn()
-        s0 = self.sl(slice(0, 1))
+        sl = self.sl
         if self.quad == "GC":
             output_array *= 0.5
-            output_array += input_array[s0]/2
+            output_array += input_array[sl(slice(0, 1))]/2
 
         elif self.quad == "GL":
             output_array *= 0.5
-            output_array += input_array[s0]/2
-            s0[self.axis] = slice(-1, None)
-            s2 = self.sl(slice(0, None, 2))
+            output_array += input_array[sl(slice(0, 1))]/2
+            s0 = sl(slice(-1, None))
+            s2 = sl(slice(0, None, 2))
             output_array[s2] += input_array[s0]/2
-            s2[self.axis] = slice(1, None, 2)
+            s2 = sl(slice(1, None, 2))
             output_array[s2] -= input_array[s0]/2
 
     def evaluate_scalar_product(self, input_array, output_array, fast_transform=True):
@@ -329,24 +324,20 @@ class ShenDirichletBasis(ChebyshevBase):
 
         bc : 2-tuple of floats, optional
              Boundary conditions at x=(1,-1). For Poisson eq.
-        plan : bool, optional
-               Plan transforms on __init__ or not. If basis is part of a
-               TensorProductSpace, then planning needs to be delayed.
         domain : 2-tuple of floats, optional
                  The computational domain
         scaled : bool, optional
                  Whether or not to use scaled basis
     """
 
-    def __init__(self, N=0, quad="GC", bc=(0, 0), plan=False,
+    def __init__(self, N=0, quad="GC", bc=(0, 0),
                  domain=(-1., 1.), scaled=False):
         ChebyshevBase.__init__(self, N, quad, domain=domain)
         from shenfun.tensorproductspace import BoundaryValues
-        self.CT = Basis(N, quad, plan=plan)
+        self.CT = Basis(N, quad)
         self._scaled = scaled
         self._factor = np.ones(1)
-        if plan:
-            self.plan(N, 0, np.float, {})
+        self.plan(N, 0, np.float, {})
         self.bc = BoundaryValues(self, bc=bc)
 
     @staticmethod
@@ -364,8 +355,13 @@ class ShenDirichletBasis(ChebyshevBase):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        w = np.arccos(x)
-        output_array[:] = np.cos(i*w) - np.cos((i+2)*w)
+        if i < self.N-2:
+            w = np.arccos(x)
+            output_array[:] = np.cos(i*w) - np.cos((i+2)*w)
+        elif i == self.N-2:
+            output_array[:] = 0.5*(1+x)
+        elif i == self.N-1:
+            output_array[:] = 0.5*(1-x)
         return output_array
 
     def is_scaled(self):
@@ -381,13 +377,14 @@ class ShenDirichletBasis(ChebyshevBase):
         s1 = self.sl(1)
         c0 = 0.5*(output[s0] + output[s1])
         c1 = 0.5*(output[s0] - output[s1])
-        s0[self.axis] = slice(0, -2)
-        s1[self.axis] = slice(2, None)
+        s0 = self.sl(slice(0, -2))
+        s1 = self.sl(slice(2, None))
         output[s0] -= output[s1]
+        s0 = list(s0)
         s0[self.axis] = -2
-        output[s0] = c0
+        output[tuple(s0)] = c0
         s0[self.axis] = -1
-        output[s0] = c1
+        output[tuple(s0)] = c1
 
     def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
@@ -413,7 +410,7 @@ class ShenDirichletBasis(ChebyshevBase):
         output_array[:] = n_cheb.chebval(x, fk[:-2])
         w_hat[2:] = fk[:-2]
         output_array -= n_cheb.chebval(x, w_hat)
-        output_array += 0.5*(fk[-1]*(1+x)+fk[-2]*(1-x))
+        output_array += 0.5*(fk[-1]*(1-x)+fk[-2]*(1+x))
         return output_array
 
     def plan(self, shape, axis, dtype, options):
@@ -452,20 +449,16 @@ class ShenNeumannBasis(ChebyshevBase):
 
         mean : float, optional
                Mean value
-        plan : bool, optional
-               Plan transforms on __init__ or not. If basis is part of a
-               TensorProductSpace, then planning needs to be delayed.
         domain : 2-tuple of floats, optional
                  The computational domain
     """
 
-    def __init__(self, N=0, quad="GC", mean=0, plan=False, domain=(-1., 1.)):
+    def __init__(self, N=0, quad="GC", mean=0, domain=(-1., 1.)):
         ChebyshevBase.__init__(self, N, quad, domain=domain)
         self.mean = mean
         self.CT = Basis(N, quad)
         self._factor = np.zeros(0)
-        if plan:
-            self.plan(N, 0, np.float, {})
+        self.plan(N, 0, np.float, {})
 
     @staticmethod
     def boundary_condition():
@@ -511,10 +504,8 @@ class ShenNeumannBasis(ChebyshevBase):
                                      fast_transform=fast_transform)
 
         output = self.scalar_product.output_array
-        s = self.sl(0)
-        output[s] = self.mean*np.pi
-        s[self.axis] = slice(-2, None)
-        output[s] = 0
+        output[self.sl(0)] = self.mean*np.pi
+        output[self.sl(slice(-2, None))] = 0
 
         if output_array is not None:
             output_array[...] = output
@@ -583,21 +574,17 @@ class ShenBiharmonicBasis(ChebyshevBase):
 
                - GL - Chebyshev-Gauss-Lobatto
                - GC - Chebyshev-Gauss
-        plan : bool, optional
-               Plan transforms on __init__ or not. If basis is part of a
-               TensorProductSpace, then planning needs to be delayed.
         domain : 2-tuple of floats, optional
                  The computational domain
 
     """
 
-    def __init__(self, N=0, quad="GC", plan=False, domain=(-1., 1.)):
+    def __init__(self, N=0, quad="GC", domain=(-1., 1.)):
         ChebyshevBase.__init__(self, N, quad, domain=domain)
         self.CT = Basis(N, quad)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
-        if plan:
-            self.plan(N, 0, np.float, {})
+        self.plan(N, 0, np.float, {})
 
     @staticmethod
     def boundary_condition():
@@ -619,8 +606,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
 
     def set_factor_arrays(self, v):
         """Set intermediate factor arrays"""
-        s = [slice(None)]*v.ndim
-        s[self.axis] = self.slice()
+        s = self.sl(self.slice())
         if not self._factor1.shape == v[s].shape:
             k = self.wavenumbers(v.shape, axis=self.axis).astype(float)
             self._factor1 = (-2*(k+2)/(k+3)).astype(float)
@@ -636,9 +622,9 @@ class ShenBiharmonicBasis(ChebyshevBase):
         self.set_factor_arrays(Tk)
         s = self.sl(self.slice())
         s2 = self.sl(slice(2, -2))
+        s4 = self.sl(slice(4, None))
         output[s] += self._factor1 * Tk[s2]
-        s2[self.axis] = slice(4, None)
-        output[s] += self._factor2 * Tk[s2]
+        output[s] += self._factor2 * Tk[s4]
 
     def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
         if input_array is not None:

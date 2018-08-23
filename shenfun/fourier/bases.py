@@ -198,7 +198,7 @@ class R2CBasis(FourierBase):
     """Fourier basis class for real to complex transforms
     """
 
-    def __init__(self, N, padding_factor=1., plan=False, domain=(0., 2.*np.pi),
+    def __init__(self, N, padding_factor=1., domain=(0., 2.*np.pi),
                  dealias_direct=False):
         FourierBase.__init__(self, N, padding_factor, domain, dealias_direct)
         self.N = N
@@ -206,8 +206,7 @@ class R2CBasis(FourierBase):
         #self._xfftn_bck = pyfftw.builders.irfft
         self._xfftn_fwd = fftw.rfftn
         self._xfftn_bck = fftw.irfftn
-        if plan:
-            self.plan((int(np.floor(padding_factor*N)),), 0, np.float, {})
+        self.plan((int(np.floor(padding_factor*N)),), 0, np.float, {})
 
     def wavenumbers(self, N, axis=0, scaled=False, eliminate_highest_freq=False):
         N = list(N) if np.ndim(N) else [N]
@@ -293,63 +292,16 @@ class R2CBasis(FourierBase):
 
         return output_array
 
-    def vandermonde_evaluate_local_expansion(self, P, input_array, output_array,
-                                             last_conj_index, offset):
-        """Evaluate expansion at certain points, possibly different from
-        the quadrature points
-
-        This method does not assume that the multidimensional arrays are aligned
-        along the axis of this basis.
-
-        Parameters
-        ----------
-            P : 2D array
-                Vandermode matrix containing local points only
-            input_array : array
-                          Expansion coefficients
-            output_array : array
-                           Function values on points
-            last_conj_index : int
-                              The last index to sum over for conj part
-                              (R2CBasis only)
-            offset : int
-                     Global offset (MPI)
-
-        Note
-        ----
-        This method is complicated by the fact that the data may not be aligned
-        in the direction of this base's axis
-
-        """
-        fc = np.moveaxis(input_array, self.axis, -2)
-        array = np.dot(P, fc)
-        s = [slice(None)]*fc.ndim
-        N = P.shape[1]
-        if offset == 0:
-            s[-2] = slice(1, N)
-            if N > last_conj_index:
-                s[-2] = slice(1, N-1)
-        else:
-            s[-2] = slice(0, N)
-            if N > last_conj_index:
-                s[-2] = slice(0, N-1)
-        sl = [slice(None)]*2
-        sl[-1] = s[-2]
-        array += np.conj(np.dot(P[sl], fc[s]))
-        output_array[:] = np.moveaxis(array, 0, self.axis)
-        return output_array
-
     def _truncation_forward(self, padded_array, trunc_array):
         if self.padding_factor > 1.0+1e-8:
             trunc_array.fill(0)
             N = trunc_array.shape[self.axis]
-            s = [slice(None)]*trunc_array.ndim
-            s[self.axis] = slice(0, N)
+            s = self.sl(slice(0, N))
             trunc_array[:] = padded_array[s]
             if self.N % 2 == 0:
-                s[self.axis] = N-1
-                trunc_array[s] = trunc_array[s].real
-                trunc_array[s] *= 2
+                s1 = self.sl(N-1)
+                trunc_array[s1] = trunc_array[s1].real
+                trunc_array[s1] *= 2
 
     def _padding_backward(self, trunc_array, padded_array):
         if self.padding_factor > 1.0+1e-8:
@@ -364,8 +316,7 @@ class R2CBasis(FourierBase):
 
         elif self.dealias_direct:
             N = self.N
-            su = [slice(None)]*padded_array.ndim
-            su[self.axis] = slice(int(np.floor(N/3.)), None)
+            su = self.sl(slice(int(np.floor(N/3.)), None))
             padded_array[su] = 0
 
     def convolve(self, u, v, uv=None, fast=True):
@@ -456,7 +407,7 @@ class C2CBasis(FourierBase):
     """Fourier basis class for complex to complex transforms
     """
 
-    def __init__(self, N, padding_factor=1., plan=False, domain=(0., 2.*np.pi),
+    def __init__(self, N, padding_factor=1., domain=(0., 2.*np.pi),
                  dealias_direct=False):
         FourierBase.__init__(self, N, padding_factor, domain, dealias_direct)
         self.N = N
@@ -464,9 +415,7 @@ class C2CBasis(FourierBase):
         #self._xfftn_bck = pyfftw.builders.ifft
         self._xfftn_fwd = fftw.fftn
         self._xfftn_bck = fftw.ifftn
-
-        if plan:
-            self.plan((int(np.floor(padding_factor*N)),), 0, np.complex, {})
+        self.plan((int(np.floor(padding_factor*N)),), 0, np.complex, {})
 
     def wavenumbers(self, N, axis=0, scaled=False, eliminate_highest_freq=False):
         N = list(N) if np.ndim(N) else [N]
@@ -486,31 +435,26 @@ class C2CBasis(FourierBase):
         if self.padding_factor > 1.0+1e-8:
             trunc_array.fill(0)
             N = trunc_array.shape[self.axis]
-            su = [slice(None)]*trunc_array.ndim
-            su[self.axis] = slice(0, N//2+1)
+            su = self.sl(slice(0, N//2+1))
             trunc_array[su] = padded_array[su]
-            su[self.axis] = slice(-(N//2), None)
+            su = self.sl(slice(-(N//2), None))
             trunc_array[su] += padded_array[su]
 
     def _padding_backward(self, trunc_array, padded_array):
         if self.padding_factor > 1.0+1e-8:
             padded_array.fill(0)
             N = trunc_array.shape[self.axis]
-            su = [slice(None)]*trunc_array.ndim
-            su[self.axis] = slice(0, N//2+1)
+            su = self.sl(slice(0, N//2+1))
             padded_array[su] = trunc_array[su]
-            su[self.axis] = slice(-(N//2), None)
+            su = self.sl(slice(-(N//2), None))
             padded_array[su] = trunc_array[su]
             if self.N % 2 == 0:  # Use symmetric Fourier interpolator
-                su[self.axis] = N//2
-                padded_array[su] *= 0.5
-                su[self.axis] = -(N//2)
-                padded_array[su] *= 0.5
+                padded_array[self.sl(N//2)] *= 0.5
+                padded_array[self.sl(-(N//2))] *= 0.5
 
         elif self.dealias_direct:
             N = trunc_array.shape[self.axis]
-            su = [slice(None)]*padded_array.ndim
-            su[self.axis] = slice(int(np.floor(N/3.)), int(np.floor(2./3.*N)))
+            su = self.sl(slice(int(np.floor(N/3.)), int(np.floor(2./3.*N))))
             padded_array[su] = 0
 
     def convolve(self, u, v, uv=None, fast=True):

@@ -104,12 +104,15 @@ The following bases are defined in submodules
     * R2CBasis - Real to complex Fourier transforms
     * C2CBasis - Complex to complex transforms
 
-All bases have methods for transforms and inner products on single- or multidimensional Numpy data arrays. The following code shows how to create a Fourier basis and subsequently perform a forward and an inverse discrete Fourier transform on a random array. The `uc` array is only used to test that the transform cycle returns the original data.
+All bases have methods for transforms and inner products on single- or multidimensional 
+Numpy data arrays. The following code shows how to create a Fourier basis and subsequently 
+perform a forward and an inverse discrete Fourier transform on a random array. 
+The `uc` array is only used to test that the transform cycle returns the original data.
 !bc pyshell
     >>> from shenfun import *
     >>> import numpy as np
     >>> N = 16
-    >>> FFT = fourier.bases.R2CBasis(N, plan=True) 
+    >>> FFT = fourier.bases.R2CBasis(N) 
     >>> u = np.random.random(N)
     >>> uc = u.copy()
     >>> u_hat = FFT.forward(u)
@@ -171,7 +174,7 @@ Weak variational forms are created using test and trial functions, as shown in S
     >>> from shenfun.chebyshev.bases import ShenDirichletBasis
     >>> from shenfun import inner, TestFunction, TrialFunction    
     >>> N = 8
-    >>> SD = ShenDirichletBasis(N, plan=True)
+    >>> SD = ShenDirichletBasis(N)
     >>> u = TrialFunction(SD)
     >>> v = TestFunction(SD)
 !ec
@@ -337,7 +340,7 @@ fe = ue.diff(x, 2)
 
 # Create Fourier basis with N basis functions
 N = 32
-ST = FourierBasis(N, np.float, plan=True)
+ST = FourierBasis(N, np.float)
 u = TrialFunction(ST)
 v = TestFunction(ST)
 X = ST.mesh(N)
@@ -484,7 +487,7 @@ ul = lambdify(x, ue, 'numpy')
 fl = lambdify(x, fe, 'numpy')
 
 N = 32
-SD = ShenDirichletBasis(N, plan=True)
+SD = ShenDirichletBasis(N)
 X = SD.mesh(N)
 u = TrialFunction(SD)
 v = TestFunction(SD)

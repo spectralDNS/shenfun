@@ -217,7 +217,9 @@ ul = lambdify(x, ue, 'numpy')
 fl = lambdify(x, fe, 'numpy')
 !ec
 
-These solutions are now valid for a continuous domain. The next step is thus to discretize, using a discrete mesh $\{x_j\}_{j=0}^{N-1}$ and a finite number of basis functions. 
+These solutions are now valid for a continuous domain. The next step is thus to 
+discretize, using a discrete mesh $\{x_j\}_{j=0}^{N-1}$ and a finite number of 
+basis functions. 
 
 Note that it is not mandatory to use `Sympy` for the manufactured solution. Since the
 solution is known (ref{eq:solution}), we could just as well simply use `Numpy`
@@ -226,20 +228,17 @@ easier to experiment and quickly change the solution.
 
 ===== Discretization =====
 
-We create a basis with a given number of basis functions, and extract the computational mesh from the basis itself
+We create a basis with a given number of basis functions, and extract the computational 
+mesh from the basis itself
 
 !bc pycod
 N = 32
-SD = Basis(N, 'Chebyshev', plan=True, bc=(a, b))
-#SD = Basis(N, 'Legendre', plan=True, bc=(a, b))
+SD = Basis(N, 'Chebyshev', bc=(a, b))
+#SD = Basis(N, 'Legendre', bc=(a, b))
 X = SD.mesh(N)
 !ec
 
-Note that we can either choose a Legendre or a Chebyshev basis. The keyword
-`plan` is used to tell the class created in ${func('Basis')} that it can 
-go ahead and plan its transforms with "pyfftw": "https://pyfftw.org", because 
-this basis will not be a part of a tensorproductspace, in which case the 
-planning would need to wait.
+Note that we can either choose a Legendre or a Chebyshev basis.
 
 ===== Variational formulation =====
 
@@ -364,7 +363,7 @@ fl = lambdify(x, fe, 'numpy')
 # Size of discretization
 N = eval(sys.argv[-2])
 
-SD = Basis(N, family=family, plan=True, bc=(a, b))
+SD = Basis(N, family=family, bc=(a, b))
 X = SD.mesh(N)
 u = TrialFunction(SD)
 v = TestFunction(SD)

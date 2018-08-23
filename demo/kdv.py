@@ -5,9 +5,9 @@ from mpl_toolkits.mplot3d import axes3d
 from matplotlib.collections import PolyCollection
 
 N = 256
-T = Basis(N, 'F', dtype='d', plan=True)
+T = Basis(N, 'F', dtype='d')
 #Tp = T
-Tp = Basis(N, 'F', dtype='d', plan=True, padding_factor=1.5)
+Tp = Basis(N, 'F', dtype='d', padding_factor=1.5)
 x = T.points_and_weights(N)[0]
 u = TrialFunction(T)
 v = TestFunction(T)

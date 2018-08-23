@@ -42,10 +42,10 @@ Solver = base.la.Helmholtz
 regtest = True
 
 # Use sympy to compute a rhs, given an analytical solution
-a = -0
-b = 0
+a = 0
+b = 1
 x, y, z = symbols("x,y,z")
-ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-z**2) + a*(1 + z)/2. + b*(1 - z)/2.
+ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-x**2) + a*(1 + x)/2. + b*(1 - x)/2.
 fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
 
 # Lambdify for faster evaluation
@@ -60,7 +60,7 @@ N = [N, N+1, N+2]
 SD = Basis(N[0], family=family, bc=(a, b))
 K1 = Basis(N[1], family='F', dtype='D')
 K2 = Basis(N[2], family='F', dtype='d')
-T = TensorProductSpace(comm, (K1, K2, SD), axes=(0, 1, 2), slab=True)
+T = TensorProductSpace(comm, (SD, K1, K2), axes=(0, 1, 2), slab=True)
 X = T.local_mesh()
 u = TrialFunction(T)
 v = TestFunction(T)
@@ -88,7 +88,7 @@ H = Solver(**matrices)
 u_hat = Function(T)           # Solution spectral space
 t0 = time.time()
 u_hat = H(u_hat, f_hat)       # Solve
-uq = T.backward(u_hat, fast_transform=False)
+uq = T.backward(u_hat, fast_transform=True)
 
 # Compare with analytical solution
 uj = ul(*X)
