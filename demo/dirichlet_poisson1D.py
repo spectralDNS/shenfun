@@ -26,9 +26,9 @@ assert isinstance(int(sys.argv[-2]), int)
 family = sys.argv[-1].lower()
 
 # Use sympy to compute a rhs, given an analytical solution
-domain = (-1., 2.)
-a = 0.
-b = 0.
+domain = (-1., 1.)
+a = -1.
+b = 1.
 x = symbols("x")
 ue = sin(4*np.pi*x)*(x+domain[0])*(x+domain[1]) + a*(x-domain[0])/2. + b*(domain[1] - x)/2.
 fe = ue.diff(x, 2)
@@ -40,7 +40,7 @@ fl = lambdify(x, fe, 'numpy')
 # Size of discretization
 N = int(sys.argv[-2])
 
-SD = Basis(N, family=family, plan=True, bc=(a, b), domain=domain)
+SD = Basis(N, family=family, bc=(a, b), domain=domain)
 X = SD.mesh(N)
 u = TrialFunction(SD)
 v = TestFunction(SD)

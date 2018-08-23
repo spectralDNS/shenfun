@@ -6,7 +6,7 @@ import shenfun
 N = 8
 comm = MPI.COMM_WORLD
 
-V = shenfun.Basis(N, 'C', plan=True)
+V = shenfun.Basis(N, 'C')
 u0 = shenfun.TrialFunction(V)
 
 T = shenfun.TensorProductSpace(comm, (V, V))

@@ -7,7 +7,7 @@ from shenfun.chebyshev import bases as cbases
 from shenfun.legendre import matrices as lmatrices
 from shenfun.legendre import bases as lbases
 
-from copy import deepcopy
+from copy import copy
 import six
 from itertools import product
 
@@ -123,11 +123,11 @@ def test_imul(key, mat, quad):
     trial = key[1]
     mat = mat((test[0](N, quad=quad), test[1]),
               (trial[0](N, quad=quad), trial[1]))
-    mc = deepcopy(dict(mat))
+    mc = copy(dict(mat))
     mat *= 2
     assert mat.scale == 2.0
 
-    mat = shenfun.SparseMatrix(deepcopy(dict(mc)), mat.shape)
+    mat = shenfun.SparseMatrix(copy(dict(mc)), mat.shape)
     mat *= 2
     assert mat.scale == 2.0
 
@@ -140,7 +140,7 @@ def test_mul(key, mat, quad):
     mc = 2.*m
     assert mc.scale == 2.0
 
-    mat = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
+    mat = shenfun.SparseMatrix(copy(dict(m)), m.shape)
     mc = 2.*mat
     assert mc.scale == 2.0
 
@@ -152,7 +152,7 @@ def test_mul2():
     mat = shenfun.SparseMatrix({-2:1, -1:1, 0: 1, 1:1, 2:1}, (3, 3))
     c = mat * v
     assert np.allclose(c, 3)
-    SD = shenfun.Basis(8, "L", bc=(0, 0), plan=True, scaled=True)
+    SD = shenfun.Basis(8, "L", bc=(0, 0), scaled=True)
     u = shenfun.TrialFunction(SD)
     v = shenfun.TestFunction(SD)
     mat = shenfun.inner(shenfun.grad(u), shenfun.grad(v))
@@ -169,7 +169,7 @@ def test_rmul(key, mat, quad):
     mc = m*2.
     assert mc.scale == 2.0
 
-    mat = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
+    mat = shenfun.SparseMatrix(copy(dict(m)), m.shape)
     mc = mat*2.
     assert mc.scale == 2.0
 
@@ -183,14 +183,14 @@ def test_div(key, mat, quad):
     mc = m/2.
     assert mc.scale == 0.5
 
-    mat = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
+    mat = shenfun.SparseMatrix(copy(dict(m)), m.shape)
     mc = mat/2.
     assert mc.scale == 0.5
 
 @pytest.mark.parametrize('basis, quad', list(product(cBasis, cquads))+
                          list(product(lBasis, lquads)))
 def test_div2(basis, quad):
-    B = basis(8, quad=quad, plan=True)
+    B = basis(8, quad=quad)
     u = shenfun.TrialFunction(B)
     v = shenfun.TestFunction(B)
     m = shenfun.inner(u, v)
@@ -209,7 +209,7 @@ def test_add(key, mat, quad):
     mc = m + m
     assert mc.scale == 2.0
 
-    mat = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
+    mat = shenfun.SparseMatrix(copy(dict(m)), m.shape)
     mc = m + mat
     for key, val in six.iteritems(mc):
         assert np.allclose(val, m[key]*2)
@@ -220,12 +220,12 @@ def test_iadd(key, mat, quad):
     trial = key[1]
     m = mat((test[0](N, quad=quad), test[1]),
             (trial[0](N, quad=quad), trial[1]))
-    mc = deepcopy(m)
+    mc = copy(m)
     m += mc
     assert m.scale == 2.0
 
-    m1 = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
-    m2 = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
+    m1 = shenfun.SparseMatrix(copy(dict(m)), m.shape)
+    m2 = shenfun.SparseMatrix(copy(dict(m)), m.shape)
     m1 += m2
     assert m1.scale == 2.0
 
@@ -235,12 +235,12 @@ def test_isub(key, mat, quad):
     trial = key[1]
     m = mat((test[0](N, quad=quad), test[1]),
             (trial[0](N, quad=quad), trial[1]))
-    mc = deepcopy(m)
+    mc = copy(m)
     m -= mc
     assert m.scale == 0.0
 
-    m1 = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
-    m2 = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
+    m1 = shenfun.SparseMatrix(copy(dict(m)), m.shape)
+    m2 = shenfun.SparseMatrix(copy(dict(m)), m.shape)
     m1 -= m2
     assert m1.scale == 0.0
 
@@ -253,8 +253,8 @@ def test_sub(key, mat, quad):
     mc = m - m
     assert mc.scale == 0.0
 
-    m1 = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
-    m2 = shenfun.SparseMatrix(deepcopy(dict(m)), m.shape)
+    m1 = shenfun.SparseMatrix(copy(dict(m)), m.shape)
+    m2 = shenfun.SparseMatrix(copy(dict(m)), m.shape)
 
     mc = m1 - m2
     assert mc.scale == 0.0

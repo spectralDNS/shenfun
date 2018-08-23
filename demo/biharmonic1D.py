@@ -50,7 +50,7 @@ fl = lambdify(x, fe, 'numpy')
 # Size of discretization
 N = int(sys.argv[-2])
 
-SD = Basis(N, family=family, bc='Biharmonic', domain=domain, plan=True)
+SD = Basis(N, family=family, bc='Biharmonic', domain=domain)
 X = SD.mesh(N)
 u = TrialFunction(SD)
 v = TestFunction(SD)

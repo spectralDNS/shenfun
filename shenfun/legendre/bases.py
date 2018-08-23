@@ -135,18 +135,13 @@ class Basis(LegendreBase):
 
                - LG - Legendre-Gauss
                - GL - Legendre-Gauss-Lobatto
-
-        plan : bool, optional
-               Plan transforms on __init__ or not. If basis is part of a
-               TensorProductSpace, then planning needs to be delayed.
         domain : 2-tuple of floats, optional
                  The computational domain
     """
 
-    def __init__(self, N=0, quad="GL", plan=False, domain=(-1., 1.)):
+    def __init__(self, N=0, quad="GL", domain=(-1., 1.)):
         LegendreBase.__init__(self, N, quad, domain=domain)
-        if plan:
-            self.plan(N, 0, np.float, {})
+        self.plan(N, 0, np.float, {})
 
     def eval(self, x, fk, output_array=None):
         if output_array is None:
@@ -172,9 +167,6 @@ class ShenDirichletBasis(LegendreBase):
 
         bc : tuple of numbers
              Boundary conditions at edges of domain
-        plan : bool, optional
-               Plan transforms on __init__ or not. If basis is part of a
-               TensorProductSpace, then planning needs to be delayed.
         domain : 2-tuple of floats, optional
                  The computational domain
         scaled : bool, optional
@@ -182,15 +174,14 @@ class ShenDirichletBasis(LegendreBase):
                  Scaled test functions give a stiffness matrix equal to the
                  identity matrix.
     """
-    def __init__(self, N=0, quad="LG", bc=(0., 0.), plan=False,
+    def __init__(self, N=0, quad="LG", bc=(0., 0.),
                  domain=(-1., 1.), scaled=False):
         LegendreBase.__init__(self, N, quad, domain=domain)
         from shenfun.tensorproductspace import BoundaryValues
         self.LT = Basis(N, quad)
         self._scaled = scaled
         self._factor = np.ones(1)
-        if plan:
-            self.plan(N, 0, np.float, {})
+        self.plan(N, 0, np.float, {})
         self.bc = BoundaryValues(self, bc=bc)
 
     @staticmethod
@@ -253,7 +244,7 @@ class ShenDirichletBasis(LegendreBase):
         output_array[:] = leg.legval(x, fk[:-2]*self._factor)
         w_hat[2:] = fk[:-2]*self._factor
         output_array -= leg.legval(x, w_hat)
-        output_array += 0.5*(fk[-1]*(1+x)+fk[-2]*(1-x))
+        output_array += 0.5*(fk[-1]*(1-x)+fk[-2]*(1+x))
         return output_array
 
     def plan(self, shape, axis, dtype, options):
@@ -289,20 +280,16 @@ class ShenNeumannBasis(LegendreBase):
 
         mean : number
                mean value
-        plan : bool, optional
-               Plan transforms on __init__ or not. If basis is part of a
-               TensorProductSpace, then planning needs to be delayed.
         domain : 2-tuple of floats, optional
                  The computational domain
     """
 
-    def __init__(self, N=0, quad="LG", mean=0, plan=False, domain=(-1., 1.)):
+    def __init__(self, N=0, quad="LG", mean=0, domain=(-1., 1.)):
         LegendreBase.__init__(self, N, quad, domain=domain)
         self.mean = mean
         self.LT = Basis(N, quad)
         self._factor = np.zeros(0)
-        if plan:
-            self.plan(N, 0, np.float, {})
+        self.plan(N, 0, np.float, {})
 
     @staticmethod
     def boundary_condition():
@@ -323,10 +310,8 @@ class ShenNeumannBasis(LegendreBase):
     def scalar_product(self, input_array=None, output_array=None, fast_transform=False):
         output = SpectralBase.scalar_product(self, input_array, output_array, False)
 
-        s = self.sl(0)
-        output[s] = self.mean*np.pi
-        s[self.axis] = slice(-2, None)
-        output[s] = 0
+        output[self.sl(0)] = self.mean*np.pi
+        output[self.sl(slice(-2, None))] = 0
         return output
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -395,20 +380,15 @@ class ShenBiharmonicBasis(LegendreBase):
 
                - LG - Legendre-Gauss
                - GL - Legendre-Gauss-Lobatto
-
-        plan : bool, optional
-               Plan transforms on __init__ or not. If basis is part of a
-               TensorProductSpace, then planning needs to be delayed.
         domain : 2-tuple of floats, optional
                  The computational domain
     """
-    def __init__(self, N=0, quad="LG", plan=False, domain=(-1., 1.)):
+    def __init__(self, N=0, quad="LG", domain=(-1., 1.)):
         LegendreBase.__init__(self, N, quad, domain=domain)
         self.LT = Basis(N, quad)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
-        if plan:
-            self.plan(N, 0, np.float, {})
+        self.plan(N, 0, np.float, {})
 
     @staticmethod
     def boundary_condition():
@@ -421,8 +401,7 @@ class ShenBiharmonicBasis(LegendreBase):
         return P
 
     def set_factor_arrays(self, v):
-        s = [slice(None)]*v.ndim
-        s[self.axis] = self.slice()
+        s = self.sl(self.slice())
         if not self._factor1.shape == v[s].shape:
             k = self.wavenumbers(v.shape, axis=self.axis).astype(np.float)
             self._factor1 = (-2*(2*k+5)/(2*k+7)).astype(float)
@@ -508,29 +487,23 @@ class SecondNeumannBasis(LegendreBase): # pragma: no cover
 
                - LG - Legendre-Gauss
                - GL - Legendre-Gauss-Lobatto
-
         mean : number
                Mean value of solution
-        plan : bool, optional
-               Plan transforms on __init__ or not. If basis is part of a
-               TensorProductSpace, then planning needs to be delayed.
         domain : 2-tuple of floats, optional
                  The computational domain
     """
-    def __init__(self, N=0, quad="LG", mean=0, plan=False, domain=(-1., 1.)):
+    def __init__(self, N=0, quad="LG", mean=0, domain=(-1., 1.)):
         LegendreBase.__init__(self, N, quad, domain=domain)
         self.mean = mean
         self.LT = Basis(N, quad)
         self._factor = np.zeros(0)
-        if plan:
-            self.plan(N, 0, np.float, {})
+        self.plan(N, 0, np.float, {})
 
     def get_vandermonde_basis(self, V):
         assert self.N == V.shape[1]
         P = np.zeros(V.shape)
         k = np.arange(self.N).astype(np.float)[:-4]
         a_k = -(k+1)*(k+2)*(2*k+3)/((k+3)*(k+4)*(2*k+7))
-
         P[:, :-4] = V[:, :-4] + (a_k-1)*V[:, 2:-2] - a_k*V[:, 4:]
         P[:, -4] = V[:, 0]
         P[:, -3] = V[:, 1]

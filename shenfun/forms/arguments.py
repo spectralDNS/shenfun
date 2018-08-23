@@ -5,7 +5,7 @@ __all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',
            'Array', 'Basis')
 
 def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
-          scaled=None, plan=False, padding_factor=1.0, dealias_direct=False):
+          scaled=None, padding_factor=1.0, dealias_direct=False):
     """Return basis for one dimension
 
     Parameters
@@ -43,9 +43,6 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
                  The computational domain
         scaled : bool
                  Whether to use scaled basis (only Legendre)
-        plan : bool, optional
-               Plan transforms on __init__ or not. If basis is part of a
-               TensorProductSpace, then planning needs to be delayed.
         padding_factor : float, optional
                          For padding backward transform (for dealiasing, and
                          only for Fourier)
@@ -59,7 +56,7 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
     >>> C1 = Basis(32, 'C', quad='GC')
 
     """
-    par = {'plan': plan}
+    par = {}
     if domain is not None:
         par['domain'] = domain
     if family.lower() in ('fourier', 'f'):

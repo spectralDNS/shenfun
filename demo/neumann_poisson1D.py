@@ -41,7 +41,7 @@ fl = lambdify(x, fe, 'numpy')
 # Size of discretization
 N = 32
 
-SD = Basis(N, family=family, bc='Neumann', plan=True)
+SD = Basis(N, family=family, bc='Neumann')
 X = SD.mesh(N)
 u = TrialFunction(SD)
 v = TestFunction(SD)

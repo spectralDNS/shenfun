@@ -166,8 +166,8 @@ class SpectralBase(object):
         self.axis = 0
         self.xfftn_fwd = None
         self.xfftn_bck = None
-        self._xfftn_fwd = None    # pyfftw forward transform function
-        self._xfftn_bck = None    # pyfftw backward transform function
+        self._xfftn_fwd = None    # external forward transform function
+        self._xfftn_bck = None    # external backward transform function
         self.padding_factor = np.floor(N*padding_factor)/N
 
     def points_and_weights(self, N, scaled=False):
@@ -349,7 +349,7 @@ class SpectralBase(object):
         return self.backward.output_array
 
     def vandermonde(self, x):
-        r"""Return Vandermonde matrix
+        r"""Return Vandermonde matrix based on the primary basis.
 
         Evaluates basis :math:`\psi_k(x)` for all wavenumbers :math:`k`, and
         all ``x``. Returned Vandermonde matrix is an N x M matrix with N the length
@@ -369,6 +369,13 @@ class SpectralBase(object):
             x : array of floats
                 points for evaluation
 
+        Note
+        ----
+        This function return a matrix composed of the primary orthogonal basis.
+        That is, it is using either pure Chebyshev, Legendre or exponentials.
+        The tru Vandermonde matrix of a bisis is obtained through
+        :meth:`.get_vandermonde_basis`.
+
         """
         raise NotImplementedError
 
@@ -378,7 +385,7 @@ class SpectralBase(object):
         Parameters
         ----------
             V : 2D array
-                Vandermonde matrix
+                Vandermonde matrix of primary basis
 
         """
         return V
@@ -495,25 +502,6 @@ class SpectralBase(object):
             array = np.dot(P, fc)
             output_array[:] = np.moveaxis(array, 0, self.axis)
 
-        return output_array
-
-    def vandermonde_evaluate_local_expansion(self, P, input_array, output_array):
-        """Evaluate expansion at certain points, possibly different from
-        the quadrature points
-
-        Parameters
-        ----------
-            P : 2D array
-                Vandermode matrix containing local points only
-            input_array : array
-                Expansion coefficients
-            output_array : array
-                Function values on points
-
-        """
-        fc = np.moveaxis(input_array, self.axis, -2)
-        array = np.dot(P, fc)
-        output_array[:] = np.moveaxis(array, 0, self.axis)
         return output_array
 
     def apply_inverse_mass(self, array):
@@ -715,6 +703,10 @@ class SpectralBase(object):
             return 1
         return R/L
 
+    @property
+    def ndim_tensorspace(self):
+        return self.forward.input_array.ndim
+
     def __hash__(self):
         return hash(repr(self.__class__))
 
@@ -733,7 +725,7 @@ class SpectralBase(object):
         """
         s = [slice(None)]*self.forward.output_array.ndim
         s[self.axis] = a
-        return s
+        return tuple(s)
 
     def rank(self):
         """Return rank of basis"""

@@ -7,7 +7,7 @@ Demo - 1D Poisson equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 9, 2018
+:Date: Aug 23, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the Poisson
 equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as shown in Figure :ref:`fig:ct0`, is demonstrated. 
@@ -270,7 +270,9 @@ The exact solution :math:`u_e(x)` and the right hand side :math:`f_e(x)` are cre
     ul = lambdify(x, ue, 'numpy')
     fl = lambdify(x, fe, 'numpy')
 
-These solutions are now valid for a continuous domain. The next step is thus to discretize, using a discrete mesh :math:`\{x_j\}_{j=0}^{N-1}` and a finite number of basis functions. 
+These solutions are now valid for a continuous domain. The next step is thus to 
+discretize, using a discrete mesh :math:`\{x_j\}_{j=0}^{N-1}` and a finite number of 
+basis functions. 
 
 Note that it is not mandatory to use ``Sympy`` for the manufactured solution. Since the
 solution is known :eq:`eq:solution`, we could just as well simply use ``Numpy``
@@ -280,20 +282,17 @@ easier to experiment and quickly change the solution.
 Discretization
 --------------
 
-We create a basis with a given number of basis functions, and extract the computational mesh from the basis itself
+We create a basis with a given number of basis functions, and extract the computational 
+mesh from the basis itself
 
 .. code-block:: python
 
     N = 32
-    SD = Basis(N, 'Chebyshev', plan=True, bc=(a, b))
-    #SD = Basis(N, 'Legendre', plan=True, bc=(a, b))
+    SD = Basis(N, 'Chebyshev', bc=(a, b))
+    #SD = Basis(N, 'Legendre', bc=(a, b))
     X = SD.mesh(N)
 
-Note that we can either choose a Legendre or a Chebyshev basis. The keyword
-``plan`` is used to tell the class created in :func:`.Basis` that it can 
-go ahead and plan its transforms with `pyfftw <https://pyfftw.org>`__, because 
-this basis will not be a part of a tensorproductspace, in which case the 
-planning would need to wait.
+Note that we can either choose a Legendre or a Chebyshev basis.
 
 Variational formulation
 -----------------------

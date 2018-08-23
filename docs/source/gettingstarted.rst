@@ -30,12 +30,11 @@ the regular Chebyshev basis :math:`\{T_k\}_{k=0}^{N-1}`, where :math:`T_k` is th
 
     from shenfun import Basis
     N = 8
-    T = Basis(N, 'Chebyshev', plan=True, bc=None)
+    T = Basis(N, 'Chebyshev', bc=None)
 
 Here ``bc=None`` is used to indicate that there are no boundary conditions associated
 with this basis, which is the default, so it could just as well have been left out.
-The ``plan=True`` is included to indicate that the :func:`.Basis` class can go ahead and
-plan its forward and backward transforms, that are to be used later on. To create
+To create
 a regular Legendre basis (i.e., :math:`\{L_k\}_{k=0}^{N-1}`, where :math:`L_k` is the
 :math:`k`'th Legendre polynomial), just replace 
 ``Chebyshev`` with ``Legendre`` above. And to create a Fourier basis, just use 

@@ -76,24 +76,24 @@ class Helmholtz(object):
     Parameters
     ----------
         ADDmat : A
-                 Stiffness matrix (Dirichlet basis)
+            Stiffness matrix (Dirichlet basis)
         BDDmat : B
-                 Mass matrix (Dirichlet basis)
+            Mass matrix (Dirichlet basis)
         ANNmat : A
-                  Stiffness matrix (Neumann basis)
+            Stiffness matrix (Neumann basis)
         BNNmat : B
-                 Mass matrix (Neumann basis)
+            Mass matrix (Neumann basis)
 
     where :math:`\alpha` and :math:`\beta` are avalable as A.scale and B.scale.
 
     Attributes
     ----------
         axis : int
-               The axis over which to solve for
+            The axis over which to solve for
         neumann : bool
-                  Whether or not bases are Neumann
+            Whether or not bases are Neumann
         bc : BoundaryValues
-             For Dirichlet problem with inhomogeneous boundary values
+            For Dirichlet problem with inhomogeneous boundary values
 
     Variables are extracted from the matrices
 
@@ -303,12 +303,13 @@ class Biharmonic(object):
 
         a_0 u'''' + \alpha u'' + \beta u = b
 
-    where :math:`u` is the solution, :math:`b` is the right hand side and :math:`a_0, \alpha` and
-    :math:`\beta` are scalars, or arrays of scalars for a multidimensional problem.
+    where :math:`u` is the solution, :math:`b` is the right hand side and
+    :math:`a_0, \alpha` and :math:`\beta` are scalars, or arrays of scalars for
+    a multidimensional problem.
 
-    The user must provide mass, stiffness and biharmonic matrices and scale arrays
-    :math:`(a_0/\alpha/\beta)`. The matrices and scales can be provided as
-    either kwargs or args
+    The user must provide mass, stiffness and biharmonic matrices and scale
+    arrays :math:`(a_0/\alpha/\beta)`. The matrices and scales can be provided
+    as either kwargs or args
 
     As 6 arguments
 
@@ -329,18 +330,18 @@ class Biharmonic(object):
     Parameters
     ----------
         SBBmat : S
-                 Biharmonic matrix
+            Biharmonic matrix
         ABBmat : A
-                 Stiffness matrix
+            Stiffness matrix
         BBBmat : B
-                 Mass matrix
+            Mass matrix
 
     where a0, alfa and beta must be avalable as S.scale, A.scale, B.scale.
 
     Attributes
     ----------
         axis : int
-               The axis over which to solve for
+            The axis over which to solve for
 
     Variables are extracted from the matrices
 
@@ -537,18 +538,18 @@ class PDMA(object):
     Parameters
     ----------
         solver : str
-                 Choose between implementations ('cython', 'python')
+            Choose between implementations ('cython', 'python')
         ABBmat : A
-                 Stiffness matrix
+            Stiffness matrix
         BBBmat : B
-                 Mass matrix
+            Mass matrix
 
     where alfa and beta must be avalable as A.scale, B.scale.
 
     Attributes
     ----------
         axis : int
-               The axis over which to solve for
+            The axis over which to solve for
 
     Variables are extracted from the matrices
 
@@ -674,8 +675,8 @@ class PDMA(object):
             u : array
                 Output array
 
-        If b and u are multidimensional, then the axis over which to solve for is
-        determined on creation of the class.
+        If b and u are multidimensional, then the axis over which to solve for
+        is determined on creation of the class.
 
         """
         if np.ndim(u) == 3:
@@ -697,3 +698,4 @@ class PDMA(object):
 
         #u /= self.mat.scale
         return u
+
