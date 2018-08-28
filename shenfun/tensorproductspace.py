@@ -139,13 +139,13 @@ class TensorProductSpace(object):
         Parameters
         ----------
             a_hat : array
-                    Input array of shape and type as output array from
-                    self.forward
+                Input array of shape and type as output array from
+                self.forward
             b_hat : array
-                    Input array of shape and type as output array from
-                    self.forward
+                Input array of shape and type as output array from
+                self.forward
             ab_hat : array
-                     Return array of same type and shape as a_hat and b_hat
+                Return array of same type and shape as a_hat and b_hat
 
         Note
         ----
@@ -200,9 +200,9 @@ class TensorProductSpace(object):
         ----------
             points : float or array of floats
             coefficients : array
-                           Expansion coefficients
+                Expansion coefficients
             output_array : array
-                           Return array, function values at points
+                Return array, function values at points
         """
         P = []
         r2c = -1
@@ -273,9 +273,9 @@ class TensorProductSpace(object):
         ----------
             points : float or array of floats
             coefficients : array
-                           Expansion coefficients
+                Expansion coefficients
             output_array : array
-                           Return array, function values at points
+                Return array, function values at points
         """
         r2c = -1
         last_conj_index = -1
@@ -312,9 +312,9 @@ class TensorProductSpace(object):
         ----------
             points : float or array of floats
             coefficients : array
-                           Expansion coefficients
+                Expansion coefficients
             output_array : array
-                           Return array, function values at points
+                Return array, function values at points
         """
         P = []
         r2c = -1
@@ -356,10 +356,10 @@ class TensorProductSpace(object):
         Parameters
         ----------
             scaled : bool, optional
-                     Scale wavenumbers with size of box
+                Scale wavenumbers with size of box
             eliminate_highest_freq : bool, optional
-                                     Set Nyquist frequency to zero for evenly
-                                     shaped axes
+                Set Nyquist frequency to zero for evenly shaped axes
+
         """
         K = []
         for base in self:
@@ -374,13 +374,13 @@ class TensorProductSpace(object):
         Parameters
         ----------
             broadcast : bool, optional
-                        Broadcast returned wavenumber arrays to actual
-                        dimensions of TensorProductSpace
+                Broadcast returned wavenumber arrays to actual
+                dimensions of TensorProductSpace
             scaled : bool, optional
-                     Scale wavenumbers with size of box
+                Scale wavenumbers with size of box
             eliminate_highest_freq : bool, optional
-                                     Set Nyquist frequency to zero for evenly
-                                     shaped axes
+                Set Nyquist frequency to zero for evenly shaped axes
+
         """
         k = self.wavenumbers(scaled=scaled, eliminate_highest_freq=eliminate_highest_freq)
         lk = []
@@ -408,15 +408,15 @@ class TensorProductSpace(object):
         Parameters
         ----------
             broadcast : bool, optional
-                        Broadcast each 1D mesh to real shape of
-                        TensorProductSpace
+                Broadcast each 1D mesh to real shape of
+                :class:`.TensorProductSpace`
         """
         m = self.mesh()
         lm = []
         for axis, (n, s) in enumerate(zip(m, self.local_slice(False))):
             ss = [slice(None)]*len(m)
             ss[axis] = s
-            lm.append(n[ss])
+            lm.append(n[tuple(ss)])
         if broadcast is True:
             return [np.broadcast_to(m, self.local_shape(False)) for m in lm]
         return lm
@@ -427,10 +427,9 @@ class TensorProductSpace(object):
         Parameters
         ----------
             spectral : bool, optional
-                       If True then return shape of spectral space, i.e.,
-                       the input to a backward transfer. If False then return
-                       shape of physical space, i.e., the input to a
-                       forward transfer.
+                If True then return shape of spectral space, i.e., the input to
+                a backward transfer. If False then return shape of physical
+                space, i.e., the input to a forward transfer.
         """
         if spectral == False:
             return [int(np.round(base.N*base.padding_factor)) for base in self]
@@ -454,10 +453,9 @@ class TensorProductSpace(object):
         Parameters
         ----------
             spectral : bool, optional
-                       If True then return local shape of spectral space, i.e.,
-                       the input to a backward transfer. If False then return
-                       local shape of physical space, i.e., the input to a
-                       forward transfer.
+                If True then return local shape of spectral space, i.e., the
+                input to a backward transfer. If False then return local shape
+                of physical space, i.e., the input to a forward transfer.
         """
         if not spectral:
             return self.forward.input_pencil.subshape
@@ -470,12 +468,10 @@ class TensorProductSpace(object):
         Parameters
         ----------
             spectral : bool, optional
-                       If True then return local slice of spectral pace, i.e.,
-                       the input to a backward transfer. If False then return
-                       local slice of physical space, i.e., the input to a
-                       forward transfer.
+                If True then return local slice of spectral pace, i.e., the
+                input to a backward transfer. If False then return local slice
+                of physical space, i.e., the input to a forward transfer.
         """
-
         if spectral is not True:
             ip = self.forward.input_pencil
             s = [slice(start, start+shape) for start, shape in zip(ip.substart,
@@ -518,7 +514,7 @@ class MixedTensorProductSpace(object):
     Parameters
     ----------
         spaces : list
-                 List of TensorProductSpaces
+            List of TensorProductSpaces
     """
 
     def __init__(self, spaces):
@@ -557,13 +553,13 @@ class MixedTensorProductSpace(object):
         Parameters
         ----------
             a_hat : array
-                    Input array of shape and type as output array from
-                    self.forward
+                Input array of shape and type as output array from
+                self.forward
             b_hat : array
-                    Input array of shape and type as output array from
-                    self.forward
+                Input array of shape and type as output array from
+                self.forward
             ab_hat : array
-                     Return array of same type and shape as a_hat and b_hat
+                Return array of same type and shape as a_hat and b_hat
 
         Note
         ----
@@ -615,7 +611,7 @@ class VectorTensorProductSpace(MixedTensorProductSpace):
     Parameters
     ----------
         space : TensorProductSpace
-                Space to create vector from
+            Space to create vector from
     """
 
     def __init__(self, space):
@@ -678,8 +674,7 @@ class Convolve(object):
     Parameters
     ----------
         padding_space : TensorProductSpace
-                        Space with regular padding backward and truncation
-                        forward.
+            Space with regular padding backward and truncation forward.
     """
 
     def __init__(self, padding_space):
@@ -718,14 +713,14 @@ class Convolve(object):
 
 
 class BoundaryValues(object):
-    """Class for setting nonhomogeneous boundary conditions for a 1D Dirichlet base
-    inside a multidimensional TensorProductSpace.
+    """Class for setting nonhomogeneous boundary conditions for a 1D Dirichlet
+    base inside a multidimensional TensorProductSpace.
 
     Parameters
     ----------
         T : TensorProductSpace
         bc : tuple of numbers
-             Tuple with physical boundary values at edges of 1D domain
+            Tuple with physical boundary values at edges of 1D domain
     """
     # pylint: disable=protected-access, redefined-outer-name, dangerous-default-value, unsubscriptable-object
 
