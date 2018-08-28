@@ -49,7 +49,9 @@ class LegendreBase(SpectralBase):
     def reference_domain(self):
         return (-1., 1.)
 
-    def points_and_weights(self, N, scaled=False):
+    def points_and_weights(self, N=None, scaled=False):
+        if N is None:
+            N = self.N
         if self.quad == "LG":
             points, weights = leg.leggauss(N)
         elif self.quad == "GL":
@@ -191,7 +193,7 @@ class ShenDirichletBasis(LegendreBase):
     def set_factor_array(self, v):
         if self.is_scaled():
             if not self._factor.shape == v.shape:
-                k = self.wavenumbers(v.shape, self.axis).astype(np.float)
+                k = self.wavenumbers().astype(np.float)
                 self._factor = 1./np.sqrt(4*k+6)
 
     def is_scaled(self):
@@ -304,7 +306,7 @@ class ShenNeumannBasis(LegendreBase):
 
     def set_factor_array(self, v):
         if not self._factor.shape == v.shape:
-            k = self.wavenumbers(v.shape, self.axis).astype(np.float)
+            k = self.wavenumbers().astype(np.float)
             self._factor = k*(k+1)/(k+2)/(k+3)
 
     def scalar_product(self, input_array=None, output_array=None, fast_transform=False):
@@ -403,7 +405,7 @@ class ShenBiharmonicBasis(LegendreBase):
     def set_factor_arrays(self, v):
         s = self.sl(self.slice())
         if not self._factor1.shape == v[s].shape:
-            k = self.wavenumbers(v.shape, axis=self.axis).astype(np.float)
+            k = self.wavenumbers().astype(np.float)
             self._factor1 = (-2*(2*k+5)/(2*k+7)).astype(float)
             self._factor2 = ((2*k+3)/(2*k+7)).astype(float)
 
@@ -511,7 +513,7 @@ class SecondNeumannBasis(LegendreBase): # pragma: no cover
 
     def set_factor_array(self, v):
         if not self._factor.shape == v.shape:
-            k = self.wavenumbers(v.shape, self.axis).astype(np.float)
+            k = self.wavenumbers().astype(np.float)
             self._factor = -(k+1)*(k+2)*(2*k+3)/((k+3)*(k+4)*(2*k+7))
 
     #def evaluate_expansion_all(self, fk, output_array):

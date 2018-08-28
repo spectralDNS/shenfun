@@ -42,7 +42,7 @@ fl = lambdify(x, fe, 'numpy')
 N = 32
 
 SD = Basis(N, family=family, bc='Neumann')
-X = SD.mesh(N)
+X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)
 

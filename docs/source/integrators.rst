@@ -78,7 +78,7 @@ We then create two functions representing the linear and nonlinear part of
     def LinearRHS(**params):
         return -inner(Dx(u, 0, 3), v)
 
-    k = T.wavenumbers(N, scaled=True, eliminate_highest_freq=True)
+    k = T.wavenumbers(scaled=True, eliminate_highest_freq=True)
     def NonlinearRHS(u, u_hat, rhs, **params):
         rhs.fill(0)
         u_[:] = T.backward(u_hat, u_)
@@ -96,7 +96,7 @@ The solution vector ``u_`` needs also to be initialized according to :eq:`eq:ini
 
     A = 25.
     B = 16.
-    x = T.points_and_weights(N)[0]
+    x = T.points_and_weights()[0]
     u_[:] = 3*A**2/np.cosh(0.5*A*(x-np.pi+2))**2 + 3*B**2/np.cosh(0.5*B*(x-np.pi+1))**2
     u_hat = T.forward(u_, u_hat)
 

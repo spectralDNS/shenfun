@@ -170,68 +170,52 @@ class SpectralBase(object):
         self._xfftn_bck = None    # external backward transform function
         self.padding_factor = np.floor(N*padding_factor)/N
 
-    def points_and_weights(self, N, scaled=False):
+    def points_and_weights(self, N=None, scaled=False):
         """Return points and weights of quadrature
 
         Parameters
         ----------
-            N : int
+            N : int, optional
                 Number of quadrature points
             scaled : bool, optional
                 Whether or not to scale with domain size
         """
         raise NotImplementedError
 
-    def mesh(self, N, axis=0):
+    def mesh(self):
         """Return the computational mesh
 
         All dimensions, except axis, are obtained through broadcasting.
 
-        Parameters
-        ---------
-            N : int or list/array of ints
-                May be a list/array of ints if base is part of a
-                TensorProductSpace with several dimensions
-            axis : int, optional
-                The axis of this base in a TensorProductSpace
         """
-        N = list(N) if np.ndim(N) else [N]
-        x = self.points_and_weights(N[axis], scaled=True)[0]
-        X = self.broadcast_to_ndims(x, len(N), axis)
+        x = self.points_and_weights(scaled=True)[0]
+        X = self.broadcast_to_ndims(x)
         return X
 
-    def wavenumbers(self, N, axis=0, **kw):
+    def wavenumbers(self, bcast=True, **kw):
         """Return the wavenumbermesh
 
         All dimensions, except axis, are obtained through broadcasting.
 
         Parameters
         ----------
-            N : int or list/array of ints
-                If N is a float then we have a 1D array. If N is an array, then
-                the wavenumber returned is a 1D array broadcasted to the shape
-                of N.
-            axis : int, optional
-                The axis of this base in a TensorProductSpace
+            bcast : bool
+                Whether or not to broadcast
+
         """
-        N = list(N) if np.ndim(N) else [N]
-        assert self.N == N[axis]
         s = self.slice()
         k = np.arange(s.start, s.stop)
-        K = self.broadcast_to_ndims(k, len(N), axis)
-        return K
+        if bcast is True:
+            k = self.broadcast_to_ndims(k)
+        return k
 
-    @staticmethod
-    def broadcast_to_ndims(x, ndims, axis=0):
-        """Return 1D array x as an array of shape ndim
+    def broadcast_to_ndims(self, x):
+        """Return 1D array x as an array of shape according to planned for
+        :class:`.TensorProductSpace`
 
         Parameters
         ----------
             x : 1D array
-            ndims : int
-                The number of dimensions to broadcast to
-            axis : int, optional
-                The axis over which x is changing
 
         Note
         ----
@@ -241,15 +225,20 @@ class SpectralBase(object):
         Example
         -------
         >>> import numpy as np
-        >>> from shenfun.spectralbase import SpectralBase
+        >>> from shenfun import Basis, TensorProductSpace
+        >>> from mpi4py import MPI
+        >>> K0 = Basis(8, 'F', dtype='D')
+        >>> K1 = Basis(8, 'F', dtype='d')
+        >>> T = TensorProductSpace(MPI.COMM_WORLD, (K0, K1))
         >>> x = np.arange(4)
-        >>> y = SpectralBase.broadcast_to_ndims(x, 4, axis=2)
+        >>> y = K0.broadcast_to_ndims(x)
         >>> print(y.shape)
-        (1, 1, 4, 1)
+        (4, 1)
         """
+        ndims = self.ndim_tensorspace
         s = [np.newaxis]*ndims
-        s[axis] = slice(None)
-        return x[s]
+        s[self.axis] = slice(None)
+        return x[tuple(s)]
 
     def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
         """Compute weighted scalar product
@@ -434,7 +423,7 @@ class SpectralBase(object):
         assert abs(self.padding_factor-1) < 1e-8
         assert self.N == input_array.shape[self.axis]
 
-        points, weights = self.points_and_weights(self.N)
+        points, weights = self.points_and_weights()
         V = self.vandermonde(points)
         P = self.get_vandermonde_basis(V)
 
@@ -466,7 +455,7 @@ class SpectralBase(object):
         """
         assert abs(self.padding_factor-1) < 1e-8
         assert self.N == output_array.shape[self.axis]
-        points = self.points_and_weights(self.N)[0]
+        points = self.points_and_weights()[0]
         V = self.vandermonde(points)
         P = self.get_vandermonde_basis(V)
 

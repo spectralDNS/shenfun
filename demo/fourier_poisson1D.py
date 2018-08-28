@@ -43,7 +43,7 @@ ST = Basis(N, dtype=dtype, domain=(-2*np.pi, 2*np.pi))
 u = TrialFunction(ST)
 v = TestFunction(ST)
 
-X = ST.mesh(N)
+X = ST.mesh()
 
 # Get f on quad points and exact solution
 fj = Array(ST, buffer=fl(X))

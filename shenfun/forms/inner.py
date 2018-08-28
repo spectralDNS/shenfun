@@ -232,7 +232,7 @@ def inner(expr0, expr1, output_array=None):
             if isinstance(space[axis], FourierBase):
                 mat = mat[0]    # get diagonal
                 if np.ndim(mat):
-                    mat = space[axis].broadcast_to_ndims(mat, space.ndim(), axis)
+                    mat = space[axis].broadcast_to_ndims(mat)
 
                 scale = scale*mat
 

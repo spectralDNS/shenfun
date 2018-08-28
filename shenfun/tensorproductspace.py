@@ -293,7 +293,7 @@ class TensorProductSpace(object):
                     last_conj_index = M
                 sl = self.local_slice()[axis].start
             x.append(base.map_reference_domain(points[axis]))
-            w.append(base.wavenumbers(base.N, 0)[self.local_slice()[axis]].astype(np.float))
+            w.append(base.wavenumbers(bcast=False)[self.local_slice()[axis]].astype(np.float))
 
         if len(self) == 2:
             output_array = shenfun.optimization.evaluate.evaluate_lm_2D(list(self.bases), output_array, coefficients, x[0], x[1], w[0], w[1], r2c, last_conj_index, sl)
@@ -362,9 +362,8 @@ class TensorProductSpace(object):
                                      shaped axes
         """
         K = []
-        N = self.shape()
-        for axis, base in enumerate(self):
-            K.append(base.wavenumbers(N, axis, scaled=scaled,
+        for base in self:
+            K.append(base.wavenumbers(scaled=scaled,
                                       eliminate_highest_freq=eliminate_highest_freq))
         return K
 
@@ -398,9 +397,8 @@ class TensorProductSpace(object):
         TensorProductSpace
         """
         X = []
-        N = self.shape(False)
-        for axis, base in enumerate(self):
-            X.append(base.mesh(N, axis))
+        for base in self:
+            X.append(base.mesh())
         return X
 
     def local_mesh(self, broadcast=False):

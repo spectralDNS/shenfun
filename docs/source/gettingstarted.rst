@@ -65,7 +65,7 @@ can create this polynomial using `sympy <www.sympy.org>`_ ::
 The Sympy function ``u`` can now be evaluated on the quadrature points of basis
 :math:`T`::
 
-    xj = T.mesh(N)
+    xj = T.mesh()
     ue = Array(T)
     ue[:] = [u.subs(x, xx) for xx in xj]
     print(xj)

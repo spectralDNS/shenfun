@@ -66,7 +66,9 @@ class ChebyshevBase(SpectralBase):
     def family():
         return 'chebyshev'
 
-    def points_and_weights(self, N, scaled=False):
+    def points_and_weights(self, N=None, scaled=False):
+        if N is None:
+            N = self.N
         if self.quad == "GL":
             points = -(n_cheb.chebpts2(N)).astype(float)
             weights = np.full(N, np.pi/(N-1))
@@ -482,7 +484,7 @@ class ShenNeumannBasis(ChebyshevBase):
     def set_factor_array(self, v):
         """Set intermediate factor arrays"""
         if not self._factor.shape == v.shape:
-            k = self.wavenumbers(v.shape, self.axis).astype(float)
+            k = self.wavenumbers().astype(float)
             self._factor = (k/(k+2))**2
 
     def evaluate_scalar_product(self, input_array, output_array, fast_transform=True):
@@ -608,7 +610,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
         """Set intermediate factor arrays"""
         s = self.sl(self.slice())
         if not self._factor1.shape == v[s].shape:
-            k = self.wavenumbers(v.shape, axis=self.axis).astype(float)
+            k = self.wavenumbers().astype(float)
             self._factor1 = (-2*(k+2)/(k+3)).astype(float)
             self._factor2 = ((k+1)/(k+3)).astype(float)
 

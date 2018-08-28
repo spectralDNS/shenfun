@@ -96,7 +96,9 @@ class FourierBase(SpectralBase):
     def boundary_condition():
         return 'Periodic'
 
-    def points_and_weights(self, N, scaled=False):
+    def points_and_weights(self, N=None, scaled=False):
+        if N is None:
+            N = self.N
         points = np.arange(N, dtype=np.float)*2*np.pi/N
         if scaled is True:
             points = self.map_true_domain(points)
@@ -108,7 +110,7 @@ class FourierBase(SpectralBase):
             output_array = np.zeros(x.shape, dtype=np.complex)
 
         if self._k is None:
-            self._k = self.wavenumbers(self.N, 0)
+            self._k = self.wavenumbers(bc=False)
         k = self._k[i]
         output_array[:] = np.exp(1j*x*k)
         return output_array
@@ -122,7 +124,7 @@ class FourierBase(SpectralBase):
                 points for evaluation
 
         """
-        k = self.wavenumbers(self.N, 0)
+        k = self.wavenumbers(bcast=False)
         x = np.atleast_1d(x)
         return np.exp(1j*x[:, np.newaxis]*k[np.newaxis, :])
 
@@ -137,7 +139,7 @@ class FourierBase(SpectralBase):
                 k'th derivative
         """
         if k > 0:
-            l = self.wavenumbers(self.N, 0, scaled=True)
+            l = self.wavenumbers(bcast=False, scaled=True)
             V = V*((1j*l)**k)[np.newaxis, :]
         return V
 
@@ -208,16 +210,15 @@ class R2CBasis(FourierBase):
         self._xfftn_bck = fftw.irfftn
         self.plan((int(np.floor(padding_factor*N)),), 0, np.float, {})
 
-    def wavenumbers(self, N, axis=0, scaled=False, eliminate_highest_freq=False):
-        N = list(N) if np.ndim(N) else [N]
-        assert self.N == N[axis]
-        k = np.fft.rfftfreq(N[axis], 1./N[axis])
-        if N[axis] % 2 == 0 and eliminate_highest_freq:
+    def wavenumbers(self, bcast=True, scaled=False, eliminate_highest_freq=False):
+        k = np.fft.rfftfreq(self.N, 1./self.N)
+        if self.N % 2 == 0 and eliminate_highest_freq:
             k[-1] = 0
         if scaled:
             k *= self.domain_factor()
-        K = self.broadcast_to_ndims(k, len(N), axis)
-        return K
+        if bcast is True:
+            k = self.broadcast_to_ndims(k)
+        return k
 
     def _get_truncarray(self, shape, dtype):
         shape = list(shape)
@@ -231,7 +232,7 @@ class R2CBasis(FourierBase):
     def vandermonde_evaluate_expansion_all(self, input_array, output_array):
         assert abs(self.padding_factor-1) < 1e-8
         assert self.N == output_array.shape[self.axis]
-        points = self.points_and_weights(self.N)[0]
+        points = self.points_and_weights()[0]
         P = self.vandermonde(points)
         if output_array.ndim == 1:
             output_array[:] = np.dot(P, input_array).real
@@ -316,7 +317,7 @@ class R2CBasis(FourierBase):
 
         elif self.dealias_direct:
             N = self.N
-            su = self.sl(slice(int(np.floor(N/3.)), None))
+            su = self.sl(slice(N//3, None))
             padded_array[su] = 0
 
     def convolve(self, u, v, uv=None, fast=True):
@@ -417,16 +418,15 @@ class C2CBasis(FourierBase):
         self._xfftn_bck = fftw.ifftn
         self.plan((int(np.floor(padding_factor*N)),), 0, np.complex, {})
 
-    def wavenumbers(self, N, axis=0, scaled=False, eliminate_highest_freq=False):
-        N = list(N) if np.ndim(N) else [N]
-        assert self.N == N[axis]
-        k = np.fft.fftfreq(N[axis], 1./N[axis])
-        if N[axis] % 2 == 0 and eliminate_highest_freq:
-            k[N[axis]//2] = 0
+    def wavenumbers(self, bcast=True, scaled=False, eliminate_highest_freq=False):
+        k = np.fft.fftfreq(self.N, 1./self.N)
+        if self.N % 2 == 0 and eliminate_highest_freq:
+            k[self.N//2] = 0
         if scaled:
             k *= self.domain_factor()
-        K = self.broadcast_to_ndims(k, len(N), axis)
-        return K
+        if bcast is True:
+            k = self.broadcast_to_ndims(k)
+        return k
 
     def slice(self):
         return slice(0, self.N)
@@ -454,7 +454,7 @@ class C2CBasis(FourierBase):
 
         elif self.dealias_direct:
             N = trunc_array.shape[self.axis]
-            su = self.sl(slice(int(np.floor(N/3.)), int(np.floor(2./3.*N))))
+            su = self.sl(slice(N//3, -(N//3)))
             padded_array[su] = 0
 
     def convolve(self, u, v, uv=None, fast=True):
