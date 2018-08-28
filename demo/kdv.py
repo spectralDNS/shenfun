@@ -8,10 +8,10 @@ N = 256
 T = Basis(N, 'F', dtype='d')
 #Tp = T
 Tp = Basis(N, 'F', dtype='d', padding_factor=1.5)
-x = T.points_and_weights(N)[0]
+x = T.points_and_weights()[0]
 u = TrialFunction(T)
 v = TestFunction(T)
-k = T.wavenumbers(N, scaled=True, eliminate_highest_freq=True)
+k = T.wavenumbers(scaled=True, eliminate_highest_freq=True)
 
 u_ = Array(T)
 Up = Array(Tp)

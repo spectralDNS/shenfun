@@ -59,7 +59,7 @@ fl = lambdify(x, fe, 'numpy')
 N = int(sys.argv[-2])
 
 SD = Basis(N, family=family, bc='Dirichlet')
-X = SD.mesh(N)
+X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)
 
@@ -93,7 +93,7 @@ if family == 'chebyshev':
     print("Error=%2.16e" %(error))
 
 else:
-    x, w = SD.points_and_weights(N)
+    x, w = SD.points_and_weights()
     print("Error=%2.16e" %(np.sqrt(np.sum((uj-ua)**2*w))))
 
 assert np.allclose(uj, ua)

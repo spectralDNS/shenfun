@@ -18,9 +18,9 @@ class HDF5Writer(object):
     Parameters
     ----------
         h5name : str
-                 Name of hdf5 file to be created
+            Name of hdf5 file to be created
         names : list of str's
-                Names of fields to be stored
+            Names of fields to be stored
         T : TensorProductSpace
             Instance of a TensorProductSpace. Must be the same as the space
             used for storing with 'write_tstep' and 'write_slice_tstep'
@@ -42,12 +42,12 @@ class HDF5Writer(object):
         Parameters
         ----------
             tstep : int
-                    Time step
+                Time step
             u : array
                 Function or Array. The field to be stored
             spectral : bool, optional
-                       If False, then u is an array from real physical space,
-                       if True, then u is an array from spectral space.
+                If False, then u is an array from real physical space,
+                if True, then u is an array from spectral space.
 
         Note
         ----
@@ -73,9 +73,9 @@ class HDF5Writer(object):
         Parameters
         ----------
             tstep : int
-                    Time step
+                Time step
             sl : list of slices
-                 The slice to be stored
+                The slice to be stored
             u : array
                 Function or Array. The field to be stored
 

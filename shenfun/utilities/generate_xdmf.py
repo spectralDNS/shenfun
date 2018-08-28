@@ -62,7 +62,7 @@ def generate_xdmf(h5filename):
     Parameters
     ----------
         h5filename : str
-                     Name of hdf5-file that we want to decorate with xdmf
+            Name of hdf5-file that we want to decorate with xdmf
     """
     f = h5py.File(h5filename)
     keys = []

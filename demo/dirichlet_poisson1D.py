@@ -41,7 +41,7 @@ fl = lambdify(x, fe, 'numpy')
 N = int(sys.argv[-2])
 
 SD = Basis(N, family=family, bc=(a, b), domain=domain)
-X = SD.mesh(N)
+X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)
 
