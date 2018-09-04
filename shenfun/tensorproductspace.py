@@ -90,16 +90,6 @@ class TensorProductSpace(object):
         self.transfer = []
         self.pencil = [None, None]
 
-        collapse = True
-        if collapse:
-            groups = [[]]
-            for ax in reversed(axes):
-                if np.all([self.subcomm[axis].Get_size() == 1 for axis in ax]):
-                    [groups[0].insert(0, axis) for axis in reversed(ax)]
-                else:
-                    groups.insert(0, ax)
-            self.axes = groups
-
         axes = self.axes[-1]
         pencil = Pencil(self.subcomm, shape, axes[-1])
         self.xfftn.append(self.bases[axes[-1]])
