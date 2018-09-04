@@ -180,7 +180,7 @@ def test_transforms(ST, quad, dim):
     for axis in range(dim):
         bc = [np.newaxis,]*dim
         bc[axis] = slice(None)
-        fij = np.broadcast_to(fj[bc], (N,)*dim).copy()
+        fij = np.broadcast_to(fj[tuple(bc)], (N,)*dim).copy()
 
         ST1 = ST(N, **kwargs)
         ST1.plan((N,)*dim, axis, fij.dtype, {})
@@ -193,6 +193,7 @@ def test_transforms(ST, quad, dim):
         u11 = ST1.backward(u00, u11)
         cc = [0,]*dim
         cc[axis] = slice(None)
+        cc = tuple(cc)
         assert np.allclose(fij[cc], u11[cc])
 
 #test_transforms(cbases.ShenBiharmonicBasis, 'GC', 2)
@@ -220,11 +221,11 @@ def test_axis(ST, quad, axis):
     if hasattr(ST, 'bc'):
         ST.bc.set_tensor_bcs(ST) # To set Dirichlet boundary conditions on multidimensional array
     ck = shenfun.Function(ST)
-    fk = np.broadcast_to(f_hat[bc], ck.shape).copy()
+    fk = np.broadcast_to(f_hat[tuple(bc)], ck.shape).copy()
     ck = B.solve(fk, ck, axis=axis)
     cc = [0,]*3
     cc[axis] = slice(None)
-    assert np.allclose(ck[cc], c)
+    assert np.allclose(ck[tuple(cc)], c)
 
 #test_axis(cbases.ShenDirichletBasis, "GC", 1)
 
@@ -499,6 +500,6 @@ if __name__ == '__main__':
     #test_convolve(fbases.R2CBasis, 8)
     #test_ADDmat(lbases.ShenNeumannBasis, "GL")
     #test_massmatrices(cBasis[3], cBasis[3], 'GC')
-    #test_scalarproduct(cBasis[2], 'GC')
-    test_eval(cBasis[0], 'GC')
+    test_scalarproduct(cBasis[2], 'GC')
+    #test_eval(cBasis[0], 'GC')
 

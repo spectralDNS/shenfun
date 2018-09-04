@@ -7,6 +7,7 @@ from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase
 from shenfun.utilities import inheritdocstrings
 from shenfun.optimization import convolve, evaluate
+from shenfun.optimization.numba_math import backward_padding
 
 __all__ = ['FourierBase', 'R2CBasis', 'C2CBasis']
 
@@ -144,6 +145,7 @@ class FourierBase(SpectralBase):
         return V
 
     # Reimplemented for efficiency (smaller array in *= when truncated)
+    #@profile
     def forward(self, input_array=None, output_array=None, fast_transform=True):
         if fast_transform is False:
             return SpectralBase.forward(self, input_array, output_array, False)
@@ -154,7 +156,8 @@ class FourierBase(SpectralBase):
         self.forward.xfftn()
         self._truncation_forward(self.forward.tmp_array,
                                  self.forward.output_array)
-        self.forward._output_array *= (1./self.N/self.padding_factor)
+        M = self.get_normalization()
+        self.forward._output_array *= M
 
         if output_array is not None:
             output_array[...] = self.forward.output_array
@@ -180,13 +183,16 @@ class FourierBase(SpectralBase):
             SpectralBase.evaluate_expansion_all(self, input_array, output_array, False)
         else:
             self.backward.xfftn(normalise_idft=False)
+        assert input_array is self.backward.xfftn.input_array
 
     def evaluate_scalar_product(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
             self.vandermonde_scalar_product(input_array, output_array)
             return
         output = self.scalar_product.xfftn()
-        output *= (1./self.N/self.padding_factor)
+        M = self.get_normalization()
+        output *= M
+        assert input_array is self.scalar_product.xfftn.input_array
 
     def vandermonde_scalar_product(self, input_array, output_array):
         SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
@@ -306,12 +312,14 @@ class R2CBasis(FourierBase):
 
     def _padding_backward(self, trunc_array, padded_array):
         if self.padding_factor > 1.0+1e-8:
+            #backward_padding(padded_array, trunc_array, self.axis, self.N)
             padded_array.fill(0)
             N = trunc_array.shape[self.axis]
             s = [slice(0, n) for n in trunc_array.shape]
-            padded_array[s] = trunc_array[s]
+            padded_array[tuple(s)] = trunc_array[tuple(s)]
             if self.N % 2 == 0:  # Symmetric Fourier interpolator
                 s[self.axis] = N-1
+                s = tuple(s)
                 padded_array[s] = padded_array[s].real
                 padded_array[s] *= 0.5
 

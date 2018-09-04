@@ -223,7 +223,7 @@ class Helmholtz(object):
     def __call__(self, u, b):
         ss = [slice(None)]*np.ndim(u)
         ss[self.axis] = self.s
-        u[ss] = b[ss]
+        u[ss] = b[tuple(ss)]
 
         #if not self.neumann:
             #s0 = [slice(0, 1)]*u.ndim
@@ -520,7 +520,7 @@ class Helmholtz_2dirichlet(object):
 
             # Apply the inverse in eigen space
             ls = self.T.local_slice()
-            u /= (self.scale['BUB'] + self.lmbdax[:, np.newaxis] + self.lmbday[np.newaxis, :])[ls]
+            u /= (self.scale['BUB'] + self.lmbdax[:, np.newaxis] + self.lmbday[np.newaxis, :])[tuple(ls)]
 
             # Map back to physical space
             u[:] = self.Vx.dot(u)

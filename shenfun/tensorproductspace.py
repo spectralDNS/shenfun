@@ -387,7 +387,7 @@ class TensorProductSpace(object):
         for axis, (n, s) in enumerate(zip(k, self.local_slice(True))):
             ss = [slice(None)]*len(k)
             ss[axis] = s
-            lk.append(n[ss])
+            lk.append(n[tuple(ss)])
         if broadcast is True:
             return [np.broadcast_to(m, self.local_shape(True)) for m in lk]
         return lk

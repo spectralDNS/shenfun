@@ -486,7 +486,7 @@ class SpectralMatrix(SparseMatrix):
         if self.testfunction[0].__class__.__name__ == 'ShenNeumannBasis':
             ss = [slice(None)]*len(v.shape)
             ss[axis] = 0
-            c[ss] = 0
+            c[tuple(ss)] = 0
         return c
 
     def solve(self, b, u=None, axis=0):

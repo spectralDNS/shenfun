@@ -200,7 +200,7 @@ class BNDmat(SpectralMatrix):
         c = super(BNDmat, self).matvec(v, c, format=format, axis=axis)
         s = [slice(None),]*v.ndim
         s[axis] = 0
-        c[s] = 0
+        c[tuple(s)] = 0
         return c
 
 
@@ -277,7 +277,7 @@ class BNTmat(SpectralMatrix):
         c = super(BNTmat, self).matvec(v, c, format=format, axis=axis)
         s = [slice(None),]*v.ndim
         s[axis] = 0
-        c[s] = 0
+        c[tuple(s)] = 0
         return c
 
 
@@ -311,7 +311,7 @@ class BNBmat(SpectralMatrix):
         c = super(BNBmat, self).matvec(v, c, format=format, axis=axis)
         s = [slice(None),]*v.ndim
         s[axis] = 0
-        c[s] = 0
+        c[tuple(s)] = 0
         return c
 
 
@@ -342,7 +342,7 @@ class BTTmat(SpectralMatrix):
         if format == 'self':
             s = [np.newaxis,]*v.ndim # broadcasting
             s[axis] = slice(None)
-            c[:] = self[0][s]*v
+            c[:] = self[0][tuple(s)]*v
             self.scale_array(c)
         else:
             c = super(BTTmat, self).matvec(v, c, format=format, axis=axis)
@@ -385,7 +385,7 @@ class BNNmat(SpectralMatrix):
         c = super(BNNmat, self).matvec(v, c, format=format, axis=axis)
         s = [slice(None),]*v.ndim
         s[axis] = 0
-        c[s] = 0
+        c[tuple(s)] = 0
         return c
 
 
@@ -720,7 +720,7 @@ class CNDmat(SpectralMatrix):
         c = super(CNDmat, self).matvec(v, c, format=format, axis=axis)
         s = [slice(None),]*v.ndim
         s[axis] = 0
-        c[s] = 0
+        c[tuple(s)] = 0
         return c
 
 
@@ -1110,7 +1110,7 @@ class ANNmat(SpectralMatrix):
         us[0] = self.testfunction[0].mean
         sl = [np.newaxis]*b.ndim
         sl[0] = slice(None)
-        us *= j2[sl]
+        us *= j2[tuple(sl)]
 
         if axis > 0:
             u = np.moveaxis(u, 0, axis)

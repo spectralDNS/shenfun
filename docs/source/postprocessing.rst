@@ -46,7 +46,7 @@ consisting of two TensorProductSpaces, and an accompanying writer class as::
     h5file_m = HDF5Writer('mixed.h5', ['u', 'f'], TT)
 
 Let's now consider a transient problem where we step a solution forward in time. 
-We create solution arrays from :class:`.Function` s, and update these Functions
+We create solution arrays from Functions, and update these Functions
 inside a while loop::
 
     u = Function(T)
@@ -151,4 +151,50 @@ mixed.xdmf, mixed_4_slice_slice.xdmf``. These ``xdmf``-files can be opened
 and inspected by ParaView. Note that 1D arrays are not wrapped, and neither are
 4D.
 
+An annoying feature of Paraview is that it views a three-dimensional array of 
+shape :math:`(N_0, N_1, N_2)` as transposed compared to shenfun. That is, 
+for Paraview the *last* axis represents the :math:`x`-axis, whereas
+shenfun considers the first axis to be the :math:`x`-axis. So when opening a
+three-dimensional array in Paraview one needs to be aware. Especially when 
+plotting vectors. Assume that we are working with a Navier-Stokes solver
+and have a three-dimensional :class:`VectorTensorProductSpace` to represent
+the fluid velocity::
+
+    from mpi4py import MPI
+    from shenfun import *
+
+    comm = MPI.COMM_WORLD
+    N = (32, 64, 128)
+    V0 = Basis(N[0], 'F', dtype='D')
+    V1 = Basis(N[1], 'F', dtype='D')
+    V2 = Basis(N[2], 'F', dtype='d')
+    T = TensorProductSpace(comm, (V0, V1, V2))
+    TV = VectorTensorProductSpace(T)
+    U = Array(TV)
+
+To store the resulting :class:`.Array` ``U`` we can create an instance of the 
+:class:`.HDF5Writer` class, using the common ``U, V, W`` to represent the
+velocity in :math:`x`, :math:`y` and :math:`z` directions::
+
+    hdf5file = HDF5Writer("NS.h5", ['U', 'V', 'W'], TV)
+    ...
+    file.write_tstep(0, U)
+    ...
+    file.write_tstep(1, U)
+
+Generate an xdmf file through::
+
+    generate_xdmf('NS.h5')
+
+and open the generated ``NS.xdmf`` file in Paraview. You will then see arrays
+of shape ``(32, 64, 128)`` in :math:`z`, :math:`y` and :math:`x` directions,
+respectively. Other than the swapped coordinate axes there is no difference.
+But be careful if creating vectors in Paraview with the Calculator. The vector
+must be created as::
+
+    U*kHat+V*jHat+W*iHat
+
+where ``U, V, W`` are the three velocity components and ``iHat, jHat, kHat``
+are the three unit vectors in Paraview's :math:`x`, :math:`y` and :math:`z`
+directions. 
 
