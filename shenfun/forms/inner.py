@@ -248,7 +248,7 @@ def inner(expr0, expr1, output_array=None):
             for axis, shape in enumerate(s):
                 if shape > 1:
                     ss[axis] = ls[axis]
-            scale = (scale[ss]).copy()
+            scale = (scale[tuple(ss)]).copy()
 
         if len(nonperiodic) is 0:
             # All diagonal matrices

@@ -52,7 +52,7 @@ class _Fouriermatrix(SpectralMatrix):
                 d[N//2] = 0
             sl = [np.newaxis]*u.ndim
             sl[axis] = slice(None)
-            u[:] = b*d[sl]
+            u[:] = b*d[tuple(sl)]
         else:
             u[:] = b*d
 

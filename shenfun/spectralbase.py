@@ -168,6 +168,7 @@ class SpectralBase(object):
         self.xfftn_bck = None
         self._xfftn_fwd = None    # external forward transform function
         self._xfftn_bck = None    # external backward transform function
+        self._M = 1.0             # Normalization factor
         self.padding_factor = np.floor(N*padding_factor)/N
 
     def points_and_weights(self, N=None, scaled=False):
@@ -182,10 +183,13 @@ class SpectralBase(object):
         """
         raise NotImplementedError
 
-    def mesh(self):
+    def mesh(self, bcast=True):
         """Return the computational mesh
 
-        All dimensions, except axis, are obtained through broadcasting.
+        Parameters
+        ----------
+            bcast : bool
+                Whether or not to broadcast to :meth:`.ndim_tensorspace` dims
 
         """
         x = self.points_and_weights(scaled=True)[0]
@@ -195,12 +199,10 @@ class SpectralBase(object):
     def wavenumbers(self, bcast=True, **kw):
         """Return the wavenumbermesh
 
-        All dimensions, except axis, are obtained through broadcasting.
-
         Parameters
         ----------
             bcast : bool
-                Whether or not to broadcast
+                Whether or not to broadcast to :meth:`.ndim_tensorspace` dims
 
         """
         s = self.slice()
@@ -210,8 +212,8 @@ class SpectralBase(object):
         return k
 
     def broadcast_to_ndims(self, x):
-        """Return 1D array x as an array of shape according to planned for
-        :class:`.TensorProductSpace`
+        """Return 1D array ``x`` as an array of shape according to the planned
+        for :class:`.TensorProductSpace`
 
         Parameters
         ----------
@@ -290,10 +292,10 @@ class SpectralBase(object):
         as planned with self.plan
 
         """
-        if input_array is not None:
-            self.forward.input_array[...] = input_array
+        #if input_array is not None:
+        #    self.forward.input_array[...] = input_array
 
-        self.scalar_product(fast_transform=fast_transform)
+        self.scalar_product(input_array, fast_transform=fast_transform)
         self.apply_inverse_mass(self.forward.tmp_array)
         self._truncation_forward(self.forward.tmp_array,
                                  self.forward.output_array)
@@ -303,6 +305,7 @@ class SpectralBase(object):
             return output_array
         return self.forward.output_array
 
+    #@profile
     def backward(self, input_array=None, output_array=None, fast_transform=True):
         """Compute backward (inverse) transform
 
@@ -433,8 +436,9 @@ class SpectralBase(object):
         else: # broadcasting
             bc_shape = [np.newaxis,]*input_array.ndim
             bc_shape[self.axis] = slice(None)
-            fc = np.moveaxis(input_array*weights[bc_shape], self.axis, -1)
+            fc = np.moveaxis(input_array*weights[tuple(bc_shape)], self.axis, -1)
             output_array[:] = np.moveaxis(np.dot(fc, np.conj(P)), -1, self.axis)
+            #output_array[:] = np.moveaxis(np.tensordot(input_array*weights[bc_shape], np.conj(P), (self.axis, 0)), -1, self.axis)
 
         assert output_array is self.forward.output_array
 
@@ -561,6 +565,8 @@ class SpectralBase(object):
 
             xfftn_fwd.update_arrays(U, V)
             xfftn_bck.update_arrays(V, U)
+            self._M = 1./np.prod(np.take(shape, axis))
+
         else:
             opts = dict(
                 overwrite_input='FFTW_DESTROY_INPUT',
@@ -583,6 +589,7 @@ class SpectralBase(object):
             xfftn_bck = plan_bck(V, n, (axis,), threads=threads, flags=flags, output_array=U)
             V.fill(0)
             U.fill(0)
+            self._M = xfftn_fwd.get_normalization()
 
         self.axis = axis
 
@@ -601,6 +608,9 @@ class SpectralBase(object):
         shape = list(shape)
         shape[self.axis] = int(np.round(shape[self.axis] / self.padding_factor))
         return pyfftw.empty_aligned(shape, dtype=dtype)
+
+    def get_normalization(self):
+        return self._M
 
     def evaluate_expansion_all(self, input_array, output_array,
                                fast_transform=False):
@@ -854,14 +864,7 @@ class FuncWrap(object):
         return object.__getattribute__(self, '_func')
 
     def __call__(self, input_array=None, output_array=None, **kw):
-        if input_array is not None:
-            self.input_array[...] = input_array
-        self.func(None, None, **kw)
-        if output_array is not None:
-            output_array[...] = self.output_array
-            return output_array
-        return self.output_array
-
+        return self.func(input_array, output_array, **kw)
 
 class Transform(FuncWrap):
 
