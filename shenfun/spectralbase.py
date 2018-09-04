@@ -534,6 +534,7 @@ class SpectralBase(object):
         """
         if isinstance(axis, tuple):
             axis = axis[0]
+        #s = tuple(np.take(shape, axis))
 
         if isinstance(self.forward, Transform):
             if self.forward.input_array.shape == shape and self.axis == axis:
