@@ -103,6 +103,7 @@ class LegendreBase(SpectralBase):
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
+            assert len(axis) == 1
             axis = axis[0]
 
         if isinstance(self.forward, Transform):
@@ -110,14 +111,11 @@ class LegendreBase(SpectralBase):
                 # Already planned
                 return
 
-        if isinstance(axis, tuple):
-            axis = axis[0]
-
         U = pyfftw.empty_aligned(shape, dtype=dtype)
         V = pyfftw.empty_aligned(shape, dtype=dtype)
         U.fill(0)
         V.fill(0)
-
+        self._ndim_tensor = U.ndim
         self.axis = axis
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
@@ -251,6 +249,7 @@ class ShenDirichletBasis(LegendreBase):
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
+            assert len(axis) == 1
             axis = axis[0]
 
         if isinstance(self.forward, Transform):
@@ -259,8 +258,9 @@ class ShenDirichletBasis(LegendreBase):
                 return
 
         self.LT.plan(shape, axis, dtype, options)
-        self.axis = self.LT.axis
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
+        self._ndim_tensor = U.ndim
+        self.axis = axis
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
@@ -352,6 +352,7 @@ class ShenNeumannBasis(LegendreBase):
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
+            assert len(axis) == 1
             axis = axis[0]
 
         if isinstance(self.forward, Transform):
@@ -360,8 +361,9 @@ class ShenNeumannBasis(LegendreBase):
                 return
 
         self.LT.plan(shape, axis, dtype, options)
-        self.axis = self.LT.axis
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
+        self._ndim_tensor = U.ndim
+        self.axis = axis
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
@@ -460,6 +462,7 @@ class ShenBiharmonicBasis(LegendreBase):
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
+            assert len(axis) == 1
             axis = axis[0]
 
         if isinstance(self.forward, Transform):
@@ -468,8 +471,9 @@ class ShenBiharmonicBasis(LegendreBase):
                 return
 
         self.LT.plan(shape, axis, dtype, options)
-        self.axis = self.LT.axis
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
+        self._ndim_tensor = U.ndim
+        self.axis = axis
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
@@ -544,6 +548,7 @@ class SecondNeumannBasis(LegendreBase): # pragma: no cover
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
+            assert len(axis) == 1
             axis = axis[0]
 
         if isinstance(self.forward, Transform):
@@ -552,8 +557,10 @@ class SecondNeumannBasis(LegendreBase): # pragma: no cover
                 return
 
         self.LT.plan(shape, axis, dtype, options)
-        self.axis = self.LT.axis
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
+        self._ndim_tensor = U.ndim
+        self.axis = axis
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
+

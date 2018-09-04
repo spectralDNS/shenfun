@@ -135,7 +135,6 @@ def test_massmatrices(test, trial, quad):
     u0 = np.zeros(N)
     u0 = test.scalar_product(fj, u0)
     s = test.slice()
-    #from IPython import embed; embed()
     assert np.allclose(u0[s], u2[s])
 
     # Multidimensional version
@@ -144,6 +143,7 @@ def test_massmatrices(test, trial, quad):
 
     test.plan((N,)*3, 0, np.complex, {})
     u0 = np.zeros((N,)*3, dtype=np.complex)
+
     u0 = test.scalar_product(fj, u0)
     u2 = np.zeros_like(f_hat)
     u2 = BBD.matvec(f_hat, u2)
@@ -194,9 +194,8 @@ def test_transforms(ST, quad, dim):
         cc = [0,]*dim
         cc[axis] = slice(None)
         cc = tuple(cc)
+        #from IPython import embed; embed()
         assert np.allclose(fij[cc], u11[cc])
-
-#test_transforms(cbases.ShenBiharmonicBasis, 'GC', 2)
 
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
 @pytest.mark.parametrize('axis', (0,1,2))
@@ -500,6 +499,7 @@ if __name__ == '__main__':
     #test_convolve(fbases.R2CBasis, 8)
     #test_ADDmat(lbases.ShenNeumannBasis, "GL")
     #test_massmatrices(cBasis[3], cBasis[3], 'GC')
-    test_scalarproduct(cBasis[2], 'GC')
+    test_transforms(cBasis[3], 'GC', 2)
+    #test_scalarproduct(cBasis[2], 'GC')
     #test_eval(cBasis[0], 'GC')
 

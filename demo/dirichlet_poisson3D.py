@@ -111,4 +111,4 @@ if plt is not None and not 'pytest' in os.environ:
     plt.colorbar()
     plt.title('Error')
 
-    plt.show()
+    #plt.show()

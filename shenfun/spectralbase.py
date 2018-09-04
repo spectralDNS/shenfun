@@ -169,6 +169,7 @@ class SpectralBase(object):
         self._xfftn_fwd = None    # external forward transform function
         self._xfftn_bck = None    # external backward transform function
         self._M = 1.0             # Normalization factor
+        self._ndim_tensor = 1     # ndim of belonging TensorProductSpace
         self.padding_factor = np.floor(N*padding_factor)/N
 
     def points_and_weights(self, N=None, scaled=False):
@@ -534,7 +535,6 @@ class SpectralBase(object):
         """
         if isinstance(axis, tuple):
             axis = axis[0]
-        #s = tuple(np.take(shape, axis))
 
         if isinstance(self.forward, Transform):
             if self.forward.input_array.shape == shape and self.axis == axis:
@@ -593,6 +593,7 @@ class SpectralBase(object):
             self._M = xfftn_fwd.get_normalization()
 
         self.axis = axis
+        self._ndim_tensor = U.ndim
 
         if self.padding_factor > 1.+1e-8:
             trunc_array = self._get_truncarray(shape, V.dtype)
@@ -705,7 +706,7 @@ class SpectralBase(object):
 
     @property
     def ndim_tensorspace(self):
-        return self.forward.input_array.ndim
+        return self._ndim_tensor
 
     def __hash__(self):
         return hash(repr(self.__class__))
@@ -723,7 +724,7 @@ class SpectralBase(object):
             a : int or slice object
                 This int or slice is used along self.axis of this basis
         """
-        s = [slice(None)]*self.forward.output_array.ndim
+        s = [slice(None)]*self.ndim_tensorspace
         s[self.axis] = a
         return tuple(s)
 
