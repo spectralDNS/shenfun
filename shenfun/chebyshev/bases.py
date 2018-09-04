@@ -126,7 +126,8 @@ class ChebyshevBase(SpectralBase):
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
-            axis = axis[0]
+            assert len(axis) == 1
+            axis = axis[-1]
 
         if isinstance(self.forward, Transform):
             if self.forward.input_array.shape == shape and self.axis == axis:
@@ -135,9 +136,6 @@ class ChebyshevBase(SpectralBase):
 
         plan_fwd = self._xfftn_fwd
         plan_bck = self._xfftn_bck
-
-        if isinstance(axis, tuple):
-            axis = axis[0]
 
         if 'builders' in self._xfftn_fwd.func.__module__:
             opts = dict(
@@ -178,7 +176,6 @@ class ChebyshevBase(SpectralBase):
             V.fill(0)
             U.fill(0)
 
-        self.axis = axis
         if np.dtype(dtype) is np.dtype('complex'):
             # dct only works on real data, so need to wrap it
             U = pyfftw.empty_aligned(shape, dtype=np.complex)
@@ -188,6 +185,8 @@ class ChebyshevBase(SpectralBase):
             xfftn_fwd = DCTWrap(xfftn_fwd, U, V)
             xfftn_bck = DCTWrap(xfftn_bck, V, U)
 
+        self._ndim_tensor = U.ndim
+        self.axis = axis
         self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
         self.backward = Transform(self.backward, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
@@ -417,7 +416,8 @@ class ShenDirichletBasis(ChebyshevBase):
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
-            axis = axis[0]
+            assert len(axis) == 1
+            axis = axis[-1]
 
         if isinstance(self.forward, Transform):
             if self.forward.input_array.shape == shape and self.axis == axis:
@@ -425,11 +425,12 @@ class ShenDirichletBasis(ChebyshevBase):
                 return
 
         self.CT.plan(shape, axis, dtype, options)
-        self.axis = self.CT.axis
         xfftn_fwd = self.CT.forward.xfftn
         xfftn_bck = self.CT.backward.xfftn
         U = xfftn_fwd.input_array
         V = xfftn_fwd.output_array
+        self._ndim_tensor = U.ndim
+        self.axis = axis
         self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
         self.backward = Transform(self.backward, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
@@ -543,6 +544,7 @@ class ShenNeumannBasis(ChebyshevBase):
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
+            assert len(axis) == 1
             axis = axis[0]
 
         if isinstance(self.forward, Transform):
@@ -551,11 +553,12 @@ class ShenNeumannBasis(ChebyshevBase):
                 return
 
         self.CT.plan(shape, axis, dtype, options)
-        self.axis = self.CT.axis
         xfftn_fwd = self.CT.forward.xfftn
         xfftn_bck = self.CT.backward.xfftn
         U = xfftn_fwd.input_array
         V = xfftn_fwd.output_array
+        self._ndim_tensor = U.ndim
+        self.axis = axis
         self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
         self.backward = Transform(self.backward, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
@@ -684,7 +687,8 @@ class ShenBiharmonicBasis(ChebyshevBase):
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
-            axis = axis[0]
+            assert len(axis) == 1
+            axis = axis[-1]
 
         if isinstance(self.forward, Transform):
             if self.forward.input_array.shape == shape and self.axis == axis:
@@ -692,11 +696,12 @@ class ShenBiharmonicBasis(ChebyshevBase):
                 return
 
         self.CT.plan(shape, axis, dtype, options)
-        self.axis = self.CT.axis
         xfftn_fwd = self.CT.forward.xfftn
         xfftn_bck = self.CT.backward.xfftn
         U = xfftn_fwd.input_array
         V = xfftn_fwd.output_array
+        self._ndim_tensor = U.ndim
+        self.axis = axis
         self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
         self.backward = Transform(self.backward, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)

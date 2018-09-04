@@ -36,12 +36,14 @@ class TensorProductSpace(object):
             will be inferred from the bases.
         slab : bool, optional
             Use 1D slab decomposition.
+        collapse_fourier : bool, optional
+            Collapse axes for Fourier bases if possible
         kw : dict, optional
             Dictionary that can be used to plan transforms. Input to method
             `plan` for the bases.
 
     """
-    def __init__(self, comm, bases, axes=None, dtype=None, slab=False, **kw):
+    def __init__(self, comm, bases, axes=None, dtype=None, slab=False, collapse_fourier=True, **kw):
         self.comm = comm
         self.bases = bases
         shape = self.shape()
@@ -90,6 +92,24 @@ class TensorProductSpace(object):
         self.transfer = []
         self.pencil = [None, None]
 
+        # Try to collapse some transforms into one. Only possible for Fourier
+        if np.any([abs(base.padding_factor - 1.0) > 1e-6 for base in bases]):
+            collapse_fourier = False
+        if collapse_fourier:
+            F = lambda ax: bases[ax].family() == 'fourier' and self.subcomm[ax].Get_size() == 1
+            axis = self.axes[-1][-1]
+            groups = [list(self.axes[-1])]
+            F0 = F(axis)
+            for ax in reversed(self.axes[:-1]):
+                axis = ax[-1]
+                if F0 and F(axis):
+                    groups[0].insert(0, axis)
+                else:
+                    groups.insert(0, list(ax))
+                F0 = F(axis)
+            self.axes = groups
+
+        self.axes = tuple(map(tuple, self.axes))
         axes = self.axes[-1]
         pencil = Pencil(self.subcomm, shape, axes[-1])
         self.xfftn.append(self.bases[axes[-1]])
@@ -128,10 +148,12 @@ class TensorProductSpace(object):
             [o.forward for o in self.transfer],
             self.pencil)
 
-        for base in self.bases:
-            if isinstance(base, (legendre.bases.ShenDirichletBasis,
-                                 chebyshev.bases.ShenDirichletBasis)):
+        for i, base in enumerate(bases):
+            if base.boundary_condition() == 'Dirichlet':
                 base.bc.set_tensor_bcs(self)
+            base.axis = i
+            base._ndim_tensor = len(bases)
+
 
     def convolve(self, a_hat, b_hat, ab_hat):
         """Convolution of a_hat and b_hat
@@ -210,10 +232,13 @@ class TensorProductSpace(object):
         sl = -1
         out = None
         previous_axes = []
-        for i, axes in enumerate(self.axes):
-            assert len(axes) == 1
-            base = self.bases[axes[-1]]
-            axis = axes[-1]
+        flataxes = []
+        for ax in self.axes:
+            for a in ax:
+                flataxes.append(a)
+        for i, axis in enumerate(flataxes):
+            #assert len(axes) == 1
+            base = self.bases[axis]
             x = base.map_reference_domain(points[axis])
             V = base.vandermonde(x)
             D = base.get_vandermonde_basis(V)
@@ -236,7 +261,7 @@ class TensorProductSpace(object):
                 if isinstance(base, R2CBasis):
                     ss = [slice(None)]*len(self)
                     ss[axis] = slice(sl, st)
-                    out += np.conj(np.tensordot(P[sp], coefficients[ss], (1, axis)))
+                    out += np.conj(np.tensordot(P[tuple(sp)], coefficients[tuple(ss)], (1, axis)))
 
             else:
                 k = np.count_nonzero([m < axis for m in previous_axes])
@@ -244,6 +269,7 @@ class TensorProductSpace(object):
                     if not isinstance(base, R2CBasis):
                         out2 = np.sum(P*out, axis=-1)
                     else:
+                        sp = tuple(sp)
                         out2 = np.sum(P.real*out.real - P.imag*out.imag, axis=-1)
                         out2 += np.sum(np.conj(P[sp].real*out[sp].real - P[sp].imag*out[sp].imag), axis=-1)
 
@@ -255,10 +281,11 @@ class TensorProductSpace(object):
                     else:
                         sx = [slice(None), slice(None)]
                     if not isinstance(base, R2CBasis):
-                        out2 = np.sum(P[sx]*out, axis=1+axis-k)
+                        out2 = np.sum(P[tuple(sx)]*out, axis=1+axis-k)
                     else:
-                        out2 = np.sum(P[sx].real*out.real - P[sx].imag*out.imag, axis=1+axis-k)
+                        out2 = np.sum(P[tuple(sx)].real*out.real - P[tuple(sx)].imag*out.imag, axis=1+axis-k)
                         sx[1+axis-k] = slice(sl, st)
+                        sx = tuple(sx)
                         out2 += np.sum(np.conj(P[sx].real*out[sx].real - P[sx].imag*out[sx].imag), axis=1+axis-k)
                 out = out2
             previous_axes.append(axis)
@@ -781,15 +808,12 @@ class BoundaryValues(object):
             number_of_bases_after_dirichlet = 0
             bases = []
             for axes in reversed(T.axes):
-                base = T.bases[axes[0]]
-                assert len(axes) == 1
-                assert axes[0] == base.axis
-                if isinstance(base, (legendre.bases.ShenDirichletBasis,
-                                     chebyshev.bases.ShenDirichletBasis)):
+                #for ax in axes:
+                base = T.bases[axes[-1]]
+                if base.boundary_condition() == 'Dirichlet':
                     axis = self.axis = base.axis
                     dirichlet_base = base
                     bases.append('D')
-
                 else:
                     if axis is None:
                         number_of_bases_after_dirichlet += 1

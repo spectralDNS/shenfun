@@ -4,7 +4,7 @@ Module for defining bases in the Fourier family
 import numpy as np
 import pyfftw
 from mpi4py_fft import fftw
-from shenfun.spectralbase import SpectralBase
+from shenfun.spectralbase import SpectralBase, Transform
 from shenfun.utilities import inheritdocstrings
 from shenfun.optimization import convolve, evaluate
 
@@ -86,6 +86,7 @@ class FourierBase(SpectralBase):
                  dealias_direct=False):
         self.dealias_direct = dealias_direct
         self._k = None
+        self._planned_axes = None  # Collapsing of axes means that this base can be used to plan transforms over several collapsed axes. Store the axes planned for here.
         SpectralBase.__init__(self, N, '', padding_factor, domain)
 
     @staticmethod
@@ -200,6 +201,95 @@ class FourierBase(SpectralBase):
     def reference_domain(self):
         return (0., 2*np.pi)
 
+    def plan(self, shape, axis, dtype, options):
+        """Plan transform
+
+        Allocate work arrays for transforms and set up methods `forward`,
+        `backward` and `scalar_product` with or without padding
+
+        Parameters
+        ----------
+            shape : array
+                Local shape of global array
+            axis : int
+                This base's axis in global TensorProductSpace
+            dtype : numpy.dtype
+                Type of array
+            options : dict
+                Options for planning transforms
+        """
+
+        if isinstance(axis, int):
+            axis = [axis]
+        s = tuple(np.take(shape, axis))
+
+        if isinstance(self.forward, Transform):
+            if self.forward.input_array.shape == shape and axis==self._planned_axes:
+                # Already planned
+                return
+
+        plan_fwd = self._xfftn_fwd
+        plan_bck = self._xfftn_bck
+
+        if 'builders' in self._xfftn_fwd.__module__:
+
+            opts = dict(
+                avoid_copy=True,
+                overwrite_input=True,
+                auto_align_input=True,
+                auto_contiguous=True,
+                planner_effort='FFTW_MEASURE',
+                threads=1,
+            )
+            opts.update(options)
+            U = pyfftw.empty_aligned(shape, dtype=dtype)
+            xfftn_fwd = plan_fwd(U, s=s, axes=axis, **opts)
+            V = xfftn_fwd.output_array
+            xfftn_bck = plan_bck(V, s=s, axes=axis, **opts)
+            V.fill(0)
+            U.fill(0)
+
+            xfftn_fwd.update_arrays(U, V)
+            xfftn_bck.update_arrays(V, U)
+            self._M = 1./np.prod(np.take(shape, axis))
+
+        else:
+            opts = dict(
+                overwrite_input='FFTW_DESTROY_INPUT',
+                planner_effort='FFTW_MEASURE',
+                threads=1,
+            )
+            opts.update(options)
+            flags = (fftw.flag_dict[opts['planner_effort']],
+                     fftw.flag_dict[opts['overwrite_input']])
+            threads = opts['threads']
+
+            U = pyfftw.empty_aligned(shape, dtype=dtype)
+            xfftn_fwd = plan_fwd(U, s=s, axes=axis, threads=threads, flags=flags)
+            V = xfftn_fwd.output_array
+
+            if np.issubdtype(dtype, np.floating):
+                flags = (fftw.flag_dict[opts['planner_effort']],)
+
+            xfftn_bck = plan_bck(V, s=s, axes=axis, threads=threads, flags=flags, output_array=U)
+            V.fill(0)
+            U.fill(0)
+            self._M = xfftn_fwd.get_normalization()
+        self._ndim_tensor = U.ndim
+        self.axis = axis[-1]
+        self._planned_axes = axis
+
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
+            self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
+        else:
+            self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
+            self.backward = Transform(self.backward, xfftn_bck, V, V, U)
+
+        # scalar_product is not padded, just the forward/backward
+        self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
+
 
 class R2CBasis(FourierBase):
     """Fourier basis class for real to complex transforms
@@ -209,11 +299,11 @@ class R2CBasis(FourierBase):
                  dealias_direct=False):
         FourierBase.__init__(self, N, padding_factor, domain, dealias_direct)
         self.N = N
-        #self._xfftn_fwd = pyfftw.builders.rfft
-        #self._xfftn_bck = pyfftw.builders.irfft
+        #self._xfftn_fwd = pyfftw.builders.rfftn
+        #self._xfftn_bck = pyfftw.builders.irfftn
         self._xfftn_fwd = fftw.rfftn
         self._xfftn_bck = fftw.irfftn
-        self.plan((int(np.floor(padding_factor*N)),), 0, np.float, {})
+        self.plan((int(np.floor(padding_factor*N)),), (0,), np.float, {})
 
     def wavenumbers(self, bcast=True, scaled=False, eliminate_highest_freq=False):
         k = np.fft.rfftfreq(self.N, 1./self.N)
@@ -252,10 +342,10 @@ class R2CBasis(FourierBase):
             s = [slice(None)]*fc.ndim
             if self.N % 2 == 0:
                 s[-2] = slice(1, -1)
-                array += np.conj(np.dot(P[:, 1:-1], fc[s])).real
+                array += np.conj(np.dot(P[:, 1:-1], fc[tuple(s)])).real
             else:
                 s[-2] = slice(1, None)
-                array += np.conj(np.dot(P[:, 1:], fc[s])).real
+                array += np.conj(np.dot(P[:, 1:], fc[tuple(s)])).real
 
             output_array[:] = np.moveaxis(array, 0, self.axis)
 
@@ -419,11 +509,11 @@ class C2CBasis(FourierBase):
                  dealias_direct=False):
         FourierBase.__init__(self, N, padding_factor, domain, dealias_direct)
         self.N = N
-        #self._xfftn_fwd = pyfftw.builders.fft
-        #self._xfftn_bck = pyfftw.builders.ifft
+        #self._xfftn_fwd = pyfftw.builders.fftn
+        #self._xfftn_bck = pyfftw.builders.ifftn
         self._xfftn_fwd = fftw.fftn
         self._xfftn_bck = fftw.ifftn
-        self.plan((int(np.floor(padding_factor*N)),), 0, np.complex, {})
+        self.plan((int(np.floor(padding_factor*N)),), (0,), np.complex, {})
 
     def wavenumbers(self, bcast=True, scaled=False, eliminate_highest_freq=False):
         k = np.fft.fftfreq(self.N, 1./self.N)
