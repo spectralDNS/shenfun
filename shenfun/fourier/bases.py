@@ -7,7 +7,6 @@ from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase
 from shenfun.utilities import inheritdocstrings
 from shenfun.optimization import convolve, evaluate
-from shenfun.optimization.numba_math import backward_padding
 
 __all__ = ['FourierBase', 'R2CBasis', 'C2CBasis']
 
