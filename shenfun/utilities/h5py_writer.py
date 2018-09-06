@@ -137,7 +137,7 @@ class HDF5Writer(object):
         self.f.close()
 
     def _write_group(self, name, u, tstep, spectral):
-        s = self.T.local_slice(spectral)
+        s = tuple(self.T.local_slice(spectral))
         group = "/".join((name, "{}D".format(len(u.shape))))
         if group not in self.f:
             self.f.create_group(group)
@@ -154,6 +154,8 @@ class HDF5Writer(object):
             raise NotImplementedError
 
     def _write_slice_group(self, name, slname, ndims, sp, u, sl, sf, inside, tstep):
+        sl = tuple(sl)
+        sf = tuple(sf)
         group = "/".join((name, "{}D".format(ndims), slname))
         if group not in self.f:
             self.f.create_group(group)
