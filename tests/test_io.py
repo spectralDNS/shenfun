@@ -1,9 +1,17 @@
 from shenfun import *
 from mpi4py import MPI
+import pytest
 
 N = (12, 13, 14, 15)
 comm = MPI.COMM_WORLD
 
+skip = False
+try:
+    import h5py
+except ImportError:
+    skip = True
+
+@pytest.mark.skipif(skip, reason='h5py not installed')
 def test_regular_2D():
     K0 = Basis(N[0], 'F')
     K1 = Basis(N[1], 'C')
@@ -14,6 +22,7 @@ def test_regular_2D():
     hfile.close()
     generate_xdmf('h5test.h5')
 
+@pytest.mark.skipif(skip, reason='h5py not installed')
 def test_mixed_2D():
     K0 = Basis(N[0], 'F')
     K1 = Basis(N[1], 'C')
@@ -25,6 +34,7 @@ def test_mixed_2D():
     hfile.close()
     generate_xdmf('h5test2.h5')
 
+@pytest.mark.skipif(skip, reason='h5py not installed')
 def test_regular_3D():
     K0 = Basis(N[0], 'F', dtype='D')
     K1 = Basis(N[1], 'F', dtype='d')
@@ -38,6 +48,7 @@ def test_regular_3D():
     hfile.close()
     generate_xdmf('h5test3.h5')
 
+@pytest.mark.skipif(skip, reason='h5py not installed')
 def test_mixed_3D():
     K0 = Basis(N[0], 'F', dtype='D')
     K1 = Basis(N[1], 'F', dtype='d')
