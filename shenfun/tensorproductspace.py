@@ -92,7 +92,8 @@ class TensorProductSpace(object):
         self.transfer = []
         self.pencil = [None, None]
 
-        # Try to collapse some transforms into one. Only possible for Fourier
+        # At this points axes is a tuple of tuples of length one.
+        # Try to collapse some Fourier transforms into one.
         if np.any([abs(base.padding_factor - 1.0) > 1e-6 for base in bases]):
             collapse_fourier = False
         if collapse_fourier:
@@ -108,8 +109,9 @@ class TensorProductSpace(object):
                     groups.insert(0, list(ax))
                 F0 = F(axis)
             self.axes = groups
-
         self.axes = tuple(map(tuple, self.axes))
+
+        # Configure all transforms
         axes = self.axes[-1]
         pencil = Pencil(self.subcomm, shape, axes[-1])
         self.xfftn.append(self.bases[axes[-1]])
@@ -236,8 +238,7 @@ class TensorProductSpace(object):
         for ax in self.axes:
             for a in ax:
                 flataxes.append(a)
-        for i, axis in enumerate(flataxes):
-            #assert len(axes) == 1
+        for axis in flataxes:
             base = self.bases[axis]
             x = base.map_reference_domain(points[axis])
             V = base.vandermonde(x)

@@ -224,7 +224,7 @@ class FourierBase(SpectralBase):
         s = tuple(np.take(shape, axis))
 
         if isinstance(self.forward, Transform):
-            if self.forward.input_array.shape == shape and axis==self._planned_axes:
+            if self.forward.input_array.shape==shape and axis==self._planned_axes:
                 # Already planned
                 return
 
