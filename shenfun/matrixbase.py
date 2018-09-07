@@ -273,7 +273,10 @@ class SparseMatrix(dict):
         return self.__hash__()
 
     def scale_array(self, c):
-        if self.scale not in (1.0, 1):
+        if isinstance(self.scale, Number):
+            if self.scale not in (1.0, 1):
+                c *= self.scale
+        else:
             c *= self.scale
 
     def solve(self, b, u=None, axis=0):
