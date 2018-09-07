@@ -23,6 +23,7 @@ import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
     Function, Basis, TensorProductSpace
 import time
+from mpi4py_fft.pencil import Subcomm
 from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt
@@ -45,7 +46,7 @@ regtest = True
 a = 0
 b = 1
 x, y, z = symbols("x,y,z")
-ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-x**2) + a*(1 + x)/2. + b*(1 - x)/2.
+ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-z**2) + a*(1 + z)/2. + b*(1 - z)/2.
 fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
 
 # Lambdify for faster evaluation
@@ -57,10 +58,11 @@ N = int(sys.argv[-2])
 N = [N, N+1, N+2]
 #N = (14, 15, 16)
 
-SD = Basis(N[0], family=family, bc=(a, b))
-K1 = Basis(N[1], family='F', dtype='D')
+SD = Basis(N[1], family=family, bc=(a, b))
+K1 = Basis(N[0], family='F', dtype='D')
 K2 = Basis(N[2], family='F', dtype='d')
-T = TensorProductSpace(comm, (SD, K1, K2), axes=(0, 1, 2), slab=True)
+subcomms = Subcomm(MPI.COMM_WORLD, [0, 1, 0])
+T = TensorProductSpace(subcomms, (K1, K2, SD), axes=(2, 0, 1))
 X = T.local_mesh()
 u = TrialFunction(T)
 v = TestFunction(T)
@@ -95,7 +97,7 @@ uj = ul(*X)
 error = comm.reduce(np.linalg.norm(uj-uq)**2)
 if comm.Get_rank() == 0 and regtest == True:
     print("Error=%2.16e" %(np.sqrt(error)))
-#assert np.allclose(uj, uq)
+assert np.allclose(uj, uq)
 
 if plt is not None and not 'pytest' in os.environ:
     plt.figure()

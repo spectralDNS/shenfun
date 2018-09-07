@@ -1686,7 +1686,7 @@ def Solve_Biharmonic_3D_n(np.int64_t axis,
                           np.ndarray[real_t, ndim=4, mode='c'] l1,
                           np.ndarray[real_t, ndim=4, mode='c'] a,
                           np.ndarray[real_t, ndim=4, mode='c'] b,
-                          np.ndarray[real_t, ndim=3] a0):
+                          real_t a0):
 
     cdef:
         int i, j, k, kk, m, M, ke, ko, jj, je, jo
@@ -1748,7 +1748,7 @@ def Solve_Biharmonic_3D_n(np.int64_t axis,
             jo = ko+6
             for j in range(fk.shape[1]):
                 for k in range(fk.shape[2]):
-                    ac = a0[0, j, k]
+                    ac = a0
                     s1[j, k] += uk[je, j, k]/(je+3.)
                     s2[j, k] += (uk[je, j, k]/(je+3.))*((je+2.)*(je+2.))
                     uk[ke, j, k] = (y[ke, j, k] - u1[0, kk, j, k]*uk[ke+2, j, k] - u2[0, kk, j, k]*uk[ke+4, j, k] - a[0, kk, j, k]*ac*s1[j, k] - b[0, kk, j, k]*ac*s2[j, k]) / u0[0, kk, j, k]
@@ -1801,7 +1801,7 @@ def Solve_Biharmonic_3D_n(np.int64_t axis,
                 je = ke+6
                 jo = ko+6
                 for k in range(fk.shape[2]):
-                    ac = a0[j, 0, k]
+                    ac = a0
                     s1[j, k] += uk[j, je, k]/(je+3.)
                     s2[j, k] += (uk[j, je, k]/(je+3.))*((je+2.)*(je+2.))
                     uk[j, ke, k] = (y[j, ke, k] - u1[0, j, kk, k]*uk[j, ke+2, k] - u2[0, j, kk, k]*uk[j, ke+4, k] - a[0, j, kk, k]*ac*s1[j, k] - b[0, j, kk, k]*ac*s2[j, k]) / u0[0, j, kk, k]
@@ -1850,7 +1850,7 @@ def Solve_Biharmonic_3D_n(np.int64_t axis,
                     ko = ke+1
                     je = ke+6
                     jo = ko+6
-                    ac = a0[j, k, 0]
+                    ac = a0
                     s1[j, k] += uk[j, k, je]/(je+3.)
                     s2[j, k] += (uk[j, k, je]/(je+3.))*((je+2.)*(je+2.))
                     uk[j, k, ke] = (y[j, k, ke] - u1[0, j, k, kk]*uk[j, k, ke+2] - u2[0, j, k, kk]*uk[j, k, ke+4] - a[0, j, k, kk]*ac*s1[j, k] - b[0, j, k, kk]*ac*s2[j, k]) / u0[0, j, k, kk]
@@ -1870,7 +1870,7 @@ def Solve_Biharmonic_2D_n(np.int64_t axis,
                           np.ndarray[real_t, ndim=3, mode='c'] l1,
                           np.ndarray[real_t, ndim=3, mode='c'] a,
                           np.ndarray[real_t, ndim=3, mode='c'] b,
-                          np.ndarray[real_t, ndim=2] a0):
+                          real_t a0):
 
     cdef:
         int i, j, k, kk, m, M, ke, ko, jj, je, jo
@@ -1926,7 +1926,7 @@ def Solve_Biharmonic_2D_n(np.int64_t axis,
             je = ke+6
             jo = ko+6
             for j in range(fk.shape[1]):
-                ac = a0[0, j]
+                ac = a0
                 s1[j] += uk[je, j]/(je+3.)
                 s2[j] += (uk[je, j]/(je+3.))*((je+2.)*(je+2.))
                 uk[ke, j] = (y[ke, j] - u1[0, kk, j]*uk[ke+2, j] - u2[0, kk, j]*uk[ke+4, j] - a[0, kk, j]*ac*s1[j] - b[0, kk, j]*ac*s2[j]) / u0[0, kk, j]
@@ -1973,7 +1973,7 @@ def Solve_Biharmonic_2D_n(np.int64_t axis,
                 ko = ke+1
                 je = ke+6
                 jo = ko+6
-                ac = a0[j, 0]
+                ac = a0
                 s1[j] += uk[j, je]/(je+3.)
                 s2[j] += (uk[j, je]/(je+3.))*((je+2.)*(je+2.))
                 uk[j, ke] = (y[j, ke] - u1[0, j, kk]*uk[j, ke+2] - u2[0, j, kk]*uk[j, ke+4] - a[0, j, kk]*ac*s1[j] - b[0, j, kk]*ac*s2[j]) / u0[0, j, kk]
@@ -1987,7 +1987,7 @@ def Solve_Biharmonic_2D_n(np.int64_t axis,
 #@cython.linetrace(True)
 #@cython.binding(True)
 def LU_Biharmonic_3D_n(np.int64_t axis,
-                     np.ndarray[real_t, ndim=3] alfa,
+                     real_t alfa,
                      np.ndarray[real_t, ndim=3] beta,
                      np.ndarray[real_t, ndim=3] ceta,
                      # 3 upper diagonals of SBB
@@ -2016,23 +2016,23 @@ def LU_Biharmonic_3D_n(np.int64_t axis,
         double pi = np.pi
         vector[double] c0, c1, c2
         #double* pc0, pc1, pc2
-        #np.ndarray[real_t, ndim=1] c0 = np.zeros(sii.shape[0]/2)
-        #np.ndarray[real_t, ndim=1] c1 = np.zeros(sii.shape[0]/2)
-        #np.ndarray[real_t, ndim=1] c2 = np.zeros(sii.shape[0]/2)
+        #np.ndarray[real_t, ndim=1] c0 = np.zeros(sii.shape[0]//2)
+        #np.ndarray[real_t, ndim=1] c1 = np.zeros(sii.shape[0]//2)
+        #np.ndarray[real_t, ndim=1] c2 = np.zeros(sii.shape[0]//2)
 
-    M = sii.shape[0]/2
+    M = sii.shape[0]//2
 
     c0.resize(M)
     c1.resize(M)
     c2.resize(M)
 
     if axis == 0:
-        N1 = alfa.shape[1]
-        N2 = alfa.shape[2]
+        N1 = beta.shape[1]
+        N2 = beta.shape[2]
 
         for j in xrange(N1):
             for k in xrange(N2):
-                a = alfa[0, j, k]
+                a = alfa
                 b = beta[0, j, k]
                 c = ceta[0, j, k]
                 for odd in xrange(2):
@@ -2083,8 +2083,8 @@ def LU_Biharmonic_3D_n(np.int64_t axis,
                                 c2[i] -= l1[odd, kk-1, j, k]*c0[i]
 
                         #for i in xrange(kk, M):
-                            #c0[i] = c1[i]
-                            #c1[i] = c2[i]
+                        #    c0[i] = c1[i]
+                        #    c1[i] = c2[i]
                         copy(c1.begin()+kk, c1.end(), c0.begin()+kk)
                         copy(c2.begin()+kk, c2.end(), c1.begin()+kk)
 
@@ -2112,12 +2112,12 @@ def LU_Biharmonic_3D_n(np.int64_t axis,
                             u2[odd, kk, j, k] = c0[kk+2]
 
     elif axis == 1:
-        N1 = alfa.shape[0]
-        N2 = alfa.shape[2]
+        N1 = beta.shape[0]
+        N2 = beta.shape[2]
 
         for j in xrange(N1):
             for k in xrange(N2):
-                a = alfa[j, 0, k]
+                a = alfa
                 b = beta[j, 0, k]
                 c = ceta[j, 0, k]
                 for odd in xrange(2):
@@ -2168,8 +2168,8 @@ def LU_Biharmonic_3D_n(np.int64_t axis,
                                 c2[i] -= l1[odd, j, kk-1, k]*c0[i]
 
                         #for i in xrange(kk, M):
-                            #c0[i] = c1[i]
-                            #c1[i] = c2[i]
+                        #    c0[i] = c1[i]
+                        #    c1[i] = c2[i]
                         copy(c1.begin()+kk, c1.end(), c0.begin()+kk)
                         copy(c2.begin()+kk, c2.end(), c1.begin()+kk)
 
@@ -2197,12 +2197,12 @@ def LU_Biharmonic_3D_n(np.int64_t axis,
                             u2[odd, j, kk, k] = c0[kk+2]
 
     elif axis == 2:
-        N1 = alfa.shape[0]
-        N2 = alfa.shape[1]
+        N1 = beta.shape[0]
+        N2 = beta.shape[1]
 
         for j in xrange(N1):
             for k in xrange(N2):
-                a = alfa[j, k, 0]
+                a = alfa
                 b = beta[j, k, 0]
                 c = ceta[j, k, 0]
                 for odd in xrange(2):
@@ -2253,8 +2253,8 @@ def LU_Biharmonic_3D_n(np.int64_t axis,
                                 c2[i] -= l1[odd, j, k, kk-1]*c0[i]
 
                         #for i in xrange(kk, M):
-                            #c0[i] = c1[i]
-                            #c1[i] = c2[i]
+                        #    c0[i] = c1[i]
+                        #    c1[i] = c2[i]
                         copy(c1.begin()+kk, c1.end(), c0.begin()+kk)
                         copy(c2.begin()+kk, c2.end(), c1.begin()+kk)
 
@@ -2286,7 +2286,7 @@ def LU_Biharmonic_3D_n(np.int64_t axis,
 #@cython.linetrace(True)
 #@cython.binding(True)
 def LU_Biharmonic_2D_n(np.int64_t axis,
-                     np.ndarray[real_t, ndim=2] alfa,
+                     real_t alfa,
                      np.ndarray[real_t, ndim=2] beta,
                      np.ndarray[real_t, ndim=2] ceta,
                      # 3 upper diagonals of SBB
@@ -2315,21 +2315,21 @@ def LU_Biharmonic_2D_n(np.int64_t axis,
         double pi = np.pi
         vector[double] c0, c1, c2
         #double* pc0, pc1, pc2
-        #np.ndarray[real_t, ndim=1] c0 = np.zeros(sii.shape[0]/2)
-        #np.ndarray[real_t, ndim=1] c1 = np.zeros(sii.shape[0]/2)
-        #np.ndarray[real_t, ndim=1] c2 = np.zeros(sii.shape[0]/2)
+        #np.ndarray[real_t, ndim=1] c0 = np.zeros(sii.shape[0]//2)
+        #np.ndarray[real_t, ndim=1] c1 = np.zeros(sii.shape[0]//2)
+        #np.ndarray[real_t, ndim=1] c2 = np.zeros(sii.shape[0]//2)
 
-    M = sii.shape[0]/2
+    M = sii.shape[0]//2
 
     c0.resize(M)
     c1.resize(M)
     c2.resize(M)
 
     if axis == 0:
-        N1 = alfa.shape[1]
+        N1 = beta.shape[1]
 
         for j in xrange(N1):
-            a = alfa[0, j]
+            a = alfa
             b = beta[0, j]
             c = ceta[0, j]
             for odd in xrange(2):
@@ -2409,10 +2409,10 @@ def LU_Biharmonic_2D_n(np.int64_t axis,
                         u2[odd, kk, j] = c0[kk+2]
 
     elif axis == 1:
-        N1 = alfa.shape[0]
+        N1 = beta.shape[0]
 
         for j in xrange(N1):
-            a = alfa[j, 0]
+            a = alfa
             b = beta[j, 0]
             c = ceta[j, 0]
             for odd in xrange(2):

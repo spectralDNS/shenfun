@@ -123,7 +123,7 @@ class Helmholtz(object):
 
     .. math::
 
-        ((2\pi)^2 A_{mj} - (k^2 + l^2) B_{mj}) \hat{u}[k, l, j] = (v, b)_w[k, l, m]
+        (A_{mj} - (k^2 + l^2) B_{mj}) \hat{u}[k, l, j] = (v, b)_w[k, l, m]
 
     Note that :math:`k` only varies along :math:`x`-direction, whereas :math:`l`
     varies along :math:`y`. To allow for Numpy broadcasting these two variables
@@ -145,12 +145,12 @@ class Helmholtz(object):
 
     Numpy will then take care of broadcasting :math:`k` to an array of shape
     (N, M, P) before performing the elementwise multiplication. Likewise, the
-    constant scale :math:`(2\pi)^2` in front of the :math:`A_{mj}` matrix is
+    constant scale :math:`1` in front of the :math:`A_{mj}` matrix is
     stored with shape (1, 1, 1), and multiplying with :math:`\hat{u}` is
     performed as if it was a scalar (as it here happens to be).
 
     This is where the scale arrays in the signature to the Helmholt solver comes
-    from. :math:`\alpha` is here :math:`(2\pi)^2`, whereas :math:`\beta` is
+    from. :math:`\alpha` is here :math:`1`, whereas :math:`\beta` is
     :math:`(k^2+l^2)`. Note that :math:`k+l` is an array of shape (N, M, 1).
 
     """
@@ -160,16 +160,19 @@ class Helmholtz(object):
         if 'ADDmat' in kwargs or 'ANNmat' in kwargs:
             if 'ADDmat' in kwargs:
                 assert 'BDDmat' in kwargs
-                A, B = kwargs['ADDmat'], kwargs['BDDmat']
+                A = self.A = kwargs['ADDmat']
+                B = self.B = kwargs['BDDmat']
 
             if 'ANNmat' in kwargs:
                 assert 'BNNmat' in kwargs
-                A, B = kwargs['ANNmat'], kwargs['BNNmat']
+                A = self.A = kwargs['ANNmat']
+                B = self.B = kwargs['BNNmat']
             A_scale = self.A_scale = A.scale
             B_scale = self.B_scale = B.scale
 
         elif len(args) == 4:
-            A, B = args[0], args[1]
+            A = self.A = args[0]
+            B = self.B = args[1]
             A_scale = self.A_scale = args[2]
             B_scale = self.B_scale = args[3]
 
@@ -255,6 +258,13 @@ class Helmholtz(object):
 
         return u
 
+    def matvec(self, v, c, axis=0):
+        c[:] = 0
+        c1 = np.zeros_like(c)
+        c1 = self.A.matvec(v, c1, axis=axis)
+        c = self.B.matvec(v, c, axis=axis)
+        c += c1
+        return c
 
 class Biharmonic(object):
     r"""Multidimensional Biharmonic solver for
@@ -359,17 +369,17 @@ class Biharmonic(object):
 
         if 'SBBmat' in kwargs:
             assert 'PBBmat' in kwargs and 'BBBmat' in kwargs
-            S = kwargs['SBBmat']
-            A = kwargs['PBBmat']
-            B = kwargs['BBBmat']
+            S = self.S = kwargs['SBBmat']
+            A = self.A = kwargs['PBBmat']
+            B = self.B = kwargs['BBBmat']
             S_scale = S.scale
             A_scale = A.scale
             B_scale = B.scale
 
         elif len(args) == 6:
-            S = args[0]
-            A = args[1]
-            B = args[2]
+            S = self.S = args[0]
+            A = self.A = args[1]
+            B = self.B = args[2]
             S_scale = args[3]
             A_scale = args[4]
             B_scale = args[5]
@@ -407,19 +417,19 @@ class Biharmonic(object):
 
         return u
 
-    #def matvec(self, v, c):
-        #N = v.shape[0]
-        #c[:] = 0
-        #if len(v.shape) > 1:
-            #Matvec.Biharmonic_matvec3D(v, c, self.a0, self.alfa, self.beta, self.S[0], self.S[2],
-                                #self.S[4], self.A[-2], self.A[0], self.A[2],
-                                #self.B[-4], self.B[-2], self.B[0], self.B[2], self.B[4])
-        #else:
-            #Matvec.Biharmonic_matvec(v, c, self.a0, self.alfa, self.beta, self.S[0], self.S[2],
-                                #self.S[4], self.A[-2], self.A[0], self.A[2],
-                                #self.B[-4], self.B[-2], self.B[0], self.B[2], self.B[4])
-        #return c
+    def matvec(self, v, c, axis=0):
+        c[:] = 0
+        c1 = np.zeros_like(c)
+        c1 = self.S.matvec(v, c1, axis=axis)
+        c += c1
+        c1[:] = 0
+        c1 = self.A.matvec(v, c1, axis=axis)
+        c += c1
+        c1[:] = 0
+        c1 = self.B.matvec(v, c1, axis=axis)
+        c += c1
 
+        return c
 
 
 class Helmholtz_2dirichlet(object):

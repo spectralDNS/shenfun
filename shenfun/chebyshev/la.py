@@ -123,7 +123,7 @@ class Helmholtz(object):
 
     .. math::
 
-        ((2\pi)^2 A_{mj} - (k^2 + l^2) B_{mj}) \hat{u}[k, l, j] = (v, b)_w[k, l, m]
+        (A_{mj} - (k^2 + l^2) B_{mj}) \hat{u}[k, l, j] = (v, b)_w[k, l, m]
 
     Note that :math:`k` only varies along :math:`x`-direction, whereas :math:`l`
     varies along :math:`y`. To allow for Numpy broadcasting these two variables
@@ -145,12 +145,12 @@ class Helmholtz(object):
 
     Numpy will then take care of broadcasting :math:`k` to an array of shape
     (N, M, P) before performing the elementwise multiplication. Likewise, the
-    constant scale :math:`(2\pi)^2` in front of the :math:`A_{mj}` matrix is
+    constant scale :math:`1` in front of the :math:`A_{mj}` matrix is
     stored with shape (1, 1, 1), and multiplying with :math:`\hat{u}` is
     performed as if it was a scalar (as it here happens to be).
 
     This is where the scale arrays in the signature to the Helmholt solver comes
-    from. :math:`\alpha` is here :math:`(2\pi)^2`, whereas :math:`\beta` is
+    from. :math:`\alpha` is here :math:`1`, whereas :math:`\beta` is
     :math:`(k^2+l^2)`. Note that :math:`k+l` is an array of shape (N, M, 1).
 
     """
@@ -274,7 +274,7 @@ class Helmholtz(object):
 
         return u
 
-    def matvec(self, v, c):
+    def matvec(self, v, c, axis=0):
         """Matrix vector product c = dot(self, v)
 
         Parameters
@@ -288,9 +288,10 @@ class Helmholtz(object):
         """
         assert self.neumann is False
         c[:] = 0
-        if len(v.shape) > 1:
-            raise NotImplementedError
-            #Matvec.Helmholtz_matvec3D(v, c, 1.0, self.alfa**2, self.A[0], self.A[2], self.B[0])
+        if len(v.shape) == 3:
+            Matvec.Helmholtz_matvec3D(v, c, 1.0, self.beta, self.A[0], self.A[2], self.B[0], axis)
+        elif len(v.shape) == 2:
+            Matvec.Helmholtz_matvec2D(v, c, 1.0, self.beta, self.A[0], self.A[2], self.B[0], axis)
         else:
             Matvec.Helmholtz_matvec(v, c, self.alfa, self.beta, self.A[0], self.A[2], self.B[0])
         return c
@@ -370,10 +371,10 @@ class Biharmonic(object):
 
     .. math::
 
-        ((2\pi)^2 S_{mj} - 2(k^2 + l^2) A_{mj}) + (k^2 + l^2)^2 B_{mj}) \hat{u}[k, l, j] = (v, b)_w[k, l, m]
+        (S_{mj} - 2(k^2 + l^2) A_{mj}) + (k^2 + l^2)^2 B_{mj}) \hat{u}[k, l, j] = (v, b)_w[k, l, m]
 
-    Note that :math:`k` only varies along :math:`x`-direction, whereas :math:`l` varies along :math:`y`. To
-    allow for Numpy broadcasting these two variables are stored as arrays of
+    Note that :math:`k` only varies along :math:`x`-direction, whereas :math:`l` varies along
+    :math:`y`. To allow for Numpy broadcasting these two variables are stored as arrays of
     shape
 
     .. math::
@@ -391,12 +392,12 @@ class Biharmonic(object):
 
     Numpy will then take care of broadcasting :math:`k` to an array of shape (N, M, P)
     before performing the elementwise multiplication. Likewise, the constant
-    scale :math:`(2\pi)^2` in front of the :math:`A_{mj}` matrix is stored with
+    scale :math:`1` in front of the :math:`A_{mj}` matrix is stored with
     shape (1, 1, 1), and multiplying with :math:`\hat{u}` is performed as if it
     was a scalar (as it here happens to be).
 
     This is where the scale arrays in the signature to the Helmholt solver comes
-    from. :math:`a_0` is here :math:`(2\pi)^2`, whereas :math:`\alpha` and
+    from. :math:`a_0` is here :math:`1`, whereas :math:`\alpha` and
     :math:`\beta` are :math:`-2(k^2+l^2)` and :math:`(k^2+l^2)^2`, respectively.
     Note that :math:`k+l` is an array of shape (N, M, 1).
     """
@@ -412,7 +413,8 @@ class Biharmonic(object):
             a0, alfa, beta = args[3], args[4], args[5]
         else:
             raise RuntimeError('Wrong input to Biharmonic solver')
-
+        self.S, self.A, self.B = S, A, B
+        self.alfa, self.beta = alfa, beta
         self.a0 = a0
         sii, siu, siuu = S[0], S[2], S[4]
         ail, aii, aiu = A[-2], A[0], A[2]
@@ -425,9 +427,7 @@ class Biharmonic(object):
             shape[S.axis] = M
             ss = copy(shape)
             ss.insert(0, 2)
-            a0 = self.a0 = np.broadcast_to(a0, shape)
-            alfa = np.broadcast_to(alfa, shape)
-            beta = np.broadcast_to(beta, shape)
+            a0 = self.a0
 
             self.u0 = np.zeros(ss)
             self.u1 = np.zeros(ss)
@@ -437,7 +437,7 @@ class Biharmonic(object):
             self.ak = np.zeros(ss)
             self.bk = np.zeros(ss)
             if np.ndim(beta) == 3:
-                la.LU_Biharmonic_3D_n(S.axis, a0, alfa, beta, sii, siu, siuu,
+                la.LU_Biharmonic_3D_n(S.axis, a0[0,0,0], alfa, beta, sii, siu, siuu,
                                       ail, aii, aiu, bill, bil, bii, biu, biuu,
                                       self.u0, self.u1, self.u2, self.l0,
                                       self.l1)
@@ -445,7 +445,7 @@ class Biharmonic(object):
                                            self.l1)
 
             elif np.ndim(beta) == 2:
-                la.LU_Biharmonic_2D_n(S.axis, a0, alfa, beta, sii, siu, siuu,
+                la.LU_Biharmonic_2D_n(S.axis, a0[0,0], alfa, beta, sii, siu, siuu,
                                       ail, aii, aiu, bill, bil, bii, biu, biuu,
                                       self.u0, self.u1, self.u2, self.l0,
                                       self.l1)
@@ -484,31 +484,35 @@ class Biharmonic(object):
         if np.ndim(u) == 3:
             la.Solve_Biharmonic_3D_n(self.axis, b, u, self.u0, self.u1,
                                      self.u2, self.l0, self.l1, self.ak,
-                                     self.bk, self.a0)
+                                     self.bk, self.a0[0,0,0])
 
         elif np.ndim(u) == 2:
             la.Solve_Biharmonic_2D_n(self.axis, b, u, self.u0, self.u1,
                                      self.u2, self.l0, self.l1, self.ak,
-                                     self.bk, self.a0)
+                                     self.bk, self.a0[0,0])
 
         else:
             la.Solve_Biharmonic_1D(b, u, self.u0, self.u1, self.u2, self.l0,
-                                   self.l1, self.ak, self.bk, self.a0)
+                                   self.l1, self.ak, self.bk, self.a0[0])
 
         return u
 
-    #def matvec(self, v, c):
-        #N = v.shape[0]
-        #c[:] = 0
-        #if len(v.shape) > 1:
-            #Matvec.Biharmonic_matvec3D(v, c, self.a0, self.alfa, self.beta, self.S[0], self.S[2],
-                                #self.S[4], self.A[-2], self.A[0], self.A[2],
-                                #self.B[-4], self.B[-2], self.B[0], self.B[2], self.B[4])
-        #else:
-            #Matvec.Biharmonic_matvec(v, c, self.a0, self.alfa, self.beta, self.S[0], self.S[2],
-                                #self.S[4], self.A[-2], self.A[0], self.A[2],
-                                #self.B[-4], self.B[-2], self.B[0], self.B[2], self.B[4])
-        #return c
+    def matvec(self, v, c, axis=0):
+        N = v.shape[0]
+        c[:] = 0
+        if len(v.shape) == 3:
+            Matvec.Biharmonic_matvec3D(v, c, self.a0[0,0,0], self.alfa, self.beta, self.S[0], self.S[2],
+                                self.S[4], self.A[-2], self.A[0], self.A[2],
+                                self.B[-4], self.B[-2], self.B[0], self.B[2], self.B[4], axis)
+        elif len(v.shape) == 2:
+            Matvec.Biharmonic_matvec2D(v, c, self.a0[0,0], self.alfa, self.beta, self.S[0], self.S[2],
+                                self.S[4], self.A[-2], self.A[0], self.A[2],
+                                self.B[-4], self.B[-2], self.B[0], self.B[2], self.B[4], axis)
+        else:
+            Matvec.Biharmonic_matvec(v, c, self.a0, self.alfa, self.beta, self.S[0], self.S[2],
+                                self.S[4], self.A[-2], self.A[0], self.A[2],
+                                self.B[-4], self.B[-2], self.B[0], self.B[2], self.B[4])
+        return c
 
 
 class PDMA(object):
