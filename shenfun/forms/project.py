@@ -1,5 +1,5 @@
 import numpy as np
-import sympy as sp
+#import sympy as sp
 from shenfun.tensorproductspace import MixedTensorProductSpace
 from .arguments import Expr, TestFunction, TrialFunction, BasisFunction, Function
 from .inner import inner
