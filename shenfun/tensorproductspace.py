@@ -43,7 +43,7 @@ class TensorProductSpace(object):
             `plan` for the bases.
 
     """
-    def __init__(self, comm, bases, axes=None, dtype=None, slab=False, collapse_fourier=True, **kw):
+    def __init__(self, comm, bases, axes=None, dtype=None, slab=False, collapse_fourier=False, **kw):
         self.comm = comm
         self.bases = bases
         shape = self.shape()
