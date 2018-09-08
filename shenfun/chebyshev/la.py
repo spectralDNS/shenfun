@@ -498,7 +498,6 @@ class Biharmonic(object):
         return u
 
     def matvec(self, v, c, axis=0):
-        N = v.shape[0]
         c[:] = 0
         if len(v.shape) == 3:
             Matvec.Biharmonic_matvec3D(v, c, self.a0[0,0,0], self.alfa, self.beta, self.S[0], self.S[2],

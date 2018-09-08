@@ -1063,7 +1063,7 @@ class ANNmat(SpectralMatrix):
         c = super(ANNmat, self).matvec(v, c, format=format, axis=axis)
         s = [slice(None),]*v.ndim
         s[axis] = 0
-        c[s] = self.testfunction[0].mean*np.pi
+        c[tuple(s)] = self.testfunction[0].mean*np.pi
         return c
 
     def solve(self, b, u=None, axis=0):

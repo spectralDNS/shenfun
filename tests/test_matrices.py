@@ -83,11 +83,11 @@ def test_cmatvec(b0, b1, quad, format, axis, k):
     d1.fill(0)
     bc = [np.newaxis,]*3
     bc[axis] = slice(None)
-    fj = np.broadcast_to(a[bc], (N,)*3).copy()
+    fj = np.broadcast_to(a[tuple(bc)], (N,)*3).copy()
     d1 = mat.matvec(fj, d1, format=format, axis=axis)
     cc = [0,]*3
     cc[axis] = slice(None)
-    assert np.allclose(c, d1[cc])
+    assert np.allclose(c, d1[tuple(cc)])
 
 @pytest.mark.parametrize('b0,b1', lbases2)
 @pytest.mark.parametrize('quad', lquads)
@@ -262,17 +262,25 @@ def test_sub(key, mat, quad):
     mc = m1 - m2
     assert mc.scale == 0.0
 
+allaxes2D = {0: (0, 1), 1: (1, 0)}
+allaxes3D = {0: (0, 1, 2), 1: (1, 0, 2), 2: (2, 0, 1)}
+
+@pytest.mark.parametrize('axis', (0, 1, 2))
 @pytest.mark.parametrize('family', ('chebyshev','legendre'))
-def test_helmholtz3D(family):
+def test_helmholtz3D(family, axis):
     la = lla
     if family == 'chebyshev':
         la = cla
     N = (8, 9, 10)
-    SD = shenfun.Basis(N[0], family=family, bc=(0, 0))
-    K1 = shenfun.Basis(N[1], family='F', dtype='D')
-    K2 = shenfun.Basis(N[2], family='F', dtype='d')
+    SD = shenfun.Basis(N[allaxes3D[axis][0]], family=family, bc=(0, 0))
+    K1 = shenfun.Basis(N[allaxes3D[axis][1]], family='F', dtype='D')
+    K2 = shenfun.Basis(N[allaxes3D[axis][2]], family='F', dtype='d')
     subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, [0, 1, 1])
-    T = shenfun.TensorProductSpace(subcomms, (SD, K1, K2), axes=(0, 1, 2))
+    bases = [0]*3
+    bases[allaxes3D[axis][0]] = SD
+    bases[allaxes3D[axis][1]] = K1
+    bases[allaxes3D[axis][2]] = K2
+    T = shenfun.TensorProductSpace(subcomms, bases, axes=allaxes3D[axis])
     u = shenfun.TrialFunction(T)
     v = shenfun.TestFunction(T)
     if family == 'chebyshev':
@@ -281,81 +289,32 @@ def test_helmholtz3D(family):
         mat = shenfun.inner(shenfun.grad(v), shenfun.grad(u))
 
     H = la.Helmholtz(**mat)
-    c = shenfun.Function(T)
     u = shenfun.Function(T)
     u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
     f = shenfun.Function(T)
-    f = H.matvec(u, f, axis=0)
+    f = H.matvec(u, f, axis=axis)
 
     g0 = shenfun.Function(T)
     g1 = shenfun.Function(T)
-    g0 = mat['ADDmat'].matvec(u, g0)
-    g1 = mat['BDDmat'].matvec(u, g1)
+    g0 = mat['ADDmat'].matvec(u, g0, axis=axis)
+    g1 = mat['BDDmat'].matvec(u, g1, axis=axis)
 
     assert np.linalg.norm(f-(g0+g1)) < 1e-12
 
-    SD = shenfun.Basis(N[1], family=family, bc=(0, 0))
-    K1 = shenfun.Basis(N[0], family='F', dtype='D')
-    K2 = shenfun.Basis(N[2], family='F', dtype='d')
-    subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, [0, 1, 1])
-    T = shenfun.TensorProductSpace(subcomms, (K1, SD, K2), axes=(1, 0, 2))
-    u = shenfun.TrialFunction(T)
-    v = shenfun.TestFunction(T)
-    if family == 'chebyshev':
-        mat = shenfun.inner(v, shenfun.div(shenfun.grad(u)))
-    else:
-        mat = shenfun.inner(shenfun.grad(v), shenfun.grad(u))
 
-    H = la.Helmholtz(**mat)
-    c = shenfun.Function(T)
-    u = shenfun.Function(T)
-    u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
-    f = shenfun.Function(T)
-    f = H.matvec(u, f, axis=1)
-
-    g0 = shenfun.Function(T)
-    g1 = shenfun.Function(T)
-    g0 = mat['ADDmat'].matvec(u, g0, axis=1)
-    g1 = mat['BDDmat'].matvec(u, g1, axis=1)
-
-    assert np.linalg.norm(f-(g0+g1)) < 1e-12
-
-    SD = shenfun.Basis(N[2], family=family, bc=(0, 0))
-    K1 = shenfun.Basis(N[0], family='F', dtype='D')
-    K2 = shenfun.Basis(N[1], family='F', dtype='d')
-    subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, [0, 1, 1])
-    T = shenfun.TensorProductSpace(subcomms, (K1, K2, SD), axes=(2, 0, 1))
-    u = shenfun.TrialFunction(T)
-    v = shenfun.TestFunction(T)
-    if family == 'chebyshev':
-        mat = shenfun.inner(v, shenfun.div(shenfun.grad(u)))
-    else:
-        mat = shenfun.inner(shenfun.grad(v), shenfun.grad(u))
-
-    H = la.Helmholtz(**mat)
-    c = shenfun.Function(T)
-    u = shenfun.Function(T)
-    u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
-    f = shenfun.Function(T)
-    f = H.matvec(u, f, axis=2)
-
-    g0 = shenfun.Function(T)
-    g1 = shenfun.Function(T)
-    g0 = mat['ADDmat'].matvec(u, g0, axis=2)
-    g1 = mat['BDDmat'].matvec(u, g1, axis=2)
-
-    assert np.linalg.norm(f-(g0+g1)) < 1e-12
-
+@pytest.mark.parametrize('axis', (0, 1))
 @pytest.mark.parametrize('family', ('chebyshev','legendre'))
-def test_helmholtz2D(family):
+def test_helmholtz2D(family, axis):
     la = lla
     if family == 'chebyshev':
         la = cla
     N = (8, 9)
-    SD = shenfun.Basis(N[0], family=family, bc=(0, 0))
-    K1 = shenfun.Basis(N[1], family='F', dtype='d')
+    SD = shenfun.Basis(N[axis], family=family, bc=(0, 0))
+    K1 = shenfun.Basis(N[(axis+1)%2], family='F', dtype='d')
     subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, [0, 1])
-    T = shenfun.TensorProductSpace(subcomms, (SD, K1), axes=(0, 1))
+    bases = [K1]
+    bases.insert(axis, SD)
+    T = shenfun.TensorProductSpace(subcomms, bases, axes=allaxes2D[axis])
     u = shenfun.TrialFunction(T)
     v = shenfun.TestFunction(T)
     if family == 'chebyshev':
@@ -364,55 +323,34 @@ def test_helmholtz2D(family):
         mat = shenfun.inner(shenfun.grad(v), shenfun.grad(u))
 
     H = la.Helmholtz(**mat)
-    c = shenfun.Function(T)
     u = shenfun.Function(T)
     u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
     f = shenfun.Function(T)
-    f = H.matvec(u, f, axis=0)
+    f = H.matvec(u, f, axis=axis)
 
     g0 = shenfun.Function(T)
     g1 = shenfun.Function(T)
-    g0 = mat['ADDmat'].matvec(u, g0)
-    g1 = mat['BDDmat'].matvec(u, g1)
+    g0 = mat['ADDmat'].matvec(u, g0, axis=axis)
+    g1 = mat['BDDmat'].matvec(u, g1, axis=axis)
 
     assert np.linalg.norm(f-(g0+g1)) < 1e-12
 
-    SD = shenfun.Basis(N[1], family=family, bc=(0, 0))
-    K1 = shenfun.Basis(N[0], family='F', dtype='d')
-    subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, [0, 1])
-    T = shenfun.TensorProductSpace(subcomms, (K1, SD), axes=(1, 0))
-    u = shenfun.TrialFunction(T)
-    v = shenfun.TestFunction(T)
-    if family == 'chebyshev':
-        mat = shenfun.inner(v, shenfun.div(shenfun.grad(u)))
-    else:
-        mat = shenfun.inner(shenfun.grad(v), shenfun.grad(u))
-
-    H = la.Helmholtz(**mat)
-    c = shenfun.Function(T)
-    u = shenfun.Function(T)
-    u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
-    f = shenfun.Function(T)
-    f = H.matvec(u, f, axis=1)
-
-    g0 = shenfun.Function(T)
-    g1 = shenfun.Function(T)
-    g0 = mat['ADDmat'].matvec(u, g0, axis=1)
-    g1 = mat['BDDmat'].matvec(u, g1, axis=1)
-
-    assert np.linalg.norm(f-(g0+g1)) < 1e-12
-
+@pytest.mark.parametrize('axis', (0, 1, 2))
 @pytest.mark.parametrize('family', ('chebyshev','legendre'))
-def test_biharmonic3D(family):
+def test_biharmonic3D(family, axis):
     la = lla
     if family == 'chebyshev':
         la = cla
     N = (16, 16, 16)
-    SD = shenfun.Basis(N[0], family=family, bc='Biharmonic')
-    K1 = shenfun.Basis(N[1], family='F', dtype='D')
-    K2 = shenfun.Basis(N[2], family='F', dtype='d')
+    SD = shenfun.Basis(N[allaxes3D[axis][0]], family=family, bc='Biharmonic')
+    K1 = shenfun.Basis(N[allaxes3D[axis][1]], family='F', dtype='D')
+    K2 = shenfun.Basis(N[allaxes3D[axis][2]], family='F', dtype='d')
     subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, [0, 1, 1])
-    T = shenfun.TensorProductSpace(subcomms, (SD, K1, K2), axes=(0, 1, 2))
+    bases = [0]*3
+    bases[allaxes3D[axis][0]] = SD
+    bases[allaxes3D[axis][1]] = K1
+    bases[allaxes3D[axis][2]] = K2
+    T = shenfun.TensorProductSpace(subcomms, bases, axes=allaxes3D[axis])
     u = shenfun.TrialFunction(T)
     v = shenfun.TestFunction(T)
     if family == 'chebyshev':
@@ -421,90 +359,34 @@ def test_biharmonic3D(family):
         mat = shenfun.inner(shenfun.div(shenfun.grad(v)), shenfun.div(shenfun.grad(u)))
 
     H = la.Biharmonic(**mat)
-    c = shenfun.Function(T)
     u = shenfun.Function(T)
     u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
     f = shenfun.Function(T)
-    f = H.matvec(u, f, axis=0)
+    f = H.matvec(u, f, axis=axis)
 
     g0 = shenfun.Function(T)
     g1 = shenfun.Function(T)
     g2 = shenfun.Function(T)
     amat = 'ABBmat' if family == 'chebyshev' else 'PBBmat'
-    g0 = mat['SBBmat'].matvec(u, g0)
-    g1 = mat[amat].matvec(u, g1)
-    g2 = mat['BBBmat'].matvec(u, g2)
+    g0 = mat['SBBmat'].matvec(u, g0, axis=axis)
+    g1 = mat[amat].matvec(u, g1, axis=axis)
+    g2 = mat['BBBmat'].matvec(u, g2, axis=axis)
 
     assert np.linalg.norm(f-(g0+g1+g2)) < 1e-8
 
-    SD = shenfun.Basis(N[1], family=family, bc='Biharmonic')
-    K1 = shenfun.Basis(N[0], family='F', dtype='D')
-    K2 = shenfun.Basis(N[2], family='F', dtype='d')
-    subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, [0, 1, 1])
-    T = shenfun.TensorProductSpace(subcomms, (K1, SD, K2), axes=(1, 0, 2))
-    u = shenfun.TrialFunction(T)
-    v = shenfun.TestFunction(T)
-    if family == 'chebyshev':
-        mat = shenfun.inner(v, shenfun.div(shenfun.grad(shenfun.div(shenfun.grad(u)))))
-    else:
-        mat = shenfun.inner(shenfun.div(shenfun.grad(v)), shenfun.div(shenfun.grad(u)))
-
-    H = la.Biharmonic(**mat)
-    c = shenfun.Function(T)
-    u = shenfun.Function(T)
-    u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
-    f = shenfun.Function(T)
-    f = H.matvec(u, f, axis=1)
-
-    g0 = shenfun.Function(T)
-    g1 = shenfun.Function(T)
-    g2 = shenfun.Function(T)
-    amat = 'ABBmat' if family == 'chebyshev' else 'PBBmat'
-    g0 = mat['SBBmat'].matvec(u, g0, axis=1)
-    g1 = mat[amat].matvec(u, g1, axis=1)
-    g2 = mat['BBBmat'].matvec(u, g2, axis=1)
-
-    assert np.linalg.norm(f-(g0+g1+g2)) < 1e-8
-
-    SD = shenfun.Basis(N[2], family=family, bc='Biharmonic')
-    K1 = shenfun.Basis(N[0], family='F', dtype='D')
-    K2 = shenfun.Basis(N[1], family='F', dtype='d')
-    subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, [0, 1, 1])
-    T = shenfun.TensorProductSpace(subcomms, (K1, K2, SD), axes=(2, 0, 1))
-    u = shenfun.TrialFunction(T)
-    v = shenfun.TestFunction(T)
-    if family == 'chebyshev':
-        mat = shenfun.inner(v, shenfun.div(shenfun.grad(shenfun.div(shenfun.grad(u)))))
-    else:
-        mat = shenfun.inner(shenfun.div(shenfun.grad(v)), shenfun.div(shenfun.grad(u)))
-
-    H = la.Biharmonic(**mat)
-    c = shenfun.Function(T)
-    u = shenfun.Function(T)
-    u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
-    f = shenfun.Function(T)
-    f = H.matvec(u, f, axis=2)
-
-    g0 = shenfun.Function(T)
-    g1 = shenfun.Function(T)
-    g2 = shenfun.Function(T)
-    amat = 'ABBmat' if family == 'chebyshev' else 'PBBmat'
-    g0 = mat['SBBmat'].matvec(u, g0, axis=2)
-    g1 = mat[amat].matvec(u, g1, axis=2)
-    g2 = mat['BBBmat'].matvec(u, g2, axis=2)
-
-    assert np.linalg.norm(f-(g0+g1+g2)) < 1e-8
-
+@pytest.mark.parametrize('axis', (0, 1))
 @pytest.mark.parametrize('family', ('chebyshev','legendre'))
-def test_biharmonic2D(family):
+def test_biharmonic2D(family, axis):
     la = lla
     if family == 'chebyshev':
         la = cla
     N = (16, 16)
-    SD = shenfun.Basis(N[0], family=family, bc='Biharmonic')
-    K1 = shenfun.Basis(N[1], family='F', dtype='d')
-    subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, [0, 1])
-    T = shenfun.TensorProductSpace(subcomms, (SD, K1), axes=(0, 1))
+    SD = shenfun.Basis(N[axis], family=family, bc='Biharmonic')
+    K1 = shenfun.Basis(N[(axis+1)%2], family='F', dtype='d')
+    subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, (0, 1))
+    bases = [K1]
+    bases.insert(axis, SD)
+    T = shenfun.TensorProductSpace(subcomms, bases, axes=allaxes2D[axis])
     u = shenfun.TrialFunction(T)
     v = shenfun.TestFunction(T)
     if family == 'chebyshev':
@@ -513,55 +395,27 @@ def test_biharmonic2D(family):
         mat = shenfun.inner(shenfun.div(shenfun.grad(v)), shenfun.div(shenfun.grad(u)))
 
     H = la.Biharmonic(**mat)
-    c = shenfun.Function(T)
     u = shenfun.Function(T)
     u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
     f = shenfun.Function(T)
-    f = H.matvec(u, f, axis=0)
+    f = H.matvec(u, f, axis=axis)
 
     g0 = shenfun.Function(T)
     g1 = shenfun.Function(T)
     g2 = shenfun.Function(T)
     amat = 'ABBmat' if family == 'chebyshev' else 'PBBmat'
-    g0 = mat['SBBmat'].matvec(u, g0)
-    g1 = mat[amat].matvec(u, g1)
-    g2 = mat['BBBmat'].matvec(u, g2)
+    g0 = mat['SBBmat'].matvec(u, g0, axis=axis)
+    g1 = mat[amat].matvec(u, g1, axis=axis)
+    g2 = mat['BBBmat'].matvec(u, g2, axis=axis)
 
     assert np.linalg.norm(f-(g0+g1+g2)) < 1e-8
 
-    SD = shenfun.Basis(N[1], family=family, bc='Biharmonic')
-    K1 = shenfun.Basis(N[0], family='F', dtype='d')
-    subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, [1, 0])
-    T = shenfun.TensorProductSpace(subcomms, (K1, SD), axes=(1, 0))
-    u = shenfun.TrialFunction(T)
-    v = shenfun.TestFunction(T)
-    if family == 'chebyshev':
-        mat = shenfun.inner(v, shenfun.div(shenfun.grad(shenfun.div(shenfun.grad(u)))))
-    else:
-        mat = shenfun.inner(shenfun.div(shenfun.grad(v)), shenfun.div(shenfun.grad(u)))
-
-    H = la.Biharmonic(**mat)
-    c = shenfun.Function(T)
-    u = shenfun.Function(T)
-    u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
-    f = shenfun.Function(T)
-    f = H.matvec(u, f, axis=1)
-
-    g0 = shenfun.Function(T)
-    g1 = shenfun.Function(T)
-    g2 = shenfun.Function(T)
-    amat = 'ABBmat' if family == 'chebyshev' else 'PBBmat'
-    g0 = mat['SBBmat'].matvec(u, g0, axis=1)
-    g1 = mat[amat].matvec(u, g1, axis=1)
-    g2 = mat['BBBmat'].matvec(u, g2, axis=1)
-
-    assert np.linalg.norm(f-(g0+g1+g2)) < 1e-8
 
 if __name__=='__main__':
     #test_add(*mats_and_quads[0])
     #test_mul2()
     #test_div2(cBasis[0], 'GC')
-    #test_helmholtz3D('legendre')
-    #test_helmholtz2D('legendre')
-    test_biharmonic3D('chebyshev')
-    #test_biharmonic2D('chebyshev')
+    test_helmholtz3D('legendre', 2)
+    #test_helmholtz2D('legendre', 0)
+    #test_biharmonic3D('chebyshev', 2)
+    #test_biharmonic2D('chebyshev', 0)
