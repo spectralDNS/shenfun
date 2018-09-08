@@ -229,7 +229,6 @@ class TensorProductSpace(object):
                 Return array, function values at points
         """
         P = []
-        r2c = -1
         last_conj_index = -1
         sl = -1
         out = None
@@ -254,7 +253,7 @@ class TensorProductSpace(object):
                 sl = self.local_slice()[axis].start
                 st = self.local_slice()[axis].stop
                 if sl == 0: sl = 1
-                st == min(last_conj_index, st)
+                st = min(last_conj_index, st)
                 sp = [slice(None), slice(sl, st)]
 
             if out is None:

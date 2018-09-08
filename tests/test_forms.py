@@ -12,7 +12,7 @@ u0 = shenfun.TrialFunction(V)
 T = shenfun.TensorProductSpace(comm, (V, V))
 u1 = shenfun.TrialFunction(V)
 
-TT = shenfun.VectorTensorProductSpace([T, T])
+TT = shenfun.VectorTensorProductSpace(T)
 u2 = shenfun.TrialFunction(TT)
 
 @pytest.mark.parametrize('basis', (u0, u1, u2))

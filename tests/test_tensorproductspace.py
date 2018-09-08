@@ -387,7 +387,6 @@ def test_eval_tensor(typecode, dim, ST, quad):
         (2, 2): sin(2*x)*cos(4*y)*funcz[ST.boundary_condition()]
         }
     syms = {1: (x, y), 2:(x, y, z)}
-    xs = {0:x, 1:y, 2:z}
     points = np.random.random((dim+1, 4))
     t_0 = 0
     t_1 = 0

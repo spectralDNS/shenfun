@@ -6,7 +6,7 @@ import pyfftw
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, Transform
 from shenfun.utilities import inheritdocstrings
-from shenfun.optimization import convolve, evaluate
+from shenfun.optimization import convolve
 
 __all__ = ['FourierBase', 'R2CBasis', 'C2CBasis']
 
