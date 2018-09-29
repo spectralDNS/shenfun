@@ -10,6 +10,11 @@
 *.ipynb
 tmp_mako*
 reveal.js/
+sphinx-rootdir/
+*.blg
+*.idx
+*.bbl
+*.aux
 
 # Macvim 
 *.swp
