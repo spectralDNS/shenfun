@@ -16,6 +16,7 @@ __all__ = ('TensorProductSpace', 'VectorTensorProductSpace',
 
 #pylint: disable=line-too-long, redefined-outer-name, len-as-condition, redefined-argument-from-local, no-else-return, no-self-use, no-member, missing-docstring
 
+
 class TensorProductSpace(object):
     """Class for multidimensional tensorproductspaces.
 
