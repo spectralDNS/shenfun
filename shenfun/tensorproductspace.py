@@ -231,7 +231,7 @@ class TensorProductSpace(object):
         P = []
         last_conj_index = -1
         sl = -1
-        out = None
+        out = []
         previous_axes = []
         flataxes = []
         for ax in self.axes:
@@ -244,7 +244,6 @@ class TensorProductSpace(object):
             D = base.get_vandermonde_basis(V)
             P = D[..., self.local_slice()[axis]]
             if isinstance(base, R2CBasis):
-                r2c = axis
                 M = base.N//2+1
                 if base.N % 2 == 0:
                     last_conj_index = M-1
@@ -256,7 +255,7 @@ class TensorProductSpace(object):
                 st = min(last_conj_index, st)
                 sp = [slice(None), slice(sl, st)]
 
-            if out is None:
+            if out == []:
                 out = np.tensordot(P, coefficients, (1, axis))
                 if isinstance(base, R2CBasis):
                     ss = [slice(None)]*len(self)
@@ -679,7 +678,7 @@ class VectorTransform(object):
 
 
 class Convolve(object):
-    """Class for convolving without truncation.
+    r"""Class for convolving without truncation.
 
     The convolution of :math:`\hat{a}` and :math:`\hat{b}` is computed by first
     transforming backwards with padding::

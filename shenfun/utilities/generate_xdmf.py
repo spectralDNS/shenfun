@@ -35,14 +35,14 @@ attribute2D = """
 
 mesh_3d = """
         <Geometry Type="VXVYVZ">
-          <DataItem Format="HDF" NumberType="Float" Precision="{0}" Dimensions="{1}">
-           {4}:/mesh/x0
+          <DataItem Format="HDF" NumberType="Float" Precision="{0}" Dimensions="{3}">
+           {4}:/mesh/x2
           </DataItem>
           <DataItem Format="HDF" NumberType="Float" Precision="{0}" Dimensions="{2}">
            {4}:/mesh/x1
           </DataItem>
-          <DataItem Format="HDF" NumberType="Float" Precision="{0}" Dimensions="{3}">
-           {4}:/mesh/x2
+          <DataItem Format="HDF" NumberType="Float" Precision="{0}" Dimensions="{1}">
+           {4}:/mesh/x0
           </DataItem>
         </Geometry>"""
 
