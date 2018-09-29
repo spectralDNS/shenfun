@@ -494,7 +494,7 @@ def test_eval_fourier(typecode, dim):
     print('method=2', t_2)
 
 if __name__ == '__main__':
-    test_transform('f', 4)
+    test_transform('f', 3)
     #test_transform('d', 2)
     #test_shentransform('d', 2, cbases.ShenNeumannBasis, 'GC')
     #test_project('d', 2, cbases.ShenDirichletBasis, 'GC')

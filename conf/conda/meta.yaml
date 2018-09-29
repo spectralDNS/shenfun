@@ -24,6 +24,7 @@ requirements:
     - cython
     - pyfftw
     - mpi4py
+    - mpi4py_fft
     - six
     - sympy
     - nomkl

@@ -157,7 +157,6 @@ def test_transforms(ST, quad, dim):
     if not ST.family() == 'fourier':
         kwargs['quad'] = quad
     ST0 = ST(N, **kwargs)
-    _, weights = ST0.points_and_weights(N)
     fj = shenfun.Array(ST0)
     fj[:] = np.random.random(fj.shape[0])
 
