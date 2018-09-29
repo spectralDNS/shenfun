@@ -1,3 +1,40 @@
+# Generated data files
 *.xdmf
 *.h5
-*.o
+*.nc
+
+*.log
+*.dlog
+
+.ipynb_checkpoints/
+*.ipynb
+tmp_mako*
+reveal.js/
+
+# Macvim 
+*.swp
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+var/
+
+# Unit test / coverage reports
+.coverage
+.coverage.*
+.cache
+coverage.xml
+.pytest_cache/
+
+# Sphinx documentation
+docs/build/
+
+*.json
