@@ -14,8 +14,6 @@ from mpi4py_fft.pencil import Subcomm, Pencil
 __all__ = ('TensorProductSpace', 'VectorTensorProductSpace',
            'MixedTensorProductSpace', 'Convolve')
 
-#pylint: disable=line-too-long, redefined-outer-name, len-as-condition, redefined-argument-from-local, no-else-return, no-self-use, no-member, missing-docstring
-
 
 class TensorProductSpace(object):
     """Class for multidimensional tensorproductspaces.
@@ -44,7 +42,8 @@ class TensorProductSpace(object):
             `plan` for the bases.
 
     """
-    def __init__(self, comm, bases, axes=None, dtype=None, slab=False, collapse_fourier=False, **kw):
+    def __init__(self, comm, bases, axes=None, dtype=None, slab=False,
+                 collapse_fourier=False, **kw):
         self.comm = comm
         self.bases = bases
         shape = self.shape()
@@ -241,8 +240,7 @@ class TensorProductSpace(object):
         for axis in flataxes:
             base = self.bases[axis]
             x = base.map_reference_domain(points[axis])
-            V = base.vandermonde(x)
-            D = base.get_vandermonde_basis(V)
+            D = base.evaluate_basis_all(x=x)
             P = D[..., self.local_slice()[axis]]
             if isinstance(base, R2CBasis):
                 M = base.N//2+1
@@ -252,11 +250,12 @@ class TensorProductSpace(object):
                     last_conj_index = M
                 sl = self.local_slice()[axis].start
                 st = self.local_slice()[axis].stop
-                if sl == 0: sl = 1
+                if sl == 0:
+                    sl = 1
                 st = min(last_conj_index, st)
                 sp = [slice(None), slice(sl, st)]
 
-            if out == []:
+            if len(out) == 0:
                 out = np.tensordot(P, coefficients, (1, axis))
                 if isinstance(base, R2CBasis):
                     ss = [slice(None)]*len(self)
@@ -326,7 +325,7 @@ class TensorProductSpace(object):
             output_array = shenfun.optimization.evaluate.evaluate_lm_2D(list(self.bases), output_array, coefficients, x[0], x[1], w[0], w[1], r2c, last_conj_index, sl)
 
         elif len(self) == 3:
-            output_array = shenfun.optimization.evaluate.evaluate_lm_3D(list(self.bases), output_array, coefficients,  x[0], x[1], x[2], w[0], w[1], w[2], r2c, last_conj_index, sl)
+            output_array = shenfun.optimization.evaluate.evaluate_lm_3D(list(self.bases), output_array, coefficients, x[0], x[1], x[2], w[0], w[1], w[2], r2c, last_conj_index, sl)
 
         output_array = np.atleast_1d(output_array)
         output_array = self.comm.allreduce(output_array)
@@ -350,8 +349,7 @@ class TensorProductSpace(object):
         for base in self:
             axis = base.axis
             x = base.map_reference_domain(points[axis])
-            V = base.vandermonde(x)
-            D = base.get_vandermonde_basis(V)
+            D = base.evaluate_basis_all(x=x)
             P.append(D[..., self.local_slice()[axis]])
             if isinstance(base, R2CBasis):
                 r2c = axis
@@ -458,7 +456,7 @@ class TensorProductSpace(object):
                 a backward transfer. If False then return shape of physical
                 space, i.e., the input to a forward transfer.
         """
-        if spectral == False:
+        if not spectral:
             return [int(np.round(base.N*base.padding_factor)) for base in self]
         return self.spectral_shape()
 

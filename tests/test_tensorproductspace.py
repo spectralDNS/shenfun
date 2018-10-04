@@ -1,14 +1,14 @@
 from __future__ import print_function
+from time import time
+from itertools import product
 import pytest
 import numpy as np
 from mpi4py import MPI
+from sympy import symbols, cos, sin, lambdify
 from shenfun.chebyshev import bases as cbases
 from shenfun.legendre import bases as lbases
 from shenfun import Function, project, Dx, Array, Basis, TensorProductSpace, \
    VectorTensorProductSpace, MixedTensorProductSpace
-from sympy import symbols, cos, sin, lambdify
-from itertools import product
-from time import time
 
 comm = MPI.COMM_WORLD
 
@@ -41,7 +41,7 @@ def test_transform(typecode, dim):
             if dim < 3:
                 n = min(shape)
                 if typecode in 'fdg':
-                    n //=2; n+=1
+                    n //= 2; n += 1
                 if n < comm.size:
                     continue
 
@@ -232,11 +232,13 @@ def test_project(typecode, dim, ST, quad):
                 uy = Array(fft)
                 uy = fft.backward(uf, uy)
                 assert np.allclose(uy, duq, 0, 1e-6)
+                uw = project(dul, fft)
+                assert np.allclose(uw, uf)
+                uw = project(due, fft)
+                assert np.allclose(uw, uf)
 
             bases.pop(axis)
             fft.destroy()
-
-#test_project('d', 1, lBasis[0], 'LG')
 
 nbases_and_quads = list(product(lBasis[2:3], lquads))+list(product(cBasis[2:3], cquads))
 @pytest.mark.parametrize('typecode', 'dD')
@@ -494,12 +496,11 @@ def test_eval_fourier(typecode, dim):
     print('method=2', t_2)
 
 if __name__ == '__main__':
-    test_transform('f', 3)
+    #test_transform('f', 3)
     #test_transform('d', 2)
     #test_shentransform('d', 2, cbases.ShenNeumannBasis, 'GC')
-    #test_project('d', 2, cbases.ShenDirichletBasis, 'GC')
+    test_project('D', 2, cbases.ShenDirichletBasis, 'GC')
     #test_project2('d', 1, lbases.ShenNeumannBasis, 'LG')
     #test_project_2dirichlet('GL')
     #test_eval_tensor('d', 2, cbases.Basis, 'GC')
     #test_eval_fourier('d', 3)
-

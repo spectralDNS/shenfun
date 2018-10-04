@@ -2,9 +2,9 @@
 Module for defining bases in the Chebyshev family
 """
 import functools
+import numpy as np
 from numpy.polynomial import chebyshev as n_cheb
 from scipy.special import eval_chebyt
-import numpy as np
 import pyfftw
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, FuncWrap
@@ -66,7 +66,7 @@ class ChebyshevBase(SpectralBase):
     def family():
         return 'chebyshev'
 
-    def points_and_weights(self, N=None, scaled=False):
+    def points_and_weights(self, N=None, map_true_domain=False):
         if N is None:
             N = self.N
         if self.quad == "GL":
@@ -80,20 +80,12 @@ class ChebyshevBase(SpectralBase):
             points = points.astype(float)
             weights = weights.astype(float)
 
-        if scaled is True:
+        if map_true_domain is True:
             points = self.map_true_domain(points)
 
         return points, weights
 
     def vandermonde(self, x):
-        """Return Chebyshev Vandermonde matrix
-
-        Parameters
-        ----------
-            x : array
-                points for evaluation
-
-        """
         return n_cheb.chebvander(x, self.N-1)
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -104,22 +96,26 @@ class ChebyshevBase(SpectralBase):
         output_array[:] = eval_chebyt(i, x)
         return output_array
 
-    def get_vandermonde_basis_derivative(self, V, k=0):
-        """Return k'th derivative of basis as a Vandermonde matrix
-
-        Parameters
-        ----------
-            V : array of ndim = 2
-                Chebyshev Vandermonde matrix
-            k : int
-                k'th derivative
-        """
+    def evaluate_basis_derivative_all(self, x=None, k=0):
+        if x is None:
+            x = self.mesh(False, False)
+        V = self.vandermonde(x)
         assert self.N == V.shape[1]
         if k > 0:
             D = np.zeros((self.N, self.N))
             D[:-k, :] = n_cheb.chebder(np.eye(self.N), k)
             V = np.dot(V, D)
-        return self.get_vandermonde_basis(V)
+        return self._composite_basis(V)
+
+    def evaluate_basis_all(self, x=None):
+        if x is None:
+            x = self.mesh(False, False)
+        V = self.vandermonde(x)
+        return self._composite_basis(V)
+
+    def _composite_basis(self, V):
+        """Return composite basis, where ``V`` is primary Vandermonde matrix."""
+        return V
 
     def reference_domain(self):
         return (-1., 1.)
@@ -345,7 +341,7 @@ class ShenDirichletBasis(ChebyshevBase):
     def boundary_condition():
         return 'Dirichlet'
 
-    def get_vandermonde_basis(self, V):
+    def _composite_basis(self, V):
         P = np.zeros(V.shape)
         P[:, :-2] = V[:, :-2] - V[:, 2:]
         P[:, -2] = (V[:, 0] + V[:, 1])/2
@@ -467,7 +463,7 @@ class ShenNeumannBasis(ChebyshevBase):
     def boundary_condition():
         return 'Neumann'
 
-    def get_vandermonde_basis(self, V):
+    def _composite_basis(self, V):
         assert self.N == V.shape[1]
         P = np.zeros(V.shape)
         k = np.arange(self.N).astype(np.float)
@@ -595,7 +591,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
     def boundary_condition():
         return 'Biharmonic'
 
-    def get_vandermonde_basis(self, V):
+    def _composite_basis(self, V):
         P = np.zeros_like(V)
         k = np.arange(V.shape[1]).astype(np.float)[:-4]
         P[:, :-4] = V[:, :-4] - (2*(k+2)/(k+3))*V[:, 2:-2] + ((k+1)/(k+3))*V[:, 4:]
@@ -705,4 +701,3 @@ class ShenBiharmonicBasis(ChebyshevBase):
         self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
         self.backward = Transform(self.backward, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
-

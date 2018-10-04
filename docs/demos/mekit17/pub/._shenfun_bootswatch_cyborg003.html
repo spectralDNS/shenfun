@@ -202,14 +202,17 @@ The following bases are defined in submodules
 
 </ul>
 
-All bases have methods for transforms and inner products on single- or multidimensional Numpy data arrays. The following code shows how to create a Fourier basis and subsequently perform a forward and an inverse discrete Fourier transform on a random array. The <code>uc</code> array is only used to test that the transform cycle returns the original data.
+All bases have methods for transforms and inner products on single- or multidimensional 
+Numpy data arrays. The following code shows how to create a Fourier basis and subsequently 
+perform a forward and an inverse discrete Fourier transform on a random array. 
+The <code>uc</code> array is only used to test that the transform cycle returns the original data.
 <p>
 
 <!-- code=python (!bc pyshell) typeset with pygments style "monokai" -->
 <div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span>    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f92672">from</span> <span style="color: #f8f8f2">shenfun</span> <span style="color: #f92672">import</span> <span style="color: #f92672">*</span>
     <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f92672">import</span> <span style="color: #f8f8f2">numpy</span> <span style="color: #f92672">as</span> <span style="color: #f8f8f2">np</span>
     <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">N</span> <span style="color: #f92672">=</span> <span style="color: #ae81ff">16</span>
-    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">FFT</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">fourier</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">bases</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">R2CBasis(N,</span> <span style="color: #f8f8f2">plan</span><span style="color: #f92672">=</span><span style="color: #f8f8f2">True)</span> 
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">FFT</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">fourier</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">bases</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">R2CBasis(N)</span> 
     <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">u</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">random</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">random(N)</span>
     <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">uc</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">u</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">copy()</span>
     <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">u_hat</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">FFT</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">forward(u)</span>
@@ -282,7 +285,7 @@ Weak variational forms are created using test and trial functions, as shown in t
 <div class="highlight" style="background: #272822"><pre style="line-height: 125%"><span></span>    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f92672">from</span> <span style="color: #f8f8f2">shenfun.chebyshev.bases</span> <span style="color: #f92672">import</span> <span style="color: #f8f8f2">ShenDirichletBasis</span>
     <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f92672">from</span> <span style="color: #f8f8f2">shenfun</span> <span style="color: #f92672">import</span> <span style="color: #f8f8f2">inner,</span> <span style="color: #f8f8f2">TestFunction,</span> <span style="color: #f8f8f2">TrialFunction</span>    
     <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">N</span> <span style="color: #f92672">=</span> <span style="color: #ae81ff">8</span>
-    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">SD</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">ShenDirichletBasis(N,</span> <span style="color: #f8f8f2">plan</span><span style="color: #f92672">=</span><span style="color: #f8f8f2">True)</span>
+    <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">SD</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">ShenDirichletBasis(N)</span>
     <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">u</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">TrialFunction(SD)</span>
     <span style="color: #f92672">&gt;&gt;&gt;</span> <span style="color: #f8f8f2">v</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">TestFunction(SD)</span>
 </pre></div>
@@ -501,7 +504,7 @@ With <code>shenfun</code> the periodic 1D Poisson equation can be trivially comp
 
 <span style="color: #75715e"># Create Fourier basis with N basis functions</span>
 <span style="color: #f8f8f2">N</span> <span style="color: #f92672">=</span> <span style="color: #ae81ff">32</span>
-<span style="color: #f8f8f2">ST</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">FourierBasis(N,</span> <span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">float,</span> <span style="color: #f8f8f2">plan</span><span style="color: #f92672">=</span><span style="color: #f8f8f2">True)</span>
+<span style="color: #f8f8f2">ST</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">FourierBasis(N,</span> <span style="color: #f8f8f2">np</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">float)</span>
 <span style="color: #f8f8f2">u</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">TrialFunction(ST)</span>
 <span style="color: #f8f8f2">v</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">TestFunction(ST)</span>
 <span style="color: #f8f8f2">X</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">ST</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">mesh(N)</span>
@@ -682,7 +685,7 @@ A simple Poisson problem with analytical solution \( \sin(\pi x)(1-x^2) \) is im
 <span style="color: #f8f8f2">fl</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">lambdify(x,</span> <span style="color: #f8f8f2">fe,</span> <span style="color: #e6db74">&#39;numpy&#39;</span><span style="color: #f8f8f2">)</span>
 
 <span style="color: #f8f8f2">N</span> <span style="color: #f92672">=</span> <span style="color: #ae81ff">32</span>
-<span style="color: #f8f8f2">SD</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">ShenDirichletBasis(N,</span> <span style="color: #f8f8f2">plan</span><span style="color: #f92672">=</span><span style="color: #f8f8f2">True)</span>
+<span style="color: #f8f8f2">SD</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">ShenDirichletBasis(N)</span>
 <span style="color: #f8f8f2">X</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">SD</span><span style="color: #f92672">.</span><span style="color: #f8f8f2">mesh(N)</span>
 <span style="color: #f8f8f2">u</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">TrialFunction(SD)</span>
 <span style="color: #f8f8f2">v</span> <span style="color: #f92672">=</span> <span style="color: #f8f8f2">TestFunction(SD)</span>

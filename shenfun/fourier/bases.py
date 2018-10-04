@@ -97,11 +97,11 @@ class FourierBase(SpectralBase):
     def boundary_condition():
         return 'Periodic'
 
-    def points_and_weights(self, N=None, scaled=False):
+    def points_and_weights(self, N=None, map_true_domain=False):
         if N is None:
             N = self.N
         points = np.arange(N, dtype=np.float)*2*np.pi/N
-        if scaled is True:
+        if map_true_domain is True:
             points = self.map_true_domain(points)
         return points, np.array([2*np.pi/N])
 
@@ -117,28 +117,14 @@ class FourierBase(SpectralBase):
         return output_array
 
     def vandermonde(self, x):
-        """Return Vandermonde matrix
-
-        Parameters
-        ----------
-            x : array
-                points for evaluation
-
-        """
         k = self.wavenumbers(bcast=False)
         x = np.atleast_1d(x)
         return np.exp(1j*x[:, np.newaxis]*k[np.newaxis, :])
 
-    def get_vandermonde_basis_derivative(self, V, k=0):
-        """Return k'th derivative of basis as a Vandermonde matrix
-
-        Parameters
-        ----------
-            V : array of ndim = 2
-                Chebyshev Vandermonde matrix
-            k : int
-                k'th derivative
-        """
+    def evaluate_basis_derivative_all(self, x=None, k=0):
+        if x is None:
+            x = self.mesh(False, False)
+        V = self.vandermonde(x)
         if k > 0:
             l = self.wavenumbers(bcast=False, scaled=True)
             V = V*((1j*l)**k)[np.newaxis, :]
@@ -224,7 +210,7 @@ class FourierBase(SpectralBase):
         s = tuple(np.take(shape, axis))
 
         if isinstance(self.forward, Transform):
-            if self.forward.input_array.shape==shape and axis==self._planned_axes:
+            if self.forward.input_array.shape == shape and axis == self._planned_axes:
                 # Already planned
                 return
 
@@ -628,4 +614,3 @@ class C2CBasis(FourierBase):
                     #uv[p] += um*vn
 
         return uv
-

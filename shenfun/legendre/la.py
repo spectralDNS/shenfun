@@ -226,7 +226,8 @@ class Helmholtz(object):
     def __call__(self, u, b):
         ss = [slice(None)]*np.ndim(u)
         ss[self.axis] = self.s
-        u[ss] = b[tuple(ss)]
+        ss = tuple(ss)
+        u[ss] = b[ss]
 
         #if not self.neumann:
             #s0 = [slice(0, 1)]*u.ndim

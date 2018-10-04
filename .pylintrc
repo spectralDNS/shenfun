@@ -1,0 +1,23 @@
+[MASTER]
+disable = locally-disabled,
+    too-few-public-methods,
+    too-many-instance-attributes,
+    invalid-name,
+    missing-docstring,
+    too-many-lines,
+    not-callable,
+    redefined-builtin,
+    unused-import,
+    too-many-arguments,
+    invalid-sequence-index,
+    line-too-long,
+    invalid-unary-operand-type,
+    redefined-outer-name,
+    len-as-condition,
+    redefined-argument-from-local,
+    no-else-return,
+    no-self-use,
+    no-member
+extension-pkg-whitelist = mpi4py,pyfftw,numpy,shenfun
+generated-members=np.floating
+reports = no
