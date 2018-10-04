@@ -162,29 +162,29 @@ class SpectralBase(object):
         self.N = N
         self.domain = domain
         self.quad = quad
-        self._mass = None # Mass matrix (if needed)
         self.axis = 0
         self.xfftn_fwd = None
         self.xfftn_bck = None
+        self.padding_factor = np.floor(N*padding_factor)/N
+        self._mass = None         # Mass matrix (if needed)
         self._xfftn_fwd = None    # external forward transform function
         self._xfftn_bck = None    # external backward transform function
         self._M = 1.0             # Normalization factor
         self._ndim_tensor = 1     # ndim of belonging TensorProductSpace
-        self.padding_factor = np.floor(N*padding_factor)/N
 
-    def points_and_weights(self, N=None, scaled=False):
+    def points_and_weights(self, N=None, map_true_domain=False):
         """Return points and weights of quadrature
 
         Parameters
         ----------
             N : int, optional
                 Number of quadrature points
-            scaled : bool, optional
-                Whether or not to scale with domain size
+            map_true_domain : bool, optional
+                Whether or not to map points to true domain
         """
         raise NotImplementedError
 
-    def mesh(self, bcast=True):
+    def mesh(self, bcast=True, map_true_domain=True):
         """Return the computational mesh
 
         Parameters
@@ -193,8 +193,9 @@ class SpectralBase(object):
                 Whether or not to broadcast to :meth:`.ndim_tensorspace` dims
 
         """
-        x = self.points_and_weights(scaled=True)[0]
-        X = self.broadcast_to_ndims(x)
+        X = self.points_and_weights(map_true_domain=map_true_domain)[0]
+        if bcast is True:
+            X = self.broadcast_to_ndims(X)
         return X
 
     def wavenumbers(self, bcast=True, **kw):
@@ -213,8 +214,8 @@ class SpectralBase(object):
         return k
 
     def broadcast_to_ndims(self, x):
-        """Return 1D array ``x`` as an array of shape according to the planned
-        for :class:`.TensorProductSpace`
+        """Return 1D array ``x`` as an array of shape according to the
+        :class:`.TensorProductSpace` the base (self) belongs to.
 
         Parameters
         ----------
@@ -223,7 +224,7 @@ class SpectralBase(object):
         Note
         ----
         The returned array has shape one in all ndims-1 dimensions apart
-        from axis.
+        from self.axis.
 
         Example
         -------
@@ -293,9 +294,6 @@ class SpectralBase(object):
         as planned with self.plan
 
         """
-        #if input_array is not None:
-        #    self.forward.input_array[...] = input_array
-
         self.scalar_product(input_array, fast_transform=fast_transform)
         self.apply_inverse_mass(self.forward.tmp_array)
         self._truncation_forward(self.forward.tmp_array,
@@ -306,7 +304,6 @@ class SpectralBase(object):
             return output_array
         return self.forward.output_array
 
-    #@profile
     def backward(self, input_array=None, output_array=None, fast_transform=True):
         """Compute backward (inverse) transform
 
@@ -342,11 +339,11 @@ class SpectralBase(object):
         return self.backward.output_array
 
     def vandermonde(self, x):
-        r"""Return Vandermonde matrix based on the primary basis.
+        r"""Return Vandermonde matrix based on the primary basis of the family.
 
-        Evaluates basis :math:`\psi_k(x)` for all wavenumbers :math:`k`, and
-        all ``x``. Returned Vandermonde matrix is an N x M matrix with N the length
-        of ``x`` and M the number of bases.
+        Evaluates basis :math:`\psi_k(x)` for all wavenumbers, and all ``x``.
+        Returned Vandermonde matrix is an N x M matrix with N the length of
+        ``x`` and M the number of bases.
 
         .. math::
 
@@ -364,35 +361,83 @@ class SpectralBase(object):
 
         Note
         ----
-        This function return a matrix composed of the primary orthogonal basis.
-        That is, it is using either pure Chebyshev, Legendre or exponentials.
-        The tru Vandermonde matrix of a bisis is obtained through
-        :meth:`.get_vandermonde_basis`.
+        This function returns a matrix of evaluated primary basis functions for
+        either family. That is, it is using either pure Chebyshev, Legendre or
+        Fourier exponentials. The true Vandermonde matrix of a basis is obtained
+        through :meth:`.evaluate_basis_all`.
 
         """
         raise NotImplementedError
 
-    def get_vandermonde_basis(self, V):
-        """Return basis as a Vandermonde matrix
+    def evaluate_basis(self, x, i=0, output_array=None):
+        """Evaluate basis ``i`` at points x
 
         Parameters
         ----------
-            V : 2D array
-                Vandermonde matrix of primary basis
+            x : float or array of floats
+            i : int, optional
+                Basis number
+            output_array : array, optional
+                Return result in output_array if provided
+
+        Returns
+        -------
+            array
 
         """
-        return V
+        raise NotImplementedError
 
-    def get_vandermonde_basis_derivative(self, V, k=0):
-        """Return k'th derivative of basis as a Vandermonde matrix
+    def evaluate_basis_all(self, x=None):
+        """Evaluate basis at ``x`` or all quadrature points
 
         Parameters
         ----------
-            V : 2D array
+            x : float or array of floats, optional
+                If not provided use quadrature points of self
+
+        Returns
+        -------
+            array
                 Vandermonde matrix
+        """
+        if x is None:
+            x = self.mesh(False, False)
+        return self.vandermonde(x)
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0):
+        """Evaluate k'th derivative of basis at ``x`` or all quadrature points
+
+        Parameters
+        ----------
+            x : float or array of floats, optional
+                If not provided use quadrature points of self
+            i : int, optional
+                Basis number
             k : int, optional
                 k'th derivative
 
+        Returns
+        -------
+            array
+
+        """
+        raise NotImplementedError
+
+    def evaluate_basis_derivative_all(self, x=None, k=0):
+        """Return k'th derivative of basis evaluated at ``x`` or all quadrature
+        points as a Vandermonde matrix.
+
+        Parameters
+        ----------
+            x : float or array of floats, optional
+                If not provided use quadrature points of self
+            k : int, optional
+                k'th derivative
+
+        Returns
+        -------
+            array
+                Vandermonde matrix
         """
         raise NotImplementedError
 
@@ -427,9 +472,8 @@ class SpectralBase(object):
         assert abs(self.padding_factor-1) < 1e-8
         assert self.N == input_array.shape[self.axis]
 
-        points, weights = self.points_and_weights()
-        V = self.vandermonde(points)
-        P = self.get_vandermonde_basis(V)
+        _, weights = self.points_and_weights()
+        P = self.evaluate_basis_all()
 
         if input_array.ndim == 1:
             output_array[:] = np.dot(input_array*weights, np.conj(P))
@@ -460,9 +504,7 @@ class SpectralBase(object):
         """
         assert abs(self.padding_factor-1) < 1e-8
         assert self.N == output_array.shape[self.axis]
-        points = self.points_and_weights()[0]
-        V = self.vandermonde(points)
-        P = self.get_vandermonde_basis(V)
+        P = self.evaluate_basis_all()
 
         if output_array.ndim == 1:
             output_array = np.dot(P, input_array, out=output_array)
@@ -486,8 +528,7 @@ class SpectralBase(object):
 
         """
         assert abs(self.padding_factor-1) < 1e-8
-        V = self.vandermonde(points)
-        P = self.get_vandermonde_basis(V)
+        P = self.evaluate_basis_all(x=points)
 
         if output_array.ndim == 1:
             output_array = np.dot(P, input_array, out=output_array)
@@ -651,20 +692,6 @@ class SpectralBase(object):
         x = self.map_reference_domain(x)
         return self.vandermonde_evaluate_expansion(x, fk, output_array)
 
-    def evaluate_basis(self, x, i=0, output_array=None):
-        """Evaluate basis ``i`` at points x
-
-        Parameters
-        ----------
-            x : float or array of floats
-            i : int, optional
-                Basis number
-            output_array : array, optional
-                Return result in output_array if provided
-
-        """
-        raise NotImplementedError
-
     def map_reference_domain(self, x):
         """Return true point `x` mapped to reference domain"""
         if not self.domain == self.reference_domain():
@@ -742,6 +769,10 @@ class SpectralBase(object):
 
     @staticmethod
     def boundary_condition():
+        return ''
+
+    @staticmethod
+    def family():
         return ''
 
     def get_mass_matrix(self):
@@ -887,4 +918,3 @@ class Transform(FuncWrap):
     @property
     def xfftn(self):
         return object.__getattribute__(self, '_xfftn')
-

@@ -2,11 +2,11 @@
 Module for defining bases in the Legendre family
 """
 
+import functools
 import numpy as np
 from numpy.polynomial import legendre as leg
 from scipy.special import eval_legendre
 import pyfftw
-import functools
 from shenfun.spectralbase import SpectralBase, work, Transform
 from shenfun.utilities import inheritdocstrings
 from .lobatto import legendre_lobatto_nodes_and_weights
@@ -49,7 +49,7 @@ class LegendreBase(SpectralBase):
     def reference_domain(self):
         return (-1., 1.)
 
-    def points_and_weights(self, N=None, scaled=False):
+    def points_and_weights(self, N=None, map_true_domain=False):
         if N is None:
             N = self.N
         if self.quad == "LG":
@@ -59,20 +59,12 @@ class LegendreBase(SpectralBase):
         else:
             raise NotImplementedError
 
-        if scaled is True:
+        if map_true_domain is True:
             points = self.map_true_domain(points)
 
         return points, weights
 
     def vandermonde(self, x):
-        """Return Legendre Vandermonde matrix
-
-        Parameters
-        ----------
-            x : array
-                points for evaluation
-
-        """
         V = leg.legvander(x, self.N-1)
         return V
 
@@ -83,23 +75,26 @@ class LegendreBase(SpectralBase):
         output_array = eval_legendre(i, x, out=output_array)
         return output_array
 
-    def get_vandermonde_basis_derivative(self, V, k=0):
-        """Return k'th derivatives of basis as a Vandermonde matrix
-
-        Parameters
-        ----------
-            V : array of ndim = 2
-                Chebyshev Vandermonde matrix
-            k : int
-                k'th derivative
-        """
+    def evaluate_basis_derivative_all(self, x=None, k=0):
+        if x is None:
+            x = self.mesh(False, False)
+        V = self.vandermonde(x)
         assert self.N == V.shape[1]
         if k > 0:
             D = np.zeros((self.N, self.N))
             D[:-k, :] = leg.legder(np.eye(self.N), k)
             V = np.dot(V, D)
+        return self._composite_basis(V)
 
-        return self.get_vandermonde_basis(V)
+    def evaluate_basis_all(self, x=None):
+        if x is None:
+            x = self.mesh(False, False)
+        V = self.vandermonde(x)
+        return self._composite_basis(V)
+
+    def _composite_basis(self, V):
+        """Return composite basis, where ``V`` is primary Vandermonde matrix."""
+        return V
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
@@ -197,7 +192,7 @@ class ShenDirichletBasis(LegendreBase):
     def is_scaled(self):
         return self._scaled
 
-    def get_vandermonde_basis(self, V):
+    def _composite_basis(self, V):
         P = np.zeros(V.shape)
         if not self.is_scaled():
             P[:, :-2] = V[:, :-2] - V[:, 2:]
@@ -297,7 +292,7 @@ class ShenNeumannBasis(LegendreBase):
     def boundary_condition():
         return 'Neumann'
 
-    def get_vandermonde_basis(self, V):
+    def _composite_basis(self, V):
         assert self.N == V.shape[1]
         P = np.zeros(V.shape)
         k = np.arange(self.N).astype(np.float)
@@ -398,7 +393,7 @@ class ShenBiharmonicBasis(LegendreBase):
     def boundary_condition():
         return 'Biharmonic'
 
-    def get_vandermonde_basis(self, V):
+    def _composite_basis(self, V):
         P = np.zeros_like(V)
         k = np.arange(V.shape[1]).astype(np.float)[:-4]
         P[:, :-4] = V[:, :-4] - (2*(2*k+5)/(2*k+7))*V[:, 2:-2] + ((2*k+3)/(2*k+7))*V[:, 4:]
@@ -505,7 +500,7 @@ class SecondNeumannBasis(LegendreBase): # pragma: no cover
         self._factor = np.zeros(0)
         self.plan(N, 0, np.float, {})
 
-    def get_vandermonde_basis(self, V):
+    def _composite_basis(self, V):
         assert self.N == V.shape[1]
         P = np.zeros(V.shape)
         k = np.arange(self.N).astype(np.float)[:-4]
@@ -563,4 +558,3 @@ class SecondNeumannBasis(LegendreBase): # pragma: no cover
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-

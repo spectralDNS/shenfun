@@ -21,6 +21,7 @@ sphinx-rootdir/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
+.pytest_cache
 *.py[cod]
 *$py.class
 
@@ -31,6 +32,8 @@ __pycache__/
 .Python
 build/
 var/
+
+*.*workspace
 
 # Unit test / coverage reports
 .coverage
@@ -43,3 +46,16 @@ coverage.xml
 docs/build/
 
 *.json
+*.measure
+
+# demos
+docs/demos/mekit17/pub/*.*
+docs/demos/mekit17/pub/*
+
+#cython
+shenfun/optimization/*.c
+shenfun/optimization/*.cpp
+shenfun/optimization/*.so
+
+
+docs/demos/mekit17/shenfun.tex

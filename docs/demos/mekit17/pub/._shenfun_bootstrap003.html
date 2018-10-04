@@ -200,14 +200,17 @@ The following bases are defined in submodules
 
 </ul>
 
-All bases have methods for transforms and inner products on single- or multidimensional Numpy data arrays. The following code shows how to create a Fourier basis and subsequently perform a forward and an inverse discrete Fourier transform on a random array. The <code>uc</code> array is only used to test that the transform cycle returns the original data.
+All bases have methods for transforms and inner products on single- or multidimensional 
+Numpy data arrays. The following code shows how to create a Fourier basis and subsequently 
+perform a forward and an inverse discrete Fourier transform on a random array. 
+The <code>uc</code> array is only used to test that the transform cycle returns the original data.
 <p>
 
 <!-- code=python (!bc pyshell) typeset with pygments style "default" -->
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>    <span style="color: #666666">&gt;&gt;&gt;</span> <span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> <span style="color: #666666">*</span>
     <span style="color: #666666">&gt;&gt;&gt;</span> <span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
     <span style="color: #666666">&gt;&gt;&gt;</span> N <span style="color: #666666">=</span> <span style="color: #666666">16</span>
-    <span style="color: #666666">&gt;&gt;&gt;</span> FFT <span style="color: #666666">=</span> fourier<span style="color: #666666">.</span>bases<span style="color: #666666">.</span>R2CBasis(N, plan<span style="color: #666666">=</span><span style="color: #008000">True</span>) 
+    <span style="color: #666666">&gt;&gt;&gt;</span> FFT <span style="color: #666666">=</span> fourier<span style="color: #666666">.</span>bases<span style="color: #666666">.</span>R2CBasis(N) 
     <span style="color: #666666">&gt;&gt;&gt;</span> u <span style="color: #666666">=</span> np<span style="color: #666666">.</span>random<span style="color: #666666">.</span>random(N)
     <span style="color: #666666">&gt;&gt;&gt;</span> uc <span style="color: #666666">=</span> u<span style="color: #666666">.</span>copy()
     <span style="color: #666666">&gt;&gt;&gt;</span> u_hat <span style="color: #666666">=</span> FFT<span style="color: #666666">.</span>forward(u)
@@ -280,7 +283,7 @@ Weak variational forms are created using test and trial functions, as shown in t
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>    <span style="color: #666666">&gt;&gt;&gt;</span> <span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun.chebyshev.bases</span> <span style="color: #008000; font-weight: bold">import</span> ShenDirichletBasis
     <span style="color: #666666">&gt;&gt;&gt;</span> <span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> inner, TestFunction, TrialFunction    
     <span style="color: #666666">&gt;&gt;&gt;</span> N <span style="color: #666666">=</span> <span style="color: #666666">8</span>
-    <span style="color: #666666">&gt;&gt;&gt;</span> SD <span style="color: #666666">=</span> ShenDirichletBasis(N, plan<span style="color: #666666">=</span><span style="color: #008000">True</span>)
+    <span style="color: #666666">&gt;&gt;&gt;</span> SD <span style="color: #666666">=</span> ShenDirichletBasis(N)
     <span style="color: #666666">&gt;&gt;&gt;</span> u <span style="color: #666666">=</span> TrialFunction(SD)
     <span style="color: #666666">&gt;&gt;&gt;</span> v <span style="color: #666666">=</span> TestFunction(SD)
 </pre></div>
@@ -499,7 +502,7 @@ fe <span style="color: #666666">=</span> ue<span style="color: #666666">.</span>
 
 <span style="color: #408080; font-style: italic"># Create Fourier basis with N basis functions</span>
 N <span style="color: #666666">=</span> <span style="color: #666666">32</span>
-ST <span style="color: #666666">=</span> FourierBasis(N, np<span style="color: #666666">.</span>float, plan<span style="color: #666666">=</span><span style="color: #008000">True</span>)
+ST <span style="color: #666666">=</span> FourierBasis(N, np<span style="color: #666666">.</span>float)
 u <span style="color: #666666">=</span> TrialFunction(ST)
 v <span style="color: #666666">=</span> TestFunction(ST)
 X <span style="color: #666666">=</span> ST<span style="color: #666666">.</span>mesh(N)
@@ -680,7 +683,7 @@ ul <span style="color: #666666">=</span> lambdify(x, ue, <span style="color: #BA
 fl <span style="color: #666666">=</span> lambdify(x, fe, <span style="color: #BA2121">&#39;numpy&#39;</span>)
 
 N <span style="color: #666666">=</span> <span style="color: #666666">32</span>
-SD <span style="color: #666666">=</span> ShenDirichletBasis(N, plan<span style="color: #666666">=</span><span style="color: #008000">True</span>)
+SD <span style="color: #666666">=</span> ShenDirichletBasis(N)
 X <span style="color: #666666">=</span> SD<span style="color: #666666">.</span>mesh(N)
 u <span style="color: #666666">=</span> TrialFunction(SD)
 v <span style="color: #666666">=</span> TestFunction(SD)

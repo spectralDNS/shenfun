@@ -1,5 +1,5 @@
-import numpy as np
 from numbers import Number
+import numpy as np
 
 __all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',
            'Array', 'Basis')
@@ -213,7 +213,7 @@ class Expr(object):
         ndim = self.function_space().ndim()
         if terms is None:
             self._terms = np.zeros((self.function_space().num_components(), 1, ndim),
-                                    dtype=np.int)
+                                   dtype=np.int)
         if scales is None:
             self._scales = np.ones((self.function_space().num_components(), 1))
 
@@ -622,7 +622,8 @@ class Function(np.ndarray, BasisFunction):
         return self._space[self.index()]
 
     def __array_finalize__(self, obj):
-        if obj is None: return
+        if obj is None:
+            return
         if hasattr(obj, '_space'):
             self._space = obj._space
 
@@ -754,7 +755,8 @@ class Array(np.ndarray):
         return obj
 
     def __array_finalize__(self, obj):
-        if obj is None: return
+        if obj is None:
+            return
         if hasattr(obj, '_space'):
             self._space = obj._space
 
@@ -794,4 +796,3 @@ class Array(np.ndarray):
             output_array = Function(space)
         output_array = space.forward(self, output_array)
         return output_array
-

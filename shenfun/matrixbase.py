@@ -611,9 +611,8 @@ def get_dense_matrix(test, trial):
     """
     N = test[0].N
     x, w = test[0].points_and_weights(N)
-    V = test[0].vandermonde(x)
-    v = test[0].get_vandermonde_basis_derivative(V, test[1])
-    u = trial[0].get_vandermonde_basis_derivative(V, trial[1])
+    v = test[0].evaluate_basis_derivative_all(k=test[1])
+    u = trial[0].evaluate_basis_derivative_all(k=trial[1])
     return np.dot(w*v.T, np.conj(u))
 
 
@@ -646,4 +645,3 @@ def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-12):
             d[-i] = l
 
     return SparseMatrix(d, M.shape)
-

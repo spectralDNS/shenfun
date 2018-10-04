@@ -150,6 +150,28 @@ def test_massmatrices(test, trial, quad):
     assert np.linalg.norm(u2[s]-u0[s])/(N*N*N) < 1e-12
     del BBD
 
+@pytest.mark.parametrize('basis', cBasis[:2])
+def test_project_1D(basis):
+    ue = sin(2*np.pi*x)*(1-x**2)
+    ul = lambdify((x,), ue, 'numpy')
+    T = basis(12)
+    u = shenfun.TrialFunction(T)
+    v = shenfun.TestFunction(T)
+    u_tilde = shenfun.Function(T)
+    X = T.mesh()
+    ua = shenfun.Array(T, buffer=ul(X))
+    u_tilde = shenfun.inner(v, ua, output_array=u_tilde)
+    M = shenfun.inner(u, v)
+    u_p = shenfun.Function(T)
+    u_p = M.solve(u_tilde, u=u_p)
+    u_0 = shenfun.Function(T)
+    u_0 = shenfun.project(ua, T)
+    assert np.allclose(u_0, u_p)
+    u_1 = shenfun.project(ul, T)
+    assert np.allclose(u_1, u_p)
+    u_2 = shenfun.project(ue, T)
+    assert np.allclose(u_2, u_p)
+
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
 @pytest.mark.parametrize('dim', (2, 3))
 def test_transforms(ST, quad, dim):
@@ -193,7 +215,6 @@ def test_transforms(ST, quad, dim):
         cc = [0,]*dim
         cc[axis] = slice(None)
         cc = tuple(cc)
-        #from IPython import embed; embed()
         assert np.allclose(fij[cc], u11[cc])
 
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
@@ -498,7 +519,7 @@ if __name__ == '__main__':
     #test_convolve(fbases.R2CBasis, 8)
     #test_ADDmat(lbases.ShenNeumannBasis, "GL")
     #test_massmatrices(cBasis[3], cBasis[3], 'GC')
-    test_transforms(cBasis[3], 'GC', 2)
+    #test_transforms(cBasis[3], 'GC', 2)
+    test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[2], 'GC')
     #test_eval(cBasis[0], 'GC')
-

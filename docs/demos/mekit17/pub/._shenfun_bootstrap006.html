@@ -192,7 +192,7 @@ The initial condition is created using <code>Sympy</code>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">sympy</span> <span style="color: #008000; font-weight: bold">import</span> symbols, exp, lambdify
-x, y <span style="color: #666666">=</span> symbols(<span style="color: #BA2121">&quot;x,y&quot;</span>)
+x, y <span style="color: #666666">=</span> symbols(<span style="color: #BA2121">&quot;x,i y&quot;</span>)
 <span style="color: #408080; font-style: italic">#ue = (1j*x + y)*exp(-0.03*(x**2+y**2))</span>
 ue <span style="color: #666666">=</span> (x <span style="color: #666666">+</span> y)<span style="color: #666666">*</span>exp(<span style="color: #666666">-0.03*</span>(x<span style="color: #666666">**2+</span>y<span style="color: #666666">**2</span>))
 ul <span style="color: #666666">=</span> lambdify((x, y), ue, <span style="color: #BA2121">&#39;numpy&#39;</span>)

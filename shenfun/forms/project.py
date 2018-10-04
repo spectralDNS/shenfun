@@ -1,14 +1,15 @@
 import numpy as np
-#import sympy as sp
-from shenfun.tensorproductspace import MixedTensorProductSpace
-from .arguments import Expr, TestFunction, TrialFunction, BasisFunction, Function
+import sympy as sp
+from shenfun.tensorproductspace import TensorProductSpace, MixedTensorProductSpace
+from .arguments import Expr, TestFunction, TrialFunction, BasisFunction, \
+    Function, Array
 from .inner import inner
 
 __all__ = ('project',)
 
 def project(uh, T, output_array=None):
     r"""
-    Project uh to tensor product space T
+    Project uh to tensor poduct space T
 
     Find :math:`u \in T`, such that
 
@@ -18,7 +19,11 @@ def project(uh, T, output_array=None):
 
     Parameters
     ----------
-    uh : :class:`.Expr`, :class:`.BasisFunction` or :class:`.Array`
+    uh : Instance of either one of
+        - :class:`.Expr`
+        - :class:`.BasisFunction`
+        - :class:`.Array`
+        - A sympy function
     T : :class:`.TensorProductSpace` or :class:`.MixedTensorProductSpace`
     output_array : :class:`.Function`
         Return array
@@ -55,13 +60,24 @@ def project(uh, T, output_array=None):
     if output_array is None:
         output_array = Function(T)
 
+    if hasattr(uh, 'evalf'):
+        # lambdify sympy function for fast execution
+        x, y, z = sp.symbols("x,y,z")
+        uh = ({1: lambda a: sp.lambdify((x,), a, 'numpy'),
+               2: lambda a: sp.lambdify((x, y), a, 'numpy'),
+               3: lambda a: sp.lambdify((x, y, z), a, 'numpy')}[len(T)])(uh)
+
+    if hasattr(uh, '__call__'):
+        # Evaluate sympy function on entire mesh
+        if isinstance(T, TensorProductSpace):
+            uh = Array(T, buffer=uh(*T.local_mesh(True)).astype(T.forward.input_array.dtype))
+        else:
+            uh = Array(T, buffer=uh(T.mesh()).astype(T.forward.input_array.dtype))
+
     if isinstance(uh, np.ndarray):
-        # Just regular forward transform
+        # Project is just regular forward transform
         output_array = T.forward(uh, output_array)
         return output_array
-
-    #if hasattr(uh, '__call__'):
-    #    ux = uh(T.map_reference_domain(T.mesh()))
 
     assert isinstance(uh, (Expr, BasisFunction))
 
@@ -99,4 +115,3 @@ def project(uh, T, output_array=None):
                 axis = B[i].axis if hasattr(B[i], 'axis') else 0
                 output_array[i] = B[i].solve(output_array[i], output_array[i], axis=axis)
     return output_array
-
