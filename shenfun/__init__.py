@@ -22,4 +22,3 @@ from .utilities.h5py_writer import *
 from .utilities.nc_writer import *
 from .utilities.generate_xdmf import *
 from .optimization import Cheb, la, Matvec, convolve, evaluate
-

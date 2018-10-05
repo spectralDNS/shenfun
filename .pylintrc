@@ -17,7 +17,10 @@ disable = locally-disabled,
     redefined-argument-from-local,
     no-else-return,
     no-self-use,
-    no-member
+    no-member,
+    too-many-branches,
+    too-many-statements,
+    too-many-locals
 extension-pkg-whitelist = mpi4py,pyfftw,numpy,shenfun
 generated-members=np.floating
 reports = no

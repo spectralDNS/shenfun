@@ -7,9 +7,9 @@ import shenfun
 from shenfun.la import TDMA
 from shenfun.spectralbase import inner_product
 from scipy.linalg import solve
+import scipy.sparse.linalg as la
 from sympy import Symbol, sin, cos, pi, lambdify
 import numpy as np
-import scipy.sparse.linalg as la
 from itertools import product
 
 N = 33

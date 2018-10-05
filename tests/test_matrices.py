@@ -411,7 +411,7 @@ def test_biharmonic2D(family, axis):
     assert np.linalg.norm(f-(g0+g1+g2)) < 1e-8
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     #test_add(*mats_and_quads[0])
     #test_mul2()
     #test_div2(cBasis[0], 'GC')

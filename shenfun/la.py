@@ -397,4 +397,3 @@ class NeumannSolve(object):
                 b = np.moveaxis(b, 0, axis)
         u /= self.A.scale
         return u
-

@@ -11,9 +11,9 @@ where V is the Fourier basis span{exp(1jkx)}_{k=-N/2}^{N/2-1} and
 VxV is a tensorproductspace.
 
 """
+import os
 from sympy import Symbol, cos, sin, lambdify
 import numpy as np
-import os
 from shenfun import inner, grad, TestFunction, TrialFunction, Array, Basis, \
     TensorProductSpace, Function
 from mpi4py import MPI
@@ -89,5 +89,4 @@ if plt is not None and not 'pytest' in os.environ:
     plt.contourf(X[0], X[1], uq-uj)
     plt.colorbar()
     plt.title('Error')
-    #plt.show()
-
+    plt.show()

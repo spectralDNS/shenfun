@@ -66,15 +66,15 @@ assert np.allclose(uj, uq)
 
 if plt is not None and not 'pytest' in os.environ:
     plt.figure()
-    plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 0])
+    plt.contourf(X[0][:, :, 0], X[1][: ,: ,0], uq[:, :, 0])
     plt.colorbar()
 
     plt.figure()
-    plt.contourf(X[0][:,:,0], X[1][:,:,0], uj[:, :, 0])
+    plt.contourf(X[0][:, :, 0], X[1][:, :, 0], uj[:, :, 0])
     plt.colorbar()
 
     plt.figure()
-    plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 0]-uj[:, :, 0])
+    plt.contourf(X[0][:, :, 0], X[1][:, :, 0], uq[:, :, 0]-uj[:, :, 0])
     plt.colorbar()
     plt.title('Error')
     #plt.show()
@@ -118,4 +118,3 @@ if plt is not None and not 'pytest' in os.environ:
 #assert np.allclose(duxj, du[0])
 #assert np.allclose(duyj, du[1])
 #assert np.allclose(duzj, du[2])
-

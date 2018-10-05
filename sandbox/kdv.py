@@ -1,8 +1,8 @@
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib.collections import PolyCollection
 from shenfun import *
 from mpl_toolkits.mplot3d import axes3d
-from matplotlib.collections import PolyCollection
 
 N = 256
 T = Basis(N, 'F', dtype='d')
@@ -61,7 +61,7 @@ N = len(data)
 tdata = np.linspace(0, end_time, N)
 ddata = np.array(data)
 
-fig = plt.figure(figsize=(8,3))
+fig = plt.figure(figsize=(8, 3))
 ax = axes3d.Axes3D(fig)
 X, Y = np.meshgrid(x, tdata)
 ax.plot_wireframe(X, Y, ddata, cstride=1000)
@@ -75,7 +75,7 @@ ax.grid()
 
 fig2 = plt.figure(figsize=(8,3))
 ax2 = fig2.gca(projection='3d')
-poly = PolyCollection(s, facecolors=(1,1,1,1), edgecolors='b')
+poly = PolyCollection(s, facecolors=(1, 1, 1, 1), edgecolors='b')
 ax2.add_collection3d(poly, zs=tdata, zdir='y')
 ax2.set_xlim3d(0, 2*np.pi)
 ax2.set_ylim3d(0, t)
@@ -84,7 +84,7 @@ ax2.view_init(65, -105)
 ax2.set_zticks([0, 2000])
 ax2.grid()
 
-fig3 = plt.figure(figsize=(8,3))
+fig3 = plt.figure(figsize=(8, 3))
 ax3 = fig3.gca(projection='3d')
 X, Y = np.meshgrid(x, tdata)
 ax3.plot_surface(X, Y, ddata, cstride=1000, rstride=1, color='w')

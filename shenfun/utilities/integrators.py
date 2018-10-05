@@ -319,4 +319,3 @@ class RK4(IntegratorBase):
             u_hat[:] = self. U_hat1
             self.update(u, u_hat, t, tstep, **self.params)
         return u_hat
-
