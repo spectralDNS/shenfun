@@ -191,7 +191,8 @@ class SpectralBase(object):
         ----------
             bcast : bool
                 Whether or not to broadcast to :meth:`.ndim_tensorspace` dims
-
+            map_true_domain : bool, optional
+                Whether or not to map points to true domain
         """
         X = self.points_and_weights(map_true_domain=map_true_domain)[0]
         if bcast is True:

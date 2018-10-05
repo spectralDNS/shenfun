@@ -84,15 +84,15 @@ assert np.allclose(uj, u)
 
 if plt is not None and not 'pytest' in os.environ:
     plt.figure()
-    plt.contourf(X[0][:,:,0], X[1][:,:,0], u[:, :, 2])
+    plt.contourf(X[0][:, :, 0], X[1][:, :, 0], u[:, :, 2])
     plt.colorbar()
 
     plt.figure()
-    plt.contourf(X[0][:,:,0], X[1][:,:,0], uj[:, :, 2])
+    plt.contourf(X[0][:, :, 0], X[1][:, :, 0], uj[:, :, 2])
     plt.colorbar()
 
     plt.figure()
-    plt.contourf(X[0][:,:,0], X[1][:,:,0], u[:, :, 2]-uj[:, :, 2])
+    plt.contourf(X[0][:, :, 0], X[1][:, :, 0], u[:, :, 2]-uj[:, :, 2])
     plt.colorbar()
     plt.title('Error')
 

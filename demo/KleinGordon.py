@@ -13,12 +13,12 @@ with both u(x, y, z, t=0) and f(x, y, z, t=0) given.
 Using the Fourier basis for all three spatial directions.
 
 """
-from sympy import symbols, exp, lambdify
 import numpy as np
+from time import time
 import six
 import matplotlib.pyplot as plt
+from sympy import symbols, exp, lambdify
 from mpi4py import MPI
-from time import time
 from shenfun import *
 from spectralDNS.utilities import Timer
 
@@ -132,7 +132,7 @@ def update(fu, fu_hat, t, tstep, **params):
         ekin = 0.5*energy_fourier(f_hat, T)
         es = 0.5*energy_fourier(1j*K*u_hat, T)
         eg = gamma*np.sum(0.5*u**2 - 0.25*u**4)/np.prod(np.array(N))
-        eg =  comm.allreduce(eg)
+        eg = comm.allreduce(eg)
         gradu = TV.backward(1j*K*u_hat, gradu)
         ep = comm.allreduce(np.sum(f*gradu)/np.prod(np.array(N)))
         ea = comm.allreduce(np.sum(np.array(X)*(0.5*f**2 + 0.5*gradu**2 - (0.5*u**2 - 0.25*u**4)*f))/np.prod(np.array(N)))

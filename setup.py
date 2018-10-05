@@ -57,14 +57,14 @@ if not "sdist" in sys.argv:
 else:
     pass
 
-setup(name = "shenfun",
-      version = "%d.%d" % (major, minor),
-      description = "Shenfun -- Automated Spectral-Galerkin framework",
-      long_description = "",
-      author = "Mikael Mortensen",
-      author_email = "mikaem@math.uio.no",
-      url = 'https://github.com/spectralDNS/shenfun',
-      classifiers = [
+setup(name="shenfun",
+      version="%d.%d" % (major, minor),
+      description="Shenfun -- Automated Spectral-Galerkin framework",
+      long_description="",
+      author="Mikael Mortensen",
+      author_email="mikaem@math.uio.no",
+      url='https://github.com/spectralDNS/shenfun',
+      classifiers=[
           'Development Status :: 5 - Production/Stable',
           'Environment :: Console',
           'Intended Audience :: Developers',
@@ -75,15 +75,15 @@ setup(name = "shenfun",
           'Topic :: Scientific/Engineering :: Mathematics',
           'Topic :: Software Development :: Libraries :: Python Modules',
           ],
-      packages = ["shenfun",
-                  "shenfun.optimization",
-                  "shenfun.legendre",
-                  "shenfun.chebyshev",
-                  "shenfun.fourier",
-                  "shenfun.forms",
-                  "shenfun.utilities"
-                  ],
-      package_dir = {"shenfun": "shenfun"},
-      ext_modules = ext,
-      cmdclass = cmdclass
-    )
+      packages=["shenfun",
+                "shenfun.optimization",
+                "shenfun.legendre",
+                "shenfun.chebyshev",
+                "shenfun.fourier",
+                "shenfun.forms",
+                "shenfun.utilities"
+               ],
+      package_dir={"shenfun": "shenfun"},
+      ext_modules=ext,
+      cmdclass=cmdclass
+     )

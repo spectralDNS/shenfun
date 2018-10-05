@@ -15,11 +15,11 @@ Use the method of manufactured solutions, and choose a
 solution that is either real or complex.
 
 """
+import os
 from sympy import Symbol, cos, sin, lambdify
 import numpy as np
 from shenfun import inner, grad, TestFunction, TrialFunction, Basis, Function, \
     Array
-import os
 try:
     import matplotlib.pyplot as plt
 except ImportError:

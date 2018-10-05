@@ -17,7 +17,7 @@ def energy_fourier(u, T):
     if not hasattr(T, 'comm'):
         # Just a 1D basis
         assert u.ndim == 1
-        if isinstance(T, fourier.bases.R2CBasis):
+        if isinstance(T, R2CBasis):
             result = (2*np.sum(abs(u[1:-1])**2) +
                       np.sum(abs(u[0])**2) +
                       np.sum(abs(u[-1])**2))
@@ -49,4 +49,3 @@ def energy_fourier(u, T):
 
     result = comm.allreduce(result)
     return result
-

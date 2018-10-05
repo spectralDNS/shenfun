@@ -610,7 +610,7 @@ def get_dense_matrix(test, trial):
                 As test, but representing matrix column.
     """
     N = test[0].N
-    x, w = test[0].points_and_weights(N)
+    _, w = test[0].points_and_weights(N)
     v = test[0].evaluate_basis_derivative_all(k=test[1])
     u = trial[0].evaluate_basis_derivative_all(k=trial[1])
     return np.dot(w*v.T, np.conj(u))

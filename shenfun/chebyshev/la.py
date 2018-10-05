@@ -437,7 +437,7 @@ class Biharmonic(object):
             self.ak = np.zeros(ss)
             self.bk = np.zeros(ss)
             if np.ndim(beta) == 3:
-                la.LU_Biharmonic_3D_n(S.axis, a0[0,0,0], alfa, beta, sii, siu, siuu,
+                la.LU_Biharmonic_3D_n(S.axis, a0[0, 0, 0], alfa, beta, sii, siu, siuu,
                                       ail, aii, aiu, bill, bil, bii, biu, biuu,
                                       self.u0, self.u1, self.u2, self.l0,
                                       self.l1)
@@ -445,7 +445,7 @@ class Biharmonic(object):
                                            self.l1)
 
             elif np.ndim(beta) == 2:
-                la.LU_Biharmonic_2D_n(S.axis, a0[0,0], alfa, beta, sii, siu, siuu,
+                la.LU_Biharmonic_2D_n(S.axis, a0[0, 0], alfa, beta, sii, siu, siuu,
                                       ail, aii, aiu, bill, bil, bii, biu, biuu,
                                       self.u0, self.u1, self.u2, self.l0,
                                       self.l1)
@@ -500,11 +500,11 @@ class Biharmonic(object):
     def matvec(self, v, c, axis=0):
         c[:] = 0
         if len(v.shape) == 3:
-            Matvec.Biharmonic_matvec3D(v, c, self.a0[0,0,0], self.alfa, self.beta, self.S[0], self.S[2],
+            Matvec.Biharmonic_matvec3D(v, c, self.a0[0, 0, 0], self.alfa, self.beta, self.S[0], self.S[2],
                                 self.S[4], self.A[-2], self.A[0], self.A[2],
                                 self.B[-4], self.B[-2], self.B[0], self.B[2], self.B[4], axis)
         elif len(v.shape) == 2:
-            Matvec.Biharmonic_matvec2D(v, c, self.a0[0,0], self.alfa, self.beta, self.S[0], self.S[2],
+            Matvec.Biharmonic_matvec2D(v, c, self.a0[0, 0], self.alfa, self.beta, self.S[0], self.S[2],
                                 self.S[4], self.A[-2], self.A[0], self.A[2],
                                 self.B[-4], self.B[-2], self.B[0], self.B[2], self.B[4], axis)
         else:
@@ -701,4 +701,3 @@ class PDMA(object):
 
         #u /= self.mat.scale
         return u
-

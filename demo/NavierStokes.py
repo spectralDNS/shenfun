@@ -1,7 +1,3 @@
-__author__ = "Mikael Mortensen <mikaem@math.uio.no>"
-__date__ = "2017-11-01"
-__copyright__ = "Copyright (C) 2017 " + __author__
-__license__  = "GNU Lesser GPL version 3 or any later version"
 """
 Simple spectral Navier-Stokes solver
 
@@ -9,8 +5,8 @@ Not implemented for efficiency. For efficiency use the Navier-Stokes
 solver in the https://github.com/spectralDNS/spectralDNS repository
 """
 
-import numpy as np
 from mpi4py import MPI
+import numpy as np
 from shenfun import *
 
 nu = 0.000625
@@ -60,7 +56,7 @@ if __name__ == '__main__':
     for integrator in (RK4, ETDRK4):
         # Initialization
         U[0] = np.sin(X[0])*np.cos(X[1])*np.cos(X[2])
-        U[1] =-np.cos(X[0])*np.sin(X[1])*np.cos(X[2])
+        U[1] = -np.cos(X[0])*np.sin(X[1])*np.cos(X[2])
         U[2] = 0
         U_hat = TV.forward(U, U_hat)
         # Solve
