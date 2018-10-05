@@ -1,7 +1,7 @@
+from time import time
 import numpy as np
 from matplotlib import pyplot as plt
-from shenfun import inner, div, grad, Dx, Function, Array, TestFunction, Basis
-from time import time
+from shenfun import inner, div, grad, Function, Array, TestFunction, Basis
 
 
 def main(N, dt=0.005, end_time=2, dealias_initial=True, plot_result=False):
@@ -94,5 +94,3 @@ if __name__ == "__main__":
         plt.xlabel(r'N')
         plt.ylabel('L2 error norm')
         plt.show()
-
-

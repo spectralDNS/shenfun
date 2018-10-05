@@ -507,7 +507,8 @@ class TensorProductSpace(object):
                                                                    ip.subshape)]
         return s
 
-    def rank(self):
+    @staticmethod
+    def rank():
         """Return rank of TensorProductSpace"""
         return 1
 
@@ -606,7 +607,8 @@ class MixedTensorProductSpace(object):
         """Return dimension of scalar space"""
         return self.spaces[0].ndim()
 
-    def rank(self):
+    @staticmethod
+    def rank():
         """Return rank of space"""
         return 2
 
@@ -652,7 +654,8 @@ class VectorTensorProductSpace(MixedTensorProductSpace):
         assert len(self.spaces) == self.ndim()
         return self.ndim()
 
-    def rank(self):
+    @staticmethod
+    def rank():
         """Return rank of space"""
         return 2
 
