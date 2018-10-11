@@ -365,7 +365,7 @@ class SpectralBase(object):
         This function returns a matrix of evaluated primary basis functions for
         either family. That is, it is using either pure Chebyshev, Legendre or
         Fourier exponentials. The true Vandermonde matrix of a basis is obtained
-        through :meth:`.evaluate_basis_all`.
+        through :meth:`.SpectralBase.evaluate_basis_all`.
 
         """
         raise NotImplementedError
@@ -405,8 +405,8 @@ class SpectralBase(object):
             x = self.mesh(False, False)
         return self.vandermonde(x)
 
-    def evaluate_basis_derivative(self, x=None, i=0, k=0):
-        """Evaluate k'th derivative of basis at ``x`` or all quadrature points
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        """Evaluate k'th derivative of basis ``i`` at ``x`` or all quadrature points
 
         Parameters
         ----------
@@ -416,6 +416,8 @@ class SpectralBase(object):
                 Basis number
             k : int, optional
                 k'th derivative
+            output_array : array, optional
+                return array
 
         Returns
         -------

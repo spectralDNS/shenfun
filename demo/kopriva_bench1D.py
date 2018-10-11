@@ -1,4 +1,3 @@
-from time import time
 import numpy as np
 from matplotlib import pyplot as plt
 from shenfun import inner, div, grad, Function, Array, TestFunction, Basis

@@ -25,18 +25,21 @@ class HDF5Writer(object):
             Instance of a TensorProductSpace. Must be the same as the space
             used for storing with 'write_tstep' and 'write_slice_tstep'
     """
-    def __init__(self, h5name, names, T):
+    def __init__(self, h5name, names, T, forward_output=False):
         self.f = h5py.File(h5name, "w", driver="mpio", comm=T.comm)
         self.f.create_group("mesh")
         self.T = T
         self.names = names
-        x = T.mesh()
+        if forward_output is True:
+            x = T.wavenumbers(True, False)
+        else:
+            x = T.mesh()
         for i in range(len(x)):
             self.f["mesh"].create_dataset("x{}".format(i), data=np.squeeze(x[i]))
         for name in names:
             self.f.create_group(name)
 
-    def write_tstep(self, tstep, u, spectral=False):
+    def write_tstep(self, tstep, u, forward_output=False):
         """Write field u to HDF5 format at a given time step
 
         Parameters
@@ -45,9 +48,9 @@ class HDF5Writer(object):
                 Time step
             u : array
                 Function or Array. The field to be stored
-            spectral : bool, optional
+            forward_output : bool, optional
                 If False, then u is an array from real physical space,
-                if True, then u is an array from spectral space.
+                If True, then u is an array from spectral space.
 
         Note
         ----
@@ -62,12 +65,12 @@ class HDF5Writer(object):
             assert self.T.ndim() == len(u.shape[1:])
             assert len(self.names) == u.shape[0]
             for i in range(u.shape[0]):
-                self._write_group(self.names[i], u[i], tstep, spectral)
+                self._write_group(self.names[i], u[i], tstep, forward_output)
         else:
             assert len(self.names) == 1
-            self._write_group(self.names[0], u, tstep, spectral)
+            self._write_group(self.names[0], u, tstep, forward_output)
 
-    def write_slice_tstep(self, tstep, sl, u):
+    def write_slice_tstep(self, tstep, sl, u, forward_output=False):
         """Write slice of field u to HDF5 format at a given time step
 
         Parameters
@@ -78,7 +81,9 @@ class HDF5Writer(object):
                 The slice to be stored
             u : array
                 Function or Array. The field to be stored
-
+            forward_output : bool, optional
+               If False, then u is an array from real physical space,
+               If True, then u is an array from spectral space.
         Note
         ----
         Slices of fields with name 'name' will be stored for, e.g.,
@@ -106,7 +111,7 @@ class HDF5Writer(object):
             else:
                 slname += str(ss)+'_'
         slname = slname[:-1]
-        s = self.T.local_slice(False)
+        s = self.T.local_slice(forward_output)
 
         # Check if slice is on this processor and make sl local
         inside = 1
@@ -127,21 +132,23 @@ class HDF5Writer(object):
             sl.insert(0, 0)
             for i in range(u.shape[0]):
                 sl[0] = i
-                self._write_slice_group(self.names[i], slname, ndims, sp, u, sl, sf, inside, tstep)
+                self._write_slice_group(self.names[i], slname, ndims, sp, u,
+                                        sl, sf, inside, tstep, forward_output)
 
         else:
             assert len(self.names) == 1
-            self._write_slice_group(self.names[0], slname, ndims, sp, u, sl, sf, inside, tstep)
+            self._write_slice_group(self.names[0], slname, ndims, sp, u, sl,
+                                    sf, inside, tstep, forward_output)
 
     def close(self):
         self.f.close()
 
-    def _write_group(self, name, u, tstep, spectral):
-        s = tuple(self.T.local_slice(spectral))
+    def _write_group(self, name, u, tstep, forward_output):
+        s = tuple(self.T.local_slice(forward_output))
         group = "/".join((name, "{}D".format(len(u.shape))))
         if group not in self.f:
             self.f.create_group(group)
-        self.f[group].create_dataset(str(tstep), shape=self.T.shape(spectral), dtype=u.dtype)
+        self.f[group].create_dataset(str(tstep), shape=self.T.shape(forward_output), dtype=u.dtype)
         if self.T.ndim() == 5:
             self.f["/".join((group, str(tstep)))][s[0], s[1], s[2], s[3], s[4]] = u
         elif self.T.ndim() == 4:
@@ -153,13 +160,13 @@ class HDF5Writer(object):
         else:
             raise NotImplementedError
 
-    def _write_slice_group(self, name, slname, ndims, sp, u, sl, sf, inside, tstep):
+    def _write_slice_group(self, name, slname, ndims, sp, u, sl, sf, inside, tstep, forward_output):
         sl = tuple(sl)
         sf = tuple(sf)
         group = "/".join((name, "{}D".format(ndims), slname))
         if group not in self.f:
             self.f.create_group(group)
-        N = self.T.shape()
+        N = self.T.shape(forward_output)
         self.f[group].create_dataset(str(tstep), shape=np.take(N, sp), dtype=u.dtype)
         if inside == 1:
             if len(sf) == 3:
@@ -168,4 +175,3 @@ class HDF5Writer(object):
                 self.f["/".join((group, str(tstep)))][sf[0], sf[1]] = u[sl]
             elif len(sf) == 1:
                 self.f["/".join((group, str(tstep)))][sf[0]] = u[sl]
-

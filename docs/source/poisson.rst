@@ -7,12 +7,12 @@ Demo - 1D Poisson equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 28, 2018
+:Date: Oct 11, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the Poisson
 equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as shown in Figure :ref:`fig:ct0`, is demonstrated. 
 The demo is implemented in
-a single Python file `dirichlet_poisson1D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py>`__, and the numerical method is is described in more detail by J. Shen :cite:`shen1` and :cite:`shen95`.
+a single Python file `dirichlet_poisson1D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py>`__, and the numerical method is is described in more detail by J. Shen [Ref1]_ and [Ref2]_.
 
 .. _fig:ct0:
 
@@ -190,7 +190,7 @@ transformed to real space :math:`u(x)` using :eq:`eq:u`, and here the contributi
 from :math:`\hat{u}_{N-1}` and :math:`\hat{u}_{N}` must be accounted for. Note that the matrix
 :math:`A_{jk}` (different for Legendre or Chebyshev) has a very special structure that
 allows for a solution to be found very efficiently in order of :math:`\mathcal{O}(N)`
-operations, see :cite:`shen1` and :cite:`shen95`. These solvers are implemented in
+operations, see [Ref1]_ and [Ref2]_. These solvers are implemented in
 shenfun for both bases.
 
 Method of manufactured solutions

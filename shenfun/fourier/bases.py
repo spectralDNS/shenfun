@@ -105,15 +105,23 @@ class FourierBase(SpectralBase):
             points = self.map_true_domain(points)
         return points, np.array([2*np.pi/N])
 
-    def evaluate_basis(self, x, i=0, output_array=None):
+    def evaluate_basis(self, x=None, i=0, output_array=None):
+        if x is None:
+            x = self.mesh(False, False)
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape, dtype=np.complex)
 
         if self._k is None:
-            self._k = self.wavenumbers(bc=False)
+            self._k = self.wavenumbers(bcast=False)
         k = self._k[i]
         output_array[:] = np.exp(1j*x*k)
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        output_array = self.evaluate_basis(x, i, output_array)
+        l = self._k[i]
+        output_array *= ((1j*l)**k)
         return output_array
 
     def vandermonde(self, x):
@@ -122,9 +130,7 @@ class FourierBase(SpectralBase):
         return np.exp(1j*x[:, np.newaxis]*k[np.newaxis, :])
 
     def evaluate_basis_derivative_all(self, x=None, k=0):
-        if x is None:
-            x = self.mesh(False, False)
-        V = self.vandermonde(x)
+        V = self.evaluate_basis_all(x=x)
         if k > 0:
             l = self.wavenumbers(bcast=False, scaled=True)
             V = V*((1j*l)**k)[np.newaxis, :]
@@ -188,23 +194,6 @@ class FourierBase(SpectralBase):
         return (0., 2*np.pi)
 
     def plan(self, shape, axis, dtype, options):
-        """Plan transform
-
-        Allocate work arrays for transforms and set up methods `forward`,
-        `backward` and `scalar_product` with or without padding
-
-        Parameters
-        ----------
-            shape : array
-                Local shape of global array
-            axis : int
-                This base's axis in global TensorProductSpace
-            dtype : numpy.dtype
-                Type of array
-            options : dict
-                Options for planning transforms
-        """
-
         if isinstance(axis, int):
             axis = [axis]
         s = tuple(np.take(shape, axis))
@@ -364,7 +353,7 @@ class R2CBasis(FourierBase):
         """
         assert abs(self.padding_factor-1) < 1e-8
         points = self.map_reference_domain(points)
-        P = self.vandermonde(points)
+        P = self.evaluate_basis_all(points)
         assert output_array.ndim == 1 # Multidimensional should use vandermonde_evaluate_local_expansion
         output_array[:] = np.dot(P, input_array).real
         if self.N % 2 == 0:

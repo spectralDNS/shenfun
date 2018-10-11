@@ -7,7 +7,7 @@ Demo - Cubic nonlinear Klein-Gordon equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 28, 2018
+:Date: Oct 11, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Klein-Gordon equation, in a triply periodic domain. The demo is implemented in
@@ -27,14 +27,14 @@ The nonlinear Klein-Gordon equation
         <embed src="https://rawgit.com/spectralDNS/spectralutilities/master/movies/KleinGordon.gif"  autoplay="false" loop="true"></embed>
         <p><em></em></p>
 
-Movie showing the evolution of the solution :math:`u` from Eq. :eq:`eq:kg`, in a slice through the center of the domain, computed with the code described in this demo. 
+Movie showing the evolution of the solution :math:`u` from Eq. :eq:`eq:kg`, in a slice through the center of the domain, computed with the code described in this demo.
 
 Model equation
 --------------
 
 The cubic nonlinear Klein-Gordon equation is a wave equation important for many
 scientific applications such as solid state physics, nonlinear optics and
-quantum field theory :cite:`abdul08`. The equation is given as
+quantum field theory [Ref1]_. The equation is given as
 
 .. math::
    :label: eq:kg
@@ -118,7 +118,7 @@ the spectral Galerkin method. Being a Galerkin method, we need to reshape the
 governing equations into proper variational forms, and this is done by
 multiplying  :eq:`eq:df` and :eq:`eq:du` with the complex conjugate of proper
 test functions and then integrating
-over the domain. To this end we use continuously differentiable 
+over the domain. To this end we use continuously differentiable
 testfunctions :math:`g\in C(\Omega)` with Eq. :eq:`eq:df`  and  :math:`v \in
 C(\Omega)` with Eq. :eq:`eq:du`, and we obtain
 
@@ -139,7 +139,7 @@ C(\Omega)` with Eq. :eq:`eq:du`, and we obtain
         
 
 Note that the overline is used to indicate a complex conjugate, and
-:math:`w` is a weight function associated with the test functions. The functions 
+:math:`w` is a weight function associated with the test functions. The functions
 :math:`f` and :math:`u` are now
 to be considered as trial functions, and the integrals over the
 domain are often referred to as inner products. With inner product notation
@@ -149,7 +149,7 @@ domain are often referred to as inner products. With inner product notation
         \left(u, v\right) = \int_{\Omega} u \, \overline{v} \, w\, dx.
         
 
-and an integration by parts on the Laplacian, the variational problem can be 
+and an integration by parts on the Laplacian, the variational problem can be
 formulated as:
 
 .. math::
@@ -178,7 +178,7 @@ Discretization
 To find a numerical solution we need to discretize the continuous problem
 :eq:`eq:df_var2` and :eq:`eq:kg:du_var2` in space as well as time. Since the
 problem is triply periodic, Fourier exponentials are normally the best choice
-for trial and test functions, and as such we use basis functions 
+for trial and test functions, and as such we use basis functions
 
 .. math::
    :label: _auto4
@@ -289,7 +289,6 @@ is set to :math:`[-2\pi, 2\pi]^3` and not the more common :math:`[0, 2\pi]^3`. W
 
         
         u(x_i, y_j, z_k) =
-        N^3
         \mathcal{F}_k^{-1}\left(\mathcal{F}_j^{-1}\left(\mathcal{F}_i^{-1}\left(\hat{u}\right)\right)\right)
         \, \forall\, (i,j,k)\in\boldsymbol{i} \times \boldsymbol{j} \times
         \boldsymbol{k},
@@ -299,18 +298,21 @@ is set to :math:`[-2\pi, 2\pi]^3` and not the more common :math:`[0, 2\pi]^3`. W
 where :math:`\mathcal{F}_i^{-1}` is the inverse Fourier transform along the direction
 of index :math:`i`, for
 all :math:`(j, k) \in \boldsymbol{j} \times \boldsymbol{k}`. Note that the three
-inverse FFTs are performed sequentially, one direction at the time, and that the factor :math:`N^3` is due to
-the definition used for the inverse Fourier transform, which is the one used
-also by `Numpy <https://docs.scipy.org/doc/numpy-1.13.0/reference/routines.fft.html>`__:
+inverse FFTs are performed sequentially, one direction at the time, and that there is no
+scaling factor due to
+the definition used for the inverse `Fourier transform <https://mpi4py-fft.readthedocs.io/en/latest/dft.html>`__
 
 .. math::
    :label: _auto11
 
         
-        u(x_j) = \frac{1}{N}\sum_{l=-N/2}^{N/2-1} \hat{u}_l e^{\imath \underline{l}
+        u(x_j) = \sum_{l=-N/2}^{N/2-1} \hat{u}_l e^{\imath \underline{l}
         x_j}, \quad \,\, \forall \, j \in \, \boldsymbol{j}.
         
         
+
+Note that this differs from the definition used by, e.g.,
+`Numpy <https://docs.scipy.org/doc/numpy-1.13.0/reference/routines.fft.html>`__.
 
 The inner products used in Eqs. :eq:`eq:df_var2`, :eq:`eq:kg:du_var2` may be
 computed using forward FFTs. However, there is a tiny detail that deserves
@@ -319,9 +321,9 @@ a comment. The regular Fourier inner product is given as
 .. math::
         \int_{0}^{L} e^{\imath \underline{k}x} e^{- \imath \underline{l}x} dx = L\, \delta_{kl}
 
-where a weight function is chosen as :math:`w(x) = 1` and :math:`\delta_{kl}` equals unity 
-for :math:`k=l` and zero otherwise. In Shenfun we choose instead to use a weight 
-function :math:`w(x)=1/L`, such that the weighted inner product integrates to 
+where a weight function is chosen as :math:`w(x) = 1` and :math:`\delta_{kl}` equals unity
+for :math:`k=l` and zero otherwise. In Shenfun we choose instead to use a weight
+function :math:`w(x)=1/L`, such that the weighted inner product integrates to
 unity:
 
 .. math::
@@ -396,10 +398,10 @@ transforms directly. See for example Sec. :ref:`sec:rk` for how :math:`(\nabla u
 v)` can be
 implemented.  In short, :mod:`.shenfun` contains all the tools required to work with
 the spectral Galerkin method, and we will now see how :mod:`.shenfun` can be used to solve
-the Klein-Gordon equation. 
+the Klein-Gordon equation.
 
 For completion, we note that the discretized problem to solve can be formulated
-with the Galerkin method as: 
+with the Galerkin method as:
 for all :math:`t>0`, find :math:`(f, u) \in W^N \times W^N`  such that
 
 .. math::
@@ -427,7 +429,7 @@ To solve the Klein-Gordon equations we need to make use of the Fourier bases in
 :mod:`.shenfun`, and these base are found in submodule
 :mod:`shenfun.fourier.bases`.
 The triply periodic domain allows for Fourier in all three directions, and we
-can as such create one instance of this base class using :func:`.Basis` with 
+can as such create one instance of this base class using :func:`.Basis` with
 family ``Fourier``
 for each direction. However, since the initial data are real, we
 can take advantage of Hermitian symmetries and thus make use of a
@@ -435,7 +437,7 @@ real to complex class for one (but only one) of the directions, by specifying
 ``dtype='d'``. We can only make use of the
 real-to-complex class for the direction that we choose to transform first with the forward
 FFT, and the reason is obviously that the output from a forward transform of
-real data is now complex. We may start implementing the solver as follows 
+real data is now complex. We may start implementing the solver as follows
 
 .. code-block:: python
 
@@ -454,14 +456,14 @@ real data is now complex. We may start implementing the solver as follows
 We now have three instances ``K0``, ``K1`` and ``K2``, corresponding to the basis
 :eq:`eq:kg:Vn`, that each can be used to solve
 one-dimensional problems. However, we want to solve a 3D problem, and for this
-we need a tensor product basis, like :eq:`eq:kg:Wn`, created as a Cartesian 
+we need a tensor product basis, like :eq:`eq:kg:Wn`, created as a Cartesian
 product of these three bases
 
 .. code-block:: python
 
     # Create communicator
     comm = MPI.COMM_WORLD
-    T = TensorProductSpace(comm, (K0, K1, K2), **{'planner_effort': 
+    T = TensorProductSpace(comm, (K0, K1, K2), **{'planner_effort':
                                                   'FFTW_MEASURE'})
 
 Here the ``planner_effort``, which is a flag used by `FFTW <http://www.fftw.org>`__, is optional. Possibel choices are from the list
@@ -496,18 +498,18 @@ e.g., the Runge-Kutta method. Arrays are created as
 
 The :class:`.Array` class is a subclass of Numpy's `ndarray <https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html>`__,
 without much more functionality than constructors that return arrays of the
-correct shape according to the basis used in the construction. The 
-:class:`.Array` represents the left hand side of :eq:`eq:usg`, 
+correct shape according to the basis used in the construction. The
+:class:`.Array` represents the left hand side of :eq:`eq:usg`,
 evaluated on the quadrature mesh. A different type
 of array is returned by the :class:`.Function`
 class, that subclasses both Nympy's ndarray as well as an internal
 :class:`.BasisFunction`
 class. An instance of the :class:`.Function` represents the entire
 spectral Galerkin function :eq:`eq:usg`. As such, it can
-be used in complex variational linear forms. For example, if you want 
-to compute the partial derivative :math:`\partial u/\partial x`, then this 
-may be achieved by projection, i.e., find :math:`u_x \in V^N` such that 
-:math:`(u_x-\partial u/\partial x, v) = 0`, for all :math:`v \in V^N`. This 
+be used in complex variational linear forms. For example, if you want
+to compute the partial derivative :math:`\partial u/\partial x`, then this
+may be achieved by projection, i.e., find :math:`u_x \in V^N` such that
+:math:`(u_x-\partial u/\partial x, v) = 0`, for all :math:`v \in V^N`. This
 projection may be easily computed in :mod:`.shenfun` using
 
 .. code-block:: python
@@ -519,7 +521,7 @@ take the derivative of an interpolated ``Array u``, only a ``Function``
 
 .. code-block:: python
 
-    try: 
+    try:
         project(Dx(u, 0, 1), T)
     except AssertionError:
         print("AssertionError: Dx not for Arrays")
@@ -563,7 +565,7 @@ function can be implemented as
 .. code-block:: python
 
     # focusing (+1) or defocusing (-1)
-    gamma = 1  
+    gamma = 1
     uh = TrialFunction(T)
     vh = TestFunction(T)
     k2 = -(inner(grad(vh), grad(uh))  + gamma)
@@ -642,7 +644,7 @@ decimal points at :math:`t=100`.
     K0 = Basis(N[0], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
     K1 = Basis(N[1], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
     K2 = Basis(N[2], 'F', domain=(-2*np.pi, 2*np.pi), dtype='d')
-    T = TensorProductSpace(comm, (K0, K1, K2), slab=False, 
+    T = TensorProductSpace(comm, (K0, K1, K2), slab=False,
                            **{'planner_effort': 'FFTW_MEASURE'})
     
     TT = MixedTensorProductSpace([T, T])
@@ -721,7 +723,7 @@ decimal points at :math:`t=100`.
             eg =  comm.allreduce(eg)
             gradu = TV.backward(1j*K*u_hat, gradu)
             ep = comm.allreduce(np.sum(f*gradu)/np.prod(np.array(N)))
-            ea = comm.allreduce(np.sum(np.array(X)*(0.5*f**2 + 0.5*gradu**2 
+            ea = comm.allreduce(np.sum(np.array(X)*(0.5*f**2 + 0.5*gradu**2
                                 - (0.5*u**2 - 0.25*u**4)*f))/np.prod(np.array(N)))
             if rank == 0:
                 image.ax.clear()

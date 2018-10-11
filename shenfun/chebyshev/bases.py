@@ -113,6 +113,17 @@ class ChebyshevBase(SpectralBase):
         V = self.vandermonde(x)
         return self._composite_basis(V)
 
+    def evaluate_basis_derivative(self, x=None, i=0, k=0):
+        if x is None:
+            x = self.mesh(False, False)
+        x = np.atleast_1d(x)
+        v = self.evaluate_basis(x, i=i)
+        if k > 0:
+            D = np.zeros((self.N, self.N))
+            D[:-k, :] = n_cheb.chebder(np.eye(self.N), k)
+            v = np.dot(v, D)
+        return v
+
     def _composite_basis(self, V):
         """Return composite basis, where ``V`` is primary Vandermonde matrix."""
         return V
