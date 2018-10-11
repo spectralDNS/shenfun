@@ -98,7 +98,7 @@ method.
 Discretization
 --------------
 
-We discretize the model equation in space using continuously differentiable 
+We discretize the model equation in space using continuously differentiable
 Fourier basis functions
 
 .. math::
@@ -122,7 +122,7 @@ a finite number of test functions. A basis :math:`V^N` can be defined as
 
 where :math:`N` is chosen as an even positive integer and :math:`\boldsymbol{l} = (-N/2,
 -N/2+1, \ldots, N/2-1)`. And now, since :math:`\Omega` is a
-two-dimensional domain, we can create a Cartesian product of two such bases: 
+two-dimensional domain, we can create a Cartesian product of two such bases:
 
 .. math::
    :label: eq:Wn
@@ -156,7 +156,7 @@ We now look for solutions of the form
 
         
         u(x, y) = \sum_{l=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}
-        \hat{u}_{lm} \Phi_{lm}(x,y). 
+        \hat{u}_{lm} \Phi_{lm}(x,y).
         
         
 
@@ -191,7 +191,6 @@ is set to :math:`[-30\pi, 30\pi]^2` and not the more common :math:`[0, 2\pi]^2`.
 
         
         u(x_i, y_j) =
-        N^2
         \mathcal{F}_y^{-1}\left(\mathcal{F}_x^{-1}\left(\hat{u}\right)\right)
         \, \forall\, (i,j)\in\boldsymbol{i} \times \boldsymbol{j},
         
@@ -199,19 +198,22 @@ is set to :math:`[-30\pi, 30\pi]^2` and not the more common :math:`[0, 2\pi]^2`.
 
 where :math:`\mathcal{F}_x^{-1}` is the inverse Fourier transform along direction
 :math:`x`, for all :math:`j \in \boldsymbol{j}`. Note that the two
-inverse FFTs are performed sequentially, one direction at the time, and that the
-factor :math:`N^2` is due to
-the definition used for the inverse Fourier transform, which is the one used
-also by `Numpy <https://docs.scipy.org/doc/numpy-1.13.0/reference/routines.fft.html>`__:
+inverse FFTs are performed sequentially, one direction at the time, and that
+there is no scaling factor due
+the definition used for the inverse
+`Fourier transform <https://mpi4py-fft.readthedocs.io/en/latest/dft.html>`__:
 
 .. math::
    :label: _auto8
 
         
-        u(x_j) = \frac{1}{N}\sum_{l=-N/2}^{N/2-1} \hat{u}_l e^{\imath \underline{l}
+        u(x_j) = \sum_{l=-N/2}^{N/2-1} \hat{u}_l e^{\imath \underline{l}
         x_j}, \quad \,\, \forall \, j \in \, \boldsymbol{j}.
         
         
+
+Note that this differs from the definition used by, e.g.,
+`Numpy <https://docs.scipy.org/doc/numpy-1.13.0/reference/routines.fft.html>`__:
 
 The inner products used in Eq. :eq:`eq:du_var2` may be
 computed using forward FFTs (using weight functions :math:`w=1/L`):
@@ -227,7 +229,7 @@ computed using forward FFTs (using weight functions :math:`w=1/L`):
         
         
 
-From this we see that the variational forms 
+From this we see that the variational forms
 may be written in terms of the Fourier transformed :math:`\hat{u}`. Expanding the
 exact derivatives of the nabla operator, we have
 
@@ -275,7 +277,7 @@ The model equation :eq:`eq:ks` is implemented in shenfun using Fourier basis fun
 both :math:`x` and :math:`y` directions. We start the solver by implementing necessary
 functionality from required modules like `Numpy <https://numpy.org>`__, `Sympy <https://sympy.org>`__
 `matplotlib <https://matplotlib.org>`__ and `mpi4py <https://bitbucket.org/mpi4py>`__, in
-addition to `shenfun <https://github.com/spectralDNS/shenfun>`__: 
+addition to `shenfun <https://github.com/spectralDNS/shenfun>`__:
 
 .. code-block:: python
 
@@ -315,7 +317,7 @@ Finally, the wavenumbers are collected in list ``K``. Here one feature is worth
 mentioning. The gradient in spectral space can be computed as ``1j*K*U_hat``.
 However, since this is an odd derivative, and we are using an even number ``N``
 for the size of the domain, the highest wavenumber must be set to zero. This is
-the purpose of the last keyword argument to ``local_wavenumbers`` below. 
+the purpose of the last keyword argument to ``local_wavenumbers`` below.
 
 .. code-block:: python
 
@@ -347,7 +349,7 @@ with the second when computing odd derivatives.
 Here :math:`\sideset{}{'}\sum` means that the first and last items in the sum are
 divided by two. Note that the two sums are equal as they stand (due to aliasing), but only the
 latter (known as the Fourier interpolant) gives the correct (zero) derivative of
-the basis with the highest wavenumber.  
+the basis with the highest wavenumber.
 
 Sympy is used to generate an initial condition, as stated in Eq :eq:`eq:ks`
 
@@ -379,13 +381,13 @@ below, called ``LinearRHS`` and ``NonlinearRHS``
         dU = T.forward(0.5*(gradu[0]*gradu[0]+gradu[1]*gradu[1]), dU)
         return dU
 
-The code should, hopefully, be self-explanatory. 
+The code should, hopefully, be self-explanatory.
 
 All that remains now is to initialize the solution arrays and to setup the
 integrator plus some plotting functionality for visualizing the results. Note
 that visualization is only nice when running the code in serial. For parallel,
 it is recommended to use :class:`.HDF5Writer`, to store intermediate results to the HDF5
-format, for later viewing in, e.g., Paraview. 
+format, for later viewing in, e.g., Paraview.
 
 The solution is initialized as
 
@@ -397,7 +399,7 @@ The solution is initialized as
     U_hat = T.forward(U, U_hat)
 
 And we also create an update function for plotting intermediate results with a
-cool colormap: 
+cool colormap:
 
 .. code-block:: python
 
