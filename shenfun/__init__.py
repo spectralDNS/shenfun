@@ -10,10 +10,7 @@ from . import fourier
 from . import matrixbase
 from .fourier import energy_fourier
 from .matrixbase import *
-from .forms.project import *
-from .forms.inner import *
-from .forms.operators import *
-from .forms.arguments import *
+from .forms import *
 from .tensorproductspace import *
 from .utilities import *
 from .utilities.lagrangian_particles import *

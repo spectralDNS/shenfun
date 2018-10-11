@@ -7,7 +7,7 @@ Demo - 3D Poisson equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 28, 2018
+:Date: Oct 11, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve a 3D Poisson
 equation in a 3D tensor product domain that has homogeneous Dirichlet boundary 
@@ -15,7 +15,7 @@ conditions in one direction and periodicity in the
 remaining two. The solver described runs with MPI without any further
 considerations required from the user. Spectral convergence, as shown in Figure :ref:`fig:3d:ct0`, is demonstrated. 
 The demo is implemented in
-a single Python file `dirichlet_poisson3D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py>`__, and the numerical method is is described in more detail by J. Shen :cite:`shen1` and :cite:`shen95`.
+a single Python file `dirichlet_poisson3D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py>`__, and the numerical method is is described in more detail by J. Shen [Ref1]_ and [Ref2]_.
 
 .. _fig:3d:ct0:
 
@@ -311,7 +311,7 @@ transformed to real space :math:`u(\boldsymbol{x})` using :eq:`eq:3d:u`. Note th
 for either case they have a
 special structure that allows for a solution to be found very efficiently
 in the order of :math:`\mathcal{O}(N_0-2)` operations given :math:`m` and :math:`n`, see
-:cite:`shen1` and :cite:`shen95`. Fast solvers for :eq:`eq:AB` are implemented in ``shenfun`` for both bases. 
+[Ref1]_ and [Ref2]_. Fast solvers for :eq:`eq:AB` are implemented in ``shenfun`` for both bases. 
 
 Method of manufactured solutions
 --------------------------------

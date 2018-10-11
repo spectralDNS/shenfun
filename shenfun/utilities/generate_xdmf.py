@@ -11,6 +11,7 @@ except ImportError:
 
 __all__ = ('generate_xdmf',)
 
+
 xdmffile = """<?xml version="1.0" encoding="utf-8"?>
 <Xdmf xmlns:xi="http://www.w3.org/2001/XInclude" Version="2.1">
   <Domain>
@@ -98,6 +99,7 @@ def generate_xdmf(h5filename):
         xf += timeattr.format(tt, len(timesteps))
 
         datatype = f[dsets[timesteps[0]][0]].dtype
+        assert datatype.char not in 'FDG', "Cannot use generate_xdmf for visualization of complex data."
         prec = 4 if datatype is dtype('float32') else 8
         if ndim == 2:
             xff = {}
@@ -110,7 +112,7 @@ def generate_xdmf(h5filename):
                     NN[slices] = f[name].shape
                     if 'slice' in slices:
                         ss = slices.split("_")
-                        coors[slices] =  [coor[i] for i, sx in enumerate(ss) if 'slice' in sx]
+                        coors[slices] = [coor[i] for i, sx in enumerate(ss) if 'slice' in sx]
                     else:
                         coors[slices] = ['x0', 'x1']
 

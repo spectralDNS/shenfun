@@ -12,59 +12,85 @@ try:
 except ImportError:
     skip = True
 
+ex = {True: 'c', False: 'r'}
+
 @pytest.mark.skipif(skip, reason='h5py not installed')
-def test_regular_2D():
+@pytest.mark.parametrize('forward_output', (True, False))
+def test_regular_2D(forward_output):
     K0 = Basis(N[0], 'F')
     K1 = Basis(N[1], 'C')
     T = TensorProductSpace(comm, (K0, K1))
-    hfile = HDF5Writer('h5test.h5', ['u'], T)
-    u = Array(T, val=1)
-    hfile.write_tstep(0, u)
+    filename = 'h5test_{}.h5'.format(ex[forward_output])
+    hfile = HDF5Writer(filename, ['u'], T, forward_output=forward_output)
+    if forward_output:
+        u = Function(T, val=1)
+    else:
+        u = Array(T, val=1)
+    hfile.write_tstep(0, u, forward_output)
     hfile.close()
-    generate_xdmf('h5test.h5')
+    if not forward_output:
+        generate_xdmf(filename)
 
 @pytest.mark.skipif(skip, reason='h5py not installed')
-def test_mixed_2D():
+@pytest.mark.parametrize('forward_output', (True, False))
+def test_mixed_2D(forward_output):
     K0 = Basis(N[0], 'F')
     K1 = Basis(N[1], 'C')
     T = TensorProductSpace(comm, (K0, K1))
     TT = MixedTensorProductSpace([T, T])
-    hfile = HDF5Writer('h5test2.h5', ['u', 'f'], TT)
-    uf = Array(TT, val=2)
-    hfile.write_tstep(0, uf)
+    filename = 'h5test2_{}.h5'.format(ex[forward_output])
+    hfile = HDF5Writer(filename, ['u', 'f'], TT, forward_output=forward_output)
+    if forward_output:
+        uf = Function(TT, val=2)
+    else:
+        uf = Array(TT, val=2)
+    hfile.write_tstep(0, uf, forward_output)
     hfile.close()
-    generate_xdmf('h5test2.h5')
+    if not forward_output:
+        generate_xdmf(filename)
 
 @pytest.mark.skipif(skip, reason='h5py not installed')
-def test_regular_3D():
+@pytest.mark.parametrize('forward_output', (True, False))
+def test_regular_3D(forward_output):
     K0 = Basis(N[0], 'F', dtype='D')
     K1 = Basis(N[1], 'F', dtype='D')
     K2 = Basis(N[2], 'F', dtype='d')
     T = TensorProductSpace(comm, (K0, K1, K2))
-    hfile = HDF5Writer('h5test3.h5', ['u'], T)
-    u = Array(T)
-    u[:] = np.random.random((N[0], N[1], N[2]))
+    filename = 'h5test3_{}.h5'.format(ex[forward_output])
+    hfile = HDF5Writer(filename, ['u'], T, forward_output)
+    if forward_output:
+        u = Function(T)
+    else:
+        u = Array(T)
+    u[:] = np.random.random(u.shape)
     for i in range(3):
-        hfile.write_tstep(i, u)
-        hfile.write_slice_tstep(i, [slice(None), 4, slice(None)], u)
-        hfile.write_slice_tstep(i, [slice(None), 4, 4], u)
+        hfile.write_tstep(i, u, forward_output)
+        hfile.write_slice_tstep(i, [slice(None), 4, slice(None)], u, forward_output)
+        hfile.write_slice_tstep(i, [slice(None), 4, 4], u, forward_output)
     hfile.close()
-    generate_xdmf('h5test3.h5')
+    if not forward_output:
+        generate_xdmf(filename)
 
 @pytest.mark.skipif(skip, reason='h5py not installed')
-def test_mixed_3D():
+@pytest.mark.parametrize('forward_output', (True, False))
+def test_mixed_3D(forward_output):
     K0 = Basis(N[0], 'F', dtype='D')
     K1 = Basis(N[1], 'F', dtype='d')
     K2 = Basis(N[2], 'C')
     T = TensorProductSpace(comm, (K0, K1, K2))
     TT = MixedTensorProductSpace([T, T])
-    hfile = HDF5Writer('h5test4.h5', ['u', 'f'], TT)
-    uf = Array(TT, val=2)
-    hfile.write_tstep(0, uf)
-    hfile.write_slice_tstep(0, [slice(None), 4, slice(None)], uf)
-    hfile.write_slice_tstep(0, [slice(None), 4, 4], uf)
+    filename = 'h5test4_{}.h5'.format(ex[forward_output])
+    hfile = HDF5Writer(filename, ['u', 'f'], TT, forward_output=forward_output)
+    if forward_output:
+        uf = Function(TT, val=2)
+    else:
+        uf = Array(TT, val=2)
+    hfile.write_tstep(0, uf, forward_output)
+    hfile.write_slice_tstep(0, [slice(None), 4, slice(None)], uf, forward_output)
+    hfile.write_slice_tstep(0, [slice(None), 4, 4], uf, forward_output)
     hfile.close()
-    generate_xdmf('h5test4.h5')
+    if not forward_output:
+        generate_xdmf(filename)
 
 if __name__ == '__main__':
-    test_regular_3D()
+    test_regular_3D(True)

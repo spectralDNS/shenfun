@@ -8,6 +8,8 @@ import numpy as np
 import shenfun
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun import chebyshev, legendre
+from shenfun.forms.arguments import Function, Array
+from shenfun.optimization import evaluate
 from mpi4py_fft.mpifft import Transform
 from mpi4py_fft.pencil import Subcomm, Pencil
 
@@ -322,10 +324,10 @@ class TensorProductSpace(object):
             w.append(base.wavenumbers(bcast=False)[self.local_slice()[axis]].astype(np.float))
 
         if len(self) == 2:
-            output_array = shenfun.optimization.evaluate.evaluate_lm_2D(list(self.bases), output_array, coefficients, x[0], x[1], w[0], w[1], r2c, last_conj_index, sl)
+            output_array = evaluate.evaluate_lm_2D(list(self.bases), output_array, coefficients, x[0], x[1], w[0], w[1], r2c, last_conj_index, sl)
 
         elif len(self) == 3:
-            output_array = shenfun.optimization.evaluate.evaluate_lm_3D(list(self.bases), output_array, coefficients, x[0], x[1], x[2], w[0], w[1], w[2], r2c, last_conj_index, sl)
+            output_array = evaluate.evaluate_lm_3D(list(self.bases), output_array, coefficients, x[0], x[1], x[2], w[0], w[1], w[2], r2c, last_conj_index, sl)
 
         output_array = np.atleast_1d(output_array)
         output_array = self.comm.allreduce(output_array)
@@ -360,10 +362,10 @@ class TensorProductSpace(object):
                     last_conj_index = M
                 sl = self.local_slice()[axis].start
         if len(self) == 2:
-            output_array = shenfun.optimization.evaluate.evaluate_2D(output_array, coefficients, P, r2c, last_conj_index, sl)
+            output_array = evaluate.evaluate_2D(output_array, coefficients, P, r2c, last_conj_index, sl)
 
         elif len(self) == 3:
-            output_array = shenfun.optimization.evaluate.evaluate_3D(output_array, coefficients, P, r2c, last_conj_index, sl)
+            output_array = evaluate.evaluate_3D(output_array, coefficients, P, r2c, last_conj_index, sl)
 
         output_array = np.atleast_1d(output_array)
         output_array = self.comm.allreduce(output_array)
@@ -730,10 +732,10 @@ class Convolve(object):
         Tp = self.padding_space
         T = self.newspace
         if ab_hat is None:
-            ab_hat = shenfun.Function(T)
+            ab_hat = Function(T)
 
-        a = shenfun.Array(Tp)
-        b = shenfun.Array(Tp)
+        a = Array(Tp)
+        b = Array(Tp)
         a = Tp.backward(a_hat, a)
         b = Tp.backward(b_hat, b)
         ab_hat = T.forward(a*b, ab_hat)
@@ -803,7 +805,6 @@ class BoundaryValues(object):
             # one Fourier space to the right, then one Fourier transform needs to
             # be performed on the bc data first. For two Fourier spaces to the right,
             # two transforms need to be executed.
-            from shenfun import Array
             axis = None
             dirichlet_base = None
             number_of_bases_after_dirichlet = 0
@@ -957,10 +958,10 @@ def some_basic_tests():
 
     comm = MPI.COMM_WORLD
     N = 8
-    K0 = shenfun.fourier.bases.C2CBasis(N)
-    K1 = shenfun.fourier.bases.C2CBasis(N)
-    K2 = shenfun.fourier.bases.C2CBasis(N)
-    K3 = shenfun.fourier.bases.R2CBasis(N)
+    K0 = C2CBasis(N)
+    K1 = C2CBasis(N)
+    K2 = C2CBasis(N)
+    K3 = R2CBasis(N)
     T = TensorProductSpace(comm, (K0, K1, K2, K3))
 
     # Create data on rank 0 for testing
@@ -976,7 +977,7 @@ def some_basic_tests():
     comm.Bcast(f_g_hat, root=0)
 
     # Create a function in real space to hold the test data
-    fj = shenfun.Array(T)
+    fj = Array(T)
     fj[:] = f_g[T.local_slice(False)]
 
     # Perform forward transformation
@@ -985,7 +986,7 @@ def some_basic_tests():
     assert np.allclose(f_g_hat[T.local_slice(True)], f_hat*N**4)
 
     # Perform backward transformation
-    fj2 = shenfun.Array(T)
+    fj2 = Array(T)
     fj2 = T.backward(f_hat)
 
     assert np.allclose(fj, fj2)
@@ -994,10 +995,10 @@ def some_basic_tests():
 
     # Padding
     # Needs new instances of bases because arrays have new sizes
-    Kp0 = shenfun.fourier.bases.C2CBasis(N, padding_factor=1.5)
-    Kp1 = shenfun.fourier.bases.C2CBasis(N, padding_factor=1.5)
-    Kp2 = shenfun.fourier.bases.C2CBasis(N, padding_factor=1.5)
-    Kp3 = shenfun.fourier.bases.R2CBasis(N, padding_factor=1.5)
+    Kp0 = C2CBasis(N, padding_factor=1.5)
+    Kp1 = C2CBasis(N, padding_factor=1.5)
+    Kp2 = C2CBasis(N, padding_factor=1.5)
+    Kp3 = R2CBasis(N, padding_factor=1.5)
     Tp = TensorProductSpace(comm, (Kp0, Kp1, Kp2, Kp3))
 
     f_g_pad = Tp.backward(f_hat)
