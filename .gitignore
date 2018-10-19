@@ -16,7 +16,7 @@ sphinx-rootdir/
 *.bbl
 *.aux
 
-# Macvim 
+# Macvim
 *.swp
 
 # Byte-compiled / optimized / DLL files
@@ -56,6 +56,5 @@ docs/demos/mekit17/pub/*
 shenfun/optimization/*.c
 shenfun/optimization/*.cpp
 shenfun/optimization/*.so
-
 
 docs/demos/mekit17/shenfun.tex

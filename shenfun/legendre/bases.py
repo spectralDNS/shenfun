@@ -220,9 +220,6 @@ class ShenDirichletBasis(LegendreBase):
     def slice(self):
         return slice(0, self.N-2)
 
-    def spectral_shape(self):
-        return self.N-2
-
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
@@ -331,9 +328,6 @@ class ShenNeumannBasis(LegendreBase):
     def slice(self):
         return slice(0, self.N-2)
 
-    def spectral_shape(self):
-        return self.N-2
-
     def eval(self, x, fk, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape)
@@ -438,9 +432,6 @@ class ShenBiharmonicBasis(LegendreBase):
     def slice(self):
         return slice(0, self.N-4)
 
-    def spectral_shape(self):
-        return self.N-4
-
     def eval(self, x, fk, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape)
@@ -529,9 +520,6 @@ class SecondNeumannBasis(LegendreBase): # pragma: no cover
 
     def slice(self):
         return slice(0, self.N-2)
-
-    def spectral_shape(self):
-        return self.N-2
 
     #def eval(self, x, input_array):
         #w_hat = work[(input_array, 0)]

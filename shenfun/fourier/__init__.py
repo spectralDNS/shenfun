@@ -40,7 +40,7 @@ def energy_fourier(u, T):
                 result += np.sum(abs(u[..., 0])**2)
             else:
                 result += 2*np.sum(abs(u[..., 0])**2)
-            if T.local_slice(True)[-1].stop == T.spectral_shape()[-1]:
+            if T.local_slice(True)[-1].stop == T.shape(True)[-1]:
                 result += np.sum(abs(u[..., -1])**2)
             else:
                 result += 2*np.sum(abs(u[..., -1])**2)

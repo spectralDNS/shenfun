@@ -719,10 +719,20 @@ class SpectralBase(object):
         """Return index set of current basis"""
         return slice(0, self.N)
 
-    def spectral_shape(self):
-        """Return the shape of current basis used to build a SpectralMatrix"""
-        s = self.slice()
-        return s.stop - s.start
+    def shape(self, forward_output=True):
+        """Return the shape of current basis
+
+        Parameters
+        ----------
+            forward_output : bool, optional
+            If True then return shape of spectral space (the outcome of a
+            forward transform). If False then return shape of physical space
+            (the input to a forward transform).
+        """
+        if forward_output:
+            s = self.slice()
+            return s.stop - s.start
+        return self.N
 
     def domain_factor(self):
         """Return scaling factor for domain"""
