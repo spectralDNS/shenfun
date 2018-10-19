@@ -471,7 +471,7 @@ class SpectralMatrix(SparseMatrix):
         assert isinstance(trial[1], (int, np.integer))
         self.testfunction = test
         self.trialfunction = trial
-        shape = (test[0].spectral_shape(), trial[0].spectral_shape())
+        shape = (test[0].shape(), trial[0].shape())
         if d == {}:
             D = get_dense_matrix(test, trial)[:shape[0], :shape[1]]
             d = extract_diagonal_matrix(D)

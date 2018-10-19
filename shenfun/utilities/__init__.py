@@ -2,9 +2,9 @@
 Module for implementing helper functions.
 """
 import types
+from collections import MutableMapping
 import numpy as np
 from scipy.fftpack import dct
-from collections import MutableMapping
 
 __all__ = ['inheritdocstrings', 'clenshaw_curtis1D', 'CachedArrayDict']
 

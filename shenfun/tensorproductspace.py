@@ -10,14 +10,14 @@ from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun import chebyshev, legendre
 from shenfun.forms.arguments import Function, Array
 from shenfun.optimization import evaluate
-from mpi4py_fft.mpifft import Transform
+from mpi4py_fft.mpifft import Transform, PFFT
 from mpi4py_fft.pencil import Subcomm, Pencil
 
 __all__ = ('TensorProductSpace', 'VectorTensorProductSpace',
            'MixedTensorProductSpace', 'Convolve')
 
 
-class TensorProductSpace(object):
+class TensorProductSpace(PFFT):
     """Class for multidimensional tensorproductspaces.
 
     The tensorproductspaces are created as Cartesian products from a set of 1D
@@ -46,6 +46,7 @@ class TensorProductSpace(object):
     """
     def __init__(self, comm, bases, axes=None, dtype=None, slab=False,
                  collapse_fourier=False, **kw):
+        # Note do not call __init__ of super
         self.comm = comm
         self.bases = bases
         shape = self.shape()
@@ -72,7 +73,7 @@ class TensorProductSpace(object):
             elif isinstance(bases[axes[-1]], R2CBasis):
                 assert np.dtype(dtype).char in 'fdg'
 
-        dtype = self.dtype = np.dtype(dtype)
+        dtype = np.dtype(dtype)
         assert dtype.char in 'fdgFDG'
 
         if isinstance(comm, Subcomm):
@@ -371,12 +372,6 @@ class TensorProductSpace(object):
         output_array = self.comm.allreduce(output_array)
         return output_array
 
-    def destroy(self):
-        """Destructor"""
-        self.subcomm.destroy()
-        for trans in self.transfer:
-            trans.destroy()
-
     def wavenumbers(self, scaled=False, eliminate_highest_freq=False):
         """Return list of wavenumbers of TensorProductSpace
 
@@ -448,75 +443,27 @@ class TensorProductSpace(object):
             return [np.broadcast_to(m, self.local_shape(False)) for m in lm]
         return lm
 
-    def shape(self, spectral=False):
-        """Return shape of TensorProductSpace in physical space
+    def shape(self, forward_output=False):
+        """Return shape of arrays for TensorProductSpace
 
         Parameters
         ----------
-            spectral : bool, optional
-                If True then return shape of spectral space, i.e., the input to
-                a backward transfer. If False then return shape of physical
-                space, i.e., the input to a forward transfer.
+            forward_output : bool, optional
+                If True then return shape of an array that is the result of a
+                forward transform. If False then return shape of physical
+                space, i.e., the input to a forward transform.
         """
-        if not spectral:
+        if not forward_output:
             return [int(np.round(base.N*base.padding_factor)) for base in self]
-        return self.spectral_shape()
-
-    def spectral_shape(self):
-        """Return shape of TensorProductSpace in spectral space
-
-        Note
-        ----
-        Spectral space corresponds to the result of a forward transfer
-        """
-        return [base.spectral_shape() for base in self]
+        return [base.shape() for base in self]
 
     def __iter__(self):
         return iter(self.bases)
-
-    def local_shape(self, spectral=True):
-        """Return local shape of TensorProductSpace
-
-        Parameters
-        ----------
-            spectral : bool, optional
-                If True then return local shape of spectral space, i.e., the
-                input to a backward transfer. If False then return local shape
-                of physical space, i.e., the input to a forward transfer.
-        """
-        if not spectral:
-            return self.forward.input_pencil.subshape
-        else:
-            return self.backward.input_pencil.subshape
-
-    def local_slice(self, spectral=True):
-        """Return the local view into the global data
-
-        Parameters
-        ----------
-            spectral : bool, optional
-                If True then return local slice of spectral pace, i.e., the
-                input to a backward transfer. If False then return local slice
-                of physical space, i.e., the input to a forward transfer.
-        """
-        if spectral is not True:
-            ip = self.forward.input_pencil
-            s = [slice(start, start+shape) for start, shape in zip(ip.substart,
-                                                                   ip.subshape)]
-        else:
-            ip = self.backward.input_pencil
-            s = [slice(start, start+shape) for start, shape in zip(ip.substart,
-                                                                   ip.subshape)]
-        return s
 
     @staticmethod
     def rank():
         """Return rank of TensorProductSpace"""
         return 1
-
-    def ndim(self):
-        """Return dimension of TensorProductSpace"""
-        return len(self.bases)
 
     def __len__(self):
         """Return dimension of TensorProductSpace"""
@@ -613,6 +560,23 @@ class MixedTensorProductSpace(object):
     def rank():
         """Return rank of space"""
         return 2
+
+    def shape(self, forward_output=False):
+        s = self.spaces[0].shape(forward_output)
+        return [self.num_components()] + s
+
+    def local_slice(self, forward_output=False):
+        """The local view into the global data
+
+        Parameters
+        ----------
+        forward_output : bool, optional
+            Return local slices of output array (spectral space) if True, else
+            return local slices of input array (physical space)
+
+        """
+        s = self.spaces[0].local_slice(forward_output)
+        return [slice(None)] + s
 
     def num_components(self):
         """Return number of spaces in mixed space"""
@@ -970,7 +934,7 @@ def some_basic_tests():
         f_g_hat = pyfftw.interfaces.numpy_fft.rfftn(f_g, axes=(0, 1, 2, 3))
     else:
         f_g = np.zeros(T.shape())
-        f_g_hat = np.zeros(T.spectral_shape(), dtype=np.complex)
+        f_g_hat = np.zeros(T.shape(), dtype=np.complex)
 
     # Distribute test data to all ranks
     comm.Bcast(f_g, root=0)
