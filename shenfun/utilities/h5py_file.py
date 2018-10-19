@@ -1,15 +1,8 @@
 #pylint: disable=missing-docstring, consider-using-enumerate
 import warnings
-import six
 import numpy as np
 from mpi4py_fft.utilities import HDF5File as BaseFile
-from shenfun import MixedTensorProductSpace
 from .shenfun_file import write
-
-try:
-    import h5py
-except ImportError:
-    warnings.warn('h5py not installed')
 
 __all__ = ('HDF5File',)
 
