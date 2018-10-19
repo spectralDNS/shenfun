@@ -3,15 +3,9 @@ import warnings
 import copy
 import numpy as np
 from mpi4py_fft.utilities import NCFile as BaseFile
-from shenfun import MixedTensorProductSpace
 from .shenfun_file import write
 
 # https://github.com/Unidata/netcdf4-python/blob/master/examples/mpi_example.py
-
-try:
-    from netCDF4 import Dataset
-except ImportError:
-    warnings.warn('netcdf not installed')
 
 __all__ = ('NCFile',)
 

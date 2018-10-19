@@ -1,8 +1,5 @@
-import warnings
 import six
 import numpy as np
-from shenfun import MixedTensorProductSpace
-
 
 __all__ = ('ShenfunFile', 'write')
 
