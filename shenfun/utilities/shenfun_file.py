@@ -4,6 +4,16 @@ import numpy as np
 from shenfun import MixedTensorProductSpace
 
 
+__all__ = ('ShenfunFile', 'write')
+
+def ShenfunFile(name, T, backend='hdf5', mode='r', **kw):
+    from .h5py_file import HDF5File
+    from .nc_file import NCFile
+    if backend.lower() == 'hdf5':
+        return HDF5File(name+'.h5', T, mode=mode, **kw)
+    assert kw.get('forward_output', False) is False, "NetCDF4 cannot store complex arrays, use HDF5"
+    return NCFile(name+'.nc', T, mode=mode, **kw)
+
 def write(self, step, fields, **kw):
     """Write snapshot ``step`` of ``fields`` to file
 
@@ -71,8 +81,10 @@ def write(self, step, fields, **kw):
                 assert len(field) == 2
                 u, sl = field
                 if self.T.rank() > 1 and sl[0] == slice(None):
+                    kw['slice_as_scalar'] = True
                     for k in range(u.shape[0]):
                         g = group + str(k)
                         self._write_slice_step(g, step, sl[1:], u[k], **kw)
                 else:
+                    kw['slice_as_scalar'] = False
                     self._write_slice_step(group, step, sl, u, **kw)

@@ -9,14 +9,16 @@ challenging to do visualization, in particular with Python and Matplotlib. For
 this reason there is a :mod:`.utilities` module with helper classes for dumping dataarrays
 to `HDF5 <https://www.hdf5.org>`_ or `NetCDF <https://www.unidata.ucar.edu/software/netcdf/>`_
 
-The helper classes are
+The helper functions and classes are
 
-    * :class:`.HDF5Writer`
-    * :class:`.NCWriter`
+    * :class:`.HDF5File`
+    * :class:`.NCFile`
+    * :func:`.ShenfunFile`
 
-An instance of either class is created with a name of the file that is going
-to store the data, names of the arrays to store, and an instance of a
-:class:`.TensorProductSpace`. For example, to create an HDF5 writer for a 3D
+where :func:`.ShenfunFile` is a common interface, returning an instance of
+either :class:`.HDF5File` or :class:`.NCFile`, depending on choice.
+
+For example, to create an HDF5 writer for a 3D
 TensorProductSpace with Fourier bases in all directions::
 
     from shenfun import *
@@ -26,47 +28,70 @@ TensorProductSpace with Fourier bases in all directions::
     K1 = Basis(N[1], 'F', dtype='D')
     K2 = Basis(N[2], 'F', dtype='d')
     T = TensorProductSpace(MPI.COMM_WORLD, (K0, K1, K2))
-    h5file = HDF5Writer('myh5file.h5', ['u'], T)
+    fl = ShenfunFile('myh5file', T, backend='hdf5', mode='w')
 
-The instance `h5file` will now have two methods that can be used to dump
-dataarrays, either the complete array, or slices into the domain
+The file instance `fl` will now have two method that can be used to either ``write``
+dataarrays to file, or ``read`` them back again.
 
-    * :meth:`.HDF5Writer.write_tstep`
-    * :meth:`.HDF5Writer.write_slice_tstep`
+    * :meth:`.HDF5File.write`
+    * :meth:`.NCFile.write`
+    * :meth:`.HDF5File.read`
+    * :meth:`.NCFile.read`
 
-These methods assume, as their names suggest, that the problem to be solved is
-timedependent. As such it is easy to use for a transient problem. 
+With the ``HDF5`` backend we can write
+both arrays from physical space (:class:`.Array`), as well as spectral space
+(:class:`.Function`). However, the ``NetCDF4`` backend cannot handle complex dataarrays,
+and as such it can only be used for real physical dataarrays.
 
-The :class:`.HDFWriter` class may also be used for the :class:`.MixedTensorProductSpace`,
+In addition to storing complete dataarrays, we can also store any slices of the arrays.
+To illustrate, this is how to store three snapshots of the ``u`` array, along with
+some *global* 2D and 1D slices::
+
+    u = Array(T)
+    u[:] = np.random.random(T.forward.input_array.shape)
+    d = {'u': [u, (u, np.s_[4, :, :]), (u, np.s_[4, 4, :])]}
+    fl.write(0, d)
+    u[:] = 2
+    fl.write(1, d)
+    fl.close()
+
+The :class:`.ShenfunFile` may also be used for the :class:`.MixedTensorProductSpace`,
 or :class:`.VectorTensorProductSpace`, that are collections of the scalar
 :class:`.TensorProductSpace`. We can create a :class:`.MixedTensorProductSpace`
 consisting of two TensorProductSpaces, and an accompanying writer class as::
 
     TT = MixedTensorProductSpace([T, T])
-    h5file_m = HDF5Writer('mixed.h5', ['u', 'f'], TT)
+    h5file_m = ShenfunFile('mixed', TT, backend='hdf5', mode='w')
 
-Let's now consider a transient problem where we step a solution forward in time. 
-We create solution arrays from Functions, and update these Functions
+Let's now consider a transient problem where we step a solution forward in time.
+We create solution arrays from Arrays, and update these Arrays
 inside a while loop::
 
-    u = Function(T)
-    uf = Function(TT)
+    TT = VectorTensorProductSpace(T)
+    fl_m = ShenfunFile('mixed', TT, backend='hdf5', mode='w')
+    uf = Array(TT)
     tstep = 0
+    du = {'uf': (uf,
+                (uf, [slice(None), 4, slice(None), slice(None)]),
+                (uf, [0, slice(None), slice(None), 10]))}
     while tstep < 3:
-        ... solve for u and uf
-        h5file.write_tstep(tstep, u)
-        h5file.write_slice_tstep(tstep, [0, slice(None), slice(None)], u)
-        h5file.write_slice_tstep(tstep, [0, 20, slice(None)], u)
-        
-        h5file_m.write_step(tstep, uf)
-        h5file_m.write_slice_tstep(tstep, [4, slice(None), slice(None)], uf)
-        h5file_m.write_slice_tstep(tstep, [slice(None), 10, 10], uf)
+        fl_m.write(tstep, du, forward_output=False)
         tstep += 1
+    fl_m.close()
 
-During the 3 time steps we will with `h5file` dump 3 dense 3D arrays, 3
-2D arrays (``u[0, :, :]``) and 3 1D arrays (``u[0, 20, :]``)
-to the file `myh5file.h5`. The different arrays will be found in groups
-stored in `myh5file.h5` with directory tree structure as::
+Note that on each time step the first two arrays
+``uf`` and ``(uf, [slice(None), 4, slice(None), slice(None)])``
+are vectors, and as such of global shape ``(3, 24, 25, 26)`` and ``(3, 25, 26)``,
+respectively. The final dumped array ``(uf, [0, slice(None), slice(None), 10])``
+is a scalar since we choose only to store component 0, and the global shape is
+``(24, 25)``.
+
+Note that the slices in the above dictionaries
+are *global* views of the global arrays, that may or may not be distributed
+over any number of processors.
+
+After running the above, the different arrays will be found in groups
+stored in `myyfile.h5` with directory tree structure as::
 
     myh5file.h5/
     ├─ u/
@@ -87,38 +112,23 @@ stored in `myh5file.h5` with directory tree structure as::
     └─ mesh/
        ├─ x0
        ├─ x1
-       └─ x2 
+       └─ x2
 
 Likewise, the `mixed.h5` file will at the end of the loop look like::
 
     mixed.h5/
-    ├─ f/
-    |  ├─ 1D/
-    |  |  └─ slice_10_10/
+    ├─ uf/
+    |  ├─ 2D/
+    |  |  └─ slice_slice_10/
     |  |     ├─ 0
     |  |     ├─ 1
     |  |     └─ 3
-    |  ├─ 2D/
+    |  ├─ 2D_Vector/
     |  |  └─ 4_slice_slice/
     |  |     ├─ 0
     |  |     ├─ 1
     |  |     └─ 2
-    |  └─ 3D/
-    |     ├─ 0
-    |     ├─ 1
-    |     └─ 2
-    ├─ u/
-    |  ├─ 1D/
-    |  |  └─ slice_10_10/
-    |  |     ├─ 0
-    |  |     ├─ 1
-    |  |     └─ 3
-    |  ├─ 2D/
-    |  |  └─ 4_slice_slice/
-    |  |     ├─ 0
-    |  |     ├─ 1
-    |  |     └─ 2
-    |  └─ 3D/
+    |  └─ 3D_Vector/
     |     ├─ 0
     |     ├─ 1
     |     └─ 2
@@ -131,13 +141,46 @@ Note that the mesh is stored as well as the results. The three mesh arrays are
 all 1D arrays, representing the domain for each basis in the TensorProductSpace.
 Also note that these routines work with any number of CPUs and dimensions.
 
+With NetCDF4 the layout is somewhat different. For ``mixed`` above,
+if we were using :class:`.NCFile` instead of :class:`.HDF5File`,
+we would get a datafile that with ``ncdump -h mixed.nc`` would look like::
+
+    netcdf mixed {
+    dimensions:
+            time = UNLIMITED ; // (3 currently)
+            x = 24 ;
+            y = 25 ;
+            z = 26 ;
+            dim = 3 ;
+    variables:
+            double time(time) ;
+            double x(x) ;
+            double y(y) ;
+            double z(z) ;
+            int64 dim(dim) ;
+            double uf(time, dim, x, y, z) ;
+            double uf_4_slice_slice(time, dim, y, z) ;
+            double uf_slice_slice_10(time, x, y) ;
+
+    // global attributes:
+                    :ndim = 3LL ;
+                    :shape = 3LL, 24LL, 25LL, 26LL ;
+    }
+
+
+Note that it is also possible to store vector arrays as scalars. For NetCDF4 this
+is necessary for direct visualization using `Visit <https://www.visitusers.org>`_.
+To store vectors as scalars, simply use::
+
+    fl_m.write(tstep, du, forward_output=False, as_scalar=True)
+
 ParaView
 ********
 
-The stored datafiles can be visualized in `ParaView <www.paraview.org>`_. 
+The stored datafiles can be visualized in `ParaView <www.paraview.org>`_.
 However, ParaView cannot understand the content of these HDF5-files without
 a little bit of help. We have to explain that these data-files contain
-structured arrays of such and such shape. The way to do this is through 
+structured arrays of such and such shape. The way to do this is through
 the simple XML descriptor `XDMF <www.xdmf.org>`_. To this end there is a
 function called :func:`.generate_xdmf` that can be called with any of the
 generated hdf5-files::
@@ -147,15 +190,15 @@ generated hdf5-files::
 
 This results in some light files being generated for the 2D and 3D arrays in
 the hdf5-file: ``myh5file.xdmf, myh5file_0_slice_slice.xdmf,
-mixed.xdmf, mixed_4_slice_slice.xdmf``. These ``xdmf``-files can be opened 
+mixed.xdmf, mixed_4_slice_slice.xdmf``. These ``xdmf``-files can be opened
 and inspected by ParaView. Note that 1D arrays are not wrapped, and neither are
 4D.
 
-An annoying feature of Paraview is that it views a three-dimensional array of 
-shape :math:`(N_0, N_1, N_2)` as transposed compared to shenfun. That is, 
+An annoying feature of Paraview is that it views a three-dimensional array of
+shape :math:`(N_0, N_1, N_2)` as transposed compared to shenfun. That is,
 for Paraview the *last* axis represents the :math:`x`-axis, whereas
 shenfun considers the first axis to be the :math:`x`-axis. So when opening a
-three-dimensional array in Paraview one needs to be aware. Especially when 
+three-dimensional array in Paraview one needs to be aware. Especially when
 plotting vectors. Assume that we are working with a Navier-Stokes solver
 and have a three-dimensional :class:`VectorTensorProductSpace` to represent
 the fluid velocity::
@@ -172,7 +215,7 @@ the fluid velocity::
     TV = VectorTensorProductSpace(T)
     U = Array(TV)
 
-To store the resulting :class:`.Array` ``U`` we can create an instance of the 
+To store the resulting :class:`.Array` ``U`` we can create an instance of the
 :class:`.HDF5Writer` class, using the common ``U, V, W`` to represent the
 velocity in :math:`x`, :math:`y` and :math:`z` directions::
 
@@ -196,5 +239,4 @@ must be created as::
 
 where ``U, V, W`` are the three velocity components and ``iHat, jHat, kHat``
 are the three unit vectors in Paraview's :math:`x`, :math:`y` and :math:`z`
-directions. 
-
+directions.

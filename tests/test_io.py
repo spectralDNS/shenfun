@@ -4,7 +4,7 @@ import pytest
 import functools
 from mpi4py_fft import generate_xdmf
 from shenfun import *
-from shenfun import HDF5File, NCFile
+from shenfun import ShenfunFile
 
 N = (12, 13, 14, 15)
 comm = MPI.COMM_WORLD
@@ -17,10 +17,8 @@ except ImportError:
 
 ex = {True: 'c', False: 'r'}
 
-writer = {'hdf5': functools.partial(HDF5File, mode='w'),
-          'netcdf': functools.partial(NCFile, mode='w')}
-reader = {'hdf5': functools.partial(HDF5File, mode='r'),
-          'netcdf': functools.partial(NCFile, mode='r')}
+writer = functools.partial(ShenfunFile, mode='w')
+reader = functools.partial(ShenfunFile, mode='r')
 ending = {'hdf5': '.h5', 'netcdf': '.nc'}
 
 @pytest.mark.skipif(skip, reason='h5py not installed')
@@ -34,7 +32,7 @@ def test_regular_2D(backend, forward_output):
     T = TensorProductSpace(comm, (K0, K1))
     filename = 'test2Dr_{}{}'.format(ex[forward_output],
                                      ending[backend])
-    hfile = writer[backend](filename, T)
+    hfile = writer(filename, T, backend=backend)
     u = Function(T, val=1) if forward_output else Array(T, val=1)
     hfile.write(0, {'u': [u]}, forward_output=forward_output)
     hfile.write(1, {'u': [u]}, forward_output=forward_output)
@@ -43,7 +41,7 @@ def test_regular_2D(backend, forward_output):
         generate_xdmf(filename)
 
     u0 = Function(T) if forward_output else Array(T)
-    read = reader[backend](filename, T)
+    read = reader(filename, T, backend=backend)
     read.read(u0, 'u', forward_output=forward_output, step=1)
     assert np.allclose(u0, u)
 
@@ -59,7 +57,7 @@ def test_mixed_2D(backend, forward_output, as_scalar):
     T = TensorProductSpace(comm, (K0, K1))
     TT = MixedTensorProductSpace([T, T])
     filename = 'test2Dm_{}{}'.format(ex[forward_output], ending[backend])
-    hfile = writer[backend](filename, TT)
+    hfile = writer(filename, TT, backend=backend)
     if forward_output:
         uf = Function(TT, val=2)
     else:
@@ -72,12 +70,12 @@ def test_mixed_2D(backend, forward_output, as_scalar):
 
     if as_scalar is False:
         u0 = Function(TT) if forward_output else Array(TT)
-        read = reader[backend](filename, TT)
+        read = reader(filename, TT, backend=backend)
         read.read(u0, 'uf', forward_output=forward_output, step=1)
         assert np.allclose(u0, uf)
     else:
         u0 = Function(T) if forward_output else Array(T)
-        read = reader[backend](filename, T)
+        read = reader(filename, T, backend=backend)
         read.read(u0, 'uf0', forward_output=forward_output, step=1)
         assert np.allclose(u0, uf[0])
 
@@ -92,7 +90,7 @@ def test_regular_3D(backend, forward_output):
     K2 = Basis(N[2], 'F', dtype='d')
     T = TensorProductSpace(comm, (K0, K1, K2))
     filename = 'test3Dr_{}{}'.format(ex[forward_output], ending[backend])
-    hfile = writer[backend](filename, T)
+    hfile = writer(filename, T, backend=backend)
     if forward_output:
         u = Function(T)
     else:
@@ -107,7 +105,7 @@ def test_regular_3D(backend, forward_output):
         generate_xdmf(filename)
 
     u0 = Function(T) if forward_output else Array(T)
-    read = reader[backend](filename, T)
+    read = reader(filename, T, backend=backend)
     read.read(u0, 'u', forward_output=forward_output, step=1)
     assert np.allclose(u0, u)
 
@@ -124,7 +122,7 @@ def test_mixed_3D(backend, forward_output, as_scalar):
     T = TensorProductSpace(comm, (K0, K1, K2))
     TT = VectorTensorProductSpace(T)
     filename = 'test3Dm_{}{}'.format(ex[forward_output], ending[backend])
-    hfile = writer[backend](filename, TT)
+    hfile = writer(filename, TT, backend=backend)
     uf = Function(TT, val=2) if forward_output else Array(TT, val=2)
     uf[0] = 1
     data = {'ux': ((uf, np.s_[0, :, :, :]),
@@ -142,17 +140,17 @@ def test_mixed_3D(backend, forward_output, as_scalar):
 
     if as_scalar is False:
         u0 = Function(TT) if forward_output else Array(TT)
-        read = reader[backend](filename, TT)
+        read = reader(filename, TT, backend=backend)
         read.read(u0, 'u', forward_output=forward_output, step=1)
         assert np.allclose(u0, uf)
     else:
         u0 = Function(T) if forward_output else Array(T)
-        read = reader[backend](filename, T)
+        read = reader(filename, T, backend=backend)
         read.read(u0, 'u0', forward_output=forward_output, step=1)
         assert np.allclose(u0, uf[0])
 
 if __name__ == '__main__':
     #test_regular_2D('netcdf', False)
     #test_regular_3D('netcdf', False)
-    test_mixed_2D('hdf5', False, False)
-    #test_mixed_3D('netcdf', False)
+    #test_mixed_2D('hdf5', False, False)
+    test_mixed_3D('netcdf', False, False)
