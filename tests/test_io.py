@@ -19,7 +19,6 @@ ex = {True: 'c', False: 'r'}
 
 writer = functools.partial(ShenfunFile, mode='w')
 reader = functools.partial(ShenfunFile, mode='r')
-ending = {'hdf5': '.h5', 'netcdf': '.nc'}
 
 @pytest.mark.skipif(skip, reason='h5py not installed')
 @pytest.mark.parametrize('forward_output', (True, False))
@@ -30,15 +29,14 @@ def test_regular_2D(backend, forward_output):
     K0 = Basis(N[0], 'F')
     K1 = Basis(N[1], 'C')
     T = TensorProductSpace(comm, (K0, K1))
-    filename = 'test2Dr_{}{}'.format(ex[forward_output],
-                                     ending[backend])
+    filename = 'test2Dr_{}'.format(ex[forward_output])
     hfile = writer(filename, T, backend=backend)
     u = Function(T, val=1) if forward_output else Array(T, val=1)
     hfile.write(0, {'u': [u]}, forward_output=forward_output)
     hfile.write(1, {'u': [u]}, forward_output=forward_output)
     hfile.close()
     if not forward_output and backend == 'hdf5' and comm.Get_rank() == 0:
-        generate_xdmf(filename)
+        generate_xdmf(filename+'.h5')
 
     u0 = Function(T) if forward_output else Array(T)
     read = reader(filename, T, backend=backend)
@@ -56,7 +54,7 @@ def test_mixed_2D(backend, forward_output, as_scalar):
     K1 = Basis(N[1], 'C')
     T = TensorProductSpace(comm, (K0, K1))
     TT = MixedTensorProductSpace([T, T])
-    filename = 'test2Dm_{}{}'.format(ex[forward_output], ending[backend])
+    filename = 'test2Dm_{}'.format(ex[forward_output])
     hfile = writer(filename, TT, backend=backend)
     if forward_output:
         uf = Function(TT, val=2)
@@ -66,7 +64,7 @@ def test_mixed_2D(backend, forward_output, as_scalar):
     hfile.write(1, {'uf': [uf]}, forward_output=forward_output, as_scalar=as_scalar)
     hfile.close()
     if not forward_output and backend == 'hdf5' and comm.Get_rank() == 0:
-        generate_xdmf(filename)
+        generate_xdmf(filename+'.h5')
 
     if as_scalar is False:
         u0 = Function(TT) if forward_output else Array(TT)
@@ -89,7 +87,7 @@ def test_regular_3D(backend, forward_output):
     K1 = Basis(N[1], 'F', dtype='D', domain=(0, 2*np.pi))
     K2 = Basis(N[2], 'F', dtype='d')
     T = TensorProductSpace(comm, (K0, K1, K2))
-    filename = 'test3Dr_{}{}'.format(ex[forward_output], ending[backend])
+    filename = 'test3Dr_{}'.format(ex[forward_output])
     hfile = writer(filename, T, backend=backend)
     if forward_output:
         u = Function(T)
@@ -102,7 +100,7 @@ def test_regular_3D(backend, forward_output):
                               (u, [slice(None), 4, 4])]}, forward_output=forward_output)
     hfile.close()
     if not forward_output and backend == 'hdf5' and comm.Get_rank() == 0:
-        generate_xdmf(filename)
+        generate_xdmf(filename+'.h5')
 
     u0 = Function(T) if forward_output else Array(T)
     read = reader(filename, T, backend=backend)
@@ -121,7 +119,7 @@ def test_mixed_3D(backend, forward_output, as_scalar):
     K2 = Basis(N[2], 'C')
     T = TensorProductSpace(comm, (K0, K1, K2))
     TT = VectorTensorProductSpace(T)
-    filename = 'test3Dm_{}{}'.format(ex[forward_output], ending[backend])
+    filename = 'test3Dm_{}'.format(ex[forward_output])
     hfile = writer(filename, TT, backend=backend)
     uf = Function(TT, val=2) if forward_output else Array(TT, val=2)
     uf[0] = 1
@@ -136,7 +134,7 @@ def test_mixed_3D(backend, forward_output, as_scalar):
     hfile.write(1, data, forward_output=forward_output, as_scalar=as_scalar)
     hfile.close()
     if not forward_output and backend == 'hdf5' and comm.Get_rank() == 0:
-        generate_xdmf(filename)
+        generate_xdmf(filename+'.h5')
 
     if as_scalar is False:
         u0 = Function(TT) if forward_output else Array(TT)
@@ -150,7 +148,7 @@ def test_mixed_3D(backend, forward_output, as_scalar):
         assert np.allclose(u0, uf[0])
 
 if __name__ == '__main__':
-    #test_regular_2D('netcdf', False)
+    test_regular_2D('hdf5', False)
     #test_regular_3D('netcdf', False)
     #test_mixed_2D('hdf5', False, False)
-    test_mixed_3D('netcdf', False, False)
+    #test_mixed_3D('netcdf', False, False)
