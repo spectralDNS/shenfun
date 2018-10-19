@@ -127,7 +127,7 @@ class HDF5File(BaseFile):
         self.f["/".join((group, str(step)))][s] = u
 
     def _write_slice_step(self, name, step, slices, field, **kw):
-        as_scalar = kw.get('as_scalar', False) and not isinstance(slices[0], int)
+        as_scalar = kw.get('slice_as_scalar', False)
         forward_output = kw.get('forward_output', False)
         slices = list(slices)
         T = self.T if not as_scalar else self.T[0]

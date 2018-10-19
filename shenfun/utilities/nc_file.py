@@ -75,8 +75,8 @@ class NCFile(BaseFile):
         self.f.sync()
 
     def _write_slice_step(self, name, step, slices, field, **kw):
+        as_scalar = kw.get('slice_as_scalar', False)
         slices = list(slices)
-        as_scalar = kw.get('as_scalar', False) and not isinstance(slices[0], int)
         T = self.T if not as_scalar else self.T[0]
         if T.rank() == 2:
             slname = self._get_slice_name(slices[1:])
