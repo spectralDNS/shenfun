@@ -7,7 +7,7 @@ Demo - Kuramato-Sivashinsky equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Oct 11, 2018
+:Date: Oct 21, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Kuramato-Sivashinsky equation, in a doubly periodic domain. The demo is implemented in
@@ -213,7 +213,7 @@ the definition used for the inverse
         
 
 Note that this differs from the definition used by, e.g.,
-`Numpy <https://docs.scipy.org/doc/numpy-1.13.0/reference/routines.fft.html>`__:
+`Numpy <https://docs.scipy.org/doc/numpy-1.13.0/reference/routines.fft.html>`__.
 
 The inner products used in Eq. :eq:`eq:du_var2` may be
 computed using forward FFTs (using weight functions :math:`w=1/L`):
