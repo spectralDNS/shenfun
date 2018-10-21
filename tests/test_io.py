@@ -1,7 +1,7 @@
+import functools
 import numpy as np
 from mpi4py import MPI
 import pytest
-import functools
 from mpi4py_fft import generate_xdmf
 from shenfun import *
 from shenfun import ShenfunFile

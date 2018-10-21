@@ -21,6 +21,6 @@ disable = locally-disabled,
     too-many-branches,
     too-many-statements,
     too-many-locals
-extension-pkg-whitelist = mpi4py,pyfftw,numpy,shenfun
+extension-pkg-whitelist = mpi4py,pyfftw,numpy,shenfun, shenfun.optimization
 generated-members=np.floating
 reports = no

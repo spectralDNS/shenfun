@@ -33,10 +33,8 @@ TensorProductSpace with Fourier bases in all directions::
 The file instance `fl` will now have two method that can be used to either ``write``
 dataarrays to file, or ``read`` them back again.
 
-    * :meth:`.HDF5File.write`
-    * :meth:`.NCFile.write`
-    * :meth:`.HDF5File.read`
-    * :meth:`.NCFile.read`
+    * ``fl.write``
+    * ```fl.read``
 
 With the ``HDF5`` backend we can write
 both arrays from physical space (:class:`.Array`), as well as spectral space
@@ -61,10 +59,10 @@ or :class:`.VectorTensorProductSpace`, that are collections of the scalar
 consisting of two TensorProductSpaces, and an accompanying writer class as::
 
     TT = MixedTensorProductSpace([T, T])
-    h5file_m = ShenfunFile('mixed', TT, backend='hdf5', mode='w')
+    fl_m = ShenfunFile('mixed', TT, backend='hdf5', mode='w')
 
 Let's now consider a transient problem where we step a solution forward in time.
-We create solution arrays from Arrays, and update these Arrays
+We create a solution array from the :class:`.Array` class, and update the array
 inside a while loop::
 
     TT = VectorTensorProductSpace(T)
@@ -142,8 +140,8 @@ all 1D arrays, representing the domain for each basis in the TensorProductSpace.
 Also note that these routines work with any number of CPUs and dimensions.
 
 With NetCDF4 the layout is somewhat different. For ``mixed`` above,
-if we were using :class:`.NCFile` instead of :class:`.HDF5File`,
-we would get a datafile that with ``ncdump -h mixed.nc`` would look like::
+if we were using backend ``netcdf`` instead of ``hdf5``,
+we would get a datafile where ``ncdump -h mixed.nc`` would result in::
 
     netcdf mixed {
     dimensions:
@@ -182,22 +180,27 @@ However, ParaView cannot understand the content of these HDF5-files without
 a little bit of help. We have to explain that these data-files contain
 structured arrays of such and such shape. The way to do this is through
 the simple XML descriptor `XDMF <www.xdmf.org>`_. To this end there is a
-function called :func:`.generate_xdmf` that can be called with any of the
+function imported from `mpi4py-fft <https://bitbucket.org/mpi4py/mpi4py-fft>`_
+called ``generate_xdmf`` that can be called with any one of the
 generated hdf5-files::
 
     generate_xdmf('myh5file.h5')
     generate_xdmf('mixed.h5')
 
-This results in some light files being generated for the 2D and 3D arrays in
-the hdf5-file: ``myh5file.xdmf, myh5file_0_slice_slice.xdmf,
-mixed.xdmf, mixed_4_slice_slice.xdmf``. These ``xdmf``-files can be opened
-and inspected by ParaView. Note that 1D arrays are not wrapped, and neither are
-4D.
+This results in some light xdmf-files being generated for the 2D and 3D arrays in
+the hdf5-file:
+
+    * ``myh5file.xdmf``
+    * ``myh5file_0_slice_slice.xdmf``
+    * ``mixed.xdmf``
+    * ``mixed_4_slice_slice.xdmf``
+These xdmf-files can be opened and inspected by ParaView. Note that 1D arrays are
+not wrapped, and neither are 4D.
 
 An annoying feature of Paraview is that it views a three-dimensional array of
 shape :math:`(N_0, N_1, N_2)` as transposed compared to shenfun. That is,
 for Paraview the *last* axis represents the :math:`x`-axis, whereas
-shenfun considers the first axis to be the :math:`x`-axis. So when opening a
+shenfun (like most others) considers the first axis to be the :math:`x`-axis. So when opening a
 three-dimensional array in Paraview one needs to be aware. Especially when
 plotting vectors. Assume that we are working with a Navier-Stokes solver
 and have a three-dimensional :class:`VectorTensorProductSpace` to represent
@@ -214,29 +217,27 @@ the fluid velocity::
     T = TensorProductSpace(comm, (V0, V1, V2))
     TV = VectorTensorProductSpace(T)
     U = Array(TV)
+    U[0] = 0
+    U[1] = 1
+    U[2] = 2
 
 To store the resulting :class:`.Array` ``U`` we can create an instance of the
-:class:`.HDF5Writer` class, using the common ``U, V, W`` to represent the
-velocity in :math:`x`, :math:`y` and :math:`z` directions::
+:class:`.HDF5File` class, and store using keyword ``as_scalar=True``::
 
-    hdf5file = HDF5Writer("NS.h5", ['U', 'V', 'W'], TV)
+    hdf5file = ShenfunFile("NS", TV, backend='hdf5', mode='w')
     ...
-    file.write_tstep(0, U)
-    ...
-    file.write_tstep(1, U)
+    file.write(0, {'u': [U]}, as_scalar=True)
+    file.write(1, {'u': [U]}, as_scalar=True)
 
 Generate an xdmf file through::
 
     generate_xdmf('NS.h5')
 
-and open the generated ``NS.xdmf`` file in Paraview. You will then see arrays
-of shape ``(32, 64, 128)`` in :math:`z`, :math:`y` and :math:`x` directions,
+and open the generated ``NS.xdmf`` file in Paraview. You will then see three scalar
+arrays ``u0, u1, u2``, each one of shape ``(32, 64, 128)``, for the vector
+component in what Paraview considers the :math:`z`, :math:`y` and :math:`x` directions,
 respectively. Other than the swapped coordinate axes there is no difference.
 But be careful if creating vectors in Paraview with the Calculator. The vector
-must be created as::
+should be created as::
 
-    U*kHat+V*jHat+W*iHat
-
-where ``U, V, W`` are the three velocity components and ``iHat, jHat, kHat``
-are the three unit vectors in Paraview's :math:`x`, :math:`y` and :math:`z`
-directions.
+    u0*kHat+u1*jHat+u2*iHat
