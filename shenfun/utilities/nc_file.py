@@ -47,6 +47,51 @@ class NCFile(BaseFile):
             *global* slices.
         as_scalar : bool, optional
             Whether to store vectors as scalars. Default is False.
+
+        Example
+        -------
+        >>> from mpi4py import MPI
+        >>> import numpy as np
+        >>> from shenfun import TensorProductSpace, Array, Basis
+        >>> from shenfun.utilities import NCFile
+        >>> comm = MPI.COMM_WORLD
+        >>> N = (24, 25, 26)
+        >>> K0 = Basis(N[0], 'F', dtype='D')
+        >>> K1 = Basis(N[1], 'F', dtype='D')
+        >>> K2 = Basis(N[2], 'F', dtype='d')
+        >>> T = TensorProductSpace(comm, (K0, K1, K2))
+        >>> fl = NCFile('ncfile.nc', T, mode='w')
+        >>> u = Array(T)
+        >>> u[:] = np.random.random(T.forward.input_array.shape)
+        >>> d = {'u': [u, (u, np.s_[4, :, :]), (u, np.s_[4, 4, :])]}
+        >>> fl.write(0, d)
+        >>> u[:] = 2
+        >>> fl.write(1, d)
+        >>> fl.close()
+
+        The resulting NetCDF4 file ``ncfile.nc`` can be viewed using
+        ``ncdump -h ncfile.nc``::
+
+            netcdf ncfile {
+            dimensions:
+                    time = UNLIMITED ; // (2 currently)
+                    x = 24 ;
+                    y = 25 ;
+                    z = 26 ;
+            variables:
+                    double time(time) ;
+                    double x(x) ;
+                    double y(y) ;
+                    double z(z) ;
+                    double u(time, x, y, z) ;
+                    double u_4_slice_slice(time, y, z) ;
+                    double u_4_4_slice(time, z) ;
+
+            // global attributes:
+                            :ndim = 3LL ;
+                            :shape = 24LL, 25LL, 26LL ;
+            }
+
         """
         as_scalar = kw.get('as_scalar', False)
         if self.T.rank() == 1 or (not as_scalar):

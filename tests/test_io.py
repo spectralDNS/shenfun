@@ -43,6 +43,7 @@ def test_regular_2D(backend, forward_output):
     read = reader(filename, T, backend=backend)
     read.read(u0, 'u', forward_output=forward_output, step=1)
     assert np.allclose(u0, u)
+    read.close()
 
 @pytest.mark.skipif(skip, reason='h5py not installed')
 @pytest.mark.parametrize('forward_output', (True, False))
@@ -77,6 +78,7 @@ def test_mixed_2D(backend, forward_output, as_scalar):
         read = reader(filename, T, backend=backend)
         read.read(u0, 'uf0', forward_output=forward_output, step=1)
         assert np.allclose(u0, uf[0])
+    read.close()
 
 @pytest.mark.skipif(skip, reason='h5py not installed')
 @pytest.mark.parametrize('forward_output', (True, False))
@@ -107,6 +109,7 @@ def test_regular_3D(backend, forward_output):
     read = reader(filename, T, backend=backend)
     read.read(u0, 'u', forward_output=forward_output, step=1)
     assert np.allclose(u0, u)
+    read.close()
 
 @pytest.mark.skipif(skip, reason='h5py not installed')
 @pytest.mark.parametrize('forward_output', (True, False))
@@ -147,9 +150,11 @@ def test_mixed_3D(backend, forward_output, as_scalar):
         read = reader(filename, T, backend=backend)
         read.read(u0, 'u0', forward_output=forward_output, step=1)
         assert np.allclose(u0, uf[0])
+    read.close()
 
 if __name__ == '__main__':
-    test_regular_2D('hdf5', False)
-    #test_regular_3D('netcdf', False)
-    #test_mixed_2D('hdf5', False, False)
-    #test_mixed_3D('netcdf', False, False)
+    for bnd in ('netcdf', 'hdf5'):
+        test_regular_2D(bnd, False)
+        test_regular_3D(bnd, False)
+        test_mixed_2D(bnd, False, True)
+        test_mixed_3D(bnd, False, True)
