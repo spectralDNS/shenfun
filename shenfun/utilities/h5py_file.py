@@ -55,7 +55,7 @@ class HDF5File(BaseFile):
         >>> T = TensorProductSpace(comm, (K0, K1, K2))
         >>> u = Array(T, val=1)
         >>> v = Array(T, val=2)
-        >>> f = HDF5File('h5filename.h5', T)
+        >>> f = HDF5File('h5filename.h5', T, mode='w')
         >>> f.write(0, {'u': [u, (u, [slice(None), 4, slice(None)])],
         ...             'v': [v, (v, [slice(None), 5, 5])]})
         >>> f.write(1, {'u': [u, (u, [slice(None), 4, slice(None)])],

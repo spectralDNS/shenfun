@@ -4,18 +4,19 @@ shenfun.utilities package
 Submodules
 ----------
 
-shenfun.utilities.generate\_xdmf module
----------------------------------------
 
-.. automodule:: shenfun.utilities.generate_xdmf
+shenfun.utilities.h5py\_file module
+-------------------------------------
+
+.. automodule:: shenfun.utilities.h5py_file
     :members:
     :undoc-members:
     :show-inheritance:
 
-shenfun.utilities.h5py\_writer module
--------------------------------------
+shenfun.utilities.nc\_file module
+-----------------------------------
 
-.. automodule:: shenfun.utilities.h5py_writer
+.. automodule:: shenfun.utilities.nc_file
     :members:
     :undoc-members:
     :show-inheritance:
@@ -28,18 +29,11 @@ shenfun.utilities.integrators module
     :undoc-members:
     :show-inheritance:
 
-shenfun.utilities.nc\_writer module
------------------------------------
-
-.. automodule:: shenfun.utilities.nc_writer
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 Module contents
 ---------------
 
 .. automodule:: shenfun.utilities
     :members:
+    :exclude-members: HDF5File, NCFile
     :undoc-members:
     :show-inheritance:
