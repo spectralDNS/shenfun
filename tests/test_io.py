@@ -37,6 +37,7 @@ def test_regular_2D(backend, forward_output):
     hfile.close()
     if not forward_output and backend == 'hdf5' and comm.Get_rank() == 0:
         generate_xdmf(filename+'.h5')
+        generate_xdmf(filename+'.h5', order='visit')
 
     u0 = Function(T) if forward_output else Array(T)
     read = reader(filename, T, backend=backend)
