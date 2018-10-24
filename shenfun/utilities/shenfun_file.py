@@ -1,7 +1,7 @@
 import six
 import numpy as np
 
-__all__ = ('ShenfunFile', 'write')
+__all__ = ('ShenfunFile', 'write_vector')
 
 def ShenfunFile(name, T, backend='hdf5', mode='r', **kw):
     """Return a file handler
@@ -10,9 +10,10 @@ def ShenfunFile(name, T, backend='hdf5', mode='r', **kw):
     ----------
     name : str
         Name of file, without ending
-    T : TensorProductSpace
-        The space used for the data stored. Can also be MixedTensorProductSpace
-        or VectorTensorProductSpace.
+    T : :class:`.TensorProductSpace`
+        The space used for the data stored. Can also be
+        :class:`.MixedTensorProductSpace` or
+        :class:`.VectorTensorProductSpace`.
     backend : str, optional
         ``hdf5`` or ``netcdf``. Default is ``hdf5``.
     mode : str, optional
@@ -31,12 +32,14 @@ def ShenfunFile(name, T, backend='hdf5', mode='r', **kw):
     assert kw.get('forward_output', False) is False, "NetCDF4 cannot store complex arrays, use HDF5"
     return NCFile(name+'.nc', T, mode=mode, **kw)
 
-def write(self, step, fields, **kw):
+def write_vector(self, step, fields, **kw):
     # Note - Overloaded write
     # Should enter here with T.rank() > 1 and kw['as_scalar'] == True.
     # However, a slice may already be a scalar if the vector component is
-    # indexed and not sliced, e.g., [2, slice(None), slice(None), 4]. In
-    # that case we need to let _write_slice_step know.
+    # indexed and not sliced, e.g., the global slices
+    # [2, slice(None), slice(None), 4] of a 3D vector array. In
+    # that case we need to let _write_slice_step know the slice is
+    # already a scalar.
     assert self.T.rank() > 1
     assert kw.get('as_scalar', False) is True
     for group, list_of_fields in six.iteritems(fields):

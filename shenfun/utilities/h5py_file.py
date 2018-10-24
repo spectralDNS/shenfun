@@ -2,7 +2,7 @@
 import warnings
 import numpy as np
 from mpi4py_fft.utilities import HDF5File as BaseFile
-from .shenfun_file import write
+from .shenfun_file import write_vector
 
 __all__ = ('HDF5File',)
 
@@ -79,7 +79,7 @@ class HDF5File(BaseFile):
         if self.T.rank() == 1 or (not as_scalar):
             BaseFile.write(self, step, fields, **kw)
         else:
-            write(self, step, fields, **kw)
+            write_vector(self, step, fields, **kw)
 
     def read(self, u, name, **kw):
         """Read into array ``u``

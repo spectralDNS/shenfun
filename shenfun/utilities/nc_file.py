@@ -3,7 +3,7 @@ import warnings
 import copy
 import numpy as np
 from mpi4py_fft.utilities import NCFile as BaseFile
-from .shenfun_file import write
+from .shenfun_file import write_vector
 
 # https://github.com/Unidata/netcdf4-python/blob/master/examples/mpi_example.py
 
@@ -99,7 +99,7 @@ class NCFile(BaseFile):
         else:
             it = self.nc_t.size
             self.nc_t[it] = step
-            write(self, it, fields, **kw)
+            write_vector(self, it, fields, **kw)
 
     def _write_group(self, name, u, step, **kw):
         as_scalar = kw.get('as_scalar', False)

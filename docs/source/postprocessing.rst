@@ -34,7 +34,7 @@ The file instance `fl` will now have two method that can be used to either ``wri
 dataarrays to file, or ``read`` them back again.
 
     * ``fl.write``
-    * ```fl.read``
+    * ``fl.read``
 
 With the ``HDF5`` backend we can write
 both arrays from physical space (:class:`.Array`), as well as spectral space
