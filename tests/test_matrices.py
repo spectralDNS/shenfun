@@ -1,6 +1,10 @@
-import pytest
+from copy import copy
+from itertools import product
 import numpy as np
 from scipy.sparse.linalg import spsolve
+from mpi4py import MPI
+import six
+import pytest
 import shenfun
 from shenfun.chebyshev import matrices as cmatrices
 from shenfun.chebyshev import bases as cbases
@@ -8,11 +12,7 @@ from shenfun.legendre import matrices as lmatrices
 from shenfun.legendre import bases as lbases
 from shenfun.chebyshev import la as cla
 from shenfun.legendre import la as lla
-from copy import copy
 import mpi4py_fft
-from mpi4py import MPI
-import six
-from itertools import product
 
 cBasis = (cbases.Basis,
           cbases.ShenDirichletBasis,
@@ -33,7 +33,7 @@ k = np.arange(N).astype(float)
 a = np.random.random(N)
 b = np.random.random((N, N, N))
 c = np.zeros(N)
-c1= np.zeros(N)
+c1 = np.zeros(N)
 d = np.zeros((N, N, N))
 d1 = np.zeros((N, N, N))
 
@@ -61,7 +61,7 @@ def test_mat(key, mat, quad):
 @pytest.mark.parametrize('b0,b1', cbases2)
 @pytest.mark.parametrize('quad', cquads)
 @pytest.mark.parametrize('format', formats)
-@pytest.mark.parametrize('axis', (0,1,2))
+@pytest.mark.parametrize('axis', (0, 1, 2))
 @pytest.mark.parametrize('k', range(5))
 def test_cmatvec(b0, b1, quad, format, axis, k):
     """Test matrix-vector product"""
@@ -92,8 +92,8 @@ def test_cmatvec(b0, b1, quad, format, axis, k):
 @pytest.mark.parametrize('b0,b1', lbases2)
 @pytest.mark.parametrize('quad', lquads)
 @pytest.mark.parametrize('format', formats)
-@pytest.mark.parametrize('axis', (0,1,2))
-@pytest.mark.parametrize('k0,k1', product((0,1,2), (0,1,2)))
+@pytest.mark.parametrize('axis', (0, 1, 2))
+@pytest.mark.parametrize('k0,k1', product((0, 1, 2), (0, 1, 2)))
 def test_lmatvec(b0, b1, quad, format, axis, k0, k1):
     """Test matrix-vector product"""
     global c, c1, d, d1
@@ -266,7 +266,7 @@ allaxes2D = {0: (0, 1), 1: (1, 0)}
 allaxes3D = {0: (0, 1, 2), 1: (1, 0, 2), 2: (2, 0, 1)}
 
 @pytest.mark.parametrize('axis', (0, 1, 2))
-@pytest.mark.parametrize('family', ('chebyshev','legendre'))
+@pytest.mark.parametrize('family', ('chebyshev', 'legendre'))
 def test_helmholtz3D(family, axis):
     la = lla
     if family == 'chebyshev':
@@ -303,7 +303,7 @@ def test_helmholtz3D(family, axis):
 
 
 @pytest.mark.parametrize('axis', (0, 1))
-@pytest.mark.parametrize('family', ('chebyshev','legendre'))
+@pytest.mark.parametrize('family', ('chebyshev', 'legendre'))
 def test_helmholtz2D(family, axis):
     la = lla
     if family == 'chebyshev':
@@ -336,7 +336,7 @@ def test_helmholtz2D(family, axis):
     assert np.linalg.norm(f-(g0+g1)) < 1e-12
 
 @pytest.mark.parametrize('axis', (0, 1, 2))
-@pytest.mark.parametrize('family', ('chebyshev','legendre'))
+@pytest.mark.parametrize('family', ('chebyshev', 'legendre'))
 def test_biharmonic3D(family, axis):
     la = lla
     if family == 'chebyshev':
@@ -375,7 +375,7 @@ def test_biharmonic3D(family, axis):
     assert np.linalg.norm(f-(g0+g1+g2)) < 1e-8
 
 @pytest.mark.parametrize('axis', (0, 1))
-@pytest.mark.parametrize('family', ('chebyshev','legendre'))
+@pytest.mark.parametrize('family', ('chebyshev', 'legendre'))
 def test_biharmonic2D(family, axis):
     la = lla
     if family == 'chebyshev':
@@ -412,10 +412,11 @@ def test_biharmonic2D(family, axis):
 
 
 if __name__ == '__main__':
+    test_cmatvec(cBasis[3], cBasis[3], 'GC', 'cython', 2, 4)
     #test_add(*mats_and_quads[0])
     #test_mul2()
     #test_div2(cBasis[0], 'GC')
-    test_helmholtz3D('legendre', 2)
+    #test_helmholtz3D('legendre', 2)
     #test_helmholtz2D('legendre', 0)
     #test_biharmonic3D('chebyshev', 2)
     #test_biharmonic2D('chebyshev', 0)

@@ -13,13 +13,14 @@ with both u(x, y, z, t=0) and f(x, y, z, t=0) given.
 Using the Fourier basis for all three spatial directions.
 
 """
-import numpy as np
 from time import time
+import numpy as np
 import six
 import matplotlib.pyplot as plt
 from sympy import symbols, exp, lambdify
 from mpi4py import MPI
 from shenfun import *
+from mpi4py_fft import generate_xdmf
 from spectralDNS.utilities import Timer
 
 comm = MPI.COMM_WORLD
@@ -43,7 +44,7 @@ K2 = Basis(N[2], 'F', dtype='d', domain=(-2*np.pi, 2*np.pi))
 T = TensorProductSpace(comm, (K0, K1, K2), slab=False, **{'planner_effort': 'FFTW_MEASURE'})
 
 TT = MixedTensorProductSpace([T, T])
-TV = VectorTensorProductSpace([T, T, T])
+TV = VectorTensorProductSpace(T)
 
 Kp0 = Basis(N[0], 'F', dtype='D', domain=(-2*np.pi, 2*np.pi), padding_factor=1.5)
 Kp1 = Basis(N[1], 'F', dtype='D', domain=(-2*np.pi, 2*np.pi), padding_factor=1.5)
@@ -102,6 +103,7 @@ def update(fu, fu_hat, t, tstep, **params):
 
     timer()
     transformed = False
+
     if rank == 0 and tstep % params['plot_tstep'] == 0 and params['plot_tstep'] > 0:
         fu = TT.backward(fu_hat, fu)
         f, u = fu[:]
@@ -110,19 +112,17 @@ def update(fu, fu_hat, t, tstep, **params):
         plt.pause(1e-6)
         transformed = True
 
-    for ts, sl in six.iteritems(params['write_slice_tstep']):
-        if tstep % ts == 0:
-            if transformed is False:
-                fu = TT.backward(fu_hat, fu)
-                transformed = True
-            for s in sl:
-                params['file'].write_slice_tstep(tstep, s, fu)
-
-    if tstep % params['write_tstep'] == 0:
+    if tstep % params['write_slice_tstep'][0] == 0:
         if transformed is False:
             fu = TT.backward(fu_hat, fu)
             transformed = True
-        params['file'].write_tstep(tstep, fu)
+        params['file'].write(tstep, params['write_slice_tstep'][1], as_scalar=True)
+
+    if tstep % params['write_tstep'][0] == 0:
+        if transformed is False:
+            fu = TT.backward(fu_hat, fu)
+            transformed = True
+        params['file'].write(tstep, params['write_tstep'][1], as_scalar=True)
 
     if tstep % params['Compute_energy'] == 0:
         if transformed is False:
@@ -141,10 +141,10 @@ def update(fu, fu_hat, t, tstep, **params):
         comm.barrier()
 
 if __name__ == '__main__':
-    file0 = HDF5Writer("KleinGordon{}.h5".format(N[0]), ['u', 'f'], TT)
-    par = {'write_slice_tstep': {10: [[slice(None), slice(None), 16],
-                                      [slice(None), 8, slice(None)]]},
-           'write_tstep': 50,
+    file0 = HDF5File("KleinGordon{}.h5".format(N[0]), TT, mode='w')
+    par = {'write_slice_tstep': (10, {'fu': [(fu, [slice(None), slice(None), 10, slice(None)]),
+                                             (fu, [slice(None), 10, slice(None), slice(None)])]}),
+           'write_tstep': (50, {'fu': [fu]}),
            'Compute_energy': 100,
            'plot_tstep': -1,
            'file': file0}

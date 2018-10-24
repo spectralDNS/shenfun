@@ -484,12 +484,12 @@ class Biharmonic(object):
         if np.ndim(u) == 3:
             la.Solve_Biharmonic_3D_n(self.axis, b, u, self.u0, self.u1,
                                      self.u2, self.l0, self.l1, self.ak,
-                                     self.bk, self.a0[0,0,0])
+                                     self.bk, self.a0[0, 0, 0])
 
         elif np.ndim(u) == 2:
             la.Solve_Biharmonic_2D_n(self.axis, b, u, self.u0, self.u1,
                                      self.u2, self.l0, self.l1, self.ak,
-                                     self.bk, self.a0[0,0])
+                                     self.bk, self.a0[0, 0])
 
         else:
             la.Solve_Biharmonic_1D(b, u, self.u0, self.u1, self.u2, self.l0,
@@ -500,17 +500,22 @@ class Biharmonic(object):
     def matvec(self, v, c, axis=0):
         c[:] = 0
         if len(v.shape) == 3:
-            Matvec.Biharmonic_matvec3D(v, c, self.a0[0, 0, 0], self.alfa, self.beta, self.S[0], self.S[2],
-                                self.S[4], self.A[-2], self.A[0], self.A[2],
-                                self.B[-4], self.B[-2], self.B[0], self.B[2], self.B[4], axis)
+            Matvec.Biharmonic_matvec3D_ptr(v, c, self.a0[0, 0, 0], self.alfa,
+                                           self.beta, self.S[0], self.S[2],
+                                           self.S[4], self.A[-2], self.A[0],
+                                           self.A[2], self.B[-4], self.B[-2],
+                                           self.B[0], self.B[2], self.B[4], axis)
         elif len(v.shape) == 2:
-            Matvec.Biharmonic_matvec2D(v, c, self.a0[0, 0], self.alfa, self.beta, self.S[0], self.S[2],
-                                self.S[4], self.A[-2], self.A[0], self.A[2],
-                                self.B[-4], self.B[-2], self.B[0], self.B[2], self.B[4], axis)
+            Matvec.Biharmonic_matvec2D_ptr(v, c, self.a0[0, 0], self.alfa,
+                                           self.beta, self.S[0], self.S[2],
+                                           self.S[4], self.A[-2], self.A[0],
+                                           self.A[2], self.B[-4], self.B[-2],
+                                           self.B[0], self.B[2], self.B[4], axis)
         else:
-            Matvec.Biharmonic_matvec(v, c, self.a0, self.alfa, self.beta, self.S[0], self.S[2],
-                                self.S[4], self.A[-2], self.A[0], self.A[2],
-                                self.B[-4], self.B[-2], self.B[0], self.B[2], self.B[4])
+            Matvec.Biharmonic_matvec(v, c, self.a0, self.alfa, self.beta, self.S[0],
+                                     self.S[2], self.S[4], self.A[-2], self.A[0],
+                                     self.A[2], self.B[-4], self.B[-2], self.B[0],
+                                     self.B[2], self.B[4])
         return c
 
 

@@ -1,9 +1,10 @@
-#cython: boundscheck=False, wraparound=False, nonecheck=False
+#cython: boundscheck=False, wraparound=False, nonecheck=False, cdivision=True
 
 import numpy as np
 cimport cython
 cimport numpy as np
 from libcpp.vector cimport vector
+from libc.math cimport M_PI
 from cython.parallel import prange
 
 ctypedef np.complex128_t complex_t
@@ -191,20 +192,21 @@ def SBBmat_matvec(np.ndarray[T, ndim=1] v,
             o2 += (j+2)*(j+2)*d
             b[k] = dd[k]*v[k] + p*o1 + r*o2
 
-
 def SBBmat_matvec3D(np.ndarray[T, ndim=3] v,
                     np.ndarray[T, ndim=3] b,
                     np.ndarray[real_t, ndim=1] dd,
                     np.int64_t axis):
     cdef:
-        int i, j, k, jj
+        int i, j, k, jj, kk
         double p, r, d2
         T d
         np.ndarray[T, ndim=2] s1
         np.ndarray[T, ndim=2] s2
         np.ndarray[T, ndim=2] o1
         np.ndarray[T, ndim=2] o2
-        int N = v.shape[0]-4
+        np.ndarray[real_t, ndim=1] pv
+        np.ndarray[real_t, ndim=1] rv
+        int N = v.shape[axis]-4
 
     #for i in range(v.shape[1]):
         #for j in range(v.shape[2]):
@@ -225,7 +227,7 @@ def SBBmat_matvec3D(np.ndarray[T, ndim=3] v,
         for k in xrange(N-3, -1, -1):
             jj = k+2
             p = k*dd[k]/(k+1.)
-            r = 24*(k+1)*(k+2)*np.pi
+            r = 24*(k+1)*(k+2)*M_PI
             d2 = dd[k]
             for i in xrange(v.shape[1]):
                 for j in xrange(v.shape[2]):
@@ -253,7 +255,7 @@ def SBBmat_matvec3D(np.ndarray[T, ndim=3] v,
         for j in xrange(N-3, -1, -1):
             jj = j+2
             p = j*dd[j]/(j+1.)
-            r = 24*(j+1)*(j+2)*np.pi
+            r = 24*(j+1)*(j+2)*M_PI
             d2 = dd[j]
             for i in xrange(v.shape[0]):
                 for k in xrange(v.shape[2]):
@@ -272,19 +274,25 @@ def SBBmat_matvec3D(np.ndarray[T, ndim=3] v,
         s2 = np.zeros((v.shape[0], v.shape[1]), dtype=v.dtype)
         o1 = np.zeros((v.shape[0], v.shape[1]), dtype=v.dtype)
         o2 = np.zeros((v.shape[0], v.shape[1]), dtype=v.dtype)
+        pv = np.zeros(v.shape[2])
+        rv = np.zeros(v.shape[2])
+
         k = N-1
         for i in range(v.shape[0]):
             for j in range(v.shape[1]):
                 b[i, j, k] = dd[k]*v[i, j, k]
                 b[i, j, k-1] = dd[k-1]*v[i, j, k-1]
 
-        for k in xrange(N-3, -1, -1):
-            kk = k+2
-            p = k*dd[k]/(k+1.)
-            r = 24*(k+1)*(k+2)*np.pi
-            d2 = dd[k]
-            for i in xrange(v.shape[0]):
-                for j in xrange(v.shape[1]):
+        for i in xrange(v.shape[0]):
+            for j in xrange(v.shape[1]):
+                for k in xrange(N-3, -1, -1):
+                    kk = k+2
+                    if i+j == 0: # cache for speedup
+                        pv[k] = k*dd[k]/(k+1.)
+                        rv[k] = 24*(k+1)*(k+2)*M_PI
+                    p = pv[k]
+                    r = rv[k]
+                    d2 = dd[k]
                     d = v[i, j, kk]/(kk+3.)
                     if k % 2 == 0:
                         s1[i, j] += d
@@ -796,13 +804,13 @@ def Helmholtz_matvec(np.ndarray[T, ndim=1] v,
     b[k-1] = (dd[k-1]*alfa + bd[k-1]*beta)*v[k-1] - pi_half*beta*v[k+1] + ud[k-1]*alfa*s2
 
 def Helmholtz_matvec3D(np.ndarray[T, ndim=3] v,
-                     np.ndarray[T, ndim=3] b,
-                     real_t alfa,
-                     np.ndarray[real_t, ndim=3] beta,
-                     np.ndarray[real_t, ndim=1] dd,
-                     np.ndarray[real_t, ndim=1] ud,
-                     np.ndarray[real_t, ndim=1] bd,
-                     int axis):
+                       np.ndarray[T, ndim=3] b,
+                       real_t alfa,
+                       np.ndarray[real_t, ndim=3] beta,
+                       np.ndarray[real_t, ndim=1] dd,
+                       np.ndarray[real_t, ndim=1] ud,
+                       np.ndarray[real_t, ndim=1] bd,
+                       int axis):
     # b = (alfa*A + beta*B)*v
     # For B matrix ld = ud = -pi/2
     cdef:
@@ -1070,7 +1078,7 @@ def Biharmonic_matvec3D(np.ndarray[T, ndim=3] v,
                         np.ndarray[real_t, ndim=1] biuu,
                         int axis):
     cdef:
-        int i, j, k
+        int i, j, k, ii
         np.ndarray[double, ndim=1] ldd, ld, dd, ud, udd
         double p, r
         T d, s1, s2, o1, o2
@@ -1127,7 +1135,7 @@ def Biharmonic_matvec3D(np.ndarray[T, ndim=3] v,
                 for i in xrange(N-7, -1, -1):
                     ii = i+6
                     p = i*sii[i]/(i+1.)
-                    r = 24*(i+1)*(i+2)*np.pi
+                    r = 24*(i+1)*(i+2)*M_PI
                     d = v[ii, j, k]/(ii+3.)
                     if i % 2 == 0:
                         s1 += d
@@ -1189,3 +1197,186 @@ def Biharmonic_matvec2D(np.ndarray[T, ndim=2] v,
             Biharmonic_matvec(v[i], b[i], a0, alfa[i, 0],
                               beta[i, 0], sii, siu, siuu, ail, aii, aiu, bill, bil, bii, biu, biuu)
 
+cdef void Biharmonic_matvec_ptr(T* v,
+                                T* b,
+                                real_t a0,
+                                real_t alfa,
+                                real_t beta,
+                                # 3 upper diagonals of SBB
+                                real_t* sii,
+                                real_t* siu,
+                                real_t* siuu,
+                                # All 3 diagonals of ABB
+                                real_t* ail,
+                                real_t* aii,
+                                real_t* aiu,
+                                # All 5 diagonals of BBB
+                                real_t* bill,
+                                real_t* bil,
+                                real_t* bii,
+                                real_t* biu,
+                                real_t* biuu,
+                                int N,
+                                int st):
+
+    cdef:
+        int i, j, k
+        vector[double] ldd, ld, dd, ud, udd
+        double p, r
+        T d, s1, s2, o1, o2
+
+    dd.resize(N)
+    ld.resize(N)
+    ldd.resize(N)
+    ud.resize(N)
+    udd.resize(N)
+
+    for i in xrange(N):
+        dd[i] = a0*sii[i] + alfa*aii[i] + beta*bii[i]
+
+    for i in xrange(N-2):
+        ld[i] = alfa*ail[i] + beta*bil[i]
+
+    for i in xrange(N-4):
+        ldd[i] = beta*bill[i]
+
+    for i in xrange(N-2):
+        ud[i] = a0*siu[i] + alfa*aiu[i] + beta*biu[i]
+
+    for i in xrange(N-4):
+        udd[i] = a0*siuu[i] + beta*biuu[i]
+
+    i = N-1
+    b[i*st] = ldd[i-4]*v[(i-4)*st]+ ld[i-2]* v[(i-2)*st] + dd[i]*v[i*st]
+    i = N-2
+    b[i*st] = ldd[i-4]*v[(i-4)*st]+ ld[i-2]* v[(i-2)*st] + dd[i]*v[i*st]
+    i = N-3
+    b[i*st] = ldd[i-4]*v[(i-4)*st]+ ld[i-2]* v[(i-2)*st] + dd[i]*v[i*st] + ud[i]*v[(i+2)*st]
+    i = N-4
+    b[i*st] = ldd[i-4]*v[(i-4)*st]+ ld[i-2]* v[(i-2)*st] + dd[i]*v[i*st] + ud[i]*v[(i+2)*st]
+    i = N-5
+    b[i*st] = ldd[i-4]*v[(i-4)*st]+ ld[i-2]* v[(i-2)*st] + dd[i]*v[i*st] + ud[i]*v[(i+2)*st] + udd[i]*v[(i+4)*st]
+    i = N-6
+    b[i*st] = ldd[i-4]*v[(i-4)*st]+ ld[i-2]* v[(i-2)*st] + dd[i]*v[i*st] + ud[i]*v[(i+2)*st] + udd[i]*v[(i+4)*st]
+
+    s1 = 0.0
+    s2 = 0.0
+    o1 = 0.0
+    o2 = 0.0
+    for k in xrange(N-7, -1, -1):
+        j = k+6
+        p = k*sii[k]/(k+1.)
+        r = 24*(k+1)*(k+2)*M_PI
+        d = v[j*st]/(j+3.)
+        if k % 2 == 0:
+            s1 += d
+            s2 += (j+2)*(j+2)*d
+            b[k*st] = (p*s1 + r*s2)*a0
+        else:
+            o1 += d
+            o2 += (j+2)*(j+2)*d
+            b[k*st] = (p*o1 + r*o2)*a0
+
+        if k > 3:
+            b[k*st] += ldd[k-4]*v[(k-4)*st]+ ld[k-2]* v[(k-2)*st] + dd[k]*v[k*st] + ud[k]*v[(k+2)*st] + udd[k]*v[(k+4)*st]
+        elif k > 1:
+            b[k*st] += ld[k-2]* v[(k-2)*st] + dd[k]*v[k*st] + ud[k]*v[(k+2)*st] + udd[k]*v[(k+4)*st]
+        else:
+            b[k*st] += dd[k]*v[k*st] + ud[k]*v[(k+2)*st] + udd[k]*v[(k+4)*st]
+
+def Biharmonic_matvec3D_ptr(T[:, :, ::1] v,
+                            T[:, :, ::1] b,
+                            real_t a0,
+                            real_t[:, :, ::1] alfa,
+                            real_t[:, :, ::1] beta,
+                            # 3 upper diagonals of SBB
+                            real_t[::1] sii,
+                            real_t[::1] siu,
+                            real_t[::1] siuu,
+                            # All 3 diagonals of ABB
+                            real_t[::1] ail,
+                            real_t[::1] aii,
+                            real_t[::1] aiu,
+                            # All 5 diagonals of BBB
+                            real_t[::1] bill,
+                            real_t[::1] bil,
+                            real_t[::1] bii,
+                            real_t[::1] biu,
+                            real_t[::1] biuu,
+                            int axis):
+    cdef:
+        int i, j, k, strides
+        int N = sii.shape[0]
+        T* v_ptr
+        T* b_ptr
+
+    strides = v.strides[axis]/v.itemsize
+    if axis == 0:
+        for j in range(v.shape[1]):
+            for k in range(v.shape[2]):
+                v_ptr = &v[0, j, k]
+                b_ptr = &b[0, j, k]
+                Biharmonic_matvec_ptr(v_ptr, b_ptr, a0, alfa[0, j, k],
+                                      beta[0, j, k], &sii[0], &siu[0], &siuu[0], &ail[0], &aii[0],
+                                      &aiu[0], &bill[0], &bil[0], &bii[0], &biu[0], &biuu[0], N, strides)
+
+    elif axis == 1:
+       for i in range(v.shape[0]):
+            for k in range(v.shape[2]):
+                v_ptr = &v[i, 0, k]
+                b_ptr = &b[i, 0, k]
+                Biharmonic_matvec_ptr(v_ptr, b_ptr, a0, alfa[i, 0, k],
+                                      beta[i, 0, k], &sii[0], &siu[0], &siuu[0], &ail[0], &aii[0],
+                                      &aiu[0], &bill[0], &bil[0], &bii[0], &biu[0], &biuu[0], N, strides)
+
+    elif axis == 2:
+        for i in range(v.shape[0]):
+            for j in range(v.shape[1]):
+                v_ptr = &v[i, j, 0]
+                b_ptr = &b[i, j, 0]
+                Biharmonic_matvec_ptr(v_ptr, b_ptr, a0, alfa[i, j, 0],
+                                      beta[i, j, 0], &sii[0], &siu[0], &siuu[0], &ail[0], &aii[0],
+                                      &aiu[0], &bill[0], &bil[0], &bii[0], &biu[0], &biuu[0], N, strides)
+
+def Biharmonic_matvec2D_ptr(T[:, ::1] v,
+                            T[:, ::1] b,
+                            real_t a0,
+                            real_t[:, ::1] alfa,
+                            real_t[:, ::1] beta,
+                            # 3 upper diagonals of SBB
+                            real_t[::1] sii,
+                            real_t[::1] siu,
+                            real_t[::1] siuu,
+                            # All 3 diagonals of ABB
+                            real_t[::1] ail,
+                            real_t[::1] aii,
+                            real_t[::1] aiu,
+                            # All 5 diagonals of BBB
+                            real_t[::1] bill,
+                            real_t[::1] bil,
+                            real_t[::1] bii,
+                            real_t[::1] biu,
+                            real_t[::1] biuu,
+                            int axis):
+    cdef:
+        int i, j, k, strides
+        int N = sii.shape[0]
+        T* v_ptr
+        T* b_ptr
+
+    strides = v.strides[axis]/v.itemsize
+    if axis == 0:
+        for j in range(v.shape[1]):
+            v_ptr = &v[0, j]
+            b_ptr = &b[0, j]
+            Biharmonic_matvec_ptr(v_ptr, b_ptr, a0, alfa[0, j],
+                                  beta[0, j], &sii[0], &siu[0], &siuu[0], &ail[0], &aii[0],
+                                  &aiu[0], &bill[0], &bil[0], &bii[0], &biu[0], &biuu[0], N, strides)
+
+    elif axis == 1:
+       for i in range(v.shape[0]):
+            v_ptr = &v[i, 0]
+            b_ptr = &b[i, 0]
+            Biharmonic_matvec_ptr(v_ptr, b_ptr, a0, alfa[i, 0],
+                                  beta[i, 0], &sii[0], &siu[0], &siuu[0], &ail[0], &aii[0],
+                                  &aiu[0], &bill[0], &bil[0], &bii[0], &biu[0], &biuu[0], N, strides)
