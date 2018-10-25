@@ -33,12 +33,12 @@ curl_hat = Function(TV)
 curl_ = Array(TV)
 X = T.local_mesh(True)
 
-def LinearRHS(**params):
+def LinearRHS(self, **params):
     #L = inner(nu*div(grad(u)), v)  # L is shape (N[0], N[1], N[2]//2+1), but used as (3, N[0], N[1], N[2]//2+1) due to broadcasting
     L = -nu*K2  # Or just simply this
     return L
 
-def NonlinearRHS(U, U_hat, dU, **params):
+def NonlinearRHS(self, U, U_hat, dU, **params):
     global TV, curl_hat, curl_, P_hat, K, K_over_K2
     dU.fill(0)
     curl_hat.fill(0)
@@ -64,7 +64,7 @@ if __name__ == '__main__':
         integ.setup(dt)
         U_hat = integ.solve(U, U_hat, dt, (0, end_time))
         # Check accuracy
-        U = TV.backward(U_hat, U)
+        U = U_hat.backward(U)
         k = comm.reduce(0.5*np.sum(U*U)/np.prod(np.array(N)))
         if comm.Get_rank() == 0:
             assert np.round(k - 0.124953117517, 7) == 0

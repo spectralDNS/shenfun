@@ -80,7 +80,7 @@ L = -inner(grad(vh), grad(uh)) - gamma
 # Coupled equations with no linear terms in their own variables,
 # so place everything in NonlinearRHS
 count = 0
-def NonlinearRHS(fu, fu_hat, dfu_hat, **par):
+def NonlinearRHS(self, fu, fu_hat, dfu_hat, **par):
     global count, up
     count += 1
     dfu_hat.fill(0)
@@ -98,7 +98,7 @@ if rank == 0:
     plt.draw()
     plt.pause(1e-4)
 
-def update(fu, fu_hat, t, tstep, **params):
+def update(self, fu, fu_hat, t, tstep, **params):
     global gradu
 
     timer()

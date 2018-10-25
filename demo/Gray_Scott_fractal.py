@@ -30,11 +30,12 @@ and for stability they are approximated using error functions.
 from sympy import Symbol, lambdify
 from sympy.functions import erf
 import numpy as np
-import matplotlib.pyplot as plt
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, HDF5Writer,\
-    ETDRK4, ETD, RK4, TensorProductSpace, VectorTensorProductSpace, Basis, Array
 import scipy
+import matplotlib.pyplot as plt
 from mpi4py import MPI
+from mpi4py_fft import generate_xdmf
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, HDF5File,\
+    ETDRK4, ETD, RK4, TensorProductSpace, VectorTensorProductSpace, Basis, Array
 
 comm = MPI.COMM_WORLD
 
@@ -91,13 +92,13 @@ U[:] = ul(*X)
 V[:] = vl(*X)
 UV_hat = TV.forward(UV, UV_hat)
 
-def LinearRHS(alpha1, alpha2, **params):
+def LinearRHS(self, alpha1, alpha2, **params):
     L = inner(vv, (e1, e2)*div(grad(uu)))
     L = np.array([-(-L[0])**(alpha1/2),
                   -(-L[1])**(alpha2/2)])
     return L
 
-def NonlinearRHS(uv, uv_hat, rhs, kappa, **params):
+def NonlinearRHS(self, uv, uv_hat, rhs, kappa, **params):
     global b0, UVp, w0, w1, TVp
     rhs.fill(0)
     UVp = TVp.backward(uv_hat, UVp) # 3/2-rule dealiasing for nonlinear term
@@ -112,9 +113,9 @@ image = plt.contourf(X[0], X[1], U.real, 100)
 plt.draw()
 plt.pause(1)
 uv0 = np.zeros_like(UV)
-def update(uv, uv_hat, t, tstep, **params):
+def update(self, uv, uv_hat, t, tstep, **params):
     if tstep % params['plot_step'] == 0 and params['plot_step'] > 0:
-        uv = TV.backward(uv_hat, uv)
+        uv = uv_hat.backward(uv)
         image.ax.clear()
         image.ax.contourf(X[0], X[1], uv[0].real, 100)
         plt.pause(1e-6)
@@ -124,11 +125,14 @@ def update(uv, uv_hat, t, tstep, **params):
               np.linalg.norm(uv[1]))
         uv0[:] = uv
 
+    if tstep % params['write_tstep'][0] == 0:
+        uv = uv_hat.backward(uv)
+        params['file'].write(tstep, params['write_tstep'][1], as_scalar=True)
 
 if __name__ == '__main__':
-    file0 = HDF5Writer("Gray_Scott_{}.h5".format(N[0]), ['u', 'v'], T)
+    file0 = HDF5File("Gray_Scott_{}.h5".format(N[0]), TV, mode='w')
     par = {'plot_step': 200,
-           'write_tstep': 200,
+           'write_tstep': (200, {'uv': [UV]}),
            'file': file0,
            'kappa': 0.061,
            'alpha1': 1.5,
@@ -138,4 +142,5 @@ if __name__ == '__main__':
     integrator = ETDRK4(TV, L=LinearRHS, N=NonlinearRHS, update=update, **par)
     integrator.setup(dt)
     UV_hat = integrator.solve(UV, UV_hat, dt, (0, end_time))
-
+    file0.close()
+    generate_xdmf("Gray_Scott_{}.h5".format(N[0]))
