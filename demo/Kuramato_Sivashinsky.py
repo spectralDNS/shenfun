@@ -41,14 +41,13 @@ U_hat = Function(T)
 gradu = Array(TV)
 K = np.array(T.local_wavenumbers(True, True, True))
 
-def LinearRHS(**params):
+def LinearRHS(self, **params):
     # Assemble diagonal bilinear forms
     L = -(inner(div(grad(u)), v) + inner(div(grad(div(grad(u)))), v))
     return L
 
-def NonlinearRHS(U, U_hat, dU, **params):
+def NonlinearRHS(self, U, U_hat, dU, gradu, **params):
     # Assemble nonlinear term
-    global gradu
     gradu = TV.backward(1j*K*U_hat, gradu)
     dU = T.forward(0.5*(gradu[0]*gradu[0]+gradu[1]*gradu[1]), dU)
     return -dU
@@ -64,19 +63,19 @@ cm = plt.get_cmap('hot')
 image = plt.contourf(X[0], X[1], U, 256, cmap=cm)
 plt.draw()
 plt.pause(1e-6)
-count = 0
-def update(u, u_hat, t, tstep, plot_step, **params):
-    global count
+def update(self, u, u_hat, t, tstep, plot_step, **params):
     if tstep % plot_step == 0 and plot_step > 0:
-        u = T.backward(u_hat, u)
+        u = u_hat.backward(u)
         image.ax.clear()
         image.ax.contourf(X[0], X[1], U, 256, cmap=cm)
         plt.pause(1e-6)
-        count += 1
-        plt.savefig('Kuramato_Sivashinsky_N_{}_{}.png'.format(N[0], count))
+        self.params['count'] += 1
+        #plt.savefig('Kuramato_Sivashinsky_N_{}_{}.png'.format(N[0], self.params['count']))
 
 if __name__ == '__main__':
-    par = {'plot_step': 100}
+    par = {'plot_step': 100,
+           'gradu': gradu,
+           'count': 0}
     dt = 0.01
     end_time = 100
     #integrator = ETDRK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)

@@ -19,6 +19,7 @@ where :math:`u` is the solution, :math:`L` is a linear operator and
 :math:`N(u)` is the nonlinear part of the right hand side.
 
 """
+import types
 import numpy as np
 from shenfun import Function, SparseMatrix
 from shenfun import inheritdocstrings
@@ -54,9 +55,9 @@ class IntegratorBase(object):
         _p.update(params)
         self.params = _p
         self.T = T
-        self.LinearRHS = L
-        self.NonlinearRHS = N
-        self.update = update
+        self.LinearRHS = types.MethodType(L, self)
+        self.NonlinearRHS = types.MethodType(N, self)
+        self.update = types.MethodType(update, self)
 
     def setup(self, dt):
         """Set up solver"""
@@ -93,9 +94,9 @@ class ETD(IntegratorBase):
         N : function
             To compute nonlinear part of right hand side
         update : function
-                 To be called at the end of a timestep
+            To be called at the end of a timestep
         params : dictionary
-                 Any relevant keyword arguments
+            Any relevant keyword arguments
     """
 
     def __init__(self, T,
@@ -131,11 +132,11 @@ class ETD(IntegratorBase):
             u : array
                 The solution array in physical space
             u_hat : array
-                    The solution array in spectral space
+                The solution array in spectral space
             dt : float
-                 Timestep
+                Timestep
             trange : two-tuple
-                     Time and end time
+                Time and end time
         """
         if self.psi is None or abs(self.params['dt']-dt) > 1e-12:
             self.setup(dt)
@@ -164,9 +165,9 @@ class ETDRK4(IntegratorBase):
         N : function
             To compute nonlinear part of right hand side
         update : function
-                 To be called at the end of a timestep
+            To be called at the end of a timestep
         params : dictionary
-                 Any relevant keyword arguments
+            Any relevant keyword arguments
     """
     def __init__(self, T,
                  L=lambda *args, **kwargs: 0,
@@ -222,13 +223,12 @@ class ETDRK4(IntegratorBase):
             u : array
                 The solution array in physical space
             u_hat : array
-                    The solution array in spectral space
+                The solution array in spectral space
             dt : float
-                 Timestep
+                Timestep
             trange : two-tuple
-                     Time and end time
+                Time and end time
         """
-
         if self.a is None or abs(self.params['dt']-dt) > 1e-12:
             self.setup(dt)
         t, end_time = trange
@@ -266,9 +266,9 @@ class RK4(IntegratorBase):
         N : function
             To compute nonlinear part of right hand side
         update : function
-                 To be called at the end of a timestep
+            To be called at the end of a timestep
         params : dictionary
-                 Any relevant keyword arguments
+            Any relevant keyword arguments
     """
     def __init__(self, T,
                  L=lambda *args, **kwargs: 0,
@@ -294,13 +294,12 @@ class RK4(IntegratorBase):
             u : array
                 The solution array in physical space
             u_hat : array
-                    The solution array in spectral space
+                The solution array in spectral space
             dt : float
-                 Timestep
+                Timestep
             trange : two-tuple
-                     Time and end time
+                Time and end time
         """
-
         if self.a is None or abs(self.params['dt']-dt) > 1e-12:
             self.setup(dt)
         t, end_time = trange

@@ -15,7 +15,7 @@ def ShenfunFile(name, T, backend='hdf5', mode='r', **kw):
         :class:`.MixedTensorProductSpace` or
         :class:`.VectorTensorProductSpace`.
     backend : str, optional
-        ``hdf5`` or ``netcdf``. Default is ``hdf5``.
+        ``hdf5`` or ``netcdf4``. Default is ``hdf5``.
     mode : str, optional
         ``r`` or ``w``. Default is ``r``.
 
@@ -62,4 +62,5 @@ def write_vector(self, step, fields, **kw):
                         self._write_slice_step(g, step, sl[1:], u[k], **kw)
                 else:
                     kw['slice_as_scalar'] = False
-                    self._write_slice_step(group, step, sl, u, **kw)
+                    g = group + str(sl[0])
+                    self._write_slice_step(g, step, sl, u, **kw)
