@@ -5,7 +5,6 @@ from numbers import Number
 import warnings
 import sympy
 import numpy as np
-import shenfun
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun import chebyshev, legendre
 from shenfun.forms.arguments import Function, Array

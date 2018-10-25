@@ -35,7 +35,7 @@ import matplotlib.pyplot as plt
 from mpi4py import MPI
 from mpi4py_fft import generate_xdmf
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, HDF5File,\
-    ETDRK4, ETD, RK4, TensorProductSpace, VectorTensorProductSpace, Basis, Array
+    ETDRK4, TensorProductSpace, VectorTensorProductSpace, Basis, Array
 
 comm = MPI.COMM_WORLD
 

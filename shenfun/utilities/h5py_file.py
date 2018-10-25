@@ -1,8 +1,7 @@
 #pylint: disable=missing-docstring, consider-using-enumerate
-import warnings
+import six
 import numpy as np
 from mpi4py_fft.utilities import HDF5File as BaseFile
-from .shenfun_file import write_vector
 
 __all__ = ('HDF5File',)
 
@@ -75,11 +74,68 @@ class HDF5File(BaseFile):
         of the *global* arrays.
 
         """
-        as_scalar = kw.get('as_scalar', False)
-        if self.T.rank() == 1 or (not as_scalar):
-            BaseFile.write(self, step, fields, **kw)
-        else:
-            write_vector(self, step, fields, **kw)
+        for group, list_of_fields in six.iteritems(fields):
+            assert isinstance(list_of_fields, (tuple, list))
+            assert isinstance(group, str)
+
+            for field in list_of_fields:
+                if self.T.rank() == 1:
+                    if isinstance(field, np.ndarray):
+                        g = "/".join((group, "{}D".format(self.T.ndim())))
+                        self._write_group(g, field, step, **kw)
+                    else:
+                        assert len(field) == 2
+                        u, sl = field
+                        ndims = sl.count(slice(None))
+                        slname = self._get_slice_name(sl)
+                        g = "/".join((group, "{}D".format(ndims), slname))
+                        self._write_slice_step(g, step, sl, u, **kw)
+                else:
+                    if kw.get('as_scalar', False):
+                        if isinstance(field, np.ndarray):
+                            if len(self.T.shape()) == len(field.shape):  # A regular vector array
+                                for k in range(field.shape[0]):
+                                    g = group + str(k)
+                                    g = "/".join((g, "{}D".format(self.T.ndim())))
+                                    self._write_group(g, field[k], step, **kw)
+                            elif len(self.T.shape()) == len(field.shape)+1: # A scalar in the vector space
+                                g = "/".join((group, "{}D".format(self.T.ndim())))
+                                self._write_group(g, field, step, **kw)
+                        else:
+                            assert len(field) == 2
+                            u, sl = field
+                            ndims = sl[1:].count(slice(None))
+                            if sl[0] == slice(None):
+                                for k in range(u.shape[0]):
+                                    g = group + str(k)
+                                    slname = self._get_slice_name(sl[1:])
+                                    g = "/".join((g, "{}D".format(ndims), slname))
+                                    self._write_slice_step(g, step, sl[1:], u[k], **kw)
+                            else:
+                                g = group + str(sl[0])
+                                slname = self._get_slice_name(sl[1:])
+                                g = "/".join((g, "{}D".format(ndims), slname))
+                                self._write_slice_step(g, step, sl, u, **kw)
+
+                    else:  # not as_scalar
+                        if isinstance(field, np.ndarray):
+                            if len(self.T.shape()) == len(field.shape):  # A regular vector array
+                                g = "/".join((group, "{}D".format(self.T.ndim())+"_Vector"))
+                            elif len(self.T.shape()) == len(field.shape)+1: # A scalar in the vector space
+                                g = "/".join((group, "{}D".format(self.T.ndim())))
+                            self._write_group(g, field, step, **kw)
+                        else:
+                            assert len(field) == 2
+                            u, sl = field
+                            ndims = sl[1:].count(slice(None))
+                            slname = self._get_slice_name(sl[1:])
+                            if sl[0] == slice(None):
+                                g = "/".join((group, "{}D".format(ndims)+"_Vector", slname))
+                                self._write_slice_step(g, step, sl, u, **kw)
+                            else:
+                                g = group + str(sl[0])
+                                g = "/".join((g, "{}D".format(ndims), slname))
+                                self._write_slice_step(g, step, sl, u, **kw)
 
     def read(self, u, name, **kw):
         """Read into array ``u``
@@ -107,41 +163,26 @@ class HDF5File(BaseFile):
         u[:] = self.f[dset][tuple(s)]
 
     def _write_group(self, name, u, step, **kw):
-        as_scalar = kw.get('as_scalar', False)
+        T = u.function_space()
         forward_output = kw.get('forward_output', False)
-        T = self.T if not as_scalar else self.T[0]
         s = tuple(T.local_slice(forward_output))
-        group = "/".join((name, "{}D".format(T.ndim())))
-        if T.rank() == 2:
-            group = group + "_Vector"
-        if group not in self.f:
-            self.f.create_group(group)
-        self.f[group].create_dataset(str(step), shape=T.shape(forward_output), dtype=u.dtype)
-        self.f["/".join((group, str(step)))][s] = u
+        if name not in self.f:
+            self.f.create_group(name)
+        self.f[name].create_dataset(str(step), shape=T.shape(forward_output), dtype=u.dtype)
+        self.f["/".join((name, str(step)))][s] = u
 
     def _write_slice_step(self, name, step, slices, field, **kw):
-        as_scalar = kw.get('slice_as_scalar', False)
         forward_output = kw.get('forward_output', False)
         slices = list(slices)
-        T = self.T if not as_scalar else self.T[0]
-        if T.rank() == 2:
-            ndims = slices[1:].count(slice(None))
-            slname = self._get_slice_name(slices[1:])
-        else:
-            ndims = slices.count(slice(None))
-            slname = self._get_slice_name(slices)
+        T = field.function_space()
         s = T.local_slice(forward_output)
         slices, inside = self._get_local_slices(slices, s)
         sp = np.nonzero([isinstance(x, slice) for x in slices])[0]
         sf = tuple(np.take(s, sp))
         sl = tuple(slices)
-        gdim = "{}D".format(ndims)
-        if T.rank() > 1 and slices[0] == slice(None):
-            gdim += "_Vector"
-        group = "/".join((name, gdim, slname))
-        if group not in self.f:
-            self.f.create_group(group)
+        if name not in self.f:
+            self.f.create_group(name)
         N = T.shape(forward_output)
-        self.f[group].create_dataset(str(step), shape=np.take(N, sp), dtype=field.dtype)
+        self.f[name].create_dataset(str(step), shape=np.take(N, sp), dtype=field.dtype)
         if inside == 1:
-            self.f["/".join((group, str(step)))][sf] = field[sl]
+            self.f["/".join((name, str(step)))][sf] = field[sl]
