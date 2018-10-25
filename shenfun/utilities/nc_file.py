@@ -1,5 +1,6 @@
 #pylint: disable=missing-docstring,consider-using-enumerate
 import warnings
+import copy
 import six
 import numpy as np
 from mpi4py_fft.utilities import NCFile as BaseFile
