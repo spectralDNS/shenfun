@@ -1,9 +1,8 @@
 #pylint: disable=missing-docstring,consider-using-enumerate
 import warnings
-import copy
+import six
 import numpy as np
 from mpi4py_fft.utilities import NCFile as BaseFile
-from .shenfun_file import write_vector
 
 # https://github.com/Unidata/netcdf4-python/blob/master/examples/mpi_example.py
 
@@ -93,17 +92,70 @@ class NCFile(BaseFile):
             }
 
         """
-        as_scalar = kw.get('as_scalar', False)
-        if self.T.rank() == 1 or (not as_scalar):
-            BaseFile.write(self, step, fields, **kw)
-        else:
-            it = self.nc_t.size
-            self.nc_t[it] = step
-            write_vector(self, it, fields, **kw)
+        it = self.nc_t.size
+        self.nc_t[it] = step
+        #write_vector(self, it, fields, **kw)
+        step = it
+        for group, list_of_fields in six.iteritems(fields):
+            assert isinstance(list_of_fields, (tuple, list))
+            assert isinstance(group, str)
+
+            for field in list_of_fields:
+                if self.T.rank() == 1:
+                    if isinstance(field, np.ndarray):
+                        g = group
+                        self._write_group(g, field, step, **kw)
+                    else:
+                        assert len(field) == 2
+                        u, sl = field
+                        ndims = sl.count(slice(None))
+                        slname = self._get_slice_name(sl)
+                        g = "_".join((group, slname))
+                        self._write_slice_step(g, step, sl, u, **kw)
+                else:
+                    if kw.get('as_scalar', False):
+                        if isinstance(field, np.ndarray):
+                            if len(self.T.shape()) == len(field.shape):  # A regular vector array
+                                for k in range(field.shape[0]):
+                                    g = group + str(k)
+                                    self._write_group(g, field[k], step, **kw)
+                            elif len(self.T.shape()) == len(field.shape)+1: # A scalar in the vector space
+                                g = group
+                                self._write_group(g, field, step, **kw)
+                        else:
+                            assert len(field) == 2
+                            u, sl = field
+                            ndims = sl[1:].count(slice(None))
+                            if sl[0] == slice(None):
+                                for k in range(u.shape[0]):
+                                    g = group + str(k)
+                                    slname = self._get_slice_name(sl[1:])
+                                    g = "_".join((g, slname))
+                                    self._write_slice_step(g, step, sl[1:], u[k], **kw)
+                            else:
+                                g = group + str(sl[0])
+                                slname = self._get_slice_name(sl[1:])
+                                g = "_".join((g, slname))
+                                self._write_slice_step(g, step, sl, u, **kw)
+
+                    else:  # not as_scalar
+                        if isinstance(field, np.ndarray):
+                            self._write_group(group, field, step, **kw)
+                        else:
+                            assert len(field) == 2
+                            u, sl = field
+                            ndims = sl[1:].count(slice(None))
+                            slname = self._get_slice_name(sl[1:])
+                            if sl[0] == slice(None):
+                                g = "_".join((group, slname))
+                                self._write_slice_step(g, step, sl, u, **kw)
+                            else:
+                                g = group + str(sl[0])
+                                g = "_".join((g, slname))
+                                self._write_slice_step(g, step, sl, u, **kw)
 
     def _write_group(self, name, u, step, **kw):
-        as_scalar = kw.get('as_scalar', False)
-        T = self.T if not as_scalar else self.T[0]
+        T = u.function_space()
         s = T.local_slice(False)
         dims = self.dims if T.rank() == 1 else self.vdims
         if name not in self.handles:
@@ -114,30 +166,23 @@ class NCFile(BaseFile):
         self.f.sync()
 
     def _write_slice_step(self, name, step, slices, field, **kw):
-        as_scalar = kw.get('slice_as_scalar', False)
         slices = list(slices)
-        T = self.T if not as_scalar else self.T[0]
-        if T.rank() == 2:
-            slname = self._get_slice_name(slices[1:])
-        else:
-            slname = self._get_slice_name(slices)
-
+        T = field.function_space()
         dims = self.dims if T.rank() == 1 else self.vdims
         s = T.local_slice(False)
         slices, inside = self._get_local_slices(slices, s)
         sp = np.nonzero([isinstance(x, slice) for x in slices])[0]
         sf = np.take(s, sp)
         sdims = ['time'] + list(np.take(dims, np.array(sp)+1))
-        fname = "_".join((name, slname))
-        if fname not in self.handles:
-            self.handles[fname] = self.f.createVariable(fname, self._dtype, sdims)
-            self.handles[fname].set_collective(True)
+        if name not in self.handles:
+            self.handles[name] = self.f.createVariable(name, self._dtype, sdims)
+            self.handles[name].set_collective(True)
 
-        self.handles[fname][step] = 0 # collectively create dataset
-        self.handles[fname].set_collective(False)
+        self.handles[name][step] = 0 # collectively create dataset
+        self.handles[name].set_collective(False)
         sf = tuple([step] + list(sf))
         sl = tuple(slices)
         if inside:
-            self.handles[fname][sf] = field[sl]
-        self.handles[fname].set_collective(True)
+            self.handles[name][sf] = field[sl]
+        self.handles[name].set_collective(True)
         self.f.sync()

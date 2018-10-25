@@ -15,7 +15,6 @@ Using the Fourier basis for all three spatial directions.
 """
 from time import time
 import numpy as np
-import six
 import matplotlib.pyplot as plt
 from sympy import symbols, exp, lambdify
 from mpi4py import MPI
