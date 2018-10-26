@@ -1,3 +1,5 @@
-numpy
+numpy>=1.15
 scipy
 fftw
+pyfftw
+git+https://bitbucket.org/mpi4py/mpi4py-fft@master
