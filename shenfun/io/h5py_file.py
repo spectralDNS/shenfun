@@ -158,7 +158,7 @@ class HDF5File(BaseFile):
         ndim = self.T.ndim()
         group = "{}D".format(ndim)
         if self.T.rank() == 2:
-            group += '_Vector'
+            name += '/Vector'
         dset = "/".join((name, group, str(step)))
         u[:] = self.f[dset][tuple(s)]
 
