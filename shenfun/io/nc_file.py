@@ -1,5 +1,4 @@
 #pylint: disable=missing-docstring,consider-using-enumerate
-import warnings
 import copy
 import six
 import numpy as np
@@ -52,8 +51,7 @@ class NCFile(BaseFile):
         -------
         >>> from mpi4py import MPI
         >>> import numpy as np
-        >>> from shenfun import TensorProductSpace, Array, Basis
-        >>> from shenfun.utilities import NCFile
+        >>> from shenfun import TensorProductSpace, Array, Basis, NCFile
         >>> comm = MPI.COMM_WORLD
         >>> N = (24, 25, 26)
         >>> K0 = Basis(N[0], 'F', dtype='D')
@@ -109,7 +107,6 @@ class NCFile(BaseFile):
                     else:
                         assert len(field) == 2
                         u, sl = field
-                        ndims = sl.count(slice(None))
                         slname = self._get_slice_name(sl)
                         g = "_".join((group, slname))
                         self._write_slice_step(g, step, sl, u, **kw)

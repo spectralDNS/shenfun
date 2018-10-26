@@ -100,7 +100,6 @@ class ChebyshevBase(SpectralBase):
         if x is None:
             x = self.mesh(False, False)
         V = self.vandermonde(x)
-        assert self.N == V.shape[1]
         if k > 0:
             D = np.zeros((self.N, self.N))
             D[:-k, :] = n_cheb.chebder(np.eye(self.N), k)
@@ -113,11 +112,11 @@ class ChebyshevBase(SpectralBase):
         V = self.vandermonde(x)
         return self._composite_basis(V)
 
-    def evaluate_basis_derivative(self, x=None, i=0, k=0):
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
         if x is None:
             x = self.mesh(False, False)
         x = np.atleast_1d(x)
-        v = self.evaluate_basis(x, i=i)
+        v = self.evaluate_basis(x, i, output_array)
         if k > 0:
             D = np.zeros((self.N, self.N))
             D[:-k, :] = n_cheb.chebder(np.eye(self.N), k)

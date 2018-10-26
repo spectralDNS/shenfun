@@ -5,11 +5,12 @@ There are currently classes for 9 bases and corresponding function spaces
 
 All bases have expansions
 
-   :math:`u(x_j) = \sum_k \hat{u}_k \phi_k`
+   :math:`u(x) = \sum_{k\in\mathcal{I}}\hat{u}_{k} \phi_k(x)`
 
-where j = 0, 1, ..., N and k = indexset(basis), and the indexset differs from
+where :math:`\mathcal{I}` the index set of the basis, and the index set differs from
 base to base, see function space definitions below. :math:`\phi_k` is the k't
-basis function of the basis span(:math:`\phi_k`, k=indexset(basis)).
+basis function in the basis. It is also called a test function, whereas :math:`u(x)`
+often is called a trial function.
 
 Chebyshev:
     ChebyshevBasis:
@@ -34,7 +35,8 @@ Chebyshev:
         since :math:`\hat{u}_{N-1}` and :math:`\hat{u}_{N}` are determined by
         boundary conditions. Inhomogeneous boundary conditions are possible for
         the Poisson equation, because :math:`\phi_{N}` and :math:`\phi_{N-1}`
-        are in the kernel of the Poisson operator.
+        are in the kernel of the Poisson operator. For homogeneous boundary
+        conditions :math:`\phi_{N-1}` and :math:`\phi_{N}` are simply ignored.
 
     ShenNeumannBasis:
         basis function:
@@ -82,7 +84,8 @@ Legendre:
         since :math:`\hat{u}_{N-1}` and :math:`\hat{u}_{N}` are determined by
         boundary conditions. Inhomogeneous boundary conditions are possible for
         the Poisson equation, because :math:`\phi_{N}` and :math:`\phi_{N-1}`
-        are in the kernel of the Poisson operator.
+        are in the kernel of the Poisson operator. For homogeneous boundary
+        conditions :math:`\phi_{N-1}` and :math:`\phi_{N}` are simply ignored.
 
     ShenNeumannBasis:
         basis function:
@@ -205,7 +208,7 @@ class SpectralBase(object):
         Parameters
         ----------
             bcast : bool
-                Whether or not to broadcast to :meth:`.ndim_tensorspace` dims
+                Whether or not to broadcast to :attr:`.ndim_tensorspace` dims
 
         """
         s = self.slice()
@@ -384,6 +387,7 @@ class SpectralBase(object):
         Returns
         -------
             array
+                output_array
 
         """
         raise NotImplementedError
@@ -422,6 +426,7 @@ class SpectralBase(object):
         Returns
         -------
             array
+                output_array
 
         """
         raise NotImplementedError
@@ -664,36 +669,41 @@ class SpectralBase(object):
 
         .. math::
 
-            f(x_j) = \sum_k f_k T_k(x_j) \quad \text{ for all} \quad j = 0, 1, ..., N
+            u(x_j) = \sum_{k\in\mathcal{I}} \hat{u}_k T_k(x_j) \quad \text{ for all} \quad j = 0, 1, ..., N
 
         Parameters
         ----------
-            input_array : :math:`f_k`
-                Expansion coefficients
-            output_array : :math:`f(x_j)`
-                Function values on quadrature mesh
+            input_array : :math:`\hat{u}_k`
+                Expansion coefficients, or instance of :class:`.Function`
+            output_array : :math:`u(x_j)`
+                Function values on quadrature mesh, instance of :class:`.Array`
             fast_transform : bool, optional
                 Whether to use fast transforms (if implemented)
 
         """
         self.vandermonde_evaluate_expansion_all(input_array, output_array)
 
-    def eval(self, x, fk, output_array=None):
-        """Evaluate function at position `x`, given expansion coefficients `fk`
+    def eval(self, x, u, output_array=None):
+        """Evaluate :class:`.Function` ``u`` at position ``x``
 
         Parameters
         ----------
             x : float or array of floats
-            fk : array
-                Expansion coefficients
+            u : array
+                Expansion coefficients or instance of :class:`.Function`
             output_array : array, optional
                 Function values at points
+
+        Returns
+        -------
+            array
+                output_array
 
         """
         if output_array is None:
             output_array = np.zeros(x.shape, dtype=self.forward.input_array.dtype)
         x = self.map_reference_domain(x)
-        return self.vandermonde_evaluate_expansion(x, fk, output_array)
+        return self.vandermonde_evaluate_expansion(x, u, output_array)
 
     def map_reference_domain(self, x):
         """Return true point `x` mapped to reference domain"""
@@ -725,9 +735,9 @@ class SpectralBase(object):
         Parameters
         ----------
             forward_output : bool, optional
-            If True then return shape of spectral space (the outcome of a
-            forward transform). If False then return shape of physical space
-            (the input to a forward transform).
+                If True then return shape of spectral space (the outcome of a
+                forward transform). If False then return shape of physical space
+                (the input to a forward transform).
         """
         if forward_output:
             s = self.slice()
@@ -746,6 +756,7 @@ class SpectralBase(object):
 
     @property
     def ndim_tensorspace(self):
+        """Return ndim of :class:`.TensorProductSpace` if planned, else 1"""
         return self._ndim_tensor
 
     def __hash__(self):

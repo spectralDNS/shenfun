@@ -82,6 +82,7 @@ setup(name="shenfun",
                 "shenfun.fourier",
                 "shenfun.forms",
                 "shenfun.utilities"
+                "shenfun.io"
                ],
       package_dir={"shenfun": "shenfun"},
       ext_modules=ext,

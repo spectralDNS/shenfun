@@ -9,6 +9,7 @@ from . import legendre
 from . import fourier
 from . import matrixbase
 from .fourier import energy_fourier
+from .io import *
 from .matrixbase import *
 from .forms import *
 from .tensorproductspace import *
