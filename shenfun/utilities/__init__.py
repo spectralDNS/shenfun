@@ -5,12 +5,9 @@ import types
 from collections import MutableMapping
 import numpy as np
 from scipy.fftpack import dct
-from .h5py_file import HDF5File
-from .nc_file import NCFile
-from .shenfun_file import ShenfunFile
 
-__all__ = ['inheritdocstrings', 'clenshaw_curtis1D', 'CachedArrayDict',
-           'HDF5File', 'NCFile', 'ShenfunFile']
+
+__all__ = ['inheritdocstrings', 'clenshaw_curtis1D', 'CachedArrayDict']
 
 def inheritdocstrings(cls):
     """Method used for inheriting docstrings from parent class
