@@ -120,7 +120,7 @@ class HDF5File(BaseFile):
                     else:  # not as_scalar
                         if isinstance(field, np.ndarray):
                             if len(self.T.shape()) == len(field.shape):  # A regular vector array
-                                g = "/".join((group, "{}D".format(self.T.ndim())+"_Vector"))
+                                g = "/".join((group, "Vector", "{}D".format(self.T.ndim())))
                             elif len(self.T.shape()) == len(field.shape)+1: # A scalar in the vector space
                                 g = "/".join((group, "{}D".format(self.T.ndim())))
                             self._write_group(g, field, step, **kw)
@@ -130,7 +130,7 @@ class HDF5File(BaseFile):
                             ndims = sl[1:].count(slice(None))
                             slname = self._get_slice_name(sl[1:])
                             if sl[0] == slice(None):
-                                g = "/".join((group, "{}D".format(ndims)+"_Vector", slname))
+                                g = "/".join((group, "Vector", "{}D".format(ndims), slname))
                                 self._write_slice_step(g, step, sl, u, **kw)
                             else:
                                 g = group + str(sl[0])

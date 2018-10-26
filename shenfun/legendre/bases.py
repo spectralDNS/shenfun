@@ -148,11 +148,11 @@ class Basis(LegendreBase):
         LegendreBase.__init__(self, N, quad, domain=domain)
         self.plan(N, 0, np.float, {})
 
-    def eval(self, x, fk, output_array=None):
+    def eval(self, x, u, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = self.map_reference_domain(x)
-        output_array[:] = leg.legval(x, fk)
+        output_array[:] = leg.legval(x, u)
         return output_array
 
 
@@ -237,16 +237,16 @@ class ShenDirichletBasis(LegendreBase):
         output_array[:] = eval_legendre(i, x) - eval_legendre(i+2, x)
         return output_array
 
-    def eval(self, x, fk, output_array=None):
+    def eval(self, x, u, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = self.map_reference_domain(x)
-        w_hat = work[(fk, 0)]
-        self.set_factor_array(fk)
-        output_array[:] = leg.legval(x, fk[:-2]*self._factor)
-        w_hat[2:] = fk[:-2]*self._factor
+        w_hat = work[(u, 0)]
+        self.set_factor_array(u)
+        output_array[:] = leg.legval(x, u[:-2]*self._factor)
+        w_hat[2:] = u[:-2]*self._factor
         output_array -= leg.legval(x, w_hat)
-        output_array += 0.5*(fk[-1]*(1-x)+fk[-2]*(1+x))
+        output_array += 0.5*(u[-1]*(1-x)+u[-2]*(1+x))
         return output_array
 
     def plan(self, shape, axis, dtype, options):
@@ -338,14 +338,14 @@ class ShenNeumannBasis(LegendreBase):
     def slice(self):
         return slice(0, self.N-2)
 
-    def eval(self, x, fk, output_array=None):
+    def eval(self, x, u, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = self.map_reference_domain(x)
-        w_hat = work[(fk, 0)]
-        self.set_factor_array(fk)
-        output_array[:] = leg.legval(x, fk[:-2])
-        w_hat[2:] = self._factor*fk[:-2]
+        w_hat = work[(u, 0)]
+        self.set_factor_array(u)
+        output_array[:] = leg.legval(x, u[:-2])
+        w_hat[2:] = self._factor*u[:-2]
         output_array -= leg.legval(x, w_hat)
         return output_array
 
@@ -442,16 +442,16 @@ class ShenBiharmonicBasis(LegendreBase):
     def slice(self):
         return slice(0, self.N-4)
 
-    def eval(self, x, fk, output_array=None):
+    def eval(self, x, u, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = self.map_reference_domain(x)
-        w_hat = work[(fk, 0)]
-        self.set_factor_arrays(fk)
-        output_array[:] = leg.legval(x, fk[:-4])
-        w_hat[2:-2] = self._factor1*fk[:-4]
+        w_hat = work[(u, 0)]
+        self.set_factor_arrays(u)
+        output_array[:] = leg.legval(x, u[:-4])
+        w_hat[2:-2] = self._factor1*u[:-4]
         output_array += leg.legval(x, w_hat[:-2])
-        w_hat[4:] = self._factor2*fk[:-4]
+        w_hat[4:] = self._factor2*u[:-4]
         w_hat[:4] = 0
         output_array += leg.legval(x, w_hat)
         return output_array
@@ -516,15 +516,15 @@ class SecondNeumannBasis(LegendreBase): # pragma: no cover
             k = self.wavenumbers().astype(np.float)
             self._factor = -(k+1)*(k+2)*(2*k+3)/((k+3)*(k+4)*(2*k+7))
 
-    #def evaluate_expansion_all(self, fk, output_array):
-        #w_hat = work[(fk, 0)]
-        #self.set_factor_array(fk)
+    #def evaluate_expansion_all(self, u, output_array):
+        #w_hat = work[(u, 0)]
+        #self.set_factor_array(u)
         #s0 = self.sl(slice(0, -4))
         #s1 = self.sl(slice(2, -2))
         #s2 = self.sl(slice(4, None))
-        #w_hat[s0] = fk[s0]
-        #w_hat[s1] += (self._factor-1)*fk[s0]
-        #w_hat[s2] -= self._factor*fk[s0]
+        #w_hat[s0] = u[s0]
+        #w_hat[s1] += (self._factor-1)*u[s0]
+        #w_hat[s2] -= self._factor*u[s0]
         #output_array = self.LT.backward(w_hat)
         #return output_array
 

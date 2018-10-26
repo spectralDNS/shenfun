@@ -37,7 +37,7 @@ while tstep < nsteps:
                                (U, [2, 4, slice(None), slice(None)]),
                                (U, [slice(None), 0, slice(None), slice(None)]),
                                (U, [slice(None), 5, 5, slice(None)])],
-                         'u': [u]}, as_scalar=True) # A scalar in the vector component space T
+                         'u': [u]}, as_scalar=False) # A scalar in the vector component space T
     tstep += 1
 
 file_s.close()
