@@ -33,7 +33,7 @@ class build_ext_subclass(build_ext):
         build_ext.build_extensions(self)
 
 args = ""
-if not "sdist" in sys.argv:
+if "sdist" not in sys.argv:
     if "build_ext" in sys.argv:
         args = "build_ext --inplace"
 
@@ -49,7 +49,7 @@ if not "sdist" in sys.argv:
     for s in ("Cheb", "convolve"):
         ext += cythonize(Extension("shenfun.optimization.{0}".format(s),
                                    libraries=['m'],
-                                   sources = [os.path.join(cdir, '{0}.pyx'.format(s))]))
+                                   sources=[os.path.join(cdir, '{0}.pyx'.format(s))]))
 
     [e.include_dirs.extend([get_include()]) for e in ext]
     cmdclass = {'build_ext': build_ext_subclass}
@@ -81,7 +81,7 @@ setup(name="shenfun",
                 "shenfun.chebyshev",
                 "shenfun.fourier",
                 "shenfun.forms",
-                "shenfun.utilities"
+                "shenfun.utilities",
                 "shenfun.io"
                ],
       package_dir={"shenfun": "shenfun"},
