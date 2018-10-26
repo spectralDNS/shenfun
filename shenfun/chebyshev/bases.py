@@ -307,11 +307,11 @@ class Basis(ChebyshevBase):
         elif self.quad == "GL":
             out *= (np.pi/(2*(self.N-1)))
 
-    def eval(self, x, fk, output_array=None):
+    def eval(self, x, u, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = self.map_reference_domain(x)
-        output_array[:] = n_cheb.chebval(x, fk)
+        output_array[:] = n_cheb.chebval(x, u)
         return output_array
 
 
@@ -409,15 +409,15 @@ class ShenDirichletBasis(ChebyshevBase):
     def slice(self):
         return slice(0, self.N-2)
 
-    def eval(self, x, fk, output_array=None):
+    def eval(self, x, u, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = self.map_reference_domain(x)
-        w_hat = work[(fk, 0)]
-        output_array[:] = n_cheb.chebval(x, fk[:-2])
-        w_hat[2:] = fk[:-2]
+        w_hat = work[(u, 0)]
+        output_array[:] = n_cheb.chebval(x, u[:-2])
+        w_hat[2:] = u[:-2]
         output_array -= n_cheb.chebval(x, w_hat)
-        output_array += 0.5*(fk[-1]*(1-x)+fk[-2]*(1+x))
+        output_array += 0.5*(u[-1]*(1-x)+u[-2]*(1+x))
         return output_array
 
     def plan(self, shape, axis, dtype, options):
@@ -537,14 +537,14 @@ class ShenNeumannBasis(ChebyshevBase):
     def slice(self):
         return slice(0, self.N-2)
 
-    def eval(self, x, fk, output_array=None):
+    def eval(self, x, u, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = self.map_reference_domain(x)
-        w_hat = work[(fk, 0)]
-        self.set_factor_array(fk)
-        output_array[:] = n_cheb.chebval(x, fk[:-2])
-        w_hat[2:] = self._factor*fk[:-2]
+        w_hat = work[(u, 0)]
+        self.set_factor_array(u)
+        output_array[:] = n_cheb.chebval(x, u[:-2])
+        w_hat[2:] = self._factor*u[:-2]
         output_array -= n_cheb.chebval(x, w_hat)
         return output_array
 
@@ -677,16 +677,16 @@ class ShenBiharmonicBasis(ChebyshevBase):
     def slice(self):
         return slice(0, self.N-4)
 
-    def eval(self, x, fk, output_array=None):
+    def eval(self, x, u, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = self.map_reference_domain(x)
-        w_hat = work[(fk, 0)]
-        self.set_factor_arrays(fk)
-        output_array[:] = n_cheb.chebval(x, fk[:-4])
-        w_hat[2:-2] = self._factor1*fk[:-4]
+        w_hat = work[(u, 0)]
+        self.set_factor_arrays(u)
+        output_array[:] = n_cheb.chebval(x, u[:-4])
+        w_hat[2:-2] = self._factor1*u[:-4]
         output_array += n_cheb.chebval(x, w_hat[:-2])
-        w_hat[4:] = self._factor2*fk[:-4]
+        w_hat[4:] = self._factor2*u[:-4]
         w_hat[:4] = 0
         output_array += n_cheb.chebval(x, w_hat)
         return output_array

@@ -123,7 +123,6 @@ class NCFile(BaseFile):
                         else:
                             assert len(field) == 2
                             u, sl = field
-                            ndims = sl[1:].count(slice(None))
                             if sl[0] == slice(None):
                                 for k in range(u.shape[0]):
                                     g = group + str(k)

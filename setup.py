@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 
 import os, sys
-from distutils.core import setup, Extension
 import subprocess
+from setuptools import setup, Extension
+from setuptools.command.build_ext import build_ext
 from numpy import get_include
-from Cython.Distutils import build_ext
-from Cython.Build import cythonize
-from Cython.Compiler.Options import get_directive_defaults
 
 # Version number
 major = 1
@@ -32,30 +30,20 @@ class build_ext_subclass(build_ext):
             e.extra_compile_args += extra_compile_args
         build_ext.build_extensions(self)
 
-args = ""
-if "sdist" not in sys.argv:
-    if "build_ext" in sys.argv:
-        args = "build_ext --inplace"
-
-    ext = []
-    for s in ("Matvec", "la", "evaluate"):
-        ext += cythonize(Extension("shenfun.optimization.{0}".format(s),
-                                   libraries=['m'],
-                                   sources=[os.path.join(cdir, '{0}.pyx'.format(s))],
-                                   language="c++"))  # , define_macros=define_macros
-    [e.extra_link_args.extend(["-std=c++11"]) for e in ext]
-    #[e.extra_link_args.extend(["-std=c++11", "-fopenmp"]) for e in ext]
-
-    for s in ("Cheb", "convolve"):
-        ext += cythonize(Extension("shenfun.optimization.{0}".format(s),
-                                   libraries=['m'],
-                                   sources=[os.path.join(cdir, '{0}.pyx'.format(s))]))
-
-    [e.include_dirs.extend([get_include()]) for e in ext]
-    cmdclass = {'build_ext': build_ext_subclass}
-
-else:
-    pass
+ext = []
+for s in ("Matvec", "la", "evaluate"):
+    ext.append(Extension("shenfun.optimization.{0}".format(s),
+                         libraries=['m'],
+                         sources=[os.path.join(cdir, '{0}.pyx'.format(s))],
+                         language="c++"))  # , define_macros=define_macros
+[e.extra_link_args.extend(["-std=c++11"]) for e in ext]
+#[e.extra_link_args.extend(["-std=c++11", "-fopenmp"]) for e in ext]
+for s in ("Cheb", "convolve"):
+    ext.append(Extension("shenfun.optimization.{0}".format(s),
+                         libraries=['m'],
+                         sources=[os.path.join(cdir, '{0}.pyx'.format(s))]))
+[e.include_dirs.extend([get_include()]) for e in ext]
+cmdclass = {'build_ext': build_ext_subclass}
 
 setup(name="shenfun",
       version="%d.%d" % (major, minor),
@@ -70,7 +58,7 @@ setup(name="shenfun",
           'Intended Audience :: Developers',
           'Intended Audience :: Science/Research',
           'Intended Audience :: Education',
-          'Programming Language :: Python :: 2.7',
+          'Programming Language :: Python',
           'License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)',
           'Topic :: Scientific/Engineering :: Mathematics',
           'Topic :: Software Development :: Libraries :: Python Modules',
@@ -85,6 +73,7 @@ setup(name="shenfun",
                 "shenfun.io"
                ],
       package_dir={"shenfun": "shenfun"},
+      setup_requires=["numpy>=1.11", "cython>=0.25", "setuptools>=18.0"],
       ext_modules=ext,
       cmdclass=cmdclass
      )
