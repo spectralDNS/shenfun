@@ -16,5 +16,6 @@ publish: tag pip
 
 clean:
 	git clean shenfun -fx
+	git clean tests -fx
 	cd docs && make clean && cd ..
 	@rm -rf *.egg-info/ build/ dist/ .eggs/
