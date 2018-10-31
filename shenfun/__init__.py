@@ -11,7 +11,7 @@ parallelized with MPI through the
 [*mpi4py-fft*](https://bitbucket.org/mpi4py/mpi4py-fft) package.
 
 """
-#pylint: disable=wildcard-import
+#pylint: disable=wildcard-import,no-name-in-module
 
 import numpy as np
 from . import chebyshev

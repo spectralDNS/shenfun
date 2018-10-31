@@ -12,8 +12,6 @@ dependencies:
   - sympy
   - python
   - scipy
-  - pyfftw
   - mpi4py_fft
   - pip:
     - sphinxcontrib-bibtex
-
