@@ -78,7 +78,6 @@ def inner(expr0, expr1, output_array=None):
 
     >>> from shenfun import Basis
     >>> from shenfun import TestFunction, TrialFunction
-    >>> import six
     >>> SD = Basis(6, 'Chebyshev', bc=(0, 0))
     >>> u = TrialFunction(SD)
     >>> v = TestFunction(SD)
@@ -86,7 +85,7 @@ def inner(expr0, expr1, output_array=None):
     >>> d = {-2: np.array([-np.pi/2]),
     ...       0: np.array([ 1.5*np.pi, np.pi, np.pi, np.pi]),
     ...       2: np.array([-np.pi/2])}
-    >>> [np.all(abs(B[k]-v) < 1e-7) for k, v in six.iteritems(d)]
+    >>> [np.all(abs(B[k]-v) < 1e-7) for k, v in d.items()]
     [True, True, True]
 
     """

@@ -3,7 +3,6 @@ from itertools import product
 import numpy as np
 from scipy.sparse.linalg import spsolve
 from mpi4py import MPI
-import six
 import pytest
 import shenfun
 from shenfun.chebyshev import matrices as cmatrices
@@ -41,8 +40,8 @@ cbases2 = list(product(cBasis, cBasis))
 lbases2 = list(product(lBasis, lBasis))
 bases2 = cbases2+lbases2
 
-cmats_and_quads = [list(k[0])+[k[1]] for k in product([(k, v) for k, v in six.iteritems(cmatrices.mat)], cquads)]
-lmats_and_quads = [list(k[0])+[k[1]] for k in product([(k, v) for k, v in six.iteritems(lmatrices.mat)], lquads)]
+cmats_and_quads = [list(k[0])+[k[1]] for k in product([(k, v) for k, v in cmatrices.mat.items()], cquads)]
+lmats_and_quads = [list(k[0])+[k[1]] for k in product([(k, v) for k, v in lmatrices.mat.items()], lquads)]
 mats_and_quads = cmats_and_quads+lmats_and_quads
 
 #cmats_and_quads_ids = ['-'.join(i) for i in product([v.__name__ for v in cmatrices.mat.values()], cquads)]
@@ -214,7 +213,7 @@ def test_add(key, mat, quad):
 
     mat = shenfun.SparseMatrix(copy(dict(m)), m.shape)
     mc = m + mat
-    for key, val in six.iteritems(mc):
+    for key, val in mc.items():
         assert np.allclose(val, m[key]*2)
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)

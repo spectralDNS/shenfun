@@ -1,12 +1,12 @@
 package:
   name: shenfun
-  version: "1.1.0"
+  version: "{{ GIT_VERSION_TAG }}"
 
 source:
   git_url: ../../
 
 build:
-  number: 9
+  number: 0
 
 requirements:
   build:
@@ -22,10 +22,9 @@ requirements:
     - numpy
     - scipy
     - cython
-    - pyfftw
+    - fftw
     - mpi4py
     - mpi4py_fft
-    - six
     - sympy
     - nomkl
     - h5py-parallel
