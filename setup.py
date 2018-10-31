@@ -30,15 +30,15 @@ def get_extensions():
     ext = []
     for s in ("Matvec", "la", "evaluate"):
         ext.append(Extension("shenfun.optimization.{0}".format(s),
-                            libraries=['m'],
-                            sources=[os.path.join(cdir, '{0}.pyx'.format(s))],
-                            language="c++"))  # , define_macros=define_macros
+                             libraries=['m'],
+                             sources=[os.path.join(cdir, '{0}.pyx'.format(s))],
+                             language="c++"))  # , define_macros=define_macros
     [e.extra_link_args.extend(["-std=c++11"]) for e in ext]
     #[e.extra_link_args.extend(["-std=c++11", "-fopenmp"]) for e in ext]
     for s in ("Cheb", "convolve"):
         ext.append(Extension("shenfun.optimization.{0}".format(s),
-                            libraries=['m'],
-                            sources=[os.path.join(cdir, '{0}.pyx'.format(s))]))
+                             libraries=['m'],
+                             sources=[os.path.join(cdir, '{0}.pyx'.format(s))]))
     [e.include_dirs.extend([get_include()]) for e in ext]
     return ext
 

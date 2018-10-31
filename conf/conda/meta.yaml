@@ -16,6 +16,7 @@ requirements:
     - pip
     - fftw
     - nomkl
+    - scipy
 
   run:
     - python
@@ -27,7 +28,6 @@ requirements:
     - sympy
     - nomkl
     - h5py-parallel
-    - libnetcdf-parallel
     - netcdf4-parallel
 
 test:
