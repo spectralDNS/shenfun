@@ -13,6 +13,7 @@ requirements:
     - python
     - cython
     - numpy
+    - mpi4py
     - pip
     - fftw
     - nomkl
