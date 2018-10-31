@@ -7,7 +7,6 @@ from numbers import Number
 from scipy.sparse import diags as sp_diags
 from scipy.sparse.linalg import spsolve
 import numpy as np
-import six
 from .utilities import inheritdocstrings
 
 __all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix', 'check_sanity', 'get_dense_matrix']
@@ -89,7 +88,7 @@ class SparseMatrix(dict):
             c = np.moveaxis(c, axis, 0)
 
         if format == 'python':
-            for key, val in six.iteritems(self):
+            for key, val in self.items():
                 if np.ndim(val) > 0: # broadcasting
                     val = val[(slice(None), ) + (np.newaxis,)*(v.ndim-1)]
                 if key < 0:
@@ -191,7 +190,7 @@ class SparseMatrix(dict):
         else:
             f = SparseMatrix(deepcopy(dict(self)), self.shape)
             assert isinstance(d, dict)
-            for key, val in six.iteritems(d):
+            for key, val in d.items():
                 if key in f:
                     # Check if symmetric and make copy if necessary
                     if -key in f:
@@ -210,7 +209,7 @@ class SparseMatrix(dict):
         if self.__hash__() == d.__hash__():
             self.scale += d.scale
         else:
-            for key, val in six.iteritems(d):
+            for key, val in d.items():
                 if key in self:
                     # Check if symmetric and make copy if necessary
                     if -key in self:
@@ -231,7 +230,7 @@ class SparseMatrix(dict):
                              self.scale-d.scale)
         else:
             f = SparseMatrix(deepcopy(dict(self)), self.shape, 1.0)
-            for key, val in six.iteritems(d):
+            for key, val in d.items():
                 if key in f:
                     # Check if symmetric and make copy if necessary
                     if -key in f:
@@ -250,7 +249,7 @@ class SparseMatrix(dict):
         if self.__hash__() == d.__hash__():
             self.scale -= d.scale
         else:
-            for key, val in six.iteritems(d):
+            for key, val in d.items():
                 if key in self:
                     # Check if symmetric and make copy if necessary
                     if -key in self:
@@ -588,7 +587,7 @@ def check_sanity(A, test, trial):
     D = get_dense_matrix(test, trial)[:N, :M]
     Dsp = extract_diagonal_matrix(D)
     Dsp *= A.scale
-    for key, val in six.iteritems(A):
+    for key, val in A.items():
         assert np.allclose(val, Dsp[key])
 
 

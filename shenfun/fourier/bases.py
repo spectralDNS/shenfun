@@ -2,7 +2,6 @@
 Module for defining bases in the Fourier family
 """
 import numpy as np
-import pyfftw
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, Transform
 from shenfun.utilities import inheritdocstrings
@@ -55,7 +54,7 @@ class FourierBase(SpectralBase):
 
     The interpolator form is used for computing odd derivatives. Otherwise,
     it makes no difference and therefore :eq:`u` is used in transforms, since
-    this is the form expected by pyfftw.
+    this is the form expected by fftw.
 
     The inner product is defined as
 
@@ -217,7 +216,7 @@ class FourierBase(SpectralBase):
                 threads=1,
             )
             opts.update(options)
-            U = pyfftw.empty_aligned(shape, dtype=dtype)
+            U = fftw.aligned(shape, dtype=dtype)
             xfftn_fwd = plan_fwd(U, s=s, axes=axis, **opts)
             V = xfftn_fwd.output_array
             xfftn_bck = plan_bck(V, s=s, axes=axis, **opts)
@@ -239,7 +238,7 @@ class FourierBase(SpectralBase):
                      fftw.flag_dict[opts['overwrite_input']])
             threads = opts['threads']
 
-            U = pyfftw.empty_aligned(shape, dtype=dtype)
+            U = fftw.aligned(shape, dtype=dtype)
             xfftn_fwd = plan_fwd(U, s=s, axes=axis, threads=threads, flags=flags)
             V = xfftn_fwd.output_array
 
@@ -294,7 +293,7 @@ class R2CBasis(FourierBase):
         shape = list(shape)
         shape[self.axis] = int(shape[self.axis] / self.padding_factor)
         shape[self.axis] = shape[self.axis]//2 + 1
-        return pyfftw.empty_aligned(shape, dtype=dtype)
+        return fftw.aligned(shape, dtype=dtype)
 
     def slice(self):
         return slice(0, self.N//2+1)

@@ -1,6 +1,5 @@
 #pylint: disable=missing-docstring,consider-using-enumerate
 import copy
-import six
 import numpy as np
 from mpi4py_fft.utilities import NCFile as BaseFile
 
@@ -95,7 +94,7 @@ class NCFile(BaseFile):
         self.nc_t[it] = step
         #write_vector(self, it, fields, **kw)
         step = it
-        for group, list_of_fields in six.iteritems(fields):
+        for group, list_of_fields in fields.items():
             assert isinstance(list_of_fields, (tuple, list))
             assert isinstance(group, str)
 

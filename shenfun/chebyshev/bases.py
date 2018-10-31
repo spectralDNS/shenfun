@@ -5,7 +5,6 @@ import functools
 import numpy as np
 from numpy.polynomial import chebyshev as n_cheb
 from scipy.special import eval_chebyt
-import pyfftw
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, FuncWrap
 from shenfun.optimization import Cheb
@@ -154,7 +153,7 @@ class ChebyshevBase(SpectralBase):
             )
             opts.update(options)
 
-            U = pyfftw.empty_aligned(shape, dtype=np.float)
+            U = fftw.aligned(shape, dtype=np.float)
             xfftn_fwd = plan_fwd(U, axis=axis, **opts)
             V = xfftn_fwd.output_array
             xfftn_bck = plan_bck(V, axis=axis, **opts)
@@ -174,7 +173,7 @@ class ChebyshevBase(SpectralBase):
                      fftw.flag_dict[opts['overwrite_input']])
             threads = opts['threads']
 
-            U = pyfftw.empty_aligned(shape, dtype=np.float)
+            U = fftw.aligned(shape, dtype=np.float)
 
             xfftn_fwd = plan_fwd(U, axes=(axis,), threads=threads, flags=flags)
             V = xfftn_fwd.output_array
@@ -184,8 +183,8 @@ class ChebyshevBase(SpectralBase):
 
         if np.dtype(dtype) is np.dtype('complex'):
             # dct only works on real data, so need to wrap it
-            U = pyfftw.empty_aligned(shape, dtype=np.complex)
-            V = pyfftw.empty_aligned(shape, dtype=np.complex)
+            U = fftw.aligned(shape, dtype=np.complex)
+            V = fftw.aligned(shape, dtype=np.complex)
             U.fill(0)
             V.fill(0)
             xfftn_fwd = DCTWrap(xfftn_fwd, U, V)

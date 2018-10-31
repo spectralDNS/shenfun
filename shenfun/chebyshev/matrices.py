@@ -41,8 +41,7 @@ and an instance of the matrix can be created as
 >>> d = {-2: np.array([-np.pi/2]),
 ...       0: np.array([ 1.5*np.pi, np.pi, np.pi, np.pi, np.pi, np.pi, np.pi, np.pi]),
 ...       2: np.array([-np.pi/2])}
->>> import six
->>> [np.all(BM[k] == v) for k, v in six.iteritems(d)]
+>>> [np.all(BM[k] == v) for k, v in d.items()]
 [True, True, True]
 
 However, this way of creating matrices is not reccommended use. It is far
@@ -53,7 +52,7 @@ generate the matrix as an inner product:
 >>> u = TrialFunction(B0)
 >>> v = TestFunction(B0)
 >>> BM = inner(u, v)
->>> [np.all(BM[k] == v) for k, v in six.iteritems(d)]
+>>> [np.all(BM[k] == v) for k, v in d.items()]
 [True, True, True]
 
 To see that this is in fact the BDDmat:

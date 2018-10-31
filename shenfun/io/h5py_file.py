@@ -1,5 +1,4 @@
 #pylint: disable=missing-docstring, consider-using-enumerate
-import six
 import numpy as np
 from mpi4py_fft.utilities import HDF5File as BaseFile
 
@@ -74,7 +73,7 @@ class HDF5File(BaseFile):
         of the *global* arrays.
 
         """
-        for group, list_of_fields in six.iteritems(fields):
+        for group, list_of_fields in fields.items():
             assert isinstance(list_of_fields, (tuple, list))
             assert isinstance(group, str)
 

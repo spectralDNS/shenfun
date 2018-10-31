@@ -134,7 +134,6 @@ for computing the (weighted) scalar product.
 
 import importlib
 import numpy as np
-import pyfftw
 from mpi4py_fft import fftw
 from .utilities import CachedArrayDict
 work = CachedArrayDict()
@@ -606,7 +605,7 @@ class SpectralBase(object):
             opts.update(options)
 
             n = shape[axis]
-            U = pyfftw.empty_aligned(shape, dtype=dtype)
+            U = fftw.aligned(shape, dtype=dtype)
             xfftn_fwd = plan_fwd(U, n=n, axis=axis, **opts)
             V = xfftn_fwd.output_array
             xfftn_bck = plan_bck(V, n=n, axis=axis, **opts)
@@ -629,7 +628,7 @@ class SpectralBase(object):
             threads = opts['threads']
 
             n = (shape[axis],)
-            U = pyfftw.empty_aligned(shape, dtype=dtype)
+            U = fftw.aligned(shape, dtype=dtype)
             xfftn_fwd = plan_fwd(U, n, (axis,), threads=threads, flags=flags)
             V = xfftn_fwd.output_array
 
@@ -658,7 +657,7 @@ class SpectralBase(object):
     def _get_truncarray(self, shape, dtype):
         shape = list(shape)
         shape[self.axis] = int(np.round(shape[self.axis] / self.padding_factor))
-        return pyfftw.empty_aligned(shape, dtype=dtype)
+        return fftw.aligned(shape, dtype=dtype)
 
     def get_normalization(self):
         return self._M
@@ -855,13 +854,12 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
 
     >>> from shenfun.spectralbase import inner_product
     >>> from shenfun.chebyshev.bases import ShenDirichletBasis
-    >>> import six
     >>> SD = ShenDirichletBasis(6)
     >>> B = inner_product((SD, 0), (SD, 0))
     >>> d = {-2: np.array([-np.pi/2]),
     ...       0: np.array([1.5*np.pi, np.pi, np.pi, np.pi]),
     ...       2: np.array([-np.pi/2])}
-    >>> [np.all(B[k] == v) for k, v in six.iteritems(d)]
+    >>> [np.all(B[k] == v) for k, v in d.items()]
     [True, True, True]
     """
     from .fourier import FourierBase, R2CBasis

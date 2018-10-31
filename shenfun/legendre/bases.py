@@ -6,7 +6,7 @@ import functools
 import numpy as np
 from numpy.polynomial import legendre as leg
 from scipy.special import eval_legendre
-import pyfftw
+from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform
 from shenfun.utilities import inheritdocstrings
 from .lobatto import legendre_lobatto_nodes_and_weights
@@ -116,8 +116,8 @@ class LegendreBase(SpectralBase):
                 # Already planned
                 return
 
-        U = pyfftw.empty_aligned(shape, dtype=dtype)
-        V = pyfftw.empty_aligned(shape, dtype=dtype)
+        U = fftw.aligned(shape, dtype=dtype)
+        V = fftw.aligned(shape, dtype=dtype)
         U.fill(0)
         V.fill(0)
         self._ndim_tensor = U.ndim
