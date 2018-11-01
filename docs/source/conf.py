@@ -14,8 +14,8 @@
 #
 import os
 import sys
+import subprocess
 sys.path.insert(0, os.path.abspath('.'))
-
 
 # -- Project information -----------------------------------------------------
 
@@ -23,11 +23,12 @@ project = u'shenfun'
 copyright = u'2018, Mikael Mortensen'
 author = u'Mikael Mortensen'
 
-# The short X.Y version
-version = u''
-# The full version, including alpha/beta/rc tags
-release = u'1.1.0'
+p = subprocess.Popen(["git describe --tags | cut -d'-' -f 1"], stdout=subprocess.PIPE, shell=True)
 
+# The short X.Y version
+version = p.communicate()[0].rstrip()
+# The full version, including alpha/beta/rc tags
+release = version
 
 # -- General configuration ---------------------------------------------------
 
