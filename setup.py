@@ -4,6 +4,7 @@ import os
 import sys
 import re
 import subprocess
+import tempfile
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 from numpy import get_include
@@ -11,19 +12,32 @@ from numpy import get_include
 cwd = os.path.abspath(os.path.dirname(__file__))
 cdir = os.path.join(cwd, "shenfun", "optimization")
 
+def has_flag(compiler, flagname):
+    """Return a boolean indicating whether a flag name is supported on
+    the specified compiler.
+    """
+    devnull = open(os.devnull, "w")
+    p = subprocess.Popen([compiler.compiler[0], '-E', '-'] + [flagname],
+                         stdin=subprocess.PIPE, stdout=devnull, stderr=devnull)
+    p.communicate("")
+    return True if p.returncode == 0 else False
+
 class build_ext_subclass(build_ext):
     def build_extensions(self):
-        #extra_compile_args = ['-w', '-Ofast', '-fopenmp', '-march=native']
-        extra_compile_args = ['-w', '-Ofast', '-march=native']
-        cmd = "echo | %s -E - %s &>/dev/null" % (
-            self.compiler.compiler[0], " ".join(extra_compile_args))
-        try:
-            subprocess.check_call(cmd, shell=True)
-        except:
-            extra_compile_args = ['-w', '-O3', '-ffast-math', '-march=native']
-            #extra_compile_args = ['-w', '-O3', '-ffast-math', '-fopenmp', '-march=native']
+        if os.environ.get("READTHEDOCS", None) == "True":
+            for ext in self.extensions:
+                ext.extra_compile_args = ["-O0"]
+            build_ext.build_extensions(self)
+            return
+
+        extra_compile_args = ['-g0']
+        for c in ['-w', '-Ofast', '-ffast-math', '-march=native']:
+            if has_flag(self.compiler, c):
+                extra_compile_args.append(c)
+
         for e in self.extensions:
             e.extra_compile_args += extra_compile_args
+            e.include_dirs.extend([get_include()])
         build_ext.build_extensions(self)
 
 def get_extensions():
@@ -39,7 +53,7 @@ def get_extensions():
         ext.append(Extension("shenfun.optimization.{0}".format(s),
                              libraries=['m'],
                              sources=[os.path.join(cdir, '{0}.pyx'.format(s))]))
-    [e.include_dirs.extend([get_include()]) for e in ext]
+
     return ext
 
 def version():

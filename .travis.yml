@@ -27,8 +27,8 @@ before_install:
 install:
     - |
       MINICONDA_URL="https://repo.continuum.io/miniconda"
-      #MINICONDA_FILE="Miniconda3-latest-MacOSX-x86_64.sh"
-      MINICONDA_FILE="Miniconda3-4.3.31-MacOSX-x86_64.sh"
+      MINICONDA_FILE="Miniconda3-latest-MacOSX-x86_64.sh"
+      #MINICONDA_FILE="Miniconda3-4.3.31-MacOSX-x86_64.sh"
       curl -L -O "${MINICONDA_URL}/${MINICONDA_FILE}"
       bash $MINICONDA_FILE -b
       source /Users/travis/miniconda3/bin/activate root
