@@ -8,9 +8,11 @@ dependencies:
   - cython
   - fftw
   - numpy
+  - nomkl
   - sympy
   - python
   - scipy
+  - mpi4py
   - pip:
     - mpi4py-fft
     - sphinxcontrib-bibtex
