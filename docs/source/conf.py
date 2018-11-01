@@ -26,7 +26,7 @@ author = u'Mikael Mortensen'
 p = subprocess.Popen(["git describe --tags | cut -d'-' -f 1"], stdout=subprocess.PIPE, shell=True)
 
 # The short X.Y version
-version = p.communicate()[0].rstrip()
+version = p.communicate()[0].rstrip().decode('utf-8')
 # The full version, including alpha/beta/rc tags
 release = version
 
