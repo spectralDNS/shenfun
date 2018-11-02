@@ -13,6 +13,9 @@ parallelized with MPI through the
 """
 #pylint: disable=wildcard-import,no-name-in-module
 
+__version__ = '1.1.0'
+__author__ = 'Mikael Mortensen'
+
 import numpy as np
 from . import chebyshev
 from . import legendre
@@ -27,6 +30,3 @@ from .utilities import *
 from .utilities.lagrangian_particles import *
 from .utilities.integrators import *
 from .optimization import Cheb, la, Matvec, convolve, evaluate
-
-__version__ = '1.1.0'
-__author__ = 'Mikael Mortensen'
