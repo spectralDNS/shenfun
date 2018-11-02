@@ -92,7 +92,6 @@ class NCFile(BaseFile):
         """
         it = self.nc_t.size
         self.nc_t[it] = step
-        #write_vector(self, it, fields, **kw)
         step = it
         for group, list_of_fields in fields.items():
             assert isinstance(list_of_fields, (tuple, list))
@@ -140,7 +139,6 @@ class NCFile(BaseFile):
                         else:
                             assert len(field) == 2
                             u, sl = field
-                            ndims = sl[1:].count(slice(None))
                             slname = self._get_slice_name(sl[1:])
                             if sl[0] == slice(None):
                                 g = "_".join((group, slname))

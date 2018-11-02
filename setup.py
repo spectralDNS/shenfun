@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 
 import os
-import sys
 import re
 import subprocess
-import tempfile
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 from numpy import get_include
@@ -18,7 +16,8 @@ def has_flag(compiler, flagname):
     """
     devnull = open(os.devnull, "w")
     p = subprocess.Popen([compiler.compiler[0], '-E', '-'] + [flagname],
-                         stdin=subprocess.PIPE, stdout=devnull, stderr=devnull)
+                         stdin=subprocess.PIPE, stdout=devnull, stderr=devnull,
+                         shell=True)
     p.communicate("")
     return True if p.returncode == 0 else False
 

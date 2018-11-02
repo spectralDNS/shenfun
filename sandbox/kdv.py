@@ -17,10 +17,10 @@ u_ = Array(T)
 Up = Array(Tp)
 u_hat = Function(T)
 
-def LinearRHS(**params):
+def LinearRHS(self, **params):
     return -inner(Dx(u, 0, 3), v)
 
-def NonlinearRHS(u, u_hat, rhs, **params):
+def NonlinearRHS(self, u, u_hat, rhs, **params):
     rhs.fill(0)
     Up[:] = Tp.backward(u_hat, Up)
     rhs = Tp.forward(-0.5*Up**2, rhs)
@@ -36,7 +36,7 @@ data = []
 tdata = []
 plt.figure()
 
-def update(u, u_hat, t, tstep, plot_step, **params):
+def update(self, u, u_hat, t, tstep, plot_step, **params):
     if tstep % plot_step == 0 and plot_step > 0:
         u = T.backward(u_hat, u)
         plt.plot(x, u)
