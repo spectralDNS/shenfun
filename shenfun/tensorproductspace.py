@@ -597,8 +597,8 @@ class MixedTensorProductSpace(object):
             shape of input array (physical space)
         """
         if forward_output is not True:
-            return [self.num_components()] + self.forward.input_pencil.subshape
-        return [self.num_components()] + self.backward.input_pencil.subshape
+            return [self.num_components()] + list(self.forward.input_pencil.subshape)
+        return [self.num_components()] + list(self.backward.input_pencil.subshape)
 
     def num_components(self):
         """Return number of spaces in mixed space"""
