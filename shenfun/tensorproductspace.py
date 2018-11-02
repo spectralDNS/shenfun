@@ -587,6 +587,19 @@ class MixedTensorProductSpace(object):
         s = self.spaces[0].local_slice(forward_output)
         return [slice(None)] + s
 
+    def local_shape(self, forward_output=True):
+        """The local (to each processor) shape of data
+
+        Parameters
+        ----------
+        forward_output : bool, optional
+            Return shape of output array (spectral space) if True, else return
+            shape of input array (physical space)
+        """
+        if forward_output is not True:
+            return [self.num_components()] + self.forward.input_pencil.subshape
+        return [self.num_components()] + self.backward.input_pencil.subshape
+
     def num_components(self):
         """Return number of spaces in mixed space"""
         return len(self.spaces)
