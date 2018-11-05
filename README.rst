@@ -1,9 +1,14 @@
-# shenfun
+shenfun
+-------
 
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/dc9c6e8e33c34382b76d38916852b36b)](https://app.codacy.com/app/mikaem/shenfun?utm_source=github.com&utm_medium=referral&utm_content=spectralDNS/shenfun&utm_campaign=badger)
-[![Build Status](https://travis-ci.org/spectralDNS/shenfun.svg?branch=master)](https://travis-ci.org/spectralDNS/shenfun)
-[![CircleCI](https://circleci.com/gh/spectralDNS/shenfun.svg?style=svg)](https://circleci.com/gh/spectralDNS/shenfun)
-[![codecov](https://codecov.io/gh/spectralDNS/shenfun/branch/master/graph/badge.svg)](https://codecov.io/gh/spectralDNS/shenfun)
+.. image:: https://api.codacy.com/project/badge/Grade/dc9c6e8e33c34382b76d38916852b36b)
+    :target: https://app.codacy.com/app/mikaem/shenfun?utm_source=github.com&utm_medium=referral&utm_content=spectralDNS/shenfun&utm_campaign=badger
+.. image:: https://travis-ci.org/spectralDNS/shenfun.svg?branch=master)
+    :target: https://travis-ci.org/spectralDNS/shenfun
+.. image:: https://circleci.com/gh/spectralDNS/shenfun.svg?style=svg)
+    :target: https://circleci.com/gh/spectralDNS/shenfun
+.. image:: https://codecov.io/gh/spectralDNS/shenfun/branch/master/graph/badge.svg)
+    :target: https://codecov.io/gh/spectralDNS/shenfun
 
 Description
 -----------
@@ -14,7 +19,7 @@ The demo folder contains several examples for the Poisson, Helmholtz and Biharmo
 About
 -----
 Shenfun is developed by
-     
+
      - Mikael Mortensen, University of Oslo
 
 Contact
