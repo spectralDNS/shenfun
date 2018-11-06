@@ -1,5 +1,4 @@
 from itertools import product
-from abc import ABC
 import pytest
 from scipy.linalg import solve
 import scipy.sparse.linalg as la
@@ -36,6 +35,12 @@ all_bases_and_quads = list(product(lBasis, lquads))+list(product(cBasis, cquads)
 
 cbases2 = list(list(i[0]) + [i[1]] for i in product(list(product(cBasis, cBasis)), cquads))
 lbases2 = list(list(i[0]) + [i[1]] for i in product(list(product(lBasis, lBasis)), lquads))
+
+class ABC(object):
+    def __init__(self, dim):
+        self.dim = dim
+    def dimensions(self):
+        return self.dim
 
 @pytest.mark.parametrize('basis', fBasis)
 @pytest.mark.parametrize('N', (8, 9))
@@ -143,8 +148,7 @@ def test_massmatrices(test, trial, quad):
     f_hat = f_hat.repeat(N*N).reshape((N, N, N)) + 1j*f_hat.repeat(N*N).reshape((N, N, N))
 
     test.plan((N,)*3, 0, np.complex, {})
-    test.tensorproductspace = ABC()
-    test.tensorproductspace.dimensions = lambda: 3
+    test.tensorproductspace = ABC(3)
     u0 = np.zeros((N,)*3, dtype=np.complex)
 
     u0 = test.scalar_product(fj, u0)
@@ -207,8 +211,7 @@ def test_transforms(ST, quad, dim):
         fij = np.broadcast_to(fj[tuple(bc)], (N,)*dim).copy()
 
         ST1 = ST(N, **kwargs)
-        ST1.tensorproductspace = ABC()
-        ST1.tensorproductspace.dimensions = lambda: dim
+        ST1.tensorproductspace = ABC(dim)
         ST1.plan((N,)*dim, axis, fij.dtype, {})
         if hasattr(ST1, 'bc'):
             ST1.bc.set_slices(ST1)  # To set Dirichlet boundary conditions
@@ -241,8 +244,7 @@ def test_axis(ST, quad, axis):
     f0 = shenfun.Array(ST)
     bc = [np.newaxis,]*3
     bc[axis] = slice(None)
-    ST.tensorproductspace = ABC()
-    ST.tensorproductspace.dimensions = lambda: 3
+    ST.tensorproductspace = ABC(3)
     ST.plan((N,)*3, axis, f0.dtype, {})
     if hasattr(ST, 'bc'):
         ST.bc.set_tensor_bcs(ST) # To set Dirichlet boundary conditions on multidimensional array
@@ -348,8 +350,7 @@ def test_CXXmat(test, trial):
     cs = np.zeros_like(f_hat)
     cs = Cm.matvec(f_hat, cs)
     cs2 = np.zeros((N, 4, 4), dtype=np.complex)
-    S1.tensorproductspace = ABC()
-    S1.tensorproductspace.dimensions = lambda: 3
+    S1.tensorproductspace = ABC(3)
     S1.plan((N, 4, 4), 0, np.complex, {})
     cs2 = S1.scalar_product(df, cs2)
 
