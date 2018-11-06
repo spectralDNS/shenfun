@@ -80,7 +80,7 @@ class HDF5File(BaseFile):
             for field in list_of_fields:
                 if self.T.rank() == 0:
                     if isinstance(field, np.ndarray):
-                        g = "/".join((group, "{}D".format(self.T.ndim())))
+                        g = "/".join((group, "{}D".format(self.T.dimensions())))
                         self._write_group(g, field, step, **kw)
                     else:
                         assert len(field) == 2
@@ -95,10 +95,10 @@ class HDF5File(BaseFile):
                             if len(self.T.shape()) == len(field.shape):  # A regular vector array
                                 for k in range(field.shape[0]):
                                     g = group + str(k)
-                                    g = "/".join((g, "{}D".format(self.T.ndim())))
+                                    g = "/".join((g, "{}D".format(self.T.dimensions())))
                                     self._write_group(g, field[k], step, **kw)
                             elif len(self.T.shape()) == len(field.shape)+1: # A scalar in the vector space
-                                g = "/".join((group, "{}D".format(self.T.ndim())))
+                                g = "/".join((group, "{}D".format(self.T.dimensions())))
                                 self._write_group(g, field, step, **kw)
                         else:
                             assert len(field) == 2
@@ -119,9 +119,9 @@ class HDF5File(BaseFile):
                     else:  # not as_scalar
                         if isinstance(field, np.ndarray):
                             if len(self.T.shape()) == len(field.shape):  # A regular vector array
-                                g = "/".join((group, "Vector", "{}D".format(self.T.ndim())))
+                                g = "/".join((group, "Vector", "{}D".format(self.T.dimensions())))
                             elif len(self.T.shape()) == len(field.shape)+1: # A scalar in the vector space
-                                g = "/".join((group, "{}D".format(self.T.ndim())))
+                                g = "/".join((group, "{}D".format(self.T.dimensions())))
                             self._write_group(g, field, step, **kw)
                         else:
                             assert len(field) == 2
@@ -154,7 +154,7 @@ class HDF5File(BaseFile):
         forward_output = kw.get('forward_output', False)
         step = kw.get('step', 0)
         s = self.T.local_slice(forward_output)
-        ndim = self.T.ndim()
+        ndim = self.T.dimensions()
         group = "{}D".format(ndim)
         if self.T.rank() == 1:
             name += '/Vector'

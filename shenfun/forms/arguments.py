@@ -146,7 +146,7 @@ class Expr(object):
         Describes operations performed in Expr
 
         - Index 0: Vector component. If Expr is rank = 0, then terms[0] = 1.
-          For vectors it equals dim
+          For vectors it equals ndim
 
         - Index 1: One for each term in the form. For example `div(grad(u))`
           has three terms in 3D:
@@ -210,7 +210,7 @@ class Expr(object):
         self._terms = terms
         self._scales = scales
         self._indices = indices
-        ndim = self.function_space().ndim()
+        ndim = self.function_space().dimensions()
         if terms is None:
             self._terms = np.zeros((self.function_space().num_components(), 1, ndim),
                                    dtype=np.int)
@@ -274,7 +274,7 @@ class Expr(object):
         """Return number of terms in Expr"""
         return self._terms.shape[1]
 
-    def dim(self):
+    def dimensions(self):
         """Return ndim of Expr"""
         return self._terms.shape[2]
 
@@ -295,8 +295,8 @@ class Expr(object):
         elif self.expr_rank() == 1:
             sc = self.scales().copy()
             if isinstance(a, tuple):
-                assert len(a) == self.dim()
-                for i in range(self.dim()):
+                assert len(a) == self.dimensions()
+                for i in range(self.dimensions()):
                     assert isinstance(a[i], Number)
                     sc[i] = sc[i]*a[i]
 
@@ -306,7 +306,7 @@ class Expr(object):
             else:
                 raise NotImplementedError
             #elif isinstance(a, np.ndarray):
-                #assert len(a) == self.dim() or len(a) == 1
+                #assert len(a) == self.dimensions() or len(a) == 1
                 #sc *= a
 
         return Expr(self._basis, self._terms.copy(), sc, self._indices.copy())
@@ -321,8 +321,8 @@ class Expr(object):
             sc *= a
         elif self.expr_rank() == 1:
             if isinstance(a, tuple):
-                assert len(a) == self.dim()
-                for i in range(self.dim()):
+                assert len(a) == self.dimensions()
+                for i in range(self.dimensions()):
                     assert isinstance(a[i], Number)
                     sc[i] = sc[i]*a[i]
 
@@ -332,7 +332,7 @@ class Expr(object):
             else:
                 raise NotImplementedError
             #elif isinstance(a, np.ndarray):
-                #assert len(a) == self.dim() or len(a) == 1
+                #assert len(a) == self.dimensions() or len(a) == 1
                 #sc *= a
 
         return self
@@ -425,9 +425,9 @@ class BasisFunction(object):
         """Return number of components in basis"""
         return self.function_space().num_components()
 
-    def ndim(self):
+    def dimensions(self):
         """Return dimensions of function space"""
-        return self.function_space().ndim()
+        return self.function_space().dimensions()
 
     def index(self):
         """Return index into vector of rank 1"""

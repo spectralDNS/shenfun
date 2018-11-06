@@ -2,16 +2,16 @@ import pytest
 from shenfun.chebyshev import bases as cbases
 from shenfun.legendre import bases as lbases
 from shenfun.fourier import bases as fbases
-
-import shenfun
-from shenfun.la import TDMA
-from shenfun.spectralbase import inner_product
 from scipy.linalg import solve
 import scipy.sparse.linalg as la
 from sympy import Symbol, sin, cos, pi, lambdify
 import numpy as np
 from itertools import product
 from abc import ABC
+import shenfun
+from shenfun.la import TDMA
+from shenfun.spectralbase import inner_product
+
 
 N = 33
 x = Symbol("x")
@@ -144,7 +144,7 @@ def test_massmatrices(test, trial, quad):
 
     test.plan((N,)*3, 0, np.complex, {})
     test.tensorproductspace = ABC()
-    test.tensorproductspace.dimension = lambda: 3
+    test.tensorproductspace.dimensions = lambda: 3
     u0 = np.zeros((N,)*3, dtype=np.complex)
 
     u0 = test.scalar_product(fj, u0)
@@ -208,7 +208,7 @@ def test_transforms(ST, quad, dim):
 
         ST1 = ST(N, **kwargs)
         ST1.tensorproductspace = ABC()
-        ST1.tensorproductspace.dimension = lambda: dim
+        ST1.tensorproductspace.dimensions = lambda: dim
         ST1.plan((N,)*dim, axis, fij.dtype, {})
         if hasattr(ST1, 'bc'):
             ST1.bc.set_slices(ST1)  # To set Dirichlet boundary conditions
@@ -242,7 +242,7 @@ def test_axis(ST, quad, axis):
     bc = [np.newaxis,]*3
     bc[axis] = slice(None)
     ST.tensorproductspace = ABC()
-    ST.tensorproductspace.dimension = lambda: 3
+    ST.tensorproductspace.dimensions = lambda: 3
     ST.plan((N,)*3, axis, f0.dtype, {})
     if hasattr(ST, 'bc'):
         ST.bc.set_tensor_bcs(ST) # To set Dirichlet boundary conditions on multidimensional array
@@ -349,7 +349,7 @@ def test_CXXmat(test, trial):
     cs = Cm.matvec(f_hat, cs)
     cs2 = np.zeros((N, 4, 4), dtype=np.complex)
     S1.tensorproductspace = ABC()
-    S1.tensorproductspace.dimension = lambda: 3
+    S1.tensorproductspace.dimensions = lambda: 3
     S1.plan((N, 4, 4), 0, np.complex, {})
     cs2 = S1.scalar_product(df, cs2)
 
