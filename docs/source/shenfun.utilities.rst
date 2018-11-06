@@ -13,7 +13,7 @@ shenfun.utilities.integrators module
     :show-inheritance:
 
 shenfun.utilities.lagrangian_particles module
---------------------------------------
+---------------------------------------------
 
 .. automodule:: shenfun.utilities.lagrangian_particles
     :members:
