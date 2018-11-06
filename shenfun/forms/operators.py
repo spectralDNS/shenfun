@@ -105,7 +105,7 @@ def curl(test):
     if isinstance(test, BasisFunction):
         test = Expr(test)
 
-    assert test.rank() == 2
+    assert test.rank() > 0
     assert test.num_components() == test.dim()  # vector
 
     w0 = Dx(test[2], 1, 1) - Dx(test[1], 2, 1)
@@ -115,4 +115,3 @@ def curl(test):
     test._scales = np.concatenate((w0.scales(), w1.scales(), w2.scales()), axis=0)
     test._indices = np.concatenate((w0.indices(), w1.indices(), w2.indices()), axis=0)
     return test
-

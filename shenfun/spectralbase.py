@@ -172,7 +172,7 @@ class SpectralBase(object):
         self._xfftn_fwd = None    # external forward transform function
         self._xfftn_bck = None    # external backward transform function
         self._M = 1.0             # Normalization factor
-        self._ndim_tensor = 1     # ndim of belonging TensorProductSpace
+        self._tensorproductspace = None     # If belonging to TensorProductSpace
 
     def points_and_weights(self, N=None, map_true_domain=False):
         """Return points and weights of quadrature
@@ -192,7 +192,8 @@ class SpectralBase(object):
         Parameters
         ----------
             bcast : bool
-                Whether or not to broadcast to :meth:`.ndim_tensorspace` dims
+                Whether or not to broadcast to :meth:`.dimension` if basis
+                belongs to a :class:`.TensorProductSpace`
             map_true_domain : bool, optional
                 Whether or not to map points to true domain
         """
@@ -207,7 +208,8 @@ class SpectralBase(object):
         Parameters
         ----------
             bcast : bool
-                Whether or not to broadcast to :attr:`.ndim_tensorspace` dims
+                Whether or not to broadcast to :meth:`.dimension` if basis
+                belongs to a :class:`.TensorProductSpace`
 
         """
         s = self.slice()
@@ -218,7 +220,8 @@ class SpectralBase(object):
 
     def broadcast_to_ndims(self, x):
         """Return 1D array ``x`` as an array of shape according to the
-        :class:`.TensorProductSpace` the base (self) belongs to.
+        :meth:`.dimension` of the :class:`.TensorProductSpace` class
+        that this base (self) belongs to.
 
         Parameters
         ----------
@@ -242,8 +245,7 @@ class SpectralBase(object):
         >>> print(y.shape)
         (4, 1)
         """
-        ndims = self.ndim_tensorspace
-        s = [np.newaxis]*ndims
+        s = [np.newaxis]*self.dimension()
         s[self.axis] = slice(None)
         return x[tuple(s)]
 
@@ -641,7 +643,6 @@ class SpectralBase(object):
             self._M = xfftn_fwd.get_normalization()
 
         self.axis = axis
-        self._ndim_tensor = U.ndim
 
         if self.padding_factor > 1.+1e-8:
             trunc_array = self._get_truncarray(shape, V.dtype)
@@ -753,10 +754,23 @@ class SpectralBase(object):
             return 1
         return R/L
 
+    def dimension(self):
+        """Return the dimensions (the number of bases) of the
+        :class:`.TensorProductSpace` class that this basis is planned for.
+        """
+        if self.tensorproductspace:
+            return self.tensorproductspace.dimension()
+        return 1
+
     @property
-    def ndim_tensorspace(self):
-        """Return ndim of :class:`.TensorProductSpace` if planned, else 1"""
-        return self._ndim_tensor
+    def tensorproductspace(self):
+        """Access the :class:`.TensorProductSpace` this basis is planned for
+        (if planned)"""
+        return self._tensorproductspace
+
+    @tensorproductspace.setter
+    def tensorproductspace(self, T):
+        self._tensorproductspace = T
 
     def __hash__(self):
         return hash(repr(self.__class__))
@@ -774,13 +788,13 @@ class SpectralBase(object):
             a : int or slice object
                 This int or slice is used along self.axis of this basis
         """
-        s = [slice(None)]*self.ndim_tensorspace
+        s = [slice(None)]*self.dimension()
         s[self.axis] = a
         return tuple(s)
 
     def rank(self):
-        """Return rank of basis"""
-        return 1
+        """Return tensor rank of basis"""
+        return 0
 
     def ndim(self):
         """Return ndim of basis"""

@@ -120,7 +120,6 @@ class LegendreBase(SpectralBase):
         V = fftw.aligned(shape, dtype=dtype)
         U.fill(0)
         V.fill(0)
-        self._ndim_tensor = U.ndim
         self.axis = axis
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
@@ -261,7 +260,6 @@ class ShenDirichletBasis(LegendreBase):
 
         self.LT.plan(shape, axis, dtype, options)
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self._ndim_tensor = U.ndim
         self.axis = axis
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
@@ -361,7 +359,6 @@ class ShenNeumannBasis(LegendreBase):
 
         self.LT.plan(shape, axis, dtype, options)
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self._ndim_tensor = U.ndim
         self.axis = axis
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
@@ -468,7 +465,6 @@ class ShenBiharmonicBasis(LegendreBase):
 
         self.LT.plan(shape, axis, dtype, options)
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self._ndim_tensor = U.ndim
         self.axis = axis
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
@@ -551,7 +547,6 @@ class SecondNeumannBasis(LegendreBase): # pragma: no cover
 
         self.LT.plan(shape, axis, dtype, options)
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self._ndim_tensor = U.ndim
         self.axis = axis
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)

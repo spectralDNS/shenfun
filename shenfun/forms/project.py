@@ -107,7 +107,7 @@ def project(uh, T, output_array=None):
 
     else:
         # Just zero or one non-periodic direction
-        if v.rank() == 1:
+        if v.rank() == 0:
             axis = B.axis if hasattr(B, 'axis') else 0 # if periodic the solve is just an elementwise division not using axis
             output_array = B.solve(output_array, output_array, axis=axis)
         else:

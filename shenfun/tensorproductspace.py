@@ -113,6 +113,9 @@ class TensorProductSpace(PFFT):
             self.axes = groups
         self.axes = tuple(map(tuple, self.axes))
 
+        for base in self.bases:
+            base.tensorproductspace = self
+
         # Configure all transforms
         axes = self.axes[-1]
         pencil = Pencil(self.subcomm, shape, axes[-1])
@@ -153,11 +156,9 @@ class TensorProductSpace(PFFT):
             self.pencil)
 
         for i, base in enumerate(bases):
+            base.axis = i
             if base.boundary_condition() == 'Dirichlet':
                 base.bc.set_tensor_bcs(self)
-            base.axis = i
-            base._ndim_tensor = len(bases)
-
 
     def convolve(self, a_hat, b_hat, ab_hat):
         """Convolution of a_hat and b_hat
@@ -462,8 +463,8 @@ class TensorProductSpace(PFFT):
 
     @staticmethod
     def rank():
-        """Return rank of TensorProductSpace"""
-        return 1
+        """Return tensor rank of TensorProductSpace"""
+        return 0
 
     def __len__(self):
         """Return dimension of TensorProductSpace"""
@@ -472,6 +473,10 @@ class TensorProductSpace(PFFT):
     def num_components(self):
         """Return number of spaces in TensorProductSpace"""
         return 1
+
+    def dimension(self):
+        """Return dimension of TensorProductSpace"""
+        return self.__len__()
 
     def __getitem__(self, i):
         """Return instance of base i
@@ -559,7 +564,7 @@ class MixedTensorProductSpace(object):
     @staticmethod
     def rank():
         """Return rank of space"""
-        return 2
+        return 1
 
     def shape(self, forward_output=False):
         """Return shape of arrays for MixedTensorProductSpace
@@ -644,8 +649,8 @@ class VectorTensorProductSpace(MixedTensorProductSpace):
 
     @staticmethod
     def rank():
-        """Return rank of space"""
-        return 2
+        """Return tensor rank of space"""
+        return 1
 
 
 class VectorTransform(object):
