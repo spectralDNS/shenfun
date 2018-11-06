@@ -24,7 +24,7 @@ class NCFile(BaseFile):
     """
     def __init__(self, ncname, T, mode='r', clobber=True, **kw):
         BaseFile.__init__(self, ncname, T, domain=T.mesh(), clobber=clobber, mode=mode, **kw)
-        if T.rank() == 2 and mode == 'w':
+        if T.rank() == 1 and mode == 'w':
             self.vdims = copy.copy(self.dims)
             self.f.createDimension('dim', T.num_components())
             d = self.f.createVariable('dim', int, ('dim'))
@@ -98,7 +98,7 @@ class NCFile(BaseFile):
             assert isinstance(group, str)
 
             for field in list_of_fields:
-                if self.T.rank() == 1:
+                if self.T.rank() == 0:
                     if isinstance(field, np.ndarray):
                         g = group
                         self._write_group(g, field, step, **kw)
@@ -151,7 +151,7 @@ class NCFile(BaseFile):
     def _write_group(self, name, u, step, **kw):
         T = u.function_space()
         s = T.local_slice(False)
-        dims = self.dims if T.rank() == 1 else self.vdims
+        dims = self.dims if T.rank() == 0 else self.vdims
         if name not in self.handles:
             self.handles[name] = self.f.createVariable(name, self._dtype, dims)
             self.handles[name].set_collective(True)
@@ -162,7 +162,7 @@ class NCFile(BaseFile):
     def _write_slice_step(self, name, step, slices, field, **kw):
         slices = list(slices)
         T = field.function_space()
-        dims = self.dims if T.rank() == 1 else self.vdims
+        dims = self.dims if T.rank() == 0 else self.vdims
         s = T.local_slice(False)
         slices, inside = self._get_local_slices(slices, s)
         sp = np.nonzero([isinstance(x, slice) for x in slices])[0]

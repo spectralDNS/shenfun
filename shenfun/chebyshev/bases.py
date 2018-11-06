@@ -190,7 +190,6 @@ class ChebyshevBase(SpectralBase):
             xfftn_fwd = DCTWrap(xfftn_fwd, U, V)
             xfftn_bck = DCTWrap(xfftn_bck, V, U)
 
-        self._ndim_tensor = U.ndim
         self.axis = axis
         self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
         self.backward = Transform(self.backward, xfftn_bck, V, V, U)
@@ -430,11 +429,11 @@ class ShenDirichletBasis(ChebyshevBase):
                 return
 
         self.CT.plan(shape, axis, dtype, options)
+        self.CT.tensorproductspace = self.tensorproductspace
         xfftn_fwd = self.CT.forward.xfftn
         xfftn_bck = self.CT.backward.xfftn
         U = xfftn_fwd.input_array
         V = xfftn_fwd.output_array
-        self._ndim_tensor = U.ndim
         self.axis = axis
         self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
         self.backward = Transform(self.backward, xfftn_bck, V, V, U)
@@ -558,11 +557,11 @@ class ShenNeumannBasis(ChebyshevBase):
                 return
 
         self.CT.plan(shape, axis, dtype, options)
+        self.CT.tensorproductspace = self.tensorproductspace
         xfftn_fwd = self.CT.forward.xfftn
         xfftn_bck = self.CT.backward.xfftn
         U = xfftn_fwd.input_array
         V = xfftn_fwd.output_array
-        self._ndim_tensor = U.ndim
         self.axis = axis
         self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
         self.backward = Transform(self.backward, xfftn_bck, V, V, U)
@@ -701,11 +700,11 @@ class ShenBiharmonicBasis(ChebyshevBase):
                 return
 
         self.CT.plan(shape, axis, dtype, options)
+        self.CT.tensorproductspace = self.tensorproductspace
         xfftn_fwd = self.CT.forward.xfftn
         xfftn_bck = self.CT.backward.xfftn
         U = xfftn_fwd.input_array
         V = xfftn_fwd.output_array
-        self._ndim_tensor = U.ndim
         self.axis = axis
         self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
         self.backward = Transform(self.backward, xfftn_bck, V, V, U)

@@ -249,7 +249,6 @@ class FourierBase(SpectralBase):
             V.fill(0)
             U.fill(0)
             self._M = xfftn_fwd.get_normalization()
-        self._ndim_tensor = U.ndim
         self.axis = axis[-1]
         self._planned_axes = axis
 

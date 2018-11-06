@@ -256,7 +256,7 @@ class Expr(object):
 
     def expr_rank(self):
         """Return rank of Expr"""
-        return 1 if self._terms.shape[0] == 1 else 2
+        return 0 if self._terms.shape[0] == 1 else 1
 
     def rank(self):
         """Return rank of Expr's basis"""
@@ -281,7 +281,7 @@ class Expr(object):
     def __getitem__(self, i):
         #assert self.num_components() == self.dim()
         basis = self._basis
-        if self.rank() == 2:
+        if self.rank() == 1:
             basis = self._basis[i]
         return Expr(basis,
                     self._terms[i][np.newaxis, :, :],
@@ -289,10 +289,10 @@ class Expr(object):
                     self._indices[i][np.newaxis, :])
 
     def __mul__(self, a):
-        if self.expr_rank() == 1:
+        if self.expr_rank() == 0:
             assert isinstance(a, Number)
             sc = self.scales().copy()*a
-        elif self.expr_rank() == 2:
+        elif self.expr_rank() == 1:
             sc = self.scales().copy()
             if isinstance(a, tuple):
                 assert len(a) == self.dim()
@@ -316,10 +316,10 @@ class Expr(object):
 
     def __imul__(self, a):
         sc = self.scales()
-        if self.expr_rank() == 1:
+        if self.expr_rank() == 0:
             assert isinstance(a, Number)
             sc *= a
-        elif self.expr_rank() == 2:
+        elif self.expr_rank() == 1:
             if isinstance(a, tuple):
                 assert len(a) == self.dim()
                 for i in range(self.dim()):
@@ -397,7 +397,7 @@ class BasisFunction(object):
     ----------
     space: TensorProductSpace
     index: int
-        Component of basis with rank > 1
+        Component of basis with rank > 0
     """
 
     def __init__(self, space, index=0):
@@ -430,11 +430,11 @@ class BasisFunction(object):
         return self.function_space().ndim()
 
     def index(self):
-        """Return index into vector of rank 2"""
+        """Return index into vector of rank 1"""
         return None
 
     def __getitem__(self, i):
-        assert self.rank() == 2
+        assert self.rank() > 0
         t0 = BasisFunction(self._space[i], i)
         return t0
 
@@ -472,14 +472,14 @@ class TestFunction(BasisFunction):
     ----------
     space: TensorProductSpace
     index: int, optional
-        Component of basis with rank > 1
+        Component of basis with rank > 0
     """
 
     def __init__(self, space, index=0):
         BasisFunction.__init__(self, space, index)
 
     def __getitem__(self, i):
-        assert self.rank() == 2
+        assert self.rank() > 0
         t0 = TestFunction(self._space[i], index=i)
         return t0
 
@@ -494,13 +494,13 @@ class TrialFunction(BasisFunction):
     ----------
     space: TensorProductSpace
     index: int, optional
-        Component of basis with rank > 1
+        Component of basis with rank > 0
     """
     def __init__(self, space, index=0):
         BasisFunction.__init__(self, space, index)
 
     def __getitem__(self, i):
-        assert self.rank() == 2
+        assert self.rank() > 0
         t0 = TrialFunction(self._space[i], index=i)
         return t0
 

@@ -78,7 +78,7 @@ class HDF5File(BaseFile):
             assert isinstance(group, str)
 
             for field in list_of_fields:
-                if self.T.rank() == 1:
+                if self.T.rank() == 0:
                     if isinstance(field, np.ndarray):
                         g = "/".join((group, "{}D".format(self.T.ndim())))
                         self._write_group(g, field, step, **kw)
@@ -156,7 +156,7 @@ class HDF5File(BaseFile):
         s = self.T.local_slice(forward_output)
         ndim = self.T.ndim()
         group = "{}D".format(ndim)
-        if self.T.rank() == 2:
+        if self.T.rank() == 1:
             name += '/Vector'
         dset = "/".join((name, group, str(step)))
         u[:] = self.f[dset][tuple(s)]

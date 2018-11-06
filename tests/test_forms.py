@@ -22,7 +22,7 @@ def test_mul(basis):
     assert np.allclose(e2.scales(), 2.)
     e2 = e*2
     assert np.allclose(e2.scales(), 2.)
-    if e.expr_rank() == 2:
+    if e.expr_rank() == 1:
         a = tuple(range(e.dim()))
         e2 = a*e
         assert np.allclose(e2.scales()[:, 0], (0, 1))
@@ -34,7 +34,7 @@ def test_imul(basis):
     assert np.allclose(e.scales(), 2.)
     e *= 2
     assert np.allclose(e.scales(), 4.)
-    if e.expr_rank() == 2:
+    if e.expr_rank() == 1:
         a = tuple(range(e.dim()))
         e *= a
         assert np.allclose(e.scales()[:, 0], (0, 4))
@@ -116,4 +116,3 @@ if __name__ == '__main__':
     # test_isub(u2)
     # test_neg(u2)
     test_index(vf)
-

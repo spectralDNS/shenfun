@@ -103,7 +103,7 @@ def inner(expr0, expr1, output_array=None):
     else:
         raise RuntimeError
 
-    if test.rank() == 2: # For vector spaces of rank 2 use recursive algorithm
+    if test.rank() == 1: # For vector spaces of rank 1 use recursive algorithm
         ndim = test.function_space().ndim()
 
         if output_array is None and trial.argument == 2:
@@ -284,7 +284,7 @@ def inner(expr0, expr1, output_array=None):
                 return DiagonalMatrix(diagonal_array)
 
             else:
-                if uh.rank() == 2:
+                if uh.rank() == 1:
                     for i, b in enumerate(B):
                         output_array += b*uh[trial_indices[0, i]]
                 else:
@@ -337,7 +337,7 @@ def inner(expr0, expr1, output_array=None):
         else: # linear form
             for i, bb in enumerate(B):
                 b = bb[npaxis]
-                if uh.rank() == 2:
+                if uh.rank() == 1:
                     sp = uh.function_space()
                     wh = Function(sp[npaxis])
                     wh = b.matvec(uh[trial_indices[0, i]], wh, axis=b.axis)
@@ -369,7 +369,7 @@ def inner(expr0, expr1, output_array=None):
 
             # Output data is aligned in axis, but may be distributed in all other directions
 
-            if uh.rank() == 2:
+            if uh.rank() == 1:
                 sp = uh.function_space()
                 wh = Function(sp[axis])
                 wc = Function(sp[axis])
@@ -382,7 +382,7 @@ def inner(expr0, expr1, output_array=None):
             wcB = np.zeros(transAB.subshapeB)
 
             for i, bb in enumerate(B):
-                if uh.rank() == 2:
+                if uh.rank() == 1:
                     wc[:] = uh[trial_indices[0, i]]
                 else:
                     wc[:] = uh
