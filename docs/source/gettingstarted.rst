@@ -14,7 +14,7 @@ most important everyday tools are
 	* :class:`.TrialFunction`
 	* :class:`.TestFunction`
 	* :class:`.Function`
-        * :class:`.Array`
+	* :class:`.Array`
 	* :func:`.inner`
 	* :func:`.div`
 	* :func:`.grad`
@@ -23,8 +23,8 @@ most important everyday tools are
 
 A good place to get started is by creating a :func:`.Basis`. There are three families of
 bases: Fourier, Chebyshev and Legendre. All bases are defined on a one-dimensional
-domain, with their own basis functions and quadrature points. For example, we have 
-the regular Chebyshev basis :math:`\{T_k\}_{k=0}^{N-1}`, where :math:`T_k` is the 
+domain, with their own basis functions and quadrature points. For example, we have
+the regular Chebyshev basis :math:`\{T_k\}_{k=0}^{N-1}`, where :math:`T_k` is the
 :math:`k`'th Chebyshev polynomial of the first kind. To create such a basis with
 8 quadrature points  (i.e., :math:`\{T_k\}_{k=0}^{7}`) do::
 
@@ -36,12 +36,12 @@ Here ``bc=None`` is used to indicate that there are no boundary conditions assoc
 with this basis, which is the default, so it could just as well have been left out.
 To create
 a regular Legendre basis (i.e., :math:`\{L_k\}_{k=0}^{N-1}`, where :math:`L_k` is the
-:math:`k`'th Legendre polynomial), just replace 
-``Chebyshev`` with ``Legendre`` above. And to create a Fourier basis, just use 
+:math:`k`'th Legendre polynomial), just replace
+``Chebyshev`` with ``Legendre`` above. And to create a Fourier basis, just use
 ``Fourier``.
 
-The basis :math:`T = \{T_k\}_{k=0}^{N-1}` has many useful methods associated 
-with it, and we may experiment a little. A :class:`.Function` ``u`` using basis 
+The basis :math:`T = \{T_k\}_{k=0}^{N-1}` has many useful methods associated
+with it, and we may experiment a little. A :class:`.Function` ``u`` using basis
 :math:`T` has expansion
 
 .. math::
@@ -49,7 +49,7 @@ with it, and we may experiment a little. A :class:`.Function` ``u`` using basis
 
     u(x) = \sum_{k=0}^{7} \hat{u}_k T_k(x)
 
-and an instance of this function (initialized with :math:`\{\hat{u}_k\}_{k=0}^7=0`) 
+and an instance of this function (initialized with :math:`\{\hat{u}_k\}_{k=0}^7=0`)
 is created in shenfun as::
 
     u = Function(T)
@@ -75,24 +75,24 @@ The Sympy function ``u`` can now be evaluated on the quadrature points of basis
       [ 0.92387953  0.38268343 -0.38268343 -0.92387953 -0.92387953 -0.38268343
         0.38268343  0.92387953]
 
-We see that ``ue`` is an :class:`.Array` on the basis ``T``, and not a 
+We see that ``ue`` is an :class:`.Array` on the basis ``T``, and not a
 :class:`.Function`. The :class:`.Array` and :class:`Function` classes
-are both subclasses of Numpy's `ndarray <https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.ndarray.html>`_, and represent the two arrays associated 
-with the spectral Galerkin function, like :eq:`eq:sum8`. 
-The :class:`.Function` represent the entire spectral Galerkin function, with 
-array values corresponding to the expansion coefficients :math:`\hat{u}`. 
+are both subclasses of Numpy's `ndarray <https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.ndarray.html>`_, and represent the two arrays associated
+with the spectral Galerkin function, like :eq:`eq:sum8`.
+The :class:`.Function` represent the entire spectral Galerkin function, with
+array values corresponding to the expansion coefficients :math:`\hat{u}`.
 The :class:`.Array` represent the spectral Galerkin function evaluated
-on the quadrature mesh of the basis ``T``, i.e., here 
-:math:`u(x_i), \forall \, i \in 0, 1, \ldots, 7`. 
- 
+on the quadrature mesh of the basis ``T``, i.e., here
+:math:`u(x_i), \forall \, i \in 0, 1, \ldots, 7`.
+
 We now want to find the :class:`.Function` ``uh`` corresponding to
-:class:`.Array` ``ue``. Considering :eq:`eq:sum8`, this corresponds to finding 
-:math:`\hat{u}_k` if the left hand side :math:`u(x_j)` is known for 
-all quadrature points :math:`x_j`. 
+:class:`.Array` ``ue``. Considering :eq:`eq:sum8`, this corresponds to finding
+:math:`\hat{u}_k` if the left hand side :math:`u(x_j)` is known for
+all quadrature points :math:`x_j`.
 
 Since we already know that ``ue`` is
 equal to the second Chebyshev polynomial, we should get an array of
-expansion coefficients equal to :math:`\hat{u} = (0, 0, 1, 0, 0, 0, 0, 0)`. 
+expansion coefficients equal to :math:`\hat{u} = (0, 0, 1, 0, 0, 0, 0, 0)`.
 We can compute ``uh`` either by using :func:`project` or a forward transform::
 
     uh = Function(T)
@@ -107,7 +107,7 @@ We can compute ``uh`` either by using :func:`project` or a forward transform::
 
 So we see that the projection works to machine precision.
 
-The projection is mathematically: find :math:`u_h \in T`, such that 
+The projection is mathematically: find :math:`u_h \in T`, such that
 
 .. math::
 
@@ -129,7 +129,7 @@ for all :math:`k \in 0, 1, \ldots, 7`. This can be rewritten on matrix form as
     B_{kj} \hat{u}_j = \tilde{u}_k
 
 where :math:`B_{kj} = (T_j, T_k)_w`, :math:`\tilde{u}_k = (u, T_k)_w` and
-summation is implied by the repeating :math:`j` indices. Since the 
+summation is implied by the repeating :math:`j` indices. Since the
 Chebyshev polynomials are orthogonal the mass matrix :math:`B_{kj}` is
 diagonal. We can assemble both :math:`B_{kj}` and :math:`\tilde{u}_j`
 with `shenfun`, and at the same time introduce the :class:`.TestFunction`,
@@ -152,10 +152,10 @@ one test function, and possibly one trial function. If, as here, it also
 contains a trial function, then a matrix is returned. If :func:`.inner`
 contains one test, but no trial function, then an array is returned.
 
-Note that the matrix :math:`B` is stored using `shenfun`'s 
+Note that the matrix :math:`B` is stored using `shenfun`'s
 :class:`.SpectralMatrix` class, which is a subclass of Python's dictionary,
-where the keys are the diagonals and the values are the diagonal entries. 
-The matrix :math:`B` is seen to have only one diagonal (the principal) 
+where the keys are the diagonals and the values are the diagonal entries.
+The matrix :math:`B` is seen to have only one diagonal (the principal)
 :math:`\{B_{ii}\}_{i=0}^{7}`.
 
 With the matrix comes a `solve` method and we can solve for :math:`\hat{u}`
@@ -170,9 +170,9 @@ through::
 which obviously is exactly the same as we found using :func:`.project`
 or the `T.forward` function.
 
-Note that :class:`.Array` merely is a subclass of Numpy's ``ndarray``, 
+Note that :class:`.Array` merely is a subclass of Numpy's ``ndarray``,
 whereas :class:`.Function` is a subclass
-of both Numpy's ``ndarray`` *and* the :class:`.BasisFunction` class. The 
+of both Numpy's ``ndarray`` *and* the :class:`.BasisFunction` class. The
 latter is used as a base class for arguments to bilinear and linear forms,
 and is as such a base class also for :class:`.TrialFunction` and
 :class:`.TestFunction`. An instance of the :class:`.Array` class cannot
@@ -185,7 +185,7 @@ all except the last one is ok::
     T = TensorProductSpace(comm, (K0, K1))
     u = TrialFunction(T)
     v = TestFunction(T)
-    uf = Function(T)    
+    uf = Function(T)
     ua = Array(T)
 
     A = inner(v, u)   # Mass matrix
@@ -202,16 +202,16 @@ all except the last one is ok::
              85             Number of derivatives
              86     """
         ---> 87     assert isinstance(test, (Expr, BasisFunction))
-             88 
+             88
              89     if isinstance(test, BasisFunction):
 
-So it is not possible to perform operations that involve differentiation on an 
+So it is not possible to perform operations that involve differentiation on an
 :class:`.Array` instance. This is because the ``ua`` does not contain more
 information than its values and its TensorProductSpace. A :class:`.BasisFunction`
 instance, on the other hand, can be manipulated with operators like :func:`.div`
 :func:`.grad` in creating instances of the :class:`.Expr` class.
 
-Any rules for efficient use of Numpy ``ndarrays``, like vectorization, also 
+Any rules for efficient use of Numpy ``ndarrays``, like vectorization, also
 applies to :class:`.Function` and :class:`.Array` instances.
 
 .. include:: mpi.rst
