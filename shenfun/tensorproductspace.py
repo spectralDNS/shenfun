@@ -474,7 +474,7 @@ class TensorProductSpace(PFFT):
         """Return number of spaces in TensorProductSpace"""
         return 1
 
-    def dimension(self):
+    def dimensions(self):
         """Return dimension of TensorProductSpace"""
         return self.__len__()
 
@@ -550,16 +550,16 @@ class MixedTensorProductSpace(object):
         FIXME Efficiency due to allocation
         """
         N = list(self.backward.output_array.shape)
-        a = np.zeros([self.ndim()]+N, dtype=self.backward.output_array.dtype)
-        b = np.zeros([self.ndim()]+N, dtype=self.backward.output_array.dtype)
+        a = np.zeros([self.dimensions()]+N, dtype=self.backward.output_array.dtype)
+        b = np.zeros([self.dimensions()]+N, dtype=self.backward.output_array.dtype)
         a = self.backward(a_hat, a)
         b = self.backward(b_hat, b)
         ab_hat = self.forward(a*b, ab_hat)
         return ab_hat
 
-    def ndim(self):
+    def dimensions(self):
         """Return dimension of scalar space"""
-        return self.spaces[0].ndim()
+        return self.spaces[0].dimensions()
 
     @staticmethod
     def rank():
@@ -617,7 +617,7 @@ class MixedTensorProductSpace(object):
         return getattr(obj[0], name)
 
     def __len__(self):
-        return self.ndim()
+        return self.spaces[0].dimensions()
 
 
 class VectorTensorProductSpace(MixedTensorProductSpace):
@@ -639,13 +639,13 @@ class VectorTensorProductSpace(MixedTensorProductSpace):
             warnings.warn("Use only the TensorProductSpace as argument", DeprecationWarning)
             spaces = space
         else:
-            spaces = [space]*space.ndim()
+            spaces = [space]*space.dimensions()
         MixedTensorProductSpace.__init__(self, spaces)
 
     def num_components(self):
         """Return number of spaces in mixed space"""
-        assert len(self.spaces) == self.ndim()
-        return self.ndim()
+        assert len(self.spaces) == self.dimensions()
+        return self.dimensions()
 
     @staticmethod
     def rank():

@@ -111,7 +111,7 @@ def project(uh, T, output_array=None):
             axis = B.axis if hasattr(B, 'axis') else 0 # if periodic the solve is just an elementwise division not using axis
             output_array = B.solve(output_array, output_array, axis=axis)
         else:
-            for i in range(v.function_space().ndim()):
+            for i in range(v.function_space().dimensions()):
                 axis = B[i].axis if hasattr(B[i], 'axis') else 0
                 output_array[i] = B[i].solve(output_array[i], output_array[i], axis=axis)
     return output_array

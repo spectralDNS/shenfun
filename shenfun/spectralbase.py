@@ -192,7 +192,7 @@ class SpectralBase(object):
         Parameters
         ----------
             bcast : bool
-                Whether or not to broadcast to :meth:`.dimension` if basis
+                Whether or not to broadcast to :meth:`.dimensions` if basis
                 belongs to a :class:`.TensorProductSpace`
             map_true_domain : bool, optional
                 Whether or not to map points to true domain
@@ -208,7 +208,7 @@ class SpectralBase(object):
         Parameters
         ----------
             bcast : bool
-                Whether or not to broadcast to :meth:`.dimension` if basis
+                Whether or not to broadcast to :meth:`.dimensions` if basis
                 belongs to a :class:`.TensorProductSpace`
 
         """
@@ -220,7 +220,7 @@ class SpectralBase(object):
 
     def broadcast_to_ndims(self, x):
         """Return 1D array ``x`` as an array of shape according to the
-        :meth:`.dimension` of the :class:`.TensorProductSpace` class
+        :meth:`.dimensions` of the :class:`.TensorProductSpace` class
         that this base (self) belongs to.
 
         Parameters
@@ -245,7 +245,7 @@ class SpectralBase(object):
         >>> print(y.shape)
         (4, 1)
         """
-        s = [np.newaxis]*self.dimension()
+        s = [np.newaxis]*self.dimensions()
         s[self.axis] = slice(None)
         return x[tuple(s)]
 
@@ -754,12 +754,12 @@ class SpectralBase(object):
             return 1
         return R/L
 
-    def dimension(self):
+    def dimensions(self):
         """Return the dimensions (the number of bases) of the
         :class:`.TensorProductSpace` class that this basis is planned for.
         """
         if self.tensorproductspace:
-            return self.tensorproductspace.dimension()
+            return self.tensorproductspace.dimensions()
         return 1
 
     @property
@@ -788,7 +788,7 @@ class SpectralBase(object):
             a : int or slice object
                 This int or slice is used along self.axis of this basis
         """
-        s = [slice(None)]*self.dimension()
+        s = [slice(None)]*self.dimensions()
         s[self.axis] = a
         return tuple(s)
 
@@ -796,6 +796,7 @@ class SpectralBase(object):
         """Return tensor rank of basis"""
         return 0
 
+    @property
     def ndim(self):
         """Return ndim of basis"""
         return 1

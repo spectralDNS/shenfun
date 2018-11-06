@@ -104,7 +104,7 @@ def inner(expr0, expr1, output_array=None):
         raise RuntimeError
 
     if test.rank() == 1: # For vector spaces of rank 1 use recursive algorithm
-        ndim = test.function_space().ndim()
+        ndim = test.function_space().dimensions()
 
         if output_array is None and trial.argument == 2:
             output_array = Function(test.function_space())
@@ -225,7 +225,7 @@ def inner(expr0, expr1, output_array=None):
     # Strip off diagonal matrices, put contribution in scale array
     B = []
     for sc, matrices in zip(S, A):
-        scale = sc.reshape((1,)*space.ndim())
+        scale = sc.reshape((1,)*space.dimensions())
         nonperiodic = {}
         for axis, mat in enumerate(matrices):
             if isinstance(space[axis], FourierBase):
@@ -242,7 +242,7 @@ def inner(expr0, expr1, output_array=None):
         # Decomposition
         if hasattr(space, 'local_slice'):
             s = scale.shape
-            ss = [slice(None)]*space.ndim()
+            ss = [slice(None)]*space.dimensions()
             ls = space.local_slice()
             for axis, shape in enumerate(s):
                 if shape > 1:
@@ -266,7 +266,7 @@ def inner(expr0, expr1, output_array=None):
     if np.all([isinstance(b, np.ndarray) for b in B]):
 
         # All Fourier
-        if space.ndim() == 1:
+        if space.dimensions() == 1:
             if trial.argument == 1:
                 A[0][0].axis = 0
                 A[0][0].scale = S[0]
@@ -301,7 +301,7 @@ def inner(expr0, expr1, output_array=None):
         npaxis = [b for b in B[0].keys() if isinstance(b, int)][0]
 
         ## 1D case for itself, because it is simpler
-        #if space.ndim() == 1:
+        #if space.dimensions() == 1:
             #from IPython import embed; embed()
             #if trial.argument == 1:
                 #if len(B) == 1:
