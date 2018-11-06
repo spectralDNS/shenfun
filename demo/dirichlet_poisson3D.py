@@ -16,15 +16,16 @@ whereas for Chebyshev we solve
      (\nabla^2 u, v) = (f, v)
 
 """
-import sys, os
+import sys
+import os
+import time
 import importlib
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
+from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
     Function, Basis, TensorProductSpace
-import time
 from mpi4py_fft.pencil import Subcomm
-from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt
 except ImportError:
@@ -95,7 +96,7 @@ uq = T.backward(u_hat, fast_transform=True)
 # Compare with analytical solution
 uj = ul(*X)
 error = comm.reduce(np.linalg.norm(uj-uq)**2)
-if comm.Get_rank() == 0 and regtest == True:
+if comm.Get_rank() == 0 and regtest is True:
     print("Error=%2.16e" %(np.sqrt(error)))
 assert np.allclose(uj, uq)
 

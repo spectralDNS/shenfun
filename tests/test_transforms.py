@@ -1,14 +1,14 @@
+from itertools import product
+from abc import ABC
 import pytest
-from shenfun.chebyshev import bases as cbases
-from shenfun.legendre import bases as lbases
-from shenfun.fourier import bases as fbases
 from scipy.linalg import solve
 import scipy.sparse.linalg as la
 from sympy import Symbol, sin, cos, pi, lambdify
 import numpy as np
-from itertools import product
-from abc import ABC
 import shenfun
+from shenfun.chebyshev import bases as cbases
+from shenfun.legendre import bases as lbases
+from shenfun.fourier import bases as fbases
 from shenfun.la import TDMA
 from shenfun.spectralbase import inner_product
 
@@ -90,7 +90,7 @@ def test_scalarproduct(ST, quad):
     u0 = ST.scalar_product(fj, u0, fast_transform=True)
     u1 = ST.scalar_product(fj, u1, fast_transform=False)
     assert np.allclose(u1, u0)
-    assert not np.all(u1==u0) # Check that fast is not the same as slow
+    assert not np.all(u1 == u0) # Check that fast is not the same as slow
 
 #test_scalarproduct(cbases.ShenDirichletBasis, 'GC')
 
@@ -223,7 +223,7 @@ def test_transforms(ST, quad, dim):
         assert np.allclose(fij[cc], u11[cc])
 
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
-@pytest.mark.parametrize('axis', (0,1,2))
+@pytest.mark.parametrize('axis', (0, 1, 2))
 def test_axis(ST, quad, axis):
     kwargs = {}
     if not ST.family() == 'fourier':
