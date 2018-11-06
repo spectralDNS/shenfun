@@ -12,7 +12,7 @@ shenfun
 
 Description
 -----------
-Shenfun is a toolbox for automating the spectral Galerkin method.  The user interface to shenfun is very similar to `FEniCS <www.fenicsproject.org>`_, but works only for tensor product grids and the spectral Galerkin method. The code is parallelized with MPI through the `mpi4py-fft <https://bitbucket.org/mpi4py/mpi4py-fft>`_ package.
+Shenfun is a toolbox for automating the spectral Galerkin method.  The user interface to shenfun is very similar to `FEniCS <https://fenicsproject.org>`_, but works only for tensor product grids and the spectral Galerkin method. The code is parallelized with MPI through the `mpi4py-fft <https://bitbucket.org/mpi4py/mpi4py-fft>`_ package.
 
 The demo folder contains several examples for the Poisson, Helmholtz and Biharmonic equations. For extended documentation and installation instructions see `ReadTheDocs <http://shenfun.readthedocs.org>`_. See also this `paper <https://rawgit.com/spectralDNS/shenfun/master/docs/demos/mekit17/pub/shenfun_bootstrap.html>`_.
 
