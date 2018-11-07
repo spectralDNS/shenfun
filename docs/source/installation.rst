@@ -30,7 +30,7 @@ other means.
 
 If not already present, the remaining dependencies can be easily
 installed using `pip`_ or `conda`_. To install remaining dependencies as
-well as ``shenfun`` do
+well as ``shenfun`` from `pypi`_ do
 
 ::
 
@@ -42,8 +42,8 @@ whereas the following will install the latest version from github
 
     pip install git+https://github.com/spectralDNS/shenfun.git@master
 
-You can also build ``shenfun`` yourself. From the top directory, after cloning
-or forking, do
+You can also build ``shenfun`` from the top directory, after cloning
+or forking
 
 ::
 
@@ -109,3 +109,4 @@ see the respective packages for how to install with support for MPI.
 .. _sympy: https://www.sympy.org
 .. _scipy: https://www.scipy.org
 .. _conda-build: https://conda.io/docs/commands/build/conda-build.html
+.. _pypi: https://pypi.org/project/shenfun/
