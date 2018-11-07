@@ -3,20 +3,18 @@ Installation
 
 Shenfun has a few dependencies
 
-::
-
-    mpi4py
-    FFTW
-    mpi4py-fft
-    cython
-    numpy
-    sympy
-    scipy
+    * `mpi4py`_
+    * `FFTW`_
+    * `mpi4py-fft`_
+    * `cython`_
+    * `numpy`_
+    * `sympy`_
+    * `scipy`_
 
 that are mostly straight-forward to install, or already installed in
 most Python environments. The first two are usually most troublesome.
 Basically, for `mpi4py`_ you need to have a working MPI installation,
-whereas `FFTW`_ is avalable on most high performance computer systems.
+whereas `FFTW`_ is available on most high performance computer systems.
 If you are using `conda`_, then both these libraries can be installed
 directly from the `conda-forge`_ channel
 
@@ -24,8 +22,9 @@ directly from the `conda-forge`_ channel
 
     conda install -c conda-forge mpi4py mpich fftw
 
-which installs `mpich`_ as a dependency of `mpi4py`_. You can get `openmpi`_
-instead by specifying so in the line above. If you do not use `conda`_,
+This installs `mpich`_ as a dependency of `mpi4py`_. You can switch
+``mpich`` with ``openmpi`` in the line above to get `openmpi`_
+instead. If you do not use `conda`_,
 then you need to make sure that MPI and FFTW are installed by some
 other means.
 
@@ -43,14 +42,14 @@ whereas the following will install the latest version from github
 
     pip install git+https://github.com/spectralDNS/shenfun.git@master
 
-From the top directory you can also do
+You can also build ``shenfun`` yourself. From the top directory, after cloning
+or forking, do
 
 ::
 
     pip install .
 
-You can also build yourself using conda-build (from top directory after
-cloning or forking)
+or using `conda-build`_ with the recipes in folder ``conf/conda``
 
 ::
 
@@ -68,8 +67,8 @@ You may also use precompiled binaries in the `spectralDNS channel`_. Use for exa
 which installs both shenfun, and all required dependencies,
 most of which are pulled in from the conda-forge channel. There are
 binaries compiled for both OSX and linux, for either Python version 2.7
-or 3.6. To specify the Python version as 3.6 instead of default (used
-above) you can for exampel do
+or 3.6. To specify the Python version as 3.6 instead of default
+you can for exampel do
 
 ::
 
@@ -106,3 +105,7 @@ see the respective packages for how to install with support for MPI.
 .. _h5py: https://www.h5py.org
 .. _mpich: https://www.mpich.org
 .. _openmpi: https://www.open-mpi.org
+.. _numpy: https://www.numpy.org
+.. _sympy: https://www.sympy.org
+.. _scipy: https://www.scipy.org
+.. _conda-build: https://conda.io/docs/commands/build/conda-build.html

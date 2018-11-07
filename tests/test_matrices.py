@@ -310,7 +310,7 @@ def test_helmholtz2D(family, axis):
     N = (8, 9)
     SD = shenfun.Basis(N[axis], family=family, bc=(0, 0))
     K1 = shenfun.Basis(N[(axis+1)%2], family='F', dtype='d')
-    subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, [0, 1])
+    subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, allaxes2D[axis])
     bases = [K1]
     bases.insert(axis, SD)
     T = shenfun.TensorProductSpace(subcomms, bases, axes=allaxes2D[axis])
@@ -382,7 +382,7 @@ def test_biharmonic2D(family, axis):
     N = (16, 16)
     SD = shenfun.Basis(N[axis], family=family, bc='Biharmonic')
     K1 = shenfun.Basis(N[(axis+1)%2], family='F', dtype='d')
-    subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, (0, 1))
+    subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, allaxes2D[axis])
     bases = [K1]
     bases.insert(axis, SD)
     T = shenfun.TensorProductSpace(subcomms, bases, axes=allaxes2D[axis])
@@ -417,5 +417,5 @@ if __name__ == '__main__':
     #test_div2(cBasis[0], 'GC')
     #test_helmholtz3D('legendre', 2)
     #test_helmholtz2D('legendre', 0)
-    #test_biharmonic3D('chebyshev', 2)
-    #test_biharmonic2D('chebyshev', 0)
+    #test_biharmonic3D('chebyshev', 1)
+    test_biharmonic2D('chebyshev', 0)
