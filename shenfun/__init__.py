@@ -13,7 +13,7 @@ parallelized with MPI through the
 """
 #pylint: disable=wildcard-import,no-name-in-module
 
-__version__ = '1.1.1'
+__version__ = '1.2.0'
 __author__ = 'Mikael Mortensen'
 
 import numpy as np
