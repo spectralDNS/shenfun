@@ -75,8 +75,8 @@ you can for exampel do
     conda create --name shenfun_py3 -c conda-forge -c spectralDNS python=3.6 shenfun
     source activate shenfun_py3
 
-Extra dependencies
-------------------
+Additional dependencies
+-----------------------
 
 For storing and retrieving data you need either `HDF5`_ or `netCDF4`_, compiled
 with support for MPI (see :ref:`Postprocessing`). Unfortunately, the libraries that
