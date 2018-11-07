@@ -21,11 +21,12 @@ bibliography: paper.bib
 
 ``Shenfun`` is a toolbox for automating the spectral Galerkin method. The user
 interface to ``shenfun`` is very similar to FEniCS (https://fenicsproject.org),
-but applications are limited to simple, yet multi-dimensional, tensor
+but applications are limited to simple, yet multidimensional, tensor
 product grids.
 
-With ``shenfun`` one can solve a wide range of PDEs, where one dimension can
-be inhomogeneous, with the remaining required to be periodic. The
+With ``shenfun`` one can solve a wide range of PDEs, with the limitation that
+one dimension can be inhomogeneous (with Dirichlet/Neumann type boundaries),
+whereas the remaining are required to be periodic. The
 periodic dimensions are discretized using Fourier exponentials as basis
 functions. For the inhomogeneous direction, we use combinations of
 Chebyshev or Legendre polynomials, as described by J. Shen [@shen95; @shen94].
@@ -38,25 +39,29 @@ for global redistribution of multidimensional arrays.
 
 ``Shenfun`` is documented, with installation instructions and demo
 programs, on readthedocs (http://shenfun.readthedocs.org).
-A range of extended demonstration programs are included for, e.g., the
+Extended demonstration programs are included for, e.g., the
 Poisson, Klein-Gordon and Kuramato-Sivashinsky equations.
 
 ``Shenfun`` has been designed as a low entry-level research tool for physicists
 [@mortensen17] in need of highly accurate numerical methods for high
-performance computing. The primary focus has been for turbulence and
-transition to turbulence, where simulations are extremely sensitive to
-disturbances, and numerical diffusion or dispersion are unacceptable.
-Spectral methods are well known for their accuracy and efficiency due to fast
-transform methods, e.g., Fast Fourier Transforms (FFTs). Combined with
-the Galerkin method, we get numerical methods that are truly state of
-the art.
+performance computing. The primary focus for the development has been for
+turbulence and transition to turbulence, where simulations are extremely
+sensitive to disturbances, and numerical diffusion or dispersion are
+unacceptable. Spectral methods are well known for their accuracy and
+efficiency, taking advantage of fast transform methods, like the Fast Fourier
+Transforms (FFTs). Combined with the Galerkin method and Shen's robust
+composite bases, this leads to well conditioned linear algebra systems and
+numerical schemes that are truly exceptional. Highly efficient direct
+solvers [@mortensen17] are provided for Poisson, Helmholtz and Biharmonic
+systems of equations, arising naturally with the current bases for a wide
+range of problems.
 
 In the spectralDNS repository (https://github.com/spectralDNS/spectralDNS)
-there are applications using ``shenfun`` for forced isotropic turbulence
-(Navier-Stokes equations), turbulent channel flows [@mortensen17b] and
-Rayleigh-Bénard flow. However, ``shenfun`` is by no means limited to the
-equations for fluid flow and it should be equally efficient for a wide
-range of scientific applications.
+there are applications utilizing ``shenfun`` for forced isotropic turbulence
+(Navier-Stokes equations), turbulent channel flows [@mortensen17b],
+Magnetohydrodynamics (MHD) and Rayleigh-Bénard flow. However, ``shenfun`` is
+by no means limited to the equations for fluid and plasma flows and it should
+be equally efficient for other scientific applications.
 
 # Acknowledgements
 
