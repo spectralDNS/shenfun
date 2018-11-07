@@ -183,7 +183,7 @@ axes = {2: {0: [0, 1, 2],
 def test_project(typecode, dim, ST, quad):
     # Using sympy to compute an analytical solution
     x, y, z = symbols("x,y,z")
-    sizes=(25, 24)
+    sizes = (25, 24)
 
     funcs = {
         (1, 0): (cos(4*y)*sin(2*np.pi*x))*(1-x**2),
@@ -201,12 +201,6 @@ def test_project(typecode, dim, ST, quad):
             bases.append(Basis(n, 'F', dtype=typecode.upper()))
         bases.append(Basis(shape[-1], 'F', dtype=typecode))
 
-        if dim < 3:
-            n = min(shape)
-            if typecode in 'fdg':
-                n //=2; n+=1
-            if n < comm.size:
-                continue
         for axis in range(dim+1):
             ST0 = ST(shape[-1], quad=quad)
             bases.insert(axis, ST0)
@@ -247,7 +241,7 @@ nbases_and_quads = list(product(lBasis[2:3], lquads))+list(product(cBasis[2:3], 
 def test_project2(typecode, dim, ST, quad):
     # Using sympy to compute an analytical solution
     x, y, z = symbols("x,y,z")
-    sizes=(25, 24)
+    sizes = (25, 24)
 
     funcx = ((2*np.pi**2*(x**2 - 1) - 1)* cos(2*np.pi*x) - 2*np.pi*x*sin(2*np.pi*x))/(4*np.pi**3)
     funcy = ((2*np.pi**2*(y**2 - 1) - 1)* cos(2*np.pi*y) - 2*np.pi*y*sin(2*np.pi*y))/(4*np.pi**3)
@@ -269,12 +263,6 @@ def test_project2(typecode, dim, ST, quad):
             bases.append(Basis(n, 'F', dtype=typecode.upper()))
         bases.append(Basis(shape[-1], 'F', dtype=typecode))
 
-        if dim < 3:
-            n = min(shape)
-            if typecode in 'fdg':
-                n //=2; n+=1
-            if n < comm.size:
-                continue
         for axis in range(dim+1):
             ST0 = ST(shape[-1], quad=quad)
             bases.insert(axis, ST0)
@@ -366,7 +354,7 @@ def test_eval_tensor(typecode, dim, ST, quad):
     # Using sympy to compute an analytical solution
     # Testing for Dirichlet and regular basis
     x, y, z = symbols("x,y,z")
-    sizes=(29, 28)
+    sizes = (29, 28)
 
     funcx = {'': (1-x**2)*sin(np.pi*x),
              'Dirichlet': (1-x**2)*sin(np.pi*x),
@@ -389,7 +377,10 @@ def test_eval_tensor(typecode, dim, ST, quad):
         (2, 2): sin(2*x)*cos(4*y)*funcz[ST.boundary_condition()]
         }
     syms = {1: (x, y), 2:(x, y, z)}
-    points = np.random.random((dim+1, 4))
+    points = None
+    if comm.Get_rank() == 0:
+        points = np.random.random((dim+1, 4))
+    points = comm.bcast(points)
     t_0 = 0
     t_1 = 0
     t_2 = 0
@@ -402,7 +393,8 @@ def test_eval_tensor(typecode, dim, ST, quad):
         if dim < 3:
             n = min(shape)
             if typecode in 'fdg':
-                n //=2; n+=1
+                n //= 2
+                n += 1
             if n < comm.size:
                 continue
         for axis in range(dim+1):
@@ -454,14 +446,17 @@ def test_eval_tensor(typecode, dim, ST, quad):
 def test_eval_fourier(typecode, dim):
     # Using sympy to compute an analytical solution
     x, y, z = symbols("x,y,z")
-    sizes=(24, 24)
+    sizes = (24, 24)
 
     funcs = {
         2: cos(4*x) + sin(6*y),
         3: sin(6*x) + cos(4*y) + sin(8*z)
         }
     syms = {2: (x, y), 3:(x, y, z)}
-    points = np.random.random((dim, 3))
+    points = None
+    if comm.Get_rank() == 0:
+        points = np.random.random((dim, 3))
+    points = comm.bcast(points)
     t_0 = 0
     t_1 = 0
     t_2 = 0
@@ -469,6 +464,13 @@ def test_eval_fourier(typecode, dim):
         bases = []
         for n in shape[:-1]:
             bases.append(Basis(n, 'F', dtype=typecode.upper()))
+        n = min(shape)
+        if typecode in 'fdg':
+            n //= 2
+            n += 1
+        if n < comm.size:
+            continue
+
         bases.append(Basis(shape[-1], 'F', dtype=typecode))
         fft = TensorProductSpace(comm, bases, dtype=typecode)
         X = fft.local_mesh(True)
@@ -481,7 +483,7 @@ def test_eval_fourier(typecode, dim):
         t0 = time()
         result = fft.eval(points, u_hat, method=0)
         t_0 += time() - t0
-        assert allclose(uq, result), print(uq-result)
+        assert allclose(uq, result), print(uq, result)
         t0 = time()
         result = fft.eval(points, u_hat, method=1)
         t_1 += time() - t0
@@ -489,7 +491,7 @@ def test_eval_fourier(typecode, dim):
         t0 = time()
         result = fft.eval(points, u_hat, method=2)
         t_2 += time() - t0
-        assert allclose(uq, result)
+        assert allclose(uq, result), print(uq, result)
 
     print('method=0', t_0)
     print('method=1', t_1)
@@ -499,8 +501,8 @@ if __name__ == '__main__':
     #test_transform('f', 3)
     #test_transform('d', 2)
     #test_shentransform('d', 2, cbases.ShenNeumannBasis, 'GC')
-    test_project('D', 2, cbases.ShenDirichletBasis, 'GC')
+    #test_project('D', 2, cbases.ShenDirichletBasis, 'GC')
     #test_project2('d', 1, lbases.ShenNeumannBasis, 'LG')
     #test_project_2dirichlet('GL')
-    #test_eval_tensor('d', 2, cbases.Basis, 'GC')
-    #test_eval_fourier('d', 3)
+    #test_eval_tensor('d', 1, cbases.Basis, 'GC')
+    test_eval_fourier('d', 3)

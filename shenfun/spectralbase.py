@@ -781,7 +781,7 @@ class SpectralBase(object):
 
     def sl(self, a):
         """Return a list of slices, broadcasted to the shape of a forward
-        output array, with `a` along self.axis
+        output array, with ``a`` along self.axis
 
         Parameters
         ----------
@@ -834,34 +834,27 @@ class SpectralBase(object):
     def _padding_backward(self, trunc_array, padded_array):
         pass
 
-def inner_product(test, trial, out=None, axis=0, fast_transform=False):
-    """Return inner product of linear or bilinear form
+def inner_product(test, trial):
+    """Return 1D inner product of bilinear form
 
     Parameters
     ----------
         test : 2-tuple of (Basis, integer)
-               Basis is any of the classes from
+            Basis is any of the classes from
 
-               - :mod:`.chebyshev.bases`
-               - :mod:`.legendre.bases`
-               - :mod:`.fourier.bases`
+            - :mod:`.chebyshev.bases`
+            - :mod:`.legendre.bases`
+            - :mod:`.fourier.bases`
 
-               The integer determines the number of times the basis is
-               differentiated. The test represents the matrix row
+            The integer determines the number of times the basis is
+            differentiated. The test represents the matrix row
         trial : 2-tuple of (Basis, integer)
-                Either an basis of argument 1 (trial) or 2 (Function)
+            Like test
 
-                - If argument = 1, then a bilinear form is assembled to
-                  a matrix. Trial represents matrix column
-                - If argument = 2, then a linear form is assembled and the
-                  trial represents a Function evaluated at quadrature nodes
-
-        out : array, optional
-              Return array
-        axis : int, optional
-               Axis to take the inner product over
-        fast_transform : bool, optional
-                         Use fast transform method if True
+    Note
+    ----
+    This function only performs 1D inner products and is unaware of any
+    :class:`.TensorProductSpace`
 
     Example
     -------
@@ -877,37 +870,10 @@ def inner_product(test, trial, out=None, axis=0, fast_transform=False):
     >>> [np.all(B[k] == v) for k, v in d.items()]
     [True, True, True]
     """
-    from .fourier import FourierBase, R2CBasis
-
-    if isinstance(test, tuple):
-        # Bilinear form
-        assert trial[0].__module__ == test[0].__module__
-        if isinstance(test[1], (int, np.integer)):
-            key = ((test[0].__class__, test[1]), (trial[0].__class__, trial[1]))
-        elif isinstance(test[1], np.ndarray):
-            assert len(test[1]) == 1
-            k_test = test[1][(0,)*np.ndim(test[1])]
-            k_trial = trial[1][(0,)*np.ndim(trial[1])]
-            key = ((test[0].__class__, k_test), (trial[0].__class__, k_trial))
-        else:
-            raise RuntimeError
-
-        mat = test[0]._get_mat()
-        m = mat[key](test, trial)
-        return m
-
-    else:
-        # Linear form
-        if out is None:
-            sl = list(trial.shape)
-            if isinstance(test, FourierBase):
-                if isinstance(test, R2CBasis):
-                    sl[axis] = sl[axis]//2+1
-                out = np.zeros(sl, dtype=np.complex)
-            else:
-                out = np.zeros_like(trial)
-        out = test.scalar_product(trial, out, fast_transform=fast_transform)
-        return out
+    assert trial[0].__module__ == test[0].__module__
+    key = ((test[0].__class__, test[1]), (trial[0].__class__, trial[1]))
+    mat = test[0]._get_mat()
+    return mat[key](test, trial)
 
 class FuncWrap(object):
 

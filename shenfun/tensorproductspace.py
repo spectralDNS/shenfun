@@ -250,11 +250,13 @@ class TensorProductSpace(PFFT):
                     last_conj_index = M-1
                 else:
                     last_conj_index = M
-                sl = self.local_slice()[axis].start
+                offset = self.local_slice()[axis].start
+                sl = offset
                 st = self.local_slice()[axis].stop
                 if sl == 0:
                     sl = 1
-                st = min(last_conj_index, st)
+                st = min(last_conj_index, st) - offset
+                sl -= offset
                 sp = [slice(None), slice(sl, st)]
 
             if len(out) == 0:
