@@ -162,16 +162,16 @@ class HDF5File(BaseFile):
         if self.T.rank() == 1:
             name += '/Vector'
         dset = "/".join((name, group, str(step)))
-        u[:] = self.f[dset][tuple(s)]
+        u[:] = self.f[dset][s]
         self.close()
 
     def _write_group(self, name, u, step, **kw):
         T = u.function_space()
         forward_output = kw.get('forward_output', False)
-        s = tuple(T.local_slice(forward_output))
+        s = T.local_slice(forward_output)
         if name not in self.f:
             self.f.create_group(name)
-        N = tuple(T.allocated_shape(forward_output))
+        N = T.allocated_shape(forward_output)
         self.f[name].require_dataset(str(step), shape=N, dtype=u.dtype)
         self.f["/".join((name, str(step)))][s] = u
 

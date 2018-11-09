@@ -163,7 +163,7 @@ class NCFile(BaseFile):
         else:
             h = self.f.variables[name]
         h.set_collective(True)
-        s = tuple([step] + s)
+        s = (step,) + s
         h[s] = u
         self.f.sync()
 
