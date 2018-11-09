@@ -104,7 +104,7 @@ def update(self, fu, fu_hat, t, tstep, **params):
     transformed = False
 
     if rank == 0 and tstep % params['plot_tstep'] == 0 and params['plot_tstep'] > 0:
-        fu = TT.backward(fu_hat, fu)
+        fu = fu_hat.backward(fu)
         f, u = fu[:]
         image.ax.clear()
         image.ax.contourf(X[1][..., 0], X[0][..., 0], u[..., N[2]//2], 100)
@@ -113,19 +113,19 @@ def update(self, fu, fu_hat, t, tstep, **params):
 
     if tstep % params['write_slice_tstep'][0] == 0:
         if transformed is False:
-            fu = TT.backward(fu_hat, fu)
+            fu = fu_hat.backward(fu)
             transformed = True
         params['file'].write(tstep, params['write_slice_tstep'][1], as_scalar=True)
 
     if tstep % params['write_tstep'][0] == 0:
         if transformed is False:
-            fu = TT.backward(fu_hat, fu)
+            fu = fu_hat.backward(fu)
             transformed = True
         params['file'].write(tstep, params['write_tstep'][1], as_scalar=True)
 
     if tstep % params['Compute_energy'] == 0:
         if transformed is False:
-            fu = TT.backward(fu_hat, fu)
+            fu = fu_hat.backward(fu)
         f, u = fu[:]
         f_hat, u_hat = fu_hat[:]
         ekin = 0.5*energy_fourier(f_hat, T)
@@ -154,8 +154,6 @@ if __name__ == '__main__':
     integrator.setup(dt)
     t0 = time()
     fu_hat = integrator.solve(fu, fu_hat, dt, (0, end_time))
-
-    file0.close()
     timer.final(True)
 
     if rank == 0:

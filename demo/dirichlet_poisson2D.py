@@ -24,10 +24,6 @@ import numpy as np
 from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
     Array, Function, Basis, TensorProductSpace
-try:
-    import matplotlib.pyplot as plt
-except ImportError:
-    plt = None
 
 comm = MPI.COMM_WORLD
 
@@ -89,7 +85,8 @@ uq = T.backward(u_hat, uq)
 uj = ul(*X)
 assert np.allclose(uj, uq)
 
-if plt is not None and not 'pytest' in os.environ:
+if 'pytest' not in os.environ:
+    import matplotlib.pyplot as plt
     plt.figure()
     plt.contourf(X[0], X[1], uq)
     plt.colorbar()

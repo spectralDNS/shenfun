@@ -18,17 +18,14 @@ with the Chebyshev basis, and
 for the Legendre basis.
 
 """
-import sys, os
+import sys
+import os
 import importlib
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
+from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
     Function, TensorProductSpace, Basis
-from mpi4py import MPI
-try:
-    import matplotlib.pyplot as plt
-except ImportError:
-    plt = None
 
 comm = MPI.COMM_WORLD
 
@@ -91,7 +88,8 @@ points = np.array([[0.2, 0.3], [0.1, 0.5]])
 p = T.eval(points, u_hat)
 assert np.allclose(p, ul(*points))
 
-if plt is not None and not 'pytest' in os.environ:
+if 'pytest' not in os.environ:
+    import matplotlib.pyplot as plt
     plt.figure()
     plt.contourf(X[0], X[1], uq)
     plt.colorbar()
@@ -105,4 +103,3 @@ if plt is not None and not 'pytest' in os.environ:
     plt.colorbar()
     plt.title('Error')
     plt.show()
-

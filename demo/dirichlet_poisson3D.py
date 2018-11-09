@@ -26,10 +26,6 @@ from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
     Function, Basis, TensorProductSpace
 from mpi4py_fft.pencil import Subcomm
-try:
-    import matplotlib.pyplot as plt
-except ImportError:
-    plt = None
 
 comm = MPI.COMM_WORLD
 
@@ -100,7 +96,8 @@ if comm.Get_rank() == 0 and regtest is True:
     print("Error=%2.16e" %(np.sqrt(error)))
 assert np.allclose(uj, uq)
 
-if plt is not None and not 'pytest' in os.environ:
+if 'pytest' not in os.environ:
+    import matplotlib.pyplot as plt
     plt.figure()
     plt.contourf(X[2][0, 0, :], X[0][:, 0, 0], uq[:, 2, :])
     plt.colorbar()

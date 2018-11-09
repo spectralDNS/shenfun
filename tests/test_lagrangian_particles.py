@@ -1,7 +1,7 @@
-import pytest
-from shenfun import *
 import sympy as sp
 from mpi4py import MPI
+import pytest
+from shenfun import *
 
 comm = MPI.COMM_WORLD
 
@@ -35,8 +35,7 @@ def test_lagrangian_particles():
         lp.step()
 
     assert np.allclose(lp.x, np.array([[0.53986228], [0.74811753]]), 1e-6)
-    assert np.allclose(lp.up, np.array([[ 0.99115526], [-0.09409196]]), 1e-6)
+    assert np.allclose(lp.up, np.array([[0.99115526], [-0.09409196]]), 1e-6)
 
 if __name__ == '__main__':
     test_lagrangian_particles()
-

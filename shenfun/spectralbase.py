@@ -735,13 +735,26 @@ class SpectralBase(object):
         Parameters
         ----------
             forward_output : bool, optional
-                If True then return shape of spectral space (the outcome of a
+                If True then return shape of spectral space (the result of a
                 forward transform). If False then return shape of physical space
                 (the input to a forward transform).
         """
         if forward_output:
             s = self.slice()
             return s.stop - s.start
+        return self.N
+
+    def allocated_shape(self, forward_output=True):
+        """Return allocated shape for basis
+
+        Parameters
+        ----------
+        forward_output : bool, optional
+            If True then return allocated shape for spectral space (the result
+            of a forward transform). If False then return allocated shape of
+            physical space (the input to a forward transform).
+
+        """
         return self.N
 
     def domain_factor(self):
@@ -760,7 +773,7 @@ class SpectralBase(object):
         """
         if self.tensorproductspace:
             return self.tensorproductspace.dimensions()
-        return 1
+        return len(self.forward.input_array.shape)
 
     @property
     def tensorproductspace(self):

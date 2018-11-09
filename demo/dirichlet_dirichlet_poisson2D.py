@@ -14,13 +14,9 @@ import os
 import importlib
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
+from mpi4py import MPI
 from shenfun import inner, grad, TestFunction, TrialFunction, Function, Basis, \
     TensorProductSpace, Array
-from mpi4py import MPI
-try:
-    import matplotlib.pyplot as plt
-except ImportError:
-    plt = None
 
 comm = MPI.COMM_WORLD
 
@@ -63,9 +59,7 @@ H = Solver(T, matrices)
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space
-#t0 = time()
 u_hat = H(u_hat, f_hat, 0)    # Solve
-#print('Time ', time()-t0)
 
 uq = Array(T)
 uq = T.backward(u_hat, uq)
@@ -76,7 +70,8 @@ print(abs(uj-uq).max())
 
 assert np.allclose(uj, uq)
 
-if plt is not None and not 'pytest' in os.environ:
+if 'pytest' not in os.environ:
+    import matplotlib.pyplot as plt
     plt.figure()
     plt.contourf(X[0], X[1], uq)
     plt.colorbar()

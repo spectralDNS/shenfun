@@ -13,8 +13,7 @@ from sympy import symbols, exp, lambdify
 import pyfftw
 import matplotlib.pyplot as plt
 from mpi4py import MPI
-import _pickle
-from mpi4py_fft import generate_xdmf
+from mpi4py_fft import generate_xdmf, fftw
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
     TensorProductSpace, Array, Function, ETDRK4, HDF5File, Basis
 
@@ -25,14 +24,6 @@ x, y = symbols("x,y")
 #ue = (1j*x + y)*exp(-0.03*(x**2+y**2))
 ue = (x + y)*exp(-0.03*(x**2+y**2))
 ul = lambdify((x, y), ue, 'numpy')
-
-try:
-    # Look for wisdom stored using pyfftw.export_wisdom
-    f = open('wisdom128.measure', 'rb')
-    wisdom = _pickle.load(f)
-    pyfftw.import_wisdom(wisdom)
-except:
-    pass
 
 # Size of discretization
 N = (128, 128)
@@ -48,10 +39,17 @@ Tp = TensorProductSpace(comm, (Kp0, Kp1), **{'planner_effort': 'FFTW_PATIENT'})
 u = TrialFunction(T)
 v = TestFunction(T)
 
+# Try to import wisdom. Note that wisdom must be imported after creating the Bases (that initializes the wisdom somehow?)
+try:
+    fftw.import_wisdom('GL.wisdom')
+    print('Importing wisdom')
+except:
+    print('No wisdom imported')
+
 # Turn on padding by commenting:
 #Tp = T
 
-X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
+X = T.local_mesh(True)
 U = Array(T)
 Up = Array(Tp)
 U_hat = Function(T)
@@ -100,5 +98,5 @@ if __name__ == '__main__':
     integrator = ETDRK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
     integrator.setup(dt)
     U_hat = integrator.solve(U, U_hat, dt, (0, end_time))
-    file0.close()
     generate_xdmf("Ginzburg_Landau_{}.h5".format(N[0]))
+    fftw.export_wisdom('GL.wisdom')

@@ -73,6 +73,7 @@ class HDF5File(BaseFile):
         of the *global* arrays.
 
         """
+        self.open()
         for group, list_of_fields in fields.items():
             assert isinstance(list_of_fields, (tuple, list))
             assert isinstance(group, str)
@@ -135,6 +136,7 @@ class HDF5File(BaseFile):
                                 g = group + str(sl[0])
                                 g = "/".join((g, "{}D".format(ndims), slname))
                                 self._write_slice_step(g, step, sl, u, **kw)
+        self.close()
 
     def read(self, u, name, **kw):
         """Read into array ``u``
@@ -153,6 +155,7 @@ class HDF5File(BaseFile):
         """
         forward_output = kw.get('forward_output', False)
         step = kw.get('step', 0)
+        self.open()
         s = self.T.local_slice(forward_output)
         ndim = self.T.dimensions()
         group = "{}D".format(ndim)
@@ -160,6 +163,7 @@ class HDF5File(BaseFile):
             name += '/Vector'
         dset = "/".join((name, group, str(step)))
         u[:] = self.f[dset][tuple(s)]
+        self.close()
 
     def _write_group(self, name, u, step, **kw):
         T = u.function_space()
@@ -167,7 +171,8 @@ class HDF5File(BaseFile):
         s = tuple(T.local_slice(forward_output))
         if name not in self.f:
             self.f.create_group(name)
-        self.f[name].create_dataset(str(step), shape=T.shape(forward_output), dtype=u.dtype)
+        N = tuple(T.allocated_shape(forward_output))
+        self.f[name].require_dataset(str(step), shape=N, dtype=u.dtype)
         self.f["/".join((name, str(step)))][s] = u
 
     def _write_slice_step(self, name, step, slices, field, **kw):
@@ -181,7 +186,7 @@ class HDF5File(BaseFile):
         sl = tuple(slices)
         if name not in self.f:
             self.f.create_group(name)
-        N = T.shape(forward_output)
-        self.f[name].create_dataset(str(step), shape=np.take(N, sp), dtype=field.dtype)
+        N = tuple(np.take(T.allocated_shape(forward_output), sp))
+        self.f[name].require_dataset(str(step), shape=N, dtype=field.dtype)
         if inside == 1:
             self.f["/".join((name, str(step)))][sf] = field[sl]

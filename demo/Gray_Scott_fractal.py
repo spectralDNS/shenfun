@@ -34,8 +34,8 @@ import scipy
 import matplotlib.pyplot as plt
 from mpi4py import MPI
 from mpi4py_fft import generate_xdmf
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, HDF5File,\
-    ETDRK4, TensorProductSpace, VectorTensorProductSpace, Basis, Array
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
+    HDF5File, ETDRK4, TensorProductSpace, VectorTensorProductSpace, Basis, Array
 
 comm = MPI.COMM_WORLD
 
@@ -138,9 +138,8 @@ if __name__ == '__main__':
            'alpha1': 1.5,
            'alpha2': 1.9}
     dt = 10.
-    end_time = 10000000
+    end_time = 1000000
     integrator = ETDRK4(TV, L=LinearRHS, N=NonlinearRHS, update=update, **par)
     integrator.setup(dt)
     UV_hat = integrator.solve(UV, UV_hat, dt, (0, end_time))
-    file0.close()
     generate_xdmf("Gray_Scott_{}.h5".format(N[0]))

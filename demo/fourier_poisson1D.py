@@ -20,10 +20,6 @@ from sympy import Symbol, cos, sin, lambdify
 import numpy as np
 from shenfun import inner, grad, TestFunction, TrialFunction, Basis, Function, \
     Array
-try:
-    import matplotlib.pyplot as plt
-except ImportError:
-    plt = None
 
 # Use sympy to compute a rhs, given an analytical solution
 x = Symbol("x")
@@ -68,7 +64,8 @@ point = np.array([0.1, 0.2])
 p = ST.eval(point, u_hat)
 assert np.allclose(p, ul(point))
 
-if plt is not None and not 'pytest' in os.environ:
+if 'pytest' not in os.environ:
+    import matplotlib.pyplot as plt
     plt.figure()
     plt.plot(X, uj)
     plt.title("U")

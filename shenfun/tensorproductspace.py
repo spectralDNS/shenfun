@@ -455,10 +455,37 @@ class TensorProductSpace(PFFT):
                 If True then return shape of an array that is the result of a
                 forward transform. If False then return shape of physical
                 space, i.e., the input to a forward transform.
+
+        Note
+        ----
+        This function is returning the actual shape of allocated arrays. So,
+        even though a homogeneous Dirichlet basis has shape N-2, it will have
+        allocated an array of shape N, and this function returns N.
         """
         if not forward_output:
-            return [int(np.round(base.N*base.padding_factor)) for base in self]
-        return [base.shape() for base in self]
+            return [int(np.round(base.shape(forward_output)*base.padding_factor)) for base in self]
+        return [base.shape(forward_output) for base in self]
+
+    def allocated_shape(self, forward_output=False):
+        """Return shape of allocated work arrays for TensorProductSpace
+
+        Parameters
+        ----------
+            forward_output : bool, optional
+                If True then return shape of an array that is the result of a
+                forward transform. If False then return shape of physical
+                space, i.e., the input to a forward transform.
+
+        Note
+        ----
+        This function is returning the actual shape of allocated arrays. So,
+        even though a homogeneous Dirichlet basis has shape N-2, it will have
+        allocated an array of shape N, and this function thus returns N.
+
+        """
+        if not forward_output:
+            return [int(np.round(base.allocated_shape(forward_output)*base.padding_factor)) for base in self]
+        return [base.allocated_shape(forward_output) for base in self]
 
     def __iter__(self):
         return iter(self.bases)
@@ -579,6 +606,26 @@ class MixedTensorProductSpace(object):
                 space, i.e., the input to a forward transform.
         """
         s = self.spaces[0].shape(forward_output)
+        return [self.num_components()] + s
+
+    def allocated_shape(self, forward_output=False):
+        """Return allocated shape of arrays for MixedTensorProductSpace
+
+        Parameters
+        ----------
+            forward_output : bool, optional
+                If True then return shape of an array that is the result of a
+                forward transform. If False then return shape of physical
+                space, i.e., the input to a forward transform.
+
+        Note
+        ----
+        This function is returning the actual shape of allocated arrays. So,
+        even though a homogeneous Dirichlet basis has shape N-2, it will have
+        allocated an array of shape N, and this function thus returns N.
+
+        """
+        s = self.spaces[0].allocated_shape(forward_output)
         return [self.num_components()] + s
 
     def local_slice(self, forward_output=False):
