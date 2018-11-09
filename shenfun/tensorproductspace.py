@@ -48,7 +48,7 @@ class TensorProductSpace(PFFT):
         # Note do not call __init__ of super
         self.comm = comm
         self.bases = bases
-        shape = self.shape()
+        shape = list(self.shape())
         assert shape
         assert min(shape) > 0
 
@@ -463,8 +463,8 @@ class TensorProductSpace(PFFT):
         allocated an array of shape N, and this function returns N.
         """
         if not forward_output:
-            return [int(np.round(base.shape(forward_output)*base.padding_factor)) for base in self]
-        return [base.shape(forward_output) for base in self]
+            return tuple([int(np.round(base.shape(forward_output)*base.padding_factor)) for base in self])
+        return tuple([base.shape(forward_output) for base in self])
 
     def allocated_shape(self, forward_output=False):
         """Return shape of allocated work arrays for TensorProductSpace
@@ -484,8 +484,8 @@ class TensorProductSpace(PFFT):
 
         """
         if not forward_output:
-            return [int(np.round(base.allocated_shape(forward_output)*base.padding_factor)) for base in self]
-        return [base.allocated_shape(forward_output) for base in self]
+            return tuple([int(np.round(base.allocated_shape(forward_output)*base.padding_factor)) for base in self])
+        return tuple([base.allocated_shape(forward_output) for base in self])
 
     def __iter__(self):
         return iter(self.bases)
@@ -606,7 +606,7 @@ class MixedTensorProductSpace(object):
                 space, i.e., the input to a forward transform.
         """
         s = self.spaces[0].shape(forward_output)
-        return [self.num_components()] + s
+        return (self.num_components(),) + s
 
     def allocated_shape(self, forward_output=False):
         """Return allocated shape of arrays for MixedTensorProductSpace
@@ -626,7 +626,7 @@ class MixedTensorProductSpace(object):
 
         """
         s = self.spaces[0].allocated_shape(forward_output)
-        return [self.num_components()] + s
+        return (self.num_components(),) + s
 
     def local_slice(self, forward_output=False):
         """The local view into the global data
@@ -639,7 +639,7 @@ class MixedTensorProductSpace(object):
 
         """
         s = self.spaces[0].local_slice(forward_output)
-        return [slice(None)] + s
+        return (slice(None),) + s
 
     def local_shape(self, forward_output=True):
         """The local (to each processor) shape of data
