@@ -18,17 +18,14 @@ with the Chebyshev basis, and
 for the Legendre basis.
 
 """
-import sys, os
+import sys
+import os
 import importlib
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
+from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
     Basis, TensorProductSpace, Function
-from mpi4py import MPI
-try:
-    import matplotlib.pyplot as plt
-except ImportError:
-    plt = None
 
 comm = MPI.COMM_WORLD
 
@@ -55,7 +52,7 @@ if family == 'chebyshev':
 SD = Basis(N[0], family=family, bc='Biharmonic')
 K1 = Basis(N[1], family='F', dtype='D')
 K2 = Basis(N[2], family='F', dtype='d')
-T = TensorProductSpace(comm, (K1, K2, SD), axes=(2,0,1))
+T = TensorProductSpace(comm, (K1, K2, SD), axes=(2, 0, 1))
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)
 v = TestFunction(T)
@@ -85,7 +82,8 @@ uj = ul(*X)
 print(abs(uj-uq).max())
 assert np.allclose(uj, uq)
 
-if plt is not None and not 'pytest' in os.environ:
+if 'pytest' not in os.environ:
+    import matplotlib.pyplot as plt
     plt.figure()
     plt.contourf(X[0][:, :, 0], X[1][:, :, 0], uq[:, :, 8])
     plt.colorbar()

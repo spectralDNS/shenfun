@@ -11,16 +11,12 @@ where V is the Fourier basis span{exp(1jkx)}_{k=-N/2}^{N/2-1} and
 VxVxV is a tensorproductspace.
 
 """
+import os
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
-import os
+from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis, \
     TensorProductSpace, Array, Function
-from mpi4py import MPI
-try:
-    import matplotlib.pyplot as plt
-except ImportError:
-    plt = None
 
 comm = MPI.COMM_WORLD
 
@@ -67,17 +63,18 @@ assert np.allclose(p, ul(*point))
 p2 = f_hat.eval(point)
 assert np.allclose(p2, ul(*point))
 
-if plt is not None and not 'pytest' in os.environ:
+if 'pytest' not in os.environ:
+    import matplotlib.pyplot as plt
     plt.figure()
-    plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 0])
+    plt.contourf(X[0][:, :, 0], X[1][:, :, 0], uq[:, :, 0])
     plt.colorbar()
 
     plt.figure()
-    plt.contourf(X[0][:,:,0], X[1][:,:,0], uj[:, :, 0])
+    plt.contourf(X[0][:, :, 0], X[1][:, :, 0], uj[:, :, 0])
     plt.colorbar()
 
     plt.figure()
-    plt.contourf(X[0][:,:,0], X[1][:,:,0], uq[:, :, 0]-uj[:, :, 0])
+    plt.contourf(X[0][:, :, 0], X[1][:, :, 0], uq[:, :, 0]-uj[:, :, 0])
     plt.colorbar()
     plt.title('Error')
     plt.show()

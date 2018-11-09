@@ -1,9 +1,9 @@
 import pytest
 import numpy as np
+from mpi4py import MPI
 from shenfun import inner, div, curl, TestFunction, TrialFunction, Function, \
     Array, project, Dx, Basis, TensorProductSpace, VectorTensorProductSpace, \
     MixedTensorProductSpace
-from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
 # Set global size of the computational box

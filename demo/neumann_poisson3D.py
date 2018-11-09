@@ -16,17 +16,14 @@ whereas for Chebyshev we solve
      (\nabla^2 u, v) = (f, v)
 
 """
-import sys, os
+import sys
+import os
 import importlib
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
+from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
     Function, TensorProductSpace, Basis
-from mpi4py import MPI
-try:
-    import matplotlib.pyplot as plt
-except ImportError:
-    plt = None
 
 comm = MPI.COMM_WORLD
 
@@ -37,7 +34,7 @@ Solver = base.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y, z = symbols("x,y,z")
-ue =  sin(6*z)*cos(4*y)*sin(2*np.pi*x)*(1-x**2)
+ue = sin(6*z)*cos(4*y)*sin(2*np.pi*x)*(1-x**2)
 fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
 
 # Lambdify for faster evaluation
@@ -82,7 +79,8 @@ uj = ul(*X)
 print(abs(uj-u).max())
 assert np.allclose(uj, u)
 
-if plt is not None and not 'pytest' in os.environ:
+if 'pytest' not in os.environ:
+    import matplotlib.pyplot as plt
     plt.figure()
     plt.contourf(X[0][:, :, 0], X[1][:, :, 0], u[:, :, 2])
     plt.colorbar()

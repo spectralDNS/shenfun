@@ -38,19 +38,12 @@ def test_transform(typecode, dim):
                 bases.append(Basis(n, 'F', dtype=typecode.upper()))
             bases.append(Basis(shape[-1], 'F', dtype=typecode))
 
-            if dim < 3:
-                n = min(shape)
-                if typecode in 'fdg':
-                    n //= 2; n += 1
-                if n < comm.size:
-                    continue
-
             fft = TensorProductSpace(comm, bases, dtype=typecode, slab=slab)
 
             if comm.rank == 0:
                 grid = [c.size for c in fft.subcomm]
                 print('grid:{} shape:{} typecode:{}'
-                        .format(grid, shape, typecode))
+                      .format(grid, shape, typecode))
 
             U = random_like(fft.forward.input_array)
 
@@ -91,19 +84,12 @@ def test_transform(typecode, dim):
                 bases.append(Basis(n, 'F', dtype=typecode.upper(), padding_factor=padding))
             bases.append(Basis(shape[-1], 'F', dtype=typecode, padding_factor=padding))
 
-            if dim < 3:
-                n = min(shape)
-                if typecode in 'fdg':
-                    n //=2; n+=1
-                if n < comm.size:
-                    continue
-
             fft = TensorProductSpace(comm, bases, dtype=typecode)
 
             if comm.rank == 0:
                 grid = [c.size for c in fft.subcomm]
                 print('grid:{} shape:{} typecode:{}'
-                        .format(grid, shape, typecode))
+                      .format(grid, shape, typecode))
 
             U = random_like(fft.forward.input_array)
             F = fft.forward(U)
@@ -121,7 +107,6 @@ def test_transform(typecode, dim):
             assert allclose(F, V)
 
             fft.destroy()
-
 
 cBasis = (cbases.Basis,
           cbases.ShenDirichletBasis,
@@ -149,12 +134,6 @@ def test_shentransform(typecode, dim, ST, quad):
             bases.append(Basis(n, 'F', dtype=typecode.upper()))
         bases.append(Basis(shape[-1], 'F', dtype=typecode))
 
-        if dim < 3:
-            n = min(shape)
-            if typecode in 'fdg':
-                n //=2; n+=1
-            if n < comm.size:
-                continue
         for axis in range(dim+1):
             ST0 = ST(shape[-1], quad=quad)
             bases.insert(axis, ST0)
@@ -390,13 +369,6 @@ def test_eval_tensor(typecode, dim, ST, quad):
             bases.append(Basis(n, 'F', dtype=typecode.upper()))
         bases.append(Basis(shape[-1], 'F', dtype=typecode))
 
-        if dim < 3:
-            n = min(shape)
-            if typecode in 'fdg':
-                n //= 2
-                n += 1
-            if n < comm.size:
-                continue
         for axis in range(dim+1):
             #for axis in (2,):
             ST0 = ST(shape[-1], quad=quad)
@@ -464,12 +436,6 @@ def test_eval_fourier(typecode, dim):
         bases = []
         for n in shape[:-1]:
             bases.append(Basis(n, 'F', dtype=typecode.upper()))
-        n = min(shape)
-        if typecode in 'fdg':
-            n //= 2
-            n += 1
-        if n < comm.size:
-            continue
 
         bases.append(Basis(shape[-1], 'F', dtype=typecode))
         fft = TensorProductSpace(comm, bases, dtype=typecode)

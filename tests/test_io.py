@@ -4,7 +4,6 @@ from mpi4py import MPI
 import pytest
 from mpi4py_fft import generate_xdmf
 from shenfun import *
-from shenfun import ShenfunFile
 
 N = (12, 13, 14, 15)
 comm = MPI.COMM_WORLD
@@ -27,14 +26,13 @@ def test_regular_2D(backend, forward_output):
     if backend == 'netcdf' and forward_output is True:
         return
     K0 = Basis(N[0], 'F')
-    K1 = Basis(N[1], 'C')
+    K1 = Basis(N[1], 'C', bc=(0, 0))
     T = TensorProductSpace(comm, (K0, K1))
     filename = 'test2Dr_{}'.format(ex[forward_output])
     hfile = writer(filename, T, backend=backend)
     u = Function(T, val=1) if forward_output else Array(T, val=1)
     hfile.write(0, {'u': [u]}, forward_output=forward_output)
     hfile.write(1, {'u': [u]}, forward_output=forward_output)
-    hfile.close()
     if not forward_output and backend == 'hdf5' and comm.Get_rank() == 0:
         generate_xdmf(filename+'.h5')
         generate_xdmf(filename+'.h5', order='visit')
@@ -43,7 +41,6 @@ def test_regular_2D(backend, forward_output):
     read = reader(filename, T, backend=backend)
     read.read(u0, 'u', forward_output=forward_output, step=1)
     assert np.allclose(u0, u)
-    read.close()
 
 @pytest.mark.skipif(skip, reason='h5py not installed')
 @pytest.mark.parametrize('forward_output', (True, False))
@@ -64,7 +61,6 @@ def test_mixed_2D(backend, forward_output, as_scalar):
         uf = Array(TT, val=2)
     hfile.write(0, {'uf': [uf]}, forward_output=forward_output, as_scalar=as_scalar)
     hfile.write(1, {'uf': [uf]}, forward_output=forward_output, as_scalar=as_scalar)
-    hfile.close()
     if not forward_output and backend == 'hdf5' and comm.Get_rank() == 0:
         generate_xdmf(filename+'.h5')
 
@@ -78,7 +74,6 @@ def test_mixed_2D(backend, forward_output, as_scalar):
         read = reader(filename, T, backend=backend)
         read.read(u0, 'uf0', forward_output=forward_output, step=1)
         assert np.allclose(u0, uf[0])
-    read.close()
 
 @pytest.mark.skipif(skip, reason='h5py not installed')
 @pytest.mark.parametrize('forward_output', (True, False))
@@ -87,8 +82,8 @@ def test_regular_3D(backend, forward_output):
     if backend == 'netcdf' and forward_output is True:
         return
     K0 = Basis(N[0], 'F', dtype='D', domain=(0, np.pi))
-    K1 = Basis(N[1], 'F', dtype='D', domain=(0, 2*np.pi))
-    K2 = Basis(N[2], 'F', dtype='d')
+    K1 = Basis(N[1], 'F', dtype='d', domain=(0, 2*np.pi))
+    K2 = Basis(N[2], 'C', dtype='d', bc=(0, 0))
     T = TensorProductSpace(comm, (K0, K1, K2))
     filename = 'test3Dr_{}'.format(ex[forward_output])
     hfile = writer(filename, T, backend=backend)
@@ -101,7 +96,6 @@ def test_regular_3D(backend, forward_output):
         hfile.write(i, {'u': [u,
                               (u, [slice(None), 4, slice(None)]),
                               (u, [slice(None), 4, 4])]}, forward_output=forward_output)
-    hfile.close()
     if not forward_output and backend == 'hdf5' and comm.Get_rank() == 0:
         generate_xdmf(filename+'.h5')
 
@@ -109,7 +103,6 @@ def test_regular_3D(backend, forward_output):
     read = reader(filename, T, backend=backend)
     read.read(u0, 'u', forward_output=forward_output, step=1)
     assert np.allclose(u0, u)
-    read.close()
 
 @pytest.mark.skipif(skip, reason='h5py not installed')
 @pytest.mark.parametrize('forward_output', (True, False))
@@ -136,7 +129,6 @@ def test_mixed_3D(backend, forward_output, as_scalar):
             'u': [uf, (uf, [slice(None), slice(None), 4, slice(None)])]}
     hfile.write(0, data, forward_output=forward_output, as_scalar=as_scalar)
     hfile.write(1, data, forward_output=forward_output, as_scalar=as_scalar)
-    hfile.close()
     if not forward_output and backend == 'hdf5' and comm.Get_rank() == 0:
         generate_xdmf(filename+'.h5')
 
@@ -150,7 +142,6 @@ def test_mixed_3D(backend, forward_output, as_scalar):
         read = reader(filename, T, backend=backend)
         read.read(u0, 'u0', forward_output=forward_output, step=1)
         assert np.allclose(u0, uf[0])
-    read.close()
 
 if __name__ == '__main__':
     for bnd in ('netcdf', 'hdf5'):

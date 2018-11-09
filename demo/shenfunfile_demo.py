@@ -40,10 +40,6 @@ while tstep < nsteps:
                          'u': [u]}, as_scalar=False) # A scalar in the vector component space T
     tstep += 1
 
-file_s.close()
-file_m.close()
-file_v.close()
-
 if backend == 'hdf5':
     generate_xdmf('myfile.h5')
     generate_xdmf('mixfile.h5')
@@ -77,9 +73,6 @@ while tstep < nsteps:
                            'u': [u]}, as_scalar=True)
     tstep += 1
 
-d4file_s.close()
-d4file_m.close()
-
 if backend == 'hdf5':
     generate_xdmf('my4Dfile.h5')
     generate_xdmf('mix4Dfile.h5')
@@ -101,8 +94,6 @@ while tstep < nsteps:
     d2file_m.write(tstep, {'uf': [uf]})
     tstep += 1
 
-d2file_s.close()
-d2file_m.close()
 if backend == 'hdf5':
     generate_xdmf('my2Dfile.h5')
     generate_xdmf('mix2Dfile.h5')

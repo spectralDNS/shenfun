@@ -1,9 +1,9 @@
+import numpy as np
+from scipy.linalg import solve
 import pytest
 from shenfun.chebyshev.la import PDMA
 from shenfun import inner, TestFunction, TrialFunction, div, grad, \
     SparseMatrix, Basis, Function, Array
-from scipy.linalg import solve
-import numpy as np
 np.warnings.filterwarnings('ignore')
 
 N = 32
@@ -62,4 +62,3 @@ def test_solve(quad):
 
 if __name__ == "__main__":
     test_solve('GC')
-

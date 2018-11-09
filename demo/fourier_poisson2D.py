@@ -14,13 +14,9 @@ VxV is a tensorproductspace.
 import os
 from sympy import Symbol, cos, sin, lambdify
 import numpy as np
+from mpi4py import MPI
 from shenfun import inner, grad, TestFunction, TrialFunction, Array, Basis, \
     TensorProductSpace, Function
-from mpi4py import MPI
-try:
-    import matplotlib.pyplot as plt
-except ImportError:
-    plt = None
 
 comm = MPI.COMM_WORLD
 
@@ -76,7 +72,8 @@ assert np.allclose(p, ul(*point))
 p2 = u_hat.eval(point)
 assert np.allclose(p2, ul(*point))
 
-if plt is not None and not 'pytest' in os.environ:
+if 'pytest' not in os.environ:
+    import matplotlib.pyplot as plt
     plt.figure()
     plt.contourf(X[0], X[1], uq)
     plt.colorbar()

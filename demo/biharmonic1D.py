@@ -6,15 +6,13 @@ Solve biharmonic equation in 1D
 Use Shen's Biharmonic basis.
 
 """
-import sys, os
+import sys
+import os
 import importlib
 from sympy import symbols, sin, lambdify
 import numpy as np
-from shenfun import inner, Dx, TestFunction, TrialFunction, Basis, Array, Function
-try:
-    import matplotlib.pyplot as plt
-except ImportError:
-    plt = None
+from shenfun import inner, Dx, TestFunction, TrialFunction, Basis, Array, \
+    Function
 
 assert len(sys.argv) == 3
 assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
@@ -27,7 +25,7 @@ Solver = base.la.Biharmonic
 
 # Use sympy to compute a rhs, given an analytical solution
 # Allow for a non-standard domain. Reference domain is (-1, 1)
-domain = (-1., 1.)
+domain = (-2., 1.)
 d = 2./(domain[1]-domain[0])
 x = symbols("x")
 x_mapped = -1+(x-domain[0])*d
@@ -82,7 +80,8 @@ point = np.array([0.1, 0.2])
 p = u_hat.eval(point)
 assert np.allclose(p, ul(point))
 
-if plt is not None and not 'pytest' in os.environ:
+if 'pytest' not in os.environ:
+    import matplotlib.pyplot as plt
     plt.figure()
     plt.plot(X, u)
 

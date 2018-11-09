@@ -16,17 +16,14 @@ whereas for Chebyshev we solve
      alpha (u, v) - (\nabla^2 u, v) = (f, v)
 
 """
-import sys, os
+import sys
+import os
 import importlib
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
+from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis, \
     Array, Function, TensorProductSpace
-from mpi4py import MPI
-try:
-    import matplotlib.pyplot as plt
-except ImportError:
-    plt = None
 
 comm = MPI.COMM_WORLD
 
@@ -88,7 +85,8 @@ uj = ul(*X)
 print("Error=%2.16e" %(np.linalg.norm(uj-uq)))
 assert np.allclose(uj, uq)
 
-if plt is not None and not 'pytest' in os.environ:
+if 'pytest' not in os.environ:
+    import matplotlib.pyplot as plt
     plt.figure()
     plt.contourf(X[0], X[1], uq)
     plt.colorbar()

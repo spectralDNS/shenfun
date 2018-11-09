@@ -297,6 +297,11 @@ class R2CBasis(FourierBase):
     def slice(self):
         return slice(0, self.N//2+1)
 
+    def allocated_shape(self, forward_output=True):
+        if forward_output:
+            return self.N//2+1
+        return self.N
+
     def vandermonde_evaluate_expansion_all(self, input_array, output_array):
         assert abs(self.padding_factor-1) < 1e-8
         assert self.N == output_array.shape[self.axis]
@@ -524,7 +529,7 @@ class C2CBasis(FourierBase):
 
         elif self.dealias_direct:
             N = trunc_array.shape[self.axis]
-            su = self.sl(slice(N//3, -(N//3)))
+            su = self.sl(slice(N//3, -(N//3)+1))
             padded_array[su] = 0
 
     def convolve(self, u, v, uv=None, fast=True):

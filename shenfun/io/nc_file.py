@@ -25,11 +25,13 @@ class NCFile(BaseFile):
     def __init__(self, ncname, T, mode='r', clobber=True, **kw):
         BaseFile.__init__(self, ncname, T, domain=T.mesh(), clobber=clobber, mode=mode, **kw)
         if T.rank() == 1 and mode == 'w':
+            self.open()
             self.vdims = copy.copy(self.dims)
             self.f.createDimension('dim', T.num_components())
             d = self.f.createVariable('dim', int, ('dim'))
             d[:] = np.arange(T.num_components())
             self.vdims.insert(1, 'dim')
+            self.close()
 
     def write(self, step, fields, **kw):
         """Write snapshot ``step`` of ``fields`` to netCDF4 file
@@ -90,8 +92,11 @@ class NCFile(BaseFile):
             }
 
         """
-        it = self.nc_t.size
-        self.nc_t[it] = step
+        self.open()
+        nc_t = self.f.variables.get('time')
+        nc_t.set_collective(True)
+        it = nc_t.size
+        nc_t[it] = step
         step = it
         for group, list_of_fields in fields.items():
             assert isinstance(list_of_fields, (tuple, list))
@@ -147,16 +152,19 @@ class NCFile(BaseFile):
                                 g = group + str(sl[0])
                                 g = "_".join((g, slname))
                                 self._write_slice_step(g, step, sl, u, **kw)
+        self.close()
 
     def _write_group(self, name, u, step, **kw):
         T = u.function_space()
         s = T.local_slice(False)
         dims = self.dims if T.rank() == 0 else self.vdims
-        if name not in self.handles:
-            self.handles[name] = self.f.createVariable(name, self._dtype, dims)
-            self.handles[name].set_collective(True)
+        if name not in self.f.variables:
+            h = self.f.createVariable(name, self._dtype, dims)
+        else:
+            h = self.f.variables[name]
+        h.set_collective(True)
         s = tuple([step] + s)
-        self.handles[name][s] = u
+        h[s] = u
         self.f.sync()
 
     def _write_slice_step(self, name, step, slices, field, **kw):
@@ -168,15 +176,16 @@ class NCFile(BaseFile):
         sp = np.nonzero([isinstance(x, slice) for x in slices])[0]
         sf = np.take(s, sp)
         sdims = ['time'] + list(np.take(dims, np.array(sp)+1))
-        if name not in self.handles:
-            self.handles[name] = self.f.createVariable(name, self._dtype, sdims)
-            self.handles[name].set_collective(True)
-
-        self.handles[name][step] = 0 # collectively create dataset
-        self.handles[name].set_collective(False)
+        if name not in self.f.variables:
+            h = self.f.createVariable(name, self._dtype, sdims)
+        else:
+            h = self.f.variables[name]
+        h.set_collective(True)
+        h[step] = 0 # collectively create dataset
+        h.set_collective(False)
         sf = tuple([step] + list(sf))
         sl = tuple(slices)
         if inside:
-            self.handles[name][sf] = field[sl]
-        self.handles[name].set_collective(True)
+            h[sf] = field[sl]
+        h.set_collective(True)
         self.f.sync()
