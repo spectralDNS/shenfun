@@ -36,11 +36,15 @@ N = (32, 32, 32)
 
 # Defocusing or focusing
 gamma = 1
+threads = 1
 
 K0 = Basis(N[0], 'F', dtype='D', domain=(-2*np.pi, 2*np.pi))
 K1 = Basis(N[1], 'F', dtype='D', domain=(-2*np.pi, 2*np.pi))
 K2 = Basis(N[2], 'F', dtype='d', domain=(-2*np.pi, 2*np.pi))
-T = TensorProductSpace(comm, (K0, K1, K2), slab=False, **{'planner_effort': 'FFTW_MEASURE'})
+T = TensorProductSpace(comm, (K0, K1, K2), slab=True,
+                       **{'planner_effort': 'FFTW_MEASURE',
+                          'threads': threads,
+                          'collapse_fourier': True})
 
 TT = MixedTensorProductSpace([T, T])
 TV = VectorTensorProductSpace(T)
@@ -48,7 +52,10 @@ TV = VectorTensorProductSpace(T)
 Kp0 = Basis(N[0], 'F', dtype='D', domain=(-2*np.pi, 2*np.pi), padding_factor=1.5)
 Kp1 = Basis(N[1], 'F', dtype='D', domain=(-2*np.pi, 2*np.pi), padding_factor=1.5)
 Kp2 = Basis(N[2], 'F', dtype='D', domain=(-2*np.pi, 2*np.pi), padding_factor=1.5)
-Tp = TensorProductSpace(comm, (Kp0, Kp1, Kp2), slab=False, **{'planner_effort': 'FFTW_MEASURE'})
+Tp = TensorProductSpace(comm, (Kp0, Kp1, Kp2), slab=True,
+                        **{'planner_effort': 'FFTW_MEASURE',
+                           'threads': threads,
+                           'collapse_fourier': True})
 
 # Turn on padding by commenting out:
 Tp = T
