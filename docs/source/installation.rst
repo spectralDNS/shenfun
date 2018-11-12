@@ -90,6 +90,25 @@ But parallel versions have been made available on the `spectralDNS channel`_
 which installs the two required Python modules `h5py`_ and `netCDF4`_. Otherwise,
 see the respective packages for how to install with support for MPI.
 
+Test installation
+-----------------
+
+After installing (from source) it may be a good idea to run all the tests
+located in the `tests <https://github.com/spectralDNS/shenfun/tree/master/tests>`_
+folder. The tests are run with `pytest <https://docs.pytest.org/en/latest/>`_
+from the main directory of the source code
+
+::
+
+    python -m pytest tests/
+
+The tests are run automatically on every commit to github, see
+
+.. image:: https://travis-ci.org/spectralDNS/shenfun.svg?branch=master
+    :target: https://travis-ci.org/spectralDNS/shenfun
+.. image:: https://circleci.com/gh/spectralDNS/shenfun.svg?style=svg
+    :target: https://circleci.com/gh/spectralDNS/shenfun
+
 
 .. _github: https://github.com/spectralDNS/shenfun
 .. _mpi4py-fft: https://bitbucket.org/mpi4py/mpi4py-fft

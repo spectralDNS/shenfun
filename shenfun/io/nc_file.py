@@ -66,7 +66,6 @@ class NCFile(BaseFile):
         >>> fl.write(0, d)
         >>> u[:] = 2
         >>> fl.write(1, d)
-        >>> fl.close()
 
         The resulting NetCDF4 file ``ncfile.nc`` can be viewed using
         ``ncdump -h ncfile.nc``::

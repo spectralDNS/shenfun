@@ -208,8 +208,8 @@ class SpectralBase(object):
         Parameters
         ----------
             bcast : bool
-                Whether or not to broadcast to :meth:`.dimensions` if basis
-                belongs to a :class:`.TensorProductSpace`
+                Whether or not to broadcast to :meth:`.SpectralBase.dimensions`
+                if basis belongs to a :class:`.TensorProductSpace`
 
         """
         s = self.slice()
