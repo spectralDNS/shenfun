@@ -95,7 +95,7 @@ if __name__ == '__main__':
                     "shenfun.io"
                    ],
           package_dir={"shenfun": "shenfun"},
-          install_requires=["mpi4py-fft", "mpi4py", "numpy", "scipy"],
+          install_requires=["mpi4py-fft", "mpi4py", "cython", "numpy", "scipy"],
           setup_requires=["numpy>=1.11",
                           "cython>=0.25",
                           "setuptools>=18.0"],
