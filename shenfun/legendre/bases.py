@@ -240,7 +240,7 @@ class ShenDirichletBasis(LegendreBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = self.map_reference_domain(x)
-        w_hat = work[(u, 0)]
+        w_hat = work[(u, 0, True)]
         self.set_factor_array(u)
         output_array[:] = leg.legval(x, u[:-2]*self._factor)
         w_hat[2:] = u[:-2]*self._factor
@@ -340,7 +340,7 @@ class ShenNeumannBasis(LegendreBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = self.map_reference_domain(x)
-        w_hat = work[(u, 0)]
+        w_hat = work[(u, 0, True)]
         self.set_factor_array(u)
         output_array[:] = leg.legval(x, u[:-2])
         w_hat[2:] = self._factor*u[:-2]
@@ -443,7 +443,7 @@ class ShenBiharmonicBasis(LegendreBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = self.map_reference_domain(x)
-        w_hat = work[(u, 0)]
+        w_hat = work[(u, 0, True)]
         self.set_factor_arrays(u)
         output_array[:] = leg.legval(x, u[:-4])
         w_hat[2:-2] = self._factor1*u[:-4]

@@ -61,46 +61,43 @@ class CachedArrayDict(MutableMapping):
     >>> from shenfun.utilities import CachedArrayDict
     >>> work = CachedArrayDict()
     >>> a = np.ones((3, 4), dtype=int)
-    >>> w = work[(a, 0)] # create work array with shape as a
+    >>> w = work[(a, 0, True)] # create work array with shape as a
     >>> print(w.shape)
     (3, 4)
     >>> print(w)
     [[0 0 0 0]
      [0 0 0 0]
      [0 0 0 0]]
-    >>> w2 = work[(a, 1)] # Get different(note 1!) array of same shape/dtype
+    >>> w2 = work[(a, 1, True)] # Get different(note 1!) array of same shape/dtype
     """
     def __init__(self):
         self._data = {}
 
     def __getitem__(self, key):
-        newkey = self.__keytransform__(key)
+        newkey, fill = self.__keytransform__(key)
         try:
             value = self._data[newkey]
         except KeyError:
             shape, dtype, _ = newkey
             value = np.zeros(shape, dtype=np.dtype(dtype, align=True))
             self._data[newkey] = value
-        value.fill(0)
+        if fill:
+            value.fill(0)
         return value
 
     @staticmethod
     def __keytransform__(key):
-        assert len(key) == 2
-        assert isinstance(key[0], np.ndarray)
-        shape = key[0].shape
-        dtype = key[0].dtype
-        i = key[1]
-        return (shape, np.dtype(dtype), i)
+        assert len(key) == 3
+        return (key[0].shape, key[0].dtype, key[1]), key[2]
 
     def __len__(self):
         return len(self._data)
 
     def __setitem__(self, key, value):
-        self._data[self.__keytransform__(key)] = value
+        self._data[self.__keytransform__(key)[0]] = value
 
     def __delitem__(self, key):
-        del self._data[self.__keytransform__(key)]
+        del self._data[self.__keytransform__(key)[0]]
 
     def __iter__(self):
         return iter(self._data)

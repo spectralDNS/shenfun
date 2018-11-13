@@ -395,7 +395,7 @@ class ShenDirichletBasis(ChebyshevBase):
         if fast_transform is False:
             SpectralBase.evaluate_expansion_all(self, input_array, output_array, False)
             return
-        w_hat = work[(input_array, 0)]
+        w_hat = work[(input_array, 0, True)]
         s0 = self.sl(slice(0, -2))
         s1 = self.sl(slice(2, None))
         w_hat[s0] = input_array[s0]
@@ -411,7 +411,7 @@ class ShenDirichletBasis(ChebyshevBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = self.map_reference_domain(x)
-        w_hat = work[(u, 0)]
+        w_hat = work[(u, 0, True)]
         output_array[:] = n_cheb.chebval(x, u[:-2])
         w_hat[2:] = u[:-2]
         output_array -= n_cheb.chebval(x, w_hat)
@@ -523,7 +523,7 @@ class ShenNeumannBasis(ChebyshevBase):
         if fast_transform is False:
             SpectralBase.evaluate_expansion_all(self, input_array, output_array, False)
             return
-        w_hat = work[(input_array, 0)]
+        w_hat = work[(input_array, 0, True)]
         self.set_factor_array(input_array)
         s0 = self.sl(slice(0, -2))
         s1 = self.sl(slice(2, None))
@@ -539,7 +539,7 @@ class ShenNeumannBasis(ChebyshevBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = self.map_reference_domain(x)
-        w_hat = work[(u, 0)]
+        w_hat = work[(u, 0, True)]
         self.set_factor_array(u)
         output_array[:] = n_cheb.chebval(x, u[:-2])
         w_hat[2:] = self._factor*u[:-2]
@@ -626,7 +626,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
             self.vandermonde_scalar_product(input_array, output_array)
             return
         output = self.CT.scalar_product(fast_transform=fast_transform)
-        Tk = work[(output, 0)]
+        Tk = work[(output, 0, True)]
         Tk[...] = output
         self.set_factor_arrays(Tk)
         s = self.sl(self.slice())
@@ -665,7 +665,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
         if fast_transform is False:
             SpectralBase.evaluate_expansion_all(self, input_array, output_array, False)
             return
-        w_hat = work[(input_array, 0)]
+        w_hat = work[(input_array, 0, True)]
         self.set_factor_arrays(input_array)
         w_hat = self.set_w_hat(w_hat, input_array, self._factor1, self._factor2)
         self.CT.backward(w_hat)
@@ -679,7 +679,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = self.map_reference_domain(x)
-        w_hat = work[(u, 0)]
+        w_hat = work[(u, 0, True)]
         self.set_factor_arrays(u)
         output_array[:] = n_cheb.chebval(x, u[:-4])
         w_hat[2:-2] = self._factor1*u[:-4]
