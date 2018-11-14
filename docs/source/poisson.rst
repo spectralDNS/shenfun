@@ -7,12 +7,14 @@ Demo - 1D Poisson equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Nov 12, 2018
+:Date: Nov 14, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the Poisson
-equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as shown in Figure :ref:`fig:ct0`, is demonstrated. 
+equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as
+shown in Figure :ref:`fig:ct0`, is demonstrated.
 The demo is implemented in
-a single Python file `dirichlet_poisson1D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py>`__, and the numerical method is is described in more detail by J. Shen [Ref1]_ and [Ref2]_.
+a single Python file `dirichlet_poisson1D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py>`__, and
+the numerical method is is described in more detail by J. Shen :cite:`shen1` and :cite:`shen95`.
 
 .. _fig:ct0:
 
@@ -43,10 +45,10 @@ The Poisson equation is given as
         
 
 where :math:`u(x)` is the solution, :math:`f(x)` is a function and :math:`a, b` are two possibly
-non-zero constants. 
+non-zero constants.
 
-To solve Eq. :eq:`eq:poisson` with the Galerkin method we need smooth continuously 
-differentiable basis functions, :math:`v_k`, that satisfy the given boundary conditions. 
+To solve Eq. :eq:`eq:poisson` with the Galerkin method we need smooth continuously
+differentiable basis functions, :math:`v_k`, that satisfy the given boundary conditions.
 And then we look for solutions like
 
 .. math::
@@ -56,12 +58,12 @@ And then we look for solutions like
         u(x) = \sum_{k=0}^{N} \hat{u}_k v_k(x), 
         
 
-where :math:`N+1` is the size of the discretized problem and the basis is 
+where :math:`N+1` is the size of the discretized problem and the basis is
 :math:`V^N=\text{span}\{v_k\}_{k=0}^{N}`.
-The basis functions can, for example,  be constructed from 
-`Chebyshev <https://en.wikipedia.org/wiki/Chebyshev_polynomials>`__, :math:`T_k(x)`, or 
-`Legendre <https://en.wikipedia.org/wiki/Legendre_polynomials>`__, :math:`L_k(x)`, functions 
-and we use the common notation :math:`\phi_k(x)` to represent either one of them. It turns out that 
+The basis functions can, for example,  be constructed from
+`Chebyshev <https://en.wikipedia.org/wiki/Chebyshev_polynomials>`__, :math:`T_k(x)`, or
+`Legendre <https://en.wikipedia.org/wiki/Legendre_polynomials>`__, :math:`L_k(x)`, functions
+and we use the common notation :math:`\phi_k(x)` to represent either one of them. It turns out that
 it is easiest to use basis functions with homogeneous Dirichlet boundary conditions
 
 .. math::
@@ -111,14 +113,14 @@ of freedom, :math:`\hat{u}_{N-1}` and :math:`\hat{u}_{N}`, now are given as
 
 and, as such, we only have to solve for :math:`\{\hat{u}_k\}_{k=0}^{N-2}`, just like
 for a problem with homogeneous boundary conditions (for homogeneous boundary condition
-we simply have :math:`\hat{u}_{N-1} = \hat{u}_N = 0`). 
+we simply have :math:`\hat{u}_{N-1} = \hat{u}_N = 0`).
 We now formulate a variational problem using the Galerkin method: Find :math:`u \in V^N` such that
 
 .. math::
    :label: eq:varform
 
         
-        \int_{-1}^1 \nabla^2 u \, v \, w\, dx = \int_{-1}^1 f \, v\, w\, dx \quad \forall v \, \in \, V^N.  
+        \int_{-1}^1 \nabla^2 u \, v \, w\, dx = \int_{-1}^1 f \, v\, w\, dx \quad \forall v \, \in \, V^N. 
         
 
 The weighted integrals, weighted by :math:`w(x)`, are called inner products, and a common notation is
@@ -127,12 +129,12 @@ The weighted integrals, weighted by :math:`w(x)`, are called inner products, and
    :label: _auto5
 
         
-        \int_{-1}^1 u \, v \, w\, dx = \left( u, v\right)_w. 
+        \int_{-1}^1 u \, v \, w\, dx = \left( u, v\right)_w.
         
         
 
 The integral can either be computed exactly, or with quadrature. The advantage
-of the latter is that it is generally faster, and that non-linear terms may be 
+of the latter is that it is generally faster, and that non-linear terms may be
 computed just as quickly as linear. For a linear problem, it does not make much
 of a difference, if any at all. Approximating the integral with quadrature, we
 obtain
@@ -153,8 +155,8 @@ obtain
         
         
 
-where :math:`w(x_j)` are quadrature weights. The quadrature points :math:`\{x_j\}_{j=0}^N` 
-are specific to the chosen basis, and even within basis there are two different 
+where :math:`w(x_j)` are quadrature weights. The quadrature points :math:`\{x_j\}_{j=0}^N`
+are specific to the chosen basis, and even within basis there are two different
 choices based on which quadrature rule is selected, either Gauss or Gauss-Lobatto.
 
 Inserting for test and trialfunctions, we get the following bilinear form and
@@ -172,8 +174,8 @@ the last two degrees of freedom already are known from Eq. :eq:`eq:dirichleta`
 and :eq:`eq:dirichletb`, and the second derivatives of :math:`v_{N-1}` and :math:`v_{N}`
 are zero.
 The right hand side linear form and vector is computed as :math:`\tilde{f}_j = (f,
-v_j)_w^N`, for :math:`j=0,1,\ldots, N-2`, where a tilde is used because this is not 
-a complete transform of the function :math:`f`, but only an inner product. 
+v_j)_w^N`, for :math:`j=0,1,\ldots, N-2`, where a tilde is used because this is not
+a complete transform of the function :math:`f`, but only an inner product.
 
 The linear system of equations to solve for the expansion coefficients of :math:`u(x)` is given as
 
@@ -190,7 +192,7 @@ transformed to real space :math:`u(x)` using :eq:`eq:u`, and here the contributi
 from :math:`\hat{u}_{N-1}` and :math:`\hat{u}_{N}` must be accounted for. Note that the matrix
 :math:`A_{jk}` (different for Legendre or Chebyshev) has a very special structure that
 allows for a solution to be found very efficiently in order of :math:`\mathcal{O}(N)`
-operations, see [Ref1]_ and [Ref2]_. These solvers are implemented in
+operations, see :cite:`shen1` and :cite:`shen95`. These solvers are implemented in
 shenfun for both bases.
 
 Method of manufactured solutions
@@ -208,8 +210,8 @@ conditions:
         u_e(x) = \sin(k\pi x)(1-x^2) + a(1+x)/2 + b(1-x)/2, 
         
 
-where :math:`k` is an integer and :math:`a` and :math:`b` are constants. Now, feeding :math:`u_e` through 
-the Laplace operator, we see that the last two linear terms disappear, whereas the 
+where :math:`k` is an integer and :math:`a` and :math:`b` are constants. Now, feeding :math:`u_e` through
+the Laplace operator, we see that the last two linear terms disappear, whereas the
 first term results in
 
 .. math::
@@ -225,11 +227,11 @@ first term results in
 
           
                           = -4k \pi x \cos(k\pi x) - 2\sin(k\pi x) - k^2 \pi^2 (1 -
-        x^2) \sin(k \pi x).  
+        x^2) \sin(k \pi x). 
         
 
-Now, setting :math:`f_e(x) = \nabla^2 u_e(x)` and solving for :math:`\nabla^2 u(x) = f_e(x)`, 
-we can compare the numerical solution :math:`u(x)` with the analytical solution :math:`u_e(x)` 
+Now, setting :math:`f_e(x) = \nabla^2 u_e(x)` and solving for :math:`\nabla^2 u(x) = f_e(x)`,
+we can compare the numerical solution :math:`u(x)` with the analytical solution :math:`u_e(x)`
 and compute error norms.
 
 Implementation
@@ -255,7 +257,7 @@ Manufactured solution
 ---------------------
 
 The exact solution :math:`u_e(x)` and the right hand side :math:`f_e(x)` are created using
-``Sympy`` as follows 
+``Sympy`` as follows
 
 .. code-block:: python
 
@@ -270,9 +272,9 @@ The exact solution :math:`u_e(x)` and the right hand side :math:`f_e(x)` are cre
     ul = lambdify(x, ue, 'numpy')
     fl = lambdify(x, fe, 'numpy')
 
-These solutions are now valid for a continuous domain. The next step is thus to 
-discretize, using a discrete mesh :math:`\{x_j\}_{j=0}^{N-1}` and a finite number of 
-basis functions. 
+These solutions are now valid for a continuous domain. The next step is thus to
+discretize, using a discrete mesh :math:`\{x_j\}_{j=0}^{N-1}` and a finite number of
+basis functions.
 
 Note that it is not mandatory to use ``Sympy`` for the manufactured solution. Since the
 solution is known :eq:`eq:solution`, we could just as well simply use ``Numpy``
@@ -282,7 +284,7 @@ easier to experiment and quickly change the solution.
 Discretization
 --------------
 
-We create a basis with a given number of basis functions, and extract the computational 
+We create a basis with a given number of basis functions, and extract the computational
 mesh from the basis itself
 
 .. code-block:: python
@@ -313,15 +315,15 @@ The variational problem :eq:`eq:varform` can be assembled using ``shenfun``'s
 
 Note that ``fl(X)`` returns a Numpy array of the correct shape and type of
 the left hand side of :eq:`eq:u`, evaluated on all quadrature points ``X``.
-We wrap this Numpy array in an :class:`.Array` class 
+We wrap this Numpy array in an :class:`.Array` class
 (``fj = Array(SD, buffer=fl(X))``), because an Array
 is required as input to the :func:`.inner` function.
 
 Solve linear equations
 ----------------------
 
-Finally, solve linear equation system and transform solution from spectral 
-:math:`\{\hat{u}_k\}_{k=0}^{N-1}` vector to the real space :math:`\{u(x_j)\}_{j=0}^N` 
+Finally, solve linear equation system and transform solution from spectral
+:math:`\{\hat{u}_k\}_{k=0}^{N-1}` vector to the real space :math:`\{u(x_j)\}_{j=0}^N`
 and then check how the solution corresponds with the exact solution :math:`u_e`.
 
 .. code-block:: python
@@ -335,9 +337,9 @@ and then check how the solution corresponds with the exact solution :math:`u_e`.
 Convergence test
 ----------------
 
-A complete solver is given in Sec. :ref:`sec:complete`. This solver is created 
-such that it takes in two commandline arguments and prints out the 
-:math:`l_2`-errornorm of the solution in the end. We can use this to write a short 
+A complete solver is given in Sec. :ref:`sec:complete`. This solver is created
+such that it takes in two commandline arguments and prints out the
+:math:`l_2`-errornorm of the solution in the end. We can use this to write a short
 script that performs a convergence test. The solver is run like
 
 .. code-block:: text
@@ -346,10 +348,10 @@ script that performs a convergence test. The solver is run like
     Error=6.5955040031498912e-10
 
 for a discretization of size :math:`N=32` and for the Legendre basis. Alternatively,
-change ``legendre`` to ``chebyshev`` for the Chebyshev basis.  
+change ``legendre`` to ``chebyshev`` for the Chebyshev basis.
 
 We set up the solver to run for a list of :math:`N=[12, 16, \ldots, 48]`, and collect
-the errornorms in arrays to be plotted. Such a script can be easily created 
+the errornorms in arrays to be plotted. Such a script can be easily created
 with the `subprocess <https://docs.python.org/3/library/subprocess.html>`__ module
 
 .. code-block:: python
