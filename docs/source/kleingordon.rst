@@ -7,7 +7,7 @@ Demo - Cubic nonlinear Klein-Gordon equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Nov 12, 2018
+:Date: Nov 14, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Klein-Gordon equation, in a triply periodic domain. The demo is implemented in
@@ -34,7 +34,7 @@ Model equation
 
 The cubic nonlinear Klein-Gordon equation is a wave equation important for many
 scientific applications such as solid state physics, nonlinear optics and
-quantum field theory [Ref1]_. The equation is given as
+quantum field theory :cite:`abdul08`. The equation is given as
 
 .. math::
    :label: eq:kg

@@ -18,7 +18,7 @@ help:
 .PHONY: help Makefile
 
 %.rst:
-	doconce format sphinx demos/$(basename $@).do.txt
+	doconce format sphinx demos/$(basename $@).do.txt --sphinx_preserve_bib_keys
 	cp demos/$(basename $@).rst source/
 	./recite.sh $(notdir $@)
 

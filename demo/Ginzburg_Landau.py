@@ -10,7 +10,6 @@ Use Fourier basis V and find u in VxV such that
 
 """
 from sympy import symbols, exp, lambdify
-import pyfftw
 import matplotlib.pyplot as plt
 from mpi4py import MPI
 from mpi4py_fft import generate_xdmf, fftw
