@@ -172,7 +172,9 @@ class SpectralBase(object):
         self._xfftn_fwd = None    # external forward transform function
         self._xfftn_bck = None    # external backward transform function
         self._M = 1.0             # Normalization factor
-        self._tensorproductspace = None     # If belonging to TensorProductSpace
+        self.si = islicedict()
+        self.sl = slicedict()
+        self._tensorproductspace = None     # link if belonging to TensorProductSpace
 
     def points_and_weights(self, N=None, map_true_domain=False):
         """Return points and weights of quadrature
@@ -280,6 +282,7 @@ class SpectralBase(object):
             return output_array
         return self.scalar_product.output_array
 
+    #@profile
     def forward(self, input_array=None, output_array=None, fast_transform=True):
         """Compute forward transform
 
@@ -309,6 +312,7 @@ class SpectralBase(object):
             return output_array
         return self.forward.output_array
 
+    #@profile
     def backward(self, input_array=None, output_array=None, fast_transform=True):
         """Compute backward (inverse) transform
 
@@ -654,6 +658,8 @@ class SpectralBase(object):
 
         # scalar_product is not padded, just the forward/backward
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
 
     def _get_truncarray(self, shape, dtype):
         shape = list(shape)
@@ -769,15 +775,13 @@ class SpectralBase(object):
 
     def dimensions(self):
         """Return the dimensions (the number of bases) of the
-        :class:`.TensorProductSpace` class that this basis is planned for.
+        :class:`.TensorProductSpace` class this basis is planned for.
         """
-        if self.tensorproductspace:
-            return self.tensorproductspace.dimensions()
-        return len(self.forward.input_array.shape)
+        return self.forward.input_array.ndim
 
     @property
     def tensorproductspace(self):
-        """Access the :class:`.TensorProductSpace` this basis is planned for
+        """Return the :class:`.TensorProductSpace` this basis is planned for
         (if planned)"""
         return self._tensorproductspace
 
@@ -791,19 +795,6 @@ class SpectralBase(object):
     def __eq__(self, other):
         return (self.__class__.__name__ == other.__class__.__name__ and
                 self.quad == other.quad and self.N == other.N)
-
-    def sl(self, a):
-        """Return a list of slices, broadcasted to the shape of a forward
-        output array, with ``a`` along self.axis
-
-        Parameters
-        ----------
-            a : int or slice object
-                This int or slice is used along self.axis of this basis
-        """
-        s = [slice(None)]*self.dimensions()
-        s[self.axis] = a
-        return tuple(s)
 
     def rank(self):
         """Return tensor rank of basis"""
@@ -846,6 +837,75 @@ class SpectralBase(object):
 
     def _padding_backward(self, trunc_array, padded_array):
         pass
+
+class islicedict(dict):
+    """Return a tuple of slices, broadcasted to ``dimensions`` number of
+    dimensions, and with integer ``a`` along ``axis``.
+
+    Parameters
+    ----------
+        axis : int
+            The axis the calling basis belongs to in a :class:`.TensorProductSpace`
+        dimensions : int
+            The number of bases in the :class:`.TensorProductSpace`
+
+    Example
+    -------
+    >>> from shenfun.spectralbase import islicedict
+    >>> s = islicedict(axis=1, dimensions=3)
+    >>> print(s[0])
+    (slice(None, None, None), 0, slice(None, None, None))
+
+    """
+    def __init__(self, axis=0, dimensions=1):
+        dict.__init__(self)
+        self.axis = axis
+        self.dimensions = dimensions
+
+    def __missing__(self, key):
+        assert isinstance(key, int)
+        s = [slice(None)]*self.dimensions
+        s[self.axis] = key
+        self[key] = s = tuple(s)
+        return s
+
+class slicedict(dict):
+    """Return a tuple of slices, broadcasted to ``dimensions`` number of
+    dimensions, and with slice ``a`` along ``axis``.
+
+    Parameters
+    ----------
+        axis : int
+            The axis the calling basis belongs to in a :class:`.TensorProductSpace`
+        dimensions : int
+            The number of bases in the :class:`.TensorProductSpace`
+
+    Example
+    -------
+    >>> from shenfun.spectralbase import slicedict
+    >>> s = slicedict(axis=1, dimensions=3)
+    >>> print(s[slice(0, 5)])
+    (slice(None, None, None), slice(0, 5, None), slice(None, None, None))
+
+    """
+    def __init__(self, axis=0, dimensions=1):
+        dict.__init__(self)
+        self.axis = axis
+        self.dimensions = dimensions
+
+    def __missing__(self, key):
+        s = [slice(None)]*self.dimensions
+        s[self.axis] = slice(*key)
+        self[key] = s = tuple(s)
+        return s
+
+    def __keytransform__(self, key):
+        assert isinstance(key, slice)
+        return key.__reduce__()[1]
+
+    def __getitem__(self, key):
+        return dict.__getitem__(self, self.__keytransform__(key))
+
 
 def inner_product(test, trial):
     """Return 1D inner product of bilinear form

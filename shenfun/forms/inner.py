@@ -300,23 +300,6 @@ def inner(expr0, expr1, output_array=None):
 
         npaxis = [b for b in B[0].keys() if isinstance(b, int)][0]
 
-        ## 1D case for itself, because it is simpler
-        #if space.dimensions() == 1:
-            #from IPython import embed; embed()
-            #if trial.argument == 1:
-                #if len(B) == 1:
-                    #b = B[0][npaxis]
-                    #b.scale = B[0]['scale']
-                    #return b
-                #else:
-
-            #else:
-                #mat = B[0][npaxis]
-                #mat.scale = B[0]['scale']
-                #output_array = mat.matvec(uh, output_array, axis=npaxis)
-                #output_array *= mat.scale
-                #return output_array
-
         if trial.argument == 1:  # bilinear form
             b = B[0][npaxis]
             b.scale = B[0]['scale']
@@ -349,7 +332,7 @@ def inner(expr0, expr1, output_array=None):
 
             return output_array
 
-    elif np.all([len(f) == 3 for f in B]):
+    elif np.all([len(f) == 3 for f in B]): # Two matrices and a scale array
         # Two nonperiodic directions
 
         if trial.argument == 1:  # bilinear form

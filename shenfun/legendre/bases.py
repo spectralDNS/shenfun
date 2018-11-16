@@ -7,7 +7,8 @@ import numpy as np
 from numpy.polynomial import legendre as leg
 from scipy.special import eval_legendre
 from mpi4py_fft import fftw
-from shenfun.spectralbase import SpectralBase, work, Transform
+from shenfun.spectralbase import SpectralBase, work, Transform, islicedict, \
+    slicedict
 from shenfun.utilities import inheritdocstrings
 from .lobatto import legendre_lobatto_nodes_and_weights
 
@@ -124,6 +125,8 @@ class LegendreBase(SpectralBase):
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
 
 
 @inheritdocstrings
@@ -216,8 +219,8 @@ class ShenDirichletBasis(LegendreBase):
     #                           fast_transform=False): # pragma: no cover
     #    # Not used since there are no fast transforms for Legendre
     #    w_hat = work[(input_array, 0)]
-    #    s0 = self.sl(slice(0, -2))
-    #    s1 = self.sl(slice(2, None))
+    #    s0 = self.sl[slice(0, -2)]
+    #    s1 = self.sl[slice(2, None)]
     #    self.set_factor_array(input_array)
     #    w_hat[s0] = input_array[s0]*self._factor
     #    w_hat[s1] -= input_array[s0]*self._factor
@@ -264,6 +267,8 @@ class ShenDirichletBasis(LegendreBase):
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
 
 
 @inheritdocstrings
@@ -312,8 +317,8 @@ class ShenNeumannBasis(LegendreBase):
     def scalar_product(self, input_array=None, output_array=None, fast_transform=False):
         output = SpectralBase.scalar_product(self, input_array, output_array, False)
 
-        output[self.sl(0)] = self.mean*np.pi
-        output[self.sl(slice(-2, None))] = 0
+        output[self.si[0]] = self.mean*np.pi
+        output[self.sl[slice(-2, None)]] = 0
         return output
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -327,8 +332,8 @@ class ShenNeumannBasis(LegendreBase):
     #    # Not used since there are no fast transforms for Legendre
     #    w_hat = work[(input_array, 0)]
     #    self.set_factor_array(input_array)
-    #    s0 = self.sl(slice(0, -2))
-    #    s1 = self.sl(slice(2, None))
+    #    s0 = self.sl[slice(0, -2)]
+    #    s1 = self.sl[slice(2, None)]
     #    w_hat[s0] = input_array[s0]
     #    w_hat[s1] -= self._factor*input_array[s0]
     #    output_array = self.LT.backward(w_hat)
@@ -363,7 +368,8 @@ class ShenNeumannBasis(LegendreBase):
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
 
 @inheritdocstrings
 class ShenBiharmonicBasis(LegendreBase):
@@ -401,7 +407,7 @@ class ShenBiharmonicBasis(LegendreBase):
         return P
 
     def set_factor_arrays(self, v):
-        s = self.sl(self.slice())
+        s = self.sl[self.slice()]
         if not self._factor1.shape == v[s].shape:
             k = self.wavenumbers().astype(np.float)
             self._factor1 = (-2*(2*k+5)/(2*k+7)).astype(float)
@@ -409,14 +415,14 @@ class ShenBiharmonicBasis(LegendreBase):
 
     def scalar_product(self, input_array=None, output_array=None, fast_transform=False):
         output = LegendreBase.scalar_product(self, input_array, output_array, False)
-        output[self.sl(slice(-4, None))] = 0
+        output[self.sl[slice(-4, None)]] = 0
         return output
 
     #@optimizer
     def set_w_hat(self, w_hat, fk, f1, f2): # pragma: no cover
-        s = self.sl(self.slice())
-        s2 = self.sl(slice(2, -2))
-        s4 = self.sl(slice(4, None))
+        s = self.sl[self.slice()]
+        s2 = self.sl[slice(2, -2)]
+        s4 = self.sl[slice(4, None)]
         w_hat[s] = fk[s]
         w_hat[s2] += f1*fk[s]
         w_hat[s4] += f2*fk[s]
@@ -469,7 +475,8 @@ class ShenBiharmonicBasis(LegendreBase):
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
 
 ## Experimental!
 @inheritdocstrings
@@ -515,9 +522,9 @@ class SecondNeumannBasis(LegendreBase): # pragma: no cover
     #def evaluate_expansion_all(self, u, output_array):
         #w_hat = work[(u, 0)]
         #self.set_factor_array(u)
-        #s0 = self.sl(slice(0, -4))
-        #s1 = self.sl(slice(2, -2))
-        #s2 = self.sl(slice(4, None))
+        #s0 = self.sl[slice(0, -4)]
+        #s1 = self.sl[slice(2, -2)]
+        #s2 = self.sl[slice(4, None)]
         #w_hat[s0] = u[s0]
         #w_hat[s1] += (self._factor-1)*u[s0]
         #w_hat[s2] -= self._factor*u[s0]
@@ -551,3 +558,5 @@ class SecondNeumannBasis(LegendreBase): # pragma: no cover
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())

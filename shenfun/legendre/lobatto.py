@@ -4,7 +4,7 @@ Module contains some useful methods for Legendre quadrature.
 import numpy as np
 from numpy.polynomial import legendre as leg
 
-def legendre_lobatto_nodes_and_weights(N):
+def legendre_lobatto_nodes_and_weights(N, tol=1e-16):
     """Return points and weights for Legendre-Lobatto quadrature
 
     Parameters
@@ -26,12 +26,14 @@ def legendre_lobatto_nodes_and_weights(N):
     dx = np.zeros_like(x[1:M])
     y = x[1:M]
     count = 0
+    prev = 1
     while not converged and count < 10:
         dx[:] = Ld(y)/Ld2(y)
         y -= dx
         error = np.linalg.norm(dx)
-        converged = error < 1e-16
+        converged = (error < tol) or (abs(error - prev) < tol)
         count += 1
+        prev = error
         #print(count, error)
 
     MM = M if N % 2 == 0 else M+1
@@ -40,7 +42,7 @@ def legendre_lobatto_nodes_and_weights(N):
     return x, w
 
 
-def legendre_gauss_nodes_and_weights(N):
+def legendre_gauss_nodes_and_weights(N, tol=1e-16):
     """Return points and weights for Legendre-Gauss quadrature
 
     Parameters
@@ -60,12 +62,14 @@ def legendre_gauss_nodes_and_weights(N):
     converged = False
     dx = np.zeros_like(x)
     count = 0
+    prev = 1
     while not converged and count < 10:
         dx[:] = Ln(x)/Ld(x)
         x -= dx
         error = np.linalg.norm(dx)
-        converged = error < 1e-16
+        converged = (error < 1e-16) or (abs(error-prev) < tol)
         count += 1
+        prev = error
         #print(count, error)
 
     MM = M if N % 2 == 0 else M+1
