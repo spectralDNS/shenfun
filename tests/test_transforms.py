@@ -221,6 +221,7 @@ def test_transforms(ST, quad, dim):
         cc[axis] = slice(None)
         cc = tuple(cc)
         assert np.allclose(fij[cc], u11[cc])
+        del ST1
 
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
 @pytest.mark.parametrize('axis', (0, 1, 2))

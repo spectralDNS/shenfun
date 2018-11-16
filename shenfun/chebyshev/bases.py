@@ -6,7 +6,8 @@ import numpy as np
 from numpy.polynomial import chebyshev as n_cheb
 from scipy.special import eval_chebyt
 from mpi4py_fft import fftw
-from shenfun.spectralbase import SpectralBase, work, Transform, FuncWrap
+from shenfun.spectralbase import SpectralBase, work, Transform, FuncWrap, \
+    islicedict, slicedict
 from shenfun.optimization import Cheb
 from shenfun.utilities import inheritdocstrings
 
@@ -194,6 +195,8 @@ class ChebyshevBase(SpectralBase):
         self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
         self.backward = Transform(self.backward, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
 
 
 @inheritdocstrings
@@ -266,11 +269,10 @@ class Basis(ChebyshevBase):
         return fd.copy()
 
     def apply_inverse_mass(self, array):
-        sl = self.sl
         array *= (2/np.pi)
-        array[sl(0)] /= 2
+        array[self.si[0]] /= 2
         if self.quad == 'GL':
-            array[sl(-1)] /= 2
+            array[self.si[-1]] /= 2
         return array
 
     def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
@@ -279,18 +281,18 @@ class Basis(ChebyshevBase):
             return
 
         output_array = self.backward.xfftn()
-        sl = self.sl
         if self.quad == "GC":
+            s0 = self.sl[slice(0, 1)]
             output_array *= 0.5
-            output_array += input_array[sl(slice(0, 1))]/2
+            output_array += input_array[s0]/2
 
         elif self.quad == "GL":
             output_array *= 0.5
-            output_array += input_array[sl(slice(0, 1))]/2
-            s0 = sl(slice(-1, None))
-            s2 = sl(slice(0, None, 2))
+            output_array += input_array[self.sl[slice(0, 1)]]/2
+            s0 = self.sl[slice(-1, None)]
+            s2 = self.sl[slice(0, None, 2)]
             output_array[s2] += input_array[s0]/2
-            s2 = sl(slice(1, None, 2))
+            s2 = self.sl[slice(1, None, 2)]
             output_array[s2] -= input_array[s0]/2
 
     def evaluate_scalar_product(self, input_array, output_array, fast_transform=True):
@@ -378,26 +380,23 @@ class ShenDirichletBasis(ChebyshevBase):
             self.vandermonde_scalar_product(input_array, output_array)
             return
         output = self.CT.scalar_product(fast_transform=fast_transform)
-        s0 = self.sl(0)
-        s1 = self.sl(1)
+        s0 = self.si[0]
+        s1 = self.si[1]
         c0 = 0.5*(output[s0] + output[s1])
         c1 = 0.5*(output[s0] - output[s1])
-        s0 = self.sl(slice(0, -2))
-        s1 = self.sl(slice(2, None))
+        s0 = self.sl[slice(0, -2)]
+        s1 = self.sl[slice(2, None)]
         output[s0] -= output[s1]
-        s0 = list(s0)
-        s0[self.axis] = -2
-        output[tuple(s0)] = c0
-        s0[self.axis] = -1
-        output[tuple(s0)] = c1
+        output[self.si[-2]] = c0
+        output[self.si[-1]] = c1
 
     def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
             SpectralBase.evaluate_expansion_all(self, input_array, output_array, False)
             return
         w_hat = work[(input_array, 0, True)]
-        s0 = self.sl(slice(0, -2))
-        s1 = self.sl(slice(2, None))
+        s0 = self.sl[slice(0, -2)]
+        s1 = self.sl[slice(2, None)]
         w_hat[s0] = input_array[s0]
         w_hat[s1] -= input_array[s0]
         self.bc.apply_before(w_hat, False, (0.5, 0.5))
@@ -438,6 +437,8 @@ class ShenDirichletBasis(ChebyshevBase):
         self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
         self.backward = Transform(self.backward, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
 
 
 @inheritdocstrings
@@ -498,8 +499,8 @@ class ShenNeumannBasis(ChebyshevBase):
             return
         output = self.CT.scalar_product(fast_transform=True)
         self.set_factor_array(output)
-        sm2 = self.sl(slice(0, -2))
-        s2p = self.sl(slice(2, None))
+        sm2 = self.sl[slice(0, -2)]
+        s2p = self.sl[slice(2, None)]
         output[sm2] -= self._factor * output[s2p]
 
     def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
@@ -511,8 +512,8 @@ class ShenNeumannBasis(ChebyshevBase):
                                      fast_transform=fast_transform)
 
         output = self.scalar_product.output_array
-        output[self.sl(0)] = self.mean*np.pi
-        output[self.sl(slice(-2, None))] = 0
+        output[self.si[0]] = self.mean*np.pi
+        output[self.sl[slice(-2, None)]] = 0
 
         if output_array is not None:
             output_array[...] = output
@@ -525,8 +526,8 @@ class ShenNeumannBasis(ChebyshevBase):
             return
         w_hat = work[(input_array, 0, True)]
         self.set_factor_array(input_array)
-        s0 = self.sl(slice(0, -2))
-        s1 = self.sl(slice(2, None))
+        s0 = self.sl[slice(0, -2)]
+        s1 = self.sl[slice(2, None)]
         w_hat[s0] = input_array[s0]
         w_hat[s1] -= self._factor*input_array[s0]
         self.CT.backward(w_hat)
@@ -566,6 +567,8 @@ class ShenNeumannBasis(ChebyshevBase):
         self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
         self.backward = Transform(self.backward, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
 
 
 @inheritdocstrings
@@ -615,7 +618,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
 
     def set_factor_arrays(self, v):
         """Set intermediate factor arrays"""
-        s = self.sl(self.slice())
+        s = self.sl[self.slice()]
         if not self._factor1.shape == v[s].shape:
             k = self.wavenumbers().astype(float)
             self._factor1 = (-2*(k+2)/(k+3)).astype(float)
@@ -629,9 +632,9 @@ class ShenBiharmonicBasis(ChebyshevBase):
         Tk = work[(output, 0, True)]
         Tk[...] = output
         self.set_factor_arrays(Tk)
-        s = self.sl(self.slice())
-        s2 = self.sl(slice(2, -2))
-        s4 = self.sl(slice(4, None))
+        s = self.sl[self.slice()]
+        s2 = self.sl[slice(2, -2)]
+        s4 = self.sl[slice(4, None)]
         output[s] += self._factor1 * Tk[s2]
         output[s] += self._factor2 * Tk[s4]
 
@@ -643,7 +646,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
                                      self.scalar_product.output_array,
                                      fast_transform=fast_transform)
 
-        self.scalar_product.output_array[self.sl(slice(-4, None))] = 0
+        self.scalar_product.output_array[self.sl[slice(-4, None)]] = 0
 
         if output_array is not None:
             output_array[...] = self.scalar_product.output_array
@@ -653,9 +656,9 @@ class ShenBiharmonicBasis(ChebyshevBase):
     #@optimizer
     def set_w_hat(self, w_hat, fk, f1, f2):
         """Return intermediate w_hat array"""
-        s = self.sl(self.slice())
-        s2 = self.sl(slice(2, -2))
-        s4 = self.sl(slice(4, None))
+        s = self.sl[self.slice()]
+        s2 = self.sl[slice(2, -2)]
+        s4 = self.sl[slice(4, None)]
         w_hat[s] = fk[s]
         w_hat[s2] += f1*fk[s]
         w_hat[s4] += f2*fk[s]
@@ -709,3 +712,5 @@ class ShenBiharmonicBasis(ChebyshevBase):
         self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
         self.backward = Transform(self.backward, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())

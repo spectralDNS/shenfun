@@ -888,9 +888,9 @@ class BoundaryValues(object):
                 Y1 = []
                 for i, ax in enumerate((x, y, z)):
                     if ax in bc0.free_symbols:
-                        Y0.append(X[i][dirichlet_base.sl(0)])
+                        Y0.append(X[i][dirichlet_base.si[0]])
                     if ax in bc1.free_symbols:
-                        Y1.append(X[i][dirichlet_base.sl(0)])
+                        Y1.append(X[i][dirichlet_base.si[0]])
 
                 f_bc0 = lbc0(*Y0)
                 f_bc1 = lbc1(*Y1)
@@ -964,10 +964,10 @@ class BoundaryValues(object):
             self.bcs_final[1] = b_hat[self.slm1].copy()
 
     def set_slices(self, T):
-        self.sl0 = T.sl(0)
-        self.sl1 = T.sl(1)
-        self.slm1 = T.sl(-1)
-        self.slm2 = T.sl(-2)
+        self.sl0 = T.si[0]
+        self.sl1 = T.si[1]
+        self.slm1 = T.si[-1]
+        self.slm2 = T.si[-2]
 
     def apply_before(self, u, final=False, scales=(0.5, 0.5)):
         if final is True:

@@ -3,7 +3,7 @@ Module for defining bases in the Fourier family
 """
 import numpy as np
 from mpi4py_fft import fftw
-from shenfun.spectralbase import SpectralBase, Transform
+from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
 from shenfun.utilities import inheritdocstrings
 from shenfun.optimization import convolve
 
@@ -262,6 +262,8 @@ class FourierBase(SpectralBase):
 
         # scalar_product is not padded, just the forward/backward
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
 
 
 class R2CBasis(FourierBase):
@@ -276,6 +278,8 @@ class R2CBasis(FourierBase):
         #self._xfftn_bck = pyfftw.builders.irfftn
         self._xfftn_fwd = fftw.rfftn
         self._xfftn_bck = fftw.irfftn
+        self._sn = []
+        self._sm = []
         self.plan((int(np.floor(padding_factor*N)),), (0,), np.float, {})
 
     def wavenumbers(self, bcast=True, scaled=False, eliminate_highest_freq=False):
@@ -370,29 +374,32 @@ class R2CBasis(FourierBase):
         if self.padding_factor > 1.0+1e-8:
             trunc_array.fill(0)
             N = trunc_array.shape[self.axis]
-            s = self.sl(slice(0, N))
+            s = self.sl[slice(0, N)]
             trunc_array[:] = padded_array[s]
             if self.N % 2 == 0:
-                s1 = self.sl(N-1)
+                s1 = self.si[N-1]
                 trunc_array[s1] = trunc_array[s1].real
                 trunc_array[s1] *= 2
 
+    #@profile
     def _padding_backward(self, trunc_array, padded_array):
         if self.padding_factor > 1.0+1e-8:
             #backward_padding(padded_array, trunc_array, self.axis, self.N)
             padded_array.fill(0)
             N = trunc_array.shape[self.axis]
-            s = [slice(0, n) for n in trunc_array.shape]
-            padded_array[tuple(s)] = trunc_array[tuple(s)]
+            if len(self._sn) != self.dimensions():
+                self._sn = tuple(slice(0, n) for n in trunc_array.shape)
+                _sm = [slice(0, n) for n in trunc_array.shape]
+                _sm[self.axis] = N-1
+                self._sm = tuple(_sm)
+            padded_array[self._sn] = trunc_array[self._sn]
             if self.N % 2 == 0:  # Symmetric Fourier interpolator
-                s[self.axis] = N-1
-                s = tuple(s)
-                padded_array[s] = padded_array[s].real
-                padded_array[s] *= 0.5
+                padded_array[self._sm] = padded_array[self._sm].real
+                padded_array[self._sm] *= 0.5
 
         elif self.dealias_direct:
             N = self.N
-            su = self.sl(slice(N//3, None))
+            su = self.sl[slice(N//3, None)]
             padded_array[su] = 0
 
     def convolve(self, u, v, uv=None, fast=True):
@@ -492,6 +499,7 @@ class C2CBasis(FourierBase):
         self._xfftn_fwd = fftw.fftn
         self._xfftn_bck = fftw.ifftn
         self.plan((int(np.floor(padding_factor*N)),), (0,), np.complex, {})
+        self._slp = []
 
     def wavenumbers(self, bcast=True, scaled=False, eliminate_highest_freq=False):
         k = np.fft.fftfreq(self.N, 1./self.N)
@@ -510,26 +518,29 @@ class C2CBasis(FourierBase):
         if self.padding_factor > 1.0+1e-8:
             trunc_array.fill(0)
             N = trunc_array.shape[self.axis]
-            su = self.sl(slice(0, N//2+1))
+            su = self.sl[slice(0, N//2+1)]
             trunc_array[su] = padded_array[su]
-            su = self.sl(slice(-(N//2), None))
+            su = self.sl[slice(-(N//2), None)]
             trunc_array[su] += padded_array[su]
 
     def _padding_backward(self, trunc_array, padded_array):
         if self.padding_factor > 1.0+1e-8:
             padded_array.fill(0)
             N = trunc_array.shape[self.axis]
-            su = self.sl(slice(0, N//2+1))
-            padded_array[su] = trunc_array[su]
-            su = self.sl(slice(-(N//2), None))
-            padded_array[su] = trunc_array[su]
+            if len(self._slp) != self.dimensions(): # Store for microoptimization
+                self._slp = self.sl[slice(0, N//2+1)]
+                self._slm = self.sl[slice(-(N//2), None)]
+                self._slp0 = self.si[N//2]
+                self._slm0 = self.si[-(N//2)]
+            padded_array[self._slp] = trunc_array[self._slp]
+            padded_array[self._slm] = trunc_array[self._slm]
             if self.N % 2 == 0:  # Use symmetric Fourier interpolator
-                padded_array[self.sl(N//2)] *= 0.5
-                padded_array[self.sl(-(N//2))] *= 0.5
+                padded_array[self._slp0] *= 0.5
+                padded_array[self._slm0] *= 0.5
 
         elif self.dealias_direct:
             N = trunc_array.shape[self.axis]
-            su = self.sl(slice(N//3, -(N//3)+1))
+            su = self.sl[slice(N//3, -(N//3)+1)]
             padded_array[su] = 0
 
     def convolve(self, u, v, uv=None, fast=True):

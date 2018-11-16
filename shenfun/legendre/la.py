@@ -531,7 +531,7 @@ class Helmholtz_2dirichlet(object):
 
             # Apply the inverse in eigen space
             ls = self.T.local_slice()
-            u /= (self.scale['BUB'] + self.lmbdax[:, np.newaxis] + self.lmbday[np.newaxis, :])[tuple(ls)]
+            u /= (self.scale['BUB'] + self.lmbdax[:, np.newaxis] + self.lmbday[np.newaxis, :])[ls]
 
             # Map back to physical space
             u[:] = self.Vx.dot(u)
