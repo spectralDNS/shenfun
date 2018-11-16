@@ -381,17 +381,13 @@ class R2CBasis(FourierBase):
                 trunc_array[s1] = trunc_array[s1].real
                 trunc_array[s1] *= 2
 
-    #@profile
     def _padding_backward(self, trunc_array, padded_array):
         if self.padding_factor > 1.0+1e-8:
-            #backward_padding(padded_array, trunc_array, self.axis, self.N)
             padded_array.fill(0)
             N = trunc_array.shape[self.axis]
             if len(self._sn) != self.dimensions():
-                self._sn = tuple(slice(0, n) for n in trunc_array.shape)
-                _sm = [slice(0, n) for n in trunc_array.shape]
-                _sm[self.axis] = N-1
-                self._sm = tuple(_sm)
+                self._sn = self.sl[slice(0, N)]
+                self._sm = self.si[N-1]
             padded_array[self._sn] = trunc_array[self._sn]
             if self.N % 2 == 0:  # Symmetric Fourier interpolator
                 padded_array[self._sm] = padded_array[self._sm].real

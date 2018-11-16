@@ -312,7 +312,6 @@ class SpectralBase(object):
             return output_array
         return self.forward.output_array
 
-    #@profile
     def backward(self, input_array=None, output_array=None, fast_transform=True):
         """Compute backward (inverse) transform
 
@@ -777,6 +776,8 @@ class SpectralBase(object):
         """Return the dimensions (the number of bases) of the
         :class:`.TensorProductSpace` class this basis is planned for.
         """
+        if self.tensorproductspace:
+            return self.tensorproductspace.dimensions()
         return self.forward.input_array.ndim
 
     @property
