@@ -129,5 +129,5 @@ def test_curl2():
     assert allclose(w, curl_)
 
 if __name__ == '__main__':
-    #test_curl('d')
-    test_curl2()
+    test_curl('g')
+    #test_curl2()

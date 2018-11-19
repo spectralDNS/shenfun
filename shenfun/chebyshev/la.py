@@ -166,18 +166,26 @@ class Helmholtz(object):
                 assert 'BNNmat' in kwargs
                 A = self.A = kwargs['ANNmat']
                 B = self.B = kwargs['BNNmat']
-            alfa = self.alfa = A.scale
-            beta = self.beta = B.scale
+            self.alfa = A.scale
+            self.beta = B.scale
+            T = A.tensorproductspace
+            shape = list(T.local_shape(True))
+            shape[A.axis] = 1
+            if not self.alfa.shape == shape:
+                self.alfa = np.broadcast_to(self.alfa, shape).copy()
+            if not self.beta.shape == shape:
+                self.beta = np.broadcast_to(self.beta, shape).copy()
 
         elif len(args) == 4:
+            # Only for 1D problems
             A = self.A = args[0]
             B = self.B = args[1]
-            alfa = self.alfa = args[2]
-            beta = self.beta = args[3]
+            self.alfa = args[2]
+            self.beta = args[3]
+            shape = (A.shape[0],)
         else:
             raise RuntimeError('Wrong input to Helmholtz solver')
 
-        shape = list(beta.shape)
         B[2] = np.broadcast_to(B[2], A[2].shape)
         B[-2] = np.broadcast_to(B[-2], A[2].shape)
         neumann = self.neumann = isinstance(A.testfunction[0], bases.ShenNeumannBasis)
@@ -191,15 +199,12 @@ class Helmholtz(object):
             self.u2 = np.zeros(N-6, float)     # Diagonal+2 entries of U
             self.L = np.zeros(N-4, float)      # The single nonzero row of L
             self.axis = 0
-            la.LU_Helmholtz_1D(A, B, alfa, beta, neumann, self.u0,
+            la.LU_Helmholtz_1D(A, B, self.alfa, self.beta, neumann, self.u0,
                                self.u1, self.u2, self.L)
 
         else:
             self.axis = A.axis
-            assert alfa.shape[A.axis] == 1 and beta.shape[A.axis] == 1
-
             N = A.shape[0]+2
-            alfa = np.broadcast_to(alfa, shape).copy()
             shape[A.axis] = N-2
             self.u0 = np.zeros(shape, float)     # Diagonal entries of U
             shape[A.axis] = N-4
@@ -207,14 +212,13 @@ class Helmholtz(object):
             self.L = np.zeros(shape, float)      # The single nonzero row of L
             shape[A.axis] = N-6
             self.u2 = np.zeros(shape, float)     # Diagonal+4 entries of U
-            self.beta = beta.copy()
 
             if len(shape) == 2:
-                la.LU_Helmholtz_2D(A, B, A.axis, alfa, beta, neumann,
+                la.LU_Helmholtz_2D(A, B, A.axis, self.alfa, self.beta, neumann,
                                    self.u0, self.u1, self.u2, self.L)
 
             elif len(shape) == 3:
-                la.LU_Helmholtz_3D(A, B, A.axis, alfa, beta, neumann,
+                la.LU_Helmholtz_3D(A, B, A.axis, self.alfa, self.beta, neumann,
                                    self.u0, self.u1, self.u2, self.L)
 
     def __call__(self, u, b):
@@ -233,41 +237,15 @@ class Helmholtz(object):
 
         """
 
-        # comment since self.beta[s0]
-        #if not self.neumann:
-            #if isinstance(self.bcs, BoundaryValues):
-                ##self.bcs.apply_before(b, True)
-                #pass
-
-            #else:
-                #s0 = [slice(0, 1)]*u.ndim
-                #b[s0] -= np.pi/2*(self.bc[0] + self.bc[1])*self.beta[s0]
-                #s = copy(s0)
-                #s[self.axis] = slice(1, 2)
-                #b[s] -= np.pi/4*(self.bc[0] - self.bc[1])*self.beta[s0]
-
         if np.ndim(u) == 3:
-
-            #la.Solve_Helmholtz_3D(self.axis, b, u, self.neumann, self.u0, self.u1,
-                                  #self.u2, self.L)
-
             la.Solve_Helmholtz_3D_ptr(self.axis, b, u, self.neumann, self.u0,
                                       self.u1, self.u2, self.L)
-
-            #la.Solve_Helmholtz_3D_hc(self.axis, b, u, self.neumann, self.u0,
-                                      #self.u1, self.u2, self.L)
-
-
         elif np.ndim(u) == 2:
-
-            la.Solve_Helmholtz_2D(self.axis, b, u, self.neumann, self.u0, self.u1,
-                                  self.u2, self.L)
-
-            #la.Solve_Helmholtz_2D_ptr(self.axis, b, u, self.neumann, self.u0,
-            #                          self.u1, self.u2, self.L)
-
+            la.Solve_Helmholtz_2D_ptr(self.axis, b, u, self.neumann, self.u0,
+                                      self.u1, self.u2, self.L)
         else:
-            la.Solve_Helmholtz_1D(b, u, self.neumann, self.u0, self.u1, self.u2, self.L)
+            la.Solve_Helmholtz_1D(b, u, self.neumann, self.u0, self.u1,
+                                  self.u2, self.L)
 
         if not self.neumann:
             self.bc.apply_after(u, True)
@@ -289,9 +267,9 @@ class Helmholtz(object):
         assert self.neumann is False
         c[:] = 0
         if len(v.shape) == 3:
-            Matvec.Helmholtz_matvec3D(v, c, 1.0, self.beta, self.A[0], self.A[2], self.B[0], axis)
+            Matvec.Helmholtz_matvec3D_ptr(v, c, self.alfa, self.beta, self.A[0], self.A[2], self.B[0], axis)
         elif len(v.shape) == 2:
-            Matvec.Helmholtz_matvec2D(v, c, 1.0, self.beta, self.A[0], self.A[2], self.B[0], axis)
+            Matvec.Helmholtz_matvec2D_ptr(v, c, self.alfa, self.beta, self.A[0], self.A[2], self.B[0], axis)
         else:
             Matvec.Helmholtz_matvec(v, c, self.alfa, self.beta, self.A[0], self.A[2], self.B[0])
         return c
@@ -691,6 +669,10 @@ class PDMA(object):
             la.Solve_Helmholtz_Biharmonic_3D_ptr(self.A.axis, b, u, self.l2,
                                                  self.l1, self.d, self.u1,
                                                  self.u2)
+        elif np.ndim(u) == 2:
+            la.Solve_Helmholtz_Biharmonic_2D_ptr(self.A.axis, b, u, self.l2,
+                                                 self.l1, self.d, self.u1,
+                                                 self.u2)
         else:
             if self.solver == 'python': # pragma: no cover
                 u[:] = b
@@ -699,8 +681,8 @@ class PDMA(object):
             elif self.solver == 'cython':
                 if u is b:
                     u = np.zeros_like(b)
-                #la.Solve_Helmholtz_Biharmonic_1D(b, u, self.l2, self.l1,
-                #                                 self.d, self.u1, self.u2)
+                la.Solve_Helmholtz_Biharmonic_1D(b, u, self.l2, self.l1,
+                                                 self.d, self.u1, self.u2)
                 la.Solve_Helmholtz_Biharmonic_1D_p(b, u, self.l2, self.l1,
                                                    self.d, self.u1, self.u2)
 

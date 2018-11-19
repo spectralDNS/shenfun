@@ -30,11 +30,19 @@ formats = ('dia', 'cython', 'python', 'self')
 N = 16
 k = np.arange(N).astype(float)
 a = np.random.random(N)
-b = np.random.random((N, N, N))
 c = np.zeros(N)
 c1 = np.zeros(N)
-d = np.zeros((N, N, N))
-d1 = np.zeros((N, N, N))
+
+work = {
+    3:
+    (np.random.random((N, N, N)),
+     np.zeros((N, N, N)),
+     np.zeros((N, N, N))),
+    2:
+    (np.random.random((N, N)),
+     np.zeros((N, N)),
+     np.zeros((N, N)))
+    }
 
 cbases2 = list(product(cBasis, cBasis))
 lbases2 = list(product(lBasis, lBasis))
@@ -60,9 +68,9 @@ def test_mat(key, mat, quad):
 @pytest.mark.parametrize('b0,b1', cbases2)
 @pytest.mark.parametrize('quad', cquads)
 @pytest.mark.parametrize('format', formats)
-@pytest.mark.parametrize('axis', (0, 1, 2))
+@pytest.mark.parametrize('dim', (2, 3))
 @pytest.mark.parametrize('k', range(5))
-def test_cmatvec(b0, b1, quad, format, axis, k):
+def test_cmatvec(b0, b1, quad, format, dim, k):
     """Test matrix-vector product"""
     global c, c1, d, d1
     b0 = b0(N, quad=quad)
@@ -71,29 +79,30 @@ def test_cmatvec(b0, b1, quad, format, axis, k):
     c = mat.matvec(a, c, format='csr')
     c1 = mat.matvec(a, c1, format=format)
     assert np.allclose(c, c1)
+    for axis in range(0, dim):
+        b, d, d1 = work[dim]
+        d.fill(0)
+        d1.fill(0)
+        d = mat.matvec(b, d, format='csr', axis=axis)
+        d1 = mat.matvec(b, d1, format=format, axis=axis)
+        assert np.allclose(d, d1)
 
-    d.fill(0)
-    d1.fill(0)
-    d = mat.matvec(b, d, format='csr', axis=axis)
-    d1 = mat.matvec(b, d1, format=format, axis=axis)
-    assert np.allclose(d, d1)
-
-    # Test multidimensional with axis equals 1D case
-    d1.fill(0)
-    bc = [np.newaxis,]*3
-    bc[axis] = slice(None)
-    fj = np.broadcast_to(a[tuple(bc)], (N,)*3).copy()
-    d1 = mat.matvec(fj, d1, format=format, axis=axis)
-    cc = [0,]*3
-    cc[axis] = slice(None)
-    assert np.allclose(c, d1[tuple(cc)])
+        # Test multidimensional with axis equals 1D case
+        d1.fill(0)
+        bc = [np.newaxis,]*dim
+        bc[axis] = slice(None)
+        fj = np.broadcast_to(a[tuple(bc)], (N,)*dim).copy()
+        d1 = mat.matvec(fj, d1, format=format, axis=axis)
+        cc = [0,]*dim
+        cc[axis] = slice(None)
+        assert np.allclose(c, d1[tuple(cc)])
 
 @pytest.mark.parametrize('b0,b1', lbases2)
 @pytest.mark.parametrize('quad', lquads)
 @pytest.mark.parametrize('format', formats)
-@pytest.mark.parametrize('axis', (0, 1, 2))
+@pytest.mark.parametrize('dim', (2, 3))
 @pytest.mark.parametrize('k0,k1', product((0, 1, 2), (0, 1, 2)))
-def test_lmatvec(b0, b1, quad, format, axis, k0, k1):
+def test_lmatvec(b0, b1, quad, format, dim, k0, k1):
     """Test matrix-vector product"""
     global c, c1, d, d1
     b0 = b0(N, quad=quad)
@@ -103,21 +112,23 @@ def test_lmatvec(b0, b1, quad, format, axis, k0, k1):
     c1 = mat.matvec(a, c1, format=format)
     assert np.allclose(c, c1)
 
-    d.fill(0)
-    d1.fill(0)
-    d = mat.matvec(b, d, format='csr', axis=axis)
-    d1 = mat.matvec(b, d1, format=format, axis=axis)
-    assert np.allclose(d, d1)
+    for axis in range(0, dim):
+        b, d, d1 = work[dim]
+        d.fill(0)
+        d1.fill(0)
+        d = mat.matvec(b, d, format='csr', axis=axis)
+        d1 = mat.matvec(b, d1, format=format, axis=axis)
+        assert np.allclose(d, d1)
 
-    # Test multidimensional with axis equals 1D case
-    d1.fill(0)
-    bc = [np.newaxis,]*3
-    bc[axis] = slice(None)
-    fj = np.broadcast_to(a[tuple(bc)], (N,)*3).copy()
-    d1 = mat.matvec(fj, d1, format=format, axis=axis)
-    cc = [0,]*3
-    cc[axis] = slice(None)
-    assert np.allclose(c, d1[tuple(cc)])
+        # Test multidimensional with axis equals 1D case
+        d1.fill(0)
+        bc = [np.newaxis,]*dim
+        bc[axis] = slice(None)
+        fj = np.broadcast_to(a[tuple(bc)], (N,)*dim).copy()
+        d1 = mat.matvec(fj, d1, format=format, axis=axis)
+        cc = [0,]*dim
+        cc[axis] = slice(None)
+        assert np.allclose(c, d1[tuple(cc)])
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_imul(key, mat, quad):
@@ -295,10 +306,11 @@ def test_helmholtz3D(family, axis):
 
     g0 = shenfun.Function(T)
     g1 = shenfun.Function(T)
+    #from IPython import embed; embed()
     g0 = mat['ADDmat'].matvec(u, g0, axis=axis)
     g1 = mat['BDDmat'].matvec(u, g1, axis=axis)
 
-    assert np.linalg.norm(f-(g0+g1)) < 1e-12
+    assert np.linalg.norm(f-(g0+g1)) < 1e-12, np.linalg.norm(f-(g0+g1))
 
 
 @pytest.mark.parametrize('axis', (0, 1))
@@ -332,7 +344,7 @@ def test_helmholtz2D(family, axis):
     g0 = mat['ADDmat'].matvec(u, g0, axis=axis)
     g1 = mat['BDDmat'].matvec(u, g1, axis=axis)
 
-    assert np.linalg.norm(f-(g0+g1)) < 1e-12
+    assert np.linalg.norm(f-(g0+g1)) < 1e-12, np.linalg.norm(f-(g0+g1))
 
 @pytest.mark.parametrize('axis', (0, 1, 2))
 @pytest.mark.parametrize('family', ('chebyshev', 'legendre'))
@@ -371,7 +383,7 @@ def test_biharmonic3D(family, axis):
     g1 = mat[amat].matvec(u, g1, axis=axis)
     g2 = mat['BBBmat'].matvec(u, g2, axis=axis)
 
-    assert np.linalg.norm(f-(g0+g1+g2)) < 1e-8
+    assert np.linalg.norm(f-(g0+g1+g2)) < 1e-8,np.linalg.norm(f-(g0+g1+g2))
 
 @pytest.mark.parametrize('axis', (0, 1))
 @pytest.mark.parametrize('family', ('chebyshev', 'legendre'))
@@ -411,11 +423,11 @@ def test_biharmonic2D(family, axis):
 
 
 if __name__ == '__main__':
-    test_cmatvec(cBasis[3], cBasis[3], 'GC', 'cython', 2, 4)
+    test_cmatvec(cBasis[3], cBasis[1], 'GC', 'cython', 3, 0)
     #test_add(*mats_and_quads[0])
     #test_mul2()
     #test_div2(cBasis[0], 'GC')
-    #test_helmholtz3D('legendre', 2)
-    #test_helmholtz2D('legendre', 0)
-    #test_biharmonic3D('chebyshev', 1)
-    test_biharmonic2D('chebyshev', 0)
+    #test_helmholtz3D('chebyshev', 1)
+    #test_helmholtz2D('chebyshev', 1)
+    #test_biharmonic3D('chebyshev', 2)
+    #test_biharmonic2D('chebyshev', 1)
