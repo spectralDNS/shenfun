@@ -38,7 +38,7 @@ Dependencies
 
 Contact
 -------
-For comments, issues, bug-reports and requests, please use the issue tracker of the current repository. Otherwise the principal author can be reached at::
+For comments, issues, bug-reports and requests, please use the issue tracker of the current repository, or see `How to contribute? <https://shenfun.readthedocs.io/en/latest/howtocontribute.html>`_ at readthedocs. Otherwise the principal author can be reached at::
 
     Mikael Mortensen
     mikaem at math.uio.no
