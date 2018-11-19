@@ -276,7 +276,11 @@ class SparseMatrix(dict):
             if self.scale not in (1.0, 1):
                 c *= self.scale
         else:
-            c *= self.scale
+            if np.prod(self.scale.shape) == 1: # array with only one number
+                if self.scale not in (1.0, 1):
+                    c *= self.scale
+            else:
+                c *= self.scale
 
     def solve(self, b, u=None, axis=0):
         """Solve matrix system Au = b
@@ -510,6 +514,12 @@ class SpectralMatrix(SparseMatrix):
         """
         u = self.solver(b, u=u, axis=axis)
         return u
+
+    @property
+    def tensorproductspace(self):
+        """Return the :class:`.TensorProductSpace` this matrix has been
+        computed for"""
+        return self.testfunction[0].tensorproductspace
 
     def __hash__(self):
         return hash(((self.testfunction[0].__class__, self.testfunction[1]),

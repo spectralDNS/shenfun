@@ -866,45 +866,101 @@ def LU_Helmholtz_1D(A, B,
             d2[i] = A_scale*A_4[i] - L[i-2]*d2[i-2]
 
 
-def Solve_Helmholtz_1D(np.ndarray[T, ndim=1] fk,
-                       np.ndarray[T, ndim=1] u_hat,
-                       bint neumann,
-                       np.ndarray[real_t, ndim=1] d0,
-                       np.ndarray[real_t, ndim=1] d1,
-                       np.ndarray[real_t, ndim=1] d2,
-                       np.ndarray[real_t, ndim=1] L):
+def LU_Helmholtz_3D(A, B, np.int64_t axis,
+                    np.ndarray[real_t, ndim=3] A_scale,
+                    np.ndarray[real_t, ndim=3] B_scale,
+                    bint neumann,
+                    np.ndarray[real_t, ndim=3] d0,
+                    np.ndarray[real_t, ndim=3] d1,
+                    np.ndarray[real_t, ndim=3] d2,
+                    np.ndarray[real_t, ndim=3] L):
     cdef:
-        int i, j, N
+        unsigned int ii, jj
+
+    if axis == 0:
+        for ii in range(d0.shape[1]):
+            for jj in range(d0.shape[2]):
+                LU_Helmholtz_1D(A, B,
+                                A_scale[0, ii, jj],
+                                B_scale[0, ii, jj],
+                                neumann,
+                                d0[:, ii, jj],
+                                d1[:, ii, jj],
+                                d2[:, ii, jj],
+                                L [:, ii, jj])
+
+    elif axis == 1:
+        for ii in range(d0.shape[0]):
+            for jj in range(d0.shape[2]):
+                LU_Helmholtz_1D(A, B,
+                                A_scale[ii, 0, jj],
+                                B_scale[ii, 0, jj],
+                                neumann,
+                                d0[ii, :, jj],
+                                d1[ii, :, jj],
+                                d2[ii, :, jj],
+                                L [ii, :, jj])
+
+    elif axis == 2:
+        for ii in range(d0.shape[0]):
+            for jj in range(d0.shape[1]):
+                LU_Helmholtz_1D(A, B,
+                                A_scale[ii, jj, 0],
+                                B_scale[ii, jj, 0],
+                                neumann,
+                                d0[ii, jj, :],
+                                d1[ii, jj, :],
+                                d2[ii, jj, :],
+                                L [ii, jj, :])
+
+def LU_Helmholtz_2D(A, B, np.int64_t axis,
+                    np.ndarray[real_t, ndim=2] A_scale,
+                    np.ndarray[real_t, ndim=2] B_scale,
+                    bint neumann,
+                    np.ndarray[real_t, ndim=2] d0,
+                    np.ndarray[real_t, ndim=2] d1,
+                    np.ndarray[real_t, ndim=2] d2,
+                    np.ndarray[real_t, ndim=2] L):
+    cdef:
+        unsigned int ii
+
+    if axis == 0:
+        for ii in range(d0.shape[1]):
+            LU_Helmholtz_1D(A, B,
+                            A_scale[0, ii],
+                            B_scale[0, ii],
+                            neumann,
+                            d0[:, ii],
+                            d1[:, ii],
+                            d2[:, ii],
+                            L [:, ii])
+
+    elif axis == 1:
+        for ii in range(d0.shape[0]):
+            LU_Helmholtz_1D(A, B,
+                            A_scale[ii, 0],
+                            B_scale[ii, 0],
+                            neumann,
+                            d0[ii, :],
+                            d1[ii, :],
+                            d2[ii, :],
+                            L [ii, :])
+
+def Solve_Helmholtz_1D(T[::1] fk,
+                       T[::1] u_hat,
+                       bint neumann,
+                       real_t[::1] d0,
+                       real_t[::1] d1,
+                       real_t[::1] d2,
+                       real_t[::1] L):
+    cdef:
+        T* fk_ptr = &fk[0]
+        T* u_hat_ptr = &u_hat[0]
+        T* y_ptr = &y[0]
         vector[T] y
-        T sum_even = 0.0
-        T sum_odd = 0.0
-
-    N = d0.shape[0]
+        int N = d0.shape[0]
     y.resize(N)
-    y[0] = fk[0]
-    y[1] = fk[1]
-    for i in xrange(2, N):
-        y[i] = fk[i] - L[i-2]*y[i-2]
-
-    u_hat[N-1] = y[N-1] / d0[N-1]
-    u_hat[N-2] = y[N-2] / d0[N-2]
-    u_hat[N-3] = (y[N-3] - d1[N-3]*u_hat[N-1]) / d0[N-3]
-    u_hat[N-4] = (y[N-4] - d1[N-4]*u_hat[N-2]) / d0[N-4]
-    for i in xrange(N-5, -1, -1):
-        u_hat[i] = y[i] - d1[i]*u_hat[i+2]
-        if i % 2 == 0:
-            sum_even += u_hat[i+4]
-            u_hat[i] -= d2[i]*sum_even
-        else:
-            sum_odd += u_hat[i+4]
-            u_hat[i] -= d2[i]*sum_odd
-        u_hat[i]/=d0[i]
-
-    if neumann:
-        u_hat[0] = 0.0
-        for i in xrange(1, N):
-            u_hat[i] /= pow(i, 2)
-
+    Solve_Helmholtz_1D_ptr(fk_ptr, u_hat_ptr, neumann, &d0[0], &d1[0], &d2[0], &L[0], &y[0], N, 1)
 
 cdef void Solve_Helmholtz_1D_ptr(T* fk,
                                  T* u_hat,
@@ -1005,7 +1061,6 @@ def Solve_Helmholtz_3D_ptr(np.int64_t axis,
                                        d1_ptr, d2_ptr, L_ptr, &y[0], d0.shape[axis],
                                        strides)
 
-
 def Solve_Helmholtz_2D_ptr(np.int64_t axis,
                            T[:,::1] fk,
                            T[:,::1] u_hat,
@@ -1048,297 +1103,6 @@ def Solve_Helmholtz_2D_ptr(np.int64_t axis,
             Solve_Helmholtz_1D_ptr(fk_ptr, u_hat_ptr, neumann, d0_ptr,
                                     d1_ptr, d2_ptr, L_ptr, &y[0], d0.shape[axis],
                                     strides)
-
-
-def LU_Helmholtz_3D(A, B, np.int64_t axis,
-                    np.ndarray[real_t, ndim=3] A_scale,
-                    np.ndarray[real_t, ndim=3] B_scale,
-                    bint neumann,
-                    np.ndarray[real_t, ndim=3] d0,
-                    np.ndarray[real_t, ndim=3] d1,
-                    np.ndarray[real_t, ndim=3] d2,
-                    np.ndarray[real_t, ndim=3] L):
-    cdef:
-        unsigned int ii, jj
-
-    if axis == 0:
-        for ii in range(d0.shape[1]):
-            for jj in range(d0.shape[2]):
-                LU_Helmholtz_1D(A, B,
-                                A_scale[0, ii, jj],
-                                B_scale[0, ii, jj],
-                                neumann,
-                                d0[:, ii, jj],
-                                d1[:, ii, jj],
-                                d2[:, ii, jj],
-                                L [:, ii, jj])
-
-    elif axis == 1:
-        for ii in range(d0.shape[0]):
-            for jj in range(d0.shape[2]):
-                LU_Helmholtz_1D(A, B,
-                                A_scale[ii, 0, jj],
-                                B_scale[ii, 0, jj],
-                                neumann,
-                                d0[ii, :, jj],
-                                d1[ii, :, jj],
-                                d2[ii, :, jj],
-                                L [ii, :, jj])
-
-    elif axis == 2:
-        for ii in range(d0.shape[0]):
-            for jj in range(d0.shape[1]):
-                LU_Helmholtz_1D(A, B,
-                                A_scale[ii, jj, 0],
-                                B_scale[ii, jj, 0],
-                                neumann,
-                                d0[ii, jj, :],
-                                d1[ii, jj, :],
-                                d2[ii, jj, :],
-                                L [ii, jj, :])
-
-def Solve_Helmholtz_3D(np.int64_t axis,
-                       np.ndarray[T, ndim=3] fk,
-                       np.ndarray[T, ndim=3] u_hat,
-                       bint neumann,
-                       np.ndarray[real_t, ndim=3] d0,
-                       np.ndarray[real_t, ndim=3] d1,
-                       np.ndarray[real_t, ndim=3] d2,
-                       np.ndarray[real_t, ndim=3] L):
-    cdef:
-        unsigned int ii, jj
-
-    if axis == 0:
-        for ii in range(d0.shape[1]):
-            for jj in range(d0.shape[2]):
-                Solve_Helmholtz_1D(fk[:, ii, jj],
-                                   u_hat[:, ii, jj],
-                                   neumann,
-                                   d0[:, ii, jj],
-                                   d1[:, ii, jj],
-                                   d2[:, ii, jj],
-                                   L [:, ii, jj])
-
-    elif axis == 1:
-        for ii in range(d0.shape[0]):
-            for jj in range(d0.shape[2]):
-                Solve_Helmholtz_1D(fk[ii, :, jj],
-                                   u_hat[ii, :, jj],
-                                   neumann,
-                                   d0[ii, :, jj],
-                                   d1[ii, :, jj],
-                                   d2[ii, :, jj],
-                                   L [ii, :, jj])
-
-    elif axis == 2:
-        for ii in range(d0.shape[0]):
-            for jj in range(d0.shape[1]):
-                Solve_Helmholtz_1D(fk[ii, jj, :],
-                                   u_hat[ii, jj, :],
-                                   neumann,
-                                   d0[ii, jj, :],
-                                   d1[ii, jj, :],
-                                   d2[ii, jj, :],
-                                   L [ii, jj, :])
-
-def LU_Helmholtz_2D(A, B, np.int64_t axis,
-                    np.ndarray[real_t, ndim=2] A_scale,
-                    np.ndarray[real_t, ndim=2] B_scale,
-                    bint neumann,
-                    np.ndarray[real_t, ndim=2] d0,
-                    np.ndarray[real_t, ndim=2] d1,
-                    np.ndarray[real_t, ndim=2] d2,
-                    np.ndarray[real_t, ndim=2] L):
-    cdef:
-        unsigned int ii
-
-    if axis == 0:
-        for ii in range(d0.shape[1]):
-            LU_Helmholtz_1D(A, B,
-                            A_scale[0, ii],
-                            B_scale[0, ii],
-                            neumann,
-                            d0[:, ii],
-                            d1[:, ii],
-                            d2[:, ii],
-                            L [:, ii])
-
-    elif axis == 1:
-        for ii in range(d0.shape[0]):
-            LU_Helmholtz_1D(A, B,
-                            A_scale[ii, 0],
-                            B_scale[ii, 0],
-                            neumann,
-                            d0[ii, :],
-                            d1[ii, :],
-                            d2[ii, :],
-                            L [ii, :])
-
-def Solve_Helmholtz_2D(np.int64_t axis,
-                       np.ndarray[T, ndim=2] fk,
-                       np.ndarray[T, ndim=2] u_hat,
-                       bint neumann,
-                       np.ndarray[real_t, ndim=2] d0,
-                       np.ndarray[real_t, ndim=2] d1,
-                       np.ndarray[real_t, ndim=2] d2,
-                       np.ndarray[real_t, ndim=2] L):
-    cdef:
-        unsigned int ii
-
-    if axis == 0:
-        for ii in range(d0.shape[1]):
-            Solve_Helmholtz_1D(fk[:, ii],
-                                u_hat[:, ii],
-                                neumann,
-                                d0[:, ii],
-                                d1[:, ii],
-                                d2[:, ii],
-                                L [:, ii])
-
-    elif axis == 1:
-        for ii in range(d0.shape[0]):
-            Solve_Helmholtz_1D(fk[ii, :],
-                                u_hat[ii, :],
-                                neumann,
-                                d0[ii, :],
-                                d1[ii, :],
-                                d2[ii, :],
-                                L [ii, :])
-
-
-def Solve_Helmholtz_3D_hc(int axis,
-                          np.ndarray[T, ndim=3] fk,
-                          np.ndarray[T, ndim=3] u_hat,
-                          bint neumann,
-                          np.ndarray[real_t, ndim=3] d0,
-                          np.ndarray[real_t, ndim=3] d1,
-                          np.ndarray[real_t, ndim=3] d2,
-                          np.ndarray[real_t, ndim=3] L):
-    cdef:
-        int i, j, N
-        np.ndarray[T, ndim=3] y = np.zeros((fk.shape[0],fk.shape[1], fk.shape[2]), dtype=fk.dtype)
-        np.ndarray[T, ndim=2] sum_even
-        np.ndarray[T, ndim=2] sum_odd
-
-    N = d0.shape[axis]
-
-    if axis == 0:
-
-        sum_even = np.zeros((d0.shape[1], d0.shape[2]), dtype=fk.dtype)
-        sum_odd = np.zeros((d0.shape[1], d0.shape[2]), dtype=fk.dtype)
-        for ii in xrange(fk.shape[1]):
-            for jj in xrange(fk.shape[2]):
-                y[0,ii,jj] = fk[0,ii,jj]
-                y[1,ii,jj] = fk[1,ii,jj]
-
-        for i in xrange(2, N):
-            for ii in xrange(fk.shape[1]):
-                for jj in xrange(fk.shape[2]):
-                    y[i,ii,jj] = fk[i,ii,jj] - L[i-2,ii,jj]*y[i-2,ii,jj]
-
-        for ii in xrange(fk.shape[1]):
-            for jj in xrange(fk.shape[2]):
-                u_hat[N-1,ii,jj] = y[N-1,ii,jj] / d0[N-1,ii,jj]
-                u_hat[N-2,ii,jj] = y[N-2,ii,jj] / d0[N-2,ii,jj]
-                u_hat[N-3,ii,jj] = (y[N-3,ii,jj] - d1[N-3,ii,jj]*u_hat[N-1,ii,jj]) / d0[N-3,ii,jj]
-                u_hat[N-4,ii,jj] = (y[N-4,ii,jj] - d1[N-4,ii,jj]*u_hat[N-2,ii,jj]) / d0[N-4,ii,jj]
-
-        for i in xrange(N-5, -1, -1):
-            for ii in xrange(fk.shape[1]):
-                for jj in xrange(fk.shape[2]):
-                    u_hat[i,ii,jj] = y[i,ii,jj] - d1[i,ii,jj]*u_hat[i+2,ii,jj]
-                    if i % 2 == 0:
-                        sum_even[ii,jj] += u_hat[i+4,ii,jj]
-                        u_hat[i,ii,jj] -= d2[i,ii,jj]*sum_even[ii,jj]
-                    else:
-                        sum_odd[ii,jj] += u_hat[i+4,ii,jj]
-                        u_hat[i,ii,jj] -= d2[i,ii,jj]*sum_odd[ii,jj]
-                    u_hat[i,ii,jj]/=d0[i,ii,jj]
-
-        if neumann:
-            for ii in xrange(fk.shape[1]):
-                for jj in xrange(fk.shape[2]):
-                    u_hat[0,ii,jj] = 0.0
-
-            for i in xrange(1, N):
-                for ii in xrange(fk.shape[1]):
-                    for jj in xrange(fk.shape[2]):
-                        u_hat[i,ii,jj] /= pow(i, 2)
-
-    elif axis == 1:
-        sum_even = np.zeros((d0.shape[0], d0.shape[2]), dtype=fk.dtype)
-        sum_odd = np.zeros((d0.shape[0], d0.shape[2]), dtype=fk.dtype)
-
-        for ii in xrange(fk.shape[0]):
-            for jj in xrange(fk.shape[2]):
-                y[ii,0,jj] = fk[ii,0,jj]
-                y[ii,1,jj] = fk[ii,1,jj]
-
-        for ii in xrange(fk.shape[0]):
-            for i in xrange(2, N):
-                for jj in xrange(fk.shape[2]):
-                    y[ii,i,jj] = fk[ii,i,jj] - L[ii,i-2,jj]*y[ii,i-2,jj]
-
-        for ii in xrange(fk.shape[0]):
-            for jj in xrange(fk.shape[2]):
-                u_hat[ii,N-1,jj] = y[ii,N-1,jj] / d0[ii,N-1,jj]
-                u_hat[ii,N-2,jj] = y[ii,N-2,jj] / d0[ii,N-2,jj]
-                u_hat[ii,N-3,jj] = (y[ii,N-3,jj] - d1[ii,N-3,jj]*u_hat[ii,N-1,jj]) / d0[ii,N-3,jj]
-                u_hat[ii,N-4,jj] = (y[ii,N-4,jj] - d1[ii,N-4,jj]*u_hat[ii,N-2,jj]) / d0[ii,N-4,jj]
-
-        for ii in xrange(fk.shape[0]):
-            for i in xrange(N-5, -1, -1):
-                for jj in xrange(fk.shape[2]):
-                    u_hat[ii,i,jj] = y[ii,i,jj] - d1[ii,i,jj]*u_hat[ii,i+2,jj]
-                    if i % 2 == 0:
-                        sum_even[ii,jj] += u_hat[ii,i+4,jj]
-                        u_hat[ii,i,jj] -= d2[ii,i,jj]*sum_even[ii,jj]
-                    else:
-                        sum_odd[ii,jj] += u_hat[ii,i+4,jj]
-                        u_hat[ii,i,jj] -= d2[ii,i,jj]*sum_odd[ii,jj]
-                    u_hat[ii,i,jj] /= d0[ii,i,jj]
-
-        if neumann:
-            for ii in xrange(fk.shape[0]):
-                for jj in xrange(fk.shape[2]):
-                    u_hat[ii,0,jj] = 0.0
-
-            for ii in xrange(fk.shape[0]):
-                for i in xrange(1, N):
-                    for jj in xrange(fk.shape[2]):
-                        u_hat[ii,i,jj] /= pow(i, 2)
-
-    elif axis == 2:
-        sum_even = np.zeros((d0.shape[0], d0.shape[1]), dtype=fk.dtype)
-        sum_odd = np.zeros((d0.shape[0], d0.shape[1]), dtype=fk.dtype)
-
-        for ii in xrange(fk.shape[0]):
-            for jj in xrange(fk.shape[1]):
-                y[ii,jj,0] = fk[ii,jj,0]
-                y[ii,jj,1] = fk[ii,jj,1]
-                for i in xrange(2, N):
-                    y[ii,jj,i] = fk[ii,jj,i] - L[ii,jj,i-2]*y[ii,jj,i-2]
-
-                u_hat[ii,jj,N-1] = y[ii,jj,N-1] / d0[ii,jj,N-1]
-                u_hat[ii,jj,N-2] = y[ii,jj,N-2] / d0[ii,jj,N-2]
-                u_hat[ii,jj,N-3] = (y[ii,jj,N-3] - d1[ii,jj,N-3]*u_hat[ii,jj,N-1]) / d0[ii,jj,N-3]
-                u_hat[ii,jj,N-4] = (y[ii,jj,N-4] - d1[ii,jj,N-4]*u_hat[ii,jj,N-2]) / d0[ii,jj,N-4]
-                for i in xrange(N-5, -1, -1):
-                    u_hat[ii,jj,i] = y[ii,jj,i] - d1[ii,jj,i]*u_hat[ii,jj,i+2]
-                    if i % 2 == 0:
-                        sum_even[ii,jj] += u_hat[ii,jj,i+4]
-                        u_hat[ii,jj,i] -= d2[ii,jj,i]*sum_even[ii,jj]
-                    else:
-                        sum_odd[ii,jj] += u_hat[ii,jj,i+4]
-                        u_hat[ii,jj,i] -= d2[ii,jj,i]*sum_odd[ii,jj]
-                    u_hat[ii,jj,i] /= d0[ii,jj,i]
-
-                if neumann:
-                    u_hat[ii,jj,0] = 0.0
-                    for i in xrange(1, N):
-                        u_hat[ii,jj,i] /= pow(i, 2)
-
-
 
 def LU_Biharmonic_1D(np.float_t a,
                      np.float_t b,
@@ -2492,57 +2256,6 @@ def LU_Biharmonic_2D_n(np.int64_t axis,
                         u2[odd, j, kk] = c0[kk+2]
 
 
-def LU_Helmholtz_Biharmonic_1D(A, B,
-                    np.float_t A_scale,
-                    np.float_t B_scale,
-                    np.ndarray[real_t, ndim=1] l2,
-                    np.ndarray[real_t, ndim=1] l1,
-                    np.ndarray[real_t, ndim=1] d,
-                    np.ndarray[real_t, ndim=1] u1,
-                    np.ndarray[real_t, ndim=1] u2
-                    ):
-    cdef:
-        int i, n, k
-        double lam
-        np.ndarray[real_t, ndim=1] A_0 = A[0].copy()
-        np.ndarray[real_t, ndim=1] A_2 = A[2].copy()
-        np.ndarray[real_t, ndim=1] A_m2 = A[-2].copy()
-        np.ndarray[real_t, ndim=1] B_m4 = B[-4].copy()
-        np.ndarray[real_t, ndim=1] B_m2 = B[-2].copy()
-        np.ndarray[real_t, ndim=1] B_0 = B[0].copy()
-        np.ndarray[real_t, ndim=1] B_2 = B[2].copy()
-        np.ndarray[real_t, ndim=1] B_4 = B[4].copy()
-
-    n = A_0.shape[0]
-    k = 2
-
-    # Set up matrix diagonals
-    l2[:] = B_scale*B_m4
-    l1[:] = A_scale*A_m2 + B_scale*B_m2
-    d[:] =  A_scale*A_0 + B_scale*B_0
-    u1[:] = A_scale*A_2 + B_scale*B_2
-    u2[:] = B_scale*B_4
-
-    for i in range(n-2*k):
-        lam = l1[i]/d[i]
-        d[i+k] -= lam*u1[i]
-        u1[i+k] -= lam*u2[i]
-        l1[i] = lam
-        lam = l2[i]/d[i]
-        l1[i+k] -= lam*u1[i]
-        d[i+2*k] -= lam*u2[i]
-        l2[i] = lam
-
-    i = n-4
-    lam = l1[i]/d[i]
-    d[i+k] -= lam*u1[i]
-    l1[i] = lam
-    i = n-3
-    lam = l1[i]/d[i]
-    d[i+k] -= lam*u1[i]
-    l1[i] = lam
-
-
 def Solve_Helmholtz_Biharmonic_1D(np.ndarray[T, ndim=1] fk,
                        np.ndarray[T, ndim=1] u_hat,
                        np.ndarray[real_t, ndim=1] l2,
@@ -2697,6 +2410,52 @@ def Solve_Helmholtz_Biharmonic_3D_ptr(np.int64_t axis,
                                        d_ptr, u1_ptr, u2_ptr, d.shape[axis],
                                        strides)
 
+def Solve_Helmholtz_Biharmonic_2D_ptr(np.int64_t axis,
+                           T[:,::1] fk,
+                           T[:,::1] u_hat,
+                           real_t[:,::1] l2,
+                           real_t[:,::1] l1,
+                           real_t[:,::1] d,
+                           real_t[:,::1] u1,
+                           real_t[:,::1] u2):
+    cdef:
+        T* fk_ptr
+        T* u_hat_ptr
+        real_t* d_ptr
+        real_t* u1_ptr
+        real_t* u2_ptr
+        real_t* l1_ptr
+        real_t* l2_ptr
+        int ii, jj, strides
+
+    strides = fk.strides[axis]/fk.itemsize
+    if axis == 0:
+        for ii in range(d.shape[1]):
+            fk_ptr = &fk[0,ii]
+            u_hat_ptr = &u_hat[0,ii]
+            d_ptr = &d[0,ii]
+            u1_ptr = &u1[0,ii]
+            u2_ptr = &u2[0,ii]
+            l1_ptr = &l1[0,ii]
+            l2_ptr = &l2[0,ii]
+            Solve_Helmholtz_Biharmonic_1D_ptr(fk_ptr, u_hat_ptr, l2_ptr, l1_ptr,
+                                   d_ptr, u1_ptr, u2_ptr, d.shape[axis],
+                                   strides)
+
+    elif axis == 1:
+        for ii in range(d.shape[0]):
+            fk_ptr = &fk[ii,0]
+            u_hat_ptr = &u_hat[ii,0]
+            d_ptr = &d[ii,0]
+            u1_ptr = &u1[ii,0]
+            u2_ptr = &u2[ii,0]
+            l1_ptr = &l1[ii,0]
+            l2_ptr = &l2[ii,0]
+            Solve_Helmholtz_Biharmonic_1D_ptr(fk_ptr, u_hat_ptr, l2_ptr, l1_ptr,
+                                   d_ptr, u1_ptr, u2_ptr, d.shape[axis],
+                                   strides)
+
+
 
 def LU_Helmholtz_Biharmonic_3D(A, B, np.int64_t axis,
                     np.ndarray[real_t, ndim=3] A_scale,
@@ -2744,3 +2503,53 @@ def LU_Helmholtz_Biharmonic_3D(A, B, np.int64_t axis,
                                 d[ii, jj, :],
                                 u1[ii, jj, :],
                                 u2[ii, jj, :])
+
+def LU_Helmholtz_Biharmonic_1D(A, B,
+                    np.float_t A_scale,
+                    np.float_t B_scale,
+                    np.ndarray[real_t, ndim=1] l2,
+                    np.ndarray[real_t, ndim=1] l1,
+                    np.ndarray[real_t, ndim=1] d,
+                    np.ndarray[real_t, ndim=1] u1,
+                    np.ndarray[real_t, ndim=1] u2
+                    ):
+    cdef:
+        int i, n, k
+        double lam
+        np.ndarray[real_t, ndim=1] A_0 = A[0].copy()
+        np.ndarray[real_t, ndim=1] A_2 = A[2].copy()
+        np.ndarray[real_t, ndim=1] A_m2 = A[-2].copy()
+        np.ndarray[real_t, ndim=1] B_m4 = B[-4].copy()
+        np.ndarray[real_t, ndim=1] B_m2 = B[-2].copy()
+        np.ndarray[real_t, ndim=1] B_0 = B[0].copy()
+        np.ndarray[real_t, ndim=1] B_2 = B[2].copy()
+        np.ndarray[real_t, ndim=1] B_4 = B[4].copy()
+
+    n = A_0.shape[0]
+    k = 2
+
+    # Set up matrix diagonals
+    l2[:] = B_scale*B_m4
+    l1[:] = A_scale*A_m2 + B_scale*B_m2
+    d[:] =  A_scale*A_0 + B_scale*B_0
+    u1[:] = A_scale*A_2 + B_scale*B_2
+    u2[:] = B_scale*B_4
+
+    for i in range(n-2*k):
+        lam = l1[i]/d[i]
+        d[i+k] -= lam*u1[i]
+        u1[i+k] -= lam*u2[i]
+        l1[i] = lam
+        lam = l2[i]/d[i]
+        l1[i+k] -= lam*u1[i]
+        d[i+2*k] -= lam*u2[i]
+        l2[i] = lam
+
+    i = n-4
+    lam = l1[i]/d[i]
+    d[i+k] -= lam*u1[i]
+    l1[i] = lam
+    i = n-3
+    lam = l1[i]/d[i]
+    d[i+k] -= lam*u1[i]
+    l1[i] = lam
