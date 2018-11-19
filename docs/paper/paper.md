@@ -26,6 +26,14 @@ interface to ``shenfun`` is very similar to FEniCS (https://fenicsproject.org),
 but applications are limited to simple, yet multidimensional, tensor
 product grids.
 
+``Shenfun`` enables fast development of efficient and accurate PDE solvers (spectral 
+order and accuracy), in the comfortable high-level Python language. The spectral 
+accuracy is ensured by using high-order *global* orthogonal basis functions 
+(Fourier, Legendre and Chebyshev), as opposed to finite element codes like FEniCS
+that are using low-order *local* basis functions. Efficiency is ensured through 
+vectorization, parallelization (MPI) and by moving critical routines to Cython 
+(https://cython.org/>). 
+
 With ``shenfun`` one can solve a wide range of PDEs, with the limitation that
 one dimension can be inhomogeneous (with Dirichlet/Neumann type of boundaries),
 whereas the remaining dimensions are required to be periodic. The
