@@ -32,7 +32,7 @@ accuracy is ensured by using high-order *global* orthogonal basis functions
 (Fourier, Legendre and Chebyshev), as opposed to finite element codes like FEniCS
 that are using low-order *local* basis functions. Efficiency is ensured through 
 vectorization, parallelization (MPI) and by moving critical routines to Cython 
-(https://cython.org/>). 
+(https://cython.org). 
 
 With ``shenfun`` one can solve a wide range of PDEs, with the limitation that
 one dimension can be inhomogeneous (with Dirichlet/Neumann type of boundaries),
@@ -54,7 +54,7 @@ Poisson, Klein-Gordon and Kuramato-Sivashinsky equations.
 
 ``Shenfun`` has been designed as a low entry-level research tool for physicists
 [@mortensen17] in need of highly accurate numerical methods for high
-performance computing. The primary focus for the development has been for
+performance computing. The primary target for the development has been
 turbulence and transition to turbulence, where simulations are extremely
 sensitive to disturbances, and numerical diffusion or dispersion are
 unacceptable. Spectral methods are well known for their accuracy and
