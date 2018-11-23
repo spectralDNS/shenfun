@@ -76,6 +76,7 @@ H = BiharmonicSolver(**matrices)
 u_hat = Function(T)             # Solution spectral space
 u_hat = H(u_hat, f_hat)         # Solve
 uq = u_hat.backward()
+uh = uq.forward()
 
 # Compare with analytical solution
 uj = ul(*X)

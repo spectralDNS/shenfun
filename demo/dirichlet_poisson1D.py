@@ -61,7 +61,9 @@ else:
     A = inner(grad(v), grad(u))
 
 f_hat = A.solve(f_hat)
-uj = SD.backward(f_hat)
+uj = f_hat.backward()
+
+uh = uj.forward()
 
 # Compare with analytical solution
 ua = ul(X)

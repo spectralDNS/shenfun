@@ -283,11 +283,11 @@ class R2CBasis(FourierBase):
         self.plan((int(np.floor(padding_factor*N)),), (0,), np.float, {})
 
     def wavenumbers(self, bcast=True, scaled=False, eliminate_highest_freq=False):
-        k = np.fft.rfftfreq(self.N, 1./self.N)
+        k = np.fft.rfftfreq(self.N, 1./self.N).astype(int)
         if self.N % 2 == 0 and eliminate_highest_freq:
             k[-1] = 0
         if scaled:
-            k *= self.domain_factor()
+            k = k*self.domain_factor()
         if bcast is True:
             k = self.broadcast_to_ndims(k)
         return k
@@ -498,11 +498,11 @@ class C2CBasis(FourierBase):
         self._slp = []
 
     def wavenumbers(self, bcast=True, scaled=False, eliminate_highest_freq=False):
-        k = np.fft.fftfreq(self.N, 1./self.N)
+        k = np.fft.fftfreq(self.N, 1./self.N).astype(int)
         if self.N % 2 == 0 and eliminate_highest_freq:
             k[self.N//2] = 0
         if scaled:
-            k *= self.domain_factor()
+            k = k*self.domain_factor()
         if bcast is True:
             k = self.broadcast_to_ndims(k)
         return k
