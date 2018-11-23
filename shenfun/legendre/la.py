@@ -39,11 +39,8 @@ class TDMA(la_TDMA):
 
         if len(u.shape) == 3:
             la.TDMA_SymSolve3D(self.dd, self.ud, self.L, u, axis)
-            #la.TDMA_SymSolve3D_ptr(self.dd[self.s], self.ud[self.s], self.L,
-                                   #u[self.s], axis)
         elif len(u.shape) == 2:
             la.TDMA_SymSolve2D(self.dd, self.ud, self.L, u, axis)
-
         elif len(u.shape) == 1:
             la.TDMA_SymSolve(self.dd, self.ud, self.L, u)
 
@@ -169,24 +166,27 @@ class Helmholtz(object):
                 B = self.B = kwargs['BNNmat']
             A_scale = self.A_scale = A.scale
             B_scale = self.B_scale = B.scale
+            T = A.tensorproductspace
+            shape = list(T.local_shape(True))
+            shape[A.axis] = 1
 
         elif len(args) == 4:
             A = self.A = args[0]
             B = self.B = args[1]
             A_scale = self.A_scale = args[2]
             B_scale = self.B_scale = args[3]
+            shape = (A.shape[0],)
 
         else:
             raise RuntimeError('Wrong input to Helmholtz solver')
 
-        self.s = A.testfunction[0].slice()
-        neumann = self.neumann = isinstance(A.testfunction[0], bases.ShenNeumannBasis)
+        v = A.testfunction[0]
+        neumann = self.neumann = v.boundary_condition() == 'Neumann'
         if not neumann:
-            self.bc = A.testfunction[0].bc
-            self.scaled = A.testfunction[0].is_scaled()
+            self.bc = v.bc
+            self.scaled = v.is_scaled()
 
         if np.ndim(B_scale) > 1:
-            shape = list(B_scale.shape)
             self.axis = A.axis
             shape[A.axis] = A.shape[0]
             self.d0 = np.zeros(shape)
@@ -222,36 +222,14 @@ class Helmholtz(object):
             self.axis = 0
             la.TDMA_SymLU(self.d0, self.d1, self.L)
 
-
     def __call__(self, u, b):
-        ss = [slice(None)]*np.ndim(u)
-        ss[self.axis] = self.s
-        ss = tuple(ss)
-        u[ss] = b[ss]
-
-        #if not self.neumann:
-            #s0 = [slice(0, 1)]*u.ndim
-            #if self.scaled:
-                #u[s0] -= (self.bc[0] + self.bc[1])*self.B_scale[s0]/np.sqrt(6.)
-            #else:
-                #u[s0] -= (self.bc[0] + self.bc[1])*self.B_scale[s0]
-            #s = copy(s0)
-            #s[self.axis] = slice(1, 2)
-            #if self.scaled:
-                #u[s] -= 1./3.*(self.bc[0] - self.bc[1])*self.B_scale[s0]/np.sqrt(10.)
-            #else:
-                #u[s] -= 1./3.*(self.bc[0] - self.bc[1])*self.B_scale[s0]
+        u[:] = b
 
         if u.ndim == 3:
-
             la.TDMA_SymSolve3D_VC(self.d0, self.d1, self.L, u, self.axis)
-
         elif u.ndim == 2:
-
             la.TDMA_SymSolve2D_VC(self.d0, self.d1, self.L, u, self.axis)
-
         elif u.ndim == 1:
-
             la.TDMA_SymSolve(self.d0, self.d1, self.L, u)
 
         if not self.neumann:

@@ -1,6 +1,7 @@
 cimport numpy as np
 #cython: boundscheck=False
 #cython: wraparound=False
+#cython: language_level=3
 
 ctypedef np.complex128_t complex_t
 ctypedef np.int64_t int_t

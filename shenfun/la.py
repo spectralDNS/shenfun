@@ -62,11 +62,8 @@ class TDMA(object):
 
         if len(u.shape) == 3:
             cython_la.TDMA_SymSolve3D(self.dd, self.ud, self.L, u, axis)
-            #cython_la.TDMA_SymSolve3D_ptr(self.dd[self.s], self.ud[self.s], self.L,
-                                   #u[self.s], axis)
         elif len(u.shape) == 2:
             cython_la.TDMA_SymSolve2D(self.dd, self.ud, self.L, u, axis)
-
         elif len(u.shape) == 1:
             cython_la.TDMA_SymSolve(self.dd, self.ud, self.L, u)
 
@@ -200,11 +197,10 @@ class PDMA(object):
             self.init()
 
         if len(u.shape) == 3:
-            #cython_la.PDMA_Symsolve3D(self.d0, self.d1, self.d2, u, axis)
             cython_la.PDMA_Symsolve3D_ptr(self.d0, self.d1, self.d2, u, axis)
 
         elif len(u.shape) == 2:
-            cython_la.PDMA_Symsolve2D(self.d0, self.d1, self.d2, u, axis)
+            cython_la.PDMA_Symsolve2D_ptr(self.d0, self.d1, self.d2, u, axis)
 
         elif len(u.shape) == 1:
             cython_la.PDMA_Symsolve(self.d0, self.d1, self.d2, u[:-4])

@@ -28,14 +28,10 @@ class TDMA(la_TDMA):
 
         if len(u.shape) == 3:
             la.TDMA_SymSolve3D(self.dd, self.ud, self.L, u, axis)
-            #la.TDMA_SymSolve3D_ptr(self.dd[self.s], self.ud[self.s], self.L,
-                                   #u[self.s], axis)
         elif len(u.shape) == 2:
             la.TDMA_SymSolve2D(self.dd, self.ud, self.L, u, axis)
-
         elif len(u.shape) == 1:
             la.TDMA_SymSolve(self.dd, self.ud, self.L, u)
-
         else:
             raise NotImplementedError
 
@@ -182,7 +178,17 @@ class Helmholtz(object):
             B = self.B = args[1]
             self.alfa = args[2]
             self.beta = args[3]
-            shape = (A.shape[0],)
+            T = A.tensorproductspace
+            if T is not None:
+                shape = list(T.local_shape(True))
+                shape[A.axis] = 1
+                if not self.alfa.shape == shape:
+                    self.alfa = np.broadcast_to(self.alfa, shape).copy()
+                if not self.beta.shape == shape:
+                    self.beta = np.broadcast_to(self.beta, shape).copy()
+            else:
+                shape = (A.shape[0],)
+
         else:
             raise RuntimeError('Wrong input to Helmholtz solver')
 

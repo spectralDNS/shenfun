@@ -1,6 +1,7 @@
-#!python
 #cython: boundscheck=False
 #cython: wraparound=False
+#cython: language_level=3
+
 import numpy as np
 cimport numpy as np
 import cython
@@ -897,4 +898,3 @@ def _evaluate_lm_3D_ccr1(np.ndarray[real_t, ndim=1] b,
                     if ii > 0 & ii < M:
                         b[i] += p
     return b
-
