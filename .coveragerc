@@ -1,6 +1,7 @@
 [run]
-source=shenfun
-omit=shenfun/optimization/*
+source = shenfun
+omit =
+    */numba/*.py
 
 [report]
 exclude_lines =
