@@ -1,7 +1,7 @@
 import numba as nb
 
-float = nb.float64
-complex = nb.complex128
+#float = nb.float64
+#complex = nb.complex128
 
 __all__ = ['TDMA_SymLU', 'TDMA_SymSolve', 'TDMA_SymSolve2D',
            'TDMA_SymSolve3D', 'TDMA_SymLU_VC', 'TDMA_SymSolve_VC']

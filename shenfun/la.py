@@ -5,7 +5,6 @@ import numpy as np
 from scipy.linalg import decomp_cholesky
 from scipy.sparse.linalg import spsolve
 from shenfun.optimization import optimizer
-from shenfun.optimization.cython import la as cython_la
 from shenfun.matrixbase import SparseMatrix
 
 class TDMA(object):

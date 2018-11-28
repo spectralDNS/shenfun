@@ -6,7 +6,6 @@ from shenfun.optimization import optimizer
 from shenfun.optimization.cython import la, Matvec
 from shenfun.la import TDMA as la_TDMA
 from shenfun.utilities import inheritdocstrings
-from . import bases
 
 @inheritdocstrings
 class TDMA(la_TDMA):
@@ -170,7 +169,7 @@ class Helmholtz(object):
 
         B[2] = np.broadcast_to(B[2], A[2].shape)
         B[-2] = np.broadcast_to(B[-2], A[2].shape)
-        neumann = self.neumann = isinstance(A.testfunction[0], bases.ShenNeumannBasis)
+        neumann = self.neumann = v.boundary_condition() == 'Neumann'
         if not self.neumann:
             self.bc = A.testfunction[0].bc
         self.axis = A.axis

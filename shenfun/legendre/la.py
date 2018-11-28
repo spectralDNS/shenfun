@@ -6,9 +6,7 @@ import scipy.linalg as scipy_la
 from shenfun.optimization import optimizer
 from shenfun.optimization.cython import la
 from shenfun.utilities import inheritdocstrings
-from shenfun.forms import Function
 from shenfun.la import TDMA as la_TDMA
-from . import bases
 
 @inheritdocstrings
 class TDMA(la_TDMA):
