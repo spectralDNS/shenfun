@@ -68,7 +68,7 @@ from __future__ import division
 #__all__ = ['mat']
 
 import numpy as np
-from shenfun.optimization import Matvec
+from shenfun.optimization.cython import Matvec
 from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
 from shenfun.la import TDMA as neumann_TDMA

@@ -302,7 +302,7 @@ def test_helmholtz3D(family, axis):
     u = shenfun.Function(T)
     u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
     f = shenfun.Function(T)
-    f = H.matvec(u, f, axis=axis)
+    f = H.matvec(u, f)
 
     g0 = shenfun.Function(T)
     g1 = shenfun.Function(T)
@@ -337,7 +337,7 @@ def test_helmholtz2D(family, axis):
     u = shenfun.Function(T)
     u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
     f = shenfun.Function(T)
-    f = H.matvec(u, f, axis=axis)
+    f = H.matvec(u, f)
 
     g0 = shenfun.Function(T)
     g1 = shenfun.Function(T)
@@ -373,7 +373,7 @@ def test_biharmonic3D(family, axis):
     u = shenfun.Function(T)
     u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
     f = shenfun.Function(T)
-    f = H.matvec(u, f, axis=axis)
+    f = H.matvec(u, f)
 
     g0 = shenfun.Function(T)
     g1 = shenfun.Function(T)
@@ -409,7 +409,7 @@ def test_biharmonic2D(family, axis):
     u = shenfun.Function(T)
     u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
     f = shenfun.Function(T)
-    f = H.matvec(u, f, axis=axis)
+    f = H.matvec(u, f)
 
     g0 = shenfun.Function(T)
     g1 = shenfun.Function(T)

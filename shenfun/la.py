@@ -4,7 +4,8 @@ This module contains linear algebra solvers for SparseMatrixes
 import numpy as np
 from scipy.linalg import decomp_cholesky
 from scipy.sparse.linalg import spsolve
-from shenfun.optimization import la as cython_la
+from shenfun.optimization import optimizer
+from shenfun.optimization.cython import la as cython_la
 from shenfun.matrixbase import SparseMatrix
 
 class TDMA(object):
@@ -33,7 +34,28 @@ class TDMA(object):
         self.dd = B[0].copy()*np.ones(M)
         self.ud = B[2].copy()*np.ones(M-2)
         self.L = np.zeros(M-2)
-        cython_la.TDMA_SymLU(self.dd, self.ud, self.L)
+        self.TDMA_SymLU(self.dd, self.ud, self.L)
+
+    @staticmethod
+    @optimizer
+    def TDMA_SymLU(d, ud, ld):
+        n = d.shape[0]
+        for i in range(2, n):
+            ld[i-2] = ud[i-2]/d[i-2]
+            d[i] = d[i] - ld[i-2]*ud[i-2]
+
+    @staticmethod
+    @optimizer
+    def TDMA_SymSolve(d, a, l, x, axis=0):
+        assert x.ndim == 1, "Use optimized version for multidimensional solve"
+        n = d.shape[0]
+        for i in range(2, n):
+            x[i] -= l[i-2]*x[i-2]
+
+        x[n-1] = x[n-1]/d[n-1]
+        x[n-2] = x[n-2]/d[n-2]
+        for i in range(n - 3, -1, -1):
+            x[i] = (x[i] - a[i]*x[i+2])/d[i]
 
     def __call__(self, b, u=None, axis=0):
         """Solve matrix problem self u = b
@@ -60,15 +82,7 @@ class TDMA(object):
         if not self.dd.shape[0] == self.mat.shape[0]:
             self.init()
 
-        if len(u.shape) == 3:
-            cython_la.TDMA_SymSolve3D(self.dd, self.ud, self.L, u, axis)
-        elif len(u.shape) == 2:
-            cython_la.TDMA_SymSolve2D(self.dd, self.ud, self.L, u, axis)
-        elif len(u.shape) == 1:
-            cython_la.TDMA_SymSolve(self.dd, self.ud, self.L, u)
-
-        else:
-            raise NotImplementedError
+        self.TDMA_SymSolve(self.dd, self.ud, self.L, u, axis=axis)
 
         u /= self.mat.scale
         return u
@@ -103,30 +117,18 @@ class PDMA(object):
     def init(self):
         """Initialize and allocate solver"""
         B = self.mat
-        if self.solver == "cython":
-            self.d0, self.d1, self.d2 = B[0].copy(), B[2].copy(), B[4].copy()
-            cython_la.PDMA_SymLU(self.d0, self.d1, self.d2)
-            #self.SymLU(self.d0, self.d1, self.d2)
-            ##self.d0 = self.d0.astype(float)
-            ##self.d1 = self.d1.astype(float)
-            ##self.d2 = self.d2.astype(float)
-        else: # pragma: no cover
-            #self.L = lu_factor(B.diags().toarray())
-            self.d0, self.d1, self.d2 = B[0].copy(), B[2].copy(), B[4].copy()
-            #self.A = np.zeros((9, B[0].shape[0]))
-            #self.A[0, 4:] = self.d2
-            #self.A[2, 2:] = self.d1
-            #self.A[4, :] = self.d0
-            #self.A[6, :-2] = self.d1
-            #self.A[8, :-4] = self.d2
-            self.A = np.zeros((5, B[0].shape[0]))
-            self.A[0, 4:] = self.d2
-            self.A[2, 2:] = self.d1
-            self.A[4, :] = self.d0
-            self.L = decomp_cholesky.cholesky_banded(self.A)
+        self.d0, self.d1, self.d2 = B[0].copy(), B[2].copy(), B[4].copy()
+        self.PDMA_SymLU(self.d0, self.d1, self.d2)
+
+        #self.A = np.zeros((5, B[0].shape[0]))
+        #self.A[0, 4:] = self.d2
+        #self.A[2, 2:] = self.d1
+        #self.A[4, :] = self.d0
+        #self.L = decomp_cholesky.cholesky_banded(self.A)
 
     @staticmethod
-    def SymLU(d, e, f): # pragma: no cover
+    @optimizer
+    def PDMA_SymLU(d, e, f): # pragma: no cover
         """Symmetric LU decomposition"""
         n = d.shape[0]
         m = e.shape[0]
@@ -149,7 +151,8 @@ class PDMA(object):
         e[n-3] = lam
 
     @staticmethod
-    def SymSolve(d, e, f, b): # pragma: no cover
+    @optimizer
+    def PDMA_SymSolve(d, e, f, b, axis=0): # pragma: no cover
         """Symmetric solve (for testing only)"""
         n = d.shape[0]
         #bc = array(map(decimal.Decimal, b))
@@ -196,17 +199,7 @@ class PDMA(object):
         if not self.d0.shape[0] == self.mat[0].shape[0]:
             self.init()
 
-        if len(u.shape) == 3:
-            cython_la.PDMA_Symsolve3D_ptr(self.d0, self.d1, self.d2, u, axis)
-
-        elif len(u.shape) == 2:
-            cython_la.PDMA_Symsolve2D_ptr(self.d0, self.d1, self.d2, u, axis)
-
-        elif len(u.shape) == 1:
-            cython_la.PDMA_Symsolve(self.d0, self.d1, self.d2, u[:-4])
-
-        else:
-            raise NotImplementedError
+        self.PDMA_SymSolve(self.d0, self.d1, self.d2, u, axis)
 
         u /= self.mat.scale
         return u

@@ -521,6 +521,12 @@ class SpectralMatrix(SparseMatrix):
         computed for"""
         return self.testfunction[0].tensorproductspace
 
+    @property
+    def axis(self):
+        """Return the axis of the :class:`.TensorProductSpace` this matrix is
+        created for"""
+        return self.testfunction[0].axis
+
     def __hash__(self):
         return hash(((self.testfunction[0].__class__, self.testfunction[1]),
                      (self.trialfunction[0].__class__, self.trialfunction[1])))

@@ -8,7 +8,7 @@ import numpy as np
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun import chebyshev, legendre
 from shenfun.forms.arguments import Function, Array
-from shenfun.optimization import evaluate
+from shenfun.optimization.cython import evaluate
 from mpi4py_fft.mpifft import Transform, PFFT
 from mpi4py_fft.pencil import Subcomm, Pencil
 

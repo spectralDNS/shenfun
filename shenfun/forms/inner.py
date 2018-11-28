@@ -236,7 +236,6 @@ def inner(expr0, expr1, output_array=None):
                 scale = scale*mat
 
             else:
-                mat.axis = axis
                 nonperiodic[axis] = mat
 
         # Decomposition
@@ -268,7 +267,6 @@ def inner(expr0, expr1, output_array=None):
         # All Fourier
         if space.dimensions() == 1:
             if trial.argument == 1:
-                A[0][0].axis = 0
                 A[0][0].scale = S[0]
                 return A[0][0]
 

@@ -36,7 +36,7 @@ BiharmonicSolver = base.la.Biharmonic
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y, z = symbols("x,y,z")
-ue = (sin(4*np.pi*z)*sin(2*y)*cos(4*x))*(1-z**2)
+ue = (sin(4*np.pi*x)*sin(2*y)*cos(4*z))*(1-x**2)
 fe = ue.diff(x, 4) + ue.diff(y, 4) + ue.diff(z, 4) + 2*ue.diff(x, 2, y, 2) + 2*ue.diff(x, 2, z, 2) + 2*ue.diff(y, 2, z, 2)
 
 # Lambdify for faster evaluation
@@ -52,7 +52,7 @@ if family == 'chebyshev':
 SD = Basis(N[0], family=family, bc='Biharmonic')
 K1 = Basis(N[1], family='F', dtype='D')
 K2 = Basis(N[2], family='F', dtype='d')
-T = TensorProductSpace(comm, (K1, K2, SD), axes=(2, 0, 1))
+T = TensorProductSpace(comm, (SD, K1, K2), axes=(0, 1, 2))
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)
 v = TestFunction(T)
@@ -98,4 +98,4 @@ if 'pytest' not in os.environ:
     plt.colorbar()
     plt.title('Error')
 
-    plt.show()
+    #plt.show()
