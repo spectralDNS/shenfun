@@ -107,4 +107,4 @@ if 'pytest' not in os.environ:
     for y in np.squeeze(X[1]):
         plt.plot((np.squeeze(X[0])[0], np.squeeze(X[0])[-1]), (y, y), 'k')
 
-    plt.show()
+    #plt.show()

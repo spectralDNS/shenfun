@@ -62,7 +62,6 @@ else:
 
 f_hat = A.solve(f_hat)
 uj = f_hat.backward()
-
 uh = uj.forward()
 
 # Compare with analytical solution

@@ -3,8 +3,10 @@
 from copy import copy
 import numpy as np
 import scipy.linalg as scipy_la
-from shenfun.optimization import la
+from shenfun.optimization import optimizer
+from shenfun.optimization.cython import la
 from shenfun.utilities import inheritdocstrings
+from shenfun.forms import Function
 from shenfun.la import TDMA as la_TDMA
 from . import bases
 
@@ -37,15 +39,7 @@ class TDMA(la_TDMA):
         if not self.dd.shape[0] == self.mat.shape[0]:
             self.init()
 
-        if len(u.shape) == 3:
-            la.TDMA_SymSolve3D(self.dd, self.ud, self.L, u, axis)
-        elif len(u.shape) == 2:
-            la.TDMA_SymSolve2D(self.dd, self.ud, self.L, u, axis)
-        elif len(u.shape) == 1:
-            la.TDMA_SymSolve(self.dd, self.ud, self.L, u)
-
-        else:
-            raise NotImplementedError
+        self.TDMA_SymSolve(self.dd, self.ud, self.L, u, axis=axis)
 
         bc.apply_after(u, False)
 
@@ -95,7 +89,7 @@ class Helmholtz(object):
     where :math:`\alpha` and :math:`\beta` are avalable as A.scale and B.scale.
 
     The solver can be used along any axis of a multidimensional problem. For
-    example, if the Chebyshev basis (Dirichlet or Neumann) is the last in a
+    example, if the Legendre basis (Dirichlet or Neumann) is the last in a
     3-dimensional TensorProductSpace, where the first two dimensions use Fourier,
     then the 1D Helmholtz equation arises when one is solving the 3D Poisson
     equation
@@ -166,16 +160,12 @@ class Helmholtz(object):
                 B = self.B = kwargs['BNNmat']
             A_scale = self.A_scale = A.scale
             B_scale = self.B_scale = B.scale
-            T = A.tensorproductspace
-            shape = list(T.local_shape(True))
-            shape[A.axis] = 1
 
         elif len(args) == 4:
             A = self.A = args[0]
             B = self.B = args[1]
             A_scale = self.A_scale = args[2]
             B_scale = self.B_scale = args[3]
-            shape = (A.shape[0],)
 
         else:
             raise RuntimeError('Wrong input to Helmholtz solver')
@@ -186,33 +176,38 @@ class Helmholtz(object):
             self.bc = v.bc
             self.scaled = v.is_scaled()
 
-        if np.ndim(B_scale) > 1:
-            self.axis = A.axis
-            shape[A.axis] = A.shape[0]
-            self.d0 = np.zeros(shape)
-            shape[A.axis] = A.shape[0]-2
-            self.d1 = np.zeros(shape)
-            self.L = np.zeros(shape)
+        self.axis = A.axis
+        shape = [1]
+        T = A.tensorproductspace
+        if T is not None:
+            shape = list(T.local_shape(True))
+            shape[A.axis] = 1
 
+        if np.ndim(B_scale) > 1:
             if len(shape) == 2:
                 if neumann and B_scale[0, 0] == 0:
                     B_scale[0, 0] = 1.
-
-                if isinstance(A[0], (int, np.integer)):
-                    A[0] = np.ones(A.shape[0])
-
-                la.TDMA_SymLU_2D(A, B, A.axis, A_scale[0, 0], B_scale, self.d0,
-                                 self.d1, self.L)
 
             elif len(shape) == 3:
                 if neumann and B_scale[0, 0, 0] == 0:
                     B_scale[0, 0, 0] = 1.
 
-                la.TDMA_SymLU_3D(A, B, A.axis, A_scale[0, 0], B_scale, self.d0,
-                                 self.d1, self.L)
-
-            else:
-                raise NotImplementedError
+            A[0] = np.atleast_1d(A[0])
+            if A[0].shape[0] == 1:
+                A[0] = np.ones(A.shape[0])*A[0]
+            A0 = v.broadcast_to_ndims(A[0])
+            B0 = v.broadcast_to_ndims(B[0])
+            B2 = v.broadcast_to_ndims(B[2])
+            shape[A.axis] = v.N
+            self.d0 = np.zeros(shape)
+            self.d1 = np.zeros(shape)
+            ss = [slice(None)]*self.d0.ndim
+            ss[self.axis] = slice(0, A.shape[0])
+            self.d0[tuple(ss)] = A0*A_scale + B0*B_scale
+            ss[self.axis] = slice(0, A.shape[0]-2)
+            self.d1[tuple(ss)] = B2*B_scale
+            self.L = np.zeros_like(self.d0)
+            self.TDMA_SymLU_VC(self.d0, self.d1, self.L, self.axis)
 
         else:
             self.d0 = A[0]*A_scale + B[0]*B_scale
@@ -220,28 +215,54 @@ class Helmholtz(object):
             self.L = np.zeros_like(self.d1)
             self.bc = A.testfunction[0].bc
             self.axis = 0
-            la.TDMA_SymLU(self.d0, self.d1, self.L)
+            self.TDMA_SymLU(self.d0, self.d1, self.L)
+
+    @staticmethod
+    @optimizer
+    def TDMA_SymLU_VC(d0, d1, L, axis=0):
+        pass
+
+    @staticmethod
+    @optimizer
+    def TDMA_SymSolve_VC(d, a, l, x, axis=0):
+        pass
+
+    @staticmethod
+    @optimizer
+    def TDMA_SymLU(d, ud, ld):
+        n = d.shape[0]
+        for i in range(2, n):
+            ld[i-2] = ud[i-2]/d[i-2]
+            d[i] = d[i] - ld[i-2]*ud[i-2]
+
+    @staticmethod
+    @optimizer
+    def TDMA_SymSolve(d, a, l, x, axis=0):
+        assert x.ndim == 1, "Use optimized version for multidimensional solve"
+        n = d.shape[0]
+        for i in range(2, n):
+            x[i] -= l[i-2]*x[i-2]
+
+        x[n-1] = x[n-1]/d[n-1]
+        x[n-2] = x[n-2]/d[n-2]
+        for i in range(n - 3, -1, -1):
+            x[i] = (x[i] - a[i]*x[i+2])/d[i]
 
     def __call__(self, u, b):
         u[:] = b
 
-        if u.ndim == 3:
-            la.TDMA_SymSolve3D_VC(self.d0, self.d1, self.L, u, self.axis)
-        elif u.ndim == 2:
-            la.TDMA_SymSolve2D_VC(self.d0, self.d1, self.L, u, self.axis)
-        elif u.ndim == 1:
-            la.TDMA_SymSolve(self.d0, self.d1, self.L, u)
+        self.TDMA_SymSolve_VC(self.d0, self.d1, self.L, u, self.axis)
 
         if not self.neumann:
             self.bc.apply_after(u, True)
 
         return u
 
-    def matvec(self, v, c, axis=0):
+    def matvec(self, v, c):
         c[:] = 0
         c1 = np.zeros_like(c)
-        c1 = self.A.matvec(v, c1, axis=axis)
-        c = self.B.matvec(v, c, axis=axis)
+        c1 = self.A.matvec(v, c1, axis=self.axis)
+        c = self.B.matvec(v, c, axis=self.axis)
         c += c1
         return c
 
@@ -368,48 +389,60 @@ class Biharmonic(object):
         if np.ndim(B_scale) > 1:
             shape = list(B_scale.shape)
             self.axis = S.axis
-            shape[S.axis] = S[0].shape[0]
+            v = S.testfunction[0]
+            shape[S.axis] = v.N
             self.d0 = np.zeros(shape)
-            shape[S.axis] = A[2].shape[0]
             self.d1 = np.zeros(shape)
-            shape[S.axis] = B[4].shape[0]
             self.d2 = np.zeros(shape)
-            if np.ndim(B_scale) == 3:
-                la.PDMA_SymLU_3D(S, A, B, S.axis, S_scale[0, 0, 0], A_scale, B_scale, self.d0, self.d1, self.d2)
-            elif np.ndim(B_scale) == 2:
-                la.PDMA_SymLU_2D(S, A, B, S.axis, S_scale[0, 0], A_scale, B_scale, self.d0, self.d1, self.d2)
+            S0 = v.broadcast_to_ndims(S[0])
+            A0 = v.broadcast_to_ndims(A[0])
+            B0 = v.broadcast_to_ndims(B[0])
+            A2 = v.broadcast_to_ndims(A[2])
+            B2 = v.broadcast_to_ndims(B[2])
+            B4 = v.broadcast_to_ndims(B[4])
+            ss = [slice(None)]*self.d0.ndim
+            ss[S.axis] = slice(0, A[0].shape[0])
+            self.d0[tuple(ss)] = S0*S_scale + A0*A_scale + B0*B_scale
+            ss[S.axis] = slice(0, A[2].shape[0])
+            self.d1[tuple(ss)] = A2*A_scale + B2*B_scale
+            ss[S.axis] = slice(0, B[4].shape[0])
+            self.d2[tuple(ss)] = B4*B_scale
+            self.PDMA_SymLU_VC(self.d0, self.d1, self.d2, S.axis)
 
         else:
             self.d0 = S[0]*S_scale + A[0]*A_scale + B[0]*B_scale
             self.d1 = A[2]*A_scale + B[2]*B_scale
             self.d2 = B[4]*B_scale
+            self.axis = 0
             la.PDMA_SymLU(self.d0, self.d1, self.d2)
+
+    @staticmethod
+    @optimizer
+    def PDMA_SymLU_VC(d0, d1, d2, axis=0):
+        raise NotImplementedError("Use Cython or Numba")
+
+    @staticmethod
+    @optimizer
+    def PDMA_SymSolve_VC(d0, d1, d2, u, axis=0):
+        raise NotImplementedError("Use Cython or Numba")
 
     def __call__(self, u, b):
         u[:] = b
-        if np.ndim(u) == 3:
-            la.PDMA_SymSolve3D_VC(self.d0, self.d1, self.d2, u, self.axis)
-        elif np.ndim(u) == 2:
-            la.PDMA_SymSolve2D_VC(self.d0, self.d1, self.d2, u, self.axis)
-        else:
-            la.PDMA_Symsolve(self.d0, self.d1, self.d2, u)
-
+        self.PDMA_SymSolve_VC(self.d0, self.d1, self.d2, u, self.axis)
         return u
 
-    def matvec(self, v, c, axis=0):
+    def matvec(self, v, c):
         c[:] = 0
         c1 = np.zeros_like(c)
-        c1 = self.S.matvec(v, c1, axis=axis)
+        c1 = self.S.matvec(v, c1, axis=self.axis)
         c += c1
         c1[:] = 0
-        c1 = self.A.matvec(v, c1, axis=axis)
+        c1 = self.A.matvec(v, c1, axis=self.axis)
         c += c1
         c1[:] = 0
-        c1 = self.B.matvec(v, c1, axis=axis)
+        c1 = self.B.matvec(v, c1, axis=self.axis)
         c += c1
-
         return c
-
 
 class Helmholtz_2dirichlet(object):
     """Helmholtz solver for 2-dimensional problems with 2 Dirichlet bases.

@@ -162,7 +162,7 @@ axes = {2: {0: [0, 1, 2],
 def test_project(typecode, dim, ST, quad):
     # Using sympy to compute an analytical solution
     x, y, z = symbols("x,y,z")
-    sizes = (25, 24)
+    sizes = (24, 23)
 
     funcs = {
         (1, 0): (cos(4*y)*sin(2*np.pi*x))*(1-x**2),
@@ -196,7 +196,7 @@ def test_project(typecode, dim, ST, quad):
             uf = project(Dx(uh, axis, 1), fft)
             uy = Array(fft)
             uy = fft.backward(uf, uy)
-            assert np.allclose(uy, duq, 0, 1e-6)
+            assert np.allclose(uy, duq, 0, 1e-5)
             for ax in (x for x in range(dim+1) if x is not axis):
                 due = ue.diff(xs[axis], 1, xs[ax], 1)
                 dul = lambdify(syms[dim], due, 'numpy')
@@ -204,11 +204,11 @@ def test_project(typecode, dim, ST, quad):
                 uf = project(Dx(Dx(uh, axis, 1), ax, 1), fft)
                 uy = Array(fft)
                 uy = fft.backward(uf, uy)
-                assert np.allclose(uy, duq, 0, 1e-6)
+                assert np.allclose(uy, duq, 0, 1e-5)
                 uw = project(dul, fft)
-                assert np.allclose(uw, uf)
+                assert np.allclose(uw, uf, 0, 1e-5)
                 uw = project(due, fft)
-                assert np.allclose(uw, uf)
+                assert np.allclose(uw, uf, 0, 1e-5)
 
             bases.pop(axis)
             fft.destroy()
@@ -220,7 +220,7 @@ nbases_and_quads = list(product(lBasis[2:3], lquads))+list(product(cBasis[2:3], 
 def test_project2(typecode, dim, ST, quad):
     # Using sympy to compute an analytical solution
     x, y, z = symbols("x,y,z")
-    sizes = (25, 24)
+    sizes = (22, 21)
 
     funcx = ((2*np.pi**2*(x**2 - 1) - 1)* cos(2*np.pi*x) - 2*np.pi*x*sin(2*np.pi*x))/(4*np.pi**3)
     funcy = ((2*np.pi**2*(y**2 - 1) - 1)* cos(2*np.pi*y) - 2*np.pi*y*sin(2*np.pi*y))/(4*np.pi**3)
@@ -259,7 +259,7 @@ def test_project2(typecode, dim, ST, quad):
             uf = project(Dx(uh, axis, 1), fft)
             uy = Array(fft)
             uy = fft.backward(uf, uy)
-            assert np.allclose(uy, duq, 0, 1e-6)
+            assert np.allclose(uy, duq, 0, 1e-5)
 
             # Test also several derivatives
             for ax in (x for x in range(dim+1) if x is not axis):
@@ -269,7 +269,7 @@ def test_project2(typecode, dim, ST, quad):
                 uf = project(Dx(Dx(uh, ax, 1), axis, 1), fft)
                 uy = Array(fft)
                 uy = fft.backward(uf, uy)
-                assert np.allclose(uy, duq, 0, 1e-6)
+                assert np.allclose(uy, duq, 0, 1e-5)
             bases.pop(axis)
             fft.destroy()
 
@@ -277,7 +277,7 @@ def test_project2(typecode, dim, ST, quad):
 def test_project_2dirichlet(quad):
     x, y = symbols("x,y")
     ue = (cos(4*y)*sin(2*x))*(1-x**2)*(1-y**2)
-    sizes = (25, 24)
+    sizes = (18, 17)
 
     D0 = lbases.ShenDirichletBasis(sizes[0], quad=quad)
     D1 = lbases.ShenDirichletBasis(sizes[1], quad=quad)
@@ -302,7 +302,7 @@ def test_project_2dirichlet(quad):
     duedx = ue.diff(x, 1)
     duxl = lambdify((x, y), duedx, 'numpy')
     dx = duxl(*X)
-    assert np.allclose(dx, dudx)
+    assert np.allclose(dx, dudx, 0, 1e-5)
 
     dudy_hat = project(Dx(uh, 1, 1), DB)
     dudy = Array(DB)
@@ -310,13 +310,13 @@ def test_project_2dirichlet(quad):
     duedy = ue.diff(y, 1)
     duyl = lambdify((x, y), duedy, 'numpy')
     dy = duyl(*X)
-    assert np.allclose(dy, dudy)
+    assert np.allclose(dy, dudy, 0, 1e-5), np.linalg.norm(dy-dudy)
 
     us_hat = Function(BB)
     us_hat = project(uq, BB, output_array=us_hat)
     us = Array(BB)
     us = BB.backward(us_hat, us)
-    assert np.allclose(us, uq)
+    assert np.allclose(us, uq, 0, 1e-5)
 
     dudxy_hat = project(Dx(us_hat, 0, 1) + Dx(us_hat, 1, 1), BB)
     dudxy = Array(BB)
@@ -324,7 +324,7 @@ def test_project_2dirichlet(quad):
     duedxy = ue.diff(x, 1) + ue.diff(y, 1)
     duxyl = lambdify((x, y), duedxy, 'numpy')
     dxy = duxyl(*X)
-    assert np.allclose(dxy, dudxy)
+    assert np.allclose(dxy, dudxy, 0, 1e-5), np.linalg.norm(dxy-dudxy)
 
 @pytest.mark.parametrize('typecode', 'dD')
 @pytest.mark.parametrize('dim', (1, 2))
@@ -333,7 +333,7 @@ def test_eval_tensor(typecode, dim, ST, quad):
     # Using sympy to compute an analytical solution
     # Testing for Dirichlet and regular basis
     x, y, z = symbols("x,y,z")
-    sizes = (29, 28)
+    sizes = (22, 21)
 
     funcx = {'': (1-x**2)*sin(np.pi*x),
              'Dirichlet': (1-x**2)*sin(np.pi*x),
@@ -418,7 +418,7 @@ def test_eval_tensor(typecode, dim, ST, quad):
 def test_eval_fourier(typecode, dim):
     # Using sympy to compute an analytical solution
     x, y, z = symbols("x,y,z")
-    sizes = (24, 24)
+    sizes = (20, 19)
 
     funcs = {
         2: cos(4*x) + sin(6*y),

@@ -2,7 +2,8 @@
 
 from copy import copy
 import numpy as np
-from shenfun.optimization import la, Matvec
+from shenfun.optimization import optimizer
+from shenfun.optimization.cython import la, Matvec
 from shenfun.la import TDMA as la_TDMA
 from shenfun.utilities import inheritdocstrings
 from . import bases
@@ -26,20 +27,12 @@ class TDMA(la_TDMA):
         if not self.dd.shape[0] == self.mat.shape[0]:
             self.init()
 
-        if len(u.shape) == 3:
-            la.TDMA_SymSolve3D(self.dd, self.ud, self.L, u, axis)
-        elif len(u.shape) == 2:
-            la.TDMA_SymSolve2D(self.dd, self.ud, self.L, u, axis)
-        elif len(u.shape) == 1:
-            la.TDMA_SymSolve(self.dd, self.ud, self.L, u)
-        else:
-            raise NotImplementedError
+        self.TDMA_SymSolve(self.dd, self.ud, self.L, u, axis=axis)
 
         bc.apply_after(u, False)
 
         u /= self.mat.scale
         return u
-
 
 class Helmholtz(object):
     r"""Helmholtz solver
@@ -164,13 +157,6 @@ class Helmholtz(object):
                 B = self.B = kwargs['BNNmat']
             self.alfa = A.scale
             self.beta = B.scale
-            T = A.tensorproductspace
-            shape = list(T.local_shape(True))
-            shape[A.axis] = 1
-            if not self.alfa.shape == shape:
-                self.alfa = np.broadcast_to(self.alfa, shape).copy()
-            if not self.beta.shape == shape:
-                self.beta = np.broadcast_to(self.beta, shape).copy()
 
         elif len(args) == 4:
             # Only for 1D problems
@@ -178,16 +164,6 @@ class Helmholtz(object):
             B = self.B = args[1]
             self.alfa = args[2]
             self.beta = args[3]
-            T = A.tensorproductspace
-            if T is not None:
-                shape = list(T.local_shape(True))
-                shape[A.axis] = 1
-                if not self.alfa.shape == shape:
-                    self.alfa = np.broadcast_to(self.alfa, shape).copy()
-                if not self.beta.shape == shape:
-                    self.beta = np.broadcast_to(self.beta, shape).copy()
-            else:
-                shape = (A.shape[0],)
 
         else:
             raise RuntimeError('Wrong input to Helmholtz solver')
@@ -197,35 +173,34 @@ class Helmholtz(object):
         neumann = self.neumann = isinstance(A.testfunction[0], bases.ShenNeumannBasis)
         if not self.neumann:
             self.bc = A.testfunction[0].bc
+        self.axis = A.axis
+        shape = [1]
+        T = A.tensorproductspace
+        if T is not None:
+            shape = list(T.local_shape(True))
+            shape[A.axis] = 1
+        if not self.alfa.shape == shape:
+            self.alfa = np.broadcast_to(self.alfa, shape).copy()
+        if not self.beta.shape == shape:
+            self.beta = np.broadcast_to(self.beta, shape).copy()
 
-        if len(shape) == 1:
-            N = A.shape[0]+2
-            self.u0 = np.zeros(N-2, float)     # Diagonal entries of U
-            self.u1 = np.zeros(N-4, float)     # Diagonal+1 entries of U
-            self.u2 = np.zeros(N-6, float)     # Diagonal+2 entries of U
-            self.L = np.zeros(N-4, float)      # The single nonzero row of L
-            self.axis = 0
-            la.LU_Helmholtz_1D(A, B, self.alfa, self.beta, neumann, self.u0,
-                               self.u1, self.u2, self.L)
+        shape[self.axis] = A.shape[0] + 2
+        self.u0 = np.zeros(shape)     # Diagonal entries of U
+        self.u1 = np.zeros(shape)     # Diagonal+2 entries of U
+        self.u2 = np.zeros(shape)     # Diagonal+4 entries of U
+        self.L = np.zeros(shape)      # The single nonzero row of L
+        self.LU_Helmholtz(A, B, self.alfa, self.beta, neumann, self.u0,
+                          self.u1, self.u2, self.L, self.axis)
 
-        else:
-            self.axis = A.axis
-            N = A.shape[0]+2
-            shape[A.axis] = N-2
-            self.u0 = np.zeros(shape, float)     # Diagonal entries of U
-            shape[A.axis] = N-4
-            self.u1 = np.zeros(shape, float)     # Diagonal+2 entries of U
-            self.L = np.zeros(shape, float)      # The single nonzero row of L
-            shape[A.axis] = N-6
-            self.u2 = np.zeros(shape, float)     # Diagonal+4 entries of U
+    @staticmethod
+    @optimizer
+    def LU_Helmholtz(A, B, As, Bs, neumann, u0, u1, u2, L, axis=0):
+        pass
 
-            if len(shape) == 2:
-                la.LU_Helmholtz_2D(A, B, A.axis, self.alfa, self.beta, neumann,
-                                   self.u0, self.u1, self.u2, self.L)
-
-            elif len(shape) == 3:
-                la.LU_Helmholtz_3D(A, B, A.axis, self.alfa, self.beta, neumann,
-                                   self.u0, self.u1, self.u2, self.L)
+    @staticmethod
+    @optimizer
+    def Solve_Helmholtz(b, u, neumann, u0, u1, u2, L, axis=0):
+        pass
 
     def __call__(self, u, b):
         """Solve matrix problem
@@ -243,22 +218,14 @@ class Helmholtz(object):
 
         """
 
-        if np.ndim(u) == 3:
-            la.Solve_Helmholtz_3D_ptr(self.axis, b, u, self.neumann, self.u0,
-                                      self.u1, self.u2, self.L)
-        elif np.ndim(u) == 2:
-            la.Solve_Helmholtz_2D_ptr(self.axis, b, u, self.neumann, self.u0,
-                                      self.u1, self.u2, self.L)
-        else:
-            la.Solve_Helmholtz_1D(b, u, self.neumann, self.u0, self.u1,
-                                  self.u2, self.L)
+        self.Solve_Helmholtz(b, u, self.neumann, self.u0, self.u1, self.u2, self.L, self.axis)
 
         if not self.neumann:
             self.bc.apply_after(u, True)
 
         return u
 
-    def matvec(self, v, c, axis=0):
+    def matvec(self, v, c):
         """Matrix vector product c = dot(self, v)
 
         Parameters
@@ -272,12 +239,7 @@ class Helmholtz(object):
         """
         assert self.neumann is False
         c[:] = 0
-        if len(v.shape) == 3:
-            Matvec.Helmholtz_matvec3D_ptr(v, c, self.alfa, self.beta, self.A[0], self.A[2], self.B[0], axis)
-        elif len(v.shape) == 2:
-            Matvec.Helmholtz_matvec2D_ptr(v, c, self.alfa, self.beta, self.A[0], self.A[2], self.B[0], axis)
-        else:
-            Matvec.Helmholtz_matvec(v, c, self.alfa, self.beta, self.A[0], self.A[2], self.B[0])
+        Matvec.Helmholtz_matvec(v, c, self.alfa, self.beta, self.A[0], self.A[2], self.B[0], self.axis)
         return c
 
 
@@ -390,64 +352,56 @@ class Biharmonic(object):
         if 'SBBmat' in kwargs:
             assert 'ABBmat' in kwargs and 'BBBmat' in kwargs
             S, A, B = kwargs['SBBmat'], kwargs['ABBmat'], kwargs['BBBmat']
-            a0, alfa, beta = S.scale, A.scale, B.scale
-
+            a0, alfa, beta = np.asscalar(S.scale), A.scale, B.scale
         elif len(args) == 6:
             S, A, B = args[0], args[1], args[2]
-            a0, alfa, beta = args[3], args[4], args[5]
+            a0, alfa, beta = np.asscalar(args[3]), args[4], args[5]
         else:
             raise RuntimeError('Wrong input to Biharmonic solver')
         self.S, self.A, self.B = S, A, B
         self.alfa, self.beta = alfa, beta
         self.a0 = a0
+        self.axis = S.axis
+        T = S.tensorproductspace
+        if T is None:
+            shape = [S[0].shape]
+        else:
+            shape = list(T.local_shape(True))
         sii, siu, siuu = S[0], S[2], S[4]
         ail, aii, aiu = A[-2], A[0], A[2]
         bill, bil, bii, biu, biuu = B[-4], B[-2], B[0], B[2], B[4]
         M = sii[::2].shape[0]
+        shape[S.axis] = M
+        ss = copy(shape)
+        ss.insert(0, 2)
+        self.u0 = np.zeros(ss)
+        self.u1 = np.zeros(ss)
+        self.u2 = np.zeros(ss)
+        self.l0 = np.zeros(ss)
+        self.l1 = np.zeros(ss)
+        self.ak = np.zeros(ss)
+        self.bk = np.zeros(ss)
 
-        if np.ndim(beta) > 1:
-            shape = list(beta.shape)
-            self.axis = S.axis
-            shape[S.axis] = M
-            ss = copy(shape)
-            ss.insert(0, 2)
-            a0 = self.a0
+        self.LU_Biharmonic(a0, alfa, beta, sii, siu, siuu, ail, aii, aiu,
+                           bill, bil, bii, biu, biuu, self.u0, self.u1,
+                           self.u2, self.l0, self.l1, self.axis)
+        self.Biharmonic_factor_pr(self.ak, self.bk, self.l0, self.l1, self.axis)
 
-            self.u0 = np.zeros(ss)
-            self.u1 = np.zeros(ss)
-            self.u2 = np.zeros(ss)
-            self.l0 = np.zeros(ss)
-            self.l1 = np.zeros(ss)
-            self.ak = np.zeros(ss)
-            self.bk = np.zeros(ss)
-            if np.ndim(beta) == 3:
-                la.LU_Biharmonic_3D_n(S.axis, a0[0, 0, 0], alfa, beta, sii, siu, siuu,
-                                      ail, aii, aiu, bill, bil, bii, biu, biuu,
-                                      self.u0, self.u1, self.u2, self.l0,
-                                      self.l1)
-                la.Biharmonic_factor_pr_3D(S.axis, self.ak, self.bk, self.l0,
-                                           self.l1)
+    @staticmethod
+    @optimizer
+    def LU_Biharmonic(a0, alfa, beta, sii, siu, siuu, ail, aii, aiu,
+                      bill, bil, bii, biu, biuu, u0, u1, u2, l0, l1, axis):
+        raise NotImplementedError('Use Cython or Numba')
 
-            elif np.ndim(beta) == 2:
-                la.LU_Biharmonic_2D_n(S.axis, a0[0, 0], alfa, beta, sii, siu, siuu,
-                                      ail, aii, aiu, bill, bil, bii, biu, biuu,
-                                      self.u0, self.u1, self.u2, self.l0,
-                                      self.l1)
-                la.Biharmonic_factor_pr_2D(S.axis, self.ak, self.bk, self.l0,
-                                           self.l1)
+    @staticmethod
+    @optimizer
+    def Biharmonic_factor_pr(ak, bk, l0, l1, axis):
+        raise NotImplementedError('Use Cython or Numba')
 
-        else:
-            self.u0 = np.zeros((2, M))
-            self.u1 = np.zeros((2, M))
-            self.u2 = np.zeros((2, M))
-            self.l0 = np.zeros((2, M))
-            self.l1 = np.zeros((2, M))
-            self.ak = np.zeros((2, M))
-            self.bk = np.zeros((2, M))
-            la.LU_Biharmonic_1D(a0, alfa, beta, sii, siu, siuu, ail, aii, aiu,
-                                bill, bil, bii, biu, biuu, self.u0, self.u1,
-                                self.u2, self.l0, self.l1)
-            la.Biharmonic_factor_pr(self.ak, self.bk, self.l0, self.l1)
+    @staticmethod
+    @optimizer
+    def Biharmonic_Solve(axis, b, u, u0, u1, u2, l0, l1, ak, bk, a0):
+        raise NotImplementedError('Use Cython or Numba')
 
     def __call__(self, u, b):
         """Solve matrix problem
@@ -464,42 +418,17 @@ class Biharmonic(object):
         determined on creation of the class.
 
         """
-
-        if np.ndim(u) == 3:
-            la.Solve_Biharmonic_3D_n(self.axis, b, u, self.u0, self.u1,
-                                     self.u2, self.l0, self.l1, self.ak,
-                                     self.bk, self.a0[0, 0, 0])
-
-        elif np.ndim(u) == 2:
-            la.Solve_Biharmonic_2D_n(self.axis, b, u, self.u0, self.u1,
-                                     self.u2, self.l0, self.l1, self.ak,
-                                     self.bk, self.a0[0, 0])
-
-        else:
-            la.Solve_Biharmonic_1D(b, u, self.u0, self.u1, self.u2, self.l0,
-                                   self.l1, self.ak, self.bk, self.a0[0])
+        self.Biharmonic_Solve(b, u, self.u0, self.u1, self.u2, self.l0,
+                              self.l1, self.ak, self.bk, self.a0, self.axis)
 
         return u
 
-    def matvec(self, v, c, axis=0):
+    def matvec(self, v, c):
         c[:] = 0
-        if len(v.shape) == 3:
-            Matvec.Biharmonic_matvec3D_ptr(v, c, self.a0[0, 0, 0], self.alfa,
-                                           self.beta, self.S[0], self.S[2],
-                                           self.S[4], self.A[-2], self.A[0],
-                                           self.A[2], self.B[-4], self.B[-2],
-                                           self.B[0], self.B[2], self.B[4], axis)
-        elif len(v.shape) == 2:
-            Matvec.Biharmonic_matvec2D_ptr(v, c, self.a0[0, 0], self.alfa,
-                                           self.beta, self.S[0], self.S[2],
-                                           self.S[4], self.A[-2], self.A[0],
-                                           self.A[2], self.B[-4], self.B[-2],
-                                           self.B[0], self.B[2], self.B[4], axis)
-        else:
-            Matvec.Biharmonic_matvec(v, c, self.a0, self.alfa, self.beta, self.S[0],
-                                     self.S[2], self.S[4], self.A[-2], self.A[0],
-                                     self.A[2], self.B[-4], self.B[-2], self.B[0],
-                                     self.B[2], self.B[4])
+        Matvec.Biharmonic_matvec(v, c, self.a0, self.alfa, self.beta, self.S[0],
+                                 self.S[2], self.S[4], self.A[-2], self.A[0],
+                                 self.A[2], self.B[-4], self.B[-2], self.B[0],
+                                 self.B[2], self.B[4], self.axis)
         return c
 
 
@@ -590,12 +519,10 @@ class PDMA(object):
             assert beta.shape[A.axis] == 1
             N = A.shape[0]+4
             alfa = np.broadcast_to(alfa, shape).copy()
-            shape[A.axis] = N-4
-            self.d = np.zeros(shape, float)     # Diagonal entries of U
-            shape[A.axis] = N-6
+            shape[A.axis] = N
+            self.d = np.zeros(shape, float)      # Diagonal entries of U
             self.u1 = np.zeros(shape, float)     # Diagonal+2 entries of U
             self.l1 = np.zeros(shape, float)     # Diagonal-2 entries of U
-            shape[A.axis] = N-8
             self.u2 = np.zeros(shape, float)     # Diagonal+4 entries of U
             self.l2 = np.zeros(shape, float)     # Diagonal-4 entries of U
             self.beta = beta.copy()
@@ -687,8 +614,8 @@ class PDMA(object):
             elif self.solver == 'cython':
                 if u is b:
                     u = np.zeros_like(b)
-                la.Solve_Helmholtz_Biharmonic_1D(b, u, self.l2, self.l1,
-                                                 self.d, self.u1, self.u2)
+                #la.Solve_Helmholtz_Biharmonic_1D(b, u, self.l2, self.l1,
+                #                                 self.d, self.u1, self.u2)
                 la.Solve_Helmholtz_Biharmonic_1D_p(b, u, self.l2, self.l1,
                                                    self.d, self.u1, self.u2)
 

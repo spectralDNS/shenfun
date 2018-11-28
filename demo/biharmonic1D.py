@@ -70,7 +70,9 @@ H = Solver(S, A, B, S.scale, A.scale, B.scale)
 # Solve and transform to real space
 u_hat = Function(SD)          # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
-u = SD.backward(u_hat)
+u = Array(SD)
+u = SD.backward(u_hat, u)
+uh = u.forward()
 
 # Compare with analytical solution
 uj = ul(X)

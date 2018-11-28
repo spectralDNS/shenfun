@@ -5,7 +5,7 @@ import numpy as np
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
 from shenfun.utilities import inheritdocstrings
-from shenfun.optimization import convolve
+from shenfun.optimization.cython import convolve
 
 __all__ = ['FourierBase', 'R2CBasis', 'C2CBasis']
 

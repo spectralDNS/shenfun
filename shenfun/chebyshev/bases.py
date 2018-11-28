@@ -8,7 +8,7 @@ from scipy.special import eval_chebyt
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, FuncWrap, \
     islicedict, slicedict
-from shenfun.optimization import Cheb
+from shenfun.optimization.cython import Cheb
 from shenfun.utilities import inheritdocstrings
 
 __all__ = ['ChebyshevBase', 'Basis', 'ShenDirichletBasis',
