@@ -1,5 +1,6 @@
 [run]
 source=shenfun
+omit=shenfun/optimization/*
 
 [report]
 exclude_lines =
