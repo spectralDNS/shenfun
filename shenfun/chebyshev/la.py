@@ -169,9 +169,10 @@ class Helmholtz(object):
 
         B[2] = np.broadcast_to(B[2], A[2].shape)
         B[-2] = np.broadcast_to(B[-2], A[2].shape)
+        v = A.testfunction[0]
         neumann = self.neumann = v.boundary_condition() == 'Neumann'
         if not self.neumann:
-            self.bc = A.testfunction[0].bc
+            self.bc = v.bc
         self.axis = A.axis
         shape = [1]
         T = A.tensorproductspace
