@@ -86,6 +86,8 @@ if __name__ == '__main__':
               ],
           packages=["shenfun",
                     "shenfun.optimization",
+                    "shenfun.optimization.cython",
+                    "shenfun.optimization.numba",
                     "shenfun.legendre",
                     "shenfun.chebyshev",
                     "shenfun.fourier",
