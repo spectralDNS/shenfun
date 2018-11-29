@@ -25,7 +25,7 @@ class SparseMatrix(dict):
             diagonals
         shape : two-tuple of ints
         scale : float
-                Scale matrix with this constant or array of constants
+            Scale matrix with this constant or array of constants
 
     Examples
     --------
@@ -67,15 +67,15 @@ class SparseMatrix(dict):
             c : array
                 Numpy output array of same ndim as v
             format : str, optional
-                     Choice for computation
+                 Choice for computation
 
-                     - csr - Compressed sparse row format
-                     - dia - Sparse matrix with DIAgonal storage
-                     - python - Use numpy and vectorization
-                     - self - To be implemented in subclass
-                     - cython - Cython implementation that may be implemented in subclass
+                 - csr - Compressed sparse row format
+                 - dia - Sparse matrix with DIAgonal storage
+                 - python - Use numpy and vectorization
+                 - self - To be implemented in subclass
+                 - cython - Cython implementation that may be implemented in subclass
             axis : int, optional
-                   The axis over which to take the matrix vector product
+                The axis over which to take the matrix vector product
 
         """
         assert v.shape == c.shape
@@ -116,10 +116,10 @@ class SparseMatrix(dict):
         Parameters
         ----------
             format : str, optional
-                     Choice of matrix type (see scipy.sparse.diags)
+                Choice of matrix type (see scipy.sparse.diags)
 
-                     - dia - Sparse matrix with DIAgonal storage
-                     - csr - Compressed sparse row
+                - dia - Sparse matrix with DIAgonal storage
+                - csr - Compressed sparse row
 
         Note
         ----
@@ -295,8 +295,8 @@ class SparseMatrix(dict):
             u : array, optional
                 Output array
             axis : int, optional
-                   The axis over which to solve for if b and u are multi-
-                   dimensional
+                The axis over which to solve for if b and u are multi-
+                dimensional
 
         Vectors may be one- or multidimensional.
 
@@ -578,6 +578,49 @@ class SpectralMatrix(SparseMatrix):
             f = SparseMatrix.__sub__(self, d)
         return f
 
+class TPMatrix(object):
+    """Tensorproduct matrix"""
+    def __init__(self, mats, space, scale=1.0):
+        assert isinstance(mats, (list, tuple))
+        assert len(mats) == len(space)
+        self.mats = mats
+        self.space = space
+        self.scale = scale
+        self.pmat = 1
+
+    def eliminate_fourier_matrices(self):
+        mats = {}
+        for axis, mat in enumerate(self.mats):
+            if self.space[axis].family() == 'fourier':
+                mat = mat[0]    # get diagoal
+                if np.ndim(mat):
+                    mat = self.space[axis].broadcast_to_ndims(mat)
+                self.scale = self.scale*mat
+            else:
+                mats[axis] = mat
+
+        # Decomposition
+        if len(self.space) > 1:
+            s = self.scale.shape
+            ss = [slice(None)]*self.space.dimensions()
+            ls = self.space.local_slice()
+            for axis, shape in enumerate(s):
+                if shape > 1:
+                    ss[axis] = ls[axis]
+            self.scale = (self.scale[tuple(ss)]).copy()
+
+        # If only one non-diagonal matrix, then make a simple link to
+        # this matrix and set its scale array.
+        if len(mats) == 1:
+            mat = list(mats.values())[0]
+            mat.scale = self.scale
+            self.pmat = mat
+
+        elif len(mats) == 2: # 2 nonperiodic
+            self.pmat = mats
+
+    def all_fourier(self):
+        return np.all([m.testfunction[0].family() == 'fourier' for m in self.mats])
 
 def check_sanity(A, test, trial):
     """Sanity check for matrix.
@@ -586,18 +629,18 @@ def check_sanity(A, test, trial):
 
     Parameters
     ----------
-        A : matrix
-        test : 2-tuple of (basis, int)
-                The basis is an instance of a class for one of the bases in
+    A : matrix
+    test : 2-tuple of (basis, int)
+        The basis is an instance of a class for one of the bases in
 
-                - shenfun.legendre.bases
-                - shenfun.chebyshev.bases
-                - shenfun.fourier.bases
+        - shenfun.legendre.bases
+        - shenfun.chebyshev.bases
+        - shenfun.fourier.bases
 
-                The int represents the number of times the test function
-                should be differentiated. Representing matrix row.
-        trial : 2-tuple of (basis, int)
-                As test, but representing matrix column.
+        The int represents the number of times the test function
+        should be differentiated. Representing matrix row.
+    trial : 2-tuple of (basis, int)
+        As test, but representing matrix column.
     """
     N, M = A.shape
     D = get_dense_matrix(test, trial)[:N, :M]
@@ -612,17 +655,17 @@ def get_dense_matrix(test, trial):
 
     Parameters
     ----------
-        test : 2-tuple of (basis, int)
-                The basis is an instance of a class for one of the bases in
+    test : 2-tuple of (basis, int)
+        The basis is an instance of a class for one of the bases in
 
-                - shenfun.legendre.bases
-                - shenfun.chebyshev.bases
-                - shenfun.fourier.bases
+        - shenfun.legendre.bases
+        - shenfun.chebyshev.bases
+        - shenfun.fourier.bases
 
-                The int represents the number of times the test function
-                should be differentiated. Representing matrix row.
-        trial : 2-tuple of (basis, int)
-                As test, but representing matrix column.
+        The int represents the number of times the test function
+        should be differentiated. Representing matrix row.
+    trial : 2-tuple of (basis, int)
+        As test, but representing matrix column.
     """
     N = test[0].N
     _, w = test[0].points_and_weights(N)
@@ -636,15 +679,15 @@ def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-12):
 
     Parameters
     ----------
-        M : Numpy array of ndim=2
-        abstol : float
-                 Tolerance. Only diagonals with max(:math:`|d|`) < tol are
-                 kept in the returned SparseMatrix, where :math:`d` is the
-                 diagonal
-        reltol : float
-                 Relative tolerance. Only diagonals with
-                 max(:math:`|d|`)/max(:math:`|M|`) > reltol are kept in the
-                 returned SparseMatrix
+    M : Numpy array of ndim=2
+    abstol : float
+        Tolerance. Only diagonals with max(:math:`|d|`) < tol are
+        kept in the returned SparseMatrix, where :math:`d` is the
+        diagonal
+    reltol : float
+        Relative tolerance. Only diagonals with
+        max(:math:`|d|`)/max(:math:`|M|`) > reltol are kept in the
+        returned SparseMatrix
 
     """
     d = {}

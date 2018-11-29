@@ -550,6 +550,7 @@ class CLLmat(SpectralMatrix):
             if axis > 0:
                 c = np.moveaxis(c, 0, axis)
                 v = np.moveaxis(v, 0, axis)
+            c *= self.scale
 
         else:
             c = super(CLLmat, self).matvec(v, c, format=format, axis=axis)

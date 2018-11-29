@@ -463,18 +463,19 @@ class Helmholtz_2dirichlet(object):
         # Extract A and B
         scale = {}
         for tmp in kwargs:
-            if tmp[0].get_key() == 'BDDmat' and tmp[1].get_key() == 'BDDmat':
-                B = tmp[0]
-                B1 = tmp[1]
-                scale['BUB'] = tmp['scale']
+            pmat = tmp.pmat
+            if pmat[0].get_key() == 'BDDmat' and pmat[1].get_key() == 'BDDmat':
+                B = pmat[0]
+                B1 = pmat[1]
+                scale['BUB'] = tmp.scale
 
-            elif tmp[0].get_key() == 'ADDmat' and tmp[1].get_key() == 'BDDmat':
-                A = tmp[0]
-                scale['AUB'] = tmp['scale']
+            elif pmat[0].get_key() == 'ADDmat' and pmat[1].get_key() == 'BDDmat':
+                A = pmat[0]
+                scale['AUB'] = tmp.scale
 
             else:
-                A1 = tmp[1]
-                scale['BUA'] = tmp['scale']
+                A1 = pmat[1]
+                scale['BUA'] = tmp.scale
 
         # Create transfer object to realign data in second direction
         pencilA = T.forward.output_pencil

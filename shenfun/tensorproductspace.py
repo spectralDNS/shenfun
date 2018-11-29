@@ -507,6 +507,14 @@ class TensorProductSpace(PFFT):
         """Return dimension of TensorProductSpace"""
         return self.__len__()
 
+    def get_nonperiodic_axes(self):
+        """Return list of axes that are not periodic"""
+        axes = []
+        for axis, base in enumerate(self):
+            if not base.family() == 'fourier':
+                axes.append(axis)
+        return axes
+
     def __getitem__(self, i):
         """Return instance of base i
 
