@@ -782,8 +782,14 @@ class SpectralBase(object):
 
     @property
     def tensorproductspace(self):
-        """Return the :class:`.TensorProductSpace` this basis is planned for
-        (if planned)"""
+        """Return the last :class:`.TensorProductSpace` this basis has been
+        planned for (if planned)
+
+        Note
+        ----
+        A basis may be part of several :class:`.TensorProductSpace`s, but they
+        all need to be of the same global shape.
+        """
         return self._tensorproductspace
 
     @tensorproductspace.setter

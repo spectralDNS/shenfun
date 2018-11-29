@@ -87,7 +87,7 @@ def project(uh, T, output_array=None):
     B = inner(v, u)
     if isinstance(B, list) and not isinstance(T, MixedTensorProductSpace):
         # Means we have two non-periodic directions
-        npaxes = [b for b in B[0].keys() if isinstance(b, int)]
+        npaxes = list(B[0].pmat.keys())
         assert len(npaxes) == 2
 
         pencilA = T.forward.output_pencil
@@ -98,10 +98,10 @@ def project(uh, T, output_array=None):
         transAB = pencilA.transfer(pencilB, 'd')
         output_arrayB = np.zeros(transAB.subshapeB)
         output_arrayB2 = np.zeros(transAB.subshapeB)
-        b = B[0][axis]
+        b = B[0].pmat[axis]
         output_array = b.solve(output_array, output_array, axis=axis)
         transAB.forward(output_array, output_arrayB)
-        b = B[0][second_axis]
+        b = B[0].pmat[second_axis]
         output_arrayB2 = b.solve(output_arrayB, output_arrayB2, axis=second_axis)
         transAB.backward(output_arrayB2, output_array)
 
