@@ -203,7 +203,7 @@ for Paraview the *last* axis represents the :math:`x`-axis, whereas
 shenfun (like most others) considers the first axis to be the :math:`x`-axis. So when opening a
 three-dimensional array in Paraview one needs to be aware. Especially when
 plotting vectors. Assume that we are working with a Navier-Stokes solver
-and have a three-dimensional :class:`VectorTensorProductSpace` to represent
+and have a three-dimensional :class:`.VectorTensorProductSpace` to represent
 the fluid velocity::
 
     from mpi4py import MPI
