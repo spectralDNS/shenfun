@@ -2,8 +2,8 @@
 This module contains the inner function that computes the
 weighted inner product.
 """
+from functools import reduce
 import numpy as np
-from shenfun.fourier import FourierBase
 from shenfun.spectralbase import inner_product
 from shenfun.matrixbase import TPMatrix, SparseMatrix
 from shenfun.la import DiagonalMatrix
@@ -132,7 +132,6 @@ def inner(expr0, expr1, output_array=None, postprocess=0):
             result.append(inner(test[ii], trial[ii], postprocess=postprocess))
         return result
 
-
     if trial.argument > 1:
         # Linear form
         assert isinstance(test, (Expr, BasisFunction))
@@ -244,9 +243,7 @@ def inner(expr0, expr1, output_array=None, postprocess=0):
         return A
 
     if np.all([f.all_fourier() for f in A]): # No non-diagonal matrix
-        f = A[0].scale
-        for m in A[1:]:
-            f = f + m.scale
+        f = reduce(lambda x, y: x.scale+y.scale, A)
 
         if trial.argument == 1:
             return DiagonalMatrix(f)
@@ -260,7 +257,6 @@ def inner(expr0, expr1, output_array=None, postprocess=0):
 
     elif np.any([isinstance(f.pmat, SparseMatrix) for f in A]):
         # One non-Fourier space
-        npaxis = A[0].pmat.axis
         if trial.argument == 1:  # bilinear form
             b = A[0].pmat
             C = {b.get_key(): b}
@@ -277,13 +273,13 @@ def inner(expr0, expr1, output_array=None, postprocess=0):
             return C
 
         else: # linear form
+            npaxis = A[0].pmat.axis
             for i, bb in enumerate(A):
                 b = bb.pmat
                 if uh.rank() == 1:
                     sp = uh.function_space()
                     wh = Function(sp[npaxis])
                     wh = b.matvec(uh[trial_indices[0, i]], wh, axis=b.axis)
-
                 else:
                     wh = Function(trialspace)
                     wh = b.matvec(uh, wh, axis=b.axis)
@@ -308,19 +304,16 @@ def inner(expr0, expr1, output_array=None, postprocess=0):
             transAB = pencilA.transfer(pencilB, 'd')
 
             # Output data is aligned in axis, but may be distributed in all other directions
-
             if uh.rank() == 1:
                 sp = uh.function_space()
                 wh = Function(sp[axis])
                 wc = Function(sp[axis])
-
             else:
                 wh = Function(trialspace)
                 wc = Function(trialspace)
 
             whB = np.zeros(transAB.subshapeB)
             wcB = np.zeros(transAB.subshapeB)
-
             for i, bb in enumerate(A):
                 if uh.rank() == 1:
                     wc[:] = uh[trial_indices[0, i]]
@@ -329,12 +322,10 @@ def inner(expr0, expr1, output_array=None, postprocess=0):
 
                 b = bb.pmat[axis]
                 wh = b.matvec(wc, wh, axis=axis)
-
                 # align in second non-periodic axis
                 transAB.forward(wh, whB)
                 b = bb.pmat[second_axis]
                 wcB = b.matvec(whB, wcB, axis=second_axis)
                 transAB.backward(wcB, wh)
                 output_array += wh
-
             return output_array
