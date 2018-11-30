@@ -9,7 +9,7 @@ __all__ = ('project',)
 
 def project(uh, T, output_array=None):
     r"""
-    Project uh to tensor poduct space T
+    Project ``uh`` to tensor poduct space T
 
     Find :math:`u \in T`, such that
 
@@ -31,7 +31,7 @@ def project(uh, T, output_array=None):
     Returns
     -------
     Function
-        The projection of uh in T
+        The projection of ``uh`` in T
 
     See Also
     --------
@@ -42,12 +42,12 @@ def project(uh, T, output_array=None):
 
     >>> import numpy as np
     >>> from mpi4py import MPI
-    >>> from shenfun import chebyshev, fourier, project, TensorProductSpace, \
-    ...     Array, Function, Dx
+    >>> from shenfun import Basis, project, TensorProductSpace, Array, \
+    ...     Function, Dx
     >>> N = 16
     >>> comm = MPI.COMM_WORLD
-    >>> T0 = chebyshev.bases.Basis(N)
-    >>> K0 = fourier.bases.R2CBasis(N)
+    >>> T0 = Basis(N, 'C')
+    >>> K0 = Basis(N, 'F', dtype='d')
     >>> T = TensorProductSpace(comm, (T0, K0))
     >>> uj = Array(T)
     >>> uj[:] = np.random.random(uj.shape)

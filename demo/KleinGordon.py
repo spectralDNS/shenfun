@@ -152,15 +152,15 @@ if __name__ == '__main__':
                                              (fu, [slice(None), 10, slice(None), slice(None)])]}),
            'write_tstep': (50, {'fu': [fu]}),
            'Compute_energy': 100,
-           'plot_tstep': -1,
+           'plot_tstep': 100,
+           'end_time': 100.,
            'file': file0}
     dt = 0.005
-    end_time = 10.
     integrator = ETDRK4(TT, N=NonlinearRHS, update=update, **par)
     #integrator = RK4(TT, N=NonlinearRHS, update=update)
     integrator.setup(dt)
     t0 = time()
-    fu_hat = integrator.solve(fu, fu_hat, dt, (0, end_time))
+    fu_hat = integrator.solve(fu, fu_hat, dt, (0, par['end_time']))
     timer.final(True)
 
     if rank == 0:

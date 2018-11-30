@@ -318,17 +318,17 @@ integrators need two methods provided by the problem being solved, representing
 the linear and nonlinear terms in the problem equation. We define two methods
 below, called `LinearRHS` and `NonlinearRHS`
 !bc pycod
-def LinearRHS():
+def LinearRHS(self):
     # Assemble diagonal bilinear forms
-    L = -(inner(div(grad(u)), v) + inner(div(grad(div(grad(u)))), v))
+    L = -(inner(div(grad(u))+div(grad(div(grad(u)))), v))
     return L
 
-def NonlinearRHS(U, U_hat, dU):
+def NonlinearRHS(self, U, U_hat, dU):
     # Assemble nonlinear term
     global gradu
     gradu = TV.backward(1j*K*U_hat, gradu)
     dU = T.forward(0.5*(gradu[0]*gradu[0]+gradu[1]*gradu[1]), dU)
-    return dU
+    return -dU
 !ec
 The code should, hopefully, be self-explanatory.
 

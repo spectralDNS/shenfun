@@ -1,7 +1,8 @@
 import numba as nb
 import numpy as np
 
-__all__ = ['LU_Biharmonic', 'Biharmonic_factor_pr', 'Biharmonic_Solve']
+__all__ = ['LU_Biharmonic', 'Biharmonic_factor_pr', 'Biharmonic_Solve',
+           'Biharmonic_matvec']
 
 def LU_Biharmonic(a0, alfa, beta, sii, siu, siuu, ail, aii, aiu,
                   bill, bil, bii, biu, biuu, u0, u1,
@@ -323,3 +324,128 @@ def Solve_Biharmonic_3D(axis, b, u, u0, u1, u2, l0, l1, ak, bk, a0):
                 Solve_Biharmonic_1D(b[i, j], u[i, j], u0[:, i, j], u1[:, i, j],
                                     u2[:, i, j], l0[:, i, j], l1[:, i, j],
                                     ak[:, i, j], bk[:, i, j], a0)
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def Biharmonic_matvec2D(v, b, a0, alfa, beta,
+                        sii, siu, siuu,
+                        ail, aii, aiu,
+                        bill, bil, bii, biu, biuu, axis):
+    if axis == 0:
+        for j in range(v.shape[1]):
+            Biharmonic_matvec1D(v[:, j], b[:, j], a0, alfa[0, j],
+                                beta[0, j], sii, siu, siuu,
+                                ail, aii, aiu,
+                                bill, bil, bii, biu, biuu)
+    elif axis == 1:
+        for i in range(v.shape[0]):
+            Biharmonic_matvec1D(v[i], b[i], a0, alfa[i, 0],
+                                beta[i, 0], sii, siu, siuu,
+                                ail, aii, aiu,
+                                bill, bil, bii, biu, biuu)
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def Biharmonic_matvec3D(v, b, a0, alfa, beta,
+                        sii, siu, siuu,
+                        ail, aii, aiu,
+                        bill, bil, bii, biu, biuu, axis):
+    if axis == 0:
+        for j in range(v.shape[1]):
+            for k in range(v.shape[2]):
+                Biharmonic_matvec1D(v[:, j, k], b[:, j, k], a0, alfa[0, j, k],
+                                    beta[0, j, k], sii, siu, siuu,
+                                    ail, aii, aiu, bill, bil, bii, biu, biuu)
+    elif axis == 1:
+        for i in range(v.shape[0]):
+            for k in range(v.shape[2]):
+                Biharmonic_matvec1D(v[i, :, k], b[i, :, k], a0, alfa[i, 0, k],
+                                    beta[i, 0, k], sii, siu, siuu,
+                                    ail, aii, aiu, bill, bil, bii, biu, biuu)
+    elif axis == 2:
+        for i in range(v.shape[0]):
+            for j in range(v.shape[1]):
+                Biharmonic_matvec1D(v[i, j], b[i, j], a0, alfa[i, j, 0],
+                                    beta[i, j, 0], sii, siu, siuu,
+                                    ail, aii, aiu, bill, bil, bii, biu, biuu)
+
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def Biharmonic_matvec1D(v, b, a0, alfa, beta,
+                        sii, siu, siuu,
+                        ail, aii, aiu,
+                        bill, bil, bii, biu, biuu):
+    N = sii.shape[0]
+    ldd = np.empty(N)
+    ld = np.empty(N)
+    dd = np.empty(N)
+    ud = np.empty(N)
+    udd = np.empty(N)
+
+    for i in range(N):
+        dd[i] = a0*sii[i] + alfa*aii[i] + beta*bii[i]
+
+    for i in range(N-2):
+        ld[i] = alfa*ail[i] + beta*bil[i]
+
+    for i in range(N-4):
+        ldd[i] = beta*bill[i]
+
+    for i in range(N-2):
+        ud[i] = a0*siu[i] + alfa*aiu[i] + beta*biu[i]
+
+    for i in range(N-4):
+        udd[i] = a0*siuu[i] + beta*biuu[i]
+
+    i = N-1
+    b[i] = ldd[i-4]*v[i-4]+ ld[i-2]* v[i-2] + dd[i]*v[i]
+    i = N-2
+    b[i] = ldd[i-4]*v[i-4]+ ld[i-2]* v[i-2] + dd[i]*v[i]
+    i = N-3
+    b[i] = ldd[i-4]*v[i-4]+ ld[i-2]* v[i-2] + dd[i]*v[i] + ud[i]*v[i+2]
+    i = N-4
+    b[i] = ldd[i-4]*v[i-4]+ ld[i-2]* v[i-2] + dd[i]*v[i] + ud[i]*v[i+2]
+    i = N-5
+    b[i] = ldd[i-4]*v[i-4]+ ld[i-2]* v[i-2] + dd[i]*v[i] + ud[i]*v[i+2] + udd[i]*v[i+4]
+    i = N-6
+    b[i] = ldd[i-4]*v[i-4]+ ld[i-2]* v[i-2] + dd[i]*v[i] + ud[i]*v[i+2] + udd[i]*v[i+4]
+
+    s1 = 0.0
+    s2 = 0.0
+    o1 = 0.0
+    o2 = 0.0
+    for k in range(N-7, -1, -1):
+        j = k+6
+        p = k*sii[k]/(k+1.)
+        r = 24*(k+1)*(k+2)*np.pi
+        d = v[j]/(j+3.)
+        if k % 2 == 0:
+            s1 += d
+            s2 += (j+2)*(j+2)*d
+            b[k] = (p*s1 + r*s2)*a0
+        else:
+            o1 += d
+            o2 += (j+2)*(j+2)*d
+            b[k] = (p*o1 + r*o2)*a0
+
+        if k > 3:
+            b[k] += ldd[k-4]*v[k-4]+ ld[k-2]* v[k-2] + dd[k]*v[k] + ud[k]*v[k+2] + udd[k]*v[k+4]
+        elif k > 1:
+            b[k] += ld[k-2]* v[k-2] + dd[k]*v[k] + ud[k]*v[k+2] + udd[k]*v[k+4]
+        else:
+            b[k] += dd[k]*v[k] + ud[k]*v[k+2] + udd[k]*v[k+4]
+
+def Biharmonic_matvec(v, b, a0, alfa, beta,
+                      sii, siu, siuu, ail, aii, aiu,
+                      bill, bil, bii, biu, biuu, axis):
+    n = v.ndim
+    if n == 1:
+        Biharmonic_matvec1D(v, b, a0, alfa, beta,
+                            sii, siu, siuu, ail, aii, aiu,
+                            bill, bil, bii, biu, biuu)
+    elif n == 2:
+        Biharmonic_matvec2D(v, b, a0, alfa, beta,
+                            sii, siu, siuu, ail, aii, aiu,
+                            bill, bil, bii, biu, biuu, axis)
+    elif n == 3:
+        Biharmonic_matvec3D(v, b, a0, alfa, beta,
+                            sii, siu, siuu, ail, aii, aiu,
+                            bill, bil, bii, biu, biuu, axis)

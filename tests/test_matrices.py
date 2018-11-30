@@ -299,9 +299,11 @@ def test_helmholtz3D(family, axis):
         mat = shenfun.inner(shenfun.grad(v), shenfun.grad(u))
 
     H = la.Helmholtz(**mat)
+    H = la.Helmholtz(**mat)
     u = shenfun.Function(T)
     u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
     f = shenfun.Function(T)
+    f = H.matvec(u, f)
     f = H.matvec(u, f)
 
     g0 = shenfun.Function(T)
@@ -334,9 +336,11 @@ def test_helmholtz2D(family, axis):
         mat = shenfun.inner(shenfun.grad(v), shenfun.grad(u))
 
     H = la.Helmholtz(**mat)
+    H = la.Helmholtz(**mat)
     u = shenfun.Function(T)
     u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
     f = shenfun.Function(T)
+    f = H.matvec(u, f)
     f = H.matvec(u, f)
 
     g0 = shenfun.Function(T)
@@ -370,9 +374,11 @@ def test_biharmonic3D(family, axis):
         mat = shenfun.inner(shenfun.div(shenfun.grad(v)), shenfun.div(shenfun.grad(u)))
 
     H = la.Biharmonic(**mat)
+    H = la.Biharmonic(**mat)
     u = shenfun.Function(T)
     u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
     f = shenfun.Function(T)
+    f = H.matvec(u, f)
     f = H.matvec(u, f)
 
     g0 = shenfun.Function(T)
@@ -383,7 +389,7 @@ def test_biharmonic3D(family, axis):
     g1 = mat[amat].matvec(u, g1, axis=axis)
     g2 = mat['BBBmat'].matvec(u, g2, axis=axis)
 
-    assert np.linalg.norm(f-(g0+g1+g2)) < 1e-8,np.linalg.norm(f-(g0+g1+g2))
+    assert np.linalg.norm(f-(g0+g1+g2)) < 1e-8, np.linalg.norm(f-(g0+g1+g2))
 
 @pytest.mark.parametrize('axis', (0, 1))
 @pytest.mark.parametrize('family', ('chebyshev', 'legendre'))
@@ -423,11 +429,11 @@ def test_biharmonic2D(family, axis):
 
 
 if __name__ == '__main__':
-    test_cmatvec(cBasis[3], cBasis[1], 'GC', 'cython', 3, 0)
+    #test_cmatvec(cBasis[3], cBasis[1], 'GC', 'cython', 3, 0)
     #test_add(*mats_and_quads[0])
     #test_mul2()
     #test_div2(cBasis[0], 'GC')
-    #test_helmholtz3D('chebyshev', 1)
-    #test_helmholtz2D('chebyshev', 1)
-    #test_biharmonic3D('chebyshev', 2)
+    #test_helmholtz3D('chebyshev', 0)
+    #test_helmholtz2D('chebyshev', 0)
+    test_biharmonic3D('chebyshev', 0)
     #test_biharmonic2D('chebyshev', 1)

@@ -1001,7 +1001,7 @@ class BoundaryValues(object):
         return True
 
 def some_basic_tests():
-    import pyfftw
+    import pyfftw             #pylint: disable=import-error
     from mpi4py import MPI
 
     comm = MPI.COMM_WORLD

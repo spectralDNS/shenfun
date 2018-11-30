@@ -9,7 +9,8 @@ from scipy.sparse.linalg import spsolve
 import numpy as np
 from .utilities import inheritdocstrings
 
-__all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix', 'check_sanity', 'get_dense_matrix']
+__all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix',
+           'check_sanity', 'get_dense_matrix']
 
 class SparseMatrix(dict):
     r"""Base class for sparse matrices
@@ -158,7 +159,7 @@ class SparseMatrix(dict):
             return SparseMatrix(deepcopy(dict(self)), self.shape,
                                 scale=self.scale*y)
         elif isinstance(y, np.ndarray):
-            c = np.zeros_like(y)
+            c = np.empty_like(y)
             c = self.matvec(y, c)
             return c
 

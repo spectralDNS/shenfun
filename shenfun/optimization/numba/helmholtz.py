@@ -1,7 +1,9 @@
 import numba as nb
 import numpy as np
 
-__all__ = ['LU_Helmholtz', 'Solve_Helmholtz']
+M_PI_2 = np.pi/2
+
+__all__ = ['LU_Helmholtz', 'Solve_Helmholtz', 'Helmholtz_matvec']
 
 def LU_Helmholtz(A, B, A_s, B_s, neumann, d0, d1, d2, L, axis):
     n = d0.ndim
@@ -194,3 +196,68 @@ def Solve_Helmholtz_3D(fk, u_hat, neumann, d0, d1, d2, L, y, axis):
                 Solve_Helmholtz_1D(fk[i, j], u_hat[i, j], neumann,
                                    d0[i, j], d1[i, j], d2[i, j],
                                    L[i, j], y)
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def Helmholtz_matvec1D(v, b, alfa, beta, dd, ud, bd):
+    # b = (alfa*A + beta*B)*v
+    # For B matrix ld = ud = -pi/2
+    N = dd.shape[0]
+    s1 = 0.0
+    s2 = 0.0
+
+    k = N-1
+    b[k] = (dd[k]*alfa + bd[k]*beta)*v[k] - M_PI_2*beta*v[k-2]
+    b[k-1] = (dd[k-1]*alfa + bd[k-1]*beta)*v[k-1] - M_PI_2*beta*v[k-3]
+
+    for k in range(N-3, 1, -1):
+        p = ud[k]*alfa
+        if k % 2 == 0:
+            s2 += v[k+2]
+            b[k] = (dd[k]*alfa + bd[k]*beta)*v[k] - M_PI_2*beta*(v[k-2] + v[k+2]) + p*s2
+        else:
+            s1 += v[k+2]
+            b[k] = (dd[k]*alfa + bd[k]*beta)*v[k] - M_PI_2*beta*(v[k-2] + v[k+2]) + p*s1
+
+    k = 1
+    s1 += v[k+2]
+    s2 += v[k+1]
+    b[k] = (dd[k]*alfa + bd[k]*beta)*v[k] - M_PI_2*beta*v[k+2] + ud[k]*alfa*s1
+    b[k-1] = (dd[k-1]*alfa + bd[k-1]*beta)*v[k-1] - M_PI_2*beta*v[k+1] + ud[k-1]*alfa*s2
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def Helmholtz_matvec3D(v, b, alfa, beta, dd, ud, bd, axis):
+    if axis == 0:
+        for j in range(v.shape[1]):
+            for k in range(v.shape[2]):
+                Helmholtz_matvec1D(v[:, j, k], b[:, j, k], alfa[0, j, k],
+                                   beta[0, j, k], dd, ud, bd)
+    elif axis == 1:
+        for i in range(v.shape[0]):
+            for k in range(v.shape[2]):
+               Helmholtz_matvec1D(v[i, :, k], b[i, :, k], alfa[i, 0, k],
+                                  beta[i, 0, k], dd, ud, bd)
+    elif axis == 2:
+        for i in range(v.shape[0]):
+            for j in range(v.shape[1]):
+                Helmholtz_matvec1D(v[i, j], b[i, j], alfa[i, j, 0],
+                                   beta[i, j, 0], dd, ud, bd)
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def Helmholtz_matvec2D(v, b, alfa, beta, dd, ud, bd, axis):
+    if axis == 0:
+        for j in range(v.shape[1]):
+            Helmholtz_matvec1D(v[:, j], b[:, j], alfa[0, j],
+                               beta[0, j], dd, ud, bd)
+    elif axis == 1:
+        for i in range(v.shape[0]):
+            Helmholtz_matvec1D(v[i], b[i], alfa[i, 0],
+                               beta[i, 0], dd, ud, bd)
+
+def Helmholtz_matvec(v, b, alfa, beta, dd, ud, bd, axis):
+    n = v.ndim
+    if n == 1:
+        Helmholtz_matvec1D(v, b, alfa, beta, dd, ud, bd)
+    elif n == 2:
+        Helmholtz_matvec2D(v, b, alfa, beta, dd, ud, bd, axis)
+    elif n == 3:
+        Helmholtz_matvec3D(v, b, alfa, beta, dd, ud, bd, axis)

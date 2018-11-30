@@ -25,7 +25,8 @@ class _Fouriermatrix(SpectralMatrix):
 
         if abs(k_trial) + abs(k_test) > 0:
             if N % 2 == 0 and (k_trial + k_test) % 2 == 1:
-                k[N//2] = 0
+                pass
+                #k[N//2] = 0
             val = (1j*k)**(k_trial)*(-1j*k)**k_test
             if (k_trial + k_test) % 2 == 0:
                 val = val.real

@@ -14,7 +14,7 @@ __all__ = ('inner',)
 
 #pylint: disable=line-too-long,inconsistent-return-statements,too-many-return-statements
 
-def inner(expr0, expr1, output_array=None, postprocess=0):
+def inner(expr0, expr1, output_array=None, level=0):
     r"""
     Return weighted discrete inner product of linear or bilinear form
 
@@ -55,7 +55,7 @@ def inner(expr0, expr1, output_array=None, postprocess=0):
     output_array:  Function
         Optional return array for linear form.
 
-    postprocess: int
+    level: int
         The level of postprocessing for assembled matrices. Applies only
         to bilinear forms
 
@@ -63,7 +63,7 @@ def inner(expr0, expr1, output_array=None, postprocess=0):
                 and add equal matrices
             - 1 Diagonal matrices to scale arrays, but don't add equal
                 matrices
-            - 2 No postprocessinig, return all assembled matrices
+            - 2 No postprocessing, return all assembled matrices
 
     Returns
     -------
@@ -129,7 +129,7 @@ def inner(expr0, expr1, output_array=None, postprocess=0):
 
         result = []
         for ii in range(ndim):
-            result.append(inner(test[ii], trial[ii], postprocess=postprocess))
+            result.append(inner(test[ii], trial[ii], level=level))
         return result
 
     if trial.argument > 1:
@@ -233,13 +233,13 @@ def inner(expr0, expr1, output_array=None, postprocess=0):
     # where local_shape is used to indicate that we are only returning the local
     # values of the scale arrays.
 
-    if postprocess == 2 and trial.argument == 1:
+    if level == 2 and trial.argument == 1:
         return A
 
     for tpmat in A:
         tpmat.eliminate_fourier_matrices()
 
-    if postprocess == 1 and trial.argument == 1:
+    if level == 1 and trial.argument == 1:
         return A
 
     if np.all([f.all_fourier() for f in A]): # No non-diagonal matrix
