@@ -243,7 +243,7 @@ def inner(expr0, expr1, output_array=None, postprocess=0):
         return A
 
     if np.all([f.all_fourier() for f in A]): # No non-diagonal matrix
-        f = reduce(lambda x, y: x.scale+y.scale, A)
+        f = reduce(lambda x, y: x+y, [s.scale for s in A])
 
         if trial.argument == 1:
             return DiagonalMatrix(f)
