@@ -3,7 +3,7 @@
 from copy import copy
 import numpy as np
 from shenfun.optimization import optimizer
-from shenfun.optimization.cython import la, Matvec
+from shenfun.optimization.cython import la
 from shenfun.la import TDMA as la_TDMA
 from shenfun.utilities import inheritdocstrings
 
@@ -195,12 +195,12 @@ class Helmholtz(object):
     @staticmethod
     @optimizer
     def LU_Helmholtz(A, B, As, Bs, neumann, u0, u1, u2, L, axis=0):
-        pass
+        raise NotImplementedError
 
     @staticmethod
     @optimizer
     def Solve_Helmholtz(b, u, neumann, u0, u1, u2, L, axis=0):
-        pass
+        raise NotImplementedError
 
     def __call__(self, u, b):
         """Solve matrix problem
@@ -239,9 +239,13 @@ class Helmholtz(object):
         """
         assert self.neumann is False
         c[:] = 0
-        Matvec.Helmholtz_matvec(v, c, self.alfa, self.beta, self.A[0], self.A[2], self.B[0], self.axis)
+        self.Helmholtz_matvec(v, c, self.alfa, self.beta, self.A[0], self.A[2], self.B[0], self.axis)
         return c
 
+    @staticmethod
+    @optimizer
+    def Helmholtz_matvec(v, b, alfa, beta, dd, ud, bd, axis=0):
+        raise NotImplementedError
 
 class Biharmonic(object):
     r"""Multidimensional Biharmonic solver for
@@ -403,6 +407,13 @@ class Biharmonic(object):
     def Biharmonic_Solve(axis, b, u, u0, u1, u2, l0, l1, ak, bk, a0):
         raise NotImplementedError('Use Cython or Numba')
 
+    @staticmethod
+    @optimizer
+    def Biharmonic_matvec(v, b, a0, alfa, beta,
+                          sii, siu, siuu, ail, aii, aiu,
+                          bill, bil, bii, biu, biuu, axis=0):
+        raise NotImplementedError('Use Cython or Numba')
+
     def __call__(self, u, b):
         """Solve matrix problem
 
@@ -425,10 +436,10 @@ class Biharmonic(object):
 
     def matvec(self, v, c):
         c[:] = 0
-        Matvec.Biharmonic_matvec(v, c, self.a0, self.alfa, self.beta, self.S[0],
-                                 self.S[2], self.S[4], self.A[-2], self.A[0],
-                                 self.A[2], self.B[-4], self.B[-2], self.B[0],
-                                 self.B[2], self.B[4], self.axis)
+        self.Biharmonic_matvec(v, c, self.a0, self.alfa, self.beta, self.S[0],
+                               self.S[2], self.S[4], self.A[-2], self.A[0],
+                               self.A[2], self.B[-4], self.B[-2], self.B[0],
+                               self.B[2], self.B[4], self.axis)
         return c
 
 

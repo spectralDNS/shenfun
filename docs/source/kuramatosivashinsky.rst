@@ -7,7 +7,7 @@ Demo - Kuramato-Sivashinsky equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Nov 14, 2018
+:Date: Nov 30, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Kuramato-Sivashinsky equation, in a doubly periodic domain. The demo is implemented in
@@ -369,17 +369,17 @@ below, called ``LinearRHS`` and ``NonlinearRHS``
 
 .. code-block:: python
 
-    def LinearRHS():
+    def LinearRHS(self):
         # Assemble diagonal bilinear forms
-        L = -(inner(div(grad(u)), v) + inner(div(grad(div(grad(u)))), v))
+        L = -(inner(div(grad(u))+div(grad(div(grad(u)))), v))
         return L
     
-    def NonlinearRHS(U, U_hat, dU):
+    def NonlinearRHS(self, U, U_hat, dU):
         # Assemble nonlinear term
         global gradu
         gradu = TV.backward(1j*K*U_hat, gradu)
         dU = T.forward(0.5*(gradu[0]*gradu[0]+gradu[1]*gradu[1]), dU)
-        return dU
+        return -dU
 
 The code should, hopefully, be self-explanatory.
 
