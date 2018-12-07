@@ -69,7 +69,7 @@ else: # Use form with integration by parts.
     matrices = inner(div(grad(v)), div(grad(u)))
 
 # Create linear algebra solver
-H = BiharmonicSolver(**matrices)
+H = BiharmonicSolver(*matrices)
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space

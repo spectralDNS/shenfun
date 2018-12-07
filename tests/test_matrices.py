@@ -172,6 +172,8 @@ def test_mul2():
     z = shenfun.Function(SD, val=1)
     c = mat * z
     assert np.allclose(c[:6], 1)
+    mat *= z
+
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_rmul(key, mat, quad):
@@ -298,8 +300,8 @@ def test_helmholtz3D(family, axis):
     else:
         mat = shenfun.inner(shenfun.grad(v), shenfun.grad(u))
 
-    H = la.Helmholtz(**mat)
-    H = la.Helmholtz(**mat)
+    H = la.Helmholtz(*mat)
+    H = la.Helmholtz(*mat)
     u = shenfun.Function(T)
     u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
     f = shenfun.Function(T)
@@ -308,9 +310,9 @@ def test_helmholtz3D(family, axis):
 
     g0 = shenfun.Function(T)
     g1 = shenfun.Function(T)
-    #from IPython import embed; embed()
-    g0 = mat['ADDmat'].matvec(u, g0, axis=axis)
-    g1 = mat['BDDmat'].matvec(u, g1, axis=axis)
+    M = {d.get_key(): d for d in mat}
+    g0 = M['ADDmat'].matvec(u, g0)
+    g1 = M['BDDmat'].matvec(u, g1)
 
     assert np.linalg.norm(f-(g0+g1)) < 1e-12, np.linalg.norm(f-(g0+g1))
 
@@ -335,8 +337,8 @@ def test_helmholtz2D(family, axis):
     else:
         mat = shenfun.inner(shenfun.grad(v), shenfun.grad(u))
 
-    H = la.Helmholtz(**mat)
-    H = la.Helmholtz(**mat)
+    H = la.Helmholtz(*mat)
+    H = la.Helmholtz(*mat)
     u = shenfun.Function(T)
     u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
     f = shenfun.Function(T)
@@ -345,8 +347,9 @@ def test_helmholtz2D(family, axis):
 
     g0 = shenfun.Function(T)
     g1 = shenfun.Function(T)
-    g0 = mat['ADDmat'].matvec(u, g0, axis=axis)
-    g1 = mat['BDDmat'].matvec(u, g1, axis=axis)
+    M = {d.get_key(): d for d in mat}
+    g0 = M['ADDmat'].matvec(u, g0)
+    g1 = M['BDDmat'].matvec(u, g1)
 
     assert np.linalg.norm(f-(g0+g1)) < 1e-12, np.linalg.norm(f-(g0+g1))
 
@@ -373,8 +376,8 @@ def test_biharmonic3D(family, axis):
     else:
         mat = shenfun.inner(shenfun.div(shenfun.grad(v)), shenfun.div(shenfun.grad(u)))
 
-    H = la.Biharmonic(**mat)
-    H = la.Biharmonic(**mat)
+    H = la.Biharmonic(*mat)
+    H = la.Biharmonic(*mat)
     u = shenfun.Function(T)
     u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
     f = shenfun.Function(T)
@@ -384,10 +387,11 @@ def test_biharmonic3D(family, axis):
     g0 = shenfun.Function(T)
     g1 = shenfun.Function(T)
     g2 = shenfun.Function(T)
+    M = {d.get_key(): d for d in mat}
     amat = 'ABBmat' if family == 'chebyshev' else 'PBBmat'
-    g0 = mat['SBBmat'].matvec(u, g0, axis=axis)
-    g1 = mat[amat].matvec(u, g1, axis=axis)
-    g2 = mat['BBBmat'].matvec(u, g2, axis=axis)
+    g0 = M['SBBmat'].matvec(u, g0)
+    g1 = M[amat].matvec(u, g1)
+    g2 = M['BBBmat'].matvec(u, g2)
 
     assert np.linalg.norm(f-(g0+g1+g2)) < 1e-8, np.linalg.norm(f-(g0+g1+g2))
 
@@ -411,7 +415,7 @@ def test_biharmonic2D(family, axis):
     else:
         mat = shenfun.inner(shenfun.div(shenfun.grad(v)), shenfun.div(shenfun.grad(u)))
 
-    H = la.Biharmonic(**mat)
+    H = la.Biharmonic(*mat)
     u = shenfun.Function(T)
     u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
     f = shenfun.Function(T)
@@ -420,10 +424,11 @@ def test_biharmonic2D(family, axis):
     g0 = shenfun.Function(T)
     g1 = shenfun.Function(T)
     g2 = shenfun.Function(T)
+    M = {d.get_key(): d for d in mat}
     amat = 'ABBmat' if family == 'chebyshev' else 'PBBmat'
-    g0 = mat['SBBmat'].matvec(u, g0, axis=axis)
-    g1 = mat[amat].matvec(u, g1, axis=axis)
-    g2 = mat['BBBmat'].matvec(u, g2, axis=axis)
+    g0 = M['SBBmat'].matvec(u, g0)
+    g1 = M[amat].matvec(u, g1)
+    g2 = M['BBBmat'].matvec(u, g2)
 
     assert np.linalg.norm(f-(g0+g1+g2)) < 1e-8
 
@@ -435,5 +440,5 @@ if __name__ == '__main__':
     #test_div2(cBasis[0], 'GC')
     #test_helmholtz3D('chebyshev', 0)
     #test_helmholtz2D('chebyshev', 0)
-    test_biharmonic3D('chebyshev', 0)
-    #test_biharmonic2D('chebyshev', 1)
+    #test_biharmonic3D('legendre', 0)
+    test_biharmonic2D('legendre', 1)

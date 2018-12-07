@@ -7,6 +7,7 @@ from shenfun.optimization import optimizer
 from shenfun.optimization.cython import la
 from shenfun.utilities import inheritdocstrings
 from shenfun.la import TDMA as la_TDMA
+from shenfun.matrixbase import TPMatrix
 
 @inheritdocstrings
 class TDMA(la_TDMA):
@@ -41,7 +42,8 @@ class TDMA(la_TDMA):
 
         bc.apply_after(u, False)
 
-        u /= self.mat.scale
+        if not self.mat.scale in (1, 1.0):
+            u /= self.mat.scale
         return u
 
 
@@ -58,33 +60,26 @@ class Helmholtz(object):
 
     The user must provide mass and stiffness matrices and scale arrays
     :math:`(\alpha/\beta)` to each matrix. The matrices and scales can be
-    provided as either kwargs or args
-
-    As 4 arguments
+    provided as instances of :class:`.TPMatrix`, or :class:`.SpectralMatrix`.
 
     Parameters
     ----------
-        A : SpectralMatrix
-            Stiffness matrix (Dirichlet or Neumann)
-        B : SpectralMatrix
-            Mass matrix (Dirichlet or Neumann)
-        alfa : Numpy array
-        beta : Numpy array
+    A : :class:`.SpectralMatrix` or :class:`.TPMatrix`
+        mass or stiffness matrix
+    B : :class:`.SpectralMatrix` or :class:`.TPMatrix`
+        mass or stiffness matrix
 
-    or as a dict with keys
+    scale_A : array, optional
+        Scale array to stiffness matrix
+    scale_B : array, optional
+        Scale array to mass matrix
 
-    Parameters
-    ----------
-        ADDmat : A
-                 Stiffness matrix (Dirichlet basis)
-        BDDmat : B
-                 Mass matrix (Dirichlet basis)
-        ANNmat : A
-                  Stiffness matrix (Neumann basis)
-        BNNmat : B
-                 Mass matrix (Neumann basis)
-
-    where :math:`\alpha` and :math:`\beta` are avalable as A.scale and B.scale.
+    The two matrices must be one stiffness and one mass matrix. Which is which
+    will be found by inspection if only two arguments are provided. The scales
+    :math:`\alpha` and :math:`\beta` must then be available as A.scale and
+    B.scale.
+    If four arguments are provided they must be in the order A, B, scale A,
+    scale B.
 
     The solver can be used along any axis of a multidimensional problem. For
     example, if the Legendre basis (Dirichlet or Neumann) is the last in a
@@ -144,29 +139,22 @@ class Helmholtz(object):
 
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args):
 
-        if 'ADDmat' in kwargs or 'ANNmat' in kwargs:
-            if 'ADDmat' in kwargs:
-                assert 'BDDmat' in kwargs
-                A = self.A = kwargs['ADDmat']
-                B = self.B = kwargs['BDDmat']
+        A, B = args[0], args[1]
+        M = {d.get_key(): d for d in (A, B)}
+        self.A = A = M.get('ADDmat', M.get('ANNmat'))
+        self.B = B = M.get('BDDmat', M.get('BNNmat'))
 
-            if 'ANNmat' in kwargs:
-                assert 'BNNmat' in kwargs
-                A = self.A = kwargs['ANNmat']
-                B = self.B = kwargs['BNNmat']
-            A_scale = self.A_scale = A.scale
-            B_scale = self.B_scale = B.scale
-
-        elif len(args) == 4:
-            A = self.A = args[0]
-            B = self.B = args[1]
-            A_scale = self.A_scale = args[2]
-            B_scale = self.B_scale = args[3]
-
+        if len(args) == 2:
+            A_scale = self.A.scale
+            B_scale = self.B.scale
+            if isinstance(self.A, TPMatrix):
+                A = self.A.pmat
+                B = self.B.pmat
         else:
-            raise RuntimeError('Wrong input to Helmholtz solver')
+            A_scale = args[2]
+            B_scale = args[3]
 
         v = A.testfunction[0]
         neumann = self.neumann = v.boundary_condition() == 'Neumann'
@@ -257,10 +245,11 @@ class Helmholtz(object):
         return u
 
     def matvec(self, v, c):
+        assert isinstance(self.A, TPMatrix)
         c[:] = 0
         c1 = np.zeros_like(c)
-        c1 = self.A.matvec(v, c1, axis=self.axis)
-        c = self.B.matvec(v, c, axis=self.axis)
+        c1 = self.A.matvec(v, c1)
+        c = self.B.matvec(v, c)
         c += c1
         return c
 
@@ -275,36 +264,25 @@ class Biharmonic(object):
     :math:`a_0, \alpha` and :math:`\beta` are scalars, or arrays of scalars for
     a multidimensional problem.
 
-    The user must provide mass, stiffness and biharmonic matrices and scale
-    arrays :math:`(a_0/\alpha/\beta)`. The matrices and scales can be provided
-    as either kwargs or args
-
-    As 6 arguments
+    The user must provide mass, stiffness and biharmonic matrices with
+    associated scale arrays :math:`(a_0/\alpha/\beta)`. The matrices and scales
+    can be provided in any order
 
     Parameters
     ----------
-        S : SpectralMatrix
-            Biharmonic matrix
-        A : SpectralMatrix
-            Stiffness matrix
-        B : SpectralMatrix
-            Mass matrix
-        a0 : array
-        alfa : array
-        beta : array
+    S : :class:`.TPMatrix` or :class:`.SpectralMatrix`
+    A : :class:`.TPMatrix` or :class:`.SpectralMatrix`
+    B : :class:`.TPMatrix` or :class:`.SpectralMatrix`
 
-    or as dict with key/values
+    scale_S : array, optional
+    scale_A : array, optional
+    scale_B : array, optional
 
-    Parameters
-    ----------
-        SBBmat : S
-                 Biharmonic matrix
-        ABBmat : A
-                 Stiffness matrix
-        BBBmat : B
-                 Mass matrix
-
-    where a0, alfa and beta must be avalable as S.scale, A.scale, B.scale.
+    If only three arguments are passed, then we decide which matrix is which
+    through inspection. The three scale arrays must then be available as
+    S.scale, A.scale, B.scale.
+    If siz arguments are provided they must be in order S, A, B, scale S,
+    scale A, scale B.
 
     The solver can be used along any axis of a multidimensional problem. For
     example, if the Chebyshev basis (Biharmonic) is the last in a
@@ -363,26 +341,27 @@ class Biharmonic(object):
     Note that :math:`k+l` is an array of shape (N, M, 1).
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args):
 
-        if 'SBBmat' in kwargs:
-            assert 'PBBmat' in kwargs and 'BBBmat' in kwargs
-            S = self.S = kwargs['SBBmat']
-            A = self.A = kwargs['PBBmat']
-            B = self.B = kwargs['BBBmat']
-            S_scale = S.scale
-            A_scale = A.scale
-            B_scale = B.scale
+        assert len(args) in (3, 6)
+        S, A, B = args[0], args[1], args[2]
+        M = {d.get_key(): d for d in (S, A, B)}
+        self.S = M['SBBmat']
+        self.A = M['PBBmat']  # Legendre and Chebyshev differ
+        self.B = M['BBBmat']
 
+        if len(args) == 3:
+            S_scale = np.asscalar(self.S.scale)
+            A_scale = self.A.scale
+            B_scale = self.B.scale
+            if isinstance(self.S, TPMatrix):
+                S = self.S.pmat
+                A = self.A.pmat
+                B = self.B.pmat
         elif len(args) == 6:
-            S = self.S = args[0]
-            A = self.A = args[1]
-            B = self.B = args[2]
-            S_scale = args[3]
+            S_scale = np.asscalar(args[3])
             A_scale = args[4]
             B_scale = args[5]
-        else:
-            raise RuntimeError('Wrong input to Biharmonic solver')
 
         if np.ndim(B_scale) > 1:
             shape = list(B_scale.shape)
@@ -430,15 +409,16 @@ class Biharmonic(object):
         return u
 
     def matvec(self, v, c):
+        assert isinstance(self.S, TPMatrix)
         c[:] = 0
         c1 = np.zeros_like(c)
-        c1 = self.S.matvec(v, c1, axis=self.axis)
+        c1 = self.S.matvec(v, c1)
         c += c1
         c1[:] = 0
-        c1 = self.A.matvec(v, c1, axis=self.axis)
+        c1 = self.A.matvec(v, c1)
         c += c1
         c1[:] = 0
-        c1 = self.B.matvec(v, c1, axis=self.axis)
+        c1 = self.B.matvec(v, c1)
         c += c1
         return c
 
@@ -453,31 +433,34 @@ class Helmholtz_2dirichlet(object):
 
     """
 
-    def __init__(self, T, kwargs):
+    def __init__(self, matrices):
 
-        self.T = T
         self.V = np.zeros(0)
-        assert len(kwargs) == 3
+        assert len(matrices) == 3
 
         # There are three terms, BUB, AUB and BUA
         # Extract A and B
         scale = {}
-        for tmp in kwargs:
+        for tmp in matrices:
             pmat = tmp.pmat
             if pmat[0].get_key() == 'BDDmat' and pmat[1].get_key() == 'BDDmat':
                 B = pmat[0]
                 B1 = pmat[1]
                 scale['BUB'] = tmp.scale
+                self.BB = tmp
 
             elif pmat[0].get_key() == 'ADDmat' and pmat[1].get_key() == 'BDDmat':
                 A = pmat[0]
                 scale['AUB'] = tmp.scale
+                self.AB = tmp
 
             else:
                 A1 = pmat[1]
                 scale['BUA'] = tmp.scale
+                self.BA = tmp
 
         # Create transfer object to realign data in second direction
+        self.T = T = matrices[0].space
         pencilA = T.forward.output_pencil
         pencilB = pencilA.pencil(1)
         self.pencilB = pencilB
@@ -541,7 +524,7 @@ class Helmholtz_2dirichlet(object):
 
             # Apply the inverse in eigen space
             ls = self.T.local_slice()
-            u /= (self.scale['BUB'] + self.lmbdax[:, np.newaxis] + self.lmbday[np.newaxis, :])[ls]
+            u /= (self.BB.scale + self.lmbdax[:, np.newaxis] + self.lmbday[np.newaxis, :])[ls]
 
             # Map back to physical space
             u[:] = self.Vx.dot(u)
@@ -560,11 +543,11 @@ class Helmholtz_2dirichlet(object):
                                                                     self.pencilB.subshape)]
 
             self.B1.scale = np.zeros((ls[0].stop-ls[0].start, 1))
-            self.B1.scale[:, 0] = self.scale['BUB'] + 1./self.lmbda[ls[0]]
+            self.B1.scale[:, 0] = self.BB.scale + 1./self.lmbda[ls[0]]
             self.A1.scale = np.ones((1, 1))
             # Create Helmholtz solver along axis=1
-            Helmy = Helmholtz(**{'ADDmat': self.A1, 'BDDmat': self.B1})
-
+            from IPython import embed; embed()
+            Helmy = Helmholtz(self.A1, self.B1)
             # Map the right hand side to eigen space
             self.rhs_A = (self.V.T).dot(b)
             self.rhs_A /= self.lmbda[:, np.newaxis]
@@ -583,6 +566,7 @@ class Helmholtz_2dirichlet(object):
 
             BB[s, s] = self.B.diags().toarray()
             AA[s, s] = self.A.diags().toarray()
+            #from IPython import embed; embed()
             G[:] = BB.dot(u)
             H[:] = u.dot(BB)
             bc = b.copy()
@@ -590,7 +574,8 @@ class Helmholtz_2dirichlet(object):
             self.B.scale = np.broadcast_to(self.B.scale, (1, u.shape[1])).copy()
             self.B.scale *= self.scale['BUB']
             self.A.scale = np.ones((1, 1))
-            Helmx = Helmholtz(**{'ADDmat': self.A, 'BDDmat': self.B})
+            #Helmx = Helmholtz(**{'ADDmat': self.A, 'BDDmat': self.B})
+            Helmx = Helmholtz(self.A, self.B)
             converged = False
             G_old = G.copy()
             Hc = H.copy()
@@ -610,7 +595,7 @@ class Helmholtz_2dirichlet(object):
                 print('Error ', num_iter, err)
                 num_iter += 1
                 G_old[:] = G
-                converged = err < 1e-8
+                converged = err < 1e-10
                 om = omega
 
             self.B.scale = B_scale

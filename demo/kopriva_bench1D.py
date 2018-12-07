@@ -17,7 +17,7 @@ def main(N, dt=0.005, end_time=2, dealias_initial=True, plot_result=False):
     b = [0.5, 0.5, 1.]                       # Runge-Kutta parameter
 
     nu = 0.2
-    k = SD.wavenumbers()
+    k = SD.wavenumbers().astype(float)
 
     # initialize
     U[:] = 3./(5.-4.*np.cos(X))

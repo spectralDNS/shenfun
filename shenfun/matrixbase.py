@@ -10,7 +10,7 @@ import numpy as np
 from .utilities import inheritdocstrings
 
 __all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix',
-           'check_sanity', 'get_dense_matrix']
+           'check_sanity', 'get_dense_matrix', 'TPMatrix', 'BlockMatrix']
 
 class SparseMatrix(dict):
     r"""Base class for sparse matrices
@@ -21,12 +21,12 @@ class SparseMatrix(dict):
 
     Parameters
     ----------
-        d : dict
-            Dictionary, where keys are the diagonal offsets and values the
-            diagonals
-        shape : two-tuple of ints
-        scale : float
-            Scale matrix with this constant or array of constants
+    d : dict
+        Dictionary, where keys are the diagonal offsets and values the
+        diagonals
+    shape : two-tuple of ints
+    scale : float
+        Scale matrix with this constant or array of constants
 
     Examples
     --------
@@ -63,20 +63,20 @@ class SparseMatrix(dict):
 
         Parameters
         ----------
-            v : array
-                Numpy input array of ndim>=1
-            c : array
-                Numpy output array of same ndim as v
-            format : str, optional
-                 Choice for computation
+        v : array
+            Numpy input array of ndim>=1
+        c : array
+            Numpy output array of same ndim as v
+        format : str, optional
+             Choice for computation
 
-                 - csr - Compressed sparse row format
-                 - dia - Sparse matrix with DIAgonal storage
-                 - python - Use numpy and vectorization
-                 - self - To be implemented in subclass
-                 - cython - Cython implementation that may be implemented in subclass
-            axis : int, optional
-                The axis over which to take the matrix vector product
+             - csr - Compressed sparse row format
+             - dia - Sparse matrix with DIAgonal storage
+             - python - Use numpy and vectorization
+             - self - To be implemented in subclass
+             - cython - Cython implementation that may be implemented in subclass
+        axis : int, optional
+            The axis over which to take the matrix vector product
 
         """
         assert v.shape == c.shape
@@ -330,6 +330,16 @@ class SparseMatrix(dict):
         u /= self.scale
         return u
 
+    def isidentity(self):
+        if not len(self) == 1:
+            return False
+        if 0 not in self:
+            return False
+        d = self[0]
+        if np.all(d == 1):
+            return True
+        return False
+
 
 @inheritdocstrings
 class SpectralMatrix(SparseMatrix):
@@ -337,22 +347,22 @@ class SpectralMatrix(SparseMatrix):
 
     Parameters
     ----------
-        d : dict
-            Dictionary, where keys are the diagonal offsets and values the
-            diagonals
-        trial : 2-tuple of (basis, int)
-                The basis is an instance of a class for one of the bases in
+    d : dict
+        Dictionary, where keys are the diagonal offsets and values the
+        diagonals
+    trial : 2-tuple of (basis, int)
+            The basis is an instance of a class for one of the bases in
 
-                - shenfun.legendre.bases
-                - shenfun.chebyshev.bases
-                - shenfun.fourier.bases
+            - shenfun.legendre.bases
+            - shenfun.chebyshev.bases
+            - shenfun.fourier.bases
 
-                The int represents the number of times the trial function
-                should be differentiated. Representing matrix column.
-        test : 2-tuple of (basis, int)
-               As trial, but representing matrix row.
-        scale : float
-                Scale matrix with this constant or array of constants
+            The int represents the number of times the trial function
+            should be differentiated. Representing matrix column.
+    test : 2-tuple of (basis, int)
+           As trial, but representing matrix row.
+    scale : float
+            Scale matrix with this constant or array of constants
 
     The matrices are assumed to be sparse diagonal. The matrices are
     inner products of trial and test functions from one of 9 function
@@ -537,6 +547,11 @@ class SpectralMatrix(SparseMatrix):
             return self.__hash__()
         return self.__class__.__name__
 
+    def simplify_fourier_matrices(self):
+        if self.testfunction[0].family() == 'fourier':
+            self.scale = self.scale*self[0]
+            self[0] = 1
+
     def __mul__(self, y):
         """Returns copy of self.__mul__(y) <==> self*y"""
         if isinstance(y, Number):
@@ -579,26 +594,65 @@ class SpectralMatrix(SparseMatrix):
             f = SparseMatrix.__sub__(self, d)
         return f
 
+class Identity(SparseMatrix):
+    def __init__(self, shape, scale=1):
+        SparseMatrix.__init__(self, {0:1}, shape, scale)
+
+class BlockMatrix(object):
+    def __init__(self, tpmats, base):
+        from .tensorproductspace import MixedTensorProductSpace
+        assert isinstance(tpmats, (list, tuple))
+        assert isinstance(base, MixedTensorProductSpace)
+        dims = base.num_components()
+        self.mats = mats = np.zeros((dims, dims), dtype=int).tolist()
+        for mat in tpmats:
+            if not isinstance(mat, list):
+                mat = [mat]
+            for m in mat:
+                i, j = m.global_index
+                if isinstance(mats[i][j], int):
+                    mats[i][j] = m
+                else:
+                    mats[i][j] = mats[i][j] + m
+
+    def matvec(self, v, c):
+        assert v.shape[0] == self.mats.shape[1]
+        assert c.shape[0] == self.mats.shape[1]
+        c.fill(0)
+        for i in range(self.mats.shape[0]):
+            for j in range(self.mats.shape[1]):
+                if isinstance(self.mats[i, j], Number):
+                    if abs(self.mats[i][j]) > 1e-8:
+                        c[i] += self.mats[i][j]*v[j]
+                else:
+                    c[i] += self.mats[i][j].matvec(v[j])
+        return c
+
+
 class TPMatrix(object):
     """Tensorproduct matrix"""
-    def __init__(self, mats, space, scale=1.0):
+    def __init__(self, mats, space, scale=1.0, global_index=None):
         assert isinstance(mats, (list, tuple))
         assert len(mats) == len(space)
         self.mats = mats
         self.space = space
         self.scale = scale
         self.pmat = 1
+        self.naxes = []
+        self.global_index = global_index
 
-    def eliminate_fourier_matrices(self):
-        mats = {}
+    def simplify_fourier_matrices(self):
+        self.naxes = []
         for axis, mat in enumerate(self.mats):
             if self.space[axis].family() == 'fourier':
-                mat = mat[0]    # get diagoal
-                if np.ndim(mat):
-                    mat = self.space[axis].broadcast_to_ndims(mat)
-                self.scale = self.scale*mat
+                d = mat[0]    # get diagoal
+                if np.ndim(d):
+                    d = self.space[axis].broadcast_to_ndims(d)
+                    d *= mat.scale
+                self.scale = self.scale*d
+                self.mats[axis] = Identity(mat.shape)
             else:
-                mats[axis] = mat
+                self.naxes.append(axis)
 
         # Decomposition
         if len(self.space) > 1:
@@ -612,16 +666,138 @@ class TPMatrix(object):
 
         # If only one non-diagonal matrix, then make a simple link to
         # this matrix and set its scale array.
-        if len(mats) == 1:
-            mat = list(mats.values())[0]
-            mat.scale = self.scale
-            self.pmat = mat
+        if len(self.naxes) == 1:
+            self.pmat = self.mats[self.naxes[0]]
 
-        elif len(mats) == 2: # 2 nonperiodic
-            self.pmat = mats
+        elif len(self.naxes) == 2: # 2 nonperiodic, experimental
+            self.pmat = self.mats
 
-    def all_fourier(self):
-        return np.all([m.testfunction[0].family() == 'fourier' for m in self.mats])
+    def solve(self, b, u=None):
+        if len(self.naxes) == 0:
+            d = self.scale
+            with np.errstate(divide='ignore'):
+                d = 1./self.scale
+            d = np.where(np.isinf(d), 0, d)
+
+            if u is not None:
+                u[:] = b * d
+                return u
+            return b * d
+
+        elif len(self.naxes) == 1:
+            axis = self.naxes[0]
+            u = self.pmat.solve(b, u=u, axis=axis)
+            u /= self.scale
+            return u
+
+        elif len(self.naxes) == 2:
+            raise NotImplementedError
+
+    def matvec(self, v, c):
+        if len(self.naxes) == 0:
+            c[:] = self.scale*v
+        elif len(self.naxes) == 1:
+            axis = self.naxes[0]
+            c = self.pmat.matvec(v, c, axis=axis)
+            c *= self.scale
+        elif len(self.naxes) == 2:
+            # 2 non-periodic directions (may be non-aligned in second axis, hence transfers)
+            npaxes = deepcopy(self.naxes)
+            pencilA = self.space.forward.output_pencil
+            subcomms = [c.Get_size() for c in pencilA.subcomm]
+            axis = pencilA.axis
+            assert subcomms[axis] == 1
+            npaxes.remove(axis)
+            second_axis = npaxes[0]
+            pencilB = pencilA.pencil(second_axis)
+            transAB = pencilA.transfer(pencilB, 'd')
+            cB = np.zeros(transAB.subshapeB)
+            cC = np.zeros(transAB.subshapeB)
+            bb = self.mats[axis]
+            c = bb.matvec(v, c, axis=axis)
+            # align in second non-periodic axis
+            transAB.forward(c, cB)
+            bb = self.mats[second_axis]
+            cC = bb.matvec(cB, cC, axis=second_axis)
+            transAB.backward(cC, c)
+            c *= self.scale
+        return c
+
+    def get_key(self):
+        assert len(self.naxes) == 1
+        return self.pmat.get_key()
+
+    def all_identity(self):
+        return np.all([m.isidentity() for m in self.mats])
+
+    def __mul__(self, a):
+        """Returns copy of self.__mul__(a) <==> self*a"""
+        if isinstance(a, Number):
+            TPMatrix(self.mats, self.space, self.scale*a, self.global_index)
+
+        elif isinstance(a, np.ndarray):
+            c = np.empty_like(a)
+            c = self.matvec(a, c)
+            return c
+
+    def __imul__(self, a):
+        """Returns self.__imul__(a) <==> self*=a"""
+        if isinstance(a, Number):
+            self.scale *= a
+        elif isinstance(a, np.ndarray):
+            self.scale = self.scale*a
+
+        return self
+
+    def __neg__(self):
+        self.scale *= -1
+        return self
+
+    def __eq__(self, a):
+        """Check if matrices and global_index are the same.
+
+        Note
+        ----
+        The attribute scale may still be different
+        """
+        assert isinstance(a, TPMatrix)
+        if not self.global_index == a.global_index:
+            return False
+        for m0, m1 in zip(self.mats, a.mats):
+            if not m0.get_key() == m1.get_key():
+                return False
+        return True
+
+    def __ne__(self, a):
+        return not self.__eq__(a)
+
+    def __add__(self, a):
+        assert isinstance(a, TPMatrix)
+        assert self.global_index == a.global_index
+        assert self == a
+        return TPMatrix(self.mats, self.space, self.scale+a.scale, self.global_index)
+
+    def __iadd__(self, a):
+        assert isinstance(a, TPMatrix)
+        assert self.global_index == a.global_index
+        for m0, m1 in zip(self.mats, a.mats):
+            assert m0.get_key() == m1.get_key()
+        self.scale = self.scale + a.scale
+        return self
+
+    def __sub__(self, a):
+        assert isinstance(a, TPMatrix)
+        assert self.global_index == a.global_index
+        assert self == a
+        return TPMatrix(self.mats, self.space, self.scale-a.scale, self.global_index)
+
+    def __isub__(self, a):
+        assert isinstance(a, TPMatrix)
+        assert self.global_index == a.global_index
+        for m0, m1 in zip(self.mats, a.mats):
+            assert m0.get_key() == m1.get_key()
+        self.scale = self.scale - a.scale
+        return self
 
 def check_sanity(A, test, trial):
     """Sanity check for matrix.

@@ -12,14 +12,14 @@ The user interface to shenfun is very similar to `FEniCS`_,
 but applications are limited to multidimensional tensor product grids.
 The code is parallelized with MPI through the `mpi4py-fft`_ package.
 
-Shenfun enables you to develop efficient and accurate PDE solvers
+Shenfun enables fast development of efficient and accurate PDE solvers
 (spectral order and accuracy), in the comfortable high-level Python
-language. The spectral accuracy is ensured from using high-order
+language. The spectral accuracy is ensured by using high-order
 *global* orthogonal basis functions (Fourier, Legendre and Chebyshev),
-as opposed to finite element codes like `FEniCS`_ that are using low-order
+as opposed to finite element codes that are using low-order
 *local* basis functions. Efficiency is ensured through vectorization
 (`Numpy`_), parallelization (`mpi4py`_) and by moving critical routines to
-`Cython`_. Shenfun has been used to run turbulence simulations (Direct
+`Cython`_ or `Numba`_. Shenfun has been used to run turbulence simulations (Direct
 Numerical Simulations) on thousands of processors on high-performance
 supercomputers, see the `spectralDNS`_ repository.
 
@@ -60,5 +60,6 @@ Document build status
 .. _mpi4py: https://bitbucket.org/mpi4py/mpi4py
 .. _Fenics: https://fenicsproject.org
 .. _Numpy: https:/www.numpy.org
+.. _Numba: https://numba.pydata.org
 .. _Cython: https://cython.org
 .. _spectralDNS: https://github.com/spectralDNS/spectralDNS

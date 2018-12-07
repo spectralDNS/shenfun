@@ -94,8 +94,8 @@ UV_hat = TV.forward(UV, UV_hat)
 
 def LinearRHS(self, alpha1, alpha2, **params):
     L = inner(vv, (e1, e2)*div(grad(uu)))
-    L = np.array([-(-L[0])**(alpha1/2),
-                  -(-L[1])**(alpha2/2)])
+    L = np.array([-(-L[0].scale)**(alpha1/2),
+                  -(-L[1].scale)**(alpha2/2)])
     return L
 
 def NonlinearRHS(self, uv, uv_hat, rhs, kappa, **params):

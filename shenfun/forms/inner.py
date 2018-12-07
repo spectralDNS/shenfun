@@ -3,11 +3,13 @@ This module contains the inner function that computes the
 weighted inner product.
 """
 from functools import reduce
+from copy import copy
 import numpy as np
 from shenfun.spectralbase import inner_product
 from shenfun.matrixbase import TPMatrix, SparseMatrix
 from shenfun.la import DiagonalMatrix
 from shenfun.tensorproductspace import MixedTensorProductSpace
+from shenfun.matrixbase import BlockMatrix
 from .arguments import Expr, Function, BasisFunction, Array
 
 __all__ = ('inner',)
@@ -59,11 +61,11 @@ def inner(expr0, expr1, output_array=None, level=0):
         The level of postprocessing for assembled matrices. Applies only
         to bilinear forms
 
-            - 0 Full postprocessing - diagonal matrices to scale arrays
-                and add equal matrices
-            - 1 Diagonal matrices to scale arrays, but don't add equal
-                matrices
-            - 2 No postprocessing, return all assembled matrices
+        - 0 Full postprocessing - diagonal matrices to scale arrays
+          and add equal matrices
+        - 1 Diagonal matrices to scale arrays, but don't add equal
+          matrices
+        - 2 No postprocessing, return all assembled matrices
 
     Returns
     -------
@@ -115,7 +117,7 @@ def inner(expr0, expr1, output_array=None, level=0):
         raise RuntimeError
 
     if test.rank() == 1: # For vector spaces of rank 1 use recursive algorithm
-        ndim = test.function_space().dimensions()
+        ndim = test.function_space().num_components()
 
         if output_array is None and trial.argument == 2:
             output_array = Function(test.function_space())
@@ -156,13 +158,14 @@ def inner(expr0, expr1, output_array=None, level=0):
     test_scale = test.scales()
     trial_scale = trial.scales()
     trial_indices = trial.indices()
+    test_indices = test.indices()
 
     uh = None
     if trial.argument == 2:
         uh = trial.base
 
     if output_array is None and trial.argument == 2:
-        output_array = Function(trial.function_space())
+        output_array = Function(test.function_space())
 
     A = []
     vec = 0
@@ -182,7 +185,7 @@ def inner(expr0, expr1, output_array=None, level=0):
                     if not space[i].domain_factor() == 1:
                         sc *= space[i].domain_factor()**(a+b)
                 sc = space[0].broadcast_to_ndims(np.array([sc]))
-                A.append(TPMatrix(M, space, sc))
+                A.append(TPMatrix(M, space, sc, (test_indices[0, test_j], trial_indices[0, trial_j])))
         vec += 1
 
     # At this point A contains all matrices of the form. The length of A is
@@ -237,52 +240,54 @@ def inner(expr0, expr1, output_array=None, level=0):
         return A
 
     for tpmat in A:
-        tpmat.eliminate_fourier_matrices()
+        tpmat.simplify_fourier_matrices()
 
     if level == 1 and trial.argument == 1:
         return A
 
-    if np.all([f.all_fourier() for f in A]): # No non-diagonal matrix
-        f = reduce(lambda x, y: x+y, [s.scale for s in A])
-
+    if np.all([f.all_identity() for f in A]): # No non-diagonal matrix
         if trial.argument == 1:
-            return DiagonalMatrix(f)
+            if trial.rank() == 0:
+                return reduce(lambda x, y: x+y, [s for s in A])
+            else:
+                return A
 
+        # linear form
         if uh.rank() == 1:
             for i, b in enumerate(A):
                 output_array += b.scale*uh[trial_indices[0, i]]
         else:
-            output_array[:] = f*uh
+            f = reduce(lambda x, y: x+y, [s for s in A])
+            output_array[:] = f.scale*uh
         return output_array
 
     elif np.any([isinstance(f.pmat, SparseMatrix) for f in A]):
         # One non-Fourier space
+        B = [A[0]]
+        for a in A[1:]:  # Add equal TPMatrices
+            found = False
+            for b in B:
+                if a == b:
+                    b += a
+                    found = True
+            if not found:
+                B.append(a)
         if trial.argument == 1:  # bilinear form
-            b = A[0].pmat
-            C = {b.get_key(): b}
-            for bb in A[1:]:
-                b = bb.pmat
-                name = b.get_key()
-                if name in C:
-                    C[name].scale = C[name].scale + b.scale
-                else:
-                    C[name] = b
-
-            if len(C) == 1:
-                return C[b.get_key()]
-            return C
+            if len(B) == 1:
+                if len(B[0].mats) == 1:
+                    p = B[0].pmat
+                    p.scale = p.scale*B[0].scale
+                    return p
+                return B[0]
+            return B
 
         else: # linear form
-            npaxis = A[0].pmat.axis
-            for i, bb in enumerate(A):
-                b = bb.pmat
+            wh = np.empty_like(output_array)
+            for i, b in enumerate(B):
                 if uh.rank() == 1:
-                    sp = uh.function_space()
-                    wh = Function(sp[npaxis])
-                    wh = b.matvec(uh[trial_indices[0, i]], wh, axis=b.axis)
+                    wh = b.matvec(uh[trial_indices[0, i]], wh)
                 else:
-                    wh = Function(trialspace)
-                    wh = b.matvec(uh, wh, axis=b.axis)
+                    wh = b.matvec(uh, wh)
                 output_array += wh
             return output_array
 
@@ -292,40 +297,11 @@ def inner(expr0, expr1, output_array=None, level=0):
             return A
 
         else: # linear form
-            npaxes = list(A[0].pmat.keys())
-
-            pencilA = space.forward.output_pencil
-            subcomms = [c.Get_size() for c in pencilA.subcomm]
-            axis = pencilA.axis
-            assert subcomms[axis] == 1
-            npaxes.remove(axis)
-            second_axis = npaxes[0]
-            pencilB = pencilA.pencil(second_axis)
-            transAB = pencilA.transfer(pencilB, 'd')
-
-            # Output data is aligned in axis, but may be distributed in all other directions
-            if uh.rank() == 1:
-                sp = uh.function_space()
-                wh = Function(sp[axis])
-                wc = Function(sp[axis])
-            else:
-                wh = Function(trialspace)
-                wc = Function(trialspace)
-
-            whB = np.zeros(transAB.subshapeB)
-            wcB = np.zeros(transAB.subshapeB)
-            for i, bb in enumerate(A):
+            wh = np.empty_like(output_array)
+            for i, b in enumerate(A):
                 if uh.rank() == 1:
-                    wc[:] = uh[trial_indices[0, i]]
+                    wh = b.matvec(uh[trial_indices[0, i]], wh)
                 else:
-                    wc[:] = uh
-
-                b = bb.pmat[axis]
-                wh = b.matvec(wc, wh, axis=axis)
-                # align in second non-periodic axis
-                transAB.forward(wh, whB)
-                b = bb.pmat[second_axis]
-                wcB = b.matvec(whB, wcB, axis=second_axis)
-                transAB.backward(wcB, wh)
+                    wh = b.matvec(uh, wh)
                 output_array += wh
             return output_array

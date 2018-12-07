@@ -69,10 +69,12 @@ if family == 'chebyshev':
 else:
     matrices = inner(grad(v), grad(u))    # Both ADDmat and BDDmat
     B = inner(v, alpha*u)
-    matrices['BDDmat'] += B
+    for m in matrices: # Add B matrix to the mass matrix in matrices
+        if m == B:
+            m += B
 
 # Create Helmholtz linear algebra solver
-H = Solver(**matrices)
+H = Solver(*matrices)
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space

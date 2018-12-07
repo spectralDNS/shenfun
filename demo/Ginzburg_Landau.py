@@ -58,7 +58,7 @@ U[:] = ul(*X)
 U_hat = T.forward(U, U_hat)
 
 def LinearRHS(self, **par):
-    L = inner(v, div(grad(u))) + 1
+    L = inner(v, div(grad(u))) + inner(v, u)
     return L
 
 def NonlinearRHS(self, u, u_hat, rhs, **par):
