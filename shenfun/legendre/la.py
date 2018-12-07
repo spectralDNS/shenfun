@@ -157,6 +157,7 @@ class Helmholtz(object):
             B_scale = args[3]
 
         v = A.testfunction[0]
+        self.s = v.sl[v.slice()]
         neumann = self.neumann = v.boundary_condition() == 'Neumann'
         if not neumann:
             self.bc = v.bc
@@ -235,7 +236,7 @@ class Helmholtz(object):
             x[i] = (x[i] - a[i]*x[i+2])/d[i]
 
     def __call__(self, u, b):
-        u[:] = b
+        u[self.s] = b[self.s]
 
         self.TDMA_SymSolve_VC(self.d0, self.d1, self.L, u, self.axis)
 
@@ -533,7 +534,6 @@ class Helmholtz_2dirichlet(object):
             self.transAB.backward(self.u_B, u)
 
         if solver == 1:
-
             assert self.A.testfunction[0].is_scaled()
 
             if len(self.V) == 0:
@@ -546,7 +546,6 @@ class Helmholtz_2dirichlet(object):
             self.B1.scale[:, 0] = self.BB.scale + 1./self.lmbda[ls[0]]
             self.A1.scale = np.ones((1, 1))
             # Create Helmholtz solver along axis=1
-            from IPython import embed; embed()
             Helmy = Helmholtz(self.A1, self.B1)
             # Map the right hand side to eigen space
             self.rhs_A = (self.V.T).dot(b)
@@ -566,7 +565,6 @@ class Helmholtz_2dirichlet(object):
 
             BB[s, s] = self.B.diags().toarray()
             AA[s, s] = self.A.diags().toarray()
-            #from IPython import embed; embed()
             G[:] = BB.dot(u)
             H[:] = u.dot(BB)
             bc = b.copy()
@@ -574,7 +572,6 @@ class Helmholtz_2dirichlet(object):
             self.B.scale = np.broadcast_to(self.B.scale, (1, u.shape[1])).copy()
             self.B.scale *= self.scale['BUB']
             self.A.scale = np.ones((1, 1))
-            #Helmx = Helmholtz(**{'ADDmat': self.A, 'BDDmat': self.B})
             Helmx = Helmholtz(self.A, self.B)
             converged = False
             G_old = G.copy()
