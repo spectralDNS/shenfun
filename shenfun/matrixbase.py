@@ -223,7 +223,7 @@ class SparseMatrix(dict):
         return self
 
     def __sub__(self, d):
-        """Return copy of self.__sub__(y) <==> self-d"""
+        """Return copy of self.__sub__(d) <==> self-d"""
         assert isinstance(d, dict)
         # Check is the same matrix
         if self.__hash__() == d.__hash__():
@@ -263,6 +263,7 @@ class SparseMatrix(dict):
         return self
 
     def __neg__(self):
+        """self.__neg__() <==> self *= -1"""
         self.scale *= -1
         return self
 
@@ -572,26 +573,26 @@ class SpectralMatrix(SparseMatrix):
 
         return f
 
-    def __add__(self, d):
-        """Return copy of self.__add__(y) <==> self+d"""
-        assert isinstance(d, dict)
+    def __add__(self, y):
+        """Return copy of self.__add__(y) <==> self+y"""
+        assert isinstance(y, dict)
         # Check is the same matrix
-        if self.__hash__() == d.__hash__():
+        if self.__hash__() == y.__hash__():
             f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
-                               self.trialfunction, self.scale+d.scale)
+                               self.trialfunction, self.scale+y.scale)
         else:
-            f = SparseMatrix.__add__(self, d)
+            f = SparseMatrix.__add__(self, y)
         return f
 
-    def __sub__(self, d):
-        """Return copy of self.__sub__(y) <==> self-d"""
-        assert isinstance(d, dict)
+    def __sub__(self, y):
+        """Return copy of self.__sub__(y) <==> self-y"""
+        assert isinstance(y, dict)
         # Check is the same matrix
-        if self.__hash__() == d.__hash__():
+        if self.__hash__() == y.__hash__():
             f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
-                               self.trialfunction, self.scale-d.scale)
+                               self.trialfunction, self.scale-y.scale)
         else:
-            f = SparseMatrix.__sub__(self, d)
+            f = SparseMatrix.__sub__(self, y)
         return f
 
 class Identity(SparseMatrix):
@@ -704,7 +705,7 @@ class TPMatrix(object):
             # 2 non-periodic directions (may be non-aligned in second axis, hence transfers)
             npaxes = deepcopy(self.naxes)
             pencilA = self.space.forward.output_pencil
-            subcomms = [c.Get_size() for c in pencilA.subcomm]
+            subcomms = [s.Get_size() for s in pencilA.subcomm]
             axis = pencilA.axis
             assert subcomms[axis] == 1
             npaxes.remove(axis)
@@ -740,6 +741,13 @@ class TPMatrix(object):
             c = self.matvec(a, c)
             return c
 
+    def __rmul__(self, a):
+        """Returns copy of self.__rmul__(a) <==> a*self"""
+        if isinstance(a, Number):
+            return self.__mul__(a)
+        else:
+            raise NotImplementedError
+
     def __imul__(self, a):
         """Returns self.__imul__(a) <==> self*=a"""
         if isinstance(a, Number):
@@ -749,7 +757,20 @@ class TPMatrix(object):
 
         return self
 
+    def __div__(self, a):
+        """Returns copy self.__div__(a) <==> self/a"""
+        if isinstance(a, Number):
+            return TPMatrix(self.mats, self.space, self.scale/a,
+                            self.global_index)
+        elif isinstance(a, np.ndarray):
+            b = np.zeros_like(a)
+            b = self.solve(a, b)
+            return b
+        else:
+            raise NotImplementedError
+
     def __neg__(self):
+        """self.__neg__() <==> self *= -1"""
         self.scale *= -1
         return self
 
@@ -772,30 +793,28 @@ class TPMatrix(object):
         return not self.__eq__(a)
 
     def __add__(self, a):
+        """Return copy of self.__add__(a) <==> self+a"""
         assert isinstance(a, TPMatrix)
-        assert self.global_index == a.global_index
         assert self == a
         return TPMatrix(self.mats, self.space, self.scale+a.scale, self.global_index)
 
     def __iadd__(self, a):
+        """self.__iadd__(a) <==> self += a"""
         assert isinstance(a, TPMatrix)
-        assert self.global_index == a.global_index
-        for m0, m1 in zip(self.mats, a.mats):
-            assert m0.get_key() == m1.get_key()
+        assert self == a
         self.scale = self.scale + a.scale
         return self
 
     def __sub__(self, a):
+        """Return copy of self.__sub__(a) <==> self-a"""
         assert isinstance(a, TPMatrix)
-        assert self.global_index == a.global_index
         assert self == a
         return TPMatrix(self.mats, self.space, self.scale-a.scale, self.global_index)
 
     def __isub__(self, a):
+        """self.__isub__(a) <==> self -= a"""
         assert isinstance(a, TPMatrix)
-        assert self.global_index == a.global_index
-        for m0, m1 in zip(self.mats, a.mats):
-            assert m0.get_key() == m1.get_key()
+        assert self == a
         self.scale = self.scale - a.scale
         return self
 
