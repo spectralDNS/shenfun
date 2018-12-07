@@ -11,43 +11,43 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
     Parameters
     ----------
 
-        N : int
-            Number of quadrature points
-        family : str, optional
-                 Choose one of (``Chebyshev``, ``C``, ``Legendre``, ``L``,
-                 ``Fourier``, ``F``), where ``C``, ``L`` and ``F`` are short-
-                 forms
-        bc : str or two-tuple, optional
-             Choose one of
+    N : int
+        Number of quadrature points
+    family : str, optional
+        Choose one of (``Chebyshev``, ``C``, ``Legendre``, ``L``,
+        ``Fourier``, ``F``), where ``C``, ``L`` and ``F`` are short-
+        forms
+    bc : str or two-tuple, optional
+        Choose one of
 
-             - two-tuple (a, b) - Dirichlet boundary condition with
-               :math:`v(-1)=a` and :math:`v(1)=b`. For solving Poisson equation.
-             - Dirichlet - Homogeneous Dirichlet
-             - Neumann - Homogeneous Neumann
-             - Biharmonic - Homogeneous Dirichlet and Neumann at both ends
-        dtype : str or np.dtype, optional
-                The datatype of physical space (input to forward transforms)
-        quad : str, optional
-               Type of quadrature
+        - two-tuple (a, b) - Dirichlet boundary condition with
+          :math:`v(-1)=a` and :math:`v(1)=b`. For solving Poisson equation.
+        - Dirichlet - Homogeneous Dirichlet
+        - Neumann - Homogeneous Neumann
+        - Biharmonic - Homogeneous Dirichlet and Neumann at both ends
+    dtype : str or np.dtype, optional
+        The datatype of physical space (input to forward transforms)
+    quad : str, optional
+        Type of quadrature
 
-               * For family=Chebyshev:
+        * For family=Chebyshev:
 
-                 - GL - Chebyshev-Gauss-Lobatto
-                 - GC - Chebyshev-Gauss
+          - GL - Chebyshev-Gauss-Lobatto
+          - GC - Chebyshev-Gauss
 
-               * For family=Legendre:
+        * For family=Legendre:
 
-                 - LG - Legendre-Gauss
-                 - GL - Legendre-Gauss-Lobatto
-        domain : two-tuple of floats, optional
-                 The computational domain
-        scaled : bool
-                 Whether to use scaled basis (only Legendre)
-        padding_factor : float, optional
-                         For padding backward transform (for dealiasing, and
-                         only for Fourier)
-        dealias_direct : bool, optional
-                         Use 2/3-rule dealiasing (only Fourier)
+          - LG - Legendre-Gauss
+          - GL - Legendre-Gauss-Lobatto
+    domain : two-tuple of floats, optional
+        The computational domain
+    scaled : bool
+        Whether to use scaled basis (only Legendre)
+    padding_factor : float, optional
+        For padding backward transform (for dealiasing, and
+        only for Fourier)
+    dealias_direct : bool, optional
+        Use 2/3-rule dealiasing (only Fourier)
 
     Examples
     --------
@@ -218,10 +218,10 @@ class Expr(object):
             self._scales = np.ones((self.function_space().num_components(), 1))
 
         if indices is None:
-            self._indices = np.arange(self.function_space().num_components())[:, np.newaxis]
+            self._indices = basis.offset()+np.arange(self.function_space().num_components())[:, np.newaxis]
             if basis.index() is not None:
                 if isinstance(basis, BasisFunction) and self._indices.shape == (1, 1):
-                    self._indices[0, 0] = basis.index()
+                    self._indices[0, 0] = basis.offset()+basis.index()
 
         assert np.prod(self._scales.shape) == self.num_terms()*self.num_components()
 
@@ -278,6 +278,12 @@ class Expr(object):
         """Return ndim of Expr"""
         return self._terms.shape[2]
 
+    def index(self):
+        return self._basis.index()
+
+    def flat_index(self):
+        return self._basis.flat_index()
+
     def __getitem__(self, i):
         #assert self.num_components() == self.dim()
         basis = self._basis
@@ -295,8 +301,8 @@ class Expr(object):
         elif self.expr_rank() == 1:
             sc = self.scales().copy()
             if isinstance(a, tuple):
-                assert len(a) == self.dimensions()
-                for i in range(self.dimensions()):
+                assert len(a) == self.num_components()
+                for i in range(self.num_components()):
                     assert isinstance(a[i], Number)
                     sc[i] = sc[i]*a[i]
 
@@ -400,9 +406,11 @@ class BasisFunction(object):
         Component of basis with rank > 0
     """
 
-    def __init__(self, space, index=0):
+    def __init__(self, space, index=None, base=None, offset=0):
         self._space = space
         self._index = index
+        self._base = base
+        self._offset = offset
 
     def rank(self):
         """Return rank of basis"""
@@ -415,6 +423,11 @@ class BasisFunction(object):
     def function_space(self):
         """Return function space of BasisFunction"""
         return self._space
+
+    @property
+    def base(self):
+        """Return base space"""
+        return self._base if self._base is not None else self._space
 
     @property
     def argument(self):
@@ -430,12 +443,27 @@ class BasisFunction(object):
         return self.function_space().dimensions()
 
     def index(self):
-        """Return index into vector of rank 1"""
-        return None
+        """Return index into vector space of rank 1"""
+        return self._index
+
+    def offset(self):
+        return self._offset
+
+    def flat_index(self):
+        """Return flattened index for scalar space"""
+        assert self.rank() == 0
+        return self._index + self._offset
 
     def __getitem__(self, i):
         assert self.rank() > 0
-        t0 = BasisFunction(self._space[i], i)
+        base = self.base
+        space = self._space[i]
+        corr = self._index if isinstance(self._index, int) else 0
+        offset = self._offset + corr
+        if self._index is None:
+            for k in range(i):
+                offset += base[k].num_components()-1
+        t0 = BasisFunction(space, i, base, offset)
         return t0
 
     def __mul__(self, a):
@@ -475,12 +503,19 @@ class TestFunction(BasisFunction):
         Component of basis with rank > 0
     """
 
-    def __init__(self, space, index=0):
-        BasisFunction.__init__(self, space, index)
+    def __init__(self, space, index=None, base=None, offset=0):
+        BasisFunction.__init__(self, space, index, base, offset)
 
     def __getitem__(self, i):
         assert self.rank() > 0
-        t0 = TestFunction(self._space[i], index=i)
+        base = self._space if self._base is None else self._base
+        space = self._space[i]
+        corr = self._index if isinstance(self._index, int) else 0
+        offset = self._offset + corr
+        if self._index is None:
+            for k in range(i):
+                offset += base[k].num_components()-1
+        t0 = TestFunction(space, i, base, offset)
         return t0
 
     @property
@@ -496,12 +531,19 @@ class TrialFunction(BasisFunction):
     index: int, optional
         Component of basis with rank > 0
     """
-    def __init__(self, space, index=0):
-        BasisFunction.__init__(self, space, index)
+    def __init__(self, space, index=None, base=None, offset=0):
+        BasisFunction.__init__(self, space, index, base, offset)
 
     def __getitem__(self, i):
         assert self.rank() > 0
-        t0 = TrialFunction(self._space[i], index=i)
+        base = self.base
+        space = self._space[i]
+        corr = self._index if isinstance(self._index, int) else 0
+        offset = self._offset + corr
+        if self._index is None:
+            for k in range(i):
+                offset += base[k].num_components()-1
+        t0 = TrialFunction(space, i, base, offset)
         return t0
 
     @property
@@ -609,6 +651,9 @@ class Function(np.ndarray, BasisFunction):
         data_base = self.base.ctypes.data
         itemsize = self.itemsize
         return (data_self - data_base) // (itemsize*np.prod(self.shape))
+
+    def offset(self):
+        return 0
 
     @property
     def argument(self):

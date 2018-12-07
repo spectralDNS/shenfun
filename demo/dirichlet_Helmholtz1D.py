@@ -46,7 +46,7 @@ base = importlib.import_module('.'.join(('shenfun', family)))
 Solver = base.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
-alfa = 1.
+alfa = 2.
 x = symbols("x")
 ue = sin(4*np.pi*x)*(1-x**2)
 fe = alfa*ue - ue.diff(x, 2)
@@ -78,7 +78,7 @@ else:
     A = inner(grad(v), grad(u))
     B = inner(v, alfa*u)
 
-H = Solver(A, B, A.scale, B.scale)
+H = Solver(A, B)
 u_hat = Function(SD)           # Solution spectral space
 u_hat = H(u_hat, f_hat)
 uj = SD.backward(u_hat)

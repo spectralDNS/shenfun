@@ -6,6 +6,7 @@ from shenfun.optimization import optimizer
 from shenfun.optimization.cython import la
 from shenfun.la import TDMA as la_TDMA
 from shenfun.utilities import inheritdocstrings
+from shenfun.matrixbase import TPMatrix
 
 @inheritdocstrings
 class TDMA(la_TDMA):
@@ -30,7 +31,8 @@ class TDMA(la_TDMA):
 
         bc.apply_after(u, False)
 
-        u /= self.mat.scale
+        if not self.mat.scale in (1, 1.0):
+            u /= self.mat.scale
         return u
 
 class Helmholtz(object):
@@ -44,44 +46,38 @@ class Helmholtz(object):
     :math:`\alpha` and :math:`\beta` are scalars, or arrays of scalars for
     a multidimensional problem.
 
-    The user must provide mass and stiffness matrices and scale arrays
+    The user must provide mass and stiffness matrices with scale arrays
     :math:`(\alpha/\beta)` to each matrix. The matrices and scales can be
-    provided as either kwargs or args
-
-    As 4 arguments
+    provided as instances of :class:`.TPMatrix`, or :class:`.SpectralMatrix`.
 
     Parameters
     ----------
-        A : SpectralMatrix
-            Stiffness matrix (Dirichlet or Neumann)
-        B : SpectralMatrix
-            Mass matrix (Dirichlet or Neumann)
-        alfa : Numpy array
-        beta : Numpy array
+    A : :class:`.SpectralMatrix` or :class:`.TPMatrix`
+        mass or stiffness matrix
+    B : :class:`.SpectralMatrix` or :class:`.TPMatrix`
+        mass or stiffness matrix
 
-    or as a dict with keys
+    scale_A : array, optional
+        Scale array to stiffness matrix
+    scale_B : array, optional
+        Scale array to mass matrix
 
-    Parameters
-    ----------
-        ADDmat : A
-            Stiffness matrix (Dirichlet basis)
-        BDDmat : B
-            Mass matrix (Dirichlet basis)
-        ANNmat : A
-            Stiffness matrix (Neumann basis)
-        BNNmat : B
-            Mass matrix (Neumann basis)
+    The two matrices must be one stiffness and one mass matrix. Which is which
+    will be found by inspection if only two arguments are provided. The scales
+    :math:`\alpha` and :math:`\beta` must then be available as A.scale and
+    B.scale.
+    If four arguments are provided they must be in the order
 
-    where :math:`\alpha` and :math:`\beta` are avalable as A.scale and B.scale.
+        - stiffness matrix, mass matrix, scale stiffness, scale mass
 
     Attributes
     ----------
-        axis : int
-            The axis over which to solve for
-        neumann : bool
-            Whether or not bases are Neumann
-        bc : BoundaryValues
-            For Dirichlet problem with inhomogeneous boundary values
+    axis : int
+        The axis over which to solve for
+    neumann : bool
+        Whether or not bases are Neumann
+    bc : BoundaryValues
+        For Dirichlet problem with inhomogeneous boundary values
 
     Variables are extracted from the matrices
 
@@ -137,36 +133,30 @@ class Helmholtz(object):
     stored with shape (1, 1, 1), and multiplying with :math:`\hat{u}` is
     performed as if it was a scalar (as it here happens to be).
 
-    This is where the scale arrays in the signature to the Helmholt solver comes
-    from. :math:`\alpha` is here :math:`1`, whereas :math:`\beta` is
-    :math:`(k^2+l^2)`. Note that :math:`k+l` is an array of shape (N, M, 1).
+    This is where the scale arrays come from. :math:`\alpha` is here
+    :math:`1`, whereas :math:`\beta` is :math:`(k^2+l^2)`. Note that
+    :math:`k+l` is an array of shape (N, M, 1).
 
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args):
 
-        if 'ADDmat' in kwargs or 'ANNmat' in kwargs:
-            if 'ADDmat' in kwargs:
-                assert 'BDDmat' in kwargs
-                A = self.A = kwargs['ADDmat']
-                B = self.B = kwargs['BDDmat']
+        assert len(args) in (2, 4)
+        A, B = args[0], args[1]
+        M = {d.get_key(): d for d in (A, B)}
+        self.A = A = M.get('ADDmat', M.get('ANNmat'))
+        self.B = B = M.get('BDDmat', M.get('BNNmat'))
 
-            if 'ANNmat' in kwargs:
-                assert 'BNNmat' in kwargs
-                A = self.A = kwargs['ANNmat']
-                B = self.B = kwargs['BNNmat']
-            self.alfa = A.scale
-            self.beta = B.scale
-
+        if len(args) == 2:
+            self.alfa = self.A.scale
+            self.beta = self.B.scale
+            if isinstance(self.A, TPMatrix):
+                self.A = self.A.pmat
+                self.B = self.B.pmat
         elif len(args) == 4:
-            # Only for 1D problems
-            A = self.A = args[0]
-            B = self.B = args[1]
             self.alfa = args[2]
             self.beta = args[3]
 
-        else:
-            raise RuntimeError('Wrong input to Helmholtz solver')
-
+        A, B = self.A, self.B
         B[2] = np.broadcast_to(B[2], A[2].shape)
         B[-2] = np.broadcast_to(B[-2], A[2].shape)
         v = A.testfunction[0]
@@ -245,7 +235,7 @@ class Helmholtz(object):
     @staticmethod
     @optimizer
     def Helmholtz_matvec(v, b, alfa, beta, dd, ud, bd, axis=0):
-        raise NotImplementedError
+        raise NotImplementedError("Use Cython or Numba")
 
 class Biharmonic(object):
     r"""Multidimensional Biharmonic solver for
@@ -258,41 +248,30 @@ class Biharmonic(object):
     :math:`a_0, \alpha` and :math:`\beta` are scalars, or arrays of scalars for
     a multidimensional problem.
 
-    The user must provide mass, stiffness and biharmonic matrices and scale
-    arrays :math:`(a_0/\alpha/\beta)`. The matrices and scales can be provided
-    as either kwargs or args
-
-    As 6 arguments
+    The user must provide mass, stiffness and biharmonic matrices with
+    associated scale arrays :math:`(a_0/\alpha/\beta)`. The matrices and scales
+    can be provided in any order
 
     Parameters
     ----------
-        S : SpectralMatrix
-            Biharmonic matrix
-        A : SpectralMatrix
-            Stiffness matrix
-        B : SpectralMatrix
-            Mass matrix
-        a0 : array
-        alfa : array
-        beta : array
+    S : :class:`.TPMatrix` or :class:`.SpectralMatrix`
+    A : :class:`.TPMatrix` or :class:`.SpectralMatrix`
+    B : :class:`.TPMatrix` or :class:`.SpectralMatrix`
 
-    or as dict with key/values
+    scale_S : array, optional
+    scale_A : array, optional
+    scale_B : array, optional
 
-    Parameters
-    ----------
-        SBBmat : S
-            Biharmonic matrix
-        ABBmat : A
-            Stiffness matrix
-        BBBmat : B
-            Mass matrix
-
-    where a0, alfa and beta must be avalable as S.scale, A.scale, B.scale.
+    If only three arguments are passed, then we decide which matrix is which
+    through inspection. The three scale arrays must then be available as
+    S.scale, A.scale, B.scale.
+    If siz arguments are provided they must be in order S, A, B, scale S,
+    scale A, scale B.
 
     Attributes
     ----------
-        axis : int
-            The axis over which to solve for
+    axis : int
+        The axis over which to solve for
 
     Variables are extracted from the matrices
 
@@ -351,20 +330,29 @@ class Biharmonic(object):
     :math:`\beta` are :math:`-2(k^2+l^2)` and :math:`(k^2+l^2)^2`, respectively.
     Note that :math:`k+l` is an array of shape (N, M, 1).
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args):
 
-        if 'SBBmat' in kwargs:
-            assert 'ABBmat' in kwargs and 'BBBmat' in kwargs
-            S, A, B = kwargs['SBBmat'], kwargs['ABBmat'], kwargs['BBBmat']
-            a0, alfa, beta = np.asscalar(S.scale), A.scale, B.scale
+        assert len(args) in (3, 6)
+        S, A, B = args[0], args[1], args[2]
+        M = {d.get_key(): d for d in (S, A, B)}
+        self.S = M['SBBmat']
+        self.A = M['ABBmat']
+        self.B = M['BBBmat']
+
+        if len(args) == 3:
+            self.a0 = a0 = np.asscalar(self.S.scale)
+            self.alfa = alfa = self.A.scale
+            self.beta = beta = self.B.scale
+            if isinstance(self.S, TPMatrix):
+                self.S = self.S.pmat
+                self.A = self.A.pmat
+                self.B = self.B.pmat
         elif len(args) == 6:
-            S, A, B = args[0], args[1], args[2]
-            a0, alfa, beta = np.asscalar(args[3]), args[4], args[5]
-        else:
-            raise RuntimeError('Wrong input to Biharmonic solver')
-        self.S, self.A, self.B = S, A, B
-        self.alfa, self.beta = alfa, beta
-        self.a0 = a0
+            self.a0 = a0 = args[3]
+            self.alfa = alfa = args[4]
+            self.beta = beta = args[5]
+
+        S, A, B = self.S, self.A, self.B
         self.axis = S.axis
         T = S.tensorproductspace
         if T is None:

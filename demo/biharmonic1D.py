@@ -65,7 +65,7 @@ A = inner(v, b*Dx(u, 0, 2))
 B = inner(v, c*u)
 
 # Create linear algebra solver
-H = Solver(S, A, B, S.scale, A.scale, B.scale)
+H = Solver(S, A, B)
 
 # Solve and transform to real space
 u_hat = Function(SD)          # Solution spectral space

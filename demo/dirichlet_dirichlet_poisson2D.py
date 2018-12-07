@@ -35,7 +35,7 @@ ul = lambdify((x, y), ue, 'numpy')
 fl = lambdify((x, y), fe, 'numpy')
 
 # Size of discretization
-N = (32, 34)
+N = (32, 32)
 
 SD0 = Basis(N[0], 'L', bc=(0, 0), scaled=True)
 SD1 = Basis(N[1], 'L', bc=(0, 0), scaled=True)
@@ -55,11 +55,11 @@ matrices = inner(grad(v), grad(u))
 matrices += inner(v, a*u)
 
 # Create Helmholtz linear algebra solver
-H = Solver(T, matrices)
+H = Solver(matrices)
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space
-u_hat = H(u_hat, f_hat, 0)    # Solve
+u_hat = H(u_hat, f_hat, 1)    # Solve
 
 uq = Array(T)
 uq = T.backward(u_hat, uq)

@@ -32,24 +32,32 @@ K1 = Basis(N[1], 'F', dtype='d', domain=(-30*np.pi, 30*np.pi))
 T = TensorProductSpace(comm, (K0, K1), **{'planner_effort': 'FFTW_MEASURE'})
 TV = VectorTensorProductSpace(T)
 
+Kp0 = Basis(N[0], 'F', dtype='D', padding_factor=1.5, domain=(-30*np.pi, 30*np.pi))
+Kp1 = Basis(N[1], 'F', dtype='d', padding_factor=1.5, domain=(-30*np.pi, 30*np.pi))
+Tp = TensorProductSpace(comm, (Kp0, Kp1), **{'planner_effort': 'FFTW_MEASURE'})
+TVp = VectorTensorProductSpace(Tp)
+
 u = TrialFunction(T)
 v = TestFunction(T)
+
+Tp = T
+TVp = TV
 
 # Create solution and work arrays
 U = Array(T)
 U_hat = Function(T)
-gradu = Array(TV)
+gradu = Array(TVp)
 K = np.array(T.local_wavenumbers(True, True, True))
 
 def LinearRHS(self, **params):
     # Assemble diagonal bilinear forms
-    L = -(inner(div(grad(u))+div(grad(div(grad(u)))), v))
+    L = inner(-div(grad(u))-div(grad(div(grad(u)))), v)
     return L
 
 def NonlinearRHS(self, U, U_hat, dU, gradu, **params):
     # Assemble nonlinear term
-    gradu = TV.backward(1j*K*U_hat, gradu)
-    dU = T.forward(0.5*(gradu[0]*gradu[0]+gradu[1]*gradu[1]), dU)
+    gradu = TVp.backward(1j*K*U_hat, gradu)
+    dU = Tp.forward(0.5*(gradu[0]*gradu[0]+gradu[1]*gradu[1]), dU)
     return -dU
 
 #initialize
@@ -77,7 +85,7 @@ if __name__ == '__main__':
            'gradu': gradu,
            'count': 0}
     dt = 0.01
-    end_time = 100
+    end_time = 50
     #integrator = ETDRK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
     integrator = RK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
     integrator.setup(dt)

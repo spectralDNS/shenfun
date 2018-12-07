@@ -21,7 +21,7 @@ where :math:`u` is the solution, :math:`L` is a linear operator and
 """
 import types
 import numpy as np
-from shenfun import Function, SparseMatrix
+from shenfun import Function, TPMatrix, SparseMatrix
 from shenfun import inheritdocstrings
 
 __all__ = ('RK4', 'ETDRK4', 'ETD')
@@ -113,6 +113,9 @@ class ETD(IntegratorBase):
         """Set up ETD ODE solver"""
         self.params['dt'] = dt
         L = self.LinearRHS(**self.params)
+        if isinstance(L, TPMatrix):
+            assert L.all_identity()
+            L = L.scale
         L = np.atleast_1d(L)
         hL = L*dt
         self.ehL = np.exp(hL)
@@ -125,7 +128,7 @@ class ETD(IntegratorBase):
         psi /= M
 
     def solve(self, u, u_hat, dt, trange):
-        """Integrate forward in end_time
+        """Integrate forward in time
 
         Parameters
         ----------
@@ -190,9 +193,9 @@ class ETDRK4(IntegratorBase):
         """Set up ETDRK4 ODE solver"""
         self.params['dt'] = dt
         L = self.LinearRHS(**self.params)
-        if isinstance(L, SparseMatrix):
-            assert 0 in L.keys() and len(L.keys()) == 1
-            L = L[0]*L.scale
+        if isinstance(L, TPMatrix):
+            assert L.all_identity()
+            L = L.scale
         L = np.atleast_1d(L)
         hL = L*dt
         ehL = self.ehL = np.exp(hL)

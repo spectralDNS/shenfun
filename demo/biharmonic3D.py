@@ -70,7 +70,7 @@ else: # Use form with integration by parts. Note that Biharmonic operator used f
     matrices = inner(div(grad(v)), div(grad(u)))
 
 # Create linear algebra solver
-H = BiharmonicSolver(**matrices)
+H = BiharmonicSolver(*matrices)
 
 # Solve and transform to real space
 u_hat = Function(T)             # Solution spectral space

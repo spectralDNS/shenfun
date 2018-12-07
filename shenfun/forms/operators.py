@@ -13,8 +13,8 @@ def div(test):
 
     Parameters
     ----------
-        test:  Expr or BasisFunction
-               Must be rank > 0 (cannot take divergence of scalar)
+    test:  Expr or BasisFunction
+           Must be rank > 0 (cannot take divergence of scalar)
 
     """
     assert isinstance(test, (Expr, BasisFunction))
@@ -48,7 +48,7 @@ def grad(test):
 
     Parameters
     ----------
-        test: Expr or BasisFunction
+    test: Expr or BasisFunction
     """
     assert isinstance(test, (Expr, BasisFunction))
 
@@ -75,11 +75,11 @@ def Dx(test, x, k=1):
 
     Parameters
     ----------
-        test: Expr or BasisFunction
-        x:  int
-            axis to take derivative over
-        k:  int
-            Number of derivatives
+    test: Expr or BasisFunction
+    x:  int
+        axis to take derivative over
+    k:  int
+        Number of derivatives
     """
     assert isinstance(test, (Expr, BasisFunction))
 
@@ -97,7 +97,7 @@ def curl(test):
 
     Parameters
     ----------
-        test: Expr or BasisFunction
+    test: Expr or BasisFunction
 
     """
     assert isinstance(test, (Expr, BasisFunction))
@@ -107,6 +107,7 @@ def curl(test):
 
     assert test.rank() > 0
     assert test.num_components() == test.dimensions()  # vector
+    assert test.dimensions() == 3
 
     w0 = Dx(test[2], 1, 1) - Dx(test[1], 2, 1)
     w1 = Dx(test[0], 2, 1) - Dx(test[2], 0, 1)

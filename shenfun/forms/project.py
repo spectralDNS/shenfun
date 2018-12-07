@@ -1,3 +1,4 @@
+from copy import copy
 import numpy as np
 import sympy as sp
 from shenfun.tensorproductspace import TensorProductSpace, MixedTensorProductSpace
@@ -9,7 +10,7 @@ __all__ = ('project',)
 
 def project(uh, T, output_array=None):
     r"""
-    Project ``uh`` to tensor poduct space T
+    Project ``uh`` to tensor product space ``T``
 
     Find :math:`u \in T`, such that
 
@@ -87,7 +88,7 @@ def project(uh, T, output_array=None):
     B = inner(v, u)
     if isinstance(B, list) and not isinstance(T, MixedTensorProductSpace):
         # Means we have two non-periodic directions
-        npaxes = list(B[0].pmat.keys())
+        npaxes = copy(B[0].naxes)
         assert len(npaxes) == 2
 
         pencilA = T.forward.output_pencil
@@ -108,10 +109,8 @@ def project(uh, T, output_array=None):
     else:
         # Just zero or one non-periodic direction
         if v.rank() == 0:
-            axis = B.axis if hasattr(B, 'axis') else 0 # if periodic the solve is just an elementwise division not using axis
-            output_array = B.solve(output_array, output_array, axis=axis)
+            output_array = B.solve(output_array, output_array)
         else:
             for i in range(v.function_space().dimensions()):
-                axis = B[i].axis if hasattr(B[i], 'axis') else 0
-                output_array[i] = B[i].solve(output_array[i], output_array[i], axis=axis)
+                output_array[i] = B[i].solve(output_array[i], output_array[i])
     return output_array

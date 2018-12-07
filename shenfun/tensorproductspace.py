@@ -1,5 +1,6 @@
 """
-Module for implementation of the TensorProductSpace class and related methods.
+Module for implementation of the :class:`.TensorProductSpace` class and
+related methods.
 """
 from numbers import Number
 import warnings
@@ -25,22 +26,22 @@ class TensorProductSpace(PFFT):
 
     Parameters
     ----------
-        comm : MPI communicator
-        bases : list
-            List of 1D bases
-        axes : tuple of ints, optional
-            A tuple containing the order of which to perform transforms.
-            Last item is transformed first. Defaults to range(len(bases))
-        dtype : data-type, optional
-            Type of input data in real physical space. If not provided it
-            will be inferred from the bases.
-        slab : bool, optional
-            Use 1D slab decomposition.
-        collapse_fourier : bool, optional
-            Collapse axes for Fourier bases if possible
-        kw : dict, optional
-            Dictionary that can be used to plan transforms. Input to method
-            `plan` for the bases.
+    comm : MPI communicator
+    bases : list
+        List of 1D bases
+    axes : tuple of ints, optional
+        A tuple containing the order of which to perform transforms.
+        Last item is transformed first. Defaults to range(len(bases))
+    dtype : data-type, optional
+        Type of input data in real physical space. If not provided it
+        will be inferred from the bases.
+    slab : bool, optional
+        Use 1D slab decomposition.
+    collapse_fourier : bool, optional
+        Collapse axes for Fourier bases if possible
+    kw : dict, optional
+        Dictionary that can be used to plan transforms. Input to method
+        `plan` for the bases.
 
     """
     def __init__(self, comm, bases, axes=None, dtype=None, slab=False,
@@ -165,14 +166,14 @@ class TensorProductSpace(PFFT):
 
         Parameters
         ----------
-            a_hat : array
-                Input array of shape and type as output array from
-                self.forward, or instance of :class:`.Function`
-            b_hat : array
-                Input array of shape and type as output array from
-                self.forward, or instance of :class:`.Function`
-            ab_hat : array
-                Return array of same type and shape as a_hat and b_hat
+        a_hat : array
+            Input array of shape and type as output array from
+            self.forward, or instance of :class:`.Function`
+        b_hat : array
+            Input array of shape and type as output array from
+            self.forward, or instance of :class:`.Function`
+        ab_hat : array
+            Return array of same type and shape as a_hat and b_hat
 
         Note
         ----
@@ -196,17 +197,17 @@ class TensorProductSpace(PFFT):
 
         Parameters
         ----------
-            points : float or array of floats
-                Array must be of shape (D, N), for  N points in D dimensions
-            coefficients : array
-                Expansion coefficients, or instance of :class:`.Function`
-            output_array : array, optional
-                Return array, function values at points
-            method : int, optional
-                Chooses implementation. The default 0 is a low-memory cython
-                version. Using method = 1 leads to a faster cython
-                implementation that, on the downside, uses more memory.
-                The final, method = 2, is a python implementation.
+        points : float or array of floats
+            Array must be of shape (D, N), for  N points in D dimensions
+        coefficients : array
+            Expansion coefficients, or instance of :class:`.Function`
+        output_array : array, optional
+            Return array, function values at points
+        method : int, optional
+            Chooses implementation. The default 0 is a low-memory cython
+            version. Using method = 1 leads to a faster cython
+            implementation that, on the downside, uses more memory.
+            The final, method = 2, is a python implementation.
         """
         if output_array is None:
             output_array = np.zeros(points.shape[1], dtype=self.forward.input_array.dtype)
@@ -224,11 +225,11 @@ class TensorProductSpace(PFFT):
 
         Parameters
         ----------
-            points : float or array of floats
-            coefficients : array
-                Expansion coefficients
-            output_array : array
-                Return array, function values at points
+        points : float or array of floats
+        coefficients : array
+            Expansion coefficients
+        output_array : array
+            Return array, function values at points
         """
         P = []
         last_conj_index = -1
@@ -301,11 +302,11 @@ class TensorProductSpace(PFFT):
 
         Parameters
         ----------
-            points : float or array of floats
-            coefficients : array
-                Expansion coefficients
-            output_array : array
-                Return array, function values at points
+        points : float or array of floats
+        coefficients : array
+            Expansion coefficients
+        output_array : array
+            Return array, function values at points
         """
         r2c = -1
         last_conj_index = -1
@@ -340,11 +341,11 @@ class TensorProductSpace(PFFT):
 
         Parameters
         ----------
-            points : float or array of floats
-            coefficients : array
-                Expansion coefficients
-            output_array : array
-                Return array, function values at points
+        points : float or array of floats
+        coefficients : array
+            Expansion coefficients
+        output_array : array
+            Return array, function values at points
         """
         P = []
         r2c = -1
@@ -378,11 +379,11 @@ class TensorProductSpace(PFFT):
 
         Parameters
         ----------
-            scaled : bool, optional
-                Scale wavenumbers with size of box
-            eliminate_highest_freq : bool, optional
-                Set Nyquist frequency to zero for evenly shaped axes of Fourier
-                bases.
+        scaled : bool, optional
+            Scale wavenumbers with size of box
+        eliminate_highest_freq : bool, optional
+            Set Nyquist frequency to zero for evenly shaped axes of Fourier
+            bases.
 
         """
         K = []
@@ -397,14 +398,14 @@ class TensorProductSpace(PFFT):
 
         Parameters
         ----------
-            broadcast : bool, optional
-                Broadcast returned wavenumber arrays to actual
-                dimensions of TensorProductSpace
-            scaled : bool, optional
-                Scale wavenumbers with size of box
-            eliminate_highest_freq : bool, optional
-                Set Nyquist frequency to zero for evenly shaped axes of Fourier
-                bases
+        broadcast : bool, optional
+            Broadcast returned wavenumber arrays to actual
+            dimensions of TensorProductSpace
+        scaled : bool, optional
+            Scale wavenumbers with size of box
+        eliminate_highest_freq : bool, optional
+            Set Nyquist frequency to zero for evenly shaped axes of Fourier
+            bases
 
         """
         k = self.wavenumbers(scaled=scaled, eliminate_highest_freq=eliminate_highest_freq)
@@ -432,9 +433,9 @@ class TensorProductSpace(PFFT):
 
         Parameters
         ----------
-            broadcast : bool, optional
-                Broadcast each 1D mesh to real shape of
-                :class:`.TensorProductSpace`
+        broadcast : bool, optional
+            Broadcast each 1D mesh to real shape of
+            :class:`.TensorProductSpace`
         """
         m = self.mesh()
         lm = []
@@ -451,10 +452,10 @@ class TensorProductSpace(PFFT):
 
         Parameters
         ----------
-            forward_output : bool, optional
-                If True then return shape of an array that is the result of a
-                forward transform. If False then return shape of physical
-                space, i.e., the input to a forward transform.
+        forward_output : bool, optional
+            If True then return shape of an array that is the result of a
+            forward transform. If False then return shape of physical
+            space, i.e., the input to a forward transform.
 
         Note
         ----
@@ -471,10 +472,10 @@ class TensorProductSpace(PFFT):
 
         Parameters
         ----------
-            forward_output : bool, optional
-                If True then return shape of an array that is the result of a
-                forward transform. If False then return shape of physical
-                space, i.e., the input to a forward transform.
+        forward_output : bool, optional
+            If True then return shape of an array that is the result of a
+            forward transform. If False then return shape of physical
+            space, i.e., the input to a forward transform.
 
         Note
         ----
@@ -520,7 +521,7 @@ class TensorProductSpace(PFFT):
 
         Parameters
         ----------
-            i : int
+        i : int
         """
         return self.bases[i]
 
@@ -530,8 +531,8 @@ class MixedTensorProductSpace(object):
 
     Parameters
     ----------
-        spaces : list
-            List of TensorProductSpaces
+    spaces : list
+        List of TensorProductSpaces
     """
 
     def __init__(self, spaces):
@@ -545,17 +546,17 @@ class MixedTensorProductSpace(object):
 
         Parameters
         ----------
-            points : float or array of floats
-            coefficients : array
-                Expansion coefficients
-            output_array : array, optional
-                Return array, function values at points
-            method : int, optional
-                Chooses implementation. The default 0 is a low-memory cython
-                version. Using method = 1 leads to a faster cython
-                implementation that, on the downside, uses more memory.
-                The final, method = 2, is a python implementation used only
-                for verification.
+        points : float or array of floats
+        coefficients : array
+            Expansion coefficients
+        output_array : array, optional
+            Return array, function values at points
+        method : int, optional
+            Chooses implementation. The default 0 is a low-memory cython
+            version. Using method = 1 leads to a faster cython
+            implementation that, on the downside, uses more memory.
+            The final, method = 2, is a python implementation used only
+            for verification.
         """
 
         if output_array is None:
@@ -569,14 +570,14 @@ class MixedTensorProductSpace(object):
 
         Parameters
         ----------
-            a_hat : array
-                Input array of shape and type as output array from
-                self.forward, or instance of :class:`.Function`
-            b_hat : array
-                Input array of shape and type as output array from
-                self.forward, or instance of :class:`.Function`
-            ab_hat : array
-                Return array of same type and shape as a_hat and b_hat
+        a_hat : array
+            Input array of shape and type as output array from
+            self.forward, or instance of :class:`.Function`
+        b_hat : array
+            Input array of shape and type as output array from
+            self.forward, or instance of :class:`.Function`
+        ab_hat : array
+            Return array of same type and shape as a_hat and b_hat
 
         Note
         ----
@@ -608,10 +609,10 @@ class MixedTensorProductSpace(object):
 
         Parameters
         ----------
-            forward_output : bool, optional
-                If True then return shape of an array that is the result of a
-                forward transform. If False then return shape of physical
-                space, i.e., the input to a forward transform.
+        forward_output : bool, optional
+            If True then return shape of an array that is the result of a
+            forward transform. If False then return shape of physical
+            space, i.e., the input to a forward transform.
         """
         s = self.spaces[0].shape(forward_output)
         return (self.num_components(),) + s
@@ -621,10 +622,10 @@ class MixedTensorProductSpace(object):
 
         Parameters
         ----------
-            forward_output : bool, optional
-                If True then return shape of an array that is the result of a
-                forward transform. If False then return shape of physical
-                space, i.e., the input to a forward transform.
+        forward_output : bool, optional
+            If True then return shape of an array that is the result of a
+            forward transform. If False then return shape of physical
+            space, i.e., the input to a forward transform.
 
         Note
         ----
@@ -664,7 +665,16 @@ class MixedTensorProductSpace(object):
 
     def num_components(self):
         """Return number of spaces in mixed space"""
-        return len(self.spaces)
+        f = []
+        self.flatten(self, f)
+        return len(f)
+
+    def flatten(self, l, s=[]):
+        if hasattr(l, 'spaces'):
+            for i in l.spaces:
+                self.flatten(i, s)
+        else:
+            s.append(l)
 
     def __getitem__(self, i):
         return self.spaces[i]
@@ -678,8 +688,8 @@ class MixedTensorProductSpace(object):
 
 
 class VectorTensorProductSpace(MixedTensorProductSpace):
-    """A special MixedTensorProductSpace where the number of spaces must equal
-    the geometrical dimension of the problem.
+    """A special :class:`.MixedTensorProductSpace` where the number of spaces
+    must equal the geometrical dimension of the problem.
 
     For example, a TensorProductSpace created by a Cartesian product of 2 1D
     bases, will have vectors of length 2. A TensorProductSpace created from 3
@@ -687,8 +697,9 @@ class VectorTensorProductSpace(MixedTensorProductSpace):
 
     Parameters
     ----------
-        space : TensorProductSpace
-            Space to create vector from
+    space : :class:`.TensorProductSpace`
+        Space to create vector from
+
     """
 
     def __init__(self, space):
@@ -715,7 +726,12 @@ class VectorTransform(object):
     __slots__ = ('_transforms',)
 
     def __init__(self, transforms):
-        self._transforms = transforms
+        self._transforms = []
+        for transform in transforms:
+            if isinstance(transform, VectorTransform):
+                self._transforms += transform._transforms
+            else:
+                self._transforms.append(transform)
 
     def __getattr__(self, name):
         obj = object.__getattribute__(self, '_transforms')
@@ -751,8 +767,8 @@ class Convolve(object):
 
     Parameters
     ----------
-        padding_space : TensorProductSpace
-            Space with regular padding backward and truncation forward.
+    padding_space : :class:`.TensorProductSpace`
+        Space with regular padding backward and truncation forward.
     """
 
     def __init__(self, padding_space):
@@ -773,9 +789,9 @@ class Convolve(object):
 
         Parameters
         ----------
-            a_hat : :class:`.Function`
-            b_hat : :class:`.Function`
-            ab_hat : :class:`.Function`
+        a_hat : :class:`.Function`
+        b_hat : :class:`.Function`
+        ab_hat : :class:`.Function`
         """
         Tp = self.padding_space
         T = self.newspace
@@ -796,9 +812,9 @@ class BoundaryValues(object):
 
     Parameters
     ----------
-        T : TensorProductSpace
-        bc : tuple of numbers
-            Tuple with physical boundary values at edges of 1D domain
+    T : TensorProductSpace
+    bc : tuple of numbers
+        Tuple with physical boundary values at edges of 1D domain
     """
     # pylint: disable=protected-access, redefined-outer-name, dangerous-default-value, unsubscriptable-object
 
