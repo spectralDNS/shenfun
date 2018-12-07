@@ -35,7 +35,7 @@ ul = lambdify((x, y), ue, 'numpy')
 fl = lambdify((x, y), fe, 'numpy')
 
 # Size of discretization
-N = (32, 32)
+N = (32, 34)
 
 SD0 = Basis(N[0], 'L', bc=(0, 0), scaled=True)
 SD1 = Basis(N[1], 'L', bc=(0, 0), scaled=True)
