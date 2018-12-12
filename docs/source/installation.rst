@@ -25,7 +25,8 @@ environment you can then
 
 This installs `mpich`_ as a dependency of `mpi4py`_. You can switch
 ``mpich`` with ``openmpi`` in the line above to get `openmpi`_
-instead. If you do not use `conda`_,
+instead. But then note that `h5py`_ needs to be compiled with `openpmi`_
+as well. If you do not use `conda`_,
 then you need to make sure that MPI and FFTW are installed by some
 other means.
 
