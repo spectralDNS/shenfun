@@ -2,7 +2,7 @@ r"""
 This module contains classes for working with sparse matrices
 """
 from __future__ import division
-from copy import deepcopy
+from copy import deepcopy, copy
 from numbers import Number
 from scipy.sparse import diags as sp_diags
 from scipy.sparse.linalg import spsolve
@@ -723,7 +723,7 @@ class BlockMatrix(object):
                     for m in mij:
                         assert len(m.naxes) == 1, "Only implemented for one nonperiodic basis"
                         axis = m.naxes[0]
-                        iit = list(it).copy()
+                        iit = copy(list(it))
                         for q, sh in enumerate(m.scale.shape): # broadcast
                             if sh == 1:
                                 iit[q] = 0
