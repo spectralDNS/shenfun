@@ -21,7 +21,7 @@ environment you can then
 
 ::
 
-    conda install -c conda-forge mpi4py mpich fftw
+    conda install -c conda-forge mpi4py mpich fftw numpy cython
 
 This installs `mpich`_ as a dependency of `mpi4py`_. You can switch
 ``mpich`` with ``openmpi`` in the line above to get `openmpi`_
