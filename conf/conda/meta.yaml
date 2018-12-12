@@ -15,6 +15,7 @@ requirements:
     - numpy
     - mpi4py
     - mpi4py-fft
+    - mpich
     - pip
     - fftw
     - nomkl
@@ -28,6 +29,7 @@ requirements:
     - fftw
     - mpi4py
     - mpi4py-fft
+    - mpich
     - sympy
     - nomkl
     - h5py-parallel
