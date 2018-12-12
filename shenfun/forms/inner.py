@@ -116,7 +116,8 @@ def inner(expr0, expr1, output_array=None, level=0):
     else:
         raise RuntimeError
 
-    if test.rank() > 0 and test.expr_rank() > 0: # For vector expressions of rank > 0 use recursive algorithm
+
+    if test.rank() > 0 and test.expr_rank() > 0 : # For vector expressions of rank > 0 use recursive algorithm
         ndim = test.function_space().num_components()
 
         if output_array is None and trial.argument == 2:
@@ -166,6 +167,7 @@ def inner(expr0, expr1, output_array=None, level=0):
     if isinstance(test, BasisFunction):
         test = Expr(test)
 
+    assert test.expr_rank() == trial.expr_rank()
     space = test.function_space()
     base = test.basis().base
     trialspace = trial.function_space()

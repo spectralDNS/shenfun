@@ -293,13 +293,19 @@ class Expr(object):
         #assert self.num_components() == self.dim()
         basis = self._basis
         if self.expr_rank() == 1:
-            basis = self._basis[i]
+            if self.rank() > 0:
+                basis = self._basis[i]
+            else:
+                basis = self._basis
             return Expr(basis,
                         self._terms[i][np.newaxis, :, :],
                         self._scales[i][np.newaxis, :],
                         self._indices[i][np.newaxis, :])
         elif self.expr_rank() == 2:
-            basis = self._basis[i]
+            if self.rank() > 0:
+                basis = self._basis[i]
+            else:
+                basis = self._basis
             ndim = self.dimensions()
             return Expr(basis,
                         self._terms[i*ndim:(i+1)*ndim],
