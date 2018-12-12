@@ -1,14 +1,14 @@
-TITLE: Demo - 3D Poisson equation 
+TITLE: Demo - 3D Poisson equation
 AUTHOR: Mikael Mortensen {copyright|CC BY} Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
 DATE: today
 
 __Summary.__
 This is a demonstration of how the Python module "shenfun":
 "https://github.com/spectralDNS/shenfun" can be used to solve a 3D Poisson
-equation in a 3D tensor product domain that has homogeneous Dirichlet boundary 
+equation in a 3D tensor product domain that has homogeneous Dirichlet boundary
 conditions in one direction and periodicity in the
 remaining two. The solver described runs with MPI without any further
-considerations required from the user. Spectral convergence, as shown in Figure ref{fig:3d:ct0}, is demonstrated. 
+considerations required from the user. Spectral convergence, as shown in Figure ref{fig:3d:ct0}, is demonstrated.
 The demo is implemented in
 a single Python file "dirichlet_poisson3D.py":
 "https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py", and the numerical method is is described in more detail by J. Shen cite{shen1} and cite{shen95}.
@@ -49,7 +49,7 @@ label{demo:poisson3d}
 
 The Poisson equation is given as
 
-!bt 
+!bt
 \begin{align}
 \nabla^2 u(\bs{x}) &= f(\bs{x}) \quad \text{for }\, \bs{x}=(x, y, z) \in \Omega, label{eq:3d:poisson}\\
 u(\pm 1 ,y, z) &=0, \\
@@ -93,7 +93,7 @@ wavenumbers in the $z$-direction, such that $\bs{n}^{N_2} = (0, 1, \ldots,
 N_2/2)$. We refer to the Cartesian wavenumber mesh on vector form as $\bs{k}$:
 
 !bt
-\bs{k} = \{(l, m, n)  \in \bs{l}^{N_0} \times \bs{m}^{N_1} \times \bs{n}^{N_2}\}. 
+\bs{k} = \{(l, m, n)  \in \bs{l}^{N_0} \times \bs{m}^{N_1} \times \bs{n}^{N_2}\}.
 !et
 
 We have the bases
@@ -133,7 +133,7 @@ W^{\bs{N}}$ such that
 \begin{equation}
 \int_{\Omega} \nabla^2 u \, \overline{v} \, w\, \bs{dx} = \int_{\Omega} f \,
 \overline{v}\, w\, \bs{dx} \quad
-\forall v \, \in \, W^{\bs{N}}. label{eq:3d:varform} 
+\forall v \, \in \, W^{\bs{N}}. label{eq:3d:varform}
 \end{equation}
 !et
 Here $\bs{dx}=dxdydz$, and the overline represents a complex conjugate, which is needed here because
@@ -141,7 +141,7 @@ the Fourier exponentials are complex functions.
 The weighted integrals, weighted by $w(\bs{x})$, are called inner products, and a common notation is
 !bt
 \begin{equation}
-\int_{\Omega} u \, \overline{v} \, w\, \bs{dx} = \langle u, v\rangle _w. 
+\int_{\Omega} u \, \overline{v} \, w\, \bs{dx} = \langle u, v\rangle _w.
 \end{equation}
 !et
 The integral can either be computed exactly, or with quadrature. The advantage
@@ -163,7 +163,7 @@ k/N_2$.
 
 Inserting for test function (ref{eq:3d:u}) and trialfunction
 $v_{p,q,r} = \mathcal{X}_{p} \mathcal{Y}_q \mathcal{Z}_r$ on the
-left hand side of (ref{eq:3d:varform}), we get 
+left hand side of (ref{eq:3d:varform}), we get
 
 !bt
 \begin{align*}
@@ -174,7 +174,7 @@ left hand side of (ref{eq:3d:varform}), we get
     &= \left[\left(\mathcal{X}_l^{''}, \mathcal{X}_p \right)_w^N - (m^2+n^2)\left(\mathcal{X}_l, \mathcal{X}_p \right)_w^N  \right]\delta_{mq} \delta_{nr} \hat{u}_{l,m,n}, \\
     &= \left( A_{pl} - (m^2 + n^2)B_{pl}\right) \hat{u}_{l,q,r},
 \end{align*}
-!et 
+!et
 where the notation $(\cdot, \cdot)_w^{N_0}$
 !bt
 \begin{equation}
@@ -184,7 +184,7 @@ B_{pl} = \left( \mathcal{X}_l, \mathcal{X}_p \right)_w^{N_0} = \sum_{i=0}^{N_0-1
 !et
 is used to represent an $L_2$ inner product along only the first, nonperiodic,
 direction. The delta functions above come from integrating over the two periodic
-directions, where we use constant weight functions $w=1/(2\pi)$ in the 
+directions, where we use constant weight functions $w=1/(2\pi)$ in the
 inner products
 !bt
 \begin{align}
@@ -193,7 +193,7 @@ inner products
 \end{align}
 !et
 The Kronecker delta-function $\delta_{ij}$ is one for $i=j$ and
-zero otherwise. 
+zero otherwise.
 
 The right hand side of Eq. (ref{eq:3d:varform}) is computed as
 
@@ -204,7 +204,7 @@ The right hand side of Eq. (ref{eq:3d:varform}) is computed as
 \end{equation}
 !et
 where a tilde is used because this is not a complete transform of the function
-$f$, but only an inner product. 
+$f$, but only an inner product.
 
 The linear system of equations to solve for the expansion coefficients can now
 be found as follows
@@ -214,7 +214,7 @@ be found as follows
 \left(A_{lj} - (m^2+n^2)B_{lj}\right) \hat{u}_{j,m,n} =
 \tilde{f}_{l,m,n}\quad \forall \, (l,m,n) \in \bs{k}. label{eq:AB}
 \end{equation}
-!et 
+!et
 
 Now, when $\hat{u}_{\ts{k}}$ is found by solving this linear system over the
 entire computational mesh, it may be
@@ -223,7 +223,7 @@ $A \in \mathbb{R}^{N_0-2, N_0-2}$ and $B \in \mathbb{R}^{N_0-2, N_0-2}$ differs 
 for either case they have a
 special structure that allows for a solution to be found very efficiently
 in the order of $\mathcal{O}(N_0-2)$ operations given $m$ and $n$, see
-cite{shen1} and cite{shen95}. Fast solvers for (ref{eq:AB}) are implemented in `shenfun` for both bases. 
+cite{shen1} and cite{shen95}. Fast solvers for (ref{eq:AB}) are implemented in `shenfun` for both bases.
 
 ===== Method of manufactured solutions =====
 
@@ -258,7 +258,7 @@ is then to import some of this module's functionality
 plus some other helper modules, like "Numpy": "https://numpy.org" and "Sympy":
 "https://sympy.org":
 
-!bc pycod  
+!bc pycod
 from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 from shenfun.tensorproductspace import TensorProductSpace
@@ -268,11 +268,11 @@ from mpi4py import MPI
 !ec
 
 We use `Sympy` for the manufactured solution and `Numpy` for testing. MPI for
-Python (`mpi4py`) is required for running the solver with MPI. 
+Python (`mpi4py`) is required for running the solver with MPI.
 
 ===== Manufactured solution =====
 
-The exact solution $u_e(x, y, z)$ and the right hand side $f_e(x, y, z)$ are created using `Sympy` as follows 
+The exact solution $u_e(x, y, z)$ and the right hand side $f_e(x, y, z)$ are created using `Sympy` as follows
 !bc pycod
 x, y, z = symbols("x,y,z")
 ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-x**2)
@@ -284,11 +284,11 @@ fl = lambdify((x, y, z), fe, 'numpy')
 !ec
 
 These solutions are now valid for a continuous domain. The next step is thus to
-discretize, using the computational mesh 
+discretize, using the computational mesh
 !bt
 (x_i, y_j, z_k)\, \forall \, (i, j, k) \in [0, 1,\ldots, N_0-1] \times [0, 1, \ldots, N_1-1] \times [0, 1, \ldots, N_2-1]
 !et
-and a finite number of basis functions. 
+and a finite number of basis functions.
 
 Note that it is not mandatory to use `Sympy` for the manufactured solution. Since the
 solution is known (ref{eq:3d:solution}), we could just as well simply use `Numpy`
@@ -319,7 +319,7 @@ computational mesh is distributed internally using the `pencil` method. The
 keyword determines the order of transforms going back and forth between real and
 spectral space. With `axes=(0, 1, 2)` and a forward transform (from real space
 to spectral, i.e., from $u$ to $\hat{u}$) axis 2 is transformed first and then 1
-and 0, respectively. 
+and 0, respectively.
 
 The manufactured solution is created with Dirichlet boundary conditions in the
 $x$-direction, and for this reason `SD` is the first basis in `T`. We could just
@@ -393,7 +393,7 @@ approach can be used with up to $\min \{N_1(N_2/2+1), N_0 N_1\}$ processors.
 ===== Variational formulation =====
 
 The variational problem (ref{eq:3d:varform}) can be assembled using `shenfun`'s
-form language, which is perhaps surprisingly similar to FEniCS. 
+form language, which is perhaps surprisingly similar to FEniCS.
 !bc pycod
 u = TrialFunction(T)
 v = TestFunction(T)
@@ -420,7 +420,7 @@ $\{m^2+n^2: (m, n) \in \bs{m}^{N_1} \times \bs{n}^{N_2}\}$. Note that $\bs{n}^{N
 simply as an array of length $N_2/2+1$ (here 9), since the transform in direction $z$
 takes a real signal and transforms it taking advantage of Hermitian symmetry,
 see "rfft":
-"https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.fft.rfft.html".   
+"https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.fft.rfft.html".
 
 ===== Solve linear equations =====
 
@@ -444,8 +444,8 @@ if comm.Get_rank() == 0:
 
 ===== Convergence test =====
 
-A complete solver is given in Sec. ref{sec:3d:complete}. This solver is created 
-such that it takes in two commandline arguments and prints out the 
+A complete solver is given in Sec. ref{sec:3d:complete}. This solver is created
+such that it takes in two commandline arguments and prints out the
 $L_2$-errornorm of the solution in the end. We can use this to write a short
 script that performs a convergence test. The solver is run like
 !bc
@@ -453,10 +453,10 @@ script that performs a convergence test. The solver is run like
 Error=6.5955040031498912e-10
 !ec
 for a discretization of size $\bs{N}= N^3 = 32^3$ and for the Legendre basis.
-Alternatively, change `legendre` to `chebyshev` for the Chebyshev basis.  
+Alternatively, change `legendre` to `chebyshev` for the Chebyshev basis.
 
 We set up the solver to run for a list of $N=[8, 10, \ldots, 38]$, and collect
-the errornorms in arrays to be plotted. Such a script can be easily created 
+the errornorms in arrays to be plotted. Such a script can be easily created
 with the "subprocess": "https://docs.python.org/3/library/subprocess.html" module
 
 !bc pycod
@@ -506,7 +506,7 @@ A complete solver, that can use either Legendre or Chebyshev bases, and any quad
 chosen as a command-line argument, is shown below.
 
 !bc
->>> python dirichlet_poisson3D.py legendre
+>>> python dirichlet_poisson3D.py 36 legendre
 !ec
 or similarly with `chebyshev` instead of `legendre`.
 
@@ -586,7 +586,8 @@ uq = T.backward(u_hat, fast_transform=False)
 # Compare with analytical solution
 uj = ul(*X)
 error = comm.reduce(np.linalg.norm(uj-uq)**2)
-print("Error=%2.16e" %(np.sqrt(error)))
+if comm.Get_rank() == 0:
+    print("Error=%2.16e" %(np.sqrt(error)))
 !ec
 
 #======= Bibliography =======
