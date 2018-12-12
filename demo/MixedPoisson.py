@@ -1,6 +1,6 @@
+import os
 import numpy as np
 import scipy.sparse as sp
-import matplotlib.pyplot as plt
 from mpi4py import MPI
 from sympy import symbols, sin, cos, lambdify
 from shenfun import *
@@ -57,14 +57,19 @@ uj = ul(*X)
 duxj = duxl(*X)
 duyj = duyl(*X)
 
-print('Error    u         dudx        dudy')
-print('     %2.4e %2.4e %2.4e' %(np.linalg.norm(uj-gu[2]),
-                                 np.linalg.norm(duxj-gu[0]),
-                                 np.linalg.norm(duyj-gu[1])))
-assert np.allclose(uj, gu[2])
+error = [comm.reduce(np.linalg.norm(uj-gu[2])),
+         comm.reduce(np.linalg.norm(duxj-gu[0])),
+         comm.reduce(np.linalg.norm(duyj-gu[1]))]
 
-plt.figure()
-plt.contourf(X[0], X[1], gu[2])
-plt.figure()
-plt.quiver(X[1], X[0], gu[1], gu[0])
-plt.show()
+if comm.Get_rank() == 0:
+    print('Error    u         dudx        dudy')
+    print('     %2.4e %2.4e %2.4e' %(error[0], error[1], error[2]))
+    assert np.all(abs(np.array(error)) < 1e-12)
+
+if 'pytest' not in os.environ:
+    import matplotlib.pyplot as plt
+    plt.figure()
+    plt.contourf(X[0], X[1], gu[2])
+    plt.figure()
+    plt.quiver(X[1], X[0], gu[1], gu[0])
+    #plt.show()
