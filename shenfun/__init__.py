@@ -25,7 +25,7 @@ routines to `Cython <https://cython.org/>`_.
 """
 #pylint: disable=wildcard-import,no-name-in-module
 
-__version__ = '1.2.1'
+__version__ = '1.2.2'
 __author__ = 'Mikael Mortensen'
 
 import numpy as np

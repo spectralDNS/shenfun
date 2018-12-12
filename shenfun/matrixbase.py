@@ -600,39 +600,186 @@ class Identity(SparseMatrix):
         SparseMatrix.__init__(self, {0:1}, shape, scale)
 
 class BlockMatrix(object):
-    def __init__(self, tpmats, base):
-        from .tensorproductspace import MixedTensorProductSpace
+    def __init__(self, tpmats):
         assert isinstance(tpmats, (list, tuple))
-        assert isinstance(base, MixedTensorProductSpace)
+        tpmats = [tpmats] if not isinstance(tpmats[0], (list, tuple)) else tpmats
+        self.base = base = tpmats[0][0].base
         dims = base.num_components()
         self.mats = mats = np.zeros((dims, dims), dtype=int).tolist()
+        tps = []
+        base.flatten(base, tps)
+        offset = [np.zeros(tps[0].dimensions(), dtype=int)]
+        for i, tp in enumerate(tps[:-1]):
+            offset.append(np.array(tp.shape(True) + offset[i]))
+        self.offset = offset
+        self.global_shape = offset[-1] + tps[-1].shape(True)
+        self += tpmats
+
+    def __add__(self, a):
+        """Return copy of self.__add__(a) <==> self+a"""
+        return BlockMatrix(self.get_list_mats()+a.get_list_mats())
+
+    def __iadd__(self, a):
+        """self.__iadd__(a) <==> self += a
+
+        Parameters
+        ----------
+        a : :class:`.BlockMatrix` or list of :class:`.TPMatrix` instances
+
+        """
+        if isinstance(a, BlockMatrix):
+            tpmats = a.get_list_mats()
+        elif isinstance(a, (list, tuple)):
+            tpmats = a
         for mat in tpmats:
             if not isinstance(mat, list):
                 mat = [mat]
             for m in mat:
+                assert isinstance(m, TPMatrix)
                 i, j = m.global_index
-                if isinstance(mats[i][j], int):
-                    mats[i][j] = m
+                m0 = self.mats[i][j]
+                if isinstance(m0, int):
+                    self.mats[i][j] = [m]
                 else:
-                    mats[i][j] = mats[i][j] + m
+                    found = False
+                    for n in m0:
+                        if m == n:
+                            n += m
+                            found = True
+                            continue
+                    if not found:
+                        self.mats[i][j].append(m)
+
+    def get_list_mats(self):
+        """Return flattened list of :class:`.TPMatrix` instances in self"""
+        tpmats = []
+        for mi in self.mats:
+            for mij in mi:
+                if isinstance(mij, (list, tuple)):
+                    for m in mij:
+                        if isinstance(m, TPMatrix):
+                            tpmats.append(m)
+        return tpmats
 
     def matvec(self, v, c):
-        assert v.shape[0] == self.mats.shape[1]
-        assert c.shape[0] == self.mats.shape[1]
+        """Compute matrix vector product
+
+            c = self * v
+
+        Parameters
+        ----------
+        v : :class:`.Function`
+        c : :class:`.Function`
+
+        Returns
+        -------
+        c : :class:`.Function`
+
+        """
+        assert v.function_space() == self.base
+        assert c.function_space() == self.base
         c.fill(0)
-        for i in range(self.mats.shape[0]):
-            for j in range(self.mats.shape[1]):
-                if isinstance(self.mats[i, j], Number):
-                    if abs(self.mats[i][j]) > 1e-8:
-                        c[i] += self.mats[i][j]*v[j]
+        z = np.zeros_like(c[0])
+        for i, mi in enumerate(self.mats):
+            for j, mij in enumerate(mi):
+                if isinstance(mij, Number):
+                    if abs(mij) > 1e-8:
+                        c[i] += mij*v[j]
                 else:
-                    c[i] += self.mats[i][j].matvec(v[j])
+                    for m in mij:
+                        z.fill(0)
+                        z = m.matvec(v[j], z)
+                        c[i] += z
         return c
 
+    def __getitem__(self, ij):
+        return self.mats[ij[0]][ij[1]]
+
+    def get_offset(self, i, axis=0):
+        return self.offset[i][axis]
+
+    def diags(self, it):
+        """Return global block matrix
+
+        Parameters
+        ----------
+        it : n-tuple of ints
+            where n is dimensions
+
+        Note
+        ----
+        Works only if there is one single non-periodic direction.
+
+        """
+        alldiags = {}
+        for i, mi in enumerate(self.mats):
+            for j, mij in enumerate(mi):
+                if isinstance(mij, Number):
+                    continue
+                else:
+                    for m in mij:
+                        assert len(m.naxes) == 1, "Only implemented for one nonperiodic basis"
+                        axis = m.naxes[0]
+                        iit = list(it).copy()
+                        for q, sh in enumerate(m.scale.shape): # broadcast
+                            if sh == 1:
+                                iit[q] = 0
+                        sc = m.scale[tuple(iit)]
+                        M = self.global_shape[axis]
+                        ii, jj = m.global_index
+                        offset_row = self.get_offset(i, axis)
+                        offset_col = self.get_offset(j, axis)
+                        ij = min(offset_row, offset_col)
+                        nx, ny = m.pmat.shape
+                        for key, val in m.pmat.items():
+                            d = key - offset_row + offset_col
+                            if not d in alldiags:
+                                alldiags[d] = np.zeros(M-abs(d), dtype=m.scale.dtype)
+                            diag = alldiags[d]
+                            if jj > ii:
+                                if key > 0:
+                                    diag[ij:(ij+min(nx, ny-key))] += sc*val
+                                else:
+                                    diag[(ij-key):(ij-key+min(ny, nx+key))] += sc*val
+                            elif jj == ii:
+                                if key >= 0:
+                                    diag[ij:(ij+ny-key)] += sc*val
+                                else:
+                                    diag[ij:(ij+nx+key)] += sc*val
+                            else:
+                                if key >= 0:
+                                    diag[ij+key:(ij+key+min(nx, ny-key))] += sc*val
+                                else:
+                                    diag[ij:(ij+min(ny, nx+key))] += sc*val
+        return sp_diags(list(alldiags.values()), list(alldiags.keys()),
+                        shape=(M, M), format='csr')
 
 class TPMatrix(object):
-    """Tensorproduct matrix"""
-    def __init__(self, mats, space, scale=1.0, global_index=None):
+    """Tensorproduct matrix
+
+    A :class:`.TensorProductSpace` is the outer product of ``D`` bases.
+    A matrix assembled from test and trialfunctions on TensorProductSpaces
+    will, as such, be represented as the outer product of ``D`` smaller matrices,
+    one for each base. This class represents the complete matrix.
+
+    Parameters
+    ----------
+    mats : sequence, or sequence of sequence of matrices
+        Instances of :class:`.SpectralMatrix` or :class:`.SparseMatrix`
+        The length of ``mats`` is the number of dimensions of the
+        :class:`.TensorProductSpace`
+    space : Function space
+        The test :class:`.TensorProductSpace`
+    scale : array, optional
+        Scalar multiple of matrices. Must have ndim equal to the number of
+        dimensions in the :class:`.TensorProductSpace`, and the shape must be 1
+        along any directions with a nondiagonal matrix.
+    global_index : 2-tuple, optional
+        Indices (test, trial) into mixed space :class:`.MixedTensorProductSpace`.
+    base : :class:`.MixedTensorProductSpace`, optional
+         Instance of the base space
+    """
+    def __init__(self, mats, space, scale=1.0, global_index=None, base=None):
         assert isinstance(mats, (list, tuple))
         assert len(mats) == len(space)
         self.mats = mats
@@ -641,6 +788,7 @@ class TPMatrix(object):
         self.pmat = 1
         self.naxes = []
         self.global_index = global_index
+        self.base = base
 
     def simplify_fourier_matrices(self):
         self.naxes = []
@@ -666,7 +814,7 @@ class TPMatrix(object):
             self.scale = (self.scale[tuple(ss)]).copy()
 
         # If only one non-diagonal matrix, then make a simple link to
-        # this matrix and set its scale array.
+        # this matrix.
         if len(self.naxes) == 1:
             self.pmat = self.mats[self.naxes[0]]
 
@@ -734,7 +882,8 @@ class TPMatrix(object):
     def __mul__(self, a):
         """Returns copy of self.__mul__(a) <==> self*a"""
         if isinstance(a, Number):
-            TPMatrix(self.mats, self.space, self.scale*a, self.global_index)
+            TPMatrix(self.mats, self.space, self.scale*a,
+                     self.global_index, self.base)
 
         elif isinstance(a, np.ndarray):
             c = np.empty_like(a)
@@ -754,14 +903,13 @@ class TPMatrix(object):
             self.scale *= a
         elif isinstance(a, np.ndarray):
             self.scale = self.scale*a
-
         return self
 
     def __div__(self, a):
         """Returns copy self.__div__(a) <==> self/a"""
         if isinstance(a, Number):
             return TPMatrix(self.mats, self.space, self.scale/a,
-                            self.global_index)
+                            self.global_index, self.base)
         elif isinstance(a, np.ndarray):
             b = np.zeros_like(a)
             b = self.solve(a, b)
@@ -796,7 +944,8 @@ class TPMatrix(object):
         """Return copy of self.__add__(a) <==> self+a"""
         assert isinstance(a, TPMatrix)
         assert self == a
-        return TPMatrix(self.mats, self.space, self.scale+a.scale, self.global_index)
+        return TPMatrix(self.mats, self.space, self.scale+a.scale,
+                        self.global_index, self.base)
 
     def __iadd__(self, a):
         """self.__iadd__(a) <==> self += a"""
@@ -809,7 +958,8 @@ class TPMatrix(object):
         """Return copy of self.__sub__(a) <==> self-a"""
         assert isinstance(a, TPMatrix)
         assert self == a
-        return TPMatrix(self.mats, self.space, self.scale-a.scale, self.global_index)
+        return TPMatrix(self.mats, self.space, self.scale-a.scale,
+                        self.global_index, self.base)
 
     def __isub__(self, a):
         """self.__isub__(a) <==> self -= a"""

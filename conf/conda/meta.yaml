@@ -14,6 +14,7 @@ requirements:
     - cython
     - numpy
     - mpi4py
+    - mpi4py-fft
     - pip
     - fftw
     - nomkl
@@ -26,6 +27,7 @@ requirements:
     - cython
     - fftw
     - mpi4py
+    - mpi4py-fft
     - sympy
     - nomkl
     - h5py-parallel

@@ -73,6 +73,7 @@ else:
     matrices = inner(grad(v), grad(u))
 
 # Create Helmholtz linear algebra solver
+
 H = Solver(*matrices)
 
 # Solve and transform to real space
