@@ -98,4 +98,6 @@ if 'pytest' not in os.environ:
     plt.contourf(X[0], X[1], gu[2])
     plt.figure()
     plt.quiver(X[1], X[0], gu[1], gu[0])
-    #plt.show()
+    plt.figure()
+    plt.spy(M.diags((3, 0)).toarray()) # The matrix for Fourier wavenumber 3
+    plt.show()
