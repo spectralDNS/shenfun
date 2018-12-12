@@ -256,7 +256,12 @@ class Expr(object):
 
     def expr_rank(self):
         """Return rank of Expr"""
-        return 0 if self._terms.shape[0] == 1 else 1
+        if self._terms.shape[0] == 1:
+            return 0
+        if self._terms.shape[0] == self._terms.shape[-1]:
+            return 1
+        if self._terms.shape[0] == self._terms.shape[-1]**2:
+            return 2
 
     def rank(self):
         """Return rank of Expr's basis"""
@@ -287,18 +292,25 @@ class Expr(object):
     def __getitem__(self, i):
         #assert self.num_components() == self.dim()
         basis = self._basis
-        if self.rank() == 1:
+        if self.expr_rank() == 1:
             basis = self._basis[i]
-        return Expr(basis,
-                    self._terms[i][np.newaxis, :, :],
-                    self._scales[i][np.newaxis, :],
-                    self._indices[i][np.newaxis, :])
+            return Expr(basis,
+                        self._terms[i][np.newaxis, :, :],
+                        self._scales[i][np.newaxis, :],
+                        self._indices[i][np.newaxis, :])
+        elif self.expr_rank() == 2:
+            basis = self._basis[i]
+            ndim = self.dimensions()
+            return Expr(basis,
+                        self._terms[i*ndim:(i+1)*ndim],
+                        self._scales[i*ndim:(i+1)*ndim],
+                        self._indices[i*ndim:(i+1)*ndim])
 
     def __mul__(self, a):
         if self.expr_rank() == 0:
             assert isinstance(a, Number)
             sc = self.scales().copy()*a
-        elif self.expr_rank() == 1:
+        else:
             sc = self.scales().copy()
             if isinstance(a, tuple):
                 assert len(a) == self.num_components()
@@ -325,7 +337,7 @@ class Expr(object):
         if self.expr_rank() == 0:
             assert isinstance(a, Number)
             sc *= a
-        elif self.expr_rank() == 1:
+        else:
             if isinstance(a, tuple):
                 assert len(a) == self.dimensions()
                 for i in range(self.dimensions()):

@@ -16,7 +16,8 @@ most Python environments. The first two are usually most troublesome.
 Basically, for `mpi4py`_ you need to have a working MPI installation,
 whereas `FFTW`_ is available on most high performance computer systems.
 If you are using `conda`_, then both these libraries can be installed
-directly from the `conda-forge`_ channel
+directly from the `conda-forge`_ channel. In an appropriate conda
+environment you can then
 
 ::
 
@@ -29,8 +30,15 @@ then you need to make sure that MPI and FFTW are installed by some
 other means.
 
 If not already present, the remaining dependencies can be easily
-installed using `pip`_ or `conda`_. To install remaining dependencies as
-well as ``shenfun`` from `pypi`_ do
+installed using `pip`_ or `conda`_. However, if mixing `pip`_ and
+`conda`_, make sure that `pip`_ is installed into the working conda
+environment first
+
+::
+
+    conda install pip
+
+To install remaining dependencies as well as ``shenfun`` from `pypi`_
 
 ::
 
@@ -101,6 +109,11 @@ from the main directory of the source code
 ::
 
     python -m pytest tests/
+
+However, note that you may need to install pytest into the correct
+environment as well. A common mistake is to run a version of pytest that has been
+already installed in a different conda environment, perhaps using a different Python
+version.
 
 The tests are run automatically on every commit to github, see
 

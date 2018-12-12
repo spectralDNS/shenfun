@@ -116,7 +116,7 @@ def inner(expr0, expr1, output_array=None, level=0):
     else:
         raise RuntimeError
 
-    if test.rank() == 1: # For vector spaces of rank 1 use recursive algorithm
+    if test.rank() > 0 and test.expr_rank() > 0: # For vector expressions of rank > 0 use recursive algorithm
         ndim = test.function_space().num_components()
 
         if output_array is None and trial.argument == 2:
@@ -131,8 +131,21 @@ def inner(expr0, expr1, output_array=None, level=0):
 
         result = []
         for ii in range(ndim):
-            result.append(inner(test[ii], trial[ii], level=level))
-        return result
+            l = inner(test[ii], trial[ii], level=level)
+            result += [l] if isinstance(l, TPMatrix) else l
+
+        # Add equal TPMatrices
+        if level == 0:
+            B = [result[0]]
+            for a in result[1:]:
+                found = False
+                for b in B:
+                    if a == b:
+                        b += a
+                        found = True
+                if not found:
+                    B.append(a)
+        return B[0] if len(B) == 1 else B
 
     if trial.argument > 1:
         # Linear form
@@ -154,6 +167,7 @@ def inner(expr0, expr1, output_array=None, level=0):
         test = Expr(test)
 
     space = test.function_space()
+    base = test.basis().base
     trialspace = trial.function_space()
     test_scale = test.scales()
     trial_scale = trial.scales()
@@ -175,17 +189,22 @@ def inner(expr0, expr1, output_array=None, level=0):
                 sc = test_scale[vec, test_j]*trial_scale[vec, trial_j]
                 M = []
                 assert len(b0) == len(b1)
+                trial_sp = trialspace
+                if isinstance(trialspace, MixedTensorProductSpace): # could operate on a vector, e.g., div(u), where u is vector
+                    trial_sp = trialspace[vec]
+                test_sp = space
+                if isinstance(space, MixedTensorProductSpace):
+                    test_sp = space[vec]
                 for i, (a, b) in enumerate(zip(b0, b1)): # Third index, one inner for each dimension
-                    ts = trialspace[i]
-                    if isinstance(trialspace, MixedTensorProductSpace): # trial could operate on a vector, e.g., div(u), where u is vector
-                        ts = ts[i]
-                    AA = inner_product((space[i], a), (ts, b))
+                    ts = trial_sp[i]
+                    sp = test_sp[i]
+                    AA = inner_product((sp, a), (ts, b))
                     M.append(AA)
                     # Take care of domains of not standard size
-                    if not space[i].domain_factor() == 1:
-                        sc *= space[i].domain_factor()**(a+b)
-                sc = space[0].broadcast_to_ndims(np.array([sc]))
-                A.append(TPMatrix(M, space, sc, (test_indices[0, test_j], trial_indices[0, trial_j])))
+                    if not sp.domain_factor() == 1:
+                        sc *= sp.domain_factor()**(a+b)
+                sc = sp.broadcast_to_ndims(np.array([sc]))
+                A.append(TPMatrix(M, test_sp, sc, (test_indices[0, test_j], trial_indices[0, trial_j]), base))
         vec += 1
 
     # At this point A contains all matrices of the form. The length of A is
@@ -253,7 +272,7 @@ def inner(expr0, expr1, output_array=None, level=0):
                 return A
 
         # linear form
-        if uh.rank() == 1:
+        if uh.rank() > 0:
             for i, b in enumerate(A):
                 output_array += b.scale*uh[trial_indices[0, i]]
         else:
@@ -284,7 +303,7 @@ def inner(expr0, expr1, output_array=None, level=0):
         else: # linear form
             wh = np.empty_like(output_array)
             for i, b in enumerate(B):
-                if uh.rank() == 1:
+                if uh.rank() > 0:
                     wh = b.matvec(uh[trial_indices[0, i]], wh)
                 else:
                     wh = b.matvec(uh, wh)
@@ -299,7 +318,7 @@ def inner(expr0, expr1, output_array=None, level=0):
         else: # linear form
             wh = np.empty_like(output_array)
             for i, b in enumerate(A):
-                if uh.rank() == 1:
+                if uh.rank() > 0:
                     wh = b.matvec(uh[trial_indices[0, i]], wh)
                 else:
                     wh = b.matvec(uh, wh)
