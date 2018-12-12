@@ -7,13 +7,13 @@ Demo - 3D Poisson equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Nov 30, 2018
+:Date: Dec 12, 2018
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve a 3D Poisson
-equation in a 3D tensor product domain that has homogeneous Dirichlet boundary 
+equation in a 3D tensor product domain that has homogeneous Dirichlet boundary
 conditions in one direction and periodicity in the
 remaining two. The solver described runs with MPI without any further
-considerations required from the user. Spectral convergence, as shown in Figure :ref:`fig:3d:ct0`, is demonstrated. 
+considerations required from the user. Spectral convergence, as shown in Figure :ref:`fig:3d:ct0`, is demonstrated.
 The demo is implemented in
 a single Python file `dirichlet_poisson3D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py>`__, and the numerical method is is described in more detail by J. Shen :cite:`shen1` and :cite:`shen95`.
 
@@ -116,7 +116,7 @@ wavenumbers in the :math:`z`-direction, such that :math:`\boldsymbol{n}^{N_2} = 
 N_2/2)`. We refer to the Cartesian wavenumber mesh on vector form as :math:`\boldsymbol{k}`:
 
 .. math::
-        \boldsymbol{k} = \{(l, m, n)  \in \boldsymbol{l}^{N_0} \times \boldsymbol{m}^{N_1} \times \boldsymbol{n}^{N_2}\}. 
+        \boldsymbol{k} = \{(l, m, n)  \in \boldsymbol{l}^{N_0} \times \boldsymbol{m}^{N_1} \times \boldsymbol{n}^{N_2}\}.
 
 We have the bases
 
@@ -187,7 +187,7 @@ W^{\boldsymbol{N}}` such that
         
         \int_{\Omega} \nabla^2 u \, \overline{v} \, w\, \boldsymbol{dx} = \int_{\Omega} f \,
         \overline{v}\, w\, \boldsymbol{dx} \quad
-        \forall v \, \in \, W^{\boldsymbol{N}}.  
+        \forall v \, \in \, W^{\boldsymbol{N}}. 
         
 
 Here :math:`\boldsymbol{dx}=dxdydz`, and the overline represents a complex conjugate, which is needed here because
@@ -198,7 +198,7 @@ The weighted integrals, weighted by :math:`w(\boldsymbol{x})`, are called inner 
    :label: _auto12
 
         
-        \int_{\Omega} u \, \overline{v} \, w\, \boldsymbol{dx} = \langle u, v\rangle _w. 
+        \int_{\Omega} u \, \overline{v} \, w\, \boldsymbol{dx} = \langle u, v\rangle _w.
         
         
 
@@ -232,7 +232,7 @@ k/N_2`.
 
 Inserting for test function :eq:`eq:3d:u` and trialfunction
 :math:`v_{p,q,r} = \mathcal{X}_{p} \mathcal{Y}_q \mathcal{Z}_r` on the
-left hand side of :eq:`eq:3d:varform`, we get 
+left hand side of :eq:`eq:3d:varform`, we get
 
 .. math::
         \begin{align*}
@@ -257,7 +257,7 @@ where the notation :math:`(\cdot, \cdot)_w^{N_0}`
 
 is used to represent an :math:`L_2` inner product along only the first, nonperiodic,
 direction. The delta functions above come from integrating over the two periodic
-directions, where we use constant weight functions :math:`w=1/(2\pi)` in the 
+directions, where we use constant weight functions :math:`w=1/(2\pi)` in the
 inner products
 
 .. math::
@@ -277,7 +277,7 @@ inner products
         
 
 The Kronecker delta-function :math:`\delta_{ij}` is one for :math:`i=j` and
-zero otherwise. 
+zero otherwise.
 
 The right hand side of Eq. :eq:`eq:3d:varform` is computed as
 
@@ -291,7 +291,7 @@ The right hand side of Eq. :eq:`eq:3d:varform` is computed as
         
 
 where a tilde is used because this is not a complete transform of the function
-:math:`f`, but only an inner product. 
+:math:`f`, but only an inner product.
 
 The linear system of equations to solve for the expansion coefficients can now
 be found as follows
@@ -311,7 +311,7 @@ transformed to real space :math:`u(\boldsymbol{x})` using :eq:`eq:3d:u`. Note th
 for either case they have a
 special structure that allows for a solution to be found very efficiently
 in the order of :math:`\mathcal{O}(N_0-2)` operations given :math:`m` and :math:`n`, see
-:cite:`shen1` and :cite:`shen95`. Fast solvers for :eq:`eq:AB` are implemented in ``shenfun`` for both bases. 
+:cite:`shen1` and :cite:`shen95`. Fast solvers for :eq:`eq:AB` are implemented in ``shenfun`` for both bases.
 
 Method of manufactured solutions
 --------------------------------
@@ -362,12 +362,12 @@ plus some other helper modules, like `Numpy <https://numpy.org>`__ and `Sympy <h
     from mpi4py import MPI
 
 We use ``Sympy`` for the manufactured solution and ``Numpy`` for testing. MPI for
-Python (``mpi4py``) is required for running the solver with MPI. 
+Python (``mpi4py``) is required for running the solver with MPI.
 
 Manufactured solution
 ---------------------
 
-The exact solution :math:`u_e(x, y, z)` and the right hand side :math:`f_e(x, y, z)` are created using ``Sympy`` as follows 
+The exact solution :math:`u_e(x, y, z)` and the right hand side :math:`f_e(x, y, z)` are created using ``Sympy`` as follows
 
 .. code-block:: python
 
@@ -380,12 +380,12 @@ The exact solution :math:`u_e(x, y, z)` and the right hand side :math:`f_e(x, y,
     fl = lambdify((x, y, z), fe, 'numpy')
 
 These solutions are now valid for a continuous domain. The next step is thus to
-discretize, using the computational mesh 
+discretize, using the computational mesh
 
 .. math::
         (x_i, y_j, z_k)\, \forall \, (i, j, k) \in [0, 1,\ldots, N_0-1] \times [0, 1, \ldots, N_1-1] \times [0, 1, \ldots, N_2-1]
 
-and a finite number of basis functions. 
+and a finite number of basis functions.
 
 Note that it is not mandatory to use ``Sympy`` for the manufactured solution. Since the
 solution is known :eq:`eq:3d:solution`, we could just as well simply use ``Numpy``
@@ -418,7 +418,7 @@ computational mesh is distributed internally using the ``pencil`` method. The
 keyword determines the order of transforms going back and forth between real and
 spectral space. With ``axes=(0, 1, 2)`` and a forward transform (from real space
 to spectral, i.e., from :math:`u` to :math:`\hat{u}`) axis 2 is transformed first and then 1
-and 0, respectively. 
+and 0, respectively.
 
 The manufactured solution is created with Dirichlet boundary conditions in the
 :math:`x`-direction, and for this reason ``SD`` is the first basis in ``T``. We could just
@@ -502,7 +502,7 @@ Variational formulation
 -----------------------
 
 The variational problem :eq:`eq:3d:varform` can be assembled using ``shenfun``'s
-form language, which is perhaps surprisingly similar to FEniCS. 
+form language, which is perhaps surprisingly similar to FEniCS.
 
 .. code-block:: python
 
@@ -530,7 +530,7 @@ set
 :math:`\{m^2+n^2: (m, n) \in \boldsymbol{m}^{N_1} \times \boldsymbol{n}^{N_2}\}`. Note that :math:`\boldsymbol{n}^{N_2}` is stored
 simply as an array of length :math:`N_2/2+1` (here 9), since the transform in direction :math:`z`
 takes a real signal and transforms it taking advantage of Hermitian symmetry,
-see `rfft <https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.fft.rfft.html>`__.   
+see `rfft <https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.fft.rfft.html>`__.
 
 Solve linear equations
 ----------------------
@@ -557,8 +557,8 @@ Finally, solve linear equation system and transform solution from spectral
 Convergence test
 ----------------
 
-A complete solver is given in Sec. :ref:`sec:3d:complete`. This solver is created 
-such that it takes in two commandline arguments and prints out the 
+A complete solver is given in Sec. :ref:`sec:3d:complete`. This solver is created
+such that it takes in two commandline arguments and prints out the
 :math:`L_2`-errornorm of the solution in the end. We can use this to write a short
 script that performs a convergence test. The solver is run like
 
@@ -568,10 +568,10 @@ script that performs a convergence test. The solver is run like
     Error=6.5955040031498912e-10
 
 for a discretization of size :math:`\boldsymbol{N}= N^3 = 32^3` and for the Legendre basis.
-Alternatively, change ``legendre`` to ``chebyshev`` for the Chebyshev basis.  
+Alternatively, change ``legendre`` to ``chebyshev`` for the Chebyshev basis.
 
 We set up the solver to run for a list of :math:`N=[8, 10, \ldots, 38]`, and collect
-the errornorms in arrays to be plotted. Such a script can be easily created 
+the errornorms in arrays to be plotted. Such a script can be easily created
 with the `subprocess <https://docs.python.org/3/library/subprocess.html>`__ module
 
 .. code-block:: python
@@ -623,7 +623,7 @@ chosen as a command-line argument, is shown below.
 
 .. code-block:: text
 
-    >>> python dirichlet_poisson3D.py legendre
+    >>> python dirichlet_poisson3D.py 36 legendre
 
 or similarly with ``chebyshev`` instead of ``legendre``.
 
@@ -704,7 +704,8 @@ or similarly with ``chebyshev`` instead of ``legendre``.
     # Compare with analytical solution
     uj = ul(*X)
     error = comm.reduce(np.linalg.norm(uj-uq)**2)
-    print("Error=%2.16e" %(np.sqrt(error)))
+    if comm.Get_rank() == 0:
+        print("Error=%2.16e" %(np.sqrt(error)))
 
 .. ======= Bibliography =======
 
