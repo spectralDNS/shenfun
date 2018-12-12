@@ -609,15 +609,15 @@ class BlockMatrix(object):
         tps = []
         base.flatten(base, tps)
         offset = [np.zeros(tps[0].dimensions(), dtype=int)]
-        for i, tp in enumerate(tps[:-1]):
+        for i, tp in enumerate(tps):
             offset.append(np.array(tp.shape(True) + offset[i]))
         self.offset = offset
-        self.global_shape = offset[-1] + tps[-1].shape(True)
+        self.global_shape = self.offset[-1]
         self += tpmats
 
     def __add__(self, a):
         """Return copy of self.__add__(a) <==> self+a"""
-        return BlockMatrix(self.get_list_mats()+a.get_list_mats())
+        return BlockMatrix(self.get_mats()+a.get_mats())
 
     def __iadd__(self, a):
         """self.__iadd__(a) <==> self += a
@@ -628,7 +628,7 @@ class BlockMatrix(object):
 
         """
         if isinstance(a, BlockMatrix):
-            tpmats = a.get_list_mats()
+            tpmats = a.get_mats()
         elif isinstance(a, (list, tuple)):
             tpmats = a
         for mat in tpmats:
@@ -650,7 +650,7 @@ class BlockMatrix(object):
                     if not found:
                         self.mats[i][j].append(m)
 
-    def get_list_mats(self):
+    def get_mats(self, return_first=False):
         """Return flattened list of :class:`.TPMatrix` instances in self"""
         tpmats = []
         for mi in self.mats:
@@ -658,7 +658,10 @@ class BlockMatrix(object):
                 if isinstance(mij, (list, tuple)):
                     for m in mij:
                         if isinstance(m, TPMatrix):
-                            tpmats.append(m)
+                            if return_first:
+                                return m
+                            else:
+                                tpmats.append(m)
         return tpmats
 
     def matvec(self, v, c):
@@ -740,6 +743,7 @@ class BlockMatrix(object):
                                 if key > 0:
                                     diag[ij:(ij+min(nx, ny-key))] += sc*val
                                 else:
+                                    #from IPython import embed; embed()
                                     diag[(ij-key):(ij-key+min(ny, nx+key))] += sc*val
                             elif jj == ii:
                                 if key >= 0:
@@ -753,6 +757,68 @@ class BlockMatrix(object):
                                     diag[ij:(ij+min(ny, nx+key))] += sc*val
         return sp_diags(list(alldiags.values()), list(alldiags.keys()),
                         shape=(M, M), format='csr')
+
+    def solve(self, b, u=None):
+        """
+        Solve matrix system Au = b
+
+        where A is the current :class:`.BlockMatrix` (self)
+
+        Parameters
+        ----------
+        b : array
+            Array of right hand side
+        u : array, optional
+            Output array
+
+        """
+        from .forms.arguments import Function
+        import scipy.sparse as sp
+        space = b.function_space()
+        if u is None:
+            u = Function(space)
+        else:
+            assert u.shape == b.shape
+        tpmat = self.get_mats(True)
+        assert len(tpmat.naxes) == 1
+        axis = tpmat.naxes[0]
+        mat = tpmat.pmat
+        assert axis == mat.axis
+        tp = []
+        space.flatten(space, tp)
+        N = self.global_shape[axis]
+        gi = np.zeros(N, dtype=np.complex)
+        go = np.zeros(N, dtype=np.complex)
+        if space.dimensions() == 2:
+            s = [0]*3
+            if axis == 0:
+                for i in range(b.shape[2]):
+                    Ai = self.diags((0, i))
+                    s[2] = i
+                    for k in range(b.shape[0]):
+                        s[0] = k
+                        s[1] = tp[k].bases[axis].slice()
+                        gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
+                    go[:] = sp.linalg.spsolve(Ai, gi)
+                    for k in range(b.shape[0]):
+                        s[0] = k
+                        s[1] = tp[k].bases[axis].slice()
+                        u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
+            elif axis == 1:
+                for i in range(b.shape[1]):
+                    Ai = self.diags((i, 0))
+                    s[1] = i
+                    for k in range(b.shape[0]):
+                        s[0] = k
+                        s[2] = tp[k].bases[axis].slice()
+                        gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
+                    go[:] = sp.linalg.spsolve(Ai, gi)
+                    for k in range(b.shape[0]):
+                        s[0] = k
+                        s[2] = tp[k].bases[axis].slice()
+                        u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
+        return u
+
 
 class TPMatrix(object):
     """Tensorproduct matrix
