@@ -1,3 +1,29 @@
+r"""Solve Poisson's equation using a mixed formulation
+
+The Poisson equation is
+
+.. math::
+
+    \nabla^2 u &= f
+    u(x, y=\pm 1) &= 0
+    u(x=2\pi, y) &= u(x=0, y)
+
+We solve using the mixed formulation
+
+.. math::
+
+    g - \nabla(u) &= 0
+    \nabla \cdot g &= f
+    u(x, y=\pm 1) &= 0
+    u(x=2\pi, y) &= u(x=0, y)
+    g(x=2\pi, y) &= g(x=0, y)
+
+We use a Tensorproductspace with Fourier expansions in the x-direction and
+a composite Chebyshev basis in the y-direction. The equations are solved
+coupled and implicit.
+
+"""
+
 import os
 import numpy as np
 import scipy.sparse as sp
