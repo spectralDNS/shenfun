@@ -46,10 +46,11 @@ fl = lambdify((x, y), fe, 'numpy')
 duxl = lambdify((x, y), dux, 'numpy')
 duyl = lambdify((x, y), duy, 'numpy')
 
-N = (36, 36)
+N = (24, 24)
 K0 = Basis(N[0], 'F', dtype='d')
-SD = Basis(N[1], 'C', bc=(0, 0))
-ST = Basis(N[1], 'C')
+SD = Basis(N[1], 'L', bc=(0, 0))
+ST = Basis(N[1], 'L')
+
 TD = TensorProductSpace(comm, (K0, SD), axes=(1, 0))
 TT = TensorProductSpace(comm, (K0, ST), axes=(1, 0))
 VT = VectorTensorProductSpace(TT)
@@ -63,7 +64,7 @@ g, u = uv[0], uv[1]
 p, q = pq[0], pq[1]
 
 A00 = inner(p, g)
-A01 = inner(p, -grad(u))
+A01 = inner(div(p), u)
 A10 = inner(q, div(g))
 
 # Get f and g on quad points
@@ -90,7 +91,7 @@ error = [comm.reduce(np.linalg.norm(uj-gu[2])),
 if comm.Get_rank() == 0:
     print('Error    u         dudx        dudy')
     print('     %2.4e %2.4e %2.4e' %(error[0], error[1], error[2]))
-    assert np.all(abs(np.array(error)) < 1e-12)
+    assert np.all(abs(np.array(error)) < 1e-8), error
 
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt

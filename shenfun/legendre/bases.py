@@ -146,7 +146,7 @@ class Basis(LegendreBase):
                  The computational domain
     """
 
-    def __init__(self, N=0, quad="GL", domain=(-1., 1.)):
+    def __init__(self, N=0, quad="LG", domain=(-1., 1.)):
         LegendreBase.__init__(self, N, quad, domain=domain)
         self.plan(N, 0, np.float, {})
 

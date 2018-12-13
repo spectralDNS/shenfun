@@ -25,7 +25,7 @@ environment you can then
 
 This installs `mpich`_ as a dependency of `mpi4py`_. You can switch
 ``mpich`` with ``openmpi`` in the line above to get `openmpi`_
-instead. But then note that `h5py`_ needs to be compiled with `openpmi`_
+instead. But then note that `h5py`_ needs to be compiled with `openmpi`_
 as well. If you do not use `conda`_,
 then you need to make sure that MPI and FFTW are installed by some
 other means.
@@ -112,8 +112,8 @@ from the main directory of the source code
     python -m pytest tests/
 
 However, note that you may need to install pytest into the correct
-environment as well. A common mistake is to run a version of pytest that has been
-already installed in a different conda environment, perhaps using a different Python
+environment as well. A common mistake is to run a version of pytest that has
+already been installed in a different conda environment, perhaps using a different Python
 version.
 
 The tests are run automatically on every commit to github, see

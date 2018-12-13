@@ -514,8 +514,8 @@ def test_ABBmat(SB, quad):
 if __name__ == '__main__':
     #test_convolve(fbases.R2CBasis, 8)
     #test_ADDmat(lbases.ShenNeumannBasis, "GL")
-    test_CDDmat("GL")
-    #test_massmatrices(cBasis[3], cBasis[3], 'GC')
+    #test_CDDmat("GL")
+    test_massmatrices(lBasis[0], lBasis[1], 'GL')
     #test_transforms(cBasis[3], 'GC', 2)
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[2], 'GC')
