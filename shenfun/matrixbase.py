@@ -8,9 +8,11 @@ from scipy.sparse import diags as sp_diags
 from scipy.sparse.linalg import spsolve
 import numpy as np
 from .utilities import inheritdocstrings
+import warnings
 
 __all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix',
-           'check_sanity', 'get_dense_matrix', 'TPMatrix', 'BlockMatrix']
+           'check_sanity', 'get_dense_matrix', 'TPMatrix', 'BlockMatrix',
+           'Identity']
 
 class SparseMatrix(dict):
     r"""Base class for sparse matrices
@@ -789,6 +791,7 @@ class BlockMatrix(object):
         N = self.global_shape[axis]
         gi = np.zeros(N, dtype=np.complex)
         go = np.zeros(N, dtype=np.complex)
+        gg = np.ones(N, dtype=np.complex)
         if space.dimensions() == 2:
             s = [0]*3
             if axis == 0:
@@ -817,8 +820,51 @@ class BlockMatrix(object):
                         s[0] = k
                         s[2] = tp[k].bases[axis].slice()
                         u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
+        elif space.dimensions() == 3:
+            s = [0]*4
+            if axis == 0:
+                for i in range(b.shape[2]):
+                    for j in range(b.shape[3]):
+                        Ai = self.diags((0, i, j))
+                        s[2], s[3] = i, j
+                        for k in range(b.shape[0]):
+                            s[0] = k
+                            s[1] = tp[k].bases[axis].slice()
+                            gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
+                        go[:] = sp.linalg.spsolve(Ai, gi)
+                        for k in range(b.shape[0]):
+                            s[0] = k
+                            s[1] = tp[k].bases[axis].slice()
+                            u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
+            elif axis == 1:
+                for i in range(b.shape[1]):
+                    for j in range(b.shape[3]):
+                        Ai = self.diags((i, 0, j))
+                        s[1], s[3] = i, j
+                        for k in range(b.shape[0]):
+                            s[0] = k
+                            s[2] = tp[k].bases[axis].slice()
+                            gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
+                        go[:] = sp.linalg.spsolve(Ai, gi)
+                        for k in range(b.shape[0]):
+                            s[0] = k
+                            s[2] = tp[k].bases[axis].slice()
+                            u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
+            elif axis == 2:
+                for i in range(b.shape[1]):
+                    for j in range(b.shape[2]):
+                        Ai = self.diags((i, j, 0))
+                        s[1], s[2] = i, j
+                        for k in range(b.shape[0]):
+                            s[0] = k
+                            s[3] = tp[k].bases[axis].slice()
+                            gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
+                        go[:] = sp.linalg.spsolve(Ai, gi)
+                        for k in range(b.shape[0]):
+                            s[0] = k
+                            s[3] = tp[k].bases[axis].slice()
+                            u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
         return u
-
 
 class TPMatrix(object):
     """Tensorproduct matrix
@@ -1079,11 +1125,12 @@ def get_dense_matrix(test, trial):
     trial : 2-tuple of (basis, int)
         As test, but representing matrix column.
     """
-    N = test[0].N
-    _, w = test[0].points_and_weights(N)
-    v = test[0].evaluate_basis_derivative_all(k=test[1])
+    N = trial[0].N
+    _, w = trial[0].points_and_weights(N)
+    v = test[0].evaluate_basis_derivative_all(x=trial[0].mesh(False, False),
+                                              k=test[1])
     u = trial[0].evaluate_basis_derivative_all(k=trial[1])
-    return np.dot(w*v.T, np.conj(u))
+    return np.dot(v.T*w[np.newaxis, :], np.conj(u))
 
 
 def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-12):

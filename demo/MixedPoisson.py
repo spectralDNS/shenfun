@@ -4,18 +4,18 @@ The Poisson equation is
 
 .. math::
 
-    \nabla^2 u &= f
-    u(x, y=\pm 1) &= 0
+    \nabla^2 u &= f \\
+    u(x, y=\pm 1) &= 0 \\
     u(x=2\pi, y) &= u(x=0, y)
 
 We solve using the mixed formulation
 
 .. math::
 
-    g - \nabla(u) &= 0
-    \nabla \cdot g &= f
-    u(x, y=\pm 1) &= 0
-    u(x=2\pi, y) &= u(x=0, y)
+    g - \nabla(u) &= 0 \\
+    \nabla \cdot g &= f \\
+    u(x, y=\pm 1) &= 0 \\
+    u(x=2\pi, y) &= u(x=0, y) \\
     g(x=2\pi, y) &= g(x=0, y)
 
 We use a Tensorproductspace with Fourier expansions in the x-direction and
@@ -47,9 +47,9 @@ duxl = lambdify((x, y), dux, 'numpy')
 duyl = lambdify((x, y), duy, 'numpy')
 
 N = (24, 24)
-K0 = Basis(N[0], 'F', dtype='d')
-SD = Basis(N[1], 'L', bc=(0, 0))
-ST = Basis(N[1], 'L')
+K0 = Basis(N[0], 'Fourier', dtype='d')
+SD = Basis(N[1], 'Legendre', bc=(0, 0))
+ST = Basis(N[1], 'Legendre')
 
 TD = TensorProductSpace(comm, (K0, SD), axes=(1, 0))
 TT = TensorProductSpace(comm, (K0, ST), axes=(1, 0))
@@ -57,11 +57,11 @@ VT = VectorTensorProductSpace(TT)
 Q = MixedTensorProductSpace([VT, TD])
 X = TD.local_mesh(True)
 
-uv = TrialFunction(Q)
+gu = TrialFunction(Q)
 pq = TestFunction(Q)
 
-g, u = uv[0], uv[1]
-p, q = pq[0], pq[1]
+g, u = gu
+p, q = pq
 
 A00 = inner(p, g)
 A01 = inner(div(p), u)
@@ -100,5 +100,5 @@ if 'pytest' not in os.environ:
     plt.figure()
     plt.quiver(X[1], X[0], gu[1], gu[0])
     plt.figure()
-    plt.spy(M.diags((3, 0)).toarray()) # The matrix for Fourier wavenumber 3
+    plt.spy(M.diags((4, 0)).toarray()) # The matrix for Fourier wavenumber 3
     plt.show()
