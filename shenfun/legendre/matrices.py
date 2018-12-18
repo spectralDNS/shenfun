@@ -5,17 +5,17 @@ the Legendre family.
 A naming convention is used for the first three capital letters for all matrices.
 The first letter refers to type of matrix.
 
-    - Mass matrices start with 'B'
-    - One derivative start with 'C'
-    - Stiffness - One derivative for test and trial - start with 'A'
-    - Biharmonic - Two derivatives for test and trial - start with 'S'
+    - Mass matrices start with `B`
+    - One derivative start with `C`
+    - Stiffness - One derivative for test and trial - start with `A`
+    - Biharmonic - Two derivatives for test and trial - start with `S`
 
 The next two letters refer to the test and trialfunctions, respectively
 
-    - Dirichlet:   'D'
-    - Neumann:     'N'
-    - Legendre:    'L'
-    - Biharmonic:  'B'
+    - Dirichlet:   `D`
+    - Neumann:     `N`
+    - Legendre:    `L`
+    - Biharmonic:  `B`
 
 As such, there are 4 mass matrices, BDDmat, BNNmat, BLLmat and BBBmat,
 corresponding to the four bases above.

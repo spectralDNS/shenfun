@@ -1,5 +1,79 @@
 r"""
-This module contains classes for working with sparse matrices
+This module contains classes for working with sparse matrices.
+
+The sparse matrices are computed as inner products of forms containing test and
+trial functions. These basis functions are chosen from the following, where we
+denote the :math:`k`'th basis function of basis V as :math:`\phi_k`::
+
+Chebyshev basis:
+    Chebyshev basis of first kind
+
+    .. math::
+
+        \phi_k &= T_k \\
+        V &= span\{\phi_k\}_{k=0}^{N}
+
+    For homogeneous Dirichlet boundary conditions:
+
+    .. math::
+
+        \phi_k &= T_k - T_{k+2} \\
+        V &= span\{\phi_k\}_{k=0}^{N-2}
+
+    For homogeneous Neumann boundary conditions:
+
+    .. math::
+
+        \phi_k &= T_k - \left(\frac{k}{k+2}\right)^2T_{k+2} \\
+        V &= span\{\phi_k\}_{k=1}^{N-2}
+
+    For Biharmonic basis with both homogeneous Dirichlet and Neumann:
+
+    .. math::
+
+        \phi_k &= T_k - 2 \frac{k+2}{k+3} T_{k+2} + \frac{k+1}{k+3} T_{k+4} \\
+        V &= span\{\phi_k\}_{k=0}^{N-4}
+
+    The scalar product is computed as a weighted inner product with
+
+    :math:`w=1/\sqrt{1-x^2}` the weights.
+
+Legendre basis:
+    Regular Legendre
+
+    .. math::
+
+        \phi_k &= L_k \\
+        V &= span\{\phi_k\}_{k=0}^{N}
+
+    Dirichlet boundary conditions
+
+    .. math::
+
+        \phi_k &= L_k-L_{k+2} \\
+        V &= span\{\phi_k\}_{k=0}^{N-2}
+
+    Homogeneous Neumann boundary conditions:
+
+    .. math::
+
+        \phi_k &= L_k - \frac{k(k+1)}{(k+2)(k+3)}L_{k+2} \\
+        V &= span\{\phi_k\}_{k=1}^{N-2}
+
+    Both homogeneous Dirichlet and Neumann:
+
+    .. math::
+
+        \psi_k &= L_k - 2 \frac{2k+5}{2k+7} L_{k+2} + \frac{2k+3}{2k+7} L_{k+4} \\
+        V &= span\{\phi_k\}_{k=0}^{N-4}
+
+Fourier basis:
+
+    .. math::
+
+        \phi_k &= exp(ikx) \\
+        V &= span\{\phi_k\}_{k=-N/2}^{N/2-1}
+
 """
 from __future__ import division
 from copy import deepcopy, copy
@@ -15,7 +89,7 @@ __all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix',
            'Identity']
 
 class SparseMatrix(dict):
-    r"""Base class for sparse matrices
+    r"""Base class for sparse matrices.
 
     The data is stored as a dictionary, where keys and values are, respectively,
     the offsets and values of the diagonals. In addition, each matrix is stored
@@ -118,11 +192,11 @@ class SparseMatrix(dict):
 
         Parameters
         ----------
-            format : str, optional
-                Choice of matrix type (see scipy.sparse.diags)
+        format : str, optional
+            Choice of matrix type (see scipy.sparse.diags)
 
-                - dia - Sparse matrix with DIAgonal storage
-                - csr - Compressed sparse row
+            - dia - Sparse matrix with DIAgonal storage
+            - csr - Compressed sparse row
 
         Note
         ----
@@ -293,15 +367,17 @@ class SparseMatrix(dict):
 
         Parameters
         ----------
-            b : array
-                Array of right hand side on entry and solution on exit unless
-                u is provided.
-            u : array, optional
-                Output array
-            axis : int, optional
-                The axis over which to solve for if b and u are multi-
-                dimensional
+        b : array
+            Array of right hand side on entry and solution on exit unless
+            u is provided.
+        u : array, optional
+            Output array
+        axis : int, optional
+            The axis over which to solve for if b and u are multi-
+            dimensional
 
+        Note
+        ----
         Vectors may be one- or multidimensional.
 
         """
@@ -346,7 +422,7 @@ class SparseMatrix(dict):
 
 @inheritdocstrings
 class SpectralMatrix(SparseMatrix):
-    r"""Base class for inner product matrices
+    r"""Base class for inner product matrices.
 
     Parameters
     ----------
@@ -354,95 +430,18 @@ class SpectralMatrix(SparseMatrix):
         Dictionary, where keys are the diagonal offsets and values the
         diagonals
     trial : 2-tuple of (basis, int)
-            The basis is an instance of a class for one of the bases in
+        The basis is an instance of a class for one of the bases in
 
-            - shenfun.legendre.bases
-            - shenfun.chebyshev.bases
-            - shenfun.fourier.bases
+        - shenfun.legendre.bases
+        - shenfun.chebyshev.bases
+        - shenfun.fourier.bases
 
-            The int represents the number of times the trial function
-            should be differentiated. Representing matrix column.
+        The int represents the number of times the trial function
+        should be differentiated. Representing matrix column.
     test : 2-tuple of (basis, int)
-           As trial, but representing matrix row.
+        As trial, but representing matrix row.
     scale : float
-            Scale matrix with this constant or array of constants
-
-    The matrices are assumed to be sparse diagonal. The matrices are
-    inner products of trial and test functions from one of 9 function
-    spaces
-
-    Denoting the :math:`k`'th basis function as :math:`\phi_k` and basis
-    as V we get the following:
-
-    Chebyshev basis:
-
-        Chebyshev basis of first kind
-
-        .. math::
-
-            \phi_k &= T_k \\
-            V &= span\{\phi_k\}_{k=0}^{N}
-
-        For homogeneous Dirichlet boundary conditions:
-
-        .. math::
-
-            \phi_k &= T_k - T_{k+2} \\
-            V &= span\{\phi_k\}_{k=0}^{N-2}
-
-        For homogeneous Neumann boundary conditions:
-
-        .. math::
-
-            \phi_k &= T_k - \left(\frac{k}{k+2}\right)^2T_{k+2} \\
-            V &= span\{\phi_k\}_{k=1}^{N-2}
-
-        For Biharmonic basis with both homogeneous Dirichlet and Neumann:
-
-        .. math::
-
-            \phi_k &= T_k - 2 \frac{k+2}{k+3} T_{k+2} + \frac{k+1}{k+3} T_{k+4} \\
-            V &= span\{\phi_k\}_{k=0}^{N-4}
-
-        The scalar product is computed as a weighted inner product with
-        :math:`w=1/\sqrt{1-x^2}` the weights.
-
-    Legendre basis:
-
-        Regular Legendre
-
-        .. math::
-
-            \phi_k &= L_k \\
-            V &= span\{\phi_k\}_{k=0}^{N}
-
-        Dirichlet boundary conditions
-
-        .. math::
-
-            \phi_k &= L_k-L_{k+2} \\
-            V &= span\{\phi_k\}_{k=0}^{N-2}
-
-        Homogeneous Neumann boundary conditions:
-
-        .. math::
-
-            \phi_k &= L_k - \frac{k(k+1)}{(k+2)(k+3)}L_{k+2} \\
-            V &= span\{\phi_k\}_{k=1}^{N-2}
-
-        Both homogeneous Dirichlet and Neumann:
-
-        .. math::
-
-            \psi_k &= L_k - 2 \frac{2k+5}{2k+7} L_{k+2} + \frac{2k+3}{2k+7} L_{k+4} \\
-            V &= span\{\phi_k\}_{k=0}^{N-4}
-
-    Fourier basis:
-
-        .. math::
-
-            \phi_k &= exp(ikx) \\
-            V &= span\{\phi_k\}_{k=-N/2}^{N/2-1}
+        Scale matrix with this constant or array of constants
 
     Examples
     --------
@@ -516,15 +515,18 @@ class SpectralMatrix(SparseMatrix):
 
         Parameters
         ----------
-            b : array
-                Array of right hand side on entry and solution on exit unless
-                u is provided.
-            u : array, optional
-                Output array
-            axis : int, optional
-                   The axis over which to solve for if b and u are multidimensional
+        b : array
+            Array of right hand side on entry and solution on exit unless
+            u is provided.
+        u : array, optional
+            Output array
+        axis : int, optional
+               The axis over which to solve for if b and u are multidimensional
 
+        Note
+        ----
         Vectors may be one- or multidimensional.
+
         """
         u = self.solver(b, u=u, axis=axis)
         return u

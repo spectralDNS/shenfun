@@ -11,8 +11,8 @@ class TDMA(object):
 
     Parameters
     ----------
-        mat : SparseMatrix
-              Symmetric tridiagonal matrix with diagonals in offsets -2, 0, 2
+    mat : SparseMatrix
+        Symmetric tridiagonal matrix with diagonals in offsets -2, 0, 2
 
     """
     # pylint: disable=too-few-public-methods
@@ -68,7 +68,10 @@ class TDMA(object):
             axis : int, optional
                    The axis over which to solve for if b and u are multidimensional
 
+        Note
+        ----
         If u is not provided, then b is overwritten with the solution and returned
+
         """
 
         if u is None:
@@ -185,6 +188,8 @@ class PDMA(object):
             axis : int, optional
                    The axis over which to solve for if b and u are multidimensional
 
+        Note
+        ----
         If u is not provided, then b is overwritten with the solution and returned
         """
 
@@ -201,48 +206,6 @@ class PDMA(object):
 
         u /= self.mat.scale
         return u
-
-class DiagonalMatrix(np.ndarray):
-    """Matrix type with only diagonal matrices in all dimensions
-
-    Typically used for Fourier spaces
-    """
-    # pylint: disable=too-few-public-methods, unused-argument
-
-    def __new__(cls, buffer):
-        assert isinstance(buffer, np.ndarray)
-        obj = np.ndarray.__new__(cls,
-                                 buffer.shape,
-                                 dtype=buffer.dtype,
-                                 buffer=buffer)
-
-        return obj
-
-    def solve(self, b, u=None, axis=0, neglect_zero_wavenumber=True):
-        """Solve for diagonal matrix
-
-        Parameters
-        ----------
-            b : array
-                Right hand side on entry, solution on exit if no u
-            u : array, optional
-                Output array
-            neglect_zero_wavenumber : bool, optional
-                                      Whether or not to neglect zeros on
-                                      diagonal
-        """
-        diagonal_array = self
-        if neglect_zero_wavenumber:
-            d = np.where(diagonal_array == 0, 1, diagonal_array)
-
-        if u is not None:
-            u[:] = b / d
-            return u
-        return b / d
-
-    #def matvec(self, v, c):
-        #c[:] = self*v
-        #return c
 
 class Solve(object):
     """Solver class for matrix created by Dirichlet bases
@@ -276,6 +239,8 @@ class Solve(object):
         axis : int, optional
                The axis over which to solve for if b and u are multidimensional
 
+        Note
+        ----
         If u is not provided, then b is overwritten with the solution and returned
 
         """

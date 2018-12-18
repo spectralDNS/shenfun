@@ -72,7 +72,7 @@ else:
     A01 = inner(div(v), p)
 A10 = inner(q, div(u))
 
-# Get f and g on quad points
+# Get f and h on quad points
 fh = Array(Q)
 fh[0] = flx(*X)
 fh[1] = fly(*X)
@@ -89,9 +89,13 @@ A11.scale = np.broadcast_to(A11.scale, (K0.shape(True), 1)).copy()
 A11.scale[:] = 0
 if comm.Get_rank() == 0: # enable only for Fourier k=0
     A11.scale[0] = 1
-# Zero the matrix diagonal (the only diagonal)
-A11.mats[1][0][:] = 0
+A11.mats[1][0][:] = 0      # Zero the matrix diagonal (the only diagonal)
 A11.mats[1][0][0] = 1      # Fixes p_hat[0, 0]
+if family.lower() == 'chebyshev': # Have to ident global row (N[1]-2)*2
+    am = A10[1].pmat.diags().toarray()
+    am[0] = 0
+    A10[1].mats[1] = extract_diagonal_matrix(am)
+    A10[1].pmat = A10[1].mats[1]
 A11.mats[1][0][-1] = 1     # fixes p_hat[0, -1]. Required to avoid singular matrix
 A11 = [A11]
 
@@ -130,4 +134,4 @@ if 'pytest' not in os.environ:
     plt.spy(M.diags((0, 0)).toarray()) # The matrix for Fourier given wavenumber
     plt.figure()
     plt.contourf(X[0], X[1], up[0], 100)
-    #plt.show()
+    plt.show()

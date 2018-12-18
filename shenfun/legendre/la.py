@@ -64,15 +64,15 @@ class Helmholtz(object):
 
     Parameters
     ----------
-    A : :class:`.SpectralMatrix` or :class:`.TPMatrix`
-        mass or stiffness matrix
-    B : :class:`.SpectralMatrix` or :class:`.TPMatrix`
-        mass or stiffness matrix
+        A : :class:`.SpectralMatrix` or :class:`.TPMatrix`
+            mass or stiffness matrix
+        B : :class:`.SpectralMatrix` or :class:`.TPMatrix`
+            mass or stiffness matrix
 
-    scale_A : array, optional
-        Scale array to stiffness matrix
-    scale_B : array, optional
-        Scale array to mass matrix
+        scale_A : array, optional
+            Scale array to stiffness matrix
+        scale_B : array, optional
+            Scale array to mass matrix
 
     The two matrices must be one stiffness and one mass matrix. Which is which
     will be found by inspection if only two arguments are provided. The scales
@@ -100,7 +100,7 @@ class Helmholtz(object):
         (v, \nabla^2 u)_w = (v, b)_w
 
 
-    See https://rawgit.com/spectralDNS/shenfun/master/docs/src/Poisson3D/poisson3d_bootstrap.html
+    See `this link <https://rawgit.com/spectralDNS/shenfun/master/docs/src/Poisson3D/poisson3d_bootstrap.html>`_
     for details, since it is actually quite involved. But basically, one
     obtains a linear algebra system to be solved along the :math:`z`-axis for
     all combinations of the two Fourier indices :math:`k` and :math:`l`
@@ -271,18 +271,18 @@ class Biharmonic(object):
 
     Parameters
     ----------
-    S : :class:`.TPMatrix` or :class:`.SpectralMatrix`
-    A : :class:`.TPMatrix` or :class:`.SpectralMatrix`
-    B : :class:`.TPMatrix` or :class:`.SpectralMatrix`
+        S : :class:`.TPMatrix` or :class:`.SpectralMatrix`
+        A : :class:`.TPMatrix` or :class:`.SpectralMatrix`
+        B : :class:`.TPMatrix` or :class:`.SpectralMatrix`
 
-    scale_S : array, optional
-    scale_A : array, optional
-    scale_B : array, optional
+        scale_S : array, optional
+        scale_A : array, optional
+        scale_B : array, optional
 
     If only three arguments are passed, then we decide which matrix is which
     through inspection. The three scale arrays must then be available as
     S.scale, A.scale, B.scale.
-    If siz arguments are provided they must be in order S, A, B, scale S,
+    If six arguments are provided they must be in order S, A, B, scale S,
     scale A, scale B.
 
     The solver can be used along any axis of a multidimensional problem. For
@@ -303,8 +303,7 @@ class Biharmonic(object):
 
         (v, \nabla^4 u)_w = (v, b)_w
 
-    See https://rawgit.com/spectralDNS/shenfun/master/docs/._shenfun_bootstrap004.html#sec:tensorproductspaces
-    for details, since it is actually quite involved. But basically, one obtains
+    See `this link <https://rawgit.com/spectralDNS/shenfun/master/docs/demos/mekit17/pub/._shenfun_bootstrap004.html>`_    for details, since it is actually quite involved. But basically, one obtains
     a linear algebra system to be solved along the z-axis for all combinations
     of the two Fourier indices k and l
 
