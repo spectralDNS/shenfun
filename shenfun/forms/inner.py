@@ -3,13 +3,10 @@ This module contains the inner function that computes the
 weighted inner product.
 """
 from functools import reduce
-from copy import copy
 import numpy as np
 from shenfun.spectralbase import inner_product
 from shenfun.matrixbase import TPMatrix, SparseMatrix
-from shenfun.la import DiagonalMatrix
 from shenfun.tensorproductspace import MixedTensorProductSpace
-from shenfun.matrixbase import BlockMatrix
 from .arguments import Expr, Function, BasisFunction, Array
 
 __all__ = ('inner',)
@@ -69,17 +66,16 @@ def inner(expr0, expr1, output_array=None, level=0):
 
     Returns
     -------
-    Function
-        For linear forms involving one :class:`.TestFunction` and one
-        :class:`.BasisFunction` or :class:`.Array`.
+    Depending on dimensionality and the arguments to the forms
 
-    SparseMatrix
-        For bilinear forms involving both :class:`.TestFunction` and
-        :class:`.TrialFunction`.
+        :class:`.Function`
+        for linear forms.
 
-    dict
-        For bilinear forms with many terms. Each item has a
-        :class:`.SparseMatrix` as value.
+        :class:`.SparseMatrix`
+        for bilinear 1D forms.
+
+        :class:`.TPMatrix` or list of :class:`.TPMatrix`
+        for bilinear multidimensional forms.
 
     See Also
     --------

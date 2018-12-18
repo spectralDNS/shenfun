@@ -52,15 +52,15 @@ class Helmholtz(object):
 
     Parameters
     ----------
-    A : :class:`.SpectralMatrix` or :class:`.TPMatrix`
-        mass or stiffness matrix
-    B : :class:`.SpectralMatrix` or :class:`.TPMatrix`
-        mass or stiffness matrix
+        A : :class:`.SpectralMatrix` or :class:`.TPMatrix`
+            mass or stiffness matrix
+        B : :class:`.SpectralMatrix` or :class:`.TPMatrix`
+            mass or stiffness matrix
 
-    scale_A : array, optional
-        Scale array to stiffness matrix
-    scale_B : array, optional
-        Scale array to mass matrix
+        scale_A : array, optional
+            Scale array to stiffness matrix
+        scale_B : array, optional
+            Scale array to mass matrix
 
     The two matrices must be one stiffness and one mass matrix. Which is which
     will be found by inspection if only two arguments are provided. The scales
@@ -72,12 +72,12 @@ class Helmholtz(object):
 
     Attributes
     ----------
-    axis : int
-        The axis over which to solve for
-    neumann : bool
-        Whether or not bases are Neumann
-    bc : BoundaryValues
-        For Dirichlet problem with inhomogeneous boundary values
+        axis : int
+            The axis over which to solve for
+        neumann : bool
+            Whether or not bases are Neumann
+        bc : BoundaryValues
+            For Dirichlet problem with inhomogeneous boundary values
 
     Variables are extracted from the matrices
 
@@ -254,24 +254,19 @@ class Biharmonic(object):
 
     Parameters
     ----------
-    S : :class:`.TPMatrix` or :class:`.SpectralMatrix`
-    A : :class:`.TPMatrix` or :class:`.SpectralMatrix`
-    B : :class:`.TPMatrix` or :class:`.SpectralMatrix`
+        S : :class:`.TPMatrix` or :class:`.SpectralMatrix`
+        A : :class:`.TPMatrix` or :class:`.SpectralMatrix`
+        B : :class:`.TPMatrix` or :class:`.SpectralMatrix`
 
-    scale_S : array, optional
-    scale_A : array, optional
-    scale_B : array, optional
+        scale_S : array, optional
+        scale_A : array, optional
+        scale_B : array, optional
 
     If only three arguments are passed, then we decide which matrix is which
     through inspection. The three scale arrays must then be available as
     S.scale, A.scale, B.scale.
-    If siz arguments are provided they must be in order S, A, B, scale S,
+    If six arguments are provided they must be in order S, A, B, scale S,
     scale A, scale B.
-
-    Attributes
-    ----------
-    axis : int
-        The axis over which to solve for
 
     Variables are extracted from the matrices
 

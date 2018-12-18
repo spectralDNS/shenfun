@@ -115,11 +115,15 @@ Fourier:
         basis:
             :math:`span(\phi_k, k=-N/2, -N/2+1, ..., N/2)`
 
-        If N is even, then :math:`c_{-N/2}` and :math:`c_{N/2} = 0.5` and
-        :math:`c_k = 1` for :math:`k=-N/2+1, ..., N/2-1`. :math:`i` is the
-        imaginary unit.
+        If the basis is used as an interpolator (if the solution is to be
+        obtained in physical space) and N is even, then :math:`c_{-N/2}`
+        and :math:`c_{N/2} = 0.5` and :math:`c_k = 1` for
+        :math:`k=-N/2+1, ..., N/2-1`. :math:`i` is the imaginary unit.
 
         If N is odd, then :math:`c_k = 1` for :math:`k=-N/2, ..., N/2`.
+
+        Note that by default a truncation form is used and in that case
+        :math:`c_k=1` for all :math:`k`.
 
     R2CBasis and C2CBasis are the same, but R2CBasis is used on real physical
     data and it takes advantage of Hermitian symmetry,
