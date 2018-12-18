@@ -37,6 +37,8 @@ python dirichlet_dirichlet_poisson2D.py
 python NavierStokes.py
 
 python MixedPoisson.py
+python Stokes.py legendre
+python Stokes.py chebyshev
 
 mpirun -np 4 python dirichlet_poisson2D.py 24 chebyshev
 mpirun -np 4 python dirichlet_poisson3D.py 24 chebyshev

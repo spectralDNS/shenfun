@@ -79,10 +79,11 @@ class LegendreBase(SpectralBase):
         if x is None:
             x = self.mesh(False, False)
         V = self.vandermonde(x)
-        assert self.N == V.shape[1]
+        #assert self.N == V.shape[1]
+        M = V.shape[1]
         if k > 0:
-            D = np.zeros((self.N, self.N))
-            D[:-k, :] = leg.legder(np.eye(self.N), k)
+            D = np.zeros((M, M))
+            D[:-k, :] = leg.legder(np.eye(M), k)
             V = np.dot(V, D)
         return self._composite_basis(V)
 
