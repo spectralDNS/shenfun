@@ -1,4 +1,4 @@
-r"""Solve Stoke's equations using a coupled formulation
+r"""Solve Stokes equations using a coupled formulation
 
 The Stokes equations are in strong form
 
@@ -10,9 +10,9 @@ The Stokes equations are in strong form
     u(x=2\pi, y) &= u(x=0, y)
     p(x=2\pi, y) &= p(x=0, y)
 
-where :math:`f` and :math:`g` are functions of space.
+where :math:`f` and :math:`g` are given functions of space.
 In addition we require :math:`\int p d\ = 0`, which is achieved by
-fixing :math:`\hat{p}_{0, 0} = 0`.
+fixing the coefficient :math:`\hat{p}_{0, 0} = 0`.
 
 We use a tensorproductspace with Fourier expansions in the x-direction and
 a composite Chebyshev or Legendre basis in the y-direction for ``u`` and
@@ -34,16 +34,16 @@ x, y = symbols("x,y")
 uex = sin(2*y)*(1-y**2)
 uey = sin(2*x)*(1-y**2)
 pe = -0.1*sin(2*x)
-fex = -uex.diff(x, 2) - uex.diff(y, 2) - pe.diff(x, 1)
-fey = -uey.diff(x, 2) - uey.diff(y, 2) - pe.diff(y, 1)
-fp = uex.diff(x, 1) + uey.diff(y, 1)
+fx = -uex.diff(x, 2) - uex.diff(y, 2) - pe.diff(x, 1)
+fy = -uey.diff(x, 2) - uey.diff(y, 2) - pe.diff(y, 1)
+h = uex.diff(x, 1) + uey.diff(y, 1)
 
 # Lambdify for faster evaluation
 ulx = lambdify((x, y), uex, 'numpy')
 uly = lambdify((x, y), uey, 'numpy')
-flx = lambdify((x, y), fex, 'numpy')
-fly = lambdify((x, y), fey, 'numpy')
-fpl = lambdify((x, y), fp, 'numpy')
+flx = lambdify((x, y), fx, 'numpy')
+fly = lambdify((x, y), fy, 'numpy')
+hl = lambdify((x, y), h, 'numpy')
 pl = lambdify((x, y), pe, 'numpy')
 
 N = (32, 32)
@@ -73,14 +73,14 @@ else:
 A10 = inner(q, div(u))
 
 # Get f and g on quad points
-fvj = Array(Q)
-fvj[0] = flx(*X)
-fvj[1] = fly(*X)
-fvj[2] = fpl(*X)
+fh = Array(Q)
+fh[0] = flx(*X)
+fh[1] = fly(*X)
+fh[2] = hl(*X)
 
-fv_hat = Function(Q)
-fv_hat[:2] = inner(v, fvj[:2], output_array=fv_hat[:2])
-fv_hat[2] = inner(q, fvj[2], output_array=fv_hat[2])
+fh_hat = Function(Q)
+fh_hat[:2] = inner(v, fh[:2], output_array=fh_hat[:2])
+fh_hat[2] = inner(q, fh[2], output_array=fh_hat[2])
 # We now need to take care of the case with Fourier wavenumber = 0.
 # Create submatrix for block (2, 2). This submatrix will only be enabled for
 # Fourier wavenumber k=0.
@@ -96,14 +96,14 @@ A11.mats[1][0][-1] = 1     # fixes p_hat[0, -1]. Required to avoid singular matr
 A11 = [A11]
 
 # set p_hat[0, 0] = 0 and p_hat[0, -1] = 0
-fv_hat[2, 0, 0] = 0
-fv_hat[2, 0, -1] = 0
+fh_hat[2, 0, 0] = 0
+fh_hat[2, 0, -1] = 0
 
 # Create block matrix
 M = BlockMatrix(A00+A01+A10+A11)
 
 # Solve problem
-up_hat = M.solve(fv_hat)
+up_hat = M.solve(fh_hat)
 up = up_hat.backward()
 
 # Exact solution
@@ -127,7 +127,7 @@ if 'pytest' not in os.environ:
     plt.figure()
     plt.quiver(X[0], X[1], up[0], up[1])
     plt.figure()
-    plt.spy(M.diags((0, 0)).toarray()) # The matrix for Fourier wavenumber 0
+    plt.spy(M.diags((0, 0)).toarray()) # The matrix for Fourier given wavenumber
     plt.figure()
     plt.contourf(X[0], X[1], up[0], 100)
     #plt.show()
