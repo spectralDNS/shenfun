@@ -78,11 +78,10 @@ Fourier basis:
 from __future__ import division
 from copy import deepcopy, copy
 from numbers import Number
-from scipy.sparse import diags as sp_diags
-from scipy.sparse.linalg import spsolve
 import numpy as np
+from scipy.sparse import bmat, diags as sp_diags
+from scipy.sparse.linalg import spsolve, norm as spnorm
 from .utilities import inheritdocstrings
-import warnings
 
 __all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix',
            'check_sanity', 'get_dense_matrix', 'TPMatrix', 'BlockMatrix',
@@ -215,19 +214,23 @@ class SparseMatrix(dict):
 
         return self._diags
 
+    def __eq__(self, a):
+        if self.shape != a.shape:
+            return False
+        if not self.same_keys(a):
+            return False
+        if (self.diags('csr') != a.diags('csr')).nnz > 0:
+            return False
+        return self.get_key() == a.get_key()
+
+    def __neq__(self, a):
+        return not self.__eq__(a)
+
     def __imul__(self, y):
         """self.__imul__(y) <==> self*=y"""
         assert isinstance(y, Number)
         self.scale *= y
         return self
-#        for key in self:
-#            # Check if symmetric
-#            if key < 0 and (-key) in self:
-#                if id(self[key]) == id(self[-key]):
-#                    continue
-#            self[key] *= y
-#
-#        return self
 
     def __mul__(self, y):
         """Returns copy of self.__mul__(y) <==> self*y"""
@@ -261,7 +264,7 @@ class SparseMatrix(dict):
 
     def __add__(self, d):
         """Return copy of self.__add__(y) <==> self+d"""
-        if self.__hash__() == d.__hash__():
+        if self == d:
             f = SparseMatrix(deepcopy(dict(self)), self.shape,
                              self.scale+d.scale)
         else:
@@ -283,7 +286,7 @@ class SparseMatrix(dict):
         """self.__iadd__(d) <==> self += d"""
         assert isinstance(d, dict)
         assert d.shape == self.shape
-        if self.__hash__() == d.__hash__():
+        if self == d:
             self.scale += d.scale
         else:
             for key, val in d.items():
@@ -302,7 +305,7 @@ class SparseMatrix(dict):
         """Return copy of self.__sub__(d) <==> self-d"""
         assert isinstance(d, dict)
         # Check is the same matrix
-        if self.__hash__() == d.__hash__():
+        if self == d:
             f = SparseMatrix(deepcopy(dict(self)), self.shape,
                              self.scale-d.scale)
         else:
@@ -323,7 +326,7 @@ class SparseMatrix(dict):
         """self.__isub__(d) <==> self -= d"""
         assert isinstance(d, dict)
         assert d.shape == self.shape
-        if self.__hash__() == d.__hash__():
+        if self == d:
             self.scale -= d.scale
         else:
             for key, val in d.items():
@@ -348,6 +351,9 @@ class SparseMatrix(dict):
 
     def get_key(self):
         return self.__hash__()
+
+    def same_keys(self, a):
+        return self.__hash__() == a.__hash__()
 
     def scale_array(self, c):
         if isinstance(self.scale, Number):
@@ -557,6 +563,11 @@ class SpectralMatrix(SparseMatrix):
             self.scale = self.scale*self[0]
             self[0] = 1
 
+    def __eq__(self, a):
+        if self.shape != a.shape:
+            return False
+        return self.get_key() == a.get_key()
+
     def __mul__(self, y):
         """Returns copy of self.__mul__(y) <==> self*y"""
         if isinstance(y, Number):
@@ -581,7 +592,7 @@ class SpectralMatrix(SparseMatrix):
         """Return copy of self.__add__(y) <==> self+y"""
         assert isinstance(y, dict)
         # Check is the same matrix
-        if self.__hash__() == y.__hash__():
+        if self == y:
             f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
                                self.trialfunction, self.scale+y.scale)
         else:
@@ -592,7 +603,7 @@ class SpectralMatrix(SparseMatrix):
         """Return copy of self.__sub__(y) <==> self-y"""
         assert isinstance(y, dict)
         # Check is the same matrix
-        if self.__hash__() == y.__hash__():
+        if self == y:
             f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
                                self.trialfunction, self.scale-y.scale)
         else:
@@ -610,8 +621,7 @@ class BlockMatrix(object):
         self.base = base = tpmats[0][0].base
         dims = base.num_components()
         self.mats = mats = np.zeros((dims, dims), dtype=int).tolist()
-        tps = []
-        base.flatten(base, tps)
+        tps = base.flatten()
         offset = [np.zeros(tps[0].dimensions(), dtype=int)]
         for i, tp in enumerate(tps):
             offset.append(np.array(tp.shape(True) + offset[i]))
@@ -718,49 +728,63 @@ class BlockMatrix(object):
         Works only if there is one single non-periodic direction.
 
         """
-        alldiags = {}
-        for i, mi in enumerate(self.mats):
-            for j, mij in enumerate(mi):
+        bm = []
+        for mi in self.mats:
+            bm.append([])
+            for mij in mi:
                 if isinstance(mij, Number):
-                    continue
+                    bm[-1].append(None)
                 else:
-                    for m in mij:
-                        assert len(m.naxes) == 1, "Only implemented for one nonperiodic basis"
-                        axis = m.naxes[0]
-                        iit = copy(list(it))
-                        for q, sh in enumerate(m.scale.shape): # broadcast
-                            if sh == 1:
-                                iit[q] = 0
-                        sc = m.scale[tuple(iit)]
-                        M = self.global_shape[axis]
-                        ii, jj = m.global_index
-                        offset_row = self.get_offset(i, axis)
-                        offset_col = self.get_offset(j, axis)
-                        ij = min(offset_row, offset_col)
-                        nx, ny = m.pmat.shape
-                        for key, val in m.pmat.items():
-                            d = key - offset_row + offset_col
-                            if not d in alldiags:
-                                alldiags[d] = np.zeros(M-abs(d), dtype=m.scale.dtype)
-                            diag = alldiags[d]
-                            if jj > ii:
-                                if key > 0:
-                                    diag[ij:(ij+min(nx, ny-key))] += sc*val
-                                else:
-                                    #from IPython import embed; embed()
-                                    diag[(ij-key):(ij-key+min(ny, nx+key))] += sc*val
-                            elif jj == ii:
-                                if key >= 0:
-                                    diag[ij:(ij+ny-key)] += sc*val
-                                else:
-                                    diag[ij:(ij+nx+key)] += sc*val
-                            else:
-                                if key >= 0:
-                                    diag[ij+key:(ij+key+min(nx, ny-key))] += sc*val
-                                else:
-                                    diag[ij:(ij+min(ny, nx+key))] += sc*val
-        return sp_diags(list(alldiags.values()), list(alldiags.keys()),
-                        shape=(M, M), format='csr')
+                    m = mij[0]
+                    iit = np.where(np.array(m.scale.shape) == 1, 0, it) # if shape is 1 use index 0, else use given index (shape=1 means the scale is constant in that direction)
+                    sc = m.scale[tuple(iit)]
+                    d = sc*m.pmat.diags('csr')
+                    for mj in mij[1:]:
+                        iit = np.where(np.array(mj.scale.shape) == 1, 0, it)
+                        sc = mj.scale[tuple(iit)]
+                        d = d + sc*mj.pmat.diags('csr')
+                    bm[-1].append(d)
+        return bmat(bm, format='csr')
+
+        #alldiags = {}
+        #for i, mi in enumerate(self.mats):
+        #    for j, mij in enumerate(mi):
+        #        if isinstance(mij, Number):
+        #            continue
+        #        else:
+        #            for m in mij:
+        #                assert len(m.naxes) == 1, "Only implemented for one nonperiodic basis"
+        #                axis = m.naxes[0]
+        #                iit = np.where(np.array(m.scale.shape) == 1, 0, it)
+        #                sc = m.scale[tuple(iit)]
+        #                M = self.global_shape[axis]
+        #                ii, jj = m.global_index
+        #                offset_row = self.get_offset(i, axis)
+        #                offset_col = self.get_offset(j, axis)
+        #                ij = min(offset_row, offset_col)
+        #                nx, ny = m.pmat.shape
+        #                for key, val in m.pmat.items():
+        #                    d = key - offset_row + offset_col
+        #                    if not d in alldiags:
+        #                        alldiags[d] = np.zeros(M-abs(d), dtype=m.scale.dtype)
+        #                    diag = alldiags[d]
+        #                    if jj > ii:
+        #                        if key > 0:
+        #                            diag[ij:(ij+min(nx, ny-key))] += sc*val
+        #                        else:
+        #                            diag[(ij-key):(ij-key+min(ny, nx+key))] += sc*val
+        #                    elif jj == ii:
+        #                        if key >= 0:
+        #                            diag[ij:(ij+ny-key)] += sc*val
+        #                        else:
+        #                            diag[ij:(ij+nx+key)] += sc*val
+        #                    else:
+        #                        if key >= 0:
+        #                            diag[ij+key:(ij+key+min(nx, ny-key))] += sc*val
+        #                        else:
+        #                            diag[ij:(ij+min(ny, nx+key))] += sc*val
+        #return sp_diags(list(alldiags.values()), list(alldiags.keys()),
+        #                shape=(M, M), format='csr')
 
     def solve(self, b, u=None):
         """
@@ -788,84 +812,47 @@ class BlockMatrix(object):
         axis = tpmat.naxes[0]
         mat = tpmat.pmat
         assert axis == mat.axis
-        tp = []
-        space.flatten(space, tp)
+        tp = space.flatten()
         N = self.global_shape[axis]
         gi = np.zeros(N, dtype=np.complex)
         go = np.zeros(N, dtype=np.complex)
-        gg = np.ones(N, dtype=np.complex)
         if space.dimensions() == 2:
             s = [0]*3
-            if axis == 0:
-                for i in range(b.shape[2]):
-                    Ai = self.diags((0, i))
-                    s[2] = i
-                    for k in range(b.shape[0]):
-                        s[0] = k
-                        s[1] = tp[k].bases[axis].slice()
-                        gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
-                    go[:] = sp.linalg.spsolve(Ai, gi)
-                    for k in range(b.shape[0]):
-                        s[0] = k
-                        s[1] = tp[k].bases[axis].slice()
-                        u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
-            elif axis == 1:
-                for i in range(b.shape[1]):
-                    Ai = self.diags((i, 0))
-                    s[1] = i
-                    for k in range(b.shape[0]):
-                        s[0] = k
-                        s[2] = tp[k].bases[axis].slice()
-                        gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
-                    go[:] = sp.linalg.spsolve(Ai, gi)
-                    for k in range(b.shape[0]):
-                        s[0] = k
-                        s[2] = tp[k].bases[axis].slice()
-                        u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
+            ii, jj = {0:(2, 1), 1:(1, 2)}[axis]
+            d0 = [0, 0]
+            for i in range(b.shape[ii]):
+                d0[(axis+1)%2] = i
+                Ai = self.diags(d0)
+                s[ii] = i
+                for k in range(b.shape[0]):
+                    s[0] = k
+                    s[jj] = tp[k].bases[axis].slice()
+                    gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
+                go[:] = sp.linalg.spsolve(Ai, gi)
+                for k in range(b.shape[0]):
+                    s[0] = k
+                    s[jj] = tp[k].bases[axis].slice()
+                    u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
+
         elif space.dimensions() == 3:
             s = [0]*4
-            if axis == 0:
-                for i in range(b.shape[2]):
-                    for j in range(b.shape[3]):
-                        Ai = self.diags((0, i, j))
-                        s[2], s[3] = i, j
-                        for k in range(b.shape[0]):
-                            s[0] = k
-                            s[1] = tp[k].bases[axis].slice()
-                            gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
-                        go[:] = sp.linalg.spsolve(Ai, gi)
-                        for k in range(b.shape[0]):
-                            s[0] = k
-                            s[1] = tp[k].bases[axis].slice()
-                            u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
-            elif axis == 1:
-                for i in range(b.shape[1]):
-                    for j in range(b.shape[3]):
-                        Ai = self.diags((i, 0, j))
-                        s[1], s[3] = i, j
-                        for k in range(b.shape[0]):
-                            s[0] = k
-                            s[2] = tp[k].bases[axis].slice()
-                            gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
-                        go[:] = sp.linalg.spsolve(Ai, gi)
-                        for k in range(b.shape[0]):
-                            s[0] = k
-                            s[2] = tp[k].bases[axis].slice()
-                            u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
-            elif axis == 2:
-                for i in range(b.shape[1]):
-                    for j in range(b.shape[2]):
-                        Ai = self.diags((i, j, 0))
-                        s[1], s[2] = i, j
-                        for k in range(b.shape[0]):
-                            s[0] = k
-                            s[3] = tp[k].bases[axis].slice()
-                            gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
-                        go[:] = sp.linalg.spsolve(Ai, gi)
-                        for k in range(b.shape[0]):
-                            s[0] = k
-                            s[3] = tp[k].bases[axis].slice()
-                            u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
+            ii, jj = {0:(2, 3), 1:(1, 3), 2:(1, 2)}[axis]
+            d0 = [0, 0, 0]
+            for i in range(b.shape[ii]):
+                for j in range(b.shape[jj]):
+                    d0[ii-1], d0[jj-1] = i, j
+                    Ai = self.diags(d0)
+                    s[ii], s[jj] = i, j
+                    for k in range(b.shape[0]):
+                        s[0] = k
+                        s[axis+1] = tp[k].bases[axis].slice()
+                        gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
+                    go[:] = sp.linalg.spsolve(Ai, gi)
+                    for k in range(b.shape[0]):
+                        s[0] = k
+                        s[axis+1] = tp[k].bases[axis].slice()
+                        u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
+
         return u
 
 class TPMatrix(object):
