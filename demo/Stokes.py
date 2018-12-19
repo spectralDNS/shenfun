@@ -7,7 +7,7 @@ The Stokes equations are in strong form
     -\nabla^2 u - \nabla p &= f \\
     \nabla \cdot u &= h \\
     u(x, y=\pm 1) &= 0 \\
-    u(x=2\pi, y) &= u(x=0, y)
+    u(x=2\pi, y) &= u(x=0, y) \\
     p(x=2\pi, y) &= p(x=0, y)
 
 where :math:`f` and :math:`g` are given functions of space.
@@ -85,18 +85,26 @@ fh_hat[2] = inner(q, fh[2], output_array=fh_hat[2])
 # Create submatrix for block (2, 2). This submatrix will only be enabled for
 # Fourier wavenumber k=0.
 A11 = inner(p, q)
-A11.scale = np.broadcast_to(A11.scale, (K0.shape(True), 1)).copy()
-A11.scale[:] = 0
+A11.scale = K0.broadcast_to_ndims(np.zeros(N[1]))
 if comm.Get_rank() == 0: # enable only for Fourier k=0
     A11.scale[0] = 1
 A11.mats[1][0][:] = 0      # Zero the matrix diagonal (the only diagonal)
-A11.mats[1][0][0] = 1      # Fixes p_hat[0, 0]
-if family.lower() == 'chebyshev': # Have to ident global row (N[1]-2)*2
-    am = A10[1].pmat.diags().toarray()
-    am[0] = 0
-    A10[1].mats[1] = extract_diagonal_matrix(am)
-    A10[1].pmat = A10[1].mats[1]
+A11.mats[1][0][0] = 1      # fixes p_hat[0, 0]
 A11.mats[1][0][-1] = 1     # fixes p_hat[0, -1]. Required to avoid singular matrix
+if family.lower() == 'chebyshev':
+    # Have to ident global row (N[1]-2)*2, but only for k=0. This is a bit tricky
+    # Need to modify block (2, 1) as well as fixing the 1 on the diagonal
+    a10 = inner(q, div(u))[1]   # This TPMatrix will be used for k=0
+    a10.scale = K0.broadcast_to_ndims(np.zeros(N[1]))
+    A10[1].scale = K0.broadcast_to_ndims(np.ones(N[1]))
+    if comm.Get_rank() == 0:
+        a10.scale[0] = 1     # enable for k=0
+        A10[1].scale[0] = 0  # disable for k=0
+    am = a10.pmat.diags().toarray()
+    am[0] = 0
+    a10.mats[1] = extract_diagonal_matrix(am)
+    a10.pmat = a10.mats[1]
+    A10.append(a10)
 A11 = [A11]
 
 # set p_hat[0, 0] = 0 and p_hat[0, -1] = 0
@@ -134,4 +142,4 @@ if 'pytest' not in os.environ:
     plt.spy(M.diags((0, 0)).toarray()) # The matrix for Fourier given wavenumber
     plt.figure()
     plt.contourf(X[0], X[1], up[0], 100)
-    plt.show()
+    #plt.show()

@@ -434,9 +434,10 @@ def test_biharmonic2D(family, axis):
 
 
 if __name__ == '__main__':
-    test_mat(((lBasis[0], 0), (lBasis[1], 1)), lmatrices.CLDmat, 'LG')
+    #test_mat(((lBasis[0], 0), (lBasis[1], 1)), lmatrices.CLDmat, 'LG')
     #test_cmatvec(cBasis[3], cBasis[1], 'GC', 'cython', 3, 0)
     #test_add(*mats_and_quads[0])
+    test_sub(*mats_and_quads[15])
     #test_mul2()
     #test_div2(cBasis[0], 'GC')
     #test_helmholtz3D('chebyshev', 0)

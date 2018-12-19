@@ -665,14 +665,18 @@ class MixedTensorProductSpace(object):
 
     def num_components(self):
         """Return number of spaces in mixed space"""
-        f = []
-        self.flatten(self, f)
+        f = self.flatten()
         return len(f)
 
-    def flatten(self, l, s=[]):
+    def flatten(self):
+        s = []
+        self._recursiveflatten(self, s)
+        return s
+
+    def _recursiveflatten(self, l, s):
         if hasattr(l, 'spaces'):
             for i in l.spaces:
-                self.flatten(i, s)
+                self._recursiveflatten(i, s)
         else:
             s.append(l)
 
