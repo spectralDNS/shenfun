@@ -21,7 +21,7 @@ where :math:`u` is the solution, :math:`L` is a linear operator and
 """
 import types
 import numpy as np
-from shenfun import Function, TPMatrix, SparseMatrix
+from shenfun import Function, TPMatrix
 from shenfun import inheritdocstrings
 
 __all__ = ('RK4', 'ETDRK4', 'ETD')

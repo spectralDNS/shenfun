@@ -26,7 +26,6 @@ coupled and implicit.
 
 import os
 import numpy as np
-import scipy.sparse as sp
 from mpi4py import MPI
 from sympy import symbols, sin, cos, lambdify
 from shenfun import *
@@ -48,8 +47,8 @@ duyl = lambdify((x, y), duy, 'numpy')
 
 N = (24, 24)
 K0 = Basis(N[0], 'Fourier', dtype='d')
-SD = Basis(N[1], 'Legendre', bc=(0, 0))
-ST = Basis(N[1], 'Legendre')
+SD = Basis(N[1], 'L', bc=(0, 0))
+ST = Basis(N[1], 'L')
 
 TD = TensorProductSpace(comm, (K0, SD), axes=(1, 0))
 TT = TensorProductSpace(comm, (K0, ST), axes=(1, 0))
@@ -65,6 +64,7 @@ p, q = pq
 
 A00 = inner(p, g)
 A01 = inner(div(p), u)
+#A01 = inner(p, -grad(u))
 A10 = inner(q, div(g))
 
 # Get f and g on quad points
@@ -100,5 +100,5 @@ if 'pytest' not in os.environ:
     plt.figure()
     plt.quiver(X[1], X[0], gu[1], gu[0])
     plt.figure()
-    plt.spy(M.diags((4, 0)).toarray()) # The matrix for Fourier wavenumber 3
+    plt.spy(M.diags((0, 0)).toarray()) # The matrix for given Fourier wavenumber
     plt.show()
