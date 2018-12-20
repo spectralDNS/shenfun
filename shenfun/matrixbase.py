@@ -76,11 +76,11 @@ Fourier basis:
 
 """
 from __future__ import division
-from copy import deepcopy, copy
+from copy import deepcopy
 from numbers import Number
 import numpy as np
 from scipy.sparse import bmat, diags as sp_diags
-from scipy.sparse.linalg import spsolve, norm as spnorm
+from scipy.sparse.linalg import spsolve
 from .utilities import inheritdocstrings
 
 __all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix',
@@ -304,7 +304,6 @@ class SparseMatrix(dict):
     def __sub__(self, d):
         """Return copy of self.__sub__(d) <==> self-d"""
         assert isinstance(d, dict)
-        # Check is the same matrix
         if self == d:
             f = SparseMatrix(deepcopy(dict(self)), self.shape,
                              self.scale-d.scale)
@@ -620,7 +619,7 @@ class BlockMatrix(object):
         tpmats = [tpmats] if not isinstance(tpmats[0], (list, tuple)) else tpmats
         self.base = base = tpmats[0][0].base
         dims = base.num_components()
-        self.mats = mats = np.zeros((dims, dims), dtype=int).tolist()
+        self.mats = np.zeros((dims, dims), dtype=int).tolist()
         tps = base.flatten()
         offset = [np.zeros(tps[0].dimensions(), dtype=int)]
         for i, tp in enumerate(tps):
@@ -715,13 +714,18 @@ class BlockMatrix(object):
     def get_offset(self, i, axis=0):
         return self.offset[i][axis]
 
-    def diags(self, it):
-        """Return global block matrix
+    def diags(self, it, format='csr'):
+        """Return global block matrix in scipy sparse format
+
+        The returned matrix is constructed for given indices in the periodic
+        directions.
 
         Parameters
         ----------
         it : n-tuple of ints
-            where n is dimensions
+            where n is dimensions. These are the indices into the scale arrays
+            of the TPMatrices in various blocks. Should be zero along the non-
+            periodic direction.
 
         Note
         ----
@@ -738,13 +742,13 @@ class BlockMatrix(object):
                     m = mij[0]
                     iit = np.where(np.array(m.scale.shape) == 1, 0, it) # if shape is 1 use index 0, else use given index (shape=1 means the scale is constant in that direction)
                     sc = m.scale[tuple(iit)]
-                    d = sc*m.pmat.diags('csr')
+                    d = sc*m.pmat.diags(format)
                     for mj in mij[1:]:
                         iit = np.where(np.array(mj.scale.shape) == 1, 0, it)
                         sc = mj.scale[tuple(iit)]
-                        d = d + sc*mj.pmat.diags('csr')
+                        d = d + sc*mj.pmat.diags(format)
                     bm[-1].append(d)
-        return bmat(bm, format='csr')
+        return bmat(bm, format=format)
 
         #alldiags = {}
         #for i, mi in enumerate(self.mats):
