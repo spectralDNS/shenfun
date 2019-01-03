@@ -79,7 +79,7 @@ from __future__ import division
 from copy import deepcopy
 from numbers import Number
 import numpy as np
-from scipy.sparse import bmat, diags as sp_diags
+from scipy.sparse import bmat, dia_matrix, diags as sp_diags
 from scipy.sparse.linalg import spsolve
 from .utilities import inheritdocstrings
 
@@ -128,7 +128,7 @@ class SparseMatrix(dict):
     def __init__(self, d, shape, scale=1.0):
         dict.__init__(self, d)
         self.shape = shape
-        self._diags = None
+        self._diags = dia_matrix((1, 1))
         self.scale = scale
 
     def matvec(self, v, c, format='dia', axis=0):
@@ -204,13 +204,13 @@ class SparseMatrix(dict):
         calculations
 
         """
-        if self._diags is None:
+        if self._diags.shape != self.shape or self._diags.format != format:
             self._diags = sp_diags(list(self.values()), list(self.keys()),
                                    shape=self.shape, format=format)
-
-        if self._diags.format != format:
-            self._diags = sp_diags(list(self.values()), list(self.keys()),
-                                   shape=self.shape, format=format)
+            scale = self.scale
+            if isinstance(scale, np.ndarray):
+                scale = np.asscalar(scale)
+            self._diags *= scale
 
         return self._diags
 
@@ -553,9 +553,9 @@ class SpectralMatrix(SparseMatrix):
                      (self.trialfunction[0].__class__, self.trialfunction[1])))
 
     def get_key(self):
-        if self.__class__.__name__.startswith('_'):
-            return self.__hash__()
-        return self.__class__.__name__
+        if 'mat' in self.__class__.__name__:
+            return  self.__class__.__name__
+        return self.__hash__()
 
     def simplify_fourier_matrices(self):
         if self.testfunction[0].family() == 'fourier':
@@ -610,15 +610,92 @@ class SpectralMatrix(SparseMatrix):
         return f
 
 class Identity(SparseMatrix):
+    """The identity matrix in :class:`.SparseMatrix` form
+
+    Parameters
+    ----------
+    shape : 2-tuple of ints
+        The shape of the matrix
+    scale : number, optional
+        Scalar multiple of the matrix, defaults to unity
+
+    """
     def __init__(self, shape, scale=1):
         SparseMatrix.__init__(self, {0:1}, shape, scale)
 
 class BlockMatrix(object):
+    r"""A class for block matrices
+
+    Parameters
+    ----------
+        tpmats : sequence of :class:`.TPMatrix` or :class:`.SparseMatrix`
+            The individual blocks for the matrix
+
+    Example
+    -------
+    Stokes equations, periodic in x and y-directions
+
+    .. math::
+
+        -\nabla^2 u - \nabla p &= 0 \\
+        \nabla \cdot u &= 0 \\
+        u(x, y, z=\pm 1) &= 0
+
+    We use for the z-direction a Dirichlet basis (SD) and a regular basis with
+    no boundary conditions (ST). This is combined with Fourier in the x- and
+    y-directions (K0, K1), such that we get two TensorProductSpaces (TD, TT)
+    that are the Cartesian product of these bases
+
+    .. math::
+
+        TD &= K0 \times K1 \times SD \\
+        TT &= K0 \times K1 \times ST
+
+    We choose trialfunctions :math:`u \in [TD]^3` and :math:`p \in TT`, and then
+    solve the weak problem
+
+    .. math::
+
+        \left( \nabla v, \nabla u\right) + \left(\nabla \cdot v, p \right) = 0\\
+        \left( q, \nabla \cdot u\right) = 0
+
+    for all :math:`v \in [TD]^3` and :math:`q \in TT`.
+
+    To solve the problem we need to assemble a block matrix
+
+    .. math::
+
+        \begin{bmatrix}
+            \left( \nabla v, \nabla u\right) & \left(\nabla \cdot v, p \right) \\
+            \left( q, \nabla \cdot u\right) & 0
+        \end{bmatrix}
+
+    This matrix is assemble below
+
+    >>> N = (24, 24, 24)
+    >>> K0 = Basis(N[0], 'Fourier', dtype='d')
+    >>> K1 = Basis(N[1], 'Fourier', dtype='D')
+    >>> SD = Basis(N[2], 'Legendre', bc=(0, 0))
+    >>> ST = Basis(N[2], 'Legendre')
+    >>> TD = TensorProductSpace(comm, (K0, K1, SD), axes=(2, 1, 0))
+    >>> TT = TensorProductSpace(comm, (K0, K1, ST), axes=(2, 1, 0))
+    >>> VT = VectorTensorProductSpace(TD)
+    >>> Q = MixedTensorProductSpace([VT, TD])
+    >>> up = TrialFunction(Q)
+    >>> vq = TestFunction(Q)
+    >>> u, p = up
+    >>> v, q = vq
+    >>> A00 = inner(grad(v), grad(u))
+    >>> A01 = inner(div(v), p)
+    >>> A10 = inner(q, div(u))
+    >>> M = BlockMatrix(A00+A01+A10)
+
+    """
     def __init__(self, tpmats):
         assert isinstance(tpmats, (list, tuple))
         tpmats = [tpmats] if not isinstance(tpmats[0], (list, tuple)) else tpmats
         self.base = base = tpmats[0][0].base
-        dims = base.num_components()
+        self.dims = dims = base.num_components()
         self.mats = np.zeros((dims, dims), dtype=int).tolist()
         tps = base.flatten()
         offset = [np.zeros(tps[0].dimensions(), dtype=int)]
@@ -648,7 +725,7 @@ class BlockMatrix(object):
             if not isinstance(mat, list):
                 mat = [mat]
             for m in mat:
-                assert isinstance(m, TPMatrix)
+                assert isinstance(m, (TPMatrix, SparseMatrix))
                 i, j = m.global_index
                 m0 = self.mats[i][j]
                 if isinstance(m0, int):
@@ -664,13 +741,13 @@ class BlockMatrix(object):
                         self.mats[i][j].append(m)
 
     def get_mats(self, return_first=False):
-        """Return flattened list of :class:`.TPMatrix` instances in self"""
+        """Return flattened list of matrices in self"""
         tpmats = []
         for mi in self.mats:
             for mij in mi:
                 if isinstance(mij, (list, tuple)):
                     for m in mij:
-                        if isinstance(m, TPMatrix):
+                        if isinstance(m, (TPMatrix, SparseMatrix)):
                             if return_first:
                                 return m
                             else:
@@ -714,11 +791,11 @@ class BlockMatrix(object):
     def get_offset(self, i, axis=0):
         return self.offset[i][axis]
 
-    def diags(self, it, format='csr'):
+    def diags(self, it=(0,), format='csr'):
         """Return global block matrix in scipy sparse format
 
-        The returned matrix is constructed for given indices in the periodic
-        directions.
+        For multidimensional forms the returned matrix is constructed for
+        given indices in the periodic directions.
 
         Parameters
         ----------
@@ -740,13 +817,18 @@ class BlockMatrix(object):
                     bm[-1].append(None)
                 else:
                     m = mij[0]
-                    iit = np.where(np.array(m.scale.shape) == 1, 0, it) # if shape is 1 use index 0, else use given index (shape=1 means the scale is constant in that direction)
-                    sc = m.scale[tuple(iit)]
-                    d = sc*m.pmat.diags(format)
-                    for mj in mij[1:]:
-                        iit = np.where(np.array(mj.scale.shape) == 1, 0, it)
-                        sc = mj.scale[tuple(iit)]
-                        d = d + sc*mj.pmat.diags(format)
+                    if len(it) == 1:
+                        d = np.asscalar(m.scale)*m.diags(format)
+                        for mj in mij[1:]:
+                            d = d + np.asscalar(m.scale)*m.diags(format)
+                    else:
+                        iit = np.where(np.array(m.scale.shape) == 1, 0, it) # if shape is 1 use index 0, else use given index (shape=1 means the scale is constant in that direction)
+                        sc = m.scale[tuple(iit)]
+                        d = sc*m.pmat.diags(format)
+                        for mj in mij[1:]:
+                            iit = np.where(np.array(mj.scale.shape) == 1, 0, it)
+                            sc = mj.scale[tuple(iit)]
+                            d = d + sc*mj.pmat.diags(format)
                     bm[-1].append(d)
         return bmat(bm, format=format)
 
@@ -812,15 +894,27 @@ class BlockMatrix(object):
         else:
             assert u.shape == b.shape
         tpmat = self.get_mats(True)
-        assert len(tpmat.naxes) == 1
-        axis = tpmat.naxes[0]
-        mat = tpmat.pmat
+        axis = tpmat.naxes[0] if isinstance(tpmat, TPMatrix) else 0
+        mat = tpmat.pmat if isinstance(tpmat, TPMatrix) else tpmat
         assert axis == mat.axis
         tp = space.flatten()
         N = self.global_shape[axis]
-        gi = np.zeros(N, dtype=np.complex)
-        go = np.zeros(N, dtype=np.complex)
-        if space.dimensions() == 2:
+        gi = np.zeros(N, dtype=b.dtype)
+        go = np.zeros(N, dtype=b.dtype)
+        if space.dimensions() == 1:
+            s = [0, 0]
+            Ai = self.diags((0,))
+            for k in range(b.shape[0]):
+                s[0] = k
+                s[1] = tp[k].slice()
+                gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
+            go[:] = sp.linalg.spsolve(Ai, gi)
+            for k in range(b.shape[0]):
+                s[0] = k
+                s[1] = tp[k].slice()
+                u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
+
+        elif space.dimensions() == 2:
             s = [0]*3
             ii, jj = {0:(2, 1), 1:(1, 2)}[axis]
             d0 = [0, 0]
@@ -865,7 +959,7 @@ class TPMatrix(object):
     A :class:`.TensorProductSpace` is the outer product of ``D`` bases.
     A matrix assembled from test and trialfunctions on TensorProductSpaces
     will, as such, be represented as the outer product of ``D`` smaller matrices,
-    one for each base. This class represents the complete matrix.
+    one for each basis. This class represents the complete matrix.
 
     Parameters
     ----------
@@ -948,6 +1042,7 @@ class TPMatrix(object):
             raise NotImplementedError
 
     def matvec(self, v, c):
+        c.fill(0)
         if len(self.naxes) == 0:
             c[:] = self.scale*v
         elif len(self.naxes) == 1:

@@ -292,20 +292,16 @@ class Expr(object):
     def __getitem__(self, i):
         #assert self.num_components() == self.dim()
         basis = self._basis
+        if self.rank() > 0:
+            basis = self._basis[i]
+        else:
+            basis = self._basis
         if self.expr_rank() == 1:
-            if self.rank() > 0:
-                basis = self._basis[i]
-            else:
-                basis = self._basis
             return Expr(basis,
                         self._terms[i][np.newaxis, :, :],
                         self._scales[i][np.newaxis, :],
                         self._indices[i][np.newaxis, :])
         elif self.expr_rank() == 2:
-            if self.rank() > 0:
-                basis = self._basis[i]
-            else:
-                basis = self._basis
             ndim = self.dimensions()
             return Expr(basis,
                         self._terms[i*ndim:(i+1)*ndim],
@@ -419,7 +415,7 @@ class BasisFunction(object):
 
     Parameters
     ----------
-    space: TensorProductSpace
+    space: :class:`.TensorProductSpace` or :class:`.SpectralBase`
     index: int
         Component of basis with rank > 0
     """
@@ -780,12 +776,11 @@ class Array(np.ndarray):
     Parameters
     ----------
 
-    space : :class:`.TensorProductSpace`
+    space : :class:`.TensorProductSpace` or :class:`.SpectralBase`
     val : int or float
         Value used to initialize array
     buffer : Numpy array or Array
         Must be of correct shape
-
 
     .. note:: For more information, see `numpy.ndarray <https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html>`_
 
