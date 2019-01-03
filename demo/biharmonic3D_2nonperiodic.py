@@ -44,7 +44,7 @@ ul = lambdify((x, y, z), ue, 'numpy')
 fl = lambdify((x, y, z), fe, 'numpy')
 
 # Size of discretization
-N = (40, 40, 40)
+N = (36, 36, 36)
 
 K0 = Basis(N[0], 'Fourier', dtype='d')
 S0 = Basis(N[1], family=family, bc='Biharmonic')

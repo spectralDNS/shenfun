@@ -32,6 +32,11 @@ python biharmonic1D.py 32 legendre
 python biharmonic2D.py legendre
 python biharmonic3D.py legendre
 
+python biharmonic2D_2nonperiodic.py
+python biharmonic3D_2nonperiodic.py
+python biharmonic2D_2nonperiodic.py legendre
+python biharmonic3D_2nonperiodic.py legendre
+
 python dirichlet_dirichlet_poisson2D.py 24 25 legendre
 python dirichlet_dirichlet_poisson2D.py 24 25 chebyshev
 
