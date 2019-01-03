@@ -25,6 +25,7 @@ coupled and implicit.
 """
 
 import os
+import sys
 import numpy as np
 from mpi4py import MPI
 from sympy import symbols, sin, cos, lambdify
@@ -32,6 +33,12 @@ from shenfun import *
 
 comm = MPI.COMM_WORLD
 x, y = symbols("x,y")
+
+family = sys.argv[-1].lower()
+assert len(sys.argv) == 4, "Call with three command-line arguments: N[0], N[1] and family (Chebyshev/Legendre)"
+assert family in ('legendre', 'chebyshev')
+assert isinstance(int(sys.argv[-2]), int)
+assert isinstance(int(sys.argv[-3]), int)
 
 #ue = (sin(2*x)*cos(3*y))*(1-x**2)
 ue = (sin(4*x)*cos(5*y))*(1-y**2)
@@ -45,10 +52,11 @@ fl = lambdify((x, y), fe, 'numpy')
 duxl = lambdify((x, y), dux, 'numpy')
 duyl = lambdify((x, y), duy, 'numpy')
 
-N = (24, 24)
+N = (int(sys.argv[-3]), int(sys.argv[-2]))
+
 K0 = Basis(N[0], 'Fourier', dtype='d')
-SD = Basis(N[1], 'L', bc=(0, 0))
-ST = Basis(N[1], 'L')
+SD = Basis(N[1], family, bc=(0, 0))
+ST = Basis(N[1], family)
 
 TD = TensorProductSpace(comm, (K0, SD), axes=(1, 0))
 TT = TensorProductSpace(comm, (K0, ST), axes=(1, 0))
@@ -63,8 +71,10 @@ g, u = gu
 p, q = pq
 
 A00 = inner(p, g)
-A01 = inner(div(p), u)
-#A01 = inner(p, -grad(u))
+if family == 'legendre':
+    A01 = inner(div(p), u)
+else:
+    A01 = inner(p, -grad(u))
 A10 = inner(q, div(g))
 
 # Get f and g on quad points

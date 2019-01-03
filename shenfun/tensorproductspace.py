@@ -213,6 +213,8 @@ class TensorProductSpace(PFFT):
             output_array = np.zeros(points.shape[1], dtype=self.forward.input_array.dtype)
         else:
             output_array[:] = 0
+        if len(self.get_nonperiodic_axes()) > 1:
+            method = 2
         if method == 0:
             return self._eval_lm_cython(points, coefficients, output_array)
         elif method == 1:
@@ -266,6 +268,7 @@ class TensorProductSpace(PFFT):
                     ss = [slice(None)]*len(self)
                     ss[axis] = slice(sl, st)
                     out += np.conj(np.tensordot(P[tuple(sp)], coefficients[tuple(ss)], (1, axis)))
+                    out = out.real
 
             else:
                 k = np.count_nonzero([m < axis for m in previous_axes])
@@ -278,24 +281,26 @@ class TensorProductSpace(PFFT):
                         out2 += np.sum(np.conj(P[sp].real*out[sp].real - P[sp].imag*out[sp].imag), axis=-1)
 
                 elif len(self) == 3:
+                    sx = [slice(None)]*out.ndim
+                    sd = [slice(None)]*out.ndim
                     if len(out.shape) == 3:
-                        sx = [slice(None)]*3
                         kk = 1 if axis-k == 1 else 2
                         sx[kk] = np.newaxis
-                    else:
-                        sx = [slice(None), slice(None)]
                     if not isinstance(base, R2CBasis):
                         out2 = np.sum(P[tuple(sx)]*out, axis=1+axis-k)
                     else:
                         out2 = np.sum(P[tuple(sx)].real*out.real - P[tuple(sx)].imag*out.imag, axis=1+axis-k)
                         sx[1+axis-k] = slice(sl, st)
+                        sd[1+axis-k] = slice(sl, st)
                         sx = tuple(sx)
-                        out2 += np.sum(np.conj(P[sx].real*out[sx].real - P[sx].imag*out[sx].imag), axis=1+axis-k)
+                        sd = tuple(sd)
+                        out2 += np.sum(np.conj(P[sx].real*out[sd].real - P[sx].imag*out[sd].imag), axis=1+axis-k)
                 out = out2
             previous_axes.append(axis)
         output_array[:] = out
         output_array = self.comm.allreduce(output_array)
         return output_array
+
 
     def _eval_lm_cython(self, points, coefficients, output_array):
         """Evaluate Function at points, given expansion coefficients
@@ -670,15 +675,14 @@ class MixedTensorProductSpace(object):
 
     def flatten(self):
         s = []
-        self._recursiveflatten(self, s)
+        def _recursiveflatten(l, s):
+            if hasattr(l, 'spaces'):
+                for i in l.spaces:
+                    _recursiveflatten(i, s)
+            else:
+                s.append(l)
+        _recursiveflatten(self, s)
         return s
-
-    def _recursiveflatten(self, l, s):
-        if hasattr(l, 'spaces'):
-            for i in l.spaces:
-                self._recursiveflatten(i, s)
-        else:
-            s.append(l)
 
     def __getitem__(self, i):
         return self.spaces[i]

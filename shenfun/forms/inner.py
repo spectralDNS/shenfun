@@ -131,7 +131,7 @@ def inner(expr0, expr1, output_array=None, level=0):
             l = inner(test[ii], trial[ii], level=level)
             result += [l] if isinstance(l, TPMatrix) else l
 
-        # Add equal TPMatrices
+        # Add equal TPMatrices together
         if level == 0:
             B = [result[0]]
             for a in result[1:]:
@@ -235,23 +235,6 @@ def inner(expr0, expr1, output_array=None, level=0):
     # two matrices are usually termed the stiffness and mass matrices, and they
     # have been implemented in chebyshev/matrices.py or legendre/matrices.py,
     # where they are called ADDmat and BDDmat, respectively.
-    #
-    # The inner product will return a dictionary of a type constructed from the
-    # matrices in A. In this case:
-    #
-    # B = (v[0], u[0]'')_x
-    # B.scale = (v[1], u[1])_y[local_shape]
-    # B.axis = 0
-    # C = (v[0], u[0])_x
-    # C.scale = (v[1], u[1])_y[local_shape]
-    # C.axis = 0
-    # return {'ADDmat': B,
-    #         'BDDmat': C}
-    #
-    # where the name 'ADDmat' is obtained from B.get_key()
-    #
-    # where local_shape is used to indicate that we are only returning the local
-    # values of the scale arrays.
 
     if level == 2 and trial.argument == 1:
         return A
@@ -294,6 +277,8 @@ def inner(expr0, expr1, output_array=None, level=0):
                 if len(B[0].mats) == 1:
                     p = B[0].pmat
                     p.scale = p.scale*B[0].scale
+                    p.global_index = B[0].global_index
+                    p.base = B[0].base
                     return p
                 return B[0]
             return B

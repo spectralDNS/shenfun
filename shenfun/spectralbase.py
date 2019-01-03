@@ -198,8 +198,8 @@ class SpectralBase(object):
         Parameters
         ----------
             bcast : bool
-                Whether or not to broadcast to :meth:`.dimensions` if basis
-                belongs to a :class:`.TensorProductSpace`
+                Whether or not to broadcast to :meth:`.SpectralBase.dimensions`
+                if basis belongs to a :class:`.TensorProductSpace`
             map_true_domain : bool, optional
                 Whether or not to map points to true domain
         """
@@ -286,7 +286,6 @@ class SpectralBase(object):
             return output_array
         return self.scalar_product.output_array
 
-    #@profile
     def forward(self, input_array=None, output_array=None, fast_transform=True):
         """Compute forward transform
 
@@ -848,6 +847,90 @@ class SpectralBase(object):
 
     def _padding_backward(self, trunc_array, padded_array):
         pass
+
+class MixedBasis(object):
+    """Class for composite bases
+
+    Parameters
+    ----------
+    spaces : list
+        List of bases
+
+    """
+    def __init__(self, bases):
+        self.bases = bases
+        self.forward = VectorBasisTransform([basis.forward for basis in bases])
+        self.backward = VectorBasisTransform([basis.backward for basis in bases])
+        self.scalar_product = VectorBasisTransform([basis.scalar_product for basis in bases])
+
+    def shape(self, forward_output=False):
+        """Return shape of arrays for MixedBasis
+
+        Parameters
+        ----------
+        forward_output : bool, optional
+            If True then return shape of an array that is the result of a
+            forward transform. If False then return shape of physical
+            space, i.e., the input to a forward transform.
+        """
+        s = self.bases[0].shape(forward_output)
+        return (self.num_components(),) + s
+
+    def num_components(self):
+        """Return number of bases in mixed basis"""
+        f = self.flatten()
+        return len(f)
+
+    def flatten(self):
+        s = []
+        def _recursiveflatten(l, s):
+            if hasattr(l, 'bases'):
+                for i in l.bases:
+                    _recursiveflatten(i, s)
+            else:
+                s.append(l)
+        _recursiveflatten(self, s)
+        return s
+
+    def __getitem__(self, i):
+        return self.bases[i]
+
+    def __getattr__(self, name):
+        obj = object.__getattribute__(self, 'bases')
+        return getattr(obj[0], name)
+
+    def __len__(self):
+        return self.bases[0].dimensions()
+
+    def rank(self):
+        return 1
+
+    def dimensions(self):
+        """Return dimension of scalar space"""
+        return self.bases[0].dimensions()
+
+class VectorBasisTransform(object):
+
+    __slots__ = ('_transforms',)
+
+    def __init__(self, transforms):
+        self._transforms = []
+        for transform in transforms:
+            if isinstance(transform, VectorBasisTransform):
+                self._transforms += transform._transforms
+            else:
+                self._transforms.append(transform)
+
+    def __getattr__(self, name):
+        obj = object.__getattribute__(self, '_transforms')
+        if name == '_transforms':
+            return obj
+        return getattr(obj[0], name)
+
+    def __call__(self, input_array, output_array, **kw):
+        for i, transform in enumerate(self._transforms):
+            output_array[i] = transform(input_array[i], output_array[i], **kw)
+        return output_array
 
 class islicedict(dict):
     """Return a tuple of slices, broadcasted to ``dimensions`` number of
