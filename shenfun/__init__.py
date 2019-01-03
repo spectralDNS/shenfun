@@ -42,4 +42,3 @@ from .tensorproductspace import *
 from .utilities import *
 from .utilities.lagrangian_particles import *
 from .utilities.integrators import *
-#from .optimization import cython, numba

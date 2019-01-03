@@ -1,10 +1,12 @@
 r"""
 This module contains linear algebra solvers for SparseMatrixes
 """
+from functools import reduce
 import numpy as np
+import scipy.sparse as sp
 from scipy.sparse.linalg import spsolve
 from shenfun.optimization import optimizer
-from shenfun.matrixbase import SparseMatrix
+from shenfun.matrixbase import SparseMatrix, Identity
 
 class TDMA(object):
     """Tridiagonal matrix solver
@@ -278,7 +280,7 @@ class Solve(object):
             if not u is b:
                 b = np.moveaxis(b, 0, axis)
 
-        u /= self.A.scale
+        #u /= self.A.scale
         return u
 
 class NeumannSolve(object):
@@ -347,5 +349,70 @@ class NeumannSolve(object):
             u = np.moveaxis(u, 0, axis)
             if not u is b:
                 b = np.moveaxis(b, 0, axis)
-        u /= self.A.scale
+        #u /= self.A.scale
+        return u
+
+class SolverGeneric2NP(object):
+    """Generi solver for tensorproductspaces consisting of (currently) two
+    non-periodic directions.
+
+    Parameters
+    ----------
+    mats : sequence
+        sequence of instances of :class:`.TPMatrix`
+    """
+
+    def __init__(self, mats):
+        self.mats = mats
+        m = mats[0]
+        assert len(m.naxes) == 2
+        self.T = T = m.base
+        ndim = T.dimensions()
+        if ndim == 2:
+            m = mats[0]
+            M0 = sp.kron(m.mats[0].diags(), m.mats[1].diags())
+            M0 *= np.asscalar(m.scale)
+            for m in mats[1:]:
+                M1 = sp.kron(m.mats[0].diags(), m.mats[1].diags())
+                M1 *= np.asscalar(m.scale)
+                M0 = M0 + M1
+            self.M = M0
+
+    def matvec(self, u, c):
+        c.fill(0)
+        if u.ndim == 2:
+            s0 = tuple(base.slice() for base in self.T)
+            c[s0] = self.M.dot(u[s0].flatten()).reshape(self.T.shape(True))
+        return c
+
+    def __call__(self, b, u=None):
+        if u is None:
+            u = b
+        else:
+            assert u.shape == b.shape
+        if u.ndim == 2:
+            s0 = tuple(base.slice() for base in self.T)
+            u[s0] = sp.linalg.spsolve(self.M, b[s0].flatten()).reshape(self.T.shape(True))
+        elif u.ndim == 3:
+            naxes = self.T.get_nonperiodic_axes()
+            periodic_axis = np.setxor1d([0, 1, 2], naxes)
+            assert len(periodic_axis) == 1
+            periodic_axis = periodic_axis[0]
+            shape = self.T.local_shape(True)
+            M = shape[periodic_axis]
+            sc = [0, 0, 0]
+            for i in range(M):
+                m = self.mats[0]
+                M0 = sp.kron(m.mats[naxes[0]].diags(), m.mats[naxes[1]].diags())
+                sc[periodic_axis] = i if m.scale.shape[periodic_axis] > 1 else 0
+                M0 *= np.asscalar(m.scale[tuple(sc)])
+                for m in self.mats[1:]:
+                    M1 = sp.kron(m.mats[naxes[0]].diags(), m.mats[naxes[1]].diags())
+                    sc[periodic_axis] = i if m.scale.shape[periodic_axis] > 1 else 0
+                    M1 *= np.asscalar(m.scale[tuple(sc)])
+                    M0 = M0 + M1
+                s0 = [base.slice() for base in self.T]
+                s0[periodic_axis] = i
+                shape = np.take(self.T.shape(True), naxes)
+                u[tuple(s0)] = sp.linalg.spsolve(M0, b[tuple(s0)].flatten()).reshape(shape)
         return u

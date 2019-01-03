@@ -1,11 +1,11 @@
 r"""
-Solve Biharmonic equation in 3D with periodic bcs in two directions
-and homogeneous Dirichlet and Neumann in the remaining third
+Solve Biharmonic equation in 3D with homogeneous Dirichlet and
+Neumann boundary conditions in two directions and Fourier in the
+last
 
     \nabla^4 u = f,
 
-Use Fourier basis for the periodic direction and Shen's Biharmonic
-basis for the non-periodic direction.
+Use Shen's Biharmonic basis for both non-periodic directions.
 
 Note that we are solving
 
@@ -20,23 +20,23 @@ for the Legendre basis.
 """
 import sys
 import os
-import importlib
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
 from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
-    Basis, TensorProductSpace, Function
+    Function, TensorProductSpace, Basis
+from shenfun.la import SolverGeneric2NP
 
 comm = MPI.COMM_WORLD
 
+assert comm.Get_size() == 1, "Two non-periodic directions only have solver implemented for serial"
+
 # Collect basis and solver from either Chebyshev or Legendre submodules
 family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
-base = importlib.import_module('.'.join(('shenfun', family)))
-BiharmonicSolver = base.la.Biharmonic
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y, z = symbols("x,y,z")
-ue = (sin(4*np.pi*x)*sin(6*z)*cos(4*y))*(1-x**2)
+ue = (sin(2*np.pi*z)*sin(4*np.pi*y)*cos(4*x))*(1-y**2)*(1-z**2)
 fe = ue.diff(x, 4) + ue.diff(y, 4) + ue.diff(z, 4) + 2*ue.diff(x, 2, y, 2) + 2*ue.diff(x, 2, z, 2) + 2*ue.diff(y, 2, z, 2)
 
 # Lambdify for faster evaluation
@@ -46,15 +46,12 @@ fl = lambdify((x, y, z), fe, 'numpy')
 # Size of discretization
 N = (36, 36, 36)
 
-if family == 'chebyshev':
-    assert N[0] % 2 == 0, "Biharmonic solver only implemented for even numbers"
+K0 = Basis(N[0], 'Fourier', dtype='d')
+S0 = Basis(N[1], family=family, bc='Biharmonic')
+S1 = Basis(N[2], family=family, bc='Biharmonic')
 
-SD = Basis(N[0], family=family, bc='Biharmonic')
-K1 = Basis(N[1], family='F', dtype='D')
-K2 = Basis(N[2], family='F', dtype='d')
-T = TensorProductSpace(comm, (SD, K1, K2), axes=(0, 1, 2))
-
-X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
+T = TensorProductSpace(comm, (K0, S0, S1), axes=(1, 0, 2), slab=True)
+X = T.local_mesh(True)
 u = TrialFunction(T)
 v = TestFunction(T)
 
@@ -67,17 +64,16 @@ f_hat = inner(v, fj)
 # Get left hand side of biharmonic equation
 if family == 'chebyshev': # No integration by parts due to weights
     matrices = inner(v, div(grad(div(grad(u)))))
-else: # Use form with integration by parts. Note that Biharmonic operator used for Chebyshev also works for Legendre
+else: # Use form with integration by parts.
     matrices = inner(div(grad(v)), div(grad(u)))
 
 # Create linear algebra solver
-H = BiharmonicSolver(*matrices)
+H = SolverGeneric2NP(matrices)
 
 # Solve and transform to real space
-u_hat = Function(T)             # Solution spectral space
-u_hat = H(u_hat, f_hat)         # Solve
+u_hat = Function(T)           # Solution spectral space
+u_hat = H(f_hat, u_hat)       # Solve
 uq = u_hat.backward()
-#uh = uq.forward()
 
 # Compare with analytical solution
 uj = ul(*X)

@@ -364,21 +364,21 @@ def test_eval_tensor(typecode, dim, ST, quad):
     t_1 = 0
     t_2 = 0
     for shape in product(*([sizes]*dim)):
+        #for shape in ((64, 64),):
         bases = []
         for n in shape[:-1]:
             bases.append(Basis(n, 'F', dtype=typecode.upper()))
         bases.append(Basis(shape[-1], 'F', dtype=typecode))
 
         for axis in range(dim+1):
-            #for axis in (2,):
+            #for axis in (0,):
             ST0 = ST(shape[-1], quad=quad)
             bases.insert(axis, ST0)
             # Spectral space must be aligned in nonperiodic direction, hence axes
             fft = TensorProductSpace(comm, bases, dtype=typecode, axes=axes[dim][axis])
-            #print('axes', axes[dim][axis])
-            #print('bases', bases)
+            print('axes', axes[dim][axis])
+            print('bases', bases)
             #print(bases[0].axis, bases[1].axis)
-            #from IPython import embed; embed()
             X = fft.local_mesh(True)
             ue = funcs[(dim, axis)]
             ul = lambdify(syms[dim], ue, 'numpy')
@@ -397,7 +397,7 @@ def test_eval_tensor(typecode, dim, ST, quad):
             t0 = time()
             result = fft.eval(points, u_hat, method=2)
             t_2 += time()-t0
-
+            print(uq)
             assert np.allclose(uq, result, 0, 1e-6), uq/result
             result = u_hat.eval(points)
             assert np.allclose(uq, result, 0, 1e-6)
@@ -469,6 +469,6 @@ if __name__ == '__main__':
     #test_shentransform('d', 2, cbases.ShenNeumannBasis, 'GC')
     #test_project('d', 1, cbases.ShenDirichletBasis, 'GC')
     #test_project2('d', 1, lbases.ShenNeumannBasis, 'LG')
-    test_project_2dirichlet('GL')
-    #test_eval_tensor('d', 1, cbases.Basis, 'GC')
+    #test_project_2dirichlet('GL')
+    test_eval_tensor('d', 2, cbases.ShenBiharmonicBasis, 'GC')
     #test_eval_fourier('d', 3)
