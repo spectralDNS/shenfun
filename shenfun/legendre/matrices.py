@@ -407,7 +407,7 @@ class GDDmat(SpectralMatrix):
             d = 1./self[0]
             sl = [np.newaxis]*bs.ndim
             sl[0] = slice(None)
-            us[:] = bs*d[sl]
+            us[:] = bs*d[tuple(sl)]
             self.testfunction[0].bc.apply_after(u, True)
 
             if axis > 0:
@@ -417,7 +417,7 @@ class GDDmat(SpectralMatrix):
         else:
             ss = [slice(None)]*b.ndim
             ss[axis] = s
-            u[ss] = -b[ss]
+            u[ss] = -b[tuple(ss)]
             self.testfunction[0].bc.apply_after(u, True)
 
         u /= self.scale

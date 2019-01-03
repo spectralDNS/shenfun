@@ -498,7 +498,7 @@ class Helmholtz_2dirichlet(object):
             a[2, :-2] = B[2]
             self.lmbda[s], self.V[s, s] = scipy_la.eig_banded(a, lower=True)
 
-    def __call__(self, u, b, solver=1):
+    def __call__(self, b, u, solver=1):
 
         if solver == 0: # pragma: no cover
 
@@ -541,11 +541,11 @@ class Helmholtz_2dirichlet(object):
             ls = [slice(start, start+shape) for start, shape in zip(self.pencilB.substart,
                                                                     self.pencilB.subshape)]
 
-            self.B1.scale = np.zeros((ls[0].stop-ls[0].start, 1))
-            self.B1.scale[:, 0] = self.BB.scale + 1./self.lmbda[ls[0]]
-            self.A1.scale = np.ones((1, 1))
+            B1_scale = np.zeros((ls[0].stop-ls[0].start, 1))
+            B1_scale[:, 0] = self.BB.scale + 1./self.lmbda[ls[0]]
+            A1_scale = np.ones((1, 1))
             # Create Helmholtz solver along axis=1
-            Helmy = Helmholtz(self.A1, self.B1)
+            Helmy = Helmholtz(self.A1, self.B1, A1_scale, B1_scale)
             # Map the right hand side to eigen space
             self.rhs_A = (self.V.T).dot(b)
             self.rhs_A /= self.lmbda[:, np.newaxis]
@@ -567,11 +567,9 @@ class Helmholtz_2dirichlet(object):
             G[:] = BB.dot(u)
             H[:] = u.dot(BB)
             bc = b.copy()
-            B_scale = copy(self.B.scale)
-            self.B.scale = np.broadcast_to(self.B.scale, (1, u.shape[1])).copy()
-            self.B.scale *= self.scale['BUB']
-            self.A.scale = np.ones((1, 1))
-            Helmx = Helmholtz(self.A, self.B)
+            B_scale = np.broadcast_to(self.B.scale, (1, u.shape[1])).copy()
+            B_scale *= self.scale['BUB']
+            Helmx = Helmholtz(self.A, self.B, np.ones((1, 1)), B_scale)
             converged = False
             G_old = G.copy()
             Hc = H.copy()
@@ -594,7 +592,5 @@ class Helmholtz_2dirichlet(object):
                 converged = err < 1e-10
                 om = omega
 
-            self.B.scale = B_scale
             u = self.B.solve(G, u)
-
         return u
