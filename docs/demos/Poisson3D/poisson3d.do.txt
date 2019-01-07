@@ -219,7 +219,7 @@ be found as follows
 Now, when $\hat{u}_{\ts{k}}$ is found by solving this linear system over the
 entire computational mesh, it may be
 transformed to real space $u(\bs{x})$ using (ref{eq:3d:u}). Note that the matrices
-$A \in \mathbb{R}^{N_0-2, N_0-2}$ and $B \in \mathbb{R}^{N_0-2, N_0-2}$ differs for Legendre or Chebyshev bases, but
+$A \in \mathbb{R}^{N_0-2 \times N_0-2}$ and $B \in \mathbb{R}^{N_0-2 \times N_0-2}$ differs for Legendre or Chebyshev bases, but
 for either case they have a
 special structure that allows for a solution to be found very efficiently
 in the order of $\mathcal{O}(N_0-2)$ operations given $m$ and $n$, see

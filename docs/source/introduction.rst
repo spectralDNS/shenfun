@@ -10,7 +10,7 @@ is very similar to the `finite element method <https://en.wikipedia.org/wiki/Fin
 feature is that it uses global shape functions, where FEM uses local. This
 feature leads to highly accurate results with very few shape functions, but
 the downside is much less flexibility when it comes to computational
-domain than FEM. 
+domain than FEM.
 
 Consider the Poisson equation with a right hand side function :math:`f(\boldsymbol{x})`
 
@@ -19,20 +19,20 @@ Consider the Poisson equation with a right hand side function :math:`f(\boldsymb
 
     -\nabla^2 u(\boldsymbol{x}) = f(\boldsymbol{x}) \quad \text{for } \, \boldsymbol{x} \in \Omega.
 
-To solve this equation, we will eventually need to supplement 
+To solve this equation, we will eventually need to supplement
 appropriate boundary conditions. However, for now just assume that any valid
 boundary conditions (Dirichlet, Neumann, periodic).
 
 With the method of weighted residuals we attempt to find :math:`u(\boldsymbol{x})`
-using an approximation, :math:`u_N`, to the solution 
+using an approximation, :math:`u_N`, to the solution
 
 .. math::
    :label: eq:mwr_u
 
-    u(\boldsymbol{x}) \approx u_N(\boldsymbol{x}) = \sum_{k=0}^{N} \hat{u}_k \phi_k(\boldsymbol{x}).
+    u(\boldsymbol{x}) \approx u_N(\boldsymbol{x}) = \sum_{k=0}^{N-1} \hat{u}_k \phi_k(\boldsymbol{x}).
 
-Here the :math:`N+1` expansion coefficients :math:`\hat{u}_k` are unknown
-and :math:`\{\phi_k\}_{k\in \mathcal{I}}, \mathcal{I} = 0, 1, \ldots, N` are
+Here the :math:`N` expansion coefficients :math:`\hat{u}_k` are unknown
+and :math:`\{\phi_k\}_{k\in \mathcal{I}^N}, \mathcal{I}^N = 0, 1, \ldots, N-1` are
 *trial* functions. Inserting for :math:`u_N` in Eq. :eq:`eq:poisson1` we get
 a residual
 
@@ -41,8 +41,8 @@ a residual
 
     R_N(\boldsymbol{x}) = \nabla^2 u_N(\boldsymbol{x}) + f(\boldsymbol{x}) \neq 0.
 
-With the WRM we now force this residual to zero in an average sense using 
-*test* function :math:`v(\boldsymbol{x})` and *weight* function 
+With the WRM we now force this residual to zero in an average sense using
+*test* function :math:`v(\boldsymbol{x})` and *weight* function
 :math:`w(\boldsymbol{x})`
 
 .. math::
@@ -51,17 +51,25 @@ With the WRM we now force this residual to zero in an average sense using
     \left(R_N, v \right)_w := \int_{\Omega} R_N(\boldsymbol{x}) \, \overline{v}(\boldsymbol{x}) \, w(\boldsymbol{x}) d\boldsymbol{x} = 0,
 
 where :math:`\overline{v}` is the complex conjugate of :math:`v`. If we
-now choose the test functions from the basis :math:`v \in V_N=span\{\phi_k\}_{k\in \mathcal{I}}`, 
-then the WRM becomes the Galerkin method, and we get :math:`N+1` equations for 
-:math:`N+1` unknowns :math:`\{\hat{u}_k\}_{k\in \mathcal{I}}`
+now choose the test functions from the basis :math:`v \in V_N=span\{\phi_k\}_{k\in \mathcal{I}^N}`,
+then the WRM becomes the Galerkin method, and we get :math:`N` equations for
+:math:`N` unknowns :math:`\{\hat{u}_k\}_{k\in \mathcal{I}^N}`
 
 .. math::
    :label: eq:galerkin
 
-    \sum_{j\in \mathcal{I}}\left(-\nabla^2 \phi_j, \phi_k \right)_w \hat{u}_j = \left( f, \phi_k \right)_w, \text{ for } k \in \mathcal{I}.
+    \sum_{j\in \mathcal{I}^N} \underbrace{\left(-\nabla^2 \phi_j, \phi_k \right)_w}_{A_{kj}} \hat{u}_j = \left( f, \phi_k \right)_w, \text{ for } k \in \mathcal{I}^N.
 
-The choice of basis for :math:`v(\boldsymbol{x})` is highly central to the method. 
-For the Galerkin method to be *spectral*, the basis is usually chosen as linear 
+Note that this is a regular linear system of algebra equations
+
+.. math::
+
+    A_{kj} \hat{u}_{j} = \tilde{f}_k,
+
+where the matrix :math:`A \in \mathbb{R}^{N \times N}`.
+
+The choice of basis for :math:`v(\boldsymbol{x})` is highly central to the method.
+For the Galerkin method to be *spectral*, the basis is usually chosen as linear
 combinations of Chebyshev, Legendre, Laguerre, Hermite or trigonometric functions.
 In one spatial dimension typical choices for :math:`\phi_k` are
 
@@ -70,15 +78,15 @@ In one spatial dimension typical choices for :math:`\phi_k` are
    \phi_k(x) &= T_k(x) \\
    \phi_k(x) &= T_k(x) - T_{k+2}(x) \\
    \phi_k(x) &= L_k(x) \\
-   \phi_k(x) &= L_k(x) - L_{k+2}(x) \\ 
+   \phi_k(x) &= L_k(x) - L_{k+2}(x) \\
    \phi_k(x) &= \exp(\imath k x)
-   
-where :math:`T_k, L_k` are the :math:`k`'th Chebyshev polynomial of the first 
-kind and the :math:`k`'th Legendre polynomial, respectively. Note that the 
-second and fourth functions above satisfy the homogeneous Dirichlet boundary 
-conditions :math:`\phi_k(\pm 1) = 0`, and as such these basis functions may be 
-used to solve the Poisson equation :eq:`eq:poisson1` with homogeneous Dirichlet 
-boundary conditions. Similarly, two basis functions that satisfy homogeneous 
+
+where :math:`T_k, L_k` are the :math:`k`'th Chebyshev polynomial of the first
+kind and the :math:`k`'th Legendre polynomial, respectively. Note that the
+second and fourth functions above satisfy the homogeneous Dirichlet boundary
+conditions :math:`\phi_k(\pm 1) = 0`, and as such these basis functions may be
+used to solve the Poisson equation :eq:`eq:poisson1` with homogeneous Dirichlet
+boundary conditions. Similarly, two basis functions that satisfy homogeneous
 Neumann boundary condition :math:`u'(\pm 1)=0` are
 
 .. math::
@@ -86,15 +94,24 @@ Neumann boundary condition :math:`u'(\pm 1)=0` are
     \phi_k &= T_k-\left(\frac{k}{k+2}\right)^2T_{k+2} \\
     \phi_k &= L_k-\frac{k(k+1)}{(k+2)(k+3)}L_{k+2}
 
-Shenfun contains classes for working with several such bases, to be used for 
+Shenfun contains classes for working with several such bases, to be used for
 different equations and boundary conditions.
+
+Complete demonstration programs that solves the Poisson equation
+:eq:`eq:poisson1`, and some other problems can be found by following these
+links
+
+    * :ref:`Demo - 1D Poisson equation`
+    * :ref:`Demo - 3D Poisson equation`
+    * :ref:`Demo - Cubic nonlinear Klein-Gordon equation`
+    * :ref:`Demo - Kuramato-Sivashinsky equation`
 
 Tensor products
 ---------------
 
 If the problem is two-dimensional, then we need two basis functions, one per
 dimension. If we call the basis function along :math:`x`-direction :math:`\mathcal{X}(x)`
-and along :math:`y`-direction as :math:`\mathcal{Y}(y)`, the test function is then 
+and along :math:`y`-direction as :math:`\mathcal{Y}(y)`, the test function is then
 computed as
 
 .. math::
@@ -117,15 +134,16 @@ test functions. Moving to even more dimensions is then trivial, as
 global basis functions simply are the products of one-dimensional basis
 functions. Combining one-dimensional bases like this results in
 tensor product spaces, with tensor product meshes. If the one-dimensional
-meshes in :math:`x`- and :math:`y`-directions are :math:`x = \{x_m\}_{m=0}^{N}`
-and :math:`y = \{y_n\}_{n=0}^{M}`, then a tensor product mesh :math:`X` is
+meshes in :math:`x`- and :math:`y`-directions are :math:`x = \{x_m\}_{m=0}^{N-1}`
+and :math:`y = \{y_n\}_{n=0}^{M-1}`, then a tensor product mesh :math:`X` is
 the outer product of these two vectors
 
 .. math::
+    :label: eq:tensormesh
 
-    X_{m, n} = x_m y_n, \text{for } (m, n) \in \mathcal{I} \times \mathcal{I}.
+    X_{m, n} = x_m y_n, \text{for } (m, n) \in \mathcal{I}^M \times \mathcal{I}^N.
 
-Likewise, a tensor product basis is given in :eq:`eq:v2D`. 
+Likewise, a tensor product basis is given in :eq:`eq:v2D`.
 
 With shenfun a user chooses the appropriate bases for each dimension of the
 problem, and may then combine these bases into tensor product spaces. For
@@ -180,4 +198,3 @@ spectral Galerkin method.
 .. _Demo for Poisson equation in 1D with inhomogeneous Dirichlet boundary conditions: https://rawgit.com/spectralDNS/shenfun/master/docs/src/Poisson/poisson_bootstrap.html
 .. _Demo for Poisson equation in 3D with Dirichlet in one and periodicity in remaining two dimensions: https://rawgit.com/spectralDNS/shenfun/master/docs/src/Poisson3D/poisson3d_bootstrap.html
 .. _Shenfun paper: https://rawgit.com/spectralDNS/shenfun/master/docs/shenfun_bootstrap.html
-
