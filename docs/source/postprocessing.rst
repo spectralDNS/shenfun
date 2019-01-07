@@ -194,6 +194,7 @@ the hdf5-file:
     * ``myh5file_0_slice_slice.xdmf``
     * ``mixed.xdmf``
     * ``mixed_4_slice_slice.xdmf``
+
 These xdmf-files can be opened and inspected by ParaView. Note that 1D arrays are
 not wrapped, and neither are 4D.
 

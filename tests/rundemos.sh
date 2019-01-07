@@ -44,6 +44,10 @@ python NavierStokes.py
 
 python MixedPoisson.py 24 25 legendre
 python MixedPoisson.py 24 25 chebyshev
+python MixedPoisson3D.py legendre
+python MixedPoisson3D.py chebyshev
+python MixedPoisson1D.py legendre
+python MixedPoisson1D.py chebyshev
 python Stokes.py legendre
 python Stokes.py chebyshev
 
@@ -70,4 +74,6 @@ mpirun -np 4 python biharmonic3D.py legendre
 mpirun -np 4 python NavierStokes.py
 mpirun -np 4 python MixedPoisson.py 24 25 legendre
 mpirun -np 4 python MixedPoisson.py 24 25 chebyshev
+mpirun -np 4 python MixedPoisson3D.py legendre
+mpirun -np 4 python MixedPoisson3D.py chebyshev
 pushd $PWD/../tests

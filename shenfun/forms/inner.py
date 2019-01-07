@@ -247,8 +247,9 @@ def inner(expr0, expr1, output_array=None, level=0):
 
     if np.all([f.all_identity() for f in A]): # No non-diagonal matrix
         if trial.argument == 1:
+            # Note 1D case return a TPMatrix
             if trial.rank() == 0:
-                return reduce(lambda x, y: x+y, [s for s in A])
+                return reduce(lambda x, y: x+y, A)
             else:
                 return A
 
@@ -257,7 +258,7 @@ def inner(expr0, expr1, output_array=None, level=0):
             for i, b in enumerate(A):
                 output_array += b.scale*uh[trial_indices[0, i]]
         else:
-            f = reduce(lambda x, y: x+y, [s for s in A])
+            f = reduce(lambda x, y: x+y, A)
             output_array[:] = f.scale*uh
         return output_array
 
@@ -276,7 +277,7 @@ def inner(expr0, expr1, output_array=None, level=0):
             if len(B) == 1:
                 if len(B[0].mats) == 1:
                     p = B[0].pmat
-                    p.scale = p.scale*B[0].scale
+                    p.scale = p.scale*np.atleast_1d(B[0].scale).item()
                     p.global_index = B[0].global_index
                     p.base = B[0].base
                     return p
