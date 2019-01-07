@@ -351,7 +351,7 @@ class Biharmonic(object):
         self.B = M['BBBmat']
 
         if len(args) == 3:
-            S_scale = np.asscalar(self.S.scale)
+            S_scale = np.atleast_1d(self.S.scale).item()
             A_scale = self.A.scale
             B_scale = self.B.scale
             if isinstance(self.S, TPMatrix):
