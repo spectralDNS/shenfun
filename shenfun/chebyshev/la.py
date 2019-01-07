@@ -169,6 +169,8 @@ class Helmholtz(object):
         if T is not None:
             shape = list(T.local_shape(True))
             shape[A.axis] = 1
+        self.alfa = np.atleast_1d(self.alfa)
+        self.beta = np.atleast_1d(self.beta)
         if not self.alfa.shape == shape:
             self.alfa = np.broadcast_to(self.alfa, shape).copy()
         if not self.beta.shape == shape:
@@ -335,7 +337,7 @@ class Biharmonic(object):
         self.B = M['BBBmat']
 
         if len(args) == 3:
-            self.a0 = a0 = np.asscalar(self.S.scale)
+            self.a0 = a0 = np.atleast_1d(self.S.scale).item()
             self.alfa = alfa = self.A.scale
             self.beta = beta = self.B.scale
             if isinstance(self.S, TPMatrix):
@@ -481,8 +483,8 @@ class PDMA(object):
         elif len(args) == 4:
             A = self.A = args[0]
             B = self.B = args[1]
-            alfa = self.alfa = args[2]
-            beta = self.beta = args[3]
+            self.alfa = args[2]
+            self.beta = args[3]
         else:
             raise RuntimeError('Wrong input to PDMA solver')
 
@@ -490,7 +492,9 @@ class PDMA(object):
         self.d, self.u1, self.u2 = (np.zeros_like(B[0]), np.zeros_like(B[2]),
                                     np.zeros_like(B[4]))
         self.l1, self.l2 = np.zeros_like(B[2]), np.zeros_like(B[4])
-        shape = list(beta.shape)
+        self.alfa = np.atleast_1d(self.alfa)
+        self.beta = np.atleast_1d(self.beta)
+        shape = list(self.beta.shape)
 
         if len(shape) == 1:
             if self.solver == 'python':
@@ -509,23 +513,22 @@ class PDMA(object):
         else:
 
             self.axis = A.axis
-            assert alfa.shape[A.axis] == 1
-            assert beta.shape[A.axis] == 1
+            assert self.alfa.shape[A.axis] == 1
+            assert self.beta.shape[A.axis] == 1
             N = A.shape[0]+4
-            alfa = np.broadcast_to(alfa, shape).copy()
+            self.alfa = np.broadcast_to(self.alfa, shape).copy()
             shape[A.axis] = N
             self.d = np.zeros(shape, float)      # Diagonal entries of U
             self.u1 = np.zeros(shape, float)     # Diagonal+2 entries of U
             self.l1 = np.zeros(shape, float)     # Diagonal-2 entries of U
             self.u2 = np.zeros(shape, float)     # Diagonal+4 entries of U
             self.l2 = np.zeros(shape, float)     # Diagonal-4 entries of U
-            self.beta = beta.copy()
 
             if len(shape) == 2:
                 raise NotImplementedError
 
             elif len(shape) == 3:
-                la.LU_Helmholtz_Biharmonic_3D(A, B, A.axis, alfa, beta, self.l2,
+                la.LU_Helmholtz_Biharmonic_3D(A, B, A.axis, self.alfa, self.beta, self.l2,
                                               self.l1, self.d, self.u1, self.u2)
 
     @staticmethod
