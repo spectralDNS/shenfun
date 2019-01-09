@@ -468,9 +468,15 @@ This block matrix ``H`` is then simply (for Legendre)
 Note that each item in :eq:`eq:coupledH` is a collection of instances of the
 :class:`.TPMatrix` class, and for similar reasons as given around :eq:`eq:matfourier`,
 we get also here one regular block matrix for each Fourier wavenumber.
-A complete demo for the coupled problem discussed here can be found in the demo
-`MixedPoisson.py <https://github.com/spectralDNS/shenfun/blob/master/demo/MixedPoisson.py>`_.
-and `MixedPoisson3D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/MixedPoisson3D.py>`_.
+The sparsity pattern is the same for all matrices except for wavenumber 0.
+The (highly sparse) sparsity pattern for block matrix :math:`H` with
+wavenumber :math:`\ne 0` is shown in the image below
+
+.. image:: Sparsity.png
+
+A complete demo for the coupled problem discussed here can be found in
+`MixedPoisson.py <https://github.com/spectralDNS/shenfun/blob/master/demo/MixedPoisson.py>`_
+and a 3D version is in `MixedPoisson3D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/MixedPoisson3D.py>`_.
 
 .. include:: integrators.rst
 .. include:: mpi.rst
