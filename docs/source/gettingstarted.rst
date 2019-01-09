@@ -404,10 +404,10 @@ periodicity in the :math:`y`-direction:
     u(x, 2\pi) &= u(x, 0)
 
 Note that there is no boundary condition on :math:`\sigma`, only on :math:`u`.
-For this reason we choose a Dirichlet basis ``SD`` for :math:`u` and a regular
-Legendre or Chebyshev ``ST`` basis for :math:`\sigma`. Since :math:`\sigma` is
-a vector we use a :class:`.VectorTensorProductSpace` ``VT`` and
-finally a :class:`.MixedTensorProductSpace` ``Q`` for the coupled and
+For this reason we choose a Dirichlet basis :math:`SD` for :math:`u` and a regular
+Legendre or Chebyshev :math:`ST` basis for :math:`\sigma`. Since :math:`\sigma` is
+a vector we use a :class:`.VectorTensorProductSpace` :math:`VT = ST \times ST` and
+finally a :class:`.MixedTensorProductSpace` :math:`Q = VT \times TD` for the coupled and
 implicit treatment of :math:`(\sigma, u)`::
 
     N, M = (16, 24)
@@ -420,7 +420,7 @@ implicit treatment of :math:`(\sigma, u)`::
     VT = VectorTensorProductSpace(TT)
     Q = MixedTensorProductSpace([VT, TD])
 
-In variational form the problem reads: find :math:`(\sigma, u) \in Q [= VT \times TD]`
+In variational form the problem reads: find :math:`(\sigma, u) \in Q`
 such that
 
 .. math::
@@ -458,15 +458,17 @@ We collect all assembled terms in a :class:`.BlockMatrix`::
 This block matrix ``H`` is then simply (for Legendre)
 
 .. math::
+    :label: eq:coupledH
 
     \begin{bmatrix}
         (\sigma, \tau)_w & (u, \nabla \cdot \tau)_w \\
         (\nabla \cdot \sigma, v)_w & 0
     \end{bmatrix}
 
-However, note that for similar reasons as seen in :eq:`eq:matfourier`, we
-get one regular block matrix for each Fourier wavenumber. A complete
-demo for the coupled problem discussed here can be found in the demo
+Note that each item in :eq:`eq:coupledH` is a collection of instances of the
+:class:`.TPMatrix` class, and for similar reasons as given around :eq:`eq:matfourier`,
+we get also here one regular block matrix for each Fourier wavenumber.
+A complete demo for the coupled problem discussed here can be found in the demo
 `MixedPoisson.py <https://github.com/spectralDNS/shenfun/blob/master/demo/MixedPoisson.py>`_.
 and `MixedPoisson3D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/MixedPoisson3D.py>`_.
 
