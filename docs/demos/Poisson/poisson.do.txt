@@ -116,10 +116,10 @@ computed just as quickly as linear. For a linear problem, it does not make much
 of a difference, if any at all. Approximating the integral with quadrature, we
 obtain
 !bt
-\begin{align}
-\int_{-1}^1 u \, v \, w\, dx &\approx \left( u, v \right)_w^N,  \\
+\begin{align*}
+\int_{-1}^1 u \, v \, w\, dx &\approx \left( u, v \right)_w^N, \\
 &\approx \sum_{j=0}^{N} u(x_j) v(x_j) w(x_j),
-\end{align}
+\end{align*}
 !et
 where $w(x_j)$ are quadrature weights. The quadrature points $\{x_j\}_{j=0}^N$
 are specific to the chosen basis, and even within basis there are two different

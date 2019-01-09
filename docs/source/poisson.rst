@@ -7,7 +7,7 @@ Demo - 1D Poisson equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Jan 4, 2019
+:Date: Jan 7, 2019
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the Poisson
 equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as
@@ -140,20 +140,10 @@ of a difference, if any at all. Approximating the integral with quadrature, we
 obtain
 
 .. math::
-   :label: _auto6
-
-        
-        \int_{-1}^1 u \, v \, w\, dx \approx \left( u, v \right)_w^N,  
-        
-        
-
-.. math::
-   :label: _auto7
-
-          
-        \approx \sum_{j=0}^{N} u(x_j) v(x_j) w(x_j),
-        
-        
+        \begin{align*}
+        \int_{-1}^1 u \, v \, w\, dx &\approx \left( u, v \right)_w^N, \\ 
+        &\approx \sum_{j=0}^{N} u(x_j) v(x_j) w(x_j),
+        \end{align*}
 
 where :math:`w(x_j)` are quadrature weights. The quadrature points :math:`\{x_j\}_{j=0}^N`
 are specific to the chosen basis, and even within basis there are two different
@@ -180,7 +170,7 @@ a complete transform of the function :math:`f`, but only an inner product.
 The linear system of equations to solve for the expansion coefficients of :math:`u(x)` is given as
 
 .. math::
-   :label: _auto8
+   :label: _auto6
 
         
         A_{jk} \hat{u}_k = \tilde{f}_j.
@@ -215,7 +205,7 @@ the Laplace operator, we see that the last two linear terms disappear, whereas t
 first term results in
 
 .. math::
-   :label: _auto9
+   :label: _auto7
 
         
          \nabla^2 u_e(x) = \frac{d^2 u_e}{dx^2},  

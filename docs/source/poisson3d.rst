@@ -7,7 +7,7 @@ Demo - 3D Poisson equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Jan 4, 2019
+:Date: Jan 7, 2019
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve a 3D Poisson
 equation in a 3D tensor product domain that has homogeneous Dirichlet boundary
@@ -307,7 +307,7 @@ be found as follows
 Now, when :math:`\hat{u}_{\boldsymbol{\textsf{k}}}` is found by solving this linear system over the
 entire computational mesh, it may be
 transformed to real space :math:`u(\boldsymbol{x})` using :eq:`eq:3d:u`. Note that the matrices
-:math:`A \in \mathbb{R}^{N_0-2, N_0-2}` and :math:`B \in \mathbb{R}^{N_0-2, N_0-2}` differs for Legendre or Chebyshev bases, but
+:math:`A \in \mathbb{R}^{N_0-2 \times N_0-2}` and :math:`B \in \mathbb{R}^{N_0-2 \times N_0-2}` differs for Legendre or Chebyshev bases, but
 for either case they have a
 special structure that allows for a solution to be found very efficiently
 in the order of :math:`\mathcal{O}(N_0-2)` operations given :math:`m` and :math:`n`, see
