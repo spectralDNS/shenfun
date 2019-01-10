@@ -63,7 +63,6 @@ def test_mixed_2D(backend, forward_output, as_scalar):
     hfile.write(1, {'uf': [uf]}, forward_output=forward_output, as_scalar=as_scalar)
     if not forward_output and backend == 'hdf5' and comm.Get_rank() == 0:
         generate_xdmf(filename+'.h5')
-
     if as_scalar is False:
         u0 = Function(TT) if forward_output else Array(TT)
         read = reader(filename, TT, backend=backend)

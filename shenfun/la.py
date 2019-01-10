@@ -371,10 +371,10 @@ class SolverGeneric2NP(object):
         if ndim == 2:
             m = mats[0]
             M0 = sp.kron(m.mats[0].diags(), m.mats[1].diags())
-            M0 *= np.asscalar(m.scale)
+            M0 *= np.atleast_1d(m.scale).item()
             for m in mats[1:]:
                 M1 = sp.kron(m.mats[0].diags(), m.mats[1].diags())
-                M1 *= np.asscalar(m.scale)
+                M1 *= np.atleast_1d(m.scale).item()
                 M0 = M0 + M1
             self.M = M0
 
@@ -405,11 +405,11 @@ class SolverGeneric2NP(object):
                 m = self.mats[0]
                 M0 = sp.kron(m.mats[naxes[0]].diags(), m.mats[naxes[1]].diags())
                 sc[periodic_axis] = i if m.scale.shape[periodic_axis] > 1 else 0
-                M0 *= np.asscalar(m.scale[tuple(sc)])
+                M0 *= m.scale[tuple(sc)]
                 for m in self.mats[1:]:
                     M1 = sp.kron(m.mats[naxes[0]].diags(), m.mats[naxes[1]].diags())
                     sc[periodic_axis] = i if m.scale.shape[periodic_axis] > 1 else 0
-                    M1 *= np.asscalar(m.scale[tuple(sc)])
+                    M1 *= m.scale[tuple(sc)]
                     M0 = M0 + M1
                 s0 = [base.slice() for base in self.T]
                 s0[periodic_axis] = i
