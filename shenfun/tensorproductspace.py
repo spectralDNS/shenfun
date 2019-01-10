@@ -566,7 +566,7 @@ class MixedTensorProductSpace(object):
 
         if output_array is None:
             output_array = np.zeros((len(self.spaces), points.shape[-1]), dtype=self.forward.input_array.dtype)
-        for i, space in enumerate(self.spaces):
+        for i, space in enumerate(self.flatten()):
             output_array[i] = space.eval(points, coefficients[i], output_array[i], method)
         return output_array
 
@@ -602,7 +602,7 @@ class MixedTensorProductSpace(object):
 
     def dimensions(self):
         """Return dimension of scalar space"""
-        return self.spaces[0].dimensions()
+        return self.flatten()[0].dimensions()
 
     @staticmethod
     def rank():
@@ -619,8 +619,14 @@ class MixedTensorProductSpace(object):
             forward transform. If False then return shape of physical
             space, i.e., the input to a forward transform.
         """
-        s = self.spaces[0].shape(forward_output)
-        return (self.num_components(),) + s
+        if forward_output:
+            s = []
+            for space in self.flatten():
+                s.append(space.shape(forward_output))
+        else:
+            s = self.flatten()[0].shape(forward_output)
+            s = (self.num_components(),) + s
+        return s
 
     def allocated_shape(self, forward_output=False):
         """Return allocated shape of arrays for MixedTensorProductSpace
@@ -639,7 +645,7 @@ class MixedTensorProductSpace(object):
         allocated an array of shape N, and this function thus returns N.
 
         """
-        s = self.spaces[0].allocated_shape(forward_output)
+        s = self.flatten()[0].allocated_shape(forward_output)
         return (self.num_components(),) + s
 
     def local_slice(self, forward_output=False):
@@ -652,7 +658,7 @@ class MixedTensorProductSpace(object):
             return local slices of input array (physical space)
 
         """
-        s = self.spaces[0].local_slice(forward_output)
+        s = self.flatten()[0].local_slice(forward_output)
         return (slice(None),) + s
 
     def local_shape(self, forward_output=True):
@@ -692,7 +698,7 @@ class MixedTensorProductSpace(object):
         return getattr(obj[0], name)
 
     def __len__(self):
-        return self.spaces[0].dimensions()
+        return self.flatten()[0].dimensions()
 
 
 class VectorTensorProductSpace(MixedTensorProductSpace):

@@ -820,7 +820,7 @@ class BlockMatrix(object):
                     if len(it) == 1:
                         d = m.scale*m.diags(format)
                         for mj in mij[1:]:
-                            d = d + m.scale*m.diags(format)
+                            d = d + mj.scale*mj.diags(format)
                     else:
                         iit = np.where(np.array(m.scale.shape) == 1, 0, it) # if shape is 1 use index 0, else use given index (shape=1 means the scale is constant in that direction)
                         sc = m.scale[tuple(iit)]

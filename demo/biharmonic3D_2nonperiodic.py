@@ -29,8 +29,6 @@ from shenfun.la import SolverGeneric2NP
 
 comm = MPI.COMM_WORLD
 
-assert comm.Get_size() == 1, "Two non-periodic directions only have solver implemented for serial"
-
 # Collect basis and solver from either Chebyshev or Legendre submodules
 family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
 

@@ -18,6 +18,8 @@ We use a tensorproductspace with Fourier expansions in the x-direction and
 a composite Chebyshev or Legendre basis in the y-direction for ``u`` and
 a regular (no boundary conditions) Chebyshev or Legendre basis for ``p``.
 
+To eliminate a nullspace we use a P_N basis for the velocity and a P_{N-1}
+basis for the pressure.
 """
 import os
 import sys
@@ -50,6 +52,12 @@ family = sys.argv[-1] if len(sys.argv) == 2 else 'Legendre'
 K0 = Basis(N[0], 'Fourier', dtype='d', domain=(0, 2*np.pi))
 SD = Basis(N[1], family, bc=(0, 0))
 ST = Basis(N[1], family)
+
+# To get a P_N x P_{N-1} space, just pick the first N-1 items of the pressure basis
+# Note that this effectively sets P_N to zero, but still the basis uses
+# the same quadrature points as the Dirichlet basis, which is required for the inner
+# products.
+ST.slice = lambda: slice(0, ST.N-1)
 
 TD = TensorProductSpace(comm, (K0, SD), axes=(1, 0))
 TT = TensorProductSpace(comm, (K0, ST), axes=(1, 0))
@@ -89,7 +97,6 @@ if comm.Get_rank() == 0: # enable only for Fourier k=0
     A11.scale[0] = 1
 A11.mats[1][0][:] = 0      # Zero the matrix diagonal (the only diagonal)
 A11.mats[1][0][0] = 1      # fixes p_hat[0, 0]
-A11.mats[1][0][-1] = 1     # fixes p_hat[0, -1]. Required to avoid singular matrix
 if family.lower() == 'chebyshev':
     # Have to ident global row (N[1]-2)*2, but only for k=0. This is a bit tricky
     # For Legendre this row is already zero. With Chebyshev we need to modify
@@ -107,9 +114,8 @@ if family.lower() == 'chebyshev':
     A10.append(a10)
 A11 = [A11]
 
-# set p_hat[0, 0] = 0 and p_hat[0, -1] = 0
+# set p_hat[0, 0] = 0
 fh_hat[2, 0, 0] = 0
-fh_hat[2, 0, -1] = 0
 
 # Create block matrix
 M = BlockMatrix(A00+A01+A10+A11)
