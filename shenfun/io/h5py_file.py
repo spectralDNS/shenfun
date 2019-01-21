@@ -16,7 +16,7 @@ class HDF5File(BaseFile):
             Instance of a :class:`.TensorProductSpace`. Can also be a
             :class:`.MixedTensorProductSpace`.
         mode : str, optional
-            ``r`` or ``w`` for read or write. Default is ``r``.
+            ``r``, ``w`` or ``a``. Default is ``r``.
     """
     def __init__(self, h5name, T, mode='r', **kw):
         BaseFile.__init__(self, h5name, T, domain=T.mesh(), mode=mode, **kw)

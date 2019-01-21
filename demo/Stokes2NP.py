@@ -75,23 +75,12 @@ vq = TestFunction(Q)
 u, p = up
 v, q = vq
 
+# Assemble blocks of the complete block matrix
 A00 = inner(grad(v), grad(u))
 A01 = inner(div(v), p)
 A10 = inner(q, div(u))
 
-# Get f and h on quad points
-fh = Array(Q)
-fh[0] = flx(*X)
-fh[1] = fly(*X)
-fh[2] = hl(*X)
-
-fh_hat = Function(Q)
-fh_hat[:2] = inner(v, fh[:2], output_array=fh_hat[:2])
-fh_hat[2] = inner(q, fh[2], output_array=fh_hat[2])
-fh_hat[2, 0, 0] = 0
-
-# Create submatrix for block (2, 2).
-# This submatrix will only be used to fix pressure mode (0, 0).
+# Create submatrix for block (2, 2). This submatrix will only be used to fix pressure mode (0, 0).
 A11 = inner(p, q)
 for i in range(2):
     A11[0].mats[i][0][:] = 0      # Zero the matrix diagonal (the only diagonal)
@@ -100,25 +89,23 @@ for i in range(2):
 # Create Block matrix
 M = BlockMatrix(A00+A01+A10+A11)
 
-# Create regular diagonal matrix from BlockMatrix
-bm = []
-for mi in M.mats:
-    bm.append([])
-    for mij in mi:
-        if isinstance(mij, Number):
-            bm[-1].append(None)
-        else:
-            m = mij[0]
-            d = m.scale.item()*sp.kron(m.mats[0].diags(), m.mats[1].diags())
-            for mj in mij[1:]:
-                d = d + mj.scale.item()*sp.kron(mj.mats[0].diags(), mj.mats[1].diags())
-            bm[-1].append(d)
-B = sp.bmat(bm, format='csr')
+# Assemble right hand side
+fh = Array(Q)
+fh[0] = flx(*X)
+fh[1] = fly(*X)
+fh[2] = hl(*X)
+fh_hat = Function(Q)
+fh_hat[:2] = inner(v, fh[:2], output_array=fh_hat[:2])
+fh_hat[2] = inner(q, fh[2], output_array=fh_hat[2])
+fh_hat[2, 0, 0] = 0
 
 # Solve problem
-bh = np.zeros((3, N[0]-2, N[1]-2))
-bh[:] = fh_hat[:, :-2, :-2]
-uh = sp.linalg.spsolve(B, bh.flatten())
+bh = np.zeros(Q.size(True))
+bh[:] = fh_hat[:, :-2, :-2].ravel()
+B = M.diags()
+uh = sp.linalg.spsolve(B, bh)
+
+# Move solution to regular Function
 uh_hat = Function(Q)
 uh_hat[:, :-2, :-2] = uh.reshape((3, N[0]-2, N[1]-2))
 up = uh_hat.backward()
