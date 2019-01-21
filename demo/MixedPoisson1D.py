@@ -77,7 +77,6 @@ fv_hat = Function(Q)
 fv_hat[1] = inner(q, fj)
 
 M = BlockMatrix([A00, A01, A10])
-
 gu_hat = M.solve(fv_hat)
 gu = gu_hat.backward()
 

@@ -79,7 +79,7 @@ from __future__ import division
 from copy import deepcopy
 from numbers import Number
 import numpy as np
-from scipy.sparse import bmat, dia_matrix, diags as sp_diags
+from scipy.sparse import bmat, dia_matrix, kron, diags as sp_diags
 from scipy.sparse.linalg import spsolve
 from .utilities import inheritdocstrings
 
@@ -804,11 +804,8 @@ class BlockMatrix(object):
             of the TPMatrices in various blocks. Should be zero along the non-
             periodic direction.
 
-        Note
-        ----
-        Works only if there is one single non-periodic direction.
-
         """
+        from .spectralbase import MixedBasis
         bm = []
         for mi in self.mats:
             bm.append([])
@@ -817,10 +814,16 @@ class BlockMatrix(object):
                     bm[-1].append(None)
                 else:
                     m = mij[0]
-                    if len(it) == 1:
+                    if isinstance(self.base, MixedBasis):
                         d = m.scale*m.diags(format)
                         for mj in mij[1:]:
                             d = d + mj.scale*mj.diags(format)
+                    elif len(m.naxes) == 2:
+                        # 2 non-periodic directions
+                        assert len(m.mats) == 2, "Only implemented without periodic directions"
+                        d = m.scale.item()*kron(m.mats[0].diags(format), m.mats[1].diags(format))
+                        for mj in mij[1:]:
+                            d = d + mj.scale.item()*kron(mj.mats[0].diags(format), mj.mats[1].diags(format))
                     else:
                         iit = np.where(np.array(m.scale.shape) == 1, 0, it) # if shape is 1 use index 0, else use given index (shape=1 means the scale is constant in that direction)
                         sc = m.scale[tuple(iit)]
@@ -831,46 +834,6 @@ class BlockMatrix(object):
                             d = d + sc*mj.pmat.diags(format)
                     bm[-1].append(d)
         return bmat(bm, format=format)
-
-        #alldiags = {}
-        #for i, mi in enumerate(self.mats):
-        #    for j, mij in enumerate(mi):
-        #        if isinstance(mij, Number):
-        #            continue
-        #        else:
-        #            for m in mij:
-        #                assert len(m.naxes) == 1, "Only implemented for one nonperiodic basis"
-        #                axis = m.naxes[0]
-        #                iit = np.where(np.array(m.scale.shape) == 1, 0, it)
-        #                sc = m.scale[tuple(iit)]
-        #                M = self.global_shape[axis]
-        #                ii, jj = m.global_index
-        #                offset_row = self.get_offset(i, axis)
-        #                offset_col = self.get_offset(j, axis)
-        #                ij = min(offset_row, offset_col)
-        #                nx, ny = m.pmat.shape
-        #                for key, val in m.pmat.items():
-        #                    d = key - offset_row + offset_col
-        #                    if not d in alldiags:
-        #                        alldiags[d] = np.zeros(M-abs(d), dtype=m.scale.dtype)
-        #                    diag = alldiags[d]
-        #                    if jj > ii:
-        #                        if key > 0:
-        #                            diag[ij:(ij+min(nx, ny-key))] += sc*val
-        #                        else:
-        #                            diag[(ij-key):(ij-key+min(ny, nx+key))] += sc*val
-        #                    elif jj == ii:
-        #                        if key >= 0:
-        #                            diag[ij:(ij+ny-key)] += sc*val
-        #                        else:
-        #                            diag[ij:(ij+nx+key)] += sc*val
-        #                    else:
-        #                        if key >= 0:
-        #                            diag[ij+key:(ij+key+min(nx, ny-key))] += sc*val
-        #                        else:
-        #                            diag[ij:(ij+min(ny, nx+key))] += sc*val
-        #return sp_diags(list(alldiags.values()), list(alldiags.keys()),
-        #                shape=(M, M), format='csr')
 
     def solve(self, b, u=None):
         """

@@ -452,6 +452,10 @@ class TensorProductSpace(PFFT):
             return [np.broadcast_to(m, self.local_shape(False)) for m in lm]
         return lm
 
+    def size(self, forward_output=False):
+        """Return number of elements in :class:`.TensorProductSpace`"""
+        return np.prod(self.shape(forward_output))
+
     def shape(self, forward_output=False):
         """Return shape of arrays for TensorProductSpace
 
@@ -462,11 +466,6 @@ class TensorProductSpace(PFFT):
             forward transform. If False then return shape of physical
             space, i.e., the input to a forward transform.
 
-        Note
-        ----
-        This function is returning the actual shape of allocated arrays. So,
-        even though a homogeneous Dirichlet basis has shape N-2, it will have
-        allocated an array of shape N, and this function returns N.
         """
         if not forward_output:
             return tuple([int(np.round(base.shape(forward_output)*base.padding_factor)) for base in self])
@@ -609,6 +608,14 @@ class MixedTensorProductSpace(object):
         """Return rank of space"""
         return 1
 
+    def size(self, forward_output=False):
+        """Return number of elements in :class:`.MixedTensorProductSpace`"""
+        N = self.shape(forward_output)
+        if forward_output:
+            return np.sum([np.prod(s) for s in N])
+        else:
+            return np.prod(N)
+
     def shape(self, forward_output=False):
         """Return shape of arrays for MixedTensorProductSpace
 
@@ -618,6 +625,12 @@ class MixedTensorProductSpace(object):
             If True then return shape of an array that is the result of a
             forward transform. If False then return shape of physical
             space, i.e., the input to a forward transform.
+
+        Note
+        ----
+        A :class:`.MixedTensorProductSpace` may contain tensor product spaces
+        of different shape in spectral space. Hence this function returns a
+        list of shapes and not one single tuple.
         """
         if forward_output:
             s = []

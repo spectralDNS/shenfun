@@ -18,7 +18,7 @@ We use a tensorproductspace with Fourier expansions in the x-direction and
 a composite Chebyshev or Legendre basis in the y-direction for ``u`` and
 a regular (no boundary conditions) Chebyshev or Legendre basis for ``p``.
 
-To eliminate a nullspace we use a P_N basis for the velocity and a P_{N-1}
+To eliminate a nullspace we use a P_N basis for the velocity and a P_{N-2}
 basis for the pressure.
 """
 import os
@@ -47,17 +47,17 @@ fly = lambdify((x, y), fy, 'numpy')
 hl = lambdify((x, y), h, 'numpy')
 pl = lambdify((x, y), pe, 'numpy')
 
-N = (32, 32)
+N = (100, 100)
 family = sys.argv[-1] if len(sys.argv) == 2 else 'Legendre'
 K0 = Basis(N[0], 'Fourier', dtype='d', domain=(0, 2*np.pi))
 SD = Basis(N[1], family, bc=(0, 0))
 ST = Basis(N[1], family)
 
-# To get a P_N x P_{N-1} space, just pick the first N-1 items of the pressure basis
-# Note that this effectively sets P_N to zero, but still the basis uses
-# the same quadrature points as the Dirichlet basis, which is required for the inner
-# products.
-ST.slice = lambda: slice(0, ST.N-1)
+# To get a P_N x P_{N-2} space, just pick the first N-1 items of the pressure basis
+# Note that this effectively sets the two highest pressure frequencies to zero, but
+# still the basis uses the same quadrature points as the Dirichlet basis, which is
+# required for the inner products.
+ST.slice = lambda: slice(0, ST.N-2)
 
 TD = TensorProductSpace(comm, (K0, SD), axes=(1, 0))
 TT = TensorProductSpace(comm, (K0, ST), axes=(1, 0))
@@ -71,6 +71,7 @@ vq = TestFunction(Q)
 u, p = up
 v, q = vq
 
+# Assemble blocks of complete matrix
 if family.lower() == 'chebyshev':
     A00 = inner(v, -div(grad(u)))
     A01 = inner(v, -grad(p))
@@ -79,21 +80,12 @@ else:
     A01 = inner(div(v), p)
 A10 = inner(q, div(u))
 
-# Get f and h on quad points
-fh = Array(Q)
-fh[0] = flx(*X)
-fh[1] = fly(*X)
-fh[2] = hl(*X)
-
-fh_hat = Function(Q)
-fh_hat[:2] = inner(v, fh[:2], output_array=fh_hat[:2])
-fh_hat[2] = inner(q, fh[2], output_array=fh_hat[2])
 # We now need to take care of the case with Fourier wavenumber k = 0.
 # Create submatrix for block (2, 2). This submatrix will only be enabled for
 # Fourier wavenumber k=0.
 A11 = inner(p, q)
-A11.scale = K0.broadcast_to_ndims(np.zeros(N[1]))
-if comm.Get_rank() == 0: # enable only for Fourier k=0
+A11.scale = np.zeros((TD.shape(True)[0], 1))
+if comm.Get_rank() == 0:   # enable only for Fourier k=0
     A11.scale[0] = 1
 A11.mats[1][0][:] = 0      # Zero the matrix diagonal (the only diagonal)
 A11.mats[1][0][0] = 1      # fixes p_hat[0, 0]
@@ -102,8 +94,8 @@ if family.lower() == 'chebyshev':
     # For Legendre this row is already zero. With Chebyshev we need to modify
     # block (2, 1) as well as fixing the 1 on the diagonal of (2, 2)
     a10 = inner(q, div(u))[1]   # This TPMatrix will be used for k=0
-    a10.scale = K0.broadcast_to_ndims(np.zeros(N[1]))
-    A10[1].scale = K0.broadcast_to_ndims(np.ones(N[1]))
+    a10.scale = np.zeros((TD.shape(True)[0], 1))
+    A10[1].scale = np.ones((TD.shape(True)[0], 1))
     if comm.Get_rank() == 0:
         a10.scale[0] = 1     # enable for k=0
         A10[1].scale[0] = 0  # disable for k=0
@@ -114,11 +106,19 @@ if family.lower() == 'chebyshev':
     A10.append(a10)
 A11 = [A11]
 
-# set p_hat[0, 0] = 0
-fh_hat[2, 0, 0] = 0
-
 # Create block matrix
 M = BlockMatrix(A00+A01+A10+A11)
+
+# Get f and h on quad points
+fh = Array(Q)
+fh[0] = flx(*X)
+fh[1] = fly(*X)
+fh[2] = hl(*X)
+
+fh_hat = Function(Q)
+fh_hat[:2] = inner(v, fh[:2], output_array=fh_hat[:2])
+fh_hat[2] = inner(q, fh[2], output_array=fh_hat[2])
+fh_hat[2, 0, 0] = 0 # set p_hat[0, 0] = 0
 
 # Solve problem
 up_hat = M.solve(fh_hat)
