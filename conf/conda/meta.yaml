@@ -9,11 +9,9 @@ build:
   number: 3
 
 requirements:
-  host:
-    - numpy
-    - setuptools
-
   build:
+    - numpy >=1.16
+    - setuptools
     - python
     - cython
     - mpi4py
@@ -26,7 +24,7 @@ requirements:
 
   run:
     - python
-    - {{ pin_compatible('numpy') }}
+    - numpy >=1.16
     - scipy
     - cython
     - fftw
