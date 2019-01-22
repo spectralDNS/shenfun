@@ -40,6 +40,7 @@ assert family in ('legendre', 'chebyshev')
 assert isinstance(int(sys.argv[-2]), int)
 assert isinstance(int(sys.argv[-3]), int)
 
+# Create a manufactured solution for verification
 #ue = (sin(2*x)*cos(3*y))*(1-x**2)
 ue = (sin(4*x)*cos(5*y))*(1-y**2)
 dux = ue.diff(x, 1)
