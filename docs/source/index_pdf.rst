@@ -12,11 +12,12 @@ Demos
 =====
 .. toctree::
    :maxdepth: 1
-   
+
    poisson
    kleingordon
    poisson3d
    kuramatosivashinsky
+   stokes
    zrefs
 
 .. _shenfun: https:/github.com/spectralDNS/shenfun

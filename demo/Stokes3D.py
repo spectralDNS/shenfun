@@ -50,7 +50,7 @@ flz = lambdify((x, y, z), fz, 'numpy')
 hl = lambdify((x, y, z), h, 'numpy')
 pl = lambdify((x, y, z), pe, 'numpy')
 
-N = (40, 40, 40)
+N = (20, 20, 20)
 family = sys.argv[-1] if len(sys.argv) == 2 else 'Legendre'
 K0 = Basis(N[0], 'Fourier', dtype='D', domain=(0, 2*np.pi))
 K1 = Basis(N[1], 'Fourier', dtype='d', domain=(0, 2*np.pi))
@@ -77,43 +77,44 @@ v, q = vq
 
 # Assemble blocks of complete matrix
 if family.lower() == 'chebyshev':
-    A00 = inner(v, div(grad(u)))
-    A01 = inner(v, -grad(p))
+    A = inner(v, div(grad(u)))
+    G = inner(v, -grad(p))
 else:
-    A00 = inner(grad(v), -grad(u))
-    A01 = inner(div(v), p)
-A10 = inner(q, div(u))
+    A = inner(grad(v), -grad(u))
+    G = inner(div(v), p)
+D = inner(q, div(u))
 
 # We now need to take care of the case with Fourier wavenumber l=m=0.
-# Create submatrix for block (2, 2). This submatrix will only be enabled for
+# Create submatrix for block (3, 3). This submatrix will only be enabled for
 # Fourier wavenumbers l=m=0.
-A11 = inner(p, q)
+P = inner(p, q)
 s = TD.shape(True)
-A11.scale = np.zeros((s[0], s[1], 1))
+P.scale = np.zeros((s[0], s[1], 1))
 ls = TD.local_slice(True)
 if ls[0].start == 0 and ls[1].start == 0:   # enable only for Fourier l=m=0
-    A11.scale[0, 0] = 1
-A11.mats[2][0][:] = 0      # Zero the matrix diagonal (the only diagonal)
-A11.mats[2][0][0] = 1      # fixes p_hat[0, 0, 0]
+    P.scale[0, 0] = 1
+P.mats[2][0][:] = 0      # Zero the matrix diagonal (the only diagonal)
+P.mats[2][0][0] = 1      # fixes p_hat[0, 0, 0]
 if family.lower() == 'chebyshev':
-    # Have to ident global row (N[1]-2)*2, but only for l=m=0. This is a bit tricky
+    # Have to ident global row (N[0]-2)*(N[1]-2)*(N[2]-2), but only for l=m=0.
+    # This is a bit tricky.
     # For Legendre this row is already zero. With Chebyshev we need to modify
-    # block (2, 1) as well as fixing the 1 on the diagonal of (2, 2)
-    a10 = inner(q, div(u))[2]   # This TPMatrix will be used for l=m=0
-    a10.scale = np.zeros((s[0], s[1], 1))
-    A10[2].scale = np.ones((s[0], s[1], 1))
+    # block (3, 2) as well as fixing the 1 on the diagonal of (3, 3)
+    a0 = inner(q, div(u))[2]   # This TPMatrix will be used for l=m=0
+    a0.scale = np.zeros((s[0], s[1], 1))
+    D[2].scale = np.ones((s[0], s[1], 1))
     if ls[0].start == 0 and ls[1].start == 0:
-        a10.scale[0, 0] = 1     # enable for l=m=0
-        A10[2].scale[0, 0] = 0  # disable for l=m=0
-    am = a10.pmat.diags().toarray()
+        a0.scale[0, 0] = 1     # enable for l=m=0
+        D[2].scale[0, 0] = 0  # disable for l=m=0
+    am = a0.pmat.diags().toarray()
     am[0] = 0
-    a10.mats[2] = extract_diagonal_matrix(am)
-    a10.pmat = a10.mats[2]
-    A10.append(a10)
-A11 = [A11]
+    a0.mats[2] = extract_diagonal_matrix(am)
+    a0.pmat = a0.mats[2]
+    D.append(a0)
+P = [P]
 
 # Create block matrix
-M = BlockMatrix(A00+A01+A10+A11)
+M = BlockMatrix(A+G+D+P)
 
 # Get f and h on quad points
 fh = Array(Q)
@@ -154,7 +155,11 @@ if 'pytest' not in os.environ:
     plt.figure()
     plt.quiver(X[0][:, :, 0], X[1][:, :, 0], up[0, :, :, 6], up[1, :, :, 6])
     plt.figure()
-    plt.spy(M.diags((0, 0, 0))) # The matrix for Fourier given wavenumber
+    l, m = 5, 5
+    plt.spy(M.diags((l, m, 0)), markersize=2, color='k') # The matrix for Fourier given wavenumber
+    plt.title('Block matrix: l, m = ({}, {})'.format(l, m))
+    plt.xticks([])
+    plt.yticks([])
     plt.figure()
     plt.contourf(X[0][:, :, 0], X[1][:, :, 0], up[0, :, :, 6], 100)
-    #plt.show()
+    plt.show()
