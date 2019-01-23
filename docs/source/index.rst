@@ -48,6 +48,7 @@ Document build status
    kleingordon
    poisson3d
    kuramatosivashinsky
+   stokes
    zrefs
 
 .. toctree::

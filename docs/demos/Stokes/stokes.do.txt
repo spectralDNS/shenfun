@@ -1,0 +1,486 @@
+TITLE: Demo - Stokes equations
+AUTHOR: Mikael Mortensen {copyright|CC BY} Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
+DATE: today
+
+__Summary.__
+The Stokes equations describe the flow of highly viscous fluids.
+This is a demonstration of how the Python module "shenfun":
+"https://github.com/spectralDNS/shenfun" can be used to solve Stokes
+equations using a  mixed (coupled) basis in a 3D tensor product domain.
+We assume homogeneous Dirichlet boundary conditions in one direction
+and periodicity in the remaining two. The solver described runs with MPI
+without any further considerations required from the user.
+The solver assembles a block matrix, that is shown below for the Legendre
+basis and Fourier coefficients l = m = 5.
+
+FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/figures/BlockMat.png] Coupled block matrix for Stokes equations. label{fig:BlockMat}
+
+TOC: on
+
+<%
+def mod(x):
+    return '`'+x+'`'
+def cls(x):
+    return '`'+x+'`'
+def func(x):
+    return '`'+x+'`'
+%>
+% if FORMAT in ("sphinx"):
+<%
+def mod(x):
+    if '.' in x:
+        return ':mod:'+'`'+x+'`'
+    return ':mod:'+'`'+'.'+x+'`'
+def cls(x):
+    if '.' in x:
+        return ':class:'+'`'+x+'`'
+    return ':class:'+'`'+'.'+x+'`'
+def func(x):
+    if '.' in x:
+        return ':func:'+'`'+x+'`'
+    return ':func:'+'`'+'.'+x+'`'
+%>
+% endif
+
+======= Model problem =======
+
+===== Stokes equations =====
+label{demo:stokes}
+
+The Stokes equations are given in strong form as
+
+!bt
+\begin{align*}
+\nabla^2 \bs{u} - \nabla p &= \bs{f} \quad \text{in }  \Omega, \\
+\nabla \cdot \bs{u} &= h \quad \text{in } \Omega  \\
+\int_{\Omega} p dx &= 0
+\end{align*}
+!et
+where $\bs{u}$ and $p$ are, respectively, the
+fluid velocity vector and pressure, and the domain
+$\Omega = [0, 2\pi]^2 \times [-1, 1]$. The flow is assumed periodic
+in $x$ and $y$-directions, whereas there is a no-slip homogeneous Dirichlet
+boundary condition on $\bs{u}$ on the boundaries of the $z$-direction, i.e.,
+$\bs{u}(x, y, \pm 1) = (0, 0, 0)$. (Note that we can configure shenfun with
+non-periodicity in any of the three directions. However, since we are to
+solve linear algebraic systems in the non-periodic direction, there is a speed
+benefit from having the nonperiodic direction last. This has to do with Numpy
+using a C-style row-major storage of arrays by default.)
+The right hand side vector $\bs{f}(\bs{x})$ is an external applied body force.
+The right hand side $h$ is usually zero in the regular Stokes equations. Here
+we include it because it will be nonzero in the verification, which is using the
+method of manufactured solutions. Note that the final $\int_{\Omega} p dx = 0$
+is there because there is no Dirichlet boundary condition on the pressure
+and the system of equations would otherwise be ill conditioned.
+
+To solve Stokes equations with the Galerkin method we need basis
+functions for both velocity and pressure. A
+Dirichlet basis will be used for velocity, whereas there is no boundary restriction
+on the pressure basis. For both three-dimensional bases we will use one basis
+function for the $x$-direction,
+$\mathcal{X}(x)$, one for the $y$-direction, $\mathcal{Y}(y)$, and one for the
+$z$-direction, $\mathcal{Z}(z)$. And
+then we create three-dimensional basis functions like
+
+!bt
+\begin{equation}
+v(x, y, z) = \mathcal{X}(x) \mathcal{Y}(y) \mathcal{Z} (z).
+\end{equation}
+!et
+
+The basis functions $\mathcal{X}(x)$ and $\mathcal{Y}(y)$ are chosen as Fourier
+exponentials, since these functions are periodic:
+
+!bt
+\begin{align}
+\mathcal{X}_l(x) &= e^{\imath l x}, &\forall \, l \in \bs{l}^{N_0}, \\
+\mathcal{Y}_m(y) &=  e^{\imath m y}, &\forall \, m \in \bs{m}^{N_1},
+\end{align}
+!et
+
+where $\bs{l}^{N_0} = (-N_0/2, -N_0/2+1, \ldots, N_0/2-1)$ and
+$\bs{m}^{N_1} = (-N_1/2, -N_1/2+1, \ldots, N_1/2-1)$.
+The size of the discretized problem in real physical space is
+$\bs{N} = (N_0, N_1, N_2)$, i.e., there are $N_0 \cdot N_1 \cdot N_2$ quadrature points
+in total.
+
+The basis functions for $\mathcal{Z}(z)$ remain to be decided.
+For the velocity we need homogeneous Dirichlet boundary conditions, and for this
+we use composite Legendre or Chebyshev polynomials
+
+!bt
+\begin{equation}
+\mathcal{Z}^0_n(z) = \phi_n(z) - \phi_{n+2}(z), \forall \, n \in \bs{n}^{N_2},
+\end{equation}
+!et
+
+where $\phi_n$ is the n'th Legendre or Chebyshev polynomial of the first kind.
+$\bs{n}^{N_2} = (0, 1, \ldots, N_2-3)$, and the zero on $\mathcal{Z}^0$
+is there to indicate the zero value on the boundary.
+
+The pressure basis that comes with no restrictions for the boundary is a
+little trickier. The reason for this has to do with
+inf-sup stability. The obvious choice of basis is the regular Legendre or
+Chebyshev basis, which is denoted as
+!bt
+\begin{equation}
+\mathcal{Z}_n(z) = \phi_n(z). label{eq:Zn}
+\end{equation}
+!et
+The problem is that for the natural choice of $n \in (0, 1, \ldots, N_2-1)$
+there is a nullspace and one degree of freedom remains unresolved. It turns out
+that the proper choice for the pressure basis is simply (ref{eq:Zn}) for
+$n \in \bs{n}^{N-2}$. (Also remember that we have to fix $\int_{\Omega} p dx = 0$.)
+
+With given basis functions we obtain the bases
+
+!bt
+\begin{align}
+V^{N_0} &= \text{span}\{ \mathcal{X}_l \}_{l\in\bs{l}^{N_0}}, \\
+V^{N_1} &= \text{span}\{ \mathcal{Y}_m \}_{m\in\bs{m}^{N_1}}, \\
+V^{N_2} &= \text{span}\{ \mathcal{Z}_n \}_{n\in\bs{n}^{N_2}}, \\
+V_0^{N_2} &= \text{span}\{ \mathcal{Z}^0_n \}_{n\in\bs{n}^{N_2}},
+\end{align}
+!et
+and from these we create two different tensor product spaces
+!bt
+\begin{align}
+W_0^{\bs{N}}(\bs{x}) &= V_0^{N_0}(x) \times V^{N_1}(y) \times V^{N_2}(z), \\
+W^{\bs{N}}(\bs{x}) &= V^{N_0}(x) \times V^{N_1}(y) \times V^{N_2}(z).
+\end{align}
+!et
+
+The velocity vector is using a mixed basis, such that we will look for
+solutions $\bs{u} \in [W_0^{\bs{N}}]^3$, whereas we look for the pressure
+$p \in W^{\bs{N}}$. We now formulate a variational problem using the Galerkin method: Find
+$\bs{u} \in [W_0^{\bs{N}}]^3$ and $p \in W^{\bs{N}}$ such that
+!bt
+\begin{align}
+\int_{\Omega} (\nabla^2 \bs{u} - \nabla p ) \cdot \overline{\bs{v}} \, dx_w &= \int_{\Omega} \bs{f} \cdot \overline{\bs{v}}\, dx_w \quad\forall \bs{v} \, \in \, [W_0^{\bs{N}}]^3, label{eq:varform} \\
+\int_{\Omega} \nabla \cdot \bs{u} \, \overline{q} \, dx_w &= \int_{\Omega} h \overline{q} \, dx_w \quad\forall q \, \in \, W^{\bs{N}}.
+\end{align}
+!et
+Here $dx_w=w_xdxw_ydyw_zdz$ represents a weighted measure, with weights $w_x(x), w_y(y), w_z(z)$.
+Note that it is only Chebyshev polynomials that
+make use of a non-constant weight $w_x=1/\sqrt{1-x^2}$. The Fourier weights are $w_y=w_z=1/(2\pi)$
+and the Legendre weight is $w_x=1$.
+The overline in $\bs{\overline{v}}$ and $\overline{q}$ represents a complex conjugate, which is needed here because
+the Fourier exponentials are complex functions.
+
+===== Mixed variational form =====
+label{sec:mixedform}
+
+Since we are to solve for $\bs{u}$ and $p$ at the same time, we formulate a
+mixed (coupled) problem: find $(\bs{u}, p) \in [W_0^{\bs{N}}]^3 \times W^{\bs{N}}$
+such that
+
+!bt
+\begin{equation}
+a((\bs{u}, p), (\bs{v}, q)) = L((\bs{v}, q)) \quad \forall (\bs{v}, q) \in [W_0^{\bs{N}}]^3 \times W^{\bs{N}},
+\end{equation}
+!et
+
+where bilinear ($a$) and linear ($L$) forms are given as
+
+!bt
+\begin{align}
+    a((\bs{u}, p), (\bs{v}, q)) &= \int_{\Omega} (\nabla^2 \bs{u} - \nabla p) \cdot \overline{\bs{v}} \, dx_w + \int_{\Omega} \nabla \cdot \bs{u} \, \overline{q} \, dx_w, \\
+    L((\bs{v}, q)) &= \int_{\Omega} \bs{f} \cdot \overline{\bs{v}}\, dx_w + \int_{\Omega} h \overline{q} \, dx_w.
+\end{align}
+!et
+
+Note that the bilinear form will assemble to block matrices, whereas the right hand side
+linear form will assemble to block vectors.
+
+======= Implementation =======
+
+===== Preamble =====
+
+We will solve the Stokes equations using the "shenfun":
+"https://github.com/spectralDNS/shenfun" Python module. The first thing needed
+is then to import some of this module's functionality
+plus some other helper modules, like "Numpy": "https://numpy.org" and "Sympy":
+"https://sympy.org":
+
+!bc pycod
+import os
+import sys
+import numpy as np
+from mpi4py import MPI
+from sympy import symbols, sin, cos, lambdify
+from shenfun import *
+!ec
+
+We use `Sympy` for the manufactured solution and `Numpy` for testing. MPI for
+Python (`mpi4py`) is required for running the solver with MPI.
+
+===== Manufactured solution =====
+label{sec:mansol}
+
+The exact solution $\bs{u}_e(\bs{x})$ and $p(\bs{x})$ are chosen to satisfy boundary
+conditions, and then the right hand sides $\bs{f}(\bs{x})$ and $h(\bs{x})$ are then
+computed exactly using `Sympy`. These exact right hand sides will then be used to
+compute a numerical solution that can be verified against the manufactured
+solution. The chosen solution with computed right hand sides are:
+!bc pycod
+uex = sin(2*y)*(1-z**2)
+uey = sin(2*x)*(1-z**2)
+uez = sin(2*z)*(1-z**2)
+pe = -0.1*sin(2*x)*cos(4*y)
+fx = uex.diff(x, 2) + uex.diff(y, 2) + uex.diff(z, 2) - pe.diff(x, 1)
+fy = uey.diff(x, 2) + uey.diff(y, 2) + uey.diff(z, 2) - pe.diff(y, 1)
+fz = uez.diff(x, 2) + uez.diff(y, 2) + uez.diff(z, 2) - pe.diff(z, 1)
+h = uex.diff(x, 1) + uey.diff(y, 1) + uez.diff(z, 1)
+
+# Lambdify for faster evaluation
+ulx = lambdify((x, y, z), uex, 'numpy')
+uly = lambdify((x, y, z), uey, 'numpy')
+ulz = lambdify((x, y, z), uez, 'numpy')
+flx = lambdify((x, y, z), fx, 'numpy')
+fly = lambdify((x, y, z), fy, 'numpy')
+flz = lambdify((x, y, z), fz, 'numpy')
+hl  = lambdify((x, y, z), h, 'numpy')
+pl  = lambdify((x, y, z), pe, 'numpy')
+!ec
+
+===== Bases and tensor product spaces =====
+
+Bases are created using the ${func('Basis')} function. The choice between
+Legendre or Chebyshev is collected from the commandline, with Legendre as default
+
+!bc
+N = (40, 40, 40)
+family = sys.argv[-1] if len(sys.argv) == 2 else 'Legendre'
+K0 = Basis(N[0], 'Fourier', dtype='D', domain=(0, 2*np.pi))
+K1 = Basis(N[1], 'Fourier', dtype='d', domain=(0, 2*np.pi))
+SD = Basis(N[2], family, bc=(0, 0))
+ST = Basis(N[2], family)
+ST.slice = lambda: slice(0, ST.N-2)
+!ec
+
+Note that the last line of code is there to ensure that only the first
+$N_2-2$ coefficients are used, see discussion around Eq. (ref{eq:Zn}).
+At the same time, we ensure that we are using $N_2$
+quadrature points, the same as for the Dirichlet basis.
+
+Next the bases are used to create two tensor product spaces WU = $W^{\bs{N}}$
+and WP = $W_0^{\bs{N}}$, one vector UV = $[W_0^{\bs{N}}]^3$ and one mixed
+space  Q = UV $\times$ WP.
+
+!bc
+WU = TensorProductSpace(comm, (K0, K1, SD), axes=(2, 0, 1))
+WP = TensorProductSpace(comm, (K0, K1, ST), axes=(2, 0, 1))
+UV = VectorTensorProductSpace(WU)
+Q = MixedTensorProductSpace([UV, WP])
+!ec
+
+Note that we choose to transform axes in the order $1, 0, 2$. This is to ensure
+that the fully transformed arrays are aligned in the non-periodic direction 2.
+And we need the arrays aligned in this direction, because this is the only
+direction where there are tensor product matrices that are non-diagonal. All
+Fourier matrices are, naturally, diagonal.
+
+Test- and trialfunctions are created much like in a regular, non-mixed,
+formulation. However, one has to create one test- and trialfunction for
+the mixed space, and then split them up afterwards
+!bc
+up = TrialFunction(Q)
+vq = TestFunction(Q)
+u, p = up
+v, q = vq
+!ec
+
+With the basisfunctions in place we may assemble the different blocks of the
+final coefficient matrix. Since Legendre is using a constant weight functions,
+that equations may also be integrated by parts to obtain a symmetric system:
+
+!bc
+if family.lower() == 'chebyshev':
+    A = inner(v, div(grad(u)))
+    G = inner(v, -grad(p))
+else:
+    A = inner(grad(v), -grad(u))
+    G = inner(div(v), p)
+D = inner(q, div(u))
+!ec
+
+Here `A, G` and `D` are lists containg the different blocks in
+the complete, coupled matrix. `A` actually contains 6
+tensor product matrices of type ${cls('TPMatrix')}. The first two
+matrices are for vector component zero of the test function `v[0]` and
+trial function `u[0]`, the
+matrices 2 and 3 are for components 1 and the last two are for components
+2. The first two matrices are as such for
+
+!bc
+  A[0:2] = inner(v[0], div(grad(u[0])))
+!ec
+
+Breaking it down the inner product is mathematically
+
+!bt
+\begin{equation}
+label{eq:partialeq1}
+\int_{\Omega} v[0] \left(\frac{\partial^2 u[0]}{\partial x^2} + \frac{\partial^2 u[0]}{\partial y^2} + \frac{\partial^2 u[0]}{\partial z^2}\right) w_x dx w_y dy w_z dz.
+\end{equation}
+!et
+
+If we now use test function $v[0]$
+!bt
+\begin{equation}
+v[0]_{lmn} = \mathcal{X}_l \mathcal{Y}_m \mathcal{Z}_n,
+\end{equation}
+!et
+and trialfunction
+!bt
+\begin{equation}
+u[0]_{pqr} = \sum_{p} \sum_{q} \sum_{r} \hat{u}[0]_{pqr} \mathcal{X}_p \mathcal{Y}_q \mathcal{Z}_r,
+\end{equation}
+!et
+and insert these test- and trialfunctions into (ref{eq:partialeq1}), then we obtain after
+performing some exact evaluations over the periodic directions
+
+!bt
+\begin{equation}
+ \Big( \underbrace{-\left(l^2 \delta_{lp} + m^2 \delta_{mq} \right) \int_{-1}^{1} \mathcal{Z}_r(z) \mathcal{Z}_n(z) w_z dz}_{A[0]} + \underbrace{\delta_{lp} \delta_{mq} \int_{-1}^{1} \frac{\partial^2 \mathcal{Z}_r(z)}{\partial z^2} \mathcal{Z}_n(z) w_z dz}_{A[1]} \Big) \hat{u}[0]_{pqr},
+\end{equation}
+!et
+
+Similarly for components 1 and 2 of the test and trial vectors, leading to 6 tensor
+product matrices in total for `A`. Similarly, we get three components of `G`
+and  three of `D`.
+
+Eliminating the Fourier diagonal matrices, we are left with block matrices like
+
+!bt
+H(l, m) =
+  \begin{bmatrix}
+      A[0]+A[1] & 0 & 0 & G[0] \\ label{eq:bmatrix}
+      0 & A[2]+A[3] & 0 & G[1] \\
+      0 & 0 &  A|[4]+A[5] & G[2] \\
+      D[0] & D[1] & D[2] & 0
+  \end{bmatrix}
+!et
+
+Note that there will be one large block matrix $H(l, m)$ for each Fourier
+wavenumber combination $(l, m)$. To solve the problem in the end we will need to
+loop over these wavenumbers and solve the assembled linear systems one by one.
+An example of the block matrix, for $l=m=5$ and $\bs{N}=(20, 20, 20)$ is given
+in Fig. ref{fig:BlockMat}.
+
+There is still one more degree of freedom to take care of due to
+$\int_{\Omega} p dx = 0$. Due to all basis functions integrating to
+zero, except from the zeroth, this simply boils down to setting
+the unknown $\hat{p}_{000}$, when the pressure trial function is
+represented as
+
+!bt
+ p(\bs{x}) = \sum_{l\in \bs{l}^{N_0}} \sum_{m\in \bs{m}^{N_1}} \sum_{n\in \bs{n}^{N_2}} \hat{p}_{lmn} \mathcal{X}_l \mathcal{Y}_m \mathcal{Z}_n.
+!et
+
+So it is only necessary to fix one degree of freedom. This would
+normally be a very easy procedure. Just indent the row of the
+coefficient matrix $H(0, 0)$ corresponding to $\hat{p}_{000}$ and set
+the corresponding right hand side to zero as well.
+For the block matrix it is a bit complicated, because the indent
+is part of the block (3, 3), which at the current time is zero,
+see (ref{eq:bmatrix}). Furthermore, it should only be enabled for
+$(l, m) = (0, 0)$.  For the Legendre basis it turns out to be
+not very difficult. Just create a diagonal matrix $I_{ij}$ in the (3, 3)
+block of (ref{eq:bmatrix}) with $I_{00}=1$ and zero otherwise, and then
+add $I_{ij}$ to the (3, 3) block of $H(0, 0)$. This can be coded as
+
+!bc
+P = inner(p, q) # assemble a diagonal matrix in block (3, 3)
+s = TD.shape(True)
+P.scale = np.zeros((s[0], s[1], 1))
+ls = TD.local_slice(True)
+if ls[0].start == 0 and ls[1].start == 0:   # enable only for Fourier l=m=0, which only lives on one processor
+    P.scale[0, 0] = 1
+I = P.mats[2]
+I[0][:] = 0      # Zero the matrix diagonal (the only diagonal)
+I[0][0] = 1      # I_{0,0} = 1
+!ec
+
+For the Chebyshev basis it is a bit more complicated because the `D[2]`
+block of (ref{eq:bmatrix}) is not zero for the row of the $\hat{p}_{000}$
+degree of freedom. So we also need to do more work to do a proper indent
+
+!bc
+if family.lower() == 'chebyshev':
+    # Have to ident global row (N[0]-2)*(N[1]-2)*(N[2]-2), but only for l=m=0.
+    # This is a bit tricky.
+    # For Legendre this row is already zero. With Chebyshev we need to modify
+    # block (3, 2) as well as fixing the 1 on the diagonal of (3, 3)
+    a0 = inner(q, div(u))[2]   # This TPMatrix will be used for only l=m=0
+    a0.scale = np.zeros((s[0], s[1], 1))
+    D[2].scale = np.ones((s[0], s[1], 1))
+    if ls[0].start == 0 and ls[1].start == 0:
+        a10.scale[0, 0] = 1     # enable for l=m=0
+        D[2].scale[0, 0] = 0    # disable for l=m=0
+    am = a0.pmat.diags().toarray()
+    am[0] = 0   # Zero the row corresponding to p_hat[0, 0, 0]
+    a0.mats[2] = extract_diagonal_matrix(am)
+    a0.pmat = a0.mats[2]
+    D.append(a0)
+!ec
+
+Note that `a0` is an instance of the ${cls('TPMatrix')}, and scale is
+an array of ndim = 3. The scale in indexed by the Fourier wavenumbers
+and scale[0, 0] represents the scale to matrix `a0` for wavenumbers
+$(l, m) = (0, 0)$.
+
+In the end we create a block matrix through
+
+!bc
+P = [P]
+M = BlockMatrix(A+G+D+P)
+!ec
+
+The right hand side can easily be assembled since we have already
+defined the functions $\bs{f}$ and $h$, see Sec. ref{sec:mansol}
+
+!bc
+# Get mesh (quadrature points)
+X = TD.local_mesh(True)
+
+# Get f and h on quad points
+fh = Array(Q)
+fh[0] = flx(*X)
+fh[1] = fly(*X)
+fh[2] = flz(*X)
+fh[3] = hl(*X)
+
+# Compute inner products
+fh_hat = Function(Q)
+fh_hat[:3] = inner(v, fh[:3], output_array=fh_hat[:3])
+fh_hat[3] = inner(q, fh[3], output_array=fh_hat[3])
+
+# Fix the right hand side of p_hat[0, 0, 0]
+fh_hat[3, 0, 0, 0] = 0
+!ec
+
+In the end all that is left is to solve and compare with
+the exact solution
+
+!bc
+# Solve problem
+up_hat = M.solve(fh_hat)
+up = up_hat.backward()
+
+# Exact solution
+ux = ulx(*X)
+uy = uly(*X)
+uz = ulz(*X)
+pe = pl(*X)
+
+error = [comm.reduce(np.linalg.norm(ux-up[0])),
+         comm.reduce(np.linalg.norm(uy-up[1])),
+         comm.reduce(np.linalg.norm(uz-up[2])),
+         comm.reduce(np.linalg.norm(pe-up[3]))]
+!ec
+
+===== Complete solver =====
+label{sec:3d:complete}
+
+A complete solver can be found in demo "Stokes3D.py":"https://github.com/spectralDNS/shenfun/blob/master/demo/Stokes3D.py".
