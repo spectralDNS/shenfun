@@ -10,8 +10,8 @@ equations using a  mixed (coupled) basis in a 3D tensor product domain.
 We assume homogeneous Dirichlet boundary conditions in one direction
 and periodicity in the remaining two. The solver described runs with MPI
 without any further considerations required from the user.
-The solver assembles a block matrix, that is shown below for the Legendre
-basis and Fourier coefficients l = m = 5.
+The solver assembles a block matrix with sparsity pattern as shown below
+for the Legendre basis.
 
 FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/figures/BlockMat.png] Coupled block matrix for Stokes equations. label{fig:BlockMat}
 
