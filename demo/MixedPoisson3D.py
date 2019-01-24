@@ -27,7 +27,6 @@ coupled and implicit.
 
 import os
 import numpy as np
-import scipy.sparse as sp
 from mpi4py import MPI
 from sympy import symbols, sin, cos, lambdify
 from shenfun import *

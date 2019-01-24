@@ -1,12 +1,11 @@
 r"""
 This module contains linear algebra solvers for SparseMatrixes
 """
-from functools import reduce
 import numpy as np
 import scipy.sparse as sp
 from scipy.sparse.linalg import spsolve
 from shenfun.optimization import optimizer
-from shenfun.matrixbase import SparseMatrix, Identity
+from shenfun.matrixbase import SparseMatrix
 
 class TDMA(object):
     """Tridiagonal matrix solver
