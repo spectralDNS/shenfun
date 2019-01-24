@@ -7,7 +7,7 @@ Demo - Stokes equations
 %%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Jan 23, 2019
+:Date: Jan 24, 2019
 
 *Summary.* The Stokes equations describe the flow of highly viscous fluids.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Stokes
@@ -15,8 +15,8 @@ equations using a  mixed (coupled) basis in a 3D tensor product domain.
 We assume homogeneous Dirichlet boundary conditions in one direction
 and periodicity in the remaining two. The solver described runs with MPI
 without any further considerations required from the user.
-The solver assembles a block matrix, that is shown below for the Legendre
-basis and Fourier coefficients l = m = 5.
+The solver assembles a block matrix with sparsity pattern as shown below
+for the Legendre basis.
 
 .. _fig:BlockMat:
 
