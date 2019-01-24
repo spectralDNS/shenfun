@@ -21,8 +21,6 @@ pressure.
 
 """
 import os
-import sys
-from numbers import Number
 import numpy as np
 from mpi4py import MPI
 from sympy import symbols, sin, cos, lambdify

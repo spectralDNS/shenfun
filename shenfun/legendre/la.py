@@ -1,6 +1,5 @@
 #pylint: disable=line-too-long, len-as-condition, missing-docstring, too-many-instance-attributes
 
-from copy import copy
 import numpy as np
 import scipy.linalg as scipy_la
 from shenfun.optimization import optimizer

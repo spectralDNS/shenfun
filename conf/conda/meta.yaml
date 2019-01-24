@@ -34,6 +34,7 @@ requirements:
     - sympy
     - nomkl
     - hdf5-parallel
+    - h5py-parallel
     - netcdf4-parallel
 
 test:

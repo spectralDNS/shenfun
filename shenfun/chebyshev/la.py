@@ -477,8 +477,8 @@ class PDMA(object):
             assert 'BBBmat' in kwargs
             A = self.A = kwargs['ABBmat']
             B = self.B = kwargs['BBBmat']
-            alfa = self.alfa = A.scale
-            beta = self.beta = B.scale
+            self.alfa = A.scale
+            self.beta = B.scale
 
         elif len(args) == 4:
             A = self.A = args[0]

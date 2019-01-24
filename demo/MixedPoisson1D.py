@@ -23,7 +23,7 @@ coupled and implicit.
 import os
 import numpy as np
 from mpi4py import MPI
-from sympy import symbols, sin, cos, lambdify
+from sympy import symbols, cos, lambdify
 from shenfun import *
 from shenfun.spectralbase import MixedBasis
 
