@@ -3,6 +3,7 @@ Module for defining bases in the Chebyshev family
 """
 import functools
 import numpy as np
+import sympy
 from numpy.polynomial import chebyshev as n_cheb
 from scipy.special import eval_chebyt
 from mpi4py_fft import fftw
@@ -87,6 +88,10 @@ class ChebyshevBase(SpectralBase):
 
     def vandermonde(self, x):
         return n_cheb.chebvander(x, self.N-1)
+
+    def sympy_basis(self, i=0):
+        x = sympy.symbols('x')
+        return sympy.chebyshevt(i, x)
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -358,6 +363,10 @@ class ShenDirichletBasis(ChebyshevBase):
         P[:, -1] = (V[:, 0] - V[:, 1])/2
         return P
 
+    def sympy_basis(self, i=0):
+        x = sympy.symbols('x')
+        return sympy.chebyshevt(i, x) - sympy.chebyshevt(i+2, x)
+
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
@@ -478,6 +487,10 @@ class ShenNeumannBasis(ChebyshevBase):
         k = np.arange(self.N).astype(np.float)
         P[:, :-2] = V[:, :-2] - (k[:-2]/(k[:-2]+2))**2*V[:, 2:]
         return P
+
+    def sympy_basis(self, i=0):
+        x = sympy.symbols('x')
+        return sympy.chebyshevt(i, x) - (i/(i+2))**2*sympy.chebyshevt(i+2, x)
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -607,6 +620,10 @@ class ShenBiharmonicBasis(ChebyshevBase):
         k = np.arange(V.shape[1]).astype(np.float)[:-4]
         P[:, :-4] = V[:, :-4] - (2*(k+2)/(k+3))*V[:, 2:-2] + ((k+1)/(k+3))*V[:, 4:]
         return P
+
+    def sympy_basis(self, i=0):
+        x = sympy.symbols('x')
+        return sympy.chebyshevt(i, x) - (2*(i+2)/(i+3))*sympy.chebyshevt(i+2, x) + (i+1)/(i+3)*sympy.chebyshevt(i+4, x)
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
