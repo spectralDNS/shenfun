@@ -10,13 +10,17 @@ build:
 
 requirements:
   build:
-    - numpy >=1.16
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+
+  host:
+    - numpy
     - setuptools
     - python
     - cython
     - mpi4py
-    - mpi4py-fft >=1.1.1
-    - mpich
+    - mpi4py-fft >=1.1.2
+    - {{ mpi }}
     - pip
     - fftw
     - nomkl
@@ -24,18 +28,17 @@ requirements:
 
   run:
     - python
-    - numpy >=1.16
+    - numpy
     - scipy
-    - cython
     - fftw
     - mpi4py
-    - mpi4py-fft >=1.1.1
-    - mpich
+    - mpi4py-fft >=1.1.2
+    - {{ mpi }}
     - sympy
     - nomkl
-    - hdf5-parallel
-    - h5py-parallel
-    - netcdf4-parallel
+    - hdf5 1.10.4 mpi_{{ mpi }}_*
+    - h5py * mpi_{{ mpi }}_*
+    #- netcdf4-parallel
 
 test:
   source_files:

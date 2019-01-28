@@ -23,6 +23,7 @@ class NCFile(BaseFile):
         clobber : bool, optional
     """
     def __init__(self, ncname, T, mode='r', clobber=True, **kw):
+        raise RuntimeError("NetCDF4 backend currently broken")
         BaseFile.__init__(self, ncname, T, domain=T.mesh(), clobber=clobber, mode=mode, **kw)
         if T.rank() == 1 and mode == 'w':
             self.open()
