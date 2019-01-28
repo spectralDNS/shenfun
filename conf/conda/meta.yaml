@@ -14,7 +14,7 @@ requirements:
     - {{ compiler('cxx') }}
 
   host:
-    - numpy
+    - numpy >=1.16
     - setuptools
     - python
     - cython
@@ -28,7 +28,7 @@ requirements:
 
   run:
     - python
-    - numpy
+    - numpy >=1.16
     - scipy
     - fftw
     - mpi4py

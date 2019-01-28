@@ -1,6 +1,6 @@
 version: 2
 jobs:
-  build:
+  build_latest_python:
     machine: true
     steps:
       - checkout
@@ -21,10 +21,16 @@ jobs:
             conda config --set always_yes yes
             conda update -q conda
             conda config --add channels conda-forge
-            conda config --add channels spectralDNS
+            #conda config --add channels spectralDNS
             conda install -n root conda-build
             conda install --yes --quiet conda-forge-ci-setup=2
             source run_conda_forge_build_setup
+
+      - run:
+          name: Build and test latest Python
+          command: |
+            cd /home/circleci/project
+            conda build ./conf/conda
 
       - save_cache:
           key: v1-miniconda-{{ .Branch }}
@@ -32,19 +38,59 @@ jobs:
             - /home/circleci/miniconda
 
       - run:
-          name: Build and test
-          command: |
-            source ~/miniconda/bin/activate root
-            cd /home/circleci/project
-            conda build --python 2.7 ./conf/conda
-            conda build --python 3.6 ./conf/conda
-
-      - run:
           name: Upload packages
           command: |
               source ~/miniconda/bin/activate root
               cd /home/circleci/project
-              export CONDA_PY=27
               upload_or_check_non_existence ./conf/conda spectralDNS --channel main
-              export CONDA_PY=36
+
+  build_python_27:
+    machine: true
+    steps:
+      - checkout
+
+      - restore_cache:
+          key: v2-miniconda-{{ .Branch }}
+
+      - run:
+          name: install miniconda2
+          command: |
+            if [[ ! -d /home/circleci/miniconda ]]; then
+                wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda2.sh &&
+                bash miniconda2.sh -b -f -p /home/circleci/miniconda2;
+            else
+                echo "Using cached miniconda2";
+            fi
+            source ~/miniconda2/bin/activate root
+            conda config --set always_yes yes
+            conda update -q conda
+            conda config --add channels conda-forge
+            #conda config --add channels spectralDNS
+            conda install -n root conda-build
+            conda install --yes --quiet conda-forge-ci-setup=2
+            source run_conda_forge_build_setup
+
+      - run:
+          name: Build and test Python 2.7
+          command: |
+            cd /home/circleci/project
+            conda build ./conf/conda
+
+      - save_cache:
+          key: v2-miniconda-{{ .Branch }}
+          paths:
+            - /home/circleci/miniconda2
+
+      - run:
+          name: Upload packages
+          command: |
+              source ~/miniconda2/bin/activate root
+              cd /home/circleci/project
               upload_or_check_non_existence ./conf/conda spectralDNS --channel main
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build_python_latest
+      - build_python_27
