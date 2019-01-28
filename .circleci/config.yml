@@ -1,6 +1,6 @@
 version: 2
 jobs:
-  build_latest_python:
+  build_python_latest:
     machine: true
     steps:
       - checkout
@@ -29,6 +29,7 @@ jobs:
       - run:
           name: Build and test latest Python
           command: |
+            source ~/miniconda/bin/activate root
             cd /home/circleci/project
             conda build ./conf/conda
 
@@ -73,6 +74,7 @@ jobs:
       - run:
           name: Build and test Python 2.7
           command: |
+            source ~/miniconda2/bin/activate root
             cd /home/circleci/project
             conda build ./conf/conda
 
