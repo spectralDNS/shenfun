@@ -21,7 +21,7 @@ reader = functools.partial(ShenfunFile, mode='r')
 
 @pytest.mark.skipif(skip, reason='h5py not installed')
 @pytest.mark.parametrize('forward_output', (True, False))
-@pytest.mark.parametrize('backend', ('hdf5', 'netcdf'))
+@pytest.mark.parametrize('backend', ('hdf5',))
 def test_regular_2D(backend, forward_output):
     if backend == 'netcdf' and forward_output is True:
         return
@@ -44,7 +44,7 @@ def test_regular_2D(backend, forward_output):
 
 @pytest.mark.skipif(skip, reason='h5py not installed')
 @pytest.mark.parametrize('forward_output', (True, False))
-@pytest.mark.parametrize('backend', ('hdf5', 'netcdf'))
+@pytest.mark.parametrize('backend', ('hdf5',))
 @pytest.mark.parametrize('as_scalar', (True, False))
 def test_mixed_2D(backend, forward_output, as_scalar):
     if backend == 'netcdf' and forward_output is True:
@@ -76,7 +76,7 @@ def test_mixed_2D(backend, forward_output, as_scalar):
 
 @pytest.mark.skipif(skip, reason='h5py not installed')
 @pytest.mark.parametrize('forward_output', (True, False))
-@pytest.mark.parametrize('backend', ('hdf5', 'netcdf'))
+@pytest.mark.parametrize('backend', ('hdf5',))
 def test_regular_3D(backend, forward_output):
     if backend == 'netcdf' and forward_output is True:
         return
@@ -105,7 +105,7 @@ def test_regular_3D(backend, forward_output):
 
 @pytest.mark.skipif(skip, reason='h5py not installed')
 @pytest.mark.parametrize('forward_output', (True, False))
-@pytest.mark.parametrize('backend', ('hdf5', 'netcdf'))
+@pytest.mark.parametrize('backend', ('hdf5',))
 @pytest.mark.parametrize('as_scalar', (True, False))
 def test_mixed_3D(backend, forward_output, as_scalar):
     if backend == 'netcdf' and forward_output is True:
@@ -143,7 +143,7 @@ def test_mixed_3D(backend, forward_output, as_scalar):
         assert np.allclose(u0, uf[0])
 
 if __name__ == '__main__':
-    for bnd in ('netcdf', 'hdf5'):
+    for bnd in ('hdf5',):
         test_regular_2D(bnd, False)
         test_regular_3D(bnd, False)
         test_mixed_2D(bnd, False, True)
