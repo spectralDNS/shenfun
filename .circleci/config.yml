@@ -13,11 +13,6 @@ jobs:
           command: |
             ./.circleci/install_conda.sh
 
-      - save_cache:
-          key: v1-miniconda-{{ .Branch }}
-          paths:
-            - /home/circleci/miniconda
-
       - run:
           name: Build and test python 2.7
           command: |
@@ -45,11 +40,6 @@ jobs:
           name: install miniconda
           command: |
             ./.circleci/install_conda.sh
-
-      - save_cache:
-          key: v1-miniconda-{{ .Branch }}
-          paths:
-            - /home/circleci/miniconda
 
       - run:
           name: Build and test python 3.6

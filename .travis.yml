@@ -11,6 +11,7 @@ env:
   matrix:
     - CONDA_PY=27
     - CONDA_PY=36
+    - CONDA_PY=37
 
   global:
     # "travis encrypt BINSTAR_TOKEN=<token> --repo spectralDNS/shenfun"
@@ -27,8 +28,8 @@ before_install:
 install:
     - |
       MINICONDA_URL="https://repo.continuum.io/miniconda"
-      #MINICONDA_FILE="Miniconda3-latest-MacOSX-x86_64.sh"
-      MINICONDA_FILE="Miniconda3-4.3.31-MacOSX-x86_64.sh"
+      MINICONDA_FILE="Miniconda3-latest-MacOSX-x86_64.sh"
+      #MINICONDA_FILE="Miniconda3-4.3.31-MacOSX-x86_64.sh"
       curl -L -O "${MINICONDA_URL}/${MINICONDA_FILE}"
       bash $MINICONDA_FILE -b
       source /Users/travis/miniconda3/bin/activate root
@@ -43,11 +44,13 @@ install:
 script:
     - |
       if [ $CONDA_PY == 36 ]; then
-          conda build --no-test conf/conda
+          conda build --no-test --python 3.6 conf/conda
           conda install shenfun --use-local
           py.test --cov=$(python -c "import site; print(site.getsitepackages()[0]+'/shenfun')") --cov-report=xml tests/
+      elif [ $CONDA_PY == 37 ]; then
+          conda build --python 3.7 conf/conda
       else
-          conda build conf/conda
+          conda build --python 2.7 conf/conda
       fi
 
 after_success:
