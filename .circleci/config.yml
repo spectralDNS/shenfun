@@ -23,8 +23,6 @@ jobs:
             conda config --add channels conda-forge
             #conda config --add channels spectralDNS
             conda install -n root conda-build
-            conda install --yes --quiet conda-forge-ci-setup=2
-            source run_conda_forge_build_setup
 
       - run:
           name: Build and test latest Python
@@ -43,6 +41,8 @@ jobs:
           command: |
               source ~/miniconda/bin/activate root
               cd /home/circleci/project
+              conda install --yes --quiet conda-forge-ci-setup=2
+              source run_conda_forge_build_setup
               upload_or_check_non_existence ./conf/conda spectralDNS --channel main
 
   build_python_27:
@@ -68,8 +68,6 @@ jobs:
             conda config --add channels conda-forge
             #conda config --add channels spectralDNS
             conda install -n root conda-build
-            conda install --yes --quiet conda-forge-ci-setup=2
-            source run_conda_forge_build_setup
 
       - run:
           name: Build and test Python 2.7
@@ -88,6 +86,8 @@ jobs:
           command: |
               source ~/miniconda2/bin/activate root
               cd /home/circleci/project
+              conda install --yes --quiet conda-forge-ci-setup=2
+              source run_conda_forge_build_setup
               upload_or_check_non_existence ./conf/conda spectralDNS --channel main
 
 workflows:
