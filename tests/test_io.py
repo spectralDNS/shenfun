@@ -8,22 +8,25 @@ from shenfun import *
 N = (12, 13, 14, 15)
 comm = MPI.COMM_WORLD
 
-skip = False
+skip = {'hdf5': False, 'netcdf4': False}
 try:
     import h5py
 except ImportError:
-    skip = True
+    skip['hdf5'] = True
+try:
+    import netCDF4
+except ImportError:
+    skip['netcdf4'] = True
 
 ex = {True: 'c', False: 'r'}
 
 writer = functools.partial(ShenfunFile, mode='w')
 reader = functools.partial(ShenfunFile, mode='r')
 
-@pytest.mark.skipif(skip, reason='h5py not installed')
 @pytest.mark.parametrize('forward_output', (True, False))
-@pytest.mark.parametrize('backend', ('hdf5',))
+@pytest.mark.parametrize('backend', ('hdf5', 'netcdf4'))
 def test_regular_2D(backend, forward_output):
-    if backend == 'netcdf' and forward_output is True:
+    if (backend == 'netcdf4' and forward_output is True) or skip[backend]:
         return
     K0 = Basis(N[0], 'F')
     K1 = Basis(N[1], 'C', bc=(0, 0))
@@ -42,12 +45,11 @@ def test_regular_2D(backend, forward_output):
     read.read(u0, 'u', forward_output=forward_output, step=1)
     assert np.allclose(u0, u)
 
-@pytest.mark.skipif(skip, reason='h5py not installed')
 @pytest.mark.parametrize('forward_output', (True, False))
-@pytest.mark.parametrize('backend', ('hdf5',))
+@pytest.mark.parametrize('backend', ('hdf5', 'netcdf4'))
 @pytest.mark.parametrize('as_scalar', (True, False))
 def test_mixed_2D(backend, forward_output, as_scalar):
-    if backend == 'netcdf' and forward_output is True:
+    if (backend == 'netcdf4' and forward_output is True) or skip[backend]:
         return
     K0 = Basis(N[0], 'F')
     K1 = Basis(N[1], 'C')
@@ -74,11 +76,10 @@ def test_mixed_2D(backend, forward_output, as_scalar):
         read.read(u0, 'uf0', forward_output=forward_output, step=1)
         assert np.allclose(u0, uf[0])
 
-@pytest.mark.skipif(skip, reason='h5py not installed')
 @pytest.mark.parametrize('forward_output', (True, False))
-@pytest.mark.parametrize('backend', ('hdf5',))
+@pytest.mark.parametrize('backend', ('hdf5', 'netcdf4'))
 def test_regular_3D(backend, forward_output):
-    if backend == 'netcdf' and forward_output is True:
+    if (backend == 'netcdf4' and forward_output is True) or skip[backend]:
         return
     K0 = Basis(N[0], 'F', dtype='D', domain=(0, np.pi))
     K1 = Basis(N[1], 'F', dtype='d', domain=(0, 2*np.pi))
@@ -103,12 +104,11 @@ def test_regular_3D(backend, forward_output):
     read.read(u0, 'u', forward_output=forward_output, step=1)
     assert np.allclose(u0, u)
 
-@pytest.mark.skipif(skip, reason='h5py not installed')
 @pytest.mark.parametrize('forward_output', (True, False))
-@pytest.mark.parametrize('backend', ('hdf5',))
+@pytest.mark.parametrize('backend', ('hdf5', 'netcdf4'))
 @pytest.mark.parametrize('as_scalar', (True, False))
 def test_mixed_3D(backend, forward_output, as_scalar):
-    if backend == 'netcdf' and forward_output is True:
+    if (backend == 'netcdf4' and forward_output is True) or skip[backend]:
         return
     K0 = Basis(N[0], 'F', dtype='D', domain=(0, np.pi))
     K1 = Basis(N[1], 'F', dtype='d', domain=(0, 2*np.pi))
@@ -143,7 +143,7 @@ def test_mixed_3D(backend, forward_output, as_scalar):
         assert np.allclose(u0, uf[0])
 
 if __name__ == '__main__':
-    for bnd in ('hdf5',):
+    for bnd in ('hdf5', 'netcdf4'):
         test_regular_2D(bnd, False)
         test_regular_3D(bnd, False)
         test_mixed_2D(bnd, False, True)

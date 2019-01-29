@@ -38,7 +38,7 @@ requirements:
     - nomkl
     - hdf5 1.10.4 mpi_{{ mpi }}_*
     - h5py * mpi_{{ mpi }}_*
-    #- netcdf4-parallel
+    - netcdf4-parallel
 
 test:
   source_files:

@@ -27,6 +27,5 @@ def ShenfunFile(name, T, backend='hdf5', mode='r', **kw):
     """
     if backend.lower() == 'hdf5':
         return HDF5File(name+'.h5', T, mode=mode, **kw)
-    raise RuntimeError("NetCDF4 backend currently broken")
     assert kw.get('forward_output', False) is False, "NetCDF4 cannot store complex arrays, use HDF5"
     return NCFile(name+'.nc', T, mode=mode, **kw)
