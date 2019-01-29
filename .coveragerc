@@ -2,6 +2,7 @@
 source = shenfun
 omit =
     */numba/*.py
+    */io/nc_file.py
 
 [report]
 exclude_lines =
