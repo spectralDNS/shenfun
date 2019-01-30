@@ -29,7 +29,6 @@ install:
     - |
       MINICONDA_URL="https://repo.continuum.io/miniconda"
       MINICONDA_FILE="Miniconda3-latest-MacOSX-x86_64.sh"
-      #MINICONDA_FILE="Miniconda3-4.3.31-MacOSX-x86_64.sh"
       curl -L -O "${MINICONDA_URL}/${MINICONDA_FILE}"
       bash $MINICONDA_FILE -b
       source /Users/travis/miniconda3/bin/activate root
@@ -54,7 +53,7 @@ script:
       fi
 
 after_success:
-    - export GIT_DESCRIBE_TAG=`git describe --tags | cut -d'-' -f 1`
+    #- export GIT_DESCRIBE_TAG=`git describe --tags | cut -d'-' -f 1`
     - upload_or_check_non_existence ./conf/conda spectralDNS --channel main || exit 1
     - |
       if [ $CONDA_PY == 37 ]; then
