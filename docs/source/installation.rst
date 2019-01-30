@@ -88,16 +88,24 @@ Additional dependencies
 -----------------------
 
 For storing and retrieving data you need either `HDF5`_ or `netCDF4`_, compiled
-with support for MPI (see :ref:`Postprocessing`). Unfortunately, the libraries that
-are available on `conda-forge`_ are compiled without MPI and cannot be used.
-But parallel versions have been made available on the `spectralDNS channel`_
+with support for MPI (see :ref:`Postprocessing`). `HDF5`_ is already available
+with parallel support on `conda-forge`_ and can be installed (with the mpich
+backend for MPI) as
 
 ::
 
-    conda install -c spectralDNS h5py-parallel netcdf4-parallel
+    conda install -c conda-forge h5py=*=mpi_mpich_*
 
-which installs the two required Python modules `h5py`_ and `netCDF4`_. Otherwise,
-see the respective packages for how to install with support for MPI.
+A parallel version of `netCDF4`_ cannot be found on conda-forge, but a precompiled
+version has been made available on the `spectralDNS channel`_
+
+::
+
+    conda install -c spectralDNS netcdf4-parallel
+
+Note that parallel HDF5 and h5py often are available as modules on
+supercomputers. Otherwise, see the respective packages for how to install
+with support for MPI.
 
 Test installation
 -----------------

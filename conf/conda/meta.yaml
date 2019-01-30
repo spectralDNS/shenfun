@@ -14,12 +14,12 @@ requirements:
     - {{ compiler('cxx') }}
 
   host:
-    - numpy >=1.16
-    - setuptools
     - python
+    - numpy 1.11.*
+    - setuptools
     - cython
     - mpi4py
-    - mpi4py-fft >=1.1.2
+    - mpi4py-fft
     - {{ mpi }}
     - pip
     - fftw
@@ -28,8 +28,9 @@ requirements:
 
   run:
     - python
-    - numpy >=1.16
+    - {{ pin_compatible('numpy') }}
     - scipy
+    - cython
     - fftw
     - mpi4py
     - mpi4py-fft >=1.1.2
