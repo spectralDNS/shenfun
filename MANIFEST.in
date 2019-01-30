@@ -1,2 +1,2 @@
-include *.py *.txt *.rst *.md *.yml
+include LICENSE *.py *.txt *.rst *.md *.yml
 recursive-include shenfun *.py *.pyx
