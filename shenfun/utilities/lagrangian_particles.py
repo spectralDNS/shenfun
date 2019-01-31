@@ -37,9 +37,14 @@ if __name__ == '__main__':
     import sympy as sp
     import matplotlib.pyplot as plt
 
-    N = (20, 20)
-    F0 = Basis(N[0], 'F', dtype='D', domain=(0., 1.))
-    F1 = Basis(N[1], 'F', dtype='d', domain=(0., 1.))
+    N = (40, 40)
+    #F0 = Basis(N[0], 'F', dtype='D', domain=(0., 1.))
+    #F1 = Basis(N[1], 'F', dtype='d', domain=(0., 1.))
+    F0 = Basis(N[0], 'C', bc=(0, 0), domain=(0., 1.))
+    F1 = Basis(N[1], 'C', bc=(0, 0), domain=(0., 1.))
+    #F0 = Basis(N[0], 'C', domain=(0., 1.))
+    #F1 = Basis(N[1], 'C', domain=(0., 1.))
+
     T = TensorProductSpace(comm, (F0, F1))
     TV = VectorTensorProductSpace(T)
 
@@ -62,7 +67,7 @@ if __name__ == '__main__':
     points = np.array([0.5+0.15*np.cos(t0), 0.75+0.15*np.sin(t0)])
 
     # Create LagrangianParticles instance with given points
-    dt = 0.01
+    dt = 0.001
     lp = LagrangianParticles(points, dt, uv)
 
     # Plot velocity vectors
@@ -89,6 +94,3 @@ if __name__ == '__main__':
     plt.title('Particles integrated forwards and backwards')
     plt.legend(lg)
     plt.show()
-
-
-

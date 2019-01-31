@@ -4,7 +4,7 @@ package:
 
 source:
   git_url: ../../
-  #url: https://pypi.io/packages/source/s/shenfun/shenfun-{{ version }}.tar.gz
+  url: https://pypi.io/packages/source/s/shenfun/shenfun-{{ version }}.tar.gz
 
 build:
   number: 4
@@ -16,7 +16,7 @@ requirements:
 
   host:
     - python
-    - numpy 1.16.*
+    - numpy 1.11.*
     - setuptools
     - cython
     - mpi4py
