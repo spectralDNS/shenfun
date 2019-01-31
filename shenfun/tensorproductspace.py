@@ -159,7 +159,7 @@ class TensorProductSpace(PFFT):
         for i, base in enumerate(bases):
             base.axis = i
             if base.boundary_condition() == 'Dirichlet':
-                base.bc.set_tensor_bcs(self)
+                base.bc.set_tensor_bcs(i, base, self)
 
     def convolve(self, a_hat, b_hat, ab_hat):
         """Convolution of a_hat and b_hat
@@ -192,7 +192,7 @@ class TensorProductSpace(PFFT):
         ab_hat = self.forward(a*b, ab_hat)
         return ab_hat
 
-    def eval(self, points, coefficients, output_array=None, method=0):
+    def eval(self, points, coefficients, output_array=None, method=2):
         """Evaluate Function at points, given expansion coefficients
 
         Parameters
@@ -877,42 +877,41 @@ class BoundaryValues(object):
 
             self.bcs_final[:] = self.bcs
 
-    def set_tensor_bcs(self, T):
+    def set_tensor_bcs(self, axis, this_base, T):
+        self.axis = axis
         self.T = T
         if isinstance(T, (chebyshev.bases.ShenDirichletBasis,
                           legendre.bases.ShenDirichletBasis)):
             # In this case we may be looking at multidimensional data with just one of the bases.
             # Mainly for testing that solvers and other routines work along any dimension.
             self.set_slices(T)
-            self.axis = T.axis
 
-        elif any(isinstance(base, (chebyshev.bases.ShenDirichletBasis,
-                                   legendre.bases.ShenDirichletBasis))
-                 for base in T.bases):
+        elif any(base.boundary_condition() == 'Dirichlet' for base in T.bases):
             # Setting the Dirichlet boundary condition in a TensorProductSpace
             # is more involved than for a single dimension, and the routine will
             # depend on the order of the bases. If the Dirichlet space is the last
             # one, then the boundary condition is applied directly. If there is
-            # one Fourier space to the right, then one Fourier transform needs to
-            # be performed on the bc data first. For two Fourier spaces to the right,
+            # one other space to the right, then one transform needs to
+            # be performed on the bc data first. For two other spaces to the right,
             # two transforms need to be executed.
             axis = None
-            dirichlet_base = None
-            number_of_bases_after_dirichlet = 0
-            bases = []
-            for axes in reversed(T.axes):
-                #for ax in axes:
-                base = T.bases[axes[-1]]
-                if base.boundary_condition() == 'Dirichlet':
-                    axis = self.axis = base.axis
-                    dirichlet_base = base
-                    bases.append('D')
-                else:
-                    if axis is None:
-                        number_of_bases_after_dirichlet += 1
-                    bases.append('F')
+            number_of_bases_after_this = len(T)-axis-1
+            bases = T.bases[axis+1:]
+            #for axes in reversed(T.axes):
+            #    #for ax in axes:
+            #    axis = axes[-1]
+            #    if axis < self.axis:
+            #        break
+            #    base = T.bases[axis]
+            #    if not axis == self.axis:
+            #        this_base = base
+            #        bases.append('D')
+            #    else:
+            #        if axis is None:
+            #            number_of_bases_after_this += 1
+            #        bases.append('F')
 
-            self.set_slices(dirichlet_base)
+            self.set_slices(this_base)
 
             if self.has_nonhomogeneous_bcs() is False:
                 self.bcs[0] = self.bcs_final[0] = 0
@@ -921,7 +920,7 @@ class BoundaryValues(object):
 
             # Set boundary values
             # These are values set at the end of a transform in Dirichlet space,
-            # but before any Fourier transforms
+            # but before any other transforms
             # Shape is like real space, since Dirichlet does not alter shape
             b = Array(T)
             s = T.local_slice(False)[axis]
@@ -939,34 +938,34 @@ class BoundaryValues(object):
                 Y1 = []
                 for i, ax in enumerate((x, y, z)):
                     if ax in bc0.free_symbols:
-                        Y0.append(X[i][dirichlet_base.si[0]])
+                        Y0.append(X[i][this_base.si[0]])
                     if ax in bc1.free_symbols:
-                        Y1.append(X[i][dirichlet_base.si[0]])
+                        Y1.append(X[i][this_base.si[0]])
 
                 f_bc0 = lbc0(*Y0)
                 f_bc1 = lbc1(*Y1)
-                if s.stop == dirichlet_base.N:
+                if s.stop == this_base.N:
                     b[self.slm2] = f_bc0
                     b[self.slm1] = f_bc1
 
             elif isinstance(self.bc[0], Number):
-                if s.stop == dirichlet_base.N:
+                if s.stop == this_base.N:
                     b[self.slm2] = self.bc[0]
                     b[self.slm1] = self.bc[1]
 
             elif isinstance(self.bc[0], np.ndarray):
-                if s.stop == dirichlet_base.N:
+                if s.stop == this_base.N:
                     b[self.slm2] = self.bc[0][self.sl0]
                     b[self.slm1] = self.bc[0][self.slm1]
 
             else:
                 raise NotImplementedError
 
-            if number_of_bases_after_dirichlet == 0:
+            if number_of_bases_after_this == 0:
                 # Dirichlet base is the first to be transformed
                 b_hat = b
 
-            elif number_of_bases_after_dirichlet == 1:
+            elif number_of_bases_after_this == 1:
                 T.forward._xfftn[0].input_array[...] = b
 
                 T.forward._xfftn[0]()
@@ -975,7 +974,7 @@ class BoundaryValues(object):
                 T.forward._transfer[0](arrayA, arrayB)
                 b_hat = arrayB.copy()
 
-            elif number_of_bases_after_dirichlet == 2:
+            elif number_of_bases_after_this == 2:
                 T.forward._xfftn[0].input_array[...] = b
 
                 T.forward._xfftn[0]()
