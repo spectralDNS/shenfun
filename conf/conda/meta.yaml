@@ -7,7 +7,7 @@ source:
   #url: https://pypi.io/packages/source/s/shenfun/shenfun-{{ version }}.tar.gz
 
 build:
-  number: 4
+  number: 5
 
 requirements:
   build:
@@ -16,16 +16,12 @@ requirements:
 
   host:
     - python
-    - numpy 1.16.*
+    - numpy
     - setuptools
     - cython
-    - mpi4py
-    - mpi4py-fft
-    - {{ mpi }}
     - pip
     - fftw
     - nomkl
-    - scipy
 
   run:
     - python
@@ -34,11 +30,11 @@ requirements:
     - cython
     - fftw
     - mpi4py
-    - mpi4py-fft >=1.1.2
+    - mpi4py-fft
     - {{ mpi }}
     - sympy
     - nomkl
-    - hdf5 1.10.4 mpi_{{ mpi }}_*
+    - hdf5 * mpi_{{ mpi }}_*
     - h5py * mpi_{{ mpi }}_*
     - netcdf4-parallel
 
