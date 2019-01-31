@@ -1,5 +1,3 @@
-numpy:
-  - '1.16.*'
 mpi:
   - 'mpich'
-  #- 'openmpi'
+  - 'openmpi'
