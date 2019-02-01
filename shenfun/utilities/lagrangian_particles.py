@@ -38,6 +38,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     N = (40, 40)
+    # Should work for any of these bases
     #F0 = Basis(N[0], 'F', dtype='D', domain=(0., 1.))
     #F1 = Basis(N[1], 'F', dtype='d', domain=(0., 1.))
     F0 = Basis(N[0], 'C', bc=(0, 0), domain=(0., 1.))

@@ -159,7 +159,7 @@ class TensorProductSpace(PFFT):
         for i, base in enumerate(bases):
             base.axis = i
             if base.boundary_condition() == 'Dirichlet':
-                base.bc.set_tensor_bcs(i, base, self)
+                base.bc.set_tensor_bcs(base, self)
 
     def convolve(self, a_hat, b_hat, ab_hat):
         """Convolution of a_hat and b_hat
@@ -877,8 +877,8 @@ class BoundaryValues(object):
 
             self.bcs_final[:] = self.bcs
 
-    def set_tensor_bcs(self, axis, this_base, T):
-        self.axis = axis
+    def set_tensor_bcs(self, this_base, T):
+        self.axis = this_base.axis
         self.T = T
         if isinstance(T, (chebyshev.bases.ShenDirichletBasis,
                           legendre.bases.ShenDirichletBasis)):
@@ -895,21 +895,17 @@ class BoundaryValues(object):
             # be performed on the bc data first. For two other spaces to the right,
             # two transforms need to be executed.
             axis = None
-            number_of_bases_after_this = len(T)-axis-1
-            bases = T.bases[axis+1:]
-            #for axes in reversed(T.axes):
-            #    #for ax in axes:
-            #    axis = axes[-1]
-            #    if axis < self.axis:
-            #        break
-            #    base = T.bases[axis]
-            #    if not axis == self.axis:
-            #        this_base = base
-            #        bases.append('D')
-            #    else:
-            #        if axis is None:
-            #            number_of_bases_after_this += 1
-            #        bases.append('F')
+            number_of_bases_after_this = 0
+            bases = []
+            for axes in reversed(T.axes):
+                base = T.bases[axes[-1]]
+                if base == this_base:
+                    axis = base.axis
+                    bases.append('D')
+                else:
+                    if axis is None:
+                        number_of_bases_after_this += 1
+                    bases.append('F')
 
             self.set_slices(this_base)
 
@@ -923,7 +919,7 @@ class BoundaryValues(object):
             # but before any other transforms
             # Shape is like real space, since Dirichlet does not alter shape
             b = Array(T)
-            s = T.local_slice(False)[axis]
+            s = T.local_slice(False)[self.axis]
 
             if isinstance(self.bc[0], sympy.Expr):
                 bc0 = self.bc[0]
@@ -989,29 +985,23 @@ class BoundaryValues(object):
                 b_hat = arrayB.copy()
 
             # Now b_hat contains the correct slices in slm1 and slm2
+            # These are the values to use on intermediate steps. If for example the Dirichlet space is squeezed between two Fourier spaces
             self.bcs[0] = b_hat[self.slm2].copy()
             self.bcs[1] = b_hat[self.slm1].copy()
 
-            # Final
+            # Final (the values to set on fully transformed functions)
             T.forward._xfftn[0].input_array[...] = b
             for i in range(len(T.forward._transfer)):
-                if bases[i] == 'F':
-                    T.forward._xfftn[i]()
-                else:
-                    T.forward._xfftn[i].output_array[...] = T.forward._xfftn[i].input_array
-
+                T.forward._xfftn[i]()
                 arrayA = T.forward._xfftn[i].output_array
                 arrayB = T.forward._xfftn[i+1].input_array
                 T.forward._transfer[i](arrayA, arrayB)
 
-            if bases[-1] == 'F':
-                T.forward._xfftn[-1]()
-            else:
-                T.forward._xfftn[-1].output_array[...] = T.forward._xfftn[-1].input_array
-
+            T.forward._xfftn[-1]()
             b_hat = T.forward._xfftn[-1].output_array
             self.bcs_final[0] = b_hat[self.slm2].copy()
             self.bcs_final[1] = b_hat[self.slm1].copy()
+            print(self.bcs_final)
 
     def set_slices(self, T):
         self.sl0 = T.si[0]
