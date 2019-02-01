@@ -32,8 +32,9 @@ requirements:
     - mpi4py-fft
     - sympy
     - nomkl
-    - hdf5 * mpi_*
-    - h5py * mpi_*
+    - {{ mpi }}
+    - hdf5 * mpi_{{ mpi }}_*
+    - h5py * mpi_{{ mpi }}_*
     - netcdf4-parallel
 
 test:
