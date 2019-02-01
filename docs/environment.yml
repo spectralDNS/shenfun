@@ -7,7 +7,7 @@ dependencies:
   - python=3.6
   - cython
   - fftw
-  - numpy >=1.16
+  - numpy 1.16.*
   - nomkl
   - sympy
   - python
