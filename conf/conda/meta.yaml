@@ -27,15 +27,13 @@ requirements:
     - python
     - {{ pin_compatible('numpy') }}
     - scipy
-    - cython
     - fftw
     - mpi4py
     - mpi4py-fft
-    - {{ mpi }}
     - sympy
     - nomkl
-    - hdf5 * mpi_{{ mpi }}_*
-    - h5py * mpi_{{ mpi }}_*
+    - hdf5 * mpi_*
+    - h5py * mpi_*
     - netcdf4-parallel
 
 test:
