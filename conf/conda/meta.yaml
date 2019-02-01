@@ -35,6 +35,7 @@ requirements:
     - {{ mpi }}
     - hdf5 * mpi_{{ mpi }}_*
     - h5py * mpi_{{ mpi }}_*
+    - libnetcdf-parallel 4.6.1
     - netcdf4-parallel
 
 test:
