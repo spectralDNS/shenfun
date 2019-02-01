@@ -245,7 +245,7 @@ def test_axis(ST, quad, axis):
     ST.tensorproductspace = ABC(3)
     ST.plan((N,)*3, axis, f0.dtype, {})
     if hasattr(ST, 'bc'):
-        ST.bc.set_tensor_bcs(ST) # To set Dirichlet boundary conditions on multidimensional array
+        ST.bc.set_tensor_bcs(ST, ST) # To set Dirichlet boundary conditions on multidimensional array
     ck = shenfun.Function(ST)
     fk = np.broadcast_to(f_hat[tuple(bc)], ck.shape).copy()
     ck = B.solve(fk, ck, axis=axis)
@@ -515,8 +515,9 @@ if __name__ == '__main__':
     #test_convolve(fbases.R2CBasis, 8)
     #test_ADDmat(lbases.ShenNeumannBasis, "GL")
     #test_CDDmat("GL")
-    test_massmatrices(lBasis[0], lBasis[1], 'GL')
+    #test_massmatrices(lBasis[0], lBasis[1], 'GL')
     #test_transforms(cBasis[3], 'GC', 2)
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[2], 'GC')
     #test_eval(cBasis[0], 'GC')
+    test_axis(cBasis[1], 'GC', 0)
