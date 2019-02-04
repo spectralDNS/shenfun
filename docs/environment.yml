@@ -4,10 +4,10 @@ channels:
   - defaults
 
 dependencies:
-  - python
+  - python=3.7
   - cython
   - fftw
-  - numpy
+  - numpy=1.16
   - nomkl
   - sympy
   - scipy
