@@ -37,8 +37,6 @@ install:
       conda config --add channels conda-forge
       conda config --add channels spectralDNS
       pip install codecov pytest-cov pytest codacy-coverage
-      conda install --yes --quiet conda-forge-ci-setup=2
-      source run_conda_forge_build_setup
 
 script:
     - |
@@ -53,8 +51,6 @@ script:
       fi
 
 after_success:
-    #- export GIT_DESCRIBE_TAG=`git describe --tags | cut -d'-' -f 1`
-    - upload_or_check_non_existence ./conf/conda spectralDNS --channel main || exit 1
     - |
       if [ $CONDA_PY == 37 ]; then
           codecov
