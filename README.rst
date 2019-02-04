@@ -8,6 +8,8 @@ Shenfun
     :target: https://circleci.com/gh/spectralDNS/shenfun
 .. image:: https://codecov.io/gh/spectralDNS/shenfun/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/spectralDNS/shenfun
+.. image:: https://anaconda.org/conda-forge/shenfun/badges/platforms.svg   
+    :target: https://anaconda.org/conda-forge/shenfun
 
 Description
 -----------
