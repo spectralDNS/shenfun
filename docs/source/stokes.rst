@@ -7,7 +7,7 @@ Demo - Stokes equations
 %%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Jan 24, 2019
+:Date: Feb 4, 2019
 
 *Summary.* The Stokes equations describe the flow of highly viscous fluids.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Stokes
@@ -173,7 +173,7 @@ and from these we create two different tensor product spaces
    :label: _auto9
 
         
-        W_0^{\boldsymbol{N}}(\boldsymbol{x}) = V_0^{N_0}(x) \times V^{N_1}(y) \times V^{N_2}(z), 
+        W_0^{\boldsymbol{N}}(\boldsymbol{x}) = V^{N_0}(x) \times V^{N_1}(y) \times V_0^{N_2}(z), 
         
         
 
@@ -277,8 +277,8 @@ Python (``mpi4py``) is required for running the solver with MPI.
 Manufactured solution
 ---------------------
 
-The exact solution :math:`\boldsymbol{u}_e(\boldsymbol{x})` and :math:`p(\boldsymbol{x})` are chosen to satisfy boundary
-conditions, and then the right hand sides :math:`\boldsymbol{f}(\boldsymbol{x})` and :math:`h(\boldsymbol{x})` are then
+The exact solutions :math:`\boldsymbol{u}_e(\boldsymbol{x})` and :math:`p(\boldsymbol{x})` are chosen to satisfy boundary
+conditions, and the right hand sides :math:`\boldsymbol{f}(\boldsymbol{x})` and :math:`h(\boldsymbol{x})` are then
 computed exactly using ``Sympy``. These exact right hand sides will then be used to
 compute a numerical solution that can be verified against the manufactured
 solution. The chosen solution with computed right hand sides are:
@@ -322,7 +322,7 @@ Legendre or Chebyshev is collected from the commandline, with Legendre as defaul
 
 Note that the last line of code is there to ensure that only the first
 :math:`N_2-2` coefficients are used, see discussion around Eq. :eq:`eq:Zn`.
-At the same time, we ensure that we are using :math:`N_2`
+At the same time, we ensure that we are still using :math:`N_2`
 quadrature points, the same as for the Dirichlet basis.
 
 Next the bases are used to create two tensor product spaces WU = :math:`W^{\boldsymbol{N}}`
@@ -354,8 +354,8 @@ the mixed space, and then split them up afterwards
     v, q = vq
 
 With the basisfunctions in place we may assemble the different blocks of the
-final coefficient matrix. Since Legendre is using a constant weight functions,
-that equations may also be integrated by parts to obtain a symmetric system:
+final coefficient matrix. Since Legendre is using a constant weight function,
+the equations may also be integrated by parts to obtain a symmetric system:
 
 .. code-block:: text
 
@@ -386,16 +386,16 @@ Breaking it down the inner product is mathematically
 
         
         
-        \int_{\Omega} v[0] \left(\frac{\partial^2 u[0]}{\partial x^2} + \frac{\partial^2 u[0]}{\partial y^2} + \frac{\partial^2 u[0]}{\partial z^2}\right) w_x dx w_y dy w_z dz.
+        \int_{\Omega} \boldsymbol{v}[0] \left(\frac{\partial^2 \boldsymbol{u}[0]}{\partial x^2} + \frac{\partial^2 \boldsymbol{u}[0]}{\partial y^2} + \frac{\partial^2 \boldsymbol{u}[0]}{\partial z^2}\right) w_x dx w_y dy w_z dz.
         
 
-If we now use test function :math:`v[0]`
+If we now use test function :math:`\boldsymbol{v}[0]`
 
 .. math::
    :label: _auto15
 
         
-        v[0]_{lmn} = \mathcal{X}_l \mathcal{Y}_m \mathcal{Z}_n,
+        \boldsymbol{v}[0]_{lmn} = \mathcal{X}_l \mathcal{Y}_m \mathcal{Z}_n,
         
         
 
@@ -405,18 +405,19 @@ and trialfunction
    :label: _auto16
 
         
-        u[0]_{pqr} = \sum_{p} \sum_{q} \sum_{r} \hat{u}[0]_{pqr} \mathcal{X}_p \mathcal{Y}_q \mathcal{Z}_r,
+        \boldsymbol{u}[0]_{pqr} = \sum_{p} \sum_{q} \sum_{r} \hat{\boldsymbol{u}}[0]_{pqr} \mathcal{X}_p \mathcal{Y}_q \mathcal{Z}_r,
         
         
 
-and insert these test- and trialfunctions into :eq:`eq:partialeq1`, then we obtain after
+where :math:`\hat{\boldsymbol{u}}` are the unknown degrees of freedom, and then insert these functions
+into :eq:`eq:partialeq1`, then we obtain after
 performing some exact evaluations over the periodic directions
 
 .. math::
    :label: _auto17
 
         
-         \Big( \underbrace{-\left(l^2 \delta_{lp} + m^2 \delta_{mq} \right) \int_{-1}^{1} \mathcal{Z}_r(z) \mathcal{Z}_n(z) w_z dz}_{A[0]} + \underbrace{\delta_{lp} \delta_{mq} \int_{-1}^{1} \frac{\partial^2 \mathcal{Z}_r(z)}{\partial z^2} \mathcal{Z}_n(z) w_z dz}_{A[1]} \Big) \hat{u}[0]_{pqr},
+         \Big( \underbrace{-\left(l^2 \delta_{lp} + m^2 \delta_{mq} \right) \int_{-1}^{1} \mathcal{Z}_r(z) \mathcal{Z}_n(z) w_z dz}_{A[0]} + \underbrace{\delta_{lp} \delta_{mq} \int_{-1}^{1} \frac{\partial^2 \mathcal{Z}_r(z)}{\partial z^2} \mathcal{Z}_n(z) w_z dz}_{A[1]} \Big) \hat{\boldsymbol{u}}[0]_{pqr},
         
         
 

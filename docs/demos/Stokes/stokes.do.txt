@@ -145,7 +145,7 @@ V_0^{N_2} &= \text{span}\{ \mathcal{Z}^0_n \}_{n\in\bs{n}^{N_2}},
 and from these we create two different tensor product spaces
 !bt
 \begin{align}
-W_0^{\bs{N}}(\bs{x}) &= V_0^{N_0}(x) \times V^{N_1}(y) \times V^{N_2}(z), \\
+W_0^{\bs{N}}(\bs{x}) &= V^{N_0}(x) \times V^{N_1}(y) \times V_0^{N_2}(z), \\
 W^{\bs{N}}(\bs{x}) &= V^{N_0}(x) \times V^{N_1}(y) \times V^{N_2}(z).
 \end{align}
 !et
@@ -217,8 +217,8 @@ Python (`mpi4py`) is required for running the solver with MPI.
 ===== Manufactured solution =====
 label{sec:mansol}
 
-The exact solution $\bs{u}_e(\bs{x})$ and $p(\bs{x})$ are chosen to satisfy boundary
-conditions, and then the right hand sides $\bs{f}(\bs{x})$ and $h(\bs{x})$ are then
+The exact solutions $\bs{u}_e(\bs{x})$ and $p(\bs{x})$ are chosen to satisfy boundary
+conditions, and the right hand sides $\bs{f}(\bs{x})$ and $h(\bs{x})$ are then
 computed exactly using `Sympy`. These exact right hand sides will then be used to
 compute a numerical solution that can be verified against the manufactured
 solution. The chosen solution with computed right hand sides are:
@@ -260,7 +260,7 @@ ST.slice = lambda: slice(0, ST.N-2)
 
 Note that the last line of code is there to ensure that only the first
 $N_2-2$ coefficients are used, see discussion around Eq. (ref{eq:Zn}).
-At the same time, we ensure that we are using $N_2$
+At the same time, we ensure that we are still using $N_2$
 quadrature points, the same as for the Dirichlet basis.
 
 Next the bases are used to create two tensor product spaces WU = $W^{\bs{N}}$
@@ -291,8 +291,8 @@ v, q = vq
 !ec
 
 With the basisfunctions in place we may assemble the different blocks of the
-final coefficient matrix. Since Legendre is using a constant weight functions,
-that equations may also be integrated by parts to obtain a symmetric system:
+final coefficient matrix. Since Legendre is using a constant weight function,
+the equations may also be integrated by parts to obtain a symmetric system:
 
 !bc
 if family.lower() == 'chebyshev':
@@ -321,28 +321,29 @@ Breaking it down the inner product is mathematically
 !bt
 \begin{equation}
 label{eq:partialeq1}
-\int_{\Omega} v[0] \left(\frac{\partial^2 u[0]}{\partial x^2} + \frac{\partial^2 u[0]}{\partial y^2} + \frac{\partial^2 u[0]}{\partial z^2}\right) w_x dx w_y dy w_z dz.
+\int_{\Omega} \bs{v}[0] \left(\frac{\partial^2 \bs{u}[0]}{\partial x^2} + \frac{\partial^2 \bs{u}[0]}{\partial y^2} + \frac{\partial^2 \bs{u}[0]}{\partial z^2}\right) w_x dx w_y dy w_z dz.
 \end{equation}
 !et
 
-If we now use test function $v[0]$
+If we now use test function $\bs{v}[0]$
 !bt
 \begin{equation}
-v[0]_{lmn} = \mathcal{X}_l \mathcal{Y}_m \mathcal{Z}_n,
+\bs{v}[0]_{lmn} = \mathcal{X}_l \mathcal{Y}_m \mathcal{Z}_n,
 \end{equation}
 !et
 and trialfunction
 !bt
 \begin{equation}
-u[0]_{pqr} = \sum_{p} \sum_{q} \sum_{r} \hat{u}[0]_{pqr} \mathcal{X}_p \mathcal{Y}_q \mathcal{Z}_r,
+\bs{u}[0]_{pqr} = \sum_{p} \sum_{q} \sum_{r} \hat{\bs{u}}[0]_{pqr} \mathcal{X}_p \mathcal{Y}_q \mathcal{Z}_r,
 \end{equation}
 !et
-and insert these test- and trialfunctions into (ref{eq:partialeq1}), then we obtain after
+where $\hat{\bs{u}}$ are the unknown degrees of freedom, and then insert these functions
+into (ref{eq:partialeq1}), then we obtain after
 performing some exact evaluations over the periodic directions
 
 !bt
 \begin{equation}
- \Big( \underbrace{-\left(l^2 \delta_{lp} + m^2 \delta_{mq} \right) \int_{-1}^{1} \mathcal{Z}_r(z) \mathcal{Z}_n(z) w_z dz}_{A[0]} + \underbrace{\delta_{lp} \delta_{mq} \int_{-1}^{1} \frac{\partial^2 \mathcal{Z}_r(z)}{\partial z^2} \mathcal{Z}_n(z) w_z dz}_{A[1]} \Big) \hat{u}[0]_{pqr},
+ \Big( \underbrace{-\left(l^2 \delta_{lp} + m^2 \delta_{mq} \right) \int_{-1}^{1} \mathcal{Z}_r(z) \mathcal{Z}_n(z) w_z dz}_{A[0]} + \underbrace{\delta_{lp} \delta_{mq} \int_{-1}^{1} \frac{\partial^2 \mathcal{Z}_r(z)}{\partial z^2} \mathcal{Z}_n(z) w_z dz}_{A[1]} \Big) \hat{\bs{u}}[0]_{pqr},
 \end{equation}
 !et
 
