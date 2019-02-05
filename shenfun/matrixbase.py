@@ -401,11 +401,11 @@ class SparseMatrix(dict):
                 b = np.moveaxis(b, axis, 0)
 
         if b.ndim == 1:
-            u[:] = spsolve(self.diags(), b)
+            u[:] = spsolve(self.diags('csr'), b)
         else:
             N = b.shape[0]
             P = np.prod(b.shape[1:])
-            u[:] = spsolve(self.diags(), b.reshape((N, P))).reshape(u.shape)
+            u[:] = spsolve(self.diags('csr'), b.reshape((N, P))).reshape(u.shape)
 
         if axis > 0:
             u = np.moveaxis(u, 0, axis)
@@ -553,7 +553,7 @@ class SpectralMatrix(SparseMatrix):
                      (self.trialfunction[0].__class__, self.trialfunction[1])))
 
     def get_key(self):
-        if 'mat' in self.__class__.__name__:
+        if self.__class__.__name__.endswith('mat'):
             return  self.__class__.__name__
         return self.__hash__()
 
@@ -1170,6 +1170,7 @@ def get_dense_matrix(test, trial):
         - shenfun.legendre.bases
         - shenfun.chebyshev.bases
         - shenfun.fourier.bases
+        - shenfun.laguerre.bases
 
         The int represents the number of times the test function
         should be differentiated. Representing matrix row.

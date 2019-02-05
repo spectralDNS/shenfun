@@ -14,9 +14,9 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
     N : int
         Number of quadrature points
     family : str, optional
-        Choose one of (``Chebyshev``, ``C``, ``Legendre``, ``L``,
-        ``Fourier``, ``F``), where ``C``, ``L`` and ``F`` are short-
-        forms
+        Choose one of (``Chebyshev``, ``C``, ``Legendre``, ``L``, ``Fourier``,
+        ``F``, ``Laguerre``, ``La``), where ``C``, ``L``, ``F`` and ``La`` are
+        short-forms
     bc : str or two-tuple, optional
         Choose one of
 
@@ -39,6 +39,10 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
 
           - LG - Legendre-Gauss
           - GL - Legendre-Gauss-Lobatto
+         * For family=Laguerre:
+
+          - LG - Laguerre-Gauss
+          - GR - Laguerre-Gauss-Radau
     domain : two-tuple of floats, optional
         The computational domain
     scaled : bool
@@ -120,6 +124,32 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
                 B = legendre.bases.ShenNeumannBasis
             elif bc.lower() == 'biharmonic':
                 B = legendre.bases.ShenBiharmonicBasis
+
+    elif family.lower() in ('laguerre', 'la'):
+        from shenfun import laguerre
+        if quad is not None:
+            assert quad in ('LG', 'GR')
+            par['quad'] = quad
+
+        if scaled is not None:
+            assert isinstance(scaled, bool)
+            par['scaled'] = scaled
+
+        if bc is None:
+            B = laguerre.bases.Basis
+
+        elif isinstance(bc, tuple):
+            assert len(bc) == 2
+            par['bc'] = bc
+            B = laguerre.bases.ShenDirichletBasis
+
+        elif isinstance(bc, str):
+            if bc.lower() == 'dirichlet':
+                B = laguerre.bases.ShenDirichletBasis
+            elif bc.lower() == 'neumann':
+                B = laguerre.bases.ShenNeumannBasis
+            elif bc.lower() == 'biharmonic':
+                B = laguerre.bases.ShenBiharmonicBasis
 
         else:
             raise NotImplementedError

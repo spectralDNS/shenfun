@@ -3,8 +3,8 @@ Module for defining bases in the Chebyshev family
 """
 import functools
 import numpy as np
-import sympy
 from numpy.polynomial import chebyshev as n_cheb
+import sympy
 from scipy.special import eval_chebyt
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, FuncWrap, \
