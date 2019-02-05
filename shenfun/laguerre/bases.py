@@ -50,6 +50,9 @@ class LaguerreBase(SpectralBase):
     def reference_domain(self):
         return (0., np.inf)
 
+    def domain_factor(self):
+        return 1
+
     def points_and_weights(self, N=None, map_true_domain=False):
         if N is None:
             N = self.N
