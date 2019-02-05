@@ -7,7 +7,7 @@ Demo - 3D Poisson equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Feb 4, 2019
+:Date: Feb 5, 2019
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve a 3D Poisson
 equation in a 3D tensor product domain that has homogeneous Dirichlet boundary

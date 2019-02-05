@@ -7,7 +7,7 @@ Demo - Stokes equations
 %%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Feb 4, 2019
+:Date: Feb 5, 2019
 
 *Summary.* The Stokes equations describe the flow of highly viscous fluids.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Stokes
