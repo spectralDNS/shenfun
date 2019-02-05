@@ -1,6 +1,6 @@
 r"""
 Solve Poisson equation in 2D with periodic bcs in one direction
-and homogeneous Dirichlet in the other. The domain is [0, 2\pi] x [0, inf]
+and homogeneous Dirichlet in the other. The domain is [0, inf] x [0, 2\pi]
 
 .. math::
 
@@ -32,7 +32,6 @@ assert len(sys.argv) == 2, "Call with one command-line arguments"
 assert isinstance(int(sys.argv[-1]), int)
 
 # Use sympy to compute a rhs, given an analytical solution
-
 x, y = symbols("x,y")
 ue = cos(2*y)*sin(2*x)*exp(-x)
 fe = ue.diff(x, 2) + ue.diff(y, 2)

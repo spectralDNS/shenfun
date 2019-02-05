@@ -72,6 +72,7 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
         else:
             B = fourier.bases.R2CBasis
         return B(N, **par)
+
     elif family.lower() in ('chebyshev', 'c'):
         from shenfun import chebyshev
         if quad is not None:
@@ -125,15 +126,13 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
             elif bc.lower() == 'biharmonic':
                 B = legendre.bases.ShenBiharmonicBasis
 
+        return B(N, **par)
+
     elif family.lower() in ('laguerre', 'la'):
         from shenfun import laguerre
         if quad is not None:
             assert quad in ('LG', 'GR')
             par['quad'] = quad
-
-        if scaled is not None:
-            assert isinstance(scaled, bool)
-            par['scaled'] = scaled
 
         if bc is None:
             B = laguerre.bases.Basis
