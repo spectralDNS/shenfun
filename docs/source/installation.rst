@@ -31,7 +31,7 @@ can be achieved with
     conda create --name shenfun -c conda-forge shenfun
     conda activate shenfun
 
-Note that this gives you shenfun with default setting. This means that
+Note that this gives you shenfun with default settings. This means that
 you will probably get the openmpi backend, and it is also likely that
 conda-forge chooses numpy with the mkl backend. Unfortunately, the mkl
 python package makes adjustments to the FFTW library and hard to resolve

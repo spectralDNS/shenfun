@@ -21,8 +21,8 @@ most important everyday tools are
 	* :func:`.project`
 	* :func:`.Basis`
 
-A good place to get started is by creating a :func:`.Basis`. There are three families of
-bases: Fourier, Chebyshev and Legendre. All bases are defined on a one-dimensional
+A good place to get started is by creating a :func:`.Basis`. There are four families of
+bases: Fourier, Chebyshev, Legendre and Laguerre. All bases are defined on a one-dimensional
 domain, with their own basis functions and quadrature points. For example, we have
 the regular Chebyshev basis :math:`\{T_k\}_{k=0}^{N-1}`, where :math:`T_k` is the
 :math:`k`'th Chebyshev polynomial of the first kind. To create such a basis with
