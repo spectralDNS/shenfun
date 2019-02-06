@@ -89,6 +89,7 @@ if __name__ == '__main__':
                     "shenfun.optimization.cython",
                     "shenfun.optimization.numba",
                     "shenfun.legendre",
+                    "shenfun.laguerre",
                     "shenfun.chebyshev",
                     "shenfun.fourier",
                     "shenfun.forms",
