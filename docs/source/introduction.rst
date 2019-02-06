@@ -105,6 +105,7 @@ links
     * :ref:`Demo - 3D Poisson equation`
     * :ref:`Demo - Cubic nonlinear Klein-Gordon equation`
     * :ref:`Demo - Kuramato-Sivashinsky equation`
+    * :ref:`Demo - Stokes equations`
 
 Tensor products
 ---------------
