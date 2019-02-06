@@ -1,7 +1,7 @@
 r"""
 This module contains classes for working with the spectral-Galerkin method
 
-There are currently classes for 9 bases and corresponding function spaces
+There are currently classes for 11 bases and corresponding function spaces
 
 All bases have expansions
 
@@ -107,6 +107,25 @@ Legendre:
         Homogeneous Dirichlet and Neumann, :math:`u(\pm 1)=0` and
         :math:`u'(\pm 1)=0`.
 
+Laguerre:
+    LaguerreBasis:
+        basis function:
+            :math:`\phi_k(x) = L_k(x) \cdot \exp(-x)`
+
+        basis:
+            :math:`span(L_k, k=0,1,...N)`
+
+        where :math:`L_k` is the Laguerre polynomial of order k.
+
+    ShenDirichletBasis:
+        basis function:
+            :math:`\phi_k = (L_k-L_{k+1})\cdot \exp(-x)`
+
+        basis:
+            :math:`span(\phi_k, k=0,1,...,N-1)`
+
+        Homogeneous Dirichlet for domain [0, inf).
+
 Fourier:
     R2CBasis and C2CBasis:
         basis function:
@@ -154,7 +173,7 @@ class SpectralBase(object):
 
             - GL - Chebyshev-Gauss-Lobatto or Legendre-Gauss-Lobatto
             - GC - Chebyshev-Gauss
-            - LG - Legendre-Gauss
+            - LG - Legendre-Gauss or Laguerre-Gauss
 
         padding_factor : float, optional
             For padding backward transform (for dealiasing)
@@ -1012,6 +1031,7 @@ def inner_product(test, trial):
             - :mod:`.chebyshev.bases`
             - :mod:`.legendre.bases`
             - :mod:`.fourier.bases`
+            - :mod:`.laguerre.bases`
 
             The integer determines the number of times the basis is
             differentiated. The test represents the matrix row

@@ -4,9 +4,10 @@ from itertools import product
 import pytest
 import numpy as np
 from mpi4py import MPI
-from sympy import symbols, cos, sin, lambdify
+from sympy import symbols, cos, sin, lambdify, exp
 from shenfun.chebyshev import bases as cbases
 from shenfun.legendre import bases as lbases
+from shenfun.laguerre import bases as lagbases
 from shenfun import Function, project, Dx, Array, Basis, TensorProductSpace, \
    VectorTensorProductSpace, MixedTensorProductSpace
 
@@ -118,16 +119,20 @@ lBasis = (lbases.Basis,
           lbases.ShenNeumannBasis,
           lbases.ShenBiharmonicBasis)
 
+lagBasis = (lagbases.Basis,
+            lagbases.ShenDirichletBasis)
+
 cquads = ('GC', 'GL')
 lquads = ('LG', 'GL')
+lagquads = ('LG',)
 
 all_bases_and_quads = list(product(lBasis, lquads))+list(product(cBasis, cquads))
+lag_bases_and_quads = list(product(lagBasis, lagquads))
 
 @pytest.mark.parametrize('typecode', 'dD')
 @pytest.mark.parametrize('dim', (1, 2))
-@pytest.mark.parametrize('ST,quad', all_bases_and_quads)
+@pytest.mark.parametrize('ST,quad', all_bases_and_quads+lag_bases_and_quads)
 def test_shentransform(typecode, dim, ST, quad):
-
     for shape in product(*([sizes]*dim)):
         bases = []
         for n in shape[:-1]:
@@ -212,6 +217,46 @@ def test_project(typecode, dim, ST, quad):
 
             bases.pop(axis)
             fft.destroy()
+
+lagbases_and_quads = list(product(lagBasis, lagquads))
+@pytest.mark.parametrize('typecode', 'dD')
+@pytest.mark.parametrize('dim', (1, 2))
+@pytest.mark.parametrize('ST,quad', lagbases_and_quads)
+def test_project_lag(typecode, dim, ST, quad):
+    # Using sympy to compute an analytical solution
+    x, y, z = symbols("x,y,z")
+    sizes = (24, 23)
+
+    funcs = {
+        (1, 0): (cos(4*y)*sin(2*x))*exp(-x),
+        (1, 1): (cos(4*x)*sin(2*y))*exp(-y),
+        (2, 0): (sin(6*z)*cos(4*y)*sin(2*x))*exp(-x),
+        (2, 1): (sin(2*z)*cos(4*x)*sin(2*y))*exp(-y),
+        (2, 2): (sin(2*x)*cos(4*y)*sin(2*z))*exp(-z)
+        }
+    syms = {1: (x, y), 2:(x, y, z)}
+    xs = {0:x, 1:y, 2:z}
+
+    for shape in product(*([sizes]*dim)):
+        bases = []
+        for n in shape[:-1]:
+            bases.append(Basis(n, 'F', dtype=typecode.upper()))
+        bases.append(Basis(shape[-1], 'F', dtype=typecode))
+
+        for axis in range(dim+1):
+            ST0 = ST(3*shape[-1], quad=quad)
+            bases.insert(axis, ST0)
+            fft = TensorProductSpace(comm, bases, dtype=typecode, axes=axes[dim][axis])
+            X = fft.local_mesh(True)
+            ue = funcs[(dim, axis)]
+            u_h = project(ue, fft)
+            ul = lambdify(syms[dim], ue, 'numpy')
+            uq = ul(*X).astype(typecode)
+            uf = u_h.backward()
+            assert np.linalg.norm(uq-uf) < 1e-5
+            bases.pop(axis)
+            fft.destroy()
+
 
 nbases_and_quads = list(product(lBasis[2:3], lquads))+list(product(cBasis[2:3], cquads))
 @pytest.mark.parametrize('typecode', 'dD')
