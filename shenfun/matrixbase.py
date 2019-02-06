@@ -67,6 +67,23 @@ Legendre basis:
         \psi_k &= L_k - 2 \frac{2k+5}{2k+7} L_{k+2} + \frac{2k+3}{2k+7} L_{k+4} \\
         V &= span\{\phi_k\}_{k=0}^{N-4}
 
+Laguerre basis:
+    Regular Laguerre function
+
+    .. math::
+
+        \phi_k &= L_k \cdot \exp(-x) \\
+        V &= span\{\phi_k\}_{k=0}^{N}
+
+    Homogeneous Dirichlet boundary conditions
+
+    .. math::
+
+        \phi_k &= (L_k-L_{k+2}) \cdot \exp(-x) \\
+        V &= span\{\phi_k\}_{k=0}^{N-1}
+
+    where :math:`L_k` is the Laguerre polynomial of order k.
+
 Fourier basis:
 
     .. math::
@@ -437,9 +454,10 @@ class SpectralMatrix(SparseMatrix):
     trial : 2-tuple of (basis, int)
         The basis is an instance of a class for one of the bases in
 
-        - shenfun.legendre.bases
-        - shenfun.chebyshev.bases
-        - shenfun.fourier.bases
+        - :mod:`.legendre.bases`
+        - :mod:`.chebyshev.bases`
+        - :mod:`.fourier.bases`
+        - :mod:`.laguerre.bases`
 
         The int represents the number of times the trial function
         should be differentiated. Representing matrix column.
@@ -1142,9 +1160,10 @@ def check_sanity(A, test, trial):
     test : 2-tuple of (basis, int)
         The basis is an instance of a class for one of the bases in
 
-        - shenfun.legendre.bases
-        - shenfun.chebyshev.bases
-        - shenfun.fourier.bases
+        - :mod:`.legendre.bases`
+        - :mod:`.chebyshev.bases`
+        - :mod:`.fourier.bases`
+        - :mod:`.laguerre.bases`
 
         The int represents the number of times the test function
         should be differentiated. Representing matrix row.
@@ -1167,10 +1186,10 @@ def get_dense_matrix(test, trial):
     test : 2-tuple of (basis, int)
         The basis is an instance of a class for one of the bases in
 
-        - shenfun.legendre.bases
-        - shenfun.chebyshev.bases
-        - shenfun.fourier.bases
-        - shenfun.laguerre.bases
+        - :mod:`.legendre.bases`
+        - :mod:`.chebyshev.bases`
+        - :mod:`.fourier.bases`
+        - :mod:`.laguerre.bases`
 
         The int represents the number of times the test function
         should be differentiated. Representing matrix row.
