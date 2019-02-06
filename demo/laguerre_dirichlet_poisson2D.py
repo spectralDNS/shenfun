@@ -70,7 +70,7 @@ uq = u_hat.backward()
 
 # Compare with analytical solution
 uj = ul(*X)
-assert np.allclose(uj, uq, atol=1e-6, rtol=0)
+assert np.allclose(uj, uq, atol=1e-5)
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()

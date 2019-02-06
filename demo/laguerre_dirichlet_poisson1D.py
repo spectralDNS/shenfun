@@ -52,11 +52,11 @@ uh = uj.forward()
 # Compare with analytical solution
 ua = ul(X)
 print("Error=%2.16e" %(np.linalg.norm(uj-ua)))
-assert np.allclose(uj, ua)
+assert np.allclose(uj, ua, atol=1e-5)
 
 point = np.array([0.1, 0.2])
 p = SD.eval(point, f_hat)
-assert np.allclose(p, ul(point))
+assert np.allclose(p, ul(point), atol=1e-5)
 
 if not 'pytest' in os.environ:
     import matplotlib.pyplot as plt

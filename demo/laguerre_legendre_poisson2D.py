@@ -28,6 +28,8 @@ from shenfun.la import SolverGeneric2NP
 
 comm = MPI.COMM_WORLD
 
+assert comm.Get_size() == 1, "Two non-periodic directions only have solver implemented for serial"
+
 assert len(sys.argv) == 2, "Call with one command-line arguments"
 assert isinstance(int(sys.argv[-1]), int)
 
@@ -70,7 +72,7 @@ uq = u_hat.backward()
 
 # Compare with analytical solution
 uj = ul(*X)
-assert np.allclose(uj, uq, atol=1e-6, rtol=0)
+assert np.allclose(uj, uq, atol=1e-6)
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()

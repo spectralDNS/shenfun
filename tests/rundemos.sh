@@ -37,6 +37,10 @@ python biharmonic3D_2nonperiodic.py
 python biharmonic2D_2nonperiodic.py legendre
 python biharmonic3D_2nonperiodic.py legendre
 
+python laguerre_dirichlet_poisson1D.py 70
+python laguerre_dirichlet_poisson2D.py 70
+python laguerre_legendre_poisson2D.py 70
+
 python dirichlet_dirichlet_poisson2D.py 24 25 legendre
 python dirichlet_dirichlet_poisson2D.py 24 25 chebyshev
 
@@ -76,4 +80,5 @@ mpirun -np 4 python MixedPoisson.py 24 25 legendre
 mpirun -np 4 python MixedPoisson.py 24 25 chebyshev
 mpirun -np 4 python MixedPoisson3D.py legendre
 mpirun -np 4 python MixedPoisson3D.py chebyshev
+mpirun -np 4 python laguerre_dirichlet_poisson2D.py 70
 pushd $PWD/../tests
