@@ -250,8 +250,7 @@ def inner(expr0, expr1, output_array=None, level=0):
             # Note 1D case return a TPMatrix
             if trial.rank() == 0:
                 return reduce(lambda x, y: x+y, A)
-            else:
-                return A
+            return A
 
         # linear form
         if uh.rank() > 0:

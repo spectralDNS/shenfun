@@ -3,8 +3,7 @@ import numpy as np
 from numpy.polynomial import hermite
 from scipy.special import eval_hermite, factorial
 from mpi4py_fft import fftw
-from shenfun.spectralbase import SpectralBase, work, Transform, islicedict, \
-    slicedict
+from shenfun.spectralbase import SpectralBase, work, Transform
 from shenfun.utilities import inheritdocstrings
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
@@ -37,11 +36,12 @@ class Basis(SpectralBase):
 
     """
 
-    def __init__(self, N=0, quad="LG"):
+    def __init__(self, N=0, quad="HG", bc=(0., 0.)):
         SpectralBase.__init__(self, N, quad, domain=(-np.inf, np.inf))
         self.forward = functools.partial(self.forward, fast_transform=False)
         self.backward = functools.partial(self.backward, fast_transform=False)
         self.scalar_product = functools.partial(self.scalar_product, fast_transform=False)
+        self.plan(N, 0, np.float, {})
 
     @staticmethod
     def family():
@@ -52,6 +52,10 @@ class Basis(SpectralBase):
 
     def domain_factor(self):
         return 1
+
+    @staticmethod
+    def boundary_condition():
+        return 'Dirichlet'
 
     def points_and_weights(self, N=None, map_true_domain=False):
         if N is None:
@@ -65,7 +69,7 @@ class Basis(SpectralBase):
         return points, weights
 
     def factor(self, i):
-        return 1./(np.pi**(0.25)*np.sqrt(2**i*factorial(i)))
+        return 1./(np.pi**(0.25)*np.sqrt(2.**i)*np.sqrt(factorial(i)))
 
     def vandermonde(self, x):
         V = hermite.hermvander(x, self.N-1)
@@ -84,20 +88,31 @@ class Basis(SpectralBase):
             x = self.mesh(False, False)
         V = self.vandermonde(x)
         M = V.shape[1]
+        X = x[:, np.newaxis]
         if k == 1:
             D = np.zeros((M, M))
             D[:-1, :] = hermite.hermder(np.eye(M), 1)
             W = np.dot(V, D)
-            W -= V*x[:, np.newaxis]
-            V = W*np.exp(-x**2/2)[:, np.newaxis]
+            W -= V*X
+            V = W*np.exp(-X**2/2)
             V *= self.factor(np.arange(M))[np.newaxis, :]
 
         elif k == 2:
-            W = (x[:, np.newaxis]**2 - 1 - 2*np.arange(M)[np.newaxis, :])*V
-            V = W*self.factor(np.arange(M))[np.newaxis, :]*np.exp(-x**2/2)[:, np.newaxis]
+            W = (X**2 - 1 - 2*np.arange(M)[np.newaxis, :])*V
+            V = W*self.factor(np.arange(M))[np.newaxis, :]*np.exp(-X**2/2)
+            #D = np.zeros((M, M))
+            #D[:-1, :] = hermite.hermder(np.eye(M), 1)
+            #W = np.dot(V, D)
+            #W = -2*X*W
+            #D[-2:] = 0
+            #D[:-2, :] = hermite.hermder(np.eye(M), 2)
+            #W += np.dot(V, D)
+            #W += (X**2-1)*V
+            #W *= np.exp(-X**2/2)*self.factor(np.arange(M))[np.newaxis, :]
+            #V[:] = W
 
         elif k == 0:
-            V *= np.exp(-x**2/2)[:, np.newaxis]*self.factor(np.arange(M))[np.newaxis, :]
+            V *= np.exp(-X**2/2)*self.factor(np.arange(M))[np.newaxis, :]
 
         else:
             raise NotImplementedError
@@ -108,7 +123,7 @@ class Basis(SpectralBase):
         if x is None:
             x = self.mesh(False, False)
         V = self.vandermonde(x)
-        V *= self.factor(np.arange(V.shape[1]))[np.newaxis, :]*np.exp(-x/2)[:, np.newaxis]
+        V *= self.factor(np.arange(V.shape[1]))[np.newaxis, :]*np.exp(-x**2/2)[:, np.newaxis]
         return V
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -154,13 +169,13 @@ class Basis(SpectralBase):
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
 
     def eval(self, x, u, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape)
         v = self.vandermonde(x)
-        w = u*self.factor(self.N)
-        output_array[:] = np.dot(v*np.exp(-x**2/2)[:, np.newaxis], w)
+        w = u*self.factor(np.arange(self.N))
+        y = hermite.hermval(x, w)
+        output_array[:] = y * np.exp(-x**2/2)
+        #output_array[:] = np.dot(v*np.exp(-x**2/2)[:, np.newaxis], w)
         return output_array

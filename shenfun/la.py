@@ -30,8 +30,8 @@ class TDMA(object):
         """Initialize and allocate solver"""
         M = self.mat.shape[0]
         B = self.mat
-        self.dd = B[0].copy()*np.ones(M)
-        self.ud = B[2].copy()*np.ones(M-2)
+        self.dd = B[0]*np.ones(M)
+        self.ud = B[2]*np.ones(M-2)
         self.L = np.zeros(M-2)
         self.TDMA_SymLU(self.dd, self.ud, self.L)
 
