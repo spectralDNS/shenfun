@@ -158,7 +158,7 @@ class TensorProductSpace(PFFT):
 
         for i, base in enumerate(bases):
             base.axis = i
-            if base.boundary_condition() == 'Dirichlet' and not base.family() == 'laguerre':
+            if base.boundary_condition() == 'Dirichlet' and not base.family() in ('laguerre', 'hermite'):
                 base.bc.set_tensor_bcs(base, self)
 
     def convolve(self, a_hat, b_hat, ab_hat):

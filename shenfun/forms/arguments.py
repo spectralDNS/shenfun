@@ -14,9 +14,15 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
     N : int
         Number of quadrature points
     family : str, optional
-        Choose one of (``Chebyshev``, ``C``, ``Legendre``, ``L``, ``Fourier``,
-        ``F``, ``Laguerre``, ``La``), where ``C``, ``L``, ``F`` and ``La`` are
-        short-forms
+        Choose one of
+
+        - (``Chebyshev``, ``C``),
+        - (``Legendre``, ``L``),
+        - (``Fourier``, ``F``),
+        - (``Laguerre``, ``La``),
+        - (``Hermite``, ``H``)
+
+        where the second are short-forms
     bc : str or two-tuple, optional
         Choose one of
 
@@ -39,10 +45,12 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
 
           - LG - Legendre-Gauss
           - GL - Legendre-Gauss-Lobatto
-         * For family=Laguerre:
+        * For family=Laguerre:
 
           - LG - Laguerre-Gauss
-          - GR - Laguerre-Gauss-Radau
+        * For family=Hermite:
+
+          - HG - Hermite-Gauss
     domain : two-tuple of floats, optional
         The computational domain
     scaled : bool
@@ -145,13 +153,29 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
         elif isinstance(bc, str):
             if bc.lower() == 'dirichlet':
                 B = laguerre.bases.ShenDirichletBasis
-            elif bc.lower() == 'neumann':
-                B = laguerre.bases.ShenNeumannBasis
-            elif bc.lower() == 'biharmonic':
-                B = laguerre.bases.ShenBiharmonicBasis
 
         else:
             raise NotImplementedError
+
+        return B(N, **par)
+
+    elif family.lower() in ('hermite', 'h'):
+        from shenfun import hermite
+        if quad is not None:
+            assert quad in ('HG',)
+            par['quad'] = quad
+
+        B = hermite.bases.Basis
+
+        if isinstance(bc, tuple):
+            assert len(bc) == 2
+            par['bc'] = bc
+
+        elif isinstance(bc, str):
+            assert bc.lower() == 'dirichlet'
+
+        else:
+            assert bc is None
 
         return B(N, **par)
 
