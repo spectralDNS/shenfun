@@ -3,8 +3,7 @@ import numpy as np
 from numpy.polynomial import laguerre as lag
 from scipy.special import eval_laguerre
 from mpi4py_fft import fftw
-from shenfun.spectralbase import SpectralBase, work, Transform, islicedict, \
-    slicedict
+from shenfun.spectralbase import SpectralBase, work, Transform
 from shenfun.utilities import inheritdocstrings
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
@@ -164,8 +163,6 @@ class LaguerreBase(SpectralBase):
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
 
 @inheritdocstrings
 class Basis(LaguerreBase):
