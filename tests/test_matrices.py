@@ -12,6 +12,8 @@ from shenfun.legendre import matrices as lmatrices
 from shenfun.legendre import bases as lbases
 from shenfun.laguerre import matrices as lagmatrices
 from shenfun.laguerre import bases as lagbases
+from shenfun.hermite import matrices as hmatrices
+from shenfun.hermite import bases as hbases
 from shenfun.chebyshev import la as cla
 from shenfun.legendre import la as lla
 
@@ -28,9 +30,12 @@ lBasis = (lbases.Basis,
 lagBasis = (lagbases.Basis,
             lagbases.ShenDirichletBasis)
 
+hBasis = (hbases.Basis,)
+
 cquads = ('GC', 'GL')
 lquads = ('LG', 'GL')
 lagquads = ('LG',)
+hquads = ('HG',)
 formats = ('dia', 'cython', 'python', 'self')
 
 N = 16
@@ -53,12 +58,14 @@ work = {
 cbases2 = list(product(cBasis, cBasis))
 lbases2 = list(product(lBasis, lBasis))
 lagbases2 = list(product(lagBasis, lagBasis))
-bases2 = cbases2+lbases2+lagbases2
+hbases2 = list(product(hBasis, hBasis))
+bases2 = cbases2+lbases2+lagbases2+hbases2
 
 cmats_and_quads = [list(k[0])+[k[1]] for k in product([(k, v) for k, v in cmatrices.mat.items()], cquads)]
 lmats_and_quads = [list(k[0])+[k[1]] for k in product([(k, v) for k, v in lmatrices.mat.items()], lquads)]
-lagmats_and_quads = [list(k[0])+[k[1]] for k in product([(k, v) for k, v in lagmatrices.mat.items()], lquads)]
-mats_and_quads = cmats_and_quads+lmats_and_quads+lagmats_and_quads
+lagmats_and_quads = [list(k[0])+[k[1]] for k in product([(k, v) for k, v in lagmatrices.mat.items()], lagquads)]
+hmats_and_quads = [list(k[0])+[k[1]] for k in product([(k, v) for k, v in hmatrices.mat.items()], hquads)]
+mats_and_quads = cmats_and_quads+lmats_and_quads+lagmats_and_quads+hmats_and_quads
 
 #cmats_and_quads_ids = ['-'.join(i) for i in product([v.__name__ for v in cmatrices.mat.values()], cquads)]
 #lmats_and_quads_ids = ['-'.join(i) for i in product([v.__name__ for v in lmatrices.mat.values()], lquads)]
@@ -144,6 +151,38 @@ def test_lmatvec(b0, b1, quad, format, dim, k0, k1):
 @pytest.mark.parametrize('dim', (2, 3))
 @pytest.mark.parametrize('k0,k1', product((0, 1, 2), (0, 1, 2)))
 def test_lagmatvec(b0, b1, quad, format, dim, k0, k1):
+    """Test matrix-vector product"""
+    global c, c1, d, d1
+    b0 = b0(N, quad=quad)
+    b1 = b1(N, quad=quad)
+    mat = shenfun.spectralbase.inner_product((b0, k0), (b1, k1))
+    c = mat.matvec(a, c, format='csr')
+    c1 = mat.matvec(a, c1, format=format)
+    assert np.allclose(c, c1)
+    for axis in range(0, dim):
+        b, d, d1 = work[dim]
+        d.fill(0)
+        d1.fill(0)
+        d = mat.matvec(b, d, format='csr', axis=axis)
+        d1 = mat.matvec(b, d1, format=format, axis=axis)
+        assert np.allclose(d, d1)
+
+        # Test multidimensional with axis equals 1D case
+        d1.fill(0)
+        bc = [np.newaxis,]*dim
+        bc[axis] = slice(None)
+        fj = np.broadcast_to(a[tuple(bc)], (N,)*dim).copy()
+        d1 = mat.matvec(fj, d1, format=format, axis=axis)
+        cc = [0,]*dim
+        cc[axis] = slice(None)
+        assert np.allclose(c, d1[tuple(cc)])
+
+@pytest.mark.parametrize('b0,b1', hbases2)
+@pytest.mark.parametrize('quad', hquads)
+@pytest.mark.parametrize('format', formats)
+@pytest.mark.parametrize('dim', (2, 3))
+@pytest.mark.parametrize('k0,k1', product((0, 1, 2), (0, 1, 2)))
+def test_hmatvec(b0, b1, quad, format, dim, k0, k1):
     """Test matrix-vector product"""
     global c, c1, d, d1
     b0 = b0(N, quad=quad)
@@ -477,7 +516,8 @@ def test_biharmonic2D(family, axis):
 if __name__ == '__main__':
     #test_mat(((lBasis[0], 0), (lBasis[1], 1)), lmatrices.CLDmat, 'LG')
     #test_cmatvec(cBasis[3], cBasis[1], 'GC', 'cython', 3, 0)
-    test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
+    #test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
+    test_hmatvec(hBasis[0], hBasis[0], 'HG', 'self', 3, 1, 1)
     #test_add(*mats_and_quads[0])
     #test_sub(*mats_and_quads[15])
     #test_mul2()

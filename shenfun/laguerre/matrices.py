@@ -1,8 +1,7 @@
 import numpy as np
 from shenfun.matrixbase import SpectralMatrix
+from shenfun.optimization.cython import Matvec
 from shenfun.utilities import inheritdocstrings
-<<<<<<< Updated upstream
-=======
 from shenfun.la import TDMA_O
 from . import bases
 
@@ -59,7 +58,6 @@ class ADDmat(SpectralMatrix):
              -1: 0.25}
         SpectralMatrix.__init__(self, d, test, trial)
         self.solve = TDMA_O(self)
->>>>>>> Stashed changes
 
 
 @inheritdocstrings
@@ -86,4 +84,7 @@ class _LagMatDict(dict):
         return matrix
 
 
-mat = _LagMatDict({})
+mat = _LagMatDict({
+    ((LD, 0), (LD, 0)): BDDmat,
+    ((LD, 1), (LD, 1)): ADDmat
+    })
