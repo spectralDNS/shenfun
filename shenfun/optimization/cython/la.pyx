@@ -494,6 +494,15 @@ def TDMA_SymSolve(d, a, l, x, axis=0):
     elif n == 3:
         TDMA_SymSolve3D(d, a, l, x, axis)
 
+def TDMA_O_SymSolve(d, a, l, x, axis=0):
+    n = x.ndim
+    if n == 1:
+        TDMA_O_SymSolve1D(d, a, l, x)
+    elif n == 2:
+        TDMA_O_SymSolve2D(d, a, l, x, axis)
+    elif n == 3:
+        TDMA_O_SymSolve3D(d, a, l, x, axis)
+
 def TDMA_SymSolve_VC(d, a, l, x, axis=0):
     n = x.ndim
     if n == 1:
@@ -520,6 +529,22 @@ def TDMA_SymSolve1D(real_t[::1] d,
         for i in range(n - 3, -1, -1):
             x[i] = (x[i] - a[i]*x[i+2])/d[i]
 
+def TDMA_O_SymSolve1D(real_t[::1] d,
+                    real_t[::1] a,
+                    real_t[::1] l,
+                    T[::1] x):
+    cdef:
+        unsigned int n = d.shape[0]
+        np.intp_t i
+
+    with nogil:
+        for i in range(1, n):
+            x[i] -= l[i-1]*x[i-2]
+
+        x[n-1] = x[n-1]/d[n-1]
+        for i in range(n - 2, -1, -1):
+            x[i] = (x[i] - a[i]*x[i+1])/d[i]
+
 def TDMA_SymSolveC(real_t[::1] d,
                    real_t[::1] a,
                    real_t[::1] l,
@@ -538,6 +563,55 @@ def TDMA_SymSolveC(real_t[::1] d,
     for i in range(n - 3, -1, -1):
         x[i].real = (x[i].real - a[i]*x[i+2].real)/d[i]
         x[i].imag = (x[i].imag - a[i]*x[i+2].imag)/d[i]
+
+def TDMA_O_SymSolve3D(real_t[::1] d,
+                      real_t[::1] a,
+                      real_t[::1] l,
+                      T[:,:,::1] x,
+                      int axis):
+    cdef:
+        unsigned int n = d.shape[0]
+        np.intp_t i, j, k
+        real_t d1
+
+    if axis == 0:
+        for i in range(1, n):
+            for j in range(x.shape[1]):
+                for k in range(x.shape[2]):
+                    x[i, j, k] -= l[i-1]*x[i-1, j, k]
+
+        for j in range(x.shape[1]):
+            for k in range(x.shape[2]):
+                x[n-1, j, k] = x[n-1, j, k]/d[n-1]
+
+        for i in range(n - 2, -1, -1):
+            d1 = 1./d[i]
+            for j in range(x.shape[1]):
+                for k in range(x.shape[2]):
+                    x[i, j, k] = (x[i, j, k] - a[i]*x[i+1, j, k])*d1
+
+    elif axis == 1:
+        for i in range(x.shape[0]):
+            for j in range(1, n):
+                for k in range(x.shape[2]):
+                    x[i, j, k] -= l[j-1]*x[i, j-1, k]
+
+            for k in range(x.shape[2]):
+                x[i, n-1, k] = x[i, n-1, k]/d[n-1]
+
+            for j in range(n - 2, -1, -1):
+                for k in range(x.shape[2]):
+                    x[i, j, k] = (x[i, j, k] - a[j]*x[i, j+1, k])/d[j]
+
+    elif axis == 2:
+        for i in range(x.shape[0]):
+            for j in range(x.shape[1]):
+                for k in range(1, n):
+                    x[i, j, k] -= l[k-1]*x[i, j, k-1]
+
+                x[i, j, n-1] = x[i, j, n-1]/d[n-1]
+                for k in range(n - 2, -1, -1):
+                    x[i, j, k] = (x[i, j, k] - a[k]*x[i, j, k+1])/d[k]
 
 def TDMA_SymSolve3D(real_t[::1] d,
                     real_t[::1] a,
@@ -590,6 +664,38 @@ def TDMA_SymSolve3D(real_t[::1] d,
                 x[i, j, n-2] = x[i, j, n-2]/d[n-2]
                 for k in range(n - 3, -1, -1):
                     x[i, j, k] = (x[i, j, k] - a[k]*x[i, j, k+2])/d[k]
+
+def TDMA_O_SymSolve2D(real_t[::1] d,
+                      real_t[::1] a,
+                      real_t[::1] l,
+                      T[:, ::1] x,
+                      int axis):
+    cdef:
+        unsigned int n = d.shape[0]
+        np.intp_t i, j, k
+        real_t d1
+
+    if axis == 0:
+        for i in range(1, n):
+            for j in range(x.shape[1]):
+                x[i, j] -= l[i-1]*x[i-1, j]
+
+        for j in range(x.shape[1]):
+            x[n-1, j] = x[n-1, j]/d[n-1]
+
+        for i in range(n - 2, -1, -1):
+            d1 = 1./d[i]
+            for j in range(x.shape[1]):
+                x[i, j] = (x[i, j] - a[i]*x[i+1, j])*d1
+
+    elif axis == 1:
+        for i in range(x.shape[0]):
+            for j in range(1, n):
+                x[i, j] -= l[j-1]*x[i, j-1]
+            x[i, n-1] = x[i, n-1]/d[n-1]
+            for j in range(n - 2, -1, -1):
+                x[i, j] = (x[i, j] - a[j]*x[i, j+1])/d[j]
+
 
 def TDMA_SymSolve2D(real_t[::1] d,
                     real_t[::1] a,
