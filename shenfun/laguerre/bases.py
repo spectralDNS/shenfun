@@ -116,12 +116,13 @@ class LaguerreBase(SpectralBase):
             x = self.mesh(False, False)
         x = np.atleast_1d(x)
         v = eval_laguerre(i, x, out=output_array)
+        X = x[:, np.newaxis]
         if k == 1:
             D = np.zeros((self.N, self.N))
             D[:-1, :] = lag.lagder(np.eye(self.N), 1)
             V = np.dot(v, D)
             V -= 0.5*v
-            V *= np.exp(-x/2)[:, np.newaxis]
+            V *= np.exp(-X/2)
             v[:] = V
 
         elif k == 2:
@@ -130,11 +131,11 @@ class LaguerreBase(SpectralBase):
             D[:-1, :] -= lag.lagder(np.eye(self.N), 1)
             V = np.dot(v, D)
             V += 0.25*v
-            V *= np.exp(-x/2)[:, np.newaxis]
+            V *= np.exp(-X/2)
             v[:] = V
 
         elif k == 0:
-            v *= np.exp(-x/2)[:, np.newaxis]
+            v *= np.exp(-X/2)
 
         else:
             raise NotImplementedError

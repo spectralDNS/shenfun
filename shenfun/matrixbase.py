@@ -84,6 +84,17 @@ Laguerre basis:
 
     where :math:`L_k` is the Laguerre polynomial of order k.
 
+Hermite basis:
+    Regular Hermite function
+
+    .. math::
+
+        \phi_k &= H_k \cdot \exp(-x^2/2)/(\pi^{0.25}\sqrt{2^k k!}) \\
+        V &= span\{\phi_k\}_{k=0}^{N}
+
+    where :math:`K_k` is the Hermite polynomial of order k.
+    Homogeneous Dirichlet boundary conditions on (-inf, inf)
+
 Fourier basis:
 
     .. math::
@@ -458,6 +469,7 @@ class SpectralMatrix(SparseMatrix):
         - :mod:`.chebyshev.bases`
         - :mod:`.fourier.bases`
         - :mod:`.laguerre.bases`
+        - :mod:`.hermite.bases`
 
         The int represents the number of times the trial function
         should be differentiated. Representing matrix column.
@@ -1164,6 +1176,7 @@ def check_sanity(A, test, trial):
         - :mod:`.chebyshev.bases`
         - :mod:`.fourier.bases`
         - :mod:`.laguerre.bases`
+        - :mod:`.hermite.bases`
 
         The int represents the number of times the test function
         should be differentiated. Representing matrix row.
@@ -1190,6 +1203,7 @@ def get_dense_matrix(test, trial):
         - :mod:`.chebyshev.bases`
         - :mod:`.fourier.bases`
         - :mod:`.laguerre.bases`
+        - :mod:`.hermite.bases`
 
         The int represents the number of times the test function
         should be differentiated. Representing matrix row.

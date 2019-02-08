@@ -126,6 +126,16 @@ Laguerre:
 
         Homogeneous Dirichlet for domain [0, inf).
 
+Hermite:
+    Basis:
+        basis function:
+            :math:`\phi_k(x) = H_k(x) \cdot \exp(-x^2/2)/(\pi^{0.25}\sqrt{2^k k!})`
+
+        basis:
+            :math:`span(\phi_k, k=0,1,...N)`
+
+        where :math:`H_k` is the Hermite polynomial of order k.
+
 Fourier:
     R2CBasis and C2CBasis:
         basis function:
@@ -174,6 +184,7 @@ class SpectralBase(object):
             - GL - Chebyshev-Gauss-Lobatto or Legendre-Gauss-Lobatto
             - GC - Chebyshev-Gauss
             - LG - Legendre-Gauss or Laguerre-Gauss
+            - HG - Hermite-Gauss
 
         padding_factor : float, optional
             For padding backward transform (for dealiasing)
@@ -1032,6 +1043,7 @@ def inner_product(test, trial):
             - :mod:`.legendre.bases`
             - :mod:`.fourier.bases`
             - :mod:`.laguerre.bases`
+            - :mod:`.hermite.bases`
 
             The integer determines the number of times the basis is
             differentiated. The test represents the matrix row
