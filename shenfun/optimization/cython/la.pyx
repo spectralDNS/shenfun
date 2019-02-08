@@ -326,6 +326,17 @@ def PDMA_Symsolve2D_ptr(real_t[::1] d,
         for i in range(x.shape[0]):
             PDMA_SymSolve_ptr(&d[0], &e[0], &f[0], &x[i,0], n, strides)
 
+def TDMA_O_SymLU(real_t[::1] d,
+                 real_t[::1] ud,
+                 real_t[::1] ld):
+    cdef:
+        unsigned int n = d.shape[0]
+        int i
+
+    for i in range(1, n):
+        ld[i-1] = ud[i-1]/d[i-1]
+        d[i] = d[i] - ld[i-1]*ud[i-1]
+
 def TDMA_SymLU(real_t[::1] d,
                real_t[::1] ud,
                real_t[::1] ld):
@@ -530,16 +541,16 @@ def TDMA_SymSolve1D(real_t[::1] d,
             x[i] = (x[i] - a[i]*x[i+2])/d[i]
 
 def TDMA_O_SymSolve1D(real_t[::1] d,
-                    real_t[::1] a,
-                    real_t[::1] l,
-                    T[::1] x):
+                      real_t[::1] a,
+                      real_t[::1] l,
+                      T[::1] x):
     cdef:
         unsigned int n = d.shape[0]
         np.intp_t i
 
     with nogil:
         for i in range(1, n):
-            x[i] -= l[i-1]*x[i-2]
+            x[i] -= l[i-1]*x[i-1]
 
         x[n-1] = x[n-1]/d[n-1]
         for i in range(n - 2, -1, -1):

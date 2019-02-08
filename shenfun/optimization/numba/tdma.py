@@ -171,7 +171,6 @@ def TDMA_SymSolve_VC_2D(d, a, l, x, axis):
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
 def TDMA_O_SymSolve1D(d, a, l, x, axis=0):
-    assert x.ndim == 1, "Use optimized version for multidimensional solve"
     n = d.shape[0]
     for i in range(1, n):
         x[i] -= l[i-1]*x[i-1]
