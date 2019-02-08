@@ -415,3 +415,84 @@ class SolverGeneric2NP(object):
                 shape = np.take(self.T.shape(True), naxes)
                 u[tuple(s0)] = sp.linalg.spsolve(M0, b[tuple(s0)].flatten()).reshape(shape)
         return u
+
+class TDMA_O(object):
+    """Tridiagonal matrix solver
+
+    Parameters
+    ----------
+    mat : SparseMatrix
+        Symmetric tridiagonal matrix with diagonals in offsets -1, 0, 1
+
+    """
+    # pylint: disable=too-few-public-methods
+
+    def __init__(self, mat):
+        assert isinstance(mat, SparseMatrix)
+        self.mat = mat
+        self.N = 0
+        self.dd = np.zeros(0)
+        self.ud = None
+        self.L = None
+
+    def init(self):
+        """Initialize and allocate solver"""
+        M = self.mat.shape[0]
+        B = self.mat
+        self.dd = B[0]*np.ones(M)
+        self.ud = B[1]*np.ones(M-1)
+        self.L = np.zeros(M-1)
+        self.TDMA_O_SymLU(self.dd, self.ud, self.L)
+
+    @staticmethod
+    @optimizer
+    def TDMA_O_SymLU(d, ud, ld):
+        n = d.shape[0]
+        for i in range(1, n):
+            ld[i-1] = ud[i-1]/d[i-1]
+            d[i] = d[i] - ld[i-1]*ud[i-1]
+
+    @staticmethod
+    @optimizer
+    def TDMA_O_SymSolve(d, a, l, x, axis=0):
+        assert x.ndim == 1, "Use optimized version for multidimensional solve"
+        n = d.shape[0]
+        for i in range(1, n):
+            x[i] -= l[i-1]*x[i-1]
+
+        x[n-1] = x[n-1]/d[n-1]
+        for i in range(n-2, -1, -1):
+            x[i] = (x[i] - a[i]*x[i+1])/d[i]
+
+    def __call__(self, b, u=None, axis=0):
+        """Solve matrix problem self u = b
+
+        Parameters
+        ----------
+            b : array
+                Array of right hand side on entry and solution on exit unless
+                u is provided.
+            u : array, optional
+                Output array
+            axis : int, optional
+                   The axis over which to solve for if b and u are multidimensional
+
+        Note
+        ----
+        If u is not provided, then b is overwritten with the solution and returned
+
+        """
+
+        if u is None:
+            u = b
+        else:
+            assert u.shape == b.shape
+            u[:] = b[:]
+
+        if not self.dd.shape[0] == self.mat.shape[0]:
+            self.init()
+
+        self.TDMA_O_SymSolve(self.dd, self.ud, self.L, u, axis=axis)
+
+        u /= self.mat.scale
+        return u

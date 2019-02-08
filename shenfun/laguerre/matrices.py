@@ -1,6 +1,65 @@
 import numpy as np
 from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
+<<<<<<< Updated upstream
+=======
+from shenfun.la import TDMA_O
+from . import bases
+
+LD = bases.ShenDirichletBasis
+
+@inheritdocstrings
+class BDDmat(SpectralMatrix):
+    r"""Mass matrix for inner product
+
+    .. math::
+
+        B_{kj} = (\phi_j, \phi_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-1 \text{ and } k = 0, 1, ..., N-1
+
+    and :math:`\phi_k` is the Laguerre (function) Dirichlet basis function.
+
+    """
+    def __init__(self, test, trial):
+        assert isinstance(test[0], LD)
+        assert isinstance(trial[0], LD)
+        d = {0:2., 1: -1., -1:-1.}
+        SpectralMatrix.__init__(self, d, test, trial)
+        self.solve = TDMA_O(self)
+
+@inheritdocstrings
+class ADDmat(SpectralMatrix):
+    r"""Mass matrix for inner product
+
+    .. math::
+
+        A_{kj} = (\phi'_j, \phi'_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-1 \text{ and } k = 0, 1, ..., N-1
+
+    and :math:`\phi_k` is the Laguerre (function) Dirichlet basis function.
+
+    """
+    def __init__(self, test, trial):
+        assert isinstance(test[0], LD)
+        assert isinstance(trial[0], LD)
+        N = test[0].N
+        k = np.arange(N, dtype=np.float)
+        d = {0: 0.5,
+             1: 0.25,
+             -1: 0.25}
+        SpectralMatrix.__init__(self, d, test, trial)
+        self.solve = TDMA_O(self)
+>>>>>>> Stashed changes
 
 
 @inheritdocstrings
