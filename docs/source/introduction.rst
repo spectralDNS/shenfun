@@ -112,15 +112,16 @@ Tensor products
 
 If the problem is two-dimensional, then we need two basis functions, one per
 dimension. If we call the basis function along :math:`x`-direction :math:`\mathcal{X}(x)`
-and along :math:`y`-direction as :math:`\mathcal{Y}(y)`, the test function is then
+and along :math:`y`-direction :math:`\mathcal{Y}(y)`, the test function is then
 computed as
 
 .. math::
 
-   v(x, y) = \mathcal{X}(x) \mathcal{Y}(y)
+   v(x, y) = \mathcal{X}(x) \mathcal{Y}(y).
 
-If we now have a problem with Dirichlet in :math:`x`-direction and periodic in
-:math:`y`-direction, then we can choose :math:`\mathcal{X}_k(x) = T_k-T_{k+2}`,
+If we now have a problem that has Dirichlet boundaries in the :math:`x`-direction
+and periodic boundaries in the :math:`y`-direction, then we can choose
+:math:`\mathcal{X}_k(x) = T_k-T_{k+2}`,
 :math:`\mathcal{Y}_l(y) = \exp(\imath l y)` and a tensor product test function
 is then
 
@@ -170,12 +171,18 @@ by mistake set to ``D``. It is merely less efficient to work with complex data
 arrays where double precision is sufficient. See Sec :ref:`sec:gettingstarted`
 for more information on getting started with using bases.
 
-The tensor product space ``V`` will here be distributed with the *slab* method
-(since the problem is 2D) and it
-can here use a maximum of 9 CPUs (9 since the last dimension is
-transformed from 16 real data to 9 complex, using the Hermitian symmetry of
+Shenfun is parallelized with MPI through the `mpi4py-fft`_ package.
+If we store the current example in ``filename.py``, then it can be run
+with more than one processor, e.g., like::
+
+    mpirun -np 4 python filename.py
+
+In this case the tensor product space ``V`` will be distributed
+with the *slab* method (since the problem is 2D) and it
+can here use a maximum of 9 CPUs. The maximum is 9 since the last dimension is
+transformed from 16 real numbers to 9 complex, using the Hermitian symmetry of
 real transforms, i.e., the shape of a transformed array in the V space will be
-(14, 9)).
+(14, 9). You can read more about MPI in the later section :ref:`MPI`.
 
 Tribute
 -------
