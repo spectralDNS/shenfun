@@ -13,21 +13,15 @@ from functools import wraps
 def optimizer(func):
     """Decorator used to wrap calls to optimized versions of functions."""
 
-    try: # Look for optimized version of function
-        mod = os.environ.get('SHENFUN_OPTIMIZATION', 'cython')
-        mod = importlib.import_module('shenfun.optimization.'+mod.lower())
-        fun = getattr(mod, func.__name__, None)
+    mod = os.environ.get('SHENFUN_OPTIMIZATION', 'cython')
+    mod = importlib.import_module('shenfun.optimization.'+mod.lower())
+    fun = getattr(mod, func.__name__, func)
+    if fun is func:
+        print(fun.__name__ + ' not optimized')
 
-        @wraps(func)
-        def wrapped_function(*args, **kwargs):
-            u0 = fun(*args, **kwargs)
-            return u0
-
-    except: # Otherwise revert to default numpy implementation
-        print(func.__name__ + ' not optimized')
-        @wraps(func)
-        def wrapped_function(*args, **kwargs):
-            u0 = func(*args, **kwargs)
-            return u0
+    @wraps(func)
+    def wrapped_function(*args, **kwargs):
+        u0 = fun(*args, **kwargs)
+        return u0
 
     return wrapped_function

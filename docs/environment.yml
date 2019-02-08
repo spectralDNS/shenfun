@@ -1,6 +1,7 @@
 name: shenfun_doc_env
 
 channels:
+  - conda-forge
   - defaults
 
 dependencies:

@@ -8,7 +8,7 @@ def LU_Biharmonic(a0, alfa, beta, sii, siu, siuu, ail, aii, aiu,
                   bill, bil, bii, biu, biuu, u0, u1,
                   u2, l0, l1, axis):
     if l1.ndim == 2:
-        LU_Biharmonic_1D(a0, np.asscalar(alfa), np.asscalar(beta),
+        LU_Biharmonic_1D(a0, np.atleast_1d(alfa).item(), np.atleast_1d(beta).item(),
                          sii, siu, siuu, ail, aii, aiu,
                          bill, bil, bii, biu, biuu, u0, u1,
                          u2, l0, l1)
