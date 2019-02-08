@@ -6,6 +6,46 @@ from shenfun.la import TDMA_O
 from . import bases
 
 LD = bases.ShenDirichletBasis
+LB = bases.Basis
+
+
+@inheritdocstrings
+class BLLmat(SpectralMatrix):
+    r"""Mass matrix for inner product
+
+    .. math::
+
+        B_{kj} = (L_j, L_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N
+
+    and :math:`L_k` is the Laguerre function.
+
+    """
+    def __init__(self, test, trial):
+        assert isinstance(test[0], LB)
+        assert isinstance(trial[0], LB)
+        SpectralMatrix.__init__(self, {0:1}, test, trial)
+
+    def solve(self, b, u=None, axis=0):
+        if u is not None:
+            u[:] = b
+            u /= self.scale
+            return u
+
+        else:
+            b /= self.scale
+            return b
+
+    def matvec(self, v, c, format='python', axis=0):
+        c[:] = v
+        self.scale_array(c)
+        return c
+
 
 @inheritdocstrings
 class BDDmat(SpectralMatrix):
@@ -86,5 +126,6 @@ class _LagMatDict(dict):
 
 mat = _LagMatDict({
     ((LD, 0), (LD, 0)): BDDmat,
-    ((LD, 1), (LD, 1)): ADDmat
+    ((LD, 1), (LD, 1)): ADDmat,
+    ((LB, 0), (LB, 0)): BLLmat
     })

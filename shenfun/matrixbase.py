@@ -442,6 +442,11 @@ class SparseMatrix(dict):
         u /= self.scale
         return u
 
+    def isdiagonal(self):
+        if len(self) == 1:
+            return True
+        return False
+
     def isidentity(self):
         if not len(self) == 1:
             return False
@@ -986,12 +991,15 @@ class TPMatrix(object):
         self.naxes = []
         for axis, mat in enumerate(self.mats):
             if self.space[axis].family() == 'fourier':
-                d = mat[0]    # get diagoal
-                if np.ndim(d):
-                    d = self.space[axis].broadcast_to_ndims(d)
-                    d *= mat.scale
-                self.scale = self.scale*d
-                self.mats[axis] = Identity(mat.shape)
+                if self.dimensions() == 1: # Don't bother with the 1D case
+                    continue
+                else:
+                    d = mat[0]    # get diagoal
+                    if np.ndim(d):
+                        d = self.space[axis].broadcast_to_ndims(d)
+                        d *= mat.scale
+                    self.scale = self.scale*d
+                    self.mats[axis] = Identity(mat.shape)
             else:
                 self.naxes.append(axis)
 
@@ -1071,6 +1079,13 @@ class TPMatrix(object):
 
     def all_identity(self):
         return np.all([m.isidentity() for m in self.mats])
+
+    def all_diagonal(self):
+        return np.all([m.isdiagonal() for m in self.mats])
+
+    def dimensions(self):
+        """Return dimension of TPMatrix"""
+        return len(self.mats)
 
     def __mul__(self, a):
         """Returns copy of self.__mul__(a) <==> self*a"""
