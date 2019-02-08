@@ -27,7 +27,7 @@ Shenfun can be installed using either `pip <https://pypi.org/project/pip/>`_ or 
 Dependencies
 ------------
 
-    * `Python <https://www.python.org/>`_ 2.7, 3.3 or above. Test suits are run with Python 2.7 and 3.6.
+    * `Python <https://www.python.org/>`_ 2.7, 3.3 or above. Test suits are run with Python 2.7, 3.6 and 3.7.
     * A functional MPI 2.x/3.x implementation like `MPICH <https://www.mpich.org>`_ or `Open MPI <https://www.open-mpi.org>`_ built with shared/dynamic libraries.
     * `FFTW <http://www.fftw.org/>`_ version 3, also built with shared/dynamic libraries.
     * Python modules:
