@@ -32,6 +32,7 @@ import numpy as np
 from . import chebyshev
 from . import legendre
 from . import laguerre
+from . import hermite
 from . import fourier
 from . import matrixbase
 from . import la
