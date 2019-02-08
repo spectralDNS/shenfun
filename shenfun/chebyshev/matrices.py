@@ -68,7 +68,7 @@ from __future__ import division
 #__all__ = ['mat']
 
 import numpy as np
-from shenfun.optimization.cython import Matvec
+from shenfun.optimization import cython
 from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
 from shenfun.la import TDMA as neumann_TDMA
@@ -133,15 +133,15 @@ class BDDmat(SpectralMatrix):
         c.fill(0)
         if format == 'cython' and v.ndim == 3:
             ld = self[-2]*np.ones(M-2)
-            Matvec.Tridiagonal_matvec3D_ptr(v, c, ld, self[0], ld, axis)
+            cython.Matvec.Tridiagonal_matvec3D_ptr(v, c, ld, self[0], ld, axis)
             self.scale_array(c)
         elif format == 'cython' and v.ndim == 2:
             ld = self[-2]*np.ones(M-2)
-            Matvec.Tridiagonal_matvec2D_ptr(v, c, ld, self[0], ld, axis)
+            cython.Matvec.Tridiagonal_matvec2D_ptr(v, c, ld, self[0], ld, axis)
             self.scale_array(c)
         elif format == 'cython' and v.ndim == 1:
             ld = self[-2]*np.ones(M-2)
-            Matvec.Tridiagonal_matvec(v, c, ld, self[0], ld)
+            cython.Matvec.Tridiagonal_matvec(v, c, ld, self[0], ld)
             self.scale_array(c)
         elif format == 'self':
             if axis > 0:
@@ -235,13 +235,13 @@ class BDNmat(SpectralMatrix):
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
         if format == 'cython' and v.ndim == 3:
-            Matvec.BDN_matvec3D_ptr(v, c, self[-2], self[0], self[2], axis)
+            cython.Matvec.BDN_matvec3D_ptr(v, c, self[-2], self[0], self[2], axis)
             self.scale_array(c)
         elif format == 'cython' and v.ndim == 2:
-            Matvec.BDN_matvec2D_ptr(v, c, self[-2], self[0], self[2], axis)
+            cython.Matvec.BDN_matvec2D_ptr(v, c, self[-2], self[0], self[2], axis)
             self.scale_array(c)
         elif format == 'cython' and v.ndim == 1:
-            Matvec.BDN_matvec1D_ptr(v, c, self[-2], self[0], self[2])
+            cython.Matvec.BDN_matvec1D_ptr(v, c, self[-2], self[0], self[2])
             self.scale_array(c)
         else:
             c = super(BDNmat, self).matvec(v, c, format=format, axis=axis)
@@ -525,17 +525,17 @@ class BBBmat(SpectralMatrix):
             self.scale_array(c)
 
         elif format == 'cython' and v.ndim == 3:
-            Matvec.Pentadiagonal_matvec3D_ptr(v, c, self[-4], self[-2], self[0],
+            cython.Matvec.Pentadiagonal_matvec3D_ptr(v, c, self[-4], self[-2], self[0],
                                               self[2], self[4], axis)
             self.scale_array(c)
 
         elif format == 'cython' and v.ndim == 2:
-            Matvec.Pentadiagonal_matvec2D_ptr(v, c, self[-4], self[-2], self[0],
+            cython.Matvec.Pentadiagonal_matvec2D_ptr(v, c, self[-4], self[-2], self[0],
                                               self[2], self[4], axis)
             self.scale_array(c)
 
         elif format == 'cython' and v.ndim == 1:
-            Matvec.Pentadiagonal_matvec(v, c, self[-4], self[-2], self[0],
+            cython.Matvec.Pentadiagonal_matvec(v, c, self[-4], self[-2], self[0],
                                         self[2], self[4])
             self.scale_array(c)
         else:
@@ -594,13 +594,13 @@ class BBDmat(SpectralMatrix):
             self.scale_array(c)
 
         elif format == 'cython' and v.ndim == 3:
-            Matvec.BBD_matvec3D_ptr(v, c, self[-2], self[0], self[2], self[4], axis)
+            cython.Matvec.BBD_matvec3D_ptr(v, c, self[-2], self[0], self[2], self[4], axis)
             self.scale_array(c)
         elif format == 'cython' and v.ndim == 2:
-            Matvec.BBD_matvec2D_ptr(v, c, self[-2], self[0], self[2], self[4], axis)
+            cython.Matvec.BBD_matvec2D_ptr(v, c, self[-2], self[0], self[2], self[4], axis)
             self.scale_array(c)
         elif format == 'cython' and v.ndim == 1:
-            Matvec.BBD_matvec1D_ptr(v, c, self[-2], self[0], self[2], self[4])
+            cython.Matvec.BBD_matvec1D_ptr(v, c, self[-2], self[0], self[2], self[4])
             self.scale_array(c)
         else:
             c = super(BBDmat, self).matvec(v, c, format=format, axis=axis)
@@ -638,13 +638,13 @@ class CDNmat(SpectralMatrix):
 
     def matvec(self, v, c, format='cython', axis=0):
         if format == 'cython' and v.ndim == 3:
-            Matvec.CDN_matvec3D_ptr(v, c, self[-1], self[1], axis)
+            cython.Matvec.CDN_matvec3D_ptr(v, c, self[-1], self[1], axis)
             self.scale_array(c)
         elif format == 'cython' and v.ndim == 2:
-            Matvec.CDN_matvec2D_ptr(v, c, self[-1], self[1], axis)
+            cython.Matvec.CDN_matvec2D_ptr(v, c, self[-1], self[1], axis)
             self.scale_array(c)
         elif format == 'cython' and v.ndim == 1:
-            Matvec.CDN_matvec1D_ptr(v, c, self[-1], self[1])
+            cython.Matvec.CDN_matvec1D_ptr(v, c, self[-1], self[1])
             self.scale_array(c)
         else:
             c = super(CDNmat, self).matvec(v, c, format=format, axis=axis)
@@ -694,13 +694,13 @@ class CDDmat(SpectralMatrix):
             self.scale_array(c)
 
         elif format == 'cython' and v.ndim == 3:
-            Matvec.CDD_matvec3D_ptr(v, c, self[-1], self[1], axis)
+            cython.Matvec.CDD_matvec3D_ptr(v, c, self[-1], self[1], axis)
             self.scale_array(c)
         elif format == 'cython' and v.ndim == 2:
-            Matvec.CDD_matvec2D_ptr(v, c, self[-1], self[1], axis)
+            cython.Matvec.CDD_matvec2D_ptr(v, c, self[-1], self[1], axis)
             self.scale_array(c)
         elif format == 'cython' and v.ndim == 1:
-            Matvec.CDD_matvec1D_ptr(v, c, self[-1], self[1])
+            cython.Matvec.CDD_matvec1D_ptr(v, c, self[-1], self[1])
             self.scale_array(c)
         else:
             c = super(CDDmat, self).matvec(v, c, format=format, axis=axis)
@@ -844,13 +844,13 @@ class CBDmat(SpectralMatrix):
                 v = np.moveaxis(v, 0, axis)
             self.scale_array(c)
         elif format == 'cython' and v.ndim == 3:
-            Matvec.CBD_matvec3D_ptr(v, c, self[-1], self[1], self[3], axis)
+            cython.Matvec.CBD_matvec3D_ptr(v, c, self[-1], self[1], self[3], axis)
             self.scale_array(c)
         elif format == 'cython' and v.ndim == 2:
-            Matvec.CBD_matvec2D_ptr(v, c, self[-1], self[1], self[3], axis)
+            cython.Matvec.CBD_matvec2D_ptr(v, c, self[-1], self[1], self[3], axis)
             self.scale_array(c)
         elif format == 'cython' and v.ndim == 1:
-            Matvec.CBD_matvec(v, c, self[-1], self[1], self[3])
+            cython.Matvec.CBD_matvec(v, c, self[-1], self[1], self[3])
             self.scale_array(c)
         else:
             c = super(CBDmat, self).matvec(v, c, format=format, axis=axis)
@@ -900,13 +900,13 @@ class CDBmat(SpectralMatrix):
             self.scale_array(c)
 
         elif format == 'cython' and v.ndim == 3:
-            Matvec.CDB_matvec3D_ptr(v, c, self[-3], self[-1], self[1], axis)
+            cython.Matvec.CDB_matvec3D_ptr(v, c, self[-3], self[-1], self[1], axis)
             self.scale_array(c)
         elif format == 'cython' and v.ndim == 2:
-            Matvec.CDB_matvec2D_ptr(v, c, self[-3], self[-1], self[1], axis)
+            cython.Matvec.CDB_matvec2D_ptr(v, c, self[-3], self[-1], self[1], axis)
             self.scale_array(c)
         elif format == 'cython' and v.ndim == 1:
-            Matvec.CDB_matvec(v, c, self[-3], self[-1], self[1])
+            cython.Matvec.CDB_matvec(v, c, self[-3], self[-1], self[1])
             self.scale_array(c)
         else:
             c = super(CDBmat, self).matvec(v, c, format=format, axis=axis)
@@ -959,13 +959,13 @@ class ABBmat(SpectralMatrix):
             self.scale_array(c)
 
         elif format == 'cython' and v.ndim == 3:
-            Matvec.Tridiagonal_matvec3D_ptr(v, c, self[-2], self[0], self[2], axis)
+            cython.Matvec.Tridiagonal_matvec3D_ptr(v, c, self[-2], self[0], self[2], axis)
             self.scale_array(c)
         elif format == 'cython' and v.ndim == 2:
-            Matvec.Tridiagonal_matvec2D_ptr(v, c, self[-2], self[0], self[2], axis)
+            cython.Matvec.Tridiagonal_matvec2D_ptr(v, c, self[-2], self[0], self[2], axis)
             self.scale_array(c)
         elif format == 'cython' and v.ndim == 1:
-            Matvec.Tridiagonal_matvec(v, c, self[-2], self[0], self[2])
+            cython.Matvec.Tridiagonal_matvec(v, c, self[-2], self[0], self[2])
             self.scale_array(c)
 
         else:
@@ -1009,13 +1009,13 @@ class ADDmat(SpectralMatrix):
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
         if format == 'cython' and v.ndim == 3:
-            Matvec.ADD_matvec3D_ptr(v, c, self[0], axis)
+            cython.Matvec.ADD_matvec3D_ptr(v, c, self[0], axis)
             self.scale_array(c)
         elif format == 'cython' and v.ndim == 2:
-            Matvec.ADD_matvec2D_ptr(v, c, self[0], axis)
+            cython.Matvec.ADD_matvec2D_ptr(v, c, self[0], axis)
             self.scale_array(c)
         elif format == 'cython' and v.ndim == 1:
-            Matvec.ADD_matvec(v, c, self[0])
+            cython.Matvec.ADD_matvec(v, c, self[0])
             self.scale_array(c)
         else:
             c = super(ADDmat, self).matvec(v, c, format=format, axis=axis)
@@ -1218,13 +1218,13 @@ class SBBmat(SpectralMatrix):
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
         if format == 'cython' and v.ndim == 3:
-            Matvec.SBB_matvec3D_ptr(v, c, self[0], axis)
+            cython.Matvec.SBB_matvec3D_ptr(v, c, self[0], axis)
             self.scale_array(c)
         elif format == 'cython' and v.ndim == 2:
-            Matvec.SBB_matvec2D_ptr(v, c, self[0], axis)
+            cython.Matvec.SBB_matvec2D_ptr(v, c, self[0], axis)
             self.scale_array(c)
         elif format == 'cython' and v.ndim == 1:
-            Matvec.SBBmat_matvec(v, c, self[0])
+            cython.Matvec.SBBmat_matvec(v, c, self[0])
             self.scale_array(c)
 
         else:
