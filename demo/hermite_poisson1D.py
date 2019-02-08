@@ -50,7 +50,7 @@ f_hat = inner(v, -fj, output_array=f_hat)
 # Get left hand side of Poisson equation
 A = inner(grad(v), grad(u))
 
-f_hat = A.solve(f_hat)
+f_hat = A / f_hat
 uj = f_hat.backward()
 uh = uj.forward()
 

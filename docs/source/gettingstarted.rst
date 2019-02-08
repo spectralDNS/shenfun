@@ -11,6 +11,7 @@ to implement PDE's with spectral methods in simple tensor product domains. The
 most important everyday tools are
 
 	* :class:`.TensorProductSpace`
+	* :class:`.MixedTensorProductSpace`
 	* :class:`.TrialFunction`
 	* :class:`.TestFunction`
 	* :class:`.Function`
@@ -21,8 +22,8 @@ most important everyday tools are
 	* :func:`.project`
 	* :func:`.Basis`
 
-A good place to get started is by creating a :func:`.Basis`. There are four families of
-bases: Fourier, Chebyshev, Legendre and Laguerre. All bases are defined on a one-dimensional
+A good place to get started is by creating a :func:`.Basis`. There are five families of
+bases: Fourier, Chebyshev, Legendre, Laguerre and Hermite. All bases are defined on a one-dimensional
 domain, with their own basis functions and quadrature points. For example, we have
 the regular Chebyshev basis :math:`\{T_k\}_{k=0}^{N-1}`, where :math:`T_k` is the
 :math:`k`'th Chebyshev polynomial of the first kind. To create such a basis with
@@ -58,9 +59,9 @@ Consider now for exampel the polynomial :math:`2x^2-1`, which happens to be
 exactly equal to :math:`T_2(x)`. We
 can create this polynomial using `sympy <www.sympy.org>`_ ::
 
-    from sympy import Symbol
-    x = Symbol('x')
-    u = 2*x**2 - 1
+    import sympy as sp
+    x = sp.Symbol('x')
+    u = 2*x**2 - 1  # or simply u = sp.chebyshevt(2, x)
 
 The Sympy function ``u`` can now be evaluated on the quadrature points of basis
 :math:`T`::
@@ -111,7 +112,7 @@ The projection is mathematically: find :math:`u_h \in T`, such that
 
 .. math::
 
-    (u_h - u, v)_w = 0 \quad \forall v \in T
+    (u_h - u, v)_w = 0 \quad \forall v \in T,
 
 where :math:`v` is a test function, :math:`u_h` is a trial function and the
 notation :math:`(\cdot, \cdot)_w` was introduced in :eq:`eq:wrm_test`. Using
@@ -119,20 +120,20 @@ now :math:`v=T_k` and :math:`u_h=\sum_{j=0}^7 \hat{u}_j T_j`, we get
 
 .. math::
 
-    (\sum_{j=0}^7 \hat{u}_j T_j, T_k)_w &= (u, T_k)_w \\
-    \sum_{j=0}^7 (T_j, T_k)_w \hat{u}_j &= (u, T_k)_w
+    (\sum_{j=0}^7 \hat{u}_j T_j, T_k)_w &= (u, T_k)_w, \\
+    \sum_{j=0}^7 (T_j, T_k)_w \hat{u}_j &= (u, T_k)_w,
 
 for all :math:`k \in 0, 1, \ldots, 7`. This can be rewritten on matrix form as
 
 .. math::
 
-    B_{kj} \hat{u}_j = \tilde{u}_k
+    B_{kj} \hat{u}_j = \tilde{u}_k,
 
 where :math:`B_{kj} = (T_j, T_k)_w`, :math:`\tilde{u}_k = (u, T_k)_w` and
 summation is implied by the repeating :math:`j` indices. Since the
 Chebyshev polynomials are orthogonal the mass matrix :math:`B_{kj}` is
 diagonal. We can assemble both :math:`B_{kj}` and :math:`\tilde{u}_j`
-with `shenfun`, and at the same time introduce the :class:`.TestFunction`,
+with shenfun, and at the same time introduce the :class:`.TestFunction`,
 :class:`.TrialFunction` classes and the :func:`.inner` function::
 
     from shenfun import TestFunction, TrialFunction, inner
@@ -152,7 +153,7 @@ one test function, and possibly one trial function. If, as here, it also
 contains a trial function, then a matrix is returned. If :func:`.inner`
 contains one test, but no trial function, then an array is returned.
 
-Note that the matrix :math:`B` is stored using `shenfun`'s
+Note that the matrix :math:`B` is stored using shenfun's
 :class:`.SpectralMatrix` class, which is a subclass of Python's dictionary,
 where the keys are the diagonals and the values are the diagonal entries.
 The matrix :math:`B` is seen to have only one diagonal (the principal)
@@ -250,7 +251,7 @@ create tensor product spaces using the class :class:`.TensorProductSpace`::
     K0 = Basis(M, 'F', dtype='d')
     T = TensorProductSpace(comm, (C0, K0))
 
-The tensor product mesh will now be :math:`[-1, 1] \times [0, 2\pi)`. We use
+The tensor product mesh will now be :math:`[-1, 1] \times [0, 2\pi]`. We use
 classes :class:`.Function`, :class:`.TrialFunction` and :class:`TestFunction`
 exactly as before::
 
@@ -394,7 +395,7 @@ but now we recast the problem into a mixed formulation
 where we solve for the vector :math:`\sigma` and scalar :math:`u` simultaneously. The
 domain :math:`\Omega` is taken as a multidimensional tensor product, with
 one inhomogeneous direction. Here we will consider the 2D domain
-:math:`\Omega=[-1, 1] \times [0, 2\pi)`, but the code is more or less identical for
+:math:`\Omega=[-1, 1] \times [0, 2\pi]`, but the code is more or less identical for
 a 3D problem. For boundary conditions we use Dirichlet in the :math:`x`-direction and
 periodicity in the :math:`y`-direction:
 
