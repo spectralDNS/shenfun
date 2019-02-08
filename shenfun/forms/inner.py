@@ -245,11 +245,18 @@ def inner(expr0, expr1, output_array=None, level=0):
     if level == 1 and trial.argument == 1:
         return A
 
-    if np.all([f.all_identity() for f in A]): # No non-diagonal matrix
+    if np.all([f.all_diagonal() for f in A]): # No non-diagonal matrix
         if trial.argument == 1:
             # Note 1D case return a TPMatrix
             if trial.rank() == 0:
-                return reduce(lambda x, y: x+y, A)
+                A = reduce(lambda x, y: x+y, A)
+                if len(A.mats) == 1:
+                    # 1D case
+                    p = A.mats[0]
+                    p.scale = p.scale*np.atleast_1d(A.scale).item()
+                    p.global_index = A.global_index
+                    p.base = A.base
+                    return p
             return A
 
         # linear form

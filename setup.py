@@ -22,12 +22,6 @@ def has_flag(compiler, flagname):
 
 class build_ext_subclass(build_ext):
     def build_extensions(self):
-        if os.environ.get("READTHEDOCS", None) == "True":
-            for ext in self.extensions:
-                ext.extra_compile_args = ["-O0"]
-            build_ext.build_extensions(self)
-            return
-
         extra_compile_args = ['-g0']
         for c in ['-w', '-Ofast', '-ffast-math', '-march=native']:
             if has_flag(self.compiler, c):

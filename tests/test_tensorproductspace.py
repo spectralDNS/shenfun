@@ -407,7 +407,6 @@ def test_project_2dirichlet(quad):
     us = Array(BB)
     us = BB.backward(us_hat, us)
     assert np.allclose(us, uq, 0, 1e-5)
-
     dudxy_hat = project(Dx(us_hat, 0, 1) + Dx(us_hat, 1, 1), BB)
     dudxy = Array(BB)
     dudxy = BB.backward(dudxy_hat, dudxy)
@@ -556,9 +555,9 @@ def test_eval_fourier(typecode, dim):
 if __name__ == '__main__':
     #test_transform('f', 3)
     #test_transform('d', 2)
-    test_shentransform('d', 2, lagbases.ShenDirichletBasis, 'LG')
+    #test_shentransform('d', 2, lagbases.ShenDirichletBasis, 'LG')
     #test_project('d', 1, cbases.ShenDirichletBasis, 'GC')
     #test_project2('d', 1, lbases.ShenNeumannBasis, 'LG')
-    #test_project_2dirichlet('GL')
+    test_project_2dirichlet('GL')
     #test_eval_tensor('d', 2, cbases.ShenBiharmonicBasis, 'GC')
     #test_eval_fourier('d', 3)

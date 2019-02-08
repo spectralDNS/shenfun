@@ -252,8 +252,6 @@ def test_mul2():
     z = shenfun.Function(SD, val=1)
     c = mat * z
     assert np.allclose(c[:6], 1)
-    mat *= z
-
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_rmul(key, mat, quad):
@@ -517,10 +515,10 @@ if __name__ == '__main__':
     #test_mat(((lBasis[0], 0), (lBasis[1], 1)), lmatrices.CLDmat, 'LG')
     #test_cmatvec(cBasis[3], cBasis[1], 'GC', 'cython', 3, 0)
     #test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
-    test_hmatvec(hBasis[0], hBasis[0], 'HG', 'self', 3, 1, 1)
+    #test_hmatvec(hBasis[0], hBasis[0], 'HG', 'self', 3, 1, 1)
     #test_add(*mats_and_quads[0])
     #test_sub(*mats_and_quads[15])
-    #test_mul2()
+    test_mul2()
     #test_div2(cBasis[0], 'GC')
     #test_helmholtz3D('chebyshev', 0)
     #test_helmholtz2D('chebyshev', 0)
