@@ -15,6 +15,7 @@
 import os
 import sys
 import subprocess
+import sphinx_bootstrap_theme
 sys.path.insert(0, os.path.abspath('.'))
 
 # -- Project information -----------------------------------------------------
@@ -94,6 +95,11 @@ html_theme = 'sphinx_rtd_theme'
 #html_theme = 'scrolls'
 #html_theme = 'classic'
 #html_theme = 'agogo'
+#html_theme = 'bootstrap'
+#html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
+
+# For some reason mathjax 2.7.5 renders bold type ugly. Use 2.7.1
+mathjax_path = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -144,6 +150,7 @@ latex_elements = {
     #
     # 'figure_align': 'htbp',
 }
+
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,

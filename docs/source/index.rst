@@ -15,7 +15,7 @@ The code is parallelized with MPI through the `mpi4py-fft`_ package.
 Shenfun enables fast development of efficient and accurate PDE solvers
 (spectral order and accuracy), in the comfortable high-level Python
 language. The spectral accuracy is ensured by using high-order
-*global* orthogonal basis functions (Fourier, Legendre and Chebyshev),
+*global* orthogonal basis functions (Fourier, Legendre, Chebyshev, Laguerre and Hermite),
 as opposed to finite element codes that are using low-order
 *local* basis functions. Efficiency is ensured through vectorization
 (`Numpy`_), parallelization (`mpi4py`_) and by moving critical routines to
