@@ -6,9 +6,10 @@ channels:
 
 dependencies:
   - python=3.7
+  - pip
   - cython
   - fftw
-  - numpy=1.16
+  - numpy
   - nomkl
   - sympy
   - scipy
