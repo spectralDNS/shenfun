@@ -556,9 +556,9 @@ def test_eval_fourier(typecode, dim):
 if __name__ == '__main__':
     #test_transform('f', 3)
     #test_transform('d', 2)
-    #test_shentransform('d', 2, cbases.ShenNeumannBasis, 'GC')
+    test_shentransform('d', 2, lagbases.ShenDirichletBasis, 'LG')
     #test_project('d', 1, cbases.ShenDirichletBasis, 'GC')
     #test_project2('d', 1, lbases.ShenNeumannBasis, 'LG')
     #test_project_2dirichlet('GL')
-    test_eval_tensor('d', 2, cbases.ShenBiharmonicBasis, 'GC')
+    #test_eval_tensor('d', 2, cbases.ShenBiharmonicBasis, 'GC')
     #test_eval_fourier('d', 3)
