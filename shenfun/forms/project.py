@@ -1,7 +1,7 @@
 from copy import copy
 import numpy as np
 import sympy as sp
-from shenfun.tensorproductspace import TensorProductSpace, MixedTensorProductSpace
+from shenfun.tensorproductspace import TensorProductSpace
 from shenfun.matrixbase import TPMatrix
 from .arguments import Expr, TestFunction, TrialFunction, BasisFunction, \
     Function, Array
@@ -87,7 +87,6 @@ def project(uh, T, output_array=None):
     u = TrialFunction(T)
     output_array = inner(v, uh, output_array=output_array)
     B = inner(v, u)
-    #if isinstance(B, list) and not isinstance(T, MixedTensorProductSpace):
     if len(T.get_nonperiodic_axes()) == 2:
         # Means we have two non-periodic directions
         B = [B] if isinstance(B, TPMatrix) else B

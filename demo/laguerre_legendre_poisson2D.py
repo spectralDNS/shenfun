@@ -17,12 +17,10 @@ The equation to solve is
 """
 import sys
 import os
-import importlib
-from sympy import symbols, cos, sin, exp, lambdify
-from scipy.sparse.linalg import spsolve
+from sympy import symbols, sin, exp, lambdify
 import numpy as np
 from mpi4py import MPI
-from shenfun import inner, div, grad, TestFunction, TrialFunction, \
+from shenfun import inner, grad, TestFunction, TrialFunction, \
     Array, Function, Basis, TensorProductSpace
 from shenfun.la import SolverGeneric2NP
 

@@ -1,6 +1,5 @@
 import numpy as np
 from shenfun.matrixbase import SpectralMatrix
-from shenfun.optimization.cython import Matvec
 from shenfun.utilities import inheritdocstrings
 from shenfun.la import TDMA_O
 from . import bases
@@ -91,8 +90,6 @@ class ADDmat(SpectralMatrix):
     def __init__(self, test, trial):
         assert isinstance(test[0], LD)
         assert isinstance(trial[0], LD)
-        N = test[0].N
-        k = np.arange(N, dtype=np.float)
         d = {0: 0.5,
              1: 0.25,
              -1: 0.25}

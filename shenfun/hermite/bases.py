@@ -3,7 +3,7 @@ import numpy as np
 from numpy.polynomial import hermite
 from scipy.special import eval_hermite, factorial
 from mpi4py_fft import fftw
-from shenfun.spectralbase import SpectralBase, work, Transform
+from shenfun.spectralbase import SpectralBase, Transform
 from shenfun.utilities import inheritdocstrings
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
@@ -68,7 +68,8 @@ class Basis(SpectralBase):
 
         return points, weights
 
-    def factor(self, i):
+    @staticmethod
+    def factor(i):
         return 1./(np.pi**(0.25)*np.sqrt(2.**i)*np.sqrt(factorial(i)))
 
     def vandermonde(self, x):
@@ -173,9 +174,7 @@ class Basis(SpectralBase):
     def eval(self, x, u, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape)
-        v = self.vandermonde(x)
         w = u*self.factor(np.arange(self.N))
         y = hermite.hermval(x, w)
         output_array[:] = y * np.exp(-x**2/2)
-        #output_array[:] = np.dot(v*np.exp(-x**2/2)[:, np.newaxis], w)
         return output_array

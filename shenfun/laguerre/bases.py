@@ -224,6 +224,7 @@ class ShenDirichletBasis(LaguerreBase):
         return 'Dirichlet'
 
     def _composite_basis(self, V):
+        assert self.N == V.shape[1]
         P = np.zeros(V.shape)
         P[:, :-1] = V[:, :-1] - V[:, 1:]
         return P
