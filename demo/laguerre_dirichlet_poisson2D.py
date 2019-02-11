@@ -18,12 +18,10 @@ The equation to solve for the Laguerre basis is
 """
 import sys
 import os
-import importlib
 from sympy import symbols, cos, sin, exp, lambdify
-from scipy.sparse.linalg import spsolve
 import numpy as np
 from mpi4py import MPI
-from shenfun import inner, div, grad, TestFunction, TrialFunction, \
+from shenfun import inner, grad, TestFunction, TrialFunction, \
     Array, Function, Basis, TensorProductSpace
 
 comm = MPI.COMM_WORLD

@@ -16,7 +16,7 @@ import os
 import sys
 from sympy import symbols, sin, exp, lambdify, hermite
 import numpy as np
-from shenfun import inner, div, grad, TestFunction, TrialFunction, \
+from shenfun import inner, grad, TestFunction, TrialFunction, \
     Array, Function, Basis
 
 assert len(sys.argv) == 2, 'Call with one command-line argument'
