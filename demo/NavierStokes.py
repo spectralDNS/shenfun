@@ -4,7 +4,6 @@ Simple spectral Navier-Stokes solver
 Not implemented for efficiency. For efficiency use the Navier-Stokes
 solver in the https://github.com/spectralDNS/spectralDNS repository
 """
-
 from mpi4py import MPI
 import numpy as np
 from shenfun import *
@@ -25,31 +24,29 @@ v = TestFunction(T)
 
 U = Array(TV)
 U_hat = Function(TV)
-K = np.array(T.local_wavenumbers(True, True, eliminate_highest_freq=False)) # No elim because used for second order diff
-K2 = np.sum(K*K, 0, dtype=int)
-K_over_K2 = K.astype(float) / np.where(K2 == 0, 1, K2).astype(float)
 P_hat = Function(T)
 curl_hat = Function(TV)
 curl_ = Array(TV)
 X = T.local_mesh(True)
+A = inner(grad(u), grad(v))
 
 def LinearRHS(self, **params):
-    #L = inner(nu*div(grad(u)), v)  # L is shape (N[0], N[1], N[2]//2+1), but used as (3, N[0], N[1], N[2]//2+1) due to broadcasting
-    L = -nu*K2  # Or just simply this
+    # Note that L is a diagonal TPmatrix with scale of shape (N[0], N[1], N[2]//2+1),
+    # but it is used as (3, N[0], N[1], N[2]//2+1) due to broadcasting
+    L = inner(nu*div(grad(u)), v)
     return L
 
 def NonlinearRHS(self, U, U_hat, dU, **params):
-    global TV, curl_hat, curl_, P_hat, K, K_over_K2
+    global TV, curl_hat, curl_, P_hat
     dU.fill(0)
     curl_hat.fill(0)
     curl_hat = project(curl(U_hat), TV, output_array=curl_hat)
     curl_ = TV.backward(curl_hat, curl_)
     U = U_hat.backward(U)
     W = np.cross(U, curl_, axis=0)                   # Nonlinear term in physical space
-    #dU = project(W, TV, output_array=dU)            # dU = TV.forward(W, dU)
-    dU = TV.forward(W, dU)
-    P_hat = np.sum(dU*K_over_K2, 0, out=P_hat)
-    dU -= P_hat*K
+    dU = project(W, TV, output_array=dU)             # dU = W.forward(dU)
+    P_hat = A.solve(inner(div(dU), v), P_hat)
+    dU += inner(grad(P_hat), TestFunction(TV))
     return dU
 
 if __name__ == '__main__':

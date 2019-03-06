@@ -74,6 +74,21 @@ or using `conda-build`_ with the recipes in folder ``conf/conda``
     conda create --name shenfun -c conda-forge -c spectralDNS shenfun --use-local
     conda activate shenfun
 
+Optimization
+------------
+
+Shenfun contains a few routines (essentially linear algebra solvers
+and matrix vector products) that are difficult to vectorize with numpy,
+and for this reason they have been implemented in either (or both of)
+`Numba`_ or `Cython`_. The user may choose which implementation
+to use through the environment variable ``SHENFUN_OPTIMIZATION``. The default
+is to use cython, but it is possible to enable either one by making
+the appropriate choice in the active terminal
+
+::
+
+    export SHENFUN_OPTIMIZATION={CYTHON,NUMBA}
+
 Additional dependencies
 -----------------------
 
@@ -138,6 +153,7 @@ The tests are run automatically on every commit to github, see
 .. _mpich: https://www.mpich.org
 .. _openmpi: https://www.open-mpi.org
 .. _numpy: https://www.numpy.org
+.. _numba: https://www.numba.org
 .. _sympy: https://www.sympy.org
 .. _scipy: https://www.scipy.org
 .. _conda-build: https://conda.io/docs/commands/build/conda-build.html

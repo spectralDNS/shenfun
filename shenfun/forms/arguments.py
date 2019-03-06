@@ -1,5 +1,6 @@
 from numbers import Number
 import numpy as np
+from mpi4py_fft import DistArray
 
 __all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',
            'Array', 'Basis')
@@ -16,13 +17,12 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
     family : str, optional
         Choose one of
 
-        - (``Chebyshev``, ``C``),
-        - (``Legendre``, ``L``),
-        - (``Fourier``, ``F``),
-        - (``Laguerre``, ``La``),
-        - (``Hermite``, ``H``)
+        - ``Chebyshev`` or ``C``,
+        - ``Legendre`` or ``L``,
+        - ``Fourier`` or ``F``,
+        - ``Laguerre`` or ``La``,
+        - ``Hermite`` or ``H``
 
-        where the second are short-forms
     bc : str or two-tuple, optional
         Choose one of
 
@@ -617,7 +617,156 @@ class TrialFunction(BasisFunction):
     def argument(self):
         return 1
 
-class Function(np.ndarray, BasisFunction):
+class Darray(np.ndarray):
+    """Base class for distributed arrays
+
+    The :class:`.Function` and :class:`.Array` classes uses this common
+    baseclass for common tasks.
+    """
+
+    def __new__(cls, space, val=0, buffer=None):
+
+        if isinstance(buffer, np.ndarray):
+            shape = buffer.shape
+            dtype = buffer.dtype
+
+        else:
+
+            if cls.__name__ == 'Function':
+                shape = space.forward.output_array.shape
+                dtype = space.forward.output_array.dtype
+            else:
+                shape = space.forward.input_array.shape
+                dtype = space.forward.input_array.dtype
+
+            if not space.num_components() == 1:
+                shape = (space.num_components(),) + shape
+
+        obj = np.ndarray.__new__(cls,
+                                 shape,
+                                 dtype=dtype,
+                                 buffer=buffer)
+
+        obj._space = space
+        if buffer is None and isinstance(val, Number):
+            obj.fill(val)
+        return obj
+
+    def __array_finalize__(self, obj):
+        if obj is None:
+            return
+        if hasattr(obj, '_space'):
+            self._space = obj._space
+
+    def function_space(self):
+        """Return function space of array ``self``"""
+        if self.base is None:
+            return self._space
+        if self.base.shape == self.shape:
+            return self._space
+        return self._space[self.index()]
+
+    @property
+    def v(self):
+        """Return ``self`` array as ``ndarray`` object"""
+        return self.__array__()
+
+    @property
+    def argument(self):
+        """Return argument of basis"""
+        return 2
+
+    @property
+    def global_shape(self):
+        """Return global shape of ``self``"""
+        return self.function_space().shape(self.forward_output)
+
+    @property
+    def forward_output(self):
+        """Return whether ``self`` is the result of a forward transform"""
+        raise NotImplementedError
+
+    def rank(self):
+        """Return rank of basis"""
+        return self.function_space().rank()
+
+    def index(self):
+        """Return index into tensor"""
+        if self.base is None:
+            return None
+
+        if self.base.shape == self.shape:
+            return None
+
+        data_self = self.ctypes.data
+        data_base = self.base.ctypes.data
+        itemsize = self.itemsize
+        return (data_self - data_base) // (itemsize*np.prod(self.shape))
+
+    def get_pencil_and_transfer(self, axis):
+        """Return pencil and transfer objects for alignment along ``axis``
+
+        Parameters
+        ----------
+        axis : int
+            The new axis to align data with
+
+        Returns
+        -------
+        2-tuple
+            2-tuple where first item is a :class:`.Pencil` aligned in ``axis``.
+            Second item is a :class:`.Transfer` object for executing the
+            redistribution of data
+        """
+        p0 = self.function_space().pencil[self.forward_output]
+        p1 = p0.pencil(axis)
+        return p1, p0.transfer(p1, self.dtype)
+
+    def redistribute(self, axis=None, darray=None):
+        """Global redistribution of ``self`` array
+
+        Align ``self`` along given ``axis``. Return a generic
+        :class:`mpi4py_fft.distarray.DistArray` since the returned distributed
+        array is not connected to a :class:`.TensorProductSpace` class.
+
+        Parameters
+        ----------
+        axis : int, optional
+            Align local ``self`` array along this axis
+        darray : :class:`mpi4py_fft.distarray.DistArray`, optional
+            Copy data to this DistArray of possibly different alignment
+        Returns
+        -------
+        DistArray : darray
+            The ``self`` array globally redistributed. If keyword ``darray`` is
+            None then a new DistArray (aligned along ``axis``) is created
+            and returned
+        """
+        global_shape = self.function_space().allocated_shape(self.forward_output)
+        if axis is None:
+            assert isinstance(darray, np.ndarray)
+            assert global_shape == darray.global_shape
+            axis = darray.alignment
+        p1, transfer = self.get_pencil_and_transfer(axis)
+        if darray is None:
+            darray = DistArray(global_shape,
+                               subcomm=p1.subcomm,
+                               dtype=self.dtype,
+                               alignment=axis,
+                               rank=self.rank())
+        if self.rank() == 0:
+            transfer.forward(self, darray)
+        elif self.rank() == 1:
+            for i in range(global_shape[0]):
+                transfer.forward(self[i], darray[i])
+        #elif self.rank() == 2:
+        #    for i in range(shape[0]):
+        #        for j in range(shape[1]):
+        #            transfer.forward(self[i, j], darray[i, j])
+        return darray
+
+
+class Function(Darray, BasisFunction):
     r"""
     Spectral Galerkin function for given :class:`.TensorProductSpace` or :func:`.Basis`
 
@@ -680,64 +829,13 @@ class Function(np.ndarray, BasisFunction):
 
     """
     # pylint: disable=too-few-public-methods,too-many-arguments
-    def __new__(cls, space, forward_output=True, val=0, buffer=None):
-
-        if isinstance(buffer, np.ndarray):
-            shape = buffer.shape
-            dtype = buffer.dtype
-
-        else:
-
-            shape = space.forward.output_array.shape
-            dtype = space.forward.output_array.dtype
-
-            if not space.num_components() == 1:
-                shape = (space.num_components(),) + shape
-
-        obj = np.ndarray.__new__(cls,
-                                 shape,
-                                 dtype=dtype,
-                                 buffer=buffer)
-
-        if buffer is None:
-            obj.fill(val)
-        return obj
 
     def __init__(self, space, val=0, buffer=None):
-        #super(Function, self).__init__(space)
         BasisFunction.__init__(self, space)
 
-    def index(self):
-        if self.base is None:
-            return None
-
-        if self.base.shape == self.shape:
-            return None
-
-        data_self = self.ctypes.data
-        data_base = self.base.ctypes.data
-        itemsize = self.itemsize
-        return (data_self - data_base) // (itemsize*np.prod(self.shape))
-
-    def offset(self):
-        return 0
-
     @property
-    def argument(self):
-        return 2
-
-    def function_space(self):
-        if self.base is None:
-            return self._space
-        if self.base.shape == self.shape:
-            return self._space
-        return self._space[self.index()]
-
-    def __array_finalize__(self, obj):
-        if obj is None:
-            return
-        if hasattr(obj, '_space'):
-            self._space = obj._space
+    def forward_output(self):
+        return True
 
     def eval(self, x, output_array=None):
         """Evaluate Function at points
@@ -768,6 +866,9 @@ class Function(np.ndarray, BasisFunction):
         """
         return self.function_space().eval(x, self, output_array)
 
+    def offset(self):
+        return 0
+
     def backward(self, output_array=None):
         """Return Function evaluated on quadrature mesh"""
         space = self.function_space()
@@ -776,7 +877,8 @@ class Function(np.ndarray, BasisFunction):
         output_array = space.backward(self, output_array)
         return output_array
 
-class Array(np.ndarray):
+
+class Array(Darray):
     r"""
     Numpy array for :class:`.TensorProductSpace`
 
@@ -846,59 +948,9 @@ class Array(np.ndarray):
     >>> FFT = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
     >>> u = Array(FFT)
     """
-    # pylint: disable=too-few-public-methods,too-many-arguments
-    def __new__(cls, space, val=0, buffer=None):
-
-        shape = space.forward.input_array.shape
-        dtype = space.forward.input_array.dtype
-
-        if not space.num_components() == 1:
-            shape = (space.num_components(),) + shape
-
-        obj = np.ndarray.__new__(cls,
-                                 shape,
-                                 dtype=dtype,
-                                 buffer=buffer)
-
-        obj._space = space
-        if buffer is None:
-            obj.fill(val)
-        return obj
-
-    def __array_finalize__(self, obj):
-        if obj is None:
-            return
-        if hasattr(obj, '_space'):
-            self._space = obj._space
-
-    def function_space(self):
-        """Return function space of Array"""
-        if self.base is None:
-            return self._space
-        if self.base.shape == self.shape:
-            return self._space
-        return self._space[self.index()]
-
-    def rank(self):
-        """Return rank of basis"""
-        return self.function_space().rank()
-
-    def index(self):
-        if self.base is None:
-            return None
-
-        if self.base.shape == self.shape:
-            return None
-
-        data_self = self.ctypes.data
-        data_base = self.base.ctypes.data
-        itemsize = self.itemsize
-        return (data_self - data_base) // (itemsize*np.prod(self.shape))
-
     @property
-    def argument(self):
-        """Return argument of basis"""
-        return 2
+    def forward_output(self):
+        return False
 
     def forward(self, output_array=None):
         """Return Function used to evaluate Array"""

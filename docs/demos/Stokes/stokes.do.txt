@@ -304,7 +304,16 @@ else:
 D = inner(q, div(u))
 !ec
 
-Here `A, G` and `D` are lists containg the different blocks in
+!bnotice
+The inner products may also be assembled with one single line, as
+!bc
+AA = inner(v, div(grad(u))) + inner(v, -grad(u)) + inner(q, div(u))
+!ec
+However, this requires addition, not subtraction, of inner products and it is not
+possible to move the negation to -inner(v, grad(u))
+!enotice
+
+The assembled subsystems `A, G` and `D` are lists containg the different blocks of
 the complete, coupled matrix. `A` actually contains 6
 tensor product matrices of type ${cls('TPMatrix')}. The first two
 matrices are for vector component zero of the test function `v[0]` and
@@ -427,7 +436,7 @@ if family.lower() == 'chebyshev':
 !ec
 
 Note that `a0` is an instance of the ${cls('TPMatrix')}, and scale is
-an array of ndim = 3. The scale in indexed by the Fourier wavenumbers
+an array of ndim = 3. The scale is indexed by the Fourier wavenumbers
 and scale[0, 0] represents the scale to matrix `a0` for wavenumbers
 $(l, m) = (0, 0)$.
 

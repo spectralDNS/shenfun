@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.abspath('.'))
 # -- Project information -----------------------------------------------------
 
 project = u'shenfun'
-copyright = u'2018, Mikael Mortensen'
+copyright = u'2019, Mikael Mortensen'
 author = u'Mikael Mortensen'
 
 p = subprocess.Popen(["git describe --tags | cut -d'-' -f 1"], stdout=subprocess.PIPE, shell=True)
@@ -100,6 +100,8 @@ html_theme = 'sphinx_rtd_theme'
 
 # For some reason mathjax 2.7.5 renders bold type ugly. Use 2.7.1
 mathjax_path = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
+
+intersphinx_mapping = {'mpi4py_fft': ('https://mpi4py-fft.readthedocs.io/en/latest/', None)}
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

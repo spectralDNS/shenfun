@@ -471,8 +471,21 @@ class TensorProductSpace(PFFT):
             return tuple([int(np.round(base.shape(forward_output)*base.padding_factor)) for base in self])
         return tuple([base.shape(forward_output) for base in self])
 
+    def global_shape(self, forward_output=False):
+        """Return global shape of arrays for TensorProductSpace
+
+        Parameters
+        ----------
+        forward_output : bool, optional
+            If True then return shape of an array that is the result of a
+            forward transform. If False then return shape of physical
+            space, i.e., the input to a forward transform.
+
+        """
+        return self.shape(forward_output)
+
     def allocated_shape(self, forward_output=False):
-        """Return shape of allocated work arrays for TensorProductSpace
+        """Return global shape of allocated work arrays for TensorProductSpace
 
         Parameters
         ----------
@@ -1001,7 +1014,6 @@ class BoundaryValues(object):
             b_hat = T.forward._xfftn[-1].output_array
             self.bcs_final[0] = b_hat[self.slm2].copy()
             self.bcs_final[1] = b_hat[self.slm1].copy()
-            print(self.bcs_final)
 
     def set_slices(self, T):
         self.sl0 = T.si[0]

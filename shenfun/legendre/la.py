@@ -138,7 +138,7 @@ class Helmholtz(object):
 
     """
 
-    def __init__(self, *args):
+    def __init__(self, *args, local_shape=None):
 
         A, B = args[0], args[1]
         M = {d.get_key(): d for d in (A, B)}
@@ -165,7 +165,10 @@ class Helmholtz(object):
         self.axis = A.axis
         shape = [1]
         T = A.tensorproductspace
-        if T is not None:
+        if local_shape is not None:
+            shape = list(local_shape)
+            shape[A.axis] = 1
+        elif T is not None:
             shape = list(T.local_shape(True))
             shape[A.axis] = 1
 
@@ -544,7 +547,7 @@ class Helmholtz_2dirichlet(object):
             B1_scale[:, 0] = self.BB.scale + 1./self.lmbda[ls[0]]
             A1_scale = np.ones((1, 1))
             # Create Helmholtz solver along axis=1
-            Helmy = Helmholtz(self.A1, self.B1, A1_scale, B1_scale)
+            Helmy = Helmholtz(self.A1, self.B1, A1_scale, B1_scale, local_shape=self.rhs_B.shape)
             # Map the right hand side to eigen space
             self.rhs_A = (self.V.T).dot(b)
             self.rhs_A /= self.lmbda[:, np.newaxis]

@@ -1,6 +1,6 @@
 #pylint: disable=missing-docstring, consider-using-enumerate
 import numpy as np
-from mpi4py_fft.utilities import HDF5File as BaseFile
+from mpi4py_fft.io import HDF5File as BaseFile
 
 __all__ = ('HDF5File',)
 
