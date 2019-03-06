@@ -138,8 +138,8 @@ class Helmholtz(object):
 
     """
 
-    def __init__(self, *args, local_shape=None):
-
+    def __init__(self, *args, **kwargs):
+        local_shape = kwargs.get('local_shape', None)
         A, B = args[0], args[1]
         M = {d.get_key(): d for d in (A, B)}
         self.A = A = M.get('ADDmat', M.get('ANNmat'))
