@@ -1,4 +1,3 @@
-import numpy as np
 from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
 from shenfun.la import TDMA_O

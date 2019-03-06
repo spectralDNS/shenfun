@@ -48,7 +48,7 @@ ul = lambdify((x, y), ue, 'numpy')
 fl = lambdify((x, y), fe, 'numpy')
 
 # Size of discretization
-N = (int(sys.argv[-2]), int(sys.argv[-2]))
+N = (int(sys.argv[-2]), int(sys.argv[-2])+1)
 
 SD = Basis(N[0], family=family, scaled=True, bc=(a, b))
 K1 = Basis(N[1], family='F', dtype='d', domain=(-2*np.pi, 2*np.pi))

@@ -1,7 +1,7 @@
 #pylint: disable=missing-docstring,consider-using-enumerate
 import copy
 import numpy as np
-from mpi4py_fft.utilities import NCFile as BaseFile
+from mpi4py_fft.io import NCFile as BaseFile
 
 # https://github.com/Unidata/netcdf4-python/blob/master/examples/mpi_example.py
 

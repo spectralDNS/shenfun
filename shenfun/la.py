@@ -352,13 +352,18 @@ class NeumannSolve(object):
         return u
 
 class SolverGeneric2NP(object):
-    """Generi solver for tensorproductspaces consisting of (currently) two
-    non-periodic directions.
+    """Generic solver for tensorproductspaces consisting of (currently) two
+    non-periodic bases.
 
     Parameters
     ----------
     mats : sequence
         sequence of instances of :class:`.TPMatrix`
+
+    Note
+    ----
+    In addition to two non-periodic directions, the solver can also handle one
+    periodic direction.
     """
 
     def __init__(self, mats):
