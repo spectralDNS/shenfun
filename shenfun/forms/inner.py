@@ -113,7 +113,7 @@ def inner(expr0, expr1, output_array=None, level=0):
         raise RuntimeError
 
 
-    if test.rank() > 0 and test.expr_rank() > 0 : # For vector expressions of rank > 0 use recursive algorithm
+    if test.rank > 0 and test.expr_rank() > 0 : # For vector expressions of rank > 0 use recursive algorithm
         ndim = test.function_space().num_components()
 
         if output_array is None and trial.argument == 2:
@@ -248,7 +248,7 @@ def inner(expr0, expr1, output_array=None, level=0):
     if np.all([f.all_diagonal() for f in A]): # No non-diagonal matrix
         if trial.argument == 1:
             # Note 1D case return a TPMatrix
-            if trial.rank() == 0:
+            if trial.rank == 0:
                 A = reduce(lambda x, y: x+y, A)
                 if len(A.mats) == 1:
                     # 1D case
@@ -260,7 +260,7 @@ def inner(expr0, expr1, output_array=None, level=0):
             return A
 
         # linear form
-        if uh.rank() > 0:
+        if uh.rank > 0:
             for i, b in enumerate(A):
                 output_array += b.scale*uh[trial_indices[0, i]]
         else:
@@ -293,7 +293,7 @@ def inner(expr0, expr1, output_array=None, level=0):
         else: # linear form
             wh = np.empty_like(output_array)
             for i, b in enumerate(B):
-                if uh.rank() > 0:
+                if uh.rank > 0:
                     wh = b.matvec(uh[trial_indices[0, i]], wh)
                 else:
                     wh = b.matvec(uh, wh)
@@ -308,7 +308,7 @@ def inner(expr0, expr1, output_array=None, level=0):
         else: # linear form
             wh = np.empty_like(output_array)
             for i, b in enumerate(A):
-                if uh.rank() > 0:
+                if uh.rank > 0:
                     wh = b.matvec(uh[trial_indices[0, i]], wh)
                 else:
                     wh = b.matvec(uh, wh)

@@ -281,7 +281,7 @@ class SpectralBase(object):
         >>> print(y.shape)
         (4, 1)
         """
-        s = [np.newaxis]*self.dimensions()
+        s = [np.newaxis]*self.dimensions
         s[self.axis] = slice(None)
         return x[tuple(s)]
 
@@ -690,8 +690,8 @@ class SpectralBase(object):
 
         # scalar_product is not padded, just the forward/backward
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def _get_truncarray(self, shape, dtype):
         shape = list(shape)
@@ -767,31 +767,20 @@ class SpectralBase(object):
         """Return index set of current basis"""
         return slice(0, self.N)
 
+    def dim(self):
+        """Return the dimension of ``self`` (the number of degrees of freedom)"""
+        s = self.slice()
+        return s.stop - s.start
+
     def shape(self, forward_output=True):
-        """Return the shape of current basis
-
-        Parameters
-        ----------
-            forward_output : bool, optional
-                If True then return shape of spectral space (the result of a
-                forward transform). If False then return shape of physical space
-                (the input to a forward transform).
-        """
-        if forward_output:
-            s = self.slice()
-            return s.stop - s.start
-        return self.N
-
-    def allocated_shape(self, forward_output=True):
-        """Return allocated shape for basis
+        """Return the allocated shape of arrays used for ``self``
 
         Parameters
         ----------
         forward_output : bool, optional
-            If True then return allocated shape for spectral space (the result
-            of a forward transform). If False then return allocated shape of
-            physical space (the input to a forward transform).
-
+            If True then return allocated shape of spectral space (the result of a
+            forward transform). If False then return allocated shape of physical space
+            (the input to a forward transform).
         """
         return self.N
 
@@ -805,12 +794,13 @@ class SpectralBase(object):
             return 1
         return R/L
 
+    @property
     def dimensions(self):
         """Return the dimensions (the number of bases) of the
         :class:`.TensorProductSpace` class this basis is planned for.
         """
         if self.tensorproductspace:
-            return self.tensorproductspace.dimensions()
+            return self.tensorproductspace.dimensions
         return self.forward.input_array.ndim
 
     @property
@@ -836,6 +826,7 @@ class SpectralBase(object):
         return (self.__class__.__name__ == other.__class__.__name__ and
                 self.quad == other.quad and self.N == other.N)
 
+    @property
     def rank(self):
         """Return tensor rank of basis"""
         return 0
@@ -893,6 +884,12 @@ class MixedBasis(object):
         self.backward = VectorBasisTransform([basis.backward for basis in bases])
         self.scalar_product = VectorBasisTransform([basis.scalar_product for basis in bases])
 
+    def dims(self):
+        """Return dimensions (degrees of freedom) for MixedBasis"""
+        return [b.dim() for b in self.bases]
+        #s = self.bases[0].dim()
+        #return (self.num_components(),) + s
+
     def shape(self, forward_output=False):
         """Return shape of arrays for MixedBasis
 
@@ -930,14 +927,16 @@ class MixedBasis(object):
         return getattr(obj[0], name)
 
     def __len__(self):
-        return self.bases[0].dimensions()
+        return self.bases[0].dimensions
 
+    @property
     def rank(self):
         return 1
 
+    @property
     def dimensions(self):
         """Return dimension of scalar space"""
-        return self.bases[0].dimensions()
+        return self.bases[0].dimensions
 
 class VectorBasisTransform(object):
 

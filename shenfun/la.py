@@ -371,7 +371,7 @@ class SolverGeneric2NP(object):
         m = mats[0]
         assert len(m.naxes) == 2
         self.T = T = m.base
-        ndim = T.dimensions()
+        ndim = T.dimensions
         if ndim == 2:
             m = mats[0]
             M0 = sp.kron(m.mats[0].diags(), m.mats[1].diags())
@@ -386,7 +386,7 @@ class SolverGeneric2NP(object):
         c.fill(0)
         if u.ndim == 2:
             s0 = tuple(base.slice() for base in self.T)
-            c[s0] = self.M.dot(u[s0].flatten()).reshape(self.T.shape(True))
+            c[s0] = self.M.dot(u[s0].flatten()).reshape(self.T.dims())
         return c
 
     def __call__(self, b, u=None):
@@ -396,14 +396,13 @@ class SolverGeneric2NP(object):
             assert u.shape == b.shape
         if u.ndim == 2:
             s0 = tuple(base.slice() for base in self.T)
-            u[s0] = sp.linalg.spsolve(self.M, b[s0].flatten()).reshape(self.T.shape(True))
+            u[s0] = sp.linalg.spsolve(self.M, b[s0].flatten()).reshape(self.T.dims())
         elif u.ndim == 3:
             naxes = self.T.get_nonperiodic_axes()
             periodic_axis = np.setxor1d([0, 1, 2], naxes)
             assert len(periodic_axis) == 1
             periodic_axis = periodic_axis[0]
-            shape = self.T.local_shape(True)
-            M = shape[periodic_axis]
+            M = self.T.shape(True)[periodic_axis]
             sc = [0, 0, 0]
             for i in range(M):
                 m = self.mats[0]
@@ -417,7 +416,7 @@ class SolverGeneric2NP(object):
                     M0 = M0 + M1
                 s0 = [base.slice() for base in self.T]
                 s0[periodic_axis] = i
-                shape = np.take(self.T.shape(True), naxes)
+                shape = np.take(self.T.dims(), naxes)
                 u[tuple(s0)] = sp.linalg.spsolve(M0, b[tuple(s0)].flatten()).reshape(shape)
         return u
 

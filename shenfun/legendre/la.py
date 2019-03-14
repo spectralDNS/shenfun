@@ -169,7 +169,7 @@ class Helmholtz(object):
             shape = list(local_shape)
             shape[A.axis] = 1
         elif T is not None:
-            shape = list(T.local_shape(True))
+            shape = list(T.shape(True))
             shape[A.axis] = 1
 
         if np.ndim(B_scale) > 1:

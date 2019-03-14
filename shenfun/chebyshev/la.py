@@ -167,7 +167,7 @@ class Helmholtz(object):
         shape = [1]
         T = A.tensorproductspace
         if T is not None:
-            shape = list(T.local_shape(True))
+            shape = list(T.shape(True))
             shape[A.axis] = 1
         self.alfa = np.atleast_1d(self.alfa)
         self.beta = np.atleast_1d(self.beta)
@@ -355,7 +355,7 @@ class Biharmonic(object):
         if T is None:
             shape = [S[0].shape]
         else:
-            shape = list(T.local_shape(True))
+            shape = list(T.shape(True))
         sii, siu, siuu = S[0], S[2], S[4]
         ail, aii, aiu = A[-2], A[0], A[2]
         bill, bil, bii, biu, biuu = B[-4], B[-2], B[0], B[2], B[4]

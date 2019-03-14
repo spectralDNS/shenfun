@@ -126,8 +126,8 @@ class LegendreBase(SpectralBase):
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
 @inheritdocstrings
@@ -268,8 +268,8 @@ class ShenDirichletBasis(LegendreBase):
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
 @inheritdocstrings
@@ -369,8 +369,8 @@ class ShenNeumannBasis(LegendreBase):
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 @inheritdocstrings
 class ShenBiharmonicBasis(LegendreBase):
@@ -476,8 +476,8 @@ class ShenBiharmonicBasis(LegendreBase):
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 ## Experimental!
 @inheritdocstrings
@@ -559,5 +559,5 @@ class SecondNeumannBasis(LegendreBase): # pragma: no cover
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)

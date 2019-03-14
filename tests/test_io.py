@@ -61,19 +61,19 @@ def test_mixed_2D(backend, forward_output, as_scalar):
         uf = Function(TT, val=2)
     else:
         uf = Array(TT, val=2)
-    hfile.write(0, {'uf': [uf]}, forward_output=forward_output, as_scalar=as_scalar)
-    hfile.write(1, {'uf': [uf]}, forward_output=forward_output, as_scalar=as_scalar)
+    hfile.write(0, {'uf': [uf]}, as_scalar=as_scalar)
+    hfile.write(1, {'uf': [uf]}, as_scalar=as_scalar)
     if not forward_output and backend == 'hdf5' and comm.Get_rank() == 0:
         generate_xdmf(filename+'.h5')
     if as_scalar is False:
         u0 = Function(TT) if forward_output else Array(TT)
         read = reader(filename, TT, backend=backend)
-        read.read(u0, 'uf', forward_output=forward_output, step=1)
+        read.read(u0, 'uf', step=1)
         assert np.allclose(u0, uf)
     else:
         u0 = Function(T) if forward_output else Array(T)
         read = reader(filename, T, backend=backend)
-        read.read(u0, 'uf0', forward_output=forward_output, step=1)
+        read.read(u0, 'uf0', step=1)
         assert np.allclose(u0, uf[0])
 
 @pytest.mark.parametrize('forward_output', (True, False))
@@ -119,27 +119,27 @@ def test_mixed_3D(backend, forward_output, as_scalar):
     hfile = writer(filename, TT, backend=backend)
     uf = Function(TT, val=2) if forward_output else Array(TT, val=2)
     uf[0] = 1
-    data = {'ux': ((uf, np.s_[0, :, :, :]),
-                   (uf, [0, slice(None), 4, slice(None)]),
-                   (uf, [0, slice(None), 4, 4])),
-            'uy': ((uf, np.s_[1, :, :, :]),
-                   (uf, [1, slice(None), 4, slice(None)]),
-                   (uf, [1, slice(None), 4, 4])),
-            'u': [uf, (uf, [slice(None), slice(None), 4, slice(None)])]}
-    hfile.write(0, data, forward_output=forward_output, as_scalar=as_scalar)
-    hfile.write(1, data, forward_output=forward_output, as_scalar=as_scalar)
+    data = {'ux': (uf[0],
+                   (uf[0], [slice(None), 4, slice(None)]),
+                   (uf[0], [slice(None), 4, 4])),
+            'uy': (uf[1],
+                   (uf[1], [slice(None), 4, slice(None)]),
+                   (uf[1], [slice(None), 4, 4])),
+            'u': [uf, (uf, [slice(None), 4, slice(None)])]}
+    hfile.write(0, data, as_scalar=as_scalar)
+    hfile.write(1, data, as_scalar=as_scalar)
     if not forward_output and backend == 'hdf5' and comm.Get_rank() == 0:
         generate_xdmf(filename+'.h5')
 
     if as_scalar is False:
         u0 = Function(TT) if forward_output else Array(TT)
         read = reader(filename, TT, backend=backend)
-        read.read(u0, 'u', forward_output=forward_output, step=1)
+        read.read(u0, 'u', step=1)
         assert np.allclose(u0, uf)
     else:
         u0 = Function(T) if forward_output else Array(T)
         read = reader(filename, T, backend=backend)
-        read.read(u0, 'u0', forward_output=forward_output, step=1)
+        read.read(u0, 'u0', step=1)
         assert np.allclose(u0, uf[0])
 
 if __name__ == '__main__':

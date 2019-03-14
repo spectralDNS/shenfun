@@ -26,7 +26,7 @@ def div(test):
     sc = test.scales().copy()
     ind = test.indices().copy()
 
-    ndim = test.dimensions()
+    ndim = test.dimensions
     if ndim == 1:      # 1D
         v += 1
 
@@ -59,7 +59,7 @@ def grad(test):
     sc = test.scales()
     ind = test.indices()
 
-    ndim = test.dimensions()
+    ndim = test.dimensions
     #assert test.num_components() == 1       # allow only gradient of scalar
     test._terms = np.repeat(terms, ndim, axis=0)       # Create vector
     test._scales = np.repeat(sc, ndim, axis=0)
@@ -105,9 +105,9 @@ def curl(test):
     if isinstance(test, BasisFunction):
         test = Expr(test)
 
-    assert test.rank() > 0
-    assert test.num_components() == test.dimensions()  # vector
-    assert test.dimensions() == 3
+    assert test.rank > 0
+    assert test.num_components() == test.dimensions  # vector
+    assert test.dimensions == 3
 
     w0 = Dx(test[2], 1, 1) - Dx(test[1], 2, 1)
     w1 = Dx(test[0], 2, 1) - Dx(test[2], 0, 1)

@@ -52,7 +52,8 @@ A = inner(v, div(grad(u)))
 b = inner(v, Array(SD, buffer=fl(X)))
 u_ = Function(SD)
 u_ = A.solve(b, u_)
-ua = u_.backward()
+ua = Array(SD)
+ua = u_.backward(ua)
 
 # Now solved in mixed formulation
 Q = MixedBasis([ST, SD])
