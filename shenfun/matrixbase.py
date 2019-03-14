@@ -527,7 +527,7 @@ class SpectralMatrix(SparseMatrix):
         assert isinstance(trial[1], (int, np.integer))
         self.testfunction = test
         self.trialfunction = trial
-        shape = (test[0].shape(), trial[0].shape())
+        shape = (test[0].dim(), trial[0].dim())
         if d == {}:
             D = get_dense_matrix(test, trial)[:shape[0], :shape[1]]
             d = extract_diagonal_matrix(D)
@@ -733,9 +733,10 @@ class BlockMatrix(object):
         self.dims = dims = base.num_components()
         self.mats = np.zeros((dims, dims), dtype=int).tolist()
         tps = base.flatten()
-        offset = [np.zeros(tps[0].dimensions(), dtype=int)]
+        offset = [np.zeros(tps[0].dimensions, dtype=int)]
         for i, tp in enumerate(tps):
-            offset.append(np.array(tp.shape(True) + offset[i]))
+            dims = tp.dim() if not hasattr(tp, 'dims') else tp.dims() # 1D basis does not have dims()
+            offset.append(np.array(dims + offset[i]))
         self.offset = offset
         self.global_shape = self.offset[-1]
         self += tpmats
@@ -899,7 +900,7 @@ class BlockMatrix(object):
         N = self.global_shape[axis]
         gi = np.zeros(N, dtype=b.dtype)
         go = np.zeros(N, dtype=b.dtype)
-        if space.dimensions() == 1:
+        if space.dimensions == 1:
             s = [0, 0]
             Ai = self.diags((0,))
             for k in range(b.shape[0]):
@@ -912,7 +913,7 @@ class BlockMatrix(object):
                 s[1] = tp[k].slice()
                 u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
 
-        elif space.dimensions() == 2:
+        elif space.dimensions == 2:
             s = [0]*3
             ii, jj = {0:(2, 1), 1:(1, 2)}[axis]
             d0 = [0, 0]
@@ -930,7 +931,7 @@ class BlockMatrix(object):
                     s[jj] = tp[k].bases[axis].slice()
                     u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
 
-        elif space.dimensions() == 3:
+        elif space.dimensions == 3:
             s = [0]*4
             ii, jj = {0:(2, 3), 1:(1, 3), 2:(1, 2)}[axis]
             d0 = [0, 0, 0]
@@ -991,7 +992,7 @@ class TPMatrix(object):
         self.naxes = []
         for axis, mat in enumerate(self.mats):
             if self.space[axis].family() == 'fourier':
-                if self.dimensions() == 1: # Don't bother with the 1D case
+                if self.dimensions == 1: # Don't bother with the 1D case
                     continue
                 else:
                     d = mat[0]    # get diagoal
@@ -1006,7 +1007,7 @@ class TPMatrix(object):
         # Decomposition
         if len(self.space) > 1:
             s = self.scale.shape
-            ss = [slice(None)]*self.space.dimensions()
+            ss = [slice(None)]*self.space.dimensions
             ls = self.space.local_slice()
             for axis, shape in enumerate(s):
                 if shape > 1:
@@ -1083,6 +1084,7 @@ class TPMatrix(object):
     def all_diagonal(self):
         return np.all([m.isdiagonal() for m in self.mats])
 
+    @property
     def dimensions(self):
         """Return dimension of TPMatrix"""
         return len(self.mats)

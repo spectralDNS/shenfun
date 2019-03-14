@@ -262,8 +262,8 @@ class FourierBase(SpectralBase):
 
         # scalar_product is not padded, just the forward/backward
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
 class R2CBasis(FourierBase):
@@ -301,7 +301,7 @@ class R2CBasis(FourierBase):
     def slice(self):
         return slice(0, self.N//2+1)
 
-    def allocated_shape(self, forward_output=True):
+    def shape(self, forward_output=True):
         if forward_output:
             return self.N//2+1
         return self.N
@@ -385,7 +385,7 @@ class R2CBasis(FourierBase):
         if self.padding_factor > 1.0+1e-8:
             padded_array.fill(0)
             N = trunc_array.shape[self.axis]
-            if len(self._sn) != self.dimensions():
+            if len(self._sn) != self.dimensions:
                 self._sn = self.sl[slice(0, N)]
                 self._sm = self.si[N-1]
             padded_array[self._sn] = trunc_array[self._sn]
@@ -523,7 +523,7 @@ class C2CBasis(FourierBase):
         if self.padding_factor > 1.0+1e-8:
             padded_array.fill(0)
             N = trunc_array.shape[self.axis]
-            if len(self._slp) != self.dimensions(): # Store for microoptimization
+            if len(self._slp) != self.dimensions: # Store for microoptimization
                 self._slp = self.sl[slice(0, N//2+1)]
                 self._slm = self.sl[slice(-(N//2), None)]
                 self._slp0 = self.si[N//2]

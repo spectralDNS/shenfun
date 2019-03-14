@@ -84,7 +84,7 @@ A10 = inner(q, div(u))
 # Create submatrix for block (2, 2). This submatrix will only be enabled for
 # Fourier wavenumber k=0.
 A11 = inner(p, q)
-A11.scale = np.zeros((TD.shape(True)[0], 1))
+A11.scale = np.zeros((TD.dims()[0], 1))
 if comm.Get_rank() == 0:   # enable only for Fourier k=0
     A11.scale[0] = 1
 A11.mats[1][0][:] = 0      # Zero the matrix diagonal (the only diagonal)
@@ -94,8 +94,8 @@ if family.lower() == 'chebyshev':
     # For Legendre this row is already zero. With Chebyshev we need to modify
     # block (2, 1) as well as fixing the 1 on the diagonal of (2, 2)
     a10 = inner(q, div(u))[1]   # This TPMatrix will be used for k=0
-    a10.scale = np.zeros((TD.shape(True)[0], 1))
-    A10[1].scale = np.ones((TD.shape(True)[0], 1))
+    a10.scale = np.zeros((TD.dims()[0], 1))
+    A10[1].scale = np.ones((TD.dims()[0], 1))
     if comm.Get_rank() == 0:
         a10.scale[0] = 1     # enable for k=0
         A10[1].scale[0] = 0  # disable for k=0

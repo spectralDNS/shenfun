@@ -200,8 +200,8 @@ class ChebyshevBase(SpectralBase):
         self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
         self.backward = Transform(self.backward, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
 @inheritdocstrings
@@ -446,8 +446,8 @@ class ShenDirichletBasis(ChebyshevBase):
         self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
         self.backward = Transform(self.backward, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
 @inheritdocstrings
@@ -580,8 +580,8 @@ class ShenNeumannBasis(ChebyshevBase):
         self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
         self.backward = Transform(self.backward, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
 @inheritdocstrings
@@ -729,5 +729,5 @@ class ShenBiharmonicBasis(ChebyshevBase):
         self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
         self.backward = Transform(self.backward, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions())
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions())
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
