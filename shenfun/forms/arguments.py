@@ -263,7 +263,7 @@ class Expr(object):
         self._terms = terms
         self._scales = scales
         self._indices = indices
-        ndim = self.function_space().dimensions()
+        ndim = self.function_space().dimensions
         if terms is None:
             self._terms = np.zeros((self.function_space().num_components(), 1, ndim),
                                    dtype=np.int)
@@ -316,9 +316,10 @@ class Expr(object):
         if self._terms.shape[0] == self._terms.shape[-1]**2:
             return 2
 
+    @property
     def rank(self):
         """Return rank of Expr's basis"""
-        return self._basis.rank()
+        return self._basis.rank
 
     def indices(self):
         """Return indices of Expr"""
@@ -332,6 +333,7 @@ class Expr(object):
         """Return number of terms in Expr"""
         return self._terms.shape[1]
 
+    @property
     def dimensions(self):
         """Return ndim of Expr"""
         return self._terms.shape[2]
@@ -345,7 +347,7 @@ class Expr(object):
     def __getitem__(self, i):
         #assert self.num_components() == self.dim()
         basis = self._basis
-        if self.rank() > 0:
+        if self.rank > 0:
             basis = self._basis[i]
         else:
             basis = self._basis
@@ -355,7 +357,7 @@ class Expr(object):
                         self._scales[i][np.newaxis, :],
                         self._indices[i][np.newaxis, :])
         elif self.expr_rank() == 2:
-            ndim = self.dimensions()
+            ndim = self.dimensions
             return Expr(basis,
                         self._terms[i*ndim:(i+1)*ndim],
                         self._scales[i*ndim:(i+1)*ndim],
@@ -379,7 +381,7 @@ class Expr(object):
             else:
                 raise NotImplementedError
             #elif isinstance(a, np.ndarray):
-                #assert len(a) == self.dimensions() or len(a) == 1
+                #assert len(a) == self.dimensions or len(a) == 1
                 #sc *= a
 
         return Expr(self._basis, self._terms.copy(), sc, self._indices.copy())
@@ -394,8 +396,8 @@ class Expr(object):
             sc *= a
         else:
             if isinstance(a, tuple):
-                assert len(a) == self.dimensions()
-                for i in range(self.dimensions()):
+                assert len(a) == self.dimensions
+                for i in range(self.dimensions):
                     assert isinstance(a[i], Number)
                     sc[i] = sc[i]*a[i]
 
@@ -405,7 +407,7 @@ class Expr(object):
             else:
                 raise NotImplementedError
             #elif isinstance(a, np.ndarray):
-                #assert len(a) == self.dimensions() or len(a) == 1
+                #assert len(a) == self.dimensions or len(a) == 1
                 #sc *= a
 
         return self
@@ -479,13 +481,14 @@ class BasisFunction(object):
         self._base = base
         self._offset = offset
 
+    @property
     def rank(self):
         """Return rank of basis"""
-        return self.function_space().rank()
+        return self.function_space().rank
 
     def expr_rank(self):
         """Return rank of expression involving basis"""
-        return self.function_space().rank()
+        return self.function_space().rank
 
     def function_space(self):
         """Return function space of BasisFunction"""
@@ -505,9 +508,10 @@ class BasisFunction(object):
         """Return number of components in basis"""
         return self.function_space().num_components()
 
+    @property
     def dimensions(self):
         """Return dimensions of function space"""
-        return self.function_space().dimensions()
+        return self.function_space().dimensions
 
     def index(self):
         """Return index into vector space of rank 1"""
@@ -518,11 +522,11 @@ class BasisFunction(object):
 
     def flat_index(self):
         """Return flattened index for scalar space"""
-        assert self.rank() == 0
+        assert self.rank == 0
         return self._index + self._offset
 
     def __getitem__(self, i):
-        assert self.rank() > 0
+        assert self.rank > 0
         base = self.base
         space = self._space[i]
         corr = self._index if isinstance(self._index, int) else 0
@@ -574,7 +578,7 @@ class TestFunction(BasisFunction):
         BasisFunction.__init__(self, space, index, base, offset)
 
     def __getitem__(self, i):
-        assert self.rank() > 0
+        assert self.rank > 0
         base = self._space if self._base is None else self._base
         space = self._space[i]
         corr = self._index if isinstance(self._index, int) else 0
@@ -602,7 +606,7 @@ class TrialFunction(BasisFunction):
         BasisFunction.__init__(self, space, index, base, offset)
 
     def __getitem__(self, i):
-        assert self.rank() > 0
+        assert self.rank > 0
         base = self.base
         space = self._space[i]
         corr = self._index if isinstance(self._index, int) else 0
@@ -617,46 +621,52 @@ class TrialFunction(BasisFunction):
     def argument(self):
         return 1
 
-class Darray(np.ndarray):
-    """Base class for distributed arrays
-
-    The :class:`.Function` and :class:`.Array` classes uses this common
-    baseclass for common tasks.
-    """
+class ShenfunBaseArray(DistArray):
 
     def __new__(cls, space, val=0, buffer=None):
 
-        if isinstance(buffer, np.ndarray):
-            shape = buffer.shape
-            dtype = buffer.dtype
-
-        else:
-
+        if hasattr(space, 'points_and_weights'): # 1D case
             if cls.__name__ == 'Function':
-                shape = space.forward.output_array.shape
                 dtype = space.forward.output_array.dtype
-            else:
-                shape = space.forward.input_array.shape
+                shape = space.forward.output_array.shape
+            elif cls.__name__ == 'Array':
                 dtype = space.forward.input_array.dtype
+                shape = space.forward.input_array.shape
 
             if not space.num_components() == 1:
                 shape = (space.num_components(),) + shape
 
-        obj = np.ndarray.__new__(cls,
-                                 shape,
-                                 dtype=dtype,
-                                 buffer=buffer)
+            obj = DistArray.__new__(cls, shape, buffer=buffer, dtype=dtype,
+                                    rank=space.rank)
+            obj._space = space
+            if buffer is None and isinstance(val, Number):
+                obj[:] = val
+            return obj
 
+        if cls.__name__ == 'Function':
+            forward_output = True
+            p0 = space.pencil[1]
+            dtype = space.forward.output_array.dtype
+        elif cls.__name__ == 'Array':
+            forward_output = False
+            p0 = space.pencil[0]
+            dtype = space.forward.input_array.dtype
+
+        global_shape = space.global_shape(forward_output)
+        obj = DistArray.__new__(cls, global_shape,
+                                subcomm=p0.subcomm, val=val, dtype=dtype,
+                                buffer=buffer, alignment=p0.axis,
+                                rank=space.rank)
         obj._space = space
-        if buffer is None and isinstance(val, Number):
-            obj.fill(val)
         return obj
 
     def __array_finalize__(self, obj):
         if obj is None:
             return
-        if hasattr(obj, '_space'):
-            self._space = obj._space
+
+        self._space = getattr(obj, '_space', None)
+        self._rank = getattr(obj, '_rank', None)
+        self._p0 = getattr(obj, '_p0', None)
 
     def function_space(self):
         """Return function space of array ``self``"""
@@ -665,30 +675,6 @@ class Darray(np.ndarray):
         if self.base.shape == self.shape:
             return self._space
         return self._space[self.index()]
-
-    @property
-    def v(self):
-        """Return ``self`` array as ``ndarray`` object"""
-        return self.__array__()
-
-    @property
-    def argument(self):
-        """Return argument of basis"""
-        return 2
-
-    @property
-    def global_shape(self):
-        """Return global shape of ``self``"""
-        return self.function_space().shape(self.forward_output)
-
-    @property
-    def forward_output(self):
-        """Return whether ``self`` is the result of a forward transform"""
-        raise NotImplementedError
-
-    def rank(self):
-        """Return rank of basis"""
-        return self.function_space().rank()
 
     def index(self):
         """Return index into tensor"""
@@ -703,70 +689,23 @@ class Darray(np.ndarray):
         itemsize = self.itemsize
         return (data_self - data_base) // (itemsize*np.prod(self.shape))
 
-    def get_pencil_and_transfer(self, axis):
-        """Return pencil and transfer objects for alignment along ``axis``
+    @property
+    def argument(self):
+        """Return argument of basis"""
+        return 2
 
-        Parameters
-        ----------
-        axis : int
-            The new axis to align data with
+    @property
+    def global_shape(self):
+        """Return global shape of ``self``"""
+        return self.function_space().global_shape(self.forward_output)
 
-        Returns
-        -------
-        2-tuple
-            2-tuple where first item is a :class:`.Pencil` aligned in ``axis``.
-            Second item is a :class:`.Transfer` object for executing the
-            redistribution of data
-        """
-        p0 = self.function_space().pencil[self.forward_output]
-        p1 = p0.pencil(axis)
-        return p1, p0.transfer(p1, self.dtype)
-
-    def redistribute(self, axis=None, darray=None):
-        """Global redistribution of ``self`` array
-
-        Align ``self`` along given ``axis``. Return a generic
-        :class:`mpi4py_fft.distarray.DistArray` since the returned distributed
-        array is not connected to a :class:`.TensorProductSpace` class.
-
-        Parameters
-        ----------
-        axis : int, optional
-            Align local ``self`` array along this axis
-        darray : :class:`mpi4py_fft.distarray.DistArray`, optional
-            Copy data to this DistArray of possibly different alignment
-        Returns
-        -------
-        DistArray : darray
-            The ``self`` array globally redistributed. If keyword ``darray`` is
-            None then a new DistArray (aligned along ``axis``) is created
-            and returned
-        """
-        global_shape = self.function_space().allocated_shape(self.forward_output)
-        if axis is None:
-            assert isinstance(darray, np.ndarray)
-            assert global_shape == darray.global_shape
-            axis = darray.alignment
-        p1, transfer = self.get_pencil_and_transfer(axis)
-        if darray is None:
-            darray = DistArray(global_shape,
-                               subcomm=p1.subcomm,
-                               dtype=self.dtype,
-                               alignment=axis,
-                               rank=self.rank())
-        if self.rank() == 0:
-            transfer.forward(self, darray)
-        elif self.rank() == 1:
-            for i in range(global_shape[0]):
-                transfer.forward(self[i], darray[i])
-        #elif self.rank() == 2:
-        #    for i in range(shape[0]):
-        #        for j in range(shape[1]):
-        #            transfer.forward(self[i, j], darray[i, j])
-        return darray
+    @property
+    def forward_output(self):
+        """Return whether ``self`` is the result of a forward transform"""
+        raise NotImplementedError
 
 
-class Function(Darray, BasisFunction):
+class Function(ShenfunBaseArray, BasisFunction):
     r"""
     Spectral Galerkin function for given :class:`.TensorProductSpace` or :func:`.Basis`
 
@@ -878,7 +817,7 @@ class Function(Darray, BasisFunction):
         return output_array
 
 
-class Array(Darray):
+class Array(ShenfunBaseArray):
     r"""
     Numpy array for :class:`.TensorProductSpace`
 

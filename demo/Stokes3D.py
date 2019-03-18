@@ -88,7 +88,7 @@ D = inner(q, div(u))
 # Create submatrix for block (3, 3). This submatrix will only be enabled for
 # Fourier wavenumbers l=m=0.
 P = inner(p, q)
-s = TD.shape(True)
+s = TD.dim()
 P.scale = np.zeros((s[0], s[1], 1))
 ls = TD.local_slice(True)
 if ls[0].start == 0 and ls[1].start == 0:   # enable only for Fourier l=m=0

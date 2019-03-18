@@ -49,7 +49,7 @@ class TensorProductSpace(PFFT):
         # Note do not call __init__ of super
         self.comm = comm
         self.bases = bases
-        shape = list(self.shape())
+        shape = list(self.global_shape())
         assert shape
         assert min(shape) > 0
 
@@ -420,7 +420,7 @@ class TensorProductSpace(PFFT):
             ss[axis] = s
             lk.append(n[tuple(ss)])
         if broadcast is True:
-            return [np.broadcast_to(m, self.local_shape(True)) for m in lk]
+            return [np.broadcast_to(m, self.dim()) for m in lk]
         return lk
 
     def mesh(self):
@@ -449,27 +449,35 @@ class TensorProductSpace(PFFT):
             ss[axis] = s
             lm.append(n[tuple(ss)])
         if broadcast is True:
-            return [np.broadcast_to(m, self.local_shape(False)) for m in lm]
+            return [np.broadcast_to(m, self.shape(False)) for m in lm]
         return lm
+
+    def dim(self):
+        """Return dimension of ``self`` (degrees of freedom)"""
+        return np.prod(self.dims())
+
+    def dims(self):
+        """Return dimensions (degrees of freedom) of all bases in ``self``"""
+        return tuple([base.dim() for base in self])
 
     def size(self, forward_output=False):
         """Return number of elements in :class:`.TensorProductSpace`"""
         return np.prod(self.shape(forward_output))
 
-    def shape(self, forward_output=False):
-        """Return shape of arrays for TensorProductSpace
+    #def shape(self, forward_output=False):
+    #    """Return shape of arrays for TensorProductSpace
 
-        Parameters
-        ----------
-        forward_output : bool, optional
-            If True then return shape of an array that is the result of a
-            forward transform. If False then return shape of physical
-            space, i.e., the input to a forward transform.
+    #    Parameters
+    #    ----------
+    #    forward_output : bool, optional
+    #        If True then return shape of an array that is the result of a
+    #        forward transform. If False then return shape of physical
+    #        space, i.e., the input to a forward transform.
 
-        """
-        if not forward_output:
-            return tuple([int(np.round(base.shape(forward_output)*base.padding_factor)) for base in self])
-        return tuple([base.shape(forward_output) for base in self])
+    #    """
+    #    if not forward_output:
+    #        return tuple([int(np.round(base.shape(forward_output)*base.padding_factor)) for base in self])
+    #    return tuple([base.shape(forward_output) for base in self])
 
     def global_shape(self, forward_output=False):
         """Return global shape of arrays for TensorProductSpace
@@ -482,34 +490,38 @@ class TensorProductSpace(PFFT):
             space, i.e., the input to a forward transform.
 
         """
-        return self.shape(forward_output)
-
-    def allocated_shape(self, forward_output=False):
-        """Return global shape of allocated work arrays for TensorProductSpace
-
-        Parameters
-        ----------
-        forward_output : bool, optional
-            If True then return shape of an array that is the result of a
-            forward transform. If False then return shape of physical
-            space, i.e., the input to a forward transform.
-
-        Note
-        ----
-        This function is returning the actual shape of allocated arrays. So,
-        even though a homogeneous Dirichlet basis has shape N-2, it will have
-        allocated an array of shape N, and this function thus returns N.
-
-        """
         if not forward_output:
-            return tuple([int(np.round(base.allocated_shape(forward_output)*base.padding_factor)) for base in self])
-        return tuple([base.allocated_shape(forward_output) for base in self])
+            return tuple([int(np.round(base.shape(forward_output)*base.padding_factor)) for base in self])
+        return tuple([base.shape(forward_output) for base in self])
+        #return self.shape(forward_output)
+
+    #def allocated_shape(self, forward_output=False):
+    #    """Return global allocated shape for TensorProductSpace
+
+    #    Parameters
+    #    ----------
+    #    forward_output : bool, optional
+    #        If True then return shape of an array that is the result of a
+    #        forward transform. If False then return shape of physical
+    #        space, i.e., the input to a forward transform.
+
+    #    Note
+    #    ----
+    #    This function is returning the actual shape of non-distributed
+    #    allocated arrays. So, even though a homogeneous Dirichlet basis has
+    #    shape N-2, it will have allocated an array of shape N, and this
+    #    function thus returns N.
+
+    #    """
+    #    if not forward_output:
+    #        return tuple([int(np.round(base.allocated_shape(forward_output)*base.padding_factor)) for base in self])
+    #    return tuple([base.allocated_shape(forward_output) for base in self])
 
     def __iter__(self):
         return iter(self.bases)
 
-    @staticmethod
-    def rank():
+    @property
+    def rank(self):
         """Return tensor rank of TensorProductSpace"""
         return 0
 
@@ -518,9 +530,10 @@ class TensorProductSpace(PFFT):
         return len(self.bases)
 
     def num_components(self):
-        """Return number of spaces in TensorProductSpace"""
+        """Return number of scalar spaces in TensorProductSpace"""
         return 1
 
+    @property
     def dimensions(self):
         """Return dimension of TensorProductSpace"""
         return self.__len__()
@@ -605,19 +618,20 @@ class MixedTensorProductSpace(object):
         FIXME Efficiency due to allocation
         """
         N = list(self.backward.output_array.shape)
-        a = np.zeros([self.dimensions()]+N, dtype=self.backward.output_array.dtype)
-        b = np.zeros([self.dimensions()]+N, dtype=self.backward.output_array.dtype)
+        a = np.zeros([self.dimensions]+N, dtype=self.backward.output_array.dtype)
+        b = np.zeros([self.dimensions]+N, dtype=self.backward.output_array.dtype)
         a = self.backward(a_hat, a)
         b = self.backward(b_hat, b)
         ab_hat = self.forward(a*b, ab_hat)
         return ab_hat
 
+    @property
     def dimensions(self):
         """Return dimension of scalar space"""
-        return self.flatten()[0].dimensions()
+        return self.flatten()[0].dimensions
 
-    @staticmethod
-    def rank():
+    @property
+    def rank(self):
         """Return rank of space"""
         return 1
 
@@ -655,7 +669,7 @@ class MixedTensorProductSpace(object):
         return s
 
     def allocated_shape(self, forward_output=False):
-        """Return allocated shape of arrays for MixedTensorProductSpace
+        """Return global allocated shape for MixedTensorProductSpace
 
         Parameters
         ----------
@@ -666,12 +680,27 @@ class MixedTensorProductSpace(object):
 
         Note
         ----
-        This function is returning the actual shape of allocated arrays. So,
-        even though a homogeneous Dirichlet basis has shape N-2, it will have
-        allocated an array of shape N, and this function thus returns N.
+        This function is returning the actual shape of non-distributed
+        allocated arrays. So, even though a homogeneous Dirichlet basis has
+        shape N-2, it will have allocated an array of shape N, and this
+        function thus returns N.
 
         """
         s = self.flatten()[0].allocated_shape(forward_output)
+        return (self.num_components(),) + s
+
+    def global_shape(self, forward_output=False):
+        """Return global shape for MixedTensorProductSpace
+
+        Parameters
+        ----------
+        forward_output : bool, optional
+            If True then return shape of an array that is the result of a
+            forward transform. If False then return shape of physical
+            space, i.e., the input to a forward transform.
+
+        """
+        s = self.flatten()[0].global_shape(forward_output)
         return (self.num_components(),) + s
 
     def local_slice(self, forward_output=False):
@@ -724,7 +753,7 @@ class MixedTensorProductSpace(object):
         return getattr(obj[0], name)
 
     def __len__(self):
-        return self.flatten()[0].dimensions()
+        return self.flatten()[0].dimensions
 
 
 class VectorTensorProductSpace(MixedTensorProductSpace):
@@ -747,16 +776,16 @@ class VectorTensorProductSpace(MixedTensorProductSpace):
             warnings.warn("Use only the TensorProductSpace as argument", DeprecationWarning)
             spaces = space
         else:
-            spaces = [space]*space.dimensions()
+            spaces = [space]*space.dimensions
         MixedTensorProductSpace.__init__(self, spaces)
 
     def num_components(self):
         """Return number of spaces in mixed space"""
-        assert len(self.spaces) == self.dimensions()
-        return self.dimensions()
+        assert len(self.spaces) == self.dimensions
+        return self.dimensions
 
-    @staticmethod
-    def rank():
+    @property
+    def rank(self):
         """Return tensor rank of space"""
         return 1
 
