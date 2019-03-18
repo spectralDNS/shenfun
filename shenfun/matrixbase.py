@@ -707,6 +707,9 @@ class BlockMatrix(object):
 
     This matrix is assemble below
 
+    >>> from shenfun import *
+    >>> from mpi4py import MPI
+    >>> comm = MPI.COMM_WORLD
     >>> N = (24, 24, 24)
     >>> K0 = Basis(N[0], 'Fourier', dtype='d')
     >>> K1 = Basis(N[1], 'Fourier', dtype='D')
