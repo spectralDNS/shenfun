@@ -39,6 +39,7 @@ lbases2 = list(list(i[0]) + [i[1]] for i in product(list(product(lBasis, lBasis)
 class ABC(object):
     def __init__(self, dim):
         self.dim = dim
+    @property
     def dimensions(self):
         return self.dim
 
@@ -59,7 +60,6 @@ def test_convolve(basis, N):
         if N % 2 == 0:
             u0[-1] = u0[-1].real
             u1[-1] = u1[-1].real
-
     uv1 = FFT.convolve(u0, u1, fast=False)
 
     # Do convolution with FFT and padding
@@ -515,9 +515,9 @@ if __name__ == '__main__':
     #test_convolve(fbases.R2CBasis, 8)
     #test_ADDmat(lbases.ShenNeumannBasis, "GL")
     #test_CDDmat("GL")
-    #test_massmatrices(lBasis[0], lBasis[1], 'GL')
-    test_transforms(lagBasis[1], 'LG', 1)
+    #test_massmatrices(cBasis[3], cBasis[3], 'GC')
+    #test_transforms(lagBasis[1], 'LG', 1)
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[2], 'GC')
     #test_eval(cBasis[0], 'GC')
-    #test_axis(cBasis[1], 'GC', 0)
+    test_axis(cBasis[1], 'GC', 0)

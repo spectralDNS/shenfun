@@ -29,7 +29,7 @@ requirements:
     - scipy
     - fftw
     - mpi4py
-    - mpi4py-fft
+    - mpi4py-fft 2.0.1
     - sympy
     - nomkl
     - {{ mpi }}

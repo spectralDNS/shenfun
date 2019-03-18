@@ -110,9 +110,9 @@ def project(uh, T, output_array=None):
 
     else:
         # Just zero or one non-periodic direction
-        if v.rank() == 0:
+        if v.rank == 0:
             output_array = B.solve(output_array, output_array)
         else:
-            for i in range(v.function_space().dimensions()):
+            for i in range(v.function_space().dimensions):
                 output_array[i] = B[i].solve(output_array[i], output_array[i])
     return output_array

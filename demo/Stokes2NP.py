@@ -81,11 +81,11 @@ A10 = inner(q, div(u))
 # Create submatrix for block (2, 2). This submatrix will only be used to fix pressure mode (0, 0).
 A11 = inner(p, q)
 for i in range(2):
-    A11[0].mats[i][0][:] = 0      # Zero the matrix diagonal (the only diagonal)
-    A11[0].mats[i][0][0] = 1      # fixes p_hat[0, 0]
+    A11.mats[i][0][:] = 0      # Zero the matrix diagonal (the only diagonal)
+    A11.mats[i][0][0] = 1      # fixes p_hat[0, 0]
 
 # Create Block matrix
-M = BlockMatrix(A00+A01+A10+A11)
+M = BlockMatrix(A00+A01+A10+[A11])
 
 # Assemble right hand side
 fh = Array(Q)
