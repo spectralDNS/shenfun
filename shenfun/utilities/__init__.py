@@ -2,7 +2,7 @@
 Module for implementing helper functions.
 """
 import types
-from collections.abc import MutableMapping
+from collections import MutableMapping
 import numpy as np
 from scipy.fftpack import dct
 
