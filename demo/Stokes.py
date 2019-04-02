@@ -11,7 +11,7 @@ The Stokes equations are in strong form
     p(x=2\pi, y) &= p(x=0, y)
 
 where :math:`f` and :math:`g` are given functions of space.
-In addition we require :math:`\int p d\ = 0`, which is achieved by
+In addition we require :math:`\int p dx = 0`, which is achieved by
 fixing the coefficient :math:`\hat{p}_{0, 0} = 0`.
 
 We use a tensorproductspace with Fourier expansions in the x-direction and
@@ -80,34 +80,8 @@ else:
     A01 = inner(div(v), p)
 A10 = inner(q, div(u))
 
-# We now need to take care of the case with Fourier wavenumber k = 0.
-# Create submatrix for block (2, 2). This submatrix will only be enabled for
-# Fourier wavenumber k=0.
-A11 = inner(p, q)
-A11.scale = np.zeros((TD.dims()[0], 1))
-if comm.Get_rank() == 0:   # enable only for Fourier k=0
-    A11.scale[0] = 1
-A11.mats[1][0][:] = 0      # Zero the matrix diagonal (the only diagonal)
-A11.mats[1][0][0] = 1      # fixes p_hat[0, 0]
-if family.lower() == 'chebyshev':
-    # Have to ident global row (N[1]-2)*2, but only for k=0. This is a bit tricky
-    # For Legendre this row is already zero. With Chebyshev we need to modify
-    # block (2, 1) as well as fixing the 1 on the diagonal of (2, 2)
-    a10 = inner(q, div(u))[1]   # This TPMatrix will be used for k=0
-    a10.scale = np.zeros((TD.dims()[0], 1))
-    A10[1].scale = np.ones((TD.dims()[0], 1))
-    if comm.Get_rank() == 0:
-        a10.scale[0] = 1     # enable for k=0
-        A10[1].scale[0] = 0  # disable for k=0
-    am = a10.pmat.diags().toarray()
-    am[0] = 0
-    a10.mats[1] = extract_diagonal_matrix(am)
-    a10.pmat = a10.mats[1]
-    A10.append(a10)
-A11 = [A11]
-
 # Create block matrix
-M = BlockMatrix(A00+A01+A10+A11)
+M = BlockMatrix(A00+A01+A10)
 
 # Get f and h on quad points
 fh = Array(Q)
@@ -118,10 +92,9 @@ fh[2] = hl(*X)
 fh_hat = Function(Q)
 fh_hat[:2] = inner(v, fh[:2], output_array=fh_hat[:2])
 fh_hat[2] = inner(q, fh[2], output_array=fh_hat[2])
-fh_hat[2, 0, 0] = 0 # set p_hat[0, 0] = 0
 
-# Solve problem
-up_hat = M.solve(fh_hat)
+# Solve problem using integral constraint on pressure
+up_hat = M.solve(fh_hat, integral_constraint=(2, 0))
 up = up_hat.backward()
 
 # Exact solution

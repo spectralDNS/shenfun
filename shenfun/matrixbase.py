@@ -3,7 +3,7 @@ This module contains classes for working with sparse matrices.
 
 The sparse matrices are computed as inner products of forms containing test and
 trial functions. These basis functions are chosen from the following, where we
-denote the :math:`k`'th basis function of basis V as :math:`\phi_k`::
+denote the :math:`k`'th basis function of basis V as :math:`\phi_k`:
 
 Chebyshev basis:
     Chebyshev basis of first kind
@@ -109,11 +109,14 @@ from numbers import Number
 import numpy as np
 from scipy.sparse import bmat, dia_matrix, kron, diags as sp_diags
 from scipy.sparse.linalg import spsolve
+from mpi4py import MPI
 from .utilities import inheritdocstrings
 
 __all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix',
            'check_sanity', 'get_dense_matrix', 'TPMatrix', 'BlockMatrix',
            'Identity']
+
+comm = MPI.COMM_WORLD
 
 class SparseMatrix(dict):
     r"""Base class for sparse matrices.
@@ -128,8 +131,8 @@ class SparseMatrix(dict):
         Dictionary, where keys are the diagonal offsets and values the
         diagonals
     shape : two-tuple of ints
-    scale : float
-        Scale matrix with this constant or array of constants
+    scale : number, optional
+        Scale matrix with this number
 
     Examples
     --------
@@ -169,7 +172,7 @@ class SparseMatrix(dict):
         v : array
             Numpy input array of ndim>=1
         c : array
-            Numpy output array of same ndim as v
+            Numpy output array of same shape as v
         format : str, optional
              Choice for computation
 
@@ -227,9 +230,7 @@ class SparseMatrix(dict):
 
         Note
         ----
-        This method does not return the matrix scaled by self.scale. Make sure
-        to include the scale if the returned matrix is to be used in further
-        calculations
+        This method returns the matrix scaled by self.scale.
 
         """
         if self._diags.shape != self.shape or self._diags.format != format:
@@ -237,7 +238,7 @@ class SparseMatrix(dict):
                                    shape=self.shape, format=format)
             scale = self.scale
             if isinstance(scale, np.ndarray):
-                scale = np.asscalar(scale)
+                scale = np.atleast_1d(scale).item()
             self._diags *= scale
 
         return self._diags
@@ -480,8 +481,8 @@ class SpectralMatrix(SparseMatrix):
         should be differentiated. Representing matrix column.
     test : 2-tuple of (basis, int)
         As trial, but representing matrix row.
-    scale : float
-        Scale matrix with this constant or array of constants
+    scale : number, optional
+        Scale matrix with this number
 
     Examples
     --------
@@ -732,10 +733,10 @@ class BlockMatrix(object):
     def __init__(self, tpmats):
         assert isinstance(tpmats, (list, tuple))
         tpmats = [tpmats] if not isinstance(tpmats[0], (list, tuple)) else tpmats
-        self.base = base = tpmats[0][0].base
-        self.dims = dims = base.num_components()
+        self.mixedbase = mixedbase = tpmats[0][0].mixedbase
+        self.dims = dims = mixedbase.num_components()
         self.mats = np.zeros((dims, dims), dtype=int).tolist()
-        tps = base.flatten()
+        tps = mixedbase.flatten()
         offset = [np.zeros(tps[0].dimensions, dtype=int)]
         for i, tp in enumerate(tps):
             dims = tp.dim() if not hasattr(tp, 'dims') else tp.dims() # 1D basis does not have dims()
@@ -808,8 +809,8 @@ class BlockMatrix(object):
         c : :class:`.Function`
 
         """
-        assert v.function_space() == self.base
-        assert c.function_space() == self.base
+        assert v.function_space() == self.mixedbase
+        assert c.function_space() == self.mixedbase
         c.fill(0)
         z = np.zeros_like(c[0])
         for i, mi in enumerate(self.mats):
@@ -842,6 +843,8 @@ class BlockMatrix(object):
             where n is dimensions. These are the indices into the scale arrays
             of the TPMatrices in various blocks. Should be zero along the non-
             periodic direction.
+        format : str
+            The format of the returned matrix. See `Scipy sparse matrices <https://docs.scipy.org/doc/scipy/reference/sparse.html>`_
 
         """
         from .spectralbase import MixedBasis
@@ -853,10 +856,10 @@ class BlockMatrix(object):
                     bm[-1].append(None)
                 else:
                     m = mij[0]
-                    if isinstance(self.base, MixedBasis):
-                        d = m.scale*m.diags(format)
+                    if isinstance(self.mixedbase, MixedBasis):
+                        d = m.diags(format)
                         for mj in mij[1:]:
-                            d = d + mj.scale*mj.diags(format)
+                            d = d + mj.diags(format)
                     elif len(m.naxes) == 2:
                         # 2 non-periodic directions
                         assert len(m.mats) == 2, "Only implemented without periodic directions"
@@ -874,8 +877,8 @@ class BlockMatrix(object):
                     bm[-1].append(d)
         return bmat(bm, format=format)
 
-    def solve(self, b, u=None):
-        """
+    def solve(self, b, u=None, integral_constraint=None):
+        r"""
         Solve matrix system Au = b
 
         where A is the current :class:`.BlockMatrix` (self)
@@ -886,6 +889,23 @@ class BlockMatrix(object):
             Array of right hand side
         u : array, optional
             Output array
+        integral_constraint : None or 2-tuple of (int, number)
+            If 2-tuple then apply an integral constraint like
+
+            .. math::
+
+                \frac{1}{V}\int p dx = number
+
+            for one of the components in the block matrix. Here :math:`V`
+            is the volume of the domain, so the number is basically the constant
+            mean value of :math:`p`.
+
+            The first (int) number of the 2-tuple tell us which component in the
+            mixed space to apply the constraint to, and the second number tells
+            us the value to go on the right hand side of the integral.
+            The integral constraint can only be applied to bases with no given
+            explicit boundary condition, like the pure Chebyshev or Legendre
+            bases.
 
         """
         from .forms.arguments import Function
@@ -895,11 +915,13 @@ class BlockMatrix(object):
             u = Function(space)
         else:
             assert u.shape == b.shape
+
         tpmat = self.get_mats(True)
         axis = tpmat.naxes[0] if isinstance(tpmat, TPMatrix) else 0
         mat = tpmat.pmat if isinstance(tpmat, TPMatrix) else tpmat
-        assert axis == mat.axis
         tp = space.flatten()
+        if integral_constraint is not None:
+            assert tp[integral_constraint[0]].bases[axis].boundary_condition().lower() in ('', 'periodic')
         N = self.global_shape[axis]
         gi = np.zeros(N, dtype=b.dtype)
         go = np.zeros(N, dtype=b.dtype)
@@ -917,22 +939,50 @@ class BlockMatrix(object):
                 u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
 
         elif space.dimensions == 2:
-            s = [0]*3
-            ii, jj = {0:(2, 1), 1:(1, 2)}[axis]
-            d0 = [0, 0]
-            for i in range(b.shape[ii]):
-                d0[(axis+1)%2] = i
-                Ai = self.diags(d0)
-                s[ii] = i
+            if len(tpmat.naxes) == 2: # 2 non-periodic axes
+                s = [0, 0, 0]
+                Ai = self.diags()
+                gi = np.zeros(space.dim())
+                go = np.zeros(space.dim())
+                start = 0
                 for k in range(b.shape[0]):
                     s[0] = k
-                    s[jj] = tp[k].bases[axis].slice()
-                    gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
+                    s[1] = tp[k].bases[0].slice()
+                    s[2] = tp[k].bases[1].slice()
+                    gi[start:(start+tp[k].dim())] = b[tuple(s)].ravel()
+                    start += tp[k].dim()
+                if integral_constraint:
+                    dim = 0
+                    for i in range(integral_constraint[0]):
+                        dim += tp[i].dim()
+                    Ai, gi = self.apply_integral_constraint(Ai, gi, dim, 0, integral_constraint)
                 go[:] = sp.linalg.spsolve(Ai, gi)
+                start = 0
                 for k in range(b.shape[0]):
                     s[0] = k
-                    s[jj] = tp[k].bases[axis].slice()
-                    u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
+                    s[1] = tp[k].bases[0].slice()
+                    s[2] = tp[k].bases[1].slice()
+                    u[tuple(s)] = go[start:(start+tp[k].dim())].reshape((1, tp[k].bases[0].dim(), tp[k].bases[1].dim()))
+                    start += tp[k].dim()
+            else:
+                s = [0]*3
+                ii, jj = {0:(2, 1), 1:(1, 2)}[axis]
+                d0 = [0, 0]
+                for i in range(b.shape[ii]):
+                    d0[(axis+1)%2] = i
+                    Ai = self.diags(d0)
+                    s[ii] = i
+                    for k in range(b.shape[0]):
+                        s[0] = k
+                        s[jj] = tp[k].bases[axis].slice()
+                        gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
+                    if integral_constraint:
+                        Ai, gi = self.apply_integral_constraint(Ai, gi, self.offset[integral_constraint[0]][axis], i, integral_constraint)
+                    go[:] = sp.linalg.spsolve(Ai, gi)
+                    for k in range(b.shape[0]):
+                        s[0] = k
+                        s[jj] = tp[k].bases[axis].slice()
+                        u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
 
         elif space.dimensions == 3:
             s = [0]*4
@@ -947,6 +997,8 @@ class BlockMatrix(object):
                         s[0] = k
                         s[axis+1] = tp[k].bases[axis].slice()
                         gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
+                    if integral_constraint:
+                        Ai, gi = self.apply_integral_constraint(Ai, gi, self.offset[integral_constraint[0]][axis], (i, j), integral_constraint)
                     go[:] = sp.linalg.spsolve(Ai, gi)
                     for k in range(b.shape[0]):
                         s[0] = k
@@ -954,6 +1006,27 @@ class BlockMatrix(object):
                         u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
 
         return u
+
+    def apply_integral_constraint(self, A, b, row, i, integral_constraint):
+        if integral_constraint is None or comm.Get_rank() > 0:
+            return A, b
+
+        if isinstance(i, int):
+            if i > 0:
+                return A, b
+
+        if isinstance(i, tuple):
+            if np.sum(np.array(i)) > 0:
+                return A, b
+
+        assert isinstance(integral_constraint, tuple)
+        assert len(integral_constraint) == 2
+        comp, val = integral_constraint
+        b[row] = val
+        r = A.getrow(row).nonzero()
+        A[(row, r[1])] = 0
+        A[row, row] = 1
+        return A, b
 
 class TPMatrix(object):
     """Tensorproduct matrix
@@ -977,10 +1050,10 @@ class TPMatrix(object):
         along any directions with a nondiagonal matrix.
     global_index : 2-tuple, optional
         Indices (test, trial) into mixed space :class:`.MixedTensorProductSpace`.
-    base : :class:`.MixedTensorProductSpace`, optional
+    mixedbase : :class:`.MixedTensorProductSpace`, optional
          Instance of the base space
     """
-    def __init__(self, mats, space, scale=1.0, global_index=None, base=None):
+    def __init__(self, mats, space, scale=1.0, global_index=None, mixedbase=None):
         assert isinstance(mats, (list, tuple))
         assert len(mats) == len(space)
         self.mats = mats
@@ -989,7 +1062,7 @@ class TPMatrix(object):
         self.pmat = 1
         self.naxes = []
         self.global_index = global_index
-        self.base = base
+        self.mixedbase = mixedbase
 
     def simplify_fourier_matrices(self):
         self.naxes = []
@@ -1096,7 +1169,7 @@ class TPMatrix(object):
         """Returns copy of self.__mul__(a) <==> self*a"""
         if isinstance(a, Number):
             TPMatrix(self.mats, self.space, self.scale*a,
-                     self.global_index, self.base)
+                     self.global_index, self.mixedbase)
 
         elif isinstance(a, np.ndarray):
             c = np.empty_like(a)
@@ -1122,7 +1195,7 @@ class TPMatrix(object):
         """Returns copy self.__div__(a) <==> self/a"""
         if isinstance(a, Number):
             return TPMatrix(self.mats, self.space, self.scale/a,
-                            self.global_index, self.base)
+                            self.global_index, self.mixedbase)
         elif isinstance(a, np.ndarray):
             b = np.zeros_like(a)
             b = self.solve(a, b)
@@ -1158,7 +1231,7 @@ class TPMatrix(object):
         assert isinstance(a, TPMatrix)
         assert self == a
         return TPMatrix(self.mats, self.space, self.scale+a.scale,
-                        self.global_index, self.base)
+                        self.global_index, self.mixedbase)
 
     def __iadd__(self, a):
         """self.__iadd__(a) <==> self += a"""
@@ -1172,7 +1245,7 @@ class TPMatrix(object):
         assert isinstance(a, TPMatrix)
         assert self == a
         return TPMatrix(self.mats, self.space, self.scale-a.scale,
-                        self.global_index, self.base)
+                        self.global_index, self.mixedbase)
 
     def __isub__(self, a):
         """self.__isub__(a) <==> self -= a"""
@@ -1239,7 +1312,7 @@ def get_dense_matrix(test, trial):
 
 
 def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-12):
-    """Return SparseMatrix version of M
+    """Return SparseMatrix version of dense matrix ``M``
 
     Parameters
     ----------

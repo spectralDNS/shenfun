@@ -1104,7 +1104,7 @@ class Transform(FuncWrap):
 
     # pylint: disable=too-few-public-methods
 
-    __slots__ = ('_xfftn', '__doc__', '_input_array', '_output_array',
+    __slots__ = ('_xfftn', '_input_array', '_output_array',
                  '_tmp_array')
 
     def __init__(self, func, xfftn, input_array, tmp_array, output_array):

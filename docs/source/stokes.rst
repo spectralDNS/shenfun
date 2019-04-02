@@ -7,7 +7,7 @@ Demo - Stokes equations
 %%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Feb 8, 2019
+:Date: Apr 2, 2019
 
 *Summary.* The Stokes equations describe the flow of highly viscous fluids.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Stokes
@@ -367,7 +367,21 @@ the equations may also be integrated by parts to obtain a symmetric system:
         G = inner(div(v), p)
     D = inner(q, div(u))
 
-Here ``A, G`` and ``D`` are lists containg the different blocks in
+
+.. note::
+   The inner products may also be assembled with one single line, as
+   
+   .. code-block:: text
+   
+       AA = inner(v, div(grad(u))) + inner(v, -grad(u)) + inner(q, div(u))
+   
+   However, this requires addition, not subtraction, of inner products and it is not
+   possible to move the negation to -inner(v, grad(u))
+
+
+
+
+The assembled subsystems ``A, G`` and ``D`` are lists containg the different blocks of
 the complete, coupled matrix. ``A`` actually contains 6
 tensor product matrices of type :class:`.TPMatrix`. The first two
 matrices are for vector component zero of the test function ``v[0]`` and
@@ -501,7 +515,7 @@ degree of freedom. So we also need to do more work to do a proper indent
         D.append(a0)
 
 Note that ``a0`` is an instance of the :class:`.TPMatrix`, and scale is
-an array of ndim = 3. The scale in indexed by the Fourier wavenumbers
+an array of ndim = 3. The scale is indexed by the Fourier wavenumbers
 and scale[0, 0] represents the scale to matrix ``a0`` for wavenumbers
 :math:`(l, m) = (0, 0)`.
 
