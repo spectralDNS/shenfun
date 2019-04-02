@@ -1,6 +1,5 @@
 import numpy as np
 from mpi4py import MPI
-import h5py
 
 comm = MPI.COMM_WORLD
 
@@ -37,6 +36,7 @@ if __name__ == '__main__':
     from shenfun import *
     import sympy as sp
     import matplotlib.pyplot as plt
+    import h5py
 
     N = (40, 40)
     # Should work for any of these bases
