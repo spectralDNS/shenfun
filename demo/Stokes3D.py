@@ -84,37 +84,8 @@ else:
     G = inner(div(v), p)
 D = inner(q, div(u))
 
-# We now need to take care of the case with Fourier wavenumber l=m=0.
-# Create submatrix for block (3, 3). This submatrix will only be enabled for
-# Fourier wavenumbers l=m=0.
-P = inner(p, q)
-s = TD.dim()
-P.scale = np.zeros((s[0], s[1], 1))
-ls = TD.local_slice(True)
-if ls[0].start == 0 and ls[1].start == 0:   # enable only for Fourier l=m=0
-    P.scale[0, 0] = 1
-P.mats[2][0][:] = 0      # Zero the matrix diagonal (the only diagonal)
-P.mats[2][0][0] = 1      # fixes p_hat[0, 0, 0]
-if family.lower() == 'chebyshev':
-    # Have to ident global row (N[0]-2)*(N[1]-2)*(N[2]-2), but only for l=m=0.
-    # This is a bit tricky.
-    # For Legendre this row is already zero. With Chebyshev we need to modify
-    # block (3, 2) as well as fixing the 1 on the diagonal of (3, 3)
-    a0 = inner(q, div(u))[2]   # This TPMatrix will be used for l=m=0
-    a0.scale = np.zeros((s[0], s[1], 1))
-    D[2].scale = np.ones((s[0], s[1], 1))
-    if ls[0].start == 0 and ls[1].start == 0:
-        a0.scale[0, 0] = 1     # enable for l=m=0
-        D[2].scale[0, 0] = 0  # disable for l=m=0
-    am = a0.pmat.diags().toarray()
-    am[0] = 0
-    a0.mats[2] = extract_diagonal_matrix(am)
-    a0.pmat = a0.mats[2]
-    D.append(a0)
-P = [P]
-
 # Create block matrix
-M = BlockMatrix(A+G+D+P)
+M = BlockMatrix(A+G+D)
 
 # Get f and h on quad points
 fh = Array(Q)
@@ -126,10 +97,9 @@ fh[3] = hl(*X)
 fh_hat = Function(Q)
 fh_hat[:3] = inner(v, fh[:3], output_array=fh_hat[:3])
 fh_hat[3] = inner(q, fh[3], output_array=fh_hat[3])
-fh_hat[3, 0, 0, 0] = 0 # set p_hat[0, 0, 0] = 0
 
-# Solve problem
-up_hat = M.solve(fh_hat)
+# Solve problem using integral constraint on pressure
+up_hat = M.solve(fh_hat, integral_constraint=(3, 0))
 up = up_hat.backward()
 
 # Exact solution

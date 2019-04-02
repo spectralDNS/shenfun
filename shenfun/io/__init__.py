@@ -1,5 +1,4 @@
 import numpy as np
-#from .h5py_file import HDF5File
 from mpi4py_fft.io import NCFile, HDF5File
 
 __all__ = ['HDF5File', 'NCFile', 'ShenfunFile']

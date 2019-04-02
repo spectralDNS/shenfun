@@ -113,7 +113,7 @@ def inner(expr0, expr1, output_array=None, level=0):
         raise RuntimeError
 
 
-    if test.rank > 0 and test.expr_rank() > 0 : # For vector expressions of rank > 0 use recursive algorithm
+    if test.rank > 0 and test.expr_rank() > 0: # For vector expressions of rank > 0 use recursive algorithm
         ndim = test.function_space().num_components()
 
         if output_array is None and trial.argument == 2:
@@ -255,7 +255,7 @@ def inner(expr0, expr1, output_array=None, level=0):
                     p = A.mats[0]
                     p.scale = p.scale*np.atleast_1d(A.scale).item()
                     p.global_index = A.global_index
-                    p.base = A.base
+                    p.mixedbase = A.mixedbase
                     return p
             return A
 
@@ -285,7 +285,7 @@ def inner(expr0, expr1, output_array=None, level=0):
                     p = B[0].pmat
                     p.scale = p.scale*np.atleast_1d(B[0].scale).item()
                     p.global_index = B[0].global_index
-                    p.base = B[0].base
+                    p.mixedbase = B[0].mixedbase
                     return p
                 return B[0]
             return B

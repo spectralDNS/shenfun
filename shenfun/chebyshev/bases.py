@@ -18,6 +18,7 @@ __all__ = ['ChebyshevBase', 'Basis', 'ShenDirichletBasis',
 #pylint: disable=abstract-method, not-callable, method-hidden, no-self-use, cyclic-import
 
 class DCTWrap(FuncWrap):
+    """DCT for complex input"""
 
     @property
     def dct(self):

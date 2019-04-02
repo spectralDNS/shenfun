@@ -370,7 +370,7 @@ class SolverGeneric2NP(object):
         self.mats = mats
         m = mats[0]
         assert len(m.naxes) == 2
-        self.T = T = m.base
+        self.T = T = m.space
         ndim = T.dimensions
         if ndim == 2:
             m = mats[0]

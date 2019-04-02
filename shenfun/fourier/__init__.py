@@ -5,13 +5,19 @@ from .bases import *
 from .matrices import *
 
 def energy_fourier(u, T):
-    """Compute the energy of u using Parceval's theorem
+    r"""Compute the energy of u using Parceval's theorem
+
+    .. math::
+
+        \int abs(u)^2 dx = N*\sum abs(u_hat)^22
 
     Parameters
     ----------
         u : Array
             The Fourier coefficients
         T : TensorProductSpace
+
+    See https://en.wikipedia.org/wiki/Parseval's_theorem
 
     """
     if not hasattr(T, 'comm'):

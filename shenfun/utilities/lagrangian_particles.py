@@ -1,5 +1,6 @@
 import numpy as np
 from mpi4py import MPI
+import h5py
 
 comm = MPI.COMM_WORLD
 
@@ -23,7 +24,7 @@ class LagrangianParticles(object):
         self.x = points
         self.u_hat = u_hat
         self.dt = dt
-        self.up = np.zeros(points.shape)
+        self.up = np.zeros(self.x.shape)
 
     def step(self):
         up = self.rhs()
@@ -71,27 +72,40 @@ if __name__ == '__main__':
     dt = 0.001
     lp = LagrangianParticles(points, dt, uv)
 
-    # Plot velocity vectors
-    plt.quiver(X[0], X[1], u, v)
+    # Store velocity vectors for later plotting on rank 0
+    u.write('velocity.h5', name='u', domain=T.mesh())
+    v.write('velocity.h5', name='v', domain=T.mesh())
+    if comm.Get_rank() == 0:
+        f = h5py.File('velocity.h5', 'r+')
+        f.create_group('points')
 
     # Run simulation from time = 0 to 1 forwards, and then integrate back to 0
-
     end_time = 2.0
     t = 0
     lg = ['Velocity field']
     b = 'Fwd'
     nsteps = int(end_time/dt)+1
+    count = 0
     for i in range(nsteps):
         if np.any(np.round(t, 4) in (0, 0.5, 1.0)):
-            plt.scatter(lp.x[0], lp.x[1])
-            print('Plotting at time %2.1f'%t)
+            if comm.Get_rank() == 0:
+                f['points'].create_dataset(str(count), shape=points.shape, dtype=np.float)
+                f['points/'+str(count)][:] = lp.x
+            print('Storing points at time %2.1f'%t)
             lg.append('%s at %2.1f' %(b, t))
+            count += 1
         if i == (nsteps-1)//2:
             lp.dt *= -1
             b = 'Bwd'
             print('Integrate backwards')
         t += lp.dt
         lp.step()
-    plt.title('Particles integrated forwards and backwards')
-    plt.legend(lg)
-    plt.show()
+
+    if comm.Get_rank() == 0:
+        plt.quiver(f['u/mesh/x0'], f['u/mesh/x1'], f['u/2D/0'].__array__().T, f['v/2D/0'].__array__().T)
+        steps = list(f['points'].keys())
+        for step in steps:
+            plt.scatter(f['points/'+str(step)][0], f['points/'+str(step)][1])
+        plt.title('Particles integrated forwards and backwards')
+        plt.legend(lg)
+        plt.show()
