@@ -1007,7 +1007,8 @@ class BlockMatrix(object):
 
         return u
 
-    def apply_integral_constraint(self, A, b, row, i, integral_constraint):
+    @staticmethod
+    def apply_integral_constraint(A, b, row, i, integral_constraint):
         if integral_constraint is None or comm.Get_rank() > 0:
             return A, b
 
@@ -1021,7 +1022,7 @@ class BlockMatrix(object):
 
         assert isinstance(integral_constraint, tuple)
         assert len(integral_constraint) == 2
-        comp, val = integral_constraint
+        val = integral_constraint[1]
         b[row] = val
         r = A.getrow(row).nonzero()
         A[(row, r[1])] = 0
