@@ -9,7 +9,7 @@ The Stokes equations are in strong form
     u(x, y=\pm 1) &= 0 \\
     u(x=\pm 1, y) &= 0
 
-where :math:`f` and :math:`g` are given functions of space.
+where :math:`f` and :math:`h` are given functions of space.
 In addition we require :math:`\int p d\ = 0`, which is achieved by
 fixing the coefficient :math:`\hat{p}_{0, 0} = 0`.
 
@@ -24,7 +24,6 @@ import os
 import numpy as np
 from mpi4py import MPI
 from sympy import symbols, sin, cos, lambdify
-import scipy.sparse as sp
 from shenfun import *
 
 comm = MPI.COMM_WORLD
@@ -98,7 +97,7 @@ fh_hat[2] = inner(q, fh[2], output_array=fh_hat[2])
 
 # Solve problem
 uh_hat = Function(Q)
-uh_hat = M.solve(fh_hat, u=uh_hat, integral_constraint=(2, 0))
+uh_hat = M.solve(fh_hat, u=uh_hat, integral_constraint=(2, 0)) # Constraint for component 2 of mixed space
 
 # Move solution to regular Function
 up = uh_hat.backward()

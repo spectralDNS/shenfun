@@ -16,9 +16,9 @@ The equation to solve for a Hermite x Fourier basis is
 import os
 import sys
 from mpi4py import MPI
-from sympy import symbols, sin, exp, lambdify, hermite, cos
+from sympy import symbols, exp, lambdify, hermite, cos
 import numpy as np
-from shenfun import inner, div, grad, TestFunction, TrialFunction, \
+from shenfun import inner, grad, TestFunction, TrialFunction, \
     Array, Function, Basis, TensorProductSpace
 
 assert len(sys.argv) == 2, 'Call with one command-line argument'

@@ -918,7 +918,6 @@ class BlockMatrix(object):
 
         tpmat = self.get_mats(True)
         axis = tpmat.naxes[0] if isinstance(tpmat, TPMatrix) else 0
-        mat = tpmat.pmat if isinstance(tpmat, TPMatrix) else tpmat
         tp = space.flatten()
         if integral_constraint is not None:
             assert tp[integral_constraint[0]].bases[axis].boundary_condition().lower() in ('', 'periodic')
