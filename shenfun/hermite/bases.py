@@ -84,7 +84,7 @@ class Basis(SpectralBase):
         output_array *= np.exp(-x**2/2)*self.factor(i)
         return output_array
 
-    def evaluate_basis_derivative_all(self, x=None, k=0):
+    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         if x is None:
             x = self.mesh(False, False)
         V = self.vandermonde(x)
@@ -120,7 +120,7 @@ class Basis(SpectralBase):
 
         return V
 
-    def evaluate_basis_all(self, x=None):
+    def evaluate_basis_all(self, x=None, argument=0):
         if x is None:
             x = self.mesh(False, False)
         V = self.vandermonde(x)

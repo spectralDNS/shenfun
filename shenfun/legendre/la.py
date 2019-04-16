@@ -29,17 +29,10 @@ class TDMA(la_TDMA):
             assert u.shape == b.shape
             u[:] = b[:]
 
-        if v.is_scaled():
-            bc.apply_before(u, False, scales=(-1./np.sqrt(6.), -1./3./np.sqrt(10.)))
-        else:
-            bc.apply_before(u, False, scales=(-1., -1./3.))
-
         if not self.dd.shape[0] == self.mat.shape[0]:
             self.init()
 
         self.TDMA_SymSolve(self.dd, self.ud, self.L, u, axis=axis)
-
-        bc.apply_after(u, False)
 
         if not self.mat.scale in (1, 1.0):
             u /= self.mat.scale
@@ -140,6 +133,14 @@ class Helmholtz(object):
 
     def __init__(self, *args, **kwargs):
         local_shape = kwargs.get('local_shape', None)
+
+        args = list(args)
+        for i, arg in enumerate(args):
+            if hasattr(arg, 'is_bc_matrix'):
+                if arg.is_bc_matrix():
+                    args.pop(i)
+                    break
+
         A, B = args[0], args[1]
         M = {d.get_key(): d for d in (A, B)}
         self.A = A = M.get('ADDmat', M.get('ANNmat'))

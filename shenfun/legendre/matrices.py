@@ -254,10 +254,13 @@ class BDLmat(SpectralMatrix):
         assert isinstance(trial[0], LB)
         N = test[0].N
         k = np.arange(N, dtype=np.float)
-        d = {2: -2./(2*k[2:] + 1),
-             0: 2./(2.*k[:-2]+1)}
+        sc = np.ones(N)
+        if test[0].is_scaled():
+            sc = 1. / np.sqrt(4*k+6)
+        d = {2: -2./(2*k[2:] + 1)*sc[2:],
+             0: 2./(2.*k[:-2]+1)*sc[:-2]}
         if test[0].quad == 'GL':
-            d[2][-1] = -2./(N-1)
+            d[2][-1] = -2./(N-1)*sc[N-1]
         SpectralMatrix.__init__(self, d, test, trial)
 
 @inheritdocstrings
@@ -282,10 +285,14 @@ class BLDmat(SpectralMatrix):
         assert isinstance(trial[0], SD)
         N = test[0].N
         k = np.arange(N, dtype=np.float)
-        d = {-2: -2./(2*k[2:] + 1),
-             0: 2./(2.*k[:-2]+1)}
+        sc = np.ones(N)
+        if trial[0].is_scaled():
+            sc = 1. / np.sqrt(4*k+6)
+
+        d = {-2: -2./(2*k[2:] + 1)*sc[2:],
+             0: 2./(2.*k[:-2]+1)*sc[:-2]}
         if test[0].quad == 'GL':
-            d[-2][-1] = -2./(N-1)
+            d[-2][-1] = -2./(N-1)*sc[-1]
         SpectralMatrix.__init__(self, d, test, trial)
 
 @inheritdocstrings
@@ -661,6 +668,9 @@ class CLDmat(SpectralMatrix):
         assert isinstance(trial[0], SD)
         N = test[0].N
         d = {-1: -2}
+        if trial[0].is_scaled():
+            k = np.arange(N-2, dtype=np.float)
+            d[-1] = -2. / np.sqrt(4*k+6)
         SpectralMatrix.__init__(self, d, test, trial)
 
 @inheritdocstrings

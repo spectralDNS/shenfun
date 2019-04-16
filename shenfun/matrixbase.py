@@ -185,7 +185,7 @@ class SparseMatrix(dict):
             The axis over which to take the matrix vector product
 
         """
-        assert v.shape == c.shape
+        #assert v.shape == c.shape
         N, M = self.shape
         c.fill(0)
 
@@ -542,9 +542,11 @@ class SpectralMatrix(SparseMatrix):
                 self.solver = Solve(self, test[0])
 
     def matvec(self, v, c, format='csr', axis=0):
-        c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
+        u = self.trialfunction[0]
+        ss = [slice(None)]*len(v.shape)
+        ss[axis] = u.slice()
+        c = super(SpectralMatrix, self).matvec(v[tuple(ss)], c, format=format, axis=axis)
         if self.testfunction[0].__class__.__name__ == 'ShenNeumannBasis':
-            ss = [slice(None)]*len(v.shape)
             ss[axis] = 0
             c[tuple(ss)] = 0
         return c
@@ -1067,6 +1069,8 @@ class TPMatrix(object):
     def simplify_fourier_matrices(self):
         self.naxes = []
         for axis, mat in enumerate(self.mats):
+            if not mat:
+                continue
             if self.space[axis].family() == 'fourier':
                 if self.dimensions == 1: # Don't bother with the 1D case
                     continue
@@ -1159,6 +1163,13 @@ class TPMatrix(object):
 
     def all_diagonal(self):
         return np.all([m.isdiagonal() for m in self.mats])
+
+    def is_bc_matrix(self):
+        for m in self.mats:
+            if hasattr(m, 'trialfunction'):
+                if m.trialfunction[0].boundary_condition() == 'Apply':
+                    return True
+        return False
 
     @property
     def dimensions(self):

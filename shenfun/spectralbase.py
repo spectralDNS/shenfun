@@ -429,13 +429,15 @@ class SpectralBase(object):
         """
         raise NotImplementedError
 
-    def evaluate_basis_all(self, x=None):
+    def evaluate_basis_all(self, x=None, argument=0):
         """Evaluate basis at ``x`` or all quadrature points
 
         Parameters
         ----------
             x : float or array of floats, optional
                 If not provided use quadrature points of self
+            argument : int
+                Zero for test and 1 for trialfunction
 
         Returns
         -------
@@ -468,7 +470,7 @@ class SpectralBase(object):
         """
         raise NotImplementedError
 
-    def evaluate_basis_derivative_all(self, x=None, k=0):
+    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         """Return k'th derivative of basis evaluated at ``x`` or all quadrature
         points as a Vandermonde matrix.
 
@@ -478,6 +480,8 @@ class SpectralBase(object):
                 If not provided use quadrature points of self
             k : int, optional
                 k'th derivative
+            argument : int
+                Zero for test and 1 for trialfunction
 
         Returns
         -------
@@ -518,7 +522,7 @@ class SpectralBase(object):
         assert self.N == input_array.shape[self.axis]
 
         _, weights = self.points_and_weights()
-        P = self.evaluate_basis_all()
+        P = self.evaluate_basis_all(argument=0)
 
         if input_array.ndim == 1:
             output_array[:] = np.dot(input_array*weights, np.conj(P))
@@ -549,7 +553,7 @@ class SpectralBase(object):
         """
         assert abs(self.padding_factor-1) < 1e-8
         assert self.N == output_array.shape[self.axis]
-        P = self.evaluate_basis_all()
+        P = self.evaluate_basis_all(argument=1)
 
         if output_array.ndim == 1:
             output_array = np.dot(P, input_array, out=output_array)
@@ -573,7 +577,7 @@ class SpectralBase(object):
 
         """
         assert abs(self.padding_factor-1) < 1e-8
-        P = self.evaluate_basis_all(x=points)
+        P = self.evaluate_basis_all(x=points, argument=1)
 
         if output_array.ndim == 1:
             output_array = np.dot(P, input_array, out=output_array)

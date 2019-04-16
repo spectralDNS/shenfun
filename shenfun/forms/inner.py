@@ -5,7 +5,7 @@ weighted inner product.
 from functools import reduce
 import numpy as np
 from shenfun.spectralbase import inner_product
-from shenfun.matrixbase import TPMatrix, SparseMatrix
+from shenfun.matrixbase import TPMatrix, SparseMatrix, Identity
 from shenfun.tensorproductspace import MixedTensorProductSpace
 from .arguments import Expr, Function, BasisFunction, Array
 
@@ -179,6 +179,7 @@ def inner(expr0, expr1, output_array=None, level=0):
     if output_array is None and trial.argument == 2:
         output_array = Function(test.function_space())
 
+    has_nonhomogeneous_bcs = False
     A = []
     vec = 0
     for base_test, base_trial in zip(test.terms(), trial.terms()): # vector/scalar
@@ -186,6 +187,7 @@ def inner(expr0, expr1, output_array=None, level=0):
             for trial_j, b1 in enumerate(base_trial):        # second index trial
                 sc = test_scale[vec, test_j]*trial_scale[vec, trial_j]
                 M = []
+                DM = []
                 assert len(b0) == len(b1)
                 trial_sp = trialspace
                 if isinstance(trialspace, MixedTensorProductSpace): # could operate on a vector, e.g., div(u), where u is vector
@@ -193,6 +195,7 @@ def inner(expr0, expr1, output_array=None, level=0):
                 test_sp = space
                 if isinstance(space, MixedTensorProductSpace):
                     test_sp = space[vec]
+                has_bcs = False
                 for i, (a, b) in enumerate(zip(b0, b1)): # Third index, one inner for each dimension
                     ts = trial_sp[i]
                     sp = test_sp[i]
@@ -201,8 +204,24 @@ def inner(expr0, expr1, output_array=None, level=0):
                     # Take care of domains of not standard size
                     if not sp.domain_factor() == 1:
                         sc *= sp.domain_factor()**(a+b)
+
+                    if ts.boundary_condition() == 'Dirichlet' and not ts.family() in ('laguerre', 'hermite'):
+                        if ts.bc.has_nonhomogeneous_bcs():
+                            tsc = ts.get_bc_basis()
+                            BB = inner_product((sp, a), (tsc, b))
+                            if BB:
+                                DM.append(BB)
+                                has_bcs = True
+                                has_nonhomogeneous_bcs = True
+                        else:
+                            DM.append(AA)
+                    else:
+                        DM.append(AA)
+
                 sc = sp.broadcast_to_ndims(np.array([sc]))
                 A.append(TPMatrix(M, test_sp, sc, (test_indices[0, test_j], trial_indices[0, trial_j]), base))
+                if has_bcs:
+                    A.append(TPMatrix(DM, test_sp, sc, (test_indices[0, test_j], trial_indices[0, trial_j]), base))
         vec += 1
 
     # At this point A contains all matrices of the form. The length of A is
@@ -235,6 +254,7 @@ def inner(expr0, expr1, output_array=None, level=0):
     # two matrices are usually termed the stiffness and mass matrices, and they
     # have been implemented in chebyshev/matrices.py or legendre/matrices.py,
     # where they are called ADDmat and BDDmat, respectively.
+
 
     if level == 2 and trial.argument == 1:
         return A
@@ -291,13 +311,15 @@ def inner(expr0, expr1, output_array=None, level=0):
             return B
 
         else: # linear form
-            wh = np.empty_like(output_array)
+            wh = np.zeros_like(output_array)
             for i, b in enumerate(B):
                 if uh.rank > 0:
                     wh = b.matvec(uh[trial_indices[0, i]], wh)
                 else:
                     wh = b.matvec(uh, wh)
                 output_array += wh
+                wh.fill(0)
+
             return output_array
 
     else:
