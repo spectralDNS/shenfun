@@ -3,6 +3,7 @@ Module for defining bases in the Legendre family
 """
 
 import functools
+import sympy
 import numpy as np
 from numpy.polynomial import legendre as leg
 from scipy.special import eval_legendre
@@ -75,36 +76,37 @@ class LegendreBase(SpectralBase):
         output_array = eval_legendre(i, x, out=output_array)
         return output_array
 
-    def evaluate_basis_derivative_all(self, x=None, k=0):
+    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         if x is None:
             x = self.mesh(False, False)
         V = self.vandermonde(x)
         #assert self.N == V.shape[1]
-        M = V.shape[1]
+        N, M = self.shape(False), self.shape(True)
         if k > 0:
-            D = np.zeros((M, M))
-            D[:-k, :] = leg.legder(np.eye(M), k)
+            D = np.zeros((M, N))
+            D[:-k] = leg.legder(np.eye(M, N), k)
             V = np.dot(V, D)
-        return self._composite_basis(V)
+        return self._composite_basis(V, argument=argument)
 
-    def evaluate_basis_all(self, x=None):
+    def evaluate_basis_all(self, x=None, argument=0):
         if x is None:
             x = self.mesh(False, False)
         V = self.vandermonde(x)
-        return self._composite_basis(V)
+        return self._composite_basis(V, argument=argument)
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
         if x is None:
             x = self.mesh(False, False)
         x = np.atleast_1d(x)
         v = self.evaluate_basis(x, i, output_array)
+        N, M = self.shape(False), self.shape(True)
         if k > 0:
-            D = np.zeros((self.N, self.N))
-            D[:-k, :] = leg.legder(np.eye(self.N), k)
+            D = np.zeros((M, N))
+            D[:-k] = leg.legder(np.eye(M, N), k)
             v = np.dot(v, D)
         return v
 
-    def _composite_basis(self, V):
+    def _composite_basis(self, V, argument=0):
         """Return composite basis, where ``V`` is primary Vandermonde matrix."""
         return V
 
@@ -205,15 +207,16 @@ class ShenDirichletBasis(LegendreBase):
     def is_scaled(self):
         return self._scaled
 
-    def _composite_basis(self, V):
+    def _composite_basis(self, V, argument=0):
         P = np.zeros(V.shape)
         if not self.is_scaled():
             P[:, :-2] = V[:, :-2] - V[:, 2:]
         else:
             k = np.arange(self.N-2).astype(np.float)
             P[:, :-2] = (V[:, :-2] - V[:, 2:])/np.sqrt(4*k+6)
-        P[:, -2] = (V[:, 0] + V[:, 1])/2
-        P[:, -1] = (V[:, 0] - V[:, 1])/2
+        if argument == 1:
+            P[:, -2] = (V[:, 0] + V[:, 1])/2
+            P[:, -1] = (V[:, 0] - V[:, 1])/2
         return P
 
     #def evaluate_expansion_all(self, input_array, output_array,
@@ -238,7 +241,14 @@ class ShenDirichletBasis(LegendreBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         output_array[:] = eval_legendre(i, x) - eval_legendre(i+2, x)
+        if self.is_scaled():
+            output_array /= np.sqrt(4*i+6)
         return output_array
+
+    def vandermonde_scalar_product(self, input_array, output_array):
+        SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
+        output_array[self.si[-2]] = 0
+        output_array[self.si[-1]] = 0
 
     def eval(self, x, u, output_array=None):
         if output_array is None:
@@ -251,6 +261,23 @@ class ShenDirichletBasis(LegendreBase):
         output_array -= leg.legval(x, w_hat)
         output_array += 0.5*(u[-1]*(1-x)+u[-2]*(1+x))
         return output_array
+
+    def apply_bc_rhs(self, u, final=False, scales=(-1., -1./3.)):
+        if self.is_scaled():
+            scales = (-1./np.sqrt(6.), -1./3./np.sqrt(10.))
+        self.bc.apply_before(u, final, scales=scales)
+
+    def forward(self, input_array=None, output_array=None, fast_transform=True):
+        self.scalar_product(input_array, fast_transform=fast_transform)
+        u = self.scalar_product.tmp_array
+        self.apply_bc_rhs(u)
+        self.apply_inverse_mass(u)
+        self.bc.apply_after(u, False)
+        self._truncation_forward(u, self.forward.output_array)
+        if output_array is not None:
+            output_array[...] = self.forward.output_array
+            return output_array
+        return self.forward.output_array
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
@@ -270,6 +297,9 @@ class ShenDirichletBasis(LegendreBase):
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
+
+    def get_bc_basis(self):
+        return BCBasis(self.N, quad=self.quad, domain=self.domain, scaled=self._scaled)
 
 
 @inheritdocstrings
@@ -303,7 +333,7 @@ class ShenNeumannBasis(LegendreBase):
     def boundary_condition():
         return 'Neumann'
 
-    def _composite_basis(self, V):
+    def _composite_basis(self, V, argument=0):
         assert self.N == V.shape[1]
         P = np.zeros(V.shape)
         k = np.arange(self.N).astype(np.float)
@@ -401,7 +431,7 @@ class ShenBiharmonicBasis(LegendreBase):
     def boundary_condition():
         return 'Biharmonic'
 
-    def _composite_basis(self, V):
+    def _composite_basis(self, V, argument=0):
         P = np.zeros_like(V)
         k = np.arange(V.shape[1]).astype(np.float)[:-4]
         P[:, :-4] = V[:, :-4] - (2*(2*k+5)/(2*k+7))*V[:, 2:-2] + ((2*k+3)/(2*k+7))*V[:, 4:]
@@ -505,7 +535,7 @@ class SecondNeumannBasis(LegendreBase): # pragma: no cover
         self._factor = np.zeros(0)
         self.plan(N, 0, np.float, {})
 
-    def _composite_basis(self, V):
+    def _composite_basis(self, V, argument=0):
         assert self.N == V.shape[1]
         P = np.zeros(V.shape)
         k = np.arange(self.N).astype(np.float)[:-4]
@@ -561,3 +591,65 @@ class SecondNeumannBasis(LegendreBase): # pragma: no cover
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
+
+@inheritdocstrings
+class BCBasis(LegendreBase):
+
+    def __init__(self, N=0, quad="GC", bc=(0, 0), scaled=False,
+                 domain=(-1., 1.)):
+        LegendreBase.__init__(self, N, quad, domain=domain)
+        self._scaled = scaled
+        self.plan(N, 0, np.float, {})
+        self.bc = bc
+
+    def plan(self, shape, axis, dtype, options):
+        if isinstance(axis, tuple):
+            assert len(axis) == 1
+            axis = axis[-1]
+        shape = list(shape) if np.ndim(shape) else [shape]
+        assert shape[axis] == self.shape(False)
+        U = np.zeros(shape, dtype=dtype)
+        shape[axis] = 2
+        V = np.zeros(shape, dtype=dtype)
+        self.forward = Transform(self.forward, lambda: None, U, V, V)
+        self.backward = Transform(self.backward, lambda: None, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, lambda: None, U, V, V)
+
+    def slice(self):
+        return slice(self.N-2, self.N)
+
+    def shape(self, forward_output=True):
+        if forward_output:
+            return 2
+        else:
+            return self.N
+
+    @staticmethod
+    def boundary_condition():
+        return 'Apply'
+
+    def vandermonde(self, x):
+        return leg.legvander(x, 1)
+
+    def _composite_basis(self, V, argument=0):
+        P = np.zeros(V.shape)
+        P[:, 0] = (V[:, 0] + V[:, 1])/2
+        P[:, 1] = (V[:, 0] - V[:, 1])/2
+        return P
+
+    def sympy_basis(self, i=0):
+        x = sympy.symbols('x')
+        if i == 0:
+            return 0.5*(1+x)
+        else:
+            return 0.5*(1-x)
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        if i == 0:
+            output_array[:] = 0.5*(1+x)
+        elif i == 1:
+            output_array[:] = 0.5*(1-x)
+        return output_array

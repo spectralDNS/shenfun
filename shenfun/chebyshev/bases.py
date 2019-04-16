@@ -13,7 +13,7 @@ from shenfun.optimization.cython import Cheb
 from shenfun.utilities import inheritdocstrings
 
 __all__ = ['ChebyshevBase', 'Basis', 'ShenDirichletBasis',
-           'ShenNeumannBasis', 'ShenBiharmonicBasis']
+           'ShenNeumannBasis', 'ShenBiharmonicBasis', 'BCBasis']
 
 #pylint: disable=abstract-method, not-callable, method-hidden, no-self-use, cyclic-import
 
@@ -102,34 +102,36 @@ class ChebyshevBase(SpectralBase):
         output_array[:] = eval_chebyt(i, x)
         return output_array
 
-    def evaluate_basis_derivative_all(self, x=None, k=0):
+    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         if x is None:
             x = self.mesh(False, False)
         V = self.vandermonde(x)
+        N, M = self.shape(False), self.shape(True)
         if k > 0:
-            D = np.zeros((self.N, self.N))
-            D[:-k, :] = n_cheb.chebder(np.eye(self.N), k)
+            D = np.zeros((M, N))
+            D[:-k] = n_cheb.chebder(np.eye(M, N), k)
             V = np.dot(V, D)
-        return self._composite_basis(V)
+        return self._composite_basis(V, argument=argument)
 
-    def evaluate_basis_all(self, x=None):
+    def evaluate_basis_all(self, x=None, argument=0):
         if x is None:
             x = self.mesh(False, False)
         V = self.vandermonde(x)
-        return self._composite_basis(V)
+        return self._composite_basis(V, argument=argument)
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
         if x is None:
             x = self.mesh(False, False)
         x = np.atleast_1d(x)
         v = self.evaluate_basis(x, i, output_array)
+        N, M = self.shape(False), self.shape(True)
         if k > 0:
-            D = np.zeros((self.N, self.N))
-            D[:-k, :] = n_cheb.chebder(np.eye(self.N), k)
+            D = np.zeros((M, N))
+            D[:-k] = n_cheb.chebder(np.eye(M, N), k)
             v = np.dot(v, D)
         return v
 
-    def _composite_basis(self, V):
+    def _composite_basis(self, V, argument=0):
         """Return composite basis, where ``V`` is primary Vandermonde matrix."""
         return V
 
@@ -341,6 +343,11 @@ class ShenDirichletBasis(ChebyshevBase):
                  The computational domain
         scaled : bool, optional
                  Whether or not to use scaled basis
+
+    Note
+    ----
+        A test function is always using homogeneous boundary conditions
+
     """
 
     def __init__(self, N=0, quad="GC", bc=(0, 0),
@@ -357,11 +364,12 @@ class ShenDirichletBasis(ChebyshevBase):
     def boundary_condition():
         return 'Dirichlet'
 
-    def _composite_basis(self, V):
+    def _composite_basis(self, V, argument=0):
         P = np.zeros(V.shape)
         P[:, :-2] = V[:, :-2] - V[:, 2:]
-        P[:, -2] = (V[:, 0] + V[:, 1])/2
-        P[:, -1] = (V[:, 0] - V[:, 1])/2
+        if argument == 1: # if trial function
+            P[:, -2] = (V[:, 0] + V[:, 1])/2
+            P[:, -1] = (V[:, 0] - V[:, 1])/2
         return P
 
     def sympy_basis(self, i=0):
@@ -385,20 +393,21 @@ class ShenDirichletBasis(ChebyshevBase):
         """Return True if scaled basis is used, otherwise False"""
         return False
 
+    def vandermonde_scalar_product(self, input_array, output_array):
+        SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
+        output_array[self.si[-2]] = 0
+        output_array[self.si[-1]] = 0
+
     def evaluate_scalar_product(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
             self.vandermonde_scalar_product(input_array, output_array)
             return
         output = self.CT.scalar_product(fast_transform=fast_transform)
-        s0 = self.si[0]
-        s1 = self.si[1]
-        c0 = 0.5*(output[s0] + output[s1])
-        c1 = 0.5*(output[s0] - output[s1])
         s0 = self.sl[slice(0, -2)]
         s1 = self.sl[slice(2, None)]
         output[s0] -= output[s1]
-        output[self.si[-2]] = c0
-        output[self.si[-1]] = c1
+        output[self.si[-2]] = 0
+        output[self.si[-1]] = 0
 
     def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
@@ -427,6 +436,21 @@ class ShenDirichletBasis(ChebyshevBase):
         output_array += 0.5*(u[-1]*(1-x)+u[-2]*(1+x))
         return output_array
 
+    def apply_bc_rhs(self, u, final=False, scales=(-np.pi/2., -np.pi/4.)):
+        self.bc.apply_before(u, final, scales=scales)
+
+    def forward(self, input_array=None, output_array=None, fast_transform=True):
+        self.scalar_product(input_array, fast_transform=fast_transform)
+        u = self.scalar_product.tmp_array
+        self.apply_bc_rhs(u)
+        self.apply_inverse_mass(u)
+        self.bc.apply_after(u, False)
+        self._truncation_forward(u, self.forward.output_array)
+        if output_array is not None:
+            output_array[...] = self.forward.output_array
+            return output_array
+        return self.forward.output_array
+
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
             assert len(axis) == 1
@@ -450,6 +474,8 @@ class ShenDirichletBasis(ChebyshevBase):
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
+    def get_bc_basis(self):
+        return BCBasis(self.N, quad=self.quad, domain=self.domain)
 
 @inheritdocstrings
 class ShenNeumannBasis(ChebyshevBase):
@@ -482,7 +508,7 @@ class ShenNeumannBasis(ChebyshevBase):
     def boundary_condition():
         return 'Neumann'
 
-    def _composite_basis(self, V):
+    def _composite_basis(self, V, argument=0):
         assert self.N == V.shape[1]
         P = np.zeros(V.shape)
         k = np.arange(self.N).astype(np.float)
@@ -616,7 +642,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
     def boundary_condition():
         return 'Biharmonic'
 
-    def _composite_basis(self, V):
+    def _composite_basis(self, V, argument=0):
         P = np.zeros_like(V)
         k = np.arange(V.shape[1]).astype(np.float)[:-4]
         P[:, :-4] = V[:, :-4] - (2*(k+2)/(k+3))*V[:, 2:-2] + ((k+1)/(k+3))*V[:, 4:]
@@ -732,3 +758,83 @@ class ShenBiharmonicBasis(ChebyshevBase):
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
+
+@inheritdocstrings
+class BCBasis(ChebyshevBase):
+    """Basis for Dirichlet boundary conditions
+
+    Parameters
+    ----------
+        N : int, optional
+            Number of quadrature points
+        quad : str, optional
+               Type of quadrature
+
+               - GL - Chebyshev-Gauss-Lobatto
+               - GC - Chebyshev-Gauss
+
+        bc : 2-tuple of floats, optional
+             Boundary conditions at x=(1,-1).
+        domain : 2-tuple of floats, optional
+                 The computational domain
+        scaled : bool, optional
+                 Whether or not to use scaled basis
+    """
+
+    def __init__(self, N=0, quad="GC", bc=(0, 0),
+                 domain=(-1., 1.), scaled=False):
+        ChebyshevBase.__init__(self, N, quad, domain=domain)
+        self.plan(N, 0, np.float, {})
+        self.bc = bc
+
+    def plan(self, shape, axis, dtype, options):
+        if isinstance(axis, tuple):
+            assert len(axis) == 1
+            axis = axis[-1]
+        shape = list(shape) if np.ndim(shape) else [shape]
+        assert shape[axis] == self.shape(False)
+        U = np.zeros(shape, dtype=dtype)
+        shape[axis] = 2
+        V = np.zeros(shape, dtype=dtype)
+        self.forward = Transform(self.forward, lambda: None, U, V, V)
+        self.backward = Transform(self.backward, lambda: None, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, lambda: None, U, V, V)
+
+    def slice(self):
+        return slice(self.N-2, self.N)
+
+    def shape(self, forward_output=True):
+        if forward_output:
+            return 2
+        else:
+            return self.N
+
+    @staticmethod
+    def boundary_condition():
+        return 'Apply'
+
+    def vandermonde(self, x):
+        return n_cheb.chebvander(x, 1)
+
+    def _composite_basis(self, V, argument=0):
+        P = np.zeros(V.shape)
+        P[:, 0] = (V[:, 0] + V[:, 1])/2
+        P[:, 1] = (V[:, 0] - V[:, 1])/2
+        return P
+
+    def sympy_basis(self, i=0):
+        x = sympy.symbols('x')
+        if i == 0:
+            return 0.5*(1+x)
+        else:
+            return 0.5*(1-x)
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        if i == 0:
+            output_array[:] = 0.5*(1+x)
+        elif i == 1:
+            output_array[:] = 0.5*(1-x)
+        return output_array

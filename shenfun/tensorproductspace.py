@@ -993,6 +993,7 @@ class BoundaryValues(object):
             # Final (the values to set on fully transformed functions)
             T.forward._xfftn[0].input_array[...] = b
             for i in range(len(T.forward._transfer)):
+
                 T.forward._xfftn[i]()
                 arrayA = T.forward._xfftn[i].output_array
                 arrayB = T.forward._xfftn[i+1].input_array
