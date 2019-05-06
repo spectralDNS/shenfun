@@ -109,7 +109,8 @@ class BLLmat(SpectralMatrix):
 
     def solve(self, b, u=None, axis=0):
         N = self.shape[0]
-        assert N == b.shape[axis]
+        #assert N == b.shape[axis]
+        s = self.trialfunction[0].slice()
 
         if u is None:
             u = b
@@ -117,11 +118,14 @@ class BLLmat(SpectralMatrix):
             assert u.shape == b.shape
 
         sl = [np.newaxis]*u.ndim
-        sl[axis] = slice(None)
+        sl[axis] = s
         sl = tuple(sl)
+        ss = [slice(None)]*u.ndim
+        ss[axis] = s
+        ss = tuple(ss)
         d = 1./self[0]
         d[sl] /= self.scale
-        u[:] = b*d[sl]
+        u[ss] = b[ss]*d[sl]
 
         return u
 

@@ -21,7 +21,6 @@ class TDMA(la_TDMA):
     def __call__(self, b, u=None, axis=0):
 
         v = self.mat.testfunction[0]
-        bc = v.bc
 
         if u is None:
             u = b
@@ -465,7 +464,7 @@ class Helmholtz_2dirichlet(object):
         # Create transfer object to realign data in second direction
         self.T = T = matrices[0].space
         pencilA = T.forward.output_pencil
-        pencilB = pencilA.pencil(1)
+        pencilB = T.forward.input_pencil
         self.pencilB = pencilB
         self.transAB = pencilA.transfer(pencilB, 'd')
         self.u_B = np.zeros(self.transAB.subshapeB)

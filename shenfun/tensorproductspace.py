@@ -245,7 +245,7 @@ class TensorProductSpace(PFFT):
         for axis in flataxes:
             base = self.bases[axis]
             x = base.map_reference_domain(points[axis])
-            D = base.evaluate_basis_all(x=x)
+            D = base.evaluate_basis_all(x=x, argument=1)
             P = D[..., self.local_slice()[axis]]
             if isinstance(base, R2CBasis):
                 M = base.N//2+1
@@ -553,9 +553,9 @@ class MixedTensorProductSpace(object):
         """
 
         if output_array is None:
-            output_array = np.zeros((len(self.spaces), points.shape[-1]), dtype=self.forward.input_array.dtype)
+            output_array = np.zeros((len(self.flatten()), points.shape[-1]), dtype=self.forward.input_array.dtype)
         for i, space in enumerate(self.flatten()):
-            output_array[i] = space.eval(points, coefficients[i], output_array[i], method)
+            output_array.__array__()[i] = space.eval(points, coefficients.__array__()[i], output_array.__array__()[i], method)
         return output_array
 
     def convolve(self, a_hat, b_hat, ab_hat):
@@ -697,7 +697,7 @@ class MixedTensorProductSpace(object):
         return getattr(obj[0], name)
 
     def __len__(self):
-        return self.flatten()[0].dimensions
+        return len(self.spaces)
 
 
 class VectorTensorProductSpace(MixedTensorProductSpace):
@@ -769,7 +769,8 @@ class VectorTransform(object):
 
     def __call__(self, input_array, output_array, **kw):
         for i, transform in enumerate(self._transforms):
-            output_array[i] = transform(input_array[i], output_array[i], **kw)
+            output_array.__array__()[i] = transform(input_array.__array__()[i],
+                                                    output_array.__array__()[i], **kw)
         return output_array
 
 
@@ -902,13 +903,12 @@ class BoundaryValues(object):
                 base = T.bases[axes[-1]]
                 if base == this_base:
                     axis = base.axis
-                    bases.append('D')
                 else:
                     if axis is None:
                         number_of_bases_after_this += 1
-                    bases.append('F')
 
             self.set_slices(this_base)
+            self.number_of_bases_after_this = number_of_bases_after_this
 
             if self.has_nonhomogeneous_bcs() is False:
                 self.bcs[0] = self.bcs_final[0] = 0
