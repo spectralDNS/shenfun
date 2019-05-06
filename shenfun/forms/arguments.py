@@ -635,6 +635,7 @@ class ShenfunBaseArray(DistArray):
             obj = DistArray.__new__(cls, shape, buffer=buffer, dtype=dtype,
                                     rank=space.rank)
             obj._space = space
+            obj._offset = 0
             if buffer is None and isinstance(val, Number):
                 obj[:] = val
             return obj
@@ -722,20 +723,6 @@ class ShenfunBaseArray(DistArray):
             v0._rank = self.rank - (self.ndim - v0.ndim)
             #v0._rank = v0.ndim - self.dimensions
             return v0
-
-        #if isinstance(i, (Integral, slice)) and self.rank > 0:
-        #    v0 = np.ndarray.__getitem__(self, i)
-        #    v0._rank = self.rank - (self.ndim - v0.ndim)
-        #    return v0
-
-        #if isinstance(i, (Integral, slice)) and self.rank == 0:
-        #    return np.ndarray.__getitem__(self.v, i)
-
-        #assert isinstance(i, tuple)
-        #if len(i) <= self.rank:
-        #    v0 = np.ndarray.__getitem__(self, i)
-        #    v0._rank = self.rank - (self.ndim - v0.ndim)
-        #    return v0
 
         return np.ndarray.__getitem__(self.v, i)
 
