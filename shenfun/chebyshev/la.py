@@ -14,7 +14,6 @@ class TDMA(la_TDMA):
     def __call__(self, b, u=None, axis=0):
 
         v = self.mat.testfunction[0]
-        bc = v.bc
 
         if u is None:
             u = b
@@ -140,6 +139,9 @@ class Helmholtz(object):
         for i, arg in enumerate(args):
             if hasattr(arg, 'is_bc_matrix'):
                 if arg.is_bc_matrix():
+                    # For this particular case the boundary dofs contribution
+                    # to the right hand side is only nonzero for Fourier wavenumber
+                    # 0, so the contribution is in effect zero
                     args.pop(i)
                     break
 

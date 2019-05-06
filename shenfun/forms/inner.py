@@ -121,14 +121,15 @@ def inner(expr0, expr1, output_array=None, level=0):
 
         if trial.argument == 2:
             # linear form
-            for ii in range(ndim):
-                output_array[ii] = inner(test[ii], trial[ii],
-                                         output_array=output_array[ii])
+            #for ii in range(ndim):
+            for ii, (te, tr) in enumerate(zip(test, trial)):
+                output_array[ii] = inner(te, tr, output_array=output_array[ii])
             return output_array
 
         result = []
-        for ii in range(ndim):
-            l = inner(test[ii], trial[ii], level=level)
+        #for ii in range(ndim):
+        for te, tr in zip(test, trial):
+            l = inner(te, tr, level=level)
             result += [l] if isinstance(l, TPMatrix) else l
 
         # Add equal TPMatrices together
@@ -282,7 +283,7 @@ def inner(expr0, expr1, output_array=None, level=0):
         # linear form
         if uh.rank > 0:
             for i, b in enumerate(A):
-                output_array += b.scale*uh[trial_indices[0, i]]
+                output_array += b.scale*uh.v[trial_indices[0, i]]
         else:
             f = reduce(lambda x, y: x+y, A)
             output_array[:] = f.scale*uh
@@ -312,13 +313,16 @@ def inner(expr0, expr1, output_array=None, level=0):
 
         else: # linear form
             wh = np.zeros_like(output_array)
-            for i, b in enumerate(B):
+            i = 0
+            for b in B:
                 if uh.rank > 0:
-                    wh = b.matvec(uh[trial_indices[0, i]], wh)
+                    wh = b.matvec(uh.v[trial_indices[0, i]], wh)
                 else:
                     wh = b.matvec(uh, wh)
                 output_array += wh
                 wh.fill(0)
+                if not b.is_bc_matrix():
+                    i += 1
 
             return output_array
 
@@ -328,10 +332,14 @@ def inner(expr0, expr1, output_array=None, level=0):
             return A
 
         else: # linear form
-            wh = np.empty_like(output_array)
-            for i, b in enumerate(A):
+            wh = np.zeros_like(output_array)
+            i = -1
+            for b in A:
+                wh.fill(0)
+                if not b.is_bc_matrix():
+                    i += 1
                 if uh.rank > 0:
-                    wh = b.matvec(uh[trial_indices[0, i]], wh)
+                    wh = b.matvec(uh.v[trial_indices[0, i]], wh)
                 else:
                     wh = b.matvec(uh, wh)
                 output_array += wh

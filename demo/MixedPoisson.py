@@ -79,25 +79,28 @@ else:
 A10 = inner(q, div(g))
 
 # Get f and g on quad points
-fvj = Array(Q)
-fj = fvj[2]
+vfj = Array(Q)
+vj, fj = vfj
 fj[:] = fl(*X)
 
-fv_hat = Function(Q)
-fv_hat[2] = inner(q, fj)
+vf_hat = Function(Q)
+v_hat, f_hat = vf_hat
+f_hat = inner(q, fj, output_array=f_hat)
 
 M = BlockMatrix(A00+A01+A10)
 
-gu_hat = M.solve(fv_hat)
+gu_hat = M.solve(vf_hat)
 gu = gu_hat.backward()
+
+g_, u_ = gu
 
 uj = ul(*X)
 duxj = duxl(*X)
 duyj = duyl(*X)
 
-error = [comm.reduce(np.linalg.norm(uj-gu[2])),
-         comm.reduce(np.linalg.norm(duxj-gu[0])),
-         comm.reduce(np.linalg.norm(duyj-gu[1]))]
+error = [comm.reduce(np.linalg.norm(uj-u_)),
+         comm.reduce(np.linalg.norm(duxj-g_[0])),
+         comm.reduce(np.linalg.norm(duyj-g_[1]))]
 
 if comm.Get_rank() == 0:
     print('Error    u         dudx        dudy')
@@ -107,9 +110,9 @@ if comm.Get_rank() == 0:
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()
-    plt.contourf(X[0], X[1], gu[2])
+    plt.contourf(X[0], X[1], u_)
     plt.figure()
-    plt.quiver(X[1], X[0], gu[1], gu[0])
+    plt.quiver(X[1], X[0], g_[1], g_[0])
     plt.figure()
     plt.spy(M.diags((0, 0)).toarray()) # The matrix for given Fourier wavenumber
     plt.show()

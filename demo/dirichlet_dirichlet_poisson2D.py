@@ -49,7 +49,7 @@ N = (int(sys.argv[-3]), int(sys.argv[-2]))
 
 SD0 = Basis(N[0], family, bc=(0, 0), scaled=True)
 SD1 = Basis(N[1], family, bc=(0, 0), scaled=True)
-T = TensorProductSpace(comm, (SD0, SD1))
+T = TensorProductSpace(comm, (SD0, SD1), axes=(1,0))
 X = T.local_mesh(True)
 u = TrialFunction(T)
 v = TestFunction(T)

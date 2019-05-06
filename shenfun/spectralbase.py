@@ -823,12 +823,14 @@ class SpectralBase(object):
     def tensorproductspace(self, T):
         self._tensorproductspace = T
 
-    def __hash__(self):
-        return hash(repr(self.__class__))
+    #def __hash__(self):
+    #    return hash(repr(self.__class__))
 
     def __eq__(self, other):
         return (self.__class__.__name__ == other.__class__.__name__ and
-                self.quad == other.quad and self.N == other.N)
+                self.quad == other.quad and
+                self.N == other.N and
+                self.axis == other.axis)
 
     @property
     def rank(self):
@@ -1081,13 +1083,13 @@ class FuncWrap(object):
 
     # pylint: disable=too-few-public-methods, missing-docstring
 
-    __slots__ = ('_func', '__doc__', '_input_array', '_output_array')
+    __slots__ = ('_func', '_input_array', '_output_array')
 
     def __init__(self, func, input_array, output_array):
         object.__setattr__(self, '_func', func)
         object.__setattr__(self, '_input_array', input_array)
         object.__setattr__(self, '_output_array', output_array)
-        object.__setattr__(self, '__doc__', func.__doc__)
+        #object.__setattr__(self, '__doc__', func.__doc__)
 
     @property
     def input_array(self):
@@ -1108,7 +1110,7 @@ class Transform(FuncWrap):
 
     # pylint: disable=too-few-public-methods
 
-    __slots__ = ('_xfftn', '__doc__', '_input_array', '_output_array',
+    __slots__ = ('_xfftn', '_input_array', '_output_array',
                  '_tmp_array')
 
     def __init__(self, func, xfftn, input_array, tmp_array, output_array):

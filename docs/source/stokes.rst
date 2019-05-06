@@ -7,7 +7,7 @@ Demo - Stokes equations
 %%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Apr 2, 2019
+:Date: Apr 26, 2019
 
 *Summary.* The Stokes equations describe the flow of highly viscous fluids.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Stokes
@@ -448,7 +448,7 @@ Eliminating the Fourier diagonal matrices, we are left with block matrices like
           \begin{bmatrix}
               A[0]+A[1] & 0 & 0 & G[0] \\ 
               0 & A[2]+A[3] & 0 & G[1] \\ 
-              0 & 0 &  A|[4]+A[5] & G[2] \\ 
+              0 & 0 &  A[4]+A[5] & G[2] \\ 
               D[0] & D[1] & D[2] & 0
           \end{bmatrix}
 
@@ -458,73 +458,11 @@ loop over these wavenumbers and solve the assembled linear systems one by one.
 An example of the block matrix, for :math:`l=m=5` and :math:`\boldsymbol{N}=(20, 20, 20)` is given
 in Fig. :ref:`fig:BlockMat`.
 
-There is still one more degree of freedom to take care of due to
-:math:`\int_{\Omega} p dx = 0`. Due to all basis functions integrating to
-zero, except from the zeroth, this simply boils down to setting
-the unknown :math:`\hat{p}_{000}`, when the pressure trial function is
-represented as
-
-.. math::
-         p(\boldsymbol{x}) = \sum_{l\in \boldsymbol{l}^{N_0}} \sum_{m\in \boldsymbol{m}^{N_1}} \sum_{n\in \boldsymbol{n}^{N_2}} \hat{p}_{lmn} \mathcal{X}_l \mathcal{Y}_m \mathcal{Z}_n.
-
-So it is only necessary to fix one degree of freedom. This would
-normally be a very easy procedure. Just indent the row of the
-coefficient matrix :math:`H(0, 0)` corresponding to :math:`\hat{p}_{000}` and set
-the corresponding right hand side to zero as well.
-For the block matrix it is a bit complicated, because the indent
-is part of the block (3, 3), which at the current time is zero,
-see :eq:`eq:bmatrix`. Furthermore, it should only be enabled for
-:math:`(l, m) = (0, 0)`.  For the Legendre basis it turns out to be
-not very difficult. Just create a diagonal matrix :math:`I_{ij}` in the (3, 3)
-block of :eq:`eq:bmatrix` with :math:`I_{00}=1` and zero otherwise, and then
-add :math:`I_{ij}` to the (3, 3) block of :math:`H(0, 0)`. This can be coded as
-
-.. code-block:: text
-
-    P = inner(p, q) # assemble a diagonal matrix in block (3, 3)
-    s = TD.shape(True)
-    P.scale = np.zeros((s[0], s[1], 1))
-    ls = TD.local_slice(True)
-    if ls[0].start == 0 and ls[1].start == 0:   # enable only for Fourier l=m=0, which only lives on one processor
-        P.scale[0, 0] = 1
-    I = P.mats[2]
-    I[0][:] = 0      # Zero the matrix diagonal (the only diagonal)
-    I[0][0] = 1      # I_{0,0} = 1
-
-For the Chebyshev basis it is a bit more complicated because the ``D[2]``
-block of :eq:`eq:bmatrix` is not zero for the row of the :math:`\hat{p}_{000}`
-degree of freedom. So we also need to do more work to do a proper indent
-
-.. code-block:: text
-
-    if family.lower() == 'chebyshev':
-        # Have to ident global row (N[0]-2)*(N[1]-2)*(N[2]-2), but only for l=m=0.
-        # This is a bit tricky.
-        # For Legendre this row is already zero. With Chebyshev we need to modify
-        # block (3, 2) as well as fixing the 1 on the diagonal of (3, 3)
-        a0 = inner(q, div(u))[2]   # This TPMatrix will be used for only l=m=0
-        a0.scale = np.zeros((s[0], s[1], 1))
-        D[2].scale = np.ones((s[0], s[1], 1))
-        if ls[0].start == 0 and ls[1].start == 0:
-            a10.scale[0, 0] = 1     # enable for l=m=0
-            D[2].scale[0, 0] = 0    # disable for l=m=0
-        am = a0.pmat.diags().toarray()
-        am[0] = 0   # Zero the row corresponding to p_hat[0, 0, 0]
-        a0.mats[2] = extract_diagonal_matrix(am)
-        a0.pmat = a0.mats[2]
-        D.append(a0)
-
-Note that ``a0`` is an instance of the :class:`.TPMatrix`, and scale is
-an array of ndim = 3. The scale is indexed by the Fourier wavenumbers
-and scale[0, 0] represents the scale to matrix ``a0`` for wavenumbers
-:math:`(l, m) = (0, 0)`.
-
 In the end we create a block matrix through
 
 .. code-block:: text
 
-    P = [P]
-    M = BlockMatrix(A+G+D+P)
+    M = BlockMatrix(A+G+D)
 
 The right hand side can easily be assembled since we have already
 defined the functions :math:`\boldsymbol{f}` and :math:`h`, see Sec. :ref:`sec:mansol`
@@ -536,27 +474,28 @@ defined the functions :math:`\boldsymbol{f}` and :math:`h`, see Sec. :ref:`sec:m
     
     # Get f and h on quad points
     fh = Array(Q)
-    fh[0] = flx(*X)
-    fh[1] = fly(*X)
-    fh[2] = flz(*X)
-    fh[3] = hl(*X)
+    f_, h_ = fh
+    f_[0] = flx(*X)
+    f_[1] = fly(*X)
+    f_[2] = flz(*X)
+    h_[:] = hl(*X)
     
     # Compute inner products
     fh_hat = Function(Q)
-    fh_hat[:3] = inner(v, fh[:3], output_array=fh_hat[:3])
-    fh_hat[3] = inner(q, fh[3], output_array=fh_hat[3])
+    f_hat, h_hat = fh_hat
+    f_hat = inner(v, f_, output_array=f_hat)
+    h_hat = inner(q, h_, output_array=h_hat)
     
-    # Fix the right hand side of p_hat[0, 0, 0]
-    fh_hat[3, 0, 0, 0] = 0
 
 In the end all that is left is to solve and compare with
-the exact solution
+the exact solution.
 
 .. code-block:: text
 
     # Solve problem
-    up_hat = M.solve(fh_hat)
+    up_hat = M.solve(fh_hat, integral_constraint=(3, 0))
     up = up_hat.backward()
+    u_, p_ = up
     
     # Exact solution
     ux = ulx(*X)
@@ -564,10 +503,19 @@ the exact solution
     uz = ulz(*X)
     pe = pl(*X)
     
-    error = [comm.reduce(np.linalg.norm(ux-up[0])),
-             comm.reduce(np.linalg.norm(uy-up[1])),
-             comm.reduce(np.linalg.norm(uz-up[2])),
-             comm.reduce(np.linalg.norm(pe-up[3]))]
+    error = [comm.reduce(np.linalg.norm(ux-u_[0])),
+             comm.reduce(np.linalg.norm(uy-u_[1])),
+             comm.reduce(np.linalg.norm(uz-u_[2])),
+             comm.reduce(np.linalg.norm(pe-p_))]
+
+Note that solve has a keyword argument
+``integral_constraint=(3, 0)`` that takes care of the restriction
+:math:`\int_{\Omega} p dx = 0` by indenting the row in M corresponding to the
+first degree of freedom for the pressure. The value :math:`(3, 0)`
+indicates that pressure is
+in block 3 of the block vector solution (the velocity vector holds
+positions 0, 1 and 2), whereas 0 ensures that the
+integral value should be 0.
 
 .. _sec:3d:complete:
 

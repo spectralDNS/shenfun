@@ -557,6 +557,6 @@ if __name__ == '__main__':
     #test_shentransform('d', 2, lagbases.ShenDirichletBasis, 'LG')
     #test_project('d', 1, cbases.ShenDirichletBasis, 'GC')
     #test_project2('d', 1, lbases.ShenNeumannBasis, 'LG')
-    #test_project_2dirichlet('GL')
-    test_eval_tensor('d', 2, cbases.ShenDirichletBasis, 'GC')
+    test_project_2dirichlet('GL')
+    #test_eval_tensor('d', 2, cbases.ShenDirichletBasis, 'GC')
     #test_eval_fourier('d', 3)
