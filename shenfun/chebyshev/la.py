@@ -13,8 +13,6 @@ class TDMA(la_TDMA):
 
     def __call__(self, b, u=None, axis=0):
 
-        v = self.mat.testfunction[0]
-
         if u is None:
             u = b
         else:

@@ -898,7 +898,6 @@ class BoundaryValues(object):
             # two transforms need to be executed.
             axis = None
             number_of_bases_after_this = 0
-            bases = []
             for axes in reversed(T.axes):
                 base = T.bases[axes[-1]]
                 if base == this_base:

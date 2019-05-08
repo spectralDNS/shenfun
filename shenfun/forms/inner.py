@@ -114,15 +114,14 @@ def inner(expr0, expr1, output_array=None, level=0):
 
 
     if test.rank > 0 and test.expr_rank() > 0: # For vector expressions of rank > 0 use recursive algorithm
-        ndim = test.function_space().num_components()
 
         if output_array is None and trial.argument == 2:
             output_array = Function(test.function_space())
 
         if trial.argument == 2:
             # linear form
-            for ii, (te, tr) in enumerate(zip(test, trial)):
-                output_array[ii] = inner(te, tr, output_array=output_array[ii])
+            for (te, tr, x) in zip(test, trial, output_array):
+                x = inner(te, tr, output_array=x)
             return output_array
 
         result = []
@@ -170,8 +169,6 @@ def inner(expr0, expr1, output_array=None, level=0):
     trialspace = trial.function_space()
     test_scale = test.scales()
     trial_scale = trial.scales()
-    trial_indices = trial.indices()
-    test_indices = test.indices()
 
     uh = None
     if trial.argument == 2:
@@ -180,7 +177,6 @@ def inner(expr0, expr1, output_array=None, level=0):
     if output_array is None and trial.argument == 2:
         output_array = Function(test.function_space())
 
-    has_nonhomogeneous_bcs = False
     A = []
     vec = 0
     for base_test, base_trial, test_ind, trial_ind in zip(test.terms(), trial.terms(), test.indices(), trial.indices()): # vector/scalar
