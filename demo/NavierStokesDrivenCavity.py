@@ -80,15 +80,11 @@ else:
 
 A10 = inner(q, div(u))
 
-AA = inner(grad(v), -nu*grad(u)) + inner(div(v), p) + inner(q, div(u))
-
 # Extract the boundary matrices
-#bc_mats = extract_bc_matrices([A00, A01, A10])
-bc_mats = extract_bc_matrices([AA])
+bc_mats = extract_bc_matrices([A00, A01, A10])
 
 # Create Block matrix
-#M = BlockMatrix(A00+A01+A10)
-M = BlockMatrix(AA)
+M = BlockMatrix(A00+A01+A10)
 
 # Create Function to hold solution
 uh_hat = Function(VQ)
