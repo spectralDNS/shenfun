@@ -7,7 +7,7 @@ Demo - Stokes equations
 %%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Apr 26, 2019
+:Date: May 8, 2019
 
 *Summary.* The Stokes equations describe the flow of highly viscous fluids.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Stokes
@@ -108,12 +108,12 @@ we use composite Legendre or Chebyshev polynomials
    :label: _auto4
 
         
-        \mathcal{Z}^0_n(z) = \phi_n(z) - \phi_{n+2}(z), \forall \, n \in \boldsymbol{n}^{N_2},
+        \mathcal{Z}^0_n(z) = \phi_n(z) - \phi_{n+2}(z), \forall \, n \in \boldsymbol{n}^{N_2-2},
         
         
 
 where :math:`\phi_n` is the n'th Legendre or Chebyshev polynomial of the first kind.
-:math:`\boldsymbol{n}^{N_2} = (0, 1, \ldots, N_2-3)`, and the zero on :math:`\mathcal{Z}^0`
+:math:`\boldsymbol{n}^{N_2-2} = (0, 1, \ldots, N_2-3)`, and the zero on :math:`\mathcal{Z}^0`
 is there to indicate the zero value on the boundary.
 
 The pressure basis that comes with no restrictions for the boundary is a
@@ -125,13 +125,13 @@ Chebyshev basis, which is denoted as
    :label: eq:Zn
 
         
-        \mathcal{Z}_n(z) = \phi_n(z). 
+        \mathcal{Z}_n(z) = \phi_n(z),  \forall \, n \in \boldsymbol{n}^{N_2}. 
         
 
 The problem is that for the natural choice of :math:`n \in (0, 1, \ldots, N_2-1)`
 there is a nullspace and one degree of freedom remains unresolved. It turns out
 that the proper choice for the pressure basis is simply :eq:`eq:Zn` for
-:math:`n \in \boldsymbol{n}^{N-2}`. (Also remember that we have to fix :math:`\int_{\Omega} p dx = 0`.)
+:math:`n \in \boldsymbol{n}^{N_2-2}`. (Also remember that we have to fix :math:`\int_{\Omega} p dx = 0`.)
 
 With given basis functions we obtain the bases
 
@@ -155,7 +155,7 @@ With given basis functions we obtain the bases
    :label: _auto7
 
           
-        V^{N_2} = \text{span}\{ \mathcal{Z}_n \}_{n\in\boldsymbol{n}^{N_2}}, 
+        V^{N_2} = \text{span}\{ \mathcal{Z}_n \}_{n\in\boldsymbol{n}^{N_2-2}}, 
         
         
 
@@ -163,7 +163,7 @@ With given basis functions we obtain the bases
    :label: _auto8
 
           
-        V_0^{N_2} = \text{span}\{ \mathcal{Z}^0_n \}_{n\in\boldsymbol{n}^{N_2}},
+        V_0^{N_2} = \text{span}\{ \mathcal{Z}^0_n \}_{n\in\boldsymbol{n}^{N_2-2}},
         
         
 

@@ -121,13 +121,11 @@ def inner(expr0, expr1, output_array=None, level=0):
 
         if trial.argument == 2:
             # linear form
-            #for ii in range(ndim):
             for ii, (te, tr) in enumerate(zip(test, trial)):
                 output_array[ii] = inner(te, tr, output_array=output_array[ii])
             return output_array
 
         result = []
-        #for ii in range(ndim):
         for te, tr in zip(test, trial):
             l = inner(te, tr, level=level)
             result += [l] if isinstance(l, TPMatrix) else l
@@ -151,8 +149,10 @@ def inner(expr0, expr1, output_array=None, level=0):
         assert test.argument == 0
         space = test.function_space()
         if isinstance(trial, Array):
-            output_array = space.scalar_product(trial, output_array)
-            return output_array
+            if trial.rank == 0:
+                output_array = space.scalar_product(trial, output_array)
+                return output_array
+            trial = trial.forward()
 
     # If trial is an Expr with terms, then compute using bilinear form and matvec
 
@@ -183,7 +183,7 @@ def inner(expr0, expr1, output_array=None, level=0):
     has_nonhomogeneous_bcs = False
     A = []
     vec = 0
-    for base_test, base_trial in zip(test.terms(), trial.terms()): # vector/scalar
+    for base_test, base_trial, test_ind, trial_ind in zip(test.terms(), trial.terms(), test.indices(), trial.indices()): # vector/scalar
         for test_j, b0 in enumerate(base_test):              # second index test
             for trial_j, b1 in enumerate(base_trial):        # second index trial
                 sc = test_scale[vec, test_j]*trial_scale[vec, trial_j]
@@ -220,9 +220,9 @@ def inner(expr0, expr1, output_array=None, level=0):
                         DM.append(AA)
 
                 sc = sp.broadcast_to_ndims(np.array([sc]))
-                A.append(TPMatrix(M, test_sp, sc, (test_indices[0, test_j], trial_indices[0, trial_j]), base))
+                A.append(TPMatrix(M, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), base))
                 if has_bcs:
-                    A.append(TPMatrix(DM, test_sp, sc, (test_indices[0, test_j], trial_indices[0, trial_j]), base))
+                    A.append(TPMatrix(DM, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), base))
         vec += 1
 
     # At this point A contains all matrices of the form. The length of A is
@@ -256,7 +256,6 @@ def inner(expr0, expr1, output_array=None, level=0):
     # have been implemented in chebyshev/matrices.py or legendre/matrices.py,
     # where they are called ADDmat and BDDmat, respectively.
 
-
     if level == 2 and trial.argument == 1:
         return A
 
@@ -282,14 +281,15 @@ def inner(expr0, expr1, output_array=None, level=0):
 
         # linear form
         if uh.rank > 0:
-            for i, b in enumerate(A):
-                output_array += b.scale*uh.v[trial_indices[0, i]]
+            for b in A:
+                output_array += b.scale*uh.v[b.global_index[1]]
         else:
             f = reduce(lambda x, y: x+y, A)
             output_array[:] = f.scale*uh
         return output_array
 
     elif np.any([isinstance(f.pmat, SparseMatrix) for f in A]):
+
         # One non-Fourier space
         B = [A[0]]
         for a in A[1:]:  # Add equal TPMatrices
@@ -313,16 +313,13 @@ def inner(expr0, expr1, output_array=None, level=0):
 
         else: # linear form
             wh = np.zeros_like(output_array)
-            i = 0
             for b in B:
                 if uh.rank > 0:
-                    wh = b.matvec(uh.v[trial_indices[0, i]], wh)
+                    wh = b.matvec(uh.v[b.global_index[1]], wh)
                 else:
                     wh = b.matvec(uh, wh)
                 output_array += wh
                 wh.fill(0)
-                if not b.is_bc_matrix():
-                    i += 1
 
             return output_array
 
@@ -333,13 +330,10 @@ def inner(expr0, expr1, output_array=None, level=0):
 
         else: # linear form
             wh = np.zeros_like(output_array)
-            i = -1
             for b in A:
                 wh.fill(0)
-                if not b.is_bc_matrix():
-                    i += 1
                 if uh.rank > 0:
-                    wh = b.matvec(uh.v[trial_indices[0, i]], wh)
+                    wh = b.matvec(uh.v[b.global_index[1]], wh)
                 else:
                     wh = b.matvec(uh, wh)
                 output_array += wh
