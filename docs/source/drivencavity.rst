@@ -19,7 +19,7 @@ tensor product spaces for vector valued equations.
 
 .. figure:: https://raw.githack.com/spectralDNS/spectralutilities/master/figures/DrivenCavity.png
 
-   *Velocity vectors for :math:`Re=100`. Computed with `NavierStokesDrivenCavity.py <https://github.com/spectralDNS/shenfun/blob/master/demo/NavierStokesDrivenCavity.py>`__, which is described below*
+   Velocity vectors for :math:`Re=100`
 
 .. _demo:navierstokes:
 
