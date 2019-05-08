@@ -539,6 +539,5 @@ plt.show()
 
 ===== Complete solver =====
 label{sec:nscomplete}
-D1Y.bc.apply_after(ui_hat[0], True)
 
 A complete solver can be found in demo "NavierStokesDrivenCavity.py":"https://github.com/spectralDNS/shenfun/blob/master/demo/NavierStokesDrivenCavity.py".
