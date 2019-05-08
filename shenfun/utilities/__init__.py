@@ -5,9 +5,10 @@ import types
 from collections import MutableMapping
 import numpy as np
 from scipy.fftpack import dct
+from shenfun.optimization import optimizer
 
 
-__all__ = ['inheritdocstrings', 'clenshaw_curtis1D', 'CachedArrayDict']
+__all__ = ['inheritdocstrings', 'clenshaw_curtis1D', 'CachedArrayDict', 'outer']
 
 def inheritdocstrings(cls):
     """Method used for inheriting docstrings from parent class
@@ -104,3 +105,43 @@ class CachedArrayDict(MutableMapping):
 
     def values(self):
         raise TypeError('Cached work arrays not iterable')
+
+def outer(a, b, c):
+    r"""Return outer product $c_{i,j} = a_i b_j$
+
+    Parameters
+    ----------
+    a : Array of shape (N, ...)
+    b : Array of shape (N, ...)
+    c : Array of shape (N*N, ...)
+
+    The outer product is taken over the first index of a and b,
+    for all remaining indices.
+    """
+    av = a.v
+    bv = b.v
+    cv = c.v
+    if av.shape[0] == 2:
+        outer2D(av, bv, cv)
+    elif av.shape[0] == 3:
+        outer3D(av, bv, cv)
+    return c
+
+@optimizer
+def outer2D(a, b, c):
+    c[0] = a[0]**2
+    c[1] = a[0]*a[1]
+    c[2] = c[1]
+    c[3] = a[1]**2
+
+@optimizer
+def outer3D(a, b, c):
+    c[0] = a[0]*b[0]
+    c[1] = a[0]*b[1]
+    c[2] = a[0]*b[2]
+    c[3] = c[1]
+    c[4] = a[1]*b[1]
+    c[5] = a[1]*b[2]
+    c[6] = c[2]
+    c[7] = c[5]
+    c[8] = a[2]*b[2]

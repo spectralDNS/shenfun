@@ -40,7 +40,7 @@ fl = lambdify(x, fe, 'numpy')
 # Size of discretization
 N = int(sys.argv[-2])
 
-SD = Basis(N, family=family, bc=(a, b), domain=domain)
+SD = Basis(N, family=family, bc=(a, b), domain=domain, scaled=True)
 X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)

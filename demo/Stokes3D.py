@@ -89,18 +89,21 @@ M = BlockMatrix(A+G+D)
 
 # Get f and h on quad points
 fh = Array(Q)
-fh[0] = flx(*X)
-fh[1] = fly(*X)
-fh[2] = flz(*X)
-fh[3] = hl(*X)
+f_, h_ = fh
+f_[0] = flx(*X)
+f_[1] = fly(*X)
+f_[2] = flz(*X)
+h_[:] = hl(*X)
 
 fh_hat = Function(Q)
-fh_hat[:3] = inner(v, fh[:3], output_array=fh_hat[:3])
-fh_hat[3] = inner(q, fh[3], output_array=fh_hat[3])
+f_hat, h_hat = fh_hat
+f_hat = inner(v, f_, output_array=f_hat)
+h_hat = inner(q, h_, output_array=h_hat)
 
 # Solve problem using integral constraint on pressure
 up_hat = M.solve(fh_hat, integral_constraint=(3, 0))
 up = up_hat.backward()
+u_, p_ = up
 
 # Exact solution
 ux = ulx(*X)
@@ -108,10 +111,10 @@ uy = uly(*X)
 uz = ulz(*X)
 pe = pl(*X)
 
-error = [comm.reduce(np.linalg.norm(ux-up[0])),
-         comm.reduce(np.linalg.norm(uy-up[1])),
-         comm.reduce(np.linalg.norm(uz-up[2])),
-         comm.reduce(np.linalg.norm(pe-up[3]))]
+error = [comm.reduce(np.linalg.norm(ux-u_[0])),
+         comm.reduce(np.linalg.norm(uy-u_[1])),
+         comm.reduce(np.linalg.norm(uz-u_[2])),
+         comm.reduce(np.linalg.norm(pe-p_))]
 
 if comm.Get_rank() == 0:
     print('Error    u          v          w        p')
@@ -121,9 +124,9 @@ if comm.Get_rank() == 0:
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()
-    plt.contourf(X[0][:, :, 0], X[1][:, :, 0], up[2, :, :, 6], 100)
+    plt.contourf(X[0][:, :, 0], X[1][:, :, 0], u_[2, :, :, 6], 100)
     plt.figure()
-    plt.quiver(X[0][:, :, 0], X[1][:, :, 0], up[0, :, :, 6], up[1, :, :, 6])
+    plt.quiver(X[0][:, :, 0], X[1][:, :, 0], u_[0, :, :, 6], u_[1, :, :, 6])
     plt.figure()
     l, m = 5, 5
     plt.spy(M.diags((l, m, 0)), markersize=2, color='k') # The matrix for Fourier given wavenumber
@@ -131,5 +134,5 @@ if 'pytest' not in os.environ:
     plt.xticks([])
     plt.yticks([])
     plt.figure()
-    plt.contourf(X[0][:, :, 0], X[1][:, :, 0], up[0, :, :, 6], 100)
+    plt.contourf(X[0][:, :, 0], X[1][:, :, 0], u_[0, :, :, 6], 100)
     plt.show()

@@ -1,0 +1,544 @@
+TITLE: Demo - Lid driven cavity
+AUTHOR: Mikael Mortensen {copyright|CC BY} Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
+DATE: today
+
+__Summary.__
+The lid driven cavity is a classical benchmark for Navier Stokes solvers.
+This is a demonstration of how the Python module "shenfun":
+"https://github.com/spectralDNS/shenfun" can be used to solve the lid
+driven cavity problem with full spectral accuracy using a mixed (coupled) basis
+in a 2D tensor product domain. The demo also shows how to use mixed
+tensor product spaces for vector valued equations.
+
+TOC: on
+
+<%
+def mod(x):
+    return '`'+x+'`'
+def cls(x):
+    return '`'+x+'`'
+def func(x):
+    return '`'+x+'`'
+%>
+% if FORMAT in ("sphinx"):
+<%
+def mod(x):
+    if '.' in x:
+        return ':mod:'+'`'+x+'`'
+    return ':mod:'+'`'+'.'+x+'`'
+def cls(x):
+    if '.' in x:
+        return ':class:'+'`'+x+'`'
+    return ':class:'+'`'+'.'+x+'`'
+def func(x):
+    if '.' in x:
+        return ':func:'+'`'+x+'`'
+    return ':func:'+'`'+'.'+x+'`'
+%>
+% endif
+
+FIGURE: [https://raw.githack.com/spectralDNS/spectralutilities/master/figures/DrivenCavity.png] Velocity vectors for $Re=100$. Computed with "NavierStokesDrivenCavity.py":"https://github.com/spectralDNS/shenfun/blob/master/demo/NavierStokesDrivenCavity.py", which is described below.  label{fig:drivencavity}
+
+===== Navier Stokes equations =====
+label{demo:navierstokes}
+
+The nonlinear steady Navier Stokes equations are given in strong form as
+
+!bt
+\begin{align*}
+\nu \nabla^2 \bs{u} - \nabla p &= \nabla \cdot \bs{u} \bs{u} \quad \text{in }  \Omega , \\
+\nabla \cdot \bs{u} &= 0 \quad \text{in } \Omega  \\
+\int_{\Omega} p dx &= 0 \\
+\bs{u}(x, y=1) &= (1, 0) \\
+\bs{u}(x, y=-1) &= (0, 0) \\
+\bs{u}(x=\pm 1, y) &= (0, 0)
+\end{align*}
+!et
+where $\bs{u}, p$ and $\nu$ are, respectively, the
+fluid velocity vector, pressure and kinematic viscosity. The domain
+$\Omega = [-1, 1]^2$ and the nonlinear term $\bs{u} \bs{u}$ is the
+outer product of vector $\bs{u}$ with itself. Note that the final
+$\int_{\Omega} p dx = 0$ is there because there is no Dirichlet boundary
+condition on the pressure and the system of equations would otherwise be
+ill conditioned.
+
+We want to solve these steady nonlinear Navier Stokes equations with the Galerkin
+method, using the "shenfun" : "https://github.com/spectralDNS/shenfun" Python
+package. The first thing we need to do then is to import all of shenfun's
+functionality
+
+!bc pycod
+from shenfun import *
+from mpi4py import MPI
+comm = MPI.COMM_WORLD
+!ec
+
+Note that MPI for Python ("mpi4py" : "https://bitbucket.org/mpi4py/mpi4py")
+is a requirement for shenfun, but the current solver cannot be used with more
+than one processor.
+
+===== Bases and tensor product spaces =====
+label{sec:bases}
+
+With the Galerkin method we need basis functions for both velocity and
+pressure, as well as for the
+nonlinear right hand side. A Dirichlet basis will be used for velocity,
+whereas there is no boundary restriction on the pressure basis. For both
+two-dimensional bases we will use one basis function for the $x$-direction,
+$\mathcal{X}_k(x)$, and one for the $y$-direction, $\mathcal{Y}_l(y)$. And
+then we create two-dimensional basis functions like
+
+!bt
+\begin{equation}
+v_{kl}(x, y) = \mathcal{X}_k(x) \mathcal{Y}_l(y),  label{eq:nstestfunction}
+\end{equation}
+!et
+
+and solutions (trial functions) as
+
+!bt
+\begin{equation}
+    u(x, y) = \sum_{k}\sum_{l} \hat{u}_{kl} v_{kl}(x, y). label{eq:nstrialfunction}
+\end{equation}
+!et
+
+For the homogeneous Dirichlet boundary condition the basis functions
+$\mathcal{X}_k(x)$ and $\mathcal{Y}_l(y)$ are chosen as composite
+Legendre polynomials:
+!bt
+\begin{align}
+\mathcal{X}_k(x) &= L_k(x) - L_{k+2}(x), \quad \forall \, k \in \bs{k}^{N_0-2}, label{eq:D0} \\
+\mathcal{Y}_l(y) &= L_l(y) - L_{l+2}(y), \quad \forall \, l \in \bs{l}^{N_1-2}, label{eq:D1}
+\end{align}
+!et
+where $\bs{k}^{N_0-2} = (0, 1, \ldots, N_0-3)$, $\bs{l}^{N_1-2} = (0, 1, \ldots, N_1-3)$
+and $N = (N_0, N_1)$ is the number
+of quadrature points in each direction. Note that $N_0$ and $N_1$ do not need
+to be the same. The basis (ref{eq:D0}) satisfies
+the homogeneous Dirichlet boundary conditions at $x=\pm 1$ and (ref{eq:D1}) the same
+at $y=\pm 1$. As such, the basis $v_{kl}(x, y)$ satisfies the homogeneous Dirichlet boundary
+condition for the entire domain.
+
+With shenfun we create these homogeneous bases, $D_0^{N_0}(x)=\text{span}\{L_k-L_{k+2}\}_{k=0}^{N_0-2}$ and
+$D_0^{N_1}(y)=\text{span}\{L_l-L_{l+2}\}_{l=0}^{N_1-2}$ as
+
+!bc pycod
+N = (51, 51)
+D0X = Basis(N[0], 'Legendre', quad='LG', bc=(0, 0))
+D0Y = Basis(N[1], 'Legendre', quad='LG', bc=(0, 0))
+!ec
+
+The bases are the same, but we will use `D0X` in the $x$-direction and
+`D0Y` in the $y$-direction. But before we use these bases in
+tensor product spaces, they remain identical as long as $N_0 = N_1$.
+
+Special attention is required by the moving lid. To get a solution
+with nonzero boundary condition at $y=1$ we need to add one more basis function
+that satisfies that solution. In general, a nonzero boundary condition
+can be added on both sides of the domain using the following basis
+
+!bt
+\begin{align}
+\mathcal{Y}_l(y) &= L_l(y) - L_{l+2}(y), \quad \forall \, l \in \bs{l}^{N_1-2}. \\
+\mathcal{Y}_{N_1-2}(y) &= (L_0+L_1)/2 \, (=(1+y)/2), \\
+\mathcal{Y}_{N_1-1}(y) &= (L_0-L_1)/2 \, (=(1-y)/2).
+\end{align}
+!et
+
+And then the unknown component $N_1-2$ decides the value at $y=1$, whereas
+the unknown at $N_1-1$ decides the value at $y=-1$. Here we only need to
+add the $N_1-2$ component, but for generality this is implemented in shenfun
+using both additional basis functions. We create the basis
+$D_1^{N_1}(y)=\text{span}\{\mathcal{Y}_l(y)\}_{l=0}^{N_1-1}$ as
+
+!bc pycod
+D1Y = Basis(N[1], 'Legendre', quad='LG', bc=(1, 0))
+!ec
+
+where `bc=(1, 0)` fixes the values for $y=1$ and $y=-1$, respectively.
+
+The pressure basis that comes with no restrictions for the boundary is a
+little trickier. The reason for this has to do with
+inf-sup stability. The obvious choice of basis functions are the
+regular Legendre polynomials $L_k(x)$ in $x$ and $L_l(y)$ in the
+$y$-directions. The problem is that for the natural choice of
+$(k, l) \in \bs{k}^{N_0} \times \bs{l}^{N_1}$
+there are nullspaces and the problem is not well-defined. It turns out
+that the proper choice for the pressure basis is simply the regular
+Legendre basis functions, but for
+$(k, l) \in \bs{k}^{N_0-2} \times \bs{l}^{N_1-2}$.
+The bases $P^{N_0}(x)=\text{span}\{L_k(x)\}_{k=0}^{N_0-3}$ and
+$P^{N_1}(y)=\text{span}\{L_l(y)\}_{l=0}^{N_1-3}$ are created as
+
+!bc pycod
+PX = Basis(N[0], family, quad='LG')
+PY = Basis(N[1], family, quad='LG')
+PX.slice = lambda: slice(0, N[0]-2)
+PY.slice = lambda: slice(0, N[1]-2)
+!ec
+
+Note that we still use these bases with the same $N_0 \cdot N_1$
+quadrature points in real space, but the two highest frequencies have
+been set to zero.
+
+We have now created all relevant bases for the problem at hand.
+It remains to combine these bases into tensor product spaces, and to
+combine tensor product spaces into mixed (coupled) tensor product
+spaces. From the Dirichlet bases we create two different tensor
+product spaces, whereas one is enough for the pressure
+!bt
+\begin{align}
+V_{1}^{\bs{N}}(\bs{x}) &= D_0^{N_0}(x) \times D_1^{N_1}(y) \\
+V_{0}^{\bs{N}}(\bs{x}) &= D_0^{N_0}(x) \times D_0^{N_1}(y) \\
+P^{\bs{N}}(\bs{x}) &= P^{N_0}(x) \times P^{N_1}(y)
+\end{align}
+!et
+With shenfun the tensor product spaces are created as
+!bc pycod
+V1 = TensorProductSpace(comm, (D0X, D1Y))
+V0 = TensorProductSpace(comm, (D0X, D0Y))
+P = TensorProductSpace(comm, (PX, PY))
+!ec
+These tensor product spaces are all scalar valued.
+The velocity is a vector, and a vector requires a mixed basis like
+$W_1^{\bs{N}} = V_1^{\bs{N}} \times V_0^{\bs{N}}$. The mixed basis is created
+in shenfun as
+
+!bc pycod
+W1 = MixedTensorProductSpace([V1, V0])
+W0 = MixedTensorProductSpace([V0, V0])
+!ec
+Note that the second mixed basis, $W_0^{\bs{N}} = V_0^{\bs{N}} \times V_0^{\bs{N}}$, uses
+homogeneous boundary conditions throughout.
+
+===== Mixed variational form =====
+label{sec:mixedform}
+
+We now formulate a variational problem using the
+Galerkin method: Find
+$\bs{u} \in W_1^{\bs{N}}$ and $p \in P^{\bs{N}}$ such that
+!bt
+\begin{align}
+\int_{\Omega} (\nu \nabla^2 \bs{u} - \nabla p ) \cdot \bs{v} \, dxdy &= \int_{\Omega} (\nabla \cdot \bs{u}\bs{u}) \cdot \bs{v}\, dxdy \quad\forall \bs{v} \, \in \, W_0^{\bs{N}}, label{eq:nsvarform} \\
+\int_{\Omega} \nabla \cdot \bs{u} \, q \, dxdy &= 0 \quad\forall q \, \in \, P^{\bs{N}}.
+\end{align}
+!et
+Note that we are using test functions $\bs{v}$ with homogeneous
+boundary conditions.
+
+The first obvious issue with Eq (ref{eq:nsvarform}) is the nonlinearity.
+In other words we will
+need to linearize and iterate to be able to solve these equations with
+the Galerkin method. To this end we will introduce the solution on
+iteration $k \in [0, 1, \ldots]$ as $\bs{u}^k$ and compute the nonlinearity
+using only known solutions
+$\int_{\Omega} (\nabla \cdot \bs{u}^k\bs{u}^k) \cdot \bs{v}\, dxdy$.
+Using further integration by parts we end up with the equations to solve
+for iteration number $k+1$ (using $\bs{u} = \bs{u}^{k+1}$ and $p=p^{k+1}$
+for simplicity)
+!bt
+\begin{align}
+-\int_{\Omega} \nu \nabla \bs{u} \, \colon \nabla \bs{v} \, dxdy + \int_{\Omega} p \nabla \cdot \bs{v} \, dxdy &= \int_{\Omega} (\nabla \cdot \bs{u}^k\bs{u}^k) \cdot \bs{v}\, dxdy \quad\forall \bs{v} \, \in \, W_0^{\bs{N}}, label{eq:nsvarform2} \\
+\int_{\Omega} \nabla \cdot \bs{u} \, q \, dxdy &= 0 \quad\forall q \, \in \, P^{\bs{N}}.
+\end{align}
+!et
+
+Note that the nonlinear term may also be integrated by parts and
+evaluated as $\int_{\Omega}-\bs{u}^k\bs{u}^k  \, \colon \nabla \bs{v} \, dxdy$. All
+boundary integrals disappear since we are using test functions with
+homogeneous boundary conditions.
+
+Since we are to solve for $\bs{u}$ and $p$ at the same time, we formulate a
+mixed (coupled) problem: find $(\bs{u}, p) \in W_1^{\bs{N}} \times P^{\bs{N}}$
+such that
+
+!bt
+\begin{equation}
+a((\bs{u}, p), (\bs{v}, q)) = L((\bs{v}, q)) \quad \forall (\bs{v}, q) \in W_0^{\bs{N}} \times P^{\bs{N}},
+\end{equation}
+!et
+
+where bilinear ($a$) and linear ($L$) forms are given as
+
+!bt
+\begin{align}
+    a((\bs{u}, p), (\bs{v}, q)) &= -\int_{\Omega} \nu \nabla \bs{u} \, \colon \nabla \bs{v} \, dxdy + \int_{\Omega} p \nabla \cdot \bs{v} \, dxdy + \int_{\Omega} \nabla \cdot \bs{u} \, q \, dxdy, \\
+    L((\bs{v}, q); \bs{u}^{k}) &= \int_{\Omega} (\nabla \cdot \bs{u}^{k}\bs{u}^{k}) \cdot \bs{v}\, dxdy.
+\end{align}
+!et
+
+Note that the bilinear form will assemble to a block matrix, whereas the right hand side
+linear form will assemble to a block vector. The bilinear form does not change
+with the solution and as such it does not need to be reassembled inside
+an iteration loop.
+
+The algorithm used to solve the equations are:
+
+  * Set $k = 0$
+  * Guess $\bs{u}^0 = (0, 0)$
+  * while not converged:
+    * assemble $L((\bs{v}, q); \bs{u}^{k})$
+    * solve $a((\bs{u}, p), (\bs{v}, q)) = L((\bs{v}, q); \bs{u}^{k})$ for $\bs{u}^{k+1}, p^{k+1}$
+    * compute error = $\int_{\Omega} (\bs{u}^{k+1}-\bs{u}^{k})^2 \, dxdy$
+    * if error $<$ some tolerance then converged = True
+    * $k$ += $1$
+
+===== Implementation of solver =====
+
+We will now implement the coupled variational problem described in previous
+sections. First of all, since we want to solve for the velocity and pressure
+in a coupled solver, we have to
+create a mixed tensor product space $VQ = W_1^{\bs{N}} \times P^{\bs{N}}$ that
+couples velocity and pressure
+
+!bc
+VQ = MixedTensorProductSpace([W1, P])    # Coupling velocity and pressure
+!ec
+
+We can now create test- and trialfunctions for the coupled space $VQ$,
+and then split them up into components afterwards:
+
+!bc
+up = TrialFunction(VQ)
+vq = TestFunction(VQ)
+u, p = up
+v, q = vq
+!ec
+
+!bnotice
+The test function `v` is using homogeneous Dirichlet boundary conditions even
+though it is derived from `VQ`, which contains `W1`. It is currently not (and will
+probably never be) possible to use test functions with inhomogeneous
+boundary conditions.
+!enotice
+
+With the basisfunctions in place we may assemble the different blocks of the
+final coefficient matrix:
+
+!bc
+A = inner(grad(v), -nu*grad(u))
+G = inner(div(v), p)
+D = inner(q, div(u))
+!ec
+
+!bnotice
+The inner products may also be assembled with one single line, as
+!bc
+AA = inner(grad(v), -nu*grad(u)) + inner(div(v), p) + inner(q, div(u))
+!ec
+But note that this requires addition, not subtraction, of inner products,
+and it is not possible to move the negation to `-inner(grad(v), nu*grad(u))`.
+This is because the ${func('inner')} function returns a list of
+tensor product matrices of type ${cls('TPMatrix')}, and you cannot
+negate a list.
+!enotice
+
+The assembled subsystems `A, G` and `D` are lists containg the different blocks of
+the complete, coupled, coefficient matrix. `A` actually contains 4
+tensor product matrices of type ${cls('TPMatrix')}. The first two
+matrices are for vector component zero of the test function `v[0]` and
+trial function `u[0]`, the
+matrices 2 and 3 are for components 1. The first two matrices are as such for
+
+!bc
+  A[0:2] = inner(grad(v[0]), -nu*grad(u[0]))
+!ec
+
+Breaking it down the inner product is mathematically
+
+!bt
+\begin{equation}
+label{eq:partialeq1}
+\int_{\Omega}-\nu \left(\frac{\partial \bs{v}[0]}{\partial x}, \frac{\partial \bs{v}[0]}{\partial y}\right) \cdot \left(\frac{\partial \bs{u}[0]}{\partial x}, \frac{\partial \bs{u}[0]}{\partial y}\right) dx dy .
+\end{equation}
+!et
+
+We can now insert for test function $\bs{v}[0]$
+!bt
+\begin{equation}
+\bs{v}[0]_{kl} = \mathcal{X}_k \mathcal{Y}_l, \quad (k, l) \in \bs{k}^{N_0-2} \times \bs{l}^{N_1-2}
+\end{equation}
+!et
+and trialfunction
+!bt
+\begin{equation}
+\bs{u}[0]_{mn} = \sum_{m=0}^{N_0-3} \sum_{n=0}^{N_1-1} \hat{\bs{u}}[0]_{mn} \mathcal{X}_m \mathcal{Y}_n,
+\end{equation}
+!et
+where $\hat{\bs{u}}$ are the unknown degrees of freedom for the velocity vector.
+Notice that the sum over the second
+index runs all the way to $N_1-1$, whereas the other indices runs to either
+$N_0-3$ or $N_1-3$. This is because of the additional basis functions required
+for the inhomogeneous boundary condition.
+
+Inserting for these basis functions into (ref{eq:partialeq1}), we obtain after a few trivial
+manipulations
+
+!bt
+\begin{equation}
+ -\sum_{m=0}^{N_0-3} \sum_{n=0}^{N_1-1} \nu \Big( \underbrace{\int_{-1}^{1} \frac{\partial \mathcal{X}_k(x)}{\partial x} \frac{\partial \mathcal{X}_m}{\partial x} dx \int_{-1}^{1} \mathcal{Y}_l \mathcal{Y}_n dy}_{A[0]} +  \underbrace{\int_{-1}^{1} \mathcal{X}_k(x) X_m(x) dx \int_{-1}^{1} \frac{\partial \mathcal{Y}_l}{\partial y} \frac{\partial \mathcal{Y}_n}{\partial y} dy}_{A[1]}  \Big) \hat{\bs{u}}[0]_{mn}.
+\end{equation}
+!et
+
+We see that each tensor product matrix (both A[0] and A[1]) is composed as
+outer products of two smaller matrices, one for each dimension.
+The first tensor product matrix, A[0], is
+
+!bt
+\begin{equation}
+    \underbrace{\int_{-1}^{1} \frac{\partial \mathcal{X}_k(x)}{\partial x} \frac{\partial \mathcal{X}_m}{\partial x} dx}_{c_{km}} \underbrace{\int_{-1}^{1} \mathcal{Y}_l \mathcal{Y}_n dy}_{f_{ln}}
+\end{equation}
+!et
+where $C\in \mathbb{R}^{N_0-2 \times N_1-2}$ and $F \in \mathbb{R}^{N_0-2 \times N_1}$.
+Note that due to the inhomogeneous boundary conditions this last matrix $F$
+is actually not square. However, remember that all contributions from the two highest
+degrees of freedom ($\hat{\bs{u}}[0]_{m,N_1-2}$ and $\hat{\bs{u}}[0]_{m,N_1-1}$) are already
+known and they can, as such, be  moved directly over to the right hand side of the
+linear algebra system that is to be solved. More precisely, we can split the
+tensor product matrix into two contributions and obtain
+
+!bt
+\sum_{m=0}^{N_0-3}\sum_{n=0}^{N_1-1} c_{km}f_{ln} \hat{\bs{u}}[0]_{m, n} = \sum_{m=0}^{N_0-3}\sum_{n=0}^{N_1-3}c_{km}f_{ln}\hat{\bs{u}}[0]_{m, n} + \sum_{m=0}^{N_0-3}\sum_{n=N_1-2}^{N_1-1}c_{km}f_{ln}\hat{\bs{u}}[0]_{m, n}, \quad \forall (k, l) \in \bs{k}^{N_0-2} \times \bs{l}^{N_1-2},
+!et
+where the first term on the right hand side is square and the second term is known and
+can be moved to the right hand side of the linear algebra equation system.
+
+All the parts of the matrices that are to be moved to the right hand side
+can be extracted from A, G and D as follows
+
+!bc
+# Extract the boundary matrices
+bc_mats = extract_bc_matrices([A, G, D])
+!ec
+
+These matrices are applied to the solution below (see `BlockMatrix P`).
+Furthermore, this leaves us with square submatrices (A, G, D), which make up a
+symmetric block matrix
+
+!bt
+M =
+  \begin{bmatrix}
+      A[0]+A[1] & 0 & G[0] \\ label{eq:nsbmatrix}
+      0 & A[2]+A[3] & G[1] \\
+      D[0] & D[1] & 0
+  \end{bmatrix}
+!et
+
+This matrix, and the matrix responsible for the boundary degrees of freedom,
+can be assembled from the pieces we already have as
+
+!bc
+M = BlockMatrix(A+G+D)
+P = BlockMatrix(bc_mats)
+!ec
+
+We now have all the matrices we need in order to solve the Navier Stokes equations.
+However, we also need some work arrays for iterations and arrays to hold the
+nonlinear term. We create these arrays as follows
+
+!bc
+# Create Function to hold solution
+uh_hat = Function(VQ)
+ui_hat = uh_hat[0]
+D1Y.bc.apply_after(ui_hat[0], True) # Fixes the values of the boundary dofs
+
+# New solution (iterative)
+uh_new = Function(VQ)
+ui_new = uh_new[0]
+D1Y.bc.apply_after(ui_new[0], True
+
+# Compute the constant contribution to rhs due to nonhomogeneous boundary conditions
+bh_hat0 = Function(VQ)
+bh_hat0 = P.matvec(-uh_hat, bh_hat0) # Negative because moved to right hand side
+bi_hat0 = bh_hat0[0]
+
+!ec
+
+Note that `bh_hat0` now contains the part of the right hand side that is
+due to the non-symmetric part of assembled matrices. The line with
+`D1Y.bc.apply_after(ui_hat[0], True)` ensures the known boundary values of
+the solution are fixed for `ui_hat`.
+
+The nonlinear right hand side also requires some additional attention.
+Nonlinear terms are usually computed in physical space before transforming
+to spectral. For this we need to evaluate the velocity vector on the
+quadrature mesh. We also need a rank 2 Array to hold the outer
+product $\bs{u}\bs{u}$. The required arrays and spaces are
+created as
+!bc pycod
+
+# Create arrays to hold velocity vector solution
+ui = Array(V1)
+
+# Create work arrays for nonlinear part
+QT = MixedTensorProductSpace([W1, W0])  # for uiuj
+uiuj = Array(QT)
+uiuj_hat = Function(QT)
+!ec
+
+The right hand side $L((\bs{v}, q);\bs{u}^{k});$ is computed in its
+own function as
+!bc pycod
+def compute_rhs(ui_hat, bh_hat):
+    global ui, uiuj, uiuj_hat, V1
+    bh_hat.fill(0)
+    ui = W1.backward(ui_hat, ui)
+    uiuj = outer(ui, ui, uiuj)
+    uiuj_hat = uiuj.forward(uiuj_hat)
+    bi_hat = bh_hat[0]
+    #bi_hat = inner(v, div(uiuj_hat), output_array=bi_hat)
+    bi_hat = inner(grad(v), -uiuj_hat, output_array=bi_hat)
+    bh_hat += bh_hat0
+    return bh_hat
+!ec
+
+Here ${func('outer')} is a shenfun function that computes the
+outer product of two vectors and returns the product in a rank two
+array (here `uiuj`). With `uiuj` forward transformed to `uiuj_hat`
+we can assemble the linear form either as `inner(v, div(uiuj_hat)` or
+`inner(grad(v), -uiuj_hat)`'. Also notice that the constant contribution
+from the inhomogeneous boundary condition, `bh_hat0`,
+is added to the right hand side vector.
+
+Now all that remains is to solve iteratively until convergence, and
+plot the velocity vectors shown in Figure ref{fig:drivencavity}.
+Note that the ${cls('BlockMatrix')} given by `M` has a solve method that sets up
+a sparse block matrix of size $\mathbb{R}^{3(N_0-2)(N_1-2), 3(N_0-2)(N_1-2)}$,
+and then solves using "scipy.sparse.linalg.spsolve": "http://scipy.github.io/devdocs/generated/scipy.sparse.linalg.spsolve.html#scipy.sparse.linalg.spsolve".
+The matrix can be pre-factored using "splu": "http://scipy.github.io/devdocs/generated/scipy.sparse.linalg.splu.html#scipy.sparse.linalg.splu",
+which is done below. Also note that the `integral_constraint=(2, 0)`
+ensures that the pressure integrates to zero, i.e., $\int_{\Omega} pdxdy=0$.
+Here the number 2 tells us that block component 2 in the mixed space
+(the pressure) should be integrated, and it should be integrated to 0.
+
+!bc pycod
+uh_hat, Ai = M.solve(bh_hat0, u=uh_hat, integral_constraint=(2, 0), return_system=True) # Constraint for component 2 of mixed space
+Alu = splu(Ai)
+uh_new.v[:] = uh_hat.v
+converged = False
+count = 0
+t0 = time.time()
+while not converged:
+    count += 1
+    bh_hat = compute_rhs(ui_hat, bh_hat)
+    uh_new = M.solve(bh_hat, u=uh_new, integral_constraint=(2, 0), Alu=Alu) # Constraint for component 2 of mixed space
+    error = np.linalg.norm(ui_hat-ui_new)
+    uh_hat.v[:] = alfa*uh_new.v + (1-alfa)*uh_hat.v
+    converged = abs(error) < 1e-10 or count >= 10000
+    print('Iteration %d Error %2.4e' %(count, error))
+
+up = uh_hat.backward()
+u, p = up
+
+import matplotlib.pyplot as plt
+plt.figure()
+plt.quiver(X[0], X[1], u_[0], u_[1])
+plt.show()
+
+!ec
+
+===== Complete solver =====
+label{sec:nscomplete}
+D1Y.bc.apply_after(ui_hat[0], True)
+
+A complete solver can be found in demo "NavierStokesDrivenCavity.py":"https://github.com/spectralDNS/shenfun/blob/master/demo/NavierStokesDrivenCavity.py".

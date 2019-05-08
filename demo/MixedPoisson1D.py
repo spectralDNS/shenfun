@@ -70,15 +70,16 @@ A01 = inner(div(p), u)
 A10 = inner(q, div(g))
 
 # Get f and g on quad points
-fvj = Array(Q)
-fj = fvj[1]
+vfj = Array(Q)
+vj, fj = vfj
 fj[:] = fl(X)
 
-fv_hat = Function(Q)
-fv_hat[1] = inner(q, fj)
+vf_hat = Function(Q)
+v_hat, f_hat = vf_hat
+f_hat = inner(q, fj, output_array=f_hat)
 
 M = BlockMatrix([A00, A01, A10])
-gu_hat = M.solve(fv_hat)
+gu_hat = M.solve(vf_hat)
 gu = gu_hat.backward()
 
 uj = ul(X)

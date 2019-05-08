@@ -185,7 +185,7 @@ class SparseMatrix(dict):
             The axis over which to take the matrix vector product
 
         """
-        assert v.shape == c.shape
+        #assert v.shape == c.shape
         N, M = self.shape
         c.fill(0)
 
@@ -542,9 +542,11 @@ class SpectralMatrix(SparseMatrix):
                 self.solver = Solve(self, test[0])
 
     def matvec(self, v, c, format='csr', axis=0):
-        c = super(SpectralMatrix, self).matvec(v, c, format=format, axis=axis)
+        u = self.trialfunction[0]
+        ss = [slice(None)]*len(v.shape)
+        ss[axis] = u.slice()
+        c = super(SpectralMatrix, self).matvec(v[tuple(ss)], c, format=format, axis=axis)
         if self.testfunction[0].__class__.__name__ == 'ShenNeumannBasis':
-            ss = [slice(None)]*len(v.shape)
             ss[axis] = 0
             c[tuple(ss)] = 0
         return c
@@ -811,18 +813,18 @@ class BlockMatrix(object):
         """
         assert v.function_space() == self.mixedbase
         assert c.function_space() == self.mixedbase
-        c.fill(0)
-        z = np.zeros_like(c[0])
+        c.v.fill(0)
+        z = np.zeros_like(c.v[0])
         for i, mi in enumerate(self.mats):
             for j, mij in enumerate(mi):
                 if isinstance(mij, Number):
                     if abs(mij) > 1e-8:
-                        c[i] += mij*v[j]
+                        c.v[i] += mij*v.v[j]
                 else:
                     for m in mij:
                         z.fill(0)
-                        z = m.matvec(v[j], z)
-                        c[i] += z
+                        z = m.matvec(v.v[j], z)
+                        c.v[i] += z
         return c
 
     def __getitem__(self, ij):
@@ -877,7 +879,7 @@ class BlockMatrix(object):
                     bm[-1].append(d)
         return bmat(bm, format=format)
 
-    def solve(self, b, u=None, integral_constraint=None):
+    def solve(self, b, u=None, integral_constraint=None, return_system=False, Alu=None):
         r"""
         Solve matrix system Au = b
 
@@ -907,6 +909,20 @@ class BlockMatrix(object):
             explicit boundary condition, like the pure Chebyshev or Legendre
             bases.
 
+        Other Parameters
+        ----------------
+        return_system : bool, optional
+            If True then return the assembled block matrix as well as the
+            solution in a 2-tuple (solution, matrix). This is helpful for
+            repeated solves, because the returned matrix may then be
+            factorized once and reused.
+            Only for non-periodic problems
+
+        Alu : pre-factorized matrix, optional
+            Computed with Alu = splu(self), where self is the assembled block
+            matrix.
+            Only for non-periodic problems.
+
         """
         from .forms.arguments import Function
         import scipy.sparse as sp
@@ -931,16 +947,22 @@ class BlockMatrix(object):
                 s[0] = k
                 s[1] = tp[k].slice()
                 gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
-            go[:] = sp.linalg.spsolve(Ai, gi)
+            if not Alu is None:
+                go[:] = Alu.solve(gi)
+            else:
+                go[:] = sp.linalg.spsolve(Ai, gi)
             for k in range(b.shape[0]):
                 s[0] = k
                 s[1] = tp[k].slice()
                 u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
+            if return_system:
+                return u, Ai
 
         elif space.dimensions == 2:
             if len(tpmat.naxes) == 2: # 2 non-periodic axes
                 s = [0, 0, 0]
-                Ai = self.diags()
+                if Alu is None:
+                    Ai = self.diags()
                 gi = np.zeros(space.dim())
                 go = np.zeros(space.dim())
                 start = 0
@@ -954,8 +976,14 @@ class BlockMatrix(object):
                     dim = 0
                     for i in range(integral_constraint[0]):
                         dim += tp[i].dim()
-                    Ai, gi = self.apply_integral_constraint(Ai, gi, dim, 0, integral_constraint)
-                go[:] = sp.linalg.spsolve(Ai, gi)
+                    if Alu is None:
+                        Ai, gi = self.apply_integral_constraint(Ai, gi, dim, 0, integral_constraint)
+                    else:
+                        gi[dim] = integral_constraint[1]
+                if not Alu is None:
+                    go[:] = Alu.solve(gi)
+                else:
+                    go[:] = sp.linalg.spsolve(Ai, gi)
                 start = 0
                 for k in range(b.shape[0]):
                     s[0] = k
@@ -963,6 +991,9 @@ class BlockMatrix(object):
                     s[2] = tp[k].bases[1].slice()
                     u[tuple(s)] = go[start:(start+tp[k].dim())].reshape((1, tp[k].bases[0].dim(), tp[k].bases[1].dim()))
                     start += tp[k].dim()
+
+                if return_system:
+                    return u, Ai
             else:
                 s = [0]*3
                 ii, jj = {0:(2, 1), 1:(1, 2)}[axis]
@@ -1067,6 +1098,8 @@ class TPMatrix(object):
     def simplify_fourier_matrices(self):
         self.naxes = []
         for axis, mat in enumerate(self.mats):
+            if not mat:
+                continue
             if self.space[axis].family() == 'fourier':
                 if self.dimensions == 1: # Don't bother with the 1D case
                     continue
@@ -1159,6 +1192,13 @@ class TPMatrix(object):
 
     def all_diagonal(self):
         return np.all([m.isdiagonal() for m in self.mats])
+
+    def is_bc_matrix(self):
+        for m in self.mats:
+            if hasattr(m, 'trialfunction'):
+                if m.trialfunction[0].boundary_condition() == 'Apply':
+                    return True
+        return False
 
     @property
     def dimensions(self):

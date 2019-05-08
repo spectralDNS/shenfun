@@ -1,4 +1,4 @@
-from numbers import Number
+from numbers import Number, Integral
 import numpy as np
 from mpi4py_fft import DistArray
 
@@ -272,9 +272,6 @@ class Expr(object):
 
         if indices is None:
             self._indices = basis.offset()+np.arange(self.function_space().num_components())[:, np.newaxis]
-            if basis.index() is not None:
-                if isinstance(basis, BasisFunction) and self._indices.shape == (1, 1):
-                    self._indices[0, 0] = basis.offset()+basis.index()
 
         assert np.prod(self._scales.shape) == self.num_terms()*self.num_components()
 
@@ -339,10 +336,9 @@ class Expr(object):
         return self._terms.shape[2]
 
     def index(self):
-        return self._basis.index()
-
-    def flat_index(self):
-        return self._basis.flat_index()
+        if self.num_components() == 1:
+            return self._basis.offset()
+        return None
 
     def __getitem__(self, i):
         #assert self.num_components() == self.dim()
@@ -470,12 +466,17 @@ class BasisFunction(object):
 
     Parameters
     ----------
-    space: :class:`.TensorProductSpace` or :class:`.SpectralBase`
-    index: int
-        Component of basis with rank > 0
+    space : :class:`.TensorProductSpace`, :class:`.MixedTensorProductSpace` or
+        :class:`.SpectralBase`
+    index : int
+        Local component of basis with rank > 0
+    base : The base :class:`.MixedTensorProductSpace` if space is a subspace.
+    offset : int
+        The number of scalar spaces (i.e., :class:`.TensorProductSpace`es)
+        ahead of this space
     """
 
-    def __init__(self, space, index=None, base=None, offset=0):
+    def __init__(self, space, index=0, base=None, offset=0):
         self._space = space
         self._index = index
         self._base = base
@@ -488,7 +489,8 @@ class BasisFunction(object):
 
     def expr_rank(self):
         """Return rank of expression involving basis"""
-        return self.function_space().rank
+        return Expr(self).expr_rank()
+        #return self.function_space().rank
 
     def function_space(self):
         """Return function space of BasisFunction"""
@@ -514,26 +516,24 @@ class BasisFunction(object):
         return self.function_space().dimensions
 
     def index(self):
-        """Return index into vector space of rank 1"""
-        return self._index
+        """Return index into base space"""
+        return self._offset + self._index
 
     def offset(self):
-        return self._offset
+        """Return offset of this basis
 
-    def flat_index(self):
-        """Return flattened index for scalar space"""
-        assert self.rank == 0
-        return self._index + self._offset
+        The offset is the number of scalar :class:`.TensorProductSpace`es ahead
+        of this space in a :class:`.MixedTensorProductSpace`.
+        """
+        return self._offset
 
     def __getitem__(self, i):
         assert self.rank > 0
         base = self.base
         space = self._space[i]
-        corr = self._index if isinstance(self._index, int) else 0
-        offset = self._offset + corr
-        if self._index is None:
-            for k in range(i):
-                offset += base[k].num_components()-1
+        offset = self._offset
+        for k in range(i):
+            offset += self._space[k].num_components()
         t0 = BasisFunction(space, i, base, offset)
         return t0
 
@@ -574,18 +574,16 @@ class TestFunction(BasisFunction):
         Component of basis with rank > 0
     """
 
-    def __init__(self, space, index=None, base=None, offset=0):
+    def __init__(self, space, index=0, base=None, offset=0):
         BasisFunction.__init__(self, space, index, base, offset)
 
     def __getitem__(self, i):
         assert self.rank > 0
         base = self._space if self._base is None else self._base
         space = self._space[i]
-        corr = self._index if isinstance(self._index, int) else 0
-        offset = self._offset + corr
-        if self._index is None:
-            for k in range(i):
-                offset += base[k].num_components()-1
+        offset = self._offset
+        for k in range(i):
+            offset += self._space[k].num_components()
         t0 = TestFunction(space, i, base, offset)
         return t0
 
@@ -602,18 +600,16 @@ class TrialFunction(BasisFunction):
     index: int, optional
         Component of basis with rank > 0
     """
-    def __init__(self, space, index=None, base=None, offset=0):
+    def __init__(self, space, index=0, base=None, offset=0):
         BasisFunction.__init__(self, space, index, base, offset)
 
     def __getitem__(self, i):
         assert self.rank > 0
         base = self.base
         space = self._space[i]
-        corr = self._index if isinstance(self._index, int) else 0
-        offset = self._offset + corr
-        if self._index is None:
-            for k in range(i):
-                offset += base[k].num_components()-1
+        offset = self._offset
+        for k in range(i):
+            offset += self._space[k].num_components()
         t0 = TrialFunction(space, i, base, offset)
         return t0
 
@@ -639,6 +635,7 @@ class ShenfunBaseArray(DistArray):
             obj = DistArray.__new__(cls, shape, buffer=buffer, dtype=dtype,
                                     rank=space.rank)
             obj._space = space
+            obj._offset = 0
             if buffer is None and isinstance(val, Number):
                 obj[:] = val
             return obj
@@ -658,6 +655,7 @@ class ShenfunBaseArray(DistArray):
                                 buffer=buffer, alignment=p0.axis,
                                 rank=space.rank)
         obj._space = space
+        obj._offset = 0
         return obj
 
     def __array_finalize__(self, obj):
@@ -667,21 +665,24 @@ class ShenfunBaseArray(DistArray):
         self._space = getattr(obj, '_space', None)
         self._rank = getattr(obj, '_rank', None)
         self._p0 = getattr(obj, '_p0', None)
+        self._offset = getattr(obj, '_offset', None)
 
     def function_space(self):
         """Return function space of array ``self``"""
-        if self.base is None:
-            return self._space
-        if self.base.shape == self.shape:
-            return self._space
-        return self._space[self.index()]
+        return self._space
 
     def index(self):
-        """Return index into tensor"""
+        """Return index for scalar into mixed base space"""
         if self.base is None:
             return None
 
-        if self.base.shape == self.shape:
+        #if self.base.shape == self.shape:
+        #    return None
+
+        #if self.rank > 0:
+        #    return None
+
+        if self.function_space().num_components() > 1:
             return None
 
         data_self = self.ctypes.data
@@ -703,6 +704,27 @@ class ShenfunBaseArray(DistArray):
     def forward_output(self):
         """Return whether ``self`` is the result of a forward transform"""
         raise NotImplementedError
+
+    def __getitem__(self, i):
+        if self.ndim == 1:
+            return np.ndarray.__getitem__(self, i)
+
+        if self.rank > 0 and isinstance(i, Integral):
+            # Return view into mixed Function
+            space = self._space[i]
+            offset = 0
+            for j in range(i):
+                offset += self._space[j].num_components()
+            ns = space.num_components()
+            s = slice(offset, offset+ns) if ns > 1 else offset
+            v0 = np.ndarray.__getitem__(self, s)
+            v0._space = space
+            v0._offset = offset + self.offset()
+            v0._rank = self.rank - (self.ndim - v0.ndim)
+            #v0._rank = v0.ndim - self.dimensions
+            return v0
+
+        return np.ndarray.__getitem__(self.v, i)
 
 
 class Function(ShenfunBaseArray, BasisFunction):
@@ -770,7 +792,7 @@ class Function(ShenfunBaseArray, BasisFunction):
     # pylint: disable=too-few-public-methods,too-many-arguments
 
     def __init__(self, space, val=0, buffer=None):
-        BasisFunction.__init__(self, space)
+        BasisFunction.__init__(self, space, offset=0)
 
     @property
     def forward_output(self):
@@ -804,9 +826,6 @@ class Function(ShenfunBaseArray, BasisFunction):
         >>> assert np.allclose(u0, ul(*points))
         """
         return self.function_space().eval(x, self, output_array)
-
-    def offset(self):
-        return 0
 
     def backward(self, output_array=None):
         """Return Function evaluated on quadrature mesh"""
@@ -887,6 +906,7 @@ class Array(ShenfunBaseArray):
     >>> FFT = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
     >>> u = Array(FFT)
     """
+
     @property
     def forward_output(self):
         return False
@@ -898,3 +918,11 @@ class Array(ShenfunBaseArray):
             output_array = Function(space)
         output_array = space.forward(self, output_array)
         return output_array
+
+    def offset(self):
+        """Return offset of this basis
+
+        The offset is the number of scalar :class:`.TensorProductSpace`es ahead
+        of this Arrays space in a :class:`.MixedTensorProductSpace`.
+        """
+        return self._offset

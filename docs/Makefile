@@ -11,7 +11,7 @@ DEMO          = Poisson/poisson.rst \
                 KleinGordon/kleingordon.rst \
                 Poisson3D/poisson3d.rst \
 				KuramatoSivashinsky/kuramatosivashinsky.rst \
-				Stokes/stokes.rst
+				Stokes/stokes.rst DrivenCavity/drivencavity.rst
 
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

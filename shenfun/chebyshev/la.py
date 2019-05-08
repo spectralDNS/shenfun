@@ -13,23 +13,16 @@ class TDMA(la_TDMA):
 
     def __call__(self, b, u=None, axis=0):
 
-        v = self.mat.testfunction[0]
-        bc = v.bc
-
         if u is None:
             u = b
         else:
             assert u.shape == b.shape
             u[:] = b[:]
 
-        bc.apply_before(u, False, scales=(-np.pi/2., -np.pi/4.))
-
         if not self.dd.shape[0] == self.mat.shape[0]:
             self.init()
 
         self.TDMA_SymSolve(self.dd, self.ud, self.L, u, axis=axis)
-
-        bc.apply_after(u, False)
 
         if not self.mat.scale in (1, 1.0):
             u /= self.mat.scale
@@ -140,6 +133,16 @@ class Helmholtz(object):
     """
     def __init__(self, *args):
 
+        args = list(args)
+        for i, arg in enumerate(args):
+            if hasattr(arg, 'is_bc_matrix'):
+                if arg.is_bc_matrix():
+                    # For this particular case the boundary dofs contribution
+                    # to the right hand side is only nonzero for Fourier wavenumber
+                    # 0, so the contribution is in effect zero
+                    args.pop(i)
+                    break
+
         assert len(args) in (2, 4)
         A, B = args[0], args[1]
         M = {d.get_key(): d for d in (A, B)}
@@ -209,7 +212,6 @@ class Helmholtz(object):
         determined on creation of the class.
 
         """
-
         self.Solve_Helmholtz(b, u, self.neumann, self.u0, self.u1, self.u2, self.L, self.axis)
 
         if not self.neumann:

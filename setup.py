@@ -44,7 +44,7 @@ def get_extensions():
                              language="c++"))  # , define_macros=define_macros
     [e.extra_link_args.extend(["-std=c++11"]) for e in ext]
     #[e.extra_link_args.extend(["-std=c++11", "-fopenmp"]) for e in ext]
-    for s in ("Cheb", "convolve"):
+    for s in ("Cheb", "convolve", "outer"):
         ext.append(Extension("shenfun.optimization.cython.{0}".format(s),
                              libraries=['m'],
                              sources=[os.path.join(cdir, '{0}.pyx'.format(s))]))
