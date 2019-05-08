@@ -37,7 +37,7 @@ def func(x):
 %>
 % endif
 
-FIGURE: [https://raw.githack.com/spectralDNS/spectralutilities/master/figures/DrivenCavity.png] Velocity vectors for $Re=100$. Computed with "NavierStokesDrivenCavity.py":"https://github.com/spectralDNS/shenfun/blob/master/demo/NavierStokesDrivenCavity.py", which is described below.  label{fig:drivencavity}
+FIGURE: [https://raw.githack.com/spectralDNS/spectralutilities/master/figures/DrivenCavity.png] Velocity vectors for $Re=100$.   label{fig:drivencavity}
 
 ===== Navier Stokes equations =====
 label{demo:navierstokes}
