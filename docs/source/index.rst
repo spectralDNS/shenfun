@@ -49,6 +49,7 @@ Document build status
    poisson3d
    kuramatosivashinsky
    stokes
+   drivencavity
    zrefs
 
 .. toctree::

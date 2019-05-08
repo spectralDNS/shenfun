@@ -5,7 +5,7 @@ weighted inner product.
 from functools import reduce
 import numpy as np
 from shenfun.spectralbase import inner_product
-from shenfun.matrixbase import TPMatrix, SparseMatrix
+from shenfun.matrixbase import TPMatrix, SparseMatrix, Identity
 from shenfun.tensorproductspace import MixedTensorProductSpace
 from .arguments import Expr, Function, BasisFunction, Array
 
@@ -114,21 +114,19 @@ def inner(expr0, expr1, output_array=None, level=0):
 
 
     if test.rank > 0 and test.expr_rank() > 0: # For vector expressions of rank > 0 use recursive algorithm
-        ndim = test.function_space().num_components()
 
         if output_array is None and trial.argument == 2:
             output_array = Function(test.function_space())
 
         if trial.argument == 2:
             # linear form
-            for ii in range(ndim):
-                output_array[ii] = inner(test[ii], trial[ii],
-                                         output_array=output_array[ii])
+            for (te, tr, x) in zip(test, trial, output_array):
+                x = inner(te, tr, output_array=x)
             return output_array
 
         result = []
-        for ii in range(ndim):
-            l = inner(test[ii], trial[ii], level=level)
+        for te, tr in zip(test, trial):
+            l = inner(te, tr, level=level)
             result += [l] if isinstance(l, TPMatrix) else l
 
         # Add equal TPMatrices together
@@ -150,8 +148,10 @@ def inner(expr0, expr1, output_array=None, level=0):
         assert test.argument == 0
         space = test.function_space()
         if isinstance(trial, Array):
-            output_array = space.scalar_product(trial, output_array)
-            return output_array
+            if trial.rank == 0:
+                output_array = space.scalar_product(trial, output_array)
+                return output_array
+            trial = trial.forward()
 
     # If trial is an Expr with terms, then compute using bilinear form and matvec
 
@@ -169,8 +169,6 @@ def inner(expr0, expr1, output_array=None, level=0):
     trialspace = trial.function_space()
     test_scale = test.scales()
     trial_scale = trial.scales()
-    trial_indices = trial.indices()
-    test_indices = test.indices()
 
     uh = None
     if trial.argument == 2:
@@ -181,11 +179,12 @@ def inner(expr0, expr1, output_array=None, level=0):
 
     A = []
     vec = 0
-    for base_test, base_trial in zip(test.terms(), trial.terms()): # vector/scalar
+    for base_test, base_trial, test_ind, trial_ind in zip(test.terms(), trial.terms(), test.indices(), trial.indices()): # vector/scalar
         for test_j, b0 in enumerate(base_test):              # second index test
             for trial_j, b1 in enumerate(base_trial):        # second index trial
                 sc = test_scale[vec, test_j]*trial_scale[vec, trial_j]
                 M = []
+                DM = []
                 assert len(b0) == len(b1)
                 trial_sp = trialspace
                 if isinstance(trialspace, MixedTensorProductSpace): # could operate on a vector, e.g., div(u), where u is vector
@@ -193,6 +192,7 @@ def inner(expr0, expr1, output_array=None, level=0):
                 test_sp = space
                 if isinstance(space, MixedTensorProductSpace):
                     test_sp = space[vec]
+                has_bcs = False
                 for i, (a, b) in enumerate(zip(b0, b1)): # Third index, one inner for each dimension
                     ts = trial_sp[i]
                     sp = test_sp[i]
@@ -201,8 +201,24 @@ def inner(expr0, expr1, output_array=None, level=0):
                     # Take care of domains of not standard size
                     if not sp.domain_factor() == 1:
                         sc *= sp.domain_factor()**(a+b)
+
+                    if ts.boundary_condition() == 'Dirichlet' and not ts.family() in ('laguerre', 'hermite'):
+                        if ts.bc.has_nonhomogeneous_bcs():
+                            tsc = ts.get_bc_basis()
+                            BB = inner_product((sp, a), (tsc, b))
+                            if BB:
+                                DM.append(BB)
+                                has_bcs = True
+                                has_nonhomogeneous_bcs = True
+                        else:
+                            DM.append(AA)
+                    else:
+                        DM.append(AA)
+
                 sc = sp.broadcast_to_ndims(np.array([sc]))
-                A.append(TPMatrix(M, test_sp, sc, (test_indices[0, test_j], trial_indices[0, trial_j]), base))
+                A.append(TPMatrix(M, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), base))
+                if has_bcs:
+                    A.append(TPMatrix(DM, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), base))
         vec += 1
 
     # At this point A contains all matrices of the form. The length of A is
@@ -261,14 +277,15 @@ def inner(expr0, expr1, output_array=None, level=0):
 
         # linear form
         if uh.rank > 0:
-            for i, b in enumerate(A):
-                output_array += b.scale*uh[trial_indices[0, i]]
+            for b in A:
+                output_array += b.scale*uh.v[b.global_index[1]]
         else:
             f = reduce(lambda x, y: x+y, A)
             output_array[:] = f.scale*uh
         return output_array
 
     elif np.any([isinstance(f.pmat, SparseMatrix) for f in A]):
+
         # One non-Fourier space
         B = [A[0]]
         for a in A[1:]:  # Add equal TPMatrices
@@ -291,13 +308,15 @@ def inner(expr0, expr1, output_array=None, level=0):
             return B
 
         else: # linear form
-            wh = np.empty_like(output_array)
-            for i, b in enumerate(B):
+            wh = np.zeros_like(output_array)
+            for b in B:
                 if uh.rank > 0:
-                    wh = b.matvec(uh[trial_indices[0, i]], wh)
+                    wh = b.matvec(uh.v[b.global_index[1]], wh)
                 else:
                     wh = b.matvec(uh, wh)
                 output_array += wh
+                wh.fill(0)
+
             return output_array
 
     else:
@@ -306,10 +325,11 @@ def inner(expr0, expr1, output_array=None, level=0):
             return A
 
         else: # linear form
-            wh = np.empty_like(output_array)
-            for i, b in enumerate(A):
+            wh = np.zeros_like(output_array)
+            for b in A:
+                wh.fill(0)
                 if uh.rank > 0:
-                    wh = b.matvec(uh[trial_indices[0, i]], wh)
+                    wh = b.matvec(uh.v[b.global_index[1]], wh)
                 else:
                     wh = b.matvec(uh, wh)
                 output_array += wh

@@ -88,12 +88,14 @@ M = BlockMatrix(A00+A01+A10)
 
 # Assemble right hand side
 fh = Array(Q)
-fh[0] = flx(*X)
-fh[1] = fly(*X)
-fh[2] = hl(*X)
+f_, h_ = fh
+f_[0] = flx(*X)
+f_[1] = fly(*X)
+h_[:] = hl(*X)
 fh_hat = Function(Q)
-fh_hat[:2] = inner(v, fh[:2], output_array=fh_hat[:2])
-fh_hat[2] = inner(q, fh[2], output_array=fh_hat[2])
+f_hat, h_hat = fh_hat
+f_hat = inner(v, f_, output_array=f_hat)
+h_hat = inner(q, h_, output_array=h_hat)
 
 # Solve problem
 uh_hat = Function(Q)
@@ -101,6 +103,7 @@ uh_hat = M.solve(fh_hat, u=uh_hat, integral_constraint=(2, 0)) # Constraint for 
 
 # Move solution to regular Function
 up = uh_hat.backward()
+u_, p_ = up
 
 # Exact solution
 ux = ulx(*X)
@@ -108,9 +111,9 @@ uy = uly(*X)
 pe = pl(*X)
 
 # Compute error
-error = [comm.reduce(np.linalg.norm(ux-up[0])),
-         comm.reduce(np.linalg.norm(uy-up[1])),
-         comm.reduce(np.linalg.norm(pe-up[2]))]
+error = [comm.reduce(np.linalg.norm(ux-u_[0])),
+         comm.reduce(np.linalg.norm(uy-u_[1])),
+         comm.reduce(np.linalg.norm(pe-p_))]
 
 if comm.Get_rank() == 0:
     print('Error    u          v          p')
@@ -120,11 +123,11 @@ if comm.Get_rank() == 0:
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()
-    plt.contourf(X[0], X[1], up[2], 100)
+    plt.contourf(X[0], X[1], p_, 100)
     plt.figure()
-    plt.quiver(X[0], X[1], up[0], up[1])
+    plt.quiver(X[0], X[1], u_[0], u_[1])
     plt.figure()
     plt.spy(M.diags())
     plt.figure()
-    plt.contourf(X[0], X[1], up[0], 100)
-    #plt.show()
+    plt.contourf(X[0], X[1], u_[0], 100)
+    plt.show()

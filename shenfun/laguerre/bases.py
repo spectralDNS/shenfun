@@ -75,7 +75,7 @@ class LaguerreBase(SpectralBase):
         output_array *= np.exp(-x/2)
         return output_array
 
-    def evaluate_basis_derivative_all(self, x=None, k=0):
+    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         if x is None:
             x = self.mesh(False, False)
         V = self.vandermonde(x)
@@ -103,12 +103,12 @@ class LaguerreBase(SpectralBase):
 
         return self._composite_basis(V)
 
-    def evaluate_basis_all(self, x=None):
+    def evaluate_basis_all(self, x=None, argument=0):
         if x is None:
             x = self.mesh(False, False)
         V = self.vandermonde(x)
         V *= np.exp(-x/2)[:, np.newaxis]
-        return self._composite_basis(V)
+        return self._composite_basis(V, argument)
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
         if x is None:
@@ -141,7 +141,7 @@ class LaguerreBase(SpectralBase):
 
         return v
 
-    def _composite_basis(self, V):
+    def _composite_basis(self, V, argument=0):
         """Return composite basis, where ``V`` is primary Vandermonde matrix."""
         return V
 
@@ -223,7 +223,7 @@ class ShenDirichletBasis(LaguerreBase):
     def boundary_condition():
         return 'Dirichlet'
 
-    def _composite_basis(self, V):
+    def _composite_basis(self, V, argument=0):
         assert self.N == V.shape[1]
         P = np.zeros(V.shape)
         P[:, :-1] = V[:, :-1] - V[:, 1:]

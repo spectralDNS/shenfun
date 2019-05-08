@@ -429,13 +429,15 @@ class SpectralBase(object):
         """
         raise NotImplementedError
 
-    def evaluate_basis_all(self, x=None):
+    def evaluate_basis_all(self, x=None, argument=0):
         """Evaluate basis at ``x`` or all quadrature points
 
         Parameters
         ----------
             x : float or array of floats, optional
                 If not provided use quadrature points of self
+            argument : int
+                Zero for test and 1 for trialfunction
 
         Returns
         -------
@@ -468,7 +470,7 @@ class SpectralBase(object):
         """
         raise NotImplementedError
 
-    def evaluate_basis_derivative_all(self, x=None, k=0):
+    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         """Return k'th derivative of basis evaluated at ``x`` or all quadrature
         points as a Vandermonde matrix.
 
@@ -478,6 +480,8 @@ class SpectralBase(object):
                 If not provided use quadrature points of self
             k : int, optional
                 k'th derivative
+            argument : int
+                Zero for test and 1 for trialfunction
 
         Returns
         -------
@@ -518,7 +522,7 @@ class SpectralBase(object):
         assert self.N == input_array.shape[self.axis]
 
         _, weights = self.points_and_weights()
-        P = self.evaluate_basis_all()
+        P = self.evaluate_basis_all(argument=0)
 
         if input_array.ndim == 1:
             output_array[:] = np.dot(input_array*weights, np.conj(P))
@@ -549,7 +553,7 @@ class SpectralBase(object):
         """
         assert abs(self.padding_factor-1) < 1e-8
         assert self.N == output_array.shape[self.axis]
-        P = self.evaluate_basis_all()
+        P = self.evaluate_basis_all(argument=1)
 
         if output_array.ndim == 1:
             output_array = np.dot(P, input_array, out=output_array)
@@ -573,7 +577,7 @@ class SpectralBase(object):
 
         """
         assert abs(self.padding_factor-1) < 1e-8
-        P = self.evaluate_basis_all(x=points)
+        P = self.evaluate_basis_all(x=points, argument=1)
 
         if output_array.ndim == 1:
             output_array = np.dot(P, input_array, out=output_array)
@@ -819,12 +823,14 @@ class SpectralBase(object):
     def tensorproductspace(self, T):
         self._tensorproductspace = T
 
-    def __hash__(self):
-        return hash(repr(self.__class__))
+    #def __hash__(self):
+    #    return hash(repr(self.__class__))
 
     def __eq__(self, other):
         return (self.__class__.__name__ == other.__class__.__name__ and
-                self.quad == other.quad and self.N == other.N)
+                self.quad == other.quad and
+                self.N == other.N and
+                self.axis == other.axis)
 
     @property
     def rank(self):
@@ -1077,13 +1083,13 @@ class FuncWrap(object):
 
     # pylint: disable=too-few-public-methods, missing-docstring
 
-    __slots__ = ('_func', '__doc__', '_input_array', '_output_array')
+    __slots__ = ('_func', '_input_array', '_output_array')
 
     def __init__(self, func, input_array, output_array):
         object.__setattr__(self, '_func', func)
         object.__setattr__(self, '_input_array', input_array)
         object.__setattr__(self, '_output_array', output_array)
-        object.__setattr__(self, '__doc__', func.__doc__)
+        #object.__setattr__(self, '__doc__', func.__doc__)
 
     @property
     def input_array(self):
@@ -1104,7 +1110,7 @@ class Transform(FuncWrap):
 
     # pylint: disable=too-few-public-methods
 
-    __slots__ = ('_xfftn', '__doc__', '_input_array', '_output_array',
+    __slots__ = ('_xfftn', '_input_array', '_output_array',
                  '_tmp_array')
 
     def __init__(self, func, xfftn, input_array, tmp_array, output_array):
