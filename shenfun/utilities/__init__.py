@@ -121,27 +121,36 @@ def outer(a, b, c):
     av = a.v
     bv = b.v
     cv = c.v
+    symmetric = a is b
     if av.shape[0] == 2:
-        outer2D(av, bv, cv)
+        outer2D(av, bv, cv, symmetric)
     elif av.shape[0] == 3:
-        outer3D(av, bv, cv)
+        outer3D(av, bv, cv, symmetric)
     return c
 
 @optimizer
-def outer2D(a, b, c):
-    c[0] = a[0]**2
-    c[1] = a[0]*a[1]
-    c[2] = c[1]
-    c[3] = a[1]**2
+def outer2D(a, b, c, symmetric):
+    c[0] = a[0]*b[0]
+    c[1] = a[0]*b[1]
+    if symmetric:
+        c[2] = c[1]
+    else:
+        c[2] = a[1]*b[0]
+    c[3] = a[1]*b[1]
 
 @optimizer
-def outer3D(a, b, c):
+def outer3D(a, b, c, symmetric):
     c[0] = a[0]*b[0]
     c[1] = a[0]*b[1]
     c[2] = a[0]*b[2]
-    c[3] = c[1]
+    if symmetric:
+        c[3] = c[1]
+        c[6] = c[2]
+        c[7] = c[5]
+    else:
+        c[3] = a[1]*b[0]
+        c[6] = a[2]*b[0]
+        c[7] = a[2]*b[1]
     c[4] = a[1]*b[1]
     c[5] = a[1]*b[2]
-    c[6] = c[2]
-    c[7] = c[5]
     c[8] = a[2]*b[2]
