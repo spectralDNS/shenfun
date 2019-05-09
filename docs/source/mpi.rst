@@ -6,7 +6,7 @@ distributed memory architectures. OpenMP is also possible to enable for FFTs.
 
 Dataarrays in Shenfun are distributed using a `new and completely generic method <https://arxiv.org/abs/1804.09536>`_, that allows for any index of a multidimensional array to be
 distributed. To illustrate, lets consider a :class:`.TensorProductSpace`
-of three dimensions, such that the arrays living in this space will be 
+of three dimensions, such that the arrays living in this space will be
 3-dimensional. We create two spaces that are identical, except from the MPI
 decomposition, and we use 4 CPUs (``mpirun -np 4 python mpitest.py``, if we
 store the code in this section as ``mpitest.py``)::
@@ -24,26 +24,26 @@ store the code in this section as ``mpitest.py``)::
 
 Here the keyword ``slab`` determines that only *one* index set of the 3-dimensional
 arrays living in ``T0`` or ``T1`` should be distributed. The defaul is to use
-two, which corresponds to a so-called pencil decomposition. The ``axes``-keyword 
-determines the order of which transforms are conducted, starting from last to 
-first in the given tuple. Note that ``T0`` now will give arrays in real physical 
-space that are distributed in the first index, whereas ``T1`` will give arrays 
+two, which corresponds to a so-called pencil decomposition. The ``axes``-keyword
+determines the order of which transforms are conducted, starting from last to
+first in the given tuple. Note that ``T0`` now will give arrays in real physical
+space that are distributed in the first index, whereas ``T1`` will give arrays
 that are distributed in the second. This is because 0 and
 1 are the first items in the tuples given to ``axes``.
 
-We can now create some Functions on these spaces::
+We can now create some Arrays on these spaces::
 
-    u0 = Function(T0, False, val=comm.Get_rank())
-    u1 = Function(T1, False, val=comm.Get_rank())
+    u0 = Array(T0, val=comm.Get_rank())
+    u1 = Array(T1, val=comm.Get_rank())
 
-such that ``u0`` and ``u1`` have values corresponding to their communicating 
+such that ``u0`` and ``u1`` have values corresponding to their communicating
 processors rank in the ``COMM_WORLD`` group (the group of all CPUs).
 
 Note that both the TensorProductSpaces have functions with expansion
 
 .. math::
    :label: u_fourier
-        
+
         u(x, y, z) = \sum_{n=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{l=-N/2}^{N/2-1}
         \hat{u}_{l,m,n} e^{\imath (lx + my + nz)}.
 
@@ -53,7 +53,7 @@ on the real physical mesh, then we get
 
 .. math::
    :label: u_fourier_d
-        
+
         u(x_i, y_j, z_k) = \sum_{n=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{l=-N/2}^{N/2-1}
         \hat{u}_{l,m,n} e^{\imath (lx_i + my_j + nz_k)}.
 
@@ -98,12 +98,12 @@ fortunate, because this axis will be the first to be transformed in, e.g.,
     :width: 250px
     :height: 200px
 
-We can now decide to distribute not just one, but the first two axes using 
+We can now decide to distribute not just one, but the first two axes using
 a pencil decomposition instead. This is achieved simply by dropping the
 slab keyword::
 
     T2 = TensorProductSpace(comm, (K0, K1, K2), axes=(0, 1, 2))
-    u2 = Function(T2, False, val=comm.Get_rank())
+    u2 = Array(T2, val=comm.Get_rank())
     pencilfile = HDF5Writer('pencilfile.h5', ['u0'], T2)
     pencilfile.write_tstep(0, u2)
     pencilfile.close()
@@ -128,18 +128,18 @@ The local slices into the global array may be obtained through::
 In spectral space the distribution will be different. This is because the
 discrete Fourier transforms are performed one axis at the time, and for
 this to happen the dataarrays need to be realigned to get entire axis available
-for each processor. Naturally, for the array in the pencil example 
+for each processor. Naturally, for the array in the pencil example
 :ref:`(see image) <pencil>`, we can only perform an
 FFT over the third and longest axis, because only this axis is locally available to all
 processors. To do the other directions, the dataarray must be realigned and this
-is done internally by the :class:`.TensorProductSpace` class. 
+is done internally by the :class:`.TensorProductSpace` class.
 The shape of the datastructure in spectral space, that is
 the shape of :math:`\hat{u}`, can be obtained as::
 
     >>> print(comm.Get_rank(), T2.local_slice(True))
     0 [slice(0, 20, None), slice(0, 20, None), slice(0, 16, None)]
     1 [slice(0, 20, None), slice(0, 20, None), slice(16, 31, None)]
-    2 [slice(0, 20, None), slice(20, 40, None), slice(0, 16, None)] 
+    2 [slice(0, 20, None), slice(20, 40, None), slice(0, 16, None)]
     3 [slice(0, 20, None), slice(20, 40, None), slice(16, 31, None)]
 
 Evidently, the spectral space is distributed in the last two axes, whereas

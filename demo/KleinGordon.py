@@ -62,15 +62,15 @@ Tp = T
 
 X = T.local_mesh(True)
 fu = Array(TT)
-f, u = fu[:]
+f, u = fu
 up = Array(Tp)
-K = np.array(T.local_wavenumbers(True, True, True))
+K = T.local_wavenumbers(False, True, True)
 
 dfu = Function(TT)
-df, du = dfu[:]
+df, du = dfu
 
 fu_hat = Function(TT)
-f_hat, u_hat = fu_hat[:]
+f_hat, u_hat = fu_hat
 
 gradu = Array(TV)
 
@@ -90,8 +90,8 @@ def NonlinearRHS(self, fu, fu_hat, dfu_hat, **par):
     global count, up
     count += 1
     dfu_hat.fill(0)
-    f_hat, u_hat = fu_hat[:]
-    df_hat, du_hat = dfu_hat[:]
+    f_hat, u_hat = fu_hat
+    df_hat, du_hat = dfu_hat
     up = Tp.backward(u_hat, up)
     df_hat = Tp.forward(gamma*up**3, df_hat)
     df_hat += L*u_hat
@@ -133,13 +133,13 @@ def update(self, fu, fu_hat, t, tstep, **params):
     if tstep % params['Compute_energy'] == 0:
         if transformed is False:
             fu = fu_hat.backward(fu)
-        f, u = fu[:]
-        f_hat, u_hat = fu_hat[:]
+        f, u = fu
+        f_hat, u_hat = fu_hat
         ekin = 0.5*energy_fourier(f_hat, T)
-        es = 0.5*energy_fourier(1j*K*u_hat, T)
+        es = 0.5*energy_fourier(1j*(K[0]*u_hat[0]+K[1]*u_hat[1]+K[2]*u_hat[2]), T)
         eg = gamma*np.sum(0.5*u**2 - 0.25*u**4)/np.prod(np.array(N))
         eg = comm.allreduce(eg)
-        gradu = TV.backward(1j*K*u_hat, gradu)
+        gradu = TV.backward(1j*(K[0]*u_hat[0]+K[1]*u_hat[1]+K[2]*u_hat[2]), gradu)
         ep = comm.allreduce(np.sum(f*gradu)/np.prod(np.array(N)))
         ea = comm.allreduce(np.sum(np.array(X)*(0.5*f**2 + 0.5*gradu**2 - (0.5*u**2 - 0.25*u**4)*f))/np.prod(np.array(N)))
         if rank == 0:
@@ -147,9 +147,9 @@ def update(self, fu, fu_hat, t, tstep, **params):
         comm.barrier()
 
 if __name__ == '__main__':
-    file0 = HDF5File("KleinGordon{}.h5".format(N[0]), TT, mode='w')
-    par = {'write_slice_tstep': (10, {'fu': [(fu, [slice(None), slice(None), 10, slice(None)]),
-                                             (fu, [slice(None), 10, slice(None), slice(None)])]}),
+    file0 = HDF5File("KleinGordon{}.h5".format(N[0]), mode='w')
+    par = {'write_slice_tstep': (10, {'fu': [(fu, [slice(None), 10, slice(None)]),
+                                             (fu, [10, slice(None), slice(None)])]}),
            'write_tstep': (50, {'fu': [fu]}),
            'Compute_energy': 100,
            'plot_tstep': 100,
