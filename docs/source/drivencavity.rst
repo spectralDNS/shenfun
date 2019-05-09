@@ -7,7 +7,7 @@ Demo - Lid driven cavity
 ========================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 8, 2019
+:Date: May 9, 2019
 
 *Summary.* The lid driven cavity is a classical benchmark for Navier Stokes solvers.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the lid
@@ -390,10 +390,13 @@ and then split them up into components afterwards:
 
 
 With the basisfunctions in place we may assemble the different blocks of the
-final coefficient matrix:
+final coefficient matrix. For this we also need to specify the kinematic
+viscosity, which is given here in terms of the Reynolds number:
 
 .. code-block:: text
 
+    Re = 100.
+    nu = 2./Re
     A = inner(grad(v), -nu*grad(u))
     G = inner(div(v), p)
     D = inner(q, div(u))
@@ -530,8 +533,8 @@ can be assembled from the pieces we already have as
     P = BlockMatrix(bc_mats)
 
 We now have all the matrices we need in order to solve the Navier Stokes equations.
-However, we also need some work arrays for iterations and arrays to hold the
-nonlinear term. We create these arrays as follows
+However, we also need some work arrays for iterations and we need to
+assemble the constant boundary contribution to the right hand side
 
 .. code-block:: text
 
@@ -574,12 +577,12 @@ created as
     uiuj_hat = Function(QT)
 
 The right hand side :math:`L((\boldsymbol{v}, q);\boldsymbol{u}^{k});` is computed in its
-own function as
+own function ``compute_rhs`` as
 
 .. code-block:: python
 
     def compute_rhs(ui_hat, bh_hat):
-        global ui, uiuj, uiuj_hat, V1
+        global ui, uiuj, uiuj_hat, V1, bh_hat0
         bh_hat.fill(0)
         ui = W1.backward(ui_hat, ui)
         uiuj = outer(ui, ui, uiuj)
@@ -594,35 +597,55 @@ Here :func:`.outer` is a shenfun function that computes the
 outer product of two vectors and returns the product in a rank two
 array (here ``uiuj``). With ``uiuj`` forward transformed to ``uiuj_hat``
 we can assemble the linear form either as ``inner(v, div(uiuj_hat)`` or
-``inner(grad(v), -uiuj_hat)``'. Also notice that the constant contribution
+``inner(grad(v), -uiuj_hat)``. Also notice that the constant contribution
 from the inhomogeneous boundary condition, ``bh_hat0``,
 is added to the right hand side vector.
 
-Now all that remains is to solve iteratively until convergence, and
-plot the velocity vectors shown in Figure :ref:`fig:drivencavity`.
-Note that the :class:`.BlockMatrix` given by ``M`` has a solve method that sets up
-a sparse block matrix of size :math:`\mathbb{R}^{3(N_0-2)(N_1-2), 3(N_0-2)(N_1-2)}`,
-and then solves using `scipy.sparse.linalg.spsolve <http://scipy.github.io/devdocs/generated/scipy.sparse.linalg.spsolve.html#scipy.sparse.linalg.spsolve>`__.
-The matrix can be pre-factored using `splu <http://scipy.github.io/devdocs/generated/scipy.sparse.linalg.splu.html#scipy.sparse.linalg.splu>`__,
-which is done below. Also note that the ``integral_constraint=(2, 0)``
-ensures that the pressure integrates to zero, i.e., :math:`\int_{\Omega} pdxdy=0`.
-Here the number 2 tells us that block component 2 in the mixed space
-(the pressure) should be integrated, and it should be integrated to 0.
+Now all that remains is to guess an initial solution and solve
+iteratively until convergence. For initial solution we simply set the
+velocity and pressure to zero and solve the Stokes equations:
 
 .. code-block:: python
 
     uh_hat, Ai = M.solve(bh_hat0, u=uh_hat, integral_constraint=(2, 0), return_system=True) # Constraint for component 2 of mixed space
     Alu = splu(Ai)
-    uh_new.v[:] = uh_hat.v
+    uh_new[:] = uh_hat
+
+Note that the :class:`.BlockMatrix` given by ``M`` has a solve method that sets up
+a sparse coefficient matrix ``Ai`` of size :math:`\mathbb{R}^{3(N_0-2)(N_1-2) \times 3(N_0-2)(N_1-2)}`,
+and then solves using `scipy.sparse.linalg.spsolve <http://scipy.github.io/devdocs/generated/scipy.sparse.linalg.spsolve.html#scipy.sparse.linalg.spsolve>`__.
+The matrix ``Ai`` is then pre-factored for reuse with `splu <http://scipy.github.io/devdocs/generated/scipy.sparse.linalg.splu.html#scipy.sparse.linalg.splu>`__.
+Also note that the ``integral_constraint=(2, 0)`` keyword argument
+ensures that the pressure integrates to zero, i.e., :math:`\int_{\Omega} pdxdy=0`.
+Here the number 2 tells us that block component 2 in the mixed space
+(the pressure) should be integrated, and it should be integrated to 0.
+
+With an initial solution from the Stokes equations we are ready to start iterating.
+However, for convergence it is necessary to add some underrelaxation :math:`\alpha`,
+and update the solution each time step as
+
+.. math::
+        \begin{align*}
+        \hat{\boldsymbol{u}}^{k+1} &= \alpha \hat{\boldsymbol{u}}^* + (1-\alpha)\hat{\boldsymbol{u}}^{k},\\ 
+        \hat{p}^{k+1} &= \alpha \hat{p}^* + (1-\alpha)\hat{p}^{k},
+        \end{align*}
+
+where :math:`\hat{\boldsymbol{u}}^*` and :math:`\hat{p}^*` are the newly computed velocity
+and pressure returned from ``M.solve``. Without underrelaxation the solution
+will quickly blow up. The iteration loop goes as follows
+
+.. code-block:: python
+
     converged = False
     count = 0
+    alfa = 0.5
     t0 = time.time()
     while not converged:
         count += 1
         bh_hat = compute_rhs(ui_hat, bh_hat)
         uh_new = M.solve(bh_hat, u=uh_new, integral_constraint=(2, 0), Alu=Alu) # Constraint for component 2 of mixed space
         error = np.linalg.norm(ui_hat-ui_new)
-        uh_hat.v[:] = alfa*uh_new.v + (1-alfa)*uh_hat.v
+        uh_hat[:] = alfa*uh_new + (1-alfa)*uh_hat
         converged = abs(error) < 1e-10 or count >= 10000
         print('Iteration %d Error %2.4e' %(count, error))
     
@@ -635,10 +658,12 @@ Here the number 2 tells us that block component 2 in the mixed space
     plt.show()
     
 
+The last three lines plots the velocity vectors that are shown
+in Figure :ref:`fig:drivencavity`.
+
 .. _sec:nscomplete:
 
 Complete solver
 ---------------
-D1Y.bc.apply_after(ui_hat[0], True)
 
 A complete solver can be found in demo `NavierStokesDrivenCavity.py <https://github.com/spectralDNS/shenfun/blob/master/demo/NavierStokesDrivenCavity.py>`__.

@@ -7,7 +7,7 @@ Demo - Cubic nonlinear Klein-Gordon equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 8, 2019
+:Date: May 9, 2019
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Klein-Gordon equation, in a triply periodic domain. The demo is implemented in
@@ -488,13 +488,13 @@ e.g., the Runge-Kutta method. Arrays are created as
 .. code-block:: python
 
     uf = Array(TT)           # Solution array in physical space
-    u, f = uf[:]             # Split solution array by creating two views u and f
+    u, f = uf                # Split solution array by creating two views u and f
     duf = Function(TT)       # Array for right hand sides
-    du, df = duf[:]          # Split into views
+    du, df = duf             # Split into views
     uf_hat = Function(TT)    # Solution in spectral space
     uf_hat0 = Function(TT)   # Work array 1
     uf_hat1 = Function(TT)   # Work array 2
-    u_hat, f_hat = uf_hat[:] # Split into views
+    u_hat, f_hat = uf_hat    # Split into views
 
 The :class:`.Array` class is a subclass of Numpy's `ndarray <https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html>`__,
 without much more functionality than constructors that return arrays of the
@@ -572,8 +572,8 @@ function can be implemented as
     
     def compute_rhs(duf_hat, uf_hat, up, Tp, w0):
         duf_hat.fill(0)
-        u_hat, f_hat = uf_hat[:]
-        du_hat, df_hat = duf_hat[:]
+        u_hat, f_hat = uf_hat
+        du_hat, df_hat = duf_hat
         df_hat[:] = k2*u_hat
         up = Tp.backward(u_hat, up)
         df_hat += Tp.forward(gamma*up**3, w0)
