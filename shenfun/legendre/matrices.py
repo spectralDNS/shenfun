@@ -159,8 +159,8 @@ class BDDmat(SpectralMatrix):
             d[0][-1] = 2./(2*(N-3)+1) + 2./(N-1)
 
         if test[0].is_scaled():
-            d[0] /= 4*k+6
-            d[-2] /= (np.sqrt(4*k[:-2]+6)*np.sqrt(4*k[2:]+6))
+            d[0] /= (4*k+6)
+            d[-2] /= (np.sqrt(4*k[2:]+6)*np.sqrt(4*k[:-2]+6))
 
         d[2] = d[-2]
         SpectralMatrix.__init__(self, d, test, trial)
@@ -261,10 +261,10 @@ class BDLmat(SpectralMatrix):
         sc = np.ones(N)
         if test[0].is_scaled():
             sc = 1. / np.sqrt(4*k+6)
-        d = {2: -2./(2*k[2:] + 1)*sc[2:],
+        d = {2: -2./(2*k[2:] + 1)*sc[:-2],
              0: 2./(2.*k[:-2]+1)*sc[:-2]}
         if test[0].quad == 'GL':
-            d[2][-1] = -2./(N-1)*sc[N-1]
+            d[2][-1] = -2./(N-1)*sc[N-3]
         SpectralMatrix.__init__(self, d, test, trial)
 
 @inheritdocstrings
@@ -293,10 +293,10 @@ class BLDmat(SpectralMatrix):
         if trial[0].is_scaled():
             sc = 1. / np.sqrt(4*k+6)
 
-        d = {-2: -2./(2*k[2:] + 1)*sc[2:],
+        d = {-2: -2./(2*k[2:] + 1)*sc[:-2],
              0: 2./(2.*k[:-2]+1)*sc[:-2]}
         if test[0].quad == 'GL':
-            d[-2][-1] = -2./(N-1)*sc[-1]
+            d[-2][-1] = -2./(N-1)*sc[-3]
         SpectralMatrix.__init__(self, d, test, trial)
 
 @inheritdocstrings
@@ -678,6 +678,34 @@ class CLDmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial)
 
 @inheritdocstrings
+class CDLmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        C_{kj} = (L_j, \psi'_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
+
+    """
+    def __init__(self, test, trial):
+        assert isinstance(test[0], SD)
+        assert isinstance(trial[0], LB)
+        N = test[0].N
+        d = {1: -2}
+        if test[0].is_scaled():
+            k = np.arange(N-2, dtype=np.float)
+            d[1] = -2. / np.sqrt(4*k+6)
+        SpectralMatrix.__init__(self, d, test, trial)
+
+
+@inheritdocstrings
 class _Legmatrix(SpectralMatrix):
     def __init__(self, test, trial):
         SpectralMatrix.__init__(self, {}, test, trial)
@@ -706,6 +734,7 @@ mat = _LegMatDict({
     ((LB, 0), (LB, 1)): CLLmat,
     ((LB, 1), (LB, 0)): CLLmatT,
     ((LB, 0), (SD, 1)): CLDmat,
+    ((SD, 1), (LB, 0)): CDLmat,
     ((SD, 0), (SD, 0)): BDDmat,
     ((SB, 0), (SB, 0)): BBBmat,
     ((SN, 0), (SN, 0)): BNNmat,

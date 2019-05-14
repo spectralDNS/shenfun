@@ -420,7 +420,7 @@ class TensorProductSpace(PFFT):
             ss[axis] = s
             lk.append(n[tuple(ss)])
         if broadcast is True:
-            return [np.broadcast_to(m, self.dim()) for m in lk]
+            return [np.broadcast_to(m, self.shape()) for m in lk]
         return lk
 
     def mesh(self):
@@ -880,6 +880,12 @@ class BoundaryValues(object):
             self.bcs_final[:] = self.bcs
 
     def set_tensor_bcs(self, this_base, T):
+        """Set correct boundary values for tensor, using values in self.bc
+
+        To modify boundary conditions on the fly, modify first self.bc and then
+        call this function. The boundary condition can then be applied as before
+        using `apply_before` and `apply_after`.
+        """
         self.axis = this_base.axis
         self.T = T
         if isinstance(T, (chebyshev.bases.ShenDirichletBasis,
@@ -921,41 +927,27 @@ class BoundaryValues(object):
             b = Array(T)
             s = T.local_slice(False)[self.axis]
 
-            if isinstance(self.bc[0], sympy.Expr):
-                bc0 = self.bc[0]
-                bc1 = self.bc[1]
-                X = T.local_mesh(True)
-                x, y, z = sympy.symbols("x,y,z")
-                sym0 = [sym for sym in (x, y, z) if sym in bc0.free_symbols]
-                sym1 = [sym for sym in (x, y, z) if sym in bc1.free_symbols]
-                lbc0 = sympy.lambdify(sym0, bc0, 'numpy')
-                lbc1 = sympy.lambdify(sym1, bc1, 'numpy')
-                Y0 = []
-                Y1 = []
-                for i, ax in enumerate((x, y, z)):
-                    if ax in bc0.free_symbols:
-                        Y0.append(X[i][this_base.si[0]])
-                    if ax in bc1.free_symbols:
-                        Y1.append(X[i][this_base.si[0]])
+            for j, bci in enumerate(self.bc):
+                if isinstance(bci, sympy.Expr):
+                    X = T.local_mesh(True)
+                    x, y, z = sympy.symbols("x,y,z")
+                    sym0 = [sym for sym in (x, y, z) if sym in bci.free_symbols]
+                    lbci = sympy.lambdify(sym0, bci, 'numpy')
+                    Yi = []
+                    for i, ax in enumerate((x, y, z)):
+                        if ax in bci.free_symbols:
+                            Yi.append(X[i][this_base.si[j]])
 
-                f_bc0 = lbc0(*Y0)
-                f_bc1 = lbc1(*Y1)
-                if s.stop == this_base.N:
-                    b[self.slm2] = f_bc0
-                    b[self.slm1] = f_bc1
+                    f_bci = lbci(*Yi)
+                    if s.stop == this_base.N:
+                        b[this_base.si[-2+j]] = f_bci
 
-            elif isinstance(self.bc[0], Number):
-                if s.stop == this_base.N:
-                    b[self.slm2] = self.bc[0]
-                    b[self.slm1] = self.bc[1]
+                elif isinstance(bci, (Number, np.ndarray)):
+                    if s.stop == this_base.N:
+                        b[this_base.si[-2+j]] = bci
 
-            elif isinstance(self.bc[0], np.ndarray):
-                if s.stop == this_base.N:
-                    b[self.slm2] = self.bc[0][self.sl0]
-                    b[self.slm1] = self.bc[0][self.slm1]
-
-            else:
-                raise NotImplementedError
+                else:
+                    raise NotImplementedError
 
             if number_of_bases_after_this == 0:
                 # Dirichlet base is the first to be transformed
@@ -1010,6 +1002,18 @@ class BoundaryValues(object):
         self.slm2 = T.si[-2]
 
     def apply_before(self, u, final=False, scales=(0.5, 0.5)):
+        """Apply boundary condition to rhs before solving in forward transforms
+
+        Parameters
+        ----------
+        u : Function
+            Apply boundary values to this Function
+        final : bool
+            Whether the function is fully transformed or not. False is used in
+            forward transforms, where the transform of this base may be in
+            between the transforms of other bases. True is not really used
+            anymore...
+        """
         if final is True:
             u[self.sl0] += scales[0]*(self.bcs_final[0] + self.bcs_final[1])
             u[self.sl1] += scales[1]*(self.bcs_final[0] - self.bcs_final[1])
@@ -1019,6 +1023,19 @@ class BoundaryValues(object):
             u[self.sl1] += scales[1]*(self.bcs[0] - self.bcs[1])
 
     def apply_after(self, u, final=False):
+        """Apply boundary condition after solving, fixing dofs N-2 and N-1
+
+        Parameters
+        ----------
+        u : Function
+            Apply boundary values to this Function
+        final : bool
+            Whether the function is fully transformed or not. Not is used in
+            forward transforms, where the transform of this base may be in
+            between the transforms of other bases. If final is True, then u
+            must be a fully transformed Function.
+
+        """
         if final is True:
             u[self.slm2] = self.bcs_final[0]
             u[self.slm1] = self.bcs_final[1]
@@ -1028,9 +1045,16 @@ class BoundaryValues(object):
             u[self.slm1] = self.bcs[1]
 
     def has_nonhomogeneous_bcs(self):
-        if self.bc[0] == 0 and self.bc[1] == 0:
-            return False
-        return True
+        for bc in self.bc:
+            if isinstance(bc, Number):
+                if not bc == 0:
+                    return True
+            elif isinstance(bc, np.ndarray):
+                if not np.all(bc == 0):
+                    return True
+            elif isinstance(bc, sympy.Expr):
+                return True
+        return False
 
 def some_basic_tests():
     import pyfftw             #pylint: disable=import-error

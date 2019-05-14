@@ -227,7 +227,8 @@ class Expr(object):
         Representing a scalar multiply of each inner product
 
     indices : Numpy array of shape == terms.shape[:2]
-        Index into VectorTensorProductSpace. Only for vector coefficients
+        Index into MixedTensorProductSpace. Only used when basis of form has
+        rank > 0
 
     Examples
     --------
@@ -281,11 +282,8 @@ class Expr(object):
 
     @property
     def base(self):
-        """Return base array used in Expr"""
-        # base is always the non-sliced parent array
-        if isinstance(self._basis, np.ndarray):
-            return self._basis if self._basis.base is None else self._basis.base
-        return self._basis
+        """Return base BasisFunction used in Expr"""
+        return self._basis if self._basis.base is None else self._basis.base
 
     def function_space(self):
         """Return function space of basis in Expr"""
@@ -358,6 +356,8 @@ class Expr(object):
                         self._terms[i*ndim:(i+1)*ndim],
                         self._scales[i*ndim:(i+1)*ndim],
                         self._indices[i*ndim:(i+1)*ndim])
+        else:
+            raise NotImplementedError
 
     def __mul__(self, a):
         if self.expr_rank() == 0:
@@ -415,7 +415,12 @@ class Expr(object):
         assert self.num_components() == a.num_components()
         assert self.function_space() == a.function_space()
         assert self.argument == a.argument
-        return Expr(self._basis,
+        if id(self._basis) == id(a._basis):
+            basis = self._basis
+        else:
+            assert id(self._basis.base) == id(a._basis.base)
+            basis = self._basis.base
+        return Expr(basis,
                     np.concatenate((self.terms(), a.terms()), axis=1),
                     np.concatenate((self.scales(), a.scales()), axis=1),
                     np.concatenate((self.indices(), a.indices()), axis=1))
@@ -427,6 +432,12 @@ class Expr(object):
         assert self.num_components() == a.num_components()
         assert self.function_space() == a.function_space()
         assert self.argument == a.argument
+        if id(self._basis) == id(a._basis):
+            basis = self._basis
+        else:
+            assert id(self._basis.base) == id(a._basis.base)
+            basis = self._basis.base
+        self._basis = basis
         self._terms = np.concatenate((self.terms(), a.terms()), axis=1)
         self._scales = np.concatenate((self.scales(), a.scales()), axis=1)
         self._indices = np.concatenate((self.indices(), a.indices()), axis=1)
@@ -437,9 +448,14 @@ class Expr(object):
         if not isinstance(a, Expr):
             a = Expr(a)
         assert self.num_components() == a.num_components()
-        assert self.function_space() == a.function_space()
+        #assert self.function_space() == a.function_space()
         assert self.argument == a.argument
-        return Expr(self._basis,
+        if id(self._basis) == id(a._basis):
+            basis = self._basis
+        else:
+            assert id(self._basis.base) == id(a._basis.base)
+            basis = self._basis.base
+        return Expr(basis,
                     np.concatenate((self.terms(), a.terms()), axis=1),
                     np.concatenate((self.scales(), -a.scales()), axis=1),
                     np.concatenate((self.indices(), a.indices()), axis=1))
@@ -451,6 +467,12 @@ class Expr(object):
         assert self.num_components() == a.num_components()
         assert self.function_space() == a.function_space()
         assert self.argument == a.argument
+        if id(self._basis) == id(a._basis):
+            basis = self._basis
+        else:
+            assert id(self._basis.base) == id(a._basis.base)
+            basis = self._basis.base
+        self._basis = basis
         self._terms = np.concatenate((self.terms(), a.terms()), axis=1)
         self._scales = np.concatenate((self.scales(), -a.scales()), axis=1)
         self._indices = np.concatenate((self.indices(), a.indices()), axis=1)
@@ -470,17 +492,20 @@ class BasisFunction(object):
         :class:`.SpectralBase`
     index : int
         Local component of basis with rank > 0
-    base : The base :class:`.MixedTensorProductSpace` if space is a subspace.
+    basespace : The base :class:`.MixedTensorProductSpace` if space is a
+        subspace.
     offset : int
         The number of scalar spaces (i.e., :class:`.TensorProductSpace`es)
         ahead of this space
+    base : The base :class:`BasisFunction`
     """
 
-    def __init__(self, space, index=0, base=None, offset=0):
+    def __init__(self, space, index=0, basespace=None, offset=0, base=None):
         self._space = space
         self._index = index
-        self._base = base
+        self._basespace = basespace
         self._offset = offset
+        self._base = base
 
     @property
     def rank(self):
@@ -497,9 +522,14 @@ class BasisFunction(object):
         return self._space
 
     @property
-    def base(self):
+    def basespace(self):
         """Return base space"""
-        return self._base if self._base is not None else self._space
+        return self._basespace if self._basespace is not None else self._space
+
+    @property
+    def base(self):
+        """Return base """
+        return self._base if self._base is not None else self
 
     @property
     def argument(self):
@@ -529,12 +559,13 @@ class BasisFunction(object):
 
     def __getitem__(self, i):
         assert self.rank > 0
+        basespace = self.basespace
         base = self.base
         space = self._space[i]
         offset = self._offset
         for k in range(i):
             offset += self._space[k].num_components()
-        t0 = BasisFunction(space, i, base, offset)
+        t0 = BasisFunction(space, i, basespace, offset, base)
         return t0
 
     def __mul__(self, a):
@@ -572,19 +603,26 @@ class TestFunction(BasisFunction):
     space: TensorProductSpace
     index: int, optional
         Component of basis with rank > 0
+    basespace : The base :class:`.MixedTensorProductSpace` if space is a
+        subspace.
+    offset : int
+        The number of scalar spaces (i.e., :class:`.TensorProductSpace`es)
+        ahead of this space
+    base : The base :class:`TestFunction`
     """
 
-    def __init__(self, space, index=0, base=None, offset=0):
-        BasisFunction.__init__(self, space, index, base, offset)
+    def __init__(self, space, index=0, basespace=None, offset=0, base=None):
+        BasisFunction.__init__(self, space, index, basespace, offset, base)
 
     def __getitem__(self, i):
         assert self.rank > 0
-        base = self._space if self._base is None else self._base
+        basespace = self.basespace
+        base = self.base
         space = self._space[i]
         offset = self._offset
         for k in range(i):
             offset += self._space[k].num_components()
-        t0 = TestFunction(space, i, base, offset)
+        t0 = TestFunction(space, i, basespace, offset, base)
         return t0
 
     @property
@@ -599,18 +637,25 @@ class TrialFunction(BasisFunction):
     space: TensorProductSpace
     index: int, optional
         Component of basis with rank > 0
+    basespace : The base :class:`.MixedTensorProductSpace` if space is a
+        subspace.
+    offset : int
+        The number of scalar spaces (i.e., :class:`.TensorProductSpace`es)
+        ahead of this space
+    base : The base :class:`TrialFunction`
     """
-    def __init__(self, space, index=0, base=None, offset=0):
-        BasisFunction.__init__(self, space, index, base, offset)
+    def __init__(self, space, index=0, basespace=None, offset=0, base=None):
+        BasisFunction.__init__(self, space, index, basespace, offset, base)
 
     def __getitem__(self, i):
         assert self.rank > 0
+        basespace = self.basespace
         base = self.base
         space = self._space[i]
         offset = self._offset
         for k in range(i):
             offset += self._space[k].num_components()
-        t0 = TrialFunction(space, i, base, offset)
+        t0 = TrialFunction(space, i, basespace, offset, base)
         return t0
 
     @property

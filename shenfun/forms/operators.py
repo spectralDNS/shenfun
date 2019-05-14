@@ -107,12 +107,16 @@ def curl(test):
 
     assert test.rank > 0
     assert test.num_components() == test.dimensions  # vector
-    assert test.dimensions == 3
 
-    w0 = Dx(test[2], 1, 1) - Dx(test[1], 2, 1)
-    w1 = Dx(test[0], 2, 1) - Dx(test[2], 0, 1)
-    w2 = Dx(test[1], 0, 1) - Dx(test[0], 1, 1)
-    test._terms = np.concatenate((w0.terms(), w1.terms(), w2.terms()), axis=0)
-    test._scales = np.concatenate((w0.scales(), w1.scales(), w2.scales()), axis=0)
-    test._indices = np.concatenate((w0.indices(), w1.indices(), w2.indices()), axis=0)
+    if test.dimensions == 3:
+        w0 = Dx(test[2], 1, 1) - Dx(test[1], 2, 1)
+        w1 = Dx(test[0], 2, 1) - Dx(test[2], 0, 1)
+        w2 = Dx(test[1], 0, 1) - Dx(test[0], 1, 1)
+        test._terms = np.concatenate((w0.terms(), w1.terms(), w2.terms()), axis=0)
+        test._scales = np.concatenate((w0.scales(), w1.scales(), w2.scales()), axis=0)
+        test._indices = np.concatenate((w0.indices(), w1.indices(), w2.indices()), axis=0)
+    else:
+        assert test.dimensions == 2
+        test = Dx(test[1], 0, 1) - Dx(test[0], 1, 1)
+
     return test

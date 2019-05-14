@@ -561,6 +561,20 @@ plt.show()
 
 !ec
 
+Running the solver leads to convergence in 65 iterations
+
+!bc
+>>> run NavierStokesDrivenCavity.py
+Iteration 1 Error 3.3951e-01
+Iteration 2 Error 1.8637e-01
+Iteration 3 Error 1.0075e-01
+Iteration 4 Error 5.7744e-02
+...
+Iteration 64 Error 1.0119e-10
+Iteration 65 Error 7.4860e-11
+Time  4.477492094039917
+!ec
+
 The last three lines plots the velocity vectors that are shown
 in Figure ref{fig:drivencavity}.
 

@@ -47,10 +47,11 @@ fly = lambdify((x, y), fy, 'numpy')
 hl = lambdify((x, y), h, 'numpy')
 pl = lambdify((x, y), pe, 'numpy')
 
-N = (40, 40)
-family = 'Chebyshev'
-SD0 = Basis(N[0], family, bc=(0, 0))
-SD1 = Basis(N[1], family, bc=(0, 0))
+N = (60, 60)
+#family = 'Chebyshev'
+family = 'Legendre'
+SD0 = Basis(N[0], family, bc=(0, 0), scaled=True)
+SD1 = Basis(N[1], family, bc=(0, 0), scaled=True)
 ST0 = Basis(N[0], family)
 ST1 = Basis(N[1], family)
 

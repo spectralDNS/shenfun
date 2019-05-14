@@ -87,7 +87,7 @@ def update(self, u, u_hat, t, tstep, plot_tstep, write_tstep, file, **params):
         file.write(tstep, write_tstep[1])
 
 if __name__ == '__main__':
-    file0 = HDF5File("Ginzburg_Landau_{}.h5".format(N[0]), T, mode='w')
+    file0 = HDF5File("Ginzburg_Landau_{}.h5".format(N[0]), mode='w')
     par = {'plot_tstep': 100,
            'write_tstep': (50, {'u': [U.real]}),
            'file': file0}

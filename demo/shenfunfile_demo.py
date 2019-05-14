@@ -28,19 +28,19 @@ while tstep < nsteps:
                                (u, [5, 5, slice(None)])]})
 
     file_m.write(tstep, {'uf': [uf,
-                                (uf, [1, 4, slice(None), slice(None)]),
-                                (uf, [slice(None), 0, slice(None), slice(None)]),
-                                (uf, [slice(None), 5, 5, slice(None)])]}, as_scalar=True)
+                                (uf, [4, slice(None), slice(None)]),
+                                (uf, [0, slice(None), slice(None)]),
+                                (uf, [5, 5, slice(None)])]}, as_scalar=True)
 
     file_v.write(tstep, {'U': [U,
-                               (U, [0, 4, slice(None), slice(None)]),
-                               (U, [2, 4, slice(None), slice(None)]),
-                               (U, [slice(None), 0, slice(None), slice(None)]),
-                               (U, [slice(None), 5, 5, slice(None)])],
+                               (U, [4, slice(None), slice(None)]),
+                               (U, [4, slice(None), slice(None)]),
+                               (U, [0, slice(None), slice(None)]),
+                               (U, [5, 5, slice(None)])],
                          'u': [u]}, as_scalar=False) # A scalar in the vector component space T
     tstep += 1
 
-if backend == 'hdf5':
+if backend == 'hdf5' and MPI.COMM_WORLD.Get_rank() == 0:
     generate_xdmf('myfile.h5')
     generate_xdmf('mixfile.h5')
     generate_xdmf('vecfile.h5')
@@ -67,13 +67,13 @@ while tstep < nsteps:
                                  (u, [slice(None), slice(None), 5, 5])]})
 
     d4file_m.write(tstep, {'uf': [uf,
-                                  (uf, [0, 0, slice(None), slice(None), slice(None)]),
-                                  (uf, [slice(None), 0, 0, slice(None), slice(None)]),
-                                  (uf, [slice(None), slice(None), 5, 5, 5])],
+                                  (uf, [0, slice(None), slice(None), slice(None)]),
+                                  (uf, [0, 0, slice(None), slice(None)]),
+                                  (uf, [slice(None), 5, 5, 5])],
                            'u': [u]}, as_scalar=True)
     tstep += 1
 
-if backend == 'hdf5':
+if backend == 'hdf5' and MPI.COMM_WORLD.Get_rank() == 0:
     generate_xdmf('my4Dfile.h5')
     generate_xdmf('mix4Dfile.h5')
 
@@ -94,6 +94,6 @@ while tstep < nsteps:
     d2file_m.write(tstep, {'uf': [uf]})
     tstep += 1
 
-if backend == 'hdf5':
+if backend == 'hdf5' and MPI.COMM_WORLD.Get_rank() == 0:
     generate_xdmf('my2Dfile.h5')
     generate_xdmf('mix2Dfile.h5')

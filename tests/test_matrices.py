@@ -79,6 +79,11 @@ def test_mat(key, mat, quad):
     trialfunction = (trial[0](N, quad=quad), trial[1])
     mat = mat(testfunction, trialfunction)
     shenfun.check_sanity(mat, testfunction, trialfunction)
+    if test[0].family() == 'Legendre' and test[0].boundary_condition() == 'Dirichlet':
+        testfunction = (test[0](N, quad=quad, scaled=True), test[1])
+        trialfunction = (trial[0](N, quad=quad, scaled=True), trial[1])
+        mat = mat(testfunction, trialfunction)
+        shenfun.check_sanity(mat, testfunction, trialfunction)
 
 @pytest.mark.parametrize('b0,b1', cbases2)
 @pytest.mark.parametrize('quad', cquads)

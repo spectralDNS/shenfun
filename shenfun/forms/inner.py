@@ -142,6 +142,9 @@ def inner(expr0, expr1, output_array=None, level=0):
                     B.append(a)
         return B[0] if len(B) == 1 else B
 
+    if output_array is None and trial.argument == 2:
+        output_array = Function(test.function_space())
+
     if trial.argument > 1:
         # Linear form
         assert isinstance(test, (Expr, BasisFunction))
@@ -165,7 +168,7 @@ def inner(expr0, expr1, output_array=None, level=0):
 
     assert test.expr_rank() == trial.expr_rank()
     space = test.function_space()
-    base = test.basis().base
+    basespace = test.base.function_space()
     trialspace = trial.function_space()
     test_scale = test.scales()
     trial_scale = trial.scales()
@@ -174,12 +177,8 @@ def inner(expr0, expr1, output_array=None, level=0):
     if trial.argument == 2:
         uh = trial.base
 
-    if output_array is None and trial.argument == 2:
-        output_array = Function(test.function_space())
-
     A = []
-    vec = 0
-    for base_test, base_trial, test_ind, trial_ind in zip(test.terms(), trial.terms(), test.indices(), trial.indices()): # vector/scalar
+    for vec, (base_test, base_trial, test_ind, trial_ind) in enumerate(zip(test.terms(), trial.terms(), test.indices(), trial.indices())): # vector/scalar
         for test_j, b0 in enumerate(base_test):              # second index test
             for trial_j, b1 in enumerate(base_trial):        # second index trial
                 sc = test_scale[vec, test_j]*trial_scale[vec, trial_j]
@@ -188,10 +187,10 @@ def inner(expr0, expr1, output_array=None, level=0):
                 assert len(b0) == len(b1)
                 trial_sp = trialspace
                 if isinstance(trialspace, MixedTensorProductSpace): # could operate on a vector, e.g., div(u), where u is vector
-                    trial_sp = trialspace[vec]
+                    trial_sp = trialspace.flatten()[vec]
                 test_sp = space
                 if isinstance(space, MixedTensorProductSpace):
-                    test_sp = space[vec]
+                    test_sp = space.flatten()[vec]
                 has_bcs = False
                 for i, (a, b) in enumerate(zip(b0, b1)): # Third index, one inner for each dimension
                     ts = trial_sp[i]
@@ -209,17 +208,15 @@ def inner(expr0, expr1, output_array=None, level=0):
                             if BB:
                                 DM.append(BB)
                                 has_bcs = True
-                                has_nonhomogeneous_bcs = True
                         else:
                             DM.append(AA)
                     else:
                         DM.append(AA)
 
                 sc = sp.broadcast_to_ndims(np.array([sc]))
-                A.append(TPMatrix(M, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), base))
+                A.append(TPMatrix(M, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), basespace))
                 if has_bcs:
-                    A.append(TPMatrix(DM, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), base))
-        vec += 1
+                    A.append(TPMatrix(DM, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), basespace))
 
     # At this point A contains all matrices of the form. The length of A is
     # the number of inner products. For each index into A there are ndim 1D
