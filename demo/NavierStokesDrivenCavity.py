@@ -98,8 +98,8 @@ D1Y.bc.apply_after(ui_new[0], True)
 
 # Compute the constant contribution to rhs due to nonhomogeneous boundary conditions
 bh_hat0 = Function(VQ)
-P = BlockMatrix(bc_mats)
-bh_hat0 = P.matvec(-uh_hat, bh_hat0)
+BM = BlockMatrix(bc_mats)
+bh_hat0 = BM.matvec(-uh_hat, bh_hat0)
 bi_hat0 = bh_hat0[0]
 
 # Create regular work arrays for right hand side. (Note that bc part will not be used so we can use Q)
@@ -137,14 +137,56 @@ while not converged:
     uh_new = M.solve(bh_hat, u=uh_new, integral_constraint=(2, 0), Alu=Alu) # Constraint for component 2 of mixed space
     error = np.linalg.norm(ui_hat-ui_new)
     uh_hat[:] = alfa*uh_new + (1-alfa)*uh_hat
-    converged = abs(error) < 1e-10 or count >= 10000
-    print('Iteration %d Error %2.4e' %(count, error))
+    converged = abs(error) < 1e-11 or count >= 10000
+    if count % 10 == 0:
+        print('Iteration %d Error %2.4e' %(count, error))
 
 print('Time ', time.time()-t0)
 
 # Move solution to regular Function
 up = uh_hat.backward()
 u_, p_ = up
+
+# Postprocessing
+# Solve streamfunction
+r = TestFunction(V0)
+s = TrialFunction(V0)
+S = inner(grad(r), grad(s))
+h = inner(r, curl(ui_hat))
+H = la.SolverGeneric2NP(S)
+phi_h = H(h)
+phi = phi_h.backward()
+# Compute vorticity
+PX.slice = lambda: slice(0, PX.N)
+PY.slice = lambda: slice(0, PY.N)
+w_h = Function(P)
+w_h = project(curl(ui_hat), P, output_array=w_h)
+#p0 = np.array([[0.], [0.]])
+#print(w_h.eval(p0)*2)
+
+# Find minimal streamfunction value and position
+# by gradually zooming in on mesh
+W = 101
+converged = False
+xmid, ymid = 0, 0
+dx = 1
+psi_old = 0
+count = 0
+y, x = np.meshgrid(np.linspace(ymid-dx, ymid+dx, W), np.linspace(xmid-dx, xmid+dx, W))
+points = np.vstack((x.flatten(), y.flatten()))
+pp = phi_h.eval(points).reshape((W, W))
+while not converged:
+    yr, xr = np.meshgrid(np.linspace(ymid-dx, ymid+dx, W), np.linspace(xmid-dx, xmid+dx, W))
+    points = np.vstack((xr.flatten(), yr.flatten()))
+    pr = phi_h.eval(points).reshape((W, W))
+    xi, yi = pr.argmin()//W, pr.argmin()%W
+    psi_min, xmid, ymid = pr.min()/2, xr[xi, yi], yr[xi, yi]
+    err = abs(psi_min-psi_old)
+    converged = err < 1e-12 or count > 10
+    psi_old = psi_min
+    dx = dx/4.
+    print("%d %d " %(xi, yi) +("%+2.7e "*4) %(xmid, ymid, psi_min, err))
+    count += 1
 
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
@@ -169,4 +211,7 @@ if 'pytest' not in os.environ:
     plt.contourf(X[0], X[1], u_[0], 100)
     plt.figure()
     plt.contourf(X[0], X[1], u_[1], 100)
-    plt.show()
+    plt.figure()
+    plt.contour(x, y, pp, 100)
+    plt.title('Streamfunction')
+    #plt.show()

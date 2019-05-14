@@ -962,7 +962,7 @@ class BlockMatrix(object):
             if len(tpmat.naxes) == 2: # 2 non-periodic axes
                 s = [0, 0, 0]
                 if Alu is None:
-                    Ai = self.diags()
+                    Ai = self.diags(format='csc')
                 gi = np.zeros(space.dim())
                 go = np.zeros(space.dim())
                 start = 0

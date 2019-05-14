@@ -130,4 +130,4 @@ def test_curl2():
 
 if __name__ == '__main__':
     test_curl('g')
-    #test_curl2()
+    test_curl2()

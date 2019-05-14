@@ -130,7 +130,7 @@ def update(self, uv, uv_hat, t, tstep, **params):
         params['file'].write(tstep, params['write_tstep'][1], as_scalar=True)
 
 if __name__ == '__main__':
-    file0 = HDF5File("Gray_Scott_{}.h5".format(N[0]), TV, mode='w')
+    file0 = HDF5File("Gray_Scott_{}.h5".format(N[0]), mode='w')
     par = {'plot_step': 200,
            'write_tstep': (200, {'uv': [UV]}),
            'file': file0,
