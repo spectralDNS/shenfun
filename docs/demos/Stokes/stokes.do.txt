@@ -263,8 +263,8 @@ $N_2-2$ coefficients are used, see discussion around Eq. (ref{eq:Zn}).
 At the same time, we ensure that we are still using $N_2$
 quadrature points, the same as for the Dirichlet basis.
 
-Next the bases are used to create two tensor product spaces TD = $W^{\bs{N}}$
-and Q = $W_0^{\bs{N}}$, one vector V = $[W_0^{\bs{N}}]^3$ and one mixed
+Next the bases are used to create two tensor product spaces Q = $W^{\bs{N}}$
+and TD = $W_0^{\bs{N}}$, one vector V = $[W_0^{\bs{N}}]^3$ and one mixed
 space  VQ = V $\times$ Q.
 
 !bc
