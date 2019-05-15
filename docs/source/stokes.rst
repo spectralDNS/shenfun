@@ -325,8 +325,8 @@ Note that the last line of code is there to ensure that only the first
 At the same time, we ensure that we are still using :math:`N_2`
 quadrature points, the same as for the Dirichlet basis.
 
-Next the bases are used to create two tensor product spaces TD = :math:`W^{\boldsymbol{N}}`
-and Q = :math:`W_0^{\boldsymbol{N}}`, one vector V = :math:`[W_0^{\boldsymbol{N}}]^3` and one mixed
+Next the bases are used to create two tensor product spaces Q = :math:`W^{\boldsymbol{N}}`
+and TD = :math:`W_0^{\boldsymbol{N}}`, one vector V = :math:`[W_0^{\boldsymbol{N}}]^3` and one mixed
 space  VQ = V :math:`\times` Q.
 
 .. code-block:: text
