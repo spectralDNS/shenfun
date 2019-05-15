@@ -7,13 +7,21 @@ Demo - Lid driven cavity
 ========================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 9, 2019
+:Date: May 15, 2019
 
 *Summary.* The lid driven cavity is a classical benchmark for Navier Stokes solvers.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the lid
 driven cavity problem with full spectral accuracy using a mixed (coupled) basis
 in a 2D tensor product domain. The demo also shows how to use mixed
-tensor product spaces for vector valued equations.
+tensor product spaces for vector valued equations. Note that the regular
+lid driven cavity, where the top wall has constant velocity and the
+remaining three walls are stationary, has a singularity at the two
+upper corners, where the velocity is discontinuous.
+Due to their global nature, spectral methods
+are usually not very good at handling problems with discontinuities, and
+for this reason we will also look at a regularized lid driven cavity,
+where the top lid moves according to :math:`(1-x)^2(1+x)^2`, thus removing
+the corner discontinuities.
 
 .. _fig:drivencavity:
 
@@ -33,7 +41,7 @@ The nonlinear steady Navier Stokes equations are given in strong form as
         \nu \nabla^2 \boldsymbol{u} - \nabla p &= \nabla \cdot \boldsymbol{u} \boldsymbol{u} \quad \text{in }  \Omega , \\ 
         \nabla \cdot \boldsymbol{u} &= 0 \quad \text{in } \Omega  \\ 
         \int_{\Omega} p dx &= 0 \\ 
-        \boldsymbol{u}(x, y=1) &= (1, 0) \\ 
+        \boldsymbol{u}(x, y=1) = (1, 0) \, &\text{ or }\, \boldsymbol{u}(x, y=1) = ((1-x)^2(1+x)^2, 0) \\ 
         \boldsymbol{u}(x, y=-1) &= (0, 0) \\ 
         \boldsymbol{u}(x=\pm 1, y) &= (0, 0)
         \end{align*}
@@ -92,7 +100,7 @@ and solutions (trial functions) as
 
 For the homogeneous Dirichlet boundary condition the basis functions
 :math:`\mathcal{X}_k(x)` and :math:`\mathcal{Y}_l(y)` are chosen as composite
-Legendre polynomials:
+Legendre polynomials (we could also use Chebyshev):
 
 .. math::
    :label: eq:D0
@@ -122,8 +130,10 @@ With shenfun we create these homogeneous bases, :math:`D_0^{N_0}(x)=\text{span}\
 .. code-block:: python
 
     N = (51, 51)
-    D0X = Basis(N[0], 'Legendre', quad='LG', bc=(0, 0))
-    D0Y = Basis(N[1], 'Legendre', quad='LG', bc=(0, 0))
+    family = 'Legendre' # or use 'Chebyshev'
+    quad = 'LG'         # for Chebyshev use 'GC' or 'GL'
+    D0X = Basis(N[0], family, quad=quad, bc=(0, 0))
+    D0Y = Basis(N[1], family, quad=quad, bc=(0, 0))
 
 The bases are the same, but we will use ``D0X`` in the :math:`x`-direction and
 ``D0Y`` in the :math:`y`-direction. But before we use these bases in
@@ -166,9 +176,22 @@ using both additional basis functions. We create the basis
 
 .. code-block:: python
 
-    D1Y = Basis(N[1], 'Legendre', quad='LG', bc=(1, 0))
+    D1Y = Basis(N[1], family, quad=quad, bc=(1, 0))
 
 where ``bc=(1, 0)`` fixes the values for :math:`y=1` and :math:`y=-1`, respectively.
+For a regularized lid driven cavity the velocity of the top lid is
+:math:`(1-x)^2(1+x)^2` and not unity. To implement this boundary condition
+instead, we can make use of `sympy <https://www.sympy.org>`__ and
+quite straight forward do
+
+.. code-block:: python
+
+    import sympy
+    x = sympy.symbols('x')
+    D1Y = Basis(N[1], family, quad=quad, bc=((1-x)**2*(1+x)**2, 0))
+
+Otherwise, there is no difference at all between the regular and the
+regularized lid driven cavity implementations.
 
 The pressure basis that comes with no restrictions for the boundary is a
 little trickier. The reason for this has to do with
@@ -185,8 +208,8 @@ The bases :math:`P^{N_0}(x)=\text{span}\{L_k(x)\}_{k=0}^{N_0-3}` and
 
 .. code-block:: python
 
-    PX = Basis(N[0], family, quad='LG')
-    PY = Basis(N[1], family, quad='LG')
+    PX = Basis(N[0], family, quad=quad)
+    PY = Basis(N[1], family, quad=quad)
     PX.slice = lambda: slice(0, N[0]-2)
     PY.slice = lambda: slice(0, N[1]-2)
 
@@ -510,7 +533,7 @@ can be extracted from A, G and D as follows
     # Extract the boundary matrices
     bc_mats = extract_bc_matrices([A, G, D])
 
-These matrices are applied to the solution below (see ``BlockMatrix P``).
+These matrices are applied to the solution below (see ``BlockMatrix BM``).
 Furthermore, this leaves us with square submatrices (A, G, D), which make up a
 symmetric block matrix
 
@@ -530,7 +553,7 @@ can be assembled from the pieces we already have as
 .. code-block:: text
 
     M = BlockMatrix(A+G+D)
-    P = BlockMatrix(bc_mats)
+    BM = BlockMatrix(bc_mats)
 
 We now have all the matrices we need in order to solve the Navier Stokes equations.
 However, we also need some work arrays for iterations and we need to
@@ -550,7 +573,7 @@ assemble the constant boundary contribution to the right hand side
     
     # Compute the constant contribution to rhs due to nonhomogeneous boundary conditions
     bh_hat0 = Function(VQ)
-    bh_hat0 = P.matvec(-uh_hat, bh_hat0) # Negative because moved to right hand side
+    bh_hat0 = BM.matvec(-uh_hat, bh_hat0) # Negative because moved to right hand side
     bi_hat0 = bh_hat0[0]
     
 
@@ -658,8 +681,34 @@ will quickly blow up. The iteration loop goes as follows
     plt.show()
     
 
+Running the solver leads to convergence in 65 iterations
+
+.. code-block:: text
+
+    >>> run NavierStokesDrivenCavity.py
+    Iteration 1 Error 3.3951e-01
+    Iteration 2 Error 1.8637e-01
+    Iteration 3 Error 1.0075e-01
+    Iteration 4 Error 5.7744e-02
+    ...
+    Iteration 64 Error 1.0119e-10
+    Iteration 65 Error 7.4860e-11
+    Time  4.477492094039917
+
 The last three lines plots the velocity vectors that are shown
-in Figure :ref:`fig:drivencavity`.
+in Figure :ref:`fig:drivencavity`. The solution is apparently nice
+and smooth, but hidden underneath are Gibbs oscillations from the
+corner discontinuities. This is painfully obvious when switching from
+Legendre to Chebyshev polynomials. With Chebyshev the same plot looks
+like Figure :ref:`fig:drivencavitycheb`. However, choosing instead the
+regularized lid, the solutions will be nice and smooth, both for
+Legendre and Chebyshev polynomials.
+
+.. _fig:drivencavitycheb:
+
+.. figure:: https://raw.githack.com/spectralDNS/spectralutilities/master/figures/DrivenCavityCheb.png
+
+   *Velocity vectors for :math:`Re=100` using Chebyshev*
 
 .. _sec:nscomplete:
 
