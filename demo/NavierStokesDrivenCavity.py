@@ -26,6 +26,7 @@ import time
 import numpy as np
 from mpi4py import MPI
 from scipy.sparse.linalg import splu
+import sympy
 from shenfun import *
 
 comm = MPI.COMM_WORLD
@@ -36,13 +37,16 @@ Re = 100.
 nu = 2./Re
 alfa = 0.5 # underrelaxation factor
 N = (51, 51)
-#family = 'Chebyshev' # There's a nullspace left in Chebyshev
+#family = 'Chebyshev'
 family = 'Legendre'
-D0X = Basis(N[0], family, quad='LG', bc=(0, 0))
-D1Y = Basis(N[1], family, quad='LG', bc=(1, 0))
-D0Y = Basis(N[1], family, quad='LG', bc=(0, 0))
-PX = Basis(N[0], family, quad='LG')
-PY = Basis(N[1], family, quad='LG')
+quad = 'LG'
+x = sympy.symbols('x')
+D0X = Basis(N[0], family, quad=quad, bc=(0, 0))
+#D1Y = Basis(N[1], family, quad=quad, bc=(1, 0))
+D1Y = Basis(N[1], family, quad=quad, bc=((1-x)**2*(1+x)**2, 0))
+D0Y = Basis(N[1], family, quad=quad, bc=(0, 0))
+PX = Basis(N[0], family, quad=quad)
+PY = Basis(N[1], family, quad=quad)
 
 # To get a P_N x P_{N-2} space, just pick the first N-2 items of the pressure basis
 # Note that this effectively sets P_N and P_{N-1} to zero, but still the basis uses

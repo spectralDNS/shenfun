@@ -50,26 +50,26 @@ pl = lambdify((x, y), pe, 'numpy')
 N = (60, 60)
 #family = 'Chebyshev'
 family = 'Legendre'
-SD0 = Basis(N[0], family, bc=(0, 0), scaled=True)
-SD1 = Basis(N[1], family, bc=(0, 0), scaled=True)
-ST0 = Basis(N[0], family)
-ST1 = Basis(N[1], family)
+D0X = Basis(N[0], family, bc=(0, 0), scaled=True)
+D0Y = Basis(N[1], family, bc=(0, 0), scaled=True)
+PX = Basis(N[0], family)
+PY = Basis(N[1], family)
 
 # To get a P_N x P_{N-2} space, just pick the first N-2 items of the pressure basis
 # Note that this effectively sets P_N and P_{N-1} to zero, but still the basis uses
 # the same quadrature points as the Dirichlet basis, which is required for the inner
 # products.
-ST0.slice = lambda: slice(0, ST0.N-2)
-ST1.slice = lambda: slice(0, ST1.N-2)
+PX.slice = lambda: slice(0, PX.N-2)
+PY.slice = lambda: slice(0, PY.N-2)
 
-TD = TensorProductSpace(comm, (SD0, SD1))
-TT = TensorProductSpace(comm, (ST0, ST1))
-VT = VectorTensorProductSpace(TD)
-Q = MixedTensorProductSpace([VT, TT])
+TD = TensorProductSpace(comm, (D0X, D0Y))
+Q = TensorProductSpace(comm, (PX, PY))
+V = VectorTensorProductSpace(TD)
+VQ = MixedTensorProductSpace([V, Q])
 X = TD.local_mesh(True)
 
-up = TrialFunction(Q)
-vq = TestFunction(Q)
+up = TrialFunction(VQ)
+vq = TestFunction(VQ)
 
 u, p = up
 v, q = vq
@@ -88,18 +88,18 @@ A10 = inner(q, div(u))
 M = BlockMatrix(A00+A01+A10)
 
 # Assemble right hand side
-fh = Array(Q)
+fh = Array(VQ)
 f_, h_ = fh
 f_[0] = flx(*X)
 f_[1] = fly(*X)
 h_[:] = hl(*X)
-fh_hat = Function(Q)
+fh_hat = Function(VQ)
 f_hat, h_hat = fh_hat
 f_hat = inner(v, f_, output_array=f_hat)
 h_hat = inner(q, h_, output_array=h_hat)
 
 # Solve problem
-uh_hat = Function(Q)
+uh_hat = Function(VQ)
 uh_hat = M.solve(fh_hat, u=uh_hat, integral_constraint=(2, 0)) # Constraint for component 2 of mixed space
 
 # Move solution to regular Function

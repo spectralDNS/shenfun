@@ -263,15 +263,15 @@ $N_2-2$ coefficients are used, see discussion around Eq. (ref{eq:Zn}).
 At the same time, we ensure that we are still using $N_2$
 quadrature points, the same as for the Dirichlet basis.
 
-Next the bases are used to create two tensor product spaces WU = $W^{\bs{N}}$
-and WP = $W_0^{\bs{N}}$, one vector UV = $[W_0^{\bs{N}}]^3$ and one mixed
-space  Q = UV $\times$ WP.
+Next the bases are used to create two tensor product spaces TD = $W^{\bs{N}}$
+and Q = $W_0^{\bs{N}}$, one vector V = $[W_0^{\bs{N}}]^3$ and one mixed
+space  VQ = V $\times$ Q.
 
 !bc
-WU = TensorProductSpace(comm, (K0, K1, SD), axes=(2, 0, 1))
-WP = TensorProductSpace(comm, (K0, K1, ST), axes=(2, 0, 1))
-UV = VectorTensorProductSpace(WU)
-Q = MixedTensorProductSpace([UV, WP])
+TD = TensorProductSpace(comm, (K0, K1, SD), axes=(2, 0, 1))
+Q = TensorProductSpace(comm, (K0, K1, ST), axes=(2, 0, 1))
+V = VectorTensorProductSpace(TD)
+VQ = MixedTensorProductSpace([V, Q])
 !ec
 
 Note that we choose to transform axes in the order $1, 0, 2$. This is to ensure
@@ -284,8 +284,8 @@ Test- and trialfunctions are created much like in a regular, non-mixed,
 formulation. However, one has to create one test- and trialfunction for
 the mixed space, and then split them up afterwards
 !bc
-up = TrialFunction(Q)
-vq = TestFunction(Q)
+up = TrialFunction(VQ)
+vq = TestFunction(VQ)
 u, p = up
 v, q = vq
 !ec
@@ -393,7 +393,7 @@ defined the functions $\bs{f}$ and $h$, see Sec. ref{sec:mansol}
 X = TD.local_mesh(True)
 
 # Get f and h on quad points
-fh = Array(Q)
+fh = Array(VQ)
 f_, h_ = fh
 f_[0] = flx(*X)
 f_[1] = fly(*X)
@@ -401,7 +401,7 @@ f_[2] = flz(*X)
 h_[:] = hl(*X)
 
 # Compute inner products
-fh_hat = Function(Q)
+fh_hat = Function(VQ)
 f_hat, h_hat = fh_hat
 f_hat = inner(v, f_, output_array=f_hat)
 h_hat = inner(q, h_, output_array=h_hat)

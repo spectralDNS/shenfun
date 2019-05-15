@@ -7,7 +7,7 @@ Demo - Stokes equations
 %%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 9, 2019
+:Date: May 15, 2019
 
 *Summary.* The Stokes equations describe the flow of highly viscous fluids.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Stokes
@@ -325,16 +325,16 @@ Note that the last line of code is there to ensure that only the first
 At the same time, we ensure that we are still using :math:`N_2`
 quadrature points, the same as for the Dirichlet basis.
 
-Next the bases are used to create two tensor product spaces WU = :math:`W^{\boldsymbol{N}}`
-and WP = :math:`W_0^{\boldsymbol{N}}`, one vector UV = :math:`[W_0^{\boldsymbol{N}}]^3` and one mixed
-space  Q = UV :math:`\times` WP.
+Next the bases are used to create two tensor product spaces TD = :math:`W^{\boldsymbol{N}}`
+and Q = :math:`W_0^{\boldsymbol{N}}`, one vector V = :math:`[W_0^{\boldsymbol{N}}]^3` and one mixed
+space  VQ = V :math:`\times` Q.
 
 .. code-block:: text
 
-    WU = TensorProductSpace(comm, (K0, K1, SD), axes=(2, 0, 1))
-    WP = TensorProductSpace(comm, (K0, K1, ST), axes=(2, 0, 1))
-    UV = VectorTensorProductSpace(WU)
-    Q = MixedTensorProductSpace([UV, WP])
+    TD = TensorProductSpace(comm, (K0, K1, SD), axes=(2, 0, 1))
+    Q = TensorProductSpace(comm, (K0, K1, ST), axes=(2, 0, 1))
+    V = VectorTensorProductSpace(TD)
+    VQ = MixedTensorProductSpace([V, Q])
 
 Note that we choose to transform axes in the order :math:`1, 0, 2`. This is to ensure
 that the fully transformed arrays are aligned in the non-periodic direction 2.
@@ -348,8 +348,8 @@ the mixed space, and then split them up afterwards
 
 .. code-block:: text
 
-    up = TrialFunction(Q)
-    vq = TestFunction(Q)
+    up = TrialFunction(VQ)
+    vq = TestFunction(VQ)
     u, p = up
     v, q = vq
 
@@ -473,7 +473,7 @@ defined the functions :math:`\boldsymbol{f}` and :math:`h`, see Sec. :ref:`sec:m
     X = TD.local_mesh(True)
     
     # Get f and h on quad points
-    fh = Array(Q)
+    fh = Array(VQ)
     f_, h_ = fh
     f_[0] = flx(*X)
     f_[1] = fly(*X)
@@ -481,7 +481,7 @@ defined the functions :math:`\boldsymbol{f}` and :math:`h`, see Sec. :ref:`sec:m
     h_[:] = hl(*X)
     
     # Compute inner products
-    fh_hat = Function(Q)
+    fh_hat = Function(VQ)
     f_hat, h_hat = fh_hat
     f_hat = inner(v, f_, output_array=f_hat)
     h_hat = inner(q, h_, output_array=h_hat)

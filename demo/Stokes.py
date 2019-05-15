@@ -60,13 +60,13 @@ ST = Basis(N[1], family)
 ST.slice = lambda: slice(0, ST.N-2)
 
 TD = TensorProductSpace(comm, (K0, SD), axes=(1, 0))
-TT = TensorProductSpace(comm, (K0, ST), axes=(1, 0))
-VT = VectorTensorProductSpace(TD)
-Q = MixedTensorProductSpace([VT, TT])
+Q = TensorProductSpace(comm, (K0, ST), axes=(1, 0))
+V = VectorTensorProductSpace(TD)
+VQ = MixedTensorProductSpace([V, Q])
 X = TD.local_mesh(True)
 
-up = TrialFunction(Q)
-vq = TestFunction(Q)
+up = TrialFunction(VQ)
+vq = TestFunction(VQ)
 
 u, p = up
 v, q = vq
@@ -84,13 +84,13 @@ A10 = inner(q, div(u))
 M = BlockMatrix(A00+A01+A10)
 
 # Get f and h on quad points
-fh = Array(Q)
+fh = Array(VQ)
 f_, h_ = fh
 f_[0] = flx(*X)
 f_[1] = fly(*X)
 h_[:] = hl(*X)
 
-fh_hat = Function(Q)
+fh_hat = Function(VQ)
 f_hat, h_hat = fh_hat
 f_hat = inner(v, f_, output_array=f_hat)
 h_hat = inner(q, h_, output_array=h_hat)
