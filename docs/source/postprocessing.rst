@@ -5,18 +5,21 @@ Post processing
 
 MPI is great because it means that you can run Shenfun on pretty much
 as many CPUs as you can get your hands on. However, MPI makes it more
-challenging to do visualization, in particular with Python and Matplotlib. For
-this reason there is a :mod:`.utilities` module with helper classes for dumping dataarrays
-to `HDF5 <https://www.hdf5.org>`_ or `NetCDF <https://www.unidata.ucar.edu/software/netcdf/>`_
+challenging to do visualization, in particular with Python and Matplotlib.
+For this reason there is a :mod:`.utilities` module with helper classes
+for dumping dataarrays to `HDF5 <https://www.hdf5.org>`_ or
+`NetCDF <https://www.unidata.ucar.edu/software/netcdf/>`_
 
-The helper functions and classes are
+Most of the IO has already been implemented in
+"mpi4py-fft": "https://mpi4py-fft.readthedocs.io/en/latest/io.html#".
+The classes :class:`.HDF5File` and :class:`.NCFile` are used exactly as
+they are implemented in mpi4py-fft. As a common interface we provide
 
-    * :class:`.HDF5File`
-    * :class:`.NCFile`
     * :func:`.ShenfunFile`
 
-where :func:`.ShenfunFile` is a common interface, returning an instance of
-either :class:`.HDF5File` or :class:`.NCFile`, depending on choice.
+where :func:`.ShenfunFile` returns an instance of
+either :class:`.HDF5File` or :class:`.NCFile`, depending on choice
+of backend.
 
 For example, to create an HDF5 writer for a 3D
 TensorProductSpace with Fourier bases in all directions::
@@ -38,20 +41,19 @@ dataarrays to file, or ``read`` them back again.
 
 With the ``HDF5`` backend we can write
 both arrays from physical space (:class:`.Array`), as well as spectral space
-(:class:`.Function`). However, the ``NetCDF4`` backend cannot handle complex dataarrays,
-and as such it can only be used for real physical dataarrays.
+(:class:`.Function`). However, the ``NetCDF4`` backend cannot handle complex
+dataarrays, and as such it can only be used for real physical dataarrays.
 
-In addition to storing complete dataarrays, we can also store any slices of the arrays.
-To illustrate, this is how to store three snapshots of the ``u`` array, along with
-some *global* 2D and 1D slices::
+In addition to storing complete dataarrays, we can also store any slices of
+the arrays. To illustrate, this is how to store three snapshots of the
+``u`` array, along with some *global* 2D and 1D slices::
 
     u = Array(T)
-    u[:] = np.random.random(T.forward.input_array.shape)
+    u[:] = np.random.random(u.shape)
     d = {'u': [u, (u, np.s_[4, :, :]), (u, np.s_[4, 4, :])]}
     fl.write(0, d)
     u[:] = 2
     fl.write(1, d)
-    fl.close()
 
 The :class:`.ShenfunFile` may also be used for the :class:`.MixedTensorProductSpace`,
 or :class:`.VectorTensorProductSpace`, that are collections of the scalar
@@ -67,77 +69,73 @@ inside a while loop::
 
     TT = VectorTensorProductSpace(T)
     fl_m = ShenfunFile('mixed', TT, backend='hdf5', mode='w')
-    uf = Array(TT)
+    u = Array(TT)
     tstep = 0
-    du = {'uf': (uf,
-                (uf, [slice(None), 4, slice(None), slice(None)]),
-                (uf, [0, slice(None), slice(None), 10]))}
+    du = {'uv': (u,
+                (u, [4, slice(None), slice(None)]),
+                (u, [slice(None), 10, 10]))}
     while tstep < 3:
         fl_m.write(tstep, du, forward_output=False)
         tstep += 1
-    fl_m.close()
 
-Note that on each time step the first two arrays
-``uf`` and ``(uf, [slice(None), 4, slice(None), slice(None)])``
-are vectors, and as such of global shape ``(3, 24, 25, 26)`` and ``(3, 25, 26)``,
-respectively. The final dumped array ``(uf, [0, slice(None), slice(None), 10])``
-is a scalar since we choose only to store component 0, and the global shape is
-``(24, 25)``.
+Note that on each time step the arrays
+``u``, ``(u, [4, slice(None), slice(None)])`` and ``(u, [slice(None), 10, 10])``
+are vectors, and as such of global shape ``(3, 24, 25, 26)``, ``(3, 25, 26)`` and
+``(3, 25)``, respectively. However, they are stored in the hdf5 file under their
+spatial dimensions ``1D, 2D`` and ``3D``, respectively.
 
 Note that the slices in the above dictionaries
 are *global* views of the global arrays, that may or may not be distributed
-over any number of processors.
+over any number of processors. Also note that these routines work with any
+number of CPUs, and the number of CPUs does not need to be the same when
+storing or retrieving the data.
 
 After running the above, the different arrays will be found in groups
 stored in `myyfile.h5` with directory tree structure as::
 
     myh5file.h5/
-    ├─ u/
-    |  ├─ 1D/
-    |  |  └─ 0_20_slice/
-    |  |     ├─ 0
-    |  |     ├─ 1
-    |  |     └─ 3
-    |  ├─ 2D/
-    |  |  └─ 0_slice_slice/
-    |  |     ├─ 0
-    |  |     ├─ 1
-    |  |     └─ 2
-    |  └─ 3D/
-    |     ├─ 0
-    |     ├─ 1
-    |     └─ 2
-    └─ mesh/
-       ├─ x0
-       ├─ x1
-       └─ x2
+    └─ u/
+       ├─ 1D/
+       |  └─ 4_4_slice/
+       |     ├─ 0
+       |     └─ 1
+       ├─ 2D/
+       |  └─ 4_slice_slice/
+       |     ├─ 0
+       |     └─ 1
+       ├─ 3D/
+       |  ├─ 0
+       |  └─ 1
+       └─ mesh/
+          ├─ x0
+          ├─ x1
+          └─ x2
 
 Likewise, the `mixed.h5` file will at the end of the loop look like::
 
     mixed.h5/
-    ├─ uf/
-    |  ├─ 2D/
-    |  |  └─ slice_slice_10/
-    |  |     ├─ 0
-    |  |     ├─ 1
-    |  |     └─ 3
-    |  ├─ 2D_Vector/
-    |  |  └─ 4_slice_slice/
-    |  |     ├─ 0
-    |  |     ├─ 1
-    |  |     └─ 2
-    |  └─ 3D_Vector/
-    |     ├─ 0
-    |     ├─ 1
-    |     └─ 2
-    └─ mesh/
-       ├─ x0
-       ├─ x1
-       └─ x2
+    └─ uv/
+       ├─ 1D/
+       |  └─ slice_10_10/
+       |     ├─ 0
+       |     ├─ 1
+       |     └─ 3
+       ├─ 2D/
+       |  └─ 4_slice_slice/
+       |     ├─ 0
+       |     ├─ 1
+       |     └─ 3
+       ├─ 3D/
+       |  ├─ 0
+       |  ├─ 1
+       |  └─ 3
+       └─ mesh/
+          ├─ x0
+          ├─ x1
+          └─ x2
 
 Note that the mesh is stored as well as the results. The three mesh arrays are
 all 1D arrays, representing the domain for each basis in the TensorProductSpace.
-Also note that these routines work with any number of CPUs and dimensions.
 
 With NetCDF4 the layout is somewhat different. For ``mixed`` above,
 if we were using backend ``netcdf`` instead of ``hdf5``,
@@ -146,23 +144,19 @@ we would get a datafile where ``ncdump -h mixed.nc`` would result in::
     netcdf mixed {
     dimensions:
             time = UNLIMITED ; // (3 currently)
+            i = 3 ;
             x = 24 ;
             y = 25 ;
             z = 26 ;
-            dim = 3 ;
     variables:
             double time(time) ;
+            double i(i) ;
             double x(x) ;
             double y(y) ;
             double z(z) ;
-            int64 dim(dim) ;
-            double uf(time, dim, x, y, z) ;
-            double uf_4_slice_slice(time, dim, y, z) ;
-            double uf_slice_slice_10(time, x, y) ;
-
-    // global attributes:
-                    :ndim = 3LL ;
-                    :shape = 3LL, 24LL, 25LL, 26LL ;
+            double uv(time, i, x, y, z) ;
+            double uv_4_slice_slice(time, i, y, z) ;
+            double uv_slice_10_10(time, i, x) ;
     }
 
 
@@ -191,7 +185,7 @@ This results in some light xdmf-files being generated for the 2D and 3D arrays i
 the hdf5-file:
 
     * ``myh5file.xdmf``
-    * ``myh5file_0_slice_slice.xdmf``
+    * ``myh5file_4_slice_slice.xdmf``
     * ``mixed.xdmf``
     * ``mixed_4_slice_slice.xdmf``
 
@@ -201,7 +195,8 @@ not wrapped, and neither are 4D.
 An annoying feature of Paraview is that it views a three-dimensional array of
 shape :math:`(N_0, N_1, N_2)` as transposed compared to shenfun. That is,
 for Paraview the *last* axis represents the :math:`x`-axis, whereas
-shenfun (like most others) considers the first axis to be the :math:`x`-axis. So when opening a
+shenfun (like most others) considers the first axis to be the :math:`x`-axis.
+So when opening a
 three-dimensional array in Paraview one needs to be aware. Especially when
 plotting vectors. Assume that we are working with a Navier-Stokes solver
 and have a three-dimensional :class:`.VectorTensorProductSpace` to represent
@@ -229,6 +224,11 @@ To store the resulting :class:`.Array` ``U`` we can create an instance of the
     ...
     file.write(0, {'u': [U]}, as_scalar=True)
     file.write(1, {'u': [U]}, as_scalar=True)
+
+Alternatively, one may store the arrays directly as::
+
+    U.write('U.h5', 'u', 0, domain=T.mesh(), as_scalar=True)
+    U.write('U.h5', 'u', 1, domain=T.mesh(), as_scalar=True)
 
 Generate an xdmf file through::
 

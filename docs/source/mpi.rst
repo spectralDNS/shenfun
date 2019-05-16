@@ -13,8 +13,8 @@ store the code in this section as ``mpitest.py``)::
 
     from shenfun import *
     from mpi4py import MPI
+    from mpi4py_fft import generate_xdmf
     comm = MPI.COMM_WORLD
-
     N = (20, 40, 60)
     K0 = Basis(N[0], 'F', dtype='D', domain=(0, 1))
     K1 = Basis(N[1], 'F', dtype='D', domain=(0, 2))
@@ -57,7 +57,7 @@ on the real physical mesh, then we get
         u(x_i, y_j, z_k) = \sum_{n=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{l=-N/2}^{N/2-1}
         \hat{u}_{l,m,n} e^{\imath (lx_i + my_j + nz_k)}.
 
-The function :math:`u(x_i, y_j, z_k)` corresponds to the functions ``u0, u1``, whereas
+The function :math:`u(x_i, y_j, z_k)` corresponds to the arrays ``u0, u1``, whereas
 we have not yet computed the array :math:`\hat{u}`. We could get :math:`\hat{u}` as::
 
     u0_hat = Function(T0)
@@ -69,20 +69,12 @@ decomposition, the values used to fill them on creation will differ. We can
 visualize the arrays in Paraview using some postprocessing tools, to be further
 described in Sec :ref:`Postprocessing`::
 
+    u0.write('myfile.h5', 'u0', 0, domain=T0.mesh())
+    u1.write('myfile.h5', 'u1', 0, domain=T1.mesh())
+    if comm.Get_rank() == 0:
+        generate_xdmf('myfile.h5')
 
-    h5file0 = HDF5Writer('my0file.h5', ['u0'], T0)
-    h5file1 = HDF5Writer('my1file.h5', ['u1'], T1)
-
-    h5file0.write_tstep(0, u0)
-    h5file1.write_tstep(0, u1)
-
-    h5file0.close()
-    h5file1.close()
-
-    generate_xdmf('my0file.h5')
-    generate_xdmf('my1file.h5')
-
-And when ``my0file.xdmf`` and ``my1file.xdmf`` are opened in Paraview, we
+And when the generated ``myfile.xdmf`` is opened in Paraview, we
 can see the different distributions. The function ``u0`` is shown first, and
 we see that it has different values along the short first dimension. The
 second figure is evidently distributed along the second dimension. Both
@@ -104,10 +96,9 @@ slab keyword::
 
     T2 = TensorProductSpace(comm, (K0, K1, K2), axes=(0, 1, 2))
     u2 = Array(T2, val=comm.Get_rank())
-    pencilfile = HDF5Writer('pencilfile.h5', ['u0'], T2)
-    pencilfile.write_tstep(0, u2)
-    pencilfile.close()
-    generate_xdmf('pencilfile.h5')
+    u2.write('pencilfile.h5', 'u2', 0)
+    if comm.Get_rank() == 0:
+        generate_xdmf('pencilfile.h5')
 
 Running again with 4 CPUs the array ``u2`` will look like:
 
