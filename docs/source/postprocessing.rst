@@ -11,7 +11,7 @@ for dumping dataarrays to `HDF5 <https://www.hdf5.org>`_ or
 `NetCDF <https://www.unidata.ucar.edu/software/netcdf/>`_
 
 Most of the IO has already been implemented in
-"mpi4py-fft": "https://mpi4py-fft.readthedocs.io/en/latest/io.html#".
+`mpi4py-fft <https://mpi4py-fft.readthedocs.io/en/latest/io.html#>`.
 The classes :class:`.HDF5File` and :class:`.NCFile` are used exactly as
 they are implemented in mpi4py-fft. As a common interface we provide
 
