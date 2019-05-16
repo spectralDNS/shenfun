@@ -607,7 +607,7 @@ like Figure ref{fig:drivencavitycheb}. However, choosing instead the
 regularized lid, the solutions will be nice and smooth, both for
 Legendre and Chebyshev polynomials.
 
-FIGURE: [https://raw.githack.com/spectralDNS/spectralutilities/master/figures/DrivenCavityCheb.png] Velocity vectors for $Re=100$ using Chebyshev.   label{fig:drivencavitycheb}
+FIGURE: [https://raw.githack.com/spectralDNS/spectralutilities/master/figures/DrivenCavityCheb.png] Velocity vectors for Re=100 using Chebyshev.   label{fig:drivencavitycheb}
 
 
 ===== Complete solver =====

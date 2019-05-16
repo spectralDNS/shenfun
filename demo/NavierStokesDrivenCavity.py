@@ -7,7 +7,7 @@ The equations are in strong form
 
     \nu\nabla^2 u - \nabla p &= (u \cdot \nabla) u) \\
     \nabla \cdot u &= 0 \\
-    u(x, y=1) &= 1 \\
+    i\bs{u}(x, y=1) = (1, 0) \, &\text{ or }\, \bs{u}(x, y=1) = ((1-x)^2(1+x)^2, 0) \\
     u(x, y=-1) &= 0 \\
     u(x=\pm 1, y) &= 0
 

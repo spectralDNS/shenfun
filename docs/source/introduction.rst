@@ -106,6 +106,7 @@ links
     * :ref:`Demo - Cubic nonlinear Klein-Gordon equation`
     * :ref:`Demo - Kuramato-Sivashinsky equation`
     * :ref:`Demo - Stokes equations`
+    * :ref:`Demo - Lid driven cavity`
 
 Tensor products
 ---------------
