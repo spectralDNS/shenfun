@@ -2,5 +2,6 @@ name: shenfun
 channels:
   - conda-forge
 dependencies:
+  - numpy
   - shenfun
   - matplotlib
