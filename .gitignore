@@ -7,7 +7,6 @@
 *.dlog
 
 .ipynb_checkpoints/
-*.ipynb
 tmp_mako*
 reveal.js/
 sphinx-rootdir/
