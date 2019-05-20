@@ -304,6 +304,10 @@ class Expr(object):
 
     def expr_rank(self):
         """Return rank of Expr"""
+        if self.dimensions == 1:
+            assert self._terms.shape[0] < 3
+            return self._terms.shape[0]-1
+
         if self._terms.shape[0] == 1:
             return 0
         if self._terms.shape[0] == self._terms.shape[-1]:

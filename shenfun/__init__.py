@@ -29,6 +29,7 @@ __version__ = '2.0.3'
 __author__ = 'Mikael Mortensen'
 
 import numpy as np
+from mpi4py import MPI
 from . import chebyshev
 from . import legendre
 from . import laguerre
@@ -44,3 +45,4 @@ from .tensorproductspace import *
 from .utilities import *
 from .utilities.lagrangian_particles import *
 from .utilities.integrators import *
+comm = MPI.COMM_WORLD

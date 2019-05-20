@@ -98,6 +98,14 @@ def inner(expr0, expr1, output_array=None, level=0):
     [True, True, True]
 
     """
+    # Wrap a pure numpy array in Array
+    if isinstance(expr0, np.ndarray) and not isinstance(expr0, Array):
+        assert isinstance(expr1, BasisFunction)
+        expr0 = Array(expr1.function_space(), buffer=expr0)
+    if isinstance(expr1, np.ndarray) and not isinstance(expr1, Array):
+        assert isinstance(expr0, BasisFunction)
+        expr1 = Array(expr0.function_space(), buffer=expr1)
+
     assert np.all([hasattr(e, 'argument') for e in (expr0, expr1)])
     t0 = expr0.argument
     t1 = expr1.argument
@@ -127,20 +135,8 @@ def inner(expr0, expr1, output_array=None, level=0):
         result = []
         for te, tr in zip(test, trial):
             l = inner(te, tr, level=level)
-            result += [l] if isinstance(l, TPMatrix) else l
-
-        # Add equal TPMatrices together
-        if level == 0:
-            B = [result[0]]
-            for a in result[1:]:
-                found = False
-                for b in B:
-                    if a == b:
-                        b += a
-                        found = True
-                if not found:
-                    B.append(a)
-        return B[0] if len(B) == 1 else B
+            result += l if isinstance(l, list) else [l]
+        return result[0] if len(result) == 1 else result
 
     if output_array is None and trial.argument == 2:
         output_array = Function(test.function_space())
