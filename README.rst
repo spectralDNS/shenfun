@@ -15,7 +15,6 @@ Shenfun
 
 
 Try it in a jupyter hub using Binder: |binder|
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Description
 -----------
