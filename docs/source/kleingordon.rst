@@ -220,7 +220,7 @@ for simplicity. A 3D tensor product basis function is now defined as
    :label: _auto5
 
         
-        \Phi_{l,m,n}(x,y,z) = e^{\imath \underline{l} x} e^{\imath \underline{m} y}
+        \Phi_{lmn}(x,y,z) = e^{\imath \underline{l} x} e^{\imath \underline{m} y}
         e^{\imath \underline{n} z} = e^{\imath
         (\underline{l}x + \underline{m}y + \underline{n}z)}
         
@@ -239,11 +239,12 @@ We now look for solutions of the form
 
         
         u(x, y, z, t) = \sum_{n=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{l=-N/2}^{N/2-1}
-        \hat{u}_{l,m,n} (t)\Phi_{l,m,n}(x,y,z). 
+        \hat{u}_{lmn} (t)\Phi_{lmn}(x,y,z). 
         
 
-The expansion coefficients :math:`\hat{u}_{l,m,n}(t)` can be related directly to the solution :math:`u(x,
-y, z, t)` using Fast Fourier Transforms (FFTs) if we are satisfied with obtaining
+The expansion coefficients :math:`\hat{\boldsymbol{u}} = \{\hat{u}_{lmn}(t)\}_{(l,m,n) \in \boldsymbol{l} \times \boldsymbol{m} \times \boldsymbol{n}}`
+can be related directly to the solution :math:`u(x, y, z, t)` using Fast
+Fourier Transforms (FFTs) if we are satisfied with obtaining
 the solution in quadrature points corresponding to
 
 .. math::
@@ -269,14 +270,7 @@ the solution in quadrature points corresponding to
 
           
          z_k = \frac{4 \pi k}{N}-2\pi \quad \forall \, k \in \boldsymbol{k},
-        \text{where}\, \boldsymbol{k}=(0,1,\ldots,N-1). 
-        
-        
-
-.. math::
-   :label: _auto9
-
-          
+        \text{where}\, \boldsymbol{k}=(0,1,\ldots,N-1).
         
         
 
@@ -285,17 +279,15 @@ the domain
 is set to :math:`[-2\pi, 2\pi]^3` and not the more common :math:`[0, 2\pi]^3`. We have
 
 .. math::
-   :label: _auto10
+   :label: eq:uxyz
 
         
-        u(x_i, y_j, z_k) =
-        \mathcal{F}_k^{-1}\left(\mathcal{F}_j^{-1}\left(\mathcal{F}_i^{-1}\left(\hat{u}\right)\right)\right)
-        \, \forall\, (i,j,k)\in\boldsymbol{i} \times \boldsymbol{j} \times
-        \boldsymbol{k},
-        
+        \boldsymbol{u} =
+        \mathcal{F}_k^{-1}\left(\mathcal{F}_j^{-1}\left(\mathcal{F}_i^{-1}\left(\hat{\boldsymbol{u}}\right)\right)\right) \
         
 
-where :math:`\mathcal{F}_i^{-1}` is the inverse Fourier transform along the direction
+with :math:`\boldsymbol{u} = \{u(x_i, y_j, z_k)\}_{(i,j,k)\in \boldsymbol{i} \times \boldsymbol{j} \times \boldsymbol{k}}`
+and where :math:`\mathcal{F}_i^{-1}` is the inverse Fourier transform along the direction
 of index :math:`i`, for
 all :math:`(j, k) \in \boldsymbol{j} \times \boldsymbol{k}`. Note that the three
 inverse FFTs are performed sequentially, one direction at the time, and that there is no
@@ -303,7 +295,7 @@ scaling factor due to
 the definition used for the inverse `Fourier transform <https://mpi4py-fft.readthedocs.io/en/latest/dft.html>`__
 
 .. math::
-   :label: _auto11
+   :label: _auto9
 
         
         u(x_j) = \sum_{l=-N/2}^{N/2-1} \hat{u}_l e^{\imath \underline{l}
@@ -333,61 +325,61 @@ With this weight function the scalar product and the forward transform
 are the same and we obtain:
 
 .. math::
-   :label: _auto12
+   :label: _auto10
 
         
-        \left(u, \Phi_{l,m,n}\right) = \hat{u}_{l,m,n} =
+        \left(u, \Phi_{lmn}\right) = \hat{u}_{lmn} =
         \left(\frac{1}{N}\right)^3
-        \mathcal{F}_l\left(\mathcal{F}_m\left(\mathcal{F}_n\left({u}\right)\right)\right)
+        \mathcal{F}_l\left(\mathcal{F}_m\left(\mathcal{F}_n\left(\boldsymbol{u}\right)\right)\right)
         \quad \forall (l,m,n) \in \boldsymbol{l} \times \boldsymbol{m} \times
         \boldsymbol{n},
         
         
 
 From this we see that the variational forms :eq:`eq:df_var2` and :eq:`eq:kg:du_var2`
-may be written in terms of the Fourier transformed quantities :math:`\hat{u}` and
-:math:`\hat{f}`. Expanding the exact derivatives of the nabla operator, we have
+may be written in terms of the Fourier transformed quantities :math:`\hat{\boldsymbol{u}}` and
+:math:`\hat{\boldsymbol{f}}`. Expanding the exact derivatives of the nabla operator, we have
+
+.. math::
+   :label: _auto11
+
+        
+        (\nabla u, \nabla v) =
+        (\underline{l}^2+\underline{m}^2+\underline{n}^2)\hat{u}_{lmn}, 
+        
+        
+
+.. math::
+   :label: _auto12
+
+          
+        (u, v) = \hat{u}_{lmn}, 
+        
+        
 
 .. math::
    :label: _auto13
 
-        
-        (\nabla u, \nabla v) =
-        (\underline{l}^2+\underline{m}^2+\underline{n}^2)\hat{u}_{l,m,n}, 
-        
-        
-
-.. math::
-   :label: _auto14
-
           
-        (u, v) = \hat{u}_{l,m,n}, 
+        (u|u|^2, v) = \widehat{u|u|^2}_{lmn}
         
         
 
-.. math::
-   :label: _auto15
-
-          
-        (u|u|^2, v) = \widehat{u|u|^2}
-        
-        
-
-and as such the equations to be solved can be found directly as
+and as such the equations to be solved for each wavenumber can be found directly as
 
 .. math::
    :label: eq:df_var3
 
         
-        \frac{\partial \hat{f}}{\partial t}  =
-        \left(-(\underline{l}^2+\underline{m}^2+\underline{n}^2+\gamma)\hat{u} + \gamma \widehat{u|u|^2}\right),  
+        \frac{\partial \hat{f}_{lmn}}{\partial t}  =
+        \left(-(\underline{l}^2+\underline{m}^2+\underline{n}^2+\gamma)\hat{u}_{lnm} + \gamma \widehat{u|u|^2}_{lnm}\right),  
         
 
 .. math::
    :label: eq:kg:du_var3
 
           
-        \frac{\partial \hat{u}}{\partial t} = \hat{f}. 
+        \frac{\partial \hat{u}_{lnm}}{\partial t} = \hat{f}_{lnm}. 
         
 
 There is more than one way to arrive at these equations. Taking the 3D Fourier

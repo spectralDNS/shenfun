@@ -76,6 +76,7 @@ package. The first thing we need to do then is to import all of shenfun's
 functionality
 
 !bc pycod
+import matplotlib.pyplot as plt
 from shenfun import *
 from mpi4py import MPI
 comm = MPI.COMM_WORLD
@@ -150,8 +151,8 @@ can be added on both sides of the domain using the following basis
 !bt
 \begin{align}
 \mathcal{Y}_l(y) &= L_l(y) - L_{l+2}(y), \quad \forall \, l \in \bs{l}^{N_1-2}. \\
-\mathcal{Y}_{N_1-2}(y) &= (L_0+L_1)/2 \, (=(1+y)/2), \\
-\mathcal{Y}_{N_1-1}(y) &= (L_0-L_1)/2 \, (=(1-y)/2).
+\mathcal{Y}_{N_1-2}(y) &= (L_0+L_1)/2 \quad \left(=(1+y)/2\right), \\
+\mathcal{Y}_{N_1-1}(y) &= (L_0-L_1)/2 \quad \left(=(1-y)/2\right).
 \end{align}
 !et
 
@@ -579,7 +580,6 @@ while not converged:
 up = uh_hat.backward()
 u, p = up
 
-import matplotlib.pyplot as plt
 X = V0.local_mesh(True)
 plt.figure()
 plt.quiver(X[0], X[1], u[0], u[1])

@@ -208,7 +208,7 @@ for simplicity. A 3D tensor product basis function is now defined as
 
 !bt
 \begin{equation}
-\Phi_{l,m,n}(x,y,z) = e^{\imath \underline{l} x} e^{\imath \underline{m} y}
+\Phi_{lmn}(x,y,z) = e^{\imath \underline{l} x} e^{\imath \underline{m} y}
 e^{\imath \underline{n} z} = e^{\imath
 (\underline{l}x + \underline{m}y + \underline{n}z)}
 \end{equation}
@@ -224,12 +224,13 @@ We now look for solutions of the form
 !bt
 \begin{equation}
 u(x, y, z, t) = \sum_{n=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{l=-N/2}^{N/2-1}
-\hat{u}_{l,m,n} (t)\Phi_{l,m,n}(x,y,z). label{eq:usg}
+\hat{u}_{lmn} (t)\Phi_{lmn}(x,y,z). label{eq:usg}
 \end{equation}
 !et
 
-The expansion coefficients $\hat{u}_{l,m,n}(t)$ can be related directly to the solution $u(x,
-y, z, t)$ using Fast Fourier Transforms (FFTs) if we are satisfied with obtaining
+The expansion coefficients $\hat{\boldsymbol{u}} = \{\hat{u}_{lmn}(t)\}_{(l,m,n) \in \boldsymbol{l} \times \boldsymbol{m} \times \boldsymbol{n}}$
+can be related directly to the solution $u(x, y, z, t)$ using Fast
+Fourier Transforms (FFTs) if we are satisfied with obtaining
 the solution in quadrature points corresponding to
 
 !bt
@@ -239,7 +240,7 @@ the solution in quadrature points corresponding to
  y_j &= \frac{4 \pi j}{N}-2\pi \quad \forall \, j \in \boldsymbol{j},
 \text{where}\, \boldsymbol{j}=(0,1,\ldots,N-1), \\
  z_k &= \frac{4 \pi k}{N}-2\pi \quad \forall \, k \in \boldsymbol{k},
-\text{where}\, \boldsymbol{k}=(0,1,\ldots,N-1). \\
+\text{where}\, \boldsymbol{k}=(0,1,\ldots,N-1).
 \end{align}
 !et
 Note that these points are different from the standard (like $2\pi j/N$) since
@@ -248,13 +249,12 @@ is set to $[-2\pi, 2\pi]^3$ and not the more common $[0, 2\pi]^3$. We have
 
 !bt
 \begin{equation}
-u(x_i, y_j, z_k) =
-\mathcal{F}_k^{-1}\left(\mathcal{F}_j^{-1}\left(\mathcal{F}_i^{-1}\left(\hat{u}\right)\right)\right)
-\, \forall\, (i,j,k)\in\boldsymbol{i} \times \boldsymbol{j} \times
-\boldsymbol{k},
+\boldsymbol{u} =
+\mathcal{F}_k^{-1}\left(\mathcal{F}_j^{-1}\left(\mathcal{F}_i^{-1}\left(\hat{\boldsymbol{u}}\right)\right)\right) \label{eq:uxyz}
 \end{equation}
 !et
-where $\mathcal{F}_i^{-1}$ is the inverse Fourier transform along the direction
+with $\boldsymbol{u} = \{u(x_i, y_j, z_k)\}_{(i,j,k)\in \boldsymbol{i} \times \boldsymbol{j} \times \boldsymbol{k}}$
+and where $\mathcal{F}_i^{-1}$ is the inverse Fourier transform along the direction
 of index $i$, for
 all $(j, k) \in \boldsymbol{j} \times \boldsymbol{k}$. Note that the three
 inverse FFTs are performed sequentially, one direction at the time, and that there is no
@@ -293,34 +293,34 @@ are the same and we obtain:
 
 !bt
 \begin{equation}
-\left(u, \Phi_{l,m,n}\right) = \hat{u}_{l,m,n} =
+\left(u, \Phi_{lmn}\right) = \hat{u}_{lmn} =
 \left(\frac{1}{N}\right)^3
-\mathcal{F}_l\left(\mathcal{F}_m\left(\mathcal{F}_n\left({u}\right)\right)\right)
+\mathcal{F}_l\left(\mathcal{F}_m\left(\mathcal{F}_n\left(\boldsymbol{u}\right)\right)\right)
 \quad \forall (l,m,n) \in \boldsymbol{l} \times \boldsymbol{m} \times
 \boldsymbol{n},
 \end{equation}
 !et
 
 From this we see that the variational forms (ref{eq:df_var2}) and (ref{eq:kg:du_var2})
-may be written in terms of the Fourier transformed quantities $\hat{u}$ and
-$\hat{f}$. Expanding the exact derivatives of the nabla operator, we have
+may be written in terms of the Fourier transformed quantities $\hat{\boldsymbol{u}}$ and
+$\hat{\boldsymbol{f}}$. Expanding the exact derivatives of the nabla operator, we have
 
 !bt
 \begin{align}
 (\nabla u, \nabla v) &=
-(\underline{l}^2+\underline{m}^2+\underline{n}^2)\hat{u}_{l,m,n}, \\
-(u, v) &= \hat{u}_{l,m,n}, \\
-(u|u|^2, v) &= \widehat{u|u|^2}
+(\underline{l}^2+\underline{m}^2+\underline{n}^2)\hat{u}_{lmn}, \\
+(u, v) &= \hat{u}_{lmn}, \\
+(u|u|^2, v) &= \widehat{u|u|^2}_{lmn}
 \end{align}
 !et
 
-and as such the equations to be solved can be found directly as
+and as such the equations to be solved for each wavenumber can be found directly as
 
 !bt
 \begin{align}
-\frac{\partial \hat{f}}{\partial t}  &=
-\left(-(\underline{l}^2+\underline{m}^2+\underline{n}^2+\gamma)\hat{u} + \gamma \widehat{u|u|^2}\right), label{eq:df_var3} \\
-\frac{\partial \hat{u}}{\partial t} &= \hat{f}. label{eq:kg:du_var3}
+\frac{\partial \hat{f}_{lmn}}{\partial t}  &=
+\left(-(\underline{l}^2+\underline{m}^2+\underline{n}^2+\gamma)\hat{u}_{lnm} + \gamma \widehat{u|u|^2}_{lnm}\right), label{eq:df_var3} \\
+\frac{\partial \hat{u}_{lnm}}{\partial t} &= \hat{f}_{lnm}. label{eq:kg:du_var3}
 \end{align}
 !et
 
