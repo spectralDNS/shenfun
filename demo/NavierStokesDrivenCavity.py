@@ -108,7 +108,6 @@ bi_hat0 = bh_hat0[0]
 
 # Create regular work arrays for right hand side. (Note that bc part will not be used so we can use Q)
 bh_hat = Function(VQ)
-bi_hat = bh_hat[0]
 
 # Create arrays to hold velocity vector solution
 ui = Array(W1)
