@@ -100,10 +100,10 @@ def inner(expr0, expr1, output_array=None, level=0):
     """
     # Wrap a pure numpy array in Array
     if isinstance(expr0, np.ndarray) and not isinstance(expr0, Array):
-        assert isinstance(expr1, BasisFunction)
+        assert isinstance(expr1, (Expr, BasisFunction))
         expr0 = Array(expr1.function_space(), buffer=expr0)
     if isinstance(expr1, np.ndarray) and not isinstance(expr1, Array):
-        assert isinstance(expr0, BasisFunction)
+        assert isinstance(expr0, (Expr, BasisFunction))
         expr1 = Array(expr0.function_space(), buffer=expr1)
 
     assert np.all([hasattr(e, 'argument') for e in (expr0, expr1)])
