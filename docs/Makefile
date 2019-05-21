@@ -11,7 +11,8 @@ DEMO          = Poisson/poisson.rst \
                 KleinGordon/kleingordon.rst \
                 Poisson3D/poisson3d.rst \
 				KuramatoSivashinsky/kuramatosivashinsky.rst \
-				Stokes/stokes.rst DrivenCavity/drivencavity.rst
+				Stokes/stokes.rst DrivenCavity/drivencavity.rst \
+				Stokes/stokes.ipynb
 
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
@@ -22,6 +23,10 @@ help:
 	doconce format sphinx demos/$(basename $@).do.txt --sphinx_preserve_bib_keys
 	cp demos/$(basename $@).rst source/
 	./recite.sh $(notdir $@)
+
+%.ipynb:
+	doconce format ipynb demos/$(basename $@).do.txt
+	cp demos/$(basename $@).ipynb ../binder/
 
 publish:
 	cd demos && publish export papers.bib && cd ..

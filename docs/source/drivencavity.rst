@@ -7,7 +7,7 @@ Demo - Lid driven cavity
 ========================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 15, 2019
+:Date: May 21, 2019
 
 *Summary.* The lid driven cavity is a classical benchmark for Navier Stokes solvers.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the lid
@@ -708,7 +708,7 @@ Legendre and Chebyshev polynomials.
 
 .. figure:: https://raw.githack.com/spectralDNS/spectralutilities/master/figures/DrivenCavityCheb.png
 
-   *Velocity vectors for :math:`Re=100` using Chebyshev*
+   *Velocity vectors for Re=100 using Chebyshev*
 
 .. _sec:nscomplete:
 
