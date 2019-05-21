@@ -892,9 +892,17 @@ class MixedBasis(object):
 
     def dims(self):
         """Return dimensions (degrees of freedom) for MixedBasis"""
-        return [b.dim() for b in self.bases]
-        #s = self.bases[0].dim()
-        #return (self.num_components(),) + s
+        s = []
+        for space in self.flatten():
+            s.append(space.dim())
+        return s
+
+    def dim(self):
+        """Return dimension of ``self`` (degrees of freedom)"""
+        s = 0
+        for space in self.flatten():
+            s += space.dim()
+        return s
 
     def shape(self, forward_output=False):
         """Return shape of arrays for MixedBasis
@@ -906,8 +914,14 @@ class MixedBasis(object):
             forward transform. If False then return shape of physical
             space, i.e., the input to a forward transform.
         """
-        s = self.bases[0].shape(forward_output)
-        return (self.num_components(),) + s
+        if forward_output:
+            s = []
+            for space in self.flatten():
+                s.append(space.shape(forward_output))
+        else:
+            s = self.flatten()[0].shape(forward_output)
+            s = (self.num_components(),) + s
+        return s
 
     def num_components(self):
         """Return number of bases in mixed basis"""

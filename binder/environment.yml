@@ -1,0 +1,6 @@
+name: shenfun
+channels:
+  - conda-forge
+dependencies:
+  - shenfun
+  - matplotlib

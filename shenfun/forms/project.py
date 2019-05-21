@@ -87,32 +87,34 @@ def project(uh, T, output_array=None):
     u = TrialFunction(T)
     output_array = inner(v, uh, output_array=output_array)
     B = inner(v, u)
-    if len(T.get_nonperiodic_axes()) == 2:
-        # Means we have two non-periodic directions
-        B = [B] if isinstance(B, TPMatrix) else B
-        npaxes = copy(B[0].naxes)
-        assert len(npaxes) == 2
 
-        pencilA = T.forward.output_pencil
-        axis = pencilA.axis
-        npaxes.remove(axis)
-        second_axis = npaxes[0]
-        pencilB = pencilA.pencil(second_axis)
-        transAB = pencilA.transfer(pencilB, 'd')
-        output_arrayB = np.zeros(transAB.subshapeB)
-        output_arrayB2 = np.zeros(transAB.subshapeB)
-        b = B[0].pmat[axis]
-        output_array = b.solve(output_array, output_array, axis=axis)
-        transAB.forward(output_array, output_arrayB)
-        b = B[0].pmat[second_axis]
-        output_arrayB2 = b.solve(output_arrayB, output_arrayB2, axis=second_axis)
-        transAB.backward(output_arrayB2, output_array)
+    if isinstance(T, TensorProductSpace):
+        if len(T.get_nonperiodic_axes()) == 2:
+            # Means we have two non-periodic directions
+            B = [B] if isinstance(B, TPMatrix) else B
+            npaxes = copy(B[0].naxes)
+            assert len(npaxes) == 2
 
+            pencilA = T.forward.output_pencil
+            axis = pencilA.axis
+            npaxes.remove(axis)
+            second_axis = npaxes[0]
+            pencilB = pencilA.pencil(second_axis)
+            transAB = pencilA.transfer(pencilB, 'd')
+            output_arrayB = np.zeros(transAB.subshapeB)
+            output_arrayB2 = np.zeros(transAB.subshapeB)
+            b = B[0].pmat[axis]
+            output_array = b.solve(output_array, output_array, axis=axis)
+            transAB.forward(output_array, output_arrayB)
+            b = B[0].pmat[second_axis]
+            output_arrayB2 = b.solve(output_arrayB, output_arrayB2, axis=second_axis)
+            transAB.backward(output_arrayB2, output_array)
+            return output_array
+
+    # Just zero or one non-periodic direction
+    if v.rank == 0:
+        output_array = B.solve(output_array, output_array)
     else:
-        # Just zero or one non-periodic direction
-        if v.rank == 0:
-            output_array = B.solve(output_array, output_array)
-        else:
-            for i in range(v.function_space().dimensions):
-                output_array[i] = B[i].solve(output_array[i], output_array[i])
+        for oa, b in zip(output_array, B):
+            oa = b.solve(oa, oa)
     return output_array

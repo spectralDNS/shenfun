@@ -223,6 +223,7 @@ computed exactly using `Sympy`. These exact right hand sides will then be used t
 compute a numerical solution that can be verified against the manufactured
 solution. The chosen solution with computed right hand sides are:
 !bc pycod
+x, y, z = symbols('x,y,z')
 uex = sin(2*y)*(1-z**2)
 uey = sin(2*x)*(1-z**2)
 uez = sin(2*z)*(1-z**2)
@@ -245,12 +246,13 @@ pl  = lambdify((x, y, z), pe, 'numpy')
 
 ===== Bases and tensor product spaces =====
 
-Bases are created using the ${func('Basis')} function. The choice between
-Legendre or Chebyshev is collected from the commandline, with Legendre as default
+Bases are created using the ${func('Basis')} function. A choice of
+polynomials between Legendre or Chebyshev can be made, and the size
+of the domain is given
 
-!bc
+!bc pycod
 N = (40, 40, 40)
-family = sys.argv[-1] if len(sys.argv) == 2 else 'Legendre'
+family = 'Legendre'
 K0 = Basis(N[0], 'Fourier', dtype='D', domain=(0, 2*np.pi))
 K1 = Basis(N[1], 'Fourier', dtype='d', domain=(0, 2*np.pi))
 SD = Basis(N[2], family, bc=(0, 0))
@@ -267,7 +269,7 @@ Next the bases are used to create two tensor product spaces Q = $W^{\bs{N}}$
 and TD = $W_0^{\bs{N}}$, one vector V = $[W_0^{\bs{N}}]^3$ and one mixed
 space  VQ = V $\times$ Q.
 
-!bc
+!bc pycod
 TD = TensorProductSpace(comm, (K0, K1, SD), axes=(2, 0, 1))
 Q = TensorProductSpace(comm, (K0, K1, ST), axes=(2, 0, 1))
 V = VectorTensorProductSpace(TD)
@@ -283,7 +285,7 @@ Fourier matrices are, naturally, diagonal.
 Test- and trialfunctions are created much like in a regular, non-mixed,
 formulation. However, one has to create one test- and trialfunction for
 the mixed space, and then split them up afterwards
-!bc
+!bc pycod
 up = TrialFunction(VQ)
 vq = TestFunction(VQ)
 u, p = up
@@ -294,7 +296,7 @@ With the basisfunctions in place we may assemble the different blocks of the
 final coefficient matrix. Since Legendre is using a constant weight function,
 the equations may also be integrated by parts to obtain a symmetric system:
 
-!bc
+!bc pycod
 if family.lower() == 'chebyshev':
     A = inner(v, div(grad(u)))
     G = inner(v, -grad(p))
@@ -381,14 +383,14 @@ in Fig. ref{fig:BlockMat}.
 
 In the end we create a block matrix through
 
-!bc
+!bc pycod
 M = BlockMatrix(A+G+D)
 !ec
 
 The right hand side can easily be assembled since we have already
 defined the functions $\bs{f}$ and $h$, see Sec. ref{sec:mansol}
 
-!bc
+!bc pycod
 # Get mesh (quadrature points)
 X = TD.local_mesh(True)
 
@@ -411,7 +413,7 @@ h_hat = inner(q, h_, output_array=h_hat)
 In the end all that is left is to solve and compare with
 the exact solution.
 
-!bc
+!bc pycod
 # Solve problem
 up_hat = M.solve(fh_hat, integral_constraint=(3, 0))
 up = up_hat.backward()
@@ -427,6 +429,7 @@ error = [comm.reduce(np.linalg.norm(ux-u_[0])),
          comm.reduce(np.linalg.norm(uy-u_[1])),
          comm.reduce(np.linalg.norm(uz-u_[2])),
          comm.reduce(np.linalg.norm(pe-p_))]
+print(error)
 !ec
 
 Note that solve has a keyword argument
