@@ -369,7 +369,7 @@ class SolverGeneric2NP(object):
     def __init__(self, mats):
         self.mats = mats
         m = mats[0]
-        assert len(m.naxes) == 2
+        #assert len(m.naxes) == 2
         self.T = T = m.space
         ndim = T.dimensions
         if ndim == 2:
@@ -419,6 +419,48 @@ class SolverGeneric2NP(object):
                 shape = np.take(self.T.dims(), naxes)
                 u[tuple(s0)] = sp.linalg.spsolve(M0, b[tuple(s0)].flatten()).reshape(shape)
         return u
+
+class Solver2D(object):
+    """Generic solver for tensorproductspaces in 2D
+
+    Parameters
+    ----------
+    mats : sequence
+        sequence of instances of :class:`.TPMatrix`
+
+    """
+
+    def __init__(self, mats):
+        self.mats = mats
+        m = mats[0]
+        self.T = T = m.space
+        ndim = T.dimensions
+        assert ndim == 2
+        assert np.atleast_1d(m.scale).size == 1, "Use level = 2 with :func:`.inner`"
+        M0 = sp.kron(m.mats[0].diags(), m.mats[1].diags())
+        M0 *= np.atleast_1d(m.scale).item()
+        for m in mats[1:]:
+            M1 = sp.kron(m.mats[0].diags(), m.mats[1].diags())
+            assert np.atleast_1d(m.scale).size == 1, "Use level = 2 with :func:`.inner`"
+            M1 *= np.atleast_1d(m.scale).item()
+            M0 = M0 + M1
+        self.M = M0
+
+    def matvec(self, u, c):
+        c.fill(0)
+        s0 = tuple(base.slice() for base in self.T)
+        c[s0] = self.M.dot(u[s0].flatten()).reshape(self.T.dims())
+        return c
+
+    def __call__(self, b, u=None):
+        if u is None:
+            u = b
+        else:
+            assert u.shape == b.shape
+        s0 = tuple(base.slice() for base in self.T)
+        u[s0] = sp.linalg.spsolve(self.M, b[s0].flatten()).reshape(self.T.dims())
+        return u
+
 
 class TDMA_O(object):
     """Tridiagonal matrix solver

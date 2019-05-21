@@ -55,14 +55,16 @@ And then we look for solutions like
    :label: eq:u
 
         
-        u(x) = \sum_{k=0}^{N} \hat{u}_k v_k(x), 
+        u(x) = \sum_{k=0}^{N-1} \hat{u}_k v_k(x), 
         
 
-where :math:`N+1` is the size of the discretized problem and the basis is
-:math:`V^N=\text{span}\{v_k\}_{k=0}^{N}`.
+where :math:`N` is the size of the discretized problem,
+:math:`\hat{\mathbf{u}} = \{\hat{u}_k\}_{k=0}^{N-1}` are the unknown expansion
+coefficients, and the basis is :math:`\text{span}\{v_k\}_{k=0}^{N-1}`.
+
 The basis functions can, for example,  be constructed from
 `Chebyshev <https://en.wikipedia.org/wiki/Chebyshev_polynomials>`__, :math:`T_k(x)`, or
-`Legendre <https://en.wikipedia.org/wiki/Legendre_polynomials>`__, :math:`L_k(x)`, functions
+`Legendre <https://en.wikipedia.org/wiki/Legendre_polynomials>`__, :math:`L_k(x)`, polynomials
 and we use the common notation :math:`\phi_k(x)` to represent either one of them. It turns out that
 it is easiest to use basis functions with homogeneous Dirichlet boundary conditions
 
@@ -74,13 +76,16 @@ it is easiest to use basis functions with homogeneous Dirichlet boundary conditi
         
         
 
-for :math:`k=0, 1, \ldots N-2`, and then the last two are added as two linear basis functions (that belong to the kernel of the Poisson equation)
+for :math:`k=0, 1, \ldots N-3`. This gives the basis
+:math:`V^N_0 = \text{span}\{v_k(x)\}_{k=0}^{N-3}`.
+We can then add two more linear basis functions (that belong to the kernel of
+the Poisson equation)
 
 .. math::
    :label: _auto3
 
         
-        v_{N-1} = \frac{1}{2}(\phi_0 + \phi_1), 
+        v_{N-2} = \frac{1}{2}(\phi_0 + \phi_1), 
         
         
 
@@ -88,18 +93,19 @@ for :math:`k=0, 1, \ldots N-2`, and then the last two are added as two linear ba
    :label: _auto4
 
           
-        v_{N} = \frac{1}{2}(\phi_0 - \phi_1).
+        v_{N-1} = \frac{1}{2}(\phi_0 - \phi_1).
         
         
 
-With these two final basis functions it is easy to see that the two last degrees
-of freedom, :math:`\hat{u}_{N-1}` and :math:`\hat{u}_{N}`, now are given as
+which gives the inhomogeneous basis :math:`V^N = \text{span}\{v_k\}_{k=0}^{N-1}`.
+With the two linear basis functions it is easy to see that the last two degrees
+of freedom, :math:`\hat{u}_{N-2}` and :math:`\hat{u}_{N-1}`, now are given as
 
 .. math::
    :label: eq:dirichleta
 
         
-        u(-1) = \sum_{k=0}^{N} \hat{u}_k v_k(-1) = \hat{u}_{N-1} = a,
+        u(-1) = \sum_{k=0}^{N-1} \hat{u}_k v_k(-1) = \hat{u}_{N-2} = a,
          
         
 
@@ -107,23 +113,27 @@ of freedom, :math:`\hat{u}_{N-1}` and :math:`\hat{u}_{N}`, now are given as
    :label: eq:dirichletb
 
           
-        u(+1) = \sum_{k=0}^{N} \hat{u}_k v_k(+1) = \hat{u}_{N} = b,
+        u(+1) = \sum_{k=0}^{N-1} \hat{u}_k v_k(+1) = \hat{u}_{N-1} = b,
         
         
 
-and, as such, we only have to solve for :math:`\{\hat{u}_k\}_{k=0}^{N-2}`, just like
+and, as such, we only have to solve for :math:`\{\hat{u}_k\}_{k=0}^{N-3}`, just like
 for a problem with homogeneous boundary conditions (for homogeneous boundary condition
-we simply have :math:`\hat{u}_{N-1} = \hat{u}_N = 0`).
+we simply have :math:`\hat{u}_{N-2} = \hat{u}_{N-1} = 0`).
 We now formulate a variational problem using the Galerkin method: Find :math:`u \in V^N` such that
 
 .. math::
    :label: eq:varform
 
         
-        \int_{-1}^1 \nabla^2 u \, v \, w\, dx = \int_{-1}^1 f \, v\, w\, dx \quad \forall v \, \in \, V^N. 
+        \int_{-1}^1 \nabla^2 u \, v \, w\, dx = \int_{-1}^1 f \, v\, w\, dx \quad \forall v \, \in \, V^N_0. 
         
 
-The weighted integrals, weighted by :math:`w(x)`, are called inner products, and a common notation is
+Note that since we only have :math:`N-3` unknowns we are only using the homogeneous test
+functions from :math:`V^N_0`.
+
+The weighted integrals, weighted by :math:`w(x)`, are called inner products, and a
+common notation is
 
 .. math::
    :label: _auto5
@@ -142,45 +152,47 @@ obtain
 .. math::
         \begin{align*}
         \int_{-1}^1 u \, v \, w\, dx &\approx \left( u, v \right)_w^N, \\ 
-        &\approx \sum_{j=0}^{N} u(x_j) v(x_j) w(x_j),
+        &\approx \sum_{j=0}^{N-1} u(x_j) v(x_j) w(x_j),
         \end{align*}
 
-where :math:`w(x_j)` are quadrature weights. The quadrature points :math:`\{x_j\}_{j=0}^N`
+where :math:`\{w(x_j)\}_{j=0}^{N-1}` are quadrature weights.
+The quadrature points :math:`\{x_j\}_{j=0}^{N-1}`
 are specific to the chosen basis, and even within basis there are two different
 choices based on which quadrature rule is selected, either Gauss or Gauss-Lobatto.
 
 Inserting for test and trialfunctions, we get the following bilinear form and
-matrix :math:`A\in\mathbb{R}^{N-1\times N-1}` for the Laplacian (using the summation convention in step 2)
+matrix :math:`A\in\mathbb{R}^{N-3\times N-3}` for the Laplacian (using the
+summation convention in step 2)
 
 .. math::
         \begin{align*}
-        \left( \nabla^2u, v \right)_w^N &= \left( \nabla^2\sum_{k=0}^{N-3}\hat{u}_k v_{k}, v_j \right)_w^N, \\ 
+        \left( \nabla^2u, v \right)_w^N &= \left( \nabla^2\sum_{k=0}^{N-3}\hat{u}_k v_{k}, v_j \right)_w^N, \quad j=0,1,\ldots, N-3\\ 
             &= \left(\nabla^2 v_{k}, v_j \right)_w^N \hat{u}_k, \\ 
-            &= A_{jk} \hat{u}_k.
+            &= a_{jk} \hat{u}_k.
         \end{align*}
 
-Note that the sum in :math:`A_{jk} \hat{u}_{k}` runs over :math:`k=0, 1, \ldots, N-2` since
-the last two degrees of freedom already are known from Eq. :eq:`eq:dirichleta`
-and :eq:`eq:dirichletb`, and the second derivatives of :math:`v_{N-1}` and :math:`v_{N}`
-are zero.
+Note that the sum in :math:`a_{jk} \hat{u}_{k}` runs over :math:`k=0, 1, \ldots, N-3` since
+the second derivatives of :math:`v_{N-1}` and :math:`v_{N}` are zero.
 The right hand side linear form and vector is computed as :math:`\tilde{f}_j = (f,
-v_j)_w^N`, for :math:`j=0,1,\ldots, N-2`, where a tilde is used because this is not
+v_j)_w^N`, for :math:`j=0,1,\ldots, N-3`, where a tilde is used because this is not
 a complete transform of the function :math:`f`, but only an inner product.
 
-The linear system of equations to solve for the expansion coefficients of :math:`u(x)` is given as
+The linear system of equations to solve for the expansion coefficients
+of :math:`u(x)` is given as
 
 .. math::
    :label: _auto6
 
         
-        A_{jk} \hat{u}_k = \tilde{f}_j.
+        A \hat{\mathbf{u}} = \tilde{\mathbf{f}}.
         
         
 
-Now, when :math:`\hat{u}` is found by solving this linear system, it may be
+Now, when the expansion coefficients :math:`\hat{\mathbf{u}}` are found by
+solving this linear system, they may be
 transformed to real space :math:`u(x)` using :eq:`eq:u`, and here the contributions
-from :math:`\hat{u}_{N-1}` and :math:`\hat{u}_{N}` must be accounted for. Note that the matrix
-:math:`A_{jk}` (different for Legendre or Chebyshev) has a very special structure that
+from :math:`\hat{u}_{N-2}` and :math:`\hat{u}_{N-1}` must be accounted for. Note that the matrix
+:math:`A` (different for Legendre or Chebyshev) has a very special structure that
 allows for a solution to be found very efficiently in order of :math:`\mathcal{O}(N)`
 operations, see :cite:`shen1` and :cite:`shen95`. These solvers are implemented in
 shenfun for both bases.
@@ -313,7 +325,7 @@ Solve linear equations
 ----------------------
 
 Finally, solve linear equation system and transform solution from spectral
-:math:`\{\hat{u}_k\}_{k=0}^{N-1}` vector to the real space :math:`\{u(x_j)\}_{j=0}^N`
+:math:`\{\hat{u}_k\}_{k=0}^{N-1}` vector to the real space :math:`\{u(x_j)\}_{j=0}^{N-1}`
 and then check how the solution corresponds with the exact solution :math:`u_e`.
 
 .. code-block:: python

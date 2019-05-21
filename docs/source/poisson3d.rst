@@ -116,7 +116,7 @@ wavenumbers in the :math:`z`-direction, such that :math:`\boldsymbol{n}^{N_2} = 
 N_2/2)`. We refer to the Cartesian wavenumber mesh on vector form as :math:`\boldsymbol{k}`:
 
 .. math::
-        \boldsymbol{k} = \{(l, m, n)  \in \boldsymbol{l}^{N_0} \times \boldsymbol{m}^{N_1} \times \boldsymbol{n}^{N_2}\}.
+        \boldsymbol{k} = \{(l, m, n)\, | \,(l, m, n)  \in \boldsymbol{l}^{N_0} \times \boldsymbol{m}^{N_1} \times \boldsymbol{n}^{N_2}\}.
 
 We have the bases
 
@@ -162,7 +162,7 @@ And then we look for discrete solutions :math:`u \in W^{\boldsymbol{N}}` like
 
         
         u(\boldsymbol{x}) = \sum_{l\in \boldsymbol{l}^{N_0}} \sum_{m\in \boldsymbol{m}^{N_1}}\sum_{n\in
-        \boldsymbol{n}^{N_2}}\hat{u}_{l,m,n} \mathcal{X}_l(x) \mathcal{Y}_m(y) \mathcal{Z}_n(z),  
+        \boldsymbol{n}^{N_2}}\hat{u}_{lmn} \mathcal{X}_l(x) \mathcal{Y}_m(y) \mathcal{Z}_n(z),  
         
 
 .. math::
@@ -173,7 +173,7 @@ And then we look for discrete solutions :math:`u \in W^{\boldsymbol{N}}` like
         
         
 
-where :math:`\hat{u}_{l,m,n}` are components of the expansion coefficients for :math:`u` and
+where :math:`\hat{u}_{lmn}` are components of the expansion coefficients for :math:`u` and
 the second form, :math:`\{\hat{u}_{\boldsymbol{\textsf{k}}}\}_{\boldsymbol{\textsf{k}}\in\boldsymbol{k}}`, is a shorter,
 simplified notation, with sans-serif :math:`\boldsymbol{\textsf{k}}=(l, m, n)`.
 The expansion coefficients are the unknowns in the spectral Galerkin method.
@@ -231,17 +231,17 @@ uniform :math:`\{y_j\}_{j=0}^{N_1-1}=2\pi j / N_1` and :math:`\{z_k\}_{k=0}^{N_2
 k/N_2`.
 
 Inserting for test function :eq:`eq:3d:u` and trialfunction
-:math:`v_{p,q,r} = \mathcal{X}_{p} \mathcal{Y}_q \mathcal{Z}_r` on the
+:math:`v_{pqr} = \mathcal{X}_{p} \mathcal{Y}_q \mathcal{Z}_r` on the
 left hand side of :eq:`eq:3d:varform`, we get
 
 .. math::
         \begin{align*}
         \langle \nabla^2u, v \rangle_w^{\boldsymbol{N}} &= \left\langle \nabla^2\sum_{l\in \boldsymbol{l}^{N_0}}
-        \sum_{m\in \boldsymbol{m}^{N_1}}\sum_{n\in \boldsymbol{n}^{N_2}}\hat{u}_{l, m, n}
+        \sum_{m\in \boldsymbol{m}^{N_1}}\sum_{n\in \boldsymbol{n}^{N_2}}\hat{u}_{lmn}
         \mathcal{X}_{l} \mathcal{Y}_m \mathcal{Z}_n,
         \mathcal{X}_{p} \mathcal{Y}_q \mathcal{Z}_r \right\rangle_w^{\boldsymbol{N}}, \\ 
-            &= \left[\left(\mathcal{X}_l^{''}, \mathcal{X}_p \right)_w^N - (m^2+n^2)\left(\mathcal{X}_l, \mathcal{X}_p \right)_w^N  \right]\delta_{mq} \delta_{nr} \hat{u}_{l,m,n}, \\ 
-            &= \left( A_{pl} - (m^2 + n^2)B_{pl}\right) \hat{u}_{l,q,r},
+            &= \left[\left(\mathcal{X}_l^{''}, \mathcal{X}_p \right)_w^N - (m^2+n^2)\left(\mathcal{X}_l, \mathcal{X}_p \right)_w^N  \right]\delta_{mq} \delta_{nr} \hat{u}_{lmn}, \\ 
+            &= \left( a_{pl} - (m^2 + n^2)b_{pl}\right) \hat{u}_{lqr},
         \end{align*}
 
 where the notation :math:`(\cdot, \cdot)_w^{N_0}`
@@ -250,7 +250,7 @@ where the notation :math:`(\cdot, \cdot)_w^{N_0}`
    :label: _auto15
 
         
-        B_{pl} = \left( \mathcal{X}_l, \mathcal{X}_p \right)_w^{N_0} = \sum_{i=0}^{N_0-1} \mathcal{X}_l(x_i)
+        b_{pl} = \left( \mathcal{X}_l, \mathcal{X}_p \right)_w^{N_0} = \sum_{i=0}^{N_0-1} \mathcal{X}_l(x_i)
         \mathcal{X}_p(x_i) w(x_i),
         
         
@@ -285,7 +285,7 @@ The right hand side of Eq. :eq:`eq:3d:varform` is computed as
    :label: _auto18
 
         
-        \tilde{f}_{p,q,r} = \left\langle f, \mathcal{X}_{p}
+        \tilde{f}_{pqr} = \left\langle f, \mathcal{X}_{p}
         \mathcal{Y}_q \mathcal{Z}_r  \right \rangle_w^{\boldsymbol{N}},
         
         
@@ -300,17 +300,19 @@ be found as follows
    :label: eq:AB
 
         
-        \left(A_{lj} - (m^2+n^2)B_{lj}\right) \hat{u}_{j,m,n} =
-        \tilde{f}_{l,m,n}\quad \forall \, (l,m,n) \in \boldsymbol{k}. 
+        \left(a_{lj} - (m^2+n^2)b_{lj}\right) \hat{u}_{jmn} =
+        \tilde{f}_{lmn}\quad \forall \, (l,m,n) \in \boldsymbol{k}. 
         
 
-Now, when :math:`\hat{u}_{\boldsymbol{\textsf{k}}}` is found by solving this linear system over the
+Now, when :math:`\hat{\boldsymbol{u}} = \{\hat{u}_{\boldsymbol{\textsf{k}}}\}_{\boldsymbol{\textsf{k}} \in \boldsymbol{k}}` is
+found by solving this linear system over the
 entire computational mesh, it may be
 transformed to real space :math:`u(\boldsymbol{x})` using :eq:`eq:3d:u`. Note that the matrices
-:math:`A \in \mathbb{R}^{N_0-2 \times N_0-2}` and :math:`B \in \mathbb{R}^{N_0-2 \times N_0-2}` differs for Legendre or Chebyshev bases, but
+:math:`A \in \mathbb{R}^{N_0-3 \times N_0-3}` and :math:`B \in \mathbb{R}^{N_0-3 \times N_0-3}`
+differ for Legendre or Chebyshev bases, but
 for either case they have a
 special structure that allows for a solution to be found very efficiently
-in the order of :math:`\mathcal{O}(N_0-2)` operations given :math:`m` and :math:`n`, see
+in the order of :math:`\mathcal{O}(N_0-3)` operations given :math:`m` and :math:`n`, see
 :cite:`shen1` and :cite:`shen95`. Fast solvers for :eq:`eq:AB` are implemented in ``shenfun`` for both bases.
 
 Method of manufactured solutions

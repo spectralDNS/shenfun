@@ -93,7 +93,7 @@ wavenumbers in the $z$-direction, such that $\bs{n}^{N_2} = (0, 1, \ldots,
 N_2/2)$. We refer to the Cartesian wavenumber mesh on vector form as $\bs{k}$:
 
 !bt
-\bs{k} = \{(l, m, n)  \in \bs{l}^{N_0} \times \bs{m}^{N_1} \times \bs{n}^{N_2}\}.
+\bs{k} = \{(l, m, n)\, | \,(l, m, n)  \in \bs{l}^{N_0} \times \bs{m}^{N_1} \times \bs{n}^{N_2}\}.
 !et
 
 We have the bases
@@ -117,12 +117,12 @@ And then we look for discrete solutions $u \in W^{\bs{N}}$ like
 !bt
 \begin{align}
 u(\bs{x}) &= \sum_{l\in \bs{l}^{N_0}} \sum_{m\in \bs{m}^{N_1}}\sum_{n\in
-\bs{n}^{N_2}}\hat{u}_{l,m,n} \mathcal{X}_l(x) \mathcal{Y}_m(y) \mathcal{Z}_n(z), label{eq:3d:u} \\
+\bs{n}^{N_2}}\hat{u}_{lmn} \mathcal{X}_l(x) \mathcal{Y}_m(y) \mathcal{Z}_n(z), label{eq:3d:u} \\
  &= \sum_{\ts{k} \in \bs{k}}\hat{u}_{\ts{k}} v_{\ts{k}}(\bs{x}),
 \end{align}
 !et
 
-where $\hat{u}_{l,m,n}$ are components of the expansion coefficients for $u$ and
+where $\hat{u}_{lmn}$ are components of the expansion coefficients for $u$ and
 the second form, $\{\hat{u}_{\ts{k}}\}_{\ts{k}\in\bs{k}}$, is a shorter,
 simplified notation, with sans-serif $\ts{k}=(l, m, n)$.
 The expansion coefficients are the unknowns in the spectral Galerkin method.
@@ -162,23 +162,23 @@ uniform $\{y_j\}_{j=0}^{N_1-1}=2\pi j / N_1$ and $\{z_k\}_{k=0}^{N_2-1} = 2 \pi
 k/N_2$.
 
 Inserting for test function (ref{eq:3d:u}) and trialfunction
-$v_{p,q,r} = \mathcal{X}_{p} \mathcal{Y}_q \mathcal{Z}_r$ on the
+$v_{pqr} = \mathcal{X}_{p} \mathcal{Y}_q \mathcal{Z}_r$ on the
 left hand side of (ref{eq:3d:varform}), we get
 
 !bt
 \begin{align*}
 \langle \nabla^2u, v \rangle_w^{\bs{N}} &= \left\langle \nabla^2\sum_{l\in \bs{l}^{N_0}}
-\sum_{m\in \bs{m}^{N_1}}\sum_{n\in \bs{n}^{N_2}}\hat{u}_{l, m, n}
+\sum_{m\in \bs{m}^{N_1}}\sum_{n\in \bs{n}^{N_2}}\hat{u}_{lmn}
 \mathcal{X}_{l} \mathcal{Y}_m \mathcal{Z}_n,
 \mathcal{X}_{p} \mathcal{Y}_q \mathcal{Z}_r \right\rangle_w^{\bs{N}}, \\
-    &= \left[\left(\mathcal{X}_l^{''}, \mathcal{X}_p \right)_w^N - (m^2+n^2)\left(\mathcal{X}_l, \mathcal{X}_p \right)_w^N  \right]\delta_{mq} \delta_{nr} \hat{u}_{l,m,n}, \\
-    &= \left( A_{pl} - (m^2 + n^2)B_{pl}\right) \hat{u}_{l,q,r},
+    &= \left[\left(\mathcal{X}_l^{''}, \mathcal{X}_p \right)_w^N - (m^2+n^2)\left(\mathcal{X}_l, \mathcal{X}_p \right)_w^N  \right]\delta_{mq} \delta_{nr} \hat{u}_{lmn}, \\
+    &= \left( a_{pl} - (m^2 + n^2)b_{pl}\right) \hat{u}_{lqr},
 \end{align*}
 !et
 where the notation $(\cdot, \cdot)_w^{N_0}$
 !bt
 \begin{equation}
-B_{pl} = \left( \mathcal{X}_l, \mathcal{X}_p \right)_w^{N_0} = \sum_{i=0}^{N_0-1} \mathcal{X}_l(x_i)
+b_{pl} = \left( \mathcal{X}_l, \mathcal{X}_p \right)_w^{N_0} = \sum_{i=0}^{N_0-1} \mathcal{X}_l(x_i)
 \mathcal{X}_p(x_i) w(x_i),
 \end{equation}
 !et
@@ -199,7 +199,7 @@ The right hand side of Eq. (ref{eq:3d:varform}) is computed as
 
 !bt
 \begin{equation}
-\tilde{f}_{p,q,r} = \left\langle f, \mathcal{X}_{p}
+\tilde{f}_{pqr} = \left\langle f, \mathcal{X}_{p}
 \mathcal{Y}_q \mathcal{Z}_r  \right \rangle_w^{\bs{N}},
 \end{equation}
 !et
@@ -211,18 +211,20 @@ be found as follows
 
 !bt
 \begin{equation}
-\left(A_{lj} - (m^2+n^2)B_{lj}\right) \hat{u}_{j,m,n} =
-\tilde{f}_{l,m,n}\quad \forall \, (l,m,n) \in \bs{k}. label{eq:AB}
+\left(a_{lj} - (m^2+n^2)b_{lj}\right) \hat{u}_{jmn} =
+\tilde{f}_{lmn}\quad \forall \, (l,m,n) \in \bs{k}. label{eq:AB}
 \end{equation}
 !et
 
-Now, when $\hat{u}_{\ts{k}}$ is found by solving this linear system over the
+Now, when $\hat{\bs{u}} = \{\hat{u}_{\ts{k}}\}_{\ts{k} \in \bs{k}}$ is
+found by solving this linear system over the
 entire computational mesh, it may be
 transformed to real space $u(\bs{x})$ using (ref{eq:3d:u}). Note that the matrices
-$A \in \mathbb{R}^{N_0-2 \times N_0-2}$ and $B \in \mathbb{R}^{N_0-2 \times N_0-2}$ differs for Legendre or Chebyshev bases, but
+$A \in \mathbb{R}^{N_0-3 \times N_0-3}$ and $B \in \mathbb{R}^{N_0-3 \times N_0-3}$
+differ for Legendre or Chebyshev bases, but
 for either case they have a
 special structure that allows for a solution to be found very efficiently
-in the order of $\mathcal{O}(N_0-2)$ operations given $m$ and $n$, see
+in the order of $\mathcal{O}(N_0-3)$ operations given $m$ and $n$, see
 cite{shen1} and cite{shen95}. Fast solvers for (ref{eq:AB}) are implemented in `shenfun` for both bases.
 
 ===== Method of manufactured solutions =====

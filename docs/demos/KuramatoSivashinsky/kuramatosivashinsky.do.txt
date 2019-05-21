@@ -221,19 +221,19 @@ exact derivatives of the nabla operator, we have
 !bt
 \begin{align}
 (\nabla^2 u, v) &=
--(\underline{l}^2+\underline{m}^2)\hat{u}_{l,m}, \\
-(\nabla^4 u, v) &= (\underline{l}^2+\underline{m}^2)^2\hat{u}_{l,m}, \\
-(|\nabla u|^2, v) &= \widehat{|\nabla u|^2}
+-(\underline{l}^2+\underline{m}^2)\hat{u}_{lm}, \\
+(\nabla^4 u, v) &= (\underline{l}^2+\underline{m}^2)^2\hat{u}_{lm}, \\
+(|\nabla u|^2, v) &= \widehat{|\nabla u|^2}_{lm}
 \end{align}
 !et
 
-and as such the equation to be solved can be found directly as
+and as such the equation to be solved for each wavenumber can be found directly as
 
 !bt
 \begin{equation}
-\frac{\partial \hat{u}}{\partial t}  =
+\frac{\partial \hat{u}_{lm}}{\partial t}  =
 \left(\underline{l}^2+\underline{m}^2 -
-(\underline{l}^2+\underline{m}^2)^2\right)\hat{u} - \widehat{|\nabla u|^2},
+(\underline{l}^2+\underline{m}^2)^2\right)\hat{u}_{lm} - \widehat{|\nabla u|^2}_{lm},
 label{eq:du_var3}
 \end{equation}
 !et

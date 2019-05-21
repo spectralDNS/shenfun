@@ -61,6 +61,7 @@ functionality
 
 .. code-block:: python
 
+    import matplotlib.pyplot as plt
     from shenfun import *
     from mpi4py import MPI
     comm = MPI.COMM_WORLD
@@ -156,7 +157,7 @@ can be added on both sides of the domain using the following basis
    :label: _auto2
 
           
-        \mathcal{Y}_{N_1-2}(y) = (L_0+L_1)/2 \, (=(1+y)/2), 
+        \mathcal{Y}_{N_1-2}(y) = (L_0+L_1)/2 \quad \left(=(1+y)/2\right), 
         
         
 
@@ -164,7 +165,7 @@ can be added on both sides of the domain using the following basis
    :label: _auto3
 
           
-        \mathcal{Y}_{N_1-1}(y) = (L_0-L_1)/2 \, (=(1-y)/2).
+        \mathcal{Y}_{N_1-1}(y) = (L_0-L_1)/2 \quad \left(=(1-y)/2\right).
         
         
 
@@ -678,7 +679,6 @@ will quickly blow up. The iteration loop goes as follows
     up = uh_hat.backward()
     u, p = up
     
-    import matplotlib.pyplot as plt
     X = V0.local_mesh(True)
     plt.figure()
     plt.quiver(X[0], X[1], u[0], u[1])
