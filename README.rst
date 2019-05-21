@@ -14,7 +14,9 @@ Shenfun
     :target: https://mybinder.org/v2/gh/spectralDNS/shenfun/master?filepath=binder
 
 
-Try it in a jupyter hub using Binder: |binder|
+Try it in a jupyter hub using Binder 
+
+|binder|
 
 Description
 -----------
