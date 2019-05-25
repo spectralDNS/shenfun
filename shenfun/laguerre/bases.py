@@ -195,6 +195,7 @@ class Basis(LaguerreBase):
         self.plan(N, 0, np.float, {})
 
     def eval(self, x, u, output_array=None):
+        x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
         output_array[:] = lag.lagval(x, u)*np.exp(-x/2)
@@ -241,6 +242,7 @@ class ShenDirichletBasis(LaguerreBase):
         return output_array
 
     def eval(self, x, u, output_array=None):
+        x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
         w_hat = work[(u, 0, True)]

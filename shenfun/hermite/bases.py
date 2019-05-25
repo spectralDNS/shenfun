@@ -172,6 +172,7 @@ class Basis(SpectralBase):
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
 
     def eval(self, x, u, output_array=None):
+        x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
         w = u*self.factor(np.arange(self.N))
