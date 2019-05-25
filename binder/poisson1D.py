@@ -17,5 +17,4 @@ A = inner(v, div(grad(u)))
 
 # Solve
 u_hat = A/f_hat
-uj = u_hat.backward()
-print('Error = \n', uj-lambdify(x, ue)(SD.mesh()))
+print('Error = \n', u_hat.backward()-Array(SD, buffer=ue))
