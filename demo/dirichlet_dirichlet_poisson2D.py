@@ -44,11 +44,10 @@ ul = lambdify((x, y), ue, 'numpy')
 fl = lambdify((x, y), fe, 'numpy')
 
 # Size of discretization
-#N = (int(sys.argv[-3]), int(sys.argv[-2]))
-N = (24, 24)
+N = (int(sys.argv[-3]), int(sys.argv[-2]))
 
-SD0 = Basis(N[0], 'Chebyshev', bc=(0, 0), scaled=True)
-SD1 = Basis(N[1], 'Legendre', bc=(0, 0), scaled=True)
+SD0 = Basis(N[0], family, bc=(0, 0), scaled=True)
+SD1 = Basis(N[1], family, bc=(0, 0), scaled=True)
 
 T = TensorProductSpace(comm, (SD0, SD1), axes=(1, 0))
 X = T.local_mesh(True)
@@ -63,10 +62,10 @@ f_hat = Function(T)
 f_hat = inner(v, fj, output_array=f_hat)
 
 # Get left hand side of Poisson equation
-#if family == 'legendre':
-#    matrices = inner(grad(v), grad(u))
-#else:
-matrices = inner(v, -div(grad(u)))
+if family == 'legendre':
+    matrices = inner(grad(v), grad(u))
+else:
+    matrices = inner(v, -div(grad(u)))
 matrices += [inner(v, a*u)]
 
 # Create Helmholtz linear algebra solver
