@@ -130,9 +130,9 @@ the spectral Galerkin method. Being a Galerkin method, we need to reshape the
 governing equations into proper variational forms, and this is done by
 multiplying  (ref{eq:df}) and (ref{eq:du}) with the complex conjugate of proper
 test functions and then integrating
-over the domain. To this end we use continuously differentiable
-testfunctions $g\in C(\Omega)$ with Eq. (ref{eq:df})  and  $v \in
-C(\Omega)$ with Eq. (ref{eq:du}), and we obtain
+over the domain. To this end we use testfunctions $g\in V(\Omega)$
+with Eq. (ref{eq:df})  and  $v \in V(\Omega)$ with Eq. (ref{eq:du}), where
+$V(\omega)$ is a suitable function space, and obtain
 
 !bt
 \begin{align}

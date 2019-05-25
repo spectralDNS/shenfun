@@ -114,7 +114,7 @@ class ETD(IntegratorBase):
         self.params['dt'] = dt
         L = self.LinearRHS(**self.params)
         if isinstance(L, TPMatrix):
-            assert L.all_identity()
+            assert L.isidentity()
             L = L.scale
         L = np.atleast_1d(L)
         hL = L*dt
@@ -194,7 +194,7 @@ class ETDRK4(IntegratorBase):
         self.params['dt'] = dt
         L = self.LinearRHS(**self.params)
         if isinstance(L, TPMatrix):
-            assert L.all_identity()
+            assert L.isidentity()
             L = L.scale
         L = np.atleast_1d(L)
         hL = L*dt

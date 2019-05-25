@@ -681,6 +681,17 @@ class ShenfunBaseArray(DistArray):
             if not space.num_components() == 1:
                 shape = (space.num_components(),) + shape
 
+            if hasattr(buffer, 'free_symbols'):
+                # Evaluate sympy function on entire mesh
+                import sympy
+                x, y, z = sympy.symbols("x,y,z")
+                sym0 = [sym for sym in (x, y, z) if sym in buffer.free_symbols]
+                buffer = sympy.lambdify(sym0, buffer)(space.mesh())
+                if cls.__name__ == 'Function':
+                    buf = np.empty_like(space.forward.output_array)
+                    buf = space.forward(buffer, buf)
+                    buffer = buf
+
             obj = DistArray.__new__(cls, shape, buffer=buffer, dtype=dtype,
                                     rank=space.rank)
             obj._space = space
@@ -697,6 +708,17 @@ class ShenfunBaseArray(DistArray):
             forward_output = False
             p0 = space.pencil[0]
             dtype = space.forward.input_array.dtype
+
+        # Evaluate sympy function on entire mesh
+        if hasattr(buffer, 'free_symbols'):
+            import sympy
+            x, y, z = sympy.symbols("x,y,z")
+            sym0 = [sym for sym in (x, y, z) if sym in buffer.free_symbols]
+            buffer = sympy.lambdify(sym0, buffer)(*space.local_mesh())
+            if cls.__name__ == 'Function':
+                buf = np.empty_like(space.forward.output_array)
+                buf = space.forward(buffer, buf)
+                buffer = buf
 
         global_shape = space.global_shape(forward_output)
         obj = DistArray.__new__(cls, global_shape,
@@ -775,6 +797,12 @@ class ShenfunBaseArray(DistArray):
 
         return np.ndarray.__getitem__(self.v, i)
 
+    def dim(self):
+        return self.function_space().dim()
+
+    def dims(self):
+        return self.function_space().dims()
+
 
 class Function(ShenfunBaseArray, BasisFunction):
     r"""
@@ -819,8 +847,10 @@ class Function(ShenfunBaseArray, BasisFunction):
     space : :class:`.TensorProductSpace`
     val : int or float
         Value used to initialize array
-    buffer : Numpy array or :class:`.Function`
-        Must be of correct shape
+    buffer : Numpy array, :class:`.Function` or sympy `Expr`
+        If array it must be of correct shape.
+        A sympy expression is evaluated on the quadrature mesh and
+        forward transformed to create the buffer array.
 
 
     .. note:: For more information, see `numpy.ndarray <https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html>`_
@@ -941,8 +971,10 @@ class Array(ShenfunBaseArray):
     space : :class:`.TensorProductSpace` or :class:`.SpectralBase`
     val : int or float
         Value used to initialize array
-    buffer : Numpy array or Array
-        Must be of correct shape
+    buffer : Numpy array, :class:`.Function` or sympy `Expr`
+        If array it must be of correct shape.
+        A sympy expression is evaluated on the quadrature mesh and
+        the result is used as buffer.
 
     .. note:: For more information, see `numpy.ndarray <https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html>`_
 

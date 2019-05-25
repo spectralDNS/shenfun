@@ -12,7 +12,7 @@ import os
 import sys
 from sympy import symbols, sin, exp, lambdify
 import numpy as np
-from shenfun import inner, grad, TestFunction, TrialFunction, \
+from shenfun import inner, div, grad, TestFunction, TrialFunction, \
     Array, Function, Basis
 
 assert len(sys.argv) == 2, 'Call with one command-line argument'
@@ -43,6 +43,7 @@ f_hat = Function(SD)
 f_hat = inner(v, -fj, output_array=f_hat)
 
 # Get left hand side of Poisson equation
+#A = inner(v, -div(grad(u)))
 A = inner(grad(v), grad(u))
 
 f_hat = A.solve(f_hat)

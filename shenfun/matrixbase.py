@@ -276,7 +276,14 @@ class SparseMatrix(dict):
         return self.__mul__(y)
 
     def __div__(self, y):
-        """Returns copy self.__div__(y) <==> self/y"""
+        """Returns elementwise division if `y` is a Number, or a linear algebra
+        solve if `y` is an array.
+
+        Parameters
+        ----------
+        y : Number or array
+
+        """
         if isinstance(y, Number):
             return SparseMatrix(deepcopy(dict(self)), self.shape,
                                 scale=self.scale/y)
@@ -1187,10 +1194,10 @@ class TPMatrix(object):
         assert len(self.naxes) == 1
         return self.pmat.get_key()
 
-    def all_identity(self):
+    def isidentity(self):
         return np.all([m.isidentity() for m in self.mats])
 
-    def all_diagonal(self):
+    def isdiagonal(self):
         return np.all([m.isdiagonal() for m in self.mats])
 
     def is_bc_matrix(self):

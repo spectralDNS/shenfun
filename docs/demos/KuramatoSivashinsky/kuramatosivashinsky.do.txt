@@ -78,7 +78,8 @@ the spectral Galerkin method. Being a Galerkin method, we need to reshape the
 governing equations into proper variational forms, and this is done by
 multiplying  (ref{eq:ks}) with the complex conjugate of a proper
 test function and then integrating
-over the domain. To this end we use testfunction $v\in H^s(\Omega)$, where $H^s(\Omega)$ is the Sobolev space of order $s$, and we obtain
+over the domain. To this end we use testfunction $v\in V(\Omega)$, where $V(\Omega)$
+is some suitable function space, and obtain
 
 !bt
 \begin{equation}
@@ -335,7 +336,7 @@ The code should, hopefully, be self-explanatory.
 All that remains now is to initialize the solution arrays and to setup the
 integrator plus some plotting functionality for visualizing the results. Note
 that visualization is only nice when running the code in serial. For parallel,
-it is recommended to use ${cls('HDF5Writer')}, to store intermediate results to the HDF5
+it is recommended to use ${cls('HDF5File')}, to store intermediate results to the HDF5
 format, for later viewing in, e.g., Paraview.
 
 The solution is initialized as

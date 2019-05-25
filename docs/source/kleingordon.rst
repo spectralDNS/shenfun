@@ -7,7 +7,7 @@ Demo - Cubic nonlinear Klein-Gordon equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 21, 2019
+:Date: May 22, 2019
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Klein-Gordon equation, in a triply periodic domain. The demo is implemented in
@@ -118,9 +118,9 @@ the spectral Galerkin method. Being a Galerkin method, we need to reshape the
 governing equations into proper variational forms, and this is done by
 multiplying  :eq:`eq:df` and :eq:`eq:du` with the complex conjugate of proper
 test functions and then integrating
-over the domain. To this end we use continuously differentiable
-testfunctions :math:`g\in C(\Omega)` with Eq. :eq:`eq:df`  and  :math:`v \in
-C(\Omega)` with Eq. :eq:`eq:du`, and we obtain
+over the domain. To this end we use testfunctions :math:`g\in V(\Omega)`
+with Eq. :eq:`eq:df`  and  :math:`v \in V(\Omega)` with Eq. :eq:`eq:du`, where
+:math:`V(\omega)` is a suitable function space, and obtain
 
 .. math::
    :label: eq:df_var
