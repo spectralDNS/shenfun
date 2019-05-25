@@ -316,6 +316,7 @@ class Basis(ChebyshevBase):
             out *= (np.pi/(2*(self.N-1)))
 
     def eval(self, x, u, output_array=None):
+        x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = self.map_reference_domain(x)
@@ -426,6 +427,7 @@ class ShenDirichletBasis(ChebyshevBase):
         return slice(0, self.N-2)
 
     def eval(self, x, u, output_array=None):
+        x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = self.map_reference_domain(x)
@@ -577,6 +579,7 @@ class ShenNeumannBasis(ChebyshevBase):
         return slice(0, self.N-2)
 
     def eval(self, x, u, output_array=None):
+        x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = self.map_reference_domain(x)
@@ -723,6 +726,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
         return slice(0, self.N-4)
 
     def eval(self, x, u, output_array=None):
+        x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = self.map_reference_domain(x)

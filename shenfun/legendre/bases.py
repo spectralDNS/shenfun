@@ -251,6 +251,7 @@ class ShenDirichletBasis(LegendreBase):
         output_array[self.si[-1]] = 0
 
     def eval(self, x, u, output_array=None):
+        x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = self.map_reference_domain(x)
