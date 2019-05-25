@@ -210,9 +210,21 @@ def inner(expr0, expr1, output_array=None, level=0):
                         DM.append(AA)
 
                 sc = sp.broadcast_to_ndims(np.array([sc]))
-                A.append(TPMatrix(M, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), basespace))
+                if len(M) == 1: # 1D case
+                    M[0].global_index = (test_ind[test_j], trial_ind[trial_j])
+                    M[0].scale = sc
+                    M[0].mixedbase = basespace
+                    A.append(M[0])
+                else:
+                    A.append(TPMatrix(M, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), basespace))
                 if has_bcs:
-                    A.append(TPMatrix(DM, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), basespace))
+                    if len(DM) == 1: # 1D case
+                        DM[0].global_index = (test_ind[test_j], trial_ind[trial_j])
+                        DM[0].scale = sc
+                        DM[0].mixedbase = basespace
+                        A.append(DM[0])
+                    else:
+                        A.append(TPMatrix(DM, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), basespace))
 
     # At this point A contains all matrices of the form. The length of A is
     # the number of inner products. For each index into A there are ndim 1D
@@ -245,85 +257,33 @@ def inner(expr0, expr1, output_array=None, level=0):
     # have been implemented in chebyshev/matrices.py or legendre/matrices.py,
     # where they are called ADDmat and BDDmat, respectively.
 
-    if level == 2 and trial.argument == 1:
+    if level == 2 and trial.argument == 1: # No processing of matrices
         return A
 
     for tpmat in A:
-        tpmat.simplify_fourier_matrices()
+        if isinstance(tpmat, TPMatrix):
+            tpmat.simplify_fourier_matrices()
 
-    if level == 1 and trial.argument == 1:
-        return A
+    # Add equal matrices
+    B = [A[0]]
+    for a in A[1:]:
+        found = False
+        for b in B:
+            if a == b:
+                b += a
+                found = True
+        if not found:
+            B.append(a)
 
-    if np.all([f.all_diagonal() for f in A]): # No non-diagonal matrix
-        if trial.argument == 1:
-            # Note 1D case return a TPMatrix
-            if trial.rank == 0:
-                A = reduce(lambda x, y: x+y, A)
-                if len(A.mats) == 1:
-                    # 1D case
-                    p = A.mats[0]
-                    p.scale = p.scale*np.atleast_1d(A.scale).item()
-                    p.global_index = A.global_index
-                    p.mixedbase = A.mixedbase
-                    return p
-            return A
+    if trial.argument == 1:
+        return B[0] if len(B) == 1 else B
 
-        # linear form
+    wh = np.zeros_like(output_array)
+    for b in B:
         if uh.rank > 0:
-            for b in A:
-                output_array += b.scale*uh.v[b.global_index[1]]
+            wh = b.matvec(uh.v[b.global_index[1]], wh)
         else:
-            f = reduce(lambda x, y: x+y, A)
-            output_array[:] = f.scale*uh
-        return output_array
-
-    elif np.any([isinstance(f.pmat, SparseMatrix) for f in A]):
-
-        # One non-Fourier space
-        B = [A[0]]
-        for a in A[1:]:  # Add equal TPMatrices
-            found = False
-            for b in B:
-                if a == b:
-                    b += a
-                    found = True
-            if not found:
-                B.append(a)
-        if trial.argument == 1:  # bilinear form
-            if len(B) == 1:
-                if len(B[0].mats) == 1:
-                    p = B[0].pmat
-                    p.scale = p.scale*np.atleast_1d(B[0].scale).item()
-                    p.global_index = B[0].global_index
-                    p.mixedbase = B[0].mixedbase
-                    return p
-                return B[0]
-            return B
-
-        else: # linear form
-            wh = np.zeros_like(output_array)
-            for b in B:
-                if uh.rank > 0:
-                    wh = b.matvec(uh.v[b.global_index[1]], wh)
-                else:
-                    wh = b.matvec(uh, wh)
-                output_array += wh
-                wh.fill(0)
-
-            return output_array
-
-    else:
-        # Two non-Fourier spaces (experimental)
-        if trial.argument == 1:  # bilinear form
-            return A
-
-        else: # linear form
-            wh = np.zeros_like(output_array)
-            for b in A:
-                wh.fill(0)
-                if uh.rank > 0:
-                    wh = b.matvec(uh.v[b.global_index[1]], wh)
-                else:
-                    wh = b.matvec(uh, wh)
-                output_array += wh
-            return output_array
+            wh = b.matvec(uh, wh)
+        output_array += wh
+        wh.fill(0)
+    return output_array

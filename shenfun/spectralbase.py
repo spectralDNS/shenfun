@@ -776,6 +776,11 @@ class SpectralBase(object):
         s = self.slice()
         return s.stop - s.start
 
+    def dims(self):
+        """Return tuple (length one since a basis only has one dim) containing
+        self.dim()"""
+        return (self.dim(),)
+
     def shape(self, forward_output=True):
         """Return the allocated shape of arrays used for ``self``
 

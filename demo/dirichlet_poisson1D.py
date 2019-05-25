@@ -33,10 +33,6 @@ x = symbols("x")
 ue = sin(4*np.pi*x)*(x+domain[0])*(x+domain[1]) + a*(x-domain[0])/2. + b*(domain[1] - x)/2.
 fe = ue.diff(x, 2)
 
-# Lambdify for faster evaluation
-ul = lambdify(x, ue, 'numpy')
-fl = lambdify(x, fe, 'numpy')
-
 # Size of discretization
 N = int(sys.argv[-2])
 
@@ -46,7 +42,7 @@ u = TrialFunction(SD)
 v = TestFunction(SD)
 
 # Get f on quad points
-fj = Array(SD, buffer=fl(X))
+fj = Array(SD, buffer=fe)
 
 # Compute right hand side of Poisson equation
 f_hat = Function(SD)
@@ -65,10 +61,10 @@ uj = f_hat.backward()
 uh = uj.forward()
 
 # Compare with analytical solution
-ua = ul(X)
+ua = Array(SD, buffer=ue)
 print("Error=%2.16e" %(np.linalg.norm(uj-ua)))
 assert np.allclose(uj, ua)
 
 point = np.array([0.1, 0.2])
 p = SD.eval(point, f_hat)
-assert np.allclose(p, ul(point))
+assert np.allclose(p, lambdify(x, ue)(point))

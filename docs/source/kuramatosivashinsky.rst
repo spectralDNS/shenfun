@@ -7,7 +7,7 @@ Demo - Kuramato-Sivashinsky equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 21, 2019
+:Date: May 22, 2019
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Kuramato-Sivashinsky equation, in a doubly periodic domain. The demo is implemented in
@@ -59,7 +59,8 @@ the spectral Galerkin method. Being a Galerkin method, we need to reshape the
 governing equations into proper variational forms, and this is done by
 multiplying  :eq:`eq:ks` with the complex conjugate of a proper
 test function and then integrating
-over the domain. To this end we use testfunction :math:`v\in H^s(\Omega)`, where :math:`H^s(\Omega)` is the Sobolev space of order :math:`s`, and we obtain
+over the domain. To this end we use testfunction :math:`v\in V(\Omega)`, where :math:`V(\Omega)`
+is some suitable function space, and obtain
 
 .. math::
    :label: eq:du_var
@@ -386,7 +387,7 @@ The code should, hopefully, be self-explanatory.
 All that remains now is to initialize the solution arrays and to setup the
 integrator plus some plotting functionality for visualizing the results. Note
 that visualization is only nice when running the code in serial. For parallel,
-it is recommended to use :class:`.HDF5Writer`, to store intermediate results to the HDF5
+it is recommended to use :class:`.HDF5File`, to store intermediate results to the HDF5
 format, for later viewing in, e.g., Paraview.
 
 The solution is initialized as

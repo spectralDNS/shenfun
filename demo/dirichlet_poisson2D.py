@@ -43,10 +43,6 @@ x, y = symbols("x,y")
 ue = (cos(4*x) + sin(2*y))*(1 - x**2) + a*(1 + x)/2. + b*(1 - x)/2.
 fe = ue.diff(x, 2) + ue.diff(y, 2)
 
-# Lambdify for faster evaluation
-ul = lambdify((x, y), ue, 'numpy')
-fl = lambdify((x, y), fe, 'numpy')
-
 # Size of discretization
 N = (int(sys.argv[-2]), int(sys.argv[-2])+1)
 
@@ -58,7 +54,7 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = Array(T, buffer=fl(*X))
+fj = Array(T, buffer=fe)
 
 # Compute right hand side of Poisson equation
 f_hat = Function(T)
@@ -83,7 +79,7 @@ uq = u_hat.backward()
 uh = uq.forward()
 
 # Compare with analytical solution
-uj = ul(*X)
+uj = lambdify((x, y), ue)(*X)
 assert np.allclose(uj, uq)
 
 if 'pytest' not in os.environ:
