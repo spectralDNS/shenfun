@@ -105,7 +105,7 @@ def curl(test):
     if isinstance(test, BasisFunction):
         test = Expr(test)
 
-    assert test.rank > 0
+    assert test.expr_rank() > 0
     assert test.num_components() == test.dimensions  # vector
 
     if test.dimensions == 3:
