@@ -1157,7 +1157,10 @@ class TPMatrix(object):
             return u
 
         elif len(self.naxes) == 2:
-            raise NotImplementedError
+            from shenfun.la import SolverGeneric2NP
+            H = SolverGeneric2NP([self])
+            u = H(b, u)
+            return u
 
     def matvec(self, v, c):
         c.fill(0)
