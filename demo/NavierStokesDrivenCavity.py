@@ -33,13 +33,13 @@ comm = MPI.COMM_WORLD
 
 assert comm.Get_size() == 1, "Two non-periodic directions only have solver implemented for serial"
 
-Re = 100.
+Re = 200.
 nu = 2./Re
-alfa = 0.5 # underrelaxation factor
+alfa = 0.2 # underrelaxation factor
 N = (51, 51)
-#family = 'Chebyshev'
-family = 'Legendre'
-quad = 'LG'
+family = 'Chebyshev'
+#family = 'Legendre'
+quad = 'GC'
 x = sympy.symbols('x')
 D0X = Basis(N[0], family, quad=quad, bc=(0, 0))
 #D1Y = Basis(N[1], family, quad=quad, bc=(1, 0))
@@ -123,8 +123,8 @@ def compute_rhs(ui_hat, bh_hat):
     uiuj = outer(ui, ui, uiuj)
     uiuj_hat = uiuj.forward(uiuj_hat)
     bi_hat = bh_hat[0]
-    #bi_hat = inner(v, div(uiuj_hat), output_array=bi_hat)
-    bi_hat = inner(grad(v), -uiuj_hat, output_array=bi_hat)
+    bi_hat = inner(v, div(uiuj_hat), output_array=bi_hat)
+    #bi_hat = inner(grad(v), -uiuj_hat, output_array=bi_hat)
     bh_hat += bh_hat0
     return bh_hat
 
@@ -141,7 +141,7 @@ while not converged:
     error = np.linalg.norm(ui_hat-ui_new)
     uh_hat[:] = alfa*uh_new + (1-alfa)*uh_hat
     converged = abs(error) < 1e-11 or count >= 10000
-    if count % 10 == 0:
+    if count % 1 == 0:
         print('Iteration %d Error %2.4e' %(count, error))
 
 print('Time ', time.time()-t0)
@@ -154,8 +154,8 @@ u_, p_ = up
 # Solve streamfunction
 r = TestFunction(V0)
 s = TrialFunction(V0)
-S = inner(grad(r), grad(s))
-h = inner(r, curl(ui_hat))
+S = inner(r, div(grad(s)))
+h = inner(r, -curl(ui_hat))
 H = la.SolverGeneric2NP(S)
 phi_h = H(h)
 phi = phi_h.backward()
