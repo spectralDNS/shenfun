@@ -1,10 +1,9 @@
 #!/bin/bash
 
-if [ "$(uname)" == "Darwin" ]
-then
-    export CXXFLAGS="-stdlib=libc++ ${CXXFLAGS}"
-    export LDFLAGS="-Wl,-rpath,$PREFIX/lib"
-    export MACOSX_DEPLOYMENT_TARGET=10.13
+if [[ "$(uname)" == "Darwin" ]]; then
+  export CXXFLAGS="-std=c++11 -stdlib=libc++ $CXXFLAGS"
+  export LDFLAGS="-Wl,-rpath,$PREFIX/lib $LDFLAGS"
+  export MACOSX_DEPLOYMENT_TARGET=10.9
 fi
 
 #pip install --no-deps --no-binary :all: -r "${RECIPE_DIR}/component-requirements.txt"
