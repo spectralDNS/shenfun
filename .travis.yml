@@ -36,7 +36,7 @@ install:
       conda config --set show_channel_urls true
       conda config --add channels conda-forge
       conda config --add channels spectralDNS
-      conda install -n root conda-build
+      conda install -n root conda-build=3.17
       pip install codecov pytest-cov pytest codacy-coverage
 
 script:
