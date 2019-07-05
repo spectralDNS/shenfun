@@ -43,7 +43,7 @@ ul = lambdify((x, y), ue, 'numpy')
 fl = lambdify((x, y), fe, 'numpy')
 
 # Size of discretization
-N = (36, 36)
+N = (30, 30)
 
 S0 = Basis(N[0], family=family, bc='Biharmonic')
 S1 = Basis(N[1], family=family, bc='Biharmonic')
@@ -53,7 +53,7 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = Array(T, buffer=fl(*X))
+fj = Array(T, buffer=fe)
 
 # Compute right hand side of biharmonic equation
 f_hat = inner(v, fj)

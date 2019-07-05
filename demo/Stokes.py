@@ -18,8 +18,10 @@ We use a tensorproductspace with Fourier expansions in the x-direction and
 a composite Chebyshev or Legendre basis in the y-direction for ``u`` and
 a regular (no boundary conditions) Chebyshev or Legendre basis for ``p``.
 
-To eliminate a nullspace we use a P_N basis for the velocity and a P_{N-2}
-basis for the pressure.
+For the zeroth Fourier wavenumber the assembled coefficient matrix has
+two nullspaces. One of these are removed by enforcing the global constraint
+on the pressure. The second is removed by fixing :math:`\hat{p}_{0, N-1} = 0`.
+
 """
 import os
 import sys
@@ -47,17 +49,11 @@ fly = lambdify((x, y), fy, 'numpy')
 hl = lambdify((x, y), h, 'numpy')
 pl = lambdify((x, y), pe, 'numpy')
 
-N = (100, 100)
+N = (80, 80)
 family = sys.argv[-1] if len(sys.argv) == 2 else 'Legendre'
 K0 = Basis(N[0], 'Fourier', dtype='d', domain=(0, 2*np.pi))
 SD = Basis(N[1], family, bc=(0, 0))
 ST = Basis(N[1], family)
-
-# To get a P_N x P_{N-2} space, just pick the first N-1 items of the pressure basis
-# Note that this effectively sets the two highest pressure frequencies to zero, but
-# still the basis uses the same quadrature points as the Dirichlet basis, which is
-# required for the inner products.
-ST.slice = lambda: slice(0, ST.N-2)
 
 TD = TensorProductSpace(comm, (K0, SD), axes=(1, 0))
 Q = TensorProductSpace(comm, (K0, ST), axes=(1, 0))
@@ -96,7 +92,7 @@ f_hat = inner(v, f_, output_array=f_hat)
 h_hat = inner(q, h_, output_array=h_hat)
 
 # Solve problem using integral constraint on pressure
-up_hat = M.solve(fh_hat, integral_constraint=(2, 0))
+up_hat = M.solve(fh_hat, constraints=((2, 0, 0), (2, N[1]-1, 0)))
 up_ = up_hat.backward()
 u_, p_ = up_
 

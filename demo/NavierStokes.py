@@ -26,6 +26,7 @@ U = Array(TV)
 U_hat = Function(TV)
 P_hat = Function(T)
 curl_hat = Function(TV)
+W = Array(TV)
 curl_ = Array(TV)
 X = T.local_mesh(True)
 A = inner(grad(u), grad(v))
@@ -37,13 +38,11 @@ def LinearRHS(self, **params):
     return L
 
 def NonlinearRHS(self, U, U_hat, dU, **params):
-    global TV, curl_hat, curl_, P_hat
-    dU.fill(0)
-    curl_hat.fill(0)
+    global TV, curl_hat, curl_, P_hat, W
     curl_hat = project(curl(U_hat), TV, output_array=curl_hat)
     curl_ = TV.backward(curl_hat, curl_)
     U = U_hat.backward(U)
-    W = np.cross(U, curl_, axis=0)                   # Nonlinear term in physical space
+    W[:] = np.cross(U, curl_, axis=0)     # Nonlinear term in physical space
     dU = project(W, TV, output_array=dU)             # dU = W.forward(dU)
     P_hat = A.solve(inner(div(dU), v), P_hat)
     dU += inner(grad(P_hat), TestFunction(TV))

@@ -7,7 +7,7 @@ Demo - Lid driven cavity
 ========================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 22, 2019
+:Date: Jun 16, 2019
 
 *Summary.* The lid driven cavity is a classical benchmark for Navier Stokes solvers.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the lid
@@ -635,7 +635,7 @@ velocity and pressure to zero and solve the Stokes equations:
 .. code-block:: python
 
     from scipy.sparse.linalg import splu
-    uh_hat, Ai = M.solve(bh_hat0, u=uh_hat, integral_constraint=(2, 0), return_system=True) # Constraint for component 2 of mixed space
+    uh_hat, Ai = M.solve(bh_hat0, u=uh_hat, constraints=((2, 0, 0),), return_system=True) # Constraint for component 2 of mixed space
     Alu = splu(Ai)
     uh_new[:] = uh_hat
 
@@ -643,10 +643,11 @@ Note that the :class:`.BlockMatrix` given by ``M`` has a solve method that sets 
 a sparse coefficient matrix ``Ai`` of size :math:`\mathbb{R}^{3(N_0-2)(N_1-2) \times 3(N_0-2)(N_1-2)}`,
 and then solves using `scipy.sparse.linalg.spsolve <http://scipy.github.io/devdocs/generated/scipy.sparse.linalg.spsolve.html#scipy.sparse.linalg.spsolve>`__.
 The matrix ``Ai`` is then pre-factored for reuse with `splu <http://scipy.github.io/devdocs/generated/scipy.sparse.linalg.splu.html#scipy.sparse.linalg.splu>`__.
-Also note that the ``integral_constraint=(2, 0)`` keyword argument
+Also note that the ``constraints=((2, 0, 0),)`` keyword argument
 ensures that the pressure integrates to zero, i.e., :math:`\int_{\Omega} pdxdy=0`.
 Here the number 2 tells us that block component 2 in the mixed space
-(the pressure) should be integrated, and it should be integrated to 0.
+(the pressure) should be integrated, dof 0 should be fixed, and it
+should be fixed to 0.
 
 With an initial solution from the Stokes equations we are ready to start iterating.
 However, for convergence it is necessary to add some underrelaxation :math:`\alpha`,
@@ -670,7 +671,7 @@ will quickly blow up. The iteration loop goes as follows
     while not converged:
         count += 1
         bh_hat = compute_rhs(ui_hat, bh_hat)
-        uh_new = M.solve(bh_hat, u=uh_new, integral_constraint=(2, 0), Alu=Alu) # Constraint for component 2 of mixed space
+        uh_new = M.solve(bh_hat, u=uh_new, constraints=((2, 0, 0),), Alu=Alu) # Constraint for component 2 of mixed space
         error = np.linalg.norm(ui_hat-ui_new)
         uh_hat[:] = alfa*uh_new + (1-alfa)*uh_hat
         converged = abs(error) < 1e-10 or count >= 10000

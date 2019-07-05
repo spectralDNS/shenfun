@@ -9,6 +9,7 @@ from shenfun.chebyshev import bases as cbases
 from shenfun.legendre import bases as lbases
 from shenfun.laguerre import bases as lagbases
 from shenfun.hermite import bases as hbases
+from shenfun.jacobi import bases as jbases
 from shenfun import Function, project, Dx, Array, Basis, TensorProductSpace, \
    VectorTensorProductSpace, MixedTensorProductSpace
 
@@ -125,18 +126,28 @@ lagBasis = (lagbases.Basis,
 
 hBasis = (hbases.Basis,)
 
+jBasis = (jbases.Basis,
+          jbases.ShenDirichletBasis,
+          jbases.ShenBiharmonicBasis,
+          jbases.ShenOrder6Basis)
+
 cquads = ('GC', 'GL')
 lquads = ('LG', 'GL')
 lagquads = ('LG',)
 hquads = ('HG',)
+jquads = ('JG',)
 
 all_bases_and_quads = list(product(lBasis, lquads))+list(product(cBasis, cquads))
 lag_bases_and_quads = list(product(lagBasis, lagquads))
 h_bases_and_quads = list(product(hBasis, hquads))
+j_bases_and_quads = list(product(jBasis, jquads))
 
 @pytest.mark.parametrize('typecode', 'dD')
 @pytest.mark.parametrize('dim', (1, 2))
-@pytest.mark.parametrize('ST,quad', all_bases_and_quads+lag_bases_and_quads+h_bases_and_quads)
+@pytest.mark.parametrize('ST,quad', all_bases_and_quads+
+                                    lag_bases_and_quads+
+                                    h_bases_and_quads+
+                                    j_bases_and_quads)
 def test_shentransform(typecode, dim, ST, quad):
     for shape in product(*([sizes]*dim)):
         bases = []
@@ -158,7 +169,9 @@ def test_shentransform(typecode, dim, ST, quad):
             fft.destroy()
 #test_shentransform('d', 2, lBasis[0], 'LG')
 
-bases_and_quads = list(product(lBasis[:2], lquads))+list(product(cBasis[:2], cquads))
+bases_and_quads = (list(product(lBasis[:2], lquads))+
+                   list(product(cBasis[:2], cquads))+
+                   list(product(jBasis[:2], jquads)))
 
 axes = {2: {0: [0, 1, 2],
             1: [1, 0, 2],
@@ -417,7 +430,7 @@ def test_project_2dirichlet(quad):
 
 @pytest.mark.parametrize('typecode', 'dD')
 @pytest.mark.parametrize('dim', (1, 2))
-@pytest.mark.parametrize('ST,quad', all_bases_and_quads)
+@pytest.mark.parametrize('ST,quad', all_bases_and_quads+j_bases_and_quads)
 def test_eval_tensor(typecode, dim, ST, quad):
     # Using sympy to compute an analytical solution
     # Testing for Dirichlet and regular basis
@@ -427,15 +440,18 @@ def test_eval_tensor(typecode, dim, ST, quad):
     funcx = {'': (1-x**2)*sin(np.pi*x),
              'Dirichlet': (1-x**2)*sin(np.pi*x),
              'Neumann': (1-x**2)*sin(np.pi*x),
-             'Biharmonic': (1-x**2)*sin(2*np.pi*x)}
+             'Biharmonic': (1-x**2)*sin(2*np.pi*x),
+             '6th order': (1-x**2)**3*sin(np.pi*x)}
     funcy = {'': (1-y**2)*sin(np.pi*y),
              'Dirichlet': (1-y**2)*sin(np.pi*y),
              'Neumann': (1-y**2)*sin(np.pi*y),
-             'Biharmonic': (1-y**2)*sin(2*np.pi*y)}
+             'Biharmonic': (1-y**2)*sin(2*np.pi*y),
+             '6th order': (1-y**2)**3*sin(np.pi*y)}
     funcz = {'': (1-z**2)*sin(np.pi*z),
              'Dirichlet': (1-z**2)*sin(np.pi*z),
              'Neumann': (1-z**2)*sin(np.pi*z),
-             'Biharmonic': (1-z**2)*sin(2*np.pi*z)}
+             'Biharmonic': (1-z**2)*sin(2*np.pi*z),
+             '6th order': (1-z**2)**3*sin(np.pi*z)}
 
     funcs = {
         (1, 0): cos(2*y)*funcx[ST.boundary_condition()],
@@ -555,8 +571,8 @@ if __name__ == '__main__':
     #test_transform('f', 3)
     #test_transform('d', 2)
     #test_shentransform('d', 2, lagbases.ShenDirichletBasis, 'LG')
-    #test_project('d', 1, cbases.ShenDirichletBasis, 'GC')
+    test_project('d', 1, jbases.Basis, 'JG')
     #test_project2('d', 1, lbases.ShenNeumannBasis, 'LG')
-    test_project_2dirichlet('GL')
+    #test_project_2dirichlet('GL')
     #test_eval_tensor('d', 2, cbases.ShenDirichletBasis, 'GC')
     #test_eval_fourier('d', 3)

@@ -96,7 +96,7 @@ class FourierBase(SpectralBase):
     def boundary_condition():
         return 'Periodic'
 
-    def points_and_weights(self, N=None, map_true_domain=False):
+    def points_and_weights(self, N=None, map_true_domain=False, **kw):
         if N is None:
             N = self.N
         points = np.arange(N, dtype=np.float)*2*np.pi/N
@@ -191,6 +191,13 @@ class FourierBase(SpectralBase):
 
     def reference_domain(self):
         return (0., 2*np.pi)
+
+    @property
+    def is_orthogonal(self):
+        return True
+
+    def get_orthogonal(self):
+        return self
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, int):
@@ -291,6 +298,14 @@ class R2CBasis(FourierBase):
         if bcast is True:
             k = self.broadcast_to_ndims(k)
         return k
+
+    def mask_nyquist(self, bcast=True):
+        f = np.ones(self.N//2+1, dtype=int)
+        if self.N % 2 == 0:
+            f[-1] = 0
+        if bcast is True:
+            f = self.broadcast_to_ndims(f)
+        return f
 
     def _get_truncarray(self, shape, dtype):
         shape = list(shape)
@@ -506,6 +521,14 @@ class C2CBasis(FourierBase):
         if bcast is True:
             k = self.broadcast_to_ndims(k)
         return k
+
+    def mask_nyquist(self, bcast=True):
+        f = np.ones(self.N, dtype=int)
+        if self.N % 2 == 0:
+            f[self.N//2] = 0
+        if bcast is True:
+            f = self.broadcast_to_ndims(f)
+        return f
 
     def slice(self):
         return slice(0, self.N)

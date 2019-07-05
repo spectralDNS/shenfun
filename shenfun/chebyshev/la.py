@@ -155,6 +155,8 @@ class Helmholtz(object):
             if isinstance(self.A, TPMatrix):
                 self.A = self.A.pmat
                 self.B = self.B.pmat
+                self.alfa *= self.A.scale
+                self.beta *= self.B.scale
         elif len(args) == 4:
             self.alfa = args[2]
             self.beta = args[3]
@@ -346,6 +348,8 @@ class Biharmonic(object):
                 self.S = self.S.pmat
                 self.A = self.A.pmat
                 self.B = self.B.pmat
+                self.alfa *= self.A.scale
+                self.beta *= self.B.scale
         elif len(args) == 6:
             self.a0 = a0 = args[3]
             self.alfa = alfa = args[4]

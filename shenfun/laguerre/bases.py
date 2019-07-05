@@ -3,7 +3,7 @@ import numpy as np
 from numpy.polynomial import laguerre as lag
 from scipy.special import eval_laguerre
 from mpi4py_fft import fftw
-from shenfun.spectralbase import SpectralBase, work, Transform
+from shenfun.spectralbase import SpectralBase, work, Transform, islicedict, slicedict
 from shenfun.utilities import inheritdocstrings
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
@@ -52,7 +52,7 @@ class LaguerreBase(SpectralBase):
     def domain_factor(self):
         return 1
 
-    def points_and_weights(self, N=None, map_true_domain=False):
+    def points_and_weights(self, N=None, map_true_domain=False, **kw):
         if N is None:
             N = self.N
         if self.quad == "LG":
@@ -163,10 +163,12 @@ class LaguerreBase(SpectralBase):
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 @inheritdocstrings
 class Basis(LaguerreBase):
-    """Basis for regular Laguerre functions
+    r"""Basis for regular Laguerre functions
 
     Parameters
     ----------
@@ -201,6 +203,13 @@ class Basis(LaguerreBase):
         output_array[:] = lag.lagval(x, u)*np.exp(-x/2)
         return output_array
 
+    @property
+    def is_orthogonal(self):
+        return True
+
+    def get_orthogonal(self):
+        return self
+
 @inheritdocstrings
 class ShenDirichletBasis(LaguerreBase):
     """Shen Laguerre basis for Dirichlet boundary conditions
@@ -229,6 +238,15 @@ class ShenDirichletBasis(LaguerreBase):
         P = np.zeros(V.shape)
         P[:, :-1] = V[:, :-1] - V[:, 1:]
         return P
+
+    def to_ortho(self, input_array, output_array=None):
+        if output_array is None:
+            output_array = np.zeros_like(input_array.__array__())
+        s0 = self.sl[slice(0, -1)]
+        s1 = self.sl[slice(1, None)]
+        output_array[s0] = input_array[s0]
+        output_array[s1] -= input_array[s0]
+        return output_array
 
     def slice(self):
         return slice(0, self.N-1)
@@ -267,3 +285,8 @@ class ShenDirichletBasis(LaguerreBase):
         self.forward = Transform(self.forward, None, U, V, V)
         self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
+
+    def get_orthogonal(self):
+        return Basis(self.N, quad=self.quad)

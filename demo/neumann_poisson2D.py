@@ -34,7 +34,7 @@ Solver = base.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y = symbols("x,y")
-ue = cos(4*y)*sin(2*np.pi*x)*(1-x**2)
+ue = cos(5*y)*(sin(2*np.pi*x))*(1-x**2)
 fe = ue.diff(x, 2) + ue.diff(y, 2)
 
 # Lambdify for faster evaluation

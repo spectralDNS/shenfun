@@ -99,10 +99,10 @@ def inner(expr0, expr1, output_array=None, level=0):
 
     """
     # Wrap a pure numpy array in Array
-    if isinstance(expr0, np.ndarray) and not isinstance(expr0, Array):
+    if isinstance(expr0, np.ndarray) and not isinstance(expr0, (Array, Function)):
         assert isinstance(expr1, (Expr, BasisFunction))
         expr0 = Array(expr1.function_space(), buffer=expr0)
-    if isinstance(expr1, np.ndarray) and not isinstance(expr1, Array):
+    if isinstance(expr1, np.ndarray) and not isinstance(expr1, (Array, Function)):
         assert isinstance(expr0, (Expr, BasisFunction))
         expr1 = Array(expr0.function_space(), buffer=expr1)
 
@@ -196,6 +196,9 @@ def inner(expr0, expr1, output_array=None, level=0):
                     # Take care of domains of not standard size
                     if not sp.domain_factor() == 1:
                         sc *= sp.domain_factor()**(a+b)
+                    if not abs(AA.scale-1.) < 1e-8:
+                        sc *= AA.scale
+                        AA.scale = 1.0
 
                     if ts.boundary_condition() == 'Dirichlet' and not ts.family() in ('laguerre', 'hermite'):
                         if ts.bc.has_nonhomogeneous_bcs():
@@ -212,7 +215,7 @@ def inner(expr0, expr1, output_array=None, level=0):
                 sc = sp.broadcast_to_ndims(np.array([sc]))
                 if len(M) == 1: # 1D case
                     M[0].global_index = (test_ind[test_j], trial_ind[trial_j])
-                    M[0].scale = sc
+                    M[0].scale = sc[0]
                     M[0].mixedbase = basespace
                     A.append(M[0])
                 else:

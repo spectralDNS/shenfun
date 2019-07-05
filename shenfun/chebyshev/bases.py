@@ -68,7 +68,7 @@ class ChebyshevBase(SpectralBase):
     def family():
         return 'chebyshev'
 
-    def points_and_weights(self, N=None, map_true_domain=False):
+    def points_and_weights(self, N=None, map_true_domain=False, **kw):
         if N is None:
             N = self.N
         if self.quad == "GL":
@@ -206,6 +206,8 @@ class ChebyshevBase(SpectralBase):
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
+    def get_orthogonal(self):
+        return Basis(self.N, quad=self.quad, domain=self.domain)
 
 @inheritdocstrings
 class Basis(ChebyshevBase):
@@ -323,6 +325,13 @@ class Basis(ChebyshevBase):
         output_array[:] = n_cheb.chebval(x, u)
         return output_array
 
+    @property
+    def is_orthogonal(self):
+        return True
+
+    def get_orthogonal(self):
+        return self
+
 
 @inheritdocstrings
 class ShenDirichletBasis(ChebyshevBase):
@@ -422,6 +431,16 @@ class ShenDirichletBasis(ChebyshevBase):
         self.bc.apply_before(w_hat, False, (0.5, 0.5))
         self.CT.backward(w_hat)
         assert output_array is self.CT.backward.output_array
+
+    def to_ortho(self, input_array, output_array=None):
+        if output_array is None:
+            output_array = np.zeros_like(input_array.__array__())
+        s0 = self.sl[slice(0, -2)]
+        s1 = self.sl[slice(2, None)]
+        output_array[s0] = input_array[s0]
+        output_array[s1] -= input_array[s0]
+        self.bc.apply_before(output_array, True, (0.5, 0.5))
+        return output_array
 
     def slice(self):
         return slice(0, self.N-2)
@@ -575,6 +594,16 @@ class ShenNeumannBasis(ChebyshevBase):
         self.CT.backward(w_hat)
         assert output_array is self.CT.backward.output_array
 
+    def to_ortho(self, input_array, output_array=None):
+        if output_array is None:
+            output_array = np.zeros_like(input_array.v)
+        s0 = self.sl[slice(0, -2)]
+        s1 = self.sl[slice(2, None)]
+        self.set_factor_array(input_array)
+        output_array[s0] = input_array[s0]
+        output_array[s1] -= self._factor*input_array[s0]
+        return output_array
+
     def slice(self):
         return slice(0, self.N-2)
 
@@ -722,6 +751,13 @@ class ShenBiharmonicBasis(ChebyshevBase):
         assert input_array is self.backward.input_array
         assert output_array is self.backward.output_array
 
+    def to_ortho(self, input_array, output_array=None):
+        if output_array is None:
+            output_array = np.zeros_like(input_array.v)
+        self.set_factor_arrays(input_array)
+        output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2)
+        return output_array
+
     def slice(self):
         return slice(0, self.N-4)
 
@@ -762,6 +798,151 @@ class ShenBiharmonicBasis(ChebyshevBase):
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
+
+@inheritdocstrings
+class SecondNeumannBasis(ChebyshevBase):
+    """Shen basis for homogeneous second order Neumann boundary conditions
+
+    Parameters
+    ----------
+        N : int, optional
+            Number of quadrature points
+        quad : str, optional
+               Type of quadrature
+
+               - GL - Chebyshev-Gauss-Lobatto
+               - GC - Chebyshev-Gauss
+
+        mean : float, optional
+               Mean value
+        domain : 2-tuple of floats, optional
+                 The computational domain
+    """
+
+    def __init__(self, N=0, quad="GC", mean=0, domain=(-1., 1.)):
+        ChebyshevBase.__init__(self, N, quad, domain=domain)
+        self.mean = mean
+        self.CT = Basis(N, quad)
+        self._factor = np.zeros(0)
+        self.plan(N, 0, np.float, {})
+
+    @staticmethod
+    def boundary_condition():
+        return 'Neumann2'
+
+    def _composite_basis(self, V, argument=0):
+        assert self.N == V.shape[1]
+        P = np.zeros(V.shape)
+        k = np.arange(self.N).astype(np.float)
+        P[:, :-2] = V[:, :-2] - (k[:-2]/(k[:-2]+2))**2*(k[:-2]**2-1)/((k[:-2]+2)**2-1)*V[:, 2:]
+        return P
+
+    def sympy_basis(self, i=0):
+        x = sympy.symbols('x')
+        return sympy.chebyshevt(i, x) - (i/(i+2))**2*(i**2-1)/((i+2)**2-1)*sympy.chebyshevt(i+2, x)
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        w = np.arccos(x)
+        output_array[:] = np.cos(i*w) - (i*1./(i+2))**2*(i**2-1.)/((i+2)**2-1.)*np.cos((i+2)*w)
+        return output_array
+
+    def set_factor_array(self, v):
+        """Set intermediate factor arrays"""
+        if not self._factor.shape == v.shape:
+            k = self.wavenumbers().astype(float)
+            self._factor = (k/(k+2))**2*(k**2-1)/((k+2)**2-1)
+
+    def evaluate_scalar_product(self, input_array, output_array, fast_transform=True):
+        if fast_transform is False:
+            self.vandermonde_scalar_product(input_array, output_array)
+            return
+        output = self.CT.scalar_product(fast_transform=True)
+        self.set_factor_array(output)
+        sm2 = self.sl[slice(0, -2)]
+        s2p = self.sl[slice(2, None)]
+        output[sm2] -= self._factor * output[s2p]
+
+    def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
+        if input_array is not None:
+            self.scalar_product.input_array[...] = input_array
+
+        self.evaluate_scalar_product(self.scalar_product.input_array,
+                                     self.scalar_product.output_array,
+                                     fast_transform=fast_transform)
+
+        output = self.scalar_product.output_array
+        output[self.si[0]] = self.mean*np.pi
+        output[self.sl[slice(-2, None)]] = 0
+
+        if output_array is not None:
+            output_array[...] = output
+            return output_array
+        return output
+
+    def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
+        if fast_transform is False:
+            SpectralBase.evaluate_expansion_all(self, input_array, output_array, False)
+            return
+        w_hat = work[(input_array, 0, True)]
+        self.set_factor_array(input_array)
+        s0 = self.sl[slice(0, -2)]
+        s1 = self.sl[slice(2, None)]
+        w_hat[s0] = input_array[s0]
+        w_hat[s1] -= self._factor*input_array[s0]
+        self.CT.backward(w_hat)
+        assert output_array is self.CT.backward.output_array
+
+    def to_ortho(self, input_array, output_array=None):
+        if output_array is None:
+            output_array = np.zeros_like(input_array.v)
+        s0 = self.sl[slice(0, -2)]
+        s1 = self.sl[slice(2, None)]
+        self.set_factor_array(input_array)
+        output_array[s0] = input_array[s0]
+        output_array[s1] -= self._factor*input_array[s0]
+        return output_array
+
+    def slice(self):
+        return slice(0, self.N-2)
+
+    def eval(self, x, u, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = self.map_reference_domain(x)
+        w_hat = work[(u, 0, True)]
+        self.set_factor_array(u)
+        output_array[:] = n_cheb.chebval(x, u[:-2])
+        w_hat[2:] = self._factor*u[:-2]
+        output_array -= n_cheb.chebval(x, w_hat)
+        return output_array
+
+    def plan(self, shape, axis, dtype, options):
+        if isinstance(axis, tuple):
+            assert len(axis) == 1
+            axis = axis[0]
+
+        if isinstance(self.forward, Transform):
+            if self.forward.input_array.shape == shape and self.axis == axis:
+                # Already planned
+                return
+
+        self.CT.plan(shape, axis, dtype, options)
+        self.CT.tensorproductspace = self.tensorproductspace
+        xfftn_fwd = self.CT.forward.xfftn
+        xfftn_bck = self.CT.backward.xfftn
+        U = xfftn_fwd.input_array
+        V = xfftn_fwd.output_array
+        self.axis = axis
+        self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
+        self.backward = Transform(self.backward, xfftn_bck, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
+
 
 @inheritdocstrings
 class BCBasis(ChebyshevBase):

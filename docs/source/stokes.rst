@@ -7,7 +7,7 @@ Demo - Stokes equations
 %%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 22, 2019
+:Date: Jun 16, 2019
 
 *Summary.* The Stokes equations describe the flow of highly viscous fluids.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Stokes
@@ -495,7 +495,7 @@ the exact solution.
 .. code-block:: python
 
     # Solve problem
-    up_hat = M.solve(fh_hat, integral_constraint=(3, 0))
+    up_hat = M.solve(fh_hat, constraints=((3, 0, 0),))
     up = up_hat.backward()
     u_, p_ = up
     
@@ -512,13 +512,13 @@ the exact solution.
     print(error)
 
 Note that solve has a keyword argument
-``integral_constraint=(3, 0)`` that takes care of the restriction
+``constraints=((3, 0, 0),)`` that takes care of the restriction
 :math:`\int_{\Omega} p dx = 0` by indenting the row in M corresponding to the
-first degree of freedom for the pressure. The value :math:`(3, 0)`
+first degree of freedom for the pressure. The value :math:`(3, 0, 0)`
 indicates that pressure is
 in block 3 of the block vector solution (the velocity vector holds
-positions 0, 1 and 2), whereas 0 ensures that the
-integral value should be 0.
+positions 0, 1 and 2), whereas the two zeros ensures that the first dof
+(dof 0) should obtain value 0.
 
 .. _sec:3d:complete:
 

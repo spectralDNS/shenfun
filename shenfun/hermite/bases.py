@@ -57,7 +57,7 @@ class Basis(SpectralBase):
     def boundary_condition():
         return 'Dirichlet'
 
-    def points_and_weights(self, N=None, map_true_domain=False):
+    def points_and_weights(self, N=None, map_true_domain=False, **kw):
         if N is None:
             N = self.N
         if self.quad == "HG":
@@ -179,3 +179,10 @@ class Basis(SpectralBase):
         y = hermite.hermval(x, w)
         output_array[:] = y * np.exp(-x**2/2)
         return output_array
+
+    @property
+    def is_orthogonal(self):
+        return True
+
+    def get_orthogonal(self):
+        return self

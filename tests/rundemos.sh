@@ -8,11 +8,16 @@ python dirichlet_poisson3D.py 32 chebyshev
 python dirichlet_poisson1D.py 64 legendre
 python dirichlet_poisson2D.py 32 legendre
 python dirichlet_poisson3D.py 32 legendre
+python dirichlet_poisson1D.py 64 jacobi
+python dirichlet_poisson2D.py 32 jacobi
+python dirichlet_poisson3D.py 32 jacobi
 
 python dirichlet_Helmholtz1D.py 32 chebyshev
 python dirichlet_Helmholtz2D.py 32 chebyshev
 python dirichlet_Helmholtz1D.py 32 legendre
 python dirichlet_Helmholtz2D.py 32 legendre
+python dirichlet_Helmholtz1D.py 32 jacobi
+python dirichlet_Helmholtz2D.py 32 jacobi
 
 python fourier_poisson1D.py
 python fourier_poisson2D.py
@@ -31,6 +36,9 @@ python biharmonic3D.py
 python biharmonic1D.py 32 legendre
 python biharmonic2D.py legendre
 python biharmonic3D.py legendre
+python biharmonic1D.py 32 jacobi
+python biharmonic2D.py jacobi
+python biharmonic3D.py jacobi
 
 python biharmonic2D_2nonperiodic.py
 python biharmonic3D_2nonperiodic.py
@@ -38,14 +46,21 @@ python biharmonic2D_2nonperiodic.py legendre
 python biharmonic3D_2nonperiodic.py legendre
 
 python laguerre_dirichlet_poisson1D.py 70
-python laguerre_dirichlet_poisson2D.py 70
-python laguerre_legendre_poisson2D.py 70
+python laguerre_dirichlet_poisson2D.py 50
+python laguerre_legendre_poisson2D.py 50
+
+python biharmonic2D_2nonperiodic.py chebyshev
+python biharmonic2D_2nonperiodic.py legendre
+python biharmonic2D_2nonperiodic.py jacobi
 
 python hermite_poisson1D.py 36
 python hermite_poisson2D.py 36
 
+python order6.py 20
+
 python dirichlet_dirichlet_poisson2D.py 24 25 legendre
 python dirichlet_dirichlet_poisson2D.py 24 25 chebyshev
+python dirichlet_dirichlet_poisson2D.py 24 25 jacobi
 
 python NavierStokes.py
 

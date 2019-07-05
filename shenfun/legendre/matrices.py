@@ -108,25 +108,17 @@ class BLLmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial)
 
     def solve(self, b, u=None, axis=0):
-        N = self.shape[0]
-        #assert N == b.shape[axis]
         s = self.trialfunction[0].slice()
-
         if u is None:
             u = b
         else:
             assert u.shape == b.shape
-
         sl = [np.newaxis]*u.ndim
         sl[axis] = s
         sl = tuple(sl)
-        ss = [slice(None)]*u.ndim
-        ss[axis] = s
-        ss = tuple(ss)
-        d = 1./self[0]
-        d[sl] /= self.scale
+        ss = self.trialfunction[0].sl[s]
+        d = (1./self.scale)/self[0]
         u[ss] = b[ss]*d[sl]
-
         return u
 
 
@@ -351,6 +343,7 @@ class ADDmat(SpectralMatrix):
             sl = [np.newaxis]*bs.ndim
             sl[0] = slice(None)
             us[:] = bs*d[tuple(sl)]
+            u /= self.scale
             self.testfunction[0].bc.apply_after(u, True)
 
             if axis > 0:
@@ -362,9 +355,9 @@ class ADDmat(SpectralMatrix):
             ss[axis] = s
             ss = tuple(ss)
             u[ss] = b[ss]
+            u /= self.scale
             self.testfunction[0].bc.apply_after(u, True)
 
-        u /= self.scale
         return u
 
 @inheritdocstrings
@@ -461,6 +454,37 @@ class ANNmat(SpectralMatrix):
         d0 = 2./(2*k+1)
         d = {0: d0*alpha*(k+0.5)*((k+2)*(k+3)-k*(k+1))}
         SpectralMatrix.__init__(self, d, test, trial)
+
+    def solve(self, b, u=None, axis=0):
+        N = self.shape[0] + 2
+        assert N == b.shape[axis]
+        s = self.trialfunction[0].slice()
+
+        if u is None:
+            u = b
+        else:
+            assert u.shape == b.shape
+
+
+        # Move axis to first
+        if axis > 0:
+            u = np.moveaxis(u, axis, 0)
+            if not u is b:
+                b = np.moveaxis(b, axis, 0)
+        bs = b[s]
+        us = u[s]
+        d = np.ones(self.shape[0])
+        d[1:] = 1./self[0][1:]
+        sl = [np.newaxis]*bs.ndim
+        sl[0] = slice(None)
+        us[:] = bs*d[tuple(sl)]
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
+            if not u is b:
+                b = np.moveaxis(b, axis, 0)
+
+        u /= self.scale
+        return u
 
 
 @inheritdocstrings
