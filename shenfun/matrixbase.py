@@ -1068,7 +1068,7 @@ class BlockMatrix(object):
                 return A, b
 
         row = offset + constraint[1]
-        print('Applying constraint row %d con (%d, %d, %2.5f)' %(row, *constraint))
+        #print('Applying constraint row %d con (%d, %d, %2.5f)' %(row, *constraint))
 
         assert isinstance(constraint, tuple)
         assert len(constraint) == 3

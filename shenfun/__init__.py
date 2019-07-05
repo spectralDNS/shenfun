@@ -35,6 +35,7 @@ from . import legendre
 from . import laguerre
 from . import hermite
 from . import fourier
+from . import jacobi
 from . import matrixbase
 from . import la
 from .fourier import energy_fourier
