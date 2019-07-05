@@ -51,7 +51,7 @@ class LegendreBase(SpectralBase):
     def reference_domain(self):
         return (-1., 1.)
 
-    def points_and_weights(self, N=None, map_true_domain=False):
+    def points_and_weights(self, N=None, map_true_domain=False, **kw):
         if N is None:
             N = self.N
         if self.quad == "LG":
@@ -131,6 +131,8 @@ class LegendreBase(SpectralBase):
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
+    def get_orthogonal(self):
+        return Basis(self.N, quad=self.quad, domain=self.domain)
 
 @inheritdocstrings
 class Basis(LegendreBase):
@@ -160,6 +162,9 @@ class Basis(LegendreBase):
         output_array[:] = leg.legval(x, u)
         return output_array
 
+    @property
+    def is_orthogonal(self):
+        return True
 
 @inheritdocstrings
 class ShenDirichletBasis(LegendreBase):
@@ -232,6 +237,24 @@ class ShenDirichletBasis(LegendreBase):
     #    output_array = self.LT.backward(w_hat)
     #    assert input_array is self.backward.input_array
     #    assert output_array is self.backward.output_array
+
+    def to_ortho(self, input_array, output_array=None):
+        if output_array is None:
+            output_array = np.zeros_like(input_array.v)
+        s0 = self.sl[slice(0, -2)]
+        s1 = self.sl[slice(2, None)]
+
+        if self.is_scaled():
+            k = self.wavenumbers()
+            output_array[s0] = input_array[s0]/np.sqrt(4*k+6)
+            output_array[s1] -= input_array[s0]/np.sqrt(4*k+6)
+
+        else:
+            output_array[s0] = input_array[s0]
+            output_array[s1] -= input_array[s0]
+
+        self.bc.apply_before(output_array, True, (0.5, 0.5))
+        return output_array
 
     def slice(self):
         return slice(0, self.N-2)
@@ -348,7 +371,6 @@ class ShenNeumannBasis(LegendreBase):
 
     def scalar_product(self, input_array=None, output_array=None, fast_transform=False):
         output = SpectralBase.scalar_product(self, input_array, output_array, False)
-
         output[self.si[0]] = self.mean*np.pi
         output[self.sl[slice(-2, None)]] = 0
         return output
@@ -369,6 +391,16 @@ class ShenNeumannBasis(LegendreBase):
     #    w_hat[s0] = input_array[s0]
     #    w_hat[s1] -= self._factor*input_array[s0]
     #    output_array = self.LT.backward(w_hat)
+
+    def to_ortho(self, input_array, output_array=None):
+        if output_array is None:
+            output_array = np.zeros_like(input_array.v)
+        s0 = self.sl[slice(0, -2)]
+        s1 = self.sl[slice(2, None)]
+        self.set_factor_array(input_array)
+        output_array[s0] = input_array[s0]
+        output_array[s1] -= self._factor*input_array[s0]
+        return output_array
 
     def slice(self):
         return slice(0, self.N-2)
@@ -473,6 +505,13 @@ class ShenBiharmonicBasis(LegendreBase):
     #    self.set_factor_arrays(input_array)
     #    w_hat = self.set_w_hat(w_hat, input_array, self._factor1, self._factor2)
     #    output_array = self.LT.backward(w_hat)
+
+    def to_ortho(self, input_array, output_array=None):
+        if output_array is None:
+            output_array = np.zeros_like(input_array.v)
+        self.set_factor_arrays(input_array)
+        output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2)
+        return output_array
 
     def slice(self):
         return slice(0, self.N-4)

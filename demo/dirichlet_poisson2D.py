@@ -28,17 +28,20 @@ from shenfun import inner, div, grad, TestFunction, TrialFunction, \
 comm = MPI.COMM_WORLD
 
 assert len(sys.argv) == 3, "Call with two command-line arguments"
-assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
+assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi')
 assert isinstance(int(sys.argv[-2]), int)
 
-# Collect solver from either Chebyshev or Legendre submodules
+# Collect solver
 family = sys.argv[-1].lower()
 base = importlib.import_module('.'.join(('shenfun', family)))
 Solver = base.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
-a = -1.
-b = 1.
+a = 1.
+b = -1.
+if family == 'jacobi':
+    a = 0
+    b = 0
 x, y = symbols("x,y")
 ue = (cos(4*x) + sin(2*y))*(1 - x**2) + a*(1 + x)/2. + b*(1 - x)/2.
 fe = ue.diff(x, 2) + ue.diff(y, 2)
@@ -59,7 +62,7 @@ fj = Array(T, buffer=fe)
 # Compute right hand side of Poisson equation
 f_hat = Function(T)
 f_hat = inner(v, fj, output_array=f_hat)
-if family == 'legendre':
+if not family == 'chebyshev':
     f_hat *= -1.
 
 # Get left hand side of Poisson equation
@@ -69,12 +72,12 @@ else:
     matrices = inner(grad(v), grad(u))
 
 # Create Helmholtz linear algebra solver
-
 H = Solver(*matrices)
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
+
 uq = u_hat.backward()
 uh = uq.forward()
 
@@ -104,4 +107,4 @@ if 'pytest' not in os.environ:
     for y in np.squeeze(X[1]):
         plt.plot((np.squeeze(X[0])[0], np.squeeze(X[0])[-1]), (y, y), 'k')
 
-    #plt.show()
+    plt.show()

@@ -6,7 +6,7 @@ __all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',
            'Array', 'Basis')
 
 def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
-          scaled=None, padding_factor=1.0, dealias_direct=False):
+          scaled=None, padding_factor=1.0, dealias_direct=False, **kw):
     """Return basis for one dimension
 
     Parameters
@@ -69,6 +69,7 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
 
     """
     par = {}
+    par.update(kw)
     if domain is not None:
         par['domain'] = domain
     if family.lower() in ('fourier', 'f'):
@@ -100,6 +101,8 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
                 B = chebyshev.bases.ShenDirichletBasis
             elif bc.lower() == 'neumann':
                 B = chebyshev.bases.ShenNeumannBasis
+            elif bc.lower() == 'neumann2':
+                B = chebyshev.bases.SecondNeumannBasis
             elif bc.lower() == 'biharmonic':
                 B = chebyshev.bases.ShenBiharmonicBasis
 
@@ -176,6 +179,32 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
 
         else:
             assert bc is None
+
+        return B(N, **par)
+
+    elif family.lower() in ('jacobi', 'j'):
+        from shenfun import jacobi
+        if quad is not None:
+            assert quad in ('JG',)
+            par['quad'] = quad
+
+        if bc is None:
+            B = jacobi.bases.Basis
+
+        elif isinstance(bc, tuple):
+            assert len(bc) == 2
+            par['bc'] = bc
+            B = jacobi.bases.ShenDirichletBasis
+
+        elif isinstance(bc, str):
+            if bc.lower() == 'dirichlet':
+                B = jacobi.bases.ShenDirichletBasis
+            elif bc.lower() == 'biharmonic':
+                B = jacobi.bases.ShenBiharmonicBasis
+            elif bc.lower() == '6th order':
+                B = jacobi.bases.ShenOrder6Basis
+            else:
+                raise NotImplementedError
 
         return B(N, **par)
 
@@ -686,7 +715,8 @@ class ShenfunBaseArray(DistArray):
                 import sympy
                 x, y, z = sympy.symbols("x,y,z")
                 sym0 = [sym for sym in (x, y, z) if sym in buffer.free_symbols]
-                buffer = sympy.lambdify(sym0, buffer)(space.mesh())
+                buffer = sympy.lambdify(sym0, buffer)
+                buffer = buffer(space.mesh())
                 if cls.__name__ == 'Function':
                     buf = np.empty_like(space.forward.output_array)
                     buf = space.forward(buffer, buf)
@@ -912,6 +942,27 @@ class Function(ShenfunBaseArray, BasisFunction):
         if output_array is None:
             output_array = Array(space)
         output_array = space.backward(self, output_array)
+        return output_array
+
+    def to_ortho(self, output_array=None):
+        """Project Function to orthogonal basis"""
+        space = self.function_space()
+        if space.dimensions > 1:
+            naxes = space.get_nonperiodic_axes()
+            axis = naxes[0]
+            base = space.bases[axis]
+            if not base.is_orthogonal:
+                output_array = base.to_ortho(self, output_array)
+            if len(naxes) > 1:
+                input_array = np.zeros_like(output_array.__array__())
+                for axis in naxes[1:]:
+                    base = space.bases[axis]
+                    input_array[:] = output_array
+                    if not base.is_orthogonal:
+                        output_array = base.to_ortho(input_array, output_array)
+            return output_array
+
+        output_array = space.to_ortho(self, output_array)
         return output_array
 
 

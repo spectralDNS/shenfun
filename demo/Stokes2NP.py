@@ -47,7 +47,7 @@ fly = lambdify((x, y), fy, 'numpy')
 hl = lambdify((x, y), h, 'numpy')
 pl = lambdify((x, y), pe, 'numpy')
 
-N = (60, 60)
+N = (38, 38)
 #family = 'Chebyshev'
 family = 'Legendre'
 D0X = Basis(N[0], family, bc=(0, 0), scaled=True)
@@ -100,7 +100,10 @@ h_hat = inner(q, h_, output_array=h_hat)
 
 # Solve problem
 uh_hat = Function(VQ)
-uh_hat = M.solve(fh_hat, u=uh_hat, integral_constraint=(2, 0)) # Constraint for component 2 of mixed space
+uh_hat = M.solve(fh_hat, u=uh_hat, constraints=((2, 0, 0),))
+                                                #(2, N[0]-1, 0),
+                                                #(2, N[0]*N[1]-1, 0),
+                                                #(2, N[0]*N[1]-N[1], 0))) # Constraint for component 2 of mixed space
 
 # Move solution to regular Function
 up = uh_hat.backward()
@@ -131,4 +134,4 @@ if 'pytest' not in os.environ:
     plt.spy(M.diags())
     plt.figure()
     plt.contourf(X[0], X[1], u_[0], 100)
-    plt.show()
+    #plt.show()

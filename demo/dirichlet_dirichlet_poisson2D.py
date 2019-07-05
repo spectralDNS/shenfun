@@ -23,7 +23,7 @@ from shenfun.la import SolverGeneric2NP
 comm = MPI.COMM_WORLD
 
 assert len(sys.argv) == 4, "Call with three command-line arguments: N[0], N[1] and family (Chebyshev/Legendre)"
-assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
+assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi')
 assert isinstance(int(sys.argv[-2]), int)
 assert isinstance(int(sys.argv[-3]), int)
 family = sys.argv[-1].lower()
@@ -55,14 +55,14 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = Array(T, buffer=fl(*X))
+fj = Array(T, buffer=fe)
 
 # Compute right hand side of Poisson equation
 f_hat = Function(T)
 f_hat = inner(v, fj, output_array=f_hat)
 
 # Get left hand side of Poisson equation
-if family == 'legendre':
+if not family == 'chebyshev':
     matrices = inner(grad(v), grad(u))
 else:
     matrices = inner(v, -div(grad(u)))

@@ -9,7 +9,7 @@ from .inner import inner
 
 __all__ = ('project',)
 
-def project(uh, T, output_array=None):
+def project(uh, T, output_array=None, fill=True, use_to_ortho=True):
     r"""
     Project ``uh`` to tensor product space ``T``
 
@@ -27,8 +27,13 @@ def project(uh, T, output_array=None):
         - :class:`.Array`
         - A sympy function
     T : :class:`.TensorProductSpace` or :class:`.MixedTensorProductSpace`
-    output_array : :class:`.Function`
+    output_array : :class:`.Function`, optional
         Return array
+    fill : bool, optional
+        Whether to fill the `output_array` with zeros before projection
+    use_to_ortho : bool, optional
+        Whether to use fast `to_ortho` method for projection of Functions
+        to orthogonal space.
 
     Returns
     -------
@@ -61,6 +66,8 @@ def project(uh, T, output_array=None):
 
     if output_array is None:
         output_array = Function(T)
+    elif fill:
+        output_array.fill(0)
 
     if hasattr(uh, 'evalf'):
         # lambdify sympy function for fast execution
@@ -76,12 +83,23 @@ def project(uh, T, output_array=None):
         else:
             uh = Array(T, buffer=uh(T.mesh()).astype(T.forward.input_array.dtype))
 
-    if isinstance(uh, np.ndarray):
+    if isinstance(uh, np.ndarray) and not isinstance(uh, (Array, Function)):
+        uh = Array(T, buffer=uh)
+
+    if isinstance(uh, Array) and uh.function_space() == T:
         # Project is just regular forward transform
         output_array = T.forward(uh, output_array)
         return output_array
 
-    assert isinstance(uh, (Expr, BasisFunction))
+    if isinstance(uh, Function) and T.is_orthogonal and use_to_ortho:
+        # Try to use fast to_ortho for projection to orthogonal space
+        try:
+            output_array = uh.to_ortho(output_array)
+            return output_array
+        except:
+            pass
+
+    assert isinstance(uh, (Expr, Array, BasisFunction))
 
     v = TestFunction(T)
     u = TrialFunction(T)

@@ -105,7 +105,7 @@ Fourier basis:
 """
 from __future__ import division
 from copy import deepcopy
-from numbers import Number
+from numbers import Number, Integral
 import numpy as np
 from scipy.sparse import bmat, dia_matrix, kron, diags as sp_diags
 from scipy.sparse.linalg import spsolve
@@ -202,6 +202,7 @@ class SparseMatrix(dict):
                     c[-key:min(N, M-key)] += val*v[:min(M, N+key)]
                 else:
                     c[:min(N, M-key)] += val*v[key:min(M, N+key)]
+            c *= self.scale
 
         else:
             if format not in ('csr', 'dia'): # Fallback on 'csr'. Should probably throw warning
@@ -214,7 +215,6 @@ class SparseMatrix(dict):
             c = np.moveaxis(c, 0, axis)
             v = np.moveaxis(v, 0, axis)
 
-        c *= self.scale
         return c
 
     def diags(self, format='dia'):
@@ -541,12 +541,12 @@ class SpectralMatrix(SparseMatrix):
             d = extract_diagonal_matrix(D)
         SparseMatrix.__init__(self, d, shape, scale)
         if shape[0] == shape[1]:
-            if test[0].__class__.__name__ == 'ShenNeumannBasis':
-                from shenfun.la import NeumannSolve
-                self.solver = NeumannSolve(self, test[0])
-            else:
-                from shenfun.la import Solve
-                self.solver = Solve(self, test[0])
+            #if test[0].__class__.__name__ == 'ShenNeumannBasis':
+            #    from shenfun.la import NeumannSolve
+            #    self.solver = NeumannSolve(self, test[0])
+            #else:
+            from shenfun.la import Solve
+            self.solver = Solve(self, test[0])
 
     def matvec(self, v, c, format='csr', axis=0):
         u = self.trialfunction[0]
@@ -886,7 +886,7 @@ class BlockMatrix(object):
                     bm[-1].append(d)
         return bmat(bm, format=format)
 
-    def solve(self, b, u=None, integral_constraint=None, return_system=False, Alu=None):
+    def solve(self, b, u=None, constraints=(), return_system=False, Alu=None):
         r"""
         Solve matrix system Au = b
 
@@ -898,21 +898,29 @@ class BlockMatrix(object):
             Array of right hand side
         u : array, optional
             Output array
-        integral_constraint : None or 2-tuple of (int, number)
-            If 2-tuple then apply an integral constraint like
+        constraints : sequence of 3-tuples of (int, int, number)
+            Any 3-tuple describe a dof to be constrained. The first int
+            represents the block number of the function to be constrained. The
+            second int gives which degree of freedom to constrain and the number
+            gives the value it should obtain. For example, for the global
+            restriction that
 
             .. math::
 
                 \frac{1}{V}\int p dx = number
 
-            for one of the components in the block matrix. Here :math:`V`
-            is the volume of the domain, so the number is basically the constant
-            mean value of :math:`p`.
+            where we have
 
-            The first (int) number of the 2-tuple tell us which component in the
-            mixed space to apply the constraint to, and the second number tells
-            us the value to go on the right hand side of the integral.
-            The integral constraint can only be applied to bases with no given
+            .. math::
+
+                p = \sum_{k=0}^{N-1} \hat{p}_k \phi_k
+
+            it is sufficient to fix the first dof of p, \hat{p}_0, since
+            the bases are created such that all basis functions except the
+            first integrates to zero. So in this case the 3-tuple can be
+            (2, 0, 0) if p is found in block 2 of the mixed basis.
+
+            The constraint can only be applied to bases with no given
             explicit boundary condition, like the pure Chebyshev or Legendre
             bases.
 
@@ -927,8 +935,7 @@ class BlockMatrix(object):
 
         Alu : pre-factorized matrix, optional
             Computed with Alu = splu(self), where self is the assembled block
-            matrix.
-            Only for non-periodic problems.
+            matrix. Only for non-periodic problems.
 
         """
         from .forms.arguments import Function
@@ -942,8 +949,12 @@ class BlockMatrix(object):
         tpmat = self.get_mats(True)
         axis = tpmat.naxes[0] if isinstance(tpmat, TPMatrix) else 0
         tp = space.flatten()
-        if integral_constraint is not None:
-            assert tp[integral_constraint[0]].bases[axis].boundary_condition().lower() in ('', 'periodic')
+        for con in constraints:
+            assert len(con) == 3
+            assert isinstance(con[0], Integral)
+            assert isinstance(con[1], Integral)
+            assert isinstance(con[2], Number)
+            #assert tp[con[0]].bases[axis].boundary_condition().lower() in ('', 'periodic')
         N = self.global_shape[axis]
         gi = np.zeros(N, dtype=b.dtype)
         go = np.zeros(N, dtype=b.dtype)
@@ -969,7 +980,7 @@ class BlockMatrix(object):
             if len(tpmat.naxes) == 2: # 2 non-periodic axes
                 s = [0, 0, 0]
                 if Alu is None:
-                    Ai = self.diags(format='csc')
+                    Ai = self.diags(format='csr')
                 gi = np.zeros(space.dim())
                 go = np.zeros(space.dim())
                 start = 0
@@ -979,14 +990,14 @@ class BlockMatrix(object):
                     s[2] = tp[k].bases[1].slice()
                     gi[start:(start+tp[k].dim())] = b[tuple(s)].ravel()
                     start += tp[k].dim()
-                if integral_constraint:
+                for con in constraints:
                     dim = 0
-                    for i in range(integral_constraint[0]):
+                    for i in range(con[0]):
                         dim += tp[i].dim()
                     if Alu is None:
-                        Ai, gi = self.apply_integral_constraint(Ai, gi, dim, 0, integral_constraint)
+                        Ai, gi = self.apply_constraint(Ai, gi, dim, 0, con)
                     else:
-                        gi[dim] = integral_constraint[1]
+                        gi[dim] = con[2]
                 if not Alu is None:
                     go[:] = Alu.solve(gi)
                 else:
@@ -998,7 +1009,6 @@ class BlockMatrix(object):
                     s[2] = tp[k].bases[1].slice()
                     u[tuple(s)] = go[start:(start+tp[k].dim())].reshape((1, tp[k].bases[0].dim(), tp[k].bases[1].dim()))
                     start += tp[k].dim()
-
                 if return_system:
                     return u, Ai
             else:
@@ -1013,8 +1023,8 @@ class BlockMatrix(object):
                         s[0] = k
                         s[jj] = tp[k].bases[axis].slice()
                         gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
-                    if integral_constraint:
-                        Ai, gi = self.apply_integral_constraint(Ai, gi, self.offset[integral_constraint[0]][axis], i, integral_constraint)
+                    for con in constraints:
+                        Ai, gi = self.apply_constraint(Ai, gi, self.offset[con[0]][axis], i, con)
                     go[:] = sp.linalg.spsolve(Ai, gi)
                     for k in range(b.shape[0]):
                         s[0] = k
@@ -1034,8 +1044,8 @@ class BlockMatrix(object):
                         s[0] = k
                         s[axis+1] = tp[k].bases[axis].slice()
                         gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
-                    if integral_constraint:
-                        Ai, gi = self.apply_integral_constraint(Ai, gi, self.offset[integral_constraint[0]][axis], (i, j), integral_constraint)
+                    for con in constraints:
+                        Ai, gi = self.apply_constraint(Ai, gi, self.offset[con[0]][axis], (i, j), con)
                     go[:] = sp.linalg.spsolve(Ai, gi)
                     for k in range(b.shape[0]):
                         s[0] = k
@@ -1045,8 +1055,8 @@ class BlockMatrix(object):
         return u
 
     @staticmethod
-    def apply_integral_constraint(A, b, row, i, integral_constraint):
-        if integral_constraint is None or comm.Get_rank() > 0:
+    def apply_constraint(A, b, offset, i, constraint):
+        if constraint is None or comm.Get_rank() > 0:
             return A, b
 
         if isinstance(i, int):
@@ -1057,13 +1067,22 @@ class BlockMatrix(object):
             if np.sum(np.array(i)) > 0:
                 return A, b
 
-        assert isinstance(integral_constraint, tuple)
-        assert len(integral_constraint) == 2
-        val = integral_constraint[1]
+        row = offset + constraint[1]
+        print('Applying constraint row %d con (%d, %d, %2.5f)' %(row, *constraint))
+
+        assert isinstance(constraint, tuple)
+        assert len(constraint) == 3
+        val = constraint[2]
         b[row] = val
         r = A.getrow(row).nonzero()
+        #rp = A.getrow(row-1).nonzero()
         A[(row, r[1])] = 0
+        #A[(row, rp[1])] = 0
+        #A[row, offset] = 1
         A[row, row] = 1
+        #A[offset, row] = 1
+        #A[row-1, row-1] = 1
+
         return A, b
 
 class TPMatrix(object):
@@ -1304,6 +1323,7 @@ class TPMatrix(object):
         self.scale = self.scale - a.scale
         return self
 
+
 def check_sanity(A, test, trial):
     """Sanity check for matrix.
 
@@ -1329,12 +1349,11 @@ def check_sanity(A, test, trial):
     N, M = A.shape
     D = get_dense_matrix(test, trial)[:N, :M]
     Dsp = extract_diagonal_matrix(D)
-    Dsp *= A.scale
     for key, val in A.items():
-        assert np.allclose(val, Dsp[key])
+        assert np.allclose(val*A.scale, Dsp[key])
 
 
-def get_dense_matrix(test, trial):
+def get_dense_matrix(test, trial, mode='mpmath'):
     """Return dense matrix automatically computed from basis
 
     Parameters
@@ -1354,12 +1373,12 @@ def get_dense_matrix(test, trial):
         As test, but representing matrix column.
     """
     N = trial[0].N
-    _, w = trial[0].points_and_weights(N)
-    v = test[0].evaluate_basis_derivative_all(x=trial[0].mesh(False, False),
+    x, w = trial[0].points_and_weights(N, mode=mode)
+    v = test[0].evaluate_basis_derivative_all(x=x,
                                               k=test[1])
-    u = trial[0].evaluate_basis_derivative_all(k=trial[1])
+    u = trial[0].evaluate_basis_derivative_all(x=x,
+                                               k=trial[1])
     return np.dot(v.T*w[np.newaxis, :], np.conj(u))
-
 
 def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-12):
     """Return SparseMatrix version of dense matrix ``M``
@@ -1382,11 +1401,11 @@ def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-12):
     for i in range(M.shape[1]):
         u = M.diagonal(i).copy()
         if abs(u).max() > abstol and abs(u).max()/relmax > reltol:
-            d[i] = u
+            d[i] = np.array(u, dtype=np.float)
 
     for i in range(1, M.shape[0]):
         l = M.diagonal(-i).copy()
         if abs(l).max() > abstol and abs(l).max()/relmax > reltol:
-            d[-i] = l
+            d[-i] = np.array(l, dtype=np.float)
 
     return SparseMatrix(d, M.shape)

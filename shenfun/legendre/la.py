@@ -140,15 +140,16 @@ class Helmholtz(object):
 
         A, B = args[0], args[1]
         M = {d.get_key(): d for d in (A, B)}
-        self.A = A = M.get('ADDmat', M.get('ANNmat'))
+        self.A = A = M.get('ADDmat', M.get('GDDmat', M.get('ANNmat')))
         self.B = B = M.get('BDDmat', M.get('BNNmat'))
-
         if len(args) == 2:
             A_scale = self.A.scale
             B_scale = self.B.scale
             if isinstance(self.A, TPMatrix):
                 A = self.A.pmat
                 B = self.B.pmat
+                A_scale *= self.A.pmat.scale
+                B_scale *= self.B.pmat.scale
         else:
             A_scale = args[2]
             B_scale = args[3]
@@ -347,7 +348,7 @@ class Biharmonic(object):
         S, A, B = args[0], args[1], args[2]
         M = {d.get_key(): d for d in (S, A, B)}
         self.S = M['SBBmat']
-        self.A = M['PBBmat']  # Legendre and Chebyshev differ
+        self.A = M['PBBmat']
         self.B = M['BBBmat']
 
         if len(args) == 3:
@@ -358,6 +359,9 @@ class Biharmonic(object):
                 S = self.S.pmat
                 A = self.A.pmat
                 B = self.B.pmat
+                A_scale *= self.A.pmat.scale
+                B_scale *= self.B.pmat.scale
+                S_scale *= self.S.pmat.scale
         elif len(args) == 6:
             S_scale = np.asscalar(args[3])
             A_scale = args[4]

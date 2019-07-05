@@ -7,6 +7,7 @@ import numpy as np
 import shenfun
 from shenfun.chebyshev import bases as cbases
 from shenfun.legendre import bases as lbases
+from shenfun.laguerre import bases as labases
 from shenfun.fourier import bases as fbases
 from shenfun.la import TDMA
 from shenfun.spectralbase import inner_product
@@ -25,16 +26,22 @@ lBasis = (lbases.Basis,
           lbases.ShenBiharmonicBasis,
           lbases.ShenNeumannBasis)
 
+laBasis = (labases.Basis,
+           labases.ShenDirichletBasis)
+
 fBasis = (fbases.R2CBasis,
           fbases.C2CBasis)
 
 cquads = ('GC', 'GL')
 lquads = ('LG', 'GL')
+laquads = ('LG',)
 
-all_bases_and_quads = list(product(lBasis, lquads))+list(product(cBasis, cquads))+list(product(fBasis, ("",)))
+all_bases_and_quads = list(product(laBasis, laquads)) + list(product(lBasis, lquads))+list(product(cBasis, cquads))+list(product(fBasis, ("",)))
 
 cbases2 = list(list(i[0]) + [i[1]] for i in product(list(product(cBasis, cBasis)), cquads))
 lbases2 = list(list(i[0]) + [i[1]] for i in product(list(product(lBasis, lBasis)), lquads))
+
+cl_nonortho = list(product(laBasis[1:], laquads)) + list(product(lBasis[1:], lquads))+list(product(cBasis[1:], cquads))
 
 class ABC(object):
     def __init__(self, dim):
@@ -118,6 +125,57 @@ def test_eval(ST, quad):
     fk = ST.forward(fj, fk, fast_transform=False)
     f = ST.eval(points, fk)
     assert np.allclose(fj, f)
+
+@pytest.mark.parametrize('basis, quad', cl_nonortho)
+def test_to_ortho(basis, quad):
+    N = 10
+    if basis.family() == 'legendre':
+        B1 = lBasis[0](N, quad)
+        B3 = lBasis[0](N, quad)
+    elif basis.family() == 'chebyshev':
+        B1 = cBasis[0](N, quad)
+        B3 = cBasis[0](N, quad)
+    elif basis.family() == 'laguerre':
+        B1 = laBasis[0](N, quad)
+        B3 = laBasis[0](N, quad)
+
+    B0 = basis(N, quad=quad)
+    a = shenfun.Array(B0)
+    a_hat = shenfun.Function(B0)
+    b0_hat = shenfun.Function(B1)
+    b1_hat = shenfun.Function(B1)
+    a[:] = np.random.random(a.shape)
+    a_hat = a.forward(a_hat)
+    b0_hat = shenfun.project(a_hat, B1, output_array=b0_hat, fill=False,  use_to_ortho=True)
+    b1_hat = shenfun.project(a_hat, B1, output_array=b1_hat, fill=False,  use_to_ortho=False)
+    assert np.linalg.norm(b0_hat-b1_hat) < 1e-10
+
+    B2 = basis(N, quad=quad)
+    TD = shenfun.TensorProductSpace(shenfun.comm, (B0, B2))
+    TC = shenfun.TensorProductSpace(shenfun.comm, (B1, B3))
+    a = shenfun.Array(TD)
+    a_hat = shenfun.Function(TD)
+    b0_hat = shenfun.Function(TC)
+    b1_hat = shenfun.Function(TC)
+    a[:] = np.random.random(a.shape)
+    a_hat = a.forward(a_hat)
+    b0_hat = shenfun.project(a_hat, TC, output_array=b0_hat, fill=False, use_to_ortho=True)
+    b1_hat = shenfun.project(a_hat, TC, output_array=b1_hat, fill=False, use_to_ortho=False)
+    assert np.linalg.norm(b0_hat-b1_hat) < 1e-10
+
+    F0 = shenfun.Basis(N, 'F')
+    TD = shenfun.TensorProductSpace(shenfun.comm, (B0, F0))
+    TC = shenfun.TensorProductSpace(shenfun.comm, (B1, F0))
+    a = shenfun.Array(TD)
+    a_hat = shenfun.Function(TD)
+    b0_hat = shenfun.Function(TC)
+    b1_hat = shenfun.Function(TC)
+    a[:] = np.random.random(a.shape)
+    a_hat = a.forward(a_hat)
+    b0_hat = shenfun.project(a_hat, TC, output_array=b0_hat, fill=False, use_to_ortho=True)
+    b1_hat = shenfun.project(a_hat, TC, output_array=b1_hat, fill=False, use_to_ortho=False)
+    assert np.linalg.norm(b0_hat-b1_hat) < 1e-10
+
 
 @pytest.mark.parametrize('test, trial, quad', cbases2+lbases2)
 def test_massmatrices(test, trial, quad):
@@ -511,12 +569,13 @@ def test_ABBmat(SB, quad):
     assert np.allclose(z0, u0)
 
 if __name__ == '__main__':
-    #test_convolve(fbases.R2CBasis, 8)
-    #test_ADDmat(lbases.ShenNeumannBasis, "GL")
+    test_to_ortho(cBasis[1], 'GC')
+    # test_convolve(fbases.R2CBasis, 8)
+    #test_ADDmat(cbases.ShenNeumannBasis, "GL")
     #test_CDDmat("GL")
     #test_massmatrices(cBasis[3], cBasis[3], 'GC')
     #test_transforms(lBasis[1], 'LG', 1)
     #test_project_1D(cBasis[0])
-    test_scalarproduct(cBasis[1], 'GC')
+    #test_scalarproduct(cBasis[1], 'GC')
     #test_eval(cBasis[1], 'GC')
     #test_axis(cBasis[1], 'GC', 0)

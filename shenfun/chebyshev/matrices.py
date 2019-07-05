@@ -351,6 +351,19 @@ class BTTmat(SpectralMatrix):
 
         return c
 
+    def solve(self, b, u=None, axis=0):
+        s = self.trialfunction[0].slice()
+        if u is None:
+            u = b
+        else:
+            assert u.shape == b.shape
+        sl = [np.newaxis]*u.ndim
+        sl[axis] = s
+        sl = tuple(sl)
+        ss = self.trialfunction[0].sl[s]
+        d = (1./self.scale)/self[0]
+        u[ss] = b[ss]*d[sl]
+        return u
 
 @inheritdocstrings
 class BNNmat(SpectralMatrix):
@@ -1061,12 +1074,12 @@ class ADDmat(SpectralMatrix):
                 us[k] = bs[k] - d1[k]*so
             us[k] /= d[k]
 
+        u /= self.scale
         self.testfunction[0].bc.apply_after(u, True)
         if axis > 0:
             u = np.moveaxis(u, 0, axis)
             if not u is b:
                 b = np.moveaxis(b, 0, axis)
-        u /= self.scale
         return u
 
 

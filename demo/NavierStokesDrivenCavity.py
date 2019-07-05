@@ -128,7 +128,7 @@ def compute_rhs(ui_hat, bh_hat):
     bh_hat += bh_hat0
     return bh_hat
 
-uh_hat, Ai = M.solve(bh_hat0, u=uh_hat, integral_constraint=(2, 0), return_system=True) # Constraint for component 2 of mixed space
+uh_hat, Ai = M.solve(bh_hat0, u=uh_hat, constraints=((2, 0, 0),), return_system=True) # Constraint for component 2 of mixed space
 Alu = splu(Ai)
 uh_new[:] = uh_hat
 converged = False
@@ -137,7 +137,7 @@ t0 = time.time()
 while not converged:
     count += 1
     bh_hat = compute_rhs(ui_hat, bh_hat)
-    uh_new = M.solve(bh_hat, u=uh_new, integral_constraint=(2, 0), Alu=Alu) # Constraint for component 2 of mixed space
+    uh_new = M.solve(bh_hat, u=uh_new, constraints=((2, 0, 0),), Alu=Alu) # Constraint for component 2 of mixed space
     error = np.linalg.norm(ui_hat-ui_new)
     uh_hat[:] = alfa*uh_new + (1-alfa)*uh_hat
     converged = abs(error) < 1e-11 or count >= 10000

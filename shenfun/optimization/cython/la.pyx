@@ -921,8 +921,10 @@ def LU_Helmholtz_1D(A, B,
 
     N = A_0.shape[0]
     if neumann:
-        A_0[0] = np.pi/A_scale
-        B_0[0] = 0.0
+        if abs(B_scale) < 1e-8:
+            A_0[0] = 1.0/A_scale
+            B_0[0] = 0.0
+
         for i in xrange(1, N):
             A_0[i] /= pow(i, 2)
             B_0[i] /= pow(i, 2)
@@ -1089,7 +1091,9 @@ cdef void Solve_Helmholtz_1D_ptr(T* fk,
         u_hat[ii]/=d0[ii]
 
     if neumann:
-        u_hat[0] = 0.0
+        if (d0[0]-1.0)*(d0[0]-1.0) < 1e-16:
+            u_hat[0] = 0.0
+
         for i in xrange(1, N):
             u_hat[i*st] /= (i*i)
 

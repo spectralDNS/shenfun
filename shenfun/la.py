@@ -329,8 +329,12 @@ class NeumannSolve(object):
 
         b[0] = self.mean
         s = self.s
-        self.A[0][0] = 1
+
         A = self.A.diags('csr')
+        _, zerorow = A[0].nonzero()
+        A[(0, zerorow)] = 0
+        A[0, 0] = 1
+
         if b.ndim == 1:
             u[s] = spsolve(A, b[s])
         else:

@@ -210,7 +210,7 @@ class SpectralBase(object):
         self.sl = slicedict()
         self._tensorproductspace = None     # link if belonging to TensorProductSpace
 
-    def points_and_weights(self, N=None, map_true_domain=False):
+    def points_and_weights(self, N=None, map_true_domain=False, **kw):
         """Return points and weights of quadrature
 
         Parameters
@@ -606,6 +606,28 @@ class SpectralBase(object):
         array = self._mass.solve(array, axis=self.axis)
         return array
 
+    def to_ortho(self, input_array, output_array=None):
+        """Project to orthogonal basis
+
+        Parameters
+        ----------
+            input_array : array
+                Expansion coefficients of input basis
+            output_array : array
+                Expansion coefficients in orthogonal basis
+        """
+        raise NotImplementedError
+        #B = input_array.function_space().get_orthogonal()
+        #if output_array is None:
+        #    from .forms import Function
+        #    output_array = Function(B)
+        #if self.is_orthogonal:
+        #    output_array[:] = input_array
+        #else:
+        #    from .forms import project
+        #    output_array = project(input_array, B, output_array=output_array)
+        #return output_array
+
     def plan(self, shape, axis, dtype, options):
         """Plan transform
 
@@ -828,14 +850,15 @@ class SpectralBase(object):
     def tensorproductspace(self, T):
         self._tensorproductspace = T
 
-    #def __hash__(self):
-    #    return hash(repr(self.__class__))
-
     def __eq__(self, other):
         return (self.__class__.__name__ == other.__class__.__name__ and
                 self.quad == other.quad and
                 self.N == other.N and
                 self.axis == other.axis)
+
+    @property
+    def is_orthogonal(self):
+        return False
 
     @property
     def rank(self):
@@ -881,7 +904,7 @@ class SpectralBase(object):
         pass
 
 class MixedBasis(object):
-    """Class for composite bases
+    """Class for composite bases in 1D
 
     Parameters
     ----------

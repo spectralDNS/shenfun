@@ -55,22 +55,46 @@ class TensorProductSpace(PFFT):
 
         if axes is not None:
             axes = list(axes) if np.ndim(axes) else [axes]
-            for i, axis in enumerate(axes):
-                if axis < 0:
-                    axes[i] = axis + len(shape)
         else:
             axes = list(range(len(shape)))
-        assert min(axes) >= 0
-        assert max(axes) < len(shape)
-        assert 0 < len(axes) <= len(shape)
-        assert sorted(axes) == sorted(set(axes))
+
+        for i, ax in enumerate(axes):
+            if isinstance(ax, (int, np.integer)):
+                if ax < 0:
+                    ax += len(shape)
+                axes[i] = (ax,)
+            else:
+                assert isinstance(ax, (tuple, list))
+                ax = list(ax)
+                for j, a in enumerate(ax):
+                    assert isinstance(a, int)
+                    if a < 0:
+                        a += len(shape)
+                        ax[j] = a
+                axes[i] = ax
+            assert min(axes[i]) >= 0
+            assert max(axes[i]) < len(shape)
+            assert 0 < len(axes[i]) <= len(shape)
+            assert sorted(axes[i]) == sorted(set(axes[i]))
+
+        #if axes is not None:
+        #    axes = list(axes) if np.ndim(axes) else [axes]
+        #    for i, axis in enumerate(axes):
+        #        if axis < 0:
+        #            axes[i] = axis + len(shape)
+        #else:
+        #    axes = list(range(len(shape)))
+        #assert min(axes) >= 0
+        #assert max(axes) < len(shape)
+        #assert 0 < len(axes) <= len(shape)
+        #assert sorted(axes) == sorted(set(axes))
 
         if dtype is None:
-            dtype = np.complex if isinstance(bases[axes[-1]], C2CBasis) else np.float
+            dtype = np.complex if isinstance(bases[axes[-1][-1]], C2CBasis) else np.float
         else:
-            if isinstance(bases[axes[-1]], C2CBasis):
+            if isinstance(bases[axes[-1][-1]], C2CBasis):
                 assert np.dtype(dtype).char in 'FDG'
-            elif isinstance(bases[axes[-1]], R2CBasis):
+            elif isinstance(bases[axes[-1][-1]], R2CBasis):
                 assert np.dtype(dtype).char in 'fdg'
 
         dtype = np.dtype(dtype)
@@ -79,18 +103,21 @@ class TensorProductSpace(PFFT):
         if isinstance(comm, Subcomm):
             assert slab is False
             assert len(comm) == len(shape)
-            assert comm[axes[-1]].Get_size() == 1
+            assert comm[axes[-1][-1]].Get_size() == 1
             self.subcomm = comm
         else:
             if slab:
+                axis = (axes[-1][-1] + 1) % len(shape)
                 dims = [1] * len(shape)
-                dims[axes[0]] = comm.Get_size()
+                dims[axis] = comm.Get_size()
             else:
                 dims = [0] * len(shape)
-                dims[axes[-1]] = 1
+                for ax in axes[-1]:
+                    dims[ax] = 1
             self.subcomm = Subcomm(comm, dims)
 
-        self.axes = tuple((axis,) for axis in axes)
+        #self.axes = tuple((axis,) for axis in axes)
+        self.axes = axes
         self.xfftn = []
         self.transfer = []
         self.pencil = [None, None]
@@ -480,6 +507,26 @@ class TensorProductSpace(PFFT):
         return tuple([base.shape(forward_output) for base in self])
         #return self.shape(forward_output)
 
+    def mask_nyquist(self):
+        """Return an arrays with zeroz for Nyquist frequencies and one otherwise"""
+        k = []
+        for base in self:
+            if base.family().lower() == 'fourier':
+                k.append(base.mask_nyquist(bcast=True))
+            else:
+                k.append(np.ones((1,)*len(self)).astype(int))
+
+        lk = []
+        for axis, (n, s) in enumerate(zip(k, self.local_slice(True))):
+            ss = [slice(None)]*len(k)
+            ss[axis] = s
+            lk.append(n[tuple(ss)])
+
+        mask = 1
+        for ll in lk:
+            mask = mask * ll
+        return mask
+
     def __iter__(self):
         return iter(self.bases)
 
@@ -508,6 +555,19 @@ class TensorProductSpace(PFFT):
             if not base.family() == 'fourier':
                 axes.append(axis)
         return axes
+
+    @property
+    def is_orthogonal(self):
+        ortho = True
+        for base in self.bases:
+            ortho *= base.is_orthogonal
+        return ortho
+
+    def get_orthogonal(self):
+        ortho = []
+        for base in self.bases:
+            ortho.append(base.get_orthogonal())
+        return TensorProductSpace(self.subcomm, ortho, axes=self.axes)
 
     def __getitem__(self, i):
         """Return instance of base i

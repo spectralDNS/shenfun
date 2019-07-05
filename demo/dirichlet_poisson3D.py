@@ -30,7 +30,7 @@ from mpi4py_fft.pencil import Subcomm
 comm = MPI.COMM_WORLD
 
 assert len(sys.argv) == 3
-assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
+assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi')
 assert isinstance(int(sys.argv[-2]), int)
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
@@ -40,8 +40,11 @@ Solver = base.la.Helmholtz
 regtest = True
 
 # Use sympy to compute a rhs, given an analytical solution
-a = 0
+a = -1
 b = 1
+if family == 'jacobi':
+    a = 0
+    b = 0
 x, y, z = symbols("x,y,z")
 ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-y**2) + a*(1 + y)/2. + b*(1 - y)/2.
 fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
@@ -71,14 +74,9 @@ fj = Array(T, buffer=fl(*X))
 
 # Compute right hand side of Poisson equation
 f_hat = inner(v, fj)
-if family == 'legendre':
-    f_hat *= -1.
 
 # Get left hand side of Poisson equation
-if family == 'chebyshev':
-    matrices = inner(v, div(grad(u)))
-else:
-    matrices = inner(grad(v), grad(u))
+matrices = inner(v, div(grad(u)))
 
 # Create Helmholtz linear algebra solver
 H = Solver(*matrices)
