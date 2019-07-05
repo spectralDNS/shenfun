@@ -47,7 +47,9 @@ class JacobiBase(SpectralBase):
         if mode == 'mpmath':
             try:
                 import quadpy
-                pw = quadpy.line_segment.GaussJacobi(N, self.alpha, self.beta, 'mpmath', 30)
+                from mpmath import mp
+                mp.dps = 30
+                pw = quadpy.line_segment.gauss_jacobi(N, self.alpha, self.beta, 'mpmath')
                 points = pw.points
                 weights = pw.weights
             except:
@@ -223,7 +225,7 @@ class ShenDirichletBasis(JacobiBase):
         f = (1-X**2)*sp.jacobi(i, 1, 1, X)
         mode = 'numpy'
         if x.dtype == 'O':
-           mode = 'mpmath'
+            mode = 'mpmath'
 
         output_array[:] = sp.lambdify(X, f.diff(X, k), mode)(x)
         return output_array
@@ -250,7 +252,9 @@ class ShenDirichletBasis(JacobiBase):
         if mode == 'mpmath':
             try:
                 import quadpy
-                pw = quadpy.line_segment.GaussJacobi(N, 0, 0, 'mpmath', 30)
+                from mpmath import mp
+                mp.dps = 30
+                pw = quadpy.line_segment.gauss_jacobi(N, 0, 0, 'mpmath')
                 points = pw.points
                 weights = pw.weights
             except:
@@ -322,7 +326,7 @@ class ShenBiharmonicBasis(JacobiBase):
         f = (1-X**2)**2*sp.jacobi(i, 2, 2, X)
         mode = 'numpy'
         if x.dtype == 'O':
-           mode = 'mpmath'
+            mode = 'mpmath'
         output_array[:] = sp.lambdify(X, f.diff(X, k), mode)(x)
         return output_array
 
@@ -360,7 +364,9 @@ class ShenBiharmonicBasis(JacobiBase):
         if mode == 'mpmath':
             try:
                 import quadpy
-                pw = quadpy.line_segment.GaussJacobi(N, 0, 0, 'mpmath', 30)
+                from mpmath import mp
+                mp.dps = 30
+                pw = quadpy.line_segment.gauss_jacobi(N, 0, 0, 'mpmath')
                 points = pw.points
                 weights = pw.weights
             except:
@@ -466,7 +472,9 @@ class ShenOrder6Basis(JacobiBase):
         if mode == 'mpmath':
             try:
                 import quadpy
-                pw = quadpy.line_segment.GaussJacobi(N, 0, 0, 'mpmath', 30)
+                from mpmath import mp
+                mp.dps = 30
+                pw = quadpy.line_segment.gauss_jacobi(N, 0, 0, 'mpmath')
                 points = pw.points
                 weights = pw.weights
             except:
