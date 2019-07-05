@@ -90,6 +90,7 @@ if __name__ == '__main__':
                     "shenfun.hermite",
                     "shenfun.chebyshev",
                     "shenfun.fourier",
+                    "shenfun.jacobi",
                     "shenfun.forms",
                     "shenfun.utilities",
                     "shenfun.io"
