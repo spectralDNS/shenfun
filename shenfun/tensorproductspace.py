@@ -507,20 +507,46 @@ class TensorProductSpace(PFFT):
         return tuple([base.shape(forward_output) for base in self])
         #return self.shape(forward_output)
 
-    def mask_nyquist(self):
-        """Return an arrays with zeroz for Nyquist frequencies and one otherwise"""
+    def mask_nyquist(self, u_hat, mask=None):
+        """Return array `u_hat` with zero Nyquist coefficients
+
+        Parameters
+        ----------
+        u_hat : array
+            Array to be masked
+        mask : array or None, optional
+            mask array, if not provided then get the mask by calling
+            :func:`get_mask_nyquist`
+        """
+        if mask is None:
+            mask = self.get_mask_nyquist()
+        if mask is not None:
+            u_hat *= mask
+        return u_hat
+
+    def get_mask_nyquist(self):
+        """Return an array with zeros for Nyquist coefficients and one otherwise"""
         k = []
+        do_mask = False
         for base in self:
-            if base.family().lower() == 'fourier':
-                k.append(base.mask_nyquist(bcast=True))
+            if base.family() == 'fourier':
+                k.append(base.get_mask_nyquist(bcast=True))
+                if base.N % 2 == 0:
+                    do_mask = True
             else:
-                k.append(np.ones((1,)*len(self)).astype(int))
+                k.append(None)
+
+        if not do_mask:
+            return None
 
         lk = []
         for axis, (n, s) in enumerate(zip(k, self.local_slice(True))):
-            ss = [slice(None)]*len(k)
-            ss[axis] = s
-            lk.append(n[tuple(ss)])
+            if n is None:
+                lk.append(1)
+            else:
+                ss = [slice(None)]*len(k)
+                ss[axis] = s
+                lk.append(n[tuple(ss)])
 
         mask = 1
         for ll in lk:

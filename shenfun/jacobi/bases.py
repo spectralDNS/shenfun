@@ -8,6 +8,7 @@ from shenfun.utilities import inheritdocstrings
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
+# Note - Look into sympy eval not being as accurate as eval_jacobi
 
 @inheritdocstrings
 class JacobiBase(SpectralBase):
@@ -214,7 +215,8 @@ class ShenDirichletBasis(JacobiBase):
 
     def sympy_basis(self, i=0):
         x = sp.symbols('x')
-        return (1-x**2)*sp.jacobi(i, 1, 1, x)
+        return (1-x**2)*sp.jacobi(i, -self.alpha, -self.beta, x)
+        #return (1-x)**(-self.alpha)*(1+x)**(-self.beta)*sp.jacobi(i, -self.alpha, -self.beta, x)
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
         if x is None:
@@ -222,11 +224,9 @@ class ShenDirichletBasis(JacobiBase):
         if output_array is None:
             output_array = np.zeros_like(x)
         X = sp.symbols('X')
-        f = (1-X**2)*sp.jacobi(i, 1, 1, X)
-        mode = 'numpy'
-        if x.dtype == 'O':
-            mode = 'mpmath'
-
+        f = (1-X**2)*sp.jacobi(i, -self.alpha, -self.beta, X)
+        #f = (1-X)**(-self.alpha)*(1+X)**(-self.beta)*sp.jacobi(i, -self.alpha, -self.beta, X)
+        mode = 'mpmath' if x.dtype == 'O' else 'numpy'
         output_array[:] = sp.lambdify(X, f.diff(X, k), mode)(x)
         return output_array
 
@@ -234,27 +234,34 @@ class ShenDirichletBasis(JacobiBase):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        output_array = (1-x**2)*eval_jacobi(i, 1, 1, x, out=output_array)
+        #output_array = (1-x**2)*eval_jacobi(i, -self.alpha, -self.beta, x, out=output_array)
+        mode = 'mpmath' if x.dtype == 'O' else 'numpy'
+        X = sp.symbols('X')
+        f = (1-X**2)*sp.jacobi(i, 1, 1, X)
+        output_array[:] = sp.lambdify(X, f, mode)(x)
         return output_array
 
     def evaluate_basis_all(self, x=None, argument=0):
         if x is None:
-            x = self.mesh(False, False)
+            #x = self.mesh(False, False)
+            x = self.points_and_weights(mode='mpmath')[0]
         V = np.zeros((x.shape[0], self.N))
-        V[:, :-2] = self.jacobi(x, 1, 1, self.N-2)*(1-x**2)[:, np.newaxis]
+        #V[:, :-2] = self.jacobi(x, -self.alpha, -self.beta, self.N-2)*(1-x**2)[:, np.newaxis]
+        for i in range(self.N-2):
+            V[:, i] = self.evaluate_basis(x, i, output_array=V[:, i])
         return V
 
     def points_and_weights(self, N=None, map_true_domain=False, mode='numpy'):
         if N is None:
             N = self.N
         assert self.quad == "JG"
-        points, weights = roots_jacobi(N, 0, 0)
+        points, weights = roots_jacobi(N, self.alpha+1, self.beta+1)
         if mode == 'mpmath':
             try:
                 import quadpy
                 from mpmath import mp
                 mp.dps = 30
-                pw = quadpy.line_segment.gauss_jacobi(N, 0, 0, 'mpmath')
+                pw = quadpy.line_segment.gauss_jacobi(N, self.alpha+1, self.beta+1, 'mpmath')
                 points = pw.points
                 weights = pw.weights
             except:
@@ -264,6 +271,7 @@ class ShenDirichletBasis(JacobiBase):
         return points, weights
 
     def to_ortho(self, input_array, output_array=None):
+        assert self.alpha == -1 and self.beta == -1
         if output_array is None:
             output_array = np.zeros_like(input_array.v)
         k = self.wavenumbers().astype(np.float)
@@ -275,7 +283,7 @@ class ShenDirichletBasis(JacobiBase):
         return output_array
 
     def get_orthogonal(self):
-        return Basis(self.N, alpha=0, beta=0, domain=self.domain)
+        return Basis(self.N, alpha=self.alpha+1, beta=self.beta+1, domain=self.domain)
 
     def vandermonde_scalar_product(self, input_array, output_array):
         SpectralBase.vandermonde_scalar_product(self, input_array, output_array)

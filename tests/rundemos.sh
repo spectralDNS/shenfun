@@ -2,13 +2,13 @@
 set -e
 
 pushd $PWD/../demo
-python dirichlet_poisson1D.py 64 chebyshev
+python dirichlet_poisson1D.py 32 chebyshev
 python dirichlet_poisson2D.py 32 chebyshev
 python dirichlet_poisson3D.py 32 chebyshev
-python dirichlet_poisson1D.py 64 legendre
+python dirichlet_poisson1D.py 32 legendre
 python dirichlet_poisson2D.py 32 legendre
 python dirichlet_poisson3D.py 32 legendre
-python dirichlet_poisson1D.py 64 jacobi
+python dirichlet_poisson1D.py 32 jacobi
 python dirichlet_poisson2D.py 32 jacobi
 python dirichlet_poisson3D.py 32 jacobi
 

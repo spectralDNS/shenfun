@@ -25,7 +25,7 @@ ue = (x + y)*exp(-0.03*(x**2+y**2))
 ul = lambdify((x, y), ue, 'numpy')
 
 # Size of discretization
-N = (128, 128)
+N = (129, 129)
 
 K0 = Basis(N[0], 'F', dtype='D', domain=(-50., 50.))
 K1 = Basis(N[1], 'F', dtype='D', domain=(-50., 50.))
@@ -52,10 +52,12 @@ X = T.local_mesh(True)
 U = Array(T)
 Up = Array(Tp)
 U_hat = Function(T)
+mask = T.get_mask_nyquist()
 
 #initialize
 U[:] = ul(*X)
 U_hat = T.forward(U, U_hat)
+T.mask_nyquist(U_hat, mask)
 
 def LinearRHS(self, **par):
     L = inner(v, div(grad(u))) + inner(v, u)
@@ -66,6 +68,7 @@ def NonlinearRHS(self, u, u_hat, rhs, **par):
     rhs.fill(0)
     Up = Tp.backward(u_hat, Up)
     rhs = Tp.forward(-(1+1.5j)*Up*abs(Up)**2, rhs)
+    Tp.mask_nyquist(rhs, mask)
     return rhs
 
 plt.figure()
