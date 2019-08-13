@@ -31,7 +31,7 @@ requirements:
     - mpi4py
     - mpi4py-fft >=2.0.3
     - sympy
-    - nomkl
+    #- nomkl
     - {{ mpi }}
     - hdf5 * mpi_{{ mpi }}_*
     - h5py * mpi_{{ mpi }}_*
