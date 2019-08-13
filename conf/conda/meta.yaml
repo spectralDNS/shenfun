@@ -21,7 +21,7 @@ requirements:
     - cython
     - pip
     - fftw
-    - nomkl
+    #- nomkl
 
   run:
     - python
