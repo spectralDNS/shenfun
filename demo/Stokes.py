@@ -90,7 +90,7 @@ fh_hat = Function(VQ)
 f_hat, h_hat = fh_hat
 f_hat = inner(v, f_, output_array=f_hat)
 h_hat = inner(q, h_, output_array=h_hat)
-TD.mask_nyquist(fh_hat)
+fh_hat.mask_nyquist()
 
 # Solve problem using integral constraint on pressure
 up_hat = M.solve(fh_hat, constraints=((2, 0, 0), (2, N[1]-1, 0)))
