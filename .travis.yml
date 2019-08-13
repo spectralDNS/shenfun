@@ -46,13 +46,9 @@ script:
           conda install shenfun --use-local
           py.test --cov=$(python -c "import site; print(site.getsitepackages()[0]+'/shenfun')") --cov-report=xml tests/
       elif [ $CONDA_PY == 36 ]; then
-          conda build --no-test --python 3.6 conf/conda
-          conda install shenfun --use-local
-          py.test tests
+          travis_wait conda build --python 3.6 conf/conda
       else
-          conda build --no-test --python 2.7 conf/conda
-          conda install shenfun --use-local
-          py.test tests
+          travis_wait conda build --python 2.7 conf/conda
       fi
 
 after_success:
