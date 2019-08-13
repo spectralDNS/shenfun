@@ -36,7 +36,7 @@ assert comm.Get_size() == 1, "Two non-periodic directions only have solver imple
 Re = 200.
 nu = 2./Re
 alfa = 0.2 # underrelaxation factor
-N = (51, 51)
+N = (50, 50)
 family = 'Chebyshev'
 #family = 'Legendre'
 quad = 'GC'

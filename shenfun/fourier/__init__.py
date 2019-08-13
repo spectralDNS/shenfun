@@ -20,36 +20,73 @@ def energy_fourier(u, T):
     See https://en.wikipedia.org/wiki/Parseval's_theorem
 
     """
+
     if not hasattr(T, 'comm'):
         # Just a 1D basis
         assert u.ndim == 1
         if isinstance(T, R2CBasis):
-            result = (2*np.sum(abs(u[1:-1])**2) +
-                      np.sum(abs(u[0])**2) +
-                      np.sum(abs(u[-1])**2))
+            if u.shape[0] % 2 == 0:
+                result = (2*np.sum(abs(u[1:-1])**2) +
+                          np.sum(abs(u[0])**2) +
+                          np.sum(abs(u[-1])**2))
+            else:
+                result = (2*np.sum(abs(u[1:])**2) +
+                          np.sum(abs(u[0])**2))
+
         else:
             result = np.sum(abs(u)**2)
         return result
 
     comm = T.comm
     assert np.all([isinstance(base, FourierBase) for base in T.bases])
-    if isinstance(T.bases[-1], R2CBasis):
-        if T.forward.output_pencil.subcomm[-1].Get_size() == 1:
-            result = (2*np.sum(abs(u[..., 1:-1])**2) +
-                      np.sum(abs(u[..., 0])**2) +
-                      np.sum(abs(u[..., -1])**2))
+    real = False
+    for axis, base in enumerate(T.bases):
+        if isinstance(base, R2CBasis):
+            real = True
+            break
+
+    if real:
+        s = [slice(None)]*u.ndim
+        uaxis = axis + u.ndim-len(T.bases)
+        if T.forward.output_pencil.subcomm[axis].Get_size() == 1:
+            # aligned in r2c direction
+            if base.N % 2 == 0:
+                s[uaxis] = slice(1, -1)
+                result = 2*np.sum(abs(u[tuple(s)])**2)
+                s[uaxis] = 0
+                result += np.sum(abs(u[tuple(s)])**2)
+                s[uaxis] = -1
+                result += np.sum(abs(u[tuple(s)])**2)
+            else:
+                s[uaxis] = slice(1, None)
+                result = 2*np.sum(abs(u[tuple(s)])**2)
+                s[uaxis] = 0
+                result += np.sum(abs(u[tuple(s)])**2)
 
         else:
-            # Data not aligned along last dimension. Need to check about 0 and -1
-            result = 2*np.sum(abs(u[..., 1:-1])**2)
-            if T.local_slice(True)[-1].start == 0:
-                result += np.sum(abs(u[..., 0])**2)
+            # Data not aligned along r2c axis. Need to check about 0 and -1
+            if base.N % 2 == 0:
+                s[uaxis] = slice(1, -1)
+                result = 2*np.sum(abs(u[tuple(s)])**2)
+                s[uaxis] = 0
+                if T.local_slice(True)[axis].start == 0:
+                    result += np.sum(abs(u[tuple(s)])**2)
+                else:
+                    result += 2*np.sum(abs(u[tuple(s)])**2)
+                s[uaxis] = -1
+                if T.local_slice(True)[axis].stop == T.dims()[axis]:
+                    result += np.sum(abs(u[tuple(s)])**2)
+                else:
+                    result += 2*np.sum(abs(u[tuple(s)])**2)
             else:
-                result += 2*np.sum(abs(u[..., 0])**2)
-            if T.local_slice(True)[-1].stop == T.dims()[-1]:
-                result += np.sum(abs(u[..., -1])**2)
-            else:
-                result += 2*np.sum(abs(u[..., -1])**2)
+                s[uaxis] = slice(1, None)
+                result = 2*np.sum(abs(u[tuple(s)])**2)
+                s[uaxis] = 0
+                if T.local_slice(True)[axis].start == 0:
+                    result += np.sum(abs(u[tuple(s)])**2)
+                else:
+                    result += 2*np.sum(abs(u[tuple(s)])**2)
+
     else:
         result = np.sum(abs(u[...])**2)
 

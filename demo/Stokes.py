@@ -49,7 +49,7 @@ fly = lambdify((x, y), fy, 'numpy')
 hl = lambdify((x, y), h, 'numpy')
 pl = lambdify((x, y), pe, 'numpy')
 
-N = (80, 80)
+N = (20, 20)
 family = sys.argv[-1] if len(sys.argv) == 2 else 'Legendre'
 K0 = Basis(N[0], 'Fourier', dtype='d', domain=(0, 2*np.pi))
 SD = Basis(N[1], family, bc=(0, 0))
@@ -90,6 +90,7 @@ fh_hat = Function(VQ)
 f_hat, h_hat = fh_hat
 f_hat = inner(v, f_, output_array=f_hat)
 h_hat = inner(q, h_, output_array=h_hat)
+TD.mask_nyquist(fh_hat)
 
 # Solve problem using integral constraint on pressure
 up_hat = M.solve(fh_hat, constraints=((2, 0, 0), (2, N[1]-1, 0)))

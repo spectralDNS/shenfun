@@ -199,6 +199,23 @@ class FourierBase(SpectralBase):
     def get_orthogonal(self):
         return self
 
+    def mask_nyquist(self, u_hat, mask=None):
+        """Return array `u_hat` with zero Nyquist coefficients
+
+        Parameters
+        ----------
+        u_hat : array
+            Array to be masked
+        mask : array or None, optional
+            mask array, if not provided then get the mask by calling
+            :func:`get_mask_nyquist`
+        """
+        if mask is None:
+            mask = self.get_mask_nyquist(bcast=False)
+        if mask is not None:
+            u_hat *= mask
+        return u_hat
+
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, int):
             axis = [axis]
@@ -299,10 +316,20 @@ class R2CBasis(FourierBase):
             k = self.broadcast_to_ndims(k)
         return k
 
-    def mask_nyquist(self, bcast=True):
-        f = np.ones(self.N//2+1, dtype=int)
+    def get_mask_nyquist(self, bcast=True):
+        """Return None or an array with zeros for Nyquist coefficients and one otherwise
+
+        Parameters
+        ----------
+        bcast : boolean, optional
+            If True then broadcast returned mask array to dimensions of the
+            :class:`TensorProductSpace` this base belongs to.
+        """
         if self.N % 2 == 0:
+            f = np.ones(self.N//2+1, dtype=int)
             f[-1] = 0
+        else:
+            return None
         if bcast is True:
             f = self.broadcast_to_ndims(f)
         return f
@@ -522,12 +549,15 @@ class C2CBasis(FourierBase):
             k = self.broadcast_to_ndims(k)
         return k
 
-    def mask_nyquist(self, bcast=True):
-        f = np.ones(self.N, dtype=int)
+    def get_mask_nyquist(self, bcast=True):
         if self.N % 2 == 0:
+            f = np.ones(self.N, dtype=int)
             f[self.N//2] = 0
+        else:
+            return None
         if bcast is True:
             f = self.broadcast_to_ndims(f)
+
         return f
 
     def slice(self):

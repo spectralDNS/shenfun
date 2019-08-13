@@ -965,6 +965,10 @@ class Function(ShenfunBaseArray, BasisFunction):
         output_array = space.to_ortho(self, output_array)
         return output_array
 
+    def mask_nyquist(self, mask=None):
+        """Set self to have zeros in Nyquist coefficients"""
+        self.function_space().mask_nyquist(self, mask=mask)
+
 
 class Array(ShenfunBaseArray):
     r"""

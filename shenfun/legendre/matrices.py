@@ -66,6 +66,7 @@ from __future__ import division
 #__all__ = ['mat']
 
 import numpy as np
+import functools
 from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
 from shenfun.la import TDMA as neumann_TDMA
@@ -308,7 +309,7 @@ class ADDmat(SpectralMatrix):
     and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, scale=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -317,7 +318,7 @@ class ADDmat(SpectralMatrix):
             d = {0: 4*k+6}
         else:
             d = {0: 1}
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale)
 
     def solve(self, b, u=None, axis=0):
         N = self.shape[0] + 2
@@ -765,8 +766,8 @@ mat = _LegMatDict({
     ((SD, 0), (LB, 0)): BDLmat,
     ((LB, 0), (SD, 0)): BLDmat,
     ((SD, 1), (SD, 1)): ADDmat,
-    ((SD, 2), (SD, 0)): GDDmat,
-    ((SD, 0), (SD, 2)): GDDmat,
+    ((SD, 2), (SD, 0)): functools.partial(ADDmat, scale=-1.),
+    ((SD, 0), (SD, 2)): functools.partial(ADDmat, scale=-1.),
     ((SN, 1), (SN, 1)): ANNmat,
     ((LB, 2), (LB, 0)): GLLmat,
     ((LB, 0), (LB, 2)): GLLmat,
