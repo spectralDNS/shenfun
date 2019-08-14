@@ -6,6 +6,8 @@ Shenfun
     :target: https://travis-ci.org/spectralDNS/shenfun
 .. image:: https://circleci.com/gh/spectralDNS/shenfun.svg?style=svg
     :target: https://circleci.com/gh/spectralDNS/shenfun
+.. image:: https://dev.azure.com/mikaem/spectralDNS/_apis/build/status/spectralDNS.shenfun?branchName=master
+    :target: https://dev.azure.com/mikaem/spectralDNS
 .. image:: https://codecov.io/gh/spectralDNS/shenfun/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/spectralDNS/shenfun
 .. image:: https://anaconda.org/conda-forge/shenfun/badges/platforms.svg
