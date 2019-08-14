@@ -52,12 +52,12 @@ jobs:
       conda config --add channels spectralDNS
       conda config --set always_yes yes
       conda install -n root conda-build=3.17
-    displayName: Create Anaconda environment
+    displayName: Set up Anaconda
 
   - bash: |
       conda build --no-test --python $PYTHON_VERSION ./conf/conda
       conda create --name shenfun pip shenfun python=$PYTHON_VERSION
-      conda activate shenfun
+      source activate shenfun
       pip install pytest-cov pytest
       pytest tests/ --junitxml=junit/test-results.xml --cov=$(python -c "import site; print(site.getsitepackages()[0]+'/shenfun')") --cov-report=xml --cov-report=html
     displayName: Build and test
