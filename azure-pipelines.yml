@@ -79,5 +79,5 @@ jobs:
       pip install codecov codacy-coverage
       codecov
       python-codacy-coverage -r coverage.xml -t $(CODECOV_TOKEN)
-    condition: and(succeeded(), eq($PYTHON_VERSION, '3.7'))
+    condition: and(succeeded(), eq('${{ python.version }}', '3.7'))
     displayName: Upload to Codecov
