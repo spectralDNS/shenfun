@@ -1,5 +1,5 @@
 jobs:
-- job:
+- job: macOS
   displayName: macOS-10.13
   pool:
     vmImage: 'macOS-10.13'
@@ -30,7 +30,7 @@ jobs:
       conda build --python $PYTHON_VERSION ./conf/conda
     displayName: Build and test
 
-- job:
+- job: Ubuntu
   displayName: Ubuntu
   pool:
     vmImage: 'ubuntu-16.04'
@@ -73,3 +73,14 @@ jobs:
       codeCoverageTool: Cobertura
       summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
       reportDirectory: '$(System.DefaultWorkingDirectory)/**/htmlcov'
+
+- job: Upload to Codecov
+  dependsOn: Ubuntu
+  condition: succeeded()
+  steps:
+    - bash: |
+        source activate shenfun
+        pip install codecov codacy-coverage
+        codecov
+        python-codacy-coverage -r coverage.xml -t $(CODECOV_TOKEN)
+      displayName: Upload to Codecov
