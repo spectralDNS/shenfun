@@ -78,8 +78,8 @@ jobs:
       if [ $PYTHON_VERSION == 3.7 ]; then
         source activate shenfun
         pip install codecov codacy-coverage
-        codecov
-        python-codacy-coverage -r coverage.xml -t $(CODECOV_TOKEN)
+        codecov -t $(CODECOV_TOKEN)
+        python-codacy-coverage -r coverage.xml -t $(CODACY_PROJECT_TOKEN)
       fi
     condition: succeeded()
     displayName: Upload to Codecov
