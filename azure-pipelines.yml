@@ -75,9 +75,11 @@ jobs:
       reportDirectory: '$(System.DefaultWorkingDirectory)/**/htmlcov'
 
   - bash: |
-      source activate shenfun
-      pip install codecov codacy-coverage
-      codecov
-      python-codacy-coverage -r coverage.xml -t $(CODECOV_TOKEN)
-    condition: and(succeeded(), eq('$(python.version)', '3.7'))
+      if [ $PYTHON_VERSION == 3.7 ]; then
+        source activate shenfun
+        pip install codecov codacy-coverage
+        codecov
+        python-codacy-coverage -r coverage.xml -t $(CODECOV_TOKEN)
+      fi
+    condition: succeeded()
     displayName: Upload to Codecov
