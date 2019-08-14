@@ -1,0 +1,54 @@
+jobs:
+- job:
+  displayName: macOS-10.13
+  pool:
+    vmImage: 'macOS-10.13'
+  strategy:
+    matrix:
+      Python27:
+        python.version: '2.7'
+      Python36:
+        python.version: '3.6'
+      Python37:
+        python.version: '3.7'
+
+  steps:
+  - bash: echo "##vso[task.prependpath]$CONDA/bin"
+    displayName: Add conda to PATH
+
+  - bash: |
+      conda config --add channels conda-forge
+      conda config --add channels spectralDNS
+      conda install -n root conda-build=3.17
+    displayName: Set up Anaconda
+
+  - bash: |
+      conda build --python $PYTHON_VERSION ./conf/conda
+    displayName: Build and test
+
+- job:
+  displayName: Ubuntu
+  pool:
+    vmImage: 'ubuntu-16.04'
+  strategy:
+    matrix:
+      Python27:
+        python.version: '2.7'
+      Python36:
+        python.version: '3.6'
+      Python37:
+        python.version: '3.7'
+
+  steps:
+  - bash: echo "##vso[task.prependpath]$CONDA/bin"
+    displayName: Add conda to PATH
+
+  - script: |
+      conda config --add channels conda-forge
+      conda config --add channels spectralDNS
+      conda install -n root conda-build=3.17
+    displayName: Create Anaconda environment
+
+  - bash: |
+      conda build --python $PYTHON_VERSION ./conf/conda
+    displayName: Build and test
