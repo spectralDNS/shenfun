@@ -74,7 +74,7 @@ jobs:
       summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
       reportDirectory: '$(System.DefaultWorkingDirectory)/**/htmlcov'
 
-- job: Upload to Codecov
+- job: Upload_to_Codecov
   dependsOn: Ubuntu
   condition: succeeded()
   steps:
