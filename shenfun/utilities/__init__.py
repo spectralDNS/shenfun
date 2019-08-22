@@ -8,7 +8,7 @@ from scipy.fftpack import dct
 from shenfun.optimization import optimizer
 
 
-__all__ = ['inheritdocstrings', 'clenshaw_curtis1D', 'CachedArrayDict', 'outer']
+__all__ = ['inheritdocstrings', 'clenshaw_curtis1D', 'CachedArrayDict', 'outer', 'apply_mask']
 
 def inheritdocstrings(cls):
     """Method used for inheriting docstrings from parent class
@@ -154,3 +154,9 @@ def outer3D(a, b, c, symmetric):
     c[4] = a[1]*b[1]
     c[5] = a[1]*b[2]
     c[8] = a[2]*b[2]
+
+@optimizer
+def apply_mask(u_hat, mask):
+    if mask is not None:
+        u_hat *= mask
+    return u_hat

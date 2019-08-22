@@ -65,8 +65,8 @@ from __future__ import division
 
 #__all__ = ['mat']
 
-import numpy as np
 import functools
+import numpy as np
 from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
 from shenfun.la import TDMA as neumann_TDMA
@@ -361,73 +361,6 @@ class ADDmat(SpectralMatrix):
 
         return u
 
-@inheritdocstrings
-class GDDmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product
-
-    .. math::
-
-        G_{kj} = (\psi''_j, \psi_k)_w
-
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
-
-    """
-    def __init__(self, test, trial):
-        assert isinstance(test[0], SD)
-        assert isinstance(trial[0], SD)
-        N = test[0].N
-        k = np.arange(N-2, dtype=np.float)
-        if not test[0].is_scaled():
-            d = {0: -(4*k+6)}
-        else:
-            d = {0: -1}
-        SpectralMatrix.__init__(self, d, test, trial)
-
-    def solve(self, b, u=None, axis=0):
-        N = self.shape[0] + 2
-        assert N == b.shape[0]
-        s = self.trialfunction[0].slice()
-
-        if u is None:
-            u = b
-        else:
-            assert u.shape == b.shape
-
-        if not self.trialfunction[0].is_scaled():
-
-            # Move axis to first
-            if axis > 0:
-                u = np.moveaxis(u, axis, 0)
-                if not u is b:
-                    b = np.moveaxis(b, axis, 0)
-
-            bs = b[s]
-            us = u[s]
-            d = 1./self[0]
-            sl = [np.newaxis]*bs.ndim
-            sl[0] = slice(None)
-            us[:] = bs*d[tuple(sl)]
-            self.testfunction[0].bc.apply_after(u, True)
-
-            if axis > 0:
-                u = np.moveaxis(u, 0, axis)
-                if not u is b:
-                    b = np.moveaxis(b, axis, 0)
-        else:
-            ss = [slice(None)]*b.ndim
-            ss[axis] = s
-            u[ss] = -b[tuple(ss)]
-            self.testfunction[0].bc.apply_after(u, True)
-
-        u /= self.scale
-        return u
-
 
 @inheritdocstrings
 class ANNmat(SpectralMatrix):
@@ -505,7 +438,7 @@ class ABBmat(SpectralMatrix):
     and :math:`\psi_k` is the Shen Legendre Biharmonic basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, scale=1):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
@@ -514,8 +447,7 @@ class ABBmat(SpectralMatrix):
         d = {0: 2*(2*k+3)*(1+gk),
              2: -2*(2*k[:-2]+3)}
         d[-2] = d[2]
-        SpectralMatrix.__init__(self, d, test, trial)
-
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale)
 
 @inheritdocstrings
 class GLLmat(SpectralMatrix):
@@ -543,35 +475,6 @@ class GLLmat(SpectralMatrix):
         for j in range(2, N, 2):
             jj = j if trial[1] else -j
             d[jj] = (k[:-j]+0.5)*((k[:-j]+j)*(k[:-j]+j+1) - k[:-j]*(k[:-j]+1))*2./(2*k[:-j]+1)
-        SpectralMatrix.__init__(self, d, test, trial)
-
-
-@inheritdocstrings
-class PBBmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product
-
-    .. math::
-
-        A_{kj} = (\psi_j, \psi''_k)_w
-
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-4 \text{ and } k = 0, 1, ..., N-4
-
-    and :math:`\psi_k` is the Shen Legendre Biharmonic basis function.
-
-    """
-    def __init__(self, test, trial):
-        assert isinstance(test[0], SB)
-        assert isinstance(trial[0], SB)
-        N = test[0].N
-        k = np.arange(N-4, dtype=np.float)
-        gk = (2*k+3)/(2*k+7)
-        d = {0: -2*(2*k+3)*(1+gk),
-             2: 2*(2*k[:-2]+3)}
-        d[-2] = d[2]
         SpectralMatrix.__init__(self, d, test, trial)
 
 
@@ -773,8 +676,8 @@ mat = _LegMatDict({
     ((LB, 0), (LB, 2)): GLLmat,
     ((SB, 2), (SB, 2)): SBBmat,
     ((SB, 1), (SB, 1)): ABBmat,
-    ((SB, 0), (SB, 2)): PBBmat,
-    ((SB, 2), (SB, 0)): PBBmat,
+    ((SB, 0), (SB, 2)): functools.partial(ABBmat, scale=-1.),
+    ((SB, 2), (SB, 0)): functools.partial(ABBmat, scale=-1.),
     ((SB, 0), (SB, 4)): SBBmat,
     ((SB, 4), (SB, 0)): SBBmat
     })

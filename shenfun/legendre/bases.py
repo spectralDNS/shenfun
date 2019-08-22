@@ -14,8 +14,7 @@ from shenfun.utilities import inheritdocstrings
 from .lobatto import legendre_lobatto_nodes_and_weights
 
 __all__ = ['LegendreBase', 'Basis', 'ShenDirichletBasis',
-           'ShenBiharmonicBasis', 'ShenNeumannBasis',
-           'SecondNeumannBasis']
+           'ShenBiharmonicBasis', 'ShenNeumannBasis', 'BCBasis']
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
@@ -69,6 +68,10 @@ class LegendreBase(SpectralBase):
     def vandermonde(self, x):
         return leg.legvander(x, self.N-1)
 
+    def sympy_basis(self, i=0):
+        x = sympy.symbols('x')
+        return sympy.legendre(i, x)
+
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
@@ -98,13 +101,12 @@ class LegendreBase(SpectralBase):
         if x is None:
             x = self.mesh(False, False)
         x = np.atleast_1d(x)
-        v = self.evaluate_basis(x, i, output_array)
-        N, M = self.shape(False), self.shape(True)
+        basis = np.zeros(self.shape(True))
+        basis[i] = 1
+        basis = leg.Legendre(basis)
         if k > 0:
-            D = np.zeros((M, N))
-            D[:-k] = leg.legder(np.eye(M, N), k)
-            v = np.dot(v, D)
-        return v
+            basis = basis.deriv(k)
+        return basis(x)
 
     def _composite_basis(self, V, argument=0):
         """Return composite basis, where ``V`` is primary Vandermonde matrix."""
@@ -259,11 +261,34 @@ class ShenDirichletBasis(LegendreBase):
     def slice(self):
         return slice(0, self.N-2)
 
+    def sympy_basis(self, i=0):
+        x = sympy.symbols('x')
+        f = sympy.legendre(i, x)-sympy.legendre(i+2, x)
+        if self.is_scaled():
+            f /= np.sqrt(4*i+6)
+        return f
+
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
         output_array[:] = eval_legendre(i, x) - eval_legendre(i+2, x)
+        if self.is_scaled():
+            output_array /= np.sqrt(4*i+6)
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        if x is None:
+            x = self.mesh(False, False)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = np.atleast_1d(x)
+        basis = np.zeros(self.shape(True))
+        basis[np.array([i, i+2])] = (1, -1)
+        basis = leg.Legendre(basis)
+        if k > 0:
+            basis = basis.deriv(k)
+        output_array[:] = basis(x)
         if self.is_scaled():
             output_array /= np.sqrt(4*i+6)
         return output_array
@@ -375,11 +400,30 @@ class ShenNeumannBasis(LegendreBase):
         output[self.sl[slice(-2, None)]] = 0
         return output
 
+    def sympy_basis(self, i=0):
+        x = sympy.symbols('x')
+        f = sympy.legendre(i, x)-(i*(i+1))/((i+2)*(i+3))*sympy.legendre(i+2, x)
+        return f
+
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
         output_array[:] = eval_legendre(i, x) - i*(i+1.)/(i+2.)/(i+3.)*eval_legendre(i+2, x)
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        if x is None:
+            x = self.mesh(False, False)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = np.atleast_1d(x)
+        basis = np.zeros(self.shape(True))
+        basis[np.array([i, i+2])] = (1, -i*(i+1.)/(i+2.)/(i+3.))
+        basis = leg.Legendre(basis)
+        if k > 0:
+            basis = basis.deriv(k)
+        output_array[:] = basis(x)
         return output_array
 
     #def evaluate_expansion_all(self, input_array, output_array): # pragma: no cover
@@ -492,11 +536,32 @@ class ShenBiharmonicBasis(LegendreBase):
         w_hat[s4] += f2*fk[s]
         return w_hat
 
+    def sympy_basis(self, i=0):
+        x = sympy.symbols('x')
+        f = (sympy.legendre(i, x)
+             -2*(2*i+5.)/(2*i+7.)*sympy.legendre(i+2, x)
+             +((2*i+3.)/(2*i+7.))*sympy.legendre(i+4, x))
+        return f
+
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
         output_array[:] = eval_legendre(i, x) - 2*(2*i+5.)/(2*i+7.)*eval_legendre(i+2, x) + ((2*i+3.)/(2*i+7.))*eval_legendre(i+4, x)
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        if x is None:
+            x = self.mesh(False, False)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = np.atleast_1d(x)
+        basis = np.zeros(self.shape(True))
+        basis[np.array([i, i+2, i+4])] = (1, -2*(2*i+5.)/(2*i+7.), ((2*i+3.)/(2*i+7.)))
+        basis = leg.Legendre(basis)
+        if k > 0:
+            basis = basis.deriv(k)
+        output_array[:] = basis(x)
         return output_array
 
     #def evaluate_expansion_all(self, input_array, output_array): # pragma: no cover
@@ -550,92 +615,92 @@ class ShenBiharmonicBasis(LegendreBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 ## Experimental!
-@inheritdocstrings
-class SecondNeumannBasis(LegendreBase): # pragma: no cover
-    """Shen basis for homogeneous second order Neumann boundary conditions
-
-    Parameters
-    ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-               Type of quadrature
-
-               - LG - Legendre-Gauss
-               - GL - Legendre-Gauss-Lobatto
-        mean : number
-               Mean value of solution
-        domain : 2-tuple of floats, optional
-                 The computational domain
-    """
-    def __init__(self, N=0, quad="LG", mean=0, domain=(-1., 1.)):
-        LegendreBase.__init__(self, N, quad, domain=domain)
-        self.mean = mean
-        self.LT = Basis(N, quad)
-        self._factor = np.zeros(0)
-        self.plan(N, 0, np.float, {})
-
-    def _composite_basis(self, V, argument=0):
-        assert self.N == V.shape[1]
-        P = np.zeros(V.shape)
-        k = np.arange(self.N).astype(np.float)[:-4]
-        a_k = -(k+1)*(k+2)*(2*k+3)/((k+3)*(k+4)*(2*k+7))
-        P[:, :-4] = V[:, :-4] + (a_k-1)*V[:, 2:-2] - a_k*V[:, 4:]
-        P[:, -4] = V[:, 0]
-        P[:, -3] = V[:, 1]
-        return P
-
-    def set_factor_array(self, v):
-        if not self._factor.shape == v.shape:
-            k = self.wavenumbers().astype(np.float)
-            self._factor = -(k+1)*(k+2)*(2*k+3)/((k+3)*(k+4)*(2*k+7))
-
-    #def evaluate_expansion_all(self, u, output_array):
-        #w_hat = work[(u, 0)]
-        #self.set_factor_array(u)
-        #s0 = self.sl[slice(0, -4)]
-        #s1 = self.sl[slice(2, -2)]
-        #s2 = self.sl[slice(4, None)]
-        #w_hat[s0] = u[s0]
-        #w_hat[s1] += (self._factor-1)*u[s0]
-        #w_hat[s2] -= self._factor*u[s0]
-        #output_array = self.LT.backward(w_hat)
-        #return output_array
-
-    def slice(self):
-        return slice(0, self.N-2)
-
-    #def eval(self, x, input_array):
-        #w_hat = work[(input_array, 0)]
-        #self.set_factor_array(input_array)
-        #f = leg.legval(x, input_array[:-2])
-        #w_hat[2:] = self._factor*input_array[:-2]
-        #f -= leg.legval(x, w_hat)
-        #return f
-
-    def plan(self, shape, axis, dtype, options):
-        if isinstance(axis, tuple):
-            assert len(axis) == 1
-            axis = axis[0]
-
-        if isinstance(self.forward, Transform):
-            if self.forward.input_array.shape == shape and self.axis == axis:
-                # Already planned
-                return
-
-        self.LT.plan(shape, axis, dtype, options)
-        U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self.axis = axis
-        self.forward = Transform(self.forward, None, U, V, V)
-        self.backward = Transform(self.backward, None, V, V, U)
-        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
+#@inheritdocstrings
+#class SecondNeumannBasis(LegendreBase): # pragma: no cover
+#    """Shen basis for homogeneous second order Neumann boundary conditions
+#
+#    Parameters
+#    ----------
+#        N : int, optional
+#            Number of quadrature points
+#        quad : str, optional
+#               Type of quadrature
+#
+#               - LG - Legendre-Gauss
+#               - GL - Legendre-Gauss-Lobatto
+#        mean : number
+#               Mean value of solution
+#        domain : 2-tuple of floats, optional
+#                 The computational domain
+#    """
+#    def __init__(self, N=0, quad="LG", mean=0, domain=(-1., 1.)):
+#        LegendreBase.__init__(self, N, quad, domain=domain)
+#        self.mean = mean
+#        self.LT = Basis(N, quad)
+#        self._factor = np.zeros(0)
+#        self.plan(N, 0, np.float, {})
+#
+#    def _composite_basis(self, V, argument=0):
+#        assert self.N == V.shape[1]
+#        P = np.zeros(V.shape)
+#        k = np.arange(self.N).astype(np.float)[:-4]
+#        a_k = -(k+1)*(k+2)*(2*k+3)/((k+3)*(k+4)*(2*k+7))
+#        P[:, :-4] = V[:, :-4] + (a_k-1)*V[:, 2:-2] - a_k*V[:, 4:]
+#        P[:, -4] = V[:, 0]
+#        P[:, -3] = V[:, 1]
+#        return P
+#
+#    def set_factor_array(self, v):
+#        if not self._factor.shape == v.shape:
+#            k = self.wavenumbers().astype(np.float)
+#            self._factor = -(k+1)*(k+2)*(2*k+3)/((k+3)*(k+4)*(2*k+7))
+#
+#    #def evaluate_expansion_all(self, u, output_array):
+#        #w_hat = work[(u, 0)]
+#        #self.set_factor_array(u)
+#        #s0 = self.sl[slice(0, -4)]
+#        #s1 = self.sl[slice(2, -2)]
+#        #s2 = self.sl[slice(4, None)]
+#        #w_hat[s0] = u[s0]
+#        #w_hat[s1] += (self._factor-1)*u[s0]
+#        #w_hat[s2] -= self._factor*u[s0]
+#        #output_array = self.LT.backward(w_hat)
+#        #return output_array
+#
+#    def slice(self):
+#        return slice(0, self.N-2)
+#
+#    #def eval(self, x, input_array):
+#        #w_hat = work[(input_array, 0)]
+#        #self.set_factor_array(input_array)
+#        #f = leg.legval(x, input_array[:-2])
+#        #w_hat[2:] = self._factor*input_array[:-2]
+#        #f -= leg.legval(x, w_hat)
+#        #return f
+#
+#    def plan(self, shape, axis, dtype, options):
+#        if isinstance(axis, tuple):
+#            assert len(axis) == 1
+#            axis = axis[0]
+#
+#        if isinstance(self.forward, Transform):
+#            if self.forward.input_array.shape == shape and self.axis == axis:
+#                # Already planned
+#                return
+#
+#        self.LT.plan(shape, axis, dtype, options)
+#        U, V = self.LT.forward.input_array, self.LT.forward.output_array
+#        self.axis = axis
+#        self.forward = Transform(self.forward, None, U, V, V)
+#        self.backward = Transform(self.backward, None, V, V, U)
+#        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
+#        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+#        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 @inheritdocstrings
 class BCBasis(LegendreBase):
 
-    def __init__(self, N=0, quad="GC", bc=(0, 0), scaled=False,
+    def __init__(self, N=0, quad="LG", bc=(0, 0), scaled=False,
                  domain=(-1., 1.)):
         LegendreBase.__init__(self, N, quad, domain=domain)
         self._scaled = scaled
@@ -681,10 +746,13 @@ class BCBasis(LegendreBase):
         x = sympy.symbols('x')
         if i == 0:
             return 0.5*(1+x)
-        else:
+        elif i == 1:
             return 0.5*(1-x)
+        else:
+            raise AttributeError('Only two bases, i < 2')
 
     def evaluate_basis(self, x, i=0, output_array=None):
+        assert i < 2
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
@@ -692,4 +760,16 @@ class BCBasis(LegendreBase):
             output_array[:] = 0.5*(1+x)
         elif i == 1:
             output_array[:] = 0.5*(1-x)
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        if i == 0 and k == 1:
+            output_array[:] = 0.5
+        elif i == 1 and k == 1:
+            output_array[:] = -0.5
+        else:
+            output_array[:] = 0
         return output_array

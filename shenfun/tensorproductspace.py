@@ -8,6 +8,7 @@ import sympy
 import numpy as np
 from shenfun.fourier.bases import R2CBasis, C2CBasis
 from shenfun import chebyshev, legendre
+from shenfun.utilities import apply_mask
 from shenfun.forms.arguments import Function, Array
 from shenfun.optimization.cython import evaluate
 from mpi4py_fft.mpifft import Transform, PFFT
@@ -520,8 +521,7 @@ class TensorProductSpace(PFFT):
         """
         if mask is None:
             mask = self.get_mask_nyquist()
-        if mask is not None:
-            u_hat *= mask
+        u_hat = apply_mask(u_hat, mask)
         return u_hat
 
     def get_mask_nyquist(self):

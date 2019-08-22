@@ -14,10 +14,14 @@ def optimizer(func):
     """Decorator used to wrap calls to optimized versions of functions."""
 
     mod = os.environ.get('SHENFUN_OPTIMIZATION', 'cython')
+    if not mod.lower() in ('cython', 'numba'):
+        # Use python function
+        #print(func.__name__ + ' not optimized')
+        return func
     mod = importlib.import_module('shenfun.optimization.'+mod.lower())
     fun = getattr(mod, func.__name__, func)
-    if fun is func:
-        print(fun.__name__ + ' not optimized')
+    #if fun is func:
+    #    print(fun.__name__ + ' not optimized')
 
     @wraps(func)
     def wrapped_function(*args, **kwargs):
