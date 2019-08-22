@@ -61,4 +61,5 @@ def test_solve(quad):
     assert np.all(abs(ww-u_hat[:-2].repeat(N-2).reshape((N-2, N-2)).transpose()) < 1e-8)
 
 if __name__ == "__main__":
-    test_solve('GC')
+    #test_solve('GC')
+    test_PDMA('GC')

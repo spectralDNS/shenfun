@@ -13,7 +13,8 @@ from shenfun.optimization.cython import Cheb
 from shenfun.utilities import inheritdocstrings
 
 __all__ = ['ChebyshevBase', 'Basis', 'ShenDirichletBasis',
-           'ShenNeumannBasis', 'ShenBiharmonicBasis', 'BCBasis']
+           'ShenNeumannBasis', 'ShenBiharmonicBasis',
+           'SecondNeumannBasis', 'BCBasis']
 
 #pylint: disable=abstract-method, not-callable, method-hidden, no-self-use, cyclic-import
 
@@ -122,14 +123,16 @@ class ChebyshevBase(SpectralBase):
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
         if x is None:
             x = self.mesh(False, False)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
-        v = self.evaluate_basis(x, i, output_array)
-        N, M = self.shape(False), self.shape(True)
+        basis = np.zeros(self.shape(True))
+        basis[i] = 1
+        basis = n_cheb.Chebyshev(basis)
         if k > 0:
-            D = np.zeros((M, N))
-            D[:-k] = n_cheb.chebder(np.eye(M, N), k)
-            v = np.dot(v, D)
-        return v
+            basis = basis.deriv(k)
+        output_array[:] = basis(x)
+        return output_array
 
     def _composite_basis(self, V, argument=0):
         """Return composite basis, where ``V`` is primary Vandermonde matrix."""
@@ -151,7 +154,7 @@ class ChebyshevBase(SpectralBase):
         plan_fwd = self._xfftn_fwd
         plan_bck = self._xfftn_bck
 
-        if 'builders' in self._xfftn_fwd.func.__module__:
+        if 'builders' in self._xfftn_fwd.func.__module__: #pragma: no cover
             opts = dict(
                 avoid_copy=True,
                 overwrite_input=True,
@@ -226,7 +229,7 @@ class Basis(ChebyshevBase):
                  The computational domain
     """
 
-    def __init__(self, N=0, quad="GC", domain=(-1., 1.)):
+    def __init__(self, N=0, quad='GC', domain=(-1., 1.)):
         ChebyshevBase.__init__(self, N, quad, domain)
         if quad == 'GC':
             self._xfftn_fwd = functools.partial(fftw.dctn, type=2)
@@ -399,6 +402,20 @@ class ShenDirichletBasis(ChebyshevBase):
             output_array[:] = 0.5*(1-x)
         return output_array
 
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        if x is None:
+            x = self.mesh(False, False)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = np.atleast_1d(x)
+        basis = np.zeros(self.shape(True))
+        basis[np.array([i, i+2])] = (1, -1)
+        basis = n_cheb.Chebyshev(basis)
+        if k > 0:
+            basis = basis.deriv(k)
+        output_array[:] = basis(x)
+        return output_array
+
     def is_scaled(self):
         """Return True if scaled basis is used, otherwise False"""
         return False
@@ -548,6 +565,20 @@ class ShenNeumannBasis(ChebyshevBase):
         output_array[:] = np.cos(i*w) - (i*1./(i+2))**2*np.cos((i+2)*w)
         return output_array
 
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        if x is None:
+            x = self.mesh(False, False)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = np.atleast_1d(x)
+        basis = np.zeros(self.shape(True))
+        basis[np.array([i, i+2])] = (1, -(i*1./(i+2))**2)
+        basis = n_cheb.Chebyshev(basis)
+        if k > 0:
+            basis = basis.deriv(k)
+        output_array[:] = basis(x)
+        return output_array
+
     def set_factor_array(self, v):
         """Set intermediate factor arrays"""
         if not self._factor.shape == v.shape:
@@ -692,6 +723,20 @@ class ShenBiharmonicBasis(ChebyshevBase):
         output_array[:] = np.cos(i*w) - (2*(i+2.)/(i+3.))*np.cos((i+2)*w) + ((i+1.)/(i+3.))*np.cos((i+4)*w)
         return output_array
 
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        if x is None:
+            x = self.mesh(False, False)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = np.atleast_1d(x)
+        basis = np.zeros(self.shape(True))
+        basis[np.array([i, i+2, i+4])] = (1, -(2*(i+2.)/(i+3.)), ((i+1.)/(i+3.)))
+        basis = n_cheb.Chebyshev(basis)
+        if k > 0:
+            basis = basis.deriv(k)
+        output_array[:] = basis(x)
+        return output_array
+
     def set_factor_arrays(self, v):
         """Set intermediate factor arrays"""
         s = self.sl[self.slice()]
@@ -800,7 +845,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 @inheritdocstrings
-class SecondNeumannBasis(ChebyshevBase):
+class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
     """Shen basis for homogeneous second order Neumann boundary conditions
 
     Parameters
@@ -847,6 +892,20 @@ class SecondNeumannBasis(ChebyshevBase):
             output_array = np.zeros(x.shape)
         w = np.arccos(x)
         output_array[:] = np.cos(i*w) - (i*1./(i+2))**2*(i**2-1.)/((i+2)**2-1.)*np.cos((i+2)*w)
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        if x is None:
+            x = self.mesh(False, False)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = np.atleast_1d(x)
+        basis = np.zeros(self.shape(True))
+        basis[np.array([i, i+2])] = (1, -(i*1./(i+2))**2*(i**2-1.)/((i+2)**2-1.))
+        basis = n_cheb.Chebyshev(basis)
+        if k > 0:
+            basis = basis.deriv(k)
+        output_array[:] = basis(x)
         return output_array
 
     def set_factor_array(self, v):
@@ -1011,8 +1070,10 @@ class BCBasis(ChebyshevBase):
         x = sympy.symbols('x')
         if i == 0:
             return 0.5*(1+x)
-        else:
+        elif i == 1:
             return 0.5*(1-x)
+        else:
+            raise AttributeError('Only two bases, i < 2')
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -1022,4 +1083,16 @@ class BCBasis(ChebyshevBase):
             output_array[:] = 0.5*(1+x)
         elif i == 1:
             output_array[:] = 0.5*(1-x)
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        if i == 0 and k == 1:
+            output_array[:] = 0.5
+        elif i == 1 and k == 1:
+            output_array[:] = -0.5
+        else:
+            output_array[:] = 0
         return output_array

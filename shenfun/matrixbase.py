@@ -248,9 +248,11 @@ class SparseMatrix(dict):
             return False
         if not self.same_keys(a):
             return False
-        if (self.diags('csr') != a.diags('csr')).nnz > 0:
+        if (np.abs(self.diags('csr') - a.diags('csr')) >= 2e-8).nnz > 0:
             return False
-        return self.get_key() == a.get_key()
+        if self.scale != a.scale:
+            return False
+        return True
 
     def __neq__(self, a):
         return not self.__eq__(a)
@@ -328,13 +330,14 @@ class SparseMatrix(dict):
             for key, val in d.items():
                 if key in self:
                     # Check if symmetric and make copy if necessary
+                    self[key] = self[key]*self.scale
                     if -key in self:
                         if id(self[key]) == id(self[-key]):
                             self[-key] = deepcopy(self[key])
-                    self[key] += d.scale*val/self.scale
+                    self[key] += d.scale*val
                 else:
-                    self[key] = d.scale*val/self.scale
-
+                    self[key] = d.scale*val
+            self.scale = 1
         return self
 
     def __sub__(self, d):
@@ -366,14 +369,15 @@ class SparseMatrix(dict):
         else:
             for key, val in d.items():
                 if key in self:
+                    self[key] = self[key]*self.scale
                     # Check if symmetric and make copy if necessary
                     if -key in self:
                         if id(self[key]) == id(self[-key]):
                             self[-key] = deepcopy(self[key])
-                    self[key] -= d.scale*val/self.scale
+                    self[key] -= d.scale*val
                 else:
-                    self[key] = -d.scale*val/self.scale
-
+                    self[key] = -d.scale*val
+            self.scale = 1
         return self
 
     def __neg__(self):
@@ -643,6 +647,14 @@ class SpectralMatrix(SparseMatrix):
             f = SparseMatrix.__add__(self, y)
         return f
 
+    def __iadd__(self, d):
+        """self.__iadd__(d) <==> self += d"""
+        SparseMatrix.__iadd__(self, d)
+        if self == d:
+            return self
+        else: # downcast
+            return SparseMatrix(dict(self), self.shape)
+
     def __sub__(self, y):
         """Return copy of self.__sub__(y) <==> self-y"""
         assert isinstance(y, dict)
@@ -653,6 +665,15 @@ class SpectralMatrix(SparseMatrix):
         else:
             f = SparseMatrix.__sub__(self, y)
         return f
+
+    def __isub__(self, y):
+        """self.__isub__(d) <==> self -= y"""
+        SparseMatrix.__isub__(self, y)
+        if self == y:
+            return self
+        else: # downcast
+            return SparseMatrix(dict(self), self.shape)
+
 
 class Identity(SparseMatrix):
     """The identity matrix in :class:`.SparseMatrix` form
@@ -1162,7 +1183,7 @@ class TPMatrix(object):
             d = self.scale
             with np.errstate(divide='ignore'):
                 d = 1./self.scale
-            d = np.where(np.isinf(d), 0, d)
+            d = np.where(np.isfinite(d), d, 0)
 
             if u is not None:
                 u[:] = b * d
@@ -1172,7 +1193,9 @@ class TPMatrix(object):
         elif len(self.naxes) == 1:
             axis = self.naxes[0]
             u = self.pmat.solve(b, u=u, axis=axis)
-            u /= self.scale
+            with np.errstate(divide='ignore'):
+                u /= self.scale
+            u = np.where(np.isfinite(u), u, 0)
             return u
 
         elif len(self.naxes) == 2:

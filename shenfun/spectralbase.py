@@ -166,6 +166,8 @@ for computing the (weighted) scalar product.
 #pylint: disable=unused-argument, not-callable, no-self-use, protected-access, too-many-public-methods, missing-docstring
 
 import importlib
+import warnings
+import sympy as sp
 import numpy as np
 from mpi4py_fft import fftw
 from .utilities import CachedArrayDict
@@ -468,7 +470,16 @@ class SpectralBase(object):
                 output_array
 
         """
-        raise NotImplementedError
+        warnings.warn('Using slow sympy evaluate_basis_derivative')
+        if x is None:
+            x = self.mesh(False, False)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = np.atleast_1d(x)
+        X = sp.symbols('x')
+        basis = self.sympy_basis(i=i).diff(X, k)
+        output_array[:] = sp.lambdify(X, basis, 'numpy')(x)
+        return output_array
 
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         """Return k'th derivative of basis evaluated at ``x`` or all quadrature

@@ -1,4 +1,5 @@
 import functools
+import sympy as sp
 import numpy as np
 from numpy.polynomial import laguerre as lag
 from scipy.special import eval_laguerre
@@ -110,37 +111,6 @@ class LaguerreBase(SpectralBase):
         V *= np.exp(-x/2)[:, np.newaxis]
         return self._composite_basis(V, argument)
 
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        if x is None:
-            x = self.mesh(False, False)
-        x = np.atleast_1d(x)
-        v = eval_laguerre(i, x, out=output_array)
-        X = x[:, np.newaxis]
-        if k == 1:
-            D = np.zeros((self.N, self.N))
-            D[:-1, :] = lag.lagder(np.eye(self.N), 1)
-            V = np.dot(v, D)
-            V -= 0.5*v
-            V *= np.exp(-X/2)
-            v[:] = V
-
-        elif k == 2:
-            D = np.zeros((self.N, self.N))
-            D[:-2, :] = lag.lagder(np.eye(self.N), 2)
-            D[:-1, :] -= lag.lagder(np.eye(self.N), 1)
-            V = np.dot(v, D)
-            V += 0.25*v
-            V *= np.exp(-X/2)
-            v[:] = V
-
-        elif k == 0:
-            v *= np.exp(-X/2)
-
-        else:
-            raise NotImplementedError
-
-        return v
-
     def _composite_basis(self, V, argument=0):
         """Return composite basis, where ``V`` is primary Vandermonde matrix."""
         return V
@@ -203,6 +173,10 @@ class Basis(LaguerreBase):
         output_array[:] = lag.lagval(x, u)*np.exp(-x/2)
         return output_array
 
+    def sympy_basis(self, i=0):
+        x = sp.symbols('x')
+        return sp.laguerre(i, x)*sp.exp(-x/2)
+
     @property
     def is_orthogonal(self):
         return True
@@ -250,6 +224,10 @@ class ShenDirichletBasis(LaguerreBase):
 
     def slice(self):
         return slice(0, self.N-1)
+
+    def sympy_basis(self, i=0):
+        x = sp.symbols('x')
+        return (sp.laguerre(i, x)-sp.laguerre(i+1, x))*sp.exp(-x/2)
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)

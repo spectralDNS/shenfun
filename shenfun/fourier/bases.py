@@ -1,6 +1,7 @@
 """
 Module for defining bases in the Fourier family
 """
+import sympy as sp
 import numpy as np
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
@@ -103,6 +104,10 @@ class FourierBase(SpectralBase):
         if map_true_domain is True:
             points = self.map_true_domain(points)
         return points, np.array([2*np.pi/N])
+
+    def sympy_basis(self, i=0):
+        x = sp.symbols('x')
+        return sp.exp(1j*i*x)
 
     def evaluate_basis(self, x=None, i=0, output_array=None):
         if x is None:

@@ -49,7 +49,7 @@ def NonlinearRHS(self, U, U_hat, dU, **params):
     return dU
 
 if __name__ == '__main__':
-    for integrator in (RK4, ETDRK4):
+    for i, integrator in enumerate((ETD, RK4, ETDRK4)):
         # Initialization
         U[0] = np.sin(X[0])*np.cos(X[1])*np.cos(X[2])
         U[1] = -np.cos(X[0])*np.sin(X[1])*np.cos(X[2])
@@ -57,10 +57,9 @@ if __name__ == '__main__':
         U_hat = TV.forward(U, U_hat)
         # Solve
         integ = integrator(TV, L=LinearRHS, N=NonlinearRHS)
-        integ.setup(dt)
         U_hat = integ.solve(U, U_hat, dt, (0, end_time))
         # Check accuracy
         U = U_hat.backward(U)
         k = comm.reduce(0.5*np.sum(U*U)/np.prod(np.array(N)))
         if comm.Get_rank() == 0:
-            assert np.round(k - 0.124953117517, 7) == 0
+            assert np.round(k - 0.124953117517, (4, 7, 7)[i]) == 0

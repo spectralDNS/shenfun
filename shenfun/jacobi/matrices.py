@@ -220,7 +220,7 @@ class ABBmat(SpectralMatrix):
     and :math:`\psi_k` is the Jacobi Biharmonic basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, scale=1):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
@@ -232,38 +232,7 @@ class ABBmat(SpectralMatrix):
         d = {0: p0*2*(2*k+3)*(1+gk),
              2: p2*(-2*(2*k[:-2]+3))}
         d[-2] = d[2]
-        SpectralMatrix.__init__(self, d, test, trial)
-
-@inheritdocstrings
-class PBBmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product
-
-    .. math::
-
-        A_{kj} = (\psi_j, \psi''_k)_w
-
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-4 \text{ and } k = 0, 1, ..., N-4
-
-    and :math:`\psi_k` is the Jacobi Biharmonic basis function.
-
-    """
-    def __init__(self, test, trial):
-        assert isinstance(test[0], SB)
-        assert isinstance(trial[0], SB)
-        N = test[0].N
-        k = np.arange(N-4, dtype=np.float)
-        p0 = 16*(k+2)**2*(k+1)**2/(2*k+5)**2/(2*k+3)**2
-        p2 = 16*(k[:-2]+2)*(k[2:]+2)*(k[:-2]+1)*(k[2:]+1)/(2*k[:-2]+5)/(2*k[2:]+5)/(2*k[:-2]+3)/(2*k[2:]+3)
-
-        gk = (2*k+3)/(2*k+7)
-        d = {0: -p0*2*(2*k+3)*(1+gk),
-             2: p2*(2*(2*k[:-2]+3))}
-        d[-2] = d[2]
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale)
 
 
 @inheritdocstrings
@@ -283,13 +252,13 @@ class SBBmat(SpectralMatrix):
     and :math:`\psi_k` is the Jacobi Biharmonic basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, scale=1):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
         k = np.arange(N-4, dtype=np.float)
         d = {0: 32*(k+2)**2*(k+1)**2/(2*k+5)}
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale)
 
 @inheritdocstrings
 class OBBmat(SpectralMatrix):
@@ -353,6 +322,6 @@ mat = _JacMatDict({
     ((SB, 0), (SB, 4)): SBBmat,
     ((SB, 4), (SB, 0)): SBBmat,
     ((SB, 1), (SB, 1)): ABBmat,
-    ((SB, 0), (SB, 2)): PBBmat,
-    ((SB, 2), (SB, 0)): PBBmat,
+    ((SB, 0), (SB, 2)): functools.partial(ABBmat, scale=-1.),
+    ((SB, 2), (SB, 0)): functools.partial(ABBmat, scale=-1.),
 })

@@ -140,7 +140,7 @@ class Helmholtz(object):
 
         A, B = args[0], args[1]
         M = {d.get_key(): d for d in (A, B)}
-        self.A = A = M.get('ADDmat', M.get('GDDmat', M.get('ANNmat')))
+        self.A = A = M.get('ADDmat', M.get('ANNmat'))
         self.B = B = M.get('BDDmat', M.get('BNNmat'))
         if len(args) == 2:
             A_scale = self.A.scale
@@ -348,7 +348,7 @@ class Biharmonic(object):
         S, A, B = args[0], args[1], args[2]
         M = {d.get_key(): d for d in (S, A, B)}
         self.S = M['SBBmat']
-        self.A = M['PBBmat']
+        self.A = M['ABBmat']
         self.B = M['BBBmat']
 
         if len(args) == 3:
@@ -547,6 +547,7 @@ class Helmholtz_2dirichlet(object):
 
             B1_scale = np.zeros((ls[0].stop-ls[0].start, 1))
             B1_scale[:, 0] = self.BB.scale + 1./self.lmbda[ls[0]]
+            assert np.allclose(self.scale['AUB'], 1., 1e-8), 'Use inner(grad(v), grad(u)) or inner(v, -div(grad(u))) to get correct scaling for solver'
             A1_scale = np.ones((1, 1))
             # Create Helmholtz solver along axis=1
             Helmy = Helmholtz(self.A1, self.B1, A1_scale, B1_scale, local_shape=self.rhs_B.shape)

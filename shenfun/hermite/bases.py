@@ -1,4 +1,5 @@
 import functools
+import sympy as sp
 import numpy as np
 from numpy.polynomial import hermite
 from scipy.special import eval_hermite, factorial
@@ -76,6 +77,10 @@ class Basis(SpectralBase):
         V = hermite.hermvander(x, self.N-1)
         return V
 
+    def sympy_basis(self, i=0):
+        x = sp.symbols('x')
+        return sp.hermite(i, x)*sp.exp(-x**2/2)*self.factor(i)
+
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
@@ -126,31 +131,6 @@ class Basis(SpectralBase):
         V = self.vandermonde(x)
         V *= self.factor(np.arange(V.shape[1]))[np.newaxis, :]*np.exp(-x**2/2)[:, np.newaxis]
         return V
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        if x is None:
-            x = self.mesh(False, False)
-        x = np.atleast_1d(x)
-        v = eval_hermite(i, x, out=output_array)
-        if k == 1:
-            D = np.zeros((self.N, self.N))
-            D[:-1, :] = hermite.hermder(np.eye(self.N), 1)
-            V = np.dot(v, D)
-            V -= v*x[:, np.newaxis]
-            V *= np.exp(-x**2/2)[:, np.newaxis]*self.factor(i)
-            v[:] = V
-
-        elif k == 2:
-            W = (x[:, np.newaxis]**2 - 1 - 2*i)*V
-            v[:] = W*self.factor(i)*np.exp(-x**2/2)[:, np.newaxis]
-
-        elif k == 0:
-            v *= np.exp(-x**2/2)[:, np.newaxis]*self.factor(i)
-
-        else:
-            raise NotImplementedError
-
-        return v
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):

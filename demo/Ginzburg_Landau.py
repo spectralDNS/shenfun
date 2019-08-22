@@ -52,12 +52,10 @@ X = T.local_mesh(True)
 U = Array(T)
 Up = Array(Tp)
 U_hat = Function(T)
-mask = T.get_mask_nyquist()
 
 #initialize
 U[:] = ul(*X)
 U_hat = T.forward(U, U_hat)
-T.mask_nyquist(U_hat, mask)
 
 def LinearRHS(self, **par):
     L = inner(v, div(grad(u))) + inner(v, u)
@@ -68,7 +66,6 @@ def NonlinearRHS(self, u, u_hat, rhs, **par):
     rhs.fill(0)
     Up = Tp.backward(u_hat, Up)
     rhs = Tp.forward(-(1+1.5j)*Up*abs(Up)**2, rhs)
-    Tp.mask_nyquist(rhs, mask)
     return rhs
 
 plt.figure()
@@ -96,7 +93,7 @@ if __name__ == '__main__':
            'file': file0}
     t = 0.0
     dt = 0.01
-    end_time = 100.0
+    end_time = 100
     integrator = ETDRK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
     integrator.setup(dt)
     U_hat = integrator.solve(U, U_hat, dt, (0, end_time))

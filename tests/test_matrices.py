@@ -1,4 +1,5 @@
-from copy import copy
+from copy import copy, deepcopy
+import functools
 from itertools import product
 import numpy as np
 from scipy.sparse.linalg import spsolve
@@ -18,6 +19,9 @@ from shenfun.jacobi import matrices as jmatrices
 from shenfun.jacobi import bases as jbases
 from shenfun.chebyshev import la as cla
 from shenfun.legendre import la as lla
+from shenfun import div, grad, inner, TensorProductSpace, Basis, SparseMatrix, \
+    TrialFunction, TestFunction, Function
+from shenfun.spectralbase import inner_product
 
 cBasis = (cbases.Basis,
           cbases.ShenDirichletBasis,
@@ -26,6 +30,7 @@ cBasis = (cbases.Basis,
 
 lBasis = (lbases.Basis,
           lbases.ShenDirichletBasis,
+          functools.partial(lbases.ShenDirichletBasis, scaled=True),
           lbases.ShenBiharmonicBasis,
           lbases.ShenNeumannBasis)
 
@@ -105,7 +110,7 @@ def test_cmatvec(b0, b1, quad, format, dim, k):
     global c, c1, d, d1
     b0 = b0(N, quad=quad)
     b1 = b1(N, quad=quad)
-    mat = shenfun.spectralbase.inner_product((b0, 0), (b1, k))
+    mat = inner_product((b0, 0), (b1, k))
     c = mat.matvec(a, c, format='csr')
     c1 = mat.matvec(a, c1, format=format)
     assert np.allclose(c, c1)
@@ -137,7 +142,7 @@ def test_lmatvec(b0, b1, quad, format, dim, k0, k1):
     global c, c1, d, d1
     b0 = b0(N, quad=quad)
     b1 = b1(N, quad=quad)
-    mat = shenfun.spectralbase.inner_product((b0, k0), (b1, k1))
+    mat = inner_product((b0, k0), (b1, k1))
     c = mat.matvec(a, c, format='csr')
     c1 = mat.matvec(a, c1, format=format)
     assert np.allclose(c, c1)
@@ -170,7 +175,7 @@ def test_lagmatvec(b0, b1, quad, format, dim, k0, k1):
     global c, c1, d, d1
     b0 = b0(N, quad=quad)
     b1 = b1(N, quad=quad)
-    mat = shenfun.spectralbase.inner_product((b0, k0), (b1, k1))
+    mat = inner_product((b0, k0), (b1, k1))
     c = mat.matvec(a, c, format='csr')
     c1 = mat.matvec(a, c1, format=format)
     assert np.allclose(c, c1)
@@ -202,7 +207,7 @@ def test_hmatvec(b0, b1, quad, format, dim, k0, k1):
     global c, c1, d, d1
     b0 = b0(N, quad=quad)
     b1 = b1(N, quad=quad)
-    mat = shenfun.spectralbase.inner_product((b0, k0), (b1, k1))
+    mat = inner_product((b0, k0), (b1, k1))
     c = mat.matvec(a, c, format='csr')
     c1 = mat.matvec(a, c1, format=format)
     assert np.allclose(c, c1)
@@ -234,7 +239,7 @@ def test_jmatvec(b0, b1, quad, format, dim, k0, k1):
     global c, c1, d, d1
     b0 = b0(N, quad=quad)
     b1 = b1(N, quad=quad)
-    mat = shenfun.spectralbase.inner_product((b0, k0), (b1, k1))
+    mat = inner_product((b0, k0), (b1, k1))
     c = mat.matvec(a, c, format='csr')
     c1 = mat.matvec(a, c1, format=format)
     assert np.allclose(c, c1)
@@ -256,6 +261,13 @@ def test_jmatvec(b0, b1, quad, format, dim, k0, k1):
         cc[axis] = slice(None)
         assert np.allclose(c, d1[tuple(cc)])
 
+def test_eq():
+    m0 = SparseMatrix({0: 1, 2: 2}, (6, 6))
+    m1 = SparseMatrix({0: 1., 2: 2.}, (6, 6))
+    assert m0 == m1
+    assert m0 is not m1
+    m2 = SparseMatrix({0: 1., 2: 3.}, (6, 6))
+    assert m0 != m2
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_imul(key, mat, quad):
@@ -268,7 +280,7 @@ def test_imul(key, mat, quad):
     assert mat.scale == 2.0*mc
 
     mat.scale = mc
-    mat = shenfun.SparseMatrix(copy(dict(mat)), mat.shape)
+    mat = SparseMatrix(copy(dict(mat)), mat.shape)
     mat *= 2
     assert mat.scale == 2.0
 
@@ -281,23 +293,23 @@ def test_mul(key, mat, quad):
     mc = 2.*m
     assert mc.scale == 2.0*m.scale
 
-    mat = shenfun.SparseMatrix(copy(dict(m)), m.shape)
+    mat = SparseMatrix(copy(dict(m)), m.shape)
     mc = 2.*mat
     assert mc.scale == 2.0
 
 def test_mul2():
-    mat = shenfun.SparseMatrix({0: 1}, (3, 3))
+    mat = SparseMatrix({0: 1}, (3, 3))
     v = np.ones(3)
     c = mat * v
     assert np.allclose(c, 1)
-    mat = shenfun.SparseMatrix({-2:1, -1:1, 0: 1, 1:1, 2:1}, (3, 3))
+    mat = SparseMatrix({-2:1, -1:1, 0: 1, 1:1, 2:1}, (3, 3))
     c = mat * v
     assert np.allclose(c, 3)
-    SD = shenfun.Basis(8, "L", bc=(0, 0), scaled=True)
-    u = shenfun.TrialFunction(SD)
-    v = shenfun.TestFunction(SD)
-    mat = shenfun.inner(shenfun.grad(u), shenfun.grad(v))
-    z = shenfun.Function(SD, val=1)
+    SD = Basis(8, "L", bc=(0, 0), scaled=True)
+    u = TrialFunction(SD)
+    v = TestFunction(SD)
+    mat = inner(grad(u), grad(v))
+    z = Function(SD, val=1)
     c = mat * z
     assert np.allclose(c[:6], 1)
 
@@ -310,7 +322,7 @@ def test_rmul(key, mat, quad):
     mc = m*2.
     assert mc.scale == 2.0*m.scale
 
-    mat = shenfun.SparseMatrix(copy(dict(m)), m.shape)
+    mat = SparseMatrix(copy(dict(m)), m.shape)
     mc = mat*2.
     assert mc.scale == 2.0
 
@@ -324,7 +336,7 @@ def test_div(key, mat, quad):
     mc = m/2.
     assert mc.scale == 0.5*m.scale
 
-    mat = shenfun.SparseMatrix(copy(dict(m)), m.shape)
+    mat = SparseMatrix(copy(dict(m)), m.shape)
     mc = mat/2.
     assert mc.scale == 0.5
 
@@ -332,10 +344,10 @@ def test_div(key, mat, quad):
                          list(product(lBasis, lquads))+list(product(lagBasis, lagquads)))
 def test_div2(basis, quad):
     B = basis(8, quad=quad)
-    u = shenfun.TrialFunction(B)
-    v = shenfun.TestFunction(B)
-    m = shenfun.inner(u, v)
-    z = shenfun.Function(B, val=1)
+    u = TrialFunction(B)
+    v = TestFunction(B)
+    m = inner(u, v)
+    z = Function(B, val=1)
     c = m / z
     m2 = m.diags('csr')
     c2 = spsolve(m2, z[B.slice()])
@@ -350,7 +362,7 @@ def test_add(key, mat, quad):
     mc = m + m
     assert mc.scale == 2.0*m.scale
 
-    mat = shenfun.SparseMatrix(copy(dict(m)), m.shape, m.scale)
+    mat = SparseMatrix(copy(dict(m)), m.shape, m.scale)
     mc = m + mat
     for key, val in mc.items():
         assert np.allclose(val*mc.scale, m[key]*2*m.scale)
@@ -365,8 +377,14 @@ def test_iadd(key, mat, quad):
     m += mc
     assert m.scale == 2.0*mc.scale
 
-    m1 = shenfun.SparseMatrix(copy(dict(m)), m.shape)
-    m2 = shenfun.SparseMatrix(copy(dict(m)), m.shape)
+    m1 = SparseMatrix(copy(dict(mc)), mc.shape)
+    m += m1
+    assert  m.scale == 1
+    assert m.__class__.__name__ == 'SparseMatrix' # downcast
+    m -= 2*mc
+    assert m == m1
+
+    m2 = SparseMatrix(copy(dict(m)), m.shape)
     m1 += m2
     assert m1.scale == 2.0
 
@@ -380,8 +398,8 @@ def test_isub(key, mat, quad):
     m -= mc
     assert m.scale == 0.0
 
-    m1 = shenfun.SparseMatrix(copy(dict(m)), m.shape)
-    m2 = shenfun.SparseMatrix(copy(dict(m)), m.shape)
+    m1 = SparseMatrix(copy(dict(m)), m.shape)
+    m2 = SparseMatrix(copy(dict(m)), m.shape)
     m1 -= m2
     assert m1.scale == 0.0
 
@@ -394,8 +412,8 @@ def test_sub(key, mat, quad):
     mc = m - m
     assert mc.scale == 0.0
 
-    m1 = shenfun.SparseMatrix(copy(dict(m)), m.shape)
-    m2 = shenfun.SparseMatrix(copy(dict(m)), m.shape)
+    m1 = SparseMatrix(copy(dict(m)), m.shape)
+    m2 = SparseMatrix(copy(dict(m)), m.shape)
 
     mc = m1 - m2
     assert mc.scale == 0.0
@@ -410,38 +428,38 @@ def test_helmholtz3D(family, axis):
     if family == 'chebyshev':
         la = cla
     N = (8, 9, 10)
-    SD = shenfun.Basis(N[allaxes3D[axis][0]], family=family, bc=(0, 0))
-    K1 = shenfun.Basis(N[allaxes3D[axis][1]], family='F', dtype='D')
-    K2 = shenfun.Basis(N[allaxes3D[axis][2]], family='F', dtype='d')
+    SD = Basis(N[allaxes3D[axis][0]], family=family, bc=(0, 0))
+    K1 = Basis(N[allaxes3D[axis][1]], family='F', dtype='D')
+    K2 = Basis(N[allaxes3D[axis][2]], family='F', dtype='d')
     subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, [0, 1, 1])
     bases = [0]*3
     bases[allaxes3D[axis][0]] = SD
     bases[allaxes3D[axis][1]] = K1
     bases[allaxes3D[axis][2]] = K2
-    T = shenfun.TensorProductSpace(subcomms, bases, axes=allaxes3D[axis])
-    u = shenfun.TrialFunction(T)
-    v = shenfun.TestFunction(T)
+    T = TensorProductSpace(subcomms, bases, axes=allaxes3D[axis])
+    u = TrialFunction(T)
+    v = TestFunction(T)
     if family == 'chebyshev':
-        mat = shenfun.inner(v, shenfun.div(shenfun.grad(u)))
+        mat = inner(v, div(grad(u)))
     else:
-        mat = shenfun.inner(shenfun.grad(v), shenfun.grad(u))
+        mat = inner(grad(v), grad(u))
 
     H = la.Helmholtz(*mat)
-    u = shenfun.Function(T)
+    u = Function(T)
     s = SD.sl[SD.slice()]
     u[s] = np.random.random(u[s].shape) + 1j*np.random.random(u[s].shape)
-    f = shenfun.Function(T)
+    f = Function(T)
     f = H.matvec(u, f)
 
-    g0 = shenfun.Function(T)
-    g1 = shenfun.Function(T)
+    g0 = Function(T)
+    g1 = Function(T)
     M = {d.get_key(): d for d in mat}
     g0 = M['ADDmat'].matvec(u, g0)
     g1 = M['BDDmat'].matvec(u, g1)
 
     assert np.linalg.norm(f-(g0+g1)) < 1e-12, np.linalg.norm(f-(g0+g1))
 
-    uc = shenfun.Function(T)
+    uc = Function(T)
     uc = H(uc, f)
     assert np.linalg.norm(uc-u) < 1e-12
 
@@ -452,35 +470,35 @@ def test_helmholtz2D(family, axis):
     if family == 'chebyshev':
         la = cla
     N = (8, 9)
-    SD = shenfun.Basis(N[axis], family=family, bc=(0, 0))
-    K1 = shenfun.Basis(N[(axis+1)%2], family='F', dtype='d')
+    SD = Basis(N[axis], family=family, bc=(0, 0))
+    K1 = Basis(N[(axis+1)%2], family='F', dtype='d')
     subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, allaxes2D[axis])
     bases = [K1]
     bases.insert(axis, SD)
-    T = shenfun.TensorProductSpace(subcomms, bases, axes=allaxes2D[axis])
-    u = shenfun.TrialFunction(T)
-    v = shenfun.TestFunction(T)
+    T = TensorProductSpace(subcomms, bases, axes=allaxes2D[axis])
+    u = TrialFunction(T)
+    v = TestFunction(T)
     if family == 'chebyshev':
-        mat = shenfun.inner(v, shenfun.div(shenfun.grad(u)))
+        mat = inner(v, div(grad(u)))
     else:
-        mat = shenfun.inner(shenfun.grad(v), shenfun.grad(u))
+        mat = inner(grad(v), grad(u))
 
     H = la.Helmholtz(*mat)
-    u = shenfun.Function(T)
+    u = Function(T)
     s = SD.sl[SD.slice()]
     u[s] = np.random.random(u[s].shape) + 1j*np.random.random(u[s].shape)
-    f = shenfun.Function(T)
+    f = Function(T)
     f = H.matvec(u, f)
 
-    g0 = shenfun.Function(T)
-    g1 = shenfun.Function(T)
+    g0 = Function(T)
+    g1 = Function(T)
     M = {d.get_key(): d for d in mat}
     g0 = M['ADDmat'].matvec(u, g0)
     g1 = M['BDDmat'].matvec(u, g1)
 
     assert np.linalg.norm(f-(g0+g1)) < 1e-12, np.linalg.norm(f-(g0+g1))
 
-    uc = shenfun.Function(T)
+    uc = Function(T)
     uc = H(uc, f)
     assert np.linalg.norm(uc-u) < 1e-12
 
@@ -491,35 +509,34 @@ def test_biharmonic3D(family, axis):
     if family == 'chebyshev':
         la = cla
     N = (16, 16, 16)
-    SD = shenfun.Basis(N[allaxes3D[axis][0]], family=family, bc='Biharmonic')
-    K1 = shenfun.Basis(N[allaxes3D[axis][1]], family='F', dtype='D')
-    K2 = shenfun.Basis(N[allaxes3D[axis][2]], family='F', dtype='d')
+    SD = Basis(N[allaxes3D[axis][0]], family=family, bc='Biharmonic')
+    K1 = Basis(N[allaxes3D[axis][1]], family='F', dtype='D')
+    K2 = Basis(N[allaxes3D[axis][2]], family='F', dtype='d')
     subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, [0, 1, 1])
     bases = [0]*3
     bases[allaxes3D[axis][0]] = SD
     bases[allaxes3D[axis][1]] = K1
     bases[allaxes3D[axis][2]] = K2
-    T = shenfun.TensorProductSpace(subcomms, bases, axes=allaxes3D[axis])
-    u = shenfun.TrialFunction(T)
-    v = shenfun.TestFunction(T)
+    T = TensorProductSpace(subcomms, bases, axes=allaxes3D[axis])
+    u = TrialFunction(T)
+    v = TestFunction(T)
     if family == 'chebyshev':
-        mat = shenfun.inner(v, shenfun.div(shenfun.grad(shenfun.div(shenfun.grad(u)))))
+        mat = inner(v, div(grad(div(grad(u)))))
     else:
-        mat = shenfun.inner(shenfun.div(shenfun.grad(v)), shenfun.div(shenfun.grad(u)))
+        mat = inner(div(grad(v)), div(grad(u)))
 
     H = la.Biharmonic(*mat)
-    u = shenfun.Function(T)
+    u = Function(T)
     u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
-    f = shenfun.Function(T)
+    f = Function(T)
     f = H.matvec(u, f)
 
-    g0 = shenfun.Function(T)
-    g1 = shenfun.Function(T)
-    g2 = shenfun.Function(T)
+    g0 = Function(T)
+    g1 = Function(T)
+    g2 = Function(T)
     M = {d.get_key(): d for d in mat}
-    amat = 'ABBmat' if family == 'chebyshev' else 'PBBmat'
     g0 = M['SBBmat'].matvec(u, g0)
-    g1 = M[amat].matvec(u, g1)
+    g1 = M['ABBmat'].matvec(u, g1)
     g2 = M['BBBmat'].matvec(u, g2)
 
     assert np.linalg.norm(f-(g0+g1+g2)) < 1e-8, np.linalg.norm(f-(g0+g1+g2))
@@ -531,32 +548,31 @@ def test_biharmonic2D(family, axis):
     if family == 'chebyshev':
         la = cla
     N = (16, 16)
-    SD = shenfun.Basis(N[axis], family=family, bc='Biharmonic')
-    K1 = shenfun.Basis(N[(axis+1)%2], family='F', dtype='d')
+    SD = Basis(N[axis], family=family, bc='Biharmonic')
+    K1 = Basis(N[(axis+1)%2], family='F', dtype='d')
     subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, allaxes2D[axis])
     bases = [K1]
     bases.insert(axis, SD)
-    T = shenfun.TensorProductSpace(subcomms, bases, axes=allaxes2D[axis])
-    u = shenfun.TrialFunction(T)
-    v = shenfun.TestFunction(T)
+    T = TensorProductSpace(subcomms, bases, axes=allaxes2D[axis])
+    u = TrialFunction(T)
+    v = TestFunction(T)
     if family == 'chebyshev':
-        mat = shenfun.inner(v, shenfun.div(shenfun.grad(shenfun.div(shenfun.grad(u)))))
+        mat = inner(v, div(grad(div(grad(u)))))
     else:
-        mat = shenfun.inner(shenfun.div(shenfun.grad(v)), shenfun.div(shenfun.grad(u)))
+        mat = inner(div(grad(v)), div(grad(u)))
 
     H = la.Biharmonic(*mat)
-    u = shenfun.Function(T)
+    u = Function(T)
     u[:] = np.random.random(u.shape) + 1j*np.random.random(u.shape)
-    f = shenfun.Function(T)
+    f = Function(T)
     f = H.matvec(u, f)
 
-    g0 = shenfun.Function(T)
-    g1 = shenfun.Function(T)
-    g2 = shenfun.Function(T)
+    g0 = Function(T)
+    g1 = Function(T)
+    g2 = Function(T)
     M = {d.get_key(): d for d in mat}
-    amat = 'ABBmat' if family == 'chebyshev' else 'PBBmat'
     g0 = M['SBBmat'].matvec(u, g0)
-    g1 = M[amat].matvec(u, g1)
+    g1 = M['ABBmat'].matvec(u, g1)
     g2 = M['BBBmat'].matvec(u, g2)
 
     assert np.linalg.norm(f-(g0+g1+g2)) < 1e-8
@@ -567,11 +583,11 @@ if __name__ == '__main__':
     #test_cmatvec(cBasis[3], cBasis[1], 'GC', 'cython', 3, 0)
     #test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
     #test_hmatvec(hBasis[0], hBasis[0], 'HG', 'self', 3, 1, 1)
-    #test_add(*mats_and_quads[0])
+    test_iadd(*mats_and_quads[15])
     #test_sub(*mats_and_quads[15])
     #test_mul2()
     #test_div2(cBasis[0], 'GC')
     #test_helmholtz3D('chebyshev', 0)
     #test_helmholtz3D('chebyshev', 0)
     #test_biharmonic3D('chebyshev', 0)
-    test_biharmonic2D('jacobi', 0)
+    #test_biharmonic2D('jacobi', 0)
