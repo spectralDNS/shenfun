@@ -3,7 +3,7 @@
 Some methods performed in Python may be slowing down solvers. In this optimization
 module we place optimized functions that are to be used instead of default
 Python methods. Some methods are implemented solely in Cython and only called
-from withing the regular Python modules.
+from within the regular Python modules.
 
 """
 import os
@@ -14,7 +14,7 @@ def optimizer(func):
     """Decorator used to wrap calls to optimized versions of functions."""
 
     mod = os.environ.get('SHENFUN_OPTIMIZATION', 'cython')
-    if not mod.lower() in ('cython', 'numba'):
+    if mod.lower() not in ('cython', 'numba'):
         # Use python function
         #print(func.__name__ + ' not optimized')
         return func

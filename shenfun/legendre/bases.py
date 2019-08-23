@@ -2,6 +2,7 @@
 Module for defining bases in the Legendre family
 """
 
+from __future__ import division
 import functools
 import sympy
 import numpy as np
