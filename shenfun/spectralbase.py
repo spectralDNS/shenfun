@@ -16,34 +16,34 @@ Chebyshev:
     ChebyshevBasis:
         basis functions: :math:`\phi_k = T_k`
 
-        basis: :math:`span(T_k, k=0,1,..., N)`
+        basis: :math:`span(T_k, k=0,1,..., N-1)`
 
     ShenDirichletBasis:
         basis functions:
             :math:`\phi_k = T_k-T_{k+2}`
 
-            :math:`\phi_{N-1} = 0.5(T_0+T_1)` for Poisson's equation
+            :math:`\phi_{N-2} = 0.5(T_0+T_1)` for Poisson's equation
 
-            :math:`\phi_{N} = 0.5(T_0-T_1)` for Poisson's equation
+            :math:`\phi_{N-1} = 0.5(T_0-T_1)` for Poisson's equation
 
-        basis: :math:`span(\phi_k, k=0,1,...,N)`
+        basis: :math:`span(\phi_k, k=0,1,...,N-1)`
 
-        where :math:`u(1)=a, u(-1)=b`, such that :math:`\hat{u}_{N-1}=a,
-        \hat{u}_{N}=b`.
+        where :math:`u(1)=a, u(-1)=b`, such that :math:`\hat{u}_{N-2}=a,
+        \hat{u}_{N-1}=b`.
 
-        Note that there are only N-1 unknown coefficients, :math:`\hat{u}_k`,
-        since :math:`\hat{u}_{N-1}` and :math:`\hat{u}_{N}` are determined by
+        Note that there are only N-2 unknown coefficients, :math:`\hat{u}_k`,
+        since :math:`\hat{u}_{N-2}` and :math:`\hat{u}_{N-1}` are determined by
         boundary conditions. Inhomogeneous boundary conditions are possible for
-        the Poisson equation, because :math:`\phi_{N}` and :math:`\phi_{N-1}`
+        the Poisson equation, because :math:`\phi_{N-1}` and :math:`\phi_{N-2}`
         are in the kernel of the Poisson operator. For homogeneous boundary
-        conditions :math:`\phi_{N-1}` and :math:`\phi_{N}` are simply ignored.
+        conditions :math:`\phi_{N-2}` and :math:`\phi_{N-1}` are simply ignored.
 
     ShenNeumannBasis:
         basis function:
             :math:`\phi_k = T_k-\left(\frac{k}{k+2}\right)^2T_{k+2}`
 
         basis:
-            :math:`span(\phi_k, k=1,2,...,N-2)`
+            :math:`span(\phi_k, k=1,2,...,N-3)`
 
         Homogeneous Neumann boundary conditions, :math:`u'(\pm 1) = 0`, and
         zero weighted mean: :math:`\int_{-1}^{1}u(x)w(x)dx = 0`.
@@ -53,7 +53,7 @@ Chebyshev:
             :math:`\phi_k = T_k - \frac{2(k+2)}{k+3}T_{k+2} + \frac{k+1}{k+3}T_{k+4}`
 
         basis:
-            :math:`span(\phi_k, k=0,1,...,N-4)`
+            :math:`span(\phi_k, k=0,1,...,N-5)`
 
         Homogeneous Dirichlet and Neumann, :math:`u(\pm 1)=0` and
         :math:`u'(\pm 1)=0`.
@@ -64,35 +64,35 @@ Legendre:
             :math:`\phi_k = L_k`
 
         basis:
-            :math:`span(L_k, k=0,1,...N)`
+            :math:`span(L_k, k=0,1,...N-1)`
 
     ShenDirichletBasis:
         basis function:
             :math:`\phi_k = L_k-L_{k+2}`
 
-            :math:`\phi_{N-1} = 0.5(L_0+L_1)`, for Poisson's equation
+            :math:`\phi_{N-2} = 0.5(L_0+L_1)`, for Poisson's equation
 
-            :math:`\phi_{N} = 0.5(L_0-L_1)`, for Poisson's equation
+            :math:`\phi_{N-1} = 0.5(L_0-L_1)`, for Poisson's equation
 
         basis:
-            :math:`span(\phi_k, k=0,1,...,N)`
+            :math:`span(\phi_k, k=0,1,...,N-1)`
 
         where :math:`u(1)=a, u(-1)=b`, such that
-        :math:`\hat{u}_{N-1}=a, \hat{u}_{N}=b`
+        :math:`\hat{u}_{N-2}=a, \hat{u}_{N-1}=b`
 
-        Note that there are only N-1 unknown coefficients, :math:`\hat{u}_k`,
-        since :math:`\hat{u}_{N-1}` and :math:`\hat{u}_{N}` are determined by
+        Note that there are only N-2 unknown coefficients, :math:`\hat{u}_k`,
+        since :math:`\hat{u}_{N-2}` and :math:`\hat{u}_{N-1}` are determined by
         boundary conditions. Inhomogeneous boundary conditions are possible for
-        the Poisson equation, because :math:`\phi_{N}` and :math:`\phi_{N-1}`
+        the Poisson equation, because :math:`\phi_{N-1}` and :math:`\phi_{N-2}`
         are in the kernel of the Poisson operator. For homogeneous boundary
-        conditions :math:`\phi_{N-1}` and :math:`\phi_{N}` are simply ignored.
+        conditions :math:`\phi_{N-2}` and :math:`\phi_{N-1}` are simply ignored.
 
     ShenNeumannBasis:
         basis function:
             :math:`\phi_k = L_k-\frac{k(k+1)}{(k+2)(k+3)}L_{k+2}`
 
         basis:
-            :math:`span(\phi_k, k=1,2,...,N-2)`
+            :math:`span(\phi_k, k=1,2,...,N-3)`
 
         Homogeneous Neumann boundary conditions, :math:`u'(\pm 1) = 0`, and
         zero mean: :math:`\int_{-1}^{1}u(x)dx = 0`.
@@ -102,7 +102,7 @@ Legendre:
             :math:`\phi_k = L_k - \frac{2(2k+5)}{2k+7}L_{k+2} + \frac{2k+3}{2k+7}L_{k+4}`
 
         basis:
-            :math:`span(\phi_k, k=0,1,...,N-4)`
+            :math:`span(\phi_k, k=0,1,...,N-5)`
 
         Homogeneous Dirichlet and Neumann, :math:`u(\pm 1)=0` and
         :math:`u'(\pm 1)=0`.
@@ -113,7 +113,7 @@ Laguerre:
             :math:`\phi_k(x) = L_k(x) \cdot \exp(-x)`
 
         basis:
-            :math:`span(L_k, k=0,1,...N)`
+            :math:`span(L_k, k=0,1,...N-1)`
 
         where :math:`L_k` is the Laguerre polynomial of order k.
 
@@ -122,7 +122,7 @@ Laguerre:
             :math:`\phi_k = (L_k-L_{k+1})\cdot \exp(-x)`
 
         basis:
-            :math:`span(\phi_k, k=0,1,...,N-1)`
+            :math:`span(\phi_k, k=0,1,...,N-2)`
 
         Homogeneous Dirichlet for domain [0, inf).
 
@@ -132,34 +132,72 @@ Hermite:
             :math:`\phi_k(x) = H_k(x) \cdot \exp(-x^2/2)/(\pi^{0.25}\sqrt{2^k k!})`
 
         basis:
-            :math:`span(\phi_k, k=0,1,...N)`
+            :math:`span(\phi_k, k=0,1,...N-1)`
 
         where :math:`H_k` is the Hermite polynomial of order k.
+
+Jacobi:
+    Basis:
+        basis function:
+            :math:`\phi_k = J_k(\alpha, \beta)`
+
+        basis:
+            :math:`span(L_k, k=0,1,...N-1)`
+
+        where :math:`J_k(\alpha, \beta)` is the regular Jacobi polynomial and
+        :math:`\alpha > -1` and :math:`\beta > -1`.
+
+    ShenDirichletBasis:
+        basis function:
+            :math:`\phi_k = j_k(-1, -1)`
+
+        basis:
+            :math:`span(\phi_k, k=0,1,...,N-3)`
+
+        where :math:`j_k` is the generalized Jacobi polynomial
+
+    ShenBiharmonicBasis:
+        basis function:
+            :math:`\phi_k = j_k(-2, -2)`
+
+        basis:
+            :math:`span(\phi_k, k=0,1,...,N-5)`
+
+        Homogeneous Dirichlet and Neumann, :math:`u(\pm 1)=0` and
+        :math:`u'(\pm 1)=0`.
+
+    ShenOrder6Basis:
+        basis function:
+            :math:`\phi_k = j_k(-3, -3)`
+
+        basis:
+            :math:`span(\phi_k, k=0,1,...,N-7)`
+
+        Homogeneous :math:`u(\pm 1)=u'(\pm 1)=u''(\pm 1)=0`.
 
 Fourier:
     R2CBasis and C2CBasis:
         basis function:
-            :math:`\phi_k = c_k exp(ikx)`
+            :math:`\phi_k = exp(ikx)`
 
         basis:
-            :math:`span(\phi_k, k=-N/2, -N/2+1, ..., N/2)`
+            :math:`span(\phi_k, k=-N/2, -N/2+1, ..., N/2-1)`
 
-        If the basis is used as an interpolator (if the solution is to be
-        obtained in physical space) and N is even, then :math:`c_{-N/2}`
-        and :math:`c_{N/2} = 0.5` and :math:`c_k = 1` for
-        :math:`k=-N/2+1, ..., N/2-1`. :math:`i` is the imaginary unit.
-
-        If N is odd, then :math:`c_k = 1` for :math:`k=-N/2, ..., N/2`.
-
-        Note that by default a truncation form is used and in that case
-        :math:`c_k=1` for all :math:`k`.
+        Note that if N is even, then the Nyquist frequency (-N/2) requires
+        special attention for the R2CBasis. We should then have been using
+        a Fourier interpolator that symmetrizes by adding and extra
+        :math:`\phi_{N/2}` and by multiplying :math:`\phi_{N/2}` and
+        :math:`\phi_{-N/2}` with 0.5. This effectively sets the
+        Nyquist frequency (-N/2) to zero for odd derivatives. This is
+        not done automatically by shenfun. Instead we recommend using
+        the :func:`.SpectralBase.mask_nyquist` function that effectively sets the
+        Nyquist frequency to zero (if N is even).
 
     R2CBasis and C2CBasis are the same, but R2CBasis is used on real physical
     data and it takes advantage of Hermitian symmetry,
     :math:`\hat{u}_{-k} = conj(\hat{u}_k)`, for :math:`k = 1, ..., N/2`
 
-
-Each class has methods for moving fast between spectral and physical space, and
+Each class has methods for moving (fast) between spectral and physical space, and
 for computing the (weighted) scalar product.
 
 """
@@ -223,6 +261,24 @@ class SpectralBase(object):
                 Whether or not to map points to true domain
         """
         raise NotImplementedError
+
+    def mpmath_points_and_weights(self, N=None, map_true_domain=False, **kw):
+        """Return points and weights of quadrature using extended precision
+        mpmath if available
+
+        Parameters
+        ----------
+            N : int, optional
+                Number of quadrature points
+            map_true_domain : bool, optional
+                Whether or not to map points to true domain
+
+        Note
+        ----
+        If not implemented, or if mpmath/quadpy are not available, then simply
+        returns the regular numpy :func:`points_and_weights`.
+        """
+        return self.points_and_weights(N=N, map_true_domain=map_true_domain)
 
     def mesh(self, bcast=True, map_true_domain=True):
         """Return the computational mesh
@@ -628,16 +684,6 @@ class SpectralBase(object):
                 Expansion coefficients in orthogonal basis
         """
         raise NotImplementedError
-        #B = input_array.function_space().get_orthogonal()
-        #if output_array is None:
-        #    from .forms import Function
-        #    output_array = Function(B)
-        #if self.is_orthogonal:
-        #    output_array[:] = input_array
-        #else:
-        #    from .forms import project
-        #    output_array = project(input_array, B, output_array=output_array)
-        #return output_array
 
     def plan(self, shape, axis, dtype, options):
         """Plan transform
@@ -667,7 +713,7 @@ class SpectralBase(object):
         plan_fwd = self._xfftn_fwd
         plan_bck = self._xfftn_bck
 
-        if 'builders' in self._xfftn_fwd.__module__:
+        if 'builders' in self._xfftn_fwd.__module__: #pragma: no cover
 
             opts = dict(
                 avoid_copy=True,
@@ -1102,6 +1148,7 @@ def inner_product(test, trial):
             - :mod:`.fourier.bases`
             - :mod:`.laguerre.bases`
             - :mod:`.hermite.bases`
+            - :mod:`.jacobi.bases`
 
             The integer determines the number of times the basis is
             differentiated. The test represents the matrix row

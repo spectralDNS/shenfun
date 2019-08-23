@@ -102,6 +102,43 @@ Fourier basis:
         \phi_k &= exp(ikx) \\
         V &= span\{\phi_k\}_{k=-N/2}^{N/2-1}
 
+Jacobi basis:
+
+    Regular Jacobi polynomials
+
+    .. math::
+
+        \phi_k(x) &= J_k(x, \alpha, \beta) \\
+        V &= span\{\phi_k\}_{k=0}^{N-1}
+
+    where :math:`\alpha > -1` and :math:`\beta > -1`. :math:`J_k` is
+    the regular Jacobi polynomial
+
+    Homogeneous Dirichlet boundary conditions
+
+    .. math::
+
+        \phi_k &= j_k(x, -1, -1)
+        V &= span\{\phi_k\}_{k=0}^{N-3}
+
+    where :math:`j_k` is the generalized Jacobi polynomial
+
+    Homogeneous Dirichlet and Neumann boundary conditions
+
+    .. math::
+
+        \phi_k &= j_k(x, -2, -2)
+        V &= span\{\phi_k\}_{k=0}^{N-5}
+
+    Homogeneous Dirichlet and first and second order derivatives
+    (for 6th order equation)
+
+    .. math::
+
+        \phi_k &= j_k(x, -3, -3)
+        V &= span\{\phi_k\}_{k=0}^{N-7}
+
+
 """
 from __future__ import division
 from copy import deepcopy
@@ -487,6 +524,7 @@ class SpectralMatrix(SparseMatrix):
         - :mod:`.fourier.bases`
         - :mod:`.laguerre.bases`
         - :mod:`.hermite.bases`
+        - :mod:`.jacobi.bases`
 
         The int represents the number of times the trial function
         should be differentiated. Representing matrix column.
@@ -1363,6 +1401,7 @@ def check_sanity(A, test, trial):
         - :mod:`.fourier.bases`
         - :mod:`.laguerre.bases`
         - :mod:`.hermite.bases`
+        - :mod:`.jacobi.bases`
 
         The int represents the number of times the test function
         should be differentiated. Representing matrix row.
@@ -1376,7 +1415,7 @@ def check_sanity(A, test, trial):
         assert np.allclose(val*A.scale, Dsp[key])
 
 
-def get_dense_matrix(test, trial, mode='mpmath'):
+def get_dense_matrix(test, trial):
     """Return dense matrix automatically computed from basis
 
     Parameters
@@ -1389,6 +1428,7 @@ def get_dense_matrix(test, trial, mode='mpmath'):
         - :mod:`.fourier.bases`
         - :mod:`.laguerre.bases`
         - :mod:`.hermite.bases`
+        - :mod:`.jacobi.bases`
 
         The int represents the number of times the test function
         should be differentiated. Representing matrix row.
@@ -1396,11 +1436,9 @@ def get_dense_matrix(test, trial, mode='mpmath'):
         As test, but representing matrix column.
     """
     N = trial[0].N
-    x, w = trial[0].points_and_weights(N, mode=mode)
-    v = test[0].evaluate_basis_derivative_all(x=x,
-                                              k=test[1])
-    u = trial[0].evaluate_basis_derivative_all(x=x,
-                                               k=trial[1])
+    x, w = trial[0].mpmath_points_and_weights(N)
+    v = test[0].evaluate_basis_derivative_all(x=x, k=test[1])
+    u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])
     return np.dot(v.T*w[np.newaxis, :], np.conj(u))
 
 def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-12):
