@@ -42,7 +42,7 @@ try:
     from mpmath import mp
     mp.dps = 30
     has_quadpy = True
-except ImportError:
+except:
     has_quadpy = False
     mp = None
 
