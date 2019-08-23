@@ -3,13 +3,13 @@
 
 .. Document title:
 
-Demo - 1D Poisson equation
-%%%%%%%%%%%%%%%%%%%%%%%%%%
+Demo - 1D Poisson's equation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Jun 16, 2019
+:Date: Aug 23, 2019
 
-*Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the Poisson
+*Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Poisson's
 equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as
 shown in Figure :ref:`fig:ct0`, is demonstrated.
 The demo is implemented in
@@ -24,10 +24,10 @@ the numerical method is is described in more detail by J. Shen :cite:`shen1` and
 
 Model problem
 =============
-Poisson equation
-----------------
+Poisson's equation
+------------------
 
-The Poisson equation is given as
+Poisson's equation is given as
 
 .. math::
    :label: eq:poisson
@@ -78,8 +78,7 @@ it is easiest to use basis functions with homogeneous Dirichlet boundary conditi
 
 for :math:`k=0, 1, \ldots N-3`. This gives the basis
 :math:`V^N_0 = \text{span}\{v_k(x)\}_{k=0}^{N-3}`.
-We can then add two more linear basis functions (that belong to the kernel of
-the Poisson equation)
+We can then add two more linear basis functions (that belong to the kernel of Poisson's equation)
 
 .. math::
    :label: _auto3
@@ -105,7 +104,7 @@ of freedom, :math:`\hat{u}_{N-2}` and :math:`\hat{u}_{N-1}`, now are given as
    :label: eq:dirichleta
 
         
-        u(-1) = \sum_{k=0}^{N-1} \hat{u}_k v_k(-1) = \hat{u}_{N-2} = a,
+        u(-1) = \sum_{k=0}^{N-1} \hat{u}_k v_k(-1) = \hat{u}_{N-1} = a,
          
         
 
@@ -113,7 +112,7 @@ of freedom, :math:`\hat{u}_{N-2}` and :math:`\hat{u}_{N-1}`, now are given as
    :label: eq:dirichletb
 
           
-        u(+1) = \sum_{k=0}^{N-1} \hat{u}_k v_k(+1) = \hat{u}_{N-1} = b,
+        u(+1) = \sum_{k=0}^{N-1} \hat{u}_k v_k(+1) = \hat{u}_{N-2} = b,
         
         
 
@@ -242,7 +241,7 @@ Implementation
 Preamble
 --------
 
-We will solve the Poisson problem using the `shenfun <https://github.com/spectralDNS/shenfun>`__ Python module. The first thing needed
+We will solve Poisson's equation using the `shenfun <https://github.com/spectralDNS/shenfun>`__ Python module. The first thing needed
 is then to import some of this module's functionality
 plus some other helper modules, like `Numpy <https://numpy.org>`__ and `Sympy <https://sympy.org>`__:
 

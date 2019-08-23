@@ -1,11 +1,11 @@
-TITLE: Demo - 1D Poisson equation
+TITLE: Demo - 1D Poisson's equation
 AUTHOR: Mikael Mortensen {copyright|CC BY} Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
 DATE: today
 
 
 __Summary.__
 This is a demonstration of how the Python module "shenfun":
-"https://github.com/spectralDNS/shenfun" can be used to solve the Poisson
+"https://github.com/spectralDNS/shenfun" can be used to solve Poisson's
 equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as
 shown in Figure ref{fig:ct0}, is demonstrated.
 The demo is implemented in
@@ -44,9 +44,9 @@ def func(x):
 
 
 ======= Model problem =======
-===== Poisson equation =====
+===== Poisson's equation =====
 
-The Poisson equation is given as
+Poisson's equation is given as
 
 !bt
 \begin{align}
@@ -82,8 +82,7 @@ v_k(x) = \phi_k(x) - \phi_{k+2}(x),
 !et
 for $k=0, 1, \ldots N-3$. This gives the basis
 $V^N_0 = \text{span}\{v_k(x)\}_{k=0}^{N-3}$.
-We can then add two more linear basis functions (that belong to the kernel of
-the Poisson equation)
+We can then add two more linear basis functions (that belong to the kernel of Poisson's equation)
 !bt
 \begin{align}
 v_{N-2} &= \frac{1}{2}(\phi_0 + \phi_1), \\
@@ -95,9 +94,9 @@ With the two linear basis functions it is easy to see that the last two degrees
 of freedom, $\hat{u}_{N-2}$ and $\hat{u}_{N-1}$, now are given as
 !bt
 \begin{align}
-u(-1) &= \sum_{k=0}^{N-1} \hat{u}_k v_k(-1) = \hat{u}_{N-2} = a,
+u(-1) &= \sum_{k=0}^{N-1} \hat{u}_k v_k(-1) = \hat{u}_{N-1} = a,
 label{eq:dirichleta} \\
-u(+1) &= \sum_{k=0}^{N-1} \hat{u}_k v_k(+1) = \hat{u}_{N-1} = b,
+u(+1) &= \sum_{k=0}^{N-1} \hat{u}_k v_k(+1) = \hat{u}_{N-2} = b,
 label{eq:dirichletb}
 \end{align}
 !et
@@ -201,7 +200,7 @@ and compute error norms.
 
 ===== Preamble =====
 
-We will solve the Poisson problem using the "shenfun":
+We will solve Poisson's equation using the "shenfun":
 "https://github.com/spectralDNS/shenfun" Python module. The first thing needed
 is then to import some of this module's functionality
 plus some other helper modules, like "Numpy": "https://numpy.org" and "Sympy":
@@ -387,13 +386,13 @@ v = TestFunction(SD)
 # Get f on quad points
 fj = Array(SD, buffer=fl(X))
 
-# Compute right hand side of Poisson equation
+# Compute right hand side of Poisson's equation
 f_hat = Function(SD)
 f_hat = inner(v, fj, output_array=f_hat)
 if family == 'legendre':
     f_hat *= -1.
 
-# Get left hand side of Poisson equation
+# Get left hand side of Poisson's equation
 if family == 'chebyshev':
     A = inner(v, div(grad(u)))
 else:
