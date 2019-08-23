@@ -10,8 +10,7 @@ Use Shen's 6th order Jacobi basis.
 
 """
 import sys
-import os
-from sympy import symbols, sin, lambdify, exp
+from sympy import symbols, sin, exp
 import numpy as np
 from scipy.sparse.linalg import spsolve
 from shenfun import *
