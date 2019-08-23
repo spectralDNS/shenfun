@@ -49,4 +49,4 @@ def test_eval_basis_derivative(base):
 
 if __name__ == '__main__':
     #test_eval_basis(chebyshev.ShenDirichletBasis)
-    test_eval_basis(legendre.ShenBiharmonicBasis)
+    test_eval_basis(legendre.ShenNeumannBasis)

@@ -1,6 +1,7 @@
 """
 Module for defining bases in the Chebyshev family
 """
+from __future__ import division
 import functools
 import numpy as np
 from numpy.polynomial import chebyshev as n_cheb
