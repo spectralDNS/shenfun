@@ -2,10 +2,9 @@
 This module contains the inner function that computes the
 weighted inner product.
 """
-from functools import reduce
 import numpy as np
 from shenfun.spectralbase import inner_product
-from shenfun.matrixbase import TPMatrix, SparseMatrix, Identity
+from shenfun.matrixbase import TPMatrix
 from shenfun.tensorproductspace import MixedTensorProductSpace
 from .arguments import Expr, Function, BasisFunction, Array
 
