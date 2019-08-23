@@ -1,3 +1,34 @@
+"""
+Module for bases of generalized Jacobi type
+
+Note the environment variable
+
+    SHENFUN_JACOBI_MODE
+
+that can be used for extended precision in this module.
+
+SHENFUN_JACOBI_MODE = 'mpmath' will use the extended precision
+mpmath module to compute inner products.
+
+The precision can be set using, e.g.,
+
+    from mpmath import mp
+    mp.dps = 50
+
+where mp.dps is the number of significant digits.
+
+Note that extended precision is costly, but for some of the
+matrices that can be created with the Jacobi bases it is necessary.
+Also note the the higher precision is only used for assembling
+matrices comuted with :func:`evaluate_basis_derivative_all`.
+It has no effect for the matrices that are predifined in the
+matrices.py module. Also note that the final matrix will be
+in regular double precision. So the higher precision is only used
+for the intermediate assembly.
+
+"""
+
+import os
 import functools
 import numpy as np
 import sympy as sp
@@ -6,9 +37,24 @@ from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
 from shenfun.utilities import inheritdocstrings
 
+try:
+    import quadpy
+    from mpmath import mp
+    mp.dps = 30
+    has_quadpy = True
+except ImportError:
+    has_quadpy = False
+    mp = None
+
+mode = os.environ.get('SHENFUN_JACOBI_MODE', 'numpy')
+mode = mode if has_quadpy else 'numpy'
+
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
 # Note - Look into sympy eval not being as accurate as eval_jacobi
+
+__all__ = ['JacobiBase', 'Basis', 'ShenDirichletBasis', 'ShenBiharmonicBasis',
+           'ShenOrder6Basis', 'mode', 'has_quadpy', 'mp']
 
 @inheritdocstrings
 class JacobiBase(SpectralBase):
@@ -40,22 +86,21 @@ class JacobiBase(SpectralBase):
     def reference_domain(self):
         return (-1., 1.)
 
-    def points_and_weights(self, N=None, map_true_domain=False, mode='numpy'):
+    def points_and_weights(self, N=None, map_true_domain=False):
         if N is None:
             N = self.N
         assert self.quad == "JG"
         points, weights = roots_jacobi(N, self.alpha, self.beta)
-        if mode == 'mpmath':
-            try:
-                import quadpy
-                from mpmath import mp
-                mp.dps = 30
-                pw = quadpy.line_segment.gauss_jacobi(N, self.alpha, self.beta, 'mpmath')
-                points = pw.points
-                weights = pw.weights
-            except:
-                pass
+        if map_true_domain is True:
+            points = self.map_true_domain(points)
+        return points, weights
 
+    def mpmath_points_and_weights(self, N=None, map_true_domain=False):
+        if N is None:
+            N = self.N
+        pw = quadpy.line_segment.gauss_jacobi(N, self.alpha, self.beta, 'mpmath')
+        points = pw.points
+        weights = pw.weights
         if map_true_domain is True:
             points = self.map_true_domain(points)
         return points, weights
@@ -88,9 +133,10 @@ class JacobiBase(SpectralBase):
         return output_array
 
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
+        # Overload always using numpy mode here
         if x is None:
             x = self.mesh(False, False)
-            #x = self.points_and_weights(mode='mpmath')[0]
+            #x = self.points_and_weights(mode=mode)[0]
         if x.dtype == 'O':
             x = np.array(x, dtype=np.float)
         return self.derivative_jacobi(x, self.alpha, self.beta, k)
@@ -207,7 +253,7 @@ class ShenDirichletBasis(JacobiBase):
 
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         if x is None:
-            x = self.points_and_weights(mode='mpmath')[0]
+            x = self.mpmath_points_and_weights()[0]
         V = np.zeros((x.shape[0], self.N))
         for i in range(self.N-2):
             V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
@@ -215,17 +261,16 @@ class ShenDirichletBasis(JacobiBase):
 
     def sympy_basis(self, i=0):
         x = sp.symbols('x')
-        return (1-x**2)*sp.jacobi(i, -self.alpha, -self.beta, x)
+        return (1-x**2)*sp.jacobi(i, 1, 1, x)
         #return (1-x)**(-self.alpha)*(1+x)**(-self.beta)*sp.jacobi(i, -self.alpha, -self.beta, x)
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
         if x is None:
-            x = self.points_and_weights(mode='mpmath')[0]
+            x = self.mpmath_points_and_weights()[0]
         if output_array is None:
-            output_array = np.zeros_like(x)
+            output_array = np.zeros(x.shape)
         X = sp.symbols('x')
         f = self.sympy_basis(i=i)
-        mode = 'mpmath' if x.dtype == 'O' else 'numpy'
         output_array[:] = sp.lambdify(X, f.diff(X, k), mode)(x)
         return output_array
 
@@ -234,38 +279,40 @@ class ShenDirichletBasis(JacobiBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         #output_array = (1-x**2)*eval_jacobi(i, -self.alpha, -self.beta, x, out=output_array)
-        mode = 'mpmath' if x.dtype == 'O' else 'numpy'
+        mmode = 'mpmath' if x.dtype == 'O' else 'numpy'
         X = sp.symbols('x')
         f = self.sympy_basis(i=i)
         #f = (1-X**2)*sp.jacobi(i, 1, 1, X)
-        output_array[:] = sp.lambdify(X, f, mode)(x)
+        output_array[:] = sp.lambdify(X, f, mmode)(x)
         return output_array
 
     def evaluate_basis_all(self, x=None, argument=0):
         if x is None:
-            #x = self.mesh(False, False)
-            x = self.points_and_weights(mode='mpmath')[0]
+            x = self.mpmath_points_and_weights()[0]
         V = np.zeros((x.shape[0], self.N))
         #V[:, :-2] = self.jacobi(x, -self.alpha, -self.beta, self.N-2)*(1-x**2)[:, np.newaxis]
         for i in range(self.N-2):
             V[:, i] = self.evaluate_basis(x, i, output_array=V[:, i])
         return V
 
-    def points_and_weights(self, N=None, map_true_domain=False, mode='numpy'):
+    def points_and_weights(self, N=None, map_true_domain=False):
         if N is None:
             N = self.N
         assert self.quad == "JG"
         points, weights = roots_jacobi(N, self.alpha+1, self.beta+1)
-        if mode == 'mpmath':
-            try:
-                import quadpy
-                from mpmath import mp
-                mp.dps = 30
-                pw = quadpy.line_segment.gauss_jacobi(N, self.alpha+1, self.beta+1, 'mpmath')
-                points = pw.points
-                weights = pw.weights
-            except:
-                pass
+        if map_true_domain is True:
+            points = self.map_true_domain(points)
+        return points, weights
+
+    def mpmath_points_and_weights(self, N=None, map_true_domain=False):
+        if mode == 'numpy' or not has_quadpy:
+            return self.points_and_weights(N=N, map_true_domain=map_true_domain)
+        if N is None:
+            N = self.N
+        assert self.quad == "JG"
+        pw = quadpy.line_segment.gauss_jacobi(N, self.alpha+1, self.beta+1, mode)
+        points = pw.points
+        weights = pw.weights
         if map_true_domain is True:
             points = self.map_true_domain(points)
         return points, weights
@@ -327,7 +374,7 @@ class ShenBiharmonicBasis(JacobiBase):
 
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         if x is None:
-            x = self.points_and_weights(mode='mpmath')[0]
+            x = self.mpmath_points_and_weights()[0]
         V = np.zeros((x.shape[0], self.N))
         for i in range(self.N-4):
             V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
@@ -335,12 +382,11 @@ class ShenBiharmonicBasis(JacobiBase):
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
         if x is None:
-            x = self.points_and_weights(mode='mpmath')[0]
+            x = self.mpmath_points_and_weights()[0]
         if output_array is None:
-            output_array = np.zeros_like(x)
+            output_array = np.zeros(x.shape)
         X = sp.symbols('x')
         f = self.sympy_basis(i=i)
-        mode = 'mpmath' if x.dtype == 'O' else 'numpy'
         output_array[:] = sp.lambdify(X, f.diff(X, k), mode)(x)
         return output_array
 
@@ -348,7 +394,7 @@ class ShenBiharmonicBasis(JacobiBase):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        output_array = (1-x**2)**2*eval_jacobi(i, 2, 2, x, out=output_array)
+        output_array[:] = (1-x**2)**2*eval_jacobi(i, 2, 2, x, out=output_array)
         return output_array
 
     def evaluate_basis_all(self, x=None, argument=0):
@@ -362,21 +408,24 @@ class ShenBiharmonicBasis(JacobiBase):
         SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
         output_array[self.sl[slice(-4, None)]] = 0
 
-    def points_and_weights(self, N=None, map_true_domain=False, mode='numpy'):
+    def points_and_weights(self, N=None, map_true_domain=False):
         if N is None:
             N = self.N
         assert self.quad == "JG"
         points, weights = roots_jacobi(N, 0, 0)
-        if mode == 'mpmath':
-            try:
-                import quadpy
-                from mpmath import mp
-                mp.dps = 30
-                pw = quadpy.line_segment.gauss_jacobi(N, 0, 0, 'mpmath')
-                points = pw.points
-                weights = pw.weights
-            except:
-                pass
+        if map_true_domain is True:
+            points = self.map_true_domain(points)
+        return points, weights
+
+    def mpmath_points_and_weights(self, N=None, map_true_domain=False):
+        if mode == 'numpy' and not has_quadpy:
+            return self.points_and_weights(N=N, map_true_domain=map_true_domain)
+        if N is None:
+            N = self.N
+        assert self.quad == "JG"
+        pw = quadpy.line_segment.gauss_jacobi(N, 0, 0, 'mpmath')
+        points = pw.points
+        weights = pw.weights
         if map_true_domain is True:
             points = self.map_true_domain(points)
         return points, weights
@@ -437,18 +486,17 @@ class ShenOrder6Basis(JacobiBase):
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
         if x is None:
-            x = self.points_and_weights(mode='mpmath')[0]
+            x = self.mpmath_points_and_weights()[0]
         if output_array is None:
-            output_array = np.zeros_like(x)
+            output_array = np.zeros(x.shape)
         X = sp.symbols('x')
         f = self.sympy_basis(i=i)
-        mode = 'mpmath' if x.dtype == 'O' else 'numpy'
         output_array[:] = sp.lambdify(X, f.diff(X, k), mode)(x)
         return output_array
 
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         if x is None:
-            x = self.points_and_weights(mode='mpmath')[0]
+            x = self.mpmath_points_and_weights()[0]
         V = np.zeros((x.shape[0], self.N))
         for i in range(self.N-6):
             V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
@@ -458,7 +506,7 @@ class ShenOrder6Basis(JacobiBase):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        output_array = (1-x**2)**3*eval_jacobi(i, 3, 3, x, out=output_array)
+        output_array[:] = (1-x**2)**3*eval_jacobi(i, 3, 3, x, out=output_array)
         return output_array
 
     def evaluate_basis_all(self, x=None, argument=0):
@@ -468,22 +516,24 @@ class ShenOrder6Basis(JacobiBase):
         V[:, :-6] = self.jacobi(x, 3, 3, self.N-6)*((1-x**2)**3)[:, np.newaxis]
         return V
 
-    def points_and_weights(self, N=None, map_true_domain=False, mode='numpy'):
+    def points_and_weights(self, N=None, map_true_domain=False):
         if N is None:
             N = self.N
         assert self.quad == "JG"
         points, weights = roots_jacobi(N, 0, 0)
-        if mode == 'mpmath':
-            try:
-                import quadpy
-                from mpmath import mp
-                mp.dps = 30
-                pw = quadpy.line_segment.gauss_jacobi(N, 0, 0, 'mpmath')
-                points = pw.points
-                weights = pw.weights
-            except:
-                pass
+        if map_true_domain is True:
+            points = self.map_true_domain(points)
+        return points, weights
 
+    def mpmath_points_and_weights(self, N=None, map_true_domain=False):
+        if mode == 'numpy' or not has_quadpy:
+            return self.points_and_weights(N=N, map_true_domain=map_true_domain)
+        if N is None:
+            N = self.N
+        assert self.quad == "JG"
+        pw = quadpy.line_segment.gauss_jacobi(N, 0, 0, 'mpmath')
+        points = pw.points
+        weights = pw.weights
         if map_true_domain is True:
             points = self.map_true_domain(points)
         return points, weights

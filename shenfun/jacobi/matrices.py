@@ -281,7 +281,8 @@ class OBBmat(SpectralMatrix):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
-        k = np.arange(N-4, dtype=np.float)
+        k = np.arange(N-6, dtype=np.float)
+        #FIXME Find the correct diagonal
         d = {0: 32*(k+2)**2*(k+1)**2/(2*k+5)}
         SpectralMatrix.__init__(self, d, test, trial)
 

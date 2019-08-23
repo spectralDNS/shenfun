@@ -154,7 +154,6 @@ def apply_bmask_4D(u, mask):
     return u
 
 
-
 @nb.jit(nopython=False, fastmath=True, cache=True)
 def apply_bxmask(u_hat, mask):
     if mask is not None:
