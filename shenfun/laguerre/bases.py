@@ -64,6 +64,16 @@ class LaguerreBase(SpectralBase):
 
         return points, weights
 
+    def regular_points_and_weights(self, N=None, map_true_domain=False, **kw):
+        if N is None:
+            N = self.N
+        if self.quad == "LG":
+            points, weights = lag.laggauss(N)
+        else:
+            raise NotImplementedError
+
+        return points, weights
+
     def vandermonde(self, x):
         V = lag.lagvander(x, self.N-1)
         return V

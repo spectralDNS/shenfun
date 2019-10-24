@@ -1233,7 +1233,7 @@ class TPMatrix(object):
             u = self.pmat.solve(b, u=u, axis=axis)
             with np.errstate(divide='ignore'):
                 u /= self.scale
-            u = np.where(np.isfinite(u), u, 0)
+            u[:] = np.where(np.isfinite(u), u, 0)
             return u
 
         elif len(self.naxes) == 2:
@@ -1248,7 +1248,11 @@ class TPMatrix(object):
             c[:] = self.scale*v
         elif len(self.naxes) == 1:
             axis = self.naxes[0]
-            c = self.pmat.matvec(v, c, axis=axis)
+            rank = v.rank if hasattr(v, 'rank') else 0
+            if rank == 0:
+                c = self.pmat.matvec(v, c, axis=axis)
+            else:
+                c = self.pmat.matvec(v[self.global_index[1]], c, axis=axis)
             c *= self.scale
         elif len(self.naxes) == 2:
             # 2 non-periodic directions (may be non-aligned in second axis, hence transfers)

@@ -351,7 +351,7 @@ class R2CBasis(FourierBase):
     def shape(self, forward_output=True):
         if forward_output:
             return self.N//2+1
-        return self.N
+        return int(np.floor(self.padding_factor*self.N))
 
     def vandermonde_evaluate_expansion_all(self, input_array, output_array):
         assert abs(self.padding_factor-1) < 1e-8
@@ -567,6 +567,11 @@ class C2CBasis(FourierBase):
 
     def slice(self):
         return slice(0, self.N)
+
+    def shape(self, forward_output=True):
+        if forward_output:
+            return self.N
+        return int(np.floor(self.padding_factor*self.N))
 
     def _truncation_forward(self, padded_array, trunc_array):
         if self.padding_factor > 1.0+1e-8:

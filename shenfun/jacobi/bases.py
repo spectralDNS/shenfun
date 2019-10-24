@@ -95,6 +95,9 @@ class JacobiBase(SpectralBase):
             points = self.map_true_domain(points)
         return points, weights
 
+    def regular_points_and_weights(self, N=None, map_true_domain=False, **kw):
+        raise NotImplementedError
+
     def mpmath_points_and_weights(self, N=None, map_true_domain=False, **kw):
         if mode == 'numpy' or not has_quadpy:
             return self.points_and_weights(N=N, map_true_domain=map_true_domain, **kw)

@@ -249,10 +249,10 @@ is set to $[-2\pi, 2\pi]^3$ and not the more common $[0, 2\pi]^3$. We have
 
 !bt
 \begin{equation}
-\boldsymbol{u} =
-\mathcal{F}_k^{-1}\left(\mathcal{F}_j^{-1}\left(\mathcal{F}_i^{-1}\left(\hat{\boldsymbol{u}}\right)\right)\right) \label{eq:uxyz}
+\boldsymbol{u} = \mathcal{F}_k^{-1}\left(\mathcal{F}_j^{-1}\left(\mathcal{F}_i^{-1}\left(\hat{\boldsymbol{u}}\right)\right)\right) label{eq:uxyz}
 \end{equation}
 !et
+
 with $\boldsymbol{u} = \{u(x_i, y_j, z_k)\}_{(i,j,k)\in \boldsymbol{i} \times \boldsymbol{j} \times \boldsymbol{k}}$
 and where $\mathcal{F}_i^{-1}$ is the inverse Fourier transform along the direction
 of index $i$, for

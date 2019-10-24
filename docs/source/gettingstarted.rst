@@ -149,12 +149,22 @@ with shenfun, and at the same time introduce the :class:`.TestFunction`,
       [-4.35983562e-17  1.05557843e-16  1.57079633e+00 -3.06535096e-16
         3.08286933e-17  1.81311282e-16 -1.74393425e-16  2.59438230e-16]
 
-The :func:`.inner` function represents the inner product and it expects
+The :func:`.inner` function represents the (weighted) inner product and it expects
 one test function, and possibly one trial function. If, as here, it also
 contains a trial function, then a matrix is returned. If :func:`.inner`
 contains one test, but no trial function, then an array is returned.
+Finally, if :func:`.inner` contains no test nor trial function, but instead
+a number and an :class:`.Array`, like::
 
-Note that the matrix :math:`B` is stored using shenfun's
+    a = Array(T, val=1)
+    print(inner(1, a))
+      2.0
+
+then :func:`.inner` represents a non-weighted integral over the domain.
+Here it returns the length of the domain (2.0) since `a` is initialized
+to unity. This latter
+
+Note that the matrix :math:`B` assembled above is stored using shenfun's
 :class:`.SpectralMatrix` class, which is a subclass of Python's dictionary,
 where the keys are the diagonals and the values are the diagonal entries.
 The matrix :math:`B` is seen to have only one diagonal (the principal)
@@ -178,9 +188,9 @@ of both Numpy's ``ndarray`` *and* the :class:`.BasisFunction` class. The
 latter is used as a base class for arguments to bilinear and linear forms,
 and is as such a base class also for :class:`.TrialFunction` and
 :class:`.TestFunction`. An instance of the :class:`.Array` class cannot
-be used in forms, except from regular inner products of test function
-vs an :class:`.Array`. To illustrate, lets create some forms, where
-all except the last one is ok::
+be used in forms, except from regular inner products of numbers or
+test function vs an :class:`.Array`. To illustrate, lets create some forms,
+where all except the last one is ok::
 
     T = Basis(12, 'Legendre')
     u = TrialFunction(T)
@@ -190,6 +200,7 @@ all except the last one is ok::
     A = inner(v, u)   # Mass matrix
     c = inner(v, ua)  # ok, a scalar product
     d = inner(v, uf)  # ok, a scalar product (slower than above)
+    e = inner(1, ua)  # ok, non-weighted integral of ua over domain
     df = Dx(uf, 0, 1) # ok
     da = Dx(ua, 0, 1) # Not ok
 
