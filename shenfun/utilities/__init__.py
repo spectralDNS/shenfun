@@ -8,7 +8,7 @@ from scipy.fftpack import dct
 from shenfun.optimization import optimizer
 
 
-__all__ = ['inheritdocstrings', 'clenshaw_curtis1D', 'CachedArrayDict', 'outer', 'apply_mask']
+__all__ = ['inheritdocstrings', 'dx', 'clenshaw_curtis1D', 'CachedArrayDict', 'outer', 'apply_mask']
 
 def inheritdocstrings(cls):
     """Method used for inheriting docstrings from parent class
@@ -31,6 +31,38 @@ def inheritdocstrings(cls):
                     func.__doc__ = parfunc.__doc__
                     break
     return cls
+
+def dx(u):
+    """Compute integral of u over domain
+
+    .. math::
+
+        \int_{\Omega} u dx
+
+    Parameters
+    ----------
+
+        u : Array
+            The Array to integrate
+
+    """
+    T = u.function_space()
+    uc = u.copy()
+    dim = len(u.shape)
+    if dim == 1:
+        w = T.regular_points_and_weights()[1]
+        return np.sum(uc*w).item()
+
+    for ax in range(dim):
+        uc = uc.redistribute(axis=ax)
+        w = T.bases[ax].regular_points_and_weights()[1]
+        sl = [np.newaxis]*len(uc.shape)
+        sl[ax] = slice(None)
+        uu = np.sum(uc*w[sl], axis=ax)
+        sl = [slice(None)]*len(uc.shape)
+        sl[ax] = np.newaxis
+        uc[:] = uu[sl]
+    return uc.flat[0]
 
 def clenshaw_curtis1D(u, quad="GC"):  # pragma: no cover
     """Clenshaw-Curtis integration in 1D"""

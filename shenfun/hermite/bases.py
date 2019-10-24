@@ -69,6 +69,16 @@ class Basis(SpectralBase):
 
         return points, weights
 
+    def regular_points_and_weights(self, N=None, map_true_domain=False, **kw):
+        if N is None:
+            N = self.N
+        if self.quad == "HG":
+            points, weights = hermite.hermgauss(N)
+        else:
+            raise NotImplementedError
+
+        return points, weights
+
     @staticmethod
     def factor(i):
         return 1./(np.pi**(0.25)*np.sqrt(2.**i)*np.sqrt(factorial(i)))

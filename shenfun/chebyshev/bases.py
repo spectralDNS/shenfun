@@ -89,6 +89,29 @@ class ChebyshevBase(SpectralBase):
 
         return points, weights
 
+    def regular_points_and_weights(self, N=None, map_true_domain=False, **kw):
+        if N is None:
+            N = self.N
+        if self.quad == "GL":
+            import quadpy
+            p = quadpy.line_segment.clenshaw_curtis(N)
+            points = -p.points
+            weights = p.weights
+
+        elif self.quad == "GC":
+            points = n_cheb.chebgauss(N)[0]
+            d = fftw.aligned(N, fill=0)
+            k = 2*(1 + np.arange((N-1)//2))
+            d[::2] = (2./N)/np.hstack((1., 1.-k*k))
+            w = fftw.aligned_like(d)
+            dct = fftw.dctn(w, axes=(0,), type=3)
+            weights = dct(d, w)
+
+        if map_true_domain is True:
+            points = self.map_true_domain(points)
+
+        return points, weights
+
     def vandermonde(self, x):
         return n_cheb.chebvander(x, self.N-1)
 

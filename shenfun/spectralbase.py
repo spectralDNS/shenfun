@@ -251,7 +251,11 @@ class SpectralBase(object):
         self._tensorproductspace = None     # link if belonging to TensorProductSpace
 
     def points_and_weights(self, N=None, map_true_domain=False, **kw):
-        """Return points and weights of quadrature
+        r"""Return points and weights of quadrature for weighted integral
+
+        .. math::
+
+            \int_{\Omega} f(x) w(x) dx \approx \sum_{i} f(x_i) w_i
 
         Parameters
         ----------
@@ -263,8 +267,12 @@ class SpectralBase(object):
         raise NotImplementedError
 
     def mpmath_points_and_weights(self, N=None, map_true_domain=False, **kw):
-        """Return points and weights of quadrature using extended precision
+        r"""Return points and weights of quadrature using extended precision
         mpmath if available
+
+        .. math::
+
+            \int_{\Omega} f(x) w(x) dx \approx \sum_{i} f(x_i) w_i
 
         Parameters
         ----------
@@ -280,6 +288,22 @@ class SpectralBase(object):
         """
         return self.points_and_weights(N=N, map_true_domain=map_true_domain)
 
+    def regular_points_and_weights(self, N=None, map_true_domain=False, **kw):
+        r"""Return points and weights of quadrature for unweigthed integrals
+
+        .. math::
+
+            \int_{\Omega} f(x) dx \approx \sum_{i} f(x_i) w_i
+
+        Parameters
+        ----------
+            N : int, optional
+                Number of quadrature points
+            map_true_domain : bool, optional
+                Whether or not to map points to true domain
+        """
+        return self.points_and_weights(N=N, map_true_domain=map_true_domain)
+
     def mesh(self, bcast=True, map_true_domain=True):
         """Return the computational mesh
 
@@ -291,7 +315,8 @@ class SpectralBase(object):
             map_true_domain : bool, optional
                 Whether or not to map points to true domain
         """
-        X = self.points_and_weights(map_true_domain=map_true_domain)[0]
+        N = self.shape(False)
+        X = self.points_and_weights(N=N, map_true_domain=map_true_domain)[0]
         if bcast is True:
             X = self.broadcast_to_ndims(X)
         return X

@@ -5,13 +5,14 @@ import pytest
 import numpy as np
 from mpi4py import MPI
 from sympy import symbols, cos, sin, lambdify, exp
+from shenfun.fourier import bases as fbases
 from shenfun.chebyshev import bases as cbases
 from shenfun.legendre import bases as lbases
 from shenfun.laguerre import bases as lagbases
 from shenfun.hermite import bases as hbases
 from shenfun.jacobi import bases as jbases
 from shenfun import Function, project, Dx, Array, Basis, TensorProductSpace, \
-   VectorTensorProductSpace, MixedTensorProductSpace
+   VectorTensorProductSpace, MixedTensorProductSpace, inner
 
 comm = MPI.COMM_WORLD
 
@@ -566,12 +567,38 @@ def test_eval_fourier(typecode, dim):
     print('method=1', t_1)
     print('method=2', t_2)
 
+@pytest.mark.parametrize('f0,f1', product(*([('C', 'L', 'F')])*2))
+def test_inner(f0, f1):
+    if f0 == 'F' and f1 == 'F':
+        B0 = Basis(8, f0, dtype='D', domain=(-2*np.pi, 2*np.pi))
+    else:
+        B0 = Basis(8, f0)
+    c = Array(B0, val=1)
+    d = inner(1, c)
+    assert abs(d-(B0.domain[1]-B0.domain[0])) < 1e-7
+
+    B1 = Basis(8, f1)
+    T = TensorProductSpace(comm, (B0, B1))
+    a0 = Array(T, val=1)
+    c0 = inner(1, a0)
+    L = np.array([b.domain[1]-b.domain[0] for b in (B0, B1)])
+    assert abs(c0-np.prod(L)) < 1e-7
+
+    if not (f0 == 'F' or f1 == 'F'):
+        B2 = Basis(8, f1, domain=(-2, 2))
+        T = TensorProductSpace(comm, (B0, B1, B2))
+        a0 = Array(T, val=1)
+        c0 = inner(1, a0)
+        L = np.array([b.domain[1]-b.domain[0] for b in (B0, B1, B2)])
+        assert abs(c0-np.prod(L)) < 1e-7
+
 if __name__ == '__main__':
     #test_transform('f', 3)
     #test_transform('d', 2)
     #test_shentransform('d', 2, lagbases.ShenDirichletBasis, 'LG')
-    test_project('d', 2, lbases.Basis, 'LG')
+    #test_project('d', 2, lbases.Basis, 'LG')
     #test_project2('d', 1, lbases.ShenNeumannBasis, 'LG')
     #test_project_2dirichlet('GL')
     #test_eval_tensor('d', 2, cbases.ShenDirichletBasis, 'GC')
     #test_eval_fourier('d', 3)
+    test_inner('C', 'C')

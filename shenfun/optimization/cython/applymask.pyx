@@ -15,6 +15,7 @@ ctypedef np.int64_t int_t
 def apply_mask(u_hat, mask):
     if mask is not None:
         if u_hat.ndim == mask.ndim:
+            mask = np.broadcast_to(mask, u_hat.shape).copy()
             if mask.ndim == 1:
                 u_hat = apply_mask_1D(u_hat, mask)
             elif mask.ndim == 2:
@@ -26,6 +27,7 @@ def apply_mask(u_hat, mask):
             else:
                 u_hat *= mask
         elif u_hat.ndim == mask.ndim + 1:
+            mask = np.broadcast_to(mask, u_hat.shape[1:]).copy()
             if mask.ndim == 1:
                 u_hat = apply_bmask_1D(u_hat, mask)
             elif mask.ndim == 2:
@@ -37,6 +39,7 @@ def apply_mask(u_hat, mask):
             else:
                 u_hat *= mask
         elif u_hat.ndim == mask.ndim + 2:
+            mask = np.broadcast_to(mask, u_hat.shape[2:]).copy()
             if mask.ndim == 1:
                 u_hat = apply_b2mask_1D(u_hat, mask)
             elif mask.ndim == 2:

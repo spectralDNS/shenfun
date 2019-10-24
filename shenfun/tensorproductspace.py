@@ -503,8 +503,8 @@ class TensorProductSpace(PFFT):
             space, i.e., the input to a forward transform.
 
         """
-        if not forward_output:
-            return tuple([int(np.round(base.shape(forward_output)*base.padding_factor)) for base in self])
+        #if not forward_output:
+        #    return tuple([int(np.round(base.shape(forward_output)*base.padding_factor)) for base in self])
         return tuple([base.shape(forward_output) for base in self])
         #return self.shape(forward_output)
 
@@ -945,14 +945,7 @@ class BoundaryValues(object):
         self.axis = 0
         self.update_bcs(bc=bc)
 
-    def update_bcs(self, sympy_params=None, bc=None):
-        if sympy_params:
-            assert isinstance(sympy_params, dict)
-            for i in range(2):
-                if isinstance(self.bc[i], sympy.Expr):
-                    self.bcs[i] = self.bc[i].evalf(subs=sympy_params)
-            self.bcs_final[:] = self.bcs
-
+    def update_bcs(self, bc=None):
         if bc is not None:
             assert isinstance(bc, (list, tuple))
             assert len(bc) == 2
@@ -962,7 +955,6 @@ class BoundaryValues(object):
                     self.bcs[i] = bc[i]
                 else:
                     raise NotImplementedError
-
             self.bcs_final[:] = self.bcs
 
     def set_tensor_bcs(self, this_base, T):
@@ -1097,8 +1089,7 @@ class BoundaryValues(object):
         final : bool
             Whether the function is fully transformed or not. False is used in
             forward transforms, where the transform of this base may be in
-            between the transforms of other bases. True is not really used
-            anymore...
+            between the transforms of other bases.
         """
         if final is True:
             u[self.sl0] += scales[0]*(self.bcs_final[0] + self.bcs_final[1])
