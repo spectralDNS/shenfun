@@ -903,7 +903,7 @@ class MixedTensorProductSpace(object):
 
     def __getattr__(self, name):
         obj = object.__getattribute__(self, 'spaces')
-        assert not name in ('bases',)
+        assert name not in ('bases',)
         return getattr(obj[0], name)
 
     def __len__(self):
