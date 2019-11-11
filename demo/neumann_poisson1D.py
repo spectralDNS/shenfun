@@ -73,7 +73,7 @@ uj = ul(X)
 print(abs(uj-u).max())
 assert np.allclose(uj, u)
 
-if not plt is None and not 'pytest' in os.environ:
+if plt is not None and 'pytest' not in os.environ:
     plt.figure()
     plt.plot(X, u)
 

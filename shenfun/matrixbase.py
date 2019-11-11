@@ -476,7 +476,7 @@ class SparseMatrix(dict):
         # Roll relevant axis to first
         if axis > 0:
             u = np.moveaxis(u, axis, 0)
-            if not u is b:
+            if u is not b:
                 b = np.moveaxis(b, axis, 0)
 
         if b.ndim == 1:
@@ -1026,7 +1026,7 @@ class BlockMatrix(object):
                 s[0] = k
                 s[1] = tp[k].slice()
                 gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
-            if not Alu is None:
+            if Alu is not None:
                 go[:] = Alu.solve(gi)
             else:
                 go[:] = sp.linalg.spsolve(Ai, gi)

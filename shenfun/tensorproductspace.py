@@ -560,10 +560,10 @@ class TensorProductSpace(PFFT):
             Broadcast each 1D mesh to real shape of
             :class:`.TensorProductSpace`
         """
-        m = self.mesh()
+        mesh = self.mesh()
         lm = []
-        for axis, (n, s) in enumerate(zip(m, self.local_slice(False))):
-            ss = [slice(None)]*len(m)
+        for axis, (n, s) in enumerate(zip(mesh, self.local_slice(False))):
+            ss = [slice(None)]*len(mesh)
             ss[axis] = s
             lm.append(n[tuple(ss)])
         if broadcast is True:

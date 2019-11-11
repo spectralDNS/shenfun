@@ -73,7 +73,7 @@ class BJJmat(SpectralMatrix):
 
         if axis > 0:
             u = np.moveaxis(u, 0, axis)
-            if not u is b:
+            if u is not b:
                 b = np.moveaxis(b, axis, 0)
 
         return u

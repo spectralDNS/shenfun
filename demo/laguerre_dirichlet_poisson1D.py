@@ -59,7 +59,7 @@ point = np.array([0.1, 0.2])
 p = SD.eval(point, f_hat)
 assert np.allclose(p, ul(point), atol=1e-5)
 
-if not 'pytest' in os.environ:
+if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     xx = np.linspace(0, 16, 100)
     plt.plot(xx, ul(xx), 'r', xx, uh.eval(xx), 'bo', markersize=2)
