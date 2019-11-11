@@ -1,6 +1,5 @@
 from numbers import Number, Integral
 import numpy as np
-#from shenfun.optimization.numba.evaluate import expreval
 from shenfun.optimization.cython import evaluate
 from mpi4py_fft import DistArray
 
@@ -382,9 +381,8 @@ class Expr(object):
             Array must be of shape (D, N), for  N points in D dimensions
 
         """
-        from shenfun import TensorProductSpace, MixedTensorProductSpace
+        from shenfun import MixedTensorProductSpace
         from shenfun.fourier.bases import R2CBasis
-        from shenfun.spectralbase import SpectralBase
 
         V = self.function_space()
         basis = self.basis()
@@ -397,8 +395,6 @@ class Expr(object):
         work = np.zeros_like(output_array)
 
         assert V.dimensions == len(x)
-
-        shape = output_array.shape
 
         for vec, (base, ind) in enumerate(zip(self.terms(), self.indices())):
             for base_j, b0 in enumerate(base):

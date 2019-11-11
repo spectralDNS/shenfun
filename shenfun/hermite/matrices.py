@@ -40,7 +40,7 @@ class BHHmat(SpectralMatrix):
             return b
 
     def matvec(self, v, c, format='python', axis=0):
-        N, M = self.shape
+        M = self.shape[1]
         ss = [slice(None)]*len(v.shape)
         ss[self.axis] = slice(0, M)
         c[tuple(ss)] = v
