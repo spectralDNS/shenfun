@@ -530,7 +530,6 @@ class CLLmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='self', axis=0):
-        N = self.shape[0]
         c.fill(0)
         if format == 'self':
             if axis > 0:

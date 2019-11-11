@@ -198,8 +198,8 @@ class ETDRK4(IntegratorBase):
             L = L.scale
         L = np.atleast_1d(L)
         hL = L*dt
-        ehL = self.ehL = np.exp(hL)
-        ehL_h = self.ehL_h = np.exp(hL/2.)
+        self.ehL = np.exp(hL)
+        self.ehL_h = np.exp(hL/2.)
 
         M = 50
         psi = self.psi = np.zeros((4,) + hL.shape, dtype=np.float)

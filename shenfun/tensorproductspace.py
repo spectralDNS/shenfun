@@ -895,7 +895,7 @@ class MixedTensorProductSpace(object):
                 break
         return compatible
 
-    def get_refined(self, factor):
+    def get_refined(self, refinement_factor):
         raise NotImplementedError
 
     def __getitem__(self, i):
