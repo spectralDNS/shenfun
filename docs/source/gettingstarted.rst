@@ -162,7 +162,7 @@ a number and an :class:`.Array`, like::
 
 then :func:`.inner` represents a non-weighted integral over the domain.
 Here it returns the length of the domain (2.0) since `a` is initialized
-to unity. This latter
+to unity.
 
 Note that the matrix :math:`B` assembled above is stored using shenfun's
 :class:`.SpectralMatrix` class, which is a subclass of Python's dictionary,

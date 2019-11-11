@@ -2,13 +2,13 @@
 Module for implementing helper functions.
 """
 import types
-from collections import MutableMapping
+from collections.abc import MutableMapping
 import numpy as np
 from scipy.fftpack import dct
 from shenfun.optimization import optimizer
 
-
-__all__ = ['inheritdocstrings', 'dx', 'clenshaw_curtis1D', 'CachedArrayDict', 'outer', 'apply_mask']
+__all__ = ['inheritdocstrings', 'dx', 'clenshaw_curtis1D', 'CachedArrayDict',
+           'outer', 'apply_mask']
 
 def inheritdocstrings(cls):
     """Method used for inheriting docstrings from parent class
@@ -33,7 +33,7 @@ def inheritdocstrings(cls):
     return cls
 
 def dx(u):
-    """Compute integral of u over domain
+    r"""Compute integral of u over domain
 
     .. math::
 
@@ -58,10 +58,10 @@ def dx(u):
         w = T.bases[ax].regular_points_and_weights()[1]
         sl = [np.newaxis]*len(uc.shape)
         sl[ax] = slice(None)
-        uu = np.sum(uc*w[sl], axis=ax)
+        uu = np.sum(uc*w[tuple(sl)], axis=ax)
         sl = [slice(None)]*len(uc.shape)
         sl[ax] = np.newaxis
-        uc[:] = uu[sl]
+        uc[:] = uu[tuple(sl)]
     return uc.flat[0]
 
 def clenshaw_curtis1D(u, quad="GC"):  # pragma: no cover

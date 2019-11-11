@@ -18,7 +18,7 @@ Up = Array(Tp)
 u_hat = Function(T)
 
 def LinearRHS(self, **params):
-    return -inner(Dx(u, 0, 3), v)
+    return -inner(Dx(u, 0, 3), v)[0]
 
 def NonlinearRHS(self, u, u_hat, rhs, **params):
     rhs.fill(0)
@@ -104,7 +104,7 @@ ax4.set_zticks([0, 2000])
 ax4.grid()
 
 fig5 = plt.figure(facecolor='k')
-ax5 = fig5.add_subplot(111, axisbg='k')
+ax5 = fig5.add_subplot(111, facecolor='k')
 N = len(tdata)
 for i in range(N):
     offset = (N-i-1)*200

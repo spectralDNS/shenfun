@@ -246,7 +246,9 @@ class SparseMatrix(dict):
                 format = 'csr'
             diags = self.diags(format=format)
             P = int(np.prod(v.shape[1:]))
-            c[:N] = diags.dot(v[:M].reshape(M, P)).reshape(c[:N].shape)
+            y = diags.dot(v[:M].reshape(M, P)).squeeze()
+            d = tuple([slice(0, m) for m in y.shape])
+            c[d] = y.reshape(c[d].shape)
 
         if axis > 0:
             c = np.moveaxis(c, 0, axis)
@@ -1264,9 +1266,9 @@ class TPMatrix(object):
             npaxes.remove(axis)
             second_axis = npaxes[0]
             pencilB = pencilA.pencil(second_axis)
-            transAB = pencilA.transfer(pencilB, 'd')
-            cB = np.zeros(transAB.subshapeB)
-            cC = np.zeros(transAB.subshapeB)
+            transAB = pencilA.transfer(pencilB, c.dtype.char)
+            cB = np.zeros(transAB.subshapeB, dtype=c.dtype)
+            cC = np.zeros(transAB.subshapeB, dtype=c.dtype)
             bb = self.mats[axis]
             c = bb.matvec(v, c, axis=axis)
             # align in second non-periodic axis
@@ -1439,8 +1441,9 @@ def get_dense_matrix(test, trial):
     trial : 2-tuple of (basis, int)
         As test, but representing matrix column.
     """
-    N = trial[0].N
-    x, w = trial[0].mpmath_points_and_weights(N)
+    N = test[0].N
+    M = trial[0].N
+    x, w = test[0].mpmath_points_and_weights(N)
     v = test[0].evaluate_basis_derivative_all(x=x, k=test[1])
     u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])
     return np.dot(v.T*w[np.newaxis, :], np.conj(u))

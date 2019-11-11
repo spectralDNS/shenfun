@@ -16,13 +16,17 @@ class LaguerreBase(SpectralBase):
 
     Parameters
     ----------
-        N : int, optional
+        N : int
             Number of quadrature points
         quad : str, optional
-               Type of quadrature
+            Type of quadrature
 
-               - LG - Laguerre-Gauss
+            - LG - Laguerre-Gauss
 
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
     Note
     ----
     We are using Laguerre functions and not the regular Laguerre polynomials
@@ -37,8 +41,9 @@ class LaguerreBase(SpectralBase):
 
     """
 
-    def __init__(self, N=0, quad="LG"):
-        SpectralBase.__init__(self, N, quad, domain=(0., np.inf))
+    def __init__(self, N, quad="LG", padding_factor=1, dealias_direct=False):
+        SpectralBase.__init__(self, N, quad=quad, domain=(0., np.inf),
+                              padding_factor=padding_factor, dealias_direct=dealias_direct)
         self.forward = functools.partial(self.forward, fast_transform=False)
         self.backward = functools.partial(self.backward, fast_transform=False)
         self.scalar_product = functools.partial(self.scalar_product, fast_transform=False)
@@ -146,18 +151,34 @@ class LaguerreBase(SpectralBase):
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
+    def get_refined(self, refinement_factor):
+        return self.__class__(int(self.N*refinement_factor),
+                              quad=self.quad,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct)
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return self.__class__(self.N,
+                              quad=self.quad,
+                              padding_factor=padding_factor,
+                              dealias_direct=dealias_direct)
+
 @inheritdocstrings
 class Basis(LaguerreBase):
     r"""Basis for regular Laguerre functions
 
     Parameters
     ----------
-        N : int, optional
+        N : int
             Number of quadrature points
         quad : str, optional
-               Type of quadrature
+            Type of quadrature
 
-               - LG - Laguerre-Gauss
+            - LG - Laguerre-Gauss
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
 
     Note
     ----
@@ -172,9 +193,10 @@ class Basis(LaguerreBase):
     polynomials of order k, respectively.
     """
 
-    def __init__(self, N=0, quad="LG"):
-        LaguerreBase.__init__(self, N, quad)
-        self.plan(N, 0, np.float, {})
+    def __init__(self, N, quad="LG", padding_factor=1, dealias_direct=False):
+        LaguerreBase.__init__(self, N, quad=quad, padding_factor=padding_factor,
+                              dealias_direct=dealias_direct)
+        self.plan(int(N*padding_factor), 0, np.float, {})
 
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
@@ -200,18 +222,24 @@ class ShenDirichletBasis(LaguerreBase):
 
     Parameters
     ----------
-        N : int, optional
+        N : int
             Number of quadrature points
         quad : str, optional
-               Type of quadrature
+            Type of quadrature
 
-               - LG - Laguerre-Gauss
+            - LG - Laguerre-Gauss
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
 
     """
-    def __init__(self, N=0, quad="LG", bc=(0., 0.)):
-        LaguerreBase.__init__(self, N, quad)
+    def __init__(self, N, quad="LG", bc=(0., 0.), padding_factor=1,
+                 dealias_direct=False):
+        LaguerreBase.__init__(self, N, quad=quad, padding_factor=padding_factor,
+                              dealias_direct=dealias_direct)
         self.LT = Basis(N, quad)
-        self.plan(N, 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, np.float, {})
 
     @staticmethod
     def boundary_condition():

@@ -72,22 +72,21 @@ class FourierBase(SpectralBase):
             Number of quadrature points. Should be even for efficiency, but
             this is not required.
         padding_factor : float, optional
-                         Factor for padding backward transforms.
-                         padding_factor=1.5 corresponds to a 3/2-rule for
-                         dealiasing.
+            Factor for padding backward transforms. padding_factor=1.5
+            corresponds to a 3/2-rule for dealiasing.
         domain : 2-tuple of floats, optional
-                 The computational domain.
+            The computational domain.
         dealias_direct : bool, optional
-                         True for dealiasing using 2/3-rule. Must be used with
-                         padding_factor == 1.
+            True for dealiasing using 2/3-rule. Must be used with
+            padding_factor = 1.
     """
 
     def __init__(self, N, padding_factor=1., domain=(0, 2*np.pi),
-                 dealias_direct=False):
+                 dealias_direct=False, **kw):
         self.dealias_direct = dealias_direct
         self._k = None
         self._planned_axes = None  # Collapsing of axes means that this base can be used to plan transforms over several collapsed axes. Store the axes planned for here.
-        SpectralBase.__init__(self, N, '', padding_factor, domain)
+        SpectralBase.__init__(self, N, padding_factor=padding_factor, domain=domain)
 
     @staticmethod
     def family():
@@ -141,8 +140,12 @@ class FourierBase(SpectralBase):
         return V
 
     # Reimplemented for efficiency (smaller array in *= when truncated)
-    #@profile
-    def forward(self, input_array=None, output_array=None, fast_transform=True):
+    def forward(self, input_array=None, output_array=None, fast_transform=True, padding_factor=1):
+        if padding_factor > 1:
+            assert self._padded_basis is not None
+            output_array = self._padded_basis.forward(input_array, output_array, fast_transform=fast_transform)
+            return output_array
+
         if fast_transform is False:
             return SpectralBase.forward(self, input_array, output_array, False)
 
@@ -224,7 +227,7 @@ class FourierBase(SpectralBase):
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, int):
             axis = [axis]
-        s = tuple(np.take(shape, axis))
+        s = list(np.take(shape, axis))
 
         if isinstance(self.forward, Transform):
             if self.forward.input_array.shape == shape and axis == self._planned_axes:
@@ -233,6 +236,9 @@ class FourierBase(SpectralBase):
 
         plan_fwd = self._xfftn_fwd
         plan_bck = self._xfftn_bck
+
+        self.axis = axis[-1]
+        self._planned_axes = axis
 
         if 'builders' in self._xfftn_fwd.__module__:
 
@@ -263,9 +269,9 @@ class FourierBase(SpectralBase):
                 threads=1,
             )
             opts.update(options)
+            threads = opts['threads']
             flags = (fftw.flag_dict[opts['planner_effort']],
                      fftw.flag_dict[opts['overwrite_input']])
-            threads = opts['threads']
 
             U = fftw.aligned(shape, dtype=dtype)
             xfftn_fwd = plan_fwd(U, s=s, axes=axis, threads=threads, flags=flags)
@@ -278,13 +284,12 @@ class FourierBase(SpectralBase):
             V.fill(0)
             U.fill(0)
             self._M = xfftn_fwd.get_normalization()
-        self.axis = axis[-1]
-        self._planned_axes = axis
 
         if self.padding_factor > 1.+1e-8:
             trunc_array = self._get_truncarray(shape, V.dtype)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
+
         else:
             self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
             self.backward = Transform(self.backward, xfftn_bck, V, V, U)
@@ -297,11 +302,26 @@ class FourierBase(SpectralBase):
 
 class R2CBasis(FourierBase):
     """Fourier basis class for real to complex transforms
+
+    Parameters
+    ----------
+        N : int
+            Number of quadrature points. Should be even for efficiency, but
+            this is not required.
+        padding_factor : float, optional
+            Factor for padding backward transforms. padding_factor=1.5
+            corresponds to a 3/2-rule for dealiasing.
+        domain : 2-tuple of floats, optional
+            The computational domain.
+        dealias_direct : bool, optional
+            True for dealiasing using 2/3-rule. Must be used with
+            padding_factor = 1.
     """
 
     def __init__(self, N, padding_factor=1., domain=(0., 2.*np.pi),
-                 dealias_direct=False):
-        FourierBase.__init__(self, N, padding_factor, domain, dealias_direct)
+                 dealias_direct=False, **kw):
+        FourierBase.__init__(self, N, padding_factor=padding_factor,
+                             domain=domain, dealias_direct=dealias_direct)
         self.N = N
         #self._xfftn_fwd = pyfftw.builders.rfftn
         #self._xfftn_bck = pyfftw.builders.irfftn
@@ -309,7 +329,7 @@ class R2CBasis(FourierBase):
         self._xfftn_bck = fftw.irfftn
         self._sn = []
         self._sm = []
-        self.plan((int(np.floor(padding_factor*N)),), (0,), np.float, {})
+        self.plan((int(padding_factor*N),), (0,), np.float, {})
 
     def wavenumbers(self, bcast=True, scaled=False, eliminate_highest_freq=False):
         k = np.fft.rfftfreq(self.N, 1./self.N).astype(int)
@@ -418,7 +438,7 @@ class R2CBasis(FourierBase):
         return output_array
 
     def _truncation_forward(self, padded_array, trunc_array):
-        if self.padding_factor > 1.0+1e-8:
+        if not id(trunc_array) == id(padded_array):
             trunc_array.fill(0)
             N = trunc_array.shape[self.axis]
             s = self.sl[slice(0, N)]
@@ -429,7 +449,7 @@ class R2CBasis(FourierBase):
                 trunc_array[s1] *= 2
 
     def _padding_backward(self, trunc_array, padded_array):
-        if self.padding_factor > 1.0+1e-8:
+        if not id(trunc_array) == id(padded_array):
             padded_array.fill(0)
             N = trunc_array.shape[self.axis]
             if len(self._sn) != self.dimensions:
@@ -531,17 +551,32 @@ class R2CBasis(FourierBase):
 
 class C2CBasis(FourierBase):
     """Fourier basis class for complex to complex transforms
+
+    Parameters
+    ----------
+        N : int
+            Number of quadrature points. Should be even for efficiency, but
+            this is not required.
+        padding_factor : float, optional
+            Factor for padding backward transforms. padding_factor=1.5
+            corresponds to a 3/2-rule for dealiasing.
+        domain : 2-tuple of floats, optional
+            The computational domain.
+        dealias_direct : bool, optional
+            True for dealiasing using 2/3-rule. Must be used with
+            padding_factor = 1.
     """
 
     def __init__(self, N, padding_factor=1., domain=(0., 2.*np.pi),
-                 dealias_direct=False):
-        FourierBase.__init__(self, N, padding_factor, domain, dealias_direct)
+                 dealias_direct=False, **kw):
+        FourierBase.__init__(self, N, padding_factor=padding_factor,
+                             domain=domain, dealias_direct=dealias_direct)
         self.N = N
         #self._xfftn_fwd = pyfftw.builders.fftn
         #self._xfftn_bck = pyfftw.builders.ifftn
         self._xfftn_fwd = fftw.fftn
         self._xfftn_bck = fftw.ifftn
-        self.plan((int(np.floor(padding_factor*N)),), (0,), np.complex, {})
+        self.plan((int(padding_factor*N),), (0,), np.complex, {})
         self._slp = []
 
     def wavenumbers(self, bcast=True, scaled=False, eliminate_highest_freq=False):
@@ -562,7 +597,6 @@ class C2CBasis(FourierBase):
             return None
         if bcast is True:
             f = self.broadcast_to_ndims(f)
-
         return f
 
     def slice(self):
@@ -574,7 +608,7 @@ class C2CBasis(FourierBase):
         return int(np.floor(self.padding_factor*self.N))
 
     def _truncation_forward(self, padded_array, trunc_array):
-        if self.padding_factor > 1.0+1e-8:
+        if not id(trunc_array) == id(padded_array):
             trunc_array.fill(0)
             N = trunc_array.shape[self.axis]
             su = self.sl[slice(0, N//2+1)]
@@ -583,7 +617,7 @@ class C2CBasis(FourierBase):
             trunc_array[su] += padded_array[su]
 
     def _padding_backward(self, trunc_array, padded_array):
-        if self.padding_factor > 1.0+1e-8:
+        if not id(trunc_array) == id(padded_array):
             padded_array.fill(0)
             N = trunc_array.shape[self.axis]
             if len(self._slp) != self.dimensions: # Store for microoptimization

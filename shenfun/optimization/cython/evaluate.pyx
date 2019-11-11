@@ -44,6 +44,10 @@ def evaluate_2D(np.ndarray[T, ndim=1] b, np.ndarray[complex_t, ndim=2] u,
         else:
             b = _evaluate_2D_cr1(b, u, P[0], P[1], r2c, M, start)
 
+    elif P[0].dtype == np.float and P[1].dtype == np.float:
+        # Two non-fourier bases
+        b = _evaluate_2D_rr0(b, u, P[0], P[1])
+
     return b
 
 def _evaluate_2D_cc0(np.ndarray[complex_t, ndim=1] b, np.ndarray[complex_t, ndim=2] u,
@@ -153,6 +157,18 @@ def _evaluate_2D_cr1(np.ndarray[real_t, ndim=1] b, np.ndarray[complex_t, ndim=2]
 
     return b
 
+def _evaluate_2D_rr0(np.ndarray[real_t, ndim=1] b,
+                     np.ndarray[real_t, ndim=2] u,
+                     np.ndarray[real_t, ndim=2] P0,
+                     np.ndarray[real_t, ndim=2] P1):
+    cdef int k, l, i
+
+    for k in range(u.shape[0]):
+        for l in range(u.shape[1]):
+            for i in range(b.shape[0]):
+                b[i] = b[i] + u[k, l] * P0[i, k] * P1[i, l]
+    return b
+
 def evaluate_3D(np.ndarray[T, ndim=1] b, np.ndarray[complex_t, ndim=3] u,
                 list P, int r2c, int M, int start):
 
@@ -184,6 +200,17 @@ def evaluate_3D(np.ndarray[T, ndim=1] b, np.ndarray[complex_t, ndim=3] u,
         else:
             b = _evaluate_3D_ccr1(b, u, P[0], P[1], P[2], r2c, M, start)
 
+    elif P[0].dtype == np.float and P[1].dtype == np.float and P[2].dtype == np.complex:
+        b = _evaluate_3D_rrc1(b, u, P[0], P[1], P[2], r2c, M, start)
+
+    elif P[0].dtype == np.float and P[1].dtype == np.complex and P[2].dtype == np.float:
+        b = _evaluate_3D_rcr1(b, u, P[0], P[1], P[2], r2c, M, start)
+
+    elif P[0].dtype == np.complex and P[1].dtype == np.float and P[2].dtype == np.float:
+        b = _evaluate_3D_crr1(b, u, P[0], P[1], P[2], r2c, M, start)
+
+    elif P[0].dtype == np.float and P[1].dtype == np.float and P[2].dtype == np.float:
+        b = _evaluate_3D_rrr(b, u, P[0], P[1], P[2])
 
     return b
 
@@ -403,6 +430,97 @@ def _evaluate_3D_ccr1(np.ndarray[real_t, ndim=1] b,
                         ii = l + start
                     if ii > 0 & ii < M:
                         b[i] += p
+    return b
+
+def _evaluate_3D_rrc1(np.ndarray[real_t, ndim=1] b,
+                      np.ndarray[complex_t, ndim=3] u,
+                      np.ndarray[real_t, ndim=2] P0,
+                      np.ndarray[real_t, ndim=2] P1,
+                      np.ndarray[complex_t, ndim=2] P2,
+                      int r2c, int M, int start):
+    cdef int k, l, m, i, ii
+    cdef real_t p
+    cdef complex_t p0
+
+    assert r2c == 2
+
+    for k in range(u.shape[0]):
+        for l in range(u.shape[1]):
+            for m in range(u.shape[2]):
+                for i in range(b.shape[0]):
+                    p = (u[k, l, m] * P0[i, k] * P1[i, l] * P2[i, m]).real
+                    #p0 = P2[i, m]
+                    #p = P0[i, k]*P1[i, l]*(u[k, l, m].real*p0.real - u[k, l, m].imag*p0.imag)
+                    b[i] += p
+                    ii = m + start
+                    if ii > 0 & ii < M:
+                        b[i] += p
+    return b
+
+def _evaluate_3D_rcr1(np.ndarray[real_t, ndim=1] b,
+                      np.ndarray[complex_t, ndim=3] u,
+                      np.ndarray[real_t, ndim=2] P0,
+                      np.ndarray[complex_t, ndim=2] P1,
+                      np.ndarray[real_t, ndim=2] P2,
+                      int r2c, int M, int start):
+    cdef int k, l, m, i, ii
+    cdef real_t p
+    cdef complex_t p0
+
+    assert r2c == 1
+
+    for k in range(u.shape[0]):
+        for l in range(u.shape[1]):
+            for m in range(u.shape[2]):
+                for i in range(b.shape[0]):
+                    p = (u[k, l, m] * P0[i, k] * P1[i, l] * P2[i, m]).real
+                    #p0 = P2[i, m]
+                    #p = P0[i, k]*P1[i, l]*(u[k, l, m].real*p0.real - u[k, l, m].imag*p0.imag)
+                    b[i] += p
+                    ii = l + start
+                    if ii > 0 & ii < M:
+                        b[i] += p
+    return b
+
+def _evaluate_3D_crr1(np.ndarray[real_t, ndim=1] b,
+                      np.ndarray[complex_t, ndim=3] u,
+                      np.ndarray[complex_t, ndim=2] P0,
+                      np.ndarray[real_t, ndim=2] P1,
+                      np.ndarray[real_t, ndim=2] P2,
+                      int r2c, int M, int start):
+    cdef int k, l, m, i, ii
+    cdef real_t p
+    cdef complex_t p0
+
+    assert r2c == 0
+
+    for k in range(u.shape[0]):
+        for l in range(u.shape[1]):
+            for m in range(u.shape[2]):
+                for i in range(b.shape[0]):
+                    p = (u[k, l, m] * P0[i, k] * P1[i, l] * P2[i, m]).real
+                    #p0 = P2[i, m]
+                    #p = P0[i, k]*P1[i, l]*(u[k, l, m].real*p0.real - u[k, l, m].imag*p0.imag)
+                    b[i] += p
+                    ii = k + start
+                    if ii > 0 & ii < M:
+                        b[i] += p
+    return b
+
+def _evaluate_3D_rrr(np.ndarray[real_t, ndim=1] b,
+                      np.ndarray[real_t, ndim=3] u,
+                      np.ndarray[real_t, ndim=2] P0,
+                      np.ndarray[real_t, ndim=2] P1,
+                      np.ndarray[real_t, ndim=2] P2):
+    cdef int k, l, m, i, ii
+    cdef real_t p
+
+    for k in range(u.shape[0]):
+        for l in range(u.shape[1]):
+            for m in range(u.shape[2]):
+                for i in range(b.shape[0]):
+                    b[i] += u[k, l, m] * P0[i, k] * P1[i, l] * P2[i, m]
+
     return b
 
 def evaluate_lm_2D(list bases, np.ndarray[T, ndim=1] b, np.ndarray[complex_t, ndim=2] u, np.ndarray[real_t, ndim=1] x0, np.ndarray[real_t, ndim=1] x1, np.ndarray[real_t, ndim=1] w0, np.ndarray[real_t, ndim=1] w1, int r2c, int M, int start):

@@ -43,10 +43,24 @@
    doi:                10.1137/0916006
    url:                https://doi.org/10.1137/0916006
    status:             published
-   allowed_duplicates: shen1
+   allowed_duplicates: s h e n 1
    bdsk-Url-1:         https://doi.org/10.1137/0916006
    bdsk-Url-2:         http://dx.doi.org/10.1137/0916006
    date-Added:         2017-09-14 13:01:07 +0000
    date-Modified:      2017-09-14 13:01:16 +0000
    entrytype:          article
    eprint:             https://doi.org/10.1137/0916006
+** Turbulent Superstructures in Rayleigh-B{\'e}nard Convection
+   key:       pandey18
+   author:    Ambrish Pandey, Janet D. Scheel, J{\"o}rg Schumacher
+   year:      2018
+   journal:   Nature Communications
+   volume:    9
+   number:    1
+   pages:     2118
+   doi:       10.1038/s41467-018-04478-0
+   status:    published
+   abstract:  Turbulent Rayleigh-B{\'e}nard convection displays a large-scale order in the form of rolls and cells on lengths larger than the layer height once the fluctuations of temperature and velocity are removed. These turbulent superstructures are reminiscent of the patterns close to the onset of convection. Here we report numerical simulations of turbulent convection in fluids at different Prandtl number ranging from 0.005 to 70 and for Rayleigh numbers up to 107. We identify characteristic scales and times that separate the fast, small-scale turbulent fluctuations from the gradually changing large-scale superstructures. The characteristic scales of the large-scale patterns, which change with Prandtl and Rayleigh number, are also correlated with the boundary layer dynamics, and in particular the clustering of thermal plumes at the top and bottom plates. Our analysis suggests a scale separation and thus the existence of a simplified description of the turbulent superstructures in geo- and astrophysical settings.
+   da:        2018/05/29
+   entrytype: article
+   isbn:      2041-1723

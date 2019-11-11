@@ -592,13 +592,99 @@ def test_inner(f0, f1):
         L = np.array([b.domain[1]-b.domain[0] for b in (B0, B1, B2)])
         assert abs(c0-np.prod(L)) < 1e-7
 
+@pytest.mark.parametrize('fam', ('C', 'L', 'F', 'La', 'H'))
+def test_assign(fam):
+    x, y = symbols("x,y")
+    for bc in (None, 'Dirichlet', 'Biharmonic'):
+        dtype = 'D' if fam == 'F' else 'd'
+        bc = 'periodic' if fam == 'F' else bc
+        if bc == 'Biharmonic' and fam in ('La', 'H'):
+            continue
+        tol = 1e-12 if fam in ('C', 'L', 'F') else 1e-5
+        B0 = Basis(10, fam, dtype=dtype, bc=bc)
+        B1 = Basis(12, fam, dtype=dtype, bc=bc)
+        u_hat = Function(B0)
+        u_hat[1:4] = 1
+        ub_hat = Function(B1)
+        u_hat.assign(ub_hat)
+        assert abs(inner(1, u_hat)-inner(1, ub_hat)) < tol
+        T = TensorProductSpace(comm, (B0, B1))
+        u_hat = Function(T)
+        u_hat[1:4, 1:4] = 1
+        Tp = T.get_refined((2, 2))
+        ub_hat = Function(Tp)
+        u_hat.assign(ub_hat)
+        assert abs(inner(1, u_hat)-inner(1, ub_hat)) < tol
+        VT = VectorTensorProductSpace(T)
+        u_hat = Function(VT)
+        u_hat[:, 1:4, 1:4] = 1
+        Tp = T.get_refined((2, 2))
+        VTp = VectorTensorProductSpace(Tp)
+        ub_hat = Function(VTp)
+        u_hat.assign(ub_hat)
+        assert abs(inner((1, 1), u_hat)-inner((1, 1), ub_hat)) < tol
+
+def test_refine():
+    assert comm.Get_size() < 7
+    F0 = Basis(8, 'F', dtype='D')
+    F1 = Basis(9, 'F', dtype='D')
+    F2 = Basis(10, 'F', dtype='d')
+    T = TensorProductSpace(comm, (F0, F1, F2), slab=True, collapse_fourier=True)
+    u_hat = Function(T)
+    u = Array(T)
+    u[:] = np.random.random(u.shape)
+    u_hat = u.forward(u_hat)
+    Tp = T.get_dealiased(padding_factor=(2, 2, 2))
+    u_ = Array(Tp)
+    up_hat = Function(Tp)
+    assert up_hat.commsizes == u_hat.commsizes
+    u2 = u_hat.refine((2, 2, 2))
+    V = VectorTensorProductSpace(T)
+    u_hat = Function(V)
+    u = Array(V)
+    u[:] = np.random.random(u.shape)
+    u_hat = u.forward(u_hat)
+    Vp = V.get_dealiased(padding_factor=(2, 2, 2))
+    u_ = Array(Vp)
+    up_hat = Function(Vp)
+    assert up_hat.commsizes == u_hat.commsizes
+    u3 = u_hat.refine((2, 2, 2))
+
+def test_eval_expression():
+    import sympy as sp
+    from shenfun import div, grad
+    x, y, z = sp.symbols('x,y,z')
+    B0 = Basis(16, 'C')
+    B1 = Basis(17, 'C')
+    B2 = Basis(20, 'F', dtype='d')
+
+    TB = TensorProductSpace(comm, (B0, B1, B2))
+    X = TB.mesh()
+
+    f = sp.sin(x)+sp.sin(y)+sp.sin(z)
+    dfx = f.diff(x, 2) + f.diff(y, 2) + f.diff(z, 2)
+    fa = Array(TB, buffer=f).forward()
+    dfe = div(grad(fa))
+    dfa = project(dfe, TB)
+
+    xyz = np.array([[0.25, 0.5, 0.75],
+                    [0.25, 0.5, 0.75],
+                    [0.25, 0.5, 0.75]])
+
+    f0 = lambdify((x, y, z), dfx)(*xyz)
+    f1 = dfe.eval(xyz)
+    f2 = dfa.eval(xyz)
+    assert np.allclose(f0, f1, 1e-7)
+    assert np.allclose(f1, f2, 1e-7)
+
 if __name__ == '__main__':
     #test_transform('f', 3)
     #test_transform('d', 2)
-    #test_shentransform('d', 2, lagbases.ShenDirichletBasis, 'LG')
+    #test_shentransform('d', 2, hbases.Basis, 'HG')
+    test_eval_expression()
     #test_project('d', 2, lbases.Basis, 'LG')
     #test_project2('d', 1, lbases.ShenNeumannBasis, 'LG')
     #test_project_2dirichlet('GL')
     #test_eval_tensor('d', 2, cbases.ShenDirichletBasis, 'GC')
     #test_eval_fourier('d', 3)
-    test_inner('C', 'C')
+    #test_inner('C', 'C')

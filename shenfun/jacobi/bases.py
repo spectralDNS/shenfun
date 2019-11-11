@@ -51,8 +51,6 @@ mode = mode if has_quadpy else 'numpy'
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
-# Note - Look into sympy eval not being as accurate as eval_jacobi
-
 __all__ = ['JacobiBase', 'Basis', 'ShenDirichletBasis', 'ShenBiharmonicBasis',
            'ShenOrder6Basis', 'mode', 'has_quadpy', 'mp']
 
@@ -62,17 +60,29 @@ class JacobiBase(SpectralBase):
 
     Parameters
     ----------
-        N : int, optional
+        N : int
             Number of quadrature points
         quad : str, optional
-               Type of quadrature
+            Type of quadrature
 
-               - JG - Jacobi-Gauss
+            - JG - Jacobi-Gauss
+        alpha : number, optional
+            Parameter of the Jacobi polynomial
+        beta : number, optional
+            Parameter of the Jacobi polynomial
+        domain : 2-tuple of floats, optional
+            The computational domain
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
 
     """
 
-    def __init__(self, N=0, quad="JG", alpha=0, beta=0, domain=(-1., 1.)):
-        SpectralBase.__init__(self, N, quad, domain=domain)
+    def __init__(self, N, quad="JG", alpha=0, beta=0, domain=(-1., 1.),
+                 padding_factor=1, dealias_direct=False):
+        SpectralBase.__init__(self, N, quad=quad, domain=domain,
+                              padding_factor=padding_factor, dealias_direct=dealias_direct)
         self.alpha = alpha
         self.beta = beta
         self.forward = functools.partial(self.forward, fast_transform=False)
@@ -85,6 +95,23 @@ class JacobiBase(SpectralBase):
 
     def reference_domain(self):
         return (-1., 1.)
+
+    def get_refined(self, refinement_factor):
+        return self.__class__(int(self.N*refinement_factor),
+                              quad=self.quad,
+                              domain=self.domain, padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              alpha=self.alpha,
+                              beta=self.beta)
+
+    def get_dealiased(self, refinement_factor):
+        return self.__class__(self.N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              alpha=self.alpha,
+                              beta=self.beta)
 
     def points_and_weights(self, N=None, map_true_domain=False, **kw):
         if N is None:
@@ -196,18 +223,30 @@ class Basis(JacobiBase):
 
     Parameters
     ----------
-        N : int, optional
+        N : int
             Number of quadrature points
         quad : str, optional
-               Type of quadrature
+            Type of quadrature
 
-               - JG - Jacobi-Gauss
+            - JG - Jacobi-Gauss
 
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
     """
 
-    def __init__(self, N=0, quad="JG", alpha=-0.5, beta=-0.5, domain=(-1., 1.)):
-        JacobiBase.__init__(self, N, quad, alpha, beta, domain)
-        self.plan(N, 0, np.float, {})
+    def __init__(self, N, quad="JG", alpha=-0.5, beta=-0.5, domain=(-1., 1.),
+                 padding_factor=1, dealias_direct=False):
+        JacobiBase.__init__(self, N, quad=quad, alpha=alpha, beta=beta, domain=domain,
+                            padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.plan(int(N*padding_factor), 0, np.float, {})
+
+    def get_refined_basis(self, refinement_factor):
+        return self.__class__(int(self.N*refinement_factor), quad=self.quad,
+                              domain=self.domain, padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              alpha=self.alpha, beta=self.beta)
 
     @property
     def is_orthogonal(self):
@@ -226,29 +265,51 @@ class ShenDirichletBasis(JacobiBase):
 
     Parameters
     ----------
-        N : int, optional
+        N : int
             Number of quadrature points
         quad : str, optional
-               Type of quadrature
+            Type of quadrature
 
-               - JG - Jacobi-Gauss
+            - JG - Jacobi-Gauss
 
         bc : tuple of numbers
-             Boundary conditions at edges of domain
+            Boundary conditions at edges of domain
         domain : 2-tuple of floats, optional
-                 The computational domain
+            The computational domain
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
 
     """
-    def __init__(self, N=0, quad='JG', bc=(0, 0), domain=(-1., 1.)):
-        JacobiBase.__init__(self, N=N, quad=quad, alpha=-1, beta=-1, domain=domain)
+    def __init__(self, N, quad='JG', bc=(0, 0), domain=(-1., 1.),
+                 padding_factor=1, dealias_direct=False):
+        JacobiBase.__init__(self, N, quad=quad, alpha=-1, beta=-1, domain=domain,
+                            padding_factor=padding_factor, dealias_direct=dealias_direct)
         assert bc in ((0, 0), 'Dirichlet')
         from shenfun.tensorproductspace import BoundaryValues
         self.bc = BoundaryValues(self, bc=bc)
-        self.plan(N, 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, np.float, {})
 
     @staticmethod
     def boundary_condition():
         return 'Dirichlet'
+
+    def get_refined(self, refinement_factor):
+        return self.__class__(int(self.N*refinement_factor),
+                              quad=self.quad,
+                              domain=self.domain,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              bc=self.bc.bc)
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return self.__class__(self.N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              padding_factor=padding_factor,
+                              dealias_direct=dealias_direct,
+                              bc=self.bc.bc)
 
     def is_scaled(self):
         return False
@@ -346,15 +407,19 @@ class ShenBiharmonicBasis(JacobiBase):
 
     Parameters
     ----------
-        N : int, optional
+        N : int
             Number of quadrature points
         quad : str, optional
-               Type of quadrature
+            Type of quadrature
 
-               - JG - Jacobi-Gauss
+            - JG - Jacobi-Gauss
 
         domain : 2-tuple of floats, optional
-                 The computational domain
+            The computational domain
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
 
     Note
     ----
@@ -362,9 +427,10 @@ class ShenBiharmonicBasis(JacobiBase):
     inner products are computed without weights, for alpha=beta=0.
 
     """
-    def __init__(self, N=0, quad='JG', domain=(-1., 1.)):
-        JacobiBase.__init__(self, N=N, quad=quad, alpha=-2, beta=-2, domain=domain)
-        self.plan(N, 0, np.float, {})
+    def __init__(self, N, quad='JG', domain=(-1., 1.), padding_factor=1, dealias_direct=False):
+        JacobiBase.__init__(self, N, quad=quad, alpha=-2, beta=-2, domain=domain,
+                            padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.plan(int(N*padding_factor), 0, np.float, {})
 
     @staticmethod
     def boundary_condition():
@@ -458,15 +524,19 @@ class ShenOrder6Basis(JacobiBase):
 
     Parameters
     ----------
-        N : int, optional
+        N : int
             Number of quadrature points
         quad : str, optional
-               Type of quadrature
+            Type of quadrature
 
-               - JG - Jacobi-Gauss
+            - JG - Jacobi-Gauss
 
         domain : 2-tuple of floats, optional
-                 The computational domain
+            The computational domain
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
 
     Note
     ----
@@ -474,9 +544,10 @@ class ShenOrder6Basis(JacobiBase):
     inner products are computed without weights, for alpha=beta=0.
 
     """
-    def __init__(self, N=0, quad='JG', domain=(-1., 1.)):
-        JacobiBase.__init__(self, N=N, quad=quad, alpha=-3, beta=-3, domain=domain)
-        self.plan(N, 0, np.float, {})
+    def __init__(self, N, quad='JG', domain=(-1., 1.), padding_factor=1, dealias_direct=False):
+        JacobiBase.__init__(self, N, quad=quad, alpha=-3, beta=-3, domain=domain,
+                            padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.plan(int(N*padding_factor), 0, np.float, {})
 
     @staticmethod
     def boundary_condition():
