@@ -11,6 +11,8 @@ jobs:
         python.version: '3.6'
       Python37:
         python.version: '3.7'
+      Python38:
+        python.version: '3.8'
 
   steps:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
@@ -42,6 +44,8 @@ jobs:
         python.version: '3.6'
       Python37:
         python.version: '3.7'
+      Python38:
+        python.version: '3.8'
 
   steps:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
