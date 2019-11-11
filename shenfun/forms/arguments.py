@@ -1,5 +1,7 @@
 from numbers import Number, Integral
 import numpy as np
+#from shenfun.optimization.numba.evaluate import expreval
+from shenfun.optimization.cython import evaluate
 from mpi4py_fft import DistArray
 
 __all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',
@@ -371,6 +373,67 @@ class Expr(object):
             return self._basis.offset()
         return None
 
+    def eval(self, x, output_array=None):
+        """Return expression evaluated on x
+
+        Parameters
+        ----------
+        x : float or array of floats
+            Array must be of shape (D, N), for  N points in D dimensions
+
+        """
+        from shenfun import TensorProductSpace, MixedTensorProductSpace
+        from shenfun.fourier.bases import R2CBasis
+        from shenfun.spectralbase import SpectralBase
+
+        V = self.function_space()
+        basis = self.basis()
+
+        if output_array is None:
+            output_array = np.zeros(x.shape[1], dtype=V.forward.input_array.dtype)
+        else:
+            output_array[:] = 0
+
+        work = np.zeros_like(output_array)
+
+        assert V.dimensions == len(x)
+
+        shape = output_array.shape
+
+        for vec, (base, ind) in enumerate(zip(self.terms(), self.indices())):
+            for base_j, b0 in enumerate(base):
+                M = []
+                sc = self.scales()[vec, base_j]
+                test_sp = V
+                if isinstance(V, MixedTensorProductSpace):
+                    test_sp = V.flatten()[ind[base_j]]
+                r2c = -1
+                last_conj_index = -1
+                sl = -1
+                for axis, k in enumerate(b0):
+                    xx = test_sp[axis].map_reference_domain(np.squeeze(x[axis]))
+                    P = test_sp[axis].evaluate_basis_derivative_all(xx, k=k)
+                    M.append(P[..., V.local_slice()[axis]])
+                    if isinstance(test_sp[axis], R2CBasis):
+                        r2c = axis
+                        m = test_sp[axis].N//2+1
+                        if test_sp[axis].N % 2 == 0:
+                            last_conj_index = m-1
+                        else:
+                            last_conj_index = m
+                        sl = V.local_slice()[axis].start
+
+                bv = basis if basis.rank == 0 else basis[ind[base_j]]
+                work.fill(0)
+                if len(x) == 2:
+                    work = evaluate.evaluate_2D(work, bv, M, r2c, last_conj_index, sl)
+
+                elif len(x) == 3:
+                    work = evaluate.evaluate_3D(work, bv, M, r2c, last_conj_index, sl)
+                output_array += sc*work
+
+        return output_array
+
     def __getitem__(self, i):
         #assert self.num_components() == self.dim()
         basis = self._basis
@@ -732,11 +795,11 @@ class ShenfunBaseArray(DistArray):
 
         if cls.__name__ == 'Function':
             forward_output = True
-            p0 = space.pencil[1]
+            p0 = space.forward.output_pencil
             dtype = space.forward.output_array.dtype
         elif cls.__name__ == 'Array':
             forward_output = False
-            p0 = space.pencil[0]
+            p0 = space.backward.output_pencil
             dtype = space.forward.input_array.dtype
 
         # Evaluate sympy function on entire mesh
@@ -947,27 +1010,170 @@ class Function(ShenfunBaseArray, BasisFunction):
     def to_ortho(self, output_array=None):
         """Project Function to orthogonal basis"""
         space = self.function_space()
-        if space.dimensions > 1:
-            naxes = space.get_nonperiodic_axes()
-            axis = naxes[0]
-            base = space.bases[axis]
-            if not base.is_orthogonal:
-                output_array = base.to_ortho(self, output_array)
-            if len(naxes) > 1:
-                input_array = np.zeros_like(output_array.__array__())
-                for axis in naxes[1:]:
-                    base = space.bases[axis]
-                    input_array[:] = output_array
-                    if not base.is_orthogonal:
-                        output_array = base.to_ortho(input_array, output_array)
-            return output_array
+        if output_array is None:
+            output_array = Function(space)
 
-        output_array = space.to_ortho(self, output_array)
+        # In case of mixed space make a loop
+        if space.rank > 0:
+            spaces = space.flatten()
+            # output_array will now loop over first index
+        else:
+            spaces = [space]
+            output_array = [output_array]
+            self = [self]
+
+        for i, space in enumerate(spaces):
+            if space.dimensions > 1:
+                naxes = space.get_nonperiodic_axes()
+                axis = naxes[0]
+                base = space.bases[axis]
+                if not base.is_orthogonal:
+                    output_array[i] = base.to_ortho(self[i], output_array[i])
+                if len(naxes) > 1:
+                    input_array = np.zeros_like(output_array[i].__array__())
+                    for axis in naxes[1:]:
+                        base = space.bases[axis]
+                        input_array[:] = output_array[i]
+                        if not base.is_orthogonal:
+                            output_array[i] = base.to_ortho(input_array, output_array[i])
+            else:
+                output_array[i] = space.to_ortho(self[i], output_array[i])
+        if isinstance(output_array, list):
+            return output_array[0]
         return output_array
 
     def mask_nyquist(self, mask=None):
         """Set self to have zeros in Nyquist coefficients"""
         self.function_space().mask_nyquist(self, mask=mask)
+
+    def assign(self, u_hat):
+        """Assign self to u_hat of possibly different size
+
+        Parameters
+        ----------
+        u_hat : Function
+            Function of possibly different shape than self. Must have
+            the same function_space
+        """
+        from shenfun import VectorTensorProductSpace
+        if self.ndim == 1:
+            assert u_hat.__class__ == self.__class__
+            if self.shape[0] < u_hat.shape[0]:
+                self.function_space()._padding_backward(self, u_hat)
+            elif self.shape[0] == u_hat.shape[0]:
+                u_hat[:] = self
+            elif self.shape[0] > u_hat.shape[0]:
+                self.function_space()._truncation_forward(self, u_hat)
+            return u_hat
+
+        space = self.function_space()
+        newspace = u_hat.function_space()
+
+        if isinstance(space, VectorTensorProductSpace):
+            for i, self_i in enumerate(self):
+                u_hat[i] = self_i.assign(u_hat[i])
+            return u_hat
+
+        same_bases = True
+        for base0, base1 in zip(space.bases, newspace.bases):
+            if not base0.__class__ == base1.__class__:
+                same_bases = False
+                break
+        assert same_bases, "Can only assign on spaces with the same underlying bases"
+
+        factor = []
+        for selfbase, newbase in zip(space.bases, newspace.bases):
+            factor.append(newbase.N/selfbase.N)
+
+        u_hat = self.refine(factor, output_array=u_hat)
+        return u_hat
+
+    def refine(self, factor, output_array=None):
+        """Return self refined according to factor
+
+        Parameters
+        ----------
+        factor : number or sequence of numbers
+            Refine according to this factor along each direction
+
+        Note
+        ----
+        If the refinement factor is less than 1, then a truncated array
+        is returned. If the refinement factor is greater than 1, then the
+        returned array is padded with zeros.
+
+        """
+        from shenfun.fourier.bases import R2CBasis
+        from shenfun import VectorTensorProductSpace
+
+        if self.ndim == 1:
+            assert isinstance(factor, Number)
+            space = self.function_space()
+            if output_array is None:
+                refined_basis = space.get_refined(factor)
+                output_array = Function(refined_basis)
+            output_array = self.assign(output_array)
+            return output_array
+
+        space = self.function_space()
+
+        if isinstance(space, VectorTensorProductSpace):
+            if output_array is None:
+                output_array = [None]*len(self)
+            for i, array in enumerate(self):
+                output_array[i] = array.refine(factor, output_array=output_array[i])
+            if isinstance(output_array, list):
+                T = output_array[0].function_space()
+                VT = VectorTensorProductSpace(T)
+                output_array = np.array(output_array)
+                output_array = Function(VT, buffer=output_array)
+            return output_array
+
+        axes = [bx for ax in space.axes for bx in ax]
+        base = space.bases[axes[0]]
+        global_shape = list(self.global_shape) # Global shape in spectral space
+        if isinstance(base, R2CBasis):
+            global_shape[axes[0]] = int((2*global_shape[axes[0]]-2)*factor[axes[0]])//2+1
+        else:
+            global_shape[axes[0]] = int(global_shape[axes[0]]*factor[axes[0]])
+        c1 = DistArray(global_shape,
+                       subcomm=self.pencil.subcomm,
+                       dtype=self.dtype,
+                       alignment=self.alignment)
+        if self.global_shape[axes[0]] <= global_shape[axes[0]]:
+            base._padding_backward(self, c1)
+        else:
+            base._truncation_forward(self, c1)
+        for ax in axes[1:]:
+            c0 = c1.redistribute(ax)
+
+            # Get a new padded array
+            base = space.bases[ax]
+            if isinstance(base, R2CBasis):
+                global_shape[ax] = int(base.N*factor[ax])//2+1
+            else:
+                global_shape[ax] = int(global_shape[ax]*factor[ax])
+            c1 = DistArray(global_shape,
+                           subcomm=c0.pencil.subcomm,
+                           dtype=c0.dtype,
+                           alignment=ax)
+
+            # Copy from c0 to d0
+            if self.global_shape[ax] <= global_shape[ax]:
+                base._padding_backward(c0, c1)
+            else:
+                base._truncation_forward(c0, c1)
+
+        # Reverse transfer to get the same distribution as u_hat
+        for ax in reversed(axes[:-1]):
+            c1 = c1.redistribute(ax)
+
+        if output_array is None:
+            refined_space = space.get_refined(factor)
+            output_array = Function(refined_space, buffer=c1)
+        else:
+            output_array[:] = c1
+        return output_array
 
 
 class Array(ShenfunBaseArray):

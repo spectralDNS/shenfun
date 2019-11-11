@@ -11,6 +11,7 @@ from shenfun import chebyshev, legendre
 from shenfun.utilities import apply_mask
 from shenfun.forms.arguments import Function, Array
 from shenfun.optimization.cython import evaluate
+from shenfun.spectralbase import slicedict, islicedict
 from mpi4py_fft.mpifft import Transform, PFFT
 from mpi4py_fft.pencil import Subcomm, Pencil
 
@@ -40,13 +41,18 @@ class TensorProductSpace(PFFT):
         Use 1D slab decomposition.
     collapse_fourier : bool, optional
         Collapse axes for Fourier bases if possible
+    backward_from_pencil : False or Pencil
+        In case of Pencil configure the transform by starting from the
+        Pencil distribution in spectral space. This is primarily intended
+        for a padded space, where the spectral distribution must be
+        equal to the non-padded space.
     kw : dict, optional
         Dictionary that can be used to plan transforms. Input to method
         `plan` for the bases.
 
     """
     def __init__(self, comm, bases, axes=None, dtype=None, slab=False,
-                 collapse_fourier=False, **kw):
+                 collapse_fourier=False, backward_from_pencil=False, **kw):
         # Note do not call __init__ of super
         self.comm = comm
         self.bases = bases
@@ -78,116 +84,200 @@ class TensorProductSpace(PFFT):
             assert 0 < len(axes[i]) <= len(shape)
             assert sorted(axes[i]) == sorted(set(axes[i]))
 
-        #if axes is not None:
-        #    axes = list(axes) if np.ndim(axes) else [axes]
-        #    for i, axis in enumerate(axes):
-        #        if axis < 0:
-        #            axes[i] = axis + len(shape)
-        #else:
-        #    axes = list(range(len(shape)))
-        #assert min(axes) >= 0
-        #assert max(axes) < len(shape)
-        #assert 0 < len(axes) <= len(shape)
-        #assert sorted(axes) == sorted(set(axes))
-
         if dtype is None:
             dtype = np.complex if isinstance(bases[axes[-1][-1]], C2CBasis) else np.float
-        else:
+
+        dtype = np.dtype(dtype)
+        assert dtype.char in 'fdgFDG'
+
+        self.axes = axes
+        self.xfftn = []
+        self.transfer = []
+        self.pencil = [None, None]
+        for axis, base in enumerate(self.bases):
+            base.tensorproductspace = self
+            base.axis = axis
+            base.sl = slicedict(axis=axis, dimensions=len(self.bases))
+            base.si = islicedict(axis=axis, dimensions=len(self.bases))
+
+        if not backward_from_pencil:
             if isinstance(bases[axes[-1][-1]], C2CBasis):
                 assert np.dtype(dtype).char in 'FDG'
             elif isinstance(bases[axes[-1][-1]], R2CBasis):
                 assert np.dtype(dtype).char in 'fdg'
 
-        dtype = np.dtype(dtype)
-        assert dtype.char in 'fdgFDG'
-
-        if isinstance(comm, Subcomm):
-            assert slab is False
-            assert len(comm) == len(shape)
-            assert comm[axes[-1][-1]].Get_size() == 1
-            self.subcomm = comm
-        else:
-            if slab:
-                axis = (axes[-1][-1] + 1) % len(shape)
-                dims = [1] * len(shape)
-                dims[axis] = comm.Get_size()
+            if isinstance(comm, Subcomm):
+                assert slab is False
+                assert len(comm) == len(shape)
+                assert comm[axes[-1][-1]].Get_size() == 1
+                self.subcomm = comm
             else:
-                dims = [0] * len(shape)
-                for ax in axes[-1]:
-                    dims[ax] = 1
-            self.subcomm = Subcomm(comm, dims)
-
-        #self.axes = tuple((axis,) for axis in axes)
-        self.axes = axes
-        self.xfftn = []
-        self.transfer = []
-        self.pencil = [None, None]
-
-        # At this points axes is a tuple of tuples of length one.
-        # Try to collapse some Fourier transforms into one.
-        if np.any([abs(base.padding_factor - 1.0) > 1e-6 for base in bases]):
-            collapse_fourier = False
-        if collapse_fourier:
-            F = lambda ax: bases[ax].family() == 'fourier' and self.subcomm[ax].Get_size() == 1
-            axis = self.axes[-1][-1]
-            groups = [list(self.axes[-1])]
-            F0 = F(axis)
-            for ax in reversed(self.axes[:-1]):
-                axis = ax[-1]
-                if F0 and F(axis):
-                    groups[0].insert(0, axis)
+                if slab:
+                    axis = (axes[-1][-1] + 1) % len(shape)
+                    dims = [1] * len(shape)
+                    dims[axis] = comm.Get_size()
                 else:
-                    groups.insert(0, list(ax))
+                    dims = [0] * len(shape)
+                    for ax in axes[-1]:
+                        dims[ax] = 1
+                self.subcomm = Subcomm(comm, dims)
+
+            # At this points axes is a tuple of tuples of length one.
+            # Try to collapse some Fourier transforms into one.
+            if np.any([abs(base.padding_factor - 1.0) > 1e-6 for base in bases]):
+                collapse_fourier = False
+            if collapse_fourier:
+                F = lambda ax: bases[ax].family() == 'fourier' and self.subcomm[ax].Get_size() == 1
+                axis = self.axes[-1][-1]
+                groups = [list(self.axes[-1])]
                 F0 = F(axis)
-            self.axes = groups
-        self.axes = tuple(map(tuple, self.axes))
+                for ax in reversed(self.axes[:-1]):
+                    axis = ax[-1]
+                    if F0 and F(axis):
+                        groups[0].insert(0, axis)
+                    else:
+                        groups.insert(0, list(ax))
+                    F0 = F(axis)
+                self.axes = groups
+            self.axes = tuple(map(tuple, self.axes))
 
-        for base in self.bases:
-            base.tensorproductspace = self
+            # Configure all transforms
+            axes = self.axes[-1]
+            pencil = Pencil(self.subcomm, shape, axes[-1])
+            self.xfftn.append(self.bases[axes[-1]])
+            self.xfftn[-1].plan(pencil.subshape, axes, dtype, kw)
+            self.pencil[0] = pencilA = pencil
+            if not shape[axes[-1]] == self.xfftn[-1].forward.output_array.shape[axes[-1]]:
+                dtype = self.xfftn[-1].forward.output_array.dtype
+                shape[axes[-1]] = self.xfftn[-1].forward.output_array.shape[axes[-1]]
+                pencilA = Pencil(self.subcomm, shape, axes[-1])
 
-        # Configure all transforms
-        axes = self.axes[-1]
-        pencil = Pencil(self.subcomm, shape, axes[-1])
-        self.xfftn.append(self.bases[axes[-1]])
-        self.xfftn[-1].plan(pencil.subshape, axes, dtype, kw)
-        self.pencil[0] = pencilA = pencil
-        if not shape[axes[-1]] == self.xfftn[-1].forward.output_array.shape[axes[-1]]:
-            dtype = self.xfftn[-1].forward.output_array.dtype
-            shape[axes[-1]] = self.xfftn[-1].forward.output_array.shape[axes[-1]]
-            pencilA = Pencil(self.subcomm, shape, axes[-1])
+            for i, axes in enumerate(reversed(self.axes[:-1])):
+                pencilB = pencilA.pencil(axes[-1])
+                transAB = pencilA.transfer(pencilB, dtype)
+                xfftn = self.bases[axes[-1]]
+                xfftn.plan(pencilB.subshape, axes, dtype, kw)
+                self.xfftn.append(xfftn)
+                self.transfer.append(transAB)
+                pencilA = pencilB
+                if not shape[axes[-1]] == xfftn.forward.output_array.shape[axes[-1]]:
+                    dtype = xfftn.forward.output_array.dtype
+                    shape[axes[-1]] = xfftn.forward.output_array.shape[axes[-1]]
+                    pencilA = Pencil(pencilB.subcomm, shape, axes[-1])
 
-        for i, axes in enumerate(reversed(self.axes[:-1])):
-            pencilB = pencilA.pencil(axes[-1])
-            transAB = pencilA.transfer(pencilB, dtype)
-            xfftn = self.bases[axes[-1]]
-            xfftn.plan(pencilB.subshape, axes, dtype, kw)
-            self.xfftn.append(xfftn)
-            self.transfer.append(transAB)
-            pencilA = pencilB
-            if not shape[axes[-1]] == xfftn.forward.output_array.shape[axes[-1]]:
-                dtype = xfftn.forward.output_array.dtype
-                shape[axes[-1]] = xfftn.forward.output_array.shape[axes[-1]]
-                pencilA = Pencil(pencilB.subcomm, shape, axes[-1])
+            self.pencil[1] = pencilA
 
-        self.pencil[1] = pencilA
+            self.forward = Transform(
+                [o.forward for o in self.xfftn],
+                [o.forward for o in self.transfer],
+                self.pencil)
+            self.backward = Transform(
+                [o.backward for o in self.xfftn[::-1]],
+                [o.backward for o in self.transfer[::-1]],
+                self.pencil[::-1])
+            self.scalar_product = Transform(
+                [o.scalar_product for o in self.xfftn],
+                [o.forward for o in self.transfer],
+                self.pencil)
 
-        self.forward = Transform(
-            [o.forward for o in self.xfftn],
-            [o.forward for o in self.transfer],
-            self.pencil)
-        self.backward = Transform(
-            [o.backward for o in self.xfftn[::-1]],
-            [o.backward for o in self.transfer[::-1]],
-            self.pencil[::-1])
-        self.scalar_product = Transform(
-            [o.scalar_product for o in self.xfftn],
-            [o.forward for o in self.transfer],
-            self.pencil)
+        else:
+            self.configure_backwards(backward_from_pencil, dtype, kw)
 
         for i, base in enumerate(bases):
             base.axis = i
             if base.boundary_condition() == 'Dirichlet' and not base.family() in ('laguerre', 'hermite'):
                 base.bc.set_tensor_bcs(base, self)
+
+    def configure_backwards(self, pencil, dtype, kw):
+        """Configure transforms starting from spectral space
+
+        Parameters
+        ----------
+            pencil : Pencil
+                The distribution in spectral space
+            dtype : Numpy dtype
+                The type of data in spectral space
+            kw : dict
+                Any parameters for planning transforms
+
+        Note
+        ----
+        To ensure the same distribution in spectral space, the padded
+        space must be configured by moving from the spectral space towards the
+        physical space. The distribution does not have to agree in physical
+        space, because the padding is done only in the spectral.
+        """
+        shape = list(self.global_shape(True))
+        axes = self.axes[0]
+        xfftn = self.bases[axes[-1]]
+        self.xfftn.append(xfftn)
+        self.subcomm = pencil.subcomm
+        subshape = list(pencil.subshape)
+        if isinstance(xfftn, R2CBasis):
+            subshape[axes[-1]] = int(np.floor(xfftn.N*xfftn.padding_factor))
+            dtype = np.float
+        else:
+            subshape[axes[-1]] = int(np.floor(subshape[axes[-1]]*xfftn.padding_factor))
+        self.xfftn[-1].plan(subshape, axes, dtype, kw)
+        if not shape[axes[-1]] == self.xfftn[-1].forward.input_array.shape[axes[-1]]:
+            dtype = self.xfftn[-1].forward.input_array.dtype
+            shape[axes[-1]] = self.xfftn[-1].forward.input_array.shape[axes[-1]]
+        pencilA = Pencil(pencil.subcomm, shape, axes[0])
+        self.pencil[0] = pencilA
+        for axes in self.axes[1:]:
+            pencilB = pencilA.pencil(axes[-1])
+            transBA = pencilA.transfer(pencilB, dtype)
+            xfftn = self.bases[axes[-1]]
+            subshape = list(pencilB.subshape)
+            if isinstance(xfftn, R2CBasis):
+                subshape[axes[-1]] = int(np.floor(xfftn.N*xfftn.padding_factor))
+                dtype = np.float
+            else:
+                subshape[axes[-1]] = int(np.floor(subshape[axes[-1]]*xfftn.padding_factor))
+            xfftn.plan(subshape, axes, dtype, kw)
+            self.xfftn.append(xfftn)
+            self.transfer.append(transBA)
+            pencilA = pencilB
+            if not shape[axes[-1]] == xfftn.forward.input_array.shape[axes[-1]]:
+                dtype = xfftn.forward.input_array.dtype
+                shape[axes[-1]] = xfftn.forward.input_array.shape[axes[-1]]
+                pencilA = Pencil(pencilB.subcomm, shape, axes[-1])
+
+        self.pencil[1] = pencilA
+
+        self.backward = Transform(
+            [o.backward for o in self.xfftn],
+            [o.forward for o in self.transfer],
+            self.pencil)
+        self.forward = Transform(
+            [o.forward for o in self.xfftn[::-1]],
+            [o.backward for o in self.transfer[::-1]],
+            self.pencil[::-1])
+        self.scalar_product = Transform(
+            [o.scalar_product for o in self.xfftn[::-1]],
+            [o.forward for o in self.transfer[::-1]],
+            self.pencil[::-1])
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        if isinstance(padding_factor, Number):
+            padding_factor = (padding_factor,)*len(self)
+        elif isinstance(padding_factor, (tuple, list, np.ndarray)):
+            assert len(padding_factor) == len(self)
+        padded_bases = [base.get_dealiased(padding_factor=padding_factor[axis],
+                                           dealias_direct=dealias_direct)
+                        for axis, base in enumerate(self.bases)]
+        return TensorProductSpace(self.comm, padded_bases,
+                                  dtype=self.forward.output_array.dtype,
+                                  backward_from_pencil=self.forward.output_pencil)
+
+    def get_refined(self, refinement_factor):
+        if isinstance(refinement_factor, Number):
+            refinement_factor = (refinement_factor,)*len(self)
+        elif isinstance(refinement_factor, (tuple, list, np.ndarray)):
+            assert len(refinement_factor) == len(self)
+        refined_bases = [base.get_refined(refinement_factor[axis])
+                         for axis, base in enumerate(self.bases)]
+        return TensorProductSpace(self.comm, refined_bases, axes=self.axes)
 
     def convolve(self, a_hat, b_hat, ab_hat):
         """Convolution of a_hat and b_hat
@@ -604,6 +694,28 @@ class TensorProductSpace(PFFT):
         """
         return self.bases[i]
 
+    def compatible_base(self, space):
+        """Return whether space is compatible with self.
+
+        Parameters
+        ----------
+
+        space : TensorProductSpace
+            The space compared to
+
+        Note
+        ----
+        Two spaces are deemed compatible if the underlying bases, along each
+        direction, belong to the same family, has the same number of quadrature
+        points, and the same quadrature scheme.
+        """
+        compatible = True
+        for base0, base1 in zip(self.bases, space.bases):
+            if not hash(base0) == hash(base1):
+                compatible = False
+                break
+        return compatible
+
 
 class MixedTensorProductSpace(object):
     """Class for composite tensorproductspaces.
@@ -774,6 +886,18 @@ class MixedTensorProductSpace(object):
         _recursiveflatten(self, s)
         return s
 
+    def compatible_base(self, space):
+        assert self.rank == space.rank
+        compatible = True
+        for space0, space1 in zip(self.flatten(), space.flatten()):
+            if space0.compatible_base(space1) is False:
+                compatible = False
+                break
+        return compatible
+
+    def get_refined(self, factor):
+        raise NotImplementedError
+
     def __getitem__(self, i):
         return self.spaces[i]
 
@@ -834,6 +958,11 @@ class VectorTensorProductSpace(MixedTensorProductSpace):
         s = (self.num_components(),) + s
         return s
 
+    def get_refined(self, refinement_factor):
+        return VectorTensorProductSpace(self.spaces[0].get_refined(refinement_factor))
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return VectorTensorProductSpace(self.spaces[0].get_dealiased(padding_factor, dealias_direct))
 
 class VectorTransform(object):
 
@@ -1017,11 +1146,11 @@ class BoundaryValues(object):
                             Yi.append(X[i][this_base.si[j]])
 
                     f_bci = lbci(*Yi)
-                    if s.stop == this_base.N:
+                    if s.stop == int(this_base.N*this_base.padding_factor):
                         b[this_base.si[-2+j]] = f_bci
 
                 elif isinstance(bci, (Number, np.ndarray)):
-                    if s.stop == this_base.N:
+                    if s.stop == int(this_base.N*this_base.padding_factor):
                         b[this_base.si[-2+j]] = bci
 
                 else:

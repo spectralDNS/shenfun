@@ -4,7 +4,7 @@ import numpy as np
 from numpy.polynomial import hermite
 from scipy.special import eval_hermite, factorial
 from mpi4py_fft import fftw
-from shenfun.spectralbase import SpectralBase, Transform
+from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
 from shenfun.utilities import inheritdocstrings
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
@@ -17,11 +17,21 @@ class Basis(SpectralBase):
     Parameters
     ----------
         N : int, optional
-            Number of quadrature points
+            Number of quadrature points. Should be even for efficiency, but
+            this is not required.
         quad : str, optional
-               Type of quadrature
+            Type of quadrature
 
-               - HG - Hermite-Gauss
+            - HG - Hermite-Gauss
+
+        domain : 2-tuple of floats, optional
+            The computational domain.
+        padding_factor : float, optional
+            Factor for padding backward transforms. padding_factor=1.5
+            corresponds to a 3/2-rule for dealiasing.
+        dealias_direct : bool, optional
+            True for dealiasing using 2/3-rule. Must be used with
+            padding_factor = 1.
 
     Note
     ----
@@ -37,12 +47,13 @@ class Basis(SpectralBase):
 
     """
 
-    def __init__(self, N=0, quad="HG", bc=(0., 0.)):
-        SpectralBase.__init__(self, N, quad, domain=(-np.inf, np.inf))
+    def __init__(self, N, quad="HG", bc=(0., 0.), padding_factor=1, dealias_direct=False):
+        SpectralBase.__init__(self, N, quad=quad, domain=(-np.inf, np.inf),
+                              padding_factor=padding_factor, dealias_direct=dealias_direct)
         self.forward = functools.partial(self.forward, fast_transform=False)
         self.backward = functools.partial(self.backward, fast_transform=False)
         self.scalar_product = functools.partial(self.scalar_product, fast_transform=False)
-        self.plan(N, 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, np.float, {})
 
     @staticmethod
     def family():
@@ -57,6 +68,18 @@ class Basis(SpectralBase):
     @staticmethod
     def boundary_condition():
         return 'Dirichlet'
+
+    def get_refined(self, refinement_factor):
+        return self.__class__(int(self.N*refinement_factor),
+                              quad=self.quad,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct)
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return self.__class__(self.N,
+                              quad=self.quad,
+                              padding_factor=padding_factor,
+                              dealias_direct=dealias_direct)
 
     def points_and_weights(self, N=None, map_true_domain=False, **kw):
         if N is None:
@@ -157,9 +180,16 @@ class Basis(SpectralBase):
         U.fill(0)
         V.fill(0)
         self.axis = axis
-        self.forward = Transform(self.forward, None, U, V, V)
-        self.backward = Transform(self.backward, None, V, V, U)
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.forward = Transform(self.forward, None, U, V, trunc_array)
+            self.backward = Transform(self.backward, None, trunc_array, V, U)
+        else:
+            self.forward = Transform(self.forward, None, U, V, V)
+            self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)

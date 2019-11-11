@@ -32,16 +32,14 @@ K1 = Basis(N[1], 'F', dtype='d', domain=(-30*np.pi, 30*np.pi))
 T = TensorProductSpace(comm, (K0, K1), **{'planner_effort': 'FFTW_MEASURE'})
 TV = VectorTensorProductSpace(T)
 
-Kp0 = Basis(N[0], 'F', dtype='D', padding_factor=1.5, domain=(-30*np.pi, 30*np.pi))
-Kp1 = Basis(N[1], 'F', dtype='d', padding_factor=1.5, domain=(-30*np.pi, 30*np.pi))
-Tp = TensorProductSpace(comm, (Kp0, Kp1), **{'planner_effort': 'FFTW_MEASURE'})
+Tp = T.get_padded_space((1.5, 1.5))
 TVp = VectorTensorProductSpace(Tp)
 
 u = TrialFunction(T)
 v = TestFunction(T)
 
-Tp = T
-TVp = TV
+#Tp = T
+#TVp = TV
 
 # Create solution and work arrays
 U = Array(T)

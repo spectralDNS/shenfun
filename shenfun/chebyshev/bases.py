@@ -54,17 +54,22 @@ class ChebyshevBase(SpectralBase):
         N : int, optional
             Number of quadrature points
         quad : str, optional
-               Type of quadrature
+            Type of quadrature
 
-               - GL - Chebyshev-Gauss-Lobatto
-               - GC - Chebyshev-Gauss
+            - GL - Chebyshev-Gauss-Lobatto
+            - GC - Chebyshev-Gauss
         domain : 2-tuple of floats, optional
-                 The computational domain
+            The computational domain
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
     """
 
-    def __init__(self, N=0, quad="GC", domain=(-1., 1.)):
+    def __init__(self, N, quad="GC", domain=(-1., 1.), padding_factor=1, dealias_direct=False):
         assert quad in ('GC', 'GL')
-        SpectralBase.__init__(self, N, quad, domain=domain)
+        self.dealias_direct = dealias_direct
+        SpectralBase.__init__(self, N, quad=quad, padding_factor=padding_factor, domain=domain)
 
     @staticmethod
     def family():
@@ -113,7 +118,7 @@ class ChebyshevBase(SpectralBase):
         return points, weights
 
     def vandermonde(self, x):
-        return n_cheb.chebvander(x, self.N-1)
+        return n_cheb.chebvander(x, int(self.N*self.padding_factor)-1)
 
     def sympy_basis(self, i=0):
         x = sympy.symbols('x')
@@ -227,14 +232,20 @@ class ChebyshevBase(SpectralBase):
             xfftn_bck = DCTWrap(xfftn_bck, V, U)
 
         self.axis = axis
-        self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
-        self.backward = Transform(self.backward, xfftn_bck, V, V, U)
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
+            self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
+        else:
+            self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
+            self.backward = Transform(self.backward, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_orthogonal(self):
         return Basis(self.N, quad=self.quad, domain=self.domain)
+
 
 @inheritdocstrings
 class Basis(ChebyshevBase):
@@ -245,16 +256,22 @@ class Basis(ChebyshevBase):
         N : int, optional
             Number of quadrature points
         quad : str, optional
-               Type of quadrature
+            Type of quadrature
 
-               - GL - Chebyshev-Gauss-Lobatto
-               - GC - Chebyshev-Gauss
+            - GL - Chebyshev-Gauss-Lobatto
+            - GC - Chebyshev-Gauss
         domain : 2-tuple of floats, optional
-                 The computational domain
+            The computational domain
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
     """
 
-    def __init__(self, N=0, quad='GC', domain=(-1., 1.)):
-        ChebyshevBase.__init__(self, N, quad, domain)
+    def __init__(self, N, quad='GC', domain=(-1., 1.), padding_factor=1,
+                 dealias_direct=False):
+        ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct)
         if quad == 'GC':
             self._xfftn_fwd = functools.partial(fftw.dctn, type=2)
             self._xfftn_bck = functools.partial(fftw.dctn, type=3)
@@ -262,7 +279,7 @@ class Basis(ChebyshevBase):
         else:
             self._xfftn_fwd = functools.partial(fftw.dctn, type=1)
             self._xfftn_bck = functools.partial(fftw.dctn, type=1)
-        self.plan(N, 0, np.float, {})
+        self.plan((int(padding_factor*N),), 0, np.float, {})
 
     @staticmethod
     def derivative_coefficients(fk):
@@ -336,13 +353,13 @@ class Basis(ChebyshevBase):
         if fast_transform is False:
             self.vandermonde_scalar_product(input_array, output_array)
             return
-        assert self.N == self.scalar_product.input_array.shape[self.axis]
+        #assert self.N == self.scalar_product.input_array.shape[self.axis]
         out = self.scalar_product.xfftn()
         if self.quad == "GC":
-            out *= (np.pi/(2*self.N))
+            out *= (np.pi/(2*self.N*self.padding_factor))
 
         elif self.quad == "GL":
-            out *= (np.pi/(2*(self.N-1)))
+            out *= (np.pi/(2*(self.N*self.padding_factor-1)))
 
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
@@ -359,7 +376,6 @@ class Basis(ChebyshevBase):
     def get_orthogonal(self):
         return self
 
-
 @inheritdocstrings
 class ShenDirichletBasis(ChebyshevBase):
     """Shen basis for Dirichlet boundary conditions
@@ -369,37 +385,48 @@ class ShenDirichletBasis(ChebyshevBase):
         N : int, optional
             Number of quadrature points
         quad : str, optional
-               Type of quadrature
+            Type of quadrature
 
-               - GL - Chebyshev-Gauss-Lobatto
-               - GC - Chebyshev-Gauss
+            - GL - Chebyshev-Gauss-Lobatto
+            - GC - Chebyshev-Gauss
 
         bc : 2-tuple of floats, optional
-             Boundary conditions at x=(1,-1). For Poisson eq.
+            Boundary conditions at x=(1,-1). For Poisson eq.
         domain : 2-tuple of floats, optional
-                 The computational domain
+            The computational domain
         scaled : bool, optional
-                 Whether or not to use scaled basis
+            Whether or not to use scaled basis
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
 
     Note
     ----
-        A test function is always using homogeneous boundary conditions
+    A test function is always using homogeneous boundary conditions
 
     """
 
-    def __init__(self, N=0, quad="GC", bc=(0, 0),
-                 domain=(-1., 1.), scaled=False):
-        ChebyshevBase.__init__(self, N, quad, domain=domain)
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), scaled=False,
+                 padding_factor=1, dealias_direct=False):
+        ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct)
         from shenfun.tensorproductspace import BoundaryValues
-        self.CT = Basis(N, quad)
+        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor = np.ones(1)
-        self.plan(N, 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, np.float, {})
         self.bc = BoundaryValues(self, bc=bc)
 
     @staticmethod
     def boundary_condition():
         return 'Dirichlet'
+
+    def get_refined(self, refinement_factor):
+        return self.__class__(int(self.N*refinement_factor), quad=self.quad,
+                              domain=self.domain, padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              bc=self.bc.bc, scaled=self._scaled)
 
     def _composite_basis(self, V, argument=0):
         P = np.zeros(V.shape)
@@ -462,7 +489,8 @@ class ShenDirichletBasis(ChebyshevBase):
 
     def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
-            SpectralBase.evaluate_expansion_all(self, input_array, output_array, False)
+            self._padding_backward(input_array, self.backward.tmp_array)
+            SpectralBase.evaluate_expansion_all(self, self.backward.tmp_array, output_array, False)
             return
         w_hat = work[(input_array, 0, True)]
         s0 = self.sl[slice(0, -2)]
@@ -506,12 +534,25 @@ class ShenDirichletBasis(ChebyshevBase):
         u = self.scalar_product.tmp_array
         self.apply_bc_rhs(u)
         self.apply_inverse_mass(u)
-        self.bc.apply_after(u, False)
         self._truncation_forward(u, self.forward.output_array)
+        self.bc.apply_after(self.forward.output_array, False)
         if output_array is not None:
             output_array[...] = self.forward.output_array
             return output_array
         return self.forward.output_array
+
+    def backward(self, input_array=None, output_array=None, fast_transform=True):
+        if input_array is not None:
+            self.backward.input_array[...] = input_array
+
+        self.evaluate_expansion_all(self.backward.input_array,
+                                    self.backward.output_array,
+                                    fast_transform=fast_transform)
+
+        if output_array is not None:
+            output_array[...] = self.backward.output_array
+            return output_array
+        return self.backward.output_array
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
@@ -530,14 +571,50 @@ class ShenDirichletBasis(ChebyshevBase):
         U = xfftn_fwd.input_array
         V = xfftn_fwd.output_array
         self.axis = axis
-        self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
-        self.backward = Transform(self.backward, xfftn_bck, V, V, U)
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
+            self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
+        else:
+            self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
+            self.backward = Transform(self.backward, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_bc_basis(self):
         return BCBasis(self.N, quad=self.quad, domain=self.domain)
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return ShenDirichletBasis(self.N,
+                                  quad=self.quad,
+                                  padding_factor=padding_factor,
+                                  dealias_direct=dealias_direct,
+                                  domain=self.domain,
+                                  bc=tuple(self.bc.bc))
+
+    def _truncation_forward(self, padded_array, trunc_array):
+        if not id(trunc_array) == id(padded_array):
+            trunc_array.fill(0)
+            N = trunc_array.shape[self.axis]
+            s = self.sl[slice(0, N-2)]
+            trunc_array[s] = padded_array[s]
+            s = self.sl[slice(-2, None)]
+            trunc_array[s] = padded_array[s]
+
+    def _padding_backward(self, trunc_array, padded_array):
+        if not id(trunc_array) == id(padded_array):
+            padded_array.fill(0)
+            N = trunc_array.shape[self.axis]
+            _sn = self.sl[slice(0, N-2)]
+            padded_array[_sn] = trunc_array[_sn]
+            _sn = self.sl[slice(N-2, N)]
+            _sp = self.sl[slice(-2, None)]
+            padded_array[_sp] = trunc_array[_sn]
+
+        elif self.dealias_direct:
+            su = self.sl[slice(2*self.N//3, None)]
+            padded_array[su] = 0
 
 @inheritdocstrings
 class ShenNeumannBasis(ChebyshevBase):
@@ -548,27 +625,38 @@ class ShenNeumannBasis(ChebyshevBase):
         N : int, optional
             Number of quadrature points
         quad : str, optional
-               Type of quadrature
+            Type of quadrature
 
-               - GL - Chebyshev-Gauss-Lobatto
-               - GC - Chebyshev-Gauss
+            - GL - Chebyshev-Gauss-Lobatto
+            - GC - Chebyshev-Gauss
 
         mean : float, optional
-               Mean value
+            Mean value
         domain : 2-tuple of floats, optional
-                 The computational domain
+            The computational domain
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
     """
-
-    def __init__(self, N=0, quad="GC", mean=0, domain=(-1., 1.)):
-        ChebyshevBase.__init__(self, N, quad, domain=domain)
+    def __init__(self, N, quad="GC", mean=0, domain=(-1., 1.), padding_factor=1,
+                 dealias_direct=False):
+        ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct)
         self.mean = mean
-        self.CT = Basis(N, quad)
+        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._factor = np.zeros(0)
-        self.plan(N, 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, np.float, {})
 
     @staticmethod
     def boundary_condition():
         return 'Neumann'
+
+    def get_refined(self, refinement_factor):
+        return self.__class__(int(self.N*refinement_factor), quad=self.quad,
+                              domain=self.domain, padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                             mean=self.mean)
 
     def _composite_basis(self, V, argument=0):
         assert self.N == V.shape[1]
@@ -638,7 +726,8 @@ class ShenNeumannBasis(ChebyshevBase):
 
     def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
-            SpectralBase.evaluate_expansion_all(self, input_array, output_array, False)
+            self._padding_backward(input_array, self.backward.tmp_array)
+            SpectralBase.evaluate_expansion_all(self, self.backward.tmp_array, output_array, False)
             return
         w_hat = work[(input_array, 0, True)]
         self.set_factor_array(input_array)
@@ -648,6 +737,19 @@ class ShenNeumannBasis(ChebyshevBase):
         w_hat[s1] -= self._factor*input_array[s0]
         self.CT.backward(w_hat)
         assert output_array is self.CT.backward.output_array
+
+    def backward(self, input_array=None, output_array=None, fast_transform=True):
+        if input_array is not None:
+            self.backward.input_array[...] = input_array
+
+        self.evaluate_expansion_all(self.backward.input_array,
+                                    self.backward.output_array,
+                                    fast_transform=fast_transform)
+
+        if output_array is not None:
+            output_array[...] = self.backward.output_array
+            return output_array
+        return self.backward.output_array
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
@@ -691,8 +793,13 @@ class ShenNeumannBasis(ChebyshevBase):
         U = xfftn_fwd.input_array
         V = xfftn_fwd.output_array
         self.axis = axis
-        self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
-        self.backward = Transform(self.backward, xfftn_bck, V, V, U)
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
+            self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
+        else:
+            self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
+            self.backward = Transform(self.backward, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
@@ -709,21 +816,26 @@ class ShenBiharmonicBasis(ChebyshevBase):
         N : int, optional
             Number of quadrature points
         quad : str, optional
-               Type of quadrature
+            Type of quadrature
 
-               - GL - Chebyshev-Gauss-Lobatto
-               - GC - Chebyshev-Gauss
+            - GL - Chebyshev-Gauss-Lobatto
+            - GC - Chebyshev-Gauss
         domain : 2-tuple of floats, optional
-                 The computational domain
+            The computational domain
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
 
     """
-
-    def __init__(self, N=0, quad="GC", domain=(-1., 1.)):
-        ChebyshevBase.__init__(self, N, quad, domain=domain)
-        self.CT = Basis(N, quad)
+    def __init__(self, N, quad="GC", domain=(-1., 1.), padding_factor=1,
+                 dealias_direct=False):
+        ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
-        self.plan(N, 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, np.float, {})
 
     @staticmethod
     def boundary_condition():
@@ -778,8 +890,8 @@ class ShenBiharmonicBasis(ChebyshevBase):
         Tk[...] = output
         self.set_factor_arrays(Tk)
         s = self.sl[self.slice()]
-        s2 = self.sl[slice(2, -2)]
-        s4 = self.sl[slice(4, None)]
+        s2 = self.sl[slice(2, self.N-2)]
+        s4 = self.sl[slice(4, self.N)]
         output[s] += self._factor1 * Tk[s2]
         output[s] += self._factor2 * Tk[s4]
 
@@ -802,8 +914,8 @@ class ShenBiharmonicBasis(ChebyshevBase):
     def set_w_hat(self, w_hat, fk, f1, f2):
         """Return intermediate w_hat array"""
         s = self.sl[self.slice()]
-        s2 = self.sl[slice(2, -2)]
-        s4 = self.sl[slice(4, None)]
+        s2 = self.sl[slice(2, self.N-2)]
+        s4 = self.sl[slice(4, self.N)]
         w_hat[s] = fk[s]
         w_hat[s2] += f1*fk[s]
         w_hat[s4] += f2*fk[s]
@@ -811,7 +923,8 @@ class ShenBiharmonicBasis(ChebyshevBase):
 
     def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
-            SpectralBase.evaluate_expansion_all(self, input_array, output_array, False)
+            self._padding_backward(input_array, self.backward.tmp_array)
+            SpectralBase.evaluate_expansion_all(self, self.backward.tmp_array, output_array, False)
             return
         w_hat = work[(input_array, 0, True)]
         self.set_factor_arrays(input_array)
@@ -827,6 +940,19 @@ class ShenBiharmonicBasis(ChebyshevBase):
         output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2)
         return output_array
 
+    def backward(self, input_array=None, output_array=None, fast_transform=True):
+        if input_array is not None:
+            self.backward.input_array[...] = input_array
+
+        self.evaluate_expansion_all(self.backward.input_array,
+                                    self.backward.output_array,
+                                    fast_transform=fast_transform)
+
+        if output_array is not None:
+            output_array[...] = self.backward.output_array
+            return output_array
+        return self.backward.output_array
+
     def slice(self):
         return slice(0, self.N-4)
 
@@ -836,7 +962,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
             output_array = np.zeros(x.shape)
         x = self.map_reference_domain(x)
         w_hat = work[(u, 0, True)]
-        self.set_factor_arrays(u)
+        self.set_factor_arrays(w_hat)
         output_array[:] = n_cheb.chebval(x, u[:-4])
         w_hat[2:-2] = self._factor1*u[:-4]
         output_array += n_cheb.chebval(x, w_hat[:-2])
@@ -862,11 +988,17 @@ class ShenBiharmonicBasis(ChebyshevBase):
         U = xfftn_fwd.input_array
         V = xfftn_fwd.output_array
         self.axis = axis
-        self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
-        self.backward = Transform(self.backward, xfftn_bck, V, V, U)
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
+            self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
+        else:
+            self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
+            self.backward = Transform(self.backward, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
+
 
 @inheritdocstrings
 class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
@@ -877,27 +1009,39 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
         N : int, optional
             Number of quadrature points
         quad : str, optional
-               Type of quadrature
+            Type of quadrature
 
-               - GL - Chebyshev-Gauss-Lobatto
-               - GC - Chebyshev-Gauss
+            - GL - Chebyshev-Gauss-Lobatto
+            - GC - Chebyshev-Gauss
 
         mean : float, optional
-               Mean value
+            Mean value
         domain : 2-tuple of floats, optional
-                 The computational domain
+            The computational domain
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
     """
 
-    def __init__(self, N=0, quad="GC", mean=0, domain=(-1., 1.)):
-        ChebyshevBase.__init__(self, N, quad, domain=domain)
+    def __init__(self, N, quad="GC", mean=0, domain=(-1., 1.), padding_factor=1,
+                 dealias_direct=False):
+        ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct)
         self.mean = mean
-        self.CT = Basis(N, quad)
+        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._factor = np.zeros(0)
-        self.plan(N, 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, np.float, {})
 
     @staticmethod
     def boundary_condition():
         return 'Neumann2'
+
+    def get_refined(self, refinement_factor):
+        return self.__class__(int(self.N*refinement_factor), quad=self.quad,
+                              domain=self.domain, padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              mean=self.mean)
 
     def _composite_basis(self, V, argument=0):
         assert self.N == V.shape[1]
@@ -1020,8 +1164,13 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
         U = xfftn_fwd.input_array
         V = xfftn_fwd.output_array
         self.axis = axis
-        self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
-        self.backward = Transform(self.backward, xfftn_bck, V, V, U)
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
+            self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
+        else:
+            self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
+            self.backward = Transform(self.backward, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
@@ -1036,22 +1185,27 @@ class BCBasis(ChebyshevBase):
         N : int, optional
             Number of quadrature points
         quad : str, optional
-               Type of quadrature
+            Type of quadrature
 
-               - GL - Chebyshev-Gauss-Lobatto
-               - GC - Chebyshev-Gauss
+            - GL - Chebyshev-Gauss-Lobatto
+            - GC - Chebyshev-Gauss
 
         bc : 2-tuple of floats, optional
-             Boundary conditions at x=(1,-1).
+            Boundary conditions at x=(1,-1).
         domain : 2-tuple of floats, optional
-                 The computational domain
+            The computational domain
         scaled : bool, optional
-                 Whether or not to use scaled basis
+            Whether or not to use scaled basis
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
     """
 
-    def __init__(self, N=0, quad="GC", bc=(0, 0),
-                 domain=(-1., 1.), scaled=False):
-        ChebyshevBase.__init__(self, N, quad, domain=domain)
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), scaled=False,
+                 padding_factor=1, dealias_direct=False):
+        ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct)
         self.plan(N, 0, np.float, {})
         self.bc = bc
 

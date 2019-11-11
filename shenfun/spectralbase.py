@@ -234,7 +234,7 @@ class SpectralBase(object):
     """
     # pylint: disable=method-hidden, too-many-instance-attributes
 
-    def __init__(self, N, quad, padding_factor=1, domain=(-1., 1.)):
+    def __init__(self, N, quad='', padding_factor=1, domain=(-1., 1.), dealias_direct=False):
         self.N = N
         self.domain = domain
         self.quad = quad
@@ -242,6 +242,7 @@ class SpectralBase(object):
         self.xfftn_fwd = None
         self.xfftn_bck = None
         self.padding_factor = np.floor(N*padding_factor)/N
+        self.dealias_direct = dealias_direct
         self._mass = None         # Mass matrix (if needed)
         self._xfftn_fwd = None    # external forward transform function
         self._xfftn_bck = None    # external backward transform function
@@ -411,6 +412,8 @@ class SpectralBase(object):
             fast_transform : bool, optional
                 If True use fast transforms, if False use
                 Vandermonde type
+            padding_factor : number
+                If > 1 then use forward transform with truncation
 
         Note
         ----
@@ -440,6 +443,8 @@ class SpectralBase(object):
             fast_transform : bool, optional
                 If True use fast transforms (if implemented), if
                 False use Vandermonde type
+            padding_factor : number
+                Pad array with zeros before transforming
 
         Note
         ----
@@ -610,23 +615,19 @@ class SpectralBase(object):
                 Expansion coefficients
 
         """
-        assert abs(self.padding_factor-1) < 1e-8
-        assert self.N == input_array.shape[self.axis]
-
-        _, weights = self.points_and_weights()
+        _, weights = self.points_and_weights(int(self.N*self.padding_factor))
         P = self.evaluate_basis_all(argument=0)
-
         if input_array.ndim == 1:
-            output_array[:] = np.dot(input_array*weights, np.conj(P))
+            output_array[slice(0, self.N)] = np.dot(input_array*weights, np.conj(P))
 
         else: # broadcasting
             bc_shape = [np.newaxis,]*input_array.ndim
             bc_shape[self.axis] = slice(None)
             fc = np.moveaxis(input_array*weights[tuple(bc_shape)], self.axis, -1)
-            output_array[:] = np.moveaxis(np.dot(fc, np.conj(P)), -1, self.axis)
+            output_array[self.sl[slice(0, self.N)]] = np.moveaxis(np.dot(fc, np.conj(P)), -1, self.axis)
             #output_array[:] = np.moveaxis(np.tensordot(input_array*weights[bc_shape], np.conj(P), (self.axis, 0)), -1, self.axis)
 
-        assert output_array is self.forward.output_array
+        assert output_array is self.scalar_product.output_array
 
     def vandermonde_evaluate_expansion_all(self, input_array, output_array):
         """Naive implementation of evaluate_expansion_all
@@ -638,20 +639,15 @@ class SpectralBase(object):
             output_array : array
                 Function values on quadrature mesh
 
-        Note
-        ----
-        Implemented only for non-padded transforms
-
         """
-        assert abs(self.padding_factor-1) < 1e-8
-        assert self.N == output_array.shape[self.axis]
         P = self.evaluate_basis_all(argument=1)
-
         if output_array.ndim == 1:
             output_array = np.dot(P, input_array, out=output_array)
         else:
             fc = np.moveaxis(input_array, self.axis, -2)
-            array = np.dot(P, fc)
+            shape = [slice(None)]*input_array.ndim
+            shape[-2] = slice(0, self.N)
+            array = np.dot(P, fc[tuple(shape)])
             output_array[:] = np.moveaxis(array, 0, self.axis)
 
     def vandermonde_evaluate_expansion(self, points, input_array, output_array):
@@ -668,7 +664,6 @@ class SpectralBase(object):
                 Function values on points
 
         """
-        assert abs(self.padding_factor-1) < 1e-8
         P = self.evaluate_basis_all(x=points, argument=1)
 
         if output_array.ndim == 1:
@@ -690,7 +685,7 @@ class SpectralBase(object):
                 mass matrix, and returned.
 
         """
-        assert self.N == array.shape[self.axis]
+        #assert self.N == array.shape[self.axis]
         if self._mass is None:
             B = self.get_mass_matrix()
             self._mass = B((self, 0), (self, 0))
@@ -747,6 +742,7 @@ class SpectralBase(object):
                 auto_contiguous=True,
                 planner_effort='FFTW_MEASURE',
                 threads=1,
+                backward=False,
             )
             opts.update(options)
 
@@ -802,7 +798,7 @@ class SpectralBase(object):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def _get_truncarray(self, shape, dtype):
-        shape = list(shape)
+        shape = list(shape) if np.ndim(shape) else [shape]
         shape[self.axis] = int(np.round(shape[self.axis] / self.padding_factor))
         return fftw.aligned(shape, dtype=dtype)
 
@@ -895,7 +891,9 @@ class SpectralBase(object):
             forward transform). If False then return allocated shape of physical space
             (the input to a forward transform).
         """
-        return self.N
+        if forward_output:
+            return self.N
+        return int(np.floor(self.padding_factor*self.N))
 
     def domain_factor(self):
         """Return scaling factor for domain"""
@@ -972,6 +970,9 @@ class SpectralBase(object):
         mod = importlib.import_module('shenfun.'+self.family())
         return mod.matrices.mat
 
+    def compatible_base(self, space):
+        return hash(self) == hash(space)
+
     def __len__(self):
         return 1
 
@@ -979,11 +980,40 @@ class SpectralBase(object):
         assert i == 0
         return self
 
+    def __hash__(self):
+        return hash((self.N, self.quad, self.family()))
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return self.__class__(self.N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              padding_factor=padding_factor,
+                              dealias_direct=dealias_direct)
+
+    def get_refined(self, refinement_factor):
+        return self.__class__(int(self.N*refinement_factor),
+                              quad=self.quad,
+                              domain=self.domain,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct)
+
     def _truncation_forward(self, padded_array, trunc_array):
-        pass
+        if not id(trunc_array) == id(padded_array):
+            trunc_array.fill(0)
+            N = trunc_array.shape[self.axis]
+            s = self.sl[slice(0, N)]
+            trunc_array[:] = padded_array[s]
 
     def _padding_backward(self, trunc_array, padded_array):
-        pass
+        if not id(trunc_array) == id(padded_array):
+            padded_array.fill(0)
+            N = trunc_array.shape[self.axis]
+            _sn = self.sl[slice(0, N)]
+            padded_array[_sn] = trunc_array[_sn]
+
+        elif self.dealias_direct:
+            su = self.sl[slice(2*self.N//3, None)]
+            padded_array[su] = 0
 
 class MixedBasis(object):
     """Class for composite bases in 1D

@@ -100,6 +100,9 @@ def get_ck(N, quad):
         ck[-1] = 2
     return ck
 
+def dmax(N, M, d):
+    Z = min(N, M)
+    return Z-abs(d)+min(max((M-N)*int(d/abs(d)), 0), abs(d))
 
 @inheritdocstrings
 class BDDmat(SpectralMatrix):
@@ -131,6 +134,10 @@ class BDDmat(SpectralMatrix):
     def matvec(self, v, c, format='cython', axis=0):
         N, M = self.shape
         c.fill(0)
+        # Cython implementation only handles square matrix
+        if not M == N:
+            format = 'csr'
+
         if format == 'cython' and v.ndim == 3:
             ld = self[-2]*np.ones(M-2)
             cython.Matvec.Tridiagonal_matvec3D_ptr(v, c, ld, self[0], ld, axis)
@@ -147,10 +154,11 @@ class BDDmat(SpectralMatrix):
             if axis > 0:
                 v = np.moveaxis(v, axis, 0)
                 c = np.moveaxis(c, axis, 0)
-            s = (slice(None),)+(np.newaxis,)*(v.ndim-1) # broadcasting
-            c[:(N-2)] = self[2]*v[2:N]
-            c[:N] += self[0][s]*v[:N]
-            c[2:N] += self[-2]*v[:(N-2)]
+            s = (slice(0, M),)+(np.newaxis,)*(v.ndim-1) # broadcasting
+            sm2 = (slice(0, M-2),)+(np.newaxis,)*(v.ndim-1) # broadcasting
+            c[:(M-2)] = self[2][sm2]*v[2:M]
+            c[:M] += self[0][s]*v[:M]
+            c[2:M] += self[-2][sm2]*v[:(M-2)]
             if axis > 0:
                 v = np.moveaxis(v, 0, axis)
                 c = np.moveaxis(c, 0, axis)
@@ -186,11 +194,14 @@ class BNDmat(SpectralMatrix):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SD)
         N = test[0].N
-        ck = get_ck(N, test[0].quad)
-        k = np.arange(N-2, dtype=np.float)
+        M = trial[0].N
+        Q = min(N, M)
+        ck = get_ck(Q, test[0].quad)
+        k = np.arange(Q-2, dtype=np.float)
         d = {-2: -np.pi/2,
-              0: np.pi/2.*(ck[:-2]+ck[2:]*(k/(k+2))**2),
-              2: -np.pi/2*(k[:N-4]/(k[:N-4]+2))**2}
+              0: np.pi/2.*(ck[:-2]+ck[2:]*(k/(k+2))**2)}
+        d2 = -np.pi/2*(k/(k+2))**2
+        d[2] = d2[:dmax(N-2, M-2, 2)]
         SpectralMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='csr', axis=0):
@@ -225,15 +236,20 @@ class BDNmat(SpectralMatrix):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SN)
         N = test[0].N
-        ck = get_ck(N, test[0].quad)
-        k = np.arange(N-2, dtype=np.float)
-        d = {-2: -np.pi/2*(k[:N-4]/(k[:N-4]+2))**2,
-              0:  np.pi/2.*(ck[:-2]+ck[2:]*(k/(k+2))**2),
-              2: -np.pi/2}
+        M = trial[0].N
+        Q = min(N, M)
+        ck = get_ck(Q, test[0].quad)
+        k = np.arange(Q-2, dtype=np.float)
+        d = {0:  np.pi/2.*(ck[:-2]+ck[2:]*(k/(k+2))**2),
+             2: -np.pi/2}
+        d[-2] = (-np.pi/2*(k/(k+2))**2)[:dmax(N-2, M-2, -2)]
         SpectralMatrix.__init__(self, d, test, trial)
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
+        N, M = self.shape
+        if not M == N:
+            format = 'csr'
         if format == 'cython' and v.ndim == 3:
             cython.Matvec.BDN_matvec3D_ptr(v, c, self[-2], self[0], self[2], axis)
             self.scale_array(c)
@@ -336,15 +352,21 @@ class BTTmat(SpectralMatrix):
     def __init__(self, test, trial):
         assert isinstance(test[0], CB)
         assert isinstance(trial[0], CB)
-        ck = get_ck(test[0].N, test[0].quad)
+        ck = get_ck(min(test[0].N, trial[0].N), test[0].quad)
         SpectralMatrix.__init__(self, {0: np.pi/2*ck}, test, trial)
 
-    def matvec(self, v, c, format='self', axis=0):
+    def matvec(self, v, c, format='csr', axis=0):
         c.fill(0)
+        N, M = self.shape
+        if not M == N:
+            format = 'csr'
         if format == 'self':
             s = [np.newaxis,]*v.ndim # broadcasting
-            s[axis] = slice(None)
-            c[:] = self[0][tuple(s)]*v
+            d = [slice(0, m) for m in v.shape]
+            N, M = self.shape
+            s[axis] = slice(0, M)
+            s = tuple(s)
+            c[d] = self[0][s]*v[d]
             self.scale_array(c)
         else:
             c = super(BTTmat, self).matvec(v, c, format=format, axis=axis)
@@ -388,11 +410,16 @@ class BNNmat(SpectralMatrix):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SN)
         N = test[0].N
-        ck = get_ck(N, test[0].quad)
-        k = np.arange(N-2, dtype=np.float)
-        d = {0: np.pi/2*(ck[:-2]+ck[2:]*(k[:]/(k[:]+2))**4),
-             2: -np.pi/2*((k[2:]-2)/(k[2:]))**2}
-        d[-2] = d[2]
+        M = trial[0].N
+        Q = min(N, M)
+        ck = get_ck(Q, test[0].quad)
+        k = np.arange(Q-2, dtype=np.float)
+        d = {0: np.pi/2*(ck[:-2]+ck[2:]*(k[:]/(k[:]+2))**4)}
+
+        dp = dmax(N-2, M-2, 2)
+        d[2] = -np.pi/2*(k[:dp]/(k[:dp]+2))**2
+        dm = dmax(N-2, M-2, -2)
+        d[-2] = -np.pi/2*(k[:dm]/(k[:dm]+2))**2
         SpectralMatrix.__init__(self, d, test, trial)
         self.solve = neumann_TDMA(self)
 
@@ -424,10 +451,12 @@ class BDTmat(SpectralMatrix):
     def __init__(self, test, trial):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], CB)
-        N = test[0].N
-        ck = get_ck(N, test[0].quad)
-        d = {0: np.pi/2*ck[:N-2],
-             2: -np.pi/2*ck[2:]}
+        N = test[0].N-2
+        M = trial[0].N
+        Q = min(N, M)
+        ck = get_ck(Q+2, test[0].quad)
+        d = {0: np.pi/2*ck[:Q],
+             2: -np.pi/2*ck[2:(dmax(N, M, 2)+2)]}
         SpectralMatrix.__init__(self, d, test, trial)
 
 
@@ -452,9 +481,11 @@ class BTDmat(SpectralMatrix):
         assert isinstance(test[0], CB)
         assert isinstance(trial[0], SD)
         N = test[0].N
+        M = trial[0].N-2
+        Q = min(N, M)
         ck = get_ck(N, test[0].quad)
-        d = {-2: -np.pi/2*ck[2:],
-              0: np.pi/2*ck[:N-2]}
+        d = {0: np.pi/2*ck[:Q]}
+        d[-2] = -np.pi/2*ck[2:(dmax(N, M, -2)+2)]
         SpectralMatrix.__init__(self, d, test, trial)
 
 
@@ -507,19 +538,26 @@ class BBBmat(SpectralMatrix):
         assert isinstance(trial[0], SB)
         from shenfun.la import PDMA
         N = test[0].N
-        ck = get_ck(N, test[0].quad)
-        k = np.arange(N-4, dtype=np.float)
-        d = {4: (k[:-4]+1)/(k[:-4]+3)*np.pi/2,
-             2: -((k[:-2]+2)/(k[:-2]+3) + (k[:-2]+4)*(k[:-2]+1)/((k[:-2]+5)*(k[:-2]+3)))*np.pi,
-             0: (ck[:N-4] + 4*((k+2)/(k+3))**2 + ck[4:]*((k+1)/(k+3))**2)*np.pi/2.}
-        d[-2] = d[2]
-        d[-4] = d[4]
+        M = trial[0].N
+        Q = min(N, M)
+        ck = get_ck(Q, test[0].quad)
+        k = np.arange(Q-4, dtype=np.float)
+        d = {0: (ck[:Q-4] + 4*((k+2)/(k+3))**2 + ck[4:]*((k+1)/(k+3))**2)*np.pi/2.}
+        d4 = (k+1)/(k+3)*np.pi/2
+        d2 = -((k+2)/(k+3)+(k+4)*(k+1)/((k+5)*(k+3)))*np.pi
+        d[2] = d2[:dmax(N-4, M-4, 2)]
+        d[4] = d4[:dmax(N-4, M-4, 4)]
+        d[-2] = d2[:dmax(N-4, M-4, -2)]
+        d[-4] = d4[:dmax(N-4, M-4, -4)]
         SpectralMatrix.__init__(self, d, test, trial)
         self.solve = PDMA(self)
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
-        N = self.shape[0]
+        N, M = self.shape
+        if not M == N:
+            format = 'csr'
+
         if format == 'self':
             if axis > 0:
                 v = np.moveaxis(v, axis, 0)

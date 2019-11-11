@@ -1,7 +1,8 @@
 from copy import copy
 import numpy as np
 import sympy as sp
-from shenfun.tensorproductspace import TensorProductSpace
+from shenfun.tensorproductspace import TensorProductSpace, VectorTensorProductSpace, \
+    MixedTensorProductSpace
 from shenfun.matrixbase import TPMatrix
 from .arguments import Expr, TestFunction, TrialFunction, BasisFunction, \
     Function, Array
@@ -9,7 +10,7 @@ from .inner import inner
 
 __all__ = ('project',)
 
-def project(uh, T, output_array=None, fill=True, use_to_ortho=True):
+def project(uh, T, output_array=None, fill=True, use_to_ortho=True, use_assign=True):
     r"""
     Project ``uh`` to tensor product space ``T``
 
@@ -34,6 +35,9 @@ def project(uh, T, output_array=None, fill=True, use_to_ortho=True):
     use_to_ortho : bool, optional
         Whether to use fast `to_ortho` method for projection of Functions
         to orthogonal space.
+    use_assign : bool, optional
+        Whether to use fast `assign` method for projection of Function to
+        a denser space of the same kind.
 
     Returns
     -------
@@ -78,28 +82,49 @@ def project(uh, T, output_array=None, fill=True, use_to_ortho=True):
 
     if hasattr(uh, '__call__'):
         # Evaluate sympy function on entire mesh
-        if isinstance(T, TensorProductSpace):
+        if isinstance(T, (TensorProductSpace, MixedTensorProductSpace)):
             uh = Array(T, buffer=uh(*T.local_mesh(True)).astype(T.forward.input_array.dtype))
         else:
             uh = Array(T, buffer=uh(T.mesh()).astype(T.forward.input_array.dtype))
 
+    if isinstance(uh, Function):
+        W = uh.function_space()
+        if W == T:
+            output_array[:] = uh
+            return output_array
+
+        assert W.rank == T.rank
+        compatible_bases = W.compatible_base(T)
+        if (not compatible_bases) and use_assign:
+            # If the underlysing bases are the same, but of different size,
+            # then use assign to simply copy to the new space
+            try:
+                uh.assign(output_array)
+                return output_array
+            except:
+                pass
+
+        elif T.is_orthogonal and use_to_ortho:
+            # Try to use fast to_ortho for projection to orthogonal space
+            try:
+                output_array = uh.to_ortho(output_array)
+                return output_array
+            except:
+                pass
+
     if isinstance(uh, np.ndarray) and not isinstance(uh, (Array, Function)):
+        assert np.all(uh.shape == T.shape(False))
         uh = Array(T, buffer=uh)
 
-    if isinstance(uh, Array) and uh.function_space() == T:
-        # Project is just regular forward transform
-        output_array = T.forward(uh, output_array)
-        return output_array
-
-    if isinstance(uh, Function) and T.is_orthogonal and use_to_ortho:
-        # Try to use fast to_ortho for projection to orthogonal space
-        try:
-            output_array = uh.to_ortho(output_array)
+    if isinstance(uh, Array):
+        if uh.function_space().compatible_base(T):
+            # Project is just regular forward transform
+            output_array = T.forward(uh, output_array)
             return output_array
-        except:
-            pass
+        else:
+            raise RuntimeError('Provided Array not the same shape as space projected into')
 
-    assert isinstance(uh, (Expr, Array, BasisFunction))
+    assert isinstance(uh, (Expr, BasisFunction))
 
     v = TestFunction(T)
     u = TrialFunction(T)
@@ -107,6 +132,9 @@ def project(uh, T, output_array=None, fill=True, use_to_ortho=True):
     B = inner(v, u)
 
     if isinstance(T, TensorProductSpace):
+        if len(T.get_nonperiodic_axes()) > 2:
+            raise NotImplementedError
+
         if len(T.get_nonperiodic_axes()) == 2:
             # Means we have two non-periodic directions
             B = [B] if isinstance(B, TPMatrix) else B
@@ -118,9 +146,9 @@ def project(uh, T, output_array=None, fill=True, use_to_ortho=True):
             npaxes.remove(axis)
             second_axis = npaxes[0]
             pencilB = pencilA.pencil(second_axis)
-            transAB = pencilA.transfer(pencilB, 'd')
-            output_arrayB = np.zeros(transAB.subshapeB)
-            output_arrayB2 = np.zeros(transAB.subshapeB)
+            transAB = pencilA.transfer(pencilB, output_array.dtype.char)
+            output_arrayB = np.zeros(transAB.subshapeB, dtype=output_array.dtype)
+            output_arrayB2 = np.zeros(transAB.subshapeB, dtype=output_array.dtype)
             b = B[0].pmat[axis]
             output_array = b.solve(output_array, output_array, axis=axis)
             transAB.forward(output_array, output_arrayB)

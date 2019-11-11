@@ -26,20 +26,26 @@ class LegendreBase(SpectralBase):
 
     Parameters
     ----------
-        N : int, optional
+        N : int
             Number of quadrature points
         quad : str, optional
-               Type of quadrature
+            Type of quadrature
 
-               - LG - Legendre-Gauss
-               - GL - Legendre-Gauss-Lobatto
+            - LG - Legendre-Gauss
+            - GL - Legendre-Gauss-Lobatto
 
         domain : 2-tuple of floats, optional
                  The computational domain
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
     """
 
-    def __init__(self, N=0, quad="LG", domain=(-1., 1.)):
-        SpectralBase.__init__(self, N, quad, domain=domain)
+    def __init__(self, N, quad="LG", domain=(-1., 1.), padding_factor=1,
+                 dealias_direct=False):
+        SpectralBase.__init__(self, N, quad=quad, domain=domain,
+                              padding_factor=padding_factor, dealias_direct=dealias_direct)
         self.forward = functools.partial(self.forward, fast_transform=False)
         self.backward = functools.partial(self.backward, fast_transform=False)
         self.scalar_product = functools.partial(self.scalar_product, fast_transform=False)
@@ -128,8 +134,13 @@ class LegendreBase(SpectralBase):
         U.fill(0)
         V.fill(0)
         self.axis = axis
-        self.forward = Transform(self.forward, None, U, V, V)
-        self.backward = Transform(self.backward, None, V, V, U)
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.forward = Transform(self.forward, None, U, V, trunc_array)
+            self.backward = Transform(self.backward, None, trunc_array, V, U)
+        else:
+            self.forward = Transform(self.forward, None, U, V, V)
+            self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
@@ -143,20 +154,26 @@ class Basis(LegendreBase):
 
     Parameters
     ----------
-        N : int, optional
+        N : int
             Number of quadrature points
         quad : str, optional
-               Type of quadrature
+            Type of quadrature
 
-               - LG - Legendre-Gauss
-               - GL - Legendre-Gauss-Lobatto
+            - LG - Legendre-Gauss
+            - GL - Legendre-Gauss-Lobatto
         domain : 2-tuple of floats, optional
-                 The computational domain
+            The computational domain
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
     """
 
-    def __init__(self, N=0, quad="LG", domain=(-1., 1.)):
-        LegendreBase.__init__(self, N, quad, domain=domain)
-        self.plan(N, 0, np.float, {})
+    def __init__(self, N, quad="LG", domain=(-1., 1.), padding_factor=1,
+                 dealias_direct=False):
+        LegendreBase.__init__(self, N, quad=quad, domain=domain,
+                              padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.plan(int(padding_factor*N), 0, np.float, {})
 
     def eval(self, x, u, output_array=None):
         if output_array is None:
@@ -175,31 +192,36 @@ class ShenDirichletBasis(LegendreBase):
 
     Parameters
     ----------
-        N : int, optional
+        N : int
             Number of quadrature points
         quad : str, optional
-               Type of quadrature
+            Type of quadrature
 
-               - LG - Legendre-Gauss
-               - GL - Legendre-Gauss-Lobatto
+            - LG - Legendre-Gauss
+            - GL - Legendre-Gauss-Lobatto
 
         bc : tuple of numbers
-             Boundary conditions at edges of domain
+            Boundary conditions at edges of domain
         domain : 2-tuple of floats, optional
-                 The computational domain
+            The computational domain
         scaled : bool, optional
-                 Whether or not to scale test functions with 1/sqrt(4k+6).
-                 Scaled test functions give a stiffness matrix equal to the
-                 identity matrix.
+            Whether or not to scale test functions with 1/sqrt(4k+6).
+            Scaled test functions give a stiffness matrix equal to the
+            identity matrix.
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
     """
-    def __init__(self, N=0, quad="LG", bc=(0., 0.),
-                 domain=(-1., 1.), scaled=False):
-        LegendreBase.__init__(self, N, quad, domain=domain)
+    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), scaled=False,
+                 padding_factor=1, dealias_direct=False):
+        LegendreBase.__init__(self, N, quad=quad, domain=domain,
+                              padding_factor=padding_factor, dealias_direct=dealias_direct)
         from shenfun.tensorproductspace import BoundaryValues
         self.LT = Basis(N, quad)
         self._scaled = scaled
         self._factor = np.ones(1)
-        self.plan(N, 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, np.float, {})
         self.bc = BoundaryValues(self, bc=bc)
 
     @staticmethod
@@ -342,8 +364,13 @@ class ShenDirichletBasis(LegendreBase):
         self.LT.plan(shape, axis, dtype, options)
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
         self.axis = axis
-        self.forward = Transform(self.forward, None, U, V, V)
-        self.backward = Transform(self.backward, None, V, V, U)
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.forward = Transform(self.forward, None, U, V, trunc_array)
+            self.backward = Transform(self.backward, None, trunc_array, V, U)
+        else:
+            self.forward = Transform(self.forward, None, U, V, V)
+            self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
@@ -351,6 +378,13 @@ class ShenDirichletBasis(LegendreBase):
     def get_bc_basis(self):
         return BCBasis(self.N, quad=self.quad, domain=self.domain, scaled=self._scaled)
 
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return ShenDirichletBasis(self.N,
+                                  quad=self.quad,
+                                  padding_factor=padding_factor,
+                                  dealias_direct=dealias_direct,
+                                  domain=self.domain,
+                                  bc=self.bc.bc)
 
 @inheritdocstrings
 class ShenNeumannBasis(LegendreBase):
@@ -358,26 +392,32 @@ class ShenNeumannBasis(LegendreBase):
 
     Parameters
     ----------
-        N : int, optional
+        N : int
             Number of quadrature points
         quad : str, optional
-               Type of quadrature
+            Type of quadrature
 
-               - LG - Legendre-Gauss
-               - GL - Legendre-Gauss-Lobatto
+            - LG - Legendre-Gauss
+            - GL - Legendre-Gauss-Lobatto
 
         mean : number
-               mean value
+            mean value
         domain : 2-tuple of floats, optional
-                 The computational domain
+            The computational domain
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
     """
 
-    def __init__(self, N=0, quad="LG", mean=0, domain=(-1., 1.)):
-        LegendreBase.__init__(self, N, quad, domain=domain)
+    def __init__(self, N, quad="LG", mean=0, domain=(-1., 1.), padding_factor=1,
+                 dealias_direct=False):
+        LegendreBase.__init__(self, N, quad=quad, domain=domain,
+                              padding_factor=padding_factor, dealias_direct=dealias_direct)
         self.mean = mean
         self.LT = Basis(N, quad)
         self._factor = np.zeros(0)
-        self.plan(N, 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, np.float, {})
 
     @staticmethod
     def boundary_condition():
@@ -474,8 +514,13 @@ class ShenNeumannBasis(LegendreBase):
         self.LT.plan(shape, axis, dtype, options)
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
         self.axis = axis
-        self.forward = Transform(self.forward, None, U, V, V)
-        self.backward = Transform(self.backward, None, V, V, U)
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.forward = Transform(self.forward, None, U, V, trunc_array)
+            self.backward = Transform(self.backward, None, trunc_array, V, U)
+        else:
+            self.forward = Transform(self.forward, None, U, V, V)
+            self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
@@ -488,22 +533,28 @@ class ShenBiharmonicBasis(LegendreBase):
 
     Parameters
     ----------
-        N : int, optional
+        N : int
             Number of quadrature points
         quad : str, optional
-               Type of quadrature
+            Type of quadrature
 
-               - LG - Legendre-Gauss
-               - GL - Legendre-Gauss-Lobatto
+            - LG - Legendre-Gauss
+            - GL - Legendre-Gauss-Lobatto
         domain : 2-tuple of floats, optional
-                 The computational domain
+            The computational domain
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
     """
-    def __init__(self, N=0, quad="LG", domain=(-1., 1.)):
-        LegendreBase.__init__(self, N, quad, domain=domain)
+    def __init__(self, N, quad="LG", domain=(-1., 1.), padding_factor=1,
+                 dealias_direct=False):
+        LegendreBase.__init__(self, N, quad=quad, domain=domain,
+                              padding_factor=padding_factor, dealias_direct=dealias_direct)
         self.LT = Basis(N, quad)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
-        self.plan(N, 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, np.float, {})
 
     @staticmethod
     def boundary_condition():
@@ -609,8 +660,13 @@ class ShenBiharmonicBasis(LegendreBase):
         self.LT.plan(shape, axis, dtype, options)
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
         self.axis = axis
-        self.forward = Transform(self.forward, None, U, V, V)
-        self.backward = Transform(self.backward, None, V, V, U)
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.forward = Transform(self.forward, None, U, V, trunc_array)
+            self.backward = Transform(self.backward, None, trunc_array, V, U)
+        else:
+            self.forward = Transform(self.forward, None, U, V, V)
+            self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
@@ -701,9 +757,9 @@ class ShenBiharmonicBasis(LegendreBase):
 @inheritdocstrings
 class BCBasis(LegendreBase):
 
-    def __init__(self, N=0, quad="LG", bc=(0, 0), scaled=False,
+    def __init__(self, N, quad="LG", bc=(0, 0), scaled=False,
                  domain=(-1., 1.)):
-        LegendreBase.__init__(self, N, quad, domain=domain)
+        LegendreBase.__init__(self, N, quad=quad, domain=domain)
         self._scaled = scaled
         self.plan(N, 0, np.float, {})
         self.bc = bc
