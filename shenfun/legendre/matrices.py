@@ -335,7 +335,7 @@ class ADDmat(SpectralMatrix):
             # Move axis to first
             if axis > 0:
                 u = np.moveaxis(u, axis, 0)
-                if not u is b:
+                if u is not b:
                     b = np.moveaxis(b, axis, 0)
 
             bs = b[s]
@@ -349,7 +349,7 @@ class ADDmat(SpectralMatrix):
 
             if axis > 0:
                 u = np.moveaxis(u, 0, axis)
-                if not u is b:
+                if u is not b:
                     b = np.moveaxis(b, axis, 0)
         else:
             ss = [slice(None)]*b.ndim
@@ -414,7 +414,7 @@ class ANNmat(SpectralMatrix):
         us[:] = bs*d[tuple(sl)]
         if axis > 0:
             u = np.moveaxis(u, 0, axis)
-            if not u is b:
+            if u is not b:
                 b = np.moveaxis(b, axis, 0)
 
         u /= self.scale
