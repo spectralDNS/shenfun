@@ -101,9 +101,9 @@ h_hat = inner(q, h_, output_array=h_hat)
 # Solve problem
 uh_hat = Function(VQ)
 uh_hat = M.solve(fh_hat, u=uh_hat, constraints=((2, 0, 0),))
-                                                #(2, N[0]-1, 0),
-                                                #(2, N[0]*N[1]-1, 0),
-                                                #(2, N[0]*N[1]-N[1], 0))) # Constraint for component 2 of mixed space
+#                                                (2, N[0]-1, 0),
+#                                                (2, N[0]*N[1]-1, 0),
+#                                                (2, N[0]*N[1]-N[1], 0))) # Constraint for component 2 of mixed space
 
 # Move solution to regular Function
 up = uh_hat.backward()

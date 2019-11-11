@@ -79,8 +79,12 @@ def LU_Biharmonic_1D(a, b, c,
                      bill, bil, bii, biu, biuu,
                      # Three upper and two lower diagonals of LU decomposition
                      u0, u1, u2, l0, l1):
-    LU_oe_Biharmonic_1D(0, a, b, c, sii[::2], siu[::2], siuu[::2], ail[::2], aii[::2], aiu[::2], bill[::2], bil[::2], bii[::2], biu[::2], biuu[::2], u0[0], u1[0], u2[0], l0[0], l1[0])
-    LU_oe_Biharmonic_1D(1, a, b, c, sii[1::2], siu[1::2], siuu[1::2], ail[1::2], aii[1::2], aiu[1::2], bill[1::2], bil[1::2], bii[1::2], biu[1::2], biuu[1::2], u0[1], u1[1], u2[1], l0[1], l1[1])
+    LU_oe_Biharmonic_1D(0, a, b, c, sii[::2], siu[::2], siuu[::2], ail[::2],
+                        aii[::2], aiu[::2], bill[::2], bil[::2], bii[::2],
+                        biu[::2], biuu[::2], u0[0], u1[0], u2[0], l0[0], l1[0])
+    LU_oe_Biharmonic_1D(1, a, b, c, sii[1::2], siu[1::2], siuu[1::2], ail[1::2],
+                        aii[1::2], aiu[1::2], bill[1::2], bil[1::2], bii[1::2],
+                        biu[1::2], biuu[1::2], u0[1], u1[1], u2[1], l0[1], l1[1])
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
 def LU_oe_Biharmonic_1D(odd, a, b, c,
