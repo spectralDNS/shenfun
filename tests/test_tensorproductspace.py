@@ -659,7 +659,6 @@ def test_eval_expression():
     B2 = Basis(20, 'F', dtype='d')
 
     TB = TensorProductSpace(comm, (B0, B1, B2))
-    X = TB.mesh()
 
     f = sp.sin(x)+sp.sin(y)+sp.sin(z)
     dfx = f.diff(x, 2) + f.diff(y, 2) + f.diff(z, 2)

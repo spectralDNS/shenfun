@@ -10,6 +10,9 @@ Subpackages
     shenfun.forms
     shenfun.fourier
     shenfun.legendre
+    shenfun.laguerre
+    shenfun.hermite
+    shenfun.jacobi
     shenfun.optimization
     shenfun.utilities
 
