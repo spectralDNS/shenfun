@@ -1,8 +1,7 @@
 from copy import copy
 import numpy as np
 import sympy as sp
-from shenfun.tensorproductspace import TensorProductSpace, VectorTensorProductSpace, \
-    MixedTensorProductSpace
+from shenfun.tensorproductspace import TensorProductSpace, MixedTensorProductSpace
 from shenfun.matrixbase import TPMatrix
 from .arguments import Expr, TestFunction, TrialFunction, BasisFunction, \
     Function, Array

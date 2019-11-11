@@ -99,17 +99,18 @@ class JacobiBase(SpectralBase):
     def get_refined(self, refinement_factor):
         return self.__class__(int(self.N*refinement_factor),
                               quad=self.quad,
-                              domain=self.domain, padding_factor=self.padding_factor,
+                              domain=self.domain,
+                              padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
                               alpha=self.alpha,
                               beta=self.beta)
 
-    def get_dealiased(self, refinement_factor):
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         return self.__class__(self.N,
                               quad=self.quad,
                               domain=self.domain,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
+                              padding_factor=padding_factor,
+                              dealias_direct=dealias_direct,
                               alpha=self.alpha,
                               beta=self.beta)
 
@@ -242,9 +243,11 @@ class Basis(JacobiBase):
                             padding_factor=padding_factor, dealias_direct=dealias_direct)
         self.plan(int(N*padding_factor), 0, np.float, {})
 
-    def get_refined_basis(self, refinement_factor):
-        return self.__class__(int(self.N*refinement_factor), quad=self.quad,
-                              domain=self.domain, padding_factor=self.padding_factor,
+    def get_refined(self, refinement_factor):
+        return self.__class__(int(self.N*refinement_factor),
+                              quad=self.quad,
+                              domain=self.domain,
+                              padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
                               alpha=self.alpha, beta=self.beta)
 
