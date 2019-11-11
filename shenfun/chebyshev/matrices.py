@@ -1053,10 +1053,10 @@ class ADDmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial)
 
         # Following storage more efficient, but requires effort in iadd/isub...
-        #d = {0: -2*np.pi*(k[:N-2]+1)*(k[:N-2]+2),
-             #2: -4*np.pi*(k[:-4]+1)}
-        #for i in range(4, N-2, 2):
-            #d[i] = d[2][:2-i]
+#        d = {0: -2*np.pi*(k[:N-2]+1)*(k[:N-2]+2),
+#             2: -4*np.pi*(k[:-4]+1)}
+#        for i in range(4, N-2, 2):
+#            d[i] = d[2][:2-i]
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
         if format == 'cython' and v.ndim == 3:

@@ -24,7 +24,7 @@ class TDMA(la_TDMA):
 
         self.TDMA_SymSolve(self.dd, self.ud, self.L, u, axis=axis)
 
-        if not self.mat.scale in (1, 1.0):
+        if self.mat.scale not in (1, 1.0):
             u /= self.mat.scale
         return u
 
