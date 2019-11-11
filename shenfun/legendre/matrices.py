@@ -535,7 +535,7 @@ class CLLmat(SpectralMatrix):
             if axis > 0:
                 c = np.moveaxis(c, axis, 0)
                 v = np.moveaxis(v, axis, 0)
-            s = (slice(None),) + (np.newaxis,)*(v.ndim-1) # broadcasting
+            #s = (slice(None),) + (np.newaxis,)*(v.ndim-1) # broadcasting
             ve = v[-2:0:-2].cumsum(axis=0)
             vo = v[-1:0:-2].cumsum(axis=0)
             c[-3::-2] = ve*2.0
