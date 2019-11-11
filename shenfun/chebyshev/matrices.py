@@ -1086,7 +1086,7 @@ class ADDmat(SpectralMatrix):
         # Move axis to first
         if axis > 0:
             u = np.moveaxis(u, axis, 0)
-            if not u is b:
+            if u is not b:
                 b = np.moveaxis(b, axis, 0)
 
         bs = b[s]
