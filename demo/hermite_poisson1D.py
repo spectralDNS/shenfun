@@ -14,7 +14,7 @@ The equation to solve for a Hermite basis is
 """
 import os
 import sys
-from sympy import symbols, sin, exp, lambdify, hermite
+from sympy import symbols, exp, lambdify, hermite
 import numpy as np
 from shenfun import inner, grad, TestFunction, TrialFunction, \
     Array, Function, Basis
@@ -63,7 +63,7 @@ point = np.array([0.1, 0.2])
 p = SD.eval(point, f_hat)
 assert np.allclose(p, ul(point), atol=1e-5)
 
-if not 'pytest' in os.environ:
+if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     xx = np.linspace(-8, 8, 100)
     plt.plot(xx, ul(xx), 'r', xx, uh.eval(xx), 'bo', markersize=2)

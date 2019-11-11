@@ -1,4 +1,4 @@
-from sympy import symbols, sin, lambdify
+from sympy import symbols, sin
 from shenfun import *
 
 # Use sympy to compute manufactured solution

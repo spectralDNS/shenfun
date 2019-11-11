@@ -276,7 +276,7 @@ class Solve(object):
 
         if axis > 0:
             u = np.moveaxis(u, 0, axis)
-            if not u is b:
+            if u is not b:
                 b = np.moveaxis(b, 0, axis)
 
         #u /= self.A.scale

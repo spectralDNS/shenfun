@@ -1059,7 +1059,7 @@ class BlockMatrix(object):
                         Ai, gi = self.apply_constraint(Ai, gi, dim, 0, con)
                     else:
                         gi[dim] = con[2]
-                if not Alu is None:
+                if Alu is not None:
                     go[:] = Alu.solve(gi)
                 else:
                     go[:] = sp.linalg.spsolve(Ai, gi)
@@ -1442,7 +1442,6 @@ def get_dense_matrix(test, trial):
         As test, but representing matrix column.
     """
     N = test[0].N
-    M = trial[0].N
     x, w = test[0].mpmath_points_and_weights(N)
     v = test[0].evaluate_basis_derivative_all(x=x, k=test[1])
     u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])

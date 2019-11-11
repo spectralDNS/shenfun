@@ -503,49 +503,6 @@ class R2CBasis(FourierBase):
             k1 = np.fft.fftfreq(Np, 1./Np).astype(int)
             convolve.convolve_real_1D(u, v, uv, k1)
 
-            #u1 = np.hstack((u, np.conj(u[1:][::-1])))
-            #if N % 2 == 0:
-                #u1[N//2:N//2+2] *= 0.5
-            #v1 = np.hstack((v, np.conj(v[1:][::-1])))
-            #if N % 2 == 0:
-                #v1[N//2:N//2+2] *= 0.5
-
-            #for m in range(N):
-                #vc = np.roll(v1, -(m+1))
-                #s = u1*vc[::-1]
-                #ki = k1 + np.roll(k1, -(m+1))[::-1]
-                #z0 = np.argwhere(ki == m)
-                #z1 = np.argwhere(ki == m-N)
-                #uv[m] = np.sum(s[z0])
-                #uv[m-N] = np.sum(s[z1])
-
-            #for m in k1:
-                #for n in k1:
-                    #p = m + n
-                    #if p >= 0:
-                        #if N % 2 == 0:
-                            #if abs(m) == N//2:
-                                #um = u[abs(m)]*0.5
-                            #elif m >= 0:
-                                #um = u[m]
-                            #else:
-                                #um = np.conj(u[abs(m)])
-                            #if abs(n) == N//2:
-                                #vn = v[abs(n)]*0.5
-                            #elif n >= 0:
-                                #vn = v[n]
-                            #else:
-                                #vn = np.conj(v[abs(n)])
-                        #else:
-                            #if m >= 0:
-                                #um = u[m]
-                            #elif m < 0:
-                                #um = np.conj(u[abs(m)])
-                            #if n >= 0:
-                                #vn = v[n]
-                            #elif n < 0:
-                                #vn = np.conj(v[abs(n)])
-                        #uv[p] += um*vn
         return uv
 
 
@@ -676,37 +633,5 @@ class C2CBasis(FourierBase):
             Np = N if not N % 2 == 0 else N+1
             k = np.fft.fftfreq(Np, 1./Np).astype(int)
             convolve.convolve_1D(u, v, uv, k)
-
-            #if N % 2 == 0:
-                #u = np.hstack((u[:N//2], u[N//2], u[N//2:]))
-                #u[N//2:N//2+2] *= 0.5
-                #v = np.hstack((v[:N//2], v[N//2], v[N//2:]))
-                #v[N//2:N//2+2] *= 0.5
-
-            #for m in range(Np):
-                #vc = np.roll(v, -(m+1))
-                #s = u*vc[::-1]
-                #ki = k + np.roll(k, -(m+1))[::-1]
-                #z0 = np.argwhere(ki == m)
-                #z1 = np.argwhere(ki == m-Np)
-                #uv[m] = np.sum(s[z0])
-                #uv[m-Np] = np.sum(s[z1])
-
-            #for m in k:
-                #for n in k:
-                    #p = m + n
-                    #if N % 2 == 0:
-                        #if abs(m) == N//2:
-                            #um = u[m]*0.5
-                        #else:
-                            #um = u[m]
-                        #if abs(n) == N//2:
-                            #vn = v[n]*0.5
-                        #else:
-                            #vn = v[n]
-                    #else:
-                        #um = u[m]
-                        #vn = v[n]
-                    #uv[p] += um*vn
 
         return uv
