@@ -132,11 +132,11 @@ V^N(x) = \text{span} \{\phi_l(x)\}_{l\in \boldsymbol{l}}, label{eq:Vn}
 !et
 where $N$ is chosen as an even positive integer and $\boldsymbol{l} = (-N/2,
 -N/2+1, \ldots, N/2-1)$. And now, since $\Omega$ is a
-two-dimensional domain, we can create a Cartesian product of two such bases:
+two-dimensional domain, we can create a tensor product of two such bases:
 
 !bt
 \begin{equation}
-W^{\boldsymbol{N}}(x, y) = V^N(x) \times V^N(y), label{eq:Wn}
+W^{\boldsymbol{N}}(x, y) = V^N(x) \otimes V^N(y), label{eq:Wn}
 \end{equation}
 !et
 where $\boldsymbol{N} = (N, N)$. Obviously, it is not necessary to use the
@@ -255,7 +255,8 @@ from shenfun import *
 !ec
 
 The size of the problem (in real space) is then specified, before creating
-the ${cls('TensorProductSpace')}, which is a Cartesian product of two Fourier bases. We also
+the ${cls('TensorProductSpace')}, which is using a tensor product of two Fourier bases as
+basis functions. We also
 create a ${cls('VectorTensorProductSpace')}, since this is required for computing the
 gradient of the scalar field `u`. The gradient is required for the nonlinear
 term.

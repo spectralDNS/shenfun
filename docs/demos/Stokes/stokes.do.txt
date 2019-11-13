@@ -145,8 +145,8 @@ V_0^{N_2} &= \text{span}\{ \mathcal{Z}^0_n \}_{n\in\bs{n}^{N_2-2}},
 and from these we create two different tensor product spaces
 !bt
 \begin{align}
-W_0^{\bs{N}}(\bs{x}) &= V^{N_0}(x) \times V^{N_1}(y) \times V_0^{N_2}(z), \\
-W^{\bs{N}}(\bs{x}) &= V^{N_0}(x) \times V^{N_1}(y) \times V^{N_2}(z).
+W_0^{\bs{N}}(\bs{x}) &= V^{N_0}(x) \otimes V^{N_1}(y) \otimes V_0^{N_2}(z), \\
+W^{\bs{N}}(\bs{x}) &= V^{N_0}(x) \otimes V^{N_1}(y) \otimes V^{N_2}(z).
 \end{align}
 !et
 

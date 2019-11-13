@@ -6,6 +6,7 @@ Automatically generated HTML file from DocOnce source
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="description" content="Shenfun - automating the spectral Galerkin method">
 <meta name="keywords" content="Computational Methods,Spectral,Galerkin,Chebyshev,Legendre">
 
@@ -155,7 +156,7 @@ $$
 <!-- !split -->
 
 <h1 id="sec:ginzburg" class="anchor">Ginzburg-Landau equation</h1>
-We end this paper with the implementation of the complex Ginzburg-Landau equation, which is a  nonlinear time dependent reaction-diffusion problem. The equation to solve is 
+We end this paper with the implementation of the complex Ginzburg-Landau equation, which is a  nonlinear time dependent reaction-diffusion problem. The equation to solve is
 $$
 \begin{equation}
 \frac{\partial u}{\partial t} = \nabla^2u + u - (1 + 1.5i)u |u|^2,
@@ -172,7 +173,7 @@ u^1(\boldsymbol{x}, 0) &= (x + y) \exp {-0.03 (x^2 + y^2)} \tag{64}.
 $$
 
 This problem is solved with the spectral Galerkin method using Fourier bases in both directions, and a tensor product
-space \( W(x,y)=V^p(x) \times V^p(y) \), where \( V^p \) is defined as in the section <a href="._shenfun_bootstrap003.html#sec:fourierpoisson">Periodic boundary conditions</a>, but here mapping 
+space \( W(x,y)=V^p(x) \otimes V^p(y) \), where \( V^p \) is defined as in the section <a href="._shenfun_bootstrap003.html#sec:fourierpoisson">Periodic boundary conditions</a>, but here mapping
 the computational domain \( [-50, 50] \) to \( [0, 2\pi] \). Considering only the spatial discretization, the variational
 problem becomes: find \( u(x, y) \) in \( W \), such that
 $$
@@ -303,11 +304,11 @@ The code that is described here will run in parallel for up to a maximum of \( \
 <p>
 <!-- navigation buttons at the bottom of the page -->
 <ul class="pager">
-\
+
   <li class="previous">
     <a href="._shenfun_bootstrap005.html">&larr; Prev</a>
   </li>
-\
+
   <li class="next">
     <a href="._shenfun_bootstrap007.html">Next &rarr;</a>
   </li>

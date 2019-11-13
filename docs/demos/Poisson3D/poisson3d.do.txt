@@ -1,4 +1,4 @@
-TITLE: Demo - 3D Poisson equation
+TITLE: Demo - 3D Poisson's equation
 AUTHOR: Mikael Mortensen {copyright|CC BY} Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
 DATE: today
 
@@ -106,10 +106,10 @@ V^{N_2} &= \text{span}\{ \mathcal{Z}_n \}_{n\in\bs{n}^{N_2}},
 \end{align}
 !et
 and from these we create a tensor product space $W^{\bs{N}}(\bs{x})$ from
-Cartesian products of the three bases
+tensor products of the three bases
 !bt
 \begin{equation}
-W^{\bs{N}}(\bs{x}) = V^{N_0}(x) \times V^{N_1}(y) \times V^{N_2}(z).
+W^{\bs{N}}(\bs{x}) = V^{N_0}(x) \otimes V^{N_1}(y) \otimes V^{N_2}(z).
 \end{equation}
 !et
 

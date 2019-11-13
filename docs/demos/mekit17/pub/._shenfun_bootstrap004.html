@@ -6,6 +6,7 @@ Automatically generated HTML file from DocOnce source
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="description" content="Shenfun - automating the spectral Galerkin method">
 <meta name="keywords" content="Computational Methods,Spectral,Galerkin,Chebyshev,Legendre">
 
@@ -165,7 +166,7 @@ $$
 
 Lets first consider 2 dimensions, with Dirichlet boundary conditions in the
 first direction and with periodicity in the second. Let \( \Omega \) be the domain
-\( [-1, 1] \times [0, 2 \pi] \), and \( T(x,y) = V^C(x) \times V^p(y) \) be the tensor product function space. We can solve this problem for some suitable function \( f(\bs{x}) \) in <code>shenfun</code> by constructing a few more classes than were required in 1D
+\( [-1, 1] \times [0, 2 \pi] \), and \( T(x,y) = V^C(x) \otimes V^p(y) \) be the tensor product function space. We can solve this problem for some suitable function \( f(\bs{x}) \) in <code>shenfun</code> by constructing a few more classes than were required in 1D
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
@@ -249,7 +250,7 @@ u <span style="color: #666666">=</span> T<span style="color: #666666">.</span>ba
 </pre></div>
 <p>
 The test functions and function spaces require a bit more attention. Test
-functions for space \( T(x, y)=V^C(x) \times V^p(y) \) are given as
+functions for space \( T(x, y)=V^C(x) \otimes V^p(y) \) are given as
 $$
 \begin{equation}
 \phi_{\ts{k}}(x, y) = v_l(x) e^{imy},
@@ -257,7 +258,7 @@ $$
 \end{equation}
 $$
 
-which introduces the sans serif tensor product wavenumber mesh \( \ts{k} = \bs{l}^D \times \bs{l} \)
+which introduces the sans serif Cartesian product wavenumber mesh \( \ts{k} = \bs{l}^D \times \bs{l} \)
 $$
 \begin{equation}
  \ts{k} = \{ (l, m) | l \in \bs{l}^D \text{ and } m \in \bs{l}\}.
@@ -265,7 +266,7 @@ $$
 \end{equation}
 $$
 
-Similarly there is a tensor product grid \( \ts{x} = \bs{x} \times \bs{y} \), where \( \bs{y} = \{y_k\}_{k=0}^{M-1} = 2 \pi k /M \)
+Similarly there is a Cartesian product grid \( \ts{x} = \bs{x} \times \bs{y} \), where \( \bs{y} = \{y_k\}_{k=0}^{M-1} = 2 \pi k /M \)
 $$
 \begin{equation}
  \ts{x} = \{ (x_j, y_k) | j=0,1,\ldots, N-1 \text{ and } k=0,1,\ldots, M-1\}.
@@ -273,7 +274,7 @@ $$
 \end{equation}
 $$
 
-Note that for computing on the tensor product grids using Numpy arrays with vectorization, the mesh and wavenumber components need to be represented as 2D arrays. As such we create
+Note that for computing on the Cartesian grids using Numpy arrays with vectorization, the mesh and wavenumber components need to be represented as 2D arrays. As such we create
 $$
 \begin{equation}
 \bs{\textsf{x}} = (\bs{x}, \bs{y}) = \Big(\{x_i\}_{i=0}^{N-1} \times I^M,  I^N \times \{y_j\}_{j=0}^{M-1} \Big),
@@ -284,13 +285,13 @@ $$
 where \( I^N \) is an N-length vector of ones. Similarly
 $$
 \begin{equation}
-\bs{\textsf{k}} = (\bs{l}, \bs{m}) = \Big(\{ l \}_{l=0}^{N-1} \times I^M,  I^N \times \{ m \}_{m=0}^{M/2} \Big). 
+\bs{\textsf{k}} = (\bs{l}, \bs{m}) = \Big(\{ l \}_{l=0}^{N-1} \times I^M,  I^N \times \{ m \}_{m=0}^{M/2} \Big).
 \tag{47}
 \end{equation}
 $$
 
-Such tensor product grids can be very efficiently stored with Numpy arrays, using no more space than the two vectors used to create them. The key to this efficiency is broadcasting. We store \( \ts{k} \) as a list of two numpy arrays, \( \bs{l} \) and \( \bs{m} \), corresponding to the two 1D wavenumber meshes \( \{ l \}_{l=0}^{N-1} \) and \( \{ m \}_{m=0}^{M/2} \). 
-However, \( \bs{l} \) and \( \bs{m} \) are now stored as 2D arrays of shape \( (N, 1) \) and \( (1, M/2+1) \), respectively. And broadcasting takes care of the additional dimension, such that the two arrays work just like if they were stored as \( (N, M/2+1) \) arrays. We can look up \( \bs{l}(l, m) \), just like a regular \( (N, M/2+1) \) array, but the storage required is still only one single vector. 
+Such Cartesian grids can be very efficiently stored with Numpy arrays, using no more space than the two vectors used to create them. The key to this efficiency is broadcasting. We store \( \ts{k} \) as a list of two numpy arrays, \( \bs{l} \) and \( \bs{m} \), corresponding to the two 1D wavenumber meshes \( \{ l \}_{l=0}^{N-1} \) and \( \{ m \}_{m=0}^{M/2} \).
+However, \( \bs{l} \) and \( \bs{m} \) are now stored as 2D arrays of shape \( (N, 1) \) and \( (1, M/2+1) \), respectively. And broadcasting takes care of the additional dimension, such that the two arrays work just like if they were stored as \( (N, M/2+1) \) arrays. We can look up \( \bs{l}(l, m) \), just like a regular \( (N, M/2+1) \) array, but the storage required is still only one single vector.
 The same goes for \( \ts{x} \), which is stored as a list of two arrays \( \bs{x} \), \( \bs{y} \) of shape \( (N, 1) \) and \( (1, M) \) respectively. This extends straightforward to even higher dimensions.
 
 <p>
@@ -349,7 +350,7 @@ $$
 \tag{55}\\
  u(x, y+2\pi, z) &= u(x, y, z), 
 \tag{56}\\
- u(x, y, z+2\pi) &= u(x, y, z). 
+ u(x, y, z+2\pi) &= u(x, y, z).
 \tag{57}
 \end{align}
 $$
@@ -362,7 +363,7 @@ V^L &= \text{span}\{L_l - \frac{2(2l+5)}{2l+7}L_{l+2} + \frac{2l+3}{2l+7}, l \in
 \end{align}
 $$
 
-where \( \bs{l}^B = 0, 1, \ldots, N-5 \). A tensor product space may be constructed as \( W(x,y,z) = V^C(x) \times V^p(y) \times V^p(z) \), and the variational problem 
+where \( \bs{l}^B = 0, 1, \ldots, N-5 \). A tensor product space may be constructed as \( W(x,y,z) = V^C(x) \otimes V^p(y) \otimes V^p(z) \), and the variational problem
 $$
 \begin{equation}
 (v, \nabla^4 u)^N_w = (v, f)^N_w,
@@ -411,15 +412,15 @@ Poisson equation, and
 thus the input data, is real and not complex. Yet, taking the Fourier
 transform along the last axis, results in a complex array. Hence we need
 real-to-complex transforms for axis 2 and complex-to-complex (<code>C2CBasis</code>)
-transforms for axis 1. 
+transforms for axis 1.
 <p>
 <!-- navigation buttons at the bottom of the page -->
 <ul class="pager">
-\
+
   <li class="previous">
     <a href="._shenfun_bootstrap003.html">&larr; Prev</a>
   </li>
-\
+
   <li class="next">
     <a href="._shenfun_bootstrap005.html">Next &rarr;</a>
   </li>

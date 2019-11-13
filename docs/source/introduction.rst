@@ -101,8 +101,8 @@ Complete demonstration programs that solves the Poisson equation
 :eq:`eq:poisson1`, and some other problems can be found by following these
 links
 
-    * :ref:`Demo - 1D Poisson equation`
-    * :ref:`Demo - 3D Poisson equation`
+    * :ref:`Demo - 1D Poisson's equation`
+    * :ref:`Demo - 3D Poisson's equation`
     * :ref:`Demo - Cubic nonlinear Klein-Gordon equation`
     * :ref:`Demo - Kuramato-Sivashinsky equation`
     * :ref:`Demo - Stokes equations`
@@ -113,7 +113,7 @@ Tensor products
 
 If the problem is two-dimensional, then we need two basis functions, one per
 dimension. If we call the basis function along :math:`x`-direction :math:`\mathcal{X}(x)`
-and along :math:`y`-direction :math:`\mathcal{Y}(y)`, the test function is then
+and along :math:`y`-direction :math:`\mathcal{Y}(y)`, a test function can then be
 computed as
 
 .. math::
@@ -122,31 +122,31 @@ computed as
 
 If we now have a problem that has Dirichlet boundaries in the :math:`x`-direction
 and periodic boundaries in the :math:`y`-direction, then we can choose
-:math:`\mathcal{X}_k(x) = T_k-T_{k+2}`,
-:math:`\mathcal{Y}_l(y) = \exp(\imath l y)` and a tensor product test function
-is then
+:math:`\mathcal{X}_k(x) = T_k-T_{k+2}`, for :math:`k \in \mathcal{I}^N`,
+:math:`\mathcal{Y}_l(y) = \exp(\imath l y)` for :math:`l \in \mathcal{I}^M`
+and a tensor product test function is then
 
 .. math::
    :label: eq:v2D
 
-   v_{k, l}(x, y) = (T_k(x) - T_{k+2}(x)) \exp(\imath l y)
+   v_{kl}(x, y) = (T_k(x) - T_{k+2}(x)) \exp(\imath l y), \text{ for } (k, l) \in \mathcal{I}^N \times \mathcal{I}^M.
 
 In other words, we choose one test function per dimension and create
-global basis functions by taking the outer products of these individual
+global basis functions by taking the outer products (or tensor products) of these individual
 test functions. Moving to even more dimensions is then trivial, as
 global basis functions simply are the products of one-dimensional basis
 functions. Combining one-dimensional bases like this results in
-tensor product spaces, with tensor product meshes. If the one-dimensional
-meshes in :math:`x`- and :math:`y`-directions are :math:`x = \{x_m\}_{m=0}^{N-1}`
-and :math:`y = \{y_n\}_{n=0}^{M-1}`, then a tensor product mesh :math:`X` is
-the outer product of these two vectors
+tensor product spaces, with Cartesian product meshes. If the one-dimensional
+meshes in :math:`x`- and :math:`y`-directions are :math:`x = \{x_m\}_{m\in \mathcal{I}^N}`
+and :math:`y = \{y_n\}_{n\in \mathcal{I}^M}`, then a Cartesian product mesh
+is :math:`x \times y`. With index notation it is
 
 .. math::
     :label: eq:tensormesh
 
-    X_{m, n} = x_m y_n, \text{for } (m, n) \in \mathcal{I}^M \times \mathcal{I}^N.
+    (x_m, y_n), \text{for } (m, n) \in \mathcal{I}^M \times \mathcal{I}^N.
 
-Likewise, a tensor product basis is given in :eq:`eq:v2D`.
+Likewise, a tensor product basis function is given in :eq:`eq:v2D`.
 
 With shenfun a user chooses the appropriate bases for each dimension of the
 problem, and may then combine these bases into tensor product spaces. For

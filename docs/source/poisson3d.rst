@@ -3,11 +3,11 @@
 
 .. Document title:
 
-Demo - 3D Poisson equation
-%%%%%%%%%%%%%%%%%%%%%%%%%%
+Demo - 3D Poisson's equation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 23, 2019
+:Date: Nov 13, 2019
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve a 3D Poisson
 equation in a 3D tensor product domain that has homogeneous Dirichlet boundary
@@ -145,13 +145,13 @@ We have the bases
         
 
 and from these we create a tensor product space :math:`W^{\boldsymbol{N}}(\boldsymbol{x})` from
-Cartesian products of the three bases
+tensor products of the three bases
 
 .. math::
    :label: _auto10
 
         
-        W^{\boldsymbol{N}}(\boldsymbol{x}) = V^{N_0}(x) \times V^{N_1}(y) \times V^{N_2}(z).
+        W^{\boldsymbol{N}}(\boldsymbol{x}) = V^{N_0}(x) \otimes V^{N_1}(y) \otimes V^{N_2}(z).
         
         
 

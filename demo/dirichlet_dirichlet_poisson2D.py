@@ -3,11 +3,7 @@ Solve Helmholtz equation in 2D with homogeneous Dirichlet boundary conditions
 
     au - \nabla^2 u = f,
 
-Use Shen's Legendre Dirichlet basis
-
-The equation to solve is
-
-     a(u, v) + (\nabla u, \nabla v) = (f, v)
+Use Shen's Dirichlet basis for either Chebyshev, Legendre or Jacobi polynomials.
 
 """
 import os
@@ -39,10 +35,6 @@ x, y = symbols("x,y")
 ue = (cos(4*y)*sin(2*x))*(1-x**2)*(1-y**2)
 fe = a*ue - ue.diff(x, 2) - ue.diff(y, 2)
 
-# Lambdify for faster evaluation
-ul = lambdify((x, y), ue, 'numpy')
-fl = lambdify((x, y), fe, 'numpy')
-
 # Size of discretization
 N = (int(sys.argv[-3]), int(sys.argv[-2]))
 
@@ -62,10 +54,7 @@ f_hat = Function(T)
 f_hat = inner(v, fj, output_array=f_hat)
 
 # Get left hand side of Poisson equation
-if not family == 'chebyshev':
-    matrices = inner(grad(v), grad(u))
-else:
-    matrices = inner(v, -div(grad(u)))
+matrices = inner(v, -div(grad(u)))
 matrices += [inner(v, a*u)]
 
 # Create Helmholtz linear algebra solver
@@ -79,9 +68,8 @@ uq = Array(T)
 uq = T.backward(u_hat, uq)
 
 # Compare with analytical solution
-uj = ul(*X)
+uj = Array(T, buffer=ue)
 print(abs(uj-uq).max())
-
 assert np.allclose(uj, uq)
 
 if 'pytest' not in os.environ:

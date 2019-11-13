@@ -7,11 +7,7 @@ and Dirichlet in the other
 Use Fourier basis for the periodic direction and Shen's Dirichlet basis for the
 non-periodic direction.
 
-The equation to solve for the Legendre basis is
-
-     alpha (u, v) + (\nabla u, \nabla v) = (f, v)
-
-whereas for Chebyshev we solve
+The equation to solve is
 
      alpha (u, v) - (\nabla^2 u, v) = (f, v)
 
@@ -23,7 +19,7 @@ from sympy import symbols, cos, sin, lambdify
 import numpy as np
 from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis, \
-    Array, Function, TensorProductSpace
+    Array, Function, TensorProductSpace, dx
 
 comm = MPI.COMM_WORLD
 
@@ -42,10 +38,6 @@ x, y = symbols("x,y")
 ue = (cos(4*np.pi*x) + sin(2*y))*(1-x**2)
 fe = alpha*ue - ue.diff(x, 2) - ue.diff(y, 2)
 
-# Lambdify for faster evaluation
-ul = lambdify((x, y), ue, 'numpy')
-fl = lambdify((x, y), fe, 'numpy')
-
 # Size of discretization
 N = (int(sys.argv[-2]),)*2
 
@@ -57,21 +49,14 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = Array(T, buffer=fl(*X))
+fj = Array(T, buffer=fe)
 
 # Compute right hand side of Poisson equation
 f_hat = Function(T)
 f_hat = inner(v, fj, output_array=f_hat)
 
 # Get left hand side of Helmholtz equation
-if family == 'chebyshev':
-    matrices = inner(v, alpha*u - div(grad(u)))
-else:
-    matrices = inner(grad(v), grad(u))    # Both ADDmat and BDDmat
-    B = inner(v, alpha*u)
-    for m in matrices: # Add B matrix to the mass matrix in matrices
-        if m == B:
-            m += B
+matrices = inner(v, alpha*u - div(grad(u)))
 
 # Create Helmholtz linear algebra solver
 H = Solver(*matrices)
@@ -83,8 +68,8 @@ uq = Array(T)
 uq = T.backward(u_hat, uq)
 
 # Compare with analytical solution
-uj = ul(*X)
-print("Error=%2.16e" %(np.linalg.norm(uj-uq)))
+uj = Array(T, buffer=ue)
+print("Error=%2.16e" %(np.sqrt(dx(uj-uq)**2)))
 assert np.allclose(uj, uq)
 
 if 'pytest' not in os.environ:
