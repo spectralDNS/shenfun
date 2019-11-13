@@ -11,7 +11,7 @@ basis for the non-periodic direction.
 import sys
 import os
 import importlib
-from sympy import symbols, cos, sin, lambdify
+from sympy import symbols, cos, sin
 import numpy as np
 from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \

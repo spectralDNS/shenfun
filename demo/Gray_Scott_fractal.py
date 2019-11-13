@@ -62,12 +62,10 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # For nonlinear term we can use the 3/2-rule with padding
-Kp0 = Basis(N[0], 'F', dtype='D', domain=(-1., 1.), padding_factor=1.5)
-Kp1 = Basis(N[1], 'F', dtype='d', domain=(-1., 1.), padding_factor=1.5)
-Tp = TensorProductSpace(comm, (Kp0, Kp1))
+Tp = T.get_dealiased((1.5, 1.5))
 
 # Turn on padding by commenting
-Tp = T
+#Tp = T
 
 # Create vector spaces and a test function for the regular vector space
 TV = VectorTensorProductSpace(T)

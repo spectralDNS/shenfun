@@ -13,7 +13,7 @@ The equation to solve is
 import sys
 import os
 import importlib
-from sympy import symbols, sin, lambdify
+from sympy import symbols, sin
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis, \
     Array, Function

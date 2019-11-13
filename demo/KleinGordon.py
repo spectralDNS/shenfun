@@ -49,7 +49,7 @@ T = TensorProductSpace(comm, (K0, K1, K2), slab=True,
 TT = MixedTensorProductSpace([T, T])
 TV = VectorTensorProductSpace(T)
 
-Tp = T.get_padded((1.5, 1.5, 1.5))
+Tp = T.get_dealiased((1.5, 1.5, 1.5))
 
 X = T.local_mesh(True)
 fu = Array(TT)

@@ -9,7 +9,7 @@ Use Shen's Biharmonic basis.
 import sys
 import os
 import importlib
-from sympy import symbols, sin, lambdify
+from sympy import symbols, sin
 import numpy as np
 from shenfun import inner, Dx, TestFunction, TrialFunction, Basis, Array, \
     Function
