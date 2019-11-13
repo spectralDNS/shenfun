@@ -7,11 +7,7 @@ and homogeneous Dirichlet in the other
 Use Fourier basis for the periodic direction and Shen's Dirichlet basis for the
 non-periodic direction.
 
-The equation to solve for the Legendre basis is
-
-     (\nabla u, \nabla v) = -(f, v)
-
-whereas for Chebyshev we solve
+The equation to solve is
 
      (\nabla^2 u, v) = (f, v)
 
@@ -62,14 +58,9 @@ fj = Array(T, buffer=fe)
 # Compute right hand side of Poisson equation
 f_hat = Function(T)
 f_hat = inner(v, fj, output_array=f_hat)
-if not family == 'chebyshev':
-    f_hat *= -1.
 
 # Get left hand side of Poisson equation
-if family == 'chebyshev':
-    matrices = inner(v, div(grad(u)))
-else:
-    matrices = inner(grad(v), grad(u))
+matrices = inner(v, div(grad(u)))
 
 # Create Helmholtz linear algebra solver
 H = Solver(*matrices)
@@ -82,7 +73,7 @@ uq = u_hat.backward()
 uh = uq.forward()
 
 # Compare with analytical solution
-uj = lambdify((x, y), ue)(*X)
+uj = Array(T, buffer=ue)
 assert np.allclose(uj, uq)
 
 if 'pytest' not in os.environ:

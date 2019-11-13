@@ -27,10 +27,6 @@ ue = cos(4*x) + 1j*sin(6*x)
 #ue = cos(4*x)
 fe = ue.diff(x, 2)
 
-# Lambdify for faster evaluation
-ul = lambdify(x, ue, 'numpy')
-fl = lambdify(x, fe, 'numpy')
-
 # Size of discretization
 N = 40
 
@@ -42,8 +38,8 @@ v = TestFunction(ST)
 X = ST.mesh()
 
 # Get f on quad points and exact solution
-fj = Array(ST, buffer=fl(X))
-uj = Array(ST, buffer=ul(X))
+fj = Array(ST, buffer=fe)
+uj = Array(ST, buffer=ue)
 
 # Compute right hand side
 f_hat = Function(ST)
@@ -62,7 +58,7 @@ assert np.allclose(uj, uq)
 
 point = np.array([0.1, 0.2])
 p = ST.eval(point, u_hat)
-assert np.allclose(p, ul(point))
+assert np.allclose(p, lambdify(x, ue)(point))
 
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt

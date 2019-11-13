@@ -47,12 +47,6 @@ dux = ue.diff(x, 1)
 duy = ue.diff(y, 1)
 fe = ue.diff(x, 2) + ue.diff(y, 2)
 
-# Lambdify for faster evaluation
-ul = lambdify((x, y), ue, 'numpy')
-fl = lambdify((x, y), fe, 'numpy')
-duxl = lambdify((x, y), dux, 'numpy')
-duyl = lambdify((x, y), duy, 'numpy')
-
 N = (int(sys.argv[-3]), int(sys.argv[-2]))
 
 K0 = Basis(N[0], 'Fourier', dtype='d')
@@ -81,7 +75,7 @@ A10 = inner(q, div(g))
 # Get f and g on quad points
 vfj = Array(Q)
 vj, fj = vfj
-fj[:] = fl(*X)
+fj[:] = lambdify((x, y), fe)(*X)
 
 vf_hat = Function(Q)
 v_hat, f_hat = vf_hat
@@ -94,9 +88,9 @@ gu = gu_hat.backward()
 
 g_, u_ = gu
 
-uj = ul(*X)
-duxj = duxl(*X)
-duyj = duyl(*X)
+uj = Array(TD, buffer=ue)
+duxj = Array(TT, buffer=dux)
+duyj = Array(TT, buffer=duy)
 
 error = [comm.reduce(np.linalg.norm(uj-u_)),
          comm.reduce(np.linalg.norm(duxj-g_[0])),

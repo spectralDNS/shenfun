@@ -7,11 +7,7 @@ and homogeneous Neumann in the other
 Use Fourier basis for the periodic direction and Shen's Neumann basis for the
 non-periodic direction.
 
-The equation to solve for the Legendre basis is
-
-    -(\nabla u, \nabla v) = (f, v)
-
-whereas for Chebyshev we solve
+The equation to solve is
 
      (\nabla^2 u, v) = (f, v)
 
@@ -37,10 +33,6 @@ x, y = symbols("x,y")
 ue = cos(5*y)*(sin(2*np.pi*x))*(1-x**2)
 fe = ue.diff(x, 2) + ue.diff(y, 2)
 
-# Lambdify for faster evaluation
-ul = lambdify((x, y), ue, 'numpy')
-fl = lambdify((x, y), fe, 'numpy')
-
 # Size of discretization
 N = (31, 32)
 
@@ -52,18 +44,13 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = Array(T, buffer=fl(*X))
+fj = Array(T, buffer=fe)
 
 # Compute right hand side of Poisson equation
 f_hat = inner(v, fj)
-if family == 'legendre':
-    f_hat *= -1.
 
 # Get left hand side of Poisson equation
-if family == 'chebyshev':
-    matrices = inner(v, div(grad(u)))
-else:
-    matrices = inner(grad(v), grad(u))
+matrices = inner(v, div(grad(u)))
 
 # Create Helmholtz linear algebra solver
 H = Solver(*matrices)
@@ -74,7 +61,7 @@ u_hat = H(u_hat, f_hat)       # Solve
 uq = T.backward(u_hat)
 
 # Compare with analytical solution
-uj = ul(*X)
+uj = Array(T, buffer=ue)
 print(abs(uj-uq).max())
 assert np.allclose(uj, uq)
 

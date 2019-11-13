@@ -21,7 +21,7 @@ from sympy import symbols, sin, exp, lambdify
 import numpy as np
 from mpi4py import MPI
 from shenfun import inner, grad, TestFunction, TrialFunction, \
-    Array, Function, Basis, TensorProductSpace
+    Array, Function, Basis, TensorProductSpace, dx
 from shenfun.la import SolverGeneric2NP
 
 comm = MPI.COMM_WORLD
@@ -36,10 +36,6 @@ x, y = symbols("x,y")
 ue = sin(4*np.pi*y)*sin(2*x)*exp(-x)
 fe = ue.diff(x, 2) + ue.diff(y, 2)
 
-# Lambdify for faster evaluation
-ul = lambdify((x, y), ue, 'numpy')
-fl = lambdify((x, y), fe, 'numpy')
-
 # Size of discretization
 N = (int(sys.argv[-1]), int(sys.argv[-1])//2)
 
@@ -51,7 +47,7 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = Array(T, buffer=fl(*X))
+fj = Array(T, buffer=fe)
 
 # Compute right hand side of Poisson equation
 f_hat = Function(T)
@@ -69,7 +65,8 @@ u_hat = H(f_hat, u_hat)       # Solve
 uq = u_hat.backward()
 
 # Compare with analytical solution
-uj = ul(*X)
+uj = Array(T, buffer=ue)
+assert np.sqrt(dx((uj-uq)**2)) < 1e-5
 #assert np.allclose(uj, uq, atol=1e-6)
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt

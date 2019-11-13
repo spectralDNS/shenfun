@@ -7,11 +7,7 @@ and homogeneous Dirichlet in the third
 Use Fourier basis for the periodic directions and Shen's Dirichlet basis for the
 remaining non-periodic direction. Discretization leads to a Holmholtz problem.
 
-Note that the equation to solve for Legendre basis is
-
-     (\nabla u, \nabla v) = -(f, v)
-
-whereas for Chebyshev we solve
+Note that the equation to solve is
 
      (\nabla^2 u, v) = (f, v)
 
@@ -24,7 +20,7 @@ from sympy import symbols, cos, sin, lambdify
 import numpy as np
 from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
-    Function, Basis, TensorProductSpace
+    Function, Basis, TensorProductSpace, dx
 from mpi4py_fft.pencil import Subcomm
 
 comm = MPI.COMM_WORLD
@@ -49,10 +45,6 @@ x, y, z = symbols("x,y,z")
 ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-y**2) + a*(1 + y)/2. + b*(1 - y)/2.
 fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
 
-# Lambdify for faster evaluation
-ul = lambdify((x, y, z), ue, 'numpy')
-fl = lambdify((x, y, z), fe, 'numpy')
-
 # Size of discretization
 N = int(sys.argv[-2])
 N = [N, N+1, N+2]
@@ -70,7 +62,7 @@ v = TestFunction(T)
 K = T.local_wavenumbers()
 
 # Get f on quad points
-fj = Array(T, buffer=fl(*X))
+fj = Array(T, buffer=fe)
 
 # Compute right hand side of Poisson equation
 f_hat = inner(v, fj)
@@ -88,8 +80,8 @@ u_hat = H(u_hat, f_hat)       # Solve
 uq = u_hat.backward()
 
 # Compare with analytical solution
-uj = ul(*X)
-error = comm.reduce(np.linalg.norm(uj-uq)**2)
+uj = Array(T, buffer=ue)
+error = comm.reduce(dx((uj-uq)**2))
 if comm.Get_rank() == 0 and regtest is True:
     print("Error=%2.16e" %(np.sqrt(error)))
 assert np.allclose(uj, uq)

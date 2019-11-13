@@ -20,7 +20,7 @@ import numpy as np
 from sympy import symbols, cos, sin, lambdify
 from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis, \
-    TensorProductSpace, Array, Function
+    TensorProductSpace, Array, Function, dx
 
 comm = MPI.COMM_WORLD
 
@@ -28,9 +28,6 @@ comm = MPI.COMM_WORLD
 x, y, z = symbols("x,y,z")
 ue = cos(4*x) + sin(4*y) + sin(6*z)
 fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2) + ue
-
-ul = lambdify((x, y, z), ue, 'numpy')
-fl = lambdify((x, y, z), fe, 'numpy')
 
 # Size of discretization
 N = 16
@@ -44,7 +41,7 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = Array(T, buffer=fl(*X))
+fj = Array(T, buffer=fe)
 
 # Compute right hand side
 f_hat = Function(T)
@@ -56,8 +53,8 @@ f_hat = A.solve(f_hat)
 
 uq = T.backward(f_hat, fast_transform=True)
 
-uj = ul(*X)
-print(abs(uj-uq).max())
+uj = Array(T, buffer=ue)
+print(np.sqrt(dx((uj-uq)**2)))
 assert np.allclose(uj, uq)
 
 if 'pytest' not in os.environ:

@@ -379,7 +379,7 @@ class ANNmat(SpectralMatrix):
     and :math:`\psi_k` is the Shen Legendre Neumann basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, scale=1):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SN)
         N = test[0].N
@@ -387,7 +387,7 @@ class ANNmat(SpectralMatrix):
         alpha = k*(k+1)/(k+2)/(k+3)
         d0 = 2./(2*k+1)
         d = {0: d0*alpha*(k+0.5)*((k+2)*(k+3)-k*(k+1))}
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale)
 
     def solve(self, b, u=None, axis=0):
         N = self.shape[0] + 2
@@ -671,6 +671,8 @@ mat = _LegMatDict({
     ((SD, 2), (SD, 0)): functools.partial(ADDmat, scale=-1.),
     ((SD, 0), (SD, 2)): functools.partial(ADDmat, scale=-1.),
     ((SN, 1), (SN, 1)): ANNmat,
+    ((SN, 2), (SN, 0)): functools.partial(ANNmat, scale=-1.),
+    ((SN, 0), (SN, 2)): functools.partial(ANNmat, scale=-1.),
     ((LB, 2), (LB, 0)): GLLmat,
     ((LB, 0), (LB, 2)): GLLmat,
     ((SB, 2), (SB, 2)): SBBmat,
