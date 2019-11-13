@@ -6,6 +6,7 @@ Automatically generated HTML file from DocOnce source
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="DocOnce: https://github.com/hplgit/doconce/" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="description" content="Shenfun - automating the spectral Galerkin method">
 <meta name="keywords" content="Computational Methods,Spectral,Galerkin,Chebyshev,Legendre">
 
@@ -176,7 +177,7 @@ The following bases are defined in submodules
   <li> shenfun.chebyshev.bases</li>
 
 <ul>
-    <li> Basis - Regular Chebyshev</li> 
+    <li> Basis - Regular Chebyshev</li>
     <li> ShenDirichletBasis - Dirichlet boundary conditions</li>
     <li> ShenNeumannBasis - Neumann boundary conditions (homogeneous)</li>
     <li> ShenBiharmonicBasis - Homogeneous Dirichlet and Neumann boundary conditions</li>
@@ -200,9 +201,9 @@ The following bases are defined in submodules
 
 </ul>
 
-All bases have methods for transforms and inner products on single- or multidimensional 
-Numpy data arrays. The following code shows how to create a Fourier basis and subsequently 
-perform a forward and an inverse discrete Fourier transform on a random array. 
+All bases have methods for transforms and inner products on single- or multidimensional
+Numpy data arrays. The following code shows how to create a Fourier basis and subsequently
+perform a forward and an inverse discrete Fourier transform on a random array.
 The <code>uc</code> array is only used to test that the transform cycle returns the original data.
 <p>
 
@@ -210,11 +211,11 @@ The <code>uc</code> array is only used to test that the transform cycle returns 
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>    <span style="color: #666666">&gt;&gt;&gt;</span> <span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> <span style="color: #666666">*</span>
     <span style="color: #666666">&gt;&gt;&gt;</span> <span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
     <span style="color: #666666">&gt;&gt;&gt;</span> N <span style="color: #666666">=</span> <span style="color: #666666">16</span>
-    <span style="color: #666666">&gt;&gt;&gt;</span> FFT <span style="color: #666666">=</span> fourier<span style="color: #666666">.</span>bases<span style="color: #666666">.</span>R2CBasis(N) 
+    <span style="color: #666666">&gt;&gt;&gt;</span> FFT <span style="color: #666666">=</span> fourier<span style="color: #666666">.</span>bases<span style="color: #666666">.</span>R2CBasis(N)
     <span style="color: #666666">&gt;&gt;&gt;</span> u <span style="color: #666666">=</span> np<span style="color: #666666">.</span>random<span style="color: #666666">.</span>random(N)
     <span style="color: #666666">&gt;&gt;&gt;</span> uc <span style="color: #666666">=</span> u<span style="color: #666666">.</span>copy()
     <span style="color: #666666">&gt;&gt;&gt;</span> u_hat <span style="color: #666666">=</span> FFT<span style="color: #666666">.</span>forward(u)
-    <span style="color: #666666">&gt;&gt;&gt;</span> u <span style="color: #666666">=</span> FFT<span style="color: #666666">.</span>backward(u_hat) 
+    <span style="color: #666666">&gt;&gt;&gt;</span> u <span style="color: #666666">=</span> FFT<span style="color: #666666">.</span>backward(u_hat)
     <span style="color: #666666">&gt;&gt;&gt;</span> <span style="color: #008000; font-weight: bold">assert</span> np<span style="color: #666666">.</span>allclose(u, uc)
 </pre></div>
 
@@ -228,13 +229,13 @@ Matrices that arise with the spectral Galerkin method using Fourier or Shen's mo
     <span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">__init__</span>(<span style="color: #008000">self</span>, d, shape):
         <span style="color: #008000">dict</span><span style="color: #666666">.</span><span style="color: #0000FF">__init__</span>(<span style="color: #008000">self</span>, d)
         <span style="color: #008000">self</span><span style="color: #666666">.</span>shape <span style="color: #666666">=</span> shape
-        
+
     <span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">diags</span>(<span style="color: #008000">self</span>, format<span style="color: #666666">=</span><span style="color: #BA2121">&#39;dia&#39;</span>):
         <span style="color: #BA2121; font-style: italic">&quot;&quot;&quot;Return Scipy sparse matrix&quot;&quot;&quot;</span>
 
     <span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">matvec</span>(<span style="color: #008000">self</span>, u, x, format<span style="color: #666666">=</span><span style="color: #BA2121">&#39;dia&#39;</span>, axis<span style="color: #666666">=0</span>):
         <span style="color: #BA2121; font-style: italic">&quot;&quot;&quot;Return Matrix vector product self*u in x&quot;&quot;&quot;</span>
-        
+
     <span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">solve</span>(<span style="color: #008000">self</span>, b, u<span style="color: #666666">=</span><span style="color: #008000">None</span>, axis<span style="color: #666666">=0</span>):
         <span style="color: #BA2121; font-style: italic">&quot;&quot;&quot;Return solution u to self*u = b&quot;&quot;&quot;</span>
 </pre></div>
@@ -281,7 +282,7 @@ Weak variational forms are created using test and trial functions, as shown in t
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>    <span style="color: #666666">&gt;&gt;&gt;</span> <span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun.chebyshev.bases</span> <span style="color: #008000; font-weight: bold">import</span> ShenDirichletBasis
-    <span style="color: #666666">&gt;&gt;&gt;</span> <span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> inner, TestFunction, TrialFunction    
+    <span style="color: #666666">&gt;&gt;&gt;</span> <span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">shenfun</span> <span style="color: #008000; font-weight: bold">import</span> inner, TestFunction, TrialFunction
     <span style="color: #666666">&gt;&gt;&gt;</span> N <span style="color: #666666">=</span> <span style="color: #666666">8</span>
     <span style="color: #666666">&gt;&gt;&gt;</span> SD <span style="color: #666666">=</span> ShenDirichletBasis(N)
     <span style="color: #666666">&gt;&gt;&gt;</span> u <span style="color: #666666">=</span> TrialFunction(SD)
@@ -330,7 +331,7 @@ implemented. For example, to solve the linear system <code>Ku_hat=b_hat</code>
     <span style="color: #666666">&gt;&gt;&gt;</span> u_hat <span style="color: #666666">=</span> K<span style="color: #666666">.</span>solve(b_hat, u_hat)
 </pre></div>
 <p>
-Most methods are designed to work along any dimension of a multidimensional array. Very little differs in the users interface. Consider, for example, the previous example on a three-dimensional cube 
+Most methods are designed to work along any dimension of a multidimensional array. Very little differs in the users interface. Consider, for example, the previous example on a three-dimensional cube
 <p>
 
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
@@ -348,7 +349,7 @@ The bases also have methods for transforming between spectral and real space. Fo
 <!-- code=python (!bc pycod) typeset with pygments style "default" -->
 <div class="highlight" style="background: #f8f8f8"><pre style="line-height: 125%"><span></span>    <span style="color: #666666">&gt;&gt;&gt;</span> fj <span style="color: #666666">=</span> np<span style="color: #666666">.</span>random<span style="color: #666666">.</span>random(N)
     <span style="color: #666666">&gt;&gt;&gt;</span> fk <span style="color: #666666">=</span> np<span style="color: #666666">.</span>zeros_like(fj)
-    <span style="color: #666666">&gt;&gt;&gt;</span> fk <span style="color: #666666">=</span> SD<span style="color: #666666">.</span>forward(fj, fk) <span style="color: #408080; font-style: italic"># Gets expansion coefficients </span>
+    <span style="color: #666666">&gt;&gt;&gt;</span> fk <span style="color: #666666">=</span> SD<span style="color: #666666">.</span>forward(fj, fk) <span style="color: #408080; font-style: italic"># Gets expansion coefficients</span>
 </pre></div>
 <p>
 and back to real physical space again
@@ -375,7 +376,7 @@ We have now shown the usage of <code>shenfun</code> for single, one-dimensional 
 
 <h3 id="sec:fourierpoisson" class="anchor">Periodic boundary conditions</h3>
 
-If the solution to Eq. <a href="._shenfun_bootstrap002.html#mjx-eqn-1">(1)</a> is periodic with periodic length \( 2 \pi \), then we use \( \Omega \in [0, 2 \pi] \) and it will be natural to choose the test functions from the space consisting of the Fourier basis functions, i.e.,  \( v_l(x)=e^{ilx} \). The mesh \( \boldsymbol{x} = \{x_j\}_{j=0}^{N-1} \) will be uniformly spaced 
+If the solution to Eq. <a href="._shenfun_bootstrap002.html#mjx-eqn-1">(1)</a> is periodic with periodic length \( 2 \pi \), then we use \( \Omega \in [0, 2 \pi] \) and it will be natural to choose the test functions from the space consisting of the Fourier basis functions, i.e.,  \( v_l(x)=e^{ilx} \). The mesh \( \boldsymbol{x} = \{x_j\}_{j=0}^{N-1} \) will be uniformly spaced
 $$
 \begin{equation}
 \boldsymbol{x} = \frac{2 \pi j}{N}  \quad j=0,1,\ldots, N-1,
@@ -507,7 +508,7 @@ u <span style="color: #666666">=</span> TrialFunction(ST)
 v <span style="color: #666666">=</span> TestFunction(ST)
 X <span style="color: #666666">=</span> ST<span style="color: #666666">.</span>mesh(N)
 
-<span style="color: #408080; font-style: italic"># Get f and exact solution on quad points </span>
+<span style="color: #408080; font-style: italic"># Get f and exact solution on quad points</span>
 fj <span style="color: #666666">=</span> np<span style="color: #666666">.</span>array([fe<span style="color: #666666">.</span>subs(x, j) <span style="color: #008000; font-weight: bold">for</span> j <span style="color: #AA22FF; font-weight: bold">in</span> X], dtype<span style="color: #666666">=</span>np<span style="color: #666666">.</span>float)
 uj <span style="color: #666666">=</span> np<span style="color: #666666">.</span>array([ue<span style="color: #666666">.</span>subs(x, i) <span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> X], dtype<span style="color: #666666">=</span>np<span style="color: #666666">.</span>float)
 
@@ -717,11 +718,11 @@ To implement the same problem with the Legendre basis <a href="#mjx-eqn-22">(22)
 <p>
 <!-- navigation buttons at the bottom of the page -->
 <ul class="pager">
-\
+
   <li class="previous">
     <a href="._shenfun_bootstrap002.html">&larr; Prev</a>
   </li>
-\
+
   <li class="next">
     <a href="._shenfun_bootstrap004.html">Next &rarr;</a>
   </li>

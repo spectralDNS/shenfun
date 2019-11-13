@@ -194,12 +194,12 @@ V^N(x) = \text{span} \{\phi_l(x)\}_{l\in \boldsymbol{l}}, label{eq:kg:Vn}
 !et
 where $N$ is chosen as an even positive integer and $\boldsymbol{l} = (-N/2,
 -N/2+1, \ldots, N/2-1)$. And now, since $\Omega$ is a
-three-dimensional domain, we can create Cartesian products of such bases to get,
+three-dimensional domain, we can create tensor products of such bases to get,
 e.g., for three dimensions
 
 !bt
 \begin{equation}
-W^{\boldsymbol{N}}(x, y, z) = V^N(x) \times V^N(y) \times V^N(z), label{eq:kg:Wn}
+W^{\boldsymbol{N}}(x, y, z) = V^N(x) \otimes V^N(y) \otimes V^N(z), label{eq:kg:Wn}
 \end{equation}
 !et
 where $\boldsymbol{N} = (N, N, N)$. Obviously, it is not necessary to use the
@@ -381,7 +381,7 @@ K2 = Basis(N[2], 'F', domain=(-2*np.pi, 2*np.pi), dtype='d')
 We now have three instances `K0`, `K1` and `K2`, corresponding to the basis
 (ref{eq:kg:Vn}), that each can be used to solve
 one-dimensional problems. However, we want to solve a 3D problem, and for this
-we need a tensor product basis, like (ref{eq:kg:Wn}), created as a Cartesian
+we need a tensor product basis, like (ref{eq:kg:Wn}), created as a tensor
 product of these three bases
 
 !bc pycod

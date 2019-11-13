@@ -7,7 +7,7 @@ Demo - Stokes equations
 %%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 23, 2019
+:Date: Nov 13, 2019
 
 *Summary.* The Stokes equations describe the flow of highly viscous fluids.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Stokes
@@ -173,7 +173,7 @@ and from these we create two different tensor product spaces
    :label: _auto9
 
         
-        W_0^{\mathbf{N}}(\mathbf{x}) = V^{N_0}(x) \times V^{N_1}(y) \times V_0^{N_2}(z), 
+        W_0^{\mathbf{N}}(\mathbf{x}) = V^{N_0}(x) \otimes V^{N_1}(y) \otimes V_0^{N_2}(z), 
         
         
 
@@ -181,7 +181,7 @@ and from these we create two different tensor product spaces
    :label: _auto10
 
           
-        W^{\mathbf{N}}(\mathbf{x}) = V^{N_0}(x) \times V^{N_1}(y) \times V^{N_2}(z).
+        W^{\mathbf{N}}(\mathbf{x}) = V^{N_0}(x) \otimes V^{N_1}(y) \otimes V^{N_2}(z).
         
         
 

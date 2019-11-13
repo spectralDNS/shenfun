@@ -255,7 +255,8 @@ Multidimensional problems
 -------------------------
 
 As described in the introduction, a multidimensional problem is handled using
-tensor product spaces, that are outer products of one-dimensional bases. We
+tensor product spaces, that have basis functions generated from taking the
+outer products of one-dimensional basis functions. We
 create tensor product spaces using the class :class:`.TensorProductSpace`::
 
     N, M = (12, 16)
@@ -263,7 +264,7 @@ create tensor product spaces using the class :class:`.TensorProductSpace`::
     K0 = Basis(M, 'F', dtype='d')
     T = TensorProductSpace(comm, (C0, K0))
 
-The tensor product mesh will now be :math:`[-1, 1] \times [0, 2\pi]`. We use
+Associated with this is a Cartesian mesh :math:`[-1, 1] \times [0, 2\pi]`. We use
 classes :class:`.Function`, :class:`.TrialFunction` and :class:`TestFunction`
 exactly as before::
 
@@ -418,8 +419,11 @@ periodicity in the :math:`y`-direction:
 
 Note that there is no boundary condition on :math:`\sigma`, only on :math:`u`.
 For this reason we choose a Dirichlet basis :math:`SD` for :math:`u` and a regular
-Legendre or Chebyshev :math:`ST` basis for :math:`\sigma`. Since :math:`\sigma` is
-a vector we use a :class:`.VectorTensorProductSpace` :math:`VT = ST \times ST` and
+Legendre or Chebyshev :math:`ST` basis for :math:`\sigma`. With :math:`K0` representing
+the function space in the periodic direction, we get the relevant 2D tensor product
+spaces as :math:`TD = SD \otimes K0` and :math:`TT = ST \otimes K0`.
+Since :math:`\sigma` is
+a vector we use a :class:`.VectorTensorProductSpace` :math:`VT = TT \times TT` and
 finally a :class:`.MixedTensorProductSpace` :math:`Q = VT \times TD` for the coupled and
 implicit treatment of :math:`(\sigma, u)`::
 

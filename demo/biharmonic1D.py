@@ -41,10 +41,6 @@ b = 1.0+nu*dt*k**2
 a = -nu*dt/2.
 fe = a*ue.diff(x, 4) + b*ue.diff(x, 2) + c*ue
 
-# Lambdify for faster evaluation
-ul = lambdify(x, ue, 'numpy')
-fl = lambdify(x, fe, 'numpy')
-
 # Size of discretization
 N = int(sys.argv[-2])
 
@@ -54,7 +50,7 @@ u = TrialFunction(SD)
 v = TestFunction(SD)
 
 # Get f on quad points
-fj = Array(SD, buffer=fl(X))
+fj = Array(SD, buffer=fe)
 
 # Compute right hand side of biharmonic equation
 f_hat = inner(v, fj)
@@ -76,12 +72,9 @@ uj = SD.backward(u_hat, uj)
 uh = uj.forward()
 
 # Compare with analytical solution
-uq = ul(X)
+uq = Array(SD, buffer=ue)
 print("Error=%2.16e" %(np.linalg.norm(uj-uq)))
 assert np.allclose(uj, uq)
-point = np.array([0.1, 0.2])
-p = u_hat.eval(point)
-assert np.allclose(p, ul(point))
 
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt

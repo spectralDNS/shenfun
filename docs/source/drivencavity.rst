@@ -7,7 +7,7 @@ Demo - Lid driven cavity
 ========================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 23, 2019
+:Date: Nov 13, 2019
 
 *Summary.* The lid driven cavity is a classical benchmark for Navier Stokes solvers.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the lid
@@ -229,7 +229,7 @@ product spaces, whereas one is enough for the pressure
    :label: _auto4
 
         
-        V_{1}^{\mathbf{N}}(\mathbf{x}) = D_0^{N_0}(x) \times D_1^{N_1}(y) 
+        V_{1}^{\mathbf{N}}(\mathbf{x}) = D_0^{N_0}(x) \otimes D_1^{N_1}(y), 
         
         
 
@@ -237,7 +237,7 @@ product spaces, whereas one is enough for the pressure
    :label: _auto5
 
           
-        V_{0}^{\mathbf{N}}(\mathbf{x}) = D_0^{N_0}(x) \times D_0^{N_1}(y) 
+        V_{0}^{\mathbf{N}}(\mathbf{x}) = D_0^{N_0}(x) \otimes D_0^{N_1}(y), 
         
         
 
@@ -245,7 +245,7 @@ product spaces, whereas one is enough for the pressure
    :label: _auto6
 
           
-        P^{\mathbf{N}}(\mathbf{x}) = P^{N_0}(x) \times P^{N_1}(y)
+        P^{\mathbf{N}}(\mathbf{x}) = P^{N_0}(x) \otimes P^{N_1}(y).
         
         
 

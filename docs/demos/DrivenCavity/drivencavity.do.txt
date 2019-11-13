@@ -213,9 +213,9 @@ spaces. From the Dirichlet bases we create two different tensor
 product spaces, whereas one is enough for the pressure
 !bt
 \begin{align}
-V_{1}^{\bs{N}}(\bs{x}) &= D_0^{N_0}(x) \times D_1^{N_1}(y) \\
-V_{0}^{\bs{N}}(\bs{x}) &= D_0^{N_0}(x) \times D_0^{N_1}(y) \\
-P^{\bs{N}}(\bs{x}) &= P^{N_0}(x) \times P^{N_1}(y)
+V_{1}^{\bs{N}}(\bs{x}) &= D_0^{N_0}(x) \otimes D_1^{N_1}(y), \\
+V_{0}^{\bs{N}}(\bs{x}) &= D_0^{N_0}(x) \otimes D_0^{N_1}(y), \\
+P^{\bs{N}}(\bs{x}) &= P^{N_0}(x) \otimes P^{N_1}(y).
 \end{align}
 !et
 With shenfun the tensor product spaces are created as

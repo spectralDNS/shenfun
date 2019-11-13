@@ -7,16 +7,6 @@ and homogeneous Dirichlet and Neumann in the remaining third
 Use Fourier basis for the periodic direction and Shen's Biharmonic
 basis for the non-periodic direction.
 
-Note that we are solving
-
-    (v, \nabla^4 u) = (v, f)
-
-with the Chebyshev basis, and
-
-    (div(grad(v), div(grad(u)) = -(v, f)
-
-for the Legendre basis.
-
 """
 import sys
 import os
@@ -39,10 +29,6 @@ x, y, z = symbols("x,y,z")
 ue = (sin(4*np.pi*x)*sin(6*z)*cos(4*y))*(1-x**2)
 fe = ue.diff(x, 4) + ue.diff(y, 4) + ue.diff(z, 4) + 2*ue.diff(x, 2, y, 2) + 2*ue.diff(x, 2, z, 2) + 2*ue.diff(y, 2, z, 2)
 
-# Lambdify for faster evaluation
-ul = lambdify((x, y, z), ue, 'numpy')
-fl = lambdify((x, y, z), fe, 'numpy')
-
 # Size of discretization
 N = (36, 36, 36)
 
@@ -59,16 +45,13 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = Array(T, buffer=fl(*X))
+fj = Array(T, buffer=fe)
 
 # Compute right hand side of biharmonic equation
 f_hat = inner(v, fj)
 
 # Get left hand side of biharmonic equation
-if family == 'chebyshev': # No integration by parts due to weights
-    matrices = inner(v, div(grad(div(grad(u)))))
-else: # Use form with integration by parts. Note that Biharmonic operator used for Chebyshev also works for Legendre
-    matrices = inner(div(grad(v)), div(grad(u)))
+matrices = inner(v, div(grad(div(grad(u)))))
 
 # Create linear algebra solver
 H = BiharmonicSolver(*matrices)
@@ -80,13 +63,9 @@ uq = u_hat.backward()
 #uh = uq.forward()
 
 # Compare with analytical solution
-uj = ul(*X)
+uj = Array(T, buffer=ue)
 print(abs(uj-uq).max())
 assert np.allclose(uj, uq)
-
-points = np.array([[0.2, 0.3], [0.1, 0.5], [0.3, 0.6]])
-p = T.eval(points, u_hat, method=2)
-assert np.allclose(p, ul(*points))
 
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt

@@ -7,7 +7,7 @@ Demo - Kuramato-Sivashinsky equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 23, 2019
+:Date: Nov 13, 2019
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Kuramato-Sivashinsky equation, in a doubly periodic domain. The demo is implemented in
@@ -123,13 +123,13 @@ a finite number of test functions. A basis :math:`V^N` can be defined as
 
 where :math:`N` is chosen as an even positive integer and :math:`\boldsymbol{l} = (-N/2,
 -N/2+1, \ldots, N/2-1)`. And now, since :math:`\Omega` is a
-two-dimensional domain, we can create a Cartesian product of two such bases:
+two-dimensional domain, we can create a tensor product of two such bases:
 
 .. math::
    :label: eq:Wn
 
         
-        W^{\boldsymbol{N}}(x, y) = V^N(x) \times V^N(y), 
+        W^{\boldsymbol{N}}(x, y) = V^N(x) \otimes V^N(y), 
         
 
 where :math:`\boldsymbol{N} = (N, N)`. Obviously, it is not necessary to use the
@@ -289,7 +289,8 @@ addition to `shenfun <https://github.com/spectralDNS/shenfun>`__:
     from shenfun import *
 
 The size of the problem (in real space) is then specified, before creating
-the :class:`.TensorProductSpace`, which is a Cartesian product of two Fourier bases. We also
+the :class:`.TensorProductSpace`, which is using a tensor product of two Fourier bases as
+basis functions. We also
 create a :class:`.VectorTensorProductSpace`, since this is required for computing the
 gradient of the scalar field ``u``. The gradient is required for the nonlinear
 term.

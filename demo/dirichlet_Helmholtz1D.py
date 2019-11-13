@@ -5,13 +5,7 @@ Solve Helmholtz equation in 1D with Dirichlet bcs
 
     \alpha u - \nabla^2 u = f, \quad u(\pm 1) = 0
 
-The equation to solve for Legendre basis is
-
-.. math::
-
-    \alpha (u, v)_w + (\nabla u, \nabla v)_w = (f, v)_w
-
-whereas for Chebyshev we solve
+The equation to solve is
 
 .. math::
 
@@ -25,8 +19,8 @@ The weighted inner product over the domain :math:`\Omega` is defined as
 
 where :math:`w(x)` is a weight function.
 
-For either Chebyshev or Legendre we choose a basis that satsifies the boundary
-conditions.
+For either Chebyshev, Legendre or Jacobi we choose a basis that satsifies
+the boundary conditions.
 
 """
 import sys
@@ -34,7 +28,7 @@ import importlib
 from sympy import symbols, sin, lambdify
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    Array, Function, Basis
+    Array, Function, Basis, dx
 
 assert len(sys.argv) == 3
 assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi')
@@ -51,10 +45,6 @@ x = symbols("x")
 ue = sin(4*np.pi*x)*(1-x**2)
 fe = alfa*ue - ue.diff(x, 2)
 
-# Lambdify for faster evaluation
-ul = lambdify(x, ue, 'numpy')
-fl = lambdify(x, fe, 'numpy')
-
 # Size of discretization
 N = int(sys.argv[-2])
 
@@ -64,19 +54,15 @@ u = TrialFunction(SD)
 v = TestFunction(SD)
 
 # Get f on quad points
-fj = Array(SD, buffer=fl(X))
+fj = Array(SD, buffer=fe)
 
 # Compute right hand side of Poisson equation
 f_hat = Array(SD)
 f_hat = inner(v, fj, output_array=f_hat)
 
 # Get left hand side of Poisson equation
-if family == 'chebyshev':
-    A = inner(v, -div(grad(u)))
-    B = inner(v, alfa*u)
-else:
-    A = inner(grad(v), grad(u))
-    B = inner(v, alfa*u)
+A = inner(v, -div(grad(u)))
+B = inner(v, alfa*u)
 
 H = Solver(A, B)
 u_hat = Function(SD)           # Solution spectral space
@@ -84,16 +70,8 @@ u_hat = H(u_hat, f_hat)
 uj = SD.backward(u_hat)
 
 # Compare with analytical solution
-ua = ul(X)
+ua = Array(SD, buffer=ue)
 
-if family == 'chebyshev':
-    # Compute L2 error norm using Clenshaw-Curtis integration
-    from shenfun import clenshaw_curtis1D
-    error = clenshaw_curtis1D((uj-ua)**2, quad=SD.quad)
-    print("Error=%2.16e" %(error))
-
-else:
-    x, w = SD.points_and_weights()
-    print("Error=%2.16e" %(np.sqrt(np.sum((uj-ua)**2*w))))
-
+error = dx((uj-ua)**2)
+print('Error=%2.6e'%(np.sqrt(error)))
 assert np.allclose(uj, ua)

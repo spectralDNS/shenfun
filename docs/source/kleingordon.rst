@@ -7,7 +7,7 @@ Demo - Cubic nonlinear Klein-Gordon equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 23, 2019
+:Date: Nov 13, 2019
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Klein-Gordon equation, in a triply periodic domain. The demo is implemented in
@@ -202,14 +202,14 @@ a finite number of test functions. A basis :math:`V^N` can be defined as
 
 where :math:`N` is chosen as an even positive integer and :math:`\boldsymbol{l} = (-N/2,
 -N/2+1, \ldots, N/2-1)`. And now, since :math:`\Omega` is a
-three-dimensional domain, we can create Cartesian products of such bases to get,
+three-dimensional domain, we can create tensor products of such bases to get,
 e.g., for three dimensions
 
 .. math::
    :label: eq:kg:Wn
 
         
-        W^{\boldsymbol{N}}(x, y, z) = V^N(x) \times V^N(y) \times V^N(z), 
+        W^{\boldsymbol{N}}(x, y, z) = V^N(x) \otimes V^N(y) \otimes V^N(z), 
         
 
 where :math:`\boldsymbol{N} = (N, N, N)`. Obviously, it is not necessary to use the
@@ -447,7 +447,7 @@ real data is now complex. We may start implementing the solver as follows
 We now have three instances ``K0``, ``K1`` and ``K2``, corresponding to the basis
 :eq:`eq:kg:Vn`, that each can be used to solve
 one-dimensional problems. However, we want to solve a 3D problem, and for this
-we need a tensor product basis, like :eq:`eq:kg:Wn`, created as a Cartesian
+we need a tensor product basis, like :eq:`eq:kg:Wn`, created as a tensor
 product of these three bases
 
 .. code-block:: python
