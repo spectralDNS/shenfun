@@ -17,7 +17,7 @@ where V is the Fourier basis :math:`span{exp(1jkx)}_{k=-N/2}^{N/2-1}` and
 """
 import os
 import numpy as np
-from sympy import symbols, cos, sin, lambdify
+from sympy import symbols, cos, sin
 from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis, \
     TensorProductSpace, Array, Function, dx

@@ -9,7 +9,7 @@ Use Shen's Biharmonic basis for both directions.
 """
 import sys
 import os
-from sympy import symbols, sin, lambdify
+from sympy import symbols, sin
 import numpy as np
 from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \

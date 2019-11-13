@@ -14,7 +14,7 @@ The equation to solve for a Hermite basis is
 """
 import os
 import sys
-from sympy import symbols, exp, lambdify, hermite
+from sympy import symbols, exp, hermite, lambdify
 import numpy as np
 from shenfun import inner, grad, TestFunction, TrialFunction, \
     Array, Function, Basis
@@ -28,10 +28,6 @@ x = symbols("x")
 ue = hermite(4, x)*exp(-x**2/2)
 fe = ue.diff(x, 2)
 
-# Lambdify for faster evaluation
-ul = lambdify(x, ue, 'numpy')
-fl = lambdify(x, fe, 'numpy')
-
 # Size of discretization
 N = int(sys.argv[-1])
 
@@ -41,7 +37,7 @@ u = TrialFunction(SD)
 v = TestFunction(SD)
 
 # Get f on quad points
-fj = Array(SD, buffer=fl(X))
+fj = Array(SD, buffer=fe)
 
 # Compute right hand side of Poisson equation
 f_hat = Function(SD)
@@ -55,13 +51,13 @@ uj = f_hat.backward()
 uh = uj.forward()
 
 # Compare with analytical solution
-ua = ul(X)
+ua = Array(SD, buffer=ue)
 print("Error=%2.16e" %(np.linalg.norm(uj-ua)))
 assert np.allclose(uj, ua, atol=1e-5)
 
 point = np.array([0.1, 0.2])
 p = SD.eval(point, f_hat)
-assert np.allclose(p, ul(point), atol=1e-5)
+assert np.allclose(p, lambdify(x, ue)(point), atol=1e-5)
 
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt

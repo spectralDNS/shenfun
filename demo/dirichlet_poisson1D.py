@@ -9,7 +9,7 @@ The equation to solve is
 
 """
 import sys
-from sympy import symbols, sin, lambdify
+from sympy import symbols, sin
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
     Array, Function, Basis, dx
