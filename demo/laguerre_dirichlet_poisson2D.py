@@ -18,7 +18,7 @@ The equation to solve for the Laguerre basis is
 """
 import sys
 import os
-from sympy import symbols, cos, sin, exp, lambdify
+from sympy import symbols, cos, sin, exp
 import numpy as np
 from mpi4py import MPI
 from shenfun import inner, grad, TestFunction, TrialFunction, \

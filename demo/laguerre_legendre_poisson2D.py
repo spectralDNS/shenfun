@@ -17,7 +17,7 @@ The equation to solve is
 """
 import sys
 import os
-from sympy import symbols, sin, exp, lambdify
+from sympy import symbols, sin, exp
 import numpy as np
 from mpi4py import MPI
 from shenfun import inner, grad, TestFunction, TrialFunction, \
