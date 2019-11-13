@@ -46,8 +46,8 @@ python biharmonic2D_2nonperiodic.py legendre
 python biharmonic3D_2nonperiodic.py legendre
 
 python laguerre_dirichlet_poisson1D.py 70
-python laguerre_dirichlet_poisson2D.py 50
-python laguerre_legendre_poisson2D.py 50
+python laguerre_dirichlet_poisson2D.py 60
+python laguerre_legendre_poisson2D.py 60
 
 python biharmonic2D_2nonperiodic.py chebyshev
 python biharmonic2D_2nonperiodic.py legendre

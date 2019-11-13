@@ -7,6 +7,7 @@ last
 
 Use Shen's Biharmonic basis for both non-periodic directions.
 
+
 """
 import sys
 import os
@@ -26,6 +27,9 @@ family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
 x, y, z = symbols("x,y,z")
 ue = (sin(2*np.pi*z)*sin(4*np.pi*y)*cos(4*x))*(1-y**2)*(1-z**2)
 fe = ue.diff(x, 4) + ue.diff(y, 4) + ue.diff(z, 4) + 2*ue.diff(x, 2, y, 2) + 2*ue.diff(x, 2, z, 2) + 2*ue.diff(y, 2, z, 2)
+
+# Lambdify for faster evaluation
+ul = lambdify((x, y, z), ue, 'numpy')
 
 # Size of discretization
 N = (36, 36, 36)
@@ -57,7 +61,7 @@ u_hat = H(f_hat, u_hat)       # Solve
 uq = u_hat.backward()
 
 # Compare with analytical solution
-uj = Array(T, buffer=fe)
+uj = Array(T, buffer=ue)
 print(abs(uj-uq).max())
 assert np.allclose(uj, uq)
 

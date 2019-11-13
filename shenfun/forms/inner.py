@@ -4,7 +4,7 @@ weighted inner product.
 """
 from numbers import Number
 import numpy as np
-from shenfun.spectralbase import inner_product, SpectralBase
+from shenfun.spectralbase import inner_product, SpectralBase, MixedBasis
 from shenfun.matrixbase import TPMatrix
 from shenfun.tensorproductspace import TensorProductSpace, MixedTensorProductSpace
 from shenfun.utilities import dx
@@ -215,9 +215,8 @@ def inner(expr0, expr1, output_array=None, level=0):
         test = Expr(test)
 
     assert test.expr_rank() == trial.expr_rank()
-    space = test.function_space()
-    basespace = test.base.function_space()
-    trialspace = trial.function_space()
+    testspace = test.base.function_space()
+    trialspace = trial.base.function_space()
     test_scale = test.scales()
     trial_scale = trial.scales()
 
@@ -234,11 +233,11 @@ def inner(expr0, expr1, output_array=None, level=0):
                 DM = []
                 assert len(b0) == len(b1)
                 trial_sp = trialspace
-                if isinstance(trialspace, MixedTensorProductSpace): # could operate on a vector, e.g., div(u), where u is vector
+                if isinstance(trialspace, (MixedTensorProductSpace, MixedBasis)): # could operate on a vector, e.g., div(u), where u is vector
                     trial_sp = trialspace.flatten()[trial_ind[trial_j]]
-                test_sp = space
-                if isinstance(space, MixedTensorProductSpace):
-                    test_sp = space.flatten()[test_ind[test_j]]
+                test_sp = testspace
+                if isinstance(testspace, (MixedTensorProductSpace, MixedBasis)):
+                    test_sp = testspace.flatten()[test_ind[test_j]]
                 has_bcs = False
                 #assert test_sp.compatible_base(trial_sp)
                 for i, (a, b) in enumerate(zip(b0, b1)): # Third index, one inner for each dimension
@@ -269,18 +268,18 @@ def inner(expr0, expr1, output_array=None, level=0):
                 if len(M) == 1: # 1D case
                     M[0].global_index = (test_ind[test_j], trial_ind[trial_j])
                     M[0].scale = sc[0]
-                    M[0].mixedbase = basespace
+                    M[0].mixedbase = testspace
                     A.append(M[0])
                 else:
-                    A.append(TPMatrix(M, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), basespace))
+                    A.append(TPMatrix(M, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
                 if has_bcs:
                     if len(DM) == 1: # 1D case
                         DM[0].global_index = (test_ind[test_j], trial_ind[trial_j])
                         DM[0].scale = sc
-                        DM[0].mixedbase = basespace
+                        DM[0].mixedbase = testspace
                         A.append(DM[0])
                     else:
-                        A.append(TPMatrix(DM, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), basespace))
+                        A.append(TPMatrix(DM, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
 
     # At this point A contains all matrices of the form. The length of A is
     # the number of inner products. For each index into A there are ndim 1D

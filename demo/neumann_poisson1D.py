@@ -5,11 +5,7 @@ Solve Poisson equation in 1D with homogeneous Neumann bcs
 
 Use Shen's Neumann basis
 
-The equation to solve for the Legendre basis is
-
-    -(\nabla u, \nabla v) = (f, v)
-
-whereas for Chebyshev we solve
+The equation to solve is
 
      (\nabla^2 u, v) = (f, v)
 
@@ -35,10 +31,6 @@ x = symbols("x")
 ue = sin(np.pi*x)*(1-x**2)
 fe = ue.diff(x, 2)
 
-# Lambdify for faster evaluation
-ul = lambdify(x, ue, 'numpy')
-fl = lambdify(x, fe, 'numpy')
-
 # Size of discretization
 N = 32
 
@@ -48,19 +40,13 @@ u = TrialFunction(SD)
 v = TestFunction(SD)
 
 # Get f on quad points
-fj = Array(SD, buffer=fl(X))
+fj = Array(SD, buffer=fe)
 
 # Compute right hand side of Poisson equation
 f_hat = Function(SD, buffer=inner(v, fj))
 
-if family == 'legendre':
-    f_hat *= -1.
-
 # Get left hand side of Poisson equation
-if family == 'chebyshev':
-    A = inner(v, div(grad(u)))
-else:
-    A = inner(grad(v), grad(u))
+A = inner(v, div(grad(u)))
 
 f_hat = A.solve(f_hat)
 
@@ -69,7 +55,7 @@ u = np.zeros(N)               # Solution real space
 u = SD.backward(f_hat, u)
 
 # Compare with analytical solution
-uj = ul(X)
+uj = Array(SD, buffer=ue)
 print(abs(uj-u).max())
 assert np.allclose(uj, u)
 

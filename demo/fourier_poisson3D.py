@@ -16,7 +16,7 @@ from sympy import symbols, cos, sin, lambdify
 import numpy as np
 from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis, \
-    TensorProductSpace, Array, Function
+    TensorProductSpace, Array, Function, dx
 
 comm = MPI.COMM_WORLD
 
@@ -24,9 +24,6 @@ comm = MPI.COMM_WORLD
 x, y, z = symbols("x,y,z")
 ue = cos(4*x) + sin(4*y) + sin(6*z)
 fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
-
-ul = lambdify((x, y, z), ue, 'numpy')
-fl = lambdify((x, y, z), fe, 'numpy')
 
 # Size of discretization
 N = (14, 15, 16)
@@ -40,7 +37,7 @@ u = TrialFunction(T)
 v = TestFunction(T)
 
 # Get f on quad points
-fj = Array(T, buffer=fl(*X))
+fj = Array(T, buffer=fe)
 
 # Compute right hand side
 f_hat = Function(T)
@@ -52,13 +49,14 @@ f_hat = A.solve(f_hat)
 
 uq = T.backward(f_hat, fast_transform=True)
 
-uj = ul(*X)
-print(abs(uj-uq).max())
+uj = Array(T, buffer=ue)
+print(np.sqrt(dx((uj-uq)**2)))
 assert np.allclose(uj, uq)
 
 # Test eval at point
 point = np.array([[0.1, 0.5], [0.5, 0.6], [0.1, 0.2]])
 p = T.eval(point, f_hat)
+ul = lambdify((x, y, z), ue)
 assert np.allclose(p, ul(*point))
 p2 = f_hat.eval(point)
 assert np.allclose(p2, ul(*point))

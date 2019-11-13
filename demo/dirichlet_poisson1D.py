@@ -3,11 +3,7 @@ Solve Poisson equation in 1D with possibly inhomogeneous Dirichlet bcs
 
     \nabla^2 u = f,
 
-The equation to solve for a Legendre basis is
-
-     (\nabla u, \nabla v) = -(f, v)
-
-whereas for Chebyshev we solve
+The equation to solve is
 
      (\nabla^2 u, v) = (f, v)
 
@@ -16,7 +12,7 @@ import sys
 from sympy import symbols, sin, lambdify
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    Array, Function, Basis
+    Array, Function, Basis, dx
 
 assert len(sys.argv) == 3, 'Call with two command-line arguments'
 assert sys.argv[-1] in ('legendre', 'chebyshev', 'jacobi')
@@ -53,14 +49,9 @@ fj = Array(SD, buffer=fe)
 # Compute right hand side of Poisson equation
 f_hat = Function(SD)
 f_hat = inner(v, fj, output_array=f_hat)
-if family in ('legendre', 'jacobi'):
-    f_hat *= -1.
 
 # Get left hand side of Poisson equation
-if family == 'chebyshev':
-    A = inner(v, div(grad(u)))
-else:
-    A = inner(grad(v), grad(u))
+A = inner(v, div(grad(u)))
 
 u_hat = Function(SD)
 u_hat = A.solve(f_hat, u_hat)
@@ -69,9 +60,5 @@ uh = uj.forward()
 
 # Compare with analytical solution
 ua = Array(SD, buffer=ue)
-print("Error=%2.16e" %(np.linalg.norm(uj-ua)))
+print("Error=%2.16e" %(np.sqrt(dx((uj-ua)**2))))
 assert np.allclose(uj, ua)
-
-point = np.array([0.1, 0.2])
-p = SD.eval(point, u_hat)
-assert np.allclose(p, lambdify(x, ue)(point))

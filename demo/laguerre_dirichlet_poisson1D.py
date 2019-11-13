@@ -13,7 +13,7 @@ import sys
 from sympy import symbols, sin, exp, lambdify
 import numpy as np
 from shenfun import inner, grad, TestFunction, TrialFunction, \
-    Array, Function, Basis
+    Array, Function, Basis, dx
 
 assert len(sys.argv) == 2, 'Call with one command-line argument'
 assert isinstance(int(sys.argv[-1]), int)
@@ -22,10 +22,6 @@ assert isinstance(int(sys.argv[-1]), int)
 x = symbols("x")
 ue = sin(2*x)*exp(-x)
 fe = ue.diff(x, 2)
-
-# Lambdify for faster evaluation
-ul = lambdify(x, ue, 'numpy')
-fl = lambdify(x, fe, 'numpy')
 
 # Size of discretization
 N = int(sys.argv[-1])
@@ -36,7 +32,7 @@ u = TrialFunction(SD)
 v = TestFunction(SD)
 
 # Get f on quad points
-fj = Array(SD, buffer=fl(X))
+fj = Array(SD, buffer=fe)
 
 # Compute right hand side of Poisson equation
 f_hat = Function(SD)
@@ -51,16 +47,17 @@ uj = f_hat.backward()
 uh = uj.forward()
 
 # Compare with analytical solution
-ua = ul(X)
+ua = Array(SD, buffer=ue)
 print("Error=%2.16e" %(np.linalg.norm(uj-ua)))
+print("Error=%2.16e" %(np.sqrt(dx(uj-ua)**2)))
 assert np.allclose(uj, ua, atol=1e-5)
 
 point = np.array([0.1, 0.2])
 p = SD.eval(point, f_hat)
-assert np.allclose(p, ul(point), atol=1e-5)
+assert np.allclose(p, lambdify(x, ue)(point), atol=1e-5)
 
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     xx = np.linspace(0, 16, 100)
-    plt.plot(xx, ul(xx), 'r', xx, uh.eval(xx), 'bo', markersize=2)
+    plt.plot(xx, lambdify(x, ue)(xx), 'r', xx, uh.eval(xx), 'bo', markersize=2)
     plt.show()
