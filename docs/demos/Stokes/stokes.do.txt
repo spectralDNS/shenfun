@@ -132,7 +132,7 @@ there is a nullspace and one degree of freedom remains unresolved. It turns out
 that the proper choice for the pressure basis is simply (ref{eq:Zn}) for
 $n \in \bs{n}^{N_2-2}$. (Also remember that we have to fix $\int_{\Omega} p dx = 0$.)
 
-With given basis functions we obtain the bases
+With given basis functions we obtain the spaces
 
 !bt
 \begin{align}
@@ -151,7 +151,8 @@ W^{\bs{N}}(\bs{x}) &= V^{N_0}(x) \otimes V^{N_1}(y) \otimes V^{N_2}(z).
 !et
 
 The velocity vector is using a mixed basis, such that we will look for
-solutions $\bs{u} \in [W_0^{\bs{N}}]^3$, whereas we look for the pressure
+solutions $\bs{u} \in [W_0^{\bs{N}}]^3 \, (=W_0^{\bs{N}} \times W_0^{\bs{N}} \times W_0^{\bs{N}})$,
+whereas we look for the pressure
 $p \in W^{\bs{N}}$. We now formulate a variational problem using the Galerkin method: Find
 $\bs{u} \in [W_0^{\bs{N}}]^3$ and $p \in W^{\bs{N}}$ such that
 !bt
@@ -265,7 +266,7 @@ $N_2-2$ coefficients are used, see discussion around Eq. (ref{eq:Zn}).
 At the same time, we ensure that we are still using $N_2$
 quadrature points, the same as for the Dirichlet basis.
 
-Next the bases are used to create two tensor product spaces Q = $W^{\bs{N}}$
+Next the one-dimensional spaces are used to create two tensor product spaces Q = $W^{\bs{N}}$
 and TD = $W_0^{\bs{N}}$, one vector V = $[W_0^{\bs{N}}]^3$ and one mixed
 space  VQ = V $\times$ Q.
 

@@ -29,14 +29,12 @@ from scipy.sparse.linalg import splu
 import sympy
 from shenfun import *
 
-comm = MPI.COMM_WORLD
-
 assert comm.Get_size() == 1, "Two non-periodic directions only have solver implemented for serial"
 
 Re = 200.
 nu = 2./Re
 alfa = 0.2 # underrelaxation factor
-N = (50, 50)
+N = (45, 45)
 family = 'Chebyshev'
 #family = 'Legendre'
 quad = 'GC'
@@ -60,13 +58,18 @@ V1 = TensorProductSpace(comm, (D0X, D1Y))
 V0 = TensorProductSpace(comm, (D0X, D0Y))
 P = TensorProductSpace(comm, (PX, PY))
 
-# Create mixed space for velocity and a space with homogeneous boundary conditions
+# Create mixed space for velocity
 W1 = MixedTensorProductSpace([V1, V0])
-W0 = MixedTensorProductSpace([V0, V0])
 
 # Create mixed space for total solution
 VQ = MixedTensorProductSpace([W1, P])   # for velocity and pressure
-QT = MixedTensorProductSpace([W1, W0])  # for uiuj
+
+# Create padded spaces for nonlinearity
+V1p = V1.get_dealiased((1.5, 1.5))
+V0p = V0.get_dealiased((1.5, 1.5))
+W1p = MixedTensorProductSpace([V1p, V0p])
+W0p = MixedTensorProductSpace([V0p, V0p])
+QTp = MixedTensorProductSpace([W1p, W0p])  # for uiuj
 
 up = TrialFunction(VQ)
 vq = TestFunction(VQ)
@@ -111,16 +114,17 @@ bh_hat = Function(VQ)
 
 # Create arrays to hold velocity vector solution
 ui = Array(W1)
+uip = Array(W1p)
 
 # Create work arrays for nonlinear part
-uiuj = Array(QT)
-uiuj_hat = Function(QT)
+uiuj = Array(QTp)
+uiuj_hat = Function(QTp)
 
 def compute_rhs(ui_hat, bh_hat):
-    global ui, uiuj, uiuj_hat, W1
+    global uip, uiuj, uiuj_hat, W1p
     bh_hat.fill(0)
-    ui = W1.backward(ui_hat, ui)
-    uiuj = outer(ui, ui, uiuj)
+    uip = W1p.backward(ui_hat, uip)
+    uiuj = outer(uip, uip, uiuj)
     uiuj_hat = uiuj.forward(uiuj_hat)
     bi_hat = bh_hat[0]
     bi_hat = inner(v, div(uiuj_hat), output_array=bi_hat)

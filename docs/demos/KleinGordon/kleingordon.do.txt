@@ -185,7 +185,7 @@ for trial and test functions, and as such we use basis functions
 where $l$ is the wavenumber, and
 $\underline{l}=\frac{2\pi}{L}l$ is the scaled wavenumber, scaled with domain
 length $L$ (here $4\pi$). Since we want to solve these equations on a computer, we need to choose
-a finite number of test functions. A basis $V^N$ can be defined as
+a finite number of test functions. A function space $V^N$ can be defined as
 
 !bt
 \begin{equation}
@@ -378,11 +378,11 @@ K1 = Basis(N[1], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
 K2 = Basis(N[2], 'F', domain=(-2*np.pi, 2*np.pi), dtype='d')
 !ec
 
-We now have three instances `K0`, `K1` and `K2`, corresponding to the basis
+We now have three instances `K0`, `K1` and `K2`, corresponding to the space
 (ref{eq:kg:Vn}), that each can be used to solve
 one-dimensional problems. However, we want to solve a 3D problem, and for this
-we need a tensor product basis, like (ref{eq:kg:Wn}), created as a tensor
-product of these three bases
+we need a tensor product space, like (ref{eq:kg:Wn}), created as a tensor
+product of these three spaces
 
 !bc pycod
 # Create communicator
@@ -492,7 +492,7 @@ function can be implemented as
 gamma = 1
 uh = TrialFunction(T)
 vh = TestFunction(T)
-k2 = -(inner(grad(vh), grad(uh))  + gamma)
+k2 = -(inner(grad(vh), grad(uh)).scale  + gamma)
 
 def compute_rhs(duf_hat, uf_hat, up, Tp, w0):
     duf_hat.fill(0)
@@ -590,7 +590,7 @@ u_hat = T.forward(u, u_hat)
 
 uh = TrialFunction(T)
 vh = TestFunction(T)
-k2 = -inner(grad(vh), grad(uh)) - gamma
+k2 = -inner(grad(vh), grad(uh)).scale - gamma
 
 count = 0
 def compute_rhs(duf_hat, uf_hat, up, T, w0):
