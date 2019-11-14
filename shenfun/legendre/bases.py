@@ -57,7 +57,7 @@ class LegendreBase(SpectralBase):
     def reference_domain(self):
         return (-1., 1.)
 
-    def points_and_weights(self, N=None, map_true_domain=False, **kw):
+    def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
             N = self.N
         if self.quad == "LG":

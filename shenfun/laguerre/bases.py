@@ -58,22 +58,13 @@ class LaguerreBase(SpectralBase):
     def domain_factor(self):
         return 1
 
-    def points_and_weights(self, N=None, map_true_domain=False, **kw):
+    def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
             N = self.N
         if self.quad == "LG":
             points, weights = lag.laggauss(N)
-            weights *= np.exp(points)
-        else:
-            raise NotImplementedError
-
-        return points, weights
-
-    def regular_points_and_weights(self, N=None, map_true_domain=False, **kw):
-        if N is None:
-            N = self.N
-        if self.quad == "LG":
-            points, weights = lag.laggauss(N)
+            if weighted:
+                weights *= np.exp(points)
         else:
             raise NotImplementedError
 

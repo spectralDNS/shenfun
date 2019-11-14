@@ -96,7 +96,7 @@ class FourierBase(SpectralBase):
     def boundary_condition():
         return 'Periodic'
 
-    def points_and_weights(self, N=None, map_true_domain=False, **kw):
+    def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
             N = self.N
         points = np.arange(N, dtype=np.float)*2*np.pi/N

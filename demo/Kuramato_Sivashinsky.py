@@ -32,7 +32,7 @@ K1 = Basis(N[1], 'F', dtype='d', domain=(-30*np.pi, 30*np.pi))
 T = TensorProductSpace(comm, (K0, K1), **{'planner_effort': 'FFTW_MEASURE'})
 TV = VectorTensorProductSpace(T)
 
-Tp = T.get_padded((1.5, 1.5))
+Tp = T.get_dealiased((1.5, 1.5))
 TVp = VectorTensorProductSpace(Tp)
 
 u = TrialFunction(T)

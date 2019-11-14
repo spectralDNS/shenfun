@@ -251,7 +251,7 @@ class SpectralBase(object):
         self.sl = slicedict()
         self._tensorproductspace = None     # link if belonging to TensorProductSpace
 
-    def points_and_weights(self, N=None, map_true_domain=False, **kw):
+    def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         r"""Return points and weights of quadrature for weighted integral
 
         .. math::
@@ -264,10 +264,13 @@ class SpectralBase(object):
                 Number of quadrature points
             map_true_domain : bool, optional
                 Whether or not to map points to true domain
+            weighted : bool, optional
+                Whether to use quadrature weights for a weighted inner product
+                (default), or a regular, non-weighted inner product.
         """
         raise NotImplementedError
 
-    def mpmath_points_and_weights(self, N=None, map_true_domain=False, **kw):
+    def mpmath_points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         r"""Return points and weights of quadrature using extended precision
         mpmath if available
 
@@ -287,23 +290,7 @@ class SpectralBase(object):
         If not implemented, or if mpmath/quadpy are not available, then simply
         returns the regular numpy :func:`points_and_weights`.
         """
-        return self.points_and_weights(N=N, map_true_domain=map_true_domain)
-
-    def regular_points_and_weights(self, N=None, map_true_domain=False, **kw):
-        r"""Return points and weights of quadrature for unweigthed integrals
-
-        .. math::
-
-            \int_{\Omega} f(x) dx \approx \sum_{i} f(x_i) w_i
-
-        Parameters
-        ----------
-            N : int, optional
-                Number of quadrature points
-            map_true_domain : bool, optional
-                Whether or not to map points to true domain
-        """
-        return self.points_and_weights(N=N, map_true_domain=map_true_domain)
+        return self.points_and_weights(N=N, map_true_domain=map_true_domain, weighted=weighted, **kw)
 
     def mesh(self, bcast=True, map_true_domain=True):
         """Return the computational mesh
@@ -1014,6 +1001,7 @@ class SpectralBase(object):
         elif self.dealias_direct:
             su = self.sl[slice(2*self.N//3, None)]
             padded_array[su] = 0
+
 
 class MixedBasis(object):
     """Class for composite bases in 1D

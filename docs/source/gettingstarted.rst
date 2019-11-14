@@ -217,7 +217,8 @@ where all except the last one is ok::
 
         AssertionError:
 
-So it is not possible to perform operations that involve differentiation on an
+So it is not possible to perform operations that involve differentiation
+(`Dx` represents a partial derivative) on an
 :class:`.Array` instance. This is because the ``ua`` does not contain more
 information than its values and its TensorProductSpace. A :class:`.BasisFunction`
 instance, on the other hand, can be manipulated with operators like :func:`.div`
@@ -331,7 +332,7 @@ where
 
 .. math::
 
-    \tilde{f}_{mn} = (v, f)_w,
+    \tilde{f}_{mn} = (v_{mn}, f)_w,
 
 for some right hand side :math:`f`, see, e.g., :eq:`eq:poissonmulti`. Note that
 an alternative formulation here is
@@ -348,7 +349,7 @@ method in :cite:`shen1` and :cite:`shen95`.
 
 Note that in our case the equation system :eq:`eq:multisystem` can be greatly simplified since
 three of the submatrices (:math:`A_{mk}, B_{nl}` and :math:`D_{nl}`) are diagonal.
-Even more, two of them equals the identity matrix
+Even more, two of them equal the identity matrix
 
 .. math::
 
@@ -380,7 +381,7 @@ Note that there is a generic solver available for the system
 assumptions on diagonality. However, this solver will, naturally, be
 quite a bit slower than a tailored solver that takes advantage of
 diagonality. For the Poisson equation such solvers are available for
-both Legendre and Chebyshev bases, see the extended demo :ref:`Demo - 3D Poisson equation`
+both Legendre and Chebyshev bases, see the extended demo :ref:`Demo - 3D Poisson's equation`
 or the demo programs `dirichlet_poisson2D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson2D.py>`_
 and `dirichlet_poisson3D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py>`_.
 

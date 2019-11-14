@@ -31,7 +31,7 @@ K0 = Basis(N[0], 'F', dtype='D', domain=(-50., 50.))
 K1 = Basis(N[1], 'F', dtype='D', domain=(-50., 50.))
 T = TensorProductSpace(comm, (K0, K1), **{'planner_effort': 'FFTW_MEASURE'})
 
-Tp = T.get_padded_space((1.5, 1.5))
+Tp = T.get_dealiased((1.5, 1.5))
 u = TrialFunction(T)
 v = TestFunction(T)
 

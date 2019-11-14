@@ -114,7 +114,7 @@ class JacobiBase(SpectralBase):
                               alpha=self.alpha,
                               beta=self.beta)
 
-    def points_and_weights(self, N=None, map_true_domain=False, **kw):
+    def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
             N = self.N
         assert self.quad == "JG"
@@ -123,9 +123,9 @@ class JacobiBase(SpectralBase):
             points = self.map_true_domain(points)
         return points, weights
 
-    def mpmath_points_and_weights(self, N=None, map_true_domain=False, **kw):
+    def mpmath_points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if mode == 'numpy' or not has_quadpy:
-            return self.points_and_weights(N=N, map_true_domain=map_true_domain, **kw)
+            return self.points_and_weights(N=N, map_true_domain=map_true_domain, weighted=weighted, **kw)
         if N is None:
             N = self.N
         pw = quadpy.line_segment.gauss_jacobi(N, self.alpha, self.beta, 'mpmath')
@@ -361,7 +361,7 @@ class ShenDirichletBasis(JacobiBase):
             V[:, i] = self.evaluate_basis(x, i, output_array=V[:, i])
         return V
 
-    def points_and_weights(self, N=None, map_true_domain=False, **kw):
+    def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
             N = self.N
         assert self.quad == "JG"
@@ -370,9 +370,9 @@ class ShenDirichletBasis(JacobiBase):
             points = self.map_true_domain(points)
         return points, weights
 
-    def mpmath_points_and_weights(self, N=None, map_true_domain=False, **kw):
+    def mpmath_points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if mode == 'numpy' or not has_quadpy:
-            return self.points_and_weights(N=N, map_true_domain=map_true_domain, **kw)
+            return self.points_and_weights(N=N, map_true_domain=map_true_domain, weighted=weighted, **kw)
         if N is None:
             N = self.N
         assert self.quad == "JG"
@@ -479,7 +479,7 @@ class ShenBiharmonicBasis(JacobiBase):
         SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
         output_array[self.sl[slice(-4, None)]] = 0
 
-    def points_and_weights(self, N=None, map_true_domain=False, **kw):
+    def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
             N = self.N
         assert self.quad == "JG"
@@ -488,9 +488,9 @@ class ShenBiharmonicBasis(JacobiBase):
             points = self.map_true_domain(points)
         return points, weights
 
-    def mpmath_points_and_weights(self, N=None, map_true_domain=False, **kw):
+    def mpmath_points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if mode == 'numpy' and not has_quadpy:
-            return self.points_and_weights(N=N, map_true_domain=map_true_domain, **kw)
+            return self.points_and_weights(N=N, map_true_domain=map_true_domain, weighted=weighted, **kw)
         if N is None:
             N = self.N
         assert self.quad == "JG"
@@ -592,7 +592,7 @@ class ShenOrder6Basis(JacobiBase):
         V[:, :-6] = self.jacobi(x, 3, 3, self.N-6)*((1-x**2)**3)[:, np.newaxis]
         return V
 
-    def points_and_weights(self, N=None, map_true_domain=False, **kw):
+    def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
             N = self.N
         assert self.quad == "JG"
@@ -601,9 +601,9 @@ class ShenOrder6Basis(JacobiBase):
             points = self.map_true_domain(points)
         return points, weights
 
-    def mpmath_points_and_weights(self, N=None, map_true_domain=False, **kw):
+    def mpmath_points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if mode == 'numpy' or not has_quadpy:
-            return self.points_and_weights(N=N, map_true_domain=map_true_domain, **kw)
+            return self.points_and_weights(N=N, map_true_domain=map_true_domain, weighted=weighted, **kw)
         if N is None:
             N = self.N
         assert self.quad == "JG"
