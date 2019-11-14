@@ -96,7 +96,7 @@ N_2/2)$. We refer to the Cartesian wavenumber mesh on vector form as $\bs{k}$:
 \bs{k} = \{(l, m, n)\, | \,(l, m, n)  \in \bs{l}^{N_0} \times \bs{m}^{N_1} \times \bs{n}^{N_2}\}.
 !et
 
-We have the bases
+We have the one-dimensional spaces
 
 !bt
 \begin{align}
@@ -105,8 +105,7 @@ V^{N_1} &= \text{span}\{ \mathcal{Y}_m \}_{m\in\bs{m}^{N_1}}, \\
 V^{N_2} &= \text{span}\{ \mathcal{Z}_n \}_{n\in\bs{n}^{N_2}},
 \end{align}
 !et
-and from these we create a tensor product space $W^{\bs{N}}(\bs{x})$ from
-tensor products of the three bases
+and from these we create a tensor product space $W^{\bs{N}}(\bs{x})$
 !bt
 \begin{equation}
 W^{\bs{N}}(\bs{x}) = V^{N_0}(x) \otimes V^{N_1}(y) \otimes V^{N_2}(z).
@@ -430,7 +429,7 @@ Finally, solve linear equation system and transform solution from spectral
 $\hat{u}_{\ts{k}}$ vector to the real space $u(\bs{x})$ and then check how the solution corresponds with the exact solution $u_e$.
 !bc pycod
 # Create Helmholtz linear algebra solver
-H = Solver(**matrices)
+H = Solver(*matrices)
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space
@@ -577,7 +576,7 @@ else:
     matrices = inner(grad(v), grad(u))
 
 # Create Helmholtz linear algebra solver
-H = Solver(**matrices)
+H = Solver(*matrices)
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space

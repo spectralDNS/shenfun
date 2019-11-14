@@ -123,7 +123,7 @@ Fourier basis functions
 !et
 where $l$ is the wavenumber, and $\underline{l}=\frac{2\pi}{L}l$ is the scaled wavenumber, scaled with domain
 length $L$ (here $60\pi$). Since we want to solve these equations on a computer, we need to choose
-a finite number of test functions. A basis $V^N$ can be defined as
+a finite number of test functions. A discrete function space $V^N$ can be defined as
 
 !bt
 \begin{equation}
@@ -132,7 +132,8 @@ V^N(x) = \text{span} \{\phi_l(x)\}_{l\in \boldsymbol{l}}, label{eq:Vn}
 !et
 where $N$ is chosen as an even positive integer and $\boldsymbol{l} = (-N/2,
 -N/2+1, \ldots, N/2-1)$. And now, since $\Omega$ is a
-two-dimensional domain, we can create a tensor product of two such bases:
+two-dimensional domain, we can create a tensor product of two such one-dimensional
+spaces:
 
 !bt
 \begin{equation}

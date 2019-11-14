@@ -407,8 +407,7 @@ but now we recast the problem into a mixed formulation
     \nabla \cdot \sigma (\boldsymbol{x})&= f(\boldsymbol{x}), \quad \text{for} \quad \boldsymbol{x} \in \Omega.
 
 where we solve for the vector :math:`\sigma` and scalar :math:`u` simultaneously. The
-domain :math:`\Omega` is taken as a multidimensional tensor product, with
-one inhomogeneous direction. Here we will consider the 2D domain
+domain :math:`\Omega` is taken as a multidimensional Cartesian product
 :math:`\Omega=[-1, 1] \times [0, 2\pi]`, but the code is more or less identical for
 a 3D problem. For boundary conditions we use Dirichlet in the :math:`x`-direction and
 periodicity in the :math:`y`-direction:
