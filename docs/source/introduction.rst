@@ -51,7 +51,8 @@ With the WRM we now force this residual to zero in an average sense using
     \left(R_N, v \right)_w := \int_{\Omega} R_N(\boldsymbol{x}) \, \overline{v}(\boldsymbol{x}) \, w(\boldsymbol{x}) d\boldsymbol{x} = 0,
 
 where :math:`\overline{v}` is the complex conjugate of :math:`v`. If we
-now choose the test functions from the basis :math:`v \in V_N=span\{\phi_k\}_{k\in \mathcal{I}^N}`,
+now choose the test functions from the same space as the trial functions,
+i.e., :math:`V_N=span\{\phi_k\}_{k\in \mathcal{I}^N}`,
 then the WRM becomes the Galerkin method, and we get :math:`N` equations for
 :math:`N` unknowns :math:`\{\hat{u}_k\}_{k\in \mathcal{I}^N}`
 
@@ -68,9 +69,9 @@ Note that this is a regular linear system of algebra equations
 
 where the matrix :math:`A \in \mathbb{R}^{N \times N}`.
 
-The choice of basis for :math:`v(\boldsymbol{x})` is highly central to the method.
+The choice of basis functions :math:`v(\boldsymbol{x})` is highly central to the method.
 For the Galerkin method to be *spectral*, the basis is usually chosen as linear
-combinations of Chebyshev, Legendre, Laguerre, Hermite or trigonometric functions.
+combinations of Chebyshev, Legendre, Laguerre, Hermite, Jacobi or trigonometric functions.
 In one spatial dimension typical choices for :math:`\phi_k` are
 
 .. math::
@@ -122,48 +123,68 @@ computed as
 
 If we now have a problem that has Dirichlet boundaries in the :math:`x`-direction
 and periodic boundaries in the :math:`y`-direction, then we can choose
-:math:`\mathcal{X}_k(x) = T_k-T_{k+2}`, for :math:`k \in \mathcal{I}^N`,
+:math:`\mathcal{X}_k(x) = T_k-T_{k+2}`, for :math:`k \in \mathcal{I}^{N-2}` (
+with :math:`N-2` because :math:`T_{k+2}` then equals :math:`T_{N}` for :math:`k=N-2`),
 :math:`\mathcal{Y}_l(y) = \exp(\imath l y)` for :math:`l \in \mathcal{I}^M`
 and a tensor product test function is then
 
 .. math::
    :label: eq:v2D
 
-   v_{kl}(x, y) = (T_k(x) - T_{k+2}(x)) \exp(\imath l y), \text{ for } (k, l) \in \mathcal{I}^N \times \mathcal{I}^M.
+   v_{kl}(x, y) = (T_k(x) - T_{k+2}(x)) \exp(\imath l y), \text{ for } (k, l) \in \mathcal{I}^{N-2} \times \mathcal{I}^M.
 
-In other words, we choose one test function per dimension and create
+In other words, we choose one test function per spatial dimension and create
 global basis functions by taking the outer products (or tensor products) of these individual
-test functions. Moving to even more dimensions is then trivial, as
-global basis functions simply are the products of one-dimensional basis
-functions. Combining one-dimensional bases like this results in
-tensor product spaces, with Cartesian product meshes. If the one-dimensional
-meshes in :math:`x`- and :math:`y`-directions are :math:`x = \{x_m\}_{m\in \mathcal{I}^N}`
-and :math:`y = \{y_n\}_{n\in \mathcal{I}^M}`, then a Cartesian product mesh
-is :math:`x \times y`. With index notation it is
+test functions. Since global basis functions simply are the tensor products of
+one-dimensional basis functions, it is trivial to move to even higher-dimensional spaces.
+The multi-dimensional basis functions then form a basis for a multi-dimensional
+tensor product space. The associated domains are similarily formed by taking
+Cartesian products of the one-dimensional domains. For example, if the one-dimensional
+domains in :math:`x`- and :math:`y`-directions are :math:`[-1, 1]` and :math:`[0, 2\pi]`, then
+the two-dimensional domain formed from these two are :math:`[-1, 1] \times [0, 2\pi]`,
+where :math:`\times` represents a Cartesian product.
+
+The one-dimensional domains are discretized using the quadrature points of the
+chosen basis functions. If the meshes in :math:`x`- and :math:`y`-directions are
+:math:`x = \{x_i\}_{i\in \mathcal{I}^N}` and :math:`y = \{y_j\}_{j\in \mathcal{I}^M}`,
+then a Cartesian product mesh is :math:`x \times y`. With index and set builder
+notation it is given as
 
 .. math::
     :label: eq:tensormesh
 
-    (x_m, y_n), \text{for } (m, n) \in \mathcal{I}^M \times \mathcal{I}^N.
-
-Likewise, a tensor product basis function is given in :eq:`eq:v2D`.
+    x \times y = \left\{(x_i, y_j) \,|\, (i, j) \in \mathcal{I}^N \times \mathcal{I}^M\right\}.
 
 With shenfun a user chooses the appropriate bases for each dimension of the
-problem, and may then combine these bases into tensor product spaces. For
-example, to create a basis for the aforementioned domain, with Dirichlet in
-:math:`x`- and periodic in :math:`y`-direction, a user may proceed
-as follows::
+problem, and may then combine these bases into tensor product spaces and Cartesian
+product domains. For
+example, to create the required spaces for the aforementioned domain, with Dirichlet in
+:math:`x`- and periodic in :math:`y`-direction, we need the following:
+
+.. math::
+
+    N, M &= (16, 16) \\
+    B^N(x) &= \text{span}\{T_k(x)-T_{k+2}(x)\}_{k\in \mathcal{I}^{N-2}} \\
+    B^M(y) &= \text{span}\{\exp(\imath l y)\}_{l\in \mathcal{I}^M} \\
+    V(x, y) &= B^N(x) \otimes B^M(y)
+
+where :math:`\otimes` represents a tensor product.
+
+This can be implemented in `shenfun` as follows::
 
     from shenfun import Basis, TensorProductSpace
     from mpi4py import MPI
     comm = MPI.COMM_WORLD
-    N = (14, 16)
-    B0 = Basis(N[0], 'Chebyshev', bc=(0, 0))
-    B1 = Basis(N[1], 'Fourier', dtype='d')
-    V = TensorProductSpace(comm, (B0, B1))
+    N, M = (16, 16)
+    BN = Basis(N, 'Chebyshev', bc=(0, 0))
+    BM = Basis(M, 'Fourier', dtype='d')
+    V = TensorProductSpace(comm, (BN, BM))
 
-where the Fourier basis ``B1`` is for real-to-complex transforms, which is
-ensured by the ``dtype`` keyword being set to ``d`` for double. ``dtype``
+Note that the Chebyshev basis is created using :math:`N` and not :math:`N-2`. The
+chosen boundary condition ``bc=(0, 0)`` ensures that only :math:`N-2` bases will be used.
+The Fourier basis ``BM`` has been defined for real inputs to a
+forward transform, which is ensured by the ``dtype`` keyword being set to ``d``
+for double. ``dtype``
 specifies the data type that is input to the ``forward`` method, or the
 data type of the solution in physical space. Setting
 ``dtype='D'`` indicates that this datatype will be complex. Note that it
