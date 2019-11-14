@@ -7,7 +7,7 @@ Demo - Lid driven cavity
 ========================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Nov 13, 2019
+:Date: Nov 14, 2019
 
 *Summary.* The lid driven cavity is a classical benchmark for Navier Stokes solvers.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the lid
@@ -120,12 +120,12 @@ Legendre polynomials (we could also use Chebyshev):
 where :math:`\mathbf{k}^{N_0-2} = (0, 1, \ldots, N_0-3)`, :math:`\mathbf{l}^{N_1-2} = (0, 1, \ldots, N_1-3)`
 and :math:`N = (N_0, N_1)` is the number
 of quadrature points in each direction. Note that :math:`N_0` and :math:`N_1` do not need
-to be the same. The basis :eq:`eq:D0` satisfies
+to be the same. The basis funciton :eq:`eq:D0` satisfies
 the homogeneous Dirichlet boundary conditions at :math:`x=\pm 1` and :eq:`eq:D1` the same
-at :math:`y=\pm 1`. As such, the basis :math:`v_{kl}(x, y)` satisfies the homogeneous Dirichlet boundary
+at :math:`y=\pm 1`. As such, the basis function :math:`v_{kl}(x, y)` satisfies the homogeneous Dirichlet boundary
 condition for the entire domain.
 
-With shenfun we create these homogeneous bases, :math:`D_0^{N_0}(x)=\text{span}\{L_k-L_{k+2}\}_{k=0}^{N_0-2}` and
+With shenfun we create these homogeneous spaces, :math:`D_0^{N_0}(x)=\text{span}\{L_k-L_{k+2}\}_{k=0}^{N_0-2}` and
 :math:`D_0^{N_1}(y)=\text{span}\{L_l-L_{l+2}\}_{l=0}^{N_1-2}` as
 
 .. code-block:: python
@@ -136,7 +136,7 @@ With shenfun we create these homogeneous bases, :math:`D_0^{N_0}(x)=\text{span}\
     D0X = Basis(N[0], family, quad=quad, bc=(0, 0))
     D0Y = Basis(N[1], family, quad=quad, bc=(0, 0))
 
-The bases are the same, but we will use ``D0X`` in the :math:`x`-direction and
+The spaces are here the same, but we will use ``D0X`` in the :math:`x`-direction and
 ``D0Y`` in the :math:`y`-direction. But before we use these bases in
 tensor product spaces, they remain identical as long as :math:`N_0 = N_1`.
 
@@ -172,7 +172,7 @@ can be added on both sides of the domain using the following basis
 And then the unknown component :math:`N_1-2` decides the value at :math:`y=1`, whereas
 the unknown at :math:`N_1-1` decides the value at :math:`y=-1`. Here we only need to
 add the :math:`N_1-2` component, but for generality this is implemented in shenfun
-using both additional basis functions. We create the basis
+using both additional basis functions. We create the space
 :math:`D_1^{N_1}(y)=\text{span}\{\mathcal{Y}_l(y)\}_{l=0}^{N_1-1}` as
 
 .. code-block:: python
@@ -215,12 +215,12 @@ The bases :math:`P^{N_0}(x)=\text{span}\{L_k(x)\}_{k=0}^{N_0-3}` and
     PX.slice = lambda: slice(0, N[0]-2)
     PY.slice = lambda: slice(0, N[1]-2)
 
-Note that we still use these bases with the same :math:`N_0 \cdot N_1`
+Note that we still use these spaces with the same :math:`N_0 \cdot N_1`
 quadrature points in real space, but the two highest frequencies have
 been set to zero.
 
-We have now created all relevant bases for the problem at hand.
-It remains to combine these bases into tensor product spaces, and to
+We have now created all relevant function spaces for the problem at hand.
+It remains to combine these spaces into tensor product spaces, and to
 combine tensor product spaces into mixed (coupled) tensor product
 spaces. From the Dirichlet bases we create two different tensor
 product spaces, whereas one is enough for the pressure

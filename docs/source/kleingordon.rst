@@ -7,7 +7,7 @@ Demo - Cubic nonlinear Klein-Gordon equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Nov 13, 2019
+:Date: Nov 14, 2019
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Klein-Gordon equation, in a triply periodic domain. The demo is implemented in
@@ -191,7 +191,7 @@ for trial and test functions, and as such we use basis functions
 where :math:`l` is the wavenumber, and
 :math:`\underline{l}=\frac{2\pi}{L}l` is the scaled wavenumber, scaled with domain
 length :math:`L` (here :math:`4\pi`). Since we want to solve these equations on a computer, we need to choose
-a finite number of test functions. A basis :math:`V^N` can be defined as
+a finite number of test functions. A function space :math:`V^N` can be defined as
 
 .. math::
    :label: eq:kg:Vn
@@ -444,11 +444,11 @@ real data is now complex. We may start implementing the solver as follows
     K1 = Basis(N[1], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
     K2 = Basis(N[2], 'F', domain=(-2*np.pi, 2*np.pi), dtype='d')
 
-We now have three instances ``K0``, ``K1`` and ``K2``, corresponding to the basis
+We now have three instances ``K0``, ``K1`` and ``K2``, corresponding to the space
 :eq:`eq:kg:Vn`, that each can be used to solve
 one-dimensional problems. However, we want to solve a 3D problem, and for this
-we need a tensor product basis, like :eq:`eq:kg:Wn`, created as a tensor
-product of these three bases
+we need a tensor product space, like :eq:`eq:kg:Wn`, created as a tensor
+product of these three spaces
 
 .. code-block:: python
 
@@ -559,7 +559,7 @@ function can be implemented as
     gamma = 1
     uh = TrialFunction(T)
     vh = TestFunction(T)
-    k2 = -(inner(grad(vh), grad(uh))  + gamma)
+    k2 = -(inner(grad(vh), grad(uh)).scale  + gamma)
     
     def compute_rhs(duf_hat, uf_hat, up, Tp, w0):
         duf_hat.fill(0)
@@ -659,7 +659,7 @@ decimal points at :math:`t=100`.
     
     uh = TrialFunction(T)
     vh = TestFunction(T)
-    k2 = -inner(grad(vh), grad(uh)) - gamma
+    k2 = -inner(grad(vh), grad(uh)).scale - gamma
     
     count = 0
     def compute_rhs(duf_hat, uf_hat, up, T, w0):
