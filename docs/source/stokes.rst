@@ -7,7 +7,7 @@ Demo - Stokes equations
 %%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Nov 13, 2019
+:Date: Nov 14, 2019
 
 *Summary.* The Stokes equations describe the flow of highly viscous fluids.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Stokes
@@ -133,7 +133,7 @@ there is a nullspace and one degree of freedom remains unresolved. It turns out
 that the proper choice for the pressure basis is simply :eq:`eq:Zn` for
 :math:`n \in \mathbf{n}^{N_2-2}`. (Also remember that we have to fix :math:`\int_{\Omega} p dx = 0`.)
 
-With given basis functions we obtain the bases
+With given basis functions we obtain the spaces
 
 .. math::
    :label: _auto5
@@ -186,7 +186,8 @@ and from these we create two different tensor product spaces
         
 
 The velocity vector is using a mixed basis, such that we will look for
-solutions :math:`\mathbf{u} \in [W_0^{\mathbf{N}}]^3`, whereas we look for the pressure
+solutions :math:`\mathbf{u} \in [W_0^{\mathbf{N}}]^3 \, (=W_0^{\mathbf{N}} \times W_0^{\mathbf{N}} \times W_0^{\mathbf{N}})`,
+whereas we look for the pressure
 :math:`p \in W^{\mathbf{N}}`. We now formulate a variational problem using the Galerkin method: Find
 :math:`\mathbf{u} \in [W_0^{\mathbf{N}}]^3` and :math:`p \in W^{\mathbf{N}}` such that
 
@@ -327,7 +328,7 @@ Note that the last line of code is there to ensure that only the first
 At the same time, we ensure that we are still using :math:`N_2`
 quadrature points, the same as for the Dirichlet basis.
 
-Next the bases are used to create two tensor product spaces Q = :math:`W^{\mathbf{N}}`
+Next the one-dimensional spaces are used to create two tensor product spaces Q = :math:`W^{\mathbf{N}}`
 and TD = :math:`W_0^{\mathbf{N}}`, one vector V = :math:`[W_0^{\mathbf{N}}]^3` and one mixed
 space  VQ = V :math:`\times` Q.
 

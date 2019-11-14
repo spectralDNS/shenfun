@@ -7,7 +7,7 @@ Demo - 3D Poisson's equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Nov 13, 2019
+:Date: Nov 14, 2019
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve a 3D Poisson
 equation in a 3D tensor product domain that has homogeneous Dirichlet boundary
@@ -118,7 +118,7 @@ N_2/2)`. We refer to the Cartesian wavenumber mesh on vector form as :math:`\bol
 .. math::
         \boldsymbol{k} = \{(l, m, n)\, | \,(l, m, n)  \in \boldsymbol{l}^{N_0} \times \boldsymbol{m}^{N_1} \times \boldsymbol{n}^{N_2}\}.
 
-We have the bases
+We have the one-dimensional spaces
 
 .. math::
    :label: _auto7
@@ -144,8 +144,7 @@ We have the bases
         
         
 
-and from these we create a tensor product space :math:`W^{\boldsymbol{N}}(\boldsymbol{x})` from
-tensor products of the three bases
+and from these we create a tensor product space :math:`W^{\boldsymbol{N}}(\boldsymbol{x})`
 
 .. math::
    :label: _auto10
@@ -543,7 +542,7 @@ Finally, solve linear equation system and transform solution from spectral
 .. code-block:: python
 
     # Create Helmholtz linear algebra solver
-    H = Solver(**matrices)
+    H = Solver(*matrices)
     
     # Solve and transform to real space
     u_hat = Function(T)           # Solution spectral space
@@ -695,7 +694,7 @@ or similarly with ``chebyshev`` instead of ``legendre``.
         matrices = inner(grad(v), grad(u))
     
     # Create Helmholtz linear algebra solver
-    H = Solver(**matrices)
+    H = Solver(*matrices)
     
     # Solve and transform to real space
     u_hat = Function(T)           # Solution spectral space

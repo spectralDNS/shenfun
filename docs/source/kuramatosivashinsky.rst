@@ -7,7 +7,7 @@ Demo - Kuramato-Sivashinsky equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Nov 13, 2019
+:Date: Nov 14, 2019
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Kuramato-Sivashinsky equation, in a doubly periodic domain. The demo is implemented in
@@ -112,7 +112,7 @@ Fourier basis functions
 
 where :math:`l` is the wavenumber, and :math:`\underline{l}=\frac{2\pi}{L}l` is the scaled wavenumber, scaled with domain
 length :math:`L` (here :math:`60\pi`). Since we want to solve these equations on a computer, we need to choose
-a finite number of test functions. A basis :math:`V^N` can be defined as
+a finite number of test functions. A discrete function space :math:`V^N` can be defined as
 
 .. math::
    :label: eq:Vn
@@ -123,7 +123,8 @@ a finite number of test functions. A basis :math:`V^N` can be defined as
 
 where :math:`N` is chosen as an even positive integer and :math:`\boldsymbol{l} = (-N/2,
 -N/2+1, \ldots, N/2-1)`. And now, since :math:`\Omega` is a
-two-dimensional domain, we can create a tensor product of two such bases:
+two-dimensional domain, we can create a tensor product of two such one-dimensional
+spaces:
 
 .. math::
    :label: eq:Wn
