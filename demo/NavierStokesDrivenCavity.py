@@ -65,8 +65,10 @@ W1 = MixedTensorProductSpace([V1, V0])
 VQ = MixedTensorProductSpace([W1, P])   # for velocity and pressure
 
 # Create padded spaces for nonlinearity
-V1p = V1.get_dealiased((1.5, 1.5))
-V0p = V0.get_dealiased((1.5, 1.5))
+#V1p = V1.get_dealiased((1.5, 1.5))
+#V0p = V0.get_dealiased((1.5, 1.5))
+V1p = V1.get_dealiased(dealias_direct=True)
+V0p = V0.get_dealiased(dealias_direct=True)
 W1p = MixedTensorProductSpace([V1p, V0p])
 W0p = MixedTensorProductSpace([V0p, V0p])
 QTp = MixedTensorProductSpace([W1p, W0p])  # for uiuj
