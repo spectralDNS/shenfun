@@ -995,12 +995,15 @@ class Function(ShenfunBaseArray, BasisFunction):
         """
         return self.function_space().eval(x, self, output_array)
 
-    def backward(self, output_array=None):
+    def backward(self, output_array=None, uniform=False):
         """Return Function evaluated on quadrature mesh"""
         space = self.function_space()
         if output_array is None:
             output_array = Array(space)
-        output_array = space.backward(self, output_array)
+        if uniform is True:
+            output_array = space.backward_uniform(self, output_array)
+        else:
+            output_array = space.backward(self, output_array)
         return output_array
 
     def to_ortho(self, output_array=None):

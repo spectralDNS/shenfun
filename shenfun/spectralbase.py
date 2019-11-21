@@ -292,7 +292,7 @@ class SpectralBase(object):
         """
         return self.points_and_weights(N=N, map_true_domain=map_true_domain, weighted=weighted, **kw)
 
-    def mesh(self, bcast=True, map_true_domain=True):
+    def mesh(self, bcast=True, map_true_domain=True, uniform=False):
         """Return the computational mesh
 
         Parameters
@@ -302,9 +302,17 @@ class SpectralBase(object):
                 if basis belongs to a :class:`.TensorProductSpace`
             map_true_domain : bool, optional
                 Whether or not to map points to true domain
+            uniform : bool, optional
+                Use uniform mesh instead of quadrature if True
         """
         N = self.shape(False)
-        X = self.points_and_weights(N=N, map_true_domain=map_true_domain)[0]
+        if self.family() == 'fourier':
+            uniform = False
+        if uniform is False:
+            X = self.points_and_weights(N=N, map_true_domain=map_true_domain)[0]
+        else:
+            d = self.domain
+            X = np.linspace(d[0], d[1], N)
         if bcast is True:
             X = self.broadcast_to_ndims(X)
         return X
@@ -424,9 +432,9 @@ class SpectralBase(object):
         Parameters
         ----------
             input_array : array, optional
-                Function values on quadrature mesh
-            output_array : array, optional
                 Expansion coefficients
+            output_array : array, optional
+                Function values on quadrature mesh
             fast_transform : bool, optional
                 If True use fast transforms (if implemented), if
                 False use Vandermonde type
@@ -448,6 +456,45 @@ class SpectralBase(object):
         self.evaluate_expansion_all(self.backward.tmp_array,
                                     self.backward.output_array,
                                     fast_transform=fast_transform)
+
+        if output_array is not None:
+            output_array[...] = self.backward.output_array
+            return output_array
+        return self.backward.output_array
+
+    def backward_uniform(self, input_array=None, output_array=None):
+        """Evaluate function on uniform mesh
+
+        Parameters
+        ----------
+            input_array : array, optional
+                Expansion coefficients
+            output_array : array, optional
+                Function values on quadrature mesh
+            fast_transform : bool, optional
+                If True use fast transforms (if implemented), if
+                False use Vandermonde type
+            padding_factor : number
+                Pad array with zeros before transforming
+
+        Note
+        ----
+        If input_array/output_array are not given, then use predefined arrays
+        as planned with self.plan
+
+        """
+        if self.family() == 'fourier': # Fourier is already using uniform mesh. Use fast transform.
+            return self.backward(input_array, output_array)
+
+        if input_array is not None:
+            self.backward.input_array[...] = input_array
+
+        self._padding_backward(self.backward.input_array,
+                               self.backward.tmp_array)
+
+        self.vandermonde_evaluate_expansion_all(self.backward.tmp_array,
+                                                self.backward.output_array,
+                                                x=self.mesh(bcast=False, uniform=True))
 
         if output_array is not None:
             output_array[...] = self.backward.output_array
@@ -616,7 +663,7 @@ class SpectralBase(object):
 
         assert output_array is self.scalar_product.output_array
 
-    def vandermonde_evaluate_expansion_all(self, input_array, output_array):
+    def vandermonde_evaluate_expansion_all(self, input_array, output_array, x=None):
         """Naive implementation of evaluate_expansion_all
 
         Parameters
@@ -625,9 +672,10 @@ class SpectralBase(object):
                 Expansion coefficients
             output_array : array
                 Function values on quadrature mesh
+            x : mesh or None, optional
 
         """
-        P = self.evaluate_basis_all(argument=1)
+        P = self.evaluate_basis_all(x=x, argument=1)
         if output_array.ndim == 1:
             output_array = np.dot(P, input_array, out=output_array)
         else:
@@ -775,9 +823,11 @@ class SpectralBase(object):
             trunc_array = self._get_truncarray(shape, V.dtype)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
+            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, trunc_array, V, U)
         else:
             self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
             self.backward = Transform(self.backward, xfftn_bck, V, V, U)
+            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, V, V, U)
 
         # scalar_product is not padded, just the forward/backward
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)

@@ -112,9 +112,13 @@ def inner(expr0, expr1, output_array=None, level=0):
     # Wrap a pure numpy array in Array
     if isinstance(expr0, np.ndarray) and not isinstance(expr0, (Array, Function)):
         assert isinstance(expr1, (Expr, BasisFunction))
+        if not expr0.flags['C_CONTIGUOUS']:
+            expr0 = expr0.copy()
         expr0 = Array(expr1.function_space(), buffer=expr0)
     if isinstance(expr1, np.ndarray) and not isinstance(expr1, (Array, Function)):
         assert isinstance(expr0, (Expr, BasisFunction))
+        if not expr1.flags['C_CONTIGUOUS']:
+            expr1 = expr1.copy()
         expr1 = Array(expr0.function_space(), buffer=expr1)
 
     if isinstance(expr0, Number):

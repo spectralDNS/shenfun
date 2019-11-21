@@ -4,7 +4,7 @@ from mpi4py_fft.io import NCFile, HDF5File
 __all__ = ['HDF5File', 'NCFile', 'ShenfunFile']
 
 
-def ShenfunFile(name, T, backend='hdf5', mode='r', **kw):
+def ShenfunFile(name, T, backend='hdf5', mode='r', uniform=False, **kw):
     """Return a file handler
 
     Parameters
@@ -19,6 +19,8 @@ def ShenfunFile(name, T, backend='hdf5', mode='r', **kw):
         ``hdf5`` or ``netcdf4``. Default is ``hdf5``.
     mode : str, optional
         ``r`` or ``w``. Default is ``r``.
+    uniform : bool, optional
+        Use uniform mesh for non-periodic bases if True
 
     Returns
     -------
@@ -26,6 +28,6 @@ def ShenfunFile(name, T, backend='hdf5', mode='r', **kw):
         Instance of either :class:`.HDF5File` or :class:`.NCFile`
     """
     if backend.lower() == 'hdf5':
-        return HDF5File(name+'.h5', domain=[np.squeeze(d) for d in T.mesh()], mode=mode, **kw)
+        return HDF5File(name+'.h5', domain=[np.squeeze(d) for d in T.mesh(uniform=uniform)], mode=mode, **kw)
     assert kw.get('forward_output', False) is False, "NetCDF4 cannot store complex arrays, use HDF5"
-    return NCFile(name+'.nc', domain=[np.squeeze(d) for d in T.mesh()], mode=mode, **kw)
+    return NCFile(name+'.nc', domain=[np.squeeze(d) for d in T.mesh(uniform=uniform)], mode=mode, **kw)

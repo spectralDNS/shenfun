@@ -7,7 +7,7 @@ Demo - Lid driven cavity
 ========================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Nov 14, 2019
+:Date: Nov 21, 2019
 
 *Summary.* The lid driven cavity is a classical benchmark for Navier Stokes solvers.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the lid
