@@ -264,14 +264,14 @@ $\hat{u}_{k,0}=0 \text{ for } k \in \bm{k}_B$.
 
 To sum up, with the solution known at $t = t - \Delta t$, we solve
 
-|---------------------------------------------------------|
-|        | Equation      |   For unknown      | With indices  |
-|---r----|-----c---------|------c-------------|----c------|
-|        | (ref{eq:u2})  | $\hat{u}_{kl}(t)$  | $(k, l) \in \bm{k}_B \times \bm{l}/\{0\}$|
-|        | (ref{eq:div2})| $\hat{v}_{kl}(t)$  | $(k, l) \in \bm{k}_D \times \bm{l}/\{0\}$|
-|        | (ref{eq:vx})  | $\hat{v}_{kl}(t)$  | $(k, l) \in \bm{k}_D \times \{0\}$ |
-|        | (ref{eq:T2})  | $\hat{T}_{kl}(t)$  | $(k, l) \in \bm{k}_T \times \bm{l}$|
-|--------------------------------------------------------|
+|----------------------------------------------------|
+| Equation      |   For unknown      | With indices  |
+|-----c---------|------c-------------|----c----------|
+| (ref{eq:u2})  | $\hat{u}_{kl}(t)$  | $(k, l) \in \bm{k}_B \times \bm{l}/\{0\}$|
+| (ref{eq:div2})| $\hat{v}_{kl}(t)$  | $(k, l) \in \bm{k}_D \times \bm{l}/\{0\}$|
+| (ref{eq:vx})  | $\hat{v}_{kl}(t)$  | $(k, l) \in \bm{k}_D \times \{0\}$|
+| (ref{eq:T2})  | $\hat{T}_{kl}(t)$  | $(k, l) \in \bm{k}_T \times \bm{l}$|
+|----------------------------------------------------|
 
 ======= Temporal discretization =======
 
