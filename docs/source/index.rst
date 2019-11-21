@@ -50,6 +50,7 @@ Document build status
    kuramatosivashinsky
    stokes
    drivencavity
+   rayleighbenard
    zrefs
 
 .. toctree::

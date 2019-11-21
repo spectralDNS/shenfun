@@ -108,6 +108,7 @@ links
     * :ref:`Demo - Kuramato-Sivashinsky equation`
     * :ref:`Demo - Stokes equations`
     * :ref:`Demo - Lid driven cavity`
+    * :ref:`Demo - Rayleigh Benard`
 
 Tensor products
 ---------------

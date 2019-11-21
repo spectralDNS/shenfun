@@ -289,10 +289,12 @@ class FourierBase(SpectralBase):
             trunc_array = self._get_truncarray(shape, V.dtype)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
+            self.backward_uniform = self.backward
 
         else:
             self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
             self.backward = Transform(self.backward, xfftn_bck, V, V, U)
+            self.backward_uniform = self.backward
 
         # scalar_product is not padded, just the forward/backward
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
@@ -373,7 +375,7 @@ class R2CBasis(FourierBase):
             return self.N//2+1
         return int(np.floor(self.padding_factor*self.N))
 
-    def vandermonde_evaluate_expansion_all(self, input_array, output_array):
+    def vandermonde_evaluate_expansion_all(self, input_array, output_array, x=None):
         assert abs(self.padding_factor-1) < 1e-8
         assert self.N == output_array.shape[self.axis]
         points = self.points_and_weights()[0]

@@ -179,6 +179,10 @@ class TensorProductSpace(PFFT):
                 [o.scalar_product for o in self.xfftn],
                 [o.forward for o in self.transfer],
                 self.pencil)
+            self.backward_uniform = Transform(
+                [o.backward_uniform for o in self.xfftn[::-1]],
+                [o.backward for o in self.transfer[::-1]],
+                self.pencil[::-1])
 
         else:
             self.configure_backwards(backward_from_pencil, dtype, kw)
@@ -257,6 +261,10 @@ class TensorProductSpace(PFFT):
             [o.scalar_product for o in self.xfftn[::-1]],
             [o.forward for o in self.transfer[::-1]],
             self.pencil[::-1])
+        self.backward_uniform = Transform(
+            [o.backward_uniform for o in self.xfftn],
+            [o.forward for o in self.transfer],
+            self.pencil)
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         if isinstance(padding_factor, Number):
@@ -541,13 +549,18 @@ class TensorProductSpace(PFFT):
             return [np.broadcast_to(m, self.shape()) for m in lk]
         return lk
 
-    def mesh(self):
+    def mesh(self, uniform=False):
         """Return list of 1D physical meshes for each dimension of
         TensorProductSpace
+
+        Parameters
+        ----------
+        uniform : bool, optional
+            Use uniform mesh for non-periodic bases
         """
         X = []
         for base in self:
-            X.append(base.mesh())
+            X.append(base.mesh(uniform=uniform))
         return X
 
     def local_mesh(self, broadcast=False):
@@ -730,6 +743,7 @@ class MixedTensorProductSpace(object):
         self.spaces = spaces
         self.forward = VectorTransform([space.forward for space in spaces])
         self.backward = VectorTransform([space.backward for space in spaces])
+        self.backward_uniform = VectorTransform([space.backward_uniform for space in spaces])
         self.scalar_product = VectorTransform([space.scalar_product for space in spaces])
 
     def eval(self, points, coefficients, output_array=None, method=0):
