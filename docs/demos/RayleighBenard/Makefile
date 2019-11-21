@@ -14,7 +14,8 @@ ${name}.pdf: ${name}.tex
 
 ${name}.html: ${name}.do.txt
 	doconce format html ${name} --html_style=${style} --pygments_html_style=default --html_admon=bootstrap_alert --html_output=${name}_${style} --keep_pygments_html_bg —html_code_style=inherit --html_pre_style=inherit
-	doconce subst 'class="col-xs-11"' 'class="col-xs-6"' ${name}_${style}.html
+	doconce subst 'class="col-xs-12"' 'class="col-xs-6"' ${name}_${style}.html
+	doconce subst 'XXX' '   ' ${name}_${style}.html
 	doconce split_html ${name}_${style}.html
 
 ${name}.rst: ${name}.do.txt
