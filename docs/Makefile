@@ -22,6 +22,7 @@ help:
 
 %.rst:
 	doconce format sphinx demos/$(basename $@).do.txt --sphinx_preserve_bib_keys
+	doconce subst 'XXX' '   ' demos/$(basename $@).rst
 	cp demos/$(basename $@).rst source/
 	./recite.sh $(notdir $@)
 
