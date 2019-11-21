@@ -364,14 +364,14 @@ to solve Eq. :eq:`eq:u2` for :math:`l \in \boldsymbol{l}/\{0\}` and can use dire
 
 To sum up, with the solution known at :math:`t = t - \Delta t`, we solve
 
-  ================  =======================  ===============================================================  
-      Equation            For unknown                                  With indices                           
-  ================  =======================  ===============================================================  
-   :eq:`eq:u2`   :math:`\hat{u}_{kl}(t)`  :math:`(k, l) \in \boldsymbol{k}_B \times \boldsymbol{l}/\{0\}`  
-  :eq:`eq:div2`  :math:`\hat{v}_{kl}(t)`  :math:`(k, l) \in \boldsymbol{k}_D \times \boldsymbol{l}/\{0\}`  
-   :eq:`eq:vx`   :math:`\hat{v}_{kl}(t)`          :math:`(k, l) \in \boldsymbol{k}_D \times \{0\}`         
-   :eq:`eq:T2`   :math:`\hat{T}_{kl}(t)`     :math:`(k, l) \in \boldsymbol{k}_T \times \boldsymbol{l}`     
-  ================  =======================  ===============================================================  
+================  =======================  ===============================================================  
+    Equation            For unknown                                  With indices                           
+================  =======================  ===============================================================  
+ :eq:`eq:u2`   :math:`\hat{u}_{kl}(t)`  :math:`(k, l) \in \boldsymbol{k}_B \times \boldsymbol{l}/\{0\}`  
+:eq:`eq:div2`  :math:`\hat{v}_{kl}(t)`  :math:`(k, l) \in \boldsymbol{k}_D \times \boldsymbol{l}/\{0\}`  
+ :eq:`eq:vx`   :math:`\hat{v}_{kl}(t)`          :math:`(k, l) \in \boldsymbol{k}_D \times \{0\}`         
+ :eq:`eq:T2`   :math:`\hat{T}_{kl}(t)`     :math:`(k, l) \in \boldsymbol{k}_T \times \boldsymbol{l}`     
+================  =======================  ===============================================================  
 
 Temporal discretization
 =======================
