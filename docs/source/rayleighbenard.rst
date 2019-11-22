@@ -25,21 +25,21 @@ Note that there is a more physically realistic 3D solver implemented within
 To allow for some simple optimizations, the solver described in this demo has been implemented in a class in the
 `RayleighBenardRk3.py <https://github.com/spectralDNS/shenfun/blob/master/demo/RayleighBenardRK3.py>`__
 module in the demo folder of shenfun. Below are two example solutions, where the first (movie)
-has been run at a very high :math:`Ra`, and the image with a low :math:`Ra` (laminar).
+has been run at a very high Rayleigh number (*_Ra_*), and the lower image with a low *_Ra_* (laminar).
 
 .. _fig:RB:
 
 .. figure:: https://raw.githack.com/spectralDNS/spectralutilities/master/movies/RB_100x256_100k_fire.png
    :width: 800
 
-   *Temperature fluctuations in the Rayleigh Benard flow. The top and bottom walls are kept at different temperatures and this sets up the Rayleigh-Benard convection. The simulation is run at :math:`Ra=100,000`, :math:`Pr=0.7` with 100 and 256 quadrature points in :math:`x` and :math:`y`-directions, respectively*
+   Temperature fluctuations in the Rayleigh Benard flow. The top and bottom walls are kept at different temperatures and this sets up the Rayleigh-Benard convection. The simulation is run at *_Ra_* =100,000, *_Pr_* =0.7 with 100 and 256 quadrature points in *x* and *y*-directions, respectively
 
 .. _fig:RB_lam:
 
 .. figure:: https://raw.githack.com/spectralDNS/spectralutilities/master/figures/RB_40x128_100_fire.png
    :width: 800
 
-   *Convection cells for a laminar flow. The simulation is run at :math:`Ra=100`, :math:`Pr=0.7` with 40 and 128 quadrature points in :math:`x` and :math:`y`-directions, respectively*
+   Convection cells for a laminar flow. The simulation is run at *_Ra_* =100, *_Pr_* =0.7 with 40 and 128 quadrature points in *x* and *y*-directions, respectively
 
 .. _demo:rayleighbenard:
 
@@ -471,7 +471,7 @@ but the former is known to be faster due to the existence of fast transforms.
     VT = Basis(N, family, bc=(0, 1))
     VF = Basis(M, 'F', dtype='d')
 
-And then we create tensor product spaces by combining these bases
+And then we create tensor product spaces by combining these bases (like in Eqs. :eq:`eq:WBF`-:eq:`eq:WWF`).
 
 .. code-block:: python
 
