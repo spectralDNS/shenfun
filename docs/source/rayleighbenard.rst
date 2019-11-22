@@ -7,7 +7,7 @@ Demo - Rayleigh Benard
 %%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Nov 21, 2019
+:Date: Nov 22, 2019
 
 *Summary.* Rayleigh-Benard convection arise
 due to temperature gradients in a fluid. The governing equations are
@@ -30,7 +30,7 @@ module in the demo folder of shenfun.
 
 .. figure:: https://raw.githack.com/spectralDNS/spectralutilities/master/movies/RB_100x256_100k_fire.png
 
-   *Temperature fluctuations in the Rayleigh Benard flow. The top and bottom walls are kept at different temperatures and this sets up the Rayleigh-Benard convection*
+   *Temperature fluctuations in the Rayleigh Benard flow. The top and bottom walls are kept at different temperatures and this sets up the Rayleigh-Benard convection. The simulation is run at :math:`Ra=100,000`, :math:`Pr=0.7` with 100 and 256 quadrature points in :math:`x` and :math:`y`-directions, respectively*
 
 .. _demo:rayleighbenard:
 
@@ -57,7 +57,7 @@ The governing equations solved in domain :math:`\Omega=[-1, 1]\times [0, 2\pi]` 
    :label: eq:div
 
           
-            \nabla \cdot \mathbf{u} = 0 
+            \nabla \cdot \mathbf{u} = 0, 
         
 
 where :math:`\mathbf{u}(x, y, t) (= u\mathbf{i} + v\mathbf{j})` is the velocity vector, :math:`p(x, y, t)` is pressure, :math:`T(x, y, t)` is the temperature, and :math:`\mathbf{i}` and
@@ -130,35 +130,35 @@ of degree less than or equal to N and introduce the following finite-dimensional
    :label: eq:VB
 
         
-          V_N^B(x) = \{v \in P_N | v(\pm 1) = v´(\pm 1) = 0\}  
+          V_N^B(x) = \{v \in P_N | v(\pm 1) = v´(\pm 1) = 0\},  
         
 
 .. math::
    :label: eq:VD
 
           
-          V_N^D(x) = \{v \in P_N | v(\pm 1) = 0\}  
+          V_N^D(x) = \{v \in P_N | v(\pm 1) = 0\},  
         
 
 .. math::
    :label: eq:VT
 
           
-          V_N^T(x) = \{v \in P_N | v(-1) = 0, v(1) = 1\}  
+          V_N^T(x) = \{v \in P_N | v(-1) = 0, v(1) = 1\},  
         
 
 .. math::
    :label: eq:VW
 
           
-          V_N^W(x) = \{v \in P_N\}  
+          V_N^W(x) = \{v \in P_N\},  
         
 
 .. math::
    :label: eq:VF
 
           
-          V_M^F(y) = \{\exp(\imath l y) | l \in [-M/2, -M/2+1, \ldots M/2-1]\} 
+          V_M^F(y) = \{\exp(\imath l y) | l \in [-M/2, -M/2+1, \ldots M/2-1]\}. 
         
         
 
@@ -179,28 +179,28 @@ one-dimensional spaces in :eq:`eq:VB`-:eq:`eq:VF`
    :label: eq:WBF
 
         
-          W_{BF} = V_N^B \otimes V_M^F   
+          W_{BF} = V_N^B \otimes V_M^F,   
         
 
 .. math::
    :label: eq:WDF
 
           
-          W_{DF} = V_N^D \otimes V_M^F   
+          W_{DF} = V_N^D \otimes V_M^F,   
         
 
 .. math::
    :label: eq:WTF
 
           
-          W_{TF} = V_N^T \otimes V_M^F   
+          W_{TF} = V_N^T \otimes V_M^F,   
         
 
 .. math::
    :label: eq:WWF
 
           
-          W_{WF} = V_N^W \otimes V_M^F 
+          W_{WF} = V_N^W \otimes V_M^F. 
         
 
 Space :math:`W_{BF}` has 2D tensor product basis functions :math:`\phi_k^B(x) \exp (\imath l y)` and
@@ -211,7 +211,7 @@ we get the following approximations for the unknowns
    :label: _auto1
 
         
-            u_N(x, y, t) = \sum_{k \in \boldsymbol{k}_B} \sum_{l \in \boldsymbol{l}} \hat{u}_{kl}(t) \phi_k^B(x) \exp(\imath l y) 
+            u_N(x, y, t) = \sum_{k \in \boldsymbol{k}_B} \sum_{l \in \boldsymbol{l}} \hat{u}_{kl}(t) \phi_k^B(x) \exp(\imath l y), 
         
         
 
@@ -219,7 +219,7 @@ we get the following approximations for the unknowns
    :label: _auto2
 
           
-            v_N(x, y, t) = \sum_{k \in \boldsymbol{k}_D} \sum_{l \in \boldsymbol{l}} \hat{v}_{kl}(t) \phi_k^D(x) \exp(\imath l y) 
+            v_N(x, y, t) = \sum_{k \in \boldsymbol{k}_D} \sum_{l \in \boldsymbol{l}} \hat{v}_{kl}(t) \phi_k^D(x) \exp(\imath l y), 
         
         
 
@@ -227,7 +227,7 @@ we get the following approximations for the unknowns
    :label: _auto3
 
           
-            p_N(x, y, t) = \sum_{k \in \boldsymbol{k}_W} \sum_{l \in \boldsymbol{l}} \hat{p}_{kl}(t) \phi_k^W(x) \exp(\imath l y) 
+            p_N(x, y, t) = \sum_{k \in \boldsymbol{k}_W} \sum_{l \in \boldsymbol{l}} \hat{p}_{kl}(t) \phi_k^W(x) \exp(\imath l y), 
         
         
 
@@ -235,15 +235,14 @@ we get the following approximations for the unknowns
    :label: _auto4
 
           
-            T_N(x, y, t) = \sum_{k \in \boldsymbol{k}_T} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl}(t) \phi_k^T(x) \exp(\imath l y)
+            T_N(x, y, t) = \sum_{k \in \boldsymbol{k}_T} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl}(t) \phi_k^T(x) \exp(\imath l y),
         
         
 
 where :math:`\boldsymbol{k}_{x} = \{0, 1, \ldots \text{dim}(V_N^x)-1\}, \, \text{for} \, x\in(B, D, W, T)`
 and :math:`\boldsymbol{l} = \{-M/2, -M/2+1, \ldots, M/2-1\}`.
 Note that since the problem is defined in real space we will have Hermitian symmetry. This means
-that we will have the symmetry
-:math:`\hat{u}_{k, l} = \overline{\hat{u}}_{k, -l}` (with overline being a complex conjugate),
+that :math:`\hat{u}_{k, l} = \overline{\hat{u}}_{k, -l}`, with an overbar being a complex conjugate,
 and similar for :math:`\hat{v}_{kl}, \hat{p}_{kl}` and
 :math:`\hat{T}_{kl}`. For this reason we can get away with
 solving for only the positive :math:`l`'s, as long as we remember that the sum in the end goes over both positive
@@ -261,7 +260,7 @@ domain using test function :math:`q \in W_{DF}`
    :label: _auto5
 
         
-            \left < \frac{\partial u_N}{\partial x} + \frac{\partial v_N}{\partial y}, q \right > _w = 0
+            \left < \frac{\partial u_N}{\partial x} + \frac{\partial v_N}{\partial y}, q \right > _w = 0.
         
         
 
@@ -271,23 +270,24 @@ Here we are using the inner product notation
    :label: _auto6
 
         
-            \left < a, b \right > _w = \int_{-1}^1 \int_0^{2\pi} a \overline{b} dx_wdy_w \left(\approx \sum_{i}\sum_{j} a(x_i, y_j) \overline{b}(x_i, y_j) w(x_i) w(y_j)\right)
+            \left < a, b \right > _w = \int_{-1}^1 \int_0^{2\pi} a \overline{b} dx_wdy_w \left(\approx \sum_{i}\sum_{j} a(x_i, y_j) \overline{b}(x_i, y_j) w(x_i) w(y_j)\right),
         
         
 
-with an overbar representing a complex conjugate (required for Fourier bases) and the exact form of the
+where the exact form of the
 weighted scalar product depends on the chosen basis; Legendre has :math:`dx_w=dx`, Chebyshev
 :math:`dx_w = dx/\sqrt{1-x^2}` and Fourier :math:`dy_w=dy/2/\pi`. The bases also have associated quadrature weights
 :math:`\{w(x_i) \}_{i=0}^{N-1}` and :math:`\{w(y_j)\}_{j=0}^{M-1}` that are used to approximate the integrals.
 
-Inserting now for the known :math:`u_N`, the unknown :math:`v_N`, and :math:`q=\phi_m^D(x) \exp(\imath n y)` the equation becomes
+Inserting now for the known :math:`u_N`, the unknown :math:`v_N`, and :math:`q=\phi_m^D(x) \exp(\imath n y)` the
+continuity equation becomes
 
 .. math::
    :label: eq:u4
 
         
           \int_{-1}^1 \int_{0}^{2\pi} \frac{\partial}{\partial x} \left(\sum_{k \in \boldsymbol{k}_B} \sum_{l \in \boldsymbol{l}} \hat{u}_{kl}(t) \phi_k^B(x) \exp(\imath l y) \right) \phi_m^D(x) \exp(-\imath n y) dx_w dy_w + \\ 
-          \int_{-1}^1 \int_{0}^{2\pi} \frac{\partial}{\partial y} \left(\sum_{k \in \boldsymbol{k}_D} \sum_{l \in \boldsymbol{l}} \hat{v}_{kl}(t) \phi_k^D(x) \exp(\imath l y) \right) \phi_m^D(x) \exp(-\imath n y) dx_w dy_w  = 0 
+          \int_{-1}^1 \int_{0}^{2\pi} \frac{\partial}{\partial y} \left(\sum_{k \in \boldsymbol{k}_D} \sum_{l \in \boldsymbol{l}} \hat{v}_{kl}(t) \phi_k^D(x) \exp(\imath l y) \right) \phi_m^D(x) \exp(-\imath n y) dx_w dy_w  = 0. 
         
 
 The :math:`x` and :math:`y` domains are separable, so we can rewrite as
@@ -297,7 +297,7 @@ The :math:`x` and :math:`y` domains are separable, so we can rewrite as
 
         
             \sum_{k \in \boldsymbol{k}_B} \sum_{l \in \boldsymbol{l}} \int_{-1}^1 \frac{\partial \phi_k^B(x)}{\partial x}  \phi_m^D(x) dx_w \int_{0}^{2\pi} \exp(\imath l y) \exp(-\imath n y) dy_w \hat{u}_{kl} + \\ 
-            \sum_{k \in \boldsymbol{k}_D} \sum_{l \in \boldsymbol{l}} \int_{-1}^1 \phi_k^D(x) \phi_m^D(x) dx_w   \int_{0}^{2\pi} \frac{\partial \exp(\imath l y)}{\partial y} \exp(-\imath n y) dy_w \hat{v}_{kl}
+            \sum_{k \in \boldsymbol{k}_D} \sum_{l \in \boldsymbol{l}} \int_{-1}^1 \phi_k^D(x) \phi_m^D(x) dx_w   \int_{0}^{2\pi} \frac{\partial \exp(\imath l y)}{\partial y} \exp(-\imath n y) dy_w \hat{v}_{kl} = 0.
         
         
 
@@ -308,11 +308,11 @@ Now perform some exact manipulations in the Fourier direction and introduce the
    :label: _auto8
 
         
-            \left(a, b\right)_w = \int_{-1}^1 a(x) b(x) dx_w \left(\approx \sum_{j = 0}^{N-1} a(x_j)b(x_j) w(x_j)\right),
+            \left(a, b\right)_w = \int_{-1}^1 a(x) b(x) dx_w \left(\approx \sum_{j = 0}^{N-1} a(x_j)b(x_j) w(x_j)\right).
         
         
 
-By also simplifying the notation by using summation of repeated indices
+By also simplifying the notation using summation of repeated indices,
 we get the following equation
 
 .. math::
@@ -339,28 +339,29 @@ We see that this equation can be solved for
 :math:`l=0` and you hit division by zero, which obviously is not allowed. And this is the reason
 why Eq. :eq:`eq:v` is still needed, to solve for :math:`\hat{v}_{k,0}`! Fortunately,
 since :math:`\exp(\imath 0 y) = 1`, the pressure derivative :math:`\frac{\partial p}{\partial y} = 0`,
-and as such the pressure is still not required. Equation :eq:`eq:v` becomes
+and as such the pressure is still not required. When used only for
+Fourier coefficient 0, Eq. :eq:`eq:v` becomes
 
 .. math::
    :label: eq:vx
 
         
-        \frac{\partial v}{\partial t} + N_y = \sqrt{\frac{Pr}{Ra}} \nabla^2 v, 
+        \frac{\partial v}{\partial t} + N_y = \sqrt{\frac{Pr}{Ra}} \nabla^2 v. 
         
 
-There is still one more revelation hidden in Eq. :eq:`eq:div3`. When :math:`l=0` we get
+There is still one more revelation to be made from Eq. :eq:`eq:div3`. When :math:`l=0` we get
 
 .. math::
    :label: _auto10
 
         
-            \left(\frac{\partial \phi_k^B}{\partial x}, \phi_m^D \right)_w \hat{u}_{k,0} = 0
+            \left(\frac{\partial \phi_k^B}{\partial x}, \phi_m^D \right)_w \hat{u}_{k,0} = 0,
         
         
 
-and the only way to satisfy this is if :math:`\hat{u}_{k,0}=0` for :math:`k\in\boldsymbol{k}_B`. So we only need
-to solve Eq. :eq:`eq:u2` for :math:`l \in \boldsymbol{l}/\{0\}` and can use directly
-:math:`\hat{u}_{k,0}=0 \text{ for } k \in \boldsymbol{k}_B`.
+and the only way to satisfy this is if :math:`\hat{u}_{k,0}=0` for :math:`k\in\boldsymbol{k}_B`. Bottom line is
+that we only need to solve Eq. :eq:`eq:u2` for :math:`l \in \boldsymbol{l}/\{0\}`, whereas we can use
+directly :math:`\hat{u}_{k,0}=0 \text{ for } k \in \boldsymbol{k}_B`.
 
 To sum up, with the solution known at :math:`t = t - \Delta t`, we solve
 
@@ -398,7 +399,7 @@ is then integrated from stage :math:`k` to :math:`k+1` according to
    :label: _auto11
 
         
-            \psi^{k+1} = \psi^k + a_k \mathcal{N}^k + b_k \mathcal{N}^{k-1} + \frac{a_k+b_k}{2}\mathcal{L}(\psi^{k+1}+\psi^{k}).
+            \psi^{k+1} = \psi^k + a_k \mathcal{N}^k + b_k \mathcal{N}^{k-1} + \frac{a_k+b_k}{2}\mathcal{L}(\psi^{k+1}+\psi^{k}),
         
         
 
@@ -445,15 +446,15 @@ Shenfun implementation
 To get started we need instances of the approximation spaces discussed in
 Eqs. :eq:`eq:VB` - :eq:`eq:WWF`. When the spaces are created we also need
 to specify the family and the dimension of each space. Here we simply
-choose Chebyshev and Fourier with 64 quadrature points in each direction
-for each one-dimensional space. We could replace 'Chebyshev' by 'Legendre',
+choose Chebyshev and Fourier with 100 and 256 quadrature points in :math:`x` and
+:math:`y`-directions, respectively. We could replace 'Chebyshev' by 'Legendre',
 but the former is known to be faster due to the existence of fast transforms.
 
 .. code-block:: python
 
     from shenfun import *
     
-    N, M = 64, 64
+    N, M = 100, 256
     family = 'Chebyshev'
     VB = Basis(N, family, bc='Biharmonic')
     VD = Basis(N, family, bc=(0, 0))
@@ -484,8 +485,8 @@ We also need containers for the computed solutions. These are created as
 
     u_  = Function(BD)     # Velocity vector, two components
     u_1 = Function(BD)     # Velocity vector, previous step
-    T_  = Funciton(W_TF)   # Temperature
-    T_1 = Funciton(W_TF)   # Temperature, previous step
+    T_  = Function(W_TF)   # Temperature
+    T_1 = Function(W_TF)   # Temperature, previous step
     H_  = Function(DD)     # Convection vector
     H_1 = Function(DD)     # Convection vector previous stage
     
@@ -560,11 +561,15 @@ The velocity is simply transformed backwards.
 
 .. code-block:: python
 
+    # Get a mask for setting Nyquist frequency to zero
+    mask = W_DF.get_mask_nyquist()
+    
     def compute_convection(u, H):
         curl = project(Dx(u[1], 0, 1) - Dx(u[0], 1, 1), W_TF).backward()
         ub = u.backward()
         H[0] = W_DF.forward(-curl*ub[1])
         H[1] = W_DF.forward(curl*ub[0])
+        H.mask_nyquist(mask)
         return H
 
 Note that the convection has a homogeneous Dirichlet boundary condition in the
@@ -583,7 +588,7 @@ and all of the right hand side, using the function ``compute_rhs_u``
         rhs[1] += a[rk]*dt*(w0+w1)
         rhs[1] += b[rk]*dt*rhs[0]
         rhs[0] = w0+w1
-        rhs.mask_nyquist()
+        rhs.mask_nyquist(mask)
         return rhs
     
 
@@ -817,19 +822,26 @@ The complete right hand side of the temperature equations can be computed as
         uT_ = BD.forward(ub*Tb)
         w0[:] = 0
         w0 = inner(q, div(uT_), output_array=w0)
-        rhs[1] -= (2.*a/self.kappa/(a[rk]+b[rk]))*w0
-        rhs[1] -= (2.*b/self.kappa/(a[rk]+b[rk]))*rhs[0]
+        rhs[1] -= (2.*a/kappa/(a[rk]+b[rk]))*w0
+        rhs[1] -= (2.*b/kappa/(a[rk]+b[rk]))*rhs[0]
         rhs[0] = w0
-        rhs.mask_nyquist(self.mask)
+        rhs.mask_nyquist(mask)
         return rhs
 
 We now have all the pieces required to solve the Rayleigh Benard problem.
-It only remains to create a solver loop that integrates the
-solution forward in time.
+It only remains to perform an initialization and then create a solver
+loop that integrates the solution forward in time.
 
 .. code-block:: python
 
-    def solve(self, t=0, tstep=0, end_time=1000):
+    # initialization
+    T_b = Array(W_TF)
+    X = W_TF.local_mesh(True)
+    T_b[:] = 0.5*(1-X[0]) + 0.001*np.random.randn(*T_b.shape)*(1-X[0])*(1+X[0])
+    T_ = T_b.forward(T_)
+    T_.mask_nyquist(mask)
+    
+    def solve(t=0, tstep=0, end_time=1000):
         while t < end_time-1e-8:
             for rk in range(3):
                 rhs_u = compute_rhs_u(u_, T_, H_, rhs_u, rk)
@@ -846,7 +858,12 @@ solution forward in time.
             tstep += 1
 
 A complete solver implemented in a solver class can be found in
-`RayleighBenardRk3.py <https://github.com/spectralDNS/shenfun/blob/master/demo/RayleighBenardRK3.py>`__
+`RayleighBenardRk3.py <https://github.com/spectralDNS/shenfun/blob/master/demo/RayleighBenardRK3.py>`__,
+where some of the terms discussed in this demo has been optimized some more for speed.
+Note that in the final solver it is also possible to use a :math:`(y, t)`-dependent boundary condition
+for the hot wall. And the solver can also be configured to store intermediate results to
+an ``HDF5`` format that later can be visualized in, e.g., Paraview. The movie in the
+beginning of this demo has been created in Paraview.
 
 .. ======= Bibliography =======
 
