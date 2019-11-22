@@ -69,8 +69,8 @@ class Basis(SpectralBase):
     def boundary_condition():
         return 'Dirichlet'
 
-    def get_refined(self, refinement_factor):
-        return self.__class__(int(self.N*refinement_factor),
+    def get_refined(self, N):
+        return self.__class__(N,
                               quad=self.quad,
                               padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct)

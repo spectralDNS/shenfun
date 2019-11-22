@@ -418,8 +418,8 @@ class ShenDirichletBasis(ChebyshevBase):
     def boundary_condition():
         return 'Dirichlet'
 
-    def get_refined(self, refinement_factor):
-        return self.__class__(int(self.N*refinement_factor), quad=self.quad,
+    def get_refined(self, N):
+        return self.__class__(N, quad=self.quad,
                               domain=self.domain, padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
                               bc=self.bc.bc, scaled=self._scaled)
@@ -650,11 +650,11 @@ class ShenNeumannBasis(ChebyshevBase):
     def boundary_condition():
         return 'Neumann'
 
-    def get_refined(self, refinement_factor):
-        return self.__class__(int(self.N*refinement_factor), quad=self.quad,
+    def get_refined(self, N):
+        return self.__class__(N, quad=self.quad,
                               domain=self.domain, padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
-                             mean=self.mean)
+                              mean=self.mean)
 
     def _composite_basis(self, V, argument=0):
         assert self.N == V.shape[1]
@@ -1039,8 +1039,8 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
     def boundary_condition():
         return 'Neumann2'
 
-    def get_refined(self, refinement_factor):
-        return self.__class__(int(self.N*refinement_factor), quad=self.quad,
+    def get_refined(self, N):
+        return self.__class__(N, quad=self.quad,
                               domain=self.domain, padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
                               mean=self.mean)

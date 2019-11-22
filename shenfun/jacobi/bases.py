@@ -96,8 +96,8 @@ class JacobiBase(SpectralBase):
     def reference_domain(self):
         return (-1., 1.)
 
-    def get_refined(self, refinement_factor):
-        return self.__class__(int(self.N*refinement_factor),
+    def get_refined(self, N):
+        return self.__class__(N,
                               quad=self.quad,
                               domain=self.domain,
                               padding_factor=self.padding_factor,
@@ -241,8 +241,8 @@ class Basis(JacobiBase):
                             padding_factor=padding_factor, dealias_direct=dealias_direct)
         self.plan(int(N*padding_factor), 0, np.float, {})
 
-    def get_refined(self, refinement_factor):
-        return self.__class__(int(self.N*refinement_factor),
+    def get_refined(self, N):
+        return self.__class__(N,
                               quad=self.quad,
                               domain=self.domain,
                               padding_factor=self.padding_factor,
@@ -296,8 +296,8 @@ class ShenDirichletBasis(JacobiBase):
     def boundary_condition():
         return 'Dirichlet'
 
-    def get_refined(self, refinement_factor):
-        return self.__class__(int(self.N*refinement_factor),
+    def get_refined(self, N):
+        return self.__class__(N,
                               quad=self.quad,
                               domain=self.domain,
                               padding_factor=self.padding_factor,

@@ -1080,25 +1080,25 @@ class Function(ShenfunBaseArray, BasisFunction):
                 break
         assert same_bases, "Can only assign on spaces with the same underlying bases"
 
-        factor = []
-        for selfbase, newbase in zip(space.bases, newspace.bases):
-            factor.append(newbase.N/selfbase.N)
+        N = []
+        for newbase in newspace.bases:
+            N.append(newbase.N)
 
-        u_hat = self.refine(factor, output_array=u_hat)
+        u_hat = self.refine(N, output_array=u_hat)
         return u_hat
 
-    def refine(self, factor, output_array=None):
-        """Return self refined according to factor
+    def refine(self, N, output_array=None):
+        """Return self with new number of quadrature points
 
         Parameters
         ----------
-        factor : number or sequence of numbers
-            Refine according to this factor along each direction
+        N : number or sequence of numbers
+            The new number of quadrature points
 
         Note
         ----
-        If the refinement factor is less than 1, then a truncated array
-        is returned. If the refinement factor is greater than 1, then the
+        If N is smaller than for self, then a truncated array
+        is returned. If N is greater than before, then the
         returned array is padded with zeros.
 
         """
@@ -1106,10 +1106,10 @@ class Function(ShenfunBaseArray, BasisFunction):
         from shenfun import VectorTensorProductSpace
 
         if self.ndim == 1:
-            assert isinstance(factor, Number)
+            assert isinstance(N, Number)
             space = self.function_space()
             if output_array is None:
-                refined_basis = space.get_refined(factor)
+                refined_basis = space.get_refined(N)
                 output_array = Function(refined_basis)
             output_array = self.assign(output_array)
             return output_array
@@ -1120,7 +1120,7 @@ class Function(ShenfunBaseArray, BasisFunction):
             if output_array is None:
                 output_array = [None]*len(self)
             for i, array in enumerate(self):
-                output_array[i] = array.refine(factor, output_array=output_array[i])
+                output_array[i] = array.refine(N, output_array=output_array[i])
             if isinstance(output_array, list):
                 T = output_array[0].function_space()
                 VT = VectorTensorProductSpace(T)
@@ -1131,10 +1131,11 @@ class Function(ShenfunBaseArray, BasisFunction):
         axes = [bx for ax in space.axes for bx in ax]
         base = space.bases[axes[0]]
         global_shape = list(self.global_shape) # Global shape in spectral space
+        factor = N[axes[0]]/self.function_space().bases[axes[0]].N
         if isinstance(base, R2CBasis):
-            global_shape[axes[0]] = int((2*global_shape[axes[0]]-2)*factor[axes[0]])//2+1
+            global_shape[axes[0]] = int((2*global_shape[axes[0]]-2)*factor)//2+1
         else:
-            global_shape[axes[0]] = int(global_shape[axes[0]]*factor[axes[0]])
+            global_shape[axes[0]] = int(global_shape[axes[0]]*factor)
         c1 = DistArray(global_shape,
                        subcomm=self.pencil.subcomm,
                        dtype=self.dtype,
@@ -1145,13 +1146,14 @@ class Function(ShenfunBaseArray, BasisFunction):
             base._truncation_forward(self, c1)
         for ax in axes[1:]:
             c0 = c1.redistribute(ax)
+            factor = N[ax]/self.function_space().bases[ax].N
 
             # Get a new padded array
             base = space.bases[ax]
             if isinstance(base, R2CBasis):
-                global_shape[ax] = int(base.N*factor[ax])//2+1
+                global_shape[ax] = int(base.N*factor)//2+1
             else:
-                global_shape[ax] = int(global_shape[ax]*factor[ax])
+                global_shape[ax] = int(global_shape[ax]*factor)
             c1 = DistArray(global_shape,
                            subcomm=c0.pencil.subcomm,
                            dtype=c0.dtype,
@@ -1168,7 +1170,7 @@ class Function(ShenfunBaseArray, BasisFunction):
             c1 = c1.redistribute(ax)
 
         if output_array is None:
-            refined_space = space.get_refined(factor)
+            refined_space = space.get_refined(N)
             output_array = Function(refined_space, buffer=c1)
         else:
             output_array[:] = c1

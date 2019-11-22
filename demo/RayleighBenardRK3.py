@@ -426,10 +426,10 @@ if __name__ == '__main__':
     from mpi4py_fft import generate_xdmf
     t0 = time()
     d = {
-        'N': (100, 256),
-        'Ra': 100000.,
-        'dt': 0.005,
-        'filename': 'RB100k',
+        'N': (40, 128),
+        'Ra': 100.,
+        'dt': 0.05,
+        'filename': 'RB100',
         'conv': 1,
         'modplot': 500,
         'modsave': 50,
@@ -439,9 +439,9 @@ if __name__ == '__main__':
         'quad': 'GC'
         }
     c = RayleighBenard2(**d)
-    c.initialize(rand=0.00001)
+    c.initialize(rand=0.01)
     c.assemble()
-    c.solve(end_time=100)
+    c.solve(end_time=200)
     print('Computing time %2.4f'%(time()-t0))
     if comm.Get_rank() == 0:
         generate_xdmf('_'.join((d['filename'], 'U'))+'.h5')

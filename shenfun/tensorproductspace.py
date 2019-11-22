@@ -278,12 +278,12 @@ class TensorProductSpace(PFFT):
                                   dtype=self.forward.output_array.dtype,
                                   backward_from_pencil=self.forward.output_pencil)
 
-    def get_refined(self, refinement_factor):
-        if isinstance(refinement_factor, Number):
-            refinement_factor = (refinement_factor,)*len(self)
-        elif isinstance(refinement_factor, (tuple, list, np.ndarray)):
-            assert len(refinement_factor) == len(self)
-        refined_bases = [base.get_refined(refinement_factor[axis])
+    def get_refined(self, N):
+        if isinstance(N, Number):
+            N = (N,)*len(self)
+        elif isinstance(N, (tuple, list, np.ndarray)):
+            assert len(N) == len(self)
+        refined_bases = [base.get_refined(N[axis])
                          for axis, base in enumerate(self.bases)]
         return TensorProductSpace(self.comm, refined_bases, axes=self.axes)
 
@@ -909,7 +909,7 @@ class MixedTensorProductSpace(object):
                 break
         return compatible
 
-    def get_refined(self, refinement_factor):
+    def get_refined(self, N):
         raise NotImplementedError
 
     def __getitem__(self, i):
@@ -972,8 +972,8 @@ class VectorTensorProductSpace(MixedTensorProductSpace):
         s = (self.num_components(),) + s
         return s
 
-    def get_refined(self, refinement_factor):
-        return VectorTensorProductSpace(self.spaces[0].get_refined(refinement_factor))
+    def get_refined(self, N):
+        return VectorTensorProductSpace(self.spaces[0].get_refined(N))
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         return VectorTensorProductSpace(self.spaces[0].get_dealiased(padding_factor, dealias_direct))
