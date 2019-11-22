@@ -24,13 +24,22 @@ Note that there is a more physically realistic 3D solver implemented within
 `the spectralDNS project <https://github.com/spectralDNS/spectralDNS/blob/master/spectralDNS/solvers/KMMRK3_RB.py>`__.
 To allow for some simple optimizations, the solver described in this demo has been implemented in a class in the
 `RayleighBenardRk3.py <https://github.com/spectralDNS/shenfun/blob/master/demo/RayleighBenardRK3.py>`__
-module in the demo folder of shenfun.
+module in the demo folder of shenfun. Below are two example solutions, where the first (movie)
+has been run at a very high :math:`Ra`, and the image with a low :math:`Ra` (laminar).
 
 .. _fig:RB:
 
 .. figure:: https://raw.githack.com/spectralDNS/spectralutilities/master/movies/RB_100x256_100k_fire.png
+   :width: 800
 
    *Temperature fluctuations in the Rayleigh Benard flow. The top and bottom walls are kept at different temperatures and this sets up the Rayleigh-Benard convection. The simulation is run at :math:`Ra=100,000`, :math:`Pr=0.7` with 100 and 256 quadrature points in :math:`x` and :math:`y`-directions, respectively*
+
+.. _fig:RB_lam:
+
+.. figure:: https://raw.githack.com/spectralDNS/spectralutilities/master/figures/RB_40x128_100_fire.png
+   :width: 800
+
+   *Convection cells for a laminar flow. The simulation is run at :math:`Ra=100`, :math:`Pr=0.7` with 40 and 128 quadrature points in :math:`x` and :math:`y`-directions, respectively*
 
 .. _demo:rayleighbenard:
 
@@ -859,7 +868,7 @@ loop that integrates the solution forward in time.
 
 A complete solver implemented in a solver class can be found in
 `RayleighBenardRk3.py <https://github.com/spectralDNS/shenfun/blob/master/demo/RayleighBenardRK3.py>`__,
-where some of the terms discussed in this demo has been optimized some more for speed.
+where some of the terms discussed in this demo have been optimized some more for speed.
 Note that in the final solver it is also possible to use a :math:`(y, t)`-dependent boundary condition
 for the hot wall. And the solver can also be configured to store intermediate results to
 an ``HDF5`` format that later can be visualized in, e.g., Paraview. The movie in the

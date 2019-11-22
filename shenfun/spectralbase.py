@@ -230,6 +230,9 @@ class SpectralBase(object):
             For padding backward transform (for dealiasing)
         domain : 2-tuple of floats, optional
             The computational domain
+        dealias_direct : bool, optional
+            If True, then set all upper 2/3 wavenumbers to zero before backward
+            transform. Cannot be used if padding_factor is different than 1.
 
     """
     # pylint: disable=method-hidden, too-many-instance-attributes
@@ -284,6 +287,9 @@ class SpectralBase(object):
                 Number of quadrature points
             map_true_domain : bool, optional
                 Whether or not to map points to true domain
+            weighted : bool, optional
+                Whether to use quadrature weights for a weighted inner product
+                (default), or a regular, non-weighted inner product.
 
         Note
         ----
@@ -407,8 +413,6 @@ class SpectralBase(object):
             fast_transform : bool, optional
                 If True use fast transforms, if False use
                 Vandermonde type
-            padding_factor : number
-                If > 1 then use forward transform with truncation
 
         Note
         ----
@@ -438,8 +442,6 @@ class SpectralBase(object):
             fast_transform : bool, optional
                 If True use fast transforms (if implemented), if
                 False use Vandermonde type
-            padding_factor : number
-                Pad array with zeros before transforming
 
         Note
         ----
@@ -471,11 +473,6 @@ class SpectralBase(object):
                 Expansion coefficients
             output_array : array, optional
                 Function values on quadrature mesh
-            fast_transform : bool, optional
-                If True use fast transforms (if implemented), if
-                False use Vandermonde type
-            padding_factor : number
-                Pad array with zeros before transforming
 
         Note
         ----
@@ -719,6 +716,10 @@ class SpectralBase(object):
                 Expansion coefficients. Overwritten by applying the inverse
                 mass matrix, and returned.
 
+        Returns
+        -------
+            array
+
         """
         #assert self.N == array.shape[self.axis]
         if self._mass is None:
@@ -735,8 +736,14 @@ class SpectralBase(object):
         ----------
             input_array : array
                 Expansion coefficients of input basis
-            output_array : array
+            output_array : array, optional
                 Expansion coefficients in orthogonal basis
+
+        Returns
+        -------
+            array
+                output_array
+
         """
         raise NotImplementedError
 
@@ -1021,14 +1028,41 @@ class SpectralBase(object):
         return hash((self.N, self.quad, self.family()))
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        """Return space (otherwise as self) to be used for dealiasing
+
+        Parameters
+        ----------
+        padding_factor : float, optional
+            Create output array of shape padding_factor time non-padded shape
+        dealias_direct : bool, optional
+            If True, set upper 2/3 of wavenumbers to zero before backward transform.
+            Cannot be used together with padding_factor different than 1.
+
+        Returns
+        -------
+        SpectralBase
+            The space to be used for dealiasing
+        """
         return self.__class__(self.N,
                               quad=self.quad,
                               domain=self.domain,
                               padding_factor=padding_factor,
                               dealias_direct=dealias_direct)
 
-    def get_refined(self, refinement_factor):
-        return self.__class__(int(self.N*refinement_factor),
+    def get_refined(self, N):
+        """Return space (otherwise as self) with N quadrature points
+
+        Parameters
+        ----------
+        N : int
+            The number of quadrature points for returned space
+
+        Returns
+        -------
+        SpectralBase
+            A new space with new number of quadrature points, otherwise as self.
+        """
+        return self.__class__(N,
                               quad=self.quad,
                               domain=self.domain,
                               padding_factor=self.padding_factor,

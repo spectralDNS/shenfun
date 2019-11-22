@@ -601,8 +601,9 @@ def test_assign(fam):
         if bc == 'Biharmonic' and fam in ('La', 'H'):
             continue
         tol = 1e-12 if fam in ('C', 'L', 'F') else 1e-5
-        B0 = Basis(10, fam, dtype=dtype, bc=bc)
-        B1 = Basis(12, fam, dtype=dtype, bc=bc)
+        N = (10, 12)
+        B0 = Basis(N[0], fam, dtype=dtype, bc=bc)
+        B1 = Basis(N[1], fam, dtype=dtype, bc=bc)
         u_hat = Function(B0)
         u_hat[1:4] = 1
         ub_hat = Function(B1)
@@ -611,14 +612,14 @@ def test_assign(fam):
         T = TensorProductSpace(comm, (B0, B1))
         u_hat = Function(T)
         u_hat[1:4, 1:4] = 1
-        Tp = T.get_refined((2, 2))
+        Tp = T.get_refined((2*N[0], 2*N[1]))
         ub_hat = Function(Tp)
         u_hat.assign(ub_hat)
         assert abs(inner(1, u_hat)-inner(1, ub_hat)) < tol
         VT = VectorTensorProductSpace(T)
         u_hat = Function(VT)
         u_hat[:, 1:4, 1:4] = 1
-        Tp = T.get_refined((2, 2))
+        Tp = T.get_refined((2*N[0], 2*N[1]))
         VTp = VectorTensorProductSpace(Tp)
         ub_hat = Function(VTp)
         u_hat.assign(ub_hat)
@@ -626,6 +627,7 @@ def test_assign(fam):
 
 def test_refine():
     assert comm.Get_size() < 7
+    N = (8, 9, 10)
     F0 = Basis(8, 'F', dtype='D')
     F1 = Basis(9, 'F', dtype='D')
     F2 = Basis(10, 'F', dtype='d')
@@ -638,7 +640,7 @@ def test_refine():
     u_ = Array(Tp)
     up_hat = Function(Tp)
     assert up_hat.commsizes == u_hat.commsizes
-    u2 = u_hat.refine((2, 2, 2))
+    u2 = u_hat.refine(2*np.array(N))
     V = VectorTensorProductSpace(T)
     u_hat = Function(V)
     u = Array(V)
@@ -648,7 +650,7 @@ def test_refine():
     u_ = Array(Vp)
     up_hat = Function(Vp)
     assert up_hat.commsizes == u_hat.commsizes
-    u3 = u_hat.refine((2, 2, 2))
+    u3 = u_hat.refine(2*np.array(N))
 
 def test_eval_expression():
     import sympy as sp
@@ -680,10 +682,12 @@ if __name__ == '__main__':
     #test_transform('f', 3)
     #test_transform('d', 2)
     #test_shentransform('d', 2, hbases.Basis, 'HG')
-    test_eval_expression()
+    #test_eval_expression()
     #test_project('d', 2, lbases.Basis, 'LG')
     #test_project2('d', 1, lbases.ShenNeumannBasis, 'LG')
     #test_project_2dirichlet('GL')
     #test_eval_tensor('d', 2, cbases.ShenDirichletBasis, 'GC')
     #test_eval_fourier('d', 3)
     #test_inner('C', 'C')
+    test_refine()
+    test_assign('C')
