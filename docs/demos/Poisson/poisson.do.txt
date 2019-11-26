@@ -267,8 +267,8 @@ f_hat = Function(SD)
 f_hat = inner(v, fj, output_array=f_hat)
 !ec
 
-Note that the 'sympy' function 'fe' can be used to initialize the ${cls('Array')} 'fj'.
-We wrap this Numpy array in an ${cls('Array')} class
+Note that the `sympy` function `fe` can be used to initialize the ${cls('Array')}
+`fj`. We wrap this Numpy array in an ${cls('Array')} class
 (`fj = Array(SD, buffer=fe)`), because an Array
 is required as input to the ${func('inner')} function.
 
@@ -278,7 +278,7 @@ Finally, solve linear equation system and transform solution from spectral
 $\{\hat{u}_k\}_{k=0}^{N-1}$ vector to the real space $\{u(x_j)\}_{j=0}^{N-1}$
 and then check how the solution corresponds with the exact solution $u_e$.
 To this end we compute the $L_2$-errornorm using the `shenfun` function
-${func('dx')}$
+${func('dx')}
 
 !bc pycod
 u_hat = A.solve(f_hat)

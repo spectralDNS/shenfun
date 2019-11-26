@@ -311,8 +311,8 @@ The variational problem :eq:`eq:varform` can be assembled using ``shenfun``'s
     f_hat = Function(SD)
     f_hat = inner(v, fj, output_array=f_hat)
 
-Note that the 'sympy' function 'fe' can be used to initialize the :class:`.Array` 'fj'.
-We wrap this Numpy array in an :class:`.Array` class
+Note that the ``sympy`` function ``fe`` can be used to initialize the :class:`.Array`
+``fj``. We wrap this Numpy array in an :class:`.Array` class
 (``fj = Array(SD, buffer=fe)``), because an Array
 is required as input to the :func:`.inner` function.
 
@@ -323,7 +323,7 @@ Finally, solve linear equation system and transform solution from spectral
 :math:`\{\hat{u}_k\}_{k=0}^{N-1}` vector to the real space :math:`\{u(x_j)\}_{j=0}^{N-1}`
 and then check how the solution corresponds with the exact solution :math:`u_e`.
 To this end we compute the :math:`L_2`-errornorm using the ``shenfun`` function
-:func:`.dx`$
+:func:`.dx`
 
 .. code-block:: python
 
