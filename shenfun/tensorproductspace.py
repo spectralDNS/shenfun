@@ -1090,9 +1090,9 @@ class BoundaryValues(object):
             assert isinstance(bc, (list, tuple))
             assert len(bc) in (2, 4)
             self.bc = list(bc)
-            for i in range(len(bc)):
-                if isinstance(bc[i], (Number, sympy.Expr, np.ndarray)):
-                    self.bcs[i] = bc[i]
+            for i, bci in enumerate(bc):
+                if isinstance(bci, (Number, sympy.Expr, np.ndarray)):
+                    self.bcs[i] = bci
                 else:
                     raise NotImplementedError
 

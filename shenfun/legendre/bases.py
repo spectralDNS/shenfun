@@ -816,7 +816,8 @@ class BCBasis(LegendreBase):
     def vandermonde(self, x):
         return leg.legvander(x, 1)
 
-    def coefficient_matrix(self):
+    @staticmethod
+    def coefficient_matrix():
         return np.array([[0.5, -0.5],
                          [0.5, 0.5]])
 
