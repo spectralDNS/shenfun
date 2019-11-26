@@ -87,7 +87,7 @@ uh = uj.forward()
 # Compare with analytical solution
 uq = Array(SD, buffer=ue)
 print("Error=%2.16e" %(np.linalg.norm(uj-uq)))
-assert np.allclose(uj, uq)
+assert np.linalg.norm(uj-uq) < 1e-8
 
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
