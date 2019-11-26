@@ -42,7 +42,7 @@ if family == 'jacobi':
     a = 0
     b = 0
 x, y, z = symbols("x,y,z")
-ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-y**2) + a*(1 + y)/2. + b*(1 - y)/2.
+ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-y**2) + a*(1 - y)/2. + b*(1 + y)/2.
 fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
 
 # Size of discretization

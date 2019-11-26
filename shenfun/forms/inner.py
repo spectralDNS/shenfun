@@ -233,6 +233,7 @@ def inner(expr0, expr1, output_array=None, level=0):
         for test_j, b0 in enumerate(base_test):              # second index test
             for trial_j, b1 in enumerate(base_trial):        # second index trial
                 sc = test_scale[vec, test_j]*trial_scale[vec, trial_j]
+                scb = sc
                 M = []
                 DM = []
                 assert len(b0) == len(b1)
@@ -252,14 +253,19 @@ def inner(expr0, expr1, output_array=None, level=0):
                     # Take care of domains of not standard size
                     if not sp.domain_factor() == 1:
                         sc *= sp.domain_factor()**(a+b)
+                        scb *= sp.domain_factor()**(a+b)
                     if not abs(AA.scale-1.) < 1e-8:
                         sc *= AA.scale
                         AA.scale = 1.0
 
-                    if ts.boundary_condition() == 'Dirichlet' and not ts.family() in ('laguerre', 'hermite'):
+                    if (ts.boundary_condition() == 'Dirichlet' and not ts.family() in ('laguerre', 'hermite') or
+                            (ts.boundary_condition() == 'Biharmonic' and not ts.family() in ('jacobi',))):
                         if ts.bc.has_nonhomogeneous_bcs():
                             tsc = ts.get_bc_basis()
                             BB = inner_product((sp, a), (tsc, b))
+                            if not abs(BB.scale-1.) < 1e-8:
+                                scb *= BB.scale
+                                BB.scale = 1.0
                             if BB:
                                 DM.append(BB)
                                 has_bcs = True
@@ -279,7 +285,7 @@ def inner(expr0, expr1, output_array=None, level=0):
                 if has_bcs:
                     if len(DM) == 1: # 1D case
                         DM[0].global_index = (test_ind[test_j], trial_ind[trial_j])
-                        DM[0].scale = sc
+                        DM[0].scale = scb
                         DM[0].mixedbase = testspace
                         A.append(DM[0])
                     else:

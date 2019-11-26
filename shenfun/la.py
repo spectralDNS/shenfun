@@ -224,8 +224,7 @@ class Solve(object):
         assert isinstance(A, SparseMatrix)
         self.s = test.slice()
         self.A = A
-        if hasattr(test, 'bc'):
-            self.bc = test.bc
+        self.test = test
 
     def __call__(self, b, u=None, axis=0):
         """Solve matrix problem Au = b
@@ -271,8 +270,8 @@ class Solve(object):
                 u.imag[s] = spsolve(A, br.imag).reshape(u[s].shape)
             else:
                 u[s] = spsolve(A, br).reshape(u[s].shape)
-        if hasattr(self, 'bc'):
-            self.bc.apply_after(u, True)
+        if self.test.has_nonhomogeneous_bcs:
+            self.test.bc.set_boundary_dofs(u, True)
 
         if axis > 0:
             u = np.moveaxis(u, 0, axis)

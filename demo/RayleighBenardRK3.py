@@ -2,8 +2,7 @@ from shenfun import *
 import matplotlib.pyplot as plt
 import sympy
 
-x, y, tt = sympy.symbols('x,y,tt')
-
+x, y, tt = sympy.symbols('x,y,t')
 
 class RayleighBenard(object):
     def __init__(self, N=(32, 32), L=(2, 2*np.pi), Ra=10000., Pr=0.7, dt=0.1,
@@ -18,11 +17,6 @@ class RayleighBenard(object):
         self.modplot = modplot
         self.modsave = modsave
         self.bcT = bcT
-        bcT0 = list(bcT)
-        if isinstance(bcT0[1], sympy.Expr):
-            if tt in bcT0[1].free_symbols:
-                bcT0[1] = bcT0[1].subs({'tt': 0})
-        bcT0 = tuple(bcT0)
 
         self.a = (8./15., 5./12., 3./4.)
         self.b = (0.0, -17./60., -5./12.)
@@ -33,7 +27,7 @@ class RayleighBenard(object):
         self.B0 = Basis(N[0], family, quad=quad, bc='Biharmonic')
         self.D0 = Basis(N[0], family, quad=quad, bc=(0, 0))
         self.C0 = Basis(N[0], family, quad=quad)
-        self.T0 = Basis(N[0], family, quad=quad, bc=bcT0)
+        self.T0 = Basis(N[0], family, quad=quad, bc=bcT)
         self.F1 = Basis(N[1], 'F', dtype='d')
         self.D00 = Basis(N[0], family, quad=quad, bc=(0, 0))  # Streamwise velocity, not to be in tensorproductspace
 
@@ -92,7 +86,7 @@ class RayleighBenard(object):
 
     def initialize(self, rand=0.001):
         X = self.TB.local_mesh(True)
-        funT = 1 if self.bcT[1] == 1 else 2
+        funT = 1 if self.bcT[0] == 1 else 2
         fun = {1: 1,
                2: (0.9+0.1*np.sin(2*X[1]))}[funT]
         self.T_b[:] = 0.5*(1-X[0])*fun+rand*np.random.randn(*self.T_b.shape)*(1-X[0])*(1+X[0])
@@ -143,14 +137,9 @@ class RayleighBenard(object):
         self.rhs_u[:] = 0
 
     def update_bc(self, t):
-        if isinstance(self.bcT[1], sympy.Expr):
-            if tt in self.bcT[1].free_symbols:
-                bcs = self.bcT[1].subs({'tt': t})
-                bcT = (self.bcT[0], bcs)
-                self.T0.bc.update_bcs(bc=bcT)
-                self.T0p.bc.update_bcs(bc=bcT)
-                self.T0.bc.set_tensor_bcs(self.T0, self.TT)
-                self.T0p.bc.set_tensor_bcs(self.T0p, self.TTp)
+        # Update the two bases with time-dependent bcs.
+        self.T0.bc.update_bcs_time(t)
+        self.TTp.bases[0].bc.update_bcs_time(t)
 
     def compute_curl(self, u):
         return project(Dx(u[1], 0, 1) - Dx(u[0], 1, 1), self.TCp).backward()
@@ -276,9 +265,9 @@ class RayleighBenard(object):
         while t < end_time-1e-8:
             # Fix the new bcs in the solutions. Don't have to fix padded T_p because it is assembled from T_1 and T_2
             for rk in range(3):
-                self.T0.bc.apply_after(self.T_, True)
+                self.T0.bc.set_boundary_dofs(self.T_, True)
                 self.update_bc(t+self.dt*self.c[rk+1]) # Update bc for next step
-                self.T0.bc.apply_after(self.T_1, True) # T_1 holds next step bc
+                self.T0.bc.set_boundary_dofs(self.T_1, True) # T_1 holds next step bc
                 rhs_u = self.compute_rhs_u(self.rhs_u, rk)
                 self.u_[0] = self.solver[rk](self.u_[0], rhs_u[1])
                 if comm.Get_rank() == 0:
@@ -403,7 +392,7 @@ class RayleighBenard2(RayleighBenard):
 
         # The following two are equal as long as the bcs is constant
         # For varying bcs they need to be included
-        if isinstance(self.bcT[1], sympy.Expr):
+        if isinstance(self.bcT[0], sympy.Expr):
             rhs[1] -= self.lhs_mat[rk][0].matvec(self.T_1, self.w0)
             rhs[1] += self.rhs_mat[rk][0].matvec(self.T_, self.w1)
             #print(np.linalg.norm(self.w0-self.w1))
@@ -426,15 +415,15 @@ if __name__ == '__main__':
     from mpi4py_fft import generate_xdmf
     t0 = time()
     d = {
-        'N': (40, 128),
+        'N': (40, 64),
         'Ra': 100.,
         'dt': 0.05,
         'filename': 'RB100',
         'conv': 1,
-        'modplot': 500,
+        'modplot': 100,
         'modsave': 50,
-        #'bcT': (0, 0.9+0.1*sympy.sin(2*(y))),
-        'bcT': (0, 1),
+        'bcT': (0.9+0.1*sympy.sin(2*(y-tt)), 0),
+        #'bcT': (1, 0),
         'family': 'C',
         'quad': 'GC'
         }

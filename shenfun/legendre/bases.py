@@ -230,6 +230,10 @@ class ShenDirichletBasis(LegendreBase):
     def boundary_condition():
         return 'Dirichlet'
 
+    @property
+    def has_nonhomogeneous_bcs(self):
+        return self.bc.has_nonhomogeneous_bcs()
+
     def set_factor_array(self, v):
         if self.is_scaled():
             if not self._factor.shape == v.shape:
@@ -247,23 +251,9 @@ class ShenDirichletBasis(LegendreBase):
             k = np.arange(self.N-2).astype(np.float)
             P[:, :-2] = (V[:, :-2] - V[:, 2:])/np.sqrt(4*k+6)
         if argument == 1:
-            P[:, -2] = (V[:, 0] + V[:, 1])/2
-            P[:, -1] = (V[:, 0] - V[:, 1])/2
+            P[:, -2] = (V[:, 0] - V[:, 1])/2
+            P[:, -1] = (V[:, 0] + V[:, 1])/2
         return P
-
-    #def evaluate_expansion_all(self, input_array, output_array,
-    #                           fast_transform=False): # pragma: no cover
-    #    # Not used since there are no fast transforms for Legendre
-    #    w_hat = work[(input_array, 0)]
-    #    s0 = self.sl[slice(0, -2)]
-    #    s1 = self.sl[slice(2, None)]
-    #    self.set_factor_array(input_array)
-    #    w_hat[s0] = input_array[s0]*self._factor
-    #    w_hat[s1] -= input_array[s0]*self._factor
-    #    self.bc.apply_before(w_hat, False, (0.5, 0.5))
-    #    output_array = self.LT.backward(w_hat)
-    #    assert input_array is self.backward.input_array
-    #    assert output_array is self.backward.output_array
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
@@ -280,7 +270,7 @@ class ShenDirichletBasis(LegendreBase):
             output_array[s0] = input_array[s0]
             output_array[s1] -= input_array[s0]
 
-        self.bc.apply_before(output_array, True, (0.5, 0.5))
+        self.bc.add_to_orthogonal(output_array, input_array)
         return output_array
 
     def slice(self):
@@ -333,20 +323,15 @@ class ShenDirichletBasis(LegendreBase):
         output_array[:] = leg.legval(x, u[:-2]*self._factor)
         w_hat[2:] = u[:-2]*self._factor
         output_array -= leg.legval(x, w_hat)
-        output_array += 0.5*(u[-1]*(1-x)+u[-2]*(1+x))
+        output_array += 0.5*(u[-1]*(1+x)+u[-2]*(1-x))
         return output_array
 
-    def apply_bc_rhs(self, u, final=False, scales=(-1., -1./3.)):
-        if self.is_scaled():
-            scales = (-1./np.sqrt(6.), -1./3./np.sqrt(10.))
-        self.bc.apply_before(u, final, scales=scales)
-
-    def forward(self, input_array=None, output_array=None, fast_transform=True):
+    def forward(self, input_array=None, output_array=None, fast_transform=False):
         self.scalar_product(input_array, fast_transform=fast_transform)
         u = self.scalar_product.tmp_array
-        self.apply_bc_rhs(u)
+        self.bc.add_mass_rhs(u)
         self.apply_inverse_mass(u)
-        self.bc.apply_after(u, False)
+        self.bc.set_boundary_dofs(u, False)
         self._truncation_forward(u, self.forward.output_array)
         if output_array is not None:
             output_array[...] = self.forward.output_array
@@ -546,6 +531,9 @@ class ShenBiharmonicBasis(LegendreBase):
 
             - LG - Legendre-Gauss
             - GL - Legendre-Gauss-Lobatto
+        4-tuple of numbers, optional
+            The values of the 4 boundary conditions at x=(-1, 1).
+            The two Dirichlet first and then the Neumann.
         domain : 2-tuple of floats, optional
             The computational domain
         padding_factor : float, optional
@@ -553,23 +541,31 @@ class ShenBiharmonicBasis(LegendreBase):
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
     """
-    def __init__(self, N, quad="LG", domain=(-1., 1.), padding_factor=1,
+    def __init__(self, N, quad="LG", bc=(0, 0, 0, 0), domain=(-1., 1.), padding_factor=1,
                  dealias_direct=False):
+        from shenfun.tensorproductspace import BoundaryValues
         LegendreBase.__init__(self, N, quad=quad, domain=domain,
                               padding_factor=padding_factor, dealias_direct=dealias_direct)
         self.LT = Basis(N, quad)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
         self.plan(int(N*padding_factor), 0, np.float, {})
+        self.bc = BoundaryValues(self, bc=bc)
 
     @staticmethod
     def boundary_condition():
         return 'Biharmonic'
 
+    @property
+    def has_nonhomogeneous_bcs(self):
+        return self.bc.has_nonhomogeneous_bcs()
+
     def _composite_basis(self, V, argument=0):
         P = np.zeros_like(V)
         k = np.arange(V.shape[1]).astype(np.float)[:-4]
         P[:, :-4] = V[:, :-4] - (2*(2*k+5)/(2*k+7))*V[:, 2:-2] + ((2*k+3)/(2*k+7))*V[:, 4:]
+        if argument == 1:
+            P[:, -4:] = np.tensordot(V[:, :4], BCBiharmonicBasis.coefficient_matrix(), (1, 1))
         return P
 
     def set_factor_arrays(self, v):
@@ -596,16 +592,24 @@ class ShenBiharmonicBasis(LegendreBase):
 
     def sympy_basis(self, i=0):
         x = sympy.symbols('x')
-        f = (sympy.legendre(i, x)
-             -2*(2*i+5.)/(2*i+7.)*sympy.legendre(i+2, x)
-             +((2*i+3.)/(2*i+7.))*sympy.legendre(i+4, x))
+        if i < self.N-4:
+            f = (sympy.legendre(i, x)
+                 -2*(2*i+5.)/(2*i+7.)*sympy.legendre(i+2, x)
+                 +((2*i+3.)/(2*i+7.))*sympy.legendre(i+4, x))
+        else:
+            f = 0
+            for j, c in enumerate(BCBiharmonicBasis.coefficient_matrix()[i-(self.N-4)]):
+                f += c*sympy.legendre(j, x)
         return f
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        output_array[:] = eval_legendre(i, x) - 2*(2*i+5.)/(2*i+7.)*eval_legendre(i+2, x) + ((2*i+3.)/(2*i+7.))*eval_legendre(i+4, x)
+        if i < self.N-4:
+            output_array[:] = eval_legendre(i, x) - 2*(2*i+5.)/(2*i+7.)*eval_legendre(i+2, x) + ((2*i+3.)/(2*i+7.))*eval_legendre(i+4, x)
+        else:
+            output_array[:] = sympy.lambdify(sympy.symbols('x'), self.sympy_basis(i))(x)
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -614,26 +618,23 @@ class ShenBiharmonicBasis(LegendreBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
-        basis = np.zeros(self.shape(True))
-        basis[np.array([i, i+2, i+4])] = (1, -2*(2*i+5.)/(2*i+7.), ((2*i+3.)/(2*i+7.)))
-        basis = leg.Legendre(basis)
-        if k > 0:
-            basis = basis.deriv(k)
-        output_array[:] = basis(x)
+        if i < self.N-4:
+            basis = np.zeros(self.shape(True))
+            basis[np.array([i, i+2, i+4])] = (1, -2*(2*i+5.)/(2*i+7.), ((2*i+3.)/(2*i+7.)))
+            basis = leg.Legendre(basis)
+            if k > 0:
+                basis = basis.deriv(k)
+            output_array[:] = basis(x)
+        else:
+            output_array[:] = sympy.lambdify(sympy.symbols('x'), self.sympy_basis(i).diff(sympy.symbols('x'), k))(x)
         return output_array
-
-    #def evaluate_expansion_all(self, input_array, output_array): # pragma: no cover
-    #    # Not used since there are no fast transforms for Legendre
-    #    w_hat = work[(input_array, 0)]
-    #    self.set_factor_arrays(input_array)
-    #    w_hat = self.set_w_hat(w_hat, input_array, self._factor1, self._factor2)
-    #    output_array = self.LT.backward(w_hat)
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
             output_array = np.zeros_like(input_array.v)
         self.set_factor_arrays(input_array)
         output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2)
+        self.bc.add_to_orthogonal(output_array, input_array)
         return output_array
 
     def slice(self):
@@ -652,6 +653,21 @@ class ShenBiharmonicBasis(LegendreBase):
         w_hat[:4] = 0
         output_array += leg.legval(x, w_hat)
         return output_array
+
+    def forward(self, input_array=None, output_array=None, fast_transform=False):
+        self.scalar_product(input_array, fast_transform=fast_transform)
+        u = self.scalar_product.tmp_array
+        self.bc.add_mass_rhs(u)
+        self.apply_inverse_mass(u)
+        self._truncation_forward(u, self.forward.output_array)
+        self.bc.set_boundary_dofs(self.forward.output_array, False)
+        if output_array is not None:
+            output_array[...] = self.forward.output_array
+            return output_array
+        return self.forward.output_array
+
+    def get_bc_basis(self):
+        return BCBiharmonicBasis(self.N, quad=self.quad, domain=self.domain)
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
@@ -765,12 +781,11 @@ class ShenBiharmonicBasis(LegendreBase):
 @inheritdocstrings
 class BCBasis(LegendreBase):
 
-    def __init__(self, N, quad="LG", bc=(0, 0), scaled=False,
+    def __init__(self, N, quad="LG", scaled=False,
                  domain=(-1., 1.)):
         LegendreBase.__init__(self, N, quad=quad, domain=domain)
         self._scaled = scaled
         self.plan(N, 0, np.float, {})
-        self.bc = bc
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
@@ -801,18 +816,30 @@ class BCBasis(LegendreBase):
     def vandermonde(self, x):
         return leg.legvander(x, 1)
 
+    def coefficient_matrix(self):
+        return np.array([[0.5, -0.5],
+                         [0.5, 0.5]])
+
+    def addmass_matrix(self):
+        if not self._scaled:
+            return np.array([[1., 1.],
+                             [-1./3., 1./3.]])
+        else:
+            return np.array([[1./np.sqrt(6.), 1./np.sqrt(6.)],
+                             [-1./3./np.sqrt(10.), 1./3./np.sqrt(10.)]])
+
     def _composite_basis(self, V, argument=0):
         P = np.zeros(V.shape)
-        P[:, 0] = (V[:, 0] + V[:, 1])/2
-        P[:, 1] = (V[:, 0] - V[:, 1])/2
+        P[:, 0] = (V[:, 0] - V[:, 1])/2
+        P[:, 1] = (V[:, 0] + V[:, 1])/2
         return P
 
     def sympy_basis(self, i=0):
         x = sympy.symbols('x')
         if i == 0:
-            return 0.5*(1+x)
-        elif i == 1:
             return 0.5*(1-x)
+        elif i == 1:
+            return 0.5*(1+x)
         else:
             raise AttributeError('Only two bases, i < 2')
 
@@ -822,9 +849,9 @@ class BCBasis(LegendreBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         if i == 0:
-            output_array[:] = 0.5*(1+x)
-        elif i == 1:
             output_array[:] = 0.5*(1-x)
+        elif i == 1:
+            output_array[:] = 0.5*(1+x)
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -832,9 +859,113 @@ class BCBasis(LegendreBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         if i == 0 and k == 1:
-            output_array[:] = 0.5
-        elif i == 1 and k == 1:
             output_array[:] = -0.5
+        elif i == 1 and k == 1:
+            output_array[:] = 0.5
         else:
             output_array[:] = 0
+        return output_array
+
+@inheritdocstrings
+class BCBiharmonicBasis(LegendreBase):
+    """Basis for inhomogeneous Biharmonic boundary conditions
+
+    Parameters
+    ----------
+        N : int, optional
+            Number of quadrature points
+        quad : str, optional
+            Type of quadrature
+
+            - GL - Chebyshev-Gauss-Lobatto
+            - GC - Chebyshev-Gauss
+
+        domain : 2-tuple of floats, optional
+            The computational domain
+        scaled : bool, optional
+            Whether or not to use scaled basis
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
+    """
+
+    def __init__(self, N, quad="GC", domain=(-1., 1.),
+                 padding_factor=1, dealias_direct=False):
+        LegendreBase.__init__(self, N, quad=quad, domain=domain,
+                              padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.plan(N, 0, np.float, {})
+
+    def plan(self, shape, axis, dtype, options):
+        if isinstance(axis, tuple):
+            assert len(axis) == 1
+            axis = axis[-1]
+        shape = list(shape) if np.ndim(shape) else [shape]
+        assert shape[axis] == self.shape(False)
+        U = np.zeros(shape, dtype=dtype)
+        shape[axis] = 4
+        V = np.zeros(shape, dtype=dtype)
+        self.forward = Transform(self.forward, lambda: None, U, V, V)
+        self.backward = Transform(self.backward, lambda: None, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, lambda: None, U, V, V)
+
+    def slice(self):
+        return slice(self.N-4, self.N)
+
+    def shape(self, forward_output=True):
+        if forward_output:
+            return 4
+        else:
+            return self.N
+
+    @staticmethod
+    def boundary_condition():
+        return 'Apply'
+
+    def vandermonde(self, x):
+        return leg.legvander(x, 3)
+
+    @staticmethod
+    def coefficient_matrix():
+        return np.array([[0.5, -0.6, 0, 0.1],
+                         [0.5, 0.6, 0, -0.1],
+                         [1./6., -1./10., -1./6., 1./10.],
+                         [-1./6., -1./10., 1./6., 1./10.]])
+
+    @staticmethod
+    def addmass_matrix():
+        return 1./7.*np.array([[7, 7, 3, -3],
+                               [-3.11111111, 3.11111111, -7.77777778e-01, -7.77777778e-01],
+                               [0, 0, -4.66666667e-01, 4.66666667e-01],
+                               [0.2, -0.2, 0.2, 0.2]])
+
+    def _composite_basis(self, V, argument=0):
+        P = np.tensordot(V[:, :4], self.coefficient_matrix(), (1, 1))
+        return P
+
+    def sympy_basis(self, i=0):
+        x = sympy.symbols('x')
+        if i < 4:
+            f = 0
+            for j, c in enumerate(self.coefficient_matrix()[i]):
+                f += c*sympy.legendre(j, x)
+            return f
+        else:
+            raise AttributeError('Only four bases, i < 4')
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        f = self.sympy_basis(i)
+        output_array[:] = sympy.lambdify(sympy.symbols('x'), f)(x)
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        f = self.sympy_basis(i)
+        X = sympy.symbols('x')
+        output_array[:] = sympy.lambdify(X, f.diff(X, k))(x)
         return output_array

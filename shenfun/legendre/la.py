@@ -242,7 +242,7 @@ class Helmholtz(object):
         self.TDMA_SymSolve_VC(self.d0, self.d1, self.L, u, self.axis)
 
         if not self.neumann:
-            self.bc.apply_after(u, True)
+            self.bc.set_boundary_dofs(u, True)
 
         return u
 
@@ -367,10 +367,11 @@ class Biharmonic(object):
             A_scale = args[4]
             B_scale = args[5]
 
+        v = S.testfunction[0]
+        self.bc = v.bc
         if np.ndim(B_scale) > 1:
             shape = list(B_scale.shape)
             self.axis = S.axis
-            v = S.testfunction[0]
             shape[S.axis] = v.N
             self.d0 = np.zeros(shape)
             self.d1 = np.zeros(shape)
@@ -410,6 +411,8 @@ class Biharmonic(object):
     def __call__(self, u, b):
         u[:] = b
         self.PDMA_SymSolve_VC(self.d0, self.d1, self.d2, u, self.axis)
+        if self.bc is not None:
+            self.bc.set_boundary_dofs(u, True)
         return u
 
     def matvec(self, v, c):

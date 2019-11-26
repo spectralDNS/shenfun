@@ -428,9 +428,10 @@ class ShenBiharmonicBasis(JacobiBase):
     inner products are computed without weights, for alpha=beta=0.
 
     """
-    def __init__(self, N, quad='JG', domain=(-1., 1.), padding_factor=1, dealias_direct=False):
+    def __init__(self, N, quad='JG', bc=(0, 0, 0, 0), domain=(-1., 1.), padding_factor=1, dealias_direct=False):
         JacobiBase.__init__(self, N, quad=quad, alpha=-2, beta=-2, domain=domain,
                             padding_factor=padding_factor, dealias_direct=dealias_direct)
+        assert bc in ((0, 0, 0, 0), 'Biharmonic')
         self.plan(int(N*padding_factor), 0, np.float, {})
 
     @staticmethod

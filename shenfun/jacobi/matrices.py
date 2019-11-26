@@ -155,7 +155,7 @@ class ADDmat(SpectralMatrix):
         sl[0] = slice(None)
         us[:] = bs*d[tuple(sl)]
         u /= self.scale
-        self.testfunction[0].bc.apply_after(u, True)
+        self.testfunction[0].bc.set_boundary_dofs(u, True)
 
         if axis > 0:
             u = np.moveaxis(u, 0, axis)
