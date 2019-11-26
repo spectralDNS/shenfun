@@ -11,7 +11,6 @@ import os
 import importlib
 from sympy import symbols, sin, chebyshevt
 import numpy as np
-import scipy
 from shenfun import inner, Dx, TestFunction, TrialFunction, Basis, Array, \
     Function, extract_bc_matrices
 
@@ -88,7 +87,7 @@ uh = uj.forward()
 # Compare with analytical solution
 uq = Array(SD, buffer=ue)
 print("Error=%2.16e" %(np.linalg.norm(uj-uq)))
-#assert np.allclose(uj, uq)
+assert np.allclose(uj, uq)
 
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt

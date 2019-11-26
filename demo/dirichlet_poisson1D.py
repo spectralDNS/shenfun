@@ -61,4 +61,4 @@ uh = uj.forward()
 # Compare with analytical solution
 ua = Array(SD, buffer=ue)
 print("Error=%2.16e" %(np.sqrt(dx((uj-ua)**2))))
-#assert np.allclose(uj, ua)
+assert np.allclose(uj, ua)
