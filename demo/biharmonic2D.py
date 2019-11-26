@@ -79,7 +79,7 @@ uq = u_hat.backward()
 # Compare with analytical solution
 uj = Array(T, buffer=ue)
 print(abs(uj-uq).max())
-assert np.allclose(uj, uq)
+assert np.allclose(uj, uq, 1e-8)
 
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
