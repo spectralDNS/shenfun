@@ -244,6 +244,7 @@ class SpectralBase(object):
         self.axis = 0
         self.xfftn_fwd = None
         self.xfftn_bck = None
+        self.bc = None
         self.padding_factor = np.floor(N*padding_factor)/N
         self.dealias_direct = dealias_direct
         self._mass = None         # Mass matrix (if needed)
@@ -982,6 +983,10 @@ class SpectralBase(object):
 
     @property
     def is_orthogonal(self):
+        return False
+
+    @property
+    def has_nonhomogeneous_bcs(self):
         return False
 
     @property

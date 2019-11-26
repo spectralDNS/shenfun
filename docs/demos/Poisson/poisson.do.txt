@@ -85,8 +85,8 @@ $V^N_0 = \text{span}\{v_k(x)\}_{k=0}^{N-3}$.
 We can then add two more linear basis functions (that belong to the kernel of Poisson's equation)
 !bt
 \begin{align}
-v_{N-2} &= \frac{1}{2}(\phi_0 + \phi_1), \\
-v_{N-1} &= \frac{1}{2}(\phi_0 - \phi_1).
+v_{N-2} &= \frac{1}{2}(\phi_0 - \phi_1), \\
+v_{N-1} &= \frac{1}{2}(\phi_0 + \phi_1).
 \end{align}
 !et
 which gives the inhomogeneous basis $V^N = \text{span}\{v_k\}_{k=0}^{N-1}$.
@@ -94,9 +94,9 @@ With the two linear basis functions it is easy to see that the last two degrees
 of freedom, $\hat{u}_{N-2}$ and $\hat{u}_{N-1}$, now are given as
 !bt
 \begin{align}
-u(-1) &= \sum_{k=0}^{N-1} \hat{u}_k v_k(-1) = \hat{u}_{N-1} = a,
+u(-1) &= \sum_{k=0}^{N-1} \hat{u}_k v_k(-1) = \hat{u}_{N-2} = a,
 label{eq:dirichleta} \\
-u(+1) &= \sum_{k=0}^{N-1} \hat{u}_k v_k(+1) = \hat{u}_{N-2} = b,
+u(+1) &= \sum_{k=0}^{N-1} \hat{u}_k v_k(+1) = \hat{u}_{N-1} = b,
 label{eq:dirichletb}
 \end{align}
 !et
@@ -178,7 +178,7 @@ this end we choose an analytical function that satisfies the given boundary
 conditions:
 !bt
 \begin{equation}
-u_e(x) = \sin(k\pi x)(1-x^2) + a(1+x)/2 + b(1-x)/2, label{eq:u_e}
+u_e(x) = \sin(k\pi x)(1-x^2) + a(1-x)/2 + b(1+x)/2, label{eq:u_e}
 \end{equation}
 !et
 where $k$ is an integer and $a$ and $b$ are constants. Now, feeding $u_e$ through
@@ -224,12 +224,9 @@ a = -1
 b = 1
 k = 4
 x = symbols("x")
-ue = sin(k*np.pi*x)*(1-x**2) + a*(1 + x)/2. + b*(1 - x)/2.
+ue = sin(k*np.pi*x)*(1-x**2) + a*(1 - x)/2. + b*(1 + x)/2.
 fe = ue.diff(x, 2)
 
-# Lambdify for faster evaluation
-ul = lambdify(x, ue, 'numpy')
-fl = lambdify(x, fe, 'numpy')
 !ec
 
 These solutions are now valid for a continuous domain. The next step is thus to
@@ -265,15 +262,14 @@ v = TestFunction(SD)
 # Assemble left hand side matrix
 A = inner(v, div(grad(u)))
 # Assemble right hand side
-fj = Array(SD, buffer=fl(X))
+fj = Array(SD, buffer=fe)
 f_hat = Function(SD)
 f_hat = inner(v, fj, output_array=f_hat)
 !ec
 
-Note that `fl(X)` returns a Numpy array of the correct shape and type of
-the left hand side of (ref{eq:u}), evaluated on all quadrature points `X`.
+Note that the 'sympy' function 'fe' can be used to initialize the ${cls('Array')} 'fj'.
 We wrap this Numpy array in an ${cls('Array')} class
-(`fj = Array(SD, buffer=fl(X))`), because an Array
+(`fj = Array(SD, buffer=fe)`), because an Array
 is required as input to the ${func('inner')} function.
 
 ===== Solve linear equations =====
@@ -281,12 +277,15 @@ is required as input to the ${func('inner')} function.
 Finally, solve linear equation system and transform solution from spectral
 $\{\hat{u}_k\}_{k=0}^{N-1}$ vector to the real space $\{u(x_j)\}_{j=0}^{N-1}$
 and then check how the solution corresponds with the exact solution $u_e$.
+To this end we compute the $L_2$-errornorm using the `shenfun` function
+${func('dx')}$
 
 !bc pycod
 u_hat = A.solve(f_hat)
 uj = SD.backward(u_hat)
-ue = ul(X)
-print("Error=%2.16e" %(np.linalg.norm(uj-ue)))
+ue = Array(SD, buffer=ue)
+
+print("Error=%2.16e" %(np.sqrt(dx((uj-ua)**2))))
 assert np.allclose(uj, ue)
 !ec
 
@@ -294,11 +293,11 @@ assert np.allclose(uj, ue)
 
 A complete solver is given in Sec. ref{sec:complete}. This solver is created
 such that it takes in two commandline arguments and prints out the
-$l_2$-errornorm of the solution in the end. We can use this to write a short
+$L_2$-errornorm of the solution in the end. We can use this to write a short
 script that performs a convergence test. The solver is run like
 !bc
 >>> python dirichlet_poisson1D.py 32 legendre
-Error=6.5955040031498912e-10
+Error=1.8132185245826562e-10
 !ec
 for a discretization of size $N=32$ and for the Legendre basis. Alternatively,
 change `legendre` to `chebyshev` for the Chebyshev basis.

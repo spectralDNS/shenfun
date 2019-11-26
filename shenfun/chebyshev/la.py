@@ -166,8 +166,6 @@ class Helmholtz(object):
         B[-2] = np.broadcast_to(B[-2], A[2].shape)
         v = A.testfunction[0]
         neumann = self.neumann = v.boundary_condition() == 'Neumann'
-        if not self.neumann:
-            self.bc = v.bc
         self.axis = A.axis
         shape = [1]
         T = A.tensorproductspace
@@ -216,8 +214,8 @@ class Helmholtz(object):
         """
         self.Solve_Helmholtz(b, u, self.neumann, self.u0, self.u1, self.u2, self.L, self.axis)
 
-        if not self.neumann:
-            self.bc.apply_after(u, True)
+        if self.A.testfunction[0].has_nonhomogeneous_bcs:
+            self.A.testfunction[0].bc.set_boundary_dofs(u, True)
 
         return u
 
@@ -333,7 +331,13 @@ class Biharmonic(object):
     """
     def __init__(self, *args):
 
+        args = list(args)
+
+        if isinstance(args[0], TPMatrix):
+            args = [arg for arg in args if not arg.is_bc_matrix()]
+
         assert len(args) in (3, 6)
+
         S, A, B = args[0], args[1], args[2]
         M = {d.get_key(): d for d in (S, A, B)}
         self.S = M['SBBmat']
@@ -362,6 +366,7 @@ class Biharmonic(object):
             shape = [S[0].shape]
         else:
             shape = list(T.shape(True))
+        v = S.testfunction[0]
         sii, siu, siuu = S[0], S[2], S[4]
         ail, aii, aiu = A[-2], A[0], A[2]
         bill, bil, bii, biu, biuu = B[-4], B[-2], B[0], B[2], B[4]
@@ -422,6 +427,8 @@ class Biharmonic(object):
         """
         self.Biharmonic_Solve(b, u, self.u0, self.u1, self.u2, self.l0,
                               self.l1, self.ak, self.bk, self.a0, self.axis)
+        if self.S.testfunction[0].has_nonhomogeneous_bcs:
+            self.S.testfunction[0].bc.set_boundary_dofs(u, True)
 
         return u
 

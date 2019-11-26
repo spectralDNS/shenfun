@@ -93,9 +93,12 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
             B = chebyshev.bases.Basis
 
         elif isinstance(bc, tuple):
-            assert len(bc) == 2
+            assert len(bc) in (2, 4)
             par['bc'] = bc
-            B = chebyshev.bases.ShenDirichletBasis
+            if len(bc) == 2:
+                B = chebyshev.bases.ShenDirichletBasis
+            else:
+                B = chebyshev.bases.ShenBiharmonicBasis
 
         elif isinstance(bc, str):
             if bc.lower() == 'dirichlet':
@@ -126,9 +129,12 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
             B = legendre.bases.Basis
 
         elif isinstance(bc, tuple):
-            assert len(bc) == 2
+            assert len(bc) in (2, 4)
             par['bc'] = bc
-            B = legendre.bases.ShenDirichletBasis
+            if len(bc) == 2:
+                B = legendre.bases.ShenDirichletBasis
+            else:
+                B = legendre.bases.ShenBiharmonicBasis
 
         elif isinstance(bc, str):
             if bc.lower() == 'dirichlet':
@@ -193,9 +199,13 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
             B = jacobi.bases.Basis
 
         elif isinstance(bc, tuple):
-            assert len(bc) == 2
+            assert len(bc) in (2, 4)
             par['bc'] = bc
-            B = jacobi.bases.ShenDirichletBasis
+            if len(bc) == 2:
+                B = jacobi.bases.ShenDirichletBasis
+            else:
+                assert np.all([abs(bci)<1e-12 for bci in bc])
+                B = jacobi.bases.ShenBiharmonicBasis
 
         elif isinstance(bc, str):
             if bc.lower() == 'dirichlet':

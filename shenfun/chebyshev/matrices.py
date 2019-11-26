@@ -1113,7 +1113,7 @@ class ADDmat(SpectralMatrix):
             us[k] /= d[k]
 
         u /= self.scale
-        self.testfunction[0].bc.apply_after(u, True)
+        self.testfunction[0].bc.set_boundary_dofs(u, True)
         if axis > 0:
             u = np.moveaxis(u, 0, axis)
             if u is not b:

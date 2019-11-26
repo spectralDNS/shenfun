@@ -267,12 +267,11 @@ def test_transforms(ST, quad, dim):
         ST1 = ST(N, **kwargs)
         ST1.tensorproductspace = ABC(dim)
         ST1.plan((N,)*dim, axis, fij.dtype, {})
-        if hasattr(ST1, 'bc'):
-            ST1.bc.set_slices(ST1)  # To set Dirichlet boundary conditions
 
         u00 = shenfun.Function(ST1)
         u11 = shenfun.Array(ST1)
         u00 = ST1.forward(fij, u00)
+
         u11 = ST1.backward(u00, u11)
         cc = [0,]*dim
         cc[axis] = slice(None)
@@ -301,7 +300,7 @@ def test_axis(ST, quad, axis):
     bc[axis] = slice(None)
     ST.tensorproductspace = ABC(3)
     ST.plan((N,)*3, axis, f0.dtype, {})
-    if hasattr(ST, 'bc'):
+    if ST.has_nonhomogeneous_bcs:
         ST.bc.set_tensor_bcs(ST, ST) # To set Dirichlet boundary conditions on multidimensional array
     ck = shenfun.Function(ST)
     fk = np.broadcast_to(f_hat[tuple(bc)], ck.shape).copy()
@@ -569,13 +568,13 @@ def test_ABBmat(SB, quad):
     assert np.allclose(z0, u0)
 
 if __name__ == '__main__':
-    test_to_ortho(cBasis[1], 'GC')
+    #test_to_ortho(cBasis[1], 'GC')
     # test_convolve(fbases.R2CBasis, 8)
     #test_ADDmat(cbases.ShenNeumannBasis, "GL")
     #test_CDDmat("GL")
     #test_massmatrices(cBasis[3], cBasis[3], 'GC')
-    #test_transforms(lBasis[1], 'LG', 1)
+    #test_transforms(cBasis[1], 'GC', 2)
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[1], 'GC')
     #test_eval(cBasis[1], 'GC')
-    #test_axis(cBasis[1], 'GC', 0)
+    test_axis(cBasis[1], 'GC', 0)

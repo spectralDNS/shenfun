@@ -7,7 +7,7 @@ Demo - 1D Poisson's equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Nov 22, 2019
+:Date: Nov 26, 2019
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Poisson's
 equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as
@@ -84,7 +84,7 @@ We can then add two more linear basis functions (that belong to the kernel of Po
    :label: _auto3
 
         
-        v_{N-2} = \frac{1}{2}(\phi_0 + \phi_1), 
+        v_{N-2} = \frac{1}{2}(\phi_0 - \phi_1), 
         
         
 
@@ -92,7 +92,7 @@ We can then add two more linear basis functions (that belong to the kernel of Po
    :label: _auto4
 
           
-        v_{N-1} = \frac{1}{2}(\phi_0 - \phi_1).
+        v_{N-1} = \frac{1}{2}(\phi_0 + \phi_1).
         
         
 
@@ -104,7 +104,7 @@ of freedom, :math:`\hat{u}_{N-2}` and :math:`\hat{u}_{N-1}`, now are given as
    :label: eq:dirichleta
 
         
-        u(-1) = \sum_{k=0}^{N-1} \hat{u}_k v_k(-1) = \hat{u}_{N-1} = a,
+        u(-1) = \sum_{k=0}^{N-1} \hat{u}_k v_k(-1) = \hat{u}_{N-2} = a,
          
         
 
@@ -112,7 +112,7 @@ of freedom, :math:`\hat{u}_{N-2}` and :math:`\hat{u}_{N-1}`, now are given as
    :label: eq:dirichletb
 
           
-        u(+1) = \sum_{k=0}^{N-1} \hat{u}_k v_k(+1) = \hat{u}_{N-2} = b,
+        u(+1) = \sum_{k=0}^{N-1} \hat{u}_k v_k(+1) = \hat{u}_{N-1} = b,
         
         
 
@@ -208,7 +208,7 @@ conditions:
    :label: eq:u_e
 
         
-        u_e(x) = \sin(k\pi x)(1-x^2) + a(1+x)/2 + b(1-x)/2, 
+        u_e(x) = \sin(k\pi x)(1-x^2) + a(1-x)/2 + b(1+x)/2, 
         
 
 where :math:`k` is an integer and :math:`a` and :math:`b` are constants. Now, feeding :math:`u_e` through
@@ -266,12 +266,9 @@ The exact solution :math:`u_e(x)` and the right hand side :math:`f_e(x)` are cre
     b = 1
     k = 4
     x = symbols("x")
-    ue = sin(k*np.pi*x)*(1-x**2) + a*(1 + x)/2. + b*(1 - x)/2.
+    ue = sin(k*np.pi*x)*(1-x**2) + a*(1 - x)/2. + b*(1 + x)/2.
     fe = ue.diff(x, 2)
     
-    # Lambdify for faster evaluation
-    ul = lambdify(x, ue, 'numpy')
-    fl = lambdify(x, fe, 'numpy')
 
 These solutions are now valid for a continuous domain. The next step is thus to
 discretize, using a discrete mesh :math:`\{x_j\}_{j=0}^{N-1}` and a finite number of
@@ -310,14 +307,13 @@ The variational problem :eq:`eq:varform` can be assembled using ``shenfun``'s
     # Assemble left hand side matrix
     A = inner(v, div(grad(u)))
     # Assemble right hand side
-    fj = Array(SD, buffer=fl(X))
+    fj = Array(SD, buffer=fe)
     f_hat = Function(SD)
     f_hat = inner(v, fj, output_array=f_hat)
 
-Note that ``fl(X)`` returns a Numpy array of the correct shape and type of
-the left hand side of :eq:`eq:u`, evaluated on all quadrature points ``X``.
+Note that the 'sympy' function 'fe' can be used to initialize the :class:`.Array` 'fj'.
 We wrap this Numpy array in an :class:`.Array` class
-(``fj = Array(SD, buffer=fl(X))``), because an Array
+(``fj = Array(SD, buffer=fe)``), because an Array
 is required as input to the :func:`.inner` function.
 
 Solve linear equations
@@ -326,13 +322,16 @@ Solve linear equations
 Finally, solve linear equation system and transform solution from spectral
 :math:`\{\hat{u}_k\}_{k=0}^{N-1}` vector to the real space :math:`\{u(x_j)\}_{j=0}^{N-1}`
 and then check how the solution corresponds with the exact solution :math:`u_e`.
+To this end we compute the :math:`L_2`-errornorm using the ``shenfun`` function
+:func:`.dx`$
 
 .. code-block:: python
 
     u_hat = A.solve(f_hat)
     uj = SD.backward(u_hat)
-    ue = ul(X)
-    print("Error=%2.16e" %(np.linalg.norm(uj-ue)))
+    ue = Array(SD, buffer=ue)
+    
+    print("Error=%2.16e" %(np.sqrt(dx((uj-ua)**2))))
     assert np.allclose(uj, ue)
 
 Convergence test
@@ -340,13 +339,13 @@ Convergence test
 
 A complete solver is given in Sec. :ref:`sec:complete`. This solver is created
 such that it takes in two commandline arguments and prints out the
-:math:`l_2`-errornorm of the solution in the end. We can use this to write a short
+:math:`L_2`-errornorm of the solution in the end. We can use this to write a short
 script that performs a convergence test. The solver is run like
 
 .. code-block:: text
 
     >>> python dirichlet_poisson1D.py 32 legendre
-    Error=6.5955040031498912e-10
+    Error=1.8132185245826562e-10
 
 for a discretization of size :math:`N=32` and for the Legendre basis. Alternatively,
 change ``legendre`` to ``chebyshev`` for the Chebyshev basis.

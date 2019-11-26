@@ -7,11 +7,10 @@ import warnings
 import sympy
 import numpy as np
 from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun import chebyshev, legendre
 from shenfun.utilities import apply_mask
 from shenfun.forms.arguments import Function, Array
 from shenfun.optimization.cython import evaluate
-from shenfun.spectralbase import slicedict, islicedict
+from shenfun.spectralbase import slicedict, islicedict, SpectralBase
 from mpi4py_fft.mpifft import Transform, PFFT
 from mpi4py_fft.pencil import Subcomm, Pencil
 
@@ -189,7 +188,7 @@ class TensorProductSpace(PFFT):
 
         for i, base in enumerate(bases):
             base.axis = i
-            if base.boundary_condition() == 'Dirichlet' and not base.family() in ('laguerre', 'hermite'):
+            if base.has_nonhomogeneous_bcs:
                 base.bc.set_tensor_bcs(base, self)
 
     def configure_backwards(self, pencil, dtype, kw):
@@ -1077,45 +1076,55 @@ class BoundaryValues(object):
     # pylint: disable=protected-access, redefined-outer-name, dangerous-default-value, unsubscriptable-object
 
     def __init__(self, T, bc=(0, 0)):
-        self.T = T
+        self.base = T
+        self.tensorproductspace = None
         self.bc = bc            # Containing Data, sympy.Exprs or np.ndarray
-        self.bcs = [0, 0]       # Processed bc
-        self.bcs_final = [0, 0] # Data. May differ from bcs only for TensorProductSpaces
-        self.sl0 = 0
-        self.sl1 = 1
-        self.slm1 = -1
-        self.slm2 = -2
+        self.bcs = list((0,)*len(bc))       # Processed bc
+        self.bcs_final = list((0,)*len(bc)) # Data. May differ from bcs only for TensorProductSpaces
         self.axis = 0
+        self.bc_time = 0
         self.update_bcs(bc=bc)
 
     def update_bcs(self, bc=None):
         if bc is not None:
             assert isinstance(bc, (list, tuple))
-            assert len(bc) == 2
+            assert len(bc) in (2, 4)
             self.bc = list(bc)
-            for i in range(2):
+            for i in range(len(bc)):
                 if isinstance(bc[i], (Number, sympy.Expr, np.ndarray)):
                     self.bcs[i] = bc[i]
                 else:
                     raise NotImplementedError
+
             self.bcs_final[:] = self.bcs
+
+    def update_bcs_time(self, time):
+        tt = sympy.symbols('t')
+        update_time = False
+        for i, bci in enumerate(self.bc):
+            if isinstance(bci, sympy.Expr):
+                if tt in bci.free_symbols:
+                    self.bc_time = time
+                    self.bcs[i] = bci.subs({'t': time})
+                    update_time = True
+        if update_time:
+            self.bcs_final[:] = self.bcs
+            if self.tensorproductspace is not None:
+                self.set_tensor_bcs(self.base, self.tensorproductspace)
 
     def set_tensor_bcs(self, this_base, T):
         """Set correct boundary values for tensor, using values in self.bc
 
         To modify boundary conditions on the fly, modify first self.bc and then
-        call this function. The boundary condition can then be applied as before
-        using `apply_before` and `apply_after`.
+        call this function. The boundary condition can then be applied as before.
         """
         self.axis = this_base.axis
-        self.T = T
-        if isinstance(T, (chebyshev.bases.ShenDirichletBasis,
-                          legendre.bases.ShenDirichletBasis)):
-            # In this case we may be looking at multidimensional data with just one of the bases.
-            # Mainly for testing that solvers and other routines work along any dimension.
-            self.set_slices(T)
+        self.base = this_base
+        self.tensorproductspace = T
 
-        elif any(base.boundary_condition() == 'Dirichlet' for base in T.bases):
+        if isinstance(T, SpectralBase):
+            pass
+        elif this_base.has_nonhomogeneous_bcs:
             # Setting the Dirichlet boundary condition in a TensorProductSpace
             # is more involved than for a single dimension, and the routine will
             # depend on the order of the bases. If the Dirichlet space is the last
@@ -1133,12 +1142,11 @@ class BoundaryValues(object):
                     if axis is None:
                         number_of_bases_after_this += 1
 
-            self.set_slices(this_base)
             self.number_of_bases_after_this = number_of_bases_after_this
 
             if self.has_nonhomogeneous_bcs() is False:
-                self.bcs[0] = self.bcs_final[0] = 0
-                self.bcs[1] = self.bcs_final[1] = 0
+                for i in range(len(self.bc)):
+                    self.bcs[i] = self.bcs_final[i] = 0
                 return
 
             # Set boundary values
@@ -1151,21 +1159,23 @@ class BoundaryValues(object):
             for j, bci in enumerate(self.bc):
                 if isinstance(bci, sympy.Expr):
                     X = T.local_mesh(True)
-                    x, y, z = sympy.symbols("x,y,z")
+                    x, y, z, tt = sympy.symbols("x,y,z,t")
                     sym0 = [sym for sym in (x, y, z) if sym in bci.free_symbols]
+                    if tt in bci.free_symbols:
+                        bci = bci.subs({'t': self.bc_time})
                     lbci = sympy.lambdify(sym0, bci, 'numpy')
                     Yi = []
                     for i, ax in enumerate((x, y, z)):
                         if ax in bci.free_symbols:
                             Yi.append(X[i][this_base.si[j]])
-
                     f_bci = lbci(*Yi)
+                    # Put the Dirichlet value in the position of the bc dofs
                     if s.stop == int(this_base.N*this_base.padding_factor):
-                        b[this_base.si[-2+j]] = f_bci
+                        b[this_base.si[-(len(self.bc))+j]] = f_bci
 
                 elif isinstance(bci, (Number, np.ndarray)):
                     if s.stop == int(this_base.N*this_base.padding_factor):
-                        b[this_base.si[-2+j]] = bci
+                        b[this_base.si[-(len(self.bc))+j]] = bci
 
                 else:
                     raise NotImplementedError
@@ -1199,8 +1209,8 @@ class BoundaryValues(object):
 
             # Now b_hat contains the correct slices in slm1 and slm2
             # These are the values to use on intermediate steps. If for example the Dirichlet space is squeezed between two Fourier spaces
-            self.bcs[0] = b_hat[self.slm2].copy()
-            self.bcs[1] = b_hat[self.slm1].copy()
+            for i in range(len(self.bc)):
+                self.bcs[i] = b_hat[this_base.si[-(len(self.bc))+i]].copy()
 
             # Final (the values to set on fully transformed functions)
             T.forward._xfftn[0].input_array[...] = b
@@ -1213,37 +1223,48 @@ class BoundaryValues(object):
 
             T.forward._xfftn[-1]()
             b_hat = T.forward._xfftn[-1].output_array
-            self.bcs_final[0] = b_hat[self.slm2].copy()
-            self.bcs_final[1] = b_hat[self.slm1].copy()
+            for i in range(len(self.bc)):
+                self.bcs_final[i] = b_hat[this_base.si[-(len(self.bc))+i]].copy()
 
-    def set_slices(self, T):
-        self.sl0 = T.si[0]
-        self.sl1 = T.si[1]
-        self.slm1 = T.si[-1]
-        self.slm2 = T.si[-2]
-
-    def apply_before(self, u, final=False, scales=(0.5, 0.5)):
-        """Apply boundary condition to rhs before solving in forward transforms
+    def add_to_orthogonal(self, u, uh):
+        """Add contribution from boundary functions to `u`
 
         Parameters
         ----------
         u : Function
             Apply boundary values to this Function
-        final : bool
-            Whether the function is fully transformed or not. False is used in
-            forward transforms, where the transform of this base may be in
-            between the transforms of other bases.
+        uh : Function
+            Containing correct boundary values of Function
         """
-        if final is True:
-            u[self.sl0] += scales[0]*(self.bcs_final[0] + self.bcs_final[1])
-            u[self.sl1] += scales[1]*(self.bcs_final[0] - self.bcs_final[1])
+        B = self.base.get_bc_basis()
+        M = B.coefficient_matrix().T
+        sl = B.slice()
+        if u.ndim > 1:
+            sl = self.base.sl[sl]
+        for i, row in enumerate(M):
+            u[self.base.si[i]] += np.sum(self.base.broadcast_to_ndims(row)*uh[sl], axis=self.base.axis)
 
-        else:
-            u[self.sl0] += scales[0]*(self.bcs[0] + self.bcs[1])
-            u[self.sl1] += scales[1]*(self.bcs[0] - self.bcs[1])
+    def add_mass_rhs(self, u):
+        """Add contribution of boundary functions to rhs before solving in forward transforms
 
-    def apply_after(self, u, final=False):
-        """Apply boundary condition after solving, fixing dofs N-2 and N-1
+        Parameters
+        ----------
+        u : Function
+            Add boundary values to this Function
+
+        """
+        B = self.base.get_bc_basis()
+        M = B.addmass_matrix()
+        sl = B.slice()
+        if u.ndim > 1:
+            sl = self.base.sl[sl]
+
+        for i, row in enumerate(M):
+            for j in range(len(self.bc)):
+                u[self.base.si[i]] -= row[j]*self.bcs[j]
+
+    def set_boundary_dofs(self, u, final=False):
+        """Apply boundary condition after solving, fixing boundary dofs
 
         Parameters
         ----------
@@ -1256,13 +1277,14 @@ class BoundaryValues(object):
             must be a fully transformed Function.
 
         """
+        M = len(self.bc)
         if final is True:
-            u[self.slm2] = self.bcs_final[0]
-            u[self.slm1] = self.bcs_final[1]
+            for i in range(M):
+                u[self.base.si[-(M)+i]] = self.bcs_final[i]
 
         else:
-            u[self.slm2] = self.bcs[0]
-            u[self.slm1] = self.bcs[1]
+            for i in range(M):
+                u[self.base.si[-(M)+i]] = self.bcs[i]
 
     def has_nonhomogeneous_bcs(self):
         for bc in self.bc:

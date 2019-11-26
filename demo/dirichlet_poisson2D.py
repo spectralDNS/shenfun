@@ -39,7 +39,7 @@ if family == 'jacobi':
     a = 0
     b = 0
 x, y = symbols("x,y")
-ue = (cos(4*x) + sin(2*y))*(1 - x**2) + a*(1 + x)/2. + b*(1 - x)/2.
+ue = (cos(4*x) + sin(2*y))*(1 - x**2) + a*(1 - x)/2. + b*(1 + x)/2.
 fe = ue.diff(x, 2) + ue.diff(y, 2)
 
 # Size of discretization
@@ -68,7 +68,6 @@ H = Solver(*matrices)
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
-
 uq = u_hat.backward()
 uh = uq.forward()
 
@@ -98,4 +97,4 @@ if 'pytest' not in os.environ:
     for y in np.squeeze(X[1]):
         plt.plot((np.squeeze(X[0])[0], np.squeeze(X[0])[-1]), (y, y), 'k')
 
-    plt.show()
+    #plt.show()
