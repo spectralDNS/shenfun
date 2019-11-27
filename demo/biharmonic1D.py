@@ -35,7 +35,7 @@ if family == 'jacobi':
     a = 0
     b = 0
 # Manufactured solution that satisfies (u(\pm 1) = u'(\pm 1) = 0)
-ue = sin(4*np.pi*x_map)*(x_map-1)*(x_map+1) + a*(0.5-9/16*x_map+1/16*chebyshevt(3, x_map)) + b*(0.5+9/16*x_map-1./16.*chebyshevt(3, x_map))
+ue = sin(4*np.pi*x_map)*(x_map-1)*(x_map+1) + a*(0.5-9./16.*x_map+1./16.*chebyshevt(3, x_map)) + b*(0.5+9./16.*x_map-1./16.*chebyshevt(3, x_map))
 
 # Use coefficients typical for Navier-Stokes solver for channel (https://github.com/spectralDNS/spectralDNS/blob/master/spectralDNS/solvers/KMM.py)
 k = 8
