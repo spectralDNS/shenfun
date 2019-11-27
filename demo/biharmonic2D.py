@@ -31,7 +31,7 @@ b = -1
 if family == 'jacobi':
     a = 0
     b = 0
-ue = (sin(2*np.pi*x)*cos(2*y))*(1-x**2) + a*(0.5-9/16*x+1/16*chebyshevt(3, x)) + b*(0.5+9/16*x-1/16*chebyshevt(3, x))
+ue = (sin(2*np.pi*x)*cos(2*y))*(1-x**2) + a*(0.5-9./16.*x+1./16.*chebyshevt(3, x)) + b*(0.5+9./16.*x-1./16.*chebyshevt(3, x))
 #ue = (sin(2*np.pi*x)*cos(2*y))*(1-x**2) + a*(0.5-0.6*x+1/10*legendre(3, x)) + b*(0.5+0.6*x-1./10.*legendre(3, x))
 fe = ue.diff(x, 4) + ue.diff(y, 4) + 2*ue.diff(x, 2, y, 2)
 
