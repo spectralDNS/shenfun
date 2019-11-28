@@ -7,7 +7,7 @@ Demo - Rayleigh Benard
 %%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Nov 26, 2019
+:Date: Nov 28, 2019
 
 *Summary.* Rayleigh-Benard convection arise
 due to temperature gradients in a fluid. The governing equations are
@@ -25,21 +25,21 @@ Note that there is a more physically realistic 3D solver implemented within
 To allow for some simple optimizations, the solver described in this demo has been implemented in a class in the
 `RayleighBenardRk3.py <https://github.com/spectralDNS/shenfun/blob/master/demo/RayleighBenardRK3.py>`__
 module in the demo folder of shenfun. Below are two example solutions, where the first (movie)
-has been run at a very high Rayleigh number (*_Ra_*), and the lower image with a low *_Ra_* (laminar).
+has been run at a very high Rayleigh number (*Ra*), and the lower image with a low *Ra* (laminar).
 
 .. _fig:RB:
 
 .. figure:: https://raw.githack.com/spectralDNS/spectralutilities/master/movies/RB_100x256_100k_fire.png
    :width: 800
 
-   Temperature fluctuations in the Rayleigh Benard flow. The top and bottom walls are kept at different temperatures and this sets up the Rayleigh-Benard convection. The simulation is run at *_Ra_* =100,000, *_Pr_* =0.7 with 100 and 256 quadrature points in *x* and *y*-directions, respectively
+   Temperature fluctuations in the Rayleigh Benard flow. The top and bottom walls are kept at different temperatures and this sets up the Rayleigh-Benard convection. The simulation is run at *Ra* =100,000, *Pr* =0.7 with 100 and 256 quadrature points in *x* and *y*-directions, respectively
 
 .. _fig:RB_lam:
 
 .. figure:: https://raw.githack.com/spectralDNS/spectralutilities/master/figures/RB_40x128_100_fire.png
    :width: 800
 
-   Convection cells for a laminar flow. The simulation is run at *_Ra_* =100, *_Pr_* =0.7 with 40 and 128 quadrature points in *x* and *y*-directions, respectively
+   Convection cells for a laminar flow. The simulation is run at *Ra* =100, *Pr* =0.7 with 40 and 128 quadrature points in *x* and *y*-directions, respectively
 
 .. _demo:rayleighbenard:
 
@@ -765,9 +765,8 @@ creation of ``VT`` by
 
 For merely a constant ``f`` or a ``y``-dependency, no further action is required.
 However, a time-dependent approach requires the boundary values to be
-updated each time step. To this end there are the functions
-``W_TF.bc.update_bc`` to update the values to the new time,
-and ``W_TF.bc.set_tensor_bcs`` to update :math:`\hat{T}_N(\pm 1, y, t)`.
+updated each time step. To this end there is the function
+``BoundaryValues.update_bcs_time``, used to update the boundary values to the new time.
 Here we will assume a time-independent boundary condition, but the
 final implementation will contain the time-dependent option.
 

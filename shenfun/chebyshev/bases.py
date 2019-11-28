@@ -429,7 +429,7 @@ class ShenDirichletBasis(ChebyshevBase):
                               bc=self.bc.bc, scaled=self._scaled)
 
     def _composite_basis(self, V, argument=0):
-        P = np.zeros(V.shape)
+        P = np.zeros_like(V)
         P[:, :-2] = V[:, :-2] - V[:, 2:]
         if argument == 1: # if trial function
             P[:, -1] = (V[:, 0] + V[:, 1])/2    # x = +1
@@ -438,7 +438,12 @@ class ShenDirichletBasis(ChebyshevBase):
 
     def sympy_basis(self, i=0):
         x = sympy.symbols('x')
-        return sympy.chebyshevt(i, x) - sympy.chebyshevt(i+2, x)
+        assert i < self.N
+        if i < self.N-2:
+            return sympy.chebyshevt(i, x) - sympy.chebyshevt(i+2, x)
+        if i == self.N-2:
+            return 0.5*(1-x)
+        return 0.5*(1+x)
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -659,14 +664,16 @@ class ShenNeumannBasis(ChebyshevBase):
 
     def _composite_basis(self, V, argument=0):
         assert self.N == V.shape[1]
-        P = np.zeros(V.shape)
+        P = np.zeros_like(V)
         k = np.arange(self.N).astype(np.float)
         P[:, :-2] = V[:, :-2] - (k[:-2]/(k[:-2]+2))**2*V[:, 2:]
         return P
 
     def sympy_basis(self, i=0):
         x = sympy.symbols('x')
-        return sympy.chebyshevt(i, x) - (i/(i+2))**2*sympy.chebyshevt(i+2, x)
+        if 0 < i < self.N-2:
+            return sympy.chebyshevt(i, x) - (i/(i+2))**2*sympy.chebyshevt(i+2, x)
+        return 0
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -865,9 +872,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
         if i < self.N-4:
             f = sympy.chebyshevt(i, x) - (2*(i+2)/(i+3))*sympy.chebyshevt(i+2, x) + (i+1)/(i+3)*sympy.chebyshevt(i+4, x)
         else:
-            f = 0
-            for j, c in enumerate(self.coefficient_matrix()[i]):
-                f += c*sympy.chebyshevt(j, x)
+            f = BCBiharmonicBasis.coefficient_matrix()[i]*np.array([sympy.chebyshevt(j, x) for j in range(4)])
         return f
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -1084,7 +1089,7 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
 
     def _composite_basis(self, V, argument=0):
         assert self.N == V.shape[1]
-        P = np.zeros(V.shape)
+        P = np.zeros_like(V)
         k = np.arange(self.N).astype(np.float)
         P[:, :-2] = V[:, :-2] - (k[:-2]/(k[:-2]+2))**2*(k[:-2]**2-1)/((k[:-2]+2)**2-1)*V[:, 2:]
         return P
@@ -1401,13 +1406,8 @@ class BCBiharmonicBasis(ChebyshevBase):
 
     def sympy_basis(self, i=0):
         x = sympy.symbols('x')
-        if i < 4:
-            f = 0
-            for j, c in enumerate(self.coefficient_matrix()[i]):
-                f += c*sympy.chebyshevt(j, x)
-            return f
-        else:
-            raise AttributeError('Only four bases, i < 4')
+        assert i < 4, 'Only four bases, i < 4'
+        return self.coefficient_matrix()[i]*np.array([sympy.chebyshevt(j, x) for j in range(4)])
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
