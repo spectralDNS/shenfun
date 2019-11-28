@@ -42,7 +42,7 @@ k = 8
 nu = 1./590.
 dt = 5e-5
 cc = -(k**2+nu*dt/2*k**4)
-bb = 1 #1.0+nu*dt*k**2
+bb = 1.0+nu*dt*k**2
 aa = -nu*dt/2.
 fe = aa*ue.diff(x, 4) + bb*ue.diff(x, 2) + cc*ue
 

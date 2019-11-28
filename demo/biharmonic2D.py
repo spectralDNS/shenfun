@@ -65,8 +65,7 @@ if SD.has_nonhomogeneous_bcs:
     SD.bc.set_boundary_dofs(u_hat, final=True)
     w0 = np.zeros_like(u_hat)
     for mat in bc_mats:
-        w0 = mat.matvec(u_hat, w0)
-        f_hat -= w0
+        f_hat -= mat.matvec(u_hat, w0)
 
 # Create linear algebra solver
 H = BiharmonicSolver(*matrices)

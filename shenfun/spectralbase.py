@@ -908,6 +908,20 @@ class SpectralBase(object):
             x = a + (x-c)/self.domain_factor()
         return x
 
+    def sympy_basis(self, i=0):
+        """Return basis function `i` as sympy function
+
+        Parameters
+        ----------
+        i : int, optional
+            The degree of freedom of the basis function
+        """
+        raise NotImplementedError
+
+    def sympy_basis_all(self):
+        """Return all basis functions as sympy functions"""
+        return np.array([self.sympy_basis(i) for i in range(self.N)])
+
     def reference_domain(self):
         """Return reference domain of basis"""
         raise NotImplementedError
