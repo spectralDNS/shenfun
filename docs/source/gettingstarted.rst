@@ -495,6 +495,505 @@ A complete demo for the coupled problem discussed here can be found in
 `MixedPoisson.py <https://github.com/spectralDNS/shenfun/blob/master/demo/MixedPoisson.py>`_
 and a 3D version is in `MixedPoisson3D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/MixedPoisson3D.py>`_.
 
-.. include:: integrators.rst
-.. include:: mpi.rst
-.. include:: postprocessing.rst
+Integrators
+-----------
+
+The :mod:`.integrators` module contains some interator classes that can be
+used to integrate a solution forward in time. However, for now these integrators
+are only implemented for purely Fourier tensor product spaces. 
+There are currently 3 different integrator classes
+
+    * :class:`.RK4`: Runge-Kutta fourth order
+    * :class:`.ETD`: Exponential time differencing Euler method
+    * :class:`.ETDRK4`: Exponential time differencing Runge-Kutta fourth order
+
+See, e.g.,
+H. Montanelli and N. Bootland "Solving periodic semilinear PDEs in 1D, 2D and
+3D with exponential integrators", https://arxiv.org/pdf/1604.08900.pdf
+
+Integrators are set up to solve equations like
+
+.. math::
+   :label: eq:nlsolver
+
+    \frac{\partial u}{\partial t} = L u + N(u)
+
+where :math:`u` is the solution, :math:`L` is a linear operator and
+:math:`N(u)` is the nonlinear part of the right hand side.
+
+To illustrate, we consider the time-dependent 1-dimensional Kortveeg-de Vries
+equation
+
+.. math::
+
+    \frac{\partial u}{\partial t} + \frac{\partial ^3 u}{\partial x^3} + u \frac{\partial u}{\partial x} = 0
+
+which can also be written as
+
+.. math::
+
+    \frac{\partial u}{\partial t} + \frac{\partial ^3 u}{\partial x^3} + \frac{1}{2}\frac{\partial u^2}{\partial x} = 0
+
+We neglect boundary issues and choose a periodic domain :math:`[0, 2\pi]` with
+Fourier exponentials as test functions. The initial condition is chosen as
+
+.. math::
+   :label: eq:init_kdv
+
+    u(x, t=0) = 3 A^2/\cosh(0.5 A (x-\pi+2))^2 + 3B^2/\cosh(0.5B(x-\pi+1))^2
+ 
+where :math:`A` and :math:`B` are constants. For discretization in space we use
+the basis :math:`V_N = span\{exp(\imath k x)\}_{k=0}^N` and formulate the 
+variational problem: find :math:`u \in V_N` such that
+
+.. math::
+
+    \frac{\partial }{\partial t} \Big(u, v \Big) = -\Big(\frac{\partial^3 u }{\partial x^3}, v \Big) - \Big(\frac{1}{2}\frac{\partial u^2}{\partial x}, v\Big), \quad \forall v \in V_N
+
+We see that the first term on the right hand side is linear in :math:`u`, 
+whereas the second term is nonlinear. To implement this problem in shenfun
+we start by creating the necessary basis and test and trial functions
+
+.. code-block:: python
+
+    import numpy as np
+    from shenfun import *
+
+    N = 256
+    T = Basis(N, 'F', dtype='d')
+    u = TrialFunction(T)
+    v = TestFunction(T)
+    u_ = Array(T)
+    u_hat = Function(T)
+
+We then create two functions representing the linear and nonlinear part of 
+:eq:`eq:nlsolver`:
+
+.. code-block:: python
+
+
+    def LinearRHS(**params):
+        return -inner(Dx(u, 0, 3), v)
+
+    k = T.wavenumbers(scaled=True, eliminate_highest_freq=True)
+    def NonlinearRHS(u, u_hat, rhs, **params):
+        rhs.fill(0)
+        u_[:] = T.backward(u_hat, u_)
+        rhs = T.forward(-0.5*u_**2, rhs)
+        return rhs*1j*k   # return inner(grad(-0.5*Up**2), v)
+
+
+Note that we differentiate in ``NonlinearRHS`` by using the wavenumbers ``k``
+directly. Alternative notation, that is given in commented out text, is slightly 
+slower, but the results are the same.
+
+The solution vector ``u_`` needs also to be initialized according to :eq:`eq:init_kdv`
+
+.. code-block:: python
+
+    A = 25.
+    B = 16.
+    x = T.points_and_weights()[0]
+    u_[:] = 3*A**2/np.cosh(0.5*A*(x-np.pi+2))**2 + 3*B**2/np.cosh(0.5*B*(x-np.pi+1))**2
+    u_hat = T.forward(u_, u_hat)
+
+Finally we create an instance of the :class:`.ETDRK4` solver, and integrate
+forward with a given timestep
+
+.. code-block:: python
+
+    dt = 0.01/N**2
+    end_time = 0.006
+    integrator = ETDRK4(T, L=LinearRHS, N=NonlinearRHS)
+    integrator.setup(dt)
+    u_hat = integrator.solve(u_, u_hat, dt, (0, end_time))
+
+The solution is two waves travelling through eachother, seemingly undisturbed.
+
+.. image:: KdV.png
+    :width: 600px
+    :height: 400px
+
+MPI
+---
+
+Shenfun makes use of the Message Passing Interface (MPI) to solve problems on
+distributed memory architectures. OpenMP is also possible to enable for FFTs.
+
+Dataarrays in Shenfun are distributed using a `new and completely generic method <https://arxiv.org/abs/1804.09536>`_, that allows for any index of a multidimensional array to be
+distributed. To illustrate, lets consider a :class:`.TensorProductSpace`
+of three dimensions, such that the arrays living in this space will be
+3-dimensional. We create two spaces that are identical, except from the MPI
+decomposition, and we use 4 CPUs (``mpirun -np 4 python mpitest.py``, if we
+store the code in this section as ``mpitest.py``)::
+
+    from shenfun import *
+    from mpi4py import MPI
+    from mpi4py_fft import generate_xdmf
+    comm = MPI.COMM_WORLD
+    N = (20, 40, 60)
+    K0 = Basis(N[0], 'F', dtype='D', domain=(0, 1))
+    K1 = Basis(N[1], 'F', dtype='D', domain=(0, 2))
+    K2 = Basis(N[2], 'F', dtype='d', domain=(0, 3))
+    T0 = TensorProductSpace(comm, (K0, K1, K2), axes=(0, 1, 2), slab=True)
+    T1 = TensorProductSpace(comm, (K0, K1, K2), axes=(1, 0, 2), slab=True)
+
+Here the keyword ``slab`` determines that only *one* index set of the 3-dimensional
+arrays living in ``T0`` or ``T1`` should be distributed. The defaul is to use
+two, which corresponds to a so-called pencil decomposition. The ``axes``-keyword
+determines the order of which transforms are conducted, starting from last to
+first in the given tuple. Note that ``T0`` now will give arrays in real physical
+space that are distributed in the first index, whereas ``T1`` will give arrays
+that are distributed in the second. This is because 0 and
+1 are the first items in the tuples given to ``axes``.
+
+We can now create some Arrays on these spaces::
+
+    u0 = Array(T0, val=comm.Get_rank())
+    u1 = Array(T1, val=comm.Get_rank())
+
+such that ``u0`` and ``u1`` have values corresponding to their communicating
+processors rank in the ``COMM_WORLD`` group (the group of all CPUs).
+
+Note that both the TensorProductSpaces have functions with expansion
+
+.. math::
+   :label: u_fourier
+
+        u(x, y, z) = \sum_{n=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{l=-N/2}^{N/2-1}
+        \hat{u}_{l,m,n} e^{\imath (lx + my + nz)}.
+
+where :math:`u(x, y, z)` is the continuous solution in real physical space, and :math:`\hat{u}`
+are the spectral expansion coefficients. If we evaluate expansion :eq:`u_fourier`
+on the real physical mesh, then we get
+
+.. math::
+   :label: u_fourier_d
+
+        u(x_i, y_j, z_k) = \sum_{n=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{l=-N/2}^{N/2-1}
+        \hat{u}_{l,m,n} e^{\imath (lx_i + my_j + nz_k)}.
+
+The function :math:`u(x_i, y_j, z_k)` corresponds to the arrays ``u0, u1``, whereas
+we have not yet computed the array :math:`\hat{u}`. We could get :math:`\hat{u}` as::
+
+    u0_hat = Function(T0)
+    u0_hat = T0.forward(u0, u0_hat)
+
+Now, ``u0`` and ``u1`` have been created on the same mesh, which is a structured
+mesh of shape :math:`(20, 40, 60)`. However, since they have different MPI
+decomposition, the values used to fill them on creation will differ. We can
+visualize the arrays in Paraview using some postprocessing tools, to be further
+described in Sec :ref:`Postprocessing`::
+
+    u0.write('myfile.h5', 'u0', 0, domain=T0.mesh())
+    u1.write('myfile.h5', 'u1', 0, domain=T1.mesh())
+    if comm.Get_rank() == 0:
+        generate_xdmf('myfile.h5')
+
+And when the generated ``myfile.xdmf`` is opened in Paraview, we
+can see the different distributions. The function ``u0`` is shown first, and
+we see that it has different values along the short first dimension. The
+second figure is evidently distributed along the second dimension. Both
+arrays are non-distributed in the third and final dimension, which is
+fortunate, because this axis will be the first to be transformed in, e.g.,
+``u0_hat = T0.forward(u0, u0_hat)``.
+
+.. image:: datastructures0.png
+    :width: 250px
+    :height: 200px
+
+.. image:: datastructures1.png
+    :width: 250px
+    :height: 200px
+
+We can now decide to distribute not just one, but the first two axes using
+a pencil decomposition instead. This is achieved simply by dropping the
+slab keyword::
+
+    T2 = TensorProductSpace(comm, (K0, K1, K2), axes=(0, 1, 2))
+    u2 = Array(T2, val=comm.Get_rank())
+    u2.write('pencilfile.h5', 'u2', 0)
+    if comm.Get_rank() == 0:
+        generate_xdmf('pencilfile.h5')
+
+Running again with 4 CPUs the array ``u2`` will look like:
+
+.. _pencil:
+
+.. image:: datastructures_pencil0.png
+    :width: 250px
+    :height: 200px
+
+The local slices into the global array may be obtained through::
+
+    >>> print(comm.Get_rank(), T2.local_slice(False))
+    0 [slice(0, 10, None), slice(0, 20, None), slice(0, 60, None)]
+    1 [slice(0, 10, None), slice(20, 40, None), slice(0, 60, None)]
+    2 [slice(10, 20, None), slice(0, 20, None), slice(0, 60, None)]
+    3 [slice(10, 20, None), slice(20, 40, None), slice(0, 60, None)]
+
+In spectral space the distribution will be different. This is because the
+discrete Fourier transforms are performed one axis at the time, and for
+this to happen the dataarrays need to be realigned to get entire axis available
+for each processor. Naturally, for the array in the pencil example
+:ref:`(see image) <pencil>`, we can only perform an
+FFT over the third and longest axis, because only this axis is locally available to all
+processors. To do the other directions, the dataarray must be realigned and this
+is done internally by the :class:`.TensorProductSpace` class.
+The shape of the datastructure in spectral space, that is
+the shape of :math:`\hat{u}`, can be obtained as::
+
+    >>> print(comm.Get_rank(), T2.local_slice(True))
+    0 [slice(0, 20, None), slice(0, 20, None), slice(0, 16, None)]
+    1 [slice(0, 20, None), slice(0, 20, None), slice(16, 31, None)]
+    2 [slice(0, 20, None), slice(20, 40, None), slice(0, 16, None)]
+    3 [slice(0, 20, None), slice(20, 40, None), slice(16, 31, None)]
+
+Evidently, the spectral space is distributed in the last two axes, whereas
+the first axis is locally avalable to all processors. Tha dataarray
+is said to be aligned in the first dimension.
+
+.. _Postprocessing:
+
+Post processing
+===============
+
+MPI is great because it means that you can run Shenfun on pretty much
+as many CPUs as you can get your hands on. However, MPI makes it more
+challenging to do visualization, in particular with Python and Matplotlib.
+For this reason there is a :mod:`.utilities` module with helper classes
+for dumping dataarrays to `HDF5 <https://www.hdf5.org>`_ or
+`NetCDF <https://www.unidata.ucar.edu/software/netcdf/>`_
+
+Most of the IO has already been implemented in
+`mpi4py-fft <https://mpi4py-fft.readthedocs.io/en/latest/io.html#>`_.
+The classes :class:`.HDF5File` and :class:`.NCFile` are used exactly as
+they are implemented in mpi4py-fft. As a common interface we provide
+
+    * :func:`.ShenfunFile`
+
+where :func:`.ShenfunFile` returns an instance of
+either :class:`.HDF5File` or :class:`.NCFile`, depending on choice
+of backend.
+
+For example, to create an HDF5 writer for a 3D
+TensorProductSpace with Fourier bases in all directions::
+
+    from shenfun import *
+    from mpi4py import MPI
+    N = (24, 25, 26)
+    K0 = Basis(N[0], 'F', dtype='D')
+    K1 = Basis(N[1], 'F', dtype='D')
+    K2 = Basis(N[2], 'F', dtype='d')
+    T = TensorProductSpace(MPI.COMM_WORLD, (K0, K1, K2))
+    fl = ShenfunFile('myh5file', T, backend='hdf5', mode='w')
+
+The file instance `fl` will now have two method that can be used to either ``write``
+dataarrays to file, or ``read`` them back again.
+
+    * ``fl.write``
+    * ``fl.read``
+
+With the ``HDF5`` backend we can write
+both arrays from physical space (:class:`.Array`), as well as spectral space
+(:class:`.Function`). However, the ``NetCDF4`` backend cannot handle complex
+dataarrays, and as such it can only be used for real physical dataarrays.
+
+In addition to storing complete dataarrays, we can also store any slices of
+the arrays. To illustrate, this is how to store three snapshots of the
+``u`` array, along with some *global* 2D and 1D slices::
+
+    u = Array(T)
+    u[:] = np.random.random(u.shape)
+    d = {'u': [u, (u, np.s_[4, :, :]), (u, np.s_[4, 4, :])]}
+    fl.write(0, d)
+    u[:] = 2
+    fl.write(1, d)
+
+The :class:`.ShenfunFile` may also be used for the :class:`.MixedTensorProductSpace`,
+or :class:`.VectorTensorProductSpace`, that are collections of the scalar
+:class:`.TensorProductSpace`. We can create a :class:`.MixedTensorProductSpace`
+consisting of two TensorProductSpaces, and an accompanying writer class as::
+
+    TT = MixedTensorProductSpace([T, T])
+    fl_m = ShenfunFile('mixed', TT, backend='hdf5', mode='w')
+
+Let's now consider a transient problem where we step a solution forward in time.
+We create a solution array from the :class:`.Array` class, and update the array
+inside a while loop::
+
+    TT = VectorTensorProductSpace(T)
+    fl_m = ShenfunFile('mixed', TT, backend='hdf5', mode='w')
+    u = Array(TT)
+    tstep = 0
+    du = {'uv': (u,
+                (u, [4, slice(None), slice(None)]),
+                (u, [slice(None), 10, 10]))}
+    while tstep < 3:
+        fl_m.write(tstep, du, forward_output=False)
+        tstep += 1
+
+Note that on each time step the arrays
+``u``, ``(u, [4, slice(None), slice(None)])`` and ``(u, [slice(None), 10, 10])``
+are vectors, and as such of global shape ``(3, 24, 25, 26)``, ``(3, 25, 26)`` and
+``(3, 25)``, respectively. However, they are stored in the hdf5 file under their
+spatial dimensions ``1D, 2D`` and ``3D``, respectively.
+
+Note that the slices in the above dictionaries
+are *global* views of the global arrays, that may or may not be distributed
+over any number of processors. Also note that these routines work with any
+number of CPUs, and the number of CPUs does not need to be the same when
+storing or retrieving the data.
+
+After running the above, the different arrays will be found in groups
+stored in `myyfile.h5` with directory tree structure as::
+
+    myh5file.h5/
+    └─ u/
+       ├─ 1D/
+       |  └─ 4_4_slice/
+       |     ├─ 0
+       |     └─ 1
+       ├─ 2D/
+       |  └─ 4_slice_slice/
+       |     ├─ 0
+       |     └─ 1
+       ├─ 3D/
+       |  ├─ 0
+       |  └─ 1
+       └─ mesh/
+          ├─ x0
+          ├─ x1
+          └─ x2
+
+Likewise, the `mixed.h5` file will at the end of the loop look like::
+
+    mixed.h5/
+    └─ uv/
+       ├─ 1D/
+       |  └─ slice_10_10/
+       |     ├─ 0
+       |     ├─ 1
+       |     └─ 3
+       ├─ 2D/
+       |  └─ 4_slice_slice/
+       |     ├─ 0
+       |     ├─ 1
+       |     └─ 3
+       ├─ 3D/
+       |  ├─ 0
+       |  ├─ 1
+       |  └─ 3
+       └─ mesh/
+          ├─ x0
+          ├─ x1
+          └─ x2
+
+Note that the mesh is stored as well as the results. The three mesh arrays are
+all 1D arrays, representing the domain for each basis in the TensorProductSpace.
+
+With NetCDF4 the layout is somewhat different. For ``mixed`` above,
+if we were using backend ``netcdf`` instead of ``hdf5``,
+we would get a datafile where ``ncdump -h mixed.nc`` would result in::
+
+    netcdf mixed {
+    dimensions:
+            time = UNLIMITED ; // (3 currently)
+            i = 3 ;
+            x = 24 ;
+            y = 25 ;
+            z = 26 ;
+    variables:
+            double time(time) ;
+            double i(i) ;
+            double x(x) ;
+            double y(y) ;
+            double z(z) ;
+            double uv(time, i, x, y, z) ;
+            double uv_4_slice_slice(time, i, y, z) ;
+            double uv_slice_10_10(time, i, x) ;
+    }
+
+
+Note that it is also possible to store vector arrays as scalars. For NetCDF4 this
+is necessary for direct visualization using `Visit <https://www.visitusers.org>`_.
+To store vectors as scalars, simply use::
+
+    fl_m.write(tstep, du, forward_output=False, as_scalar=True)
+
+ParaView
+--------
+
+The stored datafiles can be visualized in `ParaView <www.paraview.org>`_.
+However, ParaView cannot understand the content of these HDF5-files without
+a little bit of help. We have to explain that these data-files contain
+structured arrays of such and such shape. The way to do this is through
+the simple XML descriptor `XDMF <www.xdmf.org>`_. To this end there is a
+function imported from `mpi4py-fft <https://bitbucket.org/mpi4py/mpi4py-fft>`_
+called ``generate_xdmf`` that can be called with any one of the
+generated hdf5-files::
+
+    generate_xdmf('myh5file.h5')
+    generate_xdmf('mixed.h5')
+
+This results in some light xdmf-files being generated for the 2D and 3D arrays in
+the hdf5-file:
+
+    * ``myh5file.xdmf``
+    * ``myh5file_4_slice_slice.xdmf``
+    * ``mixed.xdmf``
+    * ``mixed_4_slice_slice.xdmf``
+
+These xdmf-files can be opened and inspected by ParaView. Note that 1D arrays are
+not wrapped, and neither are 4D.
+
+An annoying feature of Paraview is that it views a three-dimensional array of
+shape :math:`(N_0, N_1, N_2)` as transposed compared to shenfun. That is,
+for Paraview the *last* axis represents the :math:`x`-axis, whereas
+shenfun (like most others) considers the first axis to be the :math:`x`-axis.
+So when opening a
+three-dimensional array in Paraview one needs to be aware. Especially when
+plotting vectors. Assume that we are working with a Navier-Stokes solver
+and have a three-dimensional :class:`.VectorTensorProductSpace` to represent
+the fluid velocity::
+
+    from mpi4py import MPI
+    from shenfun import *
+
+    comm = MPI.COMM_WORLD
+    N = (32, 64, 128)
+    V0 = Basis(N[0], 'F', dtype='D')
+    V1 = Basis(N[1], 'F', dtype='D')
+    V2 = Basis(N[2], 'F', dtype='d')
+    T = TensorProductSpace(comm, (V0, V1, V2))
+    TV = VectorTensorProductSpace(T)
+    U = Array(TV)
+    U[0] = 0
+    U[1] = 1
+    U[2] = 2
+
+To store the resulting :class:`.Array` ``U`` we can create an instance of the
+:class:`.HDF5File` class, and store using keyword ``as_scalar=True``::
+
+    hdf5file = ShenfunFile("NS", TV, backend='hdf5', mode='w')
+    ...
+    file.write(0, {'u': [U]}, as_scalar=True)
+    file.write(1, {'u': [U]}, as_scalar=True)
+
+Alternatively, one may store the arrays directly as::
+
+    U.write('U.h5', 'u', 0, domain=T.mesh(), as_scalar=True)
+    U.write('U.h5', 'u', 1, domain=T.mesh(), as_scalar=True)
+
+Generate an xdmf file through::
+
+    generate_xdmf('NS.h5')
+
+and open the generated ``NS.xdmf`` file in Paraview. You will then see three scalar
+arrays ``u0, u1, u2``, each one of shape ``(32, 64, 128)``, for the vector
+component in what Paraview considers the :math:`z`, :math:`y` and :math:`x` directions,
+respectively. Other than the swapped coordinate axes there is no difference.
+But be careful if creating vectors in Paraview with the Calculator. The vector
+should be created as::
+
+    u0*kHat+u1*jHat+u2*iHat

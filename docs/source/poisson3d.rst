@@ -7,7 +7,7 @@ Demo - 3D Poisson's equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Nov 28, 2019
+:Date: Jan 2, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve a 3D Poisson
 equation in a 3D tensor product domain that has homogeneous Dirichlet boundary
@@ -709,6 +709,3 @@ or similarly with ``chebyshev`` instead of ``legendre``.
         print("Error=%2.16e" %(np.sqrt(error)))
 
 .. ======= Bibliography =======
-
-.. bibliography:: papers.bib
-   :notcited:

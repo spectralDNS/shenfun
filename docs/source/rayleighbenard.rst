@@ -7,7 +7,7 @@ Demo - Rayleigh Benard
 %%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Nov 28, 2019
+:Date: Jan 2, 2020
 
 *Summary.* Rayleigh-Benard convection arise
 due to temperature gradients in a fluid. The governing equations are
