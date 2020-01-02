@@ -670,7 +670,5 @@ BIBFILE: ../papers.pub
 
 % else:
 
-.. bibliography:: papers.bib
-   :notcited:
 
 % endif

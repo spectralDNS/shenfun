@@ -7,6 +7,8 @@ Contents
    introduction
    gettingstarted
    installation
+   howtocite
+   howtocontribute
 
 Demos
 =====
@@ -18,6 +20,8 @@ Demos
    poisson3d
    kuramatosivashinsky
    stokes
+   drivencavity
+   rayleighbenard
    zrefs
 
 .. _shenfun: https:/github.com/spectralDNS/shenfun
