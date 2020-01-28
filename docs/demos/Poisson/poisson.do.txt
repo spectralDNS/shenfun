@@ -426,5 +426,4 @@ BIBFILE: ../papers.pub
 
 % else:
 
-
 % endif

@@ -7,7 +7,7 @@ Demo - Rayleigh Benard
 %%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Jan 2, 2020
+:Date: Jan 28, 2020
 
 *Summary.* Rayleigh-Benard convection arise
 due to temperature gradients in a fluid. The governing equations are
@@ -85,7 +85,8 @@ governing equations have been non-dimensionalized using the free-fall velocitysc
 The governing equations contain a non-trivial coupling between velocity, pressure and temperature.
 This coupling can be simplified by eliminating the pressure from the equation for the wall-normal velocity
 component :math:`u`. We accomplish this by taking the Laplace of the momentum equation in wall normal
-direction, using the identity :math:`\nabla^2 p = \nabla \cdot \mathbf{H}`, where
+direction, using the pressure from the divergence of the momentum equation 
+:math:`\nabla^2 p = -\nabla \cdot \mathbf{H}+\partial T/\partial x`, where
 :math:`\mathbf{H} = (H_x, H_y) = (\mathbf{u} \cdot \nabla) \mathbf{u}`
 
 .. math::
