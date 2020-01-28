@@ -170,7 +170,8 @@ class RayleighBenard(object):
         self.w0[:] = 0
         self.w1[:] = 0
         w0 = inner(v, Dx(Dx(H_[1], 0, 1), 1, 1)-Dx(H_[0], 1, 2), output_array=self.w0)
-        w1 = inner(v, div(grad(self.T_)), output_array=self.w1)
+        #w1 = inner(v, div(grad(self.T_)), output_array=self.w1)
+        w1 = inner(v, Dx(self.T_, 1, 2), output_array=self.w1)
         rhs[1] += a*self.dt*(w0+w1)
         rhs[1] += b*self.dt*rhs[0]
         rhs[0] = w0+w1
@@ -316,7 +317,8 @@ class RayleighBenard2(RayleighBenard):
             self.mats_rhs_T.append(inner(q, 2./(kappa*(a[rk]+b[rk])*dt)*p + div(grad(p))))
             self.rhs_mat.append(extract_bc_matrices([self.mats_rhs_T[-1]]))
 
-        self.mats_uT = inner(v, div(grad(p)))
+        #self.mats_uT = inner(v, div(grad(p)))
+        self.mats_uT = inner(v, Dx(p, 1, 2))
         self.mat_conv = inner(v, (Dx(Dx(sv[1], 0, 1), 1, 1) - Dx(sv[0], 1, 2)))
 
         uv = TrialFunction(self.BD)
@@ -415,20 +417,20 @@ if __name__ == '__main__':
     from mpi4py_fft import generate_xdmf
     t0 = time()
     d = {
-        'N': (40, 64),
-        'Ra': 100.,
-        'dt': 0.05,
+        'N': (100, 256),
+        'Ra': 100000.,
+        'dt': 0.02,
         'filename': 'RB100',
         'conv': 1,
         'modplot': 100,
         'modsave': 50,
-        'bcT': (0.9+0.1*sympy.sin(2*(y-tt)), 0),
-        #'bcT': (1, 0),
+        #'bcT': (0.9+0.1*sympy.sin(2*(y-tt)), 0),
+        'bcT': (1, 0),
         'family': 'C',
         'quad': 'GC'
         }
     c = RayleighBenard2(**d)
-    c.initialize(rand=0.01)
+    c.initialize(rand=0.0001)
     c.assemble()
     c.solve(end_time=200)
     print('Computing time %2.4f'%(time()-t0))

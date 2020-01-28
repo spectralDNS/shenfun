@@ -81,7 +81,8 @@ $U=\sqrt{g \alpha \Delta T h}$. See cite{pandey18} for more details.
 The governing equations contain a non-trivial coupling between velocity, pressure and temperature.
 This coupling can be simplified by eliminating the pressure from the equation for the wall-normal velocity
 component $u$. We accomplish this by taking the Laplace of the momentum equation in wall normal
-direction, using the identity $\nabla^2 p = \nabla \cdot \bs{H}$, where
+direction, using the pressure from the divergence of the momentum equation 
+$\nabla^2 p = -\nabla \cdot \bs{H}+\partial T/\partial x$, where
 $\bs{H} = (H_x, H_y) = (\bs{u} \cdot \nabla) \bs{u}$
 
 !bt
