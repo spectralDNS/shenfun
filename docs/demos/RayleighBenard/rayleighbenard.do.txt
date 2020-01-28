@@ -87,7 +87,7 @@ $\bs{H} = (H_x, H_y) = (\bs{u} \cdot \nabla) \bs{u}$
 
 !bt
 \begin{equation}
-    \frac{\partial \nabla^2 {u}}{\partial t} = \frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y}  + \sqrt{\frac{Pr}{Ra}} \nabla^4 {u}  + \nabla^2 T. label{eq:u}
+    \frac{\partial \nabla^2 {u}}{\partial t} = \frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y}  + \sqrt{\frac{Pr}{Ra}} \nabla^4 {u}  + \frac{\partial^2 T}{\partial y^2} . label{eq:u}
 \end{equation}
 !et
 
@@ -96,7 +96,7 @@ divergence constraint. In summary, we now seem to have the following equations t
 
 !bt
 \begin{align}
-    \frac{\partial \nabla^2 {u}}{\partial t} &= \frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y}  + \sqrt{\frac{Pr}{Ra}} \nabla^4 {u}  + \nabla^2 T, label{eq:u2}\\
+    \frac{\partial \nabla^2 {u}}{\partial t} &= \frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y}  + \sqrt{\frac{Pr}{Ra}} \nabla^4 {u}  + \frac{\partial^2 T}{\partial y^2}, label{eq:u2}\\
     \frac{\partial v}{\partial t} + H_y &= -  \frac{\partial p}{\partial y} + \sqrt{\frac{Pr}{Ra}} \nabla^2 v, label{eq:v}\\
     \frac{\partial T}{\partial t} +\bs{u} \cdot \nabla T &= \frac{1}{\sqrt{RaPr}} \nabla^2 T, label{eq:T2}\\
     \nabla \cdot \bs{u} &= 0 label{eq:div2}.
@@ -435,7 +435,7 @@ can be assembled as
 inner(div(grad(u_[0])) + ((a[rk]+b[rk])*nu*dt/2.)*div(grad(div(grad(u_[0])))), v)
 !ec
 
-The remaining parts $\frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y} + \nabla^2T$
+The remaining parts $\frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y} + \frac{\partial^2 T}{\partial y^2}$
 end up in the nonlinear $\mathcal{N}$. The nonlinear convection term $\bm{H}$ can be computed in many different ways.
 Here we will make use of
 the identity $(\bm{u} \cdot \nabla) \bm{u} = -\bm{u} \times (\nabla \times \bm{u}) + 0.5 \nabla\bm{u} \cdot \bm{u}$,
@@ -476,7 +476,7 @@ def compute_rhs_u(u, T, H, rhs, rk):
     rhs[1] = 0
     rhs[1] += inner(v, div(grad(u[0])) + ((a[rk]+b[rk])*nu*dt/2.)*div(grad(div(grad(u[0])))))
     w0 = inner(v, Dx(Dx(H[1], 0, 1), 1, 1) - Dx(H[0], 1, 2))
-    w1 = inner(v, div(grad(T)))
+    w1 = inner(v, Dx(T, 1, 2))
     rhs[1] += a[rk]*dt*(w0+w1)
     rhs[1] += b[rk]*dt*rhs[0]
     rhs[0] = w0+w1
