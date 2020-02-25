@@ -6,4 +6,4 @@ sphinx:
 python:
   install:
     - method: setuptools
-    - path: .
+      path: .
