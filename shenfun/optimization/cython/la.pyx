@@ -915,7 +915,7 @@ def LU_Helmholtz_1D(A, B,
         np.ndarray[real_t, ndim=1] A_0 = A[0].copy()
         np.ndarray[real_t, ndim=1] A_2 = A[2].copy()
         np.ndarray[real_t, ndim=1] A_4 = A[4].copy()
-        np.ndarray[real_t, ndim=1] B_m2 = B[-2].copy()
+        np.ndarray[real_t, ndim=1] B_m2 = B.get(-2).copy()
         np.ndarray[real_t, ndim=1] B_0 = B[0].copy()
         np.ndarray[real_t, ndim=1] B_2 = B[2].copy()
 
@@ -2605,9 +2605,9 @@ def LU_Helmholtz_Biharmonic_1D(A, B,
         double lam
         np.ndarray[real_t, ndim=1] A_0 = A[0].copy()
         np.ndarray[real_t, ndim=1] A_2 = A[2].copy()
-        np.ndarray[real_t, ndim=1] A_m2 = A[-2].copy()
-        np.ndarray[real_t, ndim=1] B_m4 = B[-4].copy()
-        np.ndarray[real_t, ndim=1] B_m2 = B[-2].copy()
+        np.ndarray[real_t, ndim=1] A_m2 = A.get(-2).copy()
+        np.ndarray[real_t, ndim=1] B_m4 = B.get(-4).copy()
+        np.ndarray[real_t, ndim=1] B_m2 = B.get(-2).copy()
         np.ndarray[real_t, ndim=1] B_0 = B[0].copy()
         np.ndarray[real_t, ndim=1] B_2 = B[2].copy()
         np.ndarray[real_t, ndim=1] B_4 = B[4].copy()

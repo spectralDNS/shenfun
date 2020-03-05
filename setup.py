@@ -26,6 +26,7 @@ class build_ext_subclass(build_ext):
         if os.environ.get("READTHEDOCS", None) == "True":
             extra_compile_args.append('-O0')
         else:
+            extra_compile_args.append('-O3')
             if not (os.environ.get('CONDA_BUILD', 0) == 1):
                 for c in ['-w', '-Ofast', '-ffast-math', '-march=native']:
                     if has_flag(self.compiler, c):
