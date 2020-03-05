@@ -26,5 +26,5 @@ jobs:
     - run: |
         conda config --add channels conda-forge
         conda config --set always_yes yes
-        conda install -n root conda-build=3.17
+        conda install -n root conda-build
         conda build ./conf/conda
