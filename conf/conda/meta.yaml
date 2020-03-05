@@ -1,6 +1,12 @@
+{% if GIT_DESCRIBE_TAG is defined %}
+{%   set version = GIT_DESCRIBE_TAG %}
+{% else %}
+{%   set version = "1.0" %}
+{% endif %}
+
 package:
   name: shenfun
-  version: "{{ GIT_DESCRIBE_TAG }}"
+  version: version
 
 source:
   git_url: ../../
