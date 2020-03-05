@@ -1,4 +1,5 @@
 mpi:
   #- 'openmpi'
   - 'mpich'
-
+numpy:
+  - '1.16'
