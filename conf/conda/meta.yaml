@@ -1,12 +1,8 @@
-{% if GIT_DESCRIBE_TAG is defined %}
-{%   set version = GIT_DESCRIBE_TAG %}
-{% else %}
-{%   set version = "1.0" %}
-{% endif %}
+{% set data = load_setup_py_data() %}
 
 package:
   name: shenfun
-  version: version
+  version: {{ data.get('version') }}
 
 source:
   git_url: ../../
@@ -36,6 +32,7 @@ requirements:
     - mpi4py
     - mpi4py-fft >=2.0.3
     - sympy
+    - pip
     - {{ mpi }}
     - h5py * mpi_{{ mpi }}_*
     - netcdf4 * mpi_{{ mpi }}_*
