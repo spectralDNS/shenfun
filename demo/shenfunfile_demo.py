@@ -5,7 +5,7 @@ from shenfun import *
 from mpi4py_fft import generate_xdmf
 
 N = (24, 25, 26)
-backend = 'hdf5'
+backend = 'netcdf'
 nsteps = 1
 K0 = Basis(N[0], 'F', dtype='D')
 K1 = Basis(N[1], 'F', dtype='D')

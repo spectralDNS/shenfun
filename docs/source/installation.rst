@@ -32,18 +32,12 @@ can be achieved with
     conda activate shenfun
 
 Note that this gives you shenfun with default settings. This means that
-you will probably get the openmpi backend, and it is also likely that
-conda-forge chooses numpy with the mkl backend. Unfortunately, the mkl
-python package makes adjustments to the FFTW library and hard to resolve
-bugs may arise. For this reason it is advisable to make sure that mkl
-is not installed. This can be achieved with, e.g.,
+you will probably get the openmpi backend. To make sure that shenfun is
+is installed with mpich instead do
 
 ::
 
-    conda create --name shenfun -c conda-forge shenfun mpich nomkl
-
-Note that the nomkl package makes sure that numpy is installed without
-mkl, whereas mpich here chooses this backend over openmpi.
+    conda create --name shenfun -c conda-forge shenfun mpich
 
 If you do not use `conda`_, then you need to make sure that MPI
 and FFTW are installed by some other means. You can then install
@@ -93,21 +87,13 @@ Additional dependencies
 -----------------------
 
 For storing and retrieving data you need either `HDF5`_ or `netCDF4`_, compiled
-with support for MPI (see :ref:`Postprocessing`). `HDF5`_ is already available
-with parallel support on `conda-forge`_ and, if it was not installed at the same
-time as shenfun, it can be installed (with the mpich backend for MPI) as
+with support for MPI (see :ref:`Postprocessing`). Both `HDF5`_  and `netCDF4`_ 
+are already available with parallel support on `conda-forge`_, and, if they were 
+not installed at the same time as shenfun, they can be installed as
 
 ::
 
-    conda install -c conda-forge h5py=*=mpi_mpich_*
-
-A parallel version of `netCDF4`_ cannot be found on the conda-forge channel,
-but a precompiled version has been made available for python 2.7, 3.6 and 3.7
-on the `spectralDNS channel`_, for both osx and linux
-
-::
-
-    conda install -c spectralDNS netcdf4-parallel
+    conda install -c conda-forge h5py=*=mpi* netcdf4=*=mpi*
 
 Note that parallel HDF5 and NetCDF4 often are available as modules on
 supercomputers. Otherwise, see the respective packages for how to install

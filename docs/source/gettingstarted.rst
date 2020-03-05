@@ -22,7 +22,7 @@ most important everyday tools are
 	* :func:`.project`
 	* :func:`.Basis`
 
-A good place to get started is by creating a :func:`.Basis`. There are five families of
+A good place to get started is by creating a :func:`.Basis`. There are six families of
 bases: Fourier, Chebyshev, Legendre, Laguerre, Hermite and Jacobi. All bases are
 defined on a one-dimensional
 domain, with their own basis functions and quadrature points. For example, we have
@@ -54,6 +54,7 @@ with it, and we may experiment a little. A :class:`.Function` ``u`` using basis
 and an instance of this function (initialized with :math:`\{\hat{u}_k\}_{k=0}^7=0`)
 is created in shenfun as::
 
+    from shenfun import Function
     u = Function(T)
 
 Consider now for exampel the polynomial :math:`2x^2-1`, which happens to be
@@ -67,6 +68,7 @@ can create this polynomial using `sympy <www.sympy.org>`_ ::
 The Sympy function ``u`` can now be evaluated on the quadrature points of basis
 :math:`T`::
 
+    from shenfun import Array
     xj = T.mesh()
     ue = Array(T)
     ue[:] = [u.subs(x, xx) for xx in xj]
@@ -97,6 +99,7 @@ equal to the second Chebyshev polynomial, we should get an array of
 expansion coefficients equal to :math:`\hat{u} = (0, 0, 1, 0, 0, 0, 0, 0)`.
 We can compute ``uh`` either by using :func:`project` or a forward transform::
 
+    from shenfun import project
     uh = Function(T)
     uh = T.forward(ue, uh)
     # or
@@ -192,6 +195,7 @@ be used in forms, except from regular inner products of numbers or
 test function vs an :class:`.Array`. To illustrate, lets create some forms,
 where all except the last one is ok::
 
+    from shenfun import Dx
     T = Basis(12, 'Legendre')
     u = TrialFunction(T)
     v = TestFunction(T)
@@ -427,6 +431,7 @@ a vector we use a :class:`.VectorTensorProductSpace` :math:`VT = TT \times TT` a
 finally a :class:`.MixedTensorProductSpace` :math:`Q = VT \times TD` for the coupled and
 implicit treatment of :math:`(\sigma, u)`::
 
+    from shenfun import VectorTensorProductSpace, MixedTensorProductSpace
     N, M = (16, 24)
     family = 'Legendre'
     SD = Basis(N[0], family, bc=(0, 0))
@@ -470,6 +475,7 @@ is a constant, and as such get the term :math:`(-\nabla u, \tau)_w = (u, \nabla 
 
 We collect all assembled terms in a :class:`.BlockMatrix`::
 
+    from shenfun import BlockMatrix
     H = BlockMatrix(A00+A01+A10)
 
 This block matrix ``H`` is then simply (for Legendre)
