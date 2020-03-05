@@ -37,10 +37,8 @@ requirements:
     - mpi4py-fft >=2.0.3
     - sympy
     - {{ mpi }}
-    - hdf5 * mpi_{{ mpi }}_*
     - h5py * mpi_{{ mpi }}_*
-    - libnetcdf-parallel 4.6.1.*
-    - netcdf4-parallel
+    - netcdf4 * mpi_{{ mpi }}_*
 
 test:
   source_files:
