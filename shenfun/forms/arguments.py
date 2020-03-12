@@ -811,8 +811,9 @@ class ShenfunBaseArray(DistArray):
         # Evaluate sympy function on entire mesh
         if hasattr(buffer, 'free_symbols'):
             import sympy
-            x, y, z, s, t = sympy.symbols("x,y,z,s,t")
-            sym0 = [sym for sym in (x, y, z, s, t) if sym in buffer.free_symbols]
+            x, y, z, r, s, t = sympy.symbols("x,y,z,r,s,t")
+            sym0 = [sym for sym in (x, y, z, r, s, t) if sym in buffer.free_symbols]
+            #sym0 = tuple(buffer.free_symbols)
             buffer = sympy.lambdify(sym0, buffer)(*space.local_mesh())
             if cls.__name__ == 'Function':
                 buf = np.empty_like(space.forward.output_array)
