@@ -3,7 +3,6 @@ This module contains the inner function that computes the
 weighted inner product.
 """
 from numbers import Number
-import copy
 import numpy as np
 import sympy
 from shenfun.spectralbase import inner_product, SpectralBase, MixedBasis

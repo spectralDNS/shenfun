@@ -142,7 +142,6 @@ def grad(test):
         # Expr taken gradient of has measures itself
         terms = np.repeat(terms, ndim, axis=0)
         test._terms = np.repeat(terms, 2, axis=1)
-        N = test._terms.shape
         sc = np.repeat(sc, ndim, axis=0)
         test._scales = np.repeat(sc, 2, axis=1)
         ind = np.repeat(ind, ndim, axis=0)
@@ -192,8 +191,8 @@ def Dx(test, x, k=1):
     else:
         assert test.expr_rank() < 1, 'Cannot take derivative of tensor in curvilinear coordinates'
         v = test._terms = np.repeat(test.terms(), 2, axis=1)
-        sc = test._scales = np.repeat(test.scales(), 2, axis=1)
-        ind = test._indices = np.repeat(test.indices(), 2, axis=1)
+        test._scales = np.repeat(test.scales(), 2, axis=1)
+        test._indices = np.repeat(test.indices(), 2, axis=1)
         measures = test._measures = np.repeat(test.measures(), 2, axis=1)
         psi = test.function_space().measures[0]
         for i in range(v.shape[1]):
@@ -223,7 +222,6 @@ def curl(test):
     assert test.expr_rank() > 0
     assert test.num_components() == test.dimensions  # vector
 
-    measures = test.measures().copy()
     hi = test.function_space().hi
 
     if hi.prod() == 1:

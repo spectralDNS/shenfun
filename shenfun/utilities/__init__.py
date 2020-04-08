@@ -230,7 +230,7 @@ def get_measures_tangent(psi, rv):
     drv = np.zeros((len(rv),)*2, dtype=object)
     for i, ti in enumerate(psi):
         for j, rj in enumerate(rv):
-            drv[i, j] = rv[j].diff(ti, 1)
+            drv[i, j] = rj.diff(ti, 1)
     return drv
 
 def split(measures):
