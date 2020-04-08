@@ -255,6 +255,23 @@ which assembles a stiffness matrix A. Note that the two expressions fed to
 inner must have consistent rank. Here, for example, both ``grad(u)`` and
 ``grad(v)`` have rank 1 of a vector.
 
+Polar and cylindrical coordinates
+---------------------------------
+Shenfun can be used to solve equations using polar or cylindrical
+coordinates. The feature was added April 2020, and is still rather
+experimental. There are currently demos for solving both `Poisson's
+equation <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_poisson.py>`_
+and the `biharmonic equation <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_biharmonic.py>`_
+on a circular disc, a solver for `3D Poisson equation in a pipe <https://github.com/spectralDNS/shenfun/blob/master/demo/pipe_poisson.py>`_,
+and a solver for the `biharmonic equation on a part of the disc <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_biharmonic2NP.py>`_.
+A solution from solving the biharmonic equation with homogeneous
+Dirichlet boundary conditions on :math:`(\theta, r) \in [0, \pi/2] \times [0.5, 1]`
+is shown below.
+
+.. image:: biharmonic_part.png
+    :width: 600px
+    :height: 400px
+
 
 Multidimensional problems
 -------------------------
@@ -506,7 +523,7 @@ Integrators
 
 The :mod:`.integrators` module contains some interator classes that can be
 used to integrate a solution forward in time. However, for now these integrators
-are only implemented for purely Fourier tensor product spaces. 
+are only implemented for purely Fourier tensor product spaces.
 There are currently 3 different integrator classes
 
     * :class:`.RK4`: Runge-Kutta fourth order
@@ -547,16 +564,16 @@ Fourier exponentials as test functions. The initial condition is chosen as
    :label: eq:init_kdv
 
     u(x, t=0) = 3 A^2/\cosh(0.5 A (x-\pi+2))^2 + 3B^2/\cosh(0.5B(x-\pi+1))^2
- 
+
 where :math:`A` and :math:`B` are constants. For discretization in space we use
-the basis :math:`V_N = span\{exp(\imath k x)\}_{k=0}^N` and formulate the 
+the basis :math:`V_N = span\{exp(\imath k x)\}_{k=0}^N` and formulate the
 variational problem: find :math:`u \in V_N` such that
 
 .. math::
 
     \frac{\partial }{\partial t} \Big(u, v \Big) = -\Big(\frac{\partial^3 u }{\partial x^3}, v \Big) - \Big(\frac{1}{2}\frac{\partial u^2}{\partial x}, v\Big), \quad \forall v \in V_N
 
-We see that the first term on the right hand side is linear in :math:`u`, 
+We see that the first term on the right hand side is linear in :math:`u`,
 whereas the second term is nonlinear. To implement this problem in shenfun
 we start by creating the necessary basis and test and trial functions
 
@@ -572,7 +589,7 @@ we start by creating the necessary basis and test and trial functions
     u_ = Array(T)
     u_hat = Function(T)
 
-We then create two functions representing the linear and nonlinear part of 
+We then create two functions representing the linear and nonlinear part of
 :eq:`eq:nlsolver`:
 
 .. code-block:: python
@@ -590,7 +607,7 @@ We then create two functions representing the linear and nonlinear part of
 
 
 Note that we differentiate in ``NonlinearRHS`` by using the wavenumbers ``k``
-directly. Alternative notation, that is given in commented out text, is slightly 
+directly. Alternative notation, that is given in commented out text, is slightly
 slower, but the results are the same.
 
 The solution vector ``u_`` needs also to be initialized according to :eq:`eq:init_kdv`

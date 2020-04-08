@@ -68,9 +68,6 @@ if by_parts:
 
     # case m=0
     if comm.Get_rank() == 0:
-        #A0 = inner_product((L0, 1), (L0, 1), r)
-        #C0 = inner_product((L0, 0), (L0, 0), r)
-        #M0 = A0
         mats0 = inner(grad(v0), grad(u0))
         mats0 += [inner(v0, alpha*u0)]
 
@@ -79,10 +76,6 @@ else:
 
     # case m=0
     if comm.Get_rank() == 0:
-        #A0 = inner_product((L0, 0), (L0, 2), r)
-        #B0 = inner_product((L0, 0), (L0, 1))
-        #C0 = inner_product((L0, 0), (L0, 0), r)
-        #M0 = - A0 - B0
         mats0 = inner(v0, -div(grad(u0))+alpha*u0)
 
 # Solve
