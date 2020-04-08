@@ -11,7 +11,7 @@ from shenfun.utilities import inheritdocstrings
 
 @inheritdocstrings
 class _Fouriermatrix(SpectralMatrix):
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         N = test[0].N
         k = test[0].wavenumbers(N, scaled=False)
         if isinstance(test[1], (int, np.integer)):
@@ -33,7 +33,7 @@ class _Fouriermatrix(SpectralMatrix):
             d = {0: val}
         else:
             d = {0: 1.0}
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
     def solve(self, b, u=None, axis=0):
         N = self.shape[0]

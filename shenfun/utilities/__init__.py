@@ -6,12 +6,15 @@ try:
     from collections.abc import MutableMapping
 except ImportError:
     from collections import MutableMapping
+from collections import defaultdict
 import numpy as np
+import sympy as sp
 from scipy.fftpack import dct
 from shenfun.optimization import optimizer
 
 __all__ = ['inheritdocstrings', 'dx', 'clenshaw_curtis1D', 'CachedArrayDict',
-           'outer', 'apply_mask']
+           'outer', 'apply_mask', 'integrate_sympy', 'get_measures',
+           'get_measures_tangent']
 
 def inheritdocstrings(cls):
     """Method used for inheriting docstrings from parent class
@@ -195,3 +198,58 @@ def apply_mask(u_hat, mask):
     if mask is not None:
         u_hat *= mask
     return u_hat
+
+def integrate_sympy(f, d):
+    """Exact definite integral using sympy
+
+    Try to convert expression `f` to a polynomial before integrating.
+
+    See sympy issue https://github.com/sympy/sympy/pull/18613 to why this is
+    needed. Poly().integrate() is much faster than sympy.integrate() when applicable.
+
+    Parameters
+    ----------
+    f : sympy expression
+    d : 3-tuple
+        First item the symbol, next two the lower and upper integration limits
+    """
+    try:
+        p = sp.Poly(f, d[0]).integrate()
+        return p(d[2]) - p(d[1])
+    except sp.PolynomialError:
+        return sp.integrate(f, d)
+
+def get_measures(psi, rv):
+    drv = get_measures_tangent(psi, rv)
+    measures = np.zeros_like(rv)
+    for i, s in enumerate(np.sum(drv**2, axis=1)):
+        measures[i] = sp.simplify(sp.sqrt(s))
+    return measures
+
+def get_measures_tangent(psi, rv):
+    drv = np.zeros((len(rv),)*2, dtype=object)
+    for i, ti in enumerate(psi):
+        for j, rj in enumerate(rv):
+            drv[i, j] = rv[j].diff(ti, 1)
+    return drv
+
+def split(measures):
+    def _split(mss, result):
+        for ms in mss:
+            ms = sp.sympify(ms)
+            if isinstance(ms, sp.Mul):
+                # Multiplication of two or more terms
+                _split(ms.args, result)
+                continue
+
+            # Something else with only one symbol
+            sym = ms.free_symbols
+            assert len(sym) <= 1
+            if len(sym) == 1:
+                sym = sym.pop()
+                result[str(sym)] *= ms
+            else:
+                result['x'] *= ms
+    result = defaultdict(lambda: 1)
+    _split(measures, result)
+    return result

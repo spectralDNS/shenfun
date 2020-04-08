@@ -25,7 +25,7 @@ Solver = base.la.Biharmonic
 
 # Use sympy to compute a rhs, given an analytical solution
 # Allow for a non-standard domain. Reference domain is (-1, 1)
-domain = (-1., 1.)
+domain = (-1., 2.)
 d = 2./(domain[1]-domain[0])
 x = symbols("x")
 x_map = -1+(x-domain[0])*d

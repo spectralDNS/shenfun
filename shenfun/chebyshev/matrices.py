@@ -68,6 +68,7 @@ from __future__ import division
 #__all__ = ['mat']
 
 import numpy as np
+import sympy as sp
 from shenfun.optimization import cython
 from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
@@ -121,14 +122,14 @@ class BDDmat(SpectralMatrix):
     and :math:`\phi_j` is a Shen Dirichlet basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         ck = get_ck(test[0].N, test[0].quad)
         d = {0: np.pi/2*(ck[:-2]+ck[2:]),
              2: np.array([-np.pi/2])}
         d[-2] = d[2]
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
         self.solve = TDMA(self)
 
     def matvec(self, v, c, format='cython', axis=0):
@@ -190,7 +191,7 @@ class BNDmat(SpectralMatrix):
     For simplicity, the matrix is stored including the zero index row
     (:math:`k=0`)
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -202,7 +203,7 @@ class BNDmat(SpectralMatrix):
               0: np.pi/2.*(ck[:-2]+ck[2:]*(k/(k+2))**2)}
         d2 = -np.pi/2*(k/(k+2))**2
         d[2] = d2[:dmax(N-2, M-2, 2)]
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
     def matvec(self, v, c, format='csr', axis=0):
         c = super(BNDmat, self).matvec(v, c, format=format, axis=axis)
@@ -232,7 +233,7 @@ class BDNmat(SpectralMatrix):
     For simplicity, the matrix is stored including the zero index column
     (:math:`j=0`)
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SN)
         N = test[0].N
@@ -243,7 +244,7 @@ class BDNmat(SpectralMatrix):
         d = {0:  np.pi/2.*(ck[:-2]+ck[2:]*(k/(k+2))**2),
              2: -np.pi/2}
         d[-2] = (-np.pi/2*(k/(k+2))**2)[:dmax(N-2, M-2, -2)]
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -286,7 +287,7 @@ class BNTmat(SpectralMatrix):
     (:math:`k=0`)
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], CB)
         SpectralMatrix.__init__(self, {}, test, trial)
@@ -320,7 +321,7 @@ class BNBmat(SpectralMatrix):
     (:math:`k=0`)
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SB)
         SpectralMatrix.__init__(self, {}, test, trial)
@@ -349,7 +350,7 @@ class BTTmat(SpectralMatrix):
 
     and :math:`T_j` is the jth order Chebyshev function of the first kind.
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], CB)
         assert isinstance(trial[0], CB)
         ck = get_ck(min(test[0].N, trial[0].N), test[0].quad)
@@ -406,7 +407,7 @@ class BNNmat(SpectralMatrix):
     The matrix is stored including the zero index row and column
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SN)
         N = test[0].N
@@ -420,7 +421,7 @@ class BNNmat(SpectralMatrix):
         d[2] = -np.pi/2*(k[:dp]/(k[:dp]+2))**2
         dm = dmax(N-2, M-2, -2)
         d[-2] = -np.pi/2*(k[:dm]/(k[:dm]+2))**2
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
         self.solve = neumann_TDMA(self)
 
     def matvec(self, v, c, format='csr', axis=0):
@@ -448,7 +449,7 @@ class BDTmat(SpectralMatrix):
     :math:`\phi_k` is the Shen Dirichlet basis function and :math:`T_j` is the
     Chebyshev basis function.
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], CB)
         N = test[0].N-2
@@ -457,7 +458,7 @@ class BDTmat(SpectralMatrix):
         ck = get_ck(Q+2, test[0].quad)
         d = {0: np.pi/2*ck[:Q],
              2: -np.pi/2*ck[2:(dmax(N, M, 2)+2)]}
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
 @inheritdocstrings
@@ -477,7 +478,7 @@ class BTDmat(SpectralMatrix):
     :math:`\phi_j` is the Shen Dirichlet basis function and :math:`T_k` is the
     Chebyshev basis function.
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], CB)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -486,7 +487,7 @@ class BTDmat(SpectralMatrix):
         ck = get_ck(N, test[0].quad)
         d = {0: np.pi/2*ck[:Q]}
         d[-2] = -np.pi/2*ck[2:(dmax(N, M, -2)+2)]
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
 @inheritdocstrings
@@ -506,7 +507,7 @@ class BTNmat(SpectralMatrix):
     :math:`\phi_j` is the Shen Neumann basis function and :math:`T_k` is the
     Chebyshev basis function.
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], CB)
         assert isinstance(trial[0], SN)
         N = test[0].N
@@ -514,7 +515,7 @@ class BTNmat(SpectralMatrix):
         k = np.arange(N, dtype=np.float)
         d = {-2: -np.pi/2*ck[2:]*((k[2:]-2)/k[2:])**2,
               0: np.pi/2*ck[:-2]}
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
 @inheritdocstrings
@@ -533,7 +534,7 @@ class BBBmat(SpectralMatrix):
 
     and :math:`\psi_j` is the Shen Biharmonic basis function.
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         from shenfun.la import PDMA
@@ -549,7 +550,7 @@ class BBBmat(SpectralMatrix):
         d[4] = d4[:dmax(N-4, M-4, 4)]
         d[-2] = d2[:dmax(N-4, M-4, -2)]
         d[-4] = d4[:dmax(N-4, M-4, -4)]
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
         self.solve = PDMA(self)
 
     def matvec(self, v, c, format='cython', axis=0):
@@ -612,7 +613,7 @@ class BBDmat(SpectralMatrix):
     and :math:`\phi_j` is the Shen Dirichlet basis function and :math:`\psi_k`
     the Shen Biharmonic basis function.
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -624,7 +625,7 @@ class BBDmat(SpectralMatrix):
               0: (ck[:N-4] + a)*np.pi/2,
               2: -(a+b*ck[4:])*np.pi/2,
               4: b[:-2]*np.pi/2}
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -678,14 +679,14 @@ class CDNmat(SpectralMatrix):
     For simplicity, the matrix is stored including the zero index row (k=0)
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SN)
         N = test[0].N
         k = np.arange(N-2, dtype=np.float)
         d = {-1: -((k[1:]-1)/(k[1:]+1))**2*(k[1:]+1)*np.pi,
               1: (k[:-1]+1)*np.pi}
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
     def matvec(self, v, c, format='cython', axis=0):
         if format == 'cython' and v.ndim == 3:
@@ -719,14 +720,14 @@ class CDDmat(SpectralMatrix):
 
     and :math:`\phi_k` is the Shen Dirichlet basis function.
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         N = test[0].N
         k = np.arange(N, dtype=np.float)
         d = {-1: -(k[1:N-2]+1)*np.pi,
               1: (k[:(N-3)]+1)*np.pi}
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
     def matvec(self, v, c, format='cython', axis=0):
         N = self.shape[0]
@@ -779,7 +780,7 @@ class CNDmat(SpectralMatrix):
     For simplicity, the matrix is stored including the zero index coloumn (j=0)
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -788,7 +789,7 @@ class CNDmat(SpectralMatrix):
               1: -(2-k[:-1]**2/(k[:-1]+2)**2*(k[:-1]+3))*np.pi}
         for i in range(3, N-1, 2):
             d[i] = -(1-k[:-i]**2/(k[:-i]+2)**2)*2*np.pi
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
     def matvec(self, v, c, format='csr', axis=0):
         c = super(CNDmat, self).matvec(v, c, format=format, axis=axis)
@@ -815,7 +816,7 @@ class CTDmat(SpectralMatrix):
     :math:`\phi_j` is the Shen Dirichlet basis function and :math:`T_k` is the
     Chebyshev basis function.
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], CB)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -824,7 +825,7 @@ class CTDmat(SpectralMatrix):
               1: -2*np.pi}
         for i in range(3, N-2, 2):
             d[i] = -2*np.pi
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
 class CDTmat(SpectralMatrix):
@@ -843,13 +844,13 @@ class CDTmat(SpectralMatrix):
     :math:`\phi_k` is the Shen Dirichlet basis function and :math:`T_j` is the
     Chebyshev basis function.
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], CB)
         N = test[0].N
         k = np.arange(N, dtype=np.float)
         d = {1: np.pi*(k[:N-2]+1)}
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
 @inheritdocstrings
@@ -869,7 +870,7 @@ class CBDmat(SpectralMatrix):
     :math:`\phi_j` is the Shen Dirichlet basis and :math:`\psi_k` the Shen
     Biharmonic basis function.
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -877,7 +878,7 @@ class CBDmat(SpectralMatrix):
         d = {-1: -(k[1:N-4]+1)*np.pi,
               1: 2*(k[:N-4]+1)*np.pi,
               3: -(k[:N-5]+1)*np.pi}
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
     def matvec(self, v, c, format='cython', axis=0):
         N, M = self.shape
@@ -923,7 +924,7 @@ class CDBmat(SpectralMatrix):
     :math:`\phi_k` is the Shen Dirichlet basis function and :math:`\psi_j` the
     Shen Biharmonic basis function.
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SB)
         N = test[0].N
@@ -931,7 +932,7 @@ class CDBmat(SpectralMatrix):
         d = {-3: (k[3:-2]-2)*(k[3:-2]+1)/k[3:-2]*np.pi,
              -1: -2*(k[1:-3]+1)**2/(k[1:-3]+2)*np.pi,
               1: (k[:-5]+1)*np.pi}
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
     def matvec(self, v, c, format='cython', axis=0):
         N, M = self.shape
@@ -982,7 +983,7 @@ class ABBmat(SpectralMatrix):
     and :math:`\psi_k` is the Shen Biharmonic basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
@@ -990,7 +991,7 @@ class ABBmat(SpectralMatrix):
         d = {-2: 2*(k[2:]-1)*(k[2:]+2)*np.pi,
               0: -4*((k+1)*(k+2)**2)/(k+3)*np.pi,
               2: 2*(k[:-2]+1)*(k[:-2]+2)*np.pi}
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
     def matvec(self, v, c, format='cython', axis=0):
         N = self.shape[0]
@@ -1042,7 +1043,7 @@ class ADDmat(SpectralMatrix):
     and :math:`\psi_k` is the Shen Dirichlet basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -1050,7 +1051,7 @@ class ADDmat(SpectralMatrix):
         d = {0: -2*np.pi*(k[:N-2]+1)*(k[:N-2]+2)}
         for i in range(2, N-2, 2):
             d[i] = -4*np.pi*(k[:-(i+2)]+1)
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
         # Following storage more efficient, but requires effort in iadd/isub...
 #        d = {0: -2*np.pi*(k[:N-2]+1)*(k[:N-2]+2),
@@ -1138,7 +1139,7 @@ class ANNmat(SpectralMatrix):
     and :math:`\phi_k` is the Shen Neumann basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SN)
         N = test[0].N
@@ -1146,7 +1147,7 @@ class ANNmat(SpectralMatrix):
         d = {0: -2*np.pi*k**2*(k+1)/(k+2)}
         for i in range(2, N-2, 2):
             d[i] = -4*np.pi*(k[:-i]+i)**2*(k[:-i]+1)/(k[:-i]+2)**2
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
     def matvec(self, v, c, format='csr', axis=0):
         c = super(ANNmat, self).matvec(v, c, format=format, axis=axis)
@@ -1226,7 +1227,7 @@ class ATTmat(SpectralMatrix):
     and :math:`\psi_k` is the Chebyshev basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], CB)
         assert isinstance(trial[0], CB)
         N = test[0].N
@@ -1234,7 +1235,7 @@ class ATTmat(SpectralMatrix):
         d = {}
         for j in range(2, N, 2):
             d[j] = k[j:]*(k[j:]**2-k[:-j]**2)*np.pi/2.
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
 @inheritdocstrings
@@ -1253,7 +1254,7 @@ class SBBmat(SpectralMatrix):
 
     and :math:`\psi_k` is the Shen Biharmonic basis function.
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
@@ -1264,7 +1265,7 @@ class SBBmat(SpectralMatrix):
         for j in range(2, N-4, 2):
             i = 8*(ki[:-j]+1)*(ki[:-j]+2)*(ki[:-j]*(ki[:-j]+4)+3*(ki[j:]+2)**2)
             d[j] = np.array(i*np.pi/(k[j:]+3))
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -1286,8 +1287,8 @@ class SBBmat(SpectralMatrix):
 
 @inheritdocstrings
 class _Chebmatrix(SpectralMatrix):
-    def __init__(self, test, trial):
-        SpectralMatrix.__init__(self, {}, test, trial)
+    def __init__(self, test, trial, measure=1):
+        SpectralMatrix.__init__(self, {}, test, trial, measure=measure)
 
 
 class _ChebMatDict(dict):

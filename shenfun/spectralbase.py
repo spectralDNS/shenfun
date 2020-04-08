@@ -251,6 +251,7 @@ class SpectralBase(object):
         self._xfftn_fwd = None    # external forward transform function
         self._xfftn_bck = None    # external backward transform function
         self._M = 1.0             # Normalization factor
+        self._dx = 1              # Integral measure (in addition to weight)
         self.si = islicedict()
         self.sl = slicedict()
         self._tensorproductspace = None     # link if belonging to TensorProductSpace
@@ -392,6 +393,8 @@ class SpectralBase(object):
         """
         if input_array is not None:
             self.scalar_product.input_array[...] = input_array
+
+        self.scalar_product._input_array = self.get_measured_array(self.scalar_product._input_array)
 
         self.evaluate_scalar_product(self.scalar_product.input_array,
                                      self.scalar_product.output_array,
@@ -595,7 +598,7 @@ class SpectralBase(object):
             output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
         X = sp.symbols('x')
-        basis = self.sympy_basis(i=i).diff(X, k)
+        basis = self.sympy_basis(i=i, x=X).diff(X, k)
         output_array[:] = sp.lambdify(X, basis, 'numpy')(x)
         return output_array
 
@@ -647,7 +650,7 @@ class SpectralBase(object):
                 Expansion coefficients
 
         """
-        _, weights = self.points_and_weights(int(self.N*self.padding_factor))
+        weights = self.points_and_weights(int(self.N*self.padding_factor))[1]
         P = self.evaluate_basis_all(argument=0)
         if input_array.ndim == 1:
             output_array[slice(0, self.N)] = np.dot(input_array*weights, np.conj(P))
@@ -908,19 +911,23 @@ class SpectralBase(object):
             x = a + (x-c)/self.domain_factor()
         return x
 
-    def sympy_basis(self, i=0):
+    def sympy_basis(self, i=0, x=None):
         """Return basis function `i` as sympy function
 
         Parameters
         ----------
         i : int, optional
             The degree of freedom of the basis function
+        x : sympy Symbol, optional
         """
         raise NotImplementedError
 
-    def sympy_basis_all(self):
+    def sympy_basis_all(self, x=None):
         """Return all basis functions as sympy functions"""
-        return np.array([self.sympy_basis(i) for i in range(self.N)])
+        return np.array([self.sympy_basis(i, x=x) for i in range(self.slice().start, self.slice().stop)])
+
+    def sympy_weight(self, x=None):
+        return 1
 
     def reference_domain(self):
         """Return reference domain of basis"""
@@ -1027,7 +1034,14 @@ class SpectralBase(object):
 
     def get_mass_matrix(self):
         mat = self._get_mat()
-        return mat[((self.__class__, 0), (self.__class__, 0))]
+        dx = self._dx
+        if not dx == 1:
+            x0 = dx.free_symbols
+            assert len(x0) == 1
+            x0 = x0.pop()
+            x = sp.symbols('x', real=x0.is_real, positive=x0.is_positive)
+            dx = dx.subs(x0, x)
+        return mat[((self.__class__, 0), (self.__class__, 0), dx)]
 
     def _get_mat(self):
         mod = importlib.import_module('shenfun.'+self.family())
@@ -1045,6 +1059,50 @@ class SpectralBase(object):
 
     def __hash__(self):
         return hash((self.N, self.quad, self.family()))
+
+    def get_measured_weights(self, N=None, measure=None):
+        """Return weights times `measure`
+
+        Parameters
+        ----------
+        N : integer, optional
+            The number of quadrature points
+        measure : None or `sympy.Expr`
+        """
+        if N is None:
+            N = self.N
+        dx = self._dx if measure is None else measure
+        xm, wj = self.mpmath_points_and_weights(N, map_true_domain=True)
+        if dx == 1:
+            return wj
+
+        s = dx.free_symbols
+        assert len(s) == 1
+        s = s.pop()
+        xj = sp.lambdify(s, dx)(xm)
+        wj *= xj
+        return wj
+
+    def get_measured_array(self, input_array, measure=None):
+        """Return `input_array` times `measure`
+
+        Parameters
+        ----------
+        input_array : Array
+        measure : None or `sympy.Expr`
+        """
+        dx = self._dx if measure is None else measure
+        xm = self.mpmath_points_and_weights(self.N, map_true_domain=True)[0]
+        if dx == 1:
+            return input_array
+
+        s = dx.free_symbols
+        assert len(s) == 1
+        s = s.pop()
+        xj = sp.lambdify(s, dx)(xm)
+        xj = self.broadcast_to_ndims(xj)
+        input_array *= xj
+        return input_array
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         """Return space (otherwise as self) to be used for dealiasing
@@ -1281,8 +1339,8 @@ class slicedict(dict):
         return dict.__getitem__(self, self.__keytransform__(key))
 
 
-def inner_product(test, trial):
-    """Return 1D inner product of bilinear form
+def inner_product(test, trial, measure=1):
+    """Return 1D weighted inner product of bilinear form
 
     Parameters
     ----------
@@ -1300,6 +1358,7 @@ def inner_product(test, trial):
             differentiated. The test represents the matrix row
         trial : 2-tuple of (Basis, integer)
             Like test
+        measure: function of coordinate, optional
 
     Note
     ----
@@ -1322,8 +1381,24 @@ def inner_product(test, trial):
     """
     assert trial[0].__module__ == test[0].__module__
     key = ((test[0].__class__, test[1]), (trial[0].__class__, trial[1]))
+    sc = 1
+    if measure != 1:
+        x0 = measure.free_symbols
+        assert len(x0) == 1
+        x0 = x0.pop()
+        x = sp.symbols('x', real=x0.is_real, positive=x0.is_positive)
+        measure = measure.subs(x0, x)
+        if measure.subs(x, 1) < 0:
+            sc = -1
+            measure *= sc
+        key = key + (test[0].domain, measure)
+
     mat = test[0]._get_mat()
-    return mat[key](test, trial)
+    A = mat[key](test, trial, measure=measure)
+    A.scale *= sc
+    if not test[0].domain_factor() == 1:
+        A.scale *= test[0].domain_factor()**(test[1]+trial[1])
+    return A
 
 class FuncWrap(object):
 

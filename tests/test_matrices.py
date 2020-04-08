@@ -2,6 +2,7 @@ from copy import copy, deepcopy
 import functools
 from itertools import product
 import numpy as np
+import sympy as sp
 from scipy.sparse.linalg import spsolve
 from mpi4py import MPI
 import pytest
@@ -85,20 +86,35 @@ mats_and_quads = cmats_and_quads+lmats_and_quads+lagmats_and_quads+hmats_and_qua
 #cmats_and_quads_ids = ['-'.join(i) for i in product([v.__name__ for v in cmatrices.mat.values()], cquads)]
 #lmats_and_quads_ids = ['-'.join(i) for i in product([v.__name__ for v in lmatrices.mat.values()], lquads)]
 
+x = sp.symbols('x', real=True)
+xp = sp.symbols('x', real=True, positive=True)
+
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_mat(key, mat, quad):
     """Test that matrices built by hand equals those automatically generated"""
     test = key[0]
     trial = key[1]
-    testfunction = (test[0](N, quad=quad), test[1])
-    trialfunction = (trial[0](N, quad=quad), trial[1])
-    mat = mat(testfunction, trialfunction)
-    shenfun.check_sanity(mat, testfunction, trialfunction)
+    measure = 1
+    if len(key) == 4:
+        domain = key[2]
+        measure = key[3]
+        if quad == 'GL':
+            return
+    t0 = test[0]
+    t1 = trial[0]
+    if len(key) == 4:
+        t0 = functools.partial(t0, domain=domain)
+        t1 = functools.partial(t1, domain=domain)
+    testfunction = (t0(N, quad=quad), test[1])
+    trialfunction = (t1(N, quad=quad), trial[1])
+    mat = mat(testfunction, trialfunction, measure=measure)
+
+    shenfun.check_sanity(mat, testfunction, trialfunction, measure)
     if test[0].family() == 'Legendre' and test[0].boundary_condition() == 'Dirichlet':
         testfunction = (test[0](N, quad=quad, scaled=True), test[1])
         trialfunction = (trial[0](N, quad=quad, scaled=True), trial[1])
         mat = mat(testfunction, trialfunction)
-        shenfun.check_sanity(mat, testfunction, trialfunction)
+        shenfun.check_sanity(mat, testfunction, trialfunction, measure)
 
 @pytest.mark.parametrize('b0,b1', cbases2)
 @pytest.mark.parametrize('quad', cquads)
@@ -273,8 +289,20 @@ def test_eq():
 def test_imul(key, mat, quad):
     test = key[0]
     trial = key[1]
-    mat = mat((test[0](N, quad=quad), test[1]),
-              (trial[0](N, quad=quad), trial[1]))
+    measure = 1
+    if len(key) == 4:
+        domain = key[2]
+        measure = key[3]
+        if quad == 'GL':
+            return
+    t0 = test[0]
+    t1 = trial[0]
+    if len(key) == 4:
+        t0 = functools.partial(t0, domain=domain)
+        t1 = functools.partial(t1, domain=domain)
+    testfunction = (t0(N, quad=quad), test[1])
+    trialfunction = (t1(N, quad=quad), trial[1])
+    mat = mat(testfunction, trialfunction, measure=measure)
     mc = mat.scale
     mat *= 2
     assert mat.scale == 2.0*mc
@@ -288,8 +316,20 @@ def test_imul(key, mat, quad):
 def test_mul(key, mat, quad):
     test = key[0]
     trial = key[1]
-    m = mat((test[0](N, quad=quad), test[1]),
-            (trial[0](N, quad=quad), trial[1]))
+    measure = 1
+    if len(key) == 4:
+        domain = key[2]
+        measure = key[3]
+        if quad == 'GL':
+            return
+    t0 = test[0]
+    t1 = trial[0]
+    if len(key) == 4:
+        t0 = functools.partial(t0, domain=domain)
+        t1 = functools.partial(t1, domain=domain)
+    testfunction = (t0(N, quad=quad), test[1])
+    trialfunction = (t1(N, quad=quad), trial[1])
+    m = mat(testfunction, trialfunction, measure=measure)
     mc = 2.*m
     assert mc.scale == 2.0*m.scale
 
@@ -317,8 +357,20 @@ def test_mul2():
 def test_rmul(key, mat, quad):
     test = key[0]
     trial = key[1]
-    m = mat((test[0](N, quad=quad), test[1]),
-            (trial[0](N, quad=quad), trial[1]))
+    measure = 1
+    if len(key) == 4:
+        domain = key[2]
+        measure = key[3]
+        if quad == 'GL':
+            return
+    t0 = test[0]
+    t1 = trial[0]
+    if len(key) == 4:
+        t0 = functools.partial(t0, domain=domain)
+        t1 = functools.partial(t1, domain=domain)
+    testfunction = (t0(N, quad=quad), test[1])
+    trialfunction = (t1(N, quad=quad), trial[1])
+    m = mat(testfunction, trialfunction, measure=measure)
     mc = m*2.
     assert mc.scale == 2.0*m.scale
 
@@ -330,8 +382,20 @@ def test_rmul(key, mat, quad):
 def test_div(key, mat, quad):
     test = key[0]
     trial = key[1]
-    m = mat((test[0](N, quad=quad), test[1]),
-            (trial[0](N, quad=quad), trial[1]))
+    measure = 1
+    if len(key) == 4:
+        domain = key[2]
+        measure = key[3]
+        if quad == 'GL':
+            return
+    t0 = test[0]
+    t1 = trial[0]
+    if len(key) == 4:
+        t0 = functools.partial(t0, domain=domain)
+        t1 = functools.partial(t1, domain=domain)
+    testfunction = (t0(N, quad=quad), test[1])
+    trialfunction = (t1(N, quad=quad), trial[1])
+    m = mat(testfunction, trialfunction, measure=measure)
 
     mc = m/2.
     assert mc.scale == 0.5*m.scale
@@ -357,8 +421,21 @@ def test_div2(basis, quad):
 def test_add(key, mat, quad):
     test = key[0]
     trial = key[1]
-    m = mat((test[0](N, quad=quad), test[1]),
-            (trial[0](N, quad=quad), trial[1]))
+    measure = 1
+    if len(key) == 4:
+        domain = key[2]
+        measure = key[3]
+        if quad == 'GL':
+            return
+    t0 = test[0]
+    t1 = trial[0]
+    if len(key) == 4:
+        t0 = functools.partial(t0, domain=domain)
+        t1 = functools.partial(t1, domain=domain)
+    testfunction = (t0(N, quad=quad), test[1])
+    trialfunction = (t1(N, quad=quad), trial[1])
+    m = mat(testfunction, trialfunction, measure=measure)
+
     mc = m + m
     assert mc.scale == 2.0*m.scale
 
@@ -371,35 +448,52 @@ def test_add(key, mat, quad):
 def test_iadd(key, mat, quad):
     test = key[0]
     trial = key[1]
-    m = mat((test[0](N, quad=quad), test[1]),
-            (trial[0](N, quad=quad), trial[1]))
-    mc = copy(m)
+    measure = 1
+    if len(key) == 4:
+        domain = key[2]
+        measure = key[3]
+        if quad == 'GL':
+            return
+    t0 = test[0]
+    t1 = trial[0]
+    if len(key) == 4:
+        t0 = functools.partial(t0, domain=domain)
+        t1 = functools.partial(t1, domain=domain)
+    testfunction = (t0(N, quad=quad), test[1])
+    trialfunction = (t1(N, quad=quad), trial[1])
+    m = mat(testfunction, trialfunction, measure=measure)
+    mc = SparseMatrix(deepcopy(dict(m)), m.shape, m.scale)
     m += mc
-    assert m.scale == 2.0*mc.scale
+    assert np.linalg.norm((m-2*mc).diags('csr').data) < 1e-8
 
-    m1 = SparseMatrix(copy(dict(mc)), mc.shape)
-    m += m1
-    assert  m.scale == 1
-    assert m.__class__.__name__ == 'SparseMatrix' # downcast
     m -= 2*mc
-    assert m == m1
 
-    m2 = SparseMatrix(copy(dict(m)), m.shape)
-    m1 += m2
-    assert m1.scale == 2.0
+    assert np.linalg.norm(m.diags('csr').data) < 1e-10
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_isub(key, mat, quad):
     test = key[0]
     trial = key[1]
-    m = mat((test[0](N, quad=quad), test[1]),
-            (trial[0](N, quad=quad), trial[1]))
-    mc = copy(m)
+    measure = 1
+    if len(key) == 4:
+        domain = key[2]
+        measure = key[3]
+        if quad == 'GL':
+            return
+    t0 = test[0]
+    t1 = trial[0]
+    if len(key) == 4:
+        t0 = functools.partial(t0, domain=domain)
+        t1 = functools.partial(t1, domain=domain)
+    testfunction = (t0(N, quad=quad), test[1])
+    trialfunction = (t1(N, quad=quad), trial[1])
+    m = mat(testfunction, trialfunction, measure=measure)
+    mc = SparseMatrix(deepcopy(dict(m)), m.shape, m.scale)
     m -= mc
-    assert m.scale == 0.0
+    assert np.linalg.norm(m.diags('csr').data) < 1e-10
 
-    m1 = SparseMatrix(copy(dict(m)), m.shape)
-    m2 = SparseMatrix(copy(dict(m)), m.shape)
+    m1 = SparseMatrix(deepcopy(dict(m)), m.shape)
+    m2 = SparseMatrix(deepcopy(dict(m)), m.shape)
     m1 -= m2
     assert m1.scale == 0.0
 
@@ -407,8 +501,20 @@ def test_isub(key, mat, quad):
 def test_sub(key, mat, quad):
     test = key[0]
     trial = key[1]
-    m = mat((test[0](N, quad=quad), test[1]),
-            (trial[0](N, quad=quad), trial[1]))
+    measure = 1
+    if len(key) == 4:
+        domain = key[2]
+        measure = key[3]
+        if quad == 'GL':
+            return
+    t0 = test[0]
+    t1 = trial[0]
+    if len(key) == 4:
+        t0 = functools.partial(t0, domain=domain)
+        t1 = functools.partial(t1, domain=domain)
+    testfunction = (t0(N, quad=quad), test[1])
+    trialfunction = (t1(N, quad=quad), trial[1])
+    m = mat(testfunction, trialfunction, measure=measure)
     mc = m - m
     assert mc.scale == 0.0
 
@@ -579,7 +685,9 @@ def test_biharmonic2D(family, axis):
 
 
 if __name__ == '__main__':
-    #test_mat(((lBasis[0], 0), (lBasis[1], 1)), lmatrices.CLDmat, 'LG')
+    import sympy as sp
+    x = sp.symbols('x', real=True, positive=True)
+    test_mat(((lBasis[1], 1), (lBasis[1], 1), (-1, 1), 1+x), lmatrices.ADDrp1mat, 'LG')
     #test_cmatvec(cBasis[3], cBasis[1], 'GC', 'cython', 3, 0)
     #test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
     #test_hmatvec(hBasis[0], hBasis[0], 'HG', 'self', 3, 1, 1)
@@ -587,7 +695,7 @@ if __name__ == '__main__':
     #test_sub(*mats_and_quads[15])
     #test_mul2()
     #test_div2(cBasis[0], 'GC')
-    test_helmholtz2D('chebyshev', 0)
+    #test_helmholtz2D('chebyshev', 0)
     #test_helmholtz3D('chebyshev', 0)
     #test_biharmonic3D('chebyshev', 0)
     #test_biharmonic2D('jacobi', 0)

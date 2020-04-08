@@ -1,5 +1,6 @@
 from numbers import Number, Integral
 import numpy as np
+import sympy as sp
 from shenfun.optimization.cython import evaluate
 from mpi4py_fft import DistArray
 
@@ -32,6 +33,7 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
         - Dirichlet - Homogeneous Dirichlet
         - Neumann - Homogeneous Neumann
         - Biharmonic - Homogeneous Dirichlet and Neumann at both ends
+        - Polar - For basis specific to polar coordinates
     dtype : str or np.dtype, optional
         The datatype of physical space (input to forward transforms)
     quad : str, optional
@@ -109,6 +111,10 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
                 B = chebyshev.bases.SecondNeumannBasis
             elif bc.lower() == 'biharmonic':
                 B = chebyshev.bases.ShenBiharmonicBasis
+            elif bc.lower() == 'upperdirichlet':
+                B = chebyshev.bases.UpperDirichletBasis
+            elif bc.lower() == 'bipolar':
+                B = chebyshev.bases.ShenBiPolarBasis
 
         else:
             raise NotImplementedError
@@ -143,6 +149,12 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
                 B = legendre.bases.ShenNeumannBasis
             elif bc.lower() == 'biharmonic':
                 B = legendre.bases.ShenBiharmonicBasis
+            elif bc.lower() == 'upperdirichlet':
+                B = legendre.bases.UpperDirichletBasis
+            elif bc.lower() == 'bipolar':
+                B = legendre.bases.ShenBiPolarBasis
+            elif bc.lower() == 'bipolar0':
+                B = legendre.bases.ShenBiPolar0Basis
 
         return B(N, **par)
 
@@ -298,18 +310,22 @@ class Expr(object):
     final 3 since it is a 3-dimensional tensor product space.
     """
 
-    def __init__(self, basis, terms=None, scales=None, indices=None):
+    def __init__(self, basis, terms=None, scales=None, indices=None, measures=None):
         #assert isinstance(basis, BasisFunction)
         self._basis = basis
         self._terms = terms
         self._scales = scales
         self._indices = indices
+        self._measures = measures
         ndim = self.function_space().dimensions
         if terms is None:
             self._terms = np.zeros((self.function_space().num_components(), 1, ndim),
                                    dtype=np.int)
         if scales is None:
             self._scales = np.ones((self.function_space().num_components(), 1))
+
+        if measures is None:
+            self._measures = np.ones((self.function_space().num_components(), 1), dtype=object)
 
         if indices is None:
             self._indices = basis.offset()+np.arange(self.function_space().num_components())[:, np.newaxis]
@@ -336,6 +352,10 @@ class Expr(object):
     def scales(self):
         """Return scales of Expr"""
         return self._scales
+
+    def measures(self):
+        """Return measures of Expr"""
+        return self._measures
 
     @property
     def argument(self):
@@ -451,62 +471,97 @@ class Expr(object):
             return Expr(basis,
                         self._terms[i][np.newaxis, :, :],
                         self._scales[i][np.newaxis, :],
-                        self._indices[i][np.newaxis, :])
+                        self._indices[i][np.newaxis, :],
+                        self._measures[i][np.newaxis, :])
         elif self.expr_rank() == 2:
             ndim = self.dimensions
             return Expr(basis,
                         self._terms[i*ndim:(i+1)*ndim],
                         self._scales[i*ndim:(i+1)*ndim],
-                        self._indices[i*ndim:(i+1)*ndim])
+                        self._indices[i*ndim:(i+1)*ndim],
+                        self._measures[i*ndim:(i+1)*ndim])
         else:
             raise NotImplementedError
 
     def __mul__(self, a):
+        sc = self.scales().copy()
+        ms = self.measures().copy()
         if self.expr_rank() == 0:
-            assert isinstance(a, Number)
-            sc = self.scales().copy()*a
+            if isinstance(a, sp.Expr):
+                if isinstance(a, Number):
+                    sc = sc*float(a)
+                else:
+                    ms = ms*a
+            elif isinstance(a, Number):
+                sc = sc*a
+            else:
+                raise NotImplementedError
         else:
-            sc = self.scales().copy()
             if isinstance(a, tuple):
                 assert len(a) == self.num_components()
                 for i in range(self.num_components()):
-                    assert isinstance(a[i], Number)
-                    sc[i] = sc[i]*a[i]
+                    if isinstance(a[i], sp.Expr):
+                        if isinstance(a[i], Number):
+                            sc[i] = sc[i]*float(a[i])
+                        else:
+                            ms[i] = ms[i]*a[i]
+                    elif isinstance(a[i], Number):
+                        sc[i] = sc[i]*a[i]
+
+            elif isinstance(a, sp.Expr):
+                if isinstance(a, Number):
+                    sc *= float(a)
+                else:
+                    ms *= a
 
             elif isinstance(a, Number):
                 sc *= a
 
             else:
                 raise NotImplementedError
-            #elif isinstance(a, np.ndarray):
-                #assert len(a) == self.dimensions or len(a) == 1
-                #sc *= a
 
-        return Expr(self._basis, self._terms.copy(), sc, self._indices.copy())
+        return Expr(self._basis, self._terms.copy(), sc, self._indices.copy(), ms)
 
     def __rmul__(self, a):
         return self.__mul__(a)
 
     def __imul__(self, a):
         sc = self.scales()
+        ms = self.measures()
         if self.expr_rank() == 0:
-            assert isinstance(a, Number)
-            sc *= a
+            if isinstance(a, sp.Expr):
+                if isinstance(a, Number):
+                    sc *= float(a)
+                else:
+                    ms *= a
+            elif isinstance(a, Number):
+                sc *= a
+
         else:
             if isinstance(a, tuple):
                 assert len(a) == self.dimensions
                 for i in range(self.dimensions):
-                    assert isinstance(a[i], Number)
-                    sc[i] = sc[i]*a[i]
+                    if isinstance(a[i], sp.Expr):
+                        if isinstance(a[i], Number):
+                            sc[i] = sc[i]*float(a[i])
+                        else:
+                            ms[i] = ms[i]*a[i]
+                    elif isinstance(a[i], Number):
+                        sc[i] = sc[i]*a[i]
+
+                    else:
+                        raise NotImplementedError
+            elif isinstance(a, sp.Expr):
+                if isinstance(a, Number):
+                    sc *= float(a)
+                else:
+                    ms *= a
 
             elif isinstance(a, Number):
                 sc *= a
 
             else:
                 raise NotImplementedError
-            #elif isinstance(a, np.ndarray):
-                #assert len(a) == self.dimensions or len(a) == 1
-                #sc *= a
 
         return self
 
@@ -525,7 +580,8 @@ class Expr(object):
         return Expr(basis,
                     np.concatenate((self.terms(), a.terms()), axis=1),
                     np.concatenate((self.scales(), a.scales()), axis=1),
-                    np.concatenate((self.indices(), a.indices()), axis=1))
+                    np.concatenate((self.indices(), a.indices()), axis=1),
+                    np.concatenate((self.measures(), a.measures()), axis=1))
 
     def __iadd__(self, a):
         assert isinstance(a, (Expr, BasisFunction))
@@ -543,6 +599,7 @@ class Expr(object):
         self._terms = np.concatenate((self.terms(), a.terms()), axis=1)
         self._scales = np.concatenate((self.scales(), a.scales()), axis=1)
         self._indices = np.concatenate((self.indices(), a.indices()), axis=1)
+        self._measures = np.concatenate((self.measures(), a.measures()), axis=1)
         return self
 
     def __sub__(self, a):
@@ -560,7 +617,8 @@ class Expr(object):
         return Expr(basis,
                     np.concatenate((self.terms(), a.terms()), axis=1),
                     np.concatenate((self.scales(), -a.scales()), axis=1),
-                    np.concatenate((self.indices(), a.indices()), axis=1))
+                    np.concatenate((self.indices(), a.indices()), axis=1),
+                    np.concatenate((self.measures(), a.measures()), axis=1))
 
     def __isub__(self, a):
         assert isinstance(a, (Expr, BasisFunction))
@@ -578,11 +636,12 @@ class Expr(object):
         self._terms = np.concatenate((self.terms(), a.terms()), axis=1)
         self._scales = np.concatenate((self.scales(), -a.scales()), axis=1)
         self._indices = np.concatenate((self.indices(), a.indices()), axis=1)
+        self._measures = np.concatenate((self.measures(), a.measures()), axis=1)
         return self
 
     def __neg__(self):
         return Expr(self.basis(), self.terms().copy(), -self.scales().copy(),
-                    self.indices().copy())
+                    self.indices().copy(), self.measures().copy())
 
 
 class BasisFunction(object):
@@ -781,10 +840,8 @@ class ShenfunBaseArray(DistArray):
 
             if hasattr(buffer, 'free_symbols'):
                 # Evaluate sympy function on entire mesh
-                import sympy
-                x, y, z = sympy.symbols("x,y,z")
-                sym0 = [sym for sym in (x, y, z) if sym in buffer.free_symbols]
-                buffer = sympy.lambdify(sym0, buffer)
+                x = buffer.free_symbols.pop()
+                buffer = sp.lambdify(x, buffer)
                 buffer = buffer(space.mesh())
                 if cls.__name__ == 'Function':
                     buf = np.empty_like(space.forward.output_array)
@@ -810,11 +867,13 @@ class ShenfunBaseArray(DistArray):
 
         # Evaluate sympy function on entire mesh
         if hasattr(buffer, 'free_symbols'):
-            import sympy
-            x, y, z, r, s, t = sympy.symbols("x,y,z,r,s,t")
-            sym0 = [sym for sym in (x, y, z, r, s, t) if sym in buffer.free_symbols]
-            #sym0 = tuple(buffer.free_symbols)
-            buffer = sympy.lambdify(sym0, buffer)(*space.local_mesh())
+            sym0 = buffer.free_symbols
+            mesh = space.local_mesh(True)
+            m = []
+            for sym in sym0:
+                j = 'xyzrs'.index(str(sym))
+                m.append(mesh[j])
+            buffer = sp.lambdify(sym0, buffer)(*m)
             if cls.__name__ == 'Function':
                 buf = np.empty_like(space.forward.output_array)
                 buf = space.forward(buffer, buf)

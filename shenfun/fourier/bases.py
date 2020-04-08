@@ -104,9 +104,11 @@ class FourierBase(SpectralBase):
             points = self.map_true_domain(points)
         return points, np.array([2*np.pi/N])
 
-    def sympy_basis(self, i=0):
-        x = sp.symbols('x')
+    def sympy_basis(self, i=0, x=sp.symbols('x')):
         return sp.exp(1j*i*x)
+
+    def sympy_weight(self, x=sp.symbols('x')):
+        return 2*sp.pi/self.N
 
     def evaluate_basis(self, x=None, i=0, output_array=None):
         if x is None:

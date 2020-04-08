@@ -15,7 +15,9 @@ from shenfun.utilities import inheritdocstrings
 from .lobatto import legendre_lobatto_nodes_and_weights
 
 __all__ = ['LegendreBase', 'Basis', 'ShenDirichletBasis',
-           'ShenBiharmonicBasis', 'ShenNeumannBasis', 'BCBasis']
+           'ShenBiharmonicBasis', 'ShenNeumannBasis',
+           'ShenBiPolarBasis', 'ShenBiPolar0Basis',
+           'UpperDirichletBasis', 'BCBasis']
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
@@ -75,8 +77,7 @@ class LegendreBase(SpectralBase):
     def vandermonde(self, x):
         return leg.legvander(x, self.N-1)
 
-    def sympy_basis(self, i=0):
-        x = sympy.symbols('x')
+    def sympy_basis(self, i=0, x=sympy.symbols('x')):
         return sympy.legendre(i, x)
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -276,8 +277,7 @@ class ShenDirichletBasis(LegendreBase):
     def slice(self):
         return slice(0, self.N-2)
 
-    def sympy_basis(self, i=0):
-        x = sympy.symbols('x')
+    def sympy_basis(self, i=0, x=sympy.symbols('x')):
         f = sympy.legendre(i, x)-sympy.legendre(i+2, x)
         if self.is_scaled():
             f /= np.sqrt(4*i+6)
@@ -430,8 +430,7 @@ class ShenNeumannBasis(LegendreBase):
         output[self.sl[slice(-2, None)]] = 0
         return output
 
-    def sympy_basis(self, i=0):
-        x = sympy.symbols('x')
+    def sympy_basis(self, i=0, x=sympy.symbols('x')):
         f = sympy.legendre(i, x)-(i*(i+1))/((i+2)*(i+3))*sympy.legendre(i+2, x)
         return f
 
@@ -520,7 +519,7 @@ class ShenNeumannBasis(LegendreBase):
 class ShenBiharmonicBasis(LegendreBase):
     """Shen biharmonic basis
 
-    Homogeneous Dirichlet and Neumann boundary conditions.
+    Both Dirichlet and Neumann boundary conditions.
 
     Parameters
     ----------
@@ -590,8 +589,7 @@ class ShenBiharmonicBasis(LegendreBase):
         w_hat[s4] += f2*fk[s]
         return w_hat
 
-    def sympy_basis(self, i=0):
-        x = sympy.symbols('x')
+    def sympy_basis(self, i=0, x=sympy.symbols('x')):
         if i < self.N-4:
             f = (sympy.legendre(i, x)
                  -2*(2*i+5.)/(2*i+7.)*sympy.legendre(i+2, x)
@@ -609,7 +607,8 @@ class ShenBiharmonicBasis(LegendreBase):
         if i < self.N-4:
             output_array[:] = eval_legendre(i, x) - 2*(2*i+5.)/(2*i+7.)*eval_legendre(i+2, x) + ((2*i+3.)/(2*i+7.))*eval_legendre(i+4, x)
         else:
-            output_array[:] = sympy.lambdify(sympy.symbols('x'), self.sympy_basis(i))(x)
+            X = sympy.symbols('x')
+            output_array[:] = sympy.lambdify(X, self.sympy_basis(i, x=X))(x)
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -626,7 +625,8 @@ class ShenBiharmonicBasis(LegendreBase):
                 basis = basis.deriv(k)
             output_array[:] = basis(x)
         else:
-            output_array[:] = sympy.lambdify(sympy.symbols('x'), self.sympy_basis(i).diff(sympy.symbols('x'), k))(x)
+            X = sympy.symbols('x')
+            output_array[:] = sympy.lambdify(X, self.sympy_basis(i, X).diff(X, k))(x)
         return output_array
 
     def to_ortho(self, input_array, output_array=None):
@@ -694,6 +694,455 @@ class ShenBiharmonicBasis(LegendreBase):
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
+
+@inheritdocstrings
+class UpperDirichletBasis(LegendreBase):
+    """Shen Legendre basis with homogeneous Dirichlet boundary conditions on x=1
+
+    Parameters
+    ----------
+        N : int
+            Number of quadrature points
+        quad : str, optional
+            Type of quadrature
+
+            - LG - Legendre-Gauss
+            - GL - Legendre-Gauss-Lobatto
+
+        domain : 2-tuple of floats, optional
+            The computational domain
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
+    """
+    def __init__(self, N, quad="LG", domain=(-1., 1.),
+                 padding_factor=1, dealias_direct=False):
+        assert quad == "LG"
+        LegendreBase.__init__(self, N, quad=quad, domain=domain,
+                              padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.LT = Basis(N, quad)
+        self._factor = np.ones(1)
+        self.plan(int(N*padding_factor), 0, np.float, {})
+
+    @staticmethod
+    def boundary_condition():
+        return 'UpperDirichlet'
+
+    @property
+    def has_nonhomogeneous_bcs(self):
+        return False
+
+    def is_scaled(self):
+        return False
+
+    def _composite_basis(self, V, argument=0):
+        P = np.zeros(V.shape)
+        P[:, :-1] = V[:, :-1] - V[:, 1:]
+        return P
+
+    def to_ortho(self, input_array, output_array=None):
+        if output_array is None:
+            output_array = np.zeros_like(input_array.v)
+        s0 = self.sl[slice(0, -1)]
+        s1 = self.sl[slice(1, None)]
+        output_array[s0] = input_array[s0]
+        output_array[s1] -= input_array[s0]
+        return output_array
+
+    def slice(self):
+        return slice(0, self.N-1)
+
+    def sympy_basis(self, i=0, x=sympy.symbols('x')):
+        f = sympy.legendre(i, x)-sympy.legendre(i+1, x)
+        return f
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        output_array[:] = eval_legendre(i, x) - eval_legendre(i+1, x)
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        if x is None:
+            x = self.mesh(False, False)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = np.atleast_1d(x)
+        basis = np.zeros(self.shape(True))
+        basis[np.array([i, i+1])] = (1, -1)
+        basis = leg.Legendre(basis)
+        if k > 0:
+            basis = basis.deriv(k)
+        output_array[:] = basis(x)
+        return output_array
+
+    def vandermonde_scalar_product(self, input_array, output_array):
+        SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
+
+    def eval(self, x, u, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = self.map_reference_domain(x)
+        w_hat = work[(u, 0, True)]
+        output_array[:] = leg.legval(x, u[:-1])
+        w_hat[1:] = u[:-1]
+        output_array -= leg.legval(x, w_hat)
+        return output_array
+
+    def forward(self, input_array=None, output_array=None, fast_transform=False):
+        self.scalar_product(input_array, fast_transform=fast_transform)
+        u = self.scalar_product.tmp_array
+        self.apply_inverse_mass(u)
+        self._truncation_forward(u, self.forward.output_array)
+        if output_array is not None:
+            output_array[...] = self.forward.output_array
+            return output_array
+        return self.forward.output_array
+
+    def plan(self, shape, axis, dtype, options):
+        if isinstance(axis, tuple):
+            assert len(axis) == 1
+            axis = axis[0]
+
+        if isinstance(self.forward, Transform):
+            if self.forward.input_array.shape == shape and self.axis == axis:
+                # Already planned
+                return
+
+        self.LT.plan(shape, axis, dtype, options)
+        U, V = self.LT.forward.input_array, self.LT.forward.output_array
+        self.axis = axis
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.forward = Transform(self.forward, None, U, V, trunc_array)
+            self.backward = Transform(self.backward, None, trunc_array, V, U)
+            self.backward_uniform = Transform(self.backward_uniform, None, trunc_array, V, U)
+        else:
+            self.forward = Transform(self.forward, None, U, V, V)
+            self.backward = Transform(self.backward, None, V, V, U)
+            self.backward_uniform = Transform(self.backward_uniform, None, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return ShenDirichletBasis(self.N,
+                                  quad=self.quad,
+                                  padding_factor=padding_factor,
+                                  dealias_direct=dealias_direct,
+                                  domain=self.domain)
+
+@inheritdocstrings
+class ShenBiPolarBasis(LegendreBase):
+    """Shen's Legendre basis for the Biharmonic equation in polar coordinates
+
+    Parameters
+    ----------
+        N : int
+            Number of quadrature points
+        quad : str, optional
+            Type of quadrature
+
+            - LG - Legendre-Gauss
+            - GL - Legendre-Gauss-Lobatto
+
+        domain : 2-tuple of floats, optional
+            The computational domain
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
+    """
+    def __init__(self, N, quad="LG", domain=(-1., 1.),
+                 padding_factor=1, dealias_direct=False):
+        assert quad == "LG"
+        LegendreBase.__init__(self, N, quad=quad, domain=domain,
+                              padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.LT = Basis(N, quad)
+        self.plan(int(N*padding_factor), 0, np.float, {})
+
+    @staticmethod
+    def boundary_condition():
+        return 'BiPolar'
+
+    @property
+    def has_nonhomogeneous_bcs(self):
+        return False
+
+    def to_ortho(self, input_array, output_array=None):
+        raise(NotImplementedError)
+
+    def slice(self):
+        return slice(0, self.N-4)
+
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+        return (1-x)**2*(1+x)**2*(sympy.legendre(i+1, x).diff(x, 1))
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        X = sympy.symbols('x', real=True)
+        f = self.sympy_basis(i, X)
+        output_array[:] = sympy.lambdify(X, f)(x)
+        return output_array
+
+    def evaluate_basis_all(self, x=None, argument=0):
+        if x is None:
+            x = self.mesh(False, False)
+        N, M = self.shape(False), self.shape(True)
+        output_array = np.zeros((M, N))
+        D = np.zeros(M)
+        for j in range(N-4):
+            output_array[:, j] = self.evaluate_basis(x, j, D)
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        if x is None:
+            x = self.mesh(False, False)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = np.atleast_1d(x)
+        X = sympy.symbols('x')
+        f = self.sympy_basis(i, X).diff(X, k)
+        output_array[:] = sympy.lambdify(X, f)(x)
+        return output_array
+
+    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
+        if x is None:
+            x = self.mesh(False, False)
+        N, M = self.shape(False), self.shape(True)
+        output_array = np.zeros((M, N))
+        D = np.zeros(M)
+        for j in range(N-4):
+            output_array[:, j] = self.evaluate_basis_derivative(x, j, k, D)
+        return output_array
+
+    def vandermonde_scalar_product(self, input_array, output_array):
+        SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
+
+    def eval(self, x, u, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = self.map_reference_domain(x)
+        fj = self.eval_basis_all(x)
+        output_array[:] = np.dot(u, fj)
+        return output_array
+
+    def forward(self, input_array=None, output_array=None, fast_transform=False):
+        self.scalar_product(input_array, fast_transform=fast_transform)
+        u = self.scalar_product.tmp_array
+        self.apply_inverse_mass(u)
+        self._truncation_forward(u, self.forward.output_array)
+        if output_array is not None:
+            output_array[...] = self.forward.output_array
+            return output_array
+        return self.forward.output_array
+
+    def plan(self, shape, axis, dtype, options):
+        if isinstance(axis, tuple):
+            assert len(axis) == 1
+            axis = axis[0]
+
+        if isinstance(self.forward, Transform):
+            if self.forward.input_array.shape == shape and self.axis == axis:
+                # Already planned
+                return
+
+        self.LT.plan(shape, axis, dtype, options)
+        U, V = self.LT.forward.input_array, self.LT.forward.output_array
+        self.axis = axis
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.forward = Transform(self.forward, None, U, V, trunc_array)
+            self.backward = Transform(self.backward, None, trunc_array, V, U)
+            self.backward_uniform = Transform(self.backward_uniform, None, trunc_array, V, U)
+        else:
+            self.forward = Transform(self.forward, None, U, V, V)
+            self.backward = Transform(self.backward, None, V, V, U)
+            self.backward_uniform = Transform(self.backward_uniform, None, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return ShenBiPolarBasis(self.N,
+                                quad=self.quad,
+                                padding_factor=padding_factor,
+                                dealias_direct=dealias_direct,
+                                domain=self.domain)
+
+@inheritdocstrings
+class ShenBiPolar0Basis(LegendreBase):
+    """Shen biharmonic basis for polar coordinates
+
+    Homogeneous Dirichlet and Neumann boundary conditions.
+
+    Parameters
+    ----------
+        N : int
+            Number of quadrature points
+        quad : str, optional
+            Type of quadrature
+
+            - LG - Legendre-Gauss
+        4-tuple of numbers, optional
+            The values of the 4 boundary conditions at x=(-1, 1).
+            The two Dirichlet first and then the Neumann.
+        domain : 2-tuple of floats, optional
+            The computational domain
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
+    """
+    def __init__(self, N, quad="LG", domain=(-1., 1.), padding_factor=1,
+                 dealias_direct=False):
+        assert quad == "LG"
+        LegendreBase.__init__(self, N, quad="LG", domain=domain,
+                              padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.LT = Basis(N, quad)
+        self._factor1 = np.zeros(0)
+        self._factor2 = np.zeros(0)
+        self._factor3 = np.zeros(0)
+        self.plan(int(N*padding_factor), 0, np.float, {})
+
+    @staticmethod
+    def boundary_condition():
+        return 'BiPolar0'
+
+    @property
+    def has_nonhomogeneous_bcs(self):
+        return False
+
+    def _composite_basis(self, V, argument=0):
+        P = np.zeros_like(V)
+        k = np.arange(V.shape[1]).astype(np.float)[:-3]
+        P[:, :-3] = V[:, :-3] - ((2*k+3)*(k+4)/(2*k+5)/(k+2))*V[:, 1:-2] - (k*(k+1)/(k+2)/(k+3))*V[:, 2:-1] + (k+1)*(2*k+3)/(k+3)/(2*k+5)*V[:, 3:]
+        return P
+
+    def set_factor_arrays(self, v):
+        s = self.sl[self.slice()]
+        if not self._factor1.shape == v[s].shape:
+            k = self.wavenumbers().astype(np.float)
+            self._factor1 = (-(2*k+3)*(k+4)/(2*k+5)/(k+2)).astype(float)
+            self._factor2 = (-k*(k+1)/(k+2)/(k+3)).astype(float)
+            self._factor3 = ((k+1)*(2*k+3)/(k+3)/(2*k+5)).astype(float)
+
+    def scalar_product(self, input_array=None, output_array=None, fast_transform=False):
+        output = LegendreBase.scalar_product(self, input_array, output_array, False)
+        output[self.sl[slice(-3, None)]] = 0
+        return output
+
+    #@optimizer
+    def set_w_hat(self, w_hat, fk, f1, f2, f3): # pragma: no cover
+        s = self.sl[self.slice()]
+        s1 = self.sl[slice(1, -2)]
+        s2 = self.sl[slice(2, -1)]
+        s3 = self.sl[slice(3, None)]
+        w_hat[s] = fk[s]
+        w_hat[s1] += f1*fk[s]
+        w_hat[s2] += f2*fk[s]
+        w_hat[s3] += f3*fk[s]
+        return w_hat
+
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+        assert i < self.N-3
+        x = self.map_reference_domain(x)
+        return (sympy.legendre(i, x)
+                -(2*i+3)*(i+4)/(2*i+5)/(i+2)*sympy.legendre(i+1, x)
+                -i*(i+1)/(i+2)/(i+3)*sympy.legendre(i+2, x)
+                +(i+1)*(2*i+3)/(i+3)/(2*i+5)*sympy.legendre(i+3, x))
+        #return (sympy.legendre(i, x)
+        #        -(2*i+3)*(i+4)/(2*i+5)*sympy.legendre(i+1, x)
+        #        -i*(i+1)/(i+2)/(i+3)*sympy.legendre(i+2, x)
+        #        +(i+1)*(i+2)*(2*i+3)/(i+3)/(2*i+5)*sympy.legendre(i+3, x))
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        X = sympy.symbols('x', real=True)
+        output_array[:] = sympy.lambdify(X, self.sympy_basis(i, X))(x)
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        if x is None:
+            x = self.mesh(False, False)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = np.atleast_1d(x)
+        X = sympy.symbols('x', real=True)
+        output_array[:] = sympy.lambdify(X, self.sympy_basis(i, X).diff(X, k))(x)
+        return output_array
+
+    def to_ortho(self, input_array, output_array=None):
+        if output_array is None:
+            output_array = np.zeros_like(input_array.v)
+        self.set_factor_arrays(input_array)
+        output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2, self._factor3)
+        return output_array
+
+    def slice(self):
+        return slice(0, self.N-3)
+
+    def eval(self, x, u, output_array=None):
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = self.map_reference_domain(x)
+        w_hat = work[(u, 0, True)]
+        self.set_factor_arrays(u)
+        output_array[:] = leg.legval(x, u[:-3])
+        w_hat[1:-2] = self._factor1*u[:-3]
+        output_array += leg.legval(x, w_hat[:-2])
+        w_hat[2:-1] = self._factor2*u[:-3]
+        w_hat[:2] = 0
+        output_array += leg.legval(x, w_hat)
+        w_hat[3:] = self._factor3*u[:-3]
+        w_hat[:3] = 0
+        output_array += leg.legval(x, w_hat)
+        return output_array
+
+    def forward(self, input_array=None, output_array=None, fast_transform=False):
+        self.scalar_product(input_array, fast_transform=fast_transform)
+        u = self.scalar_product.tmp_array
+        self.apply_inverse_mass(u)
+        self._truncation_forward(u, self.forward.output_array)
+        if output_array is not None:
+            output_array[...] = self.forward.output_array
+            return output_array
+        return self.forward.output_array
+
+    def plan(self, shape, axis, dtype, options):
+        if isinstance(axis, tuple):
+            assert len(axis) == 1
+            axis = axis[0]
+
+        if isinstance(self.forward, Transform):
+            if self.forward.input_array.shape == shape and self.axis == axis:
+                # Already planned
+                return
+
+        self.LT.plan(shape, axis, dtype, options)
+        U, V = self.LT.forward.input_array, self.LT.forward.output_array
+        self.axis = axis
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.forward = Transform(self.forward, None, U, V, trunc_array)
+            self.backward = Transform(self.backward, None, trunc_array, V, U)
+            self.backward_uniform = Transform(self.backward_uniform, None, trunc_array, V, U)
+        else:
+            self.forward = Transform(self.forward, None, U, V, V)
+            self.backward = Transform(self.backward, None, V, V, U)
+            self.backward_uniform = Transform(self.backward_uniform, None, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
+
 
 ## Experimental!
 #@inheritdocstrings
@@ -835,8 +1284,7 @@ class BCBasis(LegendreBase):
         P[:, 1] = (V[:, 0] + V[:, 1])/2
         return P
 
-    def sympy_basis(self, i=0):
-        x = sympy.symbols('x')
+    def sympy_basis(self, i=0, x=sympy.symbols('x')):
         if i == 0:
             return 0.5*(1-x)
         elif i == 1:
@@ -944,8 +1392,7 @@ class BCBiharmonicBasis(LegendreBase):
         P = np.tensordot(V[:, :4], self.coefficient_matrix(), (1, 1))
         return P
 
-    def sympy_basis(self, i=0):
-        x = sympy.symbols('x')
+    def sympy_basis(self, i=0, x=sympy.symbols('x')):
         if i < 4:
             f = 0
             for j, c in enumerate(self.coefficient_matrix()[i]):
@@ -958,15 +1405,16 @@ class BCBiharmonicBasis(LegendreBase):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        f = self.sympy_basis(i)
-        output_array[:] = sympy.lambdify(sympy.symbols('x'), f)(x)
+        X = sympy.symbols('x')
+        f = self.sympy_basis(i, X)
+        output_array[:] = sympy.lambdify(X, f)(x)
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        f = self.sympy_basis(i)
         X = sympy.symbols('x')
+        f = self.sympy_basis(i, X)
         output_array[:] = sympy.lambdify(X, f.diff(X, k))(x)
         return output_array

@@ -7,7 +7,7 @@ Demo - Rayleigh Benard
 %%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Jan 28, 2020
+:Date: Apr 8, 2020
 
 *Summary.* Rayleigh-Benard convection arise
 due to temperature gradients in a fluid. The governing equations are
@@ -550,7 +550,7 @@ can be assembled as
 
     inner(div(grad(u_[0])) + ((a[rk]+b[rk])*nu*dt/2.)*div(grad(div(grad(u_[0])))), v)
 
-The remaining parts :math:`\frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y} + \nabla^2T`
+The remaining parts :math:`\frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y} + \frac{\partial^2 T}{\partial y^2}`
 end up in the nonlinear :math:`\mathcal{N}`. The nonlinear convection term :math:`\boldsymbol{H}` can be computed in many different ways.
 Here we will make use of
 the identity :math:`(\boldsymbol{u} \cdot \nabla) \boldsymbol{u} = -\boldsymbol{u} \times (\nabla \times \boldsymbol{u}) + 0.5 \nabla\boldsymbol{u} \cdot \boldsymbol{u}`,
@@ -594,7 +594,7 @@ and all of the right hand side, using the function ``compute_rhs_u``
         rhs[1] = 0
         rhs[1] += inner(v, div(grad(u[0])) + ((a[rk]+b[rk])*nu*dt/2.)*div(grad(div(grad(u[0])))))
         w0 = inner(v, Dx(Dx(H[1], 0, 1), 1, 1) - Dx(H[0], 1, 2))
-        w1 = inner(v, div(grad(T)))
+        w1 = inner(v, Dx(T, 1, 2))
         rhs[1] += a[rk]*dt*(w0+w1)
         rhs[1] += b[rk]*dt*rhs[0]
         rhs[0] = w0+w1
