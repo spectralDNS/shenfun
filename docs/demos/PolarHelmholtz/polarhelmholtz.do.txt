@@ -260,7 +260,7 @@ if we use `T0`, much because the additional $\theta$-direction is
 required for the polar coordinates to apply.
 Also note that `F` is created using the entire range of wavenumber
 and as such we need to make sure that the coefficient created for
-$k=0$ ) (i.e., $\hat{u}^1_{0,j}$) will be exactly zero.
+$k=0$ (i.e., $\hat{u}^1_{0,j}$) will be exactly zero.
 Finally, note that
 `T0` is not distributed with MPI, which is accomplished using
 `MPI.COMM_SELF` instead of `comm` (which equals `MPI.COMM_WORLD`).
