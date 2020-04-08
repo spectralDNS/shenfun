@@ -1,40 +1,45 @@
 """
-Solve Helmholtz equation on the unit disc
+Solve Biharmonic equation on the unit disc
 
 Using polar coordinates and numerical method from:
 
 "Efficient spectral-Galerkin methods III: Polar and cylindrical geometries",
 J Shen, SIAM J. Sci Comput. 18, 6, 1583-1604
 
-Using shenfun to map coordinates instead of
-directly applying r = (t+1)/2, as in the SIAM paper.
-
 """
+
 import matplotlib.pyplot as plt
-from mpi4py import MPI
+import functools
 from shenfun import *
 from shenfun.la import SolverGeneric1NP
 import sympy as sp
 
-by_parts = True
-
 # Define polar coordinates using angle along first axis and radius second
 theta, r = psi = sp.symbols('x,y', real=True, positive=True)
 rv = (r*sp.cos(theta), r*sp.sin(theta))
+measures = get_measures(psi, rv)
 
-alpha = 2
-
-# Manufactured solution
-ue = (r*(1-r))**2*sp.cos(8*theta)-0.1*(r-1)
-f = -ue.diff(r, 2) - (1/r)*ue.diff(r, 1) - (1/r**2)*ue.diff(theta, 2) + alpha*ue
-
-N = 32
+N = 20
+by_parts = True
 F = Basis(N, 'F', dtype='d')
 F0 = Basis(1, 'F', dtype='d')
-L = Basis(N, 'L', bc='Dirichlet', domain=(0, 1))
-L0 = Basis(N, 'L', bc='UpperDirichlet', domain=(0, 1))
+L = Basis(N, 'L', bc='Bipolar', domain=(0, 1))
+L0 = Basis(N, 'L', bc='BiPolar0', domain=(0, 1))
 T = TensorProductSpace(comm, (F, L), axes=(1, 0), measures=(psi, rv))
 T0 = TensorProductSpace(MPI.COMM_SELF, (F0, L0), axes=(1, 0), measures=(psi, rv))
+
+# Manufactured solution
+ue = (r*(1-r))**4*(1+sp.cos(8*theta))
+
+# Right hand side of numerical solution
+g = (ue.diff(r, 4)
+     + (2/r**2)*ue.diff(r, 2, theta, 2)
+     + 1/r**4*ue.diff(theta, 4)
+     + (2/r)*ue.diff(r, 3)
+     - 2/r**3*ue.diff(r, 1, theta, 2)
+     - 1/r**2*ue.diff(r, 2)
+     + 4/r**4*ue.diff(theta, 2)
+     + 1/r**3*ue.diff(r, 1))
 
 v = TestFunction(T)
 u = TrialFunction(T)
@@ -42,49 +47,44 @@ v0 = TestFunction(T0)
 u0 = TrialFunction(T0)
 
 # Compute the right hand side on the quadrature mesh
-fj = Array(T, buffer=f)
+gj = Array(T, buffer=g)
 
 # Take scalar product
-f_hat = Function(T)
-f_hat = inner(v, fj, output_array=f_hat)
+g_hat = Function(T)
+g_hat = inner(v, gj, output_array=g_hat)
 if T.local_slice(True)[0].start == 0: # The processor that owns k=0
-    f_hat[0] = 0
+    g_hat[0] = 0
 
-# For m=0 we solve only a 1D equation. Do the scalar product fo Fourier coefficient 0 by hand (or sympy)
-# Since F0 only has one item, it is not sufficient to do a regular inner product.
+# For m=0 we solve only a 1D equation. Do the scalar product for Fourier coefficient 0 by hand (or sympy)
 if comm.Get_rank() == 0:
-    f0_hat = Function(T0)
-    gt = sp.lambdify(r, sp.integrate(f, (theta, 0, 2*sp.pi))/2/sp.pi)(L0.mesh())
-    f0_hat = L0.scalar_product(gt, f0_hat)
+    g0_hat = Function(T0)
+    gt = sp.lambdify(r, sp.integrate(g, (theta, 0, 2*sp.pi))/2/sp.pi)(L0.mesh())
+    g0_hat = L0.scalar_product(gt, g0_hat)
 
-# Assemble matrices.
 if by_parts:
-    mats = inner(grad(v), grad(u))
-    mats += [inner(v, alpha*u)]
-    # case m=0
+    mats = inner(div(grad(v)), div(grad(u)))
     if comm.Get_rank() == 0:
-        mats0 = inner(grad(v0), grad(u0))
-        mats0 += [inner(v0, alpha*u0)]
+        mats0 = inner(div(grad(v0)), div(grad(u0)))
+
 else:
-    mats = inner(v, -div(grad(u))+alpha*u)
-    # case m=0
+    mats = inner(v, div(grad(div(grad(u)))))
     if comm.Get_rank() == 0:
-        mats0 = inner(v0, -div(grad(u0))+alpha*u0)
+        mats0 = inner(v0, div(grad(div(grad(u0)))))
 
 # Solve
 # case m > 0
 u_hat = Function(T)
 Sol1 = SolverGeneric1NP(mats)
-u_hat = Sol1(f_hat, u_hat)
+u_hat = Sol1(g_hat, u_hat)
 
 # case m = 0
 u0_hat = Function(T0)
 if comm.Get_rank() == 0:
     Sol0 = SolverGeneric1NP(mats0)
-    u0_hat = Sol0(f0_hat, u0_hat)
+    u0_hat = Sol0(g0_hat, u0_hat)
 comm.Bcast(u0_hat, root=0)
 
-# Transform back to real space. Broadcast 1D solution
+# Transform back to real space.
 sl = T.local_slice(False)
 uj = u_hat.backward() + u0_hat.backward()[:, sl[1]]
 ue = Array(T, buffer=ue)
@@ -112,7 +112,7 @@ up = np.vstack([ur, ur[0]])
 plt.figure()
 plt.contourf(xp, yp, up)
 plt.colorbar()
-plt.title('Helmholtz - unitdisc')
+plt.title('Biharmonic - unitdisc')
 plt.xticks([])
 plt.yticks([])
 plt.axis('off')
