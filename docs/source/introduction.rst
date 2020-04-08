@@ -104,6 +104,7 @@ links
 
     * :ref:`Demo - 1D Poisson's equation`
     * :ref:`Demo - 3D Poisson's equation`
+    * :ref:`Demo - Helmholtz equation in polar coordinates`
     * :ref:`Demo - Cubic nonlinear Klein-Gordon equation`
     * :ref:`Demo - Kuramato-Sivashinsky equation`
     * :ref:`Demo - Stokes equations`

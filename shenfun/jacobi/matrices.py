@@ -27,7 +27,7 @@ class BJJmat(SpectralMatrix):
     and :math:`\psi_k` is the Jacobi basis function.
 
     """
-    def __init__(self, test, trial, scale=1.):
+    def __init__(self, test, trial, scale=1., measure=1):
         assert isinstance(test[0], JB)
         assert isinstance(trial[0], JB)
         N = test[0].N
@@ -95,7 +95,7 @@ class BDDmat(SpectralMatrix):
     and :math:`\psi_k` is the Jacobi Dirichlet basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -124,7 +124,7 @@ class ADDmat(SpectralMatrix):
     and :math:`\psi_k` is the Jacobi Dirichlet basis function.
 
     """
-    def __init__(self, test, trial, scale=1.):
+    def __init__(self, test, trial, scale=1., measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -181,7 +181,7 @@ class BBBmat(SpectralMatrix):
     and :math:`\psi_k` is the Biharmonic basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         from shenfun.la import PDMA
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
@@ -220,7 +220,7 @@ class ABBmat(SpectralMatrix):
     and :math:`\psi_k` is the Jacobi Biharmonic basis function.
 
     """
-    def __init__(self, test, trial, scale=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
@@ -252,7 +252,7 @@ class SBBmat(SpectralMatrix):
     and :math:`\psi_k` is the Jacobi Biharmonic basis function.
 
     """
-    def __init__(self, test, trial, scale=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
@@ -277,7 +277,7 @@ class OBBmat(SpectralMatrix):
     and :math:`\psi_k` is the 6th order Jacobi basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
@@ -289,8 +289,8 @@ class OBBmat(SpectralMatrix):
 
 @inheritdocstrings
 class _Jacmatrix(SpectralMatrix):
-    def __init__(self, test, trial):
-        SpectralMatrix.__init__(self, {}, test, trial)
+    def __init__(self, test, trial, measure=1):
+        SpectralMatrix.__init__(self, {}, test, trial, measure=measure)
 
 
 class _JacMatDict(dict):

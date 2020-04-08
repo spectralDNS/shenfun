@@ -101,8 +101,7 @@ class Basis(SpectralBase):
         V = hermite.hermvander(x, self.N-1)
         return V
 
-    def sympy_basis(self, i=0):
-        x = sp.symbols('x')
+    def sympy_basis(self, i=0, x=sp.symbols('x')):
         return sp.hermite(i, x)*sp.exp(-x**2/2)*self.factor(i)
 
     def evaluate_basis(self, x, i=0, output_array=None):

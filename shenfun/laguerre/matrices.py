@@ -24,7 +24,7 @@ class BLLmat(SpectralMatrix):
     and :math:`L_k` is the Laguerre function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], LB)
         assert isinstance(trial[0], LB)
         SpectralMatrix.__init__(self, {0:1}, test, trial)
@@ -62,7 +62,7 @@ class BDDmat(SpectralMatrix):
     and :math:`\phi_k` is the Laguerre (function) Dirichlet basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], LD)
         assert isinstance(trial[0], LD)
         d = {0:2., 1: -1., -1:-1.}
@@ -86,7 +86,7 @@ class ADDmat(SpectralMatrix):
     and :math:`\phi_k` is the Laguerre (function) Dirichlet basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], LD)
         assert isinstance(trial[0], LD)
         d = {0: 0.5,
@@ -98,8 +98,8 @@ class ADDmat(SpectralMatrix):
 
 @inheritdocstrings
 class _Lagmatrix(SpectralMatrix):
-    def __init__(self, test, trial):
-        SpectralMatrix.__init__(self, {}, test, trial)
+    def __init__(self, test, trial, measure=1):
+        SpectralMatrix.__init__(self, {}, test, trial, measure=measure)
 
 
 class _LagMatDict(dict):

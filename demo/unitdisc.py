@@ -3,33 +3,36 @@ Solve Helmholtz equation on the unit disc
 
 Using polar coordinates and numerical method from:
 
-"Efficient spectral-Galerkin methods III: Polar and cylindrical geometries", 
+"Efficient spectral-Galerkin methods III: Polar and cylindrical geometries",
 J Shen, SIAM J. Sci Comput. 18, 6, 1583-1604
 
 """
 
 import matplotlib.pyplot as plt
+import functools
 from shenfun import *
-import sympy as sp 
+import sympy as sp
 
-x, r = sp.symbols('x,r')
+theta, r = sp.symbols('x,y')
 
-beta = 1
+alpha = 8
+beta = alpha / 4
 
 # Manufactured solution
-u = (1-r**4)*sp.cos(4*x)-(r-1)/2
-g = -u.diff(r, 2) - (1/(r+1))*u.diff(r, 1) - (1/(r+1)**2)*u.diff(x, 2) + beta*u
+#u = (1-r**2)**2*sp.cos(4*x)-0*(r-1)/2
+u = (1-r**4)*sp.cos(4*theta)-0*(r-1)/2
+g = -u.diff(r, 2) - (1/(r+1))*u.diff(r, 1) - (1/(r+1)**2)*u.diff(theta, 2) + beta*u
 
-N = 16
+N = 12
 F = Basis(N, 'F', dtype='d')
 L = Basis(N, 'L', bc='Dirichlet')
-L0 = Basis(N, 'L')
+L0 = Basis(N, 'L', bc='UpperDirichlet')
 T = TensorProductSpace(comm, (F, L), axes=(1, 0))
 
 # Compute the right hand side on the quadrature mesh
 gj = Array(T, buffer=g*(1+r))
 
-# Fourier transform rhs first, since we need to apply a different 
+# Fourier transform rhs first, since we need to apply a different
 # basis for one given Fourier wavenumber.
 # g_tilde is intermediate, whereas g_hat full scalar product
 g_tilde = Function(T)
@@ -38,87 +41,76 @@ g_tilde = F.scalar_product(gj, g_tilde) # Fourier transform
 
 # Take scalar product in Legendre direction
 g_hat = L.scalar_product(g_tilde, g_hat)
+g_hat[0] = 0
 
-# case m=0 has different radial basis (see SIAM paper referenced above), 
-# but the Fourier basis is unity (exp(0))
-P = lambda n: sp.legendre(n, r) - sp.legendre(n+1, r)
-
-# Scalar product of rhs for m=0, simply overwrite
+# Scalar product of rhs for m=0
 M = g_hat.dims()
-xj, wj = L.points_and_weights()
-for j in range(M[1]+1):
-    hj = sp.lambdify(r, P(j))(xj) # Testfunction on quadrature mesh
-    g_hat[0, j] = np.sum(g_tilde[0]*hj*wj)
+g0_hat = Function(L0)
+g0_hat = L0.scalar_product(g_tilde[0].real, g0_hat)
 
 # Assemble matrices. Note that sympy integrate is slow compared to quadrature,
-# but integration is exact, so this is pure spectral Galerkin.
-A = np.zeros((M[1], M[1]))
-B = np.zeros((M[1], M[1]))
-C = np.zeros((M[1], M[1]))
-for i in range(M[1]):
-    psi_i = L.sympy_basis(i).subs({'x': r})
-    for j in range(M[1]):
-        psi_j =  L.sympy_basis(j).subs({'x': r})
-        A[i, j] = sp.integrate((1+r)*psi_i.diff(r, 1)*psi_j.diff(r, 1), (r, -1, 1))
-        B[i, j] = sp.integrate(1/(1+r)*psi_i*psi_j, (r, -1, 1)) 
-        C[i, j] = sp.integrate((1+r)*psi_i*psi_j, (r, -1, 1))  
+# but integration is exact, so this is pure spectral Galerkin. For the entire
+# method to be pure, we should also do the Legendre scalar product with sympy.
 
-A = extract_diagonal_matrix(A)
-B = extract_diagonal_matrix(B)
-C = extract_diagonal_matrix(C)
+if L.family().lower() == 'legendre':
+    A = inner_product((L, 1), (L, 1), (1+r))
+    B = inner_product((L, 0), (L, 0), (1/(1+r)))
+    C = inner_product((L, 0), (L, 0), (1+r))
+    MC = A + beta*C
 
-#case m=0
-A0 = np.zeros((N-1, N-1))
-C0 = np.zeros((N-1, N-1))
-for i in range(N-1):
-    psi_i = P(i)
-    for j in range(N-1):
-        psi_j =  P(j)
-        A0[i, j] = sp.integrate((1+r)*psi_i.diff(r, 1)*psi_j.diff(r, 1), (r, -1, 1))
-        C0[i, j] = sp.integrate((1+r)*psi_i*psi_j, (r, -1, 1))
+    # case m=0
+    A0 = inner_product((L0, 1), (L0, 1), (1+r))
+    C0 = inner_product((L0, 0), (L0, 0), (1+r))
 
-A0 = extract_diagonal_matrix(A0)
-C0 = extract_diagonal_matrix(C0)
+else:
+    A = inner_product((L, 0), (L, 2), (1+r))
+    B = inner_product((L, 0), (L, 1))
+    C = inner_product((L, 0), (L, 0), 1/(1+r))
+    D = inner_product((L, 0), (L, 0), (1+r))
+    MC = beta*D - A - B
+
+    # case m=0
+    A0 = inner_product((L0, 0), (L0, 2), (1+r))
+    B0 = inner_product((L0, 0), (L0, 1))
+    D0 = inner_product((L0, 0), (L0, 0), (1+r))
 
 # Solve
 # case m > 0
 u_hat = Function(T)
 for m in range(1, M[0]):
-    MM = A + m**2*B + beta*C
+    if L.family().lower() == 'legendre':
+        MM = MC + m**2*B
+    else:
+        MM = MC + m**2*C
     u_hat[m, :-2] = MM.solve(g_hat[m, :-2], u_hat[m, :-2])
 
 # case m = 0
-u0_hat = Function(L0) 
-M0 = A0 + beta*C0
-u0_hat[:-1] = M0.solve(g_hat[0, :-1].real, u0_hat[:-1])
+u0_hat = Function(L0)
+if L.family().lower() == 'legendre':
+    M0 = A0 + beta*C0
+else:
+    M0 = - A0 - B0 + beta*D0
+u0_hat[:-1] = M0.solve(g0_hat[:-1], u0_hat[:-1])
 
-# Transform back to real space. There's no shenfun basis for the 
-# m=0 basis, so do backward manually here
-uj = u_hat.backward()
-w0_hat = u0_hat.copy()
-w0_hat[1:] -= u0_hat[:-1]
-w0 = w0_hat.backward()
-uj += w0[None, :]
-
+# Transform back to real space.
+uj = u_hat.backward() + u0_hat.backward()[None, :]
 ue = Array(T, buffer=u)
-X = T.local_mesh(True) 
+X = T.local_mesh(True)
 print('Error =', np.linalg.norm(uj-ue))
 
 # Postprocess
 # Refine for a nicer plot. Refine simply pads Functions with zeros, which
-# gives more quadrature points. u_hat has NxN quadrature points, refine 
+# gives more quadrature points. u_hat has NxN quadrature points, refine
 # using any higher number.
 u_hat2 = u_hat.refine([N*5, N*5])
-w0_hat2 = w0_hat.refine(N*5)
-ur = u_hat2.backward()
-wr = w0_hat2.backward()
-ur += wr[None, :]
+u0_hat2 = u0_hat.refine(N*5)
+ur = u_hat2.backward() + u0_hat2.backward()[None, :]
 Y = u_hat2.function_space().local_mesh(True)
-theta, t = Y[0], Y[1]
-r = (t+1)/2
+thetaj, tj = Y[0], Y[1]
+rj = (tj+1)/2
 
 # Wrap periodic plot around since it looks nicer
-xx, yy = r*np.cos(theta), r*np.sin(theta)
+xx, yy = rj*np.cos(thetaj), rj*np.sin(thetaj)
 xp = np.vstack([xx, xx[0]])
 yp = np.vstack([yy, yy[0]])
 up = np.vstack([ur, ur[0]])

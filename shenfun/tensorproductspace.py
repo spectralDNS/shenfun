@@ -4,10 +4,10 @@ related methods.
 """
 from numbers import Number
 import warnings
-import sympy
+import sympy as sp
 import numpy as np
 from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun.utilities import apply_mask
+from shenfun.utilities import apply_mask, get_measures, split
 from shenfun.forms.arguments import Function, Array
 from shenfun.optimization.cython import evaluate
 from shenfun.spectralbase import slicedict, islicedict, SpectralBase
@@ -17,6 +17,8 @@ from mpi4py_fft.pencil import Subcomm, Pencil
 __all__ = ('TensorProductSpace', 'VectorTensorProductSpace',
            'MixedTensorProductSpace', 'Convolve')
 
+# Default sympy symbols. Note that order is important
+x, y, z, r, s = psi = sp.symbols('x,y,z,r,s', real=True)
 
 class TensorProductSpace(PFFT):
     """Class for multidimensional tensorproductspaces.
@@ -51,10 +53,18 @@ class TensorProductSpace(PFFT):
 
     """
     def __init__(self, comm, bases, axes=None, dtype=None, slab=False,
-                 collapse_fourier=False, backward_from_pencil=False, **kw):
+                 collapse_fourier=False, backward_from_pencil=False,
+                 measures=None, **kw):
         # Note do not call __init__ of super
         self.comm = comm
         self.bases = bases
+        self.measures = measures if measures is not None else (psi[:len(bases)],)*2
+        self.hi = get_measures(*self.measures)
+        if not self.hi.prod() == 1:
+            for key, val in split(self.hi).items():
+                k = 'xyzrs'.index(key)
+                self.bases[k]._dx *= val
+
         shape = list(self.global_shape())
         assert shape
         assert min(shape) > 0
@@ -146,7 +156,8 @@ class TensorProductSpace(PFFT):
             self.xfftn.append(self.bases[axes[-1]])
             self.xfftn[-1].plan(pencil.subshape, axes, dtype, kw)
             self.pencil[0] = pencilA = pencil
-            if not shape[axes[-1]] == self.xfftn[-1].forward.output_array.shape[axes[-1]]:
+            if not (shape[axes[-1]] == self.xfftn[-1].forward.output_array.shape[axes[-1]] and
+                    self.xfftn[-1].forward.input_array.dtype == self.xfftn[-1].forward.output_array.dtype):
                 dtype = self.xfftn[-1].forward.output_array.dtype
                 shape[axes[-1]] = self.xfftn[-1].forward.output_array.shape[axes[-1]]
                 pencilA = Pencil(self.subcomm, shape, axes[-1])
@@ -159,7 +170,8 @@ class TensorProductSpace(PFFT):
                 self.xfftn.append(xfftn)
                 self.transfer.append(transAB)
                 pencilA = pencilB
-                if not shape[axes[-1]] == xfftn.forward.output_array.shape[axes[-1]]:
+                if not (shape[axes[-1]] == xfftn.forward.output_array.shape[axes[-1]] and
+                        xfftn.forward.input_array.dtype == xfftn.forward.output_array.dtype):
                     dtype = xfftn.forward.output_array.dtype
                     shape[axes[-1]] = xfftn.forward.output_array.shape[axes[-1]]
                     pencilA = Pencil(pencilB.subcomm, shape, axes[-1])
@@ -222,7 +234,8 @@ class TensorProductSpace(PFFT):
         else:
             subshape[axes[-1]] = int(np.floor(subshape[axes[-1]]*xfftn.padding_factor))
         self.xfftn[-1].plan(subshape, axes, dtype, kw)
-        if not shape[axes[-1]] == self.xfftn[-1].forward.input_array.shape[axes[-1]]:
+        if not (shape[axes[-1]] == self.xfftn[-1].forward.input_array.shape[axes[-1]] and
+                self.xfftn[-1].forward.input_array.dtype == self.xfftn[-1].forward.output_array.dtype):
             dtype = self.xfftn[-1].forward.input_array.dtype
             shape[axes[-1]] = self.xfftn[-1].forward.input_array.shape[axes[-1]]
         pencilA = Pencil(pencil.subcomm, shape, axes[0])
@@ -241,7 +254,8 @@ class TensorProductSpace(PFFT):
             self.xfftn.append(xfftn)
             self.transfer.append(transBA)
             pencilA = pencilB
-            if not shape[axes[-1]] == xfftn.forward.input_array.shape[axes[-1]]:
+            if not (shape[axes[-1]] == xfftn.forward.input_array.shape[axes[-1]] and
+                    xfftn.forward.input_array.dtype == xfftn.forward.output_array.dtype):
                 dtype = xfftn.forward.input_array.dtype
                 shape[axes[-1]] = xfftn.forward.input_array.shape[axes[-1]]
                 pencilA = Pencil(pencilB.subcomm, shape, axes[-1])
@@ -1078,7 +1092,7 @@ class BoundaryValues(object):
     def __init__(self, T, bc=(0, 0)):
         self.base = T
         self.tensorproductspace = None
-        self.bc = bc            # Containing Data, sympy.Exprs or np.ndarray
+        self.bc = bc            # Containing Data, sp.Exprs or np.ndarray
         self.bcs = list((0,)*len(bc))       # Processed bc
         self.bcs_final = list((0,)*len(bc)) # Data. May differ from bcs only for TensorProductSpaces
         self.axis = 0
@@ -1091,7 +1105,7 @@ class BoundaryValues(object):
             assert len(bc) in (2, 4)
             self.bc = list(bc)
             for i, bci in enumerate(bc):
-                if isinstance(bci, (Number, sympy.Expr, np.ndarray)):
+                if isinstance(bci, (Number, sp.Expr, np.ndarray)):
                     self.bcs[i] = bci
                 else:
                     raise NotImplementedError
@@ -1099,10 +1113,10 @@ class BoundaryValues(object):
             self.bcs_final[:] = self.bcs
 
     def update_bcs_time(self, time):
-        tt = sympy.symbols('t')
+        tt = sp.symbols('t')
         update_time = False
         for i, bci in enumerate(self.bc):
-            if isinstance(bci, sympy.Expr):
+            if isinstance(bci, sp.Expr):
                 if tt in bci.free_symbols:
                     self.bc_time = time
                     self.bcs[i] = bci.subs({'t': time})
@@ -1157,18 +1171,29 @@ class BoundaryValues(object):
             s = T.local_slice(False)[self.axis]
 
             for j, bci in enumerate(self.bc):
-                if isinstance(bci, sympy.Expr):
+                if isinstance(bci, sp.Expr):
                     X = T.local_mesh(True)
-                    x, y, z, tt = sympy.symbols("x,y,z,t")
-                    sym0 = [sym for sym in (x, y, z) if sym in bci.free_symbols]
-                    if tt in bci.free_symbols:
-                        bci = bci.subs({'t': self.bc_time})
-                    lbci = sympy.lambdify(sym0, bci, 'numpy')
+                    for sym in bci.free_symbols:
+                        if str(sym) == 't':
+                            bci = bci.subs({'t': self.bc_time})
+                    sym0 = bci.free_symbols
+                    lbci = sp.lambdify(sym0, bci, 'numpy')
                     Yi = []
-                    for i, ax in enumerate((x, y, z)):
-                        if ax in bci.free_symbols:
-                            Yi.append(X[i][this_base.si[j]])
+                    for sym in sym0:
+                        k = 'xyzrs'.index(str(sym))
+                        Yi.append(X[k][this_base.si[j]])
                     f_bci = lbci(*Yi)
+
+                    #x, y, z, tt = sp.symbols("x,y,z,t")
+                    #sym0 = [sym for sym in (x, y, z) if sym in bci.free_symbols]
+                    #if tt in bci.free_symbols:
+                    #    bci = bci.subs({'t': self.bc_time})
+                    #lbci = sp.lambdify(sym0, bci, 'numpy')
+                    #Yi = []
+                    #for i, ax in enumerate((x, y, z)):
+                    #    if ax in bci.free_symbols:
+                    #        Yi.append(X[i][this_base.si[j]])
+                    #f_bci = lbci(*Yi)
                     # Put the Dirichlet value in the position of the bc dofs
                     if s.stop == int(this_base.N*this_base.padding_factor):
                         b[this_base.si[-(len(self.bc))+j]] = f_bci
@@ -1294,7 +1319,7 @@ class BoundaryValues(object):
             elif isinstance(bc, np.ndarray):
                 if not np.all(bc == 0):
                     return True
-            elif isinstance(bc, sympy.Expr):
+            elif isinstance(bc, sp.Expr):
                 return True
         return False
 

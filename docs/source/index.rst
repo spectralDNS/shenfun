@@ -47,6 +47,7 @@ Document build status
    poisson
    kleingordon
    poisson3d
+   polarhelmholtz
    kuramatosivashinsky
    stokes
    drivencavity

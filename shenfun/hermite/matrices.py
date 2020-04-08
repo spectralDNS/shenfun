@@ -24,7 +24,7 @@ class BHHmat(SpectralMatrix):
     and :math:`H_k` is the Hermite (function) basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], HB)
         assert isinstance(trial[0], HB)
         SpectralMatrix.__init__(self, {0:1}, test, trial)
@@ -64,7 +64,7 @@ class AHHmat(SpectralMatrix):
     and :math:`H_k` is the Hermite (function) basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], HB)
         assert isinstance(trial[0], HB)
         N = test[0].N
@@ -111,8 +111,8 @@ class AHHmat(SpectralMatrix):
 
 @inheritdocstrings
 class _Lagmatrix(SpectralMatrix):
-    def __init__(self, test, trial):
-        SpectralMatrix.__init__(self, {}, test, trial)
+    def __init__(self, test, trial, measure=1):
+        SpectralMatrix.__init__(self, {}, test, trial, measure=measure)
 
 
 class _LagMatDict(dict):

@@ -21,9 +21,9 @@ from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis, \
 comm = MPI.COMM_WORLD
 
 # Use sympy to compute a rhs, given an analytical solution
-x, y, z, s, t = symbols("x,y,z,s,t")
-ue = cos(4*x) + sin(4*y) + sin(6*z) + cos(6*s) + sin(4*t)
-fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2) + ue.diff(s, 2) + ue.diff(t, 2)
+x, y, z, r, s = symbols("x,y,z,r,s")
+ue = cos(4*x) + sin(4*y) + sin(6*z) + cos(6*r) + sin(4*s)
+fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2) + ue.diff(r, 2) + ue.diff(s, 2)
 
 # Size of discretization
 N = (8, 10, 12, 14, 12)

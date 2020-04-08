@@ -196,8 +196,7 @@ class Basis(LaguerreBase):
         output_array[:] = lag.lagval(x, u)*np.exp(-x/2)
         return output_array
 
-    def sympy_basis(self, i=0):
-        x = sp.symbols('x')
+    def sympy_basis(self, i=0, x=sp.symbols('x')):
         return sp.laguerre(i, x)*sp.exp(-x/2)
 
     @property
@@ -254,8 +253,7 @@ class ShenDirichletBasis(LaguerreBase):
     def slice(self):
         return slice(0, self.N-1)
 
-    def sympy_basis(self, i=0):
-        x = sp.symbols('x')
+    def sympy_basis(self, i=0, x=sp.symbols('x')):
         return (sp.laguerre(i, x)-sp.laguerre(i+1, x))*sp.exp(-x/2)
 
     def evaluate_basis(self, x, i=0, output_array=None):

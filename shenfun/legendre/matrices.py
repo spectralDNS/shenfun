@@ -67,6 +67,7 @@ from __future__ import division
 
 import functools
 import numpy as np
+import sympy as sp
 from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
 from shenfun.la import TDMA as neumann_TDMA
@@ -78,6 +79,10 @@ LB = bases.Basis
 SD = bases.ShenDirichletBasis
 SB = bases.ShenBiharmonicBasis
 SN = bases.ShenNeumannBasis
+SU = bases.UpperDirichletBasis
+
+x = sp.symbols('x', real=True)
+xp = sp.symbols('x', real=True, positive=True)
 
 #pylint: disable=unused-variable, redefined-builtin, bad-continuation
 
@@ -98,7 +103,7 @@ class BLLmat(SpectralMatrix):
     and :math:`L_k` is the Legendre basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], LB)
         assert isinstance(trial[0], LB)
         N = test[0].N
@@ -106,7 +111,7 @@ class BLLmat(SpectralMatrix):
         d = {0: 2./(2.*k+1)}
         if test[0].quad == 'GL':
             d[0][-1] = 2./(N-1)
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
     def solve(self, b, u=None, axis=0):
         s = self.trialfunction[0].slice()
@@ -140,7 +145,7 @@ class BDDmat(SpectralMatrix):
     and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -156,7 +161,7 @@ class BDDmat(SpectralMatrix):
             d[-2] /= (np.sqrt(4*k[2:]+6)*np.sqrt(4*k[:-2]+6))
 
         d[2] = d[-2]
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
         self.solve = TDMA(self)
 
 
@@ -177,7 +182,7 @@ class BNNmat(SpectralMatrix):
     and :math:`\psi_k` is the Shen Legendre Neumann basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SN)
         N = test[0].N
@@ -189,7 +194,7 @@ class BNNmat(SpectralMatrix):
         if test[0].quad == 'GL':
             d[0][-1] = d0[-1] + alpha[-1]**2*2./(N-1)
         d[-2] = d[2]
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
         #self.solve = neumann_TDMA(self)
 
 
@@ -210,7 +215,7 @@ class BBBmat(SpectralMatrix):
     and :math:`\psi_k` is the Shen Legendre Biharmonic basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         from shenfun.la import PDMA
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
@@ -226,7 +231,7 @@ class BBBmat(SpectralMatrix):
              4: gk[:-8]*ek[4:-4]}
         d[-2] = d[2]
         d[-4] = d[4]
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
         self.solve = PDMA(self)
 
 @inheritdocstrings
@@ -246,7 +251,7 @@ class BDLmat(SpectralMatrix):
     and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], LB)
         N = test[0].N
@@ -258,7 +263,7 @@ class BDLmat(SpectralMatrix):
              0: 2./(2.*k[:-2]+1)*sc[:-2]}
         if test[0].quad == 'GL':
             d[2][-1] = -2./(N-1)*sc[N-3]
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 @inheritdocstrings
 class BLDmat(SpectralMatrix):
@@ -277,7 +282,7 @@ class BLDmat(SpectralMatrix):
     and :math:`\psi_j` is the Shen Legendre Dirichlet basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], LB)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -290,7 +295,7 @@ class BLDmat(SpectralMatrix):
              0: 2./(2.*k[:-2]+1)*sc[:-2]}
         if test[0].quad == 'GL':
             d[-2][-1] = -2./(N-1)*sc[-3]
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 @inheritdocstrings
 class ADDmat(SpectralMatrix):
@@ -309,7 +314,7 @@ class ADDmat(SpectralMatrix):
     and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
 
     """
-    def __init__(self, test, trial, scale=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -318,7 +323,7 @@ class ADDmat(SpectralMatrix):
             d = {0: 4*k+6}
         else:
             d = {0: 1}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
     def solve(self, b, u=None, axis=0):
         N = self.shape[0] + 2
@@ -379,7 +384,7 @@ class ANNmat(SpectralMatrix):
     and :math:`\psi_k` is the Shen Legendre Neumann basis function.
 
     """
-    def __init__(self, test, trial, scale=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SN)
         N = test[0].N
@@ -387,7 +392,7 @@ class ANNmat(SpectralMatrix):
         alpha = k*(k+1)/(k+2)/(k+3)
         d0 = 2./(2*k+1)
         d = {0: d0*alpha*(k+0.5)*((k+2)*(k+3)-k*(k+1))}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
     def solve(self, b, u=None, axis=0):
         N = self.shape[0] + 2
@@ -438,7 +443,7 @@ class ABBmat(SpectralMatrix):
     and :math:`\psi_k` is the Shen Legendre Biharmonic basis function.
 
     """
-    def __init__(self, test, trial, scale=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
@@ -447,7 +452,7 @@ class ABBmat(SpectralMatrix):
         d = {0: 2*(2*k+3)*(1+gk),
              2: -2*(2*k[:-2]+3)}
         d[-2] = d[2]
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 @inheritdocstrings
 class GLLmat(SpectralMatrix):
@@ -466,7 +471,7 @@ class GLLmat(SpectralMatrix):
     and :math:`L_k` is the Legendre basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], LB)
         assert isinstance(trial[0], LB)
         N = test[0].N
@@ -475,7 +480,7 @@ class GLLmat(SpectralMatrix):
         for j in range(2, N, 2):
             jj = j if trial[1] else -j
             d[jj] = (k[:-j]+0.5)*((k[:-j]+j)*(k[:-j]+j+1) - k[:-j]*(k[:-j]+1))*2./(2*k[:-j]+1)
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
 @inheritdocstrings
@@ -495,13 +500,13 @@ class SBBmat(SpectralMatrix):
     and :math:`\psi_k` is the Shen Legendre Biharmonic basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
         k = np.arange(N-4, dtype=np.float)
         d = {0: 2*(2*k+3)**2*(2*k+5)}
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 @inheritdocstrings
 class CLLmat(SpectralMatrix):
@@ -520,14 +525,14 @@ class CLLmat(SpectralMatrix):
     and :math:`\psi_k` is the Shen Legendre basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], LB)
         assert isinstance(trial[0], LB)
         N = test[0].N
         d = {}
         for i in range(1, N, 2):
             d[i] = 2.0
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
     def matvec(self, v, c, format='self', axis=0):
         c.fill(0)
@@ -568,14 +573,14 @@ class CLLmatT(SpectralMatrix):
     and :math:`\psi_k` is the Shen Legendre basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], LB)
         assert isinstance(trial[0], LB)
         N = test[0].N
         d = {}
         for i in range(-1, -N, -2):
             d[i] = 2.0
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 @inheritdocstrings
 class CLDmat(SpectralMatrix):
@@ -594,7 +599,7 @@ class CLDmat(SpectralMatrix):
     and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], LB)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -602,7 +607,7 @@ class CLDmat(SpectralMatrix):
         if trial[0].is_scaled():
             k = np.arange(N-2, dtype=np.float)
             d[-1] = -2. / np.sqrt(4*k+6)
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 @inheritdocstrings
 class CDLmat(SpectralMatrix):
@@ -621,7 +626,7 @@ class CDLmat(SpectralMatrix):
     and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
 
     """
-    def __init__(self, test, trial):
+    def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], LB)
         N = test[0].N
@@ -629,13 +634,226 @@ class CDLmat(SpectralMatrix):
         if test[0].is_scaled():
             k = np.arange(N-2, dtype=np.float)
             d[1] = -2. / np.sqrt(4*k+6)
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+
+@inheritdocstrings
+class CDDmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        C_{kj} = (\psi'_j, \psi_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], SD)
+        assert isinstance(trial[0], SD)
+        N = test[0].N
+        d = {-1: -2, 1: 2}
+        if trial[0].is_scaled():
+            k = np.arange(N-2, dtype=np.float)
+            d[-1] = -2. / np.sqrt(4*k[:-1]+6)
+            d[1] = 2. / np.sqrt(4*k[:-1]+6)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+
+class ADDrp1mat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        A_{kj} = \int_{-1}^{1} \psi_j'(x) \psi_k'(x) (1+x) dx
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], SD)
+        assert isinstance(trial[0], SD)
+        assert test[0].quad == 'LG'
+
+        k = np.arange(test[0].N-2)
+        d = {0: 4*k+6, 1: 2*k[:-1]+4, -1: 2*k[:-1]+4}
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+
+class ADD2rp1mat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        A_{kj} = \int_{-1}^{1} \psi_j(x) \psi_k''(x) (1+x) dx
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], SD)
+        assert isinstance(trial[0], SD)
+        assert test[0].quad == 'LG'
+
+        k = np.arange(test[0].N-2)
+        d = {0: -(4*k+6), 1: -(2*k[:-1]+6), -1: -(2*k[:-1]+2)}
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+
+class ADD2Trp1mat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        A_{kj} = \int_{-1}^{1} \psi_j''(x) \psi_k(x) (1+x) dx
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], SD)
+        assert isinstance(trial[0], SD)
+        assert test[0].quad == 'LG'
+
+        k = np.arange(test[0].N-2)
+        d = {0: -(4*k+6), -1: -(2*k[:-1]+6), 1: -(2*k[:-1]+2)}
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+
+class AUUrp1mat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        A_{kj} = \int_{-1}^{1} \psi_j'(x) \psi_k'(x) (1+x) dx
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the Upper Dirichlet basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], SU)
+        assert isinstance(trial[0], SU)
+        assert test[0].quad == 'LG'
+        k = np.arange(test[0].N-1)
+        d = {0: 2*k+2}
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+
+class BUUrp1mat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj} = \int_{-1}^{1} \psi_j(x) \psi_k(x) (1+x) dx
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the Upper Dirichlet basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], SU)
+        assert isinstance(trial[0], SU)
+        assert test[0].quad == 'LG'
+        k = np.arange(test[0].N-1)
+        d = {0: 2*k+2}
+        d = {0: 4*(k+1)/(2*k+1)/(2*k+3),
+             1: 4/(2*k[:-1]+1)/(2*k[:-1]+3)/(2*k[:-1]+5),
+             2: -2*(k[:-2]+2)/(2*k[:-2]+3)/(2*k[:-2]+5)}
+        d[-1] = d[1]
+        d[-2] = d[2]
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+
+
+class BDD1orp1mat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        A_{kj} = \int_{-1}^{1} \psi_j(x) \psi_k(x) 1/(1+x) dx
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], SD)
+        assert isinstance(trial[0], SD)
+        assert test[0].quad == 'LG'
+
+        k = np.arange(test[0].N-2)
+        d = {0: 2*(2*k+3)/(k+1)/(k+2), 1: -2/(k[:-1]+2), -1: -2/(k[:-1]+2)}
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+
+class BDDrp1mat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        A_{kj} = \int_{-1}^{1} \psi_j(x) \psi_k(x) (1+x) dx
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], SD)
+        assert isinstance(trial[0], SD)
+        assert test[0].quad == 'LG'
+
+        k = np.arange(test[0].N-2)
+        d = {0: 2/(2*k+1)+2/(2*k+5),
+             1: 2/(2*k[:-1]+1)/(2*k[:-1]+5) + 2*(k[:-1]+3)/(2*k[:-1]+5)/(2*k[:-1]+7),
+             2: -2/(2*k[:-2]+5),
+             3: -2*(k[:-3]+3)/(2*k[:-3]+5)/(2*k[:-3]+7)}
+        d[-1] = d[1]
+        d[-2] = d[2]
+        d[-3] = d[3]
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
 @inheritdocstrings
 class _Legmatrix(SpectralMatrix):
-    def __init__(self, test, trial):
-        SpectralMatrix.__init__(self, {}, test, trial)
+    def __init__(self, test, trial, measure=1):
+        SpectralMatrix.__init__(self, {}, test, trial, measure=measure)
 
 
 class _LegMatDict(dict):
@@ -655,13 +873,14 @@ class _LegMatDict(dict):
         matrix = dict.__getitem__(self, key)
         return matrix
 
-
 mat = _LegMatDict({
     ((LB, 0), (LB, 0)): BLLmat,
     ((LB, 0), (LB, 1)): CLLmat,
     ((LB, 1), (LB, 0)): CLLmatT,
     ((LB, 0), (SD, 1)): CLDmat,
     ((SD, 1), (LB, 0)): CDLmat,
+    ((SD, 0), (SD, 1)): CDDmat,
+    ((SD, 1), (SD, 0)): functools.partial(CDDmat, scale=-1.),
     ((SD, 0), (SD, 0)): BDDmat,
     ((SB, 0), (SB, 0)): BBBmat,
     ((SN, 0), (SN, 0)): BNNmat,
@@ -680,5 +899,19 @@ mat = _LegMatDict({
     ((SB, 0), (SB, 2)): functools.partial(ABBmat, scale=-1.),
     ((SB, 2), (SB, 0)): functools.partial(ABBmat, scale=-1.),
     ((SB, 0), (SB, 4)): SBBmat,
-    ((SB, 4), (SB, 0)): SBBmat
+    ((SB, 4), (SB, 0)): SBBmat,
+    ((SD, 1), (SD, 1), (-1, 1), 1+x): ADDrp1mat,
+    ((SD, 0), (SD, 2), (-1, 1), 1+x): ADD2rp1mat,
+    ((SD, 2), (SD, 0), (-1, 1), 1+x): ADD2Trp1mat,
+    ((SD, 0), (SD, 2), (0, 1), xp): functools.partial(ADD2rp1mat, scale=0.5),
+    ((SD, 2), (SD, 0), (0, 1), xp): functools.partial(ADD2Trp1mat, scale=0.5),
+    ((SD, 1), (SD, 1), (0, 1), xp): functools.partial(ADDrp1mat, scale=0.5),
+    ((SD, 0), (SD, 0), (-1, 1), 1+x): BDDrp1mat,
+    ((SD, 0), (SD, 0), (0, 1), xp): functools.partial(BDDrp1mat, scale=0.5),
+    ((SD, 0), (SD, 0), (-1, 1), 1/(1+x)): BDD1orp1mat,
+    ((SD, 0), (SD, 0), (0, 1), 1/xp): functools.partial(BDD1orp1mat, scale=2),
+    ((SU, 1), (SU, 1), (-1, 1), 1+x): AUUrp1mat,
+    ((SU, 1), (SU, 1), (0, 1), xp): functools.partial(AUUrp1mat, scale=0.5),
+    ((SU, 0), (SU, 0), (-1, 1), 1+x): BUUrp1mat,
+    ((SU, 0), (SU, 0), (0, 1), xp): functools.partial(BUUrp1mat, scale=0.5),
     })

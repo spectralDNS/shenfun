@@ -28,8 +28,8 @@ bases = (chebyshev.Basis,
 def test_eval_basis(base):
     B = base(8)
     i = 1
-    s = B.sympy_basis(i=i)
     x = sp.symbols('x')
+    s = B.sympy_basis(i, x)
     mesh = B.points_and_weights()[0]
     f0 = sp.lambdify(x, s, 'numpy')(mesh)
     f1 = B.evaluate_basis(mesh, i=i)
@@ -39,8 +39,8 @@ def test_eval_basis(base):
 def test_eval_basis_derivative(base):
     B = base(8)
     i = 1
-    s = B.sympy_basis(i=i)
     x = sp.symbols('x')
+    s = B.sympy_basis(i, x)
     mesh = B.points_and_weights()[0]
     for k in (1, 2, 3):
         f0 = sp.lambdify(x, s.diff(x, k), 'numpy')(mesh)

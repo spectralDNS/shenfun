@@ -270,15 +270,14 @@ class Solve(object):
                 u.imag[s] = spsolve(A, br.imag).reshape(u[s].shape)
             else:
                 u[s] = spsolve(A, br).reshape(u[s].shape)
-        if self.test.has_nonhomogeneous_bcs:
-            self.test.bc.set_boundary_dofs(u, True)
+        #if self.test.has_nonhomogeneous_bcs:
+        #    self.test.bc.set_boundary_dofs(u, True)
 
         if axis > 0:
             u = np.moveaxis(u, 0, axis)
             if u is not b:
                 b = np.moveaxis(b, 0, axis)
 
-        #u /= self.A.scale
         return u
 
 class NeumannSolve(object):
@@ -544,4 +543,110 @@ class TDMA_O(object):
         self.TDMA_O_SymSolve(self.dd, self.ud, self.L, u, axis=axis)
 
         u /= self.mat.scale
+        return u
+
+
+class SolverGeneric1NP(object):
+    """Generic solver for tensorproductspaces consisting of only one
+    non-periodic space.
+
+    Parameters
+    ----------
+    mats : sequence
+        sequence of instances of :class:`.TPMatrix`
+
+    Note
+    ----
+    In addition to the one non-periodic direction, the solver can also handle
+    up to two periodic directions. Also, this Python version of the solver is
+    not very efficient. Consider using Cython.
+
+    """
+
+    def __init__(self, mats):
+        assert isinstance(mats, list)
+        m = mats[0]
+        if m.naxes == []:
+            for tpmat in mats:
+                tpmat.simplify_fourier_matrices()
+
+        self.mats = mats
+
+    def __call__(self, b, u=None):
+        if u is None:
+            u = b
+        else:
+            assert u.shape == b.shape
+        m = self.mats[0]
+
+        if u.ndim == 2:
+            if m.naxes[0] == 0:
+                # non-periodic in axis=0
+                for i in range(b.shape[1]):
+                    MM = None
+                    for mat in self.mats:
+                        sc = mat.scale[0, i] if mat.scale.shape[1] > 1 else mat.scale[0, 0]
+                        if MM:
+                            MM += sc*mat.mats[0]
+                        else:
+                            MM = sc*mat.mats[0]
+                    sl = mat.space.bases[0].slice()
+                    u[sl, i] = MM.solve(b[sl, i], u[sl, i])
+
+            else:
+                # non-periodic in axis=1
+                for i in range(b.shape[0]):
+                    MM = None
+                    for mat in self.mats:
+                        sc = mat.scale[i, 0] if mat.scale.shape[0] > 1 else mat.scale[0, 0]
+                        if MM:
+                            MM += sc*mat.mats[1]
+                        else:
+                            MM = sc*mat.mats[1]
+                    sl = mat.space.bases[1].slice()
+                    u[i, sl] = MM.solve(b[i, sl], u[i, sl])
+
+        elif u.ndim == 3:
+            if m.naxes[0] == 0:
+                # non-periodic in axis=0
+                for i in range(b.shape[1]):
+                    for j in range(b.shape[2]):
+                        MM = None
+                        for mat in self.mats:
+                            sc = np.broadcast_to(mat.scale, u.shape)[0, i, j]
+                            if MM:
+                                MM += sc*mat.mats[0]
+                            else:
+                                MM = sc*mat.mats[0]
+                        sl = mat.space.bases[0].slice()
+                        u[sl, i, j] = MM.solve(b[sl, i, j], u[sl, i, j])
+
+            elif m.naxes[0] == 1:
+                # non-periodic in axis=1
+                for i in range(b.shape[0]):
+                    for j in range(b.shape[2]):
+                        MM = None
+                        for mat in self.mats:
+                            sc = np.broadcast_to(mat.scale, u.shape)[i, 0, j]
+                            if MM:
+                                MM += sc*mat.mats[1]
+                            else:
+                                MM = sc*mat.mats[1]
+                        sl = mat.space.bases[1].slice()
+                        u[i, sl, j] = MM.solve(b[i, sl, j], u[i, sl, j])
+
+            elif m.naxes[0] == 2:
+                # non-periodic in axis=2
+                for i in range(b.shape[0]):
+                    for j in range(b.shape[1]):
+                        MM = None
+                        for mat in self.mats:
+                            sc = np.broadcast_to(mat.scale, u.shape)[i, j, 0]
+                            if MM:
+                                MM += sc*mat.mats[2]
+                            else:
+                                MM = sc*mat.mats[2]
+                        sl = mat.space.bases[2].slice()
+                        u[i, j, sl] = MM.solve(b[i, j, sl], u[i, j, sl])
+
         return u

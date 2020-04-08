@@ -3,11 +3,13 @@ This module contains the inner function that computes the
 weighted inner product.
 """
 from numbers import Number
+import copy
 import numpy as np
+import sympy
 from shenfun.spectralbase import inner_product, SpectralBase, MixedBasis
 from shenfun.matrixbase import TPMatrix
 from shenfun.tensorproductspace import TensorProductSpace, MixedTensorProductSpace
-from shenfun.utilities import dx
+from shenfun.utilities import dx, split
 from .arguments import Expr, Function, BasisFunction, Array
 
 __all__ = ('inner',)
@@ -223,6 +225,8 @@ def inner(expr0, expr1, output_array=None, level=0):
     trialspace = trial.base.function_space()
     test_scale = test.scales()
     trial_scale = trial.scales()
+    test_m = test.measures()
+    trial_m = trial.measures()
 
     uh = None
     if trial.argument == 2:
@@ -244,16 +248,33 @@ def inner(expr0, expr1, output_array=None, level=0):
                 if isinstance(testspace, (MixedTensorProductSpace, MixedBasis)):
                     test_sp = testspace.flatten()[test_ind[test_j]]
                 has_bcs = False
-                #assert test_sp.compatible_base(trial_sp)
+                # Check if measure is or scale is zero
+                ms = test_m[vec, test_j]*trial_m[vec, trial_j]
+                if ms == 0 or np.abs(sc) < 1e-14:
+                    continue
+
+                msdict = split([test_m[vec, test_j], trial_m[vec, trial_j]])
+
                 for i, (a, b) in enumerate(zip(b0, b1)): # Third index, one inner for each dimension
                     ts = trial_sp[i]
                     sp = test_sp[i]
-                    AA = inner_product((sp, a), (ts, b))
+                    # Handle measure. The measure could be a function of x, y, z, ..
+                    # In the tensor product matrix a measure dependent on x goes in
+                    # the matrix for dimension 0 (x-direction), etc.
+                    let = 1
+                    msx = 'xyzrs'[i]
+                    msi = msdict[msx]
+                    if isinstance(msi, sympy.Expr):
+                        # Divide with leading term to get the same matrix, for matrices that only differ in scale
+                        sym = msi.free_symbols
+                        if len(sym) == 1:
+                            let = msi.leadterm(sym.pop())[0]
+                            msi /= let
+
+                    # assemble inner product
+                    AA = inner_product((sp, a), (ts, b), msi*sp._dx)
                     M.append(AA)
-                    # Take care of domains of not standard size
-                    if not sp.domain_factor() == 1:
-                        sc *= sp.domain_factor()**(a+b)
-                        scb *= sp.domain_factor()**(a+b)
+                    AA.scale *= float(let)
                     if not abs(AA.scale-1.) < 1e-8:
                         sc *= AA.scale
                         AA.scale = 1.0
