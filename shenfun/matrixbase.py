@@ -141,7 +141,7 @@ Jacobi basis:
 
 """
 from __future__ import division
-from copy import deepcopy, copy
+from copy import deepcopy
 from numbers import Number, Integral
 import numpy as np
 import sympy as sp
