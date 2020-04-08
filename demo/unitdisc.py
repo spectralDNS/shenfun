@@ -9,7 +9,6 @@ J Shen, SIAM J. Sci Comput. 18, 6, 1583-1604
 """
 
 import matplotlib.pyplot as plt
-import functools
 from shenfun import *
 import sympy as sp
 
