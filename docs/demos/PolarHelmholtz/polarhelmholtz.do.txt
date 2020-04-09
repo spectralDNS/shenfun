@@ -242,7 +242,10 @@ rv = (r*sp.cos(theta), r*sp.sin(theta)) # Map to Cartesian (x, y)
 Note that Sympy symbols are both positive and real, $\theta$ is
 chosen to be along the first axis and $r$ second. This has to agree with
 the next step, which is the creation of tensorproductspaces
-$V_F^0 \otimes V_U^N$ and $V_F^1 \otimes V_D^N$
+$V_F^0 \otimes V_U^N$ and $V_F^1 \otimes V_D^N$. We use
+`domain=(0, 1)` for the radial direction to get a unit disc, whereas
+the default domain for the Fourier bases is already the
+required $(0, 2\pi)$.
 
 !bc pycod
 N = 16
@@ -257,15 +260,19 @@ T0 = TensorProductSpace(MPI.COMM_SELF, (F0, L0), axes=(1, 0), measures=(psi, rv)
 Note that since `F0` only has one component we could actually use
 `L0` without creating `T0`. But the code turns out to be simpler
 if we use `T0`, much because the additional $\theta$-direction is
-required for the polar coordinates to apply.
-Also note that `F` is created using the entire range of wavenumber
-and as such we need to make sure that the coefficient created for
+required for the polar coordinates to apply. Using one single basis
+function for the $\theta$ direction is as such a generic way to handle
+polar 1D problems (i.e., problems that are only functions of the
+radial direction, but still using polar coordinates).
+Also note that `F` is created using the entire range of wavenumbers
+even though it should not include wavenumber 0.
+As such we need to make sure that the coefficient created for
 $k=0$ (i.e., $\hat{u}^1_{0,j}$) will be exactly zero.
 Finally, note that
 `T0` is not distributed with MPI, which is accomplished using
 `MPI.COMM_SELF` instead of `comm` (which equals `MPI.COMM_WORLD`).
-The small problem (ref{eq:u0}) is only solved on the one processor
-with rank = 0.
+The purely radial problem (ref{eq:u0}) is only solved on the one
+processor with rank = 0.
 
 Note that polar coordinates are ensured feeding `measures=(psi, rv)`
 to ${cls('TensorProductSpace')}. Operators like ${func('div')}
