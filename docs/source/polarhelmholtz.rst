@@ -7,7 +7,7 @@ Demo - Helmholtz equation in polar coordinates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Apr 8, 2020
+:Date: Apr 9, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the
 Helmholtz equation on a circular disc, using polar coordinates. This demo is implemented in
@@ -66,7 +66,7 @@ We use polar coordinates :math:`(\theta, r)`, defined as
 which gives us a Cartesian product mesh :math:`(\theta, r) \in [0, 2\pi) \times [0, a]`
 suitable for a numerical implementation. Note that we order the
 two directions with :math:`\theta` first and then :math:`r`, which is less common
-than :math:`(r, theta)`. This has to do with the fact that we will need to
+than :math:`(r, \theta)`. This has to do with the fact that we will need to
 solve linear equation systems along the radial direction, but not
 the :math:`\theta`-direction, since Fourier matrices are diagonal. When
 the radial direction is placed last, the data in the radial direction
@@ -173,7 +173,7 @@ Chebyshev polynomial of the first kind :math:`T_j(x)`, we can have
    :label: _auto9
 
         
-        \overline{\psi}_j(r) = \phi_j(2r-1) - \phi_{j+1}(2r-1), \text{ for } j \in 0, 1, \ldots N-1, 
+        \overline{\psi}_j(r) = \phi_j(2r/a-1) - \phi_{j+1}(2r/a-1), \text{ for } j \in 0, 1, \ldots N-1, 
         
         
 
@@ -181,7 +181,7 @@ Chebyshev polynomial of the first kind :math:`T_j(x)`, we can have
    :label: eq:psi
 
           
-        \psi_j(r) = \phi_j(2r-1) - \phi_{j+2}(2r-1), \text{ for } j \in 0, 1, \ldots N-2.
+        \psi_j(r) = \phi_j(2r/a-1) - \phi_{j+2}(2r/a-1), \text{ for } j \in 0, 1, \ldots N-2.
         
         
 
@@ -265,7 +265,7 @@ Find :math:`u^0 \in V_F^0 \otimes V_U^N` such that
    :label: eq:u0
 
            
-           \int_{\Omega} (-\nabla^2 u^0 + \alpha u^0) v^0 w r dr d\theta = \int_{\Omega} f v^0 w r dr d\theta, \quad \forall \, v^0 \in V_F^0 \otimes V_U^N.
+           \int_{\Omega} (-\nabla^2 u^0 + \alpha u^0) v^0 w d\sigma = \int_{\Omega} f v^0 w d\sigma, \quad \forall \, v^0 \in V_F^0 \otimes V_U^N.
         
            
 
@@ -275,15 +275,15 @@ Find :math:`u^1 \in V_F^1 \otimes V_D^N` such that
    :label: eq:u1
 
            
-           \int_{\Omega} (-\nabla^2 u^1 + \alpha u^1) v^1 w r dr d\theta = \int_{\Omega} f v^1 w r dr d\theta, \quad \forall \, v^1 \in V_F^1 \otimes V_D^N.
+           \int_{\Omega} (-\nabla^2 u^1 + \alpha u^1) v^1 w d\sigma = \int_{\Omega} f v^1 w d\sigma, \quad \forall \, v^1 \in V_F^1 \otimes V_D^N.
         
            
 
 Note that integration over the domain is done using
-polar coordinates with an integral measure of :math:`rdrd\theta`.
+polar coordinates with an integral measure of :math:`d\sigma=rdrd\theta`.
 However, the integral in the radial direction needs to be mapped
-to :math:`t=2r-1`, where :math:`t \in [-1, 1]` suits the basis functions used,
-see :eq:`eq:psi`. This leads to a measure of :math:`0.5(t+1)dtd\theta`.
+to :math:`t=2r/a-1`, where :math:`t \in [-1, 1]`, which suits the basis functions used,
+see :eq:`eq:psi`. This leads to a measure of :math:`0.5(t+1)adtd\theta`.
 Furthermore, the weight :math:`w(t)` will be unity for the Legendre basis and
 :math:`(1-t^2)^{-0.5}` for the Chebyshev bases.
 
@@ -310,7 +310,10 @@ polar coordinates.
 Note that Sympy symbols are both positive and real, :math:`\theta` is
 chosen to be along the first axis and :math:`r` second. This has to agree with
 the next step, which is the creation of tensorproductspaces
-:math:`V_F^0 \otimes V_U^N` and :math:`V_F^1 \otimes V_D^N`
+:math:`V_F^0 \otimes V_U^N` and :math:`V_F^1 \otimes V_D^N`. We use
+``domain=(0, 1)`` for the radial direction to get a unit disc, whereas
+the default domain for the Fourier bases is already the
+required :math:`(0, 2\pi)`.
 
 .. code-block:: python
 
@@ -325,15 +328,19 @@ the next step, which is the creation of tensorproductspaces
 Note that since ``F0`` only has one component we could actually use
 ``L0`` without creating ``T0``. But the code turns out to be simpler
 if we use ``T0``, much because the additional :math:`\theta`-direction is
-required for the polar coordinates to apply.
-Also note that ``F`` is created using the entire range of wavenumber
-and as such we need to make sure that the coefficient created for
-:math:`k=0` ) (i.e., :math:`\hat{u}^1_{0,j}`) will be exactly zero.
+required for the polar coordinates to apply. Using one single basis
+function for the :math:`\theta` direction is as such a generic way to handle
+polar 1D problems (i.e., problems that are only functions of the
+radial direction, but still using polar coordinates).
+Also note that ``F`` is created using the entire range of wavenumbers
+even though it should not include wavenumber 0.
+As such we need to make sure that the coefficient created for
+:math:`k=0` (i.e., :math:`\hat{u}^1_{0,j}`) will be exactly zero.
 Finally, note that
 ``T0`` is not distributed with MPI, which is accomplished using
 ``MPI.COMM_SELF`` instead of ``comm`` (which equals ``MPI.COMM_WORLD``).
-The small problem :eq:`eq:u0` is only solved on the one processor
-with rank = 0.
+The purely radial problem :eq:`eq:u0` is only solved on the one
+processor with rank = 0.
 
 Note that polar coordinates are ensured feeding ``measures=(psi, rv)``
 to :class:`.TensorProductSpace`. Operators like :func:`.div`
