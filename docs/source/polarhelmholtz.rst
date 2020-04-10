@@ -7,7 +7,7 @@ Demo - Helmholtz equation in polar coordinates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Apr 9, 2020
+:Date: Apr 10, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the
 Helmholtz equation on a circular disc, using polar coordinates. This demo is implemented in
@@ -63,9 +63,9 @@ We use polar coordinates :math:`(\theta, r)`, defined as
         
         
 
-which gives us a Cartesian product mesh :math:`(\theta, r) \in [0, 2\pi) \times [0, a]`
-suitable for a numerical implementation. Note that we order the
-two directions with :math:`\theta` first and then :math:`r`, which is less common
+which leads to a Cartesian product mesh :math:`(\theta, r) \in [0, 2\pi) \times [0, a]`
+suitable for numerical implementations. Note that the
+two directions are ordered with :math:`\theta` first and then :math:`r`, which is less common
 than :math:`(r, \theta)`. This has to do with the fact that we will need to
 solve linear equation systems along the radial direction, but not
 the :math:`\theta`-direction, since Fourier matrices are diagonal. When
@@ -76,8 +76,9 @@ changes in ``shenfun`` to switch the directions to :math:`(r, \theta)` if this
 is still desired.
 
 We will use Chebyshev
-or Legendre basis functions :math:`\psi_j(r)` for the radial direction and a periodic Fourier expansion
-in :math:`\exp(\imath k \theta)` for the azimuthal direction. The polar basis functions are as such
+or Legendre basis functions :math:`\psi_j(r)` for the radial direction and
+a periodic Fourier expansion in :math:`\exp(\imath k \theta)` for the
+azimuthal direction. The polar basis functions are as such
 
 .. math::
         v_{kj}(\theta, r) = \exp(\imath k \theta) \psi_j(r),
@@ -93,7 +94,7 @@ A discrete Fourier approximation space with :math:`N` basis functions is then
         V_F^N = \text{span} \{\exp(\imath k \theta)\}, \text{ for } k \in K,
 
 where :math:`K = \{-N/2, -N/2+1, \ldots, N/2-1\}`. Since the solution :math:`u(\theta, r)`
-is real, we have Hermitian symmetry and :math:`\hat{u}_{k,j} = \hat{u}_{k,-j}^*`
+is real, there is Hermitian symmetry and :math:`\hat{u}_{k,j} = \hat{u}_{k,-j}^*`
 (with :math:`*` denoting a complex conjugate).
 For this reason we use only :math:`k \in K=\{0, 1, \ldots, N/2\}` in solving for
 :math:`\hat{u}_{kj}`, and then use Hermitian symmetry to get the remaining
@@ -113,8 +114,8 @@ simply 1
 .. math::
         u(\theta, r) = \sum_{j} \left( \hat{u}_{0j} \psi_{j}(r) + \sum_{k=1}^{N/2} \hat{u}_{kj} \exp(\imath k \theta) \psi_j(r) \right).
 
-We then apply a different radial basis for the two :math:`\psi`'s in the above equation
-(renaming the first :math:`\overline{\psi}`)
+We then apply a different radial basis for the two :math:`\psi`'s in
+the above equation (renaming the first :math:`\overline{\psi}`)
 
 .. math::
         u(\theta, r) = \sum_{j} \left( \hat{u}_{0j} \overline{\psi}_{j}(r) + \sum_{k=1}^{N/2} \hat{u}_{kj} \exp(\imath k \theta) \psi_j(r) \right).
@@ -138,8 +139,8 @@ of :math:`\theta`. Now, to enforce conditions
         
         
 
-we see that it is sufficient for the two bases
-(:math:`\overline{\psi}` and :math:`\psi`) to satisfy
+it is sufficient for the two bases (:math:`\overline{\psi}` and :math:`\psi`) to
+satisfy
 
 .. math::
    :label: _auto6
@@ -165,8 +166,9 @@ we see that it is sufficient for the two bases
         
         
 
-We can find such bases both with Legendre and Chebyshev polynomials.
-If we let :math:`\phi_j(x)` mean either the Legendre polynomial :math:`L_j(x)` or the
+Bases that satisfy these conditions can be found both with Legendre and
+Chebyshev polynomials.
+If :math:`\phi_j(x)` is used for either the Legendre polynomial :math:`L_j(x)` or the
 Chebyshev polynomial of the first kind :math:`T_j(x)`, we can have
 
 .. math::
@@ -342,7 +344,7 @@ Finally, note that
 The purely radial problem :eq:`eq:u0` is only solved on the one
 processor with rank = 0.
 
-Note that polar coordinates are ensured feeding ``measures=(psi, rv)``
+Polar coordinates are ensured by feeding ``measures=(psi, rv)``
 to :class:`.TensorProductSpace`. Operators like :func:`.div`
 :func:`.grad` and  :func:`.curl` will now work on
 items of :class:`.Function`, :class:`.TestFunction` and
@@ -363,11 +365,12 @@ is remarkably similar to the mathematics.
     if comm.Get_rank() == 0:
         mats0 = inner(v0, -div(grad(u0))+alpha*u0)
 
-Here ``mats`` and ``mats0`` will contain several matrices in the form of
+Here ``mats`` and ``mats0`` will contain several tensor product
+matrices in the form of
 :class:`.TPMatrix`. Since there is only one non-periodic direction
 the matrices can be easily solved using :class:`.SolverGeneric1NP`.
-But first we need to define the function :math:`f(\theta, r)`, such
-that we have something to solve. We use sympy and the method of
+But first we need to define the function :math:`f(\theta, r)`.
+To this end we use sympy and the method of
 manufactured solution to define a possible solution ``ue``,
 and then compute ``f`` exactly using exact differentiation
 
