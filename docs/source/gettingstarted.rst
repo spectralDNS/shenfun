@@ -255,23 +255,6 @@ which assembles a stiffness matrix A. Note that the two expressions fed to
 inner must have consistent rank. Here, for example, both ``grad(u)`` and
 ``grad(v)`` have rank 1 of a vector.
 
-Polar and cylindrical coordinates
----------------------------------
-Shenfun can be used to solve equations using polar or cylindrical
-coordinates. The feature was added April 2020, and is still rather
-experimental. There are currently demos for solving both `Poisson's
-equation <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_poisson.py>`_
-and the `biharmonic equation <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_biharmonic.py>`_
-on a circular disc, a solver for `3D Poisson equation in a pipe <https://github.com/spectralDNS/shenfun/blob/master/demo/pipe_poisson.py>`_,
-and a solver for the `biharmonic equation on a part of the disc <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_biharmonic2NP.py>`_.
-A solution from solving the biharmonic equation with homogeneous
-Dirichlet boundary conditions on :math:`(\theta, r) \in [0, \pi/2] \times [0.5, 1]`
-is shown below.
-
-.. image:: biharmonic_part.png
-    :width: 600px
-    :height: 400px
-
 
 Multidimensional problems
 -------------------------
@@ -405,6 +388,23 @@ diagonality. For the Poisson equation such solvers are available for
 both Legendre and Chebyshev bases, see the extended demo :ref:`Demo - 3D Poisson's equation`
 or the demo programs `dirichlet_poisson2D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson2D.py>`_
 and `dirichlet_poisson3D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py>`_.
+
+Polar and cylindrical coordinates
+---------------------------------
+Shenfun can be used to solve equations using polar or cylindrical
+coordinates. The feature was added April 2020, and is still rather
+experimental. There are currently demos for solving both `Poisson's
+equation <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_poisson.py>`_
+and the `biharmonic equation <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_biharmonic.py>`_
+on a circular disc, a solver for `3D Poisson equation in a pipe <https://github.com/spectralDNS/shenfun/blob/master/demo/pipe_poisson.py>`_,
+and a solver for the `biharmonic equation on a part of the disc <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_biharmonic2NP.py>`_.
+A solution from solving the biharmonic equation with homogeneous
+Dirichlet boundary conditions on :math:`(\theta, r) \in [0, \pi/2] \times [0.5, 1]`
+is shown below.
+
+.. image:: biharmonic_part.png
+    :width: 600px
+    :height: 400px
 
 Coupled problems
 ----------------
