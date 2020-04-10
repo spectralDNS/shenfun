@@ -131,10 +131,11 @@ def inner(expr0, expr1, output_array=None, level=0):
             df = space.domain_factor()
         if isinstance(expr1, Function):
             return (expr0/df)*dx(expr1.backward())
-        if space.hi.prod() != 1:
-            expr1 = expr1.copy()
-            for base in space.bases:
-                expr1 = base.get_measured_array(expr1)
+        if hasattr(space, 'hi'):
+            if space.hi.prod() != 1:
+                expr1 = expr1.copy()
+                for base in space.bases:
+                    expr1 = base.get_measured_array(expr1)
         return (expr0/df)*dx(expr1)
 
     if isinstance(expr1, Number):
@@ -146,10 +147,11 @@ def inner(expr0, expr1, output_array=None, level=0):
             df = space.domain_factor()
         if isinstance(expr0, Function):
             return (expr1/df)*dx(expr0.backward())
-        if space.hi.prod() != 1:
-            expr0 = expr0.copy()
-            for base in space.bases:
-                expr0 = base.get_measured_array(expr0)
+        if hasattr(space, 'hi'):
+            if space.hi.prod() != 1:
+                expr0 = expr0.copy()
+                for base in space.bases:
+                    expr0 = base.get_measured_array(expr0)
         return (expr1/df)*dx(expr0)
 
     if isinstance(expr0, tuple):
