@@ -221,13 +221,13 @@ def integrate_sympy(f, d):
 
 def get_measures(psi, rv):
     drv = get_measures_tangent(psi, rv)
-    measures = np.zeros_like(rv)
+    measures = np.zeros_like(psi)
     for i, s in enumerate(np.sum(drv**2, axis=1)):
         measures[i] = sp.simplify(sp.sqrt(s))
     return measures
 
 def get_measures_tangent(psi, rv):
-    drv = np.zeros((len(rv),)*2, dtype=object)
+    drv = np.zeros((len(psi), len(rv)), dtype=object)
     for i, ti in enumerate(psi):
         for j, rj in enumerate(rv):
             drv[i, j] = rj.diff(ti, 1)
