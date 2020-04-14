@@ -22,7 +22,6 @@ by_parts = False
 # Define polar coordinates using angle along first axis and radius second
 r, theta, z = psi = sp.symbols('x,y,z', real=True, positive=True)
 rv = (r*sp.cos(theta), r*sp.sin(theta), z)
-measures = get_measures(psi, rv)
 
 alpha = 2
 
@@ -37,8 +36,8 @@ L = Basis(N, 'L', bc='Dirichlet', domain=(0, 1))
 F2 = Basis(1, 'F', dtype='D')
 F3 = Basis(N, 'F', dtype='d')
 L0 = Basis(N, 'L', bc='UpperDirichlet', domain=(0, 1))
-T = TensorProductSpace(comm, (L, F0, F1), measures=(psi, rv))
-T0 = TensorProductSpace(MPI.COMM_SELF, (L0, F2, F3), measures=(psi, rv))
+T = TensorProductSpace(comm, (L, F0, F1), coordinates=(psi, rv))
+T0 = TensorProductSpace(MPI.COMM_SELF, (L0, F2, F3), coordinates=(psi, rv))
 
 v = TestFunction(T)
 u = TrialFunction(T)

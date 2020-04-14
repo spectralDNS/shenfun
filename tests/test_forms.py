@@ -19,25 +19,25 @@ u2 = shenfun.TrialFunction(TT)
 def test_mul(basis):
     e = shenfun.Expr(basis)
     e2 = 2*e
-    assert np.allclose(e2.scales(), 2.)
+    assert np.allclose(e2.scales().astype(np.int), 2)
     e2 = e*2
-    assert np.allclose(e2.scales(), 2.)
+    assert np.allclose(e2.scales().astype(np.int), 2.)
     if e.expr_rank() == 1:
         a = tuple(range(e.dimensions))
         e2 = a*e
-        assert np.allclose(e2.scales()[:, 0], (0, 1))
+        assert np.allclose(e2.scales().astype(np.int)[:, 0], (0, 1))
 
 @pytest.mark.parametrize('basis', (u0, u1, u2))
 def test_imul(basis):
     e = shenfun.Expr(basis)
     e *= 2
-    assert np.allclose(e.scales(), 2.)
+    assert np.allclose(e.scales().astype(np.int), 2)
     e *= 2
-    assert np.allclose(e.scales(), 4.)
+    assert np.allclose(e.scales().astype(np.int), 4)
     if e.expr_rank() == 1:
         a = tuple(range(e.dimensions))
         e *= a
-        assert np.allclose(e.scales()[:, 0], (0, 4))
+        assert np.allclose(e.scales().astype(np.int)[:, 0], (0, 4))
 
 @pytest.mark.parametrize('basis', (u0, u1, u2))
 def test_add(basis):
@@ -45,7 +45,7 @@ def test_add(basis):
     e2 = shenfun.Expr(basis)
     e3 = e + e2
     assert np.allclose(e3.terms(), np.concatenate((e.terms(), e2.terms()), axis=1))
-    assert np.allclose(e3.scales(), np.concatenate((e.scales(), e2.scales()), axis=1))
+    assert np.allclose(e3.scales().astype(np.int), np.concatenate((e.scales().astype(np.int), e2.scales().astype(np.int)), axis=1))
     assert np.allclose(e3.indices(), np.concatenate((e.indices(), e2.indices()), axis=1))
 
 @pytest.mark.parametrize('basis', (u0, u1, u2))
@@ -54,7 +54,7 @@ def test_iadd(basis):
     e2 = shenfun.Expr(basis)
     e += e2
     assert np.allclose(e.terms(), np.concatenate((e2.terms(), e2.terms()), axis=1))
-    assert np.allclose(e.scales(), np.concatenate((e2.scales(), e2.scales()), axis=1))
+    assert np.allclose(e.scales().astype(np.int), np.concatenate((e2.scales().astype(np.int), e2.scales().astype(np.int)), axis=1))
     assert np.allclose(e.indices(), np.concatenate((e2.indices(), e2.indices()), axis=1))
 
 @pytest.mark.parametrize('basis', (u0, u1, u2))
@@ -63,7 +63,7 @@ def test_sub(basis):
     e2 = shenfun.Expr(basis)
     e3 = e - e2
     assert np.allclose(e3.terms(), np.concatenate((e.terms(), e2.terms()), axis=1))
-    assert np.allclose(e3.scales(), np.concatenate((e.scales(), -e2.scales()), axis=1))
+    assert np.allclose(e3.scales().astype(np.int), np.concatenate((e.scales().astype(np.int), -e2.scales().astype(np.int)), axis=1))
     assert np.allclose(e3.indices(), np.concatenate((e.indices(), e2.indices()), axis=1))
 
 @pytest.mark.parametrize('basis', (u0, u1, u2))
@@ -72,14 +72,14 @@ def test_isub(basis):
     e2 = shenfun.Expr(basis)
     e -= e2
     assert np.allclose(e.terms(), np.concatenate((e2.terms(), e2.terms()), axis=1))
-    assert np.allclose(e.scales(), np.concatenate((e2.scales(), -e2.scales()), axis=1))
+    assert np.allclose(e.scales().astype(np.int), np.concatenate((e2.scales().astype(np.int), -e2.scales().astype(np.int)), axis=1))
     assert np.allclose(e.indices(), np.concatenate((e2.indices(), e2.indices()), axis=1))
 
 @pytest.mark.parametrize('basis', (u0, u1, u2))
 def test_neg(basis):
     e = shenfun.Expr(basis)
     e2 = -e
-    assert np.allclose(e.scales(), -e2.scales())
+    assert np.allclose(e.scales().astype(np.int), -e2.scales().astype(np.int))
 
 K0 = shenfun.Basis(N, 'F', dtype='D')
 K1 = shenfun.Basis(N, 'F', dtype='D')

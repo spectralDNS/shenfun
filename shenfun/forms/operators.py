@@ -29,7 +29,6 @@ def div(test):
     v = test.terms().copy()
     sc = test.scales().copy()
     ind = test.indices().copy()
-    measures = test.measures().copy()
     ndim = test.dimensions
     hi = np.ones(1, dtype=np.int)
     if ndim > 1:
@@ -46,12 +45,10 @@ def div(test):
             v = v.reshape((v.shape[0]//ndim, v.shape[1]*ndim, ndim))
             sc = sc.reshape((sc.shape[0]//ndim, sc.shape[1]*ndim))
             ind = ind.reshape((ind.shape[0]//ndim, ind.shape[1]*ndim))
-            measures = measures.reshape((measures.shape[0]//ndim, measures.shape[1]*ndim))
 
         test._terms = v
         test._scales = sc
         test._indices = ind
-        test._measures = measures
         return test
 
     else:
@@ -64,27 +61,24 @@ def div(test):
             v = np.repeat(v, 2, axis=1)
             sc = np.repeat(sc, 2, axis=1)
             ind = np.repeat(ind, 2, axis=1)
-            measures = np.repeat(measures, 2, axis=1)
-            psi = test.function_space().measures[0]
+            psi = test.function_space().coordinates[0]
 
             for i, s in enumerate(v):
                 ll = [k for k in range(ndim) if not k==i]
                 for j in range(v.shape[1]):
                     if j%2 == 0:
                         s[j, i%ndim] += 1
-                        measures[i, j] = measures[i, j] / hi[i%ndim]
+                        sc[i, j] = sc[i, j] / hi[i%ndim]
                     else:
-                        ms2 = measures[i, j]*np.take(hi, ll).prod()
-                        measures[i, j] = ms2.diff(psi[i%ndim], 1) / hi.prod()
+                        ms2 = sc[i, j]*np.take(hi, ll).prod()
+                        sc[i, j] = ms2.diff(psi[i%ndim], 1) / hi.prod()
 
             v = v.reshape((v.shape[0]//ndim, v.shape[1]*ndim, ndim))
             sc = sc.reshape((sc.shape[0]//ndim, sc.shape[1]*ndim))
             ind = ind.reshape((ind.shape[0]//ndim, ind.shape[1]*ndim))
-            measures = measures.reshape((measures.shape[0]//ndim, measures.shape[1]*ndim))
         test._terms = v
         test._scales = sc
         test._indices = ind
-        test._measures = measures
         return test
 
 
@@ -105,7 +99,6 @@ def grad(test):
     terms = test.terms().copy()
     sc = test.scales().copy()
     ind = test.indices().copy()
-    measures = test.measures().copy()
     ndim = test.dimensions
     hi = np.ones(1, dtype=np.int)
     if ndim > 1:
@@ -119,22 +112,20 @@ def grad(test):
         test._terms = np.repeat(terms, ndim, axis=0)
         test._scales = np.repeat(sc, ndim, axis=0)
         test._indices = np.repeat(ind, ndim, axis=0)
-        test._measures = np.repeat(measures, ndim, axis=0)
         for i, s in enumerate(test._terms):
             s[..., i%ndim] += 1
         return test
 
-    elif measures.flatten().prod() == 1:
+    elif sc.flatten().prod() == 1:
         # If expr taken gradient of has measure 1
 
         test._terms = np.repeat(terms, ndim, axis=0)
         test._scales = np.repeat(sc, ndim, axis=0)
         test._indices = np.repeat(ind, ndim, axis=0)
-        test._measures = np.repeat(measures, ndim, axis=0)
         for i, s in enumerate(test._terms):
             s[..., i%ndim] += 1
 
-        for i, s in enumerate(test._measures):
+        for i, s in enumerate(test._scales):
             s[:] /= hi[i%ndim]
         return test
 
@@ -146,17 +137,15 @@ def grad(test):
         test._scales = np.repeat(sc, 2, axis=1)
         ind = np.repeat(ind, ndim, axis=0)
         test._indices = np.repeat(ind, 2, axis=1)
-        measures = np.repeat(measures, ndim, axis=0)
-        test._measures = np.repeat(measures, 2, axis=1)
-        psi = test.function_space().measures[0]
+        psi = test.function_space().coordinates[0]
 
         for i, s in enumerate(test._terms):
             for j in range(test._terms.shape[1]):
                 if j % 2 == 0:
                     s[j, i%ndim] += 1
-                    test._measures[i, j] /= hi[i%ndim]
+                    test._scales[i, j] /= hi[i%ndim]
                 else:
-                    test._measures[i, j] = test._measures[i, j].diff(psi[i%ndim], 1) / hi[i%ndim]
+                    test._scales[i, j] = test._scales[i, j].diff(psi[i%ndim], 1) / hi[i%ndim]
 
     return test
 
@@ -191,15 +180,14 @@ def Dx(test, x, k=1):
     else:
         assert test.expr_rank() < 1, 'Cannot take derivative of tensor in curvilinear coordinates'
         v = test._terms = np.repeat(test.terms(), 2, axis=1)
-        test._scales = np.repeat(test.scales(), 2, axis=1)
+        sc = test._scales = np.repeat(test.scales(), 2, axis=1)
         test._indices = np.repeat(test.indices(), 2, axis=1)
-        measures = test._measures = np.repeat(test.measures(), 2, axis=1)
-        psi = test.function_space().measures[0]
+        psi = test.function_space().coordinates[0]
         for i in range(v.shape[1]):
             if i % 2 == 0:
                 v[:, i, x] += k
             else:
-                measures[:, i] = sp.diff(measures[:, i], psi[x], 1)
+                sc[:, i] = sp.diff(sc[:, i], psi[x], 1)
 
     return test
 
@@ -233,14 +221,13 @@ def curl(test):
             test._terms = np.concatenate((w0.terms(), w1.terms(), w2.terms()), axis=0)
             test._scales = np.concatenate((w0.scales(), w1.scales(), w2.scales()), axis=0)
             test._indices = np.concatenate((w0.indices(), w1.indices(), w2.indices()), axis=0)
-            test._measures = np.concatenate((w0.measures(), w1.measures(), w2.measures()), axis=0)
         else:
             assert test.dimensions == 2
             test = Dx(test[1], 0, 1) - Dx(test[0], 1, 1)
 
     else:
         assert test.expr_rank() < 2, 'Cannot take curl of higher order tensor in curvilinear coordinates'
-        psi = test.function_space().measures[0]
+        psi = test.function_space().coordinates[0]
         if test.dimensions == 3:
             w0 = (hi[2]*Dx(test[2], 1, 1) + test[2]*sp.diff(hi[2], psi[1], 1) - hi[1]*Dx(test[1], 2, 1) - test[1]*sp.diff(hi[1], psi[2], 1))*(1/(hi[1]*hi[2]))
             w1 = (hi[0]*Dx(test[0], 2, 1) + test[0]*sp.diff(hi[0], psi[2], 1) - hi[2]*Dx(test[2], 0, 1) - test[2]*sp.diff(hi[2], psi[0], 1))*(1/(hi[0]*hi[2]))
@@ -248,10 +235,8 @@ def curl(test):
             test._terms = np.concatenate((w0.terms(), w1.terms(), w2.terms()), axis=0)
             test._scales = np.concatenate((w0.scales(), w1.scales(), w2.scales()), axis=0)
             test._indices = np.concatenate((w0.indices(), w1.indices(), w2.indices()), axis=0)
-            test._measures = np.concatenate((w0.measures(), w1.measures(), w2.measures()), axis=0)
         else:
             assert test.dimensions == 2
             test = (hi[1]*Dx(test[1], 0, 1) + test[1]*sp.diff(hi[1], psi[0], 1) - hi[0]*Dx(test[0], 1, 1) - test[0]*sp.diff(hi[0], psi[1], 1))*(1/(hi[0]*hi[1]))
-
 
     return test

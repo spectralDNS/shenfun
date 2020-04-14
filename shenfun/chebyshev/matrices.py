@@ -363,7 +363,7 @@ class BTTmat(SpectralMatrix):
             format = 'csr'
         if format == 'self':
             s = [np.newaxis,]*v.ndim # broadcasting
-            d = [slice(0, m) for m in v.shape]
+            d = tuple(slice(0, m) for m in v.shape)
             N, M = self.shape
             s[axis] = slice(0, M)
             s = tuple(s)

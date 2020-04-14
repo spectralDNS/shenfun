@@ -234,8 +234,6 @@ def inner(expr0, expr1, output_array=None, level=0):
     trialspace = trial.base.function_space()
     test_scale = test.scales()
     trial_scale = trial.scales()
-    test_m = test.measures()
-    trial_m = trial.measures()
 
     uh = None
     if trial.argument == 2:
@@ -246,7 +244,7 @@ def inner(expr0, expr1, output_array=None, level=0):
         for test_j, b0 in enumerate(base_test):              # second index test
             for trial_j, b1 in enumerate(base_trial):        # second index trial
                 sc = test_scale[vec, test_j]*trial_scale[vec, trial_j]
-                scb = sc
+                #scb = sc
                 M = []
                 DM = []
                 assert len(b0) == len(b1)
@@ -257,13 +255,13 @@ def inner(expr0, expr1, output_array=None, level=0):
                 if isinstance(testspace, (MixedTensorProductSpace, MixedBasis)):
                     test_sp = testspace.flatten()[test_ind[test_j]]
                 has_bcs = False
-                # Check if measure is or scale is zero
-                ms = test_m[vec, test_j]*trial_m[vec, trial_j]
-                if ms == 0 or np.abs(sc) < 1e-14:
+                # Check if scale is zero
+                if sc == 0:
                     continue
 
-                msdict = split([test_m[vec, test_j], trial_m[vec, trial_j]])
-
+                msdict = split([test_scale[vec, test_j], trial_scale[vec, trial_j]])
+                sc = 1
+                scb = 1
                 for i, (a, b) in enumerate(zip(b0, b1)): # Third index, one inner for each dimension
                     ts = trial_sp[i]
                     sp = test_sp[i]
@@ -279,6 +277,9 @@ def inner(expr0, expr1, output_array=None, level=0):
                         if len(sym) == 1:
                             let = msi.leadterm(sym.pop())[0]
                             msi /= let
+                        else:
+                            let = msi
+                            msi = 1
 
                     # assemble inner product
                     AA = inner_product((sp, a), (ts, b), msi*sp._dx)
@@ -293,6 +294,7 @@ def inner(expr0, expr1, output_array=None, level=0):
                         if ts.bc.has_nonhomogeneous_bcs():
                             tsc = ts.get_bc_basis()
                             BB = inner_product((sp, a), (tsc, b))
+                            BB.scale *= float(let)
                             if not abs(BB.scale-1.) < 1e-8:
                                 scb *= BB.scale
                                 BB.scale = 1.0
