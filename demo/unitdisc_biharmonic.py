@@ -17,7 +17,6 @@ import sympy as sp
 # Define polar coordinates using angle along first axis and radius second
 theta, r = psi = sp.symbols('x,y', real=True, positive=True)
 rv = (r*sp.cos(theta), r*sp.sin(theta))
-measures = get_measures(psi, rv)
 
 N = 20
 by_parts = True
@@ -25,8 +24,8 @@ F = Basis(N, 'F', dtype='d')
 F0 = Basis(1, 'F', dtype='d')
 L = Basis(N, 'L', bc='Bipolar', domain=(0, 1))
 L0 = Basis(N, 'L', bc='BiPolar0', domain=(0, 1))
-T = TensorProductSpace(comm, (F, L), axes=(1, 0), measures=(psi, rv))
-T0 = TensorProductSpace(MPI.COMM_SELF, (F0, L0), axes=(1, 0), measures=(psi, rv))
+T = TensorProductSpace(comm, (F, L), axes=(1, 0), coordinates=(psi, rv))
+T0 = TensorProductSpace(MPI.COMM_SELF, (F0, L0), axes=(1, 0), coordinates=(psi, rv))
 
 # Manufactured solution
 ue = (r*(1-r))**4*(1+sp.cos(8*theta))

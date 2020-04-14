@@ -13,8 +13,9 @@ from scipy.fftpack import dct
 from shenfun.optimization import optimizer
 
 __all__ = ['inheritdocstrings', 'dx', 'clenshaw_curtis1D', 'CachedArrayDict',
-           'outer', 'apply_mask', 'integrate_sympy', 'get_measures',
-           'get_measures_tangent']
+           'outer', 'apply_mask', 'integrate_sympy', 'get_scaling_factors',
+           'get_covariant_basis', 'get_contravariant_basis', 'get_covariant_metric_tensor',
+           'get_contravariant_metric_tensor']
 
 def inheritdocstrings(cls):
     """Method used for inheriting docstrings from parent class
@@ -219,19 +220,70 @@ def integrate_sympy(f, d):
     except sp.PolynomialError:
         return sp.integrate(f, d)
 
-def get_measures(psi, rv):
-    drv = get_measures_tangent(psi, rv)
-    measures = np.zeros_like(psi)
-    for i, s in enumerate(np.sum(drv**2, axis=1)):
-        measures[i] = sp.simplify(sp.sqrt(s))
-    return measures
+def get_cartesian_basis(N):
+    e = np.zeros((N, N), dtype=object)
+    for i in range(N):
+        e[i, i] = sp.S(1)
+    return e
 
-def get_measures_tangent(psi, rv):
-    drv = np.zeros((len(psi), len(rv)), dtype=object)
+def get_scaling_factors(psi, rv):
+    b = get_covariant_basis(psi, rv)
+    hi = np.zeros_like(psi)
+    for i, s in enumerate(np.sum(b**2, axis=1)):
+        hi[i] = sp.simplify(sp.sqrt(s))
+    return hi
+
+def get_covariant_basis(psi, rv):
+    b = np.zeros((len(psi), len(rv)), dtype=object)
     for i, ti in enumerate(psi):
         for j, rj in enumerate(rv):
-            drv[i, j] = rj.diff(ti, 1)
-    return drv
+            b[i, j] = rj.diff(ti, 1)
+    return b
+
+def get_contravariant_basis(psi, rv):
+    b = get_covariant_basis(psi, rv)
+    bt = np.zeros_like(b)
+    F = get_transform(b)
+    bt = np.dot(F.T.inv(), np.eye(len(psi), dtype=int))
+    for i in range(len(psi)):
+        for j in range(len(psi)):
+            bt[i, j] = sp.simplify(bt[i, j])
+    return bt
+
+def get_covariant_metric_tensor(psi, rv):
+    b = get_covariant_basis(psi, rv)
+    g = np.zeros((len(psi), len(psi)), dtype=object)
+    for i in range(len(psi)):
+        for j in range(len(psi)):
+            g[i, j] = sp.simplify(np.dot(b[i], b[j]))
+    return g
+
+def get_contravariant_metric_tensor(g=None, psi=None, rv=None):
+    if g is None:
+        assert psi and rv
+        g = get_covariant_metric_tensor(psi, rv)
+    t = g.nonzero()
+    gt = np.zeros_like(g)
+    gt[t] = 1 / g[t]
+    return gt
+
+def get_transform(b):
+    N = b.shape[0]
+    F = sp.Matrix(np.zeros((N, N), object))
+    for i in range(3):
+        for j in range(3):
+            F[i, j] = np.dot(b[i], np.eye(N, dtype=int)[j])
+    return F
+
+def get_christoffel_second(psi, rv):
+    b = get_covariant_basis(psi, rv)
+    bt = get_contravariant_basis(psi, rv)
+    Ct = np.zeros((len(psi),)*len(psi), object)
+    for i in range(len(psi)):
+        for j in range(len(psi)):
+            for k in range(len(psi)):
+                Ct[i, j, k] = sp.simplify(np.dot(np.array([bij.diff(psi[j], 1) for bij in b[i]]), bt[k]))
+    return Ct
 
 def split(measures):
     def _split(mss, result):

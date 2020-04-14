@@ -22,7 +22,7 @@ N = 20
 by_parts = True
 L0 = Basis(N, 'L', bc='Biharmonic', domain=(0, np.pi/2))
 L1 = Basis(N, 'L', bc='Biharmonic', domain=(0.5, 1))
-T = TensorProductSpace(comm, (L0, L1), axes=(1, 0), measures=(psi, rv))
+T = TensorProductSpace(comm, (L0, L1), axes=(1, 0), coordinates=(psi, rv))
 
 # Manufactured solution
 ue = ((0.5-r)*(1-r))**2*((sp.pi/2-theta)*theta)**2

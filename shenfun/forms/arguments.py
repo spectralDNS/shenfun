@@ -310,22 +310,18 @@ class Expr(object):
     final 3 since it is a 3-dimensional tensor product space.
     """
 
-    def __init__(self, basis, terms=None, scales=None, indices=None, measures=None):
+    def __init__(self, basis, terms=None, scales=None, indices=None):
         #assert isinstance(basis, BasisFunction)
         self._basis = basis
         self._terms = terms
         self._scales = scales
         self._indices = indices
-        self._measures = measures
         ndim = self.function_space().dimensions
         if terms is None:
             self._terms = np.zeros((self.function_space().num_components(), 1, ndim),
                                    dtype=np.int)
         if scales is None:
-            self._scales = np.ones((self.function_space().num_components(), 1))
-
-        if measures is None:
-            self._measures = np.ones((self.function_space().num_components(), 1), dtype=object)
+            self._scales = np.ones((self.function_space().num_components(), 1), dtype=object)
 
         if indices is None:
             self._indices = basis.offset()+np.arange(self.function_space().num_components())[:, np.newaxis]
@@ -471,97 +467,49 @@ class Expr(object):
             return Expr(basis,
                         self._terms[i][np.newaxis, :, :],
                         self._scales[i][np.newaxis, :],
-                        self._indices[i][np.newaxis, :],
-                        self._measures[i][np.newaxis, :])
+                        self._indices[i][np.newaxis, :])
+
         elif self.expr_rank() == 2:
             ndim = self.dimensions
             return Expr(basis,
                         self._terms[i*ndim:(i+1)*ndim],
                         self._scales[i*ndim:(i+1)*ndim],
-                        self._indices[i*ndim:(i+1)*ndim],
-                        self._measures[i*ndim:(i+1)*ndim])
+                        self._indices[i*ndim:(i+1)*ndim])
         else:
             raise NotImplementedError
 
     def __mul__(self, a):
         sc = self.scales().copy()
-        ms = self.measures().copy()
         if self.expr_rank() == 0:
-            if isinstance(a, sp.Expr):
-                if isinstance(a, Number):
-                    sc = sc*float(a)
-                else:
-                    ms = ms*a
-            elif isinstance(a, Number):
-                sc = sc*a
-            else:
-                raise NotImplementedError
+            sc = sc * sp.sympify(a)
+
         else:
             if isinstance(a, tuple):
                 assert len(a) == self.num_components()
                 for i in range(self.num_components()):
-                    if isinstance(a[i], sp.Expr):
-                        if isinstance(a[i], Number):
-                            sc[i] = sc[i]*float(a[i])
-                        else:
-                            ms[i] = ms[i]*a[i]
-                    elif isinstance(a[i], Number):
-                        sc[i] = sc[i]*a[i]
-
-            elif isinstance(a, sp.Expr):
-                if isinstance(a, Number):
-                    sc *= float(a)
-                else:
-                    ms *= a
-
-            elif isinstance(a, Number):
-                sc *= a
+                    sc[i] = sc[i] * sp.sympify(a[i])
 
             else:
-                raise NotImplementedError
+                sc *= sp.sympify(a)
 
-        return Expr(self._basis, self._terms.copy(), sc, self._indices.copy(), ms)
+        return Expr(self._basis, self._terms.copy(), sc, self._indices.copy())
 
     def __rmul__(self, a):
         return self.__mul__(a)
 
     def __imul__(self, a):
         sc = self.scales()
-        ms = self.measures()
         if self.expr_rank() == 0:
-            if isinstance(a, sp.Expr):
-                if isinstance(a, Number):
-                    sc *= float(a)
-                else:
-                    ms *= a
-            elif isinstance(a, Number):
-                sc *= a
+            sc *= sp.sympify(a)
 
         else:
             if isinstance(a, tuple):
                 assert len(a) == self.dimensions
                 for i in range(self.dimensions):
-                    if isinstance(a[i], sp.Expr):
-                        if isinstance(a[i], Number):
-                            sc[i] = sc[i]*float(a[i])
-                        else:
-                            ms[i] = ms[i]*a[i]
-                    elif isinstance(a[i], Number):
-                        sc[i] = sc[i]*a[i]
-
-                    else:
-                        raise NotImplementedError
-            elif isinstance(a, sp.Expr):
-                if isinstance(a, Number):
-                    sc *= float(a)
-                else:
-                    ms *= a
-
-            elif isinstance(a, Number):
-                sc *= a
+                    sc[i] = sc[i] * sp.sympify(a[i])
 
             else:
-                raise NotImplementedError
+                sc *= sp.sympify(a)
 
         return self
 
@@ -580,8 +528,7 @@ class Expr(object):
         return Expr(basis,
                     np.concatenate((self.terms(), a.terms()), axis=1),
                     np.concatenate((self.scales(), a.scales()), axis=1),
-                    np.concatenate((self.indices(), a.indices()), axis=1),
-                    np.concatenate((self.measures(), a.measures()), axis=1))
+                    np.concatenate((self.indices(), a.indices()), axis=1))
 
     def __iadd__(self, a):
         assert isinstance(a, (Expr, BasisFunction))
@@ -599,7 +546,6 @@ class Expr(object):
         self._terms = np.concatenate((self.terms(), a.terms()), axis=1)
         self._scales = np.concatenate((self.scales(), a.scales()), axis=1)
         self._indices = np.concatenate((self.indices(), a.indices()), axis=1)
-        self._measures = np.concatenate((self.measures(), a.measures()), axis=1)
         return self
 
     def __sub__(self, a):
@@ -617,8 +563,7 @@ class Expr(object):
         return Expr(basis,
                     np.concatenate((self.terms(), a.terms()), axis=1),
                     np.concatenate((self.scales(), -a.scales()), axis=1),
-                    np.concatenate((self.indices(), a.indices()), axis=1),
-                    np.concatenate((self.measures(), a.measures()), axis=1))
+                    np.concatenate((self.indices(), a.indices()), axis=1))
 
     def __isub__(self, a):
         assert isinstance(a, (Expr, BasisFunction))
@@ -636,12 +581,11 @@ class Expr(object):
         self._terms = np.concatenate((self.terms(), a.terms()), axis=1)
         self._scales = np.concatenate((self.scales(), -a.scales()), axis=1)
         self._indices = np.concatenate((self.indices(), a.indices()), axis=1)
-        self._measures = np.concatenate((self.measures(), a.measures()), axis=1)
         return self
 
     def __neg__(self):
         return Expr(self.basis(), self.terms().copy(), -self.scales().copy(),
-                    self.indices().copy(), self.measures().copy())
+                    self.indices().copy())
 
 
 class BasisFunction(object):

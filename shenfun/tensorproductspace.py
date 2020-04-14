@@ -7,7 +7,7 @@ import warnings
 import sympy as sp
 import numpy as np
 from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun.utilities import apply_mask, get_measures, split
+from shenfun.utilities import apply_mask, get_scaling_factors, split
 from shenfun.forms.arguments import Function, Array
 from shenfun.optimization.cython import evaluate
 from shenfun.spectralbase import slicedict, islicedict, SpectralBase
@@ -47,6 +47,17 @@ class TensorProductSpace(PFFT):
         Pencil distribution in spectral space. This is primarily intended
         for a padded space, where the spectral distribution must be
         equal to the non-padded space.
+    cordinates: two tuples, optional
+        Map for curvilinear coordinatesystem.
+        First tuple are the coordinate variables in the new coordinate system
+        Second tuple are the Cartesian coordinates as functions of the variables
+        in the first tuple. Example::
+
+            psi = (theta, r) = sp.symbols('x,y', real=True, positive=True)
+            rv = (r*sp.cos(theta), r*sp.sin(theta))
+
+        where psi and rv are the first and second tuples, respectively.
+
     kw : dict, optional
         Dictionary that can be used to plan transforms. Input to method
         `plan` for the bases.
@@ -54,12 +65,12 @@ class TensorProductSpace(PFFT):
     """
     def __init__(self, comm, bases, axes=None, dtype=None, slab=False,
                  collapse_fourier=False, backward_from_pencil=False,
-                 measures=None, **kw):
+                 coordinates=None, **kw):
         # Note do not call __init__ of super
         self.comm = comm
         self.bases = bases
-        self.measures = measures if measures is not None else (psi[:len(bases)],)*2
-        self.hi = get_measures(*self.measures)
+        self.coordinates = coordinates if coordinates is not None else (psi[:len(bases)],)*2
+        self.hi = get_scaling_factors(*self.coordinates)
         if not self.hi.prod() == 1:
             for key, val in split(self.hi).items():
                 k = 'xyzrs'.index(key)
