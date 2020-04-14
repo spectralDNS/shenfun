@@ -7,7 +7,7 @@ Demo - Helmholtz equation in polar coordinates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Apr 10, 2020
+:Date: Apr 14, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the
 Helmholtz equation on a circular disc, using polar coordinates. This demo is implemented in
@@ -324,8 +324,8 @@ required :math:`(0, 2\pi)`.
     F0 = Basis(1, 'F', dtype='d')
     L = Basis(N, 'L', bc='Dirichlet', domain=(0, 1))
     L0 = Basis(N, 'L', bc='UpperDirichlet', domain=(0, 1))
-    T = TensorProductSpace(comm, (F, L), axes=(1, 0), measures=(psi, rv))
-    T0 = TensorProductSpace(MPI.COMM_SELF, (F0, L0), axes=(1, 0), measures=(psi, rv))
+    T = TensorProductSpace(comm, (F, L), axes=(1, 0), coordinates=(psi, rv))
+    T0 = TensorProductSpace(MPI.COMM_SELF, (F0, L0), axes=(1, 0), coordinates=(psi, rv))
 
 Note that since ``F0`` only has one component we could actually use
 ``L0`` without creating ``T0``. But the code turns out to be simpler
@@ -344,7 +344,7 @@ Finally, note that
 The purely radial problem :eq:`eq:u0` is only solved on the one
 processor with rank = 0.
 
-Polar coordinates are ensured by feeding ``measures=(psi, rv)``
+Polar coordinates are ensured by feeding ``coordinates=(psi, rv)``
 to :class:`.TensorProductSpace`. Operators like :func:`.div`
 :func:`.grad` and  :func:`.curl` will now work on
 items of :class:`.Function`, :class:`.TestFunction` and
