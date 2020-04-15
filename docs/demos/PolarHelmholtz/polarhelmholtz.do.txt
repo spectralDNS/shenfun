@@ -8,7 +8,7 @@ This is a demonstration of how the Python module "shenfun":
 Helmholtz equation on a circular disc, using polar coordinates. This demo is implemented in
 a single Python file "unitdisc_poisson.py":
 "https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_poisson.py",
-and the numerical method is is described in more detail by J. Shen cite{shen3}.
+and the numerical method is described in more detail by J. Shen cite{shen3}.
 
 FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/figures/Helmholtzdisc.png, width=700 frac=1] Poisson on the unit disc. label{fig:helmholtz}
 
