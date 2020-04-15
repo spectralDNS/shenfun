@@ -7,7 +7,7 @@ Demo - Lid driven cavity
 ========================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Apr 14, 2020
+:Date: Apr 15, 2020
 
 *Summary.* The lid driven cavity is a classical benchmark for Navier Stokes solvers.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the lid
@@ -38,18 +38,18 @@ The nonlinear steady Navier Stokes equations are given in strong form as
 
 .. math::
         \begin{align*}
-        \nu \nabla^2 \bs{u} - \nabla p &= \nabla \cdot \bs{u} \bs{u} \quad \text{in }  \Omega , \\ 
-        \nabla \cdot \bs{u} &= 0 \quad \text{in } \Omega  \\ 
+        \nu \nabla^2 \boldsymbol{u} - \nabla p &= \nabla \cdot \boldsymbol{u} \boldsymbol{u} \quad \text{in }  \Omega , \\ 
+        \nabla \cdot \boldsymbol{u} &= 0 \quad \text{in } \Omega  \\ 
         \int_{\Omega} p dx &= 0 \\ 
-        \bs{u}(x, y=1) = (1, 0) \, &\text{ or }\, \bs{u}(x, y=1) = ((1-x)^2(1+x)^2, 0) \\ 
-        \bs{u}(x, y=-1) &= (0, 0) \\ 
-        \bs{u}(x=\pm 1, y) &= (0, 0)
+        \boldsymbol{u}(x, y=1) = (1, 0) \, &\text{ or }\, \boldsymbol{u}(x, y=1) = ((1-x)^2(1+x)^2, 0) \\ 
+        \boldsymbol{u}(x, y=-1) &= (0, 0) \\ 
+        \boldsymbol{u}(x=\pm 1, y) &= (0, 0)
         \end{align*}
 
-where :math:`\bs{u}, p` and :math:`\nu` are, respectively, the
+where :math:`\boldsymbol{u}, p` and :math:`\nu` are, respectively, the
 fluid velocity vector, pressure and kinematic viscosity. The domain
-:math:`\Omega = [-1, 1]^2` and the nonlinear term :math:`\bs{u} \bs{u}` is the
-outer product of vector :math:`\bs{u}` with itself. Note that the final
+:math:`\Omega = [-1, 1]^2` and the nonlinear term :math:`\boldsymbol{u} \boldsymbol{u}` is the
+outer product of vector :math:`\boldsymbol{u}` with itself. Note that the final
 :math:`\int_{\Omega} p dx = 0` is there because there is no Dirichlet boundary
 condition on the pressure and the system of equations would otherwise be
 ill conditioned.
@@ -107,17 +107,17 @@ Legendre polynomials (we could also use Chebyshev):
    :label: eq:D0
 
         
-        \mathcal{X}_k(x) = L_k(x) - L_{k+2}(x), \quad \forall \, k \in \bs{k}^{N_0-2},  
+        \mathcal{X}_k(x) = L_k(x) - L_{k+2}(x), \quad \forall \, k \in \boldsymbol{k}^{N_0-2},  
         
 
 .. math::
    :label: eq:D1
 
           
-        \mathcal{Y}_l(y) = L_l(y) - L_{l+2}(y), \quad \forall \, l \in \bs{l}^{N_1-2}, 
+        \mathcal{Y}_l(y) = L_l(y) - L_{l+2}(y), \quad \forall \, l \in \boldsymbol{l}^{N_1-2}, 
         
 
-where :math:`\bs{k}^{N_0-2} = (0, 1, \ldots, N_0-3)`, :math:`\bs{l}^{N_1-2} = (0, 1, \ldots, N_1-3)`
+where :math:`\boldsymbol{k}^{N_0-2} = (0, 1, \ldots, N_0-3)`, :math:`\boldsymbol{l}^{N_1-2} = (0, 1, \ldots, N_1-3)`
 and :math:`N = (N_0, N_1)` is the number
 of quadrature points in each direction. Note that :math:`N_0` and :math:`N_1` do not need
 to be the same. The basis funciton :eq:`eq:D0` satisfies
@@ -149,7 +149,7 @@ can be added on both sides of the domain using the following basis
    :label: _auto1
 
         
-        \mathcal{Y}_l(y) = L_l(y) - L_{l+2}(y), \quad \forall \, l \in \bs{l}^{N_1-2}. 
+        \mathcal{Y}_l(y) = L_l(y) - L_{l+2}(y), \quad \forall \, l \in \boldsymbol{l}^{N_1-2}. 
         
         
 
@@ -200,11 +200,11 @@ little trickier. The reason for this has to do with
 inf-sup stability. The obvious choice of basis functions are the
 regular Legendre polynomials :math:`L_k(x)` in :math:`x` and :math:`L_l(y)` in the
 :math:`y`-directions. The problem is that for the natural choice of
-:math:`(k, l) \in \bs{k}^{N_0} \times \bs{l}^{N_1}`
+:math:`(k, l) \in \boldsymbol{k}^{N_0} \times \boldsymbol{l}^{N_1}`
 there are nullspaces and the problem is not well-defined. It turns out
 that the proper choice for the pressure basis is simply the regular
 Legendre basis functions, but for
-:math:`(k, l) \in \bs{k}^{N_0-2} \times \bs{l}^{N_1-2}`.
+:math:`(k, l) \in \boldsymbol{k}^{N_0-2} \times \boldsymbol{l}^{N_1-2}`.
 The bases :math:`P^{N_0}(x)=\text{span}\{L_k(x)\}_{k=0}^{N_0-3}` and
 :math:`P^{N_1}(y)=\text{span}\{L_l(y)\}_{l=0}^{N_1-3}` are created as
 
@@ -229,7 +229,7 @@ product spaces, whereas one is enough for the pressure
    :label: _auto4
 
         
-        V_{1}^{\bs{N}}(\bs{x}) = D_0^{N_0}(x) \otimes D_1^{N_1}(y), 
+        V_{1}^{\boldsymbol{N}}(\boldsymbol{x}) = D_0^{N_0}(x) \otimes D_1^{N_1}(y), 
         
         
 
@@ -237,7 +237,7 @@ product spaces, whereas one is enough for the pressure
    :label: _auto5
 
           
-        V_{0}^{\bs{N}}(\bs{x}) = D_0^{N_0}(x) \otimes D_0^{N_1}(y), 
+        V_{0}^{\boldsymbol{N}}(\boldsymbol{x}) = D_0^{N_0}(x) \otimes D_0^{N_1}(y), 
         
         
 
@@ -245,7 +245,7 @@ product spaces, whereas one is enough for the pressure
    :label: _auto6
 
           
-        P^{\bs{N}}(\bs{x}) = P^{N_0}(x) \otimes P^{N_1}(y).
+        P^{\boldsymbol{N}}(\boldsymbol{x}) = P^{N_0}(x) \otimes P^{N_1}(y).
         
         
 
@@ -259,7 +259,7 @@ With shenfun the tensor product spaces are created as
 
 These tensor product spaces are all scalar valued.
 The velocity is a vector, and a vector requires a mixed basis like
-:math:`W_1^{\bs{N}} = V_1^{\bs{N}} \times V_0^{\bs{N}}`. The mixed basis is created
+:math:`W_1^{\boldsymbol{N}} = V_1^{\boldsymbol{N}} \times V_0^{\boldsymbol{N}}`. The mixed basis is created
 in shenfun as
 
 .. code-block:: python
@@ -267,7 +267,7 @@ in shenfun as
     W1 = MixedTensorProductSpace([V1, V0])
     W0 = MixedTensorProductSpace([V0, V0])
 
-Note that the second mixed basis, :math:`W_0^{\bs{N}} = V_0^{\bs{N}} \times V_0^{\bs{N}}`, uses
+Note that the second mixed basis, :math:`W_0^{\boldsymbol{N}} = V_0^{\boldsymbol{N}} \times V_0^{\boldsymbol{N}}`, uses
 homogeneous boundary conditions throughout.
 
 .. _sec:mixedform:
@@ -277,66 +277,66 @@ Mixed variational form
 
 We now formulate a variational problem using the
 Galerkin method: Find
-:math:`\bs{u} \in W_1^{\bs{N}}` and :math:`p \in P^{\bs{N}}` such that
+:math:`\boldsymbol{u} \in W_1^{\boldsymbol{N}}` and :math:`p \in P^{\boldsymbol{N}}` such that
 
 .. math::
    :label: eq:nsvarform
 
         
-        \int_{\Omega} (\nu \nabla^2 \bs{u} - \nabla p ) \cdot \bs{v} \, dxdy = \int_{\Omega} (\nabla \cdot \bs{u}\bs{u}) \cdot \bs{v}\, dxdy \quad\forall \bs{v} \, \in \, W_0^{\bs{N}},  
+        \int_{\Omega} (\nu \nabla^2 \boldsymbol{u} - \nabla p ) \cdot \boldsymbol{v} \, dxdy = \int_{\Omega} (\nabla \cdot \boldsymbol{u}\boldsymbol{u}) \cdot \boldsymbol{v}\, dxdy \quad\forall \boldsymbol{v} \, \in \, W_0^{\boldsymbol{N}},  
         
 
 .. math::
    :label: _auto7
 
           
-        \int_{\Omega} \nabla \cdot \bs{u} \, q \, dxdy = 0 \quad\forall q \, \in \, P^{\bs{N}}.
+        \int_{\Omega} \nabla \cdot \boldsymbol{u} \, q \, dxdy = 0 \quad\forall q \, \in \, P^{\boldsymbol{N}}.
         
         
 
-Note that we are using test functions :math:`\bs{v}` with homogeneous
+Note that we are using test functions :math:`\boldsymbol{v}` with homogeneous
 boundary conditions.
 
 The first obvious issue with Eq :eq:`eq:nsvarform` is the nonlinearity.
 In other words we will
 need to linearize and iterate to be able to solve these equations with
 the Galerkin method. To this end we will introduce the solution on
-iteration :math:`k \in [0, 1, \ldots]` as :math:`\bs{u}^k` and compute the nonlinearity
+iteration :math:`k \in [0, 1, \ldots]` as :math:`\boldsymbol{u}^k` and compute the nonlinearity
 using only known solutions
-:math:`\int_{\Omega} (\nabla \cdot \bs{u}^k\bs{u}^k) \cdot \bs{v}\, dxdy`.
+:math:`\int_{\Omega} (\nabla \cdot \boldsymbol{u}^k\boldsymbol{u}^k) \cdot \boldsymbol{v}\, dxdy`.
 Using further integration by parts we end up with the equations to solve
-for iteration number :math:`k+1` (using :math:`\bs{u} = \bs{u}^{k+1}` and :math:`p=p^{k+1}`
+for iteration number :math:`k+1` (using :math:`\boldsymbol{u} = \boldsymbol{u}^{k+1}` and :math:`p=p^{k+1}`
 for simplicity)
 
 .. math::
    :label: eq:nsvarform2
 
         
-        -\int_{\Omega} \nu \nabla \bs{u} \, \colon \nabla \bs{v} \, dxdy + \int_{\Omega} p \nabla \cdot \bs{v} \, dxdy = \int_{\Omega} (\nabla \cdot \bs{u}^k\bs{u}^k) \cdot \bs{v}\, dxdy \quad\forall \bs{v} \, \in \, W_0^{\bs{N}},  
+        -\int_{\Omega} \nu \nabla \boldsymbol{u} \, \colon \nabla \boldsymbol{v} \, dxdy + \int_{\Omega} p \nabla \cdot \boldsymbol{v} \, dxdy = \int_{\Omega} (\nabla \cdot \boldsymbol{u}^k\boldsymbol{u}^k) \cdot \boldsymbol{v}\, dxdy \quad\forall \boldsymbol{v} \, \in \, W_0^{\boldsymbol{N}},  
         
 
 .. math::
    :label: _auto8
 
           
-        \int_{\Omega} \nabla \cdot \bs{u} \, q \, dxdy = 0 \quad\forall q \, \in \, P^{\bs{N}}.
+        \int_{\Omega} \nabla \cdot \boldsymbol{u} \, q \, dxdy = 0 \quad\forall q \, \in \, P^{\boldsymbol{N}}.
         
         
 
 Note that the nonlinear term may also be integrated by parts and
-evaluated as :math:`\int_{\Omega}-\bs{u}^k\bs{u}^k  \, \colon \nabla \bs{v} \, dxdy`. All
+evaluated as :math:`\int_{\Omega}-\boldsymbol{u}^k\boldsymbol{u}^k  \, \colon \nabla \boldsymbol{v} \, dxdy`. All
 boundary integrals disappear since we are using test functions with
 homogeneous boundary conditions.
 
-Since we are to solve for :math:`\bs{u}` and :math:`p` at the same time, we formulate a
-mixed (coupled) problem: find :math:`(\bs{u}, p) \in W_1^{\bs{N}} \times P^{\bs{N}}`
+Since we are to solve for :math:`\boldsymbol{u}` and :math:`p` at the same time, we formulate a
+mixed (coupled) problem: find :math:`(\boldsymbol{u}, p) \in W_1^{\boldsymbol{N}} \times P^{\boldsymbol{N}}`
 such that
 
 .. math::
    :label: _auto9
 
         
-        a((\bs{u}, p), (\bs{v}, q)) = L((\bs{v}, q)) \quad \forall (\bs{v}, q) \in W_0^{\bs{N}} \times P^{\bs{N}},
+        a((\boldsymbol{u}, p), (\boldsymbol{v}, q)) = L((\boldsymbol{v}, q)) \quad \forall (\boldsymbol{v}, q) \in W_0^{\boldsymbol{N}} \times P^{\boldsymbol{N}},
         
         
 
@@ -346,7 +346,7 @@ where bilinear (:math:`a`) and linear (:math:`L`) forms are given as
    :label: _auto10
 
         
-            a((\bs{u}, p), (\bs{v}, q)) = -\int_{\Omega} \nu \nabla \bs{u} \, \colon \nabla \bs{v} \, dxdy + \int_{\Omega} p \nabla \cdot \bs{v} \, dxdy + \int_{\Omega} \nabla \cdot \bs{u} \, q \, dxdy, 
+            a((\boldsymbol{u}, p), (\boldsymbol{v}, q)) = -\int_{\Omega} \nu \nabla \boldsymbol{u} \, \colon \nabla \boldsymbol{v} \, dxdy + \int_{\Omega} p \nabla \cdot \boldsymbol{v} \, dxdy + \int_{\Omega} \nabla \cdot \boldsymbol{u} \, q \, dxdy, 
         
         
 
@@ -354,7 +354,7 @@ where bilinear (:math:`a`) and linear (:math:`L`) forms are given as
    :label: _auto11
 
           
-            L((\bs{v}, q); \bs{u}^{k}) = \int_{\Omega} (\nabla \cdot \bs{u}^{k}\bs{u}^{k}) \cdot \bs{v}\, dxdy.
+            L((\boldsymbol{v}, q); \boldsymbol{u}^{k}) = \int_{\Omega} (\nabla \cdot \boldsymbol{u}^{k}\boldsymbol{u}^{k}) \cdot \boldsymbol{v}\, dxdy.
         
         
 
@@ -367,15 +367,15 @@ The algorithm used to solve the equations are:
 
   * Set :math:`k = 0`
 
-  * Guess :math:`\bs{u}^0 = (0, 0)`
+  * Guess :math:`\boldsymbol{u}^0 = (0, 0)`
 
   * while not converged:
 
-    * assemble :math:`L((\bs{v}, q); \bs{u}^{k})`
+    * assemble :math:`L((\boldsymbol{v}, q); \boldsymbol{u}^{k})`
 
-    * solve :math:`a((\bs{u}, p), (\bs{v}, q)) = L((\bs{v}, q); \bs{u}^{k})` for :math:`\bs{u}^{k+1}, p^{k+1}`
+    * solve :math:`a((\boldsymbol{u}, p), (\boldsymbol{v}, q)) = L((\boldsymbol{v}, q); \boldsymbol{u}^{k})` for :math:`\boldsymbol{u}^{k+1}, p^{k+1}`
 
-    * compute error = :math:`\int_{\Omega} (\bs{u}^{k+1}-\bs{u}^{k})^2 \, dxdy`
+    * compute error = :math:`\int_{\Omega} (\boldsymbol{u}^{k+1}-\boldsymbol{u}^{k})^2 \, dxdy`
 
     * if error :math:`<` some tolerance then converged = True
 
@@ -387,7 +387,7 @@ Implementation of solver
 We will now implement the coupled variational problem described in previous
 sections. First of all, since we want to solve for the velocity and pressure
 in a coupled solver, we have to
-create a mixed tensor product space :math:`VQ = W_1^{\bs{N}} \times P^{\bs{N}}` that
+create a mixed tensor product space :math:`VQ = W_1^{\boldsymbol{N}} \times P^{\boldsymbol{N}}` that
 couples velocity and pressure
 
 .. code-block:: python
@@ -461,16 +461,16 @@ Breaking it down the inner product is mathematically
 
         
         
-        \int_{\Omega}-\nu \left(\frac{\partial \bs{v}[0]}{\partial x}, \frac{\partial \bs{v}[0]}{\partial y}\right) \cdot \left(\frac{\partial \bs{u}[0]}{\partial x}, \frac{\partial \bs{u}[0]}{\partial y}\right) dx dy .
+        \int_{\Omega}-\nu \left(\frac{\partial \boldsymbol{v}[0]}{\partial x}, \frac{\partial \boldsymbol{v}[0]}{\partial y}\right) \cdot \left(\frac{\partial \boldsymbol{u}[0]}{\partial x}, \frac{\partial \boldsymbol{u}[0]}{\partial y}\right) dx dy .
         
 
-We can now insert for test function :math:`\bs{v}[0]`
+We can now insert for test function :math:`\boldsymbol{v}[0]`
 
 .. math::
    :label: _auto12
 
         
-        \bs{v}[0]_{kl} = \mathcal{X}_k \mathcal{Y}_l, \quad (k, l) \in \bs{k}^{N_0-2} \times \bs{l}^{N_1-2}
+        \boldsymbol{v}[0]_{kl} = \mathcal{X}_k \mathcal{Y}_l, \quad (k, l) \in \boldsymbol{k}^{N_0-2} \times \boldsymbol{l}^{N_1-2}
         
         
 
@@ -480,11 +480,11 @@ and trialfunction
    :label: _auto13
 
         
-        \bs{u}[0]_{mn} = \sum_{m=0}^{N_0-3} \sum_{n=0}^{N_1-1} \hat{\bs{u}}[0]_{mn} \mathcal{X}_m \mathcal{Y}_n,
+        \boldsymbol{u}[0]_{mn} = \sum_{m=0}^{N_0-3} \sum_{n=0}^{N_1-1} \hat{\boldsymbol{u}}[0]_{mn} \mathcal{X}_m \mathcal{Y}_n,
         
         
 
-where :math:`\hat{\bs{u}}` are the unknown degrees of freedom for the velocity vector.
+where :math:`\hat{\boldsymbol{u}}` are the unknown degrees of freedom for the velocity vector.
 Notice that the sum over the second
 index runs all the way to :math:`N_1-1`, whereas the other indices runs to either
 :math:`N_0-3` or :math:`N_1-3`. This is because of the additional basis functions required
@@ -497,7 +497,7 @@ manipulations
    :label: _auto14
 
         
-         -\sum_{m=0}^{N_0-3} \sum_{n=0}^{N_1-1} \nu \Big( \underbrace{\int_{-1}^{1} \frac{\partial \mathcal{X}_k(x)}{\partial x} \frac{\partial \mathcal{X}_m}{\partial x} dx \int_{-1}^{1} \mathcal{Y}_l \mathcal{Y}_n dy}_{A[0]} +  \underbrace{\int_{-1}^{1} \mathcal{X}_k(x) X_m(x) dx \int_{-1}^{1} \frac{\partial \mathcal{Y}_l}{\partial y} \frac{\partial \mathcal{Y}_n}{\partial y} dy}_{A[1]}  \Big) \hat{\bs{u}}[0]_{mn}.
+         -\sum_{m=0}^{N_0-3} \sum_{n=0}^{N_1-1} \nu \Big( \underbrace{\int_{-1}^{1} \frac{\partial \mathcal{X}_k(x)}{\partial x} \frac{\partial \mathcal{X}_m}{\partial x} dx \int_{-1}^{1} \mathcal{Y}_l \mathcal{Y}_n dy}_{A[0]} +  \underbrace{\int_{-1}^{1} \mathcal{X}_k(x) X_m(x) dx \int_{-1}^{1} \frac{\partial \mathcal{Y}_l}{\partial y} \frac{\partial \mathcal{Y}_n}{\partial y} dy}_{A[1]}  \Big) \hat{\boldsymbol{u}}[0]_{mn}.
         
         
 
@@ -516,13 +516,13 @@ The first tensor product matrix, A[0], is
 where :math:`C\in \mathbb{R}^{N_0-2 \times N_1-2}` and :math:`F \in \mathbb{R}^{N_0-2 \times N_1}`.
 Note that due to the inhomogeneous boundary conditions this last matrix :math:`F`
 is actually not square. However, remember that all contributions from the two highest
-degrees of freedom (:math:`\hat{\bs{u}}[0]_{m,N_1-2}` and :math:`\hat{\bs{u}}[0]_{m,N_1-1}`) are already
+degrees of freedom (:math:`\hat{\boldsymbol{u}}[0]_{m,N_1-2}` and :math:`\hat{\boldsymbol{u}}[0]_{m,N_1-1}`) are already
 known and they can, as such, be  moved directly over to the right hand side of the
 linear algebra system that is to be solved. More precisely, we can split the
 tensor product matrix into two contributions and obtain
 
 .. math::
-        \sum_{m=0}^{N_0-3}\sum_{n=0}^{N_1-1} c_{km}f_{ln} \hat{\bs{u}}[0]_{m, n} = \sum_{m=0}^{N_0-3}\sum_{n=0}^{N_1-3}c_{km}f_{ln}\hat{\bs{u}}[0]_{m, n} + \sum_{m=0}^{N_0-3}\sum_{n=N_1-2}^{N_1-1}c_{km}f_{ln}\hat{\bs{u}}[0]_{m, n}, \quad \forall (k, l) \in \bs{k}^{N_0-2} \times \bs{l}^{N_1-2},
+        \sum_{m=0}^{N_0-3}\sum_{n=0}^{N_1-1} c_{km}f_{ln} \hat{\boldsymbol{u}}[0]_{m, n} = \sum_{m=0}^{N_0-3}\sum_{n=0}^{N_1-3}c_{km}f_{ln}\hat{\boldsymbol{u}}[0]_{m, n} + \sum_{m=0}^{N_0-3}\sum_{n=N_1-2}^{N_1-1}c_{km}f_{ln}\hat{\boldsymbol{u}}[0]_{m, n}, \quad \forall (k, l) \in \boldsymbol{k}^{N_0-2} \times \boldsymbol{l}^{N_1-2},
 
 where the first term on the right hand side is square and the second term is known and
 can be moved to the right hand side of the linear algebra equation system.
@@ -588,7 +588,7 @@ The nonlinear right hand side also requires some additional attention.
 Nonlinear terms are usually computed in physical space before transforming
 to spectral. For this we need to evaluate the velocity vector on the
 quadrature mesh. We also need a rank 2 Array to hold the outer
-product :math:`\bs{u}\bs{u}`. The required arrays and spaces are
+product :math:`\boldsymbol{u}\boldsymbol{u}`. The required arrays and spaces are
 created as
 
 .. code-block:: python
@@ -603,7 +603,7 @@ created as
     uiuj = Array(QT)
     uiuj_hat = Function(QT)
 
-The right hand side :math:`L((\bs{v}, q);\bs{u}^{k});` is computed in its
+The right hand side :math:`L((\boldsymbol{v}, q);\boldsymbol{u}^{k});` is computed in its
 own function ``compute_rhs`` as
 
 .. code-block:: python
@@ -655,11 +655,11 @@ and update the solution each time step as
 
 .. math::
         \begin{align*}
-        \hat{\bs{u}}^{k+1} &= \alpha \hat{\bs{u}}^* + (1-\alpha)\hat{\bs{u}}^{k},\\ 
+        \hat{\boldsymbol{u}}^{k+1} &= \alpha \hat{\boldsymbol{u}}^* + (1-\alpha)\hat{\boldsymbol{u}}^{k},\\ 
         \hat{p}^{k+1} &= \alpha \hat{p}^* + (1-\alpha)\hat{p}^{k},
         \end{align*}
 
-where :math:`\hat{\bs{u}}^*` and :math:`\hat{p}^*` are the newly computed velocity
+where :math:`\hat{\boldsymbol{u}}^*` and :math:`\hat{p}^*` are the newly computed velocity
 and pressure returned from ``M.solve``. Without underrelaxation the solution
 will quickly blow up. The iteration loop goes as follows
 
