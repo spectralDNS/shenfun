@@ -208,7 +208,7 @@ import warnings
 import sympy as sp
 import numpy as np
 from mpi4py_fft import fftw
-from .utilities import CachedArrayDict
+from .utilities import CachedArrayDict, split
 work = CachedArrayDict()
 
 class SpectralBase(object):
@@ -251,7 +251,7 @@ class SpectralBase(object):
         self._xfftn_fwd = None    # external forward transform function
         self._xfftn_bck = None    # external backward transform function
         self._M = 1.0             # Normalization factor
-        self._dx = 1              # Integral measure (in addition to weight)
+        self.hi = np.ones(1, dtype=object)  # Integral measure (in addition to weight)
         self.si = islicedict()
         self.sl = slicedict()
         self._tensorproductspace = None     # link if belonging to TensorProductSpace
@@ -393,8 +393,6 @@ class SpectralBase(object):
         """
         if input_array is not None:
             self.scalar_product.input_array[...] = input_array
-
-        self.scalar_product._input_array = self.get_measured_array(self.scalar_product._input_array)
 
         self.evaluate_scalar_product(self.scalar_product.input_array,
                                      self.scalar_product.output_array,
@@ -1034,13 +1032,16 @@ class SpectralBase(object):
 
     def get_mass_matrix(self):
         mat = self._get_mat()
-        dx = self._dx
+        dx = self.hi.prod()
+        msdict = split(dx)
         if not dx == 1:
             x0 = dx.free_symbols
-            assert len(x0) == 1
+            if len(x0) > 1:
+                raise NotImplementedError("Cannot use forward for Curvilinear coordinates with unseparable measure - Use inner with mass matrix for tensor product space")
             x0 = x0.pop()
             x = sp.symbols('x', real=x0.is_real, positive=x0.is_positive)
             dx = dx.subs(x0, x)
+
         return mat[((self.__class__, 0), (self.__class__, 0), dx)]
 
     def _get_mat(self):
@@ -1071,7 +1072,7 @@ class SpectralBase(object):
         """
         if N is None:
             N = self.N
-        dx = self._dx if measure is None else measure
+        dx = self.hi.prod() if measure is None else measure
         xm, wj = self.mpmath_points_and_weights(N, map_true_domain=True)
         if dx == 1:
             return wj
@@ -1080,29 +1081,10 @@ class SpectralBase(object):
         assert len(s) == 1
         s = s.pop()
         xj = sp.lambdify(s, dx)(xm)
+        if wj.shape[0] == 1:
+            wj = np.broadcast_to(wj, xj.shape).copy()
         wj *= xj
         return wj
-
-    def get_measured_array(self, input_array, measure=None):
-        """Return `input_array` times `measure`
-
-        Parameters
-        ----------
-        input_array : Array
-        measure : None or `sympy.Expr`
-        """
-        dx = self._dx if measure is None else measure
-        xm = self.mpmath_points_and_weights(self.N, map_true_domain=True)[0]
-        if dx == 1:
-            return input_array
-
-        s = dx.free_symbols
-        assert len(s) == 1
-        s = s.pop()
-        xj = sp.lambdify(s, dx)(xm)
-        xj = self.broadcast_to_ndims(xj)
-        input_array *= xj
-        return input_array
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         """Return space (otherwise as self) to be used for dealiasing

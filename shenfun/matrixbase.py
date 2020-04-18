@@ -1512,15 +1512,16 @@ def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-8):
     """
     d = {}
     relmax = abs(M).max()
+    dtype = np.float if M.dtype == 'O' else M.dtype # For mpf object
     for i in range(M.shape[1]):
         u = M.diagonal(i).copy()
         if abs(u).max() > abstol and abs(u).max()/relmax > reltol:
-            d[i] = np.array(u, dtype=np.float)
+            d[i] = np.array(u, dtype=dtype)
 
     for i in range(1, M.shape[0]):
         l = M.diagonal(-i).copy()
         if abs(l).max() > abstol and abs(l).max()/relmax > reltol:
-            d[-i] = np.array(l, dtype=np.float)
+            d[-i] = np.array(l, dtype=dtype)
 
     return SparseMatrix(d, M.shape)
 

@@ -111,15 +111,12 @@ sl = u_hat2.function_space().local_slice(False)
 ur = u_hat2.backward() + u0_hat2.backward()[sl[0], :, sl[2]]
 # Get 2D array to plot on rank 0
 ur = ur.get((slice(None), slice(None), 2))
-Y = u_hat2.function_space().mesh()
-if comm.Get_rank() == 0:
-    rj = np.broadcast_to(Y[0][:, :, 0], ur.shape)
-    thetaj = np.broadcast_to(Y[1][:, :, 0], ur.shape)
+xx, yy, zz = u_hat2.function_space().curvilinear_mesh()
 
+if comm.Get_rank() == 0:
     # Wrap periodic plot around since it looks nicer
-    xx, yy = rj*np.cos(thetaj), rj*np.sin(thetaj)
-    xp = np.hstack([xx, xx[:, 0][:, None]])
-    yp = np.hstack([yy, yy[:, 0][:, None]])
+    xp = np.hstack([xx[:, :, 0], xx[:, 0, 0][:, None]])
+    yp = np.hstack([yy[:, :, 0], yy[:, 0, 0][:, None]])
     up = np.hstack([ur, ur[:, 0][:, None]])
 
     # plot

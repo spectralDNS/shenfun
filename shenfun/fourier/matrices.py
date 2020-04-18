@@ -13,26 +13,28 @@ from shenfun.utilities import inheritdocstrings
 class _Fouriermatrix(SpectralMatrix):
     def __init__(self, test, trial, measure=1):
         N = test[0].N
-        k = test[0].wavenumbers(N, scaled=False)
-        if isinstance(test[1], (int, np.integer)):
-            k_test, k_trial = test[1], trial[1]
-        elif isinstance(test[1], np.ndarray):
-            assert len(test[1]) == 1
-            k_test = test[1][(0,)*np.ndim(test[1])]
-            k_trial = trial[1][(0,)*np.ndim(trial[1])]
-        else:
-            raise RuntimeError
+        d = {}
+        if measure == 1:
+            k = test[0].wavenumbers(N, scaled=False)
+            if isinstance(test[1], (int, np.integer)):
+                k_test, k_trial = test[1], trial[1]
+            elif isinstance(test[1], np.ndarray):
+                assert len(test[1]) == 1
+                k_test = test[1][(0,)*np.ndim(test[1])]
+                k_trial = trial[1][(0,)*np.ndim(trial[1])]
+            else:
+                raise RuntimeError
 
-        if abs(k_trial) + abs(k_test) > 0:
-            if N % 2 == 0 and (k_trial + k_test) % 2 == 1:
-                pass
-                #k[N//2] = 0
-            val = (1j*k)**(k_trial)*(-1j*k)**k_test
-            if (k_trial + k_test) % 2 == 0:
-                val = val.real
-            d = {0: val}
-        else:
-            d = {0: 1.0}
+            if abs(k_trial) + abs(k_test) > 0:
+                if N % 2 == 0 and (k_trial + k_test) % 2 == 1:
+                    pass
+                    #k[N//2] = 0
+                val = (1j*k)**(k_trial)*(-1j*k)**k_test
+                if (k_trial + k_test) % 2 == 0:
+                    val = val.real
+                d = {0: val}
+            else:
+                d = {0: 1.0}
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
     def solve(self, b, u=None, axis=0):

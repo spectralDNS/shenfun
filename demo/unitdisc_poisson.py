@@ -55,7 +55,7 @@ if T.local_slice(True)[0].start == 0: # The processor that owns k=0
 if comm.Get_rank() == 0:
     f0_hat = Function(T0)
     gt = sp.lambdify(r, sp.integrate(f, (theta, 0, 2*sp.pi))/2/sp.pi)(L0.mesh())
-    f0_hat = L0.scalar_product(gt, f0_hat)
+    f0_hat = T0.scalar_product(gt, f0_hat)
 
 # Assemble matrices.
 if by_parts:
@@ -99,11 +99,9 @@ u_hat2 = u_hat.refine([N*3, N*3])
 u0_hat2 = u0_hat.refine([1, N*3])
 sl = u_hat2.function_space().local_slice(False)
 ur = u_hat2.backward() + u0_hat2.backward()[:, sl[1]]
-Y = u_hat2.function_space().local_mesh(True)
-thetaj, rj = Y[0], Y[1]
 
 # Wrap periodic plot around since it looks nicer
-xx, yy = rj*np.cos(thetaj), rj*np.sin(thetaj)
+xx, yy = u_hat2.function_space().local_curvilinear_mesh()
 xp = np.vstack([xx, xx[0]])
 yp = np.vstack([yy, yy[0]])
 up = np.vstack([ur, ur[0]])

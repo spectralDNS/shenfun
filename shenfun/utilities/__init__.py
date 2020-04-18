@@ -291,7 +291,7 @@ def split(measures):
             ms = sp.sympify(ms)
             if isinstance(ms, sp.Mul):
                 # Multiplication of two or more terms
-                _split(ms.args, result)
+                result = _split(ms.args, result)
                 continue
 
             # Something else with only one symbol
@@ -301,7 +301,15 @@ def split(measures):
                 sym = sym.pop()
                 result[str(sym)] *= ms
             else:
-                result['x'] *= ms
-    result = defaultdict(lambda: 1)
-    _split(measures, result)
+                ms = int(ms) if isinstance(ms, sp.Integer) else float(ms)
+                result['scale'] *= ms
+        return result
+
+    ms = sp.sympify(measures).expand()
+    result = []
+    if isinstance(ms, sp.Add):
+        for arg in ms.args:
+            result.append(_split([arg], defaultdict(lambda: 1)))
+    else:
+        result.append(_split([ms], defaultdict(lambda: 1)))
     return result
