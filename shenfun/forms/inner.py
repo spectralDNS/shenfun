@@ -4,7 +4,7 @@ weighted inner product.
 """
 from numbers import Number
 import numpy as np
-import sympy
+import sympy as sp
 from shenfun.spectralbase import inner_product, SpectralBase, MixedBasis
 from shenfun.matrixbase import TPMatrix
 from shenfun.tensorproductspace import TensorProductSpace, MixedTensorProductSpace
@@ -243,10 +243,7 @@ def inner(expr0, expr1, output_array=None, level=0):
     for vec, (base_test, base_trial, test_ind, trial_ind) in enumerate(zip(test.terms(), trial.terms(), test.indices(), trial.indices())): # vector/scalar
         for test_j, b0 in enumerate(base_test):              # second index test
             for trial_j, b1 in enumerate(base_trial):        # second index trial
-                sc = test_scale[vec, test_j]*trial_scale[vec, trial_j]
-                #scb = sc
-                M = []
-                DM = []
+                dV = test_scale[vec, test_j]*trial_scale[vec, trial_j]*testspace.hi.prod()
                 assert len(b0) == len(b1)
                 trial_sp = trialspace
                 if isinstance(trialspace, (MixedTensorProductSpace, MixedBasis)): # could operate on a vector, e.g., div(u), where u is vector
@@ -256,72 +253,59 @@ def inner(expr0, expr1, output_array=None, level=0):
                     test_sp = testspace.flatten()[test_ind[test_j]]
                 has_bcs = False
                 # Check if scale is zero
-                if sc == 0:
+                if dV == 0:
                     continue
 
-                msdict = split([test_scale[vec, test_j], trial_scale[vec, trial_j]])
-                sc = 1
-                scb = 1
-                for i, (a, b) in enumerate(zip(b0, b1)): # Third index, one inner for each dimension
-                    ts = trial_sp[i]
-                    sp = test_sp[i]
-                    # Handle measure. The measure could be a function of x, y, z, ..
-                    # In the tensor product matrix a measure dependent on x goes in
-                    # the matrix for dimension 0 (x-direction), etc.
-                    let = 1
-                    msx = 'xyzrs'[i]
-                    msi = msdict[msx]
-                    if isinstance(msi, sympy.Expr):
-                        # Divide with leading term to get the same matrix, for matrices that only differ in scale
-                        sym = msi.free_symbols
-                        if len(sym) == 1:
-                            let = msi.leadterm(sym.pop())[0]
-                            msi /= let
-                        else:
-                            let = msi
-                            msi = 1
+                for dv in split(dV):
+                    sc = dv['scale']
+                    scb = dv['scale']
+                    M = []
+                    DM = []
+                    for i, (a, b) in enumerate(zip(b0, b1)): # Third index, one inner for each dimension
+                        ts = trial_sp[i]
+                        tt = test_sp[i]
+                        msx = 'xyzrs'[i]
+                        msi = dv[msx]
 
-                    # assemble inner product
-                    AA = inner_product((sp, a), (ts, b), msi*sp._dx)
-                    M.append(AA)
-                    AA.scale *= float(let)
-                    if not abs(AA.scale-1.) < 1e-8:
-                        sc *= AA.scale
-                        AA.scale = 1.0
+                        # assemble inner product
+                        AA = inner_product((tt, a), (ts, b), msi)
+                        M.append(AA)
+                        if not abs(AA.scale-1.) < 1e-8:
+                            sc *= AA.scale
+                            AA.scale = 1.0
 
-                    if (ts.boundary_condition() == 'Dirichlet' and not ts.family() in ('laguerre', 'hermite') or
-                            (ts.boundary_condition() == 'Biharmonic' and not ts.family() in ('jacobi',))):
-                        if ts.bc.has_nonhomogeneous_bcs():
-                            tsc = ts.get_bc_basis()
-                            BB = inner_product((sp, a), (tsc, b))
-                            BB.scale *= float(let)
-                            if not abs(BB.scale-1.) < 1e-8:
-                                scb *= BB.scale
-                                BB.scale = 1.0
-                            if BB:
-                                DM.append(BB)
-                                has_bcs = True
+                        if (ts.boundary_condition() == 'Dirichlet' and not ts.family() in ('laguerre', 'hermite') or
+                                (ts.boundary_condition() == 'Biharmonic' and not ts.family() in ('jacobi',))):
+                            if ts.bc.has_nonhomogeneous_bcs():
+                                tsc = ts.get_bc_basis()
+                                BB = inner_product((tt, a), (tsc, b))
+                                if not abs(BB.scale-1.) < 1e-8:
+                                    scb *= BB.scale
+                                    BB.scale = 1.0
+                                if BB:
+                                    DM.append(BB)
+                                    has_bcs = True
+                            else:
+                                DM.append(AA)
                         else:
                             DM.append(AA)
-                    else:
-                        DM.append(AA)
 
-                sc = sp.broadcast_to_ndims(np.array([sc]))
-                if len(M) == 1: # 1D case
-                    M[0].global_index = (test_ind[test_j], trial_ind[trial_j])
-                    M[0].scale = sc[0]
-                    M[0].mixedbase = testspace
-                    A.append(M[0])
-                else:
-                    A.append(TPMatrix(M, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
-                if has_bcs:
-                    if len(DM) == 1: # 1D case
-                        DM[0].global_index = (test_ind[test_j], trial_ind[trial_j])
-                        DM[0].scale = scb
-                        DM[0].mixedbase = testspace
-                        A.append(DM[0])
+                    sc = tt.broadcast_to_ndims(np.array([sc]))
+                    if len(M) == 1: # 1D case
+                        M[0].global_index = (test_ind[test_j], trial_ind[trial_j])
+                        M[0].scale = sc[0]
+                        M[0].mixedbase = testspace
+                        A.append(M[0])
                     else:
-                        A.append(TPMatrix(DM, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                        A.append(TPMatrix(M, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                    if has_bcs:
+                        if len(DM) == 1: # 1D case
+                            DM[0].global_index = (test_ind[test_j], trial_ind[trial_j])
+                            DM[0].scale = scb
+                            DM[0].mixedbase = testspace
+                            A.append(DM[0])
+                        else:
+                            A.append(TPMatrix(DM, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
 
     # At this point A contains all matrices of the form. The length of A is
     # the number of inner products. For each index into A there are ndim 1D

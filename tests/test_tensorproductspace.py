@@ -681,7 +681,7 @@ def test_eval_expression():
 if __name__ == '__main__':
     #test_transform('f', 3)
     #test_transform('d', 2)
-    #test_shentransform('d', 2, hbases.Basis, 'HG')
+    test_shentransform('d', 2, jbases.ShenBiharmonicBasis, 'JG')
     #test_eval_expression()
     #test_project('d', 2, lbases.Basis, 'LG')
     #test_project2('d', 1, lbases.ShenNeumannBasis, 'LG')
@@ -689,5 +689,5 @@ if __name__ == '__main__':
     #test_eval_tensor('d', 2, cbases.ShenDirichletBasis, 'GC')
     #test_eval_fourier('d', 3)
     #test_inner('C', 'C')
-    test_refine()
-    test_assign('C')
+    #test_refine()
+    #test_assign('C')

@@ -4,6 +4,7 @@ related methods.
 """
 from numbers import Number
 import warnings
+import functools
 import sympy as sp
 import numpy as np
 from shenfun.fourier.bases import R2CBasis, C2CBasis
@@ -19,6 +20,91 @@ __all__ = ('TensorProductSpace', 'VectorTensorProductSpace',
 
 # Default sympy symbols. Note that order is important
 x, y, z, r, s = psi = sp.symbols('x,y,z,r,s', real=True)
+
+class CurvilinearTransform(Transform):
+    """Class for performing forward parallel transform using curvilinear
+    coordinates
+
+    Parameters
+    ----------
+    xfftn : list of serial transform objects
+    transfer : list of global redistribution objects
+    pencil : list of two pencil objects
+        The two pencils represent the input and final output configuration of
+        the distributed global arrays
+    T : TensorProductSpace
+    """
+    def __init__(self, xfftn, transfer, pencil, T=None):
+        assert len(xfftn) == len(transfer) + 1 and len(pencil) == 2
+        assert T is not None
+        self._xfftn = tuple(xfftn)
+        self._transfer = tuple(transfer)
+        self._pencil = tuple(pencil)
+        self._T = T
+
+    @property
+    def hi(self):
+        """Return scaling factors of Transform"""
+        return self._T.hi
+
+    @property
+    def local_mesh(self):
+        """Return local mesh"""
+        return self._T.local_mesh(True)
+
+    def get_measured_input_array(self):
+        """Weigh input array with integral measure
+        """
+        dx = self.hi.prod()
+        mesh = self.local_mesh
+        if dx == 1:
+            return
+
+        sym0 = dx.free_symbols
+        m = []
+        for sym in sym0:
+            j = 'xyzrs'.index(str(sym))
+            m.append(mesh[j])
+        xj = sp.lambdify(sym0, dx)(*m)
+        self.input_array[...] = self.input_array*xj
+        return
+
+    def __call__(self, input_array=None, output_array=None, **kw):
+        """Compute transform
+
+        Parameters
+        ----------
+        input_array : array, optional
+        output_array : array, optional
+        kw : dict
+            parameters to serial transforms
+            Note in particular that the keyword 'normalize'=True/False can be
+            used to turn normalization on or off. Default is to enable
+            normalization for forward transforms and disable it for backward.
+
+        Note
+        ----
+        If input_array/output_array are not given, then use predefined arrays
+        as planned with serial transform object _xfftn.
+
+        """
+        if input_array is not None:
+            self.input_array[...] = input_array
+
+        self.get_measured_input_array()
+
+        for i in range(len(self._transfer)):
+            self._xfftn[i](**kw)
+            arrayA = self._xfftn[i].output_array
+            arrayB = self._xfftn[i+1].input_array
+            self._transfer[i](arrayA, arrayB)
+        self._xfftn[-1](**kw)
+
+        if output_array is not None:
+            output_array[...] = self.output_array
+            return output_array
+        else:
+            return self.output_array
 
 class TensorProductSpace(PFFT):
     """Class for multidimensional tensorproductspaces.
@@ -71,11 +157,6 @@ class TensorProductSpace(PFFT):
         self.bases = bases
         self.coordinates = coordinates if coordinates is not None else (psi[:len(bases)],)*2
         self.hi = get_scaling_factors(*self.coordinates)
-        if not self.hi.prod() == 1:
-            for key, val in split(self.hi).items():
-                k = 'xyzrs'.index(key)
-                self.bases[k]._dx *= val
-
         shape = list(self.global_shape())
         assert shape
         assert min(shape) > 0
@@ -189,7 +270,9 @@ class TensorProductSpace(PFFT):
 
             self.pencil[1] = pencilA
 
-            self.forward = Transform(
+            FT = functools.partial(CurvilinearTransform, T=self) if not self.hi.prod() == 1 else Transform
+
+            self.forward = FT(
                 [o.forward for o in self.xfftn],
                 [o.forward for o in self.transfer],
                 self.pencil)
@@ -197,7 +280,7 @@ class TensorProductSpace(PFFT):
                 [o.backward for o in self.xfftn[::-1]],
                 [o.backward for o in self.transfer[::-1]],
                 self.pencil[::-1])
-            self.scalar_product = Transform(
+            self.scalar_product = FT(
                 [o.scalar_product for o in self.xfftn],
                 [o.forward for o in self.transfer],
                 self.pencil)
@@ -273,15 +356,17 @@ class TensorProductSpace(PFFT):
 
         self.pencil[1] = pencilA
 
+        FT = functools.partial(CurvilinearTransform, T=self) if not self.hi.prod() == 1 else Transform
+
         self.backward = Transform(
             [o.backward for o in self.xfftn],
             [o.forward for o in self.transfer],
             self.pencil)
-        self.forward = Transform(
+        self.forward = FT(
             [o.forward for o in self.xfftn[::-1]],
             [o.backward for o in self.transfer[::-1]],
             self.pencil[::-1])
-        self.scalar_product = Transform(
+        self.scalar_product = FT(
             [o.scalar_product for o in self.xfftn[::-1]],
             [o.forward for o in self.transfer[::-1]],
             self.pencil[::-1])
@@ -300,7 +385,8 @@ class TensorProductSpace(PFFT):
                         for axis, base in enumerate(self.bases)]
         return TensorProductSpace(self.comm, padded_bases,
                                   dtype=self.forward.output_array.dtype,
-                                  backward_from_pencil=self.forward.output_pencil)
+                                  backward_from_pencil=self.forward.output_pencil,
+                                  coordinates=self.coordinates)
 
     def get_refined(self, N):
         if isinstance(N, Number):
@@ -309,7 +395,7 @@ class TensorProductSpace(PFFT):
             assert len(N) == len(self)
         refined_bases = [base.get_refined(N[axis])
                          for axis, base in enumerate(self.bases)]
-        return TensorProductSpace(self.comm, refined_bases, axes=self.axes)
+        return TensorProductSpace(self.comm, refined_bases, axes=self.axes, coordinates=self.coordinates)
 
     def convolve(self, a_hat, b_hat, ab_hat):
         """Convolution of a_hat and b_hat
@@ -606,6 +692,24 @@ class TensorProductSpace(PFFT):
         if broadcast is True:
             return [np.broadcast_to(m, self.shape(False)) for m in lm]
         return lm
+
+    def local_curvilinear_mesh(self):
+        """Return curvilinear mesh"""
+        X = self.local_mesh(True)
+        xx = []
+        psi = self.coordinates[0]
+        for rv in self.coordinates[1]:
+            xx.append(sp.lambdify(psi, rv)(*X))
+        return xx
+
+    def curvilinear_mesh(self):
+        """Return curvilinear mesh"""
+        X = self.mesh()
+        xx = []
+        psi = self.coordinates[0]
+        for rv in self.coordinates[1]:
+            xx.append(sp.lambdify(psi, rv)(*X))
+        return xx
 
     def dim(self):
         """Return dimension of ``self`` (degrees of freedom)"""
