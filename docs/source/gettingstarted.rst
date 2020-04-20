@@ -389,15 +389,17 @@ both Legendre and Chebyshev bases, see the extended demo :ref:`Demo - 3D Poisson
 or the demo programs `dirichlet_poisson2D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson2D.py>`_
 and `dirichlet_poisson3D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py>`_.
 
-Polar and cylindrical coordinates
+Polar, cylindrical and spherical coordinates
 ---------------------------------
-Shenfun can be used to solve equations using polar or cylindrical
-coordinates. The feature was added April 2020, and is still rather
-experimental. There are currently demos for solving both `Poisson's
+Shenfun can be used to solve equations using polar, cylindrical
+and spherical coordinates. The feature was added April 2020, and is still rather
+experimental. There are currently demos for solving both `Helmholtz's
 equation <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_poisson.py>`_
 and the `biharmonic equation <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_biharmonic.py>`_
 on a circular disc, a solver for `3D Poisson equation in a pipe <https://github.com/spectralDNS/shenfun/blob/master/demo/pipe_poisson.py>`_,
 and a solver for the `biharmonic equation on a part of the disc <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_biharmonic2NP.py>`_.
+Also, the Helmholtz equation solved on the surface of the unit sphere using
+spherical coordinates is shown `here <https://github.com/spectralDNS/shenfun/blob/master/demo/spherical_shell_helmholtz.py>`_.
 A solution from solving the biharmonic equation with homogeneous
 Dirichlet boundary conditions on :math:`(\theta, r) \in [0, \pi/2] \times [0.5, 1]`
 is shown below.

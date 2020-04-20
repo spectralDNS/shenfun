@@ -48,6 +48,7 @@ Document build status
    kleingordon
    poisson3d
    polarhelmholtz
+   sphericalhelmholtz
    kuramatosivashinsky
    stokes
    drivencavity
