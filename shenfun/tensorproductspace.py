@@ -740,12 +740,12 @@ class TensorProductSpace(PFFT):
         #return self.shape(forward_output)
 
     def mask_nyquist(self, u_hat, mask=None):
-        """Return array `u_hat` with zero Nyquist coefficients
+        """Return Function `u_hat` with zero Nyquist coefficients
 
         Parameters
         ----------
         u_hat : array
-            Array to be masked
+            Function to be masked
         mask : array or None, optional
             mask array, if not provided then get the mask by calling
             :func:`get_mask_nyquist`
@@ -783,6 +783,27 @@ class TensorProductSpace(PFFT):
         for ll in lk:
             mask = mask * ll
         return mask
+
+    def get_measured_array(self, u):
+        """Weigh Array `u` with integral measure
+
+        Parameters
+        ----------
+        u : Array
+        """
+        dx = self.hi.prod()
+        mesh = self.local_mesh(True)
+        if dx == 1:
+            return
+
+        sym0 = dx.free_symbols
+        m = []
+        for sym in sym0:
+            j = 'xyzrs'.index(str(sym))
+            m.append(mesh[j])
+        xj = sp.lambdify(sym0, dx)(*m)
+        u *= xj
+        return u
 
     def __iter__(self):
         return iter(self.bases)

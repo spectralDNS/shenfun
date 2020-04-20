@@ -163,8 +163,8 @@ Define the following approximation spaces for the radial direction
 
 !bt
 \begin{align}
-V_D^N &= \text{span} \{\psi_j\}_{j=0}^{N-2} \\
-V_U^N &= \text{span} \{\overline{\psi}_j\}_{j=0}^{N-1} \\
+V_D^N &= \text{span} \{\psi_j\}_{j=0}^{N-3} \\
+V_U^N &= \text{span} \{\overline{\psi}_j\}_{j=0}^{N-2} \\
 \end{align}
 !et
 
@@ -189,8 +189,8 @@ where
 
 !bt
 \begin{align}
-u^0(r) &= \sum_{j=0}^{N-1} \hat{u}^0_j \overline{\psi}_j(r), \\
-u^1(\theta, r) &= \sum_{j=0}^{N-2}\sum_{k=1}^{N/2} \hat{u}^1_{kj} \exp(\imath k \theta) \psi_j(r) .
+u^0(r) &= \sum_{j=0}^{N-2} \hat{u}^0_j \overline{\psi}_j(r), \\
+u^1(\theta, r) &= \sum_{j=0}^{N-3}\sum_{k=1}^{N/2} \hat{u}^1_{kj} \exp(\imath k \theta) \psi_j(r) .
 \end{align}
 !et
 

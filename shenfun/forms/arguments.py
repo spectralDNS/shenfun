@@ -1,4 +1,5 @@
 from numbers import Number, Integral
+from scipy.special import sph_harm
 import numpy as np
 import sympy as sp
 from shenfun.optimization.cython import evaluate
@@ -6,6 +7,10 @@ from mpi4py_fft import DistArray
 
 __all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',
            'Array', 'Basis')
+
+# Define some special functions required for spherical harmonics
+cot = lambda x: 1/np.tan(x)
+Ynm = lambda n, m, x, y : sph_harm(m, n, y, x)
 
 def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
           scaled=None, padding_factor=1.0, dealias_direct=False, **kw):
@@ -425,7 +430,6 @@ class Expr(object):
         for vec, (base, ind) in enumerate(zip(self.terms(), self.indices())):
             for base_j, b0 in enumerate(base):
                 M = []
-                sc = self.scales()[vec, base_j]
                 test_sp = V
                 if isinstance(V, MixedTensorProductSpace):
                     test_sp = V.flatten()[ind[base_j]]
@@ -452,6 +456,17 @@ class Expr(object):
 
                 elif len(x) == 3:
                     work = evaluate.evaluate_3D(work, bv, M, r2c, last_conj_index, sl)
+
+                sc = self.scales()[vec, base_j]
+                if not hasattr(sc, 'free_symbols'):
+                    sc = float(sc)
+                else:
+                    sym0 = sc.free_symbols
+                    m = []
+                    for sym in sym0:
+                        j = 'xyzrs'.index(str(sym))
+                        m.append(x[j])
+                    sc = sp.lambdify(sym0, sc)(*m)
                 output_array += sc*work
 
         return output_array
@@ -817,7 +832,8 @@ class ShenfunBaseArray(DistArray):
             for sym in sym0:
                 j = 'xyzrs'.index(str(sym))
                 m.append(mesh[j])
-            buffer = sp.lambdify(sym0, buffer)(*m)
+
+            buffer = sp.lambdify(sym0, buffer, modules=['numpy', {'cot': cot, 'Ynm': Ynm}])(*m)
             if cls.__name__ == 'Function':
                 buf = np.empty_like(space.forward.output_array)
                 buf = space.forward(buffer, buf)
