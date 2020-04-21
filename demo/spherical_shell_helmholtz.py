@@ -6,7 +6,7 @@ Using spherical coordinates
 """
 from mpi4py import MPI
 from shenfun import *
-from shenfun.la import SolverGeneric2NP
+from shenfun.la import SolverGeneric1NP
 import sympy as sp
 
 by_parts = False
@@ -17,12 +17,13 @@ theta, phi = sp.symbols('x,y', real=True, positive=True)
 psi = (theta, phi)
 rv = (r*sp.sin(theta)*sp.cos(phi), r*sp.sin(theta)*sp.sin(phi), r*sp.cos(theta))
 
-alpha = 2
+alpha = 1000
 
 # Manufactured solution
 sph = sp.functions.special.spherical_harmonics.Ynm
-ue = sph(6, 3, theta, phi)
-g = - (1/r**2)*ue.diff(theta, 2) - (1/sp.tan(theta)/r**2)*ue.diff(theta, 1) - (1/r**2/sp.sin(theta)**2)*ue.diff(phi, 2) + alpha*ue
+ue = sph(10, 8, theta, phi)
+#ue = sp.cos(8*(sp.sin(theta)*sp.cos(phi) + sp.sin(theta)*sp.sin(phi) + sp.cos(theta)))
+g = - ue.diff(theta, 2) - (1/sp.tan(theta))*ue.diff(theta, 1) - (1/sp.sin(theta)**2)*ue.diff(phi, 2) + alpha*ue
 
 N = 60
 # Choose domain for L0 somewhere in [0, pi], L1 somewhere in [0, 2pi]
@@ -42,15 +43,15 @@ g_hat = inner(v, gj, output_array=g_hat)
 
 # Assemble matrices.
 if by_parts:
-    mats = inner(grad(v), grad(u), level=2)
-    mats += inner(v, alpha*u, level=2)
+    mats = inner(grad(v), grad(u))
+    mats += [inner(v, alpha*u)]
 
 else:
-    mats = inner(v, -div(grad(u))+alpha*u, level=2)
+    mats = inner(v, -div(grad(u))+alpha*u)
 
 # Solve
 u_hat = Function(T)
-Sol1 = SolverGeneric2NP(mats)
+Sol1 = SolverGeneric1NP(mats)
 u_hat = Sol1(g_hat, u_hat)
 
 # Transform back to real space.
@@ -73,7 +74,7 @@ if T.bases[1].domain == (0, 2*np.pi):
     yy = np.hstack([yy, yy[:, 0][:, None]])
     zz = np.hstack([zz, zz[:, 0][:, None]])
     ur = np.hstack([ur, ur[:, 0][:, None]])
-mlab.mesh(xx, yy, zz, scalars=ur.imag, colormap='jet')
+mlab.mesh(xx, yy, zz, scalars=ur.real, colormap='jet')
 mlab.savefig('sphere.tiff')
 mlab.show()
 

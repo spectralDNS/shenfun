@@ -74,7 +74,7 @@ def project(uh, T, output_array=None, fill=True, use_to_ortho=True, use_assign=T
 
     if hasattr(uh, 'evalf'):
         # lambdify sympy function for fast execution
-        x, y, z = sp.symbols("x,y,z")
+        x, y, z = sp.symbols("x,y,z", real=True)
         uh = ({1: lambda a: sp.lambdify((x,), a, 'numpy'),
                2: lambda a: sp.lambdify((x, y), a, 'numpy'),
                3: lambda a: sp.lambdify((x, y, z), a, 'numpy')}[len(T)])(uh)
