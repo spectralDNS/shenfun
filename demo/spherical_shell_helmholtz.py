@@ -17,7 +17,7 @@ theta, phi = sp.symbols('x,y', real=True, positive=True)
 psi = (theta, phi)
 rv = (r*sp.sin(theta)*sp.cos(phi), r*sp.sin(theta)*sp.sin(phi), r*sp.cos(theta))
 
-alpha = 1000
+alpha = 2
 
 # Manufactured solution
 sph = sp.functions.special.spherical_harmonics.Ynm
@@ -25,10 +25,10 @@ ue = sph(10, 8, theta, phi)
 #ue = sp.cos(8*(sp.sin(theta)*sp.cos(phi) + sp.sin(theta)*sp.sin(phi) + sp.cos(theta)))
 g = - ue.diff(theta, 2) - (1/sp.tan(theta))*ue.diff(theta, 1) - (1/sp.sin(theta)**2)*ue.diff(phi, 2) + alpha*ue
 
-N = 60
+N, M = 40, 30
 # Choose domain for L0 somewhere in [0, pi], L1 somewhere in [0, 2pi]
-L0 = Basis(N, 'C', bc=None, domain=(0, np.pi))
-F1 = Basis(N, 'F', dtype='D')
+L0 = Basis(N, 'L', bc=None, domain=(0, np.pi))
+F1 = Basis(M, 'F', dtype='D')
 T = TensorProductSpace(comm, (L0, F1), coordinates=(psi, rv))
 
 v = TestFunction(T)
@@ -63,7 +63,7 @@ print('Error =', np.linalg.norm(uj-uq))
 # Refine for a nicer plot. Refine simply pads Functions with zeros, which
 # gives more quadrature points. u_hat has NxN quadrature points, refine
 # using any higher number.
-u_hat2 = u_hat.refine([N*2, N*2])
+u_hat2 = u_hat.refine([N*2, M*2])
 ur = u_hat2.backward()
 # Get 2D array to plot on rank 0
 from mayavi import mlab
