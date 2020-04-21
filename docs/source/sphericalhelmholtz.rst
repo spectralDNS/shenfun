@@ -13,7 +13,7 @@ Demo - Helmholtz equation on the unit sphere
 Helmholtz equation on the surface of a unit sphere, using spherical
 coordinates. This demo is implemented in
 a single Python file `spherical_shell_helmholtz.py <https://github.com/spectralDNS/shenfun/blob/master/demo/spherical_shell_helmholtz.py>`__.
-If nequested the solver will run in parallel using MPI.
+If requested the solver will run in parallel using MPI.
 
 .. _fig:helmholtz:
 
@@ -195,7 +195,7 @@ matrices in the form of
 non-diagonal matrices (:math:`\theta`-direction) we
 can use the generic :class:`.SolverGeneric1NP` solver.
 
-To solve the problem we need to define the function :math:`f(\theta, r)`.
+To solve the problem we also need to define the function :math:`f(\theta, r)`.
 To this end we use sympy and the method of
 manufactured solution to define a possible solution ``ue``,
 and then compute ``f`` exactly using exact differentiation. We use
@@ -230,27 +230,24 @@ left is to transform it back to real space.
     uq = Array(T, buffer=ue)
     print('Error =', np.linalg.norm(uj-uq))
 
-Postprocessing
-==============
-The solution can now be compared with the exact solution
-through
+Leading to
 
 .. code-block:: python
 
-    ue = Array(T, buffer=ue)
-    X = T.local_mesh(True)
-    print('Error =', np.linalg.norm(uj-ue))
+    Error = 8.383877617440085e-10
 
-And we can refine the solution to make it look better,
-and plot on the unit sphere using mayavi,
+Postprocessing
+==============
+We can refine the solution to make it look better,
+and plot on the unit sphere using `mayavi <https://docs.enthought.com/mayavi/mayavi/>`__,
 leading to Figure :ref:`fig:helmholtz`.
 
 .. code-block:: text
 
     # Refine for a nicer plot. Refine simply pads Functions with zeros, which
-    # gives more quadrature points. u_hat has NxN quadrature points, refine
+    # gives more quadrature points. u_hat has NxM quadrature points, refine
     # using any higher number.
-    u_hat2 = u_hat.refine([N*2, N*2])
+    u_hat2 = u_hat.refine([N*2, M*2])
     ur = u_hat2.backward()
     from mayavi import mlab
     xx, yy, zz = u_hat2.function_space().local_curvilinear_mesh()
