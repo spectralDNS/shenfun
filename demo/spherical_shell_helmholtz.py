@@ -9,7 +9,7 @@ from shenfun import *
 from shenfun.la import SolverGeneric1NP
 import sympy as sp
 
-by_parts = False
+by_parts = True
 
 # Define spherical coordinates
 r = 1

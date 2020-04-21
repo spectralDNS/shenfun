@@ -189,11 +189,20 @@ is very similar to the mathematics.
     
     mats = inner(v, -div(grad(u))+alpha*u)
 
-Here ``mats`` will contain several tensor product
+Here ``mats`` will be a list containing several tensor product
 matrices in the form of
 :class:`.TPMatrix`. Since there is only one directions with
 non-diagonal matrices (:math:`\theta`-direction) we
 can use the generic :class:`.SolverGeneric1NP` solver.
+Note that some of the non-diagonal matrices will be dense,
+which is a weakness of the current method. Also note
+that with Legendre one can use integration by parts
+instead
+
+.. code-block:: python
+
+    mats = inner(grad(v), grad(u))
+    mats += [inner(v, alpha*u)]
 
 To solve the problem we also need to define the function :math:`f(\theta, r)`.
 To this end we use sympy and the method of
@@ -244,9 +253,6 @@ leading to Figure :ref:`fig:helmholtz`.
 
 .. code-block:: text
 
-    # Refine for a nicer plot. Refine simply pads Functions with zeros, which
-    # gives more quadrature points. u_hat has NxM quadrature points, refine
-    # using any higher number.
     u_hat2 = u_hat.refine([N*2, M*2])
     ur = u_hat2.backward()
     from mayavi import mlab
