@@ -439,6 +439,8 @@ class Expr(object):
                 for axis, k in enumerate(b0):
                     xx = test_sp[axis].map_reference_domain(np.squeeze(x[axis]))
                     P = test_sp[axis].evaluate_basis_derivative_all(xx, k=k)
+                    if not test_sp[axis].domain_factor() == 1:
+                        P *= test_sp[axis].domain_factor()**(k)
                     M.append(P[..., V.local_slice()[axis]])
                     if isinstance(test_sp[axis], R2CBasis):
                         r2c = axis

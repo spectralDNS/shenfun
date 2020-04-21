@@ -230,7 +230,7 @@ def get_scaling_factors(psi, rv):
     b = get_covariant_basis(psi, rv)
     hi = np.zeros_like(psi)
     for i, s in enumerate(np.sum(b**2, axis=1)):
-        hi[i] = sp.simplify(sp.sqrt(s))
+        hi[i] = sp.simplify(sp.srepr(sp.simplify(sp.sqrt(s))).replace('Abs', ''))
     return hi
 
 def get_covariant_basis(psi, rv):

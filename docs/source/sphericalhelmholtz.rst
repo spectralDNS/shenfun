@@ -7,12 +7,13 @@ Demo - Helmholtz equation on the unit sphere
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Apr 20, 2020
+:Date: Apr 21, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the
 Helmholtz equation on the surface of a unit sphere, using spherical
 coordinates. This demo is implemented in
 a single Python file `spherical_shell_helmholtz.py <https://github.com/spectralDNS/shenfun/blob/master/demo/spherical_shell_helmholtz.py>`__.
+If nequested the solver will run in parallel using MPI.
 
 .. _fig:helmholtz:
 
@@ -86,12 +87,12 @@ to computational coordinates in domain :math:`[-1, 1]`.
 The spherical basis functions are as such
 
 .. math::
-        v_{kj}(\theta, \phi) = \psi_k(\theta) \exp(\imath j \phi),
+        v_{jk}(\theta, \phi) = \psi_j(\theta) \exp(\imath k \phi),
 
 and we look for solutions
 
 .. math::
-        u(\theta, \phi) = \sum_{k} \sum_{j} \hat{u}_{kj} v_{kj}(\theta, \phi).
+        u(\theta, \phi) = \sum_{j} \sum_{k} \hat{u}_{jk} v_{jk}(\theta, \phi).
 
 A discrete Fourier approximation space with :math:`N` basis functions is then
 
@@ -108,7 +109,7 @@ The following approximation space is used for the :math:`\theta`-direction
    :label: _auto5
 
         
-        V^N = \text{span} \{\psi_j\}_{j=0}^{N} 
+        V^N = \text{span} \{\psi_j\}_{j=0}^{N-1} 
         
         
 
@@ -119,7 +120,7 @@ The following approximation space is used for the :math:`\theta`-direction
         
         
 
-and the spectral Galerkin variational formulation of the problem reads:
+and the variational formulation of the problem reads:
 find :math:`u \in V^N \otimes V_F^N` such that
 
 .. math::
@@ -186,32 +187,28 @@ is very similar to the mathematics.
     v = TestFunction(T)
     u = TrialFunction(T)
     
-    mats = inner(v, -div(grad(u))+alpha*u, level=2)
+    mats = inner(v, -div(grad(u))+alpha*u)
 
 Here ``mats`` will contain several tensor product
 matrices in the form of
-:class:`.TPMatrix`. Note the keyword ``level=2``. This is
-required since the matrices along the Fourier direction will
-not in general be diagonal. Simplifications performed in Cartesian
-coordinates are as such not possible here, see :func:`.inner`.
-Since there are two directions with non-diagonal matrices we
-need to use the generic :class:`.SolverGeneric2NP` solver, which
-has not been optimized for speed and only runs for one single
-processor.
+:class:`.TPMatrix`. Since there is only one directions with
+non-diagonal matrices (:math:`\theta`-direction) we
+can use the generic :class:`.SolverGeneric1NP` solver.
 
 To solve the problem we need to define the function :math:`f(\theta, r)`.
 To this end we use sympy and the method of
 manufactured solution to define a possible solution ``ue``,
 and then compute ``f`` exactly using exact differentiation. We use
-the spherical harmonic to define an analytical solution
+the `spherical harmonics function <https://docs.sympy.org/latest/modules/functions/special.html#spherical-harmonics>`__
+to define an analytical solution
 
 .. code-block:: python
 
     # Manufactured solution
     alpha = 2
     sph = sp.functions.special.spherical_harmonics.Ynm
-    ue = sph(6, 3, theta, phi)+1
-    f = - (1/r**2)*ue.diff(theta, 2) - (1/sp.tan(theta)/r**2)*ue.diff(theta, 1) - (1/r**2/sp.sin(theta)**2)*ue.diff(phi, 2) + alpha*ue
+    ue = sph(6, 3, theta, phi)
+    f = - ue.diff(theta, 2) - (1/sp.tan(theta))*ue.diff(theta, 1) - (1/sp.sin(theta)**2)*ue.diff(phi, 2) + alpha*ue
     
     # Compute the right hand side on the quadrature mesh
     fj = Array(T, buffer=f)
@@ -221,7 +218,7 @@ the spherical harmonic to define an analytical solution
     f_hat = inner(v, fj, output_array=f_hat)
     
     u_hat = Function(T)
-    Sol = SolverGeneric2NP(mats)
+    Sol = SolverGeneric1NP(mats)
     u_hat = Sol(f_hat, u_hat)
 
 Having found the solution in spectral space all that is
