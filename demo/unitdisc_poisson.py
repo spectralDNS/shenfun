@@ -10,13 +10,12 @@ Using shenfun to map coordinates instead of
 directly applying r = (t+1)/2, as in the SIAM paper.
 
 """
-import matplotlib.pyplot as plt
-from mpi4py import MPI
+import os
 from shenfun import *
 from shenfun.la import SolverGeneric1NP
 import sympy as sp
 
-by_parts = True
+by_parts = False
 
 # Define polar coordinates using angle along first axis and radius second
 theta, r = psi = sp.symbols('x,y', real=True, positive=True)
@@ -31,8 +30,8 @@ f = -ue.diff(r, 2) - (1/r)*ue.diff(r, 1) - (1/r**2)*ue.diff(theta, 2) + alpha*ue
 N = 32
 F = Basis(N, 'F', dtype='d')
 F0 = Basis(1, 'F', dtype='d')
-L = Basis(N, 'L', bc='Dirichlet', domain=(0, 1))
-L0 = Basis(N, 'L', bc='UpperDirichlet', domain=(0, 1))
+L = Basis(N, 'C', bc='Dirichlet', domain=(0, 1))
+L0 = Basis(N, 'C', bc='UpperDirichlet', domain=(0, 1))
 T = TensorProductSpace(comm, (F, L), axes=(1, 0), coordinates=(psi, rv))
 T0 = TensorProductSpace(MPI.COMM_SELF, (F0, L0), axes=(1, 0), coordinates=(psi, rv))
 
@@ -90,28 +89,32 @@ uj = u_hat.backward() + u0_hat.backward()[:, sl[1]]
 ue = Array(T, buffer=ue)
 X = T.local_mesh(True)
 print('Error =', np.linalg.norm(uj-ue))
+assert np.linalg.norm(uj-ue) < 1e-8
 
-# Postprocess
-# Refine for a nicer plot. Refine simply pads Functions with zeros, which
-# gives more quadrature points. u_hat has NxN quadrature points, refine
-# using any higher number.
-u_hat2 = u_hat.refine([N*3, N*3])
-u0_hat2 = u0_hat.refine([1, N*3])
-sl = u_hat2.function_space().local_slice(False)
-ur = u_hat2.backward() + u0_hat2.backward()[:, sl[1]]
+if 'pytest' not in os.environ:
+    import matplotlib.pyplot as plt
 
-# Wrap periodic plot around since it looks nicer
-xx, yy = u_hat2.function_space().local_curvilinear_mesh()
-xp = np.vstack([xx, xx[0]])
-yp = np.vstack([yy, yy[0]])
-up = np.vstack([ur, ur[0]])
+    # Postprocess
+    # Refine for a nicer plot. Refine simply pads Functions with zeros, which
+    # gives more quadrature points. u_hat has NxN quadrature points, refine
+    # using any higher number.
+    u_hat2 = u_hat.refine([N*3, N*3])
+    u0_hat2 = u0_hat.refine([1, N*3])
+    sl = u_hat2.function_space().local_slice(False)
+    ur = u_hat2.backward() + u0_hat2.backward()[:, sl[1]]
 
-# plot
-plt.figure()
-plt.contourf(xp, yp, up)
-plt.colorbar()
-plt.title('Helmholtz - unitdisc')
-plt.xticks([])
-plt.yticks([])
-plt.axis('off')
-plt.show()
+    # Wrap periodic plot around since it looks nicer
+    xx, yy = u_hat2.function_space().local_curvilinear_mesh()
+    xp = np.vstack([xx, xx[0]])
+    yp = np.vstack([yy, yy[0]])
+    up = np.vstack([ur, ur[0]])
+
+    # plot
+    plt.figure()
+    plt.contourf(xp, yp, up)
+    plt.colorbar()
+    plt.title('Helmholtz - unitdisc')
+    plt.xticks([])
+    plt.yticks([])
+    plt.axis('off')
+    plt.show()

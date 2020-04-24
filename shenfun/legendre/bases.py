@@ -77,7 +77,7 @@ class LegendreBase(SpectralBase):
     def vandermonde(self, x):
         return leg.legvander(x, self.N-1)
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x')):
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         return sympy.legendre(i, x)
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -277,7 +277,7 @@ class ShenDirichletBasis(LegendreBase):
     def slice(self):
         return slice(0, self.N-2)
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x')):
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         f = sympy.legendre(i, x)-sympy.legendre(i+2, x)
         if self.is_scaled():
             f /= np.sqrt(4*i+6)
@@ -430,7 +430,7 @@ class ShenNeumannBasis(LegendreBase):
         output[self.sl[slice(-2, None)]] = 0
         return output
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x')):
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         f = sympy.legendre(i, x)-(i*(i+1))/((i+2)*(i+3))*sympy.legendre(i+2, x)
         return f
 
@@ -589,7 +589,7 @@ class ShenBiharmonicBasis(LegendreBase):
         w_hat[s4] += f2*fk[s]
         return w_hat
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x')):
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         if i < self.N-4:
             f = (sympy.legendre(i, x)
                  -2*(2*i+5.)/(2*i+7.)*sympy.legendre(i+2, x)
@@ -607,7 +607,7 @@ class ShenBiharmonicBasis(LegendreBase):
         if i < self.N-4:
             output_array[:] = eval_legendre(i, x) - 2*(2*i+5.)/(2*i+7.)*eval_legendre(i+2, x) + ((2*i+3.)/(2*i+7.))*eval_legendre(i+4, x)
         else:
-            X = sympy.symbols('x')
+            X = sympy.symbols('x', real=True)
             output_array[:] = sympy.lambdify(X, self.sympy_basis(i, x=X))(x)
         return output_array
 
@@ -625,7 +625,7 @@ class ShenBiharmonicBasis(LegendreBase):
                 basis = basis.deriv(k)
             output_array[:] = basis(x)
         else:
-            X = sympy.symbols('x')
+            X = sympy.symbols('x', real=True)
             output_array[:] = sympy.lambdify(X, self.sympy_basis(i, X).diff(X, k))(x)
         return output_array
 
@@ -753,7 +753,7 @@ class UpperDirichletBasis(LegendreBase):
     def slice(self):
         return slice(0, self.N-1)
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x')):
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         f = sympy.legendre(i, x)-sympy.legendre(i+1, x)
         return f
 
@@ -893,11 +893,9 @@ class ShenBiPolarBasis(LegendreBase):
     def evaluate_basis_all(self, x=None, argument=0):
         if x is None:
             x = self.mesh(False, False)
-        N, M = self.shape(False), self.shape(True)
-        output_array = np.zeros((M, N))
-        D = np.zeros(M)
-        for j in range(N-4):
-            output_array[:, j] = self.evaluate_basis(x, j, D)
+        output_array = np.zeros((x.shape[0], self.N))
+        for j in range(self.N-4):
+            output_array[:, j] = self.evaluate_basis(x, j, output_array=output_array[:, j])
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -906,20 +904,18 @@ class ShenBiPolarBasis(LegendreBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
-        X = sympy.symbols('x')
+        X = sympy.symbols('x', real=True)
         f = self.sympy_basis(i, X).diff(X, k)
         output_array[:] = sympy.lambdify(X, f)(x)
         return output_array
 
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         if x is None:
-            x = self.mesh(False, False)
-        N, M = self.shape(False), self.shape(True)
-        output_array = np.zeros((M, N))
-        D = np.zeros(M)
-        for j in range(N-4):
-            output_array[:, j] = self.evaluate_basis_derivative(x, j, k, D)
-        return output_array
+            x = self.mpmath_points_and_weights()[0]
+        V = np.zeros((x.shape[0], self.N))
+        for i in range(self.N-2):
+            V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
+        return V
 
     def vandermonde_scalar_product(self, input_array, output_array):
         SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
@@ -928,9 +924,11 @@ class ShenBiPolarBasis(LegendreBase):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
+        else:
+            output_array.fill(0)
         x = self.map_reference_domain(x)
-        fj = self.eval_basis_all(x)
-        output_array[:] = np.dot(u, fj)
+        fj = self.evaluate_basis_all(x)
+        output_array[:] = np.dot(fj, u)
         return output_array
 
     def forward(self, input_array=None, output_array=None, fast_transform=False):
@@ -1051,7 +1049,6 @@ class ShenBiPolar0Basis(LegendreBase):
         return w_hat
 
     def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
-        assert i < self.N-3
         x = self.map_reference_domain(x)
         return (sympy.legendre(i, x)
                 -(2*i+3)*(i+4)/(2*i+5)/(i+2)*sympy.legendre(i+1, x)
@@ -1284,7 +1281,7 @@ class BCBasis(LegendreBase):
         P[:, 1] = (V[:, 0] + V[:, 1])/2
         return P
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x')):
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         if i == 0:
             return 0.5*(1-x)
         elif i == 1:
@@ -1392,7 +1389,7 @@ class BCBiharmonicBasis(LegendreBase):
         P = np.tensordot(V[:, :4], self.coefficient_matrix(), (1, 1))
         return P
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x')):
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         if i < 4:
             f = 0
             for j, c in enumerate(self.coefficient_matrix()[i]):
@@ -1405,7 +1402,7 @@ class BCBiharmonicBasis(LegendreBase):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        X = sympy.symbols('x')
+        X = sympy.symbols('x', real=True)
         f = self.sympy_basis(i, X)
         output_array[:] = sympy.lambdify(X, f)(x)
         return output_array
@@ -1414,7 +1411,7 @@ class BCBiharmonicBasis(LegendreBase):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        X = sympy.symbols('x')
+        X = sympy.symbols('x', real=True)
         f = self.sympy_basis(i, X)
         output_array[:] = sympy.lambdify(X, f.diff(X, k))(x)
         return output_array

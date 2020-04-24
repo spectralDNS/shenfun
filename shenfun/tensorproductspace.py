@@ -673,7 +673,7 @@ class TensorProductSpace(PFFT):
             X.append(base.mesh(uniform=uniform))
         return X
 
-    def local_mesh(self, broadcast=False):
+    def local_mesh(self, broadcast=False, uniform=False):
         """Return list of local 1D physical meshes for each dimension of
         TensorProductSpace
 
@@ -682,8 +682,10 @@ class TensorProductSpace(PFFT):
         broadcast : bool, optional
             Broadcast each 1D mesh to real shape of
             :class:`.TensorProductSpace`
+        uniform : bool, optional
+            Use uniform mesh for non-periodic bases
         """
-        mesh = self.mesh()
+        mesh = self.mesh(uniform=uniform)
         lm = []
         for axis, (n, s) in enumerate(zip(mesh, self.local_slice(False))):
             ss = [slice(None)]*len(mesh)
@@ -693,18 +695,30 @@ class TensorProductSpace(PFFT):
             return [np.broadcast_to(m, self.shape(False)) for m in lm]
         return lm
 
-    def local_curvilinear_mesh(self):
-        """Return curvilinear mesh"""
-        X = self.local_mesh(True)
+    def local_curvilinear_mesh(self, uniform=False):
+        """Return curvilinear mesh
+
+        Parameters
+        ----------
+        uniform : bool, optional
+            Use uniform mesh for non-periodic bases
+        """
+        X = self.local_mesh(broadcast=True, uniform=uniform)
         xx = []
         psi = self.coordinates[0]
         for rv in self.coordinates[1]:
             xx.append(sp.lambdify(psi, rv)(*X))
         return xx
 
-    def curvilinear_mesh(self):
-        """Return curvilinear mesh"""
-        X = self.mesh()
+    def curvilinear_mesh(self, uniform=False):
+        """Return curvilinear mesh
+
+        Parameters
+        ----------
+        uniform : bool, optional
+            Use uniform mesh for non-periodic bases
+        """
+        X = self.mesh(uniform=uniform)
         xx = []
         psi = self.coordinates[0]
         for rv in self.coordinates[1]:

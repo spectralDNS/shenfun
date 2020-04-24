@@ -1,3 +1,4 @@
+import functools
 from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
 from shenfun.la import TDMA_O
@@ -111,7 +112,8 @@ class _LagMatDict(dict):
     """
 
     def __missing__(self, key):
-        c = _Lagmatrix
+        measure = 1 if len(key) == 2 else key[3]
+        c = functools.partial(_Lagmatrix, measure=measure)
         self[key] = c
         return c
 

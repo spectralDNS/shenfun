@@ -1,3 +1,4 @@
+import functools
 import numpy as np
 from scipy.special import gamma
 from shenfun.matrixbase import SpectralMatrix
@@ -302,15 +303,14 @@ class _JacMatDict(dict):
     """
 
     def __missing__(self, key):
-        c = _Jacmatrix
+        measure = 1 if len(key) == 2 else key[3]
+        c = functools.partial(_Jacmatrix, measure=measure)
         self[key] = c
         return c
 
     def __getitem__(self, key):
         matrix = dict.__getitem__(self, key)
         return matrix
-
-import functools
 
 mat = _JacMatDict({
     ((JB, 0), (JB, 0)): BJJmat,

@@ -186,7 +186,7 @@ class JacobiBase(SpectralBase):
             #x = self.points_and_weights(mode='mpmath')[0]
         dj = np.prod(np.array([i+self.alpha+self.beta+1+j for j in range(k)]))
         return dj/2**k*eval_jacobi(i-k, self.alpha+k, self.beta+k, x)
-        #X = sp.symbols('X')
+        #X = sp.symbols('x', real=True)
         #f = sp.jacobi(i, self.alpha, self.beta, X)
         #output_array[:] = sp.lambdify(X, f.diff(X, k), 'mpmath')(x)
         #return output_array
@@ -256,7 +256,7 @@ class Basis(JacobiBase):
     def get_orthogonal(self):
         return self
 
-    def sympy_basis(self, i=0, x=sp.symbols('x')):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         return sp.jacobi(i, self.alpha, self.beta, x)
 
 
@@ -325,7 +325,7 @@ class ShenDirichletBasis(JacobiBase):
             V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
         return V
 
-    def sympy_basis(self, i=0, x=sp.symbols('x')):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         return (1-x**2)*sp.jacobi(i, 1, 1, x)
         #return (1-x)**(-self.alpha)*(1+x)**(-self.beta)*sp.jacobi(i, -self.alpha, -self.beta, x)
 
@@ -334,7 +334,7 @@ class ShenDirichletBasis(JacobiBase):
             x = self.mpmath_points_and_weights()[0]
         if output_array is None:
             output_array = np.zeros(x.shape)
-        X = sp.symbols('x')
+        X = sp.symbols('x', real=True)
         f = self.sympy_basis(i, X)
         output_array[:] = sp.lambdify(X, f.diff(X, k), mode)(x)
         return output_array
@@ -345,7 +345,7 @@ class ShenDirichletBasis(JacobiBase):
             output_array = np.zeros(x.shape)
         #output_array = (1-x**2)*eval_jacobi(i, -self.alpha, -self.beta, x, out=output_array)
         mmode = 'mpmath' if x.dtype == 'O' else 'numpy'
-        X = sp.symbols('x')
+        X = sp.symbols('x', real=True)
         f = self.sympy_basis(i, X)
         #f = (1-X**2)*sp.jacobi(i, 1, 1, X)
         output_array[:] = sp.lambdify(X, f, mmode)(x)
@@ -439,7 +439,7 @@ class ShenBiharmonicBasis(JacobiBase):
     def slice(self):
         return slice(0, self.N-4)
 
-    def sympy_basis(self, i=0, x=sp.symbols('x')):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         return (1-x**2)**2*sp.jacobi(i, 2, 2, x)
 
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
@@ -455,7 +455,7 @@ class ShenBiharmonicBasis(JacobiBase):
             x = self.mpmath_points_and_weights()[0]
         if output_array is None:
             output_array = np.zeros(x.shape)
-        X = sp.symbols('x')
+        X = sp.symbols('x', real=True)
         f = self.sympy_basis(i, X)
         output_array[:] = sp.lambdify(X, f.diff(X, k), mode)(x)
         return output_array
@@ -555,7 +555,7 @@ class ShenOrder6Basis(JacobiBase):
     def slice(self):
         return slice(0, self.N-6)
 
-    def sympy_basis(self, i=0, x=sp.symbols('x')):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         return (1-x**2)**3*sp.jacobi(i, 3, 3, x)
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -563,7 +563,7 @@ class ShenOrder6Basis(JacobiBase):
             x = self.mpmath_points_and_weights()[0]
         if output_array is None:
             output_array = np.zeros(x.shape)
-        X = sp.symbols('x')
+        X = sp.symbols('x', real=True)
         f = self.sympy_basis(i, X)
         output_array[:] = sp.lambdify(X, f.diff(X, k), mode)(x)
         return output_array

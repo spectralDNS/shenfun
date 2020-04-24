@@ -21,10 +21,19 @@ cBasis = (cbases.Basis,
           cbases.ShenNeumannBasis,
           cbases.ShenBiharmonicBasis)
 
+# Bases with only GC quadrature
+cBasisGC = (cbases.UpperDirichletBasis,
+            cbases.ShenBiPolarBasis)
+
 lBasis = (lbases.Basis,
           lbases.ShenDirichletBasis,
           lbases.ShenBiharmonicBasis,
           lbases.ShenNeumannBasis)
+
+# Bases with only LG quadrature
+lBasisLG = (lbases.UpperDirichletBasis,
+            lbases.ShenBiPolarBasis,
+            lbases.ShenBiPolar0Basis)
 
 laBasis = (labases.Basis,
            labases.ShenDirichletBasis)
@@ -36,16 +45,28 @@ cquads = ('GC', 'GL')
 lquads = ('LG', 'GL')
 laquads = ('LG',)
 
-all_bases_and_quads = list(product(laBasis, laquads)) + list(product(lBasis, lquads))+list(product(cBasis, cquads))+list(product(fBasis, ("",)))
+all_bases_and_quads = (list(product(laBasis, laquads))
+                     +list(product(lBasis, lquads))
+                     +list(product(lBasisLG, ('LG',)))
+                     +list(product(cBasis, cquads))
+                     +list(product(cBasisGC, ('GC',)))
+                     +list(product(fBasis, ('',))))
 
 cbases2 = list(list(i[0]) + [i[1]] for i in product(list(product(cBasis, cBasis)), cquads))
+cbases2 += list(list(i[0]) + [i[1]] for i in product(list(product(cBasisGC, cBasisGC)), ('GC',)))
 lbases2 = list(list(i[0]) + [i[1]] for i in product(list(product(lBasis, lBasis)), lquads))
+lbases2 += list(list(i[0]) + [i[1]] for i in product(list(product(lBasisLG, lBasisLG)), ('LG',)))
 
-cl_nonortho = list(product(laBasis[1:], laquads)) + list(product(lBasis[1:], lquads))+list(product(cBasis[1:], cquads))
+cl_nonortho = (list(product(laBasis[1:], laquads))
+             +list(product(lBasis[1:], lquads))
+             +list(product(lBasisLG, ('LG',)))
+             +list(product(cBasis[1:], cquads))
+             +list(product(cBasisGC, ('GC',))))
 
 class ABC(object):
     def __init__(self, dim):
         self.dim = dim
+        self.hi = np.ones(1)
     @property
     def dimensions(self):
         return self.dim
@@ -107,7 +128,7 @@ def test_scalarproduct(ST, quad):
 
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
 def test_eval(ST, quad):
-    """Test eval agains fast inverse"""
+    """Test eval against fast inverse"""
     kwargs = {}
     if not ST.family() == 'fourier':
         kwargs['quad'] = quad
@@ -127,6 +148,7 @@ def test_eval(ST, quad):
     assert np.allclose(fj, f)
 
 @pytest.mark.parametrize('basis, quad', cl_nonortho)
+#@pytest.mark.xfail(raises=AssertionError)
 def test_to_ortho(basis, quad):
     N = 10
     if basis.family() == 'legendre':
@@ -208,7 +230,7 @@ def test_massmatrices(test, trial, quad):
     u0 = test.scalar_product(fj, u0)
     u2 = np.zeros_like(f_hat)
     u2 = BBD.matvec(f_hat, u2)
-    assert np.linalg.norm(u2[s]-u0[s])/(N*N*N) < 1e-12
+    assert np.linalg.norm(u2[s]-u0[s])/(N*N*N) < 1e-10
     del BBD
 
 @pytest.mark.parametrize('basis', cBasis[:2])
@@ -572,9 +594,9 @@ if __name__ == '__main__':
     # test_convolve(fbases.R2CBasis, 8)
     #test_ADDmat(cbases.ShenNeumannBasis, "GL")
     #test_CDDmat("GL")
-    #test_massmatrices(cBasis[3], cBasis[3], 'GC')
+    test_massmatrices(cBasisGC[0], cBasisGC[1], 'GC')
     #test_transforms(cBasis[1], 'GC', 2)
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[1], 'GC')
-    #test_eval(cBasis[1], 'GC')
-    test_axis(cBasis[1], 'GC', 0)
+    #test_eval(lBasisLG[1], 'LG')
+    #test_axis(cBasis[1], 'GC', 0)
