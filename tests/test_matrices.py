@@ -29,11 +29,20 @@ cBasis = (cbases.Basis,
           cbases.ShenNeumannBasis,
           cbases.ShenBiharmonicBasis)
 
+# Bases with only GC quadrature
+cBasisGC = (cbases.UpperDirichletBasis,
+            cbases.ShenBiPolarBasis)
+
 lBasis = (lbases.Basis,
           lbases.ShenDirichletBasis,
           functools.partial(lbases.ShenDirichletBasis, scaled=True),
           lbases.ShenBiharmonicBasis,
           lbases.ShenNeumannBasis)
+
+# Bases with only LG quadrature
+lBasisLG = (lbases.UpperDirichletBasis,
+            lbases.ShenBiPolarBasis,
+            lbases.ShenBiPolar0Basis)
 
 lagBasis = (lagbases.Basis,
             lagbases.ShenDirichletBasis)
@@ -69,8 +78,8 @@ work = {
      np.zeros((N, N)))
     }
 
-cbases2 = list(product(cBasis, cBasis))
-lbases2 = list(product(lBasis, lBasis))
+cbases2 = list(product(cBasis, cBasis))+list(product(cBasisGC, cBasisGC))
+lbases2 = list(product(lBasis, lBasis))+list(product(lBasisLG, lBasisLG))
 lagbases2 = list(product(lagBasis, lagBasis))
 hbases2 = list(product(hBasis, hBasis))
 jbases2 = list(product(jBasis, jBasis))
@@ -149,7 +158,7 @@ def test_cmatvec(b0, b1, quad, format, dim, k):
         assert np.allclose(c, d1[tuple(cc)])
 
 @pytest.mark.parametrize('b0,b1', lbases2)
-@pytest.mark.parametrize('quad', lquads)
+@pytest.mark.parametrize('quad', ('LG',))
 @pytest.mark.parametrize('format', formats)
 @pytest.mark.parametrize('dim', (2, 3))
 @pytest.mark.parametrize('k0,k1', product((0, 1, 2), (0, 1, 2)))

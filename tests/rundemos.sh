@@ -62,6 +62,11 @@ python dirichlet_dirichlet_poisson2D.py 24 25 legendre
 python dirichlet_dirichlet_poisson2D.py 24 25 chebyshev
 python dirichlet_dirichlet_poisson2D.py 24 25 jacobi
 
+python unitdisc_poisson.py
+python unitdisc_biharmonic.py
+python dirichletneumann_poisson1D.py 24
+python spherical_shell_helmholtz.py
+
 python NavierStokes.py
 
 python MixedPoisson.py 24 25 legendre

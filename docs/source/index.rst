@@ -9,7 +9,8 @@ Welcome to shenfun's documentation!
 Shenfun is a high performance computing platform for solving partial
 differential equations (PDEs) by the spectral Galerkin method.
 The user interface to shenfun is very similar to `FEniCS`_,
-but applications are limited to multidimensional tensor product grids.
+but applications are limited to multidimensional tensor product grids,
+using either Cartesian or curvilinear grids (polar/cylindrical/spherical).
 The code is parallelized with MPI through the `mpi4py-fft`_ package.
 
 Shenfun enables fast development of efficient and accurate PDE solvers

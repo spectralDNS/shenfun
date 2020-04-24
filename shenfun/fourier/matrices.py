@@ -3,8 +3,8 @@ Module for handling Fourier diagonal matrices
 """
 from __future__ import division
 
-__all__ = ['mat']
-
+#__all__ = ['mat']
+import functools
 import numpy as np
 from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
@@ -72,7 +72,8 @@ class _FourierMatDict(dict):
     """
 
     def __missing__(self, key):
-        c = _Fouriermatrix
+        measure = 1 if len(key) == 2 else key[3]
+        c = functools.partial(_Fouriermatrix, measure=measure)
         self[key] = c
         return c
 

@@ -208,7 +208,7 @@ import warnings
 import sympy as sp
 import numpy as np
 from mpi4py_fft import fftw
-from .utilities import CachedArrayDict, split
+from .utilities import CachedArrayDict, split, get_scaling_factors
 work = CachedArrayDict()
 
 class SpectralBase(object):
@@ -237,7 +237,8 @@ class SpectralBase(object):
     """
     # pylint: disable=method-hidden, too-many-instance-attributes
 
-    def __init__(self, N, quad='', padding_factor=1, domain=(-1., 1.), dealias_direct=False):
+    def __init__(self, N, quad='', padding_factor=1, domain=(-1., 1.),
+                 dealias_direct=False, coordinates=None):
         self.N = N
         self.domain = domain
         self.quad = quad
@@ -252,6 +253,8 @@ class SpectralBase(object):
         self._xfftn_bck = None    # external backward transform function
         self._M = 1.0             # Normalization factor
         self.hi = np.ones(1, dtype=object)  # Integral measure (in addition to weight)
+        self.coordinates = coordinates if coordinates is not None else ((sp.Symbol('x', real=True),),)*2
+        self.hi = get_scaling_factors(*self.coordinates)
         self.si = islicedict()
         self.sl = slicedict()
         self._tensorproductspace = None     # link if belonging to TensorProductSpace
@@ -321,6 +324,8 @@ class SpectralBase(object):
         else:
             d = self.domain
             X = np.linspace(d[0], d[1], N)
+            if map_true_domain is False:
+                X = self.map_reference_domain(X)
         if bcast is True:
             X = self.broadcast_to_ndims(X)
         return X
@@ -493,7 +498,7 @@ class SpectralBase(object):
 
         self.vandermonde_evaluate_expansion_all(self.backward.tmp_array,
                                                 self.backward.output_array,
-                                                x=self.mesh(bcast=False, uniform=True))
+                                                x=self.mesh(bcast=False, map_true_domain=False, uniform=True))
 
         if output_array is not None:
             output_array[...] = self.backward.output_array
@@ -1033,7 +1038,12 @@ class SpectralBase(object):
     def get_mass_matrix(self):
         mat = self._get_mat()
         dx = self.hi.prod()
-        msdict = split(dx)
+        key = ((self.__class__, 0), (self.__class__, 0))
+        if self.tensorproductspace:
+            dx = self.tensorproductspace.hi.prod()
+            msdict = split(dx)
+            assert len(msdict) == 1
+            dx = msdict[0]['xyzrs'[self.axis]]
         if not dx == 1:
             x0 = dx.free_symbols
             if len(x0) > 1:
@@ -1041,8 +1051,9 @@ class SpectralBase(object):
             x0 = x0.pop()
             x = sp.symbols('x', real=x0.is_real, positive=x0.is_positive)
             dx = dx.subs(x0, x)
+            key = key + (self.domain, dx)
 
-        return mat[((self.__class__, 0), (self.__class__, 0), dx)]
+        return mat[key]
 
     def _get_mat(self):
         mod = importlib.import_module('shenfun.'+self.family())
@@ -1061,7 +1072,7 @@ class SpectralBase(object):
     def __hash__(self):
         return hash((self.N, self.quad, self.family()))
 
-    def get_measured_weights(self, N=None, measure=None):
+    def get_measured_weights(self, N=None, measure=1):
         """Return weights times `measure`
 
         Parameters
@@ -1072,15 +1083,14 @@ class SpectralBase(object):
         """
         if N is None:
             N = self.N
-        dx = self.hi.prod() if measure is None else measure
         xm, wj = self.mpmath_points_and_weights(N, map_true_domain=True)
-        if dx == 1:
+        if measure == 1:
             return wj
 
-        s = dx.free_symbols
+        s = measure.free_symbols
         assert len(s) == 1
         s = s.pop()
-        xj = sp.lambdify(s, dx)(xm)
+        xj = sp.lambdify(s, measure)(xm)
         if wj.shape[0] == 1:
             wj = np.broadcast_to(wj, xj.shape).copy()
         wj *= xj

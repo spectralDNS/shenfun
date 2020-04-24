@@ -865,7 +865,8 @@ class _LegMatDict(dict):
     """
 
     def __missing__(self, key):
-        c = _Legmatrix
+        measure = 1 if len(key) == 2 else key[3]
+        c = functools.partial(_Legmatrix, measure=measure)
         self[key] = c
         return c
 
@@ -907,7 +908,7 @@ mat = _LegMatDict({
     ((SD, 2), (SD, 0), (0, 1), xp): functools.partial(ADD2Trp1mat, scale=0.5),
     ((SD, 1), (SD, 1), (0, 1), xp): functools.partial(ADDrp1mat, scale=0.5),
     ((SD, 0), (SD, 0), (-1, 1), 1+x): BDDrp1mat,
-    ((SD, 0), (SD, 0), (0, 1), xp): functools.partial(BDDrp1mat, scale=0.5),
+    #((SD, 0), (SD, 0), (0, 1), xp): functools.partial(BDDrp1mat, scale=0.5),
     ((SD, 0), (SD, 0), (-1, 1), 1/(1+x)): BDD1orp1mat,
     ((SD, 0), (SD, 0), (0, 1), 1/xp): functools.partial(BDD1orp1mat, scale=2),
     ((SU, 1), (SU, 1), (-1, 1), 1+x): AUUrp1mat,

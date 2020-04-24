@@ -7,9 +7,7 @@ Using polar coordinates and numerical method from:
 J Shen, SIAM J. Sci Comput. 18, 6, 1583-1604
 
 """
-
-import matplotlib.pyplot as plt
-import functools
+import os
 from shenfun import *
 from shenfun.la import SolverGeneric1NP
 import sympy as sp
@@ -89,28 +87,32 @@ uj = u_hat.backward() + u0_hat.backward()[:, sl[1]]
 ue = Array(T, buffer=ue)
 X = T.local_mesh(True)
 print('Error =', np.linalg.norm(uj-ue))
+assert np.linalg.norm(uj-ue) < 1e-8
 
-# Postprocess
-# Refine for a nicer plot. Refine simply pads Functions with zeros, which
-# gives more quadrature points. u_hat has NxN quadrature points, refine
-# using any higher number.
-u_hat2 = u_hat.refine([N*3, N*3])
-u0_hat2 = u0_hat.refine([1, N*3])
-sl = u_hat2.function_space().local_slice(False)
-ur = u_hat2.backward() + u0_hat2.backward()[:, sl[1]]
+if 'pytest' not in os.environ:
+    import matplotlib.pyplot as plt
 
-# Wrap periodic plot around since it looks nicer
-xx, yy = u_hat2.function_space().local_curvilinear_mesh()
-xp = np.vstack([xx, xx[0]])
-yp = np.vstack([yy, yy[0]])
-up = np.vstack([ur, ur[0]])
+    # Postprocess
+    # Refine for a nicer plot. Refine simply pads Functions with zeros, which
+    # gives more quadrature points. u_hat has NxN quadrature points, refine
+    # using any higher number.
+    u_hat2 = u_hat.refine([N*3, N*3])
+    u0_hat2 = u0_hat.refine([1, N*3])
+    sl = u_hat2.function_space().local_slice(False)
+    ur = u_hat2.backward() + u0_hat2.backward()[:, sl[1]]
 
-# plot
-plt.figure()
-plt.contourf(xp, yp, up)
-plt.colorbar()
-plt.title('Biharmonic - unitdisc')
-plt.xticks([])
-plt.yticks([])
-plt.axis('off')
-plt.show()
+    # Wrap periodic plot around since it looks nicer
+    xx, yy = u_hat2.function_space().local_curvilinear_mesh()
+    xp = np.vstack([xx, xx[0]])
+    yp = np.vstack([yy, yy[0]])
+    up = np.vstack([ur, ur[0]])
+
+    # plot
+    plt.figure()
+    plt.contourf(xp, yp, up)
+    plt.colorbar()
+    plt.title('Biharmonic - unitdisc')
+    plt.xticks([])
+    plt.yticks([])
+    plt.axis('off')
+    plt.show()

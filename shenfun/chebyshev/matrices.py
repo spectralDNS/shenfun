@@ -65,8 +65,7 @@ To see that this is in fact the BDDmat:
 
 from __future__ import division
 
-#__all__ = ['mat']
-
+import functools
 import numpy as np
 import sympy as sp
 from shenfun.optimization import cython
@@ -1300,7 +1299,8 @@ class _ChebMatDict(dict):
     """
 
     def __missing__(self, key):
-        c = _Chebmatrix
+        measure = 1 if len(key) == 2 else key[3]
+        c = functools.partial(_Chebmatrix, measure=measure)
         self[key] = c
         return c
 

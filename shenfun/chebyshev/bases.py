@@ -16,7 +16,8 @@ from shenfun.utilities import inheritdocstrings
 __all__ = ['ChebyshevBase', 'Basis', 'ShenDirichletBasis',
            'ShenNeumannBasis', 'ShenBiharmonicBasis',
            'SecondNeumannBasis', 'UpperDirichletBasis',
-           'ShenBiPolarBasis', 'BCBasis', 'BCBiharmonicBasis']
+           'ShenBiPolarBasis', 'BCBasis', 'BCBiharmonicBasis',
+           'DirichletNeumannBasis']
 
 #pylint: disable=abstract-method, not-callable, method-hidden, no-self-use, cyclic-import
 
@@ -115,10 +116,10 @@ class ChebyshevBase(SpectralBase):
     def vandermonde(self, x):
         return n_cheb.chebvander(x, int(self.N*self.padding_factor)-1)
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x')):
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         return sympy.chebyshevt(i, x)
 
-    def sympy_weight(self, x=sympy.symbols('x')):
+    def sympy_weight(self, x=sympy.symbols('x', real=True)):
         return 1/sp.sqrt(1-x**2)
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -439,7 +440,7 @@ class ShenDirichletBasis(ChebyshevBase):
             P[:, -2] = (V[:, 0] - V[:, 1])/2    # x = -1
         return P
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x')):
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         assert i < self.N
         if i < self.N-2:
             return sympy.chebyshevt(i, x) - sympy.chebyshevt(i+2, x)
@@ -511,6 +512,8 @@ class ShenDirichletBasis(ChebyshevBase):
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
             output_array = np.zeros_like(input_array.__array__())
+        else:
+            output_array.fill(0)
         s0 = self.sl[slice(0, -2)]
         s1 = self.sl[slice(2, None)]
         output_array[s0] = input_array[s0]
@@ -671,7 +674,7 @@ class ShenNeumannBasis(ChebyshevBase):
         P[:, :-2] = V[:, :-2] - (k[:-2]/(k[:-2]+2))**2*V[:, 2:]
         return P
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x')):
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         if 0 < i < self.N-2:
             return sympy.chebyshevt(i, x) - (i/(i+2))**2*sympy.chebyshevt(i+2, x)
         return 0
@@ -761,6 +764,8 @@ class ShenNeumannBasis(ChebyshevBase):
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
             output_array = np.zeros_like(input_array.v)
+        else:
+            output_array.fill(0)
         s0 = self.sl[slice(0, -2)]
         s1 = self.sl[slice(2, None)]
         self.set_factor_array(input_array)
@@ -868,7 +873,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
             P[:, -4:] = np.tensordot(V[:, :4], BCBiharmonicBasis.coefficient_matrix(), (1, 1))
         return P
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x')):
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         if i < self.N-4:
             f = sympy.chebyshevt(i, x) - (2*(i+2)/(i+3))*sympy.chebyshevt(i+2, x) + (i+1)/(i+3)*sympy.chebyshevt(i+4, x)
         else:
@@ -961,6 +966,8 @@ class ShenBiharmonicBasis(ChebyshevBase):
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
             output_array = np.zeros_like(input_array.v)
+        else:
+            output_array.fill(0)
         self.set_factor_arrays(input_array)
         output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2)
         self.bc.add_to_orthogonal(output_array, input_array)
@@ -1115,7 +1122,7 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
         P[:, :-2] = V[:, :-2] - (k[:-2]/(k[:-2]+2))**2*(k[:-2]**2-1)/((k[:-2]+2)**2-1)*V[:, 2:]
         return P
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x')):
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         return sympy.chebyshevt(i, x) - (i/(i+2))**2*(i**2-1)/((i+2)**2-1)*sympy.chebyshevt(i+2, x)
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -1189,6 +1196,8 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
             output_array = np.zeros_like(input_array.v)
+        else:
+            output_array.fill(0)
         s0 = self.sl[slice(0, -2)]
         s1 = self.sl[slice(2, None)]
         self.set_factor_array(input_array)
@@ -1295,7 +1304,7 @@ class UpperDirichletBasis(ChebyshevBase):
         P[:, :-1] = V[:, :-1] - V[:, 1:]
         return P
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x')):
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         assert i < self.N-1
         return sympy.chebyshevt(i, x) - sympy.chebyshevt(i+1, x)
 
@@ -1336,6 +1345,7 @@ class UpperDirichletBasis(ChebyshevBase):
         s0 = self.sl[slice(0, -1)]
         s1 = self.sl[slice(1, None)]
         output[s0] -= output[s1]
+        output[self.si[-1]] = 0
 
     def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
@@ -1353,6 +1363,8 @@ class UpperDirichletBasis(ChebyshevBase):
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
             output_array = np.zeros_like(input_array.__array__())
+        else:
+            output_array.fill(0)
         s0 = self.sl[slice(0, -1)]
         s1 = self.sl[slice(1, None)]
         output_array[s0] = input_array[s0]
@@ -1477,7 +1489,7 @@ class ShenBiPolarBasis(ChebyshevBase):
     def slice(self):
         return slice(0, self.N-4)
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x')):
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         f = (1-x)**2*(1+x)**2*(sympy.chebyshevt(i+1, x).diff(x, 1))
         return f
 
@@ -1485,7 +1497,7 @@ class ShenBiPolarBasis(ChebyshevBase):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        X = sympy.symbols('x')
+        X = sympy.symbols('x', real=True)
         f = self.sympy_basis(i, X)
         output_array[:] = sympy.lambdify(X, f)(x)
         return output_array
@@ -1493,10 +1505,9 @@ class ShenBiPolarBasis(ChebyshevBase):
     def evaluate_basis_all(self, x=None, argument=0):
         if x is None:
             x = self.mesh(False, False)
-        N, M = self.shape(False), self.shape(True)
-        output_array = np.zeros((M, N))
-        D = np.zeros(M)
-        for j in range(N-4):
+        output_array = np.zeros((x.shape[0], self.N))
+        D = np.zeros(x.shape[0])
+        for j in range(self.N-4):
             output_array[:, j] = self.evaluate_basis(x, j, D)
         return output_array
 
@@ -1506,7 +1517,7 @@ class ShenBiPolarBasis(ChebyshevBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
-        X = sympy.symbols('x')
+        X = sympy.symbols('x', real=True)
         f = self.sympy_basis(i, X).diff(X, k)
         output_array[:] = sympy.lambdify(X, f)(x)
         return output_array
@@ -1514,11 +1525,10 @@ class ShenBiPolarBasis(ChebyshevBase):
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         if x is None:
             x = self.mesh(False, False)
-        N, M = self.shape(False), self.shape(True)
-        output_array = np.zeros((M, N))
-        D = np.zeros(M)
-        for j in range(N-4):
-            output_array[:, j] = self.evaluate_basis_derivative(x, j, k, D)
+        output_array = np.zeros((x.shape[0], self.N))
+        D = np.zeros(x.shape[0])
+        for j in range(self.N-4):
+            output_array[:, j] = self.evaluate_basis_derivative(x, j, k, output_array=D)
         return output_array
 
     def scalar_product(self, input_array=None, output_array=None, fast_transform=False):
@@ -1534,8 +1544,8 @@ class ShenBiPolarBasis(ChebyshevBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = self.map_reference_domain(x)
-        fj = self.eval_basis_all(x)
-        output_array[:] = np.dot(u, fj)
+        fj = self.evaluate_basis_all(x)
+        output_array[:] = np.dot(fj, u)
         return output_array
 
     def forward(self, input_array=None, output_array=None, fast_transform=False):
@@ -1584,6 +1594,226 @@ class ShenBiPolarBasis(ChebyshevBase):
                                 padding_factor=padding_factor,
                                 dealias_direct=dealias_direct,
                                 domain=self.domain)
+
+@inheritdocstrings
+class DirichletNeumannBasis(ChebyshevBase):
+    """Basis for mixed Dirichlet/Neumann boundary conditions
+
+    Parameters
+    ----------
+        N : int, optional
+            Number of quadrature points
+        quad : str, optional
+            Type of quadrature
+
+            - GL - Chebyshev-Gauss-Lobatto
+            - GC - Chebyshev-Gauss
+
+        domain : 2-tuple of floats, optional
+            The computational domain
+        scaled : bool, optional
+            Whether or not to use scaled basis
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
+
+    """
+
+    def __init__(self, N, quad="GC", domain=(-1., 1.), scaled=False,
+                 padding_factor=1, dealias_direct=False):
+        ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
+                               padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self._scaled = scaled
+        self._factor1 = np.zeros(0)
+        self._factor2 = np.zeros(0)
+        self.plan(int(N*padding_factor), 0, np.float, {})
+
+    @staticmethod
+    def boundary_condition():
+        return 'DirichletNeumann'
+
+    @property
+    def has_nonhomogeneous_bcs(self):
+        return False
+
+    def get_refined(self, N):
+        return self.__class__(N, quad=self.quad,
+                              domain=self.domain, padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              scaled=self._scaled)
+
+    def set_factor_arrays(self, v):
+        """Set intermediate factor arrays"""
+        s = self.sl[self.slice()]
+        if not self._factor1.shape == v[s].shape:
+            k = self.wavenumbers().astype(float)
+            self._factor1 = ((-k**2 + (k + 2)**2)/((k + 1)**2 + (k + 2)**2)).astype(float)
+            self._factor2 = ((-k**2 - (k + 1)**2)/((k + 1)**2 + (k + 2)**2)).astype(float)
+
+    def _composite_basis(self, V, argument=0):
+        P = np.zeros_like(V)
+        k = np.arange(V.shape[1]).astype(np.float)[:-2]
+        P[:, :-2] = (V[:, :-2] +
+                     ((-k**2 + (k + 2)**2)/((k + 1)**2 + (k + 2)**2))*V[:, 1:-1] +
+                     ((-k**2 - (k + 1)**2)/((k + 1)**2 + (k + 2)**2))*V[:, 2:])
+        return P
+
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+        assert i < self.N-2
+        return (sympy.chebyshevt(i, x)+
+               ((-i**2+(i+2)**2)/((i+1)**2+(i+2)**2))*sympy.chebyshevt(i+1, x)+
+               ((-i**2-(i+1)**2)/((i+1)**2+(i+2)**2))*sympy.chebyshevt(i+2, x))
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        w = np.arccos(x)
+        output_array[:] = (np.cos(i*w)+
+                           ((-i**2+(i+2)**2)/((i+1)**2+(i+2)**2))*np.cos((i+1)*w)+
+                           ((-i**2-(i+1)**2)/((i+1)**2+(i+2)**2))*np.cos((i+2)*w))
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        if x is None:
+            x = self.mesh(False, False)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = np.atleast_1d(x)
+        basis = np.zeros(self.shape(True))
+        basis[np.array([i, i+1, i+2])] = (1,((-i**2+(i+2)**2)/((i+1)**2+(i+2)**2)), ((-i**2-(i+1)**2)/((i+1)**2+(i+2)**2)))
+        basis = n_cheb.Chebyshev(basis)
+        if k > 0:
+            basis = basis.deriv(k)
+        output_array[:] = basis(x)
+        return output_array
+
+    def is_scaled(self):
+        """Return True if scaled basis is used, otherwise False"""
+        return False
+
+    def set_w_hat(self, w_hat, fk, f1, f2):
+        """Return intermediate w_hat array"""
+        s0 = self.sl[slice(0, -2)]
+        s1 = self.sl[slice(1, -1)]
+        s2 = self.sl[slice(2, None)]
+        w_hat[s0] = fk[s0]
+        w_hat[s1] += f1*fk[s0]
+        w_hat[s2] += f2*fk[s0]
+        return w_hat
+
+    def evaluate_scalar_product(self, input_array, output_array, fast_transform=True):
+        if fast_transform is False:
+            self.vandermonde_scalar_product(input_array, output_array)
+            return
+        output = self.CT.scalar_product(fast_transform=fast_transform)
+        Tk = work[(output, 0, True)]
+        Tk[...] = output
+        self.set_factor_arrays(Tk)
+        s0 = self.sl[slice(0, -2)]
+        s1 = self.sl[slice(1, -1)]
+        s2 = self.sl[slice(2, None)]
+        output[s0] += self._factor1*Tk[s1]
+        output[s0] += self._factor2*Tk[s2]
+
+    def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
+        if fast_transform is False:
+            self._padding_backward(input_array, self.backward.tmp_array)
+            SpectralBase.evaluate_expansion_all(self, self.backward.tmp_array, output_array, False)
+            return
+        w_hat = work[(input_array, 0, True)]
+        self.set_factor_arrays(input_array)
+        w_hat = self.set_w_hat(w_hat, input_array, self._factor1, self._factor2)
+        self.CT.backward(w_hat)
+
+    def to_ortho(self, input_array, output_array=None):
+        if output_array is None:
+            output_array = np.zeros_like(input_array.__array__())
+        else:
+            output_array.fill(0)
+        self.set_factor_arrays(input_array)
+        output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2)
+        return output_array
+
+    def slice(self):
+        return slice(0, self.N-2)
+
+    def eval(self, x, u, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = self.map_reference_domain(x)
+        w_hat = work[(u, 0, True)]
+        self.set_factor_arrays(w_hat)
+        output_array[:] = n_cheb.chebval(x, u[:-2])
+        w_hat[1:-1] = self._factor1*u[:-2]
+        output_array += n_cheb.chebval(x, w_hat)
+        w_hat[2:] = self._factor2*u[:-2]
+        w_hat[:2] = 0
+        output_array += n_cheb.chebval(x, w_hat)
+        return output_array
+
+    def forward(self, input_array=None, output_array=None, fast_transform=True):
+        self.scalar_product(input_array, fast_transform=fast_transform)
+        u = self.scalar_product.tmp_array
+        self.apply_inverse_mass(u)
+        self._truncation_forward(u, self.forward.output_array)
+        if output_array is not None:
+            output_array[...] = self.forward.output_array
+            return output_array
+        return self.forward.output_array
+
+    def backward(self, input_array=None, output_array=None, fast_transform=True):
+        if input_array is not None:
+            self.backward.input_array[...] = input_array
+
+        self.evaluate_expansion_all(self.backward.input_array,
+                                    self.backward.output_array,
+                                    fast_transform=fast_transform)
+
+        if output_array is not None:
+            output_array[...] = self.backward.output_array
+            return output_array
+        return self.backward.output_array
+
+    def plan(self, shape, axis, dtype, options):
+        if isinstance(axis, tuple):
+            assert len(axis) == 1
+            axis = axis[-1]
+
+        if isinstance(self.forward, Transform):
+            if self.forward.input_array.shape == shape and self.axis == axis:
+                # Already planned
+                return
+
+        self.CT.plan(shape, axis, dtype, options)
+        self.CT.tensorproductspace = self.tensorproductspace
+        xfftn_fwd = self.CT.forward.xfftn
+        xfftn_bck = self.CT.backward.xfftn
+        U = xfftn_fwd.input_array
+        V = xfftn_fwd.output_array
+        self.axis = axis
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
+            self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
+            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, trunc_array, V, U)
+        else:
+            self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
+            self.backward = Transform(self.backward, xfftn_bck, V, V, U)
+            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return DirichletNeumannBasis(self.N,
+                                     quad=self.quad,
+                                     padding_factor=padding_factor,
+                                     dealias_direct=dealias_direct,
+                                     domain=self.domain)
 
 
 @inheritdocstrings
@@ -1660,7 +1890,7 @@ class BCBasis(ChebyshevBase):
         P[:] = np.tensordot(V[:, :2], self.coefficient_matrix(), (1, 1))
         return P
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x')):
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         if i == 0:
             return 0.5*(1-x)
         elif i == 1:
@@ -1767,7 +1997,7 @@ class BCBiharmonicBasis(ChebyshevBase):
         P = np.tensordot(V[:, :4], self.coefficient_matrix(), (1, 1))
         return P
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x')):
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         assert i < 4, 'Only four bases, i < 4'
         return self.coefficient_matrix()[i]*np.array([sympy.chebyshevt(j, x) for j in range(4)])
 
@@ -1775,7 +2005,7 @@ class BCBiharmonicBasis(ChebyshevBase):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        X = sympy.symbols('x')
+        X = sympy.symbols('x', real=True)
         f = self.sympy_basis(i, x=X)
         output_array[:] = sympy.lambdify(X, f)(x)
         return output_array
@@ -1784,7 +2014,7 @@ class BCBiharmonicBasis(ChebyshevBase):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        X = sympy.symbols('x')
+        X = sympy.symbols('x', real=True)
         f = self.sympy_basis(i, x=X)
         output_array[:] = sympy.lambdify(X, f.diff(X, k))(x)
         return output_array

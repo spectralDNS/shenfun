@@ -623,10 +623,6 @@ class SpectralMatrix(SparseMatrix):
             d = extract_diagonal_matrix(D)
         SparseMatrix.__init__(self, d, shape, scale)
         if shape[0] == shape[1]:
-            #if test[0].__class__.__name__ == 'ShenNeumannBasis':
-            #    from shenfun.la import NeumannSolve
-            #    self.solver = NeumannSolve(self, test[0])
-            #else:
             from shenfun.la import Solve
             self.solver = Solve(self, test[0])
 
