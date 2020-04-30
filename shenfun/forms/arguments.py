@@ -13,7 +13,8 @@ cot = lambda x: 1/np.tan(x)
 Ynm = lambda n, m, x, y : sph_harm(m, n, y, x)
 
 def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
-          scaled=None, padding_factor=1.0, dealias_direct=False, **kw):
+          scaled=None, padding_factor=1.0, dealias_direct=False,
+          coordinates=None, **kw):
     """Return basis for one dimension
 
     Parameters
@@ -68,6 +69,16 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
         only for Fourier)
     dealias_direct : bool, optional
         Use 2/3-rule dealiasing (only Fourier)
+    cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
+
+        where theta and rv are the first and second items in the 2-tuple.
 
     Examples
     --------
@@ -76,14 +87,14 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
     >>> C1 = Basis(32, 'C', quad='GC')
 
     """
-    par = {}
+    par = {'padding_factor': padding_factor,
+           'dealias_direct': dealias_direct,
+           'coordinates': coordinates}
     par.update(kw)
     if domain is not None:
         par['domain'] = domain
     if family.lower() in ('fourier', 'f'):
         from shenfun import fourier
-        par.update({'padding_factor': padding_factor,
-                    'dealias_direct': dealias_direct})
         if np.dtype(dtype).char in 'FDG':
             B = fourier.bases.C2CBasis
         else:

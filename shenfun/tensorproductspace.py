@@ -8,10 +8,11 @@ import functools
 import sympy as sp
 import numpy as np
 from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun.utilities import apply_mask, get_scaling_factors, split
+from shenfun.utilities import apply_mask, split
 from shenfun.forms.arguments import Function, Array
 from shenfun.optimization.cython import evaluate
 from shenfun.spectralbase import slicedict, islicedict, SpectralBase
+from shenfun.coordinates import Coordinates
 from mpi4py_fft.mpifft import Transform, PFFT
 from mpi4py_fft.pencil import Subcomm, Pencil
 
@@ -155,8 +156,9 @@ class TensorProductSpace(PFFT):
         # Note do not call __init__ of super
         self.comm = comm
         self.bases = bases
-        self.coordinates = coordinates if coordinates is not None else (psi[:len(bases)],)*2
-        self.hi = get_scaling_factors(*self.coordinates)
+        coors = coordinates if coordinates is not None else (psi[:len(bases)],)*2
+        self.coors = Coordinates(*coors)
+        self.hi = self.coors.get_scaling_factors()
         shape = list(self.global_shape())
         assert shape
         assert min(shape) > 0
@@ -705,8 +707,8 @@ class TensorProductSpace(PFFT):
         """
         X = self.local_mesh(broadcast=True, uniform=uniform)
         xx = []
-        psi = self.coordinates[0]
-        for rv in self.coordinates[1]:
+        psi = self.coors.coordinates[0]
+        for rv in self.coors.coordinates[1]:
             xx.append(sp.lambdify(psi, rv)(*X))
         return xx
 
@@ -720,8 +722,8 @@ class TensorProductSpace(PFFT):
         """
         X = self.mesh(uniform=uniform)
         xx = []
-        psi = self.coordinates[0]
-        for rv in self.coordinates[1]:
+        psi = self.coors.coordinates[0]
+        for rv in self.coors.coordinates[1]:
             xx.append(sp.lambdify(psi, rv)(*X))
         return xx
 
