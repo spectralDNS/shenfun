@@ -66,12 +66,21 @@ class ChebyshevBase(SpectralBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
+        cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, quad="GC", domain=(-1., 1.), padding_factor=1, dealias_direct=False):
+    def __init__(self, N, quad="GC", domain=(-1., 1.), padding_factor=1, dealias_direct=False,
+                 coordinates=None):
         assert quad in ('GC', 'GL')
-        self.dealias_direct = dealias_direct
-        SpectralBase.__init__(self, N, quad=quad, padding_factor=padding_factor, domain=domain)
+        SpectralBase.__init__(self, N, quad=quad, padding_factor=padding_factor,
+                              dealias_direct=dealias_direct, domain=domain, coordinates=coordinates)
 
     @staticmethod
     def family():
@@ -244,7 +253,7 @@ class ChebyshevBase(SpectralBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_orthogonal(self):
-        return Basis(self.N, quad=self.quad, domain=self.domain)
+        return Basis(self.N, quad=self.quad, domain=self.domain, coordinates=self.coors.coordinates)
 
 
 @inheritdocstrings
@@ -266,12 +275,21 @@ class Basis(ChebyshevBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
+        cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
     """
 
     def __init__(self, N, quad='GC', domain=(-1., 1.), padding_factor=1,
-                 dealias_direct=False):
+                 dealias_direct=False, coordinates=None):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct)
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
         if quad == 'GC':
             self._xfftn_fwd = functools.partial(fftw.dctn, type=2)
             self._xfftn_bck = functools.partial(fftw.dctn, type=3)
@@ -400,6 +418,14 @@ class ShenDirichletBasis(ChebyshevBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
+        cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
 
     Note
     ----
@@ -408,11 +434,12 @@ class ShenDirichletBasis(ChebyshevBase):
     """
 
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), scaled=False,
-                 padding_factor=1, dealias_direct=False):
+                 padding_factor=1, dealias_direct=False, coordinates=None):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct)
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
-        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
         self._scaled = scaled
         self._factor = np.ones(1)
         self.plan(int(N*padding_factor), 0, np.float, {})
@@ -430,7 +457,8 @@ class ShenDirichletBasis(ChebyshevBase):
         return self.__class__(N, quad=self.quad,
                               domain=self.domain, padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
-                              bc=self.bc.bc, scaled=self._scaled)
+                              bc=self.bc.bc, scaled=self._scaled,
+                              coordinates=self.coors.coordinates)
 
     def _composite_basis(self, V, argument=0):
         P = np.zeros_like(V)
@@ -592,7 +620,7 @@ class ShenDirichletBasis(ChebyshevBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_bc_basis(self):
-        return BCBasis(self.N, quad=self.quad, domain=self.domain)
+        return BCBasis(self.N, quad=self.quad, domain=self.domain, coordinates=self.coors.coordinates)
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         return ShenDirichletBasis(self.N,
@@ -600,7 +628,8 @@ class ShenDirichletBasis(ChebyshevBase):
                                   padding_factor=padding_factor,
                                   dealias_direct=dealias_direct,
                                   domain=self.domain,
-                                  bc=self.bc.bc)
+                                  bc=self.bc.bc,
+                                  coordinates=self.coors.coordinates)
 
     def _truncation_forward(self, padded_array, trunc_array):
         if not id(trunc_array) == id(padded_array):
@@ -647,13 +676,22 @@ class ShenNeumannBasis(ChebyshevBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
+        cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="GC", mean=0, domain=(-1., 1.), padding_factor=1,
-                 dealias_direct=False):
+                 dealias_direct=False, coordinates=None):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct)
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
         self.mean = mean
-        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
         self._factor = np.zeros(0)
         self.plan(int(N*padding_factor), 0, np.float, {})
 
@@ -665,6 +703,7 @@ class ShenNeumannBasis(ChebyshevBase):
         return self.__class__(N, quad=self.quad,
                               domain=self.domain, padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates,
                               mean=self.mean)
 
     def _composite_basis(self, V, argument=0):
@@ -847,11 +886,12 @@ class ShenBiharmonicBasis(ChebyshevBase):
 
     """
     def __init__(self, N, quad="GC", bc=(0, 0, 0, 0), domain=(-1., 1.), padding_factor=1,
-                 dealias_direct=False):
+                 dealias_direct=False, coordinates=None):
         from shenfun.tensorproductspace import BoundaryValues
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct)
-        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
+        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
         self.plan(int(N*padding_factor), 0, np.float, {})
@@ -1017,7 +1057,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
         return output_array
 
     def get_bc_basis(self):
-        return BCBiharmonicBasis(self.N, quad=self.quad, domain=self.domain)
+        return BCBiharmonicBasis(self.N, quad=self.quad, domain=self.domain, coordinates=self.coors.coordinates)
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
@@ -1094,14 +1134,23 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
+        cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
     """
 
     def __init__(self, N, quad="GC", mean=0, domain=(-1., 1.), padding_factor=1,
-                 dealias_direct=False):
+                 dealias_direct=False, coordinates=None):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct)
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
         self.mean = mean
-        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
         self._factor = np.zeros(0)
         self.plan(int(N*padding_factor), 0, np.float, {})
 
@@ -1113,6 +1162,7 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
         return self.__class__(N, quad=self.quad,
                               domain=self.domain, padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates,
                               mean=self.mean)
 
     def _composite_basis(self, V, argument=0):
@@ -1273,14 +1323,23 @@ class UpperDirichletBasis(ChebyshevBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
+        cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
 
     """
 
     def __init__(self, N, quad="GC", domain=(-1., 1.), scaled=False,
-                 padding_factor=1, dealias_direct=False):
+                 padding_factor=1, dealias_direct=False, coordinates=None):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct)
-        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
+        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
         self._scaled = scaled
         self._factor = np.ones(1)
         self.plan(int(N*padding_factor), 0, np.float, {})
@@ -1297,6 +1356,7 @@ class UpperDirichletBasis(ChebyshevBase):
         return self.__class__(N, quad=self.quad,
                               domain=self.domain, padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates,
                               scaled=self._scaled)
 
     def _composite_basis(self, V, argument=0):
@@ -1439,11 +1499,12 @@ class UpperDirichletBasis(ChebyshevBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return PolarBasis(self.N,
-                          quad=self.quad,
-                          padding_factor=padding_factor,
-                          dealias_direct=dealias_direct,
-                          domain=self.domain)
+        return UpperDirichletBasis(self.N,
+                                   quad=self.quad,
+                                   padding_factor=padding_factor,
+                                   dealias_direct=dealias_direct,
+                                   coordinates=self.coors.coordinates,
+                                   domain=self.domain)
 
 
 @inheritdocstrings
@@ -1466,13 +1527,22 @@ class ShenBiPolarBasis(ChebyshevBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
+        cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="GC", domain=(-1., 1.),
-                 padding_factor=1, dealias_direct=False):
+                 padding_factor=1, dealias_direct=False, coordinates=None):
         #assert quad == "GC"
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct)
-        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
+                               padding_factor=padding_factor, dealias_direct=dealias_direct,
+                               coordinates=coordinates)
+        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
         self.plan(int(N*padding_factor), 0, np.float, {})
 
     @staticmethod
@@ -1593,6 +1663,7 @@ class ShenBiPolarBasis(ChebyshevBase):
                                 quad=self.quad,
                                 padding_factor=padding_factor,
                                 dealias_direct=dealias_direct,
+                                coordinates=self.coors.coordinates,
                                 domain=self.domain)
 
 @inheritdocstrings
@@ -1617,14 +1688,22 @@ class DirichletNeumannBasis(ChebyshevBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
+        cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
 
     """
 
     def __init__(self, N, quad="GC", domain=(-1., 1.), scaled=False,
-                 padding_factor=1, dealias_direct=False):
+                 padding_factor=1, dealias_direct=False, coordinates=None):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct)
-        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
+                               padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
+        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
         self._scaled = scaled
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
@@ -1642,6 +1721,7 @@ class DirichletNeumannBasis(ChebyshevBase):
         return self.__class__(N, quad=self.quad,
                               domain=self.domain, padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates,
                               scaled=self._scaled)
 
     def set_factor_arrays(self, v):
@@ -1813,6 +1893,7 @@ class DirichletNeumannBasis(ChebyshevBase):
                                      quad=self.quad,
                                      padding_factor=padding_factor,
                                      dealias_direct=dealias_direct,
+                                     coordinates=self.coors.coordinates,
                                      domain=self.domain)
 
 
@@ -1834,16 +1915,20 @@ class BCBasis(ChebyshevBase):
             The computational domain
         scaled : bool, optional
             Whether or not to use scaled basis
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
+        cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
     """
 
     def __init__(self, N, quad="GC", domain=(-1., 1.), scaled=False,
-                 padding_factor=1, dealias_direct=False):
+                 coordinates=None):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct)
+                               coordinates=coordinates)
         self.plan(N, 0, np.float, {})
 
     def plan(self, shape, axis, dtype, options):
@@ -1938,16 +2023,19 @@ class BCBiharmonicBasis(ChebyshevBase):
             The computational domain
         scaled : bool, optional
             Whether or not to use scaled basis
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
+        cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
     """
 
     def __init__(self, N, quad="GC", domain=(-1., 1.), scaled=False,
-                 padding_factor=1, dealias_direct=False):
-        ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct)
+                 coordinates=None):
+        ChebyshevBase.__init__(self, N, quad=quad, domain=domain, coordinates=coordinates)
         self.plan(N, 0, np.float, {})
 
     def plan(self, shape, axis, dtype, options):
