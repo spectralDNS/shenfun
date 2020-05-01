@@ -28,11 +28,9 @@ The demo folder contains several examples for the Poisson, Helmholtz and Biharmo
 
 Note that there is now some support for solving equations using curvilinear coordinates. For example, it is possible to solve equations on a spherical shell using spherical coordinates, or along any curved line in 2D/3D, like for the coil show below.
 
-.. image:: https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/smallcoil.png
-    :align: center
+.. image:: https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/smallcoil2.png
     :alt: Solution of Poisson's equation on a Coil
-.. image:: https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/smallsphere.png
-    :align: center
+.. image:: https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/sphere.png
     :alt: Solution of Poisson's equation on a spherical shell
 
 Installation
