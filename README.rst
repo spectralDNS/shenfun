@@ -26,6 +26,15 @@ Shenfun enables fast development of efficient and accurate PDE solvers (spectral
 
 The demo folder contains several examples for the Poisson, Helmholtz and Biharmonic equations. For extended documentation and installation instructions see `ReadTheDocs <http://shenfun.readthedocs.org>`_. Note that shenfun currently comes with the possibility to use two non-periodic directions (see `biharmonic demo <https://github.com/spectralDNS/shenfun/blob/master/demo/biharmonic2D_2nonperiodic.py>`_). Furthermore, equations may be solved coupled and implicit (see `MixedPoisson.py <https://github.com/spectralDNS/shenfun/blob/master/demo/MixedPoisson.py>`_).
 
+Note that there is now some support for solving equations using curvilinear coordinates. For example, it is possible to solve equations on a spherical shell using spherical coordinates, or along any curved line in 2D/3D, like for the coil show below.
+
+<p align="center">
+    <img src="https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/Coil.png" width="300" height="200" alt="Solution of Poisson's equation on a Coil"/>
+</p>
+<p align="center">
+    <img src="https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/sphere.png" width="300" height="200" alt="Solution of Poisson's equation on a spherical shell"/>
+</p>
+
 Installation
 ------------
 
