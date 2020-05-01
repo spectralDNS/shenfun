@@ -22,7 +22,7 @@ alpha = 2
 
 # Manufactured solution
 sph = sp.functions.special.spherical_harmonics.Ynm
-ue = sph(10, 8, theta, phi)
+ue = sph(4, 3, theta, phi)
 #ue = sp.cos(8*(sp.sin(theta)*sp.cos(phi) + sp.sin(theta)*sp.sin(phi) + sp.cos(theta)))
 g = - ue.diff(theta, 2) - (1/sp.tan(theta))*ue.diff(theta, 1) - (1/sp.sin(theta)**2)*ue.diff(phi, 2) + alpha*ue
 

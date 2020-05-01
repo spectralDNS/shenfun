@@ -76,13 +76,22 @@ class JacobiBase(SpectralBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
+        cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
 
     """
 
     def __init__(self, N, quad="JG", alpha=0, beta=0, domain=(-1., 1.),
-                 padding_factor=1, dealias_direct=False):
+                 padding_factor=1, dealias_direct=False, coordinates=None):
         SpectralBase.__init__(self, N, quad=quad, domain=domain,
-                              padding_factor=padding_factor, dealias_direct=dealias_direct)
+                              padding_factor=padding_factor, dealias_direct=dealias_direct,
+                              coordinates=coordinates)
         self.alpha = alpha
         self.beta = beta
         self.forward = functools.partial(self.forward, fast_transform=False)
@@ -102,6 +111,7 @@ class JacobiBase(SpectralBase):
                               domain=self.domain,
                               padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates,
                               alpha=self.alpha,
                               beta=self.beta)
 
@@ -111,6 +121,7 @@ class JacobiBase(SpectralBase):
                               domain=self.domain,
                               padding_factor=padding_factor,
                               dealias_direct=dealias_direct,
+                              coordinates=self.coors.coordinates,
                               alpha=self.alpha,
                               beta=self.beta)
 
@@ -233,12 +244,21 @@ class Basis(JacobiBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
+        cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
     """
 
     def __init__(self, N, quad="JG", alpha=-0.5, beta=-0.5, domain=(-1., 1.),
-                 padding_factor=1, dealias_direct=False):
+                 padding_factor=1, dealias_direct=False, coordinates=None):
         JacobiBase.__init__(self, N, quad=quad, alpha=alpha, beta=beta, domain=domain,
-                            padding_factor=padding_factor, dealias_direct=dealias_direct)
+                            padding_factor=padding_factor, dealias_direct=dealias_direct,
+                            coordinates=coordinates)
         self.plan(int(N*padding_factor), 0, np.float, {})
 
     def get_refined(self, N):
@@ -247,6 +267,7 @@ class Basis(JacobiBase):
                               domain=self.domain,
                               padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates,
                               alpha=self.alpha, beta=self.beta)
 
     @property
@@ -280,12 +301,21 @@ class ShenDirichletBasis(JacobiBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
+        cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
 
     """
     def __init__(self, N, quad='JG', bc=(0, 0), domain=(-1., 1.),
-                 padding_factor=1, dealias_direct=False):
+                 padding_factor=1, dealias_direct=False, coordinates=None):
         JacobiBase.__init__(self, N, quad=quad, alpha=-1, beta=-1, domain=domain,
-                            padding_factor=padding_factor, dealias_direct=dealias_direct)
+                            padding_factor=padding_factor, dealias_direct=dealias_direct,
+                            coordinates=coordinates)
         assert bc in ((0, 0), 'Dirichlet')
         from shenfun.tensorproductspace import BoundaryValues
         self.bc = BoundaryValues(self, bc=bc)
@@ -301,6 +331,7 @@ class ShenDirichletBasis(JacobiBase):
                               domain=self.domain,
                               padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates,
                               bc=self.bc.bc)
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
@@ -309,6 +340,7 @@ class ShenDirichletBasis(JacobiBase):
                               domain=self.domain,
                               padding_factor=padding_factor,
                               dealias_direct=dealias_direct,
+                              coordinates=self.coors.coordinates,
                               bc=self.bc.bc)
 
     def is_scaled(self):
@@ -395,7 +427,7 @@ class ShenDirichletBasis(JacobiBase):
         return output_array
 
     def get_orthogonal(self):
-        return Basis(self.N, alpha=self.alpha+1, beta=self.beta+1, domain=self.domain)
+        return Basis(self.N, alpha=self.alpha+1, beta=self.beta+1, domain=self.domain, coordinates=self.coors.coordinates)
 
     def vandermonde_scalar_product(self, input_array, output_array):
         SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
@@ -419,6 +451,14 @@ class ShenBiharmonicBasis(JacobiBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
+        cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
 
     Note
     ----
@@ -426,9 +466,11 @@ class ShenBiharmonicBasis(JacobiBase):
     inner products are computed without weights, for alpha=beta=0.
 
     """
-    def __init__(self, N, quad='JG', bc=(0, 0, 0, 0), domain=(-1., 1.), padding_factor=1, dealias_direct=False):
+    def __init__(self, N, quad='JG', bc=(0, 0, 0, 0), domain=(-1., 1.), padding_factor=1,
+                 dealias_direct=False, coordinates=None):
         JacobiBase.__init__(self, N, quad=quad, alpha=-2, beta=-2, domain=domain,
-                            padding_factor=padding_factor, dealias_direct=dealias_direct)
+                            padding_factor=padding_factor, dealias_direct=dealias_direct,
+                            coordinates=coordinates)
         assert bc in ((0, 0, 0, 0), 'Biharmonic')
         self.plan(int(N*padding_factor), 0, np.float, {})
 
@@ -515,7 +557,7 @@ class ShenBiharmonicBasis(JacobiBase):
         return output_array
 
     def get_orthogonal(self):
-        return Basis(self.N, alpha=0, beta=0, domain=self.domain)
+        return Basis(self.N, alpha=0, beta=0, domain=self.domain, coordinates=self.coors.coordinates)
 
 
 class ShenOrder6Basis(JacobiBase):
@@ -536,6 +578,14 @@ class ShenOrder6Basis(JacobiBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
+        cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
 
     Note
     ----
@@ -543,9 +593,11 @@ class ShenOrder6Basis(JacobiBase):
     inner products are computed without weights, for alpha=beta=0.
 
     """
-    def __init__(self, N, quad='JG', domain=(-1., 1.), padding_factor=1, dealias_direct=False):
+    def __init__(self, N, quad='JG', domain=(-1., 1.), padding_factor=1, dealias_direct=False,
+                 coordinates=None):
         JacobiBase.__init__(self, N, quad=quad, alpha=-3, beta=-3, domain=domain,
-                            padding_factor=padding_factor, dealias_direct=dealias_direct)
+                            padding_factor=padding_factor, dealias_direct=dealias_direct,
+                            coordinates=coordinates)
         self.plan(int(N*padding_factor), 0, np.float, {})
 
     @staticmethod
@@ -613,7 +665,7 @@ class ShenOrder6Basis(JacobiBase):
         return points, weights
 
     def get_orthogonal(self):
-        return Basis(self.N, alpha=0, beta=0, domain=self.domain)
+        return Basis(self.N, alpha=0, beta=0, domain=self.domain, coordinates=self.coors.coordinates)
 
     def vandermonde_scalar_product(self, input_array, output_array):
         SpectralBase.vandermonde_scalar_product(self, input_array, output_array)

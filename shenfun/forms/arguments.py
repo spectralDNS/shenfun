@@ -268,7 +268,7 @@ class Expr(object):
     terms : Numpy array of ndim = 3
         Describes operations performed in Expr
 
-        - Index 0: Vector component. If Expr is rank = 0, then terms[0] = 1.
+        - Index 0: Vector component. If Expr is rank = 0, then terms.shape[0] = 1.
           For vectors it equals ndim
 
         - Index 1: One for each term in the form. For example `div(grad(u))`
@@ -294,7 +294,8 @@ class Expr(object):
         second direction, etc.
 
     scales :  Numpy array of shape == terms.shape[:2]
-        Representing a scalar multiply of each inner product
+        Representing a scalar multiply of each inner product. Note that
+        the scalar can be a function of coordinates (using sympy).
 
     indices : Numpy array of shape == terms.shape[:2]
         Index into MixedTensorProductSpace. Only used when basis of form has
