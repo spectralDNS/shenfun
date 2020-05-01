@@ -30,7 +30,7 @@ Note that there is now some support for solving equations using curvilinear coor
 
 .. image:: https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/smallcoil2.png
     :alt: Solution of Poisson's equation on a Coil
-.. image:: https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/smallsphere2.png
+.. image:: https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/spherewhite4.png
     :alt: Solution of Poisson's equation on a spherical shell
 
 Installation
