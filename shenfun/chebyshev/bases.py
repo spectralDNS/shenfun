@@ -439,7 +439,7 @@ class ShenDirichletBasis(ChebyshevBase):
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
-        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
+        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor = np.ones(1)
         self.plan(int(N*padding_factor), 0, np.float, {})
@@ -691,7 +691,7 @@ class ShenNeumannBasis(ChebyshevBase):
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
         self.mean = mean
-        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
+        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._factor = np.zeros(0)
         self.plan(int(N*padding_factor), 0, np.float, {})
 
@@ -891,7 +891,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
+        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
         self.plan(int(N*padding_factor), 0, np.float, {})
@@ -1150,7 +1150,7 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
         self.mean = mean
-        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
+        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._factor = np.zeros(0)
         self.plan(int(N*padding_factor), 0, np.float, {})
 
@@ -1339,7 +1339,7 @@ class UpperDirichletBasis(ChebyshevBase):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
+        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor = np.ones(1)
         self.plan(int(N*padding_factor), 0, np.float, {})
@@ -1542,7 +1542,7 @@ class ShenBiPolarBasis(ChebyshevBase):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
+        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self.plan(int(N*padding_factor), 0, np.float, {})
 
     @staticmethod
@@ -1703,7 +1703,7 @@ class DirichletNeumannBasis(ChebyshevBase):
                  padding_factor=1, dealias_direct=False, coordinates=None):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
                                padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
-        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
+        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)

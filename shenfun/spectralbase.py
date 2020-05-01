@@ -350,7 +350,7 @@ class SpectralBase(object):
         uniform : bool, optional
             Use uniform mesh
         """
-        x = self.mesh(uniform=True)
+        x = self.mesh(uniform=uniform)
         psi = self.coors.coordinates[0]
         xx = []
         for rv in self.coors.coordinates[1]:
@@ -1180,7 +1180,8 @@ class SpectralBase(object):
                               quad=self.quad,
                               domain=self.domain,
                               padding_factor=padding_factor,
-                              dealias_direct=dealias_direct)
+                              dealias_direct=dealias_direct,
+                              coordinates=self.coors.coordinates)
 
     def get_refined(self, N):
         """Return space (otherwise as self) with N quadrature points
@@ -1199,7 +1200,8 @@ class SpectralBase(object):
                               quad=self.quad,
                               domain=self.domain,
                               padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct)
+                              dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates)
 
     def _truncation_forward(self, padded_array, trunc_array):
         if not id(trunc_array) == id(padded_array):

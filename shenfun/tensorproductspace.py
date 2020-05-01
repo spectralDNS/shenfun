@@ -388,7 +388,7 @@ class TensorProductSpace(PFFT):
         return TensorProductSpace(self.comm, padded_bases,
                                   dtype=self.forward.output_array.dtype,
                                   backward_from_pencil=self.forward.output_pencil,
-                                  coordinates=self.coordinates)
+                                  coordinates=self.coors.coordinates)
 
     def get_refined(self, N):
         if isinstance(N, Number):
@@ -397,7 +397,8 @@ class TensorProductSpace(PFFT):
             assert len(N) == len(self)
         refined_bases = [base.get_refined(N[axis])
                          for axis, base in enumerate(self.bases)]
-        return TensorProductSpace(self.comm, refined_bases, axes=self.axes, coordinates=self.coordinates)
+        return TensorProductSpace(self.comm, refined_bases, axes=self.axes,
+                                  coordinates=self.coors.coordinates)
 
     def convolve(self, a_hat, b_hat, ab_hat):
         """Convolution of a_hat and b_hat
