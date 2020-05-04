@@ -32,6 +32,14 @@ class Basis(SpectralBase):
         dealias_direct : bool, optional
             True for dealiasing using 2/3-rule. Must be used with
             padding_factor = 1.
+        cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
 
     Note
     ----
@@ -47,9 +55,10 @@ class Basis(SpectralBase):
 
     """
 
-    def __init__(self, N, quad="HG", bc=(0., 0.), padding_factor=1, dealias_direct=False):
+    def __init__(self, N, quad="HG", bc=(0., 0.), padding_factor=1, dealias_direct=False, coordinates=None):
         SpectralBase.__init__(self, N, quad=quad, domain=(-np.inf, np.inf),
-                              padding_factor=padding_factor, dealias_direct=dealias_direct)
+                              padding_factor=padding_factor, dealias_direct=dealias_direct,
+                              coordinates=coordinates)
         self.forward = functools.partial(self.forward, fast_transform=False)
         self.backward = functools.partial(self.backward, fast_transform=False)
         self.scalar_product = functools.partial(self.scalar_product, fast_transform=False)
@@ -73,13 +82,15 @@ class Basis(SpectralBase):
         return self.__class__(N,
                               quad=self.quad,
                               padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct)
+                              dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates)
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         return self.__class__(self.N,
                               quad=self.quad,
                               padding_factor=padding_factor,
-                              dealias_direct=dealias_direct)
+                              dealias_direct=dealias_direct,
+                              coordinates=self.coors.coordinates)
 
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
