@@ -254,18 +254,19 @@ def curl(test):
     else:
         assert test.expr_rank() < 2, 'Cannot (yet) take curl of higher order tensor in curvilinear coordinates'
         psi = coors.psi
+        sg = coors.get_sqrt_g()
         if coors.is_orthogonal:
             if test.dimensions == 3:
-                w0 = (hi[2]*Dx(test[2], 1, 1) + test[2]*sp.diff(hi[2], psi[1], 1) - hi[1]*Dx(test[1], 2, 1) - test[1]*sp.diff(hi[1], psi[2], 1))*(1/(hi[1]*hi[2]))
-                w1 = (hi[0]*Dx(test[0], 2, 1) + test[0]*sp.diff(hi[0], psi[2], 1) - hi[2]*Dx(test[2], 0, 1) - test[2]*sp.diff(hi[2], psi[0], 1))*(1/(hi[0]*hi[2]))
-                w2 = (hi[1]*Dx(test[1], 0, 1) + test[1]*sp.diff(hi[1], psi[0], 1) - hi[0]*Dx(test[0], 1, 1) - test[0]*sp.diff(hi[0], psi[1], 1))*(1/(hi[0]*hi[1]))
+                w0 = (hi[2]**2*Dx(test[2], 1, 1) + test[2]*sp.diff(hi[2]**2, psi[1], 1) - hi[1]**3*Dx(test[1], 2, 1) - test[1]*sp.diff(hi[1]**2, psi[2], 1))/sg
+                w1 = (hi[0]**2*Dx(test[0], 2, 1) + test[0]*sp.diff(hi[0]**2, psi[2], 1) - hi[2]**3*Dx(test[2], 0, 1) - test[2]*sp.diff(hi[2]**2, psi[0], 1))/sg
+                w2 = (hi[1]**2*Dx(test[1], 0, 1) + test[1]*sp.diff(hi[1]**2, psi[0], 1) - hi[0]**3*Dx(test[0], 1, 1) - test[0]*sp.diff(hi[0]**2, psi[1], 1))/sg
                 test._terms = np.concatenate((w0.terms(), w1.terms(), w2.terms()), axis=0)
                 test._scales = np.concatenate((w0.scales(), w1.scales(), w2.scales()), axis=0)
                 test._indices = np.concatenate((w0.indices(), w1.indices(), w2.indices()), axis=0)
             else:
                 assert test.dimensions == 2
-                test = (hi[1]*Dx(test[1], 0, 1) + test[1]*sp.diff(hi[1], psi[0], 1) - hi[0]*Dx(test[0], 1, 1) - test[0]*sp.diff(hi[0], psi[1], 1))*(1/(hi[0]*hi[1]))
+                test = (hi[1]**2*Dx(test[1], 0, 1) + test[1]*sp.diff(hi[1]**2, psi[0], 1) - hi[0]**2*Dx(test[0], 1, 1) - test[0]*sp.diff(hi[0]**2, psi[1], 1))/sg
         else:
-            raise NotImplementedError('Cannot (yet) take curl of vector in non-orthogonal coordinates')
+            raise NotImplementedError
 
     return test
