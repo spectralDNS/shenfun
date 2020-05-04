@@ -391,7 +391,7 @@ and `dirichlet_poisson3D.py <https://github.com/spectralDNS/shenfun/blob/master/
 
 Polar, cylindrical and spherical coordinates
 --------------------------------------------
-Shenfun can be used to solve equations using polar, cylindrical
+Shenfun can be used to solve scalar equations using polar, cylindrical
 and spherical coordinates. The feature was added April 2020, and is still rather
 experimental. There are currently demos for solving both `Helmholtz's
 equation <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_poisson.py>`_
