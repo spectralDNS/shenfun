@@ -173,7 +173,9 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
                 B = legendre.bases.ShenBiPolarBasis
             elif bc.lower() == 'bipolar0':
                 B = legendre.bases.ShenBiPolar0Basis
-
+            elif bc.lower() == 'dirichletneumann':
+                B = legendre.bases.DirichletNeumannBasis
+                
         return B(N, **par)
 
     elif family.lower() in ('laguerre', 'la'):
