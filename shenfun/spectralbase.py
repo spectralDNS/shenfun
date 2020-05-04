@@ -208,7 +208,8 @@ import warnings
 import sympy as sp
 import numpy as np
 from mpi4py_fft import fftw
-from .utilities import CachedArrayDict, split, get_scaling_factors
+from .utilities import CachedArrayDict, split
+from .coordinates import Coordinates
 work = CachedArrayDict()
 
 class SpectralBase(object):
@@ -233,6 +234,16 @@ class SpectralBase(object):
         dealias_direct : bool, optional
             If True, then set all upper 2/3 wavenumbers to zero before backward
             transform. Cannot be used if padding_factor is different than 1.
+        cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
+
+        where theta and rv are the first and second items in the 2-tuple.
 
     """
     # pylint: disable=method-hidden, too-many-instance-attributes
@@ -253,8 +264,9 @@ class SpectralBase(object):
         self._xfftn_bck = None    # external backward transform function
         self._M = 1.0             # Normalization factor
         self.hi = np.ones(1, dtype=object)  # Integral measure (in addition to weight)
-        self.coordinates = coordinates if coordinates is not None else ((sp.Symbol('x', real=True),),)*2
-        self.hi = get_scaling_factors(*self.coordinates)
+        coors = coordinates if coordinates is not None else ((sp.Symbol('x', real=True),),)*2
+        self.coors = Coordinates(*coors)
+        self.hi = self.coors.get_scaling_factors()
         self.si = islicedict()
         self.sl = slicedict()
         self._tensorproductspace = None     # link if belonging to TensorProductSpace
@@ -330,6 +342,21 @@ class SpectralBase(object):
             X = self.broadcast_to_ndims(X)
         return X
 
+    def curvilinear_mesh(self, uniform=False):
+        """Return curvilinear mesh of of basis
+
+        Parameters
+        ----------
+        uniform : bool, optional
+            Use uniform mesh
+        """
+        x = self.mesh(uniform=uniform)
+        psi = self.coors.coordinates[0]
+        xx = []
+        for rv in self.coors.coordinates[1]:
+            xx.append(sp.lambdify(psi, rv)(x))
+        return xx
+
     def wavenumbers(self, bcast=True, **kw):
         """Return the wavenumbermesh
 
@@ -398,6 +425,8 @@ class SpectralBase(object):
         """
         if input_array is not None:
             self.scalar_product.input_array[...] = input_array
+
+        self.scalar_product._input_array = self.get_measured_array(self.scalar_product._input_array)
 
         self.evaluate_scalar_product(self.scalar_product.input_array,
                                      self.scalar_product.output_array,
@@ -1096,6 +1125,41 @@ class SpectralBase(object):
         wj *= xj
         return wj
 
+    def get_measured_array(self, array):
+        """Return weights times `measure`
+
+        Parameters
+        ----------
+        N : integer, optional
+            The number of quadrature points
+        measure : None or `sympy.Expr`
+
+        Note
+        ----
+        If basis is part of a `TensorProductSpace`, then the
+        array will be measured there. So in that case, just return
+        the array unchanged.
+        """
+        if self.tensorproductspace:
+            return array
+
+        measure = self.hi.prod()
+        if measure == 1:
+            return array
+
+        xm = self.mpmath_points_and_weights(self.N, map_true_domain=True)[0]
+        s = measure.free_symbols
+        if len(s) == 0:
+            # constant
+            array[...] = array*float(measure)
+        elif len(s) == 1:
+            s = s.pop()
+            xj = sp.lambdify(s, measure)(xm)
+            array[...] = array*xj
+        else:
+            raise NotImplementedError
+        return array
+
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         """Return space (otherwise as self) to be used for dealiasing
 
@@ -1116,7 +1180,8 @@ class SpectralBase(object):
                               quad=self.quad,
                               domain=self.domain,
                               padding_factor=padding_factor,
-                              dealias_direct=dealias_direct)
+                              dealias_direct=dealias_direct,
+                              coordinates=self.coors.coordinates)
 
     def get_refined(self, N):
         """Return space (otherwise as self) with N quadrature points
@@ -1135,7 +1200,8 @@ class SpectralBase(object):
                               quad=self.quad,
                               domain=self.domain,
                               padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct)
+                              dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates)
 
     def _truncation_forward(self, padded_array, trunc_array):
         if not id(trunc_array) == id(padded_array):

@@ -79,14 +79,21 @@ class FourierBase(SpectralBase):
         dealias_direct : bool, optional
             True for dealiasing using 2/3-rule. Must be used with
             padding_factor = 1.
+        cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
     """
 
     def __init__(self, N, padding_factor=1., domain=(0, 2*np.pi),
-                 dealias_direct=False, **kw):
-        self.dealias_direct = dealias_direct
+                 dealias_direct=False, coordinates=None):
         self._k = None
         self._planned_axes = None  # Collapsing of axes means that this base can be used to plan transforms over several collapsed axes. Store the axes planned for here.
-        SpectralBase.__init__(self, N, padding_factor=padding_factor, domain=domain)
+        SpectralBase.__init__(self, N, padding_factor=padding_factor, dealias_direct=dealias_direct, domain=domain, coordinates=coordinates)
 
     @staticmethod
     def family():
@@ -209,6 +216,20 @@ class FourierBase(SpectralBase):
     def get_orthogonal(self):
         return self
 
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return self.__class__(self.N,
+                              domain=self.domain,
+                              padding_factor=padding_factor,
+                              dealias_direct=dealias_direct,
+                              coordinates=self.coors.coordinates)
+
+    def get_refined(self, N):
+        return self.__class__(N,
+                              domain=self.domain,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates)
+
     def mask_nyquist(self, u_hat, mask=None):
         """Return array `u_hat` with zero Nyquist coefficients
 
@@ -320,12 +341,21 @@ class R2CBasis(FourierBase):
         dealias_direct : bool, optional
             True for dealiasing using 2/3-rule. Must be used with
             padding_factor = 1.
+        cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
     """
 
     def __init__(self, N, padding_factor=1., domain=(0., 2.*np.pi),
-                 dealias_direct=False, **kw):
+                 dealias_direct=False, coordinates=None):
         FourierBase.__init__(self, N, padding_factor=padding_factor,
-                             domain=domain, dealias_direct=dealias_direct)
+                             domain=domain, dealias_direct=dealias_direct,
+                             coordinates=coordinates)
         self.N = N
         #self._xfftn_fwd = pyfftw.builders.rfftn
         #self._xfftn_bck = pyfftw.builders.irfftn
@@ -526,12 +556,21 @@ class C2CBasis(FourierBase):
         dealias_direct : bool, optional
             True for dealiasing using 2/3-rule. Must be used with
             padding_factor = 1.
+        cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
     """
 
     def __init__(self, N, padding_factor=1., domain=(0., 2.*np.pi),
-                 dealias_direct=False, **kw):
+                 dealias_direct=False, coordinates=None):
         FourierBase.__init__(self, N, padding_factor=padding_factor,
-                             domain=domain, dealias_direct=dealias_direct)
+                             domain=domain, dealias_direct=dealias_direct,
+                             coordinates=coordinates)
         self.N = N
         #self._xfftn_fwd = pyfftw.builders.fftn
         #self._xfftn_bck = pyfftw.builders.ifftn
