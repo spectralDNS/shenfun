@@ -22,10 +22,14 @@ through vectorization (`Numpy <https://www.numpy.org/>`_), parallelization
 (`mpi4py <https://bitbucket.org/mpi4py/mpi4py>`_) and by moving critical
 routines to `Cython <https://cython.org/>`_.
 
+``Shenfun`` has some support for solving scalar equations in curvilinear
+coordinates, like polar or spherical coordinates. It is (yet) not
+possible to solve vector-equations using curvilinear coordinates.
+
 """
 #pylint: disable=wildcard-import,no-name-in-module
 
-__version__ = '2.2.0'
+__version__ = '2.2.1'
 __author__ = 'Mikael Mortensen'
 
 import numpy as np

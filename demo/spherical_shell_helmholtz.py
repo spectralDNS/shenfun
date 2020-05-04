@@ -22,11 +22,11 @@ alpha = 2
 
 # Manufactured solution
 sph = sp.functions.special.spherical_harmonics.Ynm
-ue = sph(4, 3, theta, phi)
+ue = sph(6, 3, theta, phi)
 #ue = sp.cos(8*(sp.sin(theta)*sp.cos(phi) + sp.sin(theta)*sp.sin(phi) + sp.cos(theta)))
 g = - ue.diff(theta, 2) - (1/sp.tan(theta))*ue.diff(theta, 1) - (1/sp.sin(theta)**2)*ue.diff(phi, 2) + alpha*ue
 
-N, M = 30, 20
+N, M = 60, 40
 # Choose domain for L0 somewhere in [0, pi], L1 somewhere in [0, 2pi]
 L0 = Basis(N, 'C', domain=(0, np.pi))
 F1 = Basis(M, 'F', dtype='D')
@@ -65,10 +65,11 @@ if 'pytest' not in os.environ:
     # Refine for a nicer plot. Refine simply pads Functions with zeros, which
     # gives more quadrature points. u_hat has NxN quadrature points, refine
     # using any higher number.
-    u_hat2 = u_hat.refine([N*2, M*2])
+    u_hat2 = u_hat.refine([N*3, M*3])
     ur = u_hat2.backward(uniform=True)
     # Get 2D array to plot on rank 0
     from mayavi import mlab
+    import matplotlib.pyplot as plt
     xx, yy, zz = u_hat2.function_space().local_curvilinear_mesh(uniform=True)
     # Wrap periodic direction around
     if T.bases[1].domain == (0, 2*np.pi):
@@ -76,7 +77,9 @@ if 'pytest' not in os.environ:
         yy = np.hstack([yy, yy[:, 0][:, None]])
         zz = np.hstack([zz, zz[:, 0][:, None]])
         ur = np.hstack([ur, ur[:, 0][:, None]])
+    #h = plt.figure(figsize=(4, 3))
+    mlab.figure(bgcolor=(1, 1, 1), size=(400, 400))
     mlab.mesh(xx, yy, zz, scalars=ur.real, colormap='jet')
-    mlab.savefig('sphere.tiff')
+    mlab.savefig('spherewhite.tiff')
     mlab.show()
 
