@@ -53,20 +53,21 @@ whereas the following will install the latest version from github
 
     pip install git+https://github.com/spectralDNS/shenfun.git@master
 
-You can also build ``shenfun`` yourselves from the top directory,
-after cloning or forking
+Note that a common approach is to install ``shenfun`` from ``conda-forge`` to
+get all the dependencies, and then build a local version by (after cloning or
+forking to a local folder) running from the top directory
 
 ::
 
     pip install .
 
-or using `conda-build`_ with the recipes in folder ``conf/conda``
+or
 
 ::
 
-    conda build -c conda-forge -c spectralDNS conf/conda
-    conda create --name shenfun -c conda-forge -c spectralDNS shenfun --use-local
-    conda activate shenfun
+    python setup.py build_ext -i
+
+This is required to build all the Cython dependencies locally.
 
 Optimization
 ------------
@@ -87,8 +88,8 @@ Additional dependencies
 -----------------------
 
 For storing and retrieving data you need either `HDF5`_ or `netCDF4`_, compiled
-with support for MPI (see :ref:`Postprocessing`). Both `HDF5`_  and `netCDF4`_ 
-are already available with parallel support on `conda-forge`_, and, if they were 
+with support for MPI (see :ref:`Postprocessing`). Both `HDF5`_  and `netCDF4`_
+are already available with parallel support on `conda-forge`_, and, if they were
 not installed at the same time as shenfun, they can be installed as
 
 ::
