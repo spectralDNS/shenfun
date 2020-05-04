@@ -63,9 +63,9 @@ assert np.allclose(p, lambdify(x, ue)(point))
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()
-    plt.plot(X, uj)
+    plt.plot(X, uj.real)
     plt.title("U")
     plt.figure()
-    plt.plot(X, uq - uj)
+    plt.plot(X, (uq - uj).real)
     plt.title("Error")
     plt.show()

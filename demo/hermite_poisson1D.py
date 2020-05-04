@@ -62,5 +62,5 @@ assert np.allclose(p, lambdify(x, ue)(point), atol=1e-5)
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     xx = np.linspace(-8, 8, 100)
-    plt.plot(xx, ul(xx), 'r', xx, uh.eval(xx), 'bo', markersize=2)
+    plt.plot(xx, lambdify(x, ue)(xx), 'r', xx, uh.eval(xx), 'bo', markersize=2)
     plt.show()
