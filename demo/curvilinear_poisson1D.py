@@ -16,7 +16,7 @@ Solve::
 using curvilinear coordinates.
 
 """
-import matplotlib.pyplot as plt
+import os
 from shenfun import *
 import sympy as sp
 
@@ -53,18 +53,18 @@ print('Error = ', np.linalg.norm(uj-uq))
 uj = u_hat.backward(uniform=True)
 X = L.curvilinear_mesh(uniform=True)
 
-fig = plt.figure(figsize=(4, 3))
-ax = fig.add_subplot(111, projection='3d')
-if len(rv) == 3:
-    ax.plot(X[0], X[1], X[2], 'r')
-    ax.plot(X[0], X[1], X[2]+uj, 'b')
-    ax.set_xticks(np.linspace(-1, 1, 5))
-    ax.set_yticks(np.linspace(-1, 1, 5))
-    #ax.set_zticks([])
-    plt.title("Poisson's equation on a coil")
-elif len(rv) == 2:
-   ax.plot(X[0], X[1], uj, 'b')
-   ax.plot(X[0], X[1], 'r')
+if 'pytest' not in os.environ:
+    import matplotlib.pyplot as plt
+    fig = plt.figure(figsize=(4, 3))
+    ax = fig.add_subplot(111, projection='3d')
+    if len(rv) == 3:
+        ax.plot(X[0], X[1], X[2], 'r')
+        ax.plot(X[0], X[1], X[2]+uj, 'b')
+        ax.set_xticks(np.linspace(-1, 1, 5))
+        ax.set_yticks(np.linspace(-1, 1, 5))
+        plt.title("Poisson's equation on a coil")
+    elif len(rv) == 2:
+       ax.plot(X[0], X[1], uj, 'b')
+       ax.plot(X[0], X[1], 'r')
 
-plt.show()
-
+    plt.show()
