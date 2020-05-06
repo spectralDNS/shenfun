@@ -1561,14 +1561,14 @@ class DirichletNeumannBasis(LegendreBase):
         s = self.sl[self.slice()]
         if not self._factor1.shape == v[s].shape:
             k = self.wavenumbers().astype(float)
-            self._factor1 = ( (4*k + 5) / (2 * (k + 2)**2) ).astype(float)
+            self._factor1 = ( (2*k + 3) / (k + 2)**2 ).astype(float)
             self._factor2 = - ( (k + 1)**2/(k + 2)**2 ).astype(float)
             
     def _composite_basis(self, V, argument=0):
         P = np.zeros_like(V)
         k = np.arange(V.shape[1]).astype(np.float)[:-2]
         P[:, :-2] = ( V[:, :-2] +
-                     ( (4*k + 5) / (2 * (k + 2)**2) ) * V[:, 1:-1] -
+                     ( (2*k + 3) / (k + 2)**2) * V[:, 1:-1] -
                      ( (k + 1)**2 / (k + 2)**2 ) * V[:, 2:] )
         return P
 
@@ -1597,7 +1597,7 @@ class DirichletNeumannBasis(LegendreBase):
     def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         assert i < self.N-2
         return ( sympy.legendre(i, x) + 
-                (4*i + 5) / (2 * (i + 2)**2)  * sympy.legendre(i+1, x) -
+                (2*i + 3) / (i + 2)**2  * sympy.legendre(i+1, x) -
                 (i + 1)**2 / (i + 2)**2 * sympy.legendre(i+2, x))
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -1605,7 +1605,7 @@ class DirichletNeumannBasis(LegendreBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         output_array[:] = ( eval_legendre(i, x) + 
-                            (4*i + 5)/(2 * (i + 2)**2) * eval_legendre(i + 1, x) -
+                            (2*i + 3)/(i + 2)**2 * eval_legendre(i + 1, x) -
                             (i + 1)**2/(i + 2)**2 * eval_legendre(i + 2, x) )
         return output_array
     
@@ -1616,7 +1616,7 @@ class DirichletNeumannBasis(LegendreBase):
             output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
         basis = np.zeros(self.shape(True))
-        basis[np.array([i, i+1, i+2])] = (1, (4*i + 5)/(2 * (i + 2)**2), (i + 1)**2/(i + 2)**2 )
+        basis[np.array([i, i+1, i+2])] = (1, (2*i + 3)/(i + 2)**2, (i + 1)**2/(i + 2)**2 )
         basis = leg.Legendre(basis)
         if k > 0:
             basis = basis.deriv(k)
