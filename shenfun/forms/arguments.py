@@ -177,7 +177,7 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
                 B = legendre.bases.DirichletNeumannBasis
             elif bc.lower() == 'neumanndirichlet':
                 B = legendre.bases.NeumannDirichletBasis
-                
+
         return B(N, **par)
 
     elif family.lower() in ('laguerre', 'la'):

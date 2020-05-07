@@ -1596,7 +1596,7 @@ class DirichletNeumannBasis(LegendreBase):
     
     def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         assert i < self.N-2
-        return ( sympy.legendre(i, x) + 
+        return ( sympy.legendre(i, x) +
                 (2*i + 3) / (i + 2)**2  * sympy.legendre(i+1, x) -
                 (i + 1)**2 / (i + 2)**2 * sympy.legendre(i+2, x))
 
@@ -1765,7 +1765,7 @@ class NeumannDirichletBasis(LegendreBase):
     
     def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         assert i < self.N-2
-        return ( sympy.legendre(i, x) - 
+        return ( sympy.legendre(i, x) -
                 (2*i + 3) / (i + 2)**2  * sympy.legendre(i+1, x) -
                 (i + 1)**2 / (i + 2)**2 * sympy.legendre(i+2, x))
 
@@ -1832,7 +1832,7 @@ class NeumannDirichletBasis(LegendreBase):
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
-    
+
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         return NeumannDirichletBasis(self.N,
                                      quad=self.quad,
