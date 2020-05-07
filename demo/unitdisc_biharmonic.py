@@ -17,7 +17,7 @@ theta, r = psi = sp.symbols('x,y', real=True, positive=True)
 rv = (r*sp.cos(theta), r*sp.sin(theta))
 
 N = 20
-by_parts = True
+by_parts = False
 F = Basis(N, 'F', dtype='d')
 F0 = Basis(1, 'F', dtype='d')
 L = Basis(N, 'L', bc='Bipolar', domain=(0, 1))
