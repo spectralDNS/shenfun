@@ -186,8 +186,16 @@ def inner(expr0, expr1, output_array=None, level=0):
     else:
         raise RuntimeError
 
-    if test.rank > 0 and test.expr_rank() > 0: # For vector expressions of rank > 0 use recursive algorithm
+    if isinstance(test, BasisFunction):
+        recursive = test.rank > 0
+    elif isinstance(test, Expr):
+        recursive = test.basis_rank() > 0
+    if isinstance(trial, Array):
+        assert trial.rank == test.rank
+    elif isinstance(trial, BasisFunction):
+        recursive *= (trial.expr_rank() > 0)
 
+    if recursive: # Use recursive algorithm for vector expressions of expr_rank > 0, e.g., inner(v, grad(u))
         if output_array is None and trial.argument == 2:
             output_array = Function(test.function_space())
 
@@ -272,19 +280,15 @@ def inner(expr0, expr1, output_array=None, level=0):
                             sc *= AA.scale
                             AA.scale = 1.0
 
-                        if (ts.boundary_condition() == 'Dirichlet' and not ts.family() in ('laguerre', 'hermite') or
-                                (ts.boundary_condition() == 'Biharmonic' and not ts.family() in ('jacobi',))):
-                            if ts.bc.has_nonhomogeneous_bcs():
-                                tsc = ts.get_bc_basis()
-                                BB = inner_product((tt, a), (tsc, b))
-                                if not abs(BB.scale-1.) < 1e-8:
-                                    scb *= BB.scale
-                                    BB.scale = 1.0
-                                if BB:
-                                    DM.append(BB)
-                                    has_bcs = True
-                            else:
-                                DM.append(AA)
+                        if ts.has_nonhomogeneous_bcs:
+                            tsc = ts.get_bc_basis()
+                            BB = inner_product((tt, a), (tsc, b))
+                            if not abs(BB.scale-1.) < 1e-8:
+                                scb *= BB.scale
+                                BB.scale = 1.0
+                            if BB:
+                                DM.append(BB)
+                                has_bcs = True
                         else:
                             DM.append(AA)
 

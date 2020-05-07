@@ -134,7 +134,7 @@ class TensorProductSpace(PFFT):
         Pencil distribution in spectral space. This is primarily intended
         for a padded space, where the spectral distribution must be
         equal to the non-padded space.
-    cordinates: two tuples, optional
+    coordinates: two tuples, optional
         Map for curvilinear coordinatesystem.
         First tuple are the coordinate variables in the new coordinate system
         Second tuple are the Cartesian coordinates as functions of the variables
@@ -864,6 +864,10 @@ class TensorProductSpace(PFFT):
             ortho.append(base.get_orthogonal())
         return TensorProductSpace(self.subcomm, ortho, axes=self.axes)
 
+    @property
+    def is_composite_space(self):
+        return 0
+
     def __getitem__(self, i):
         """Return instance of base i
 
@@ -899,10 +903,13 @@ class TensorProductSpace(PFFT):
 class MixedTensorProductSpace(object):
     """Class for composite tensorproductspaces.
 
+    The mixed spaces are Cartesian products of TensorproductSpaces or
+    other MixedTensorProductSpaces.
+
     Parameters
     ----------
     spaces : list
-        List of TensorProductSpaces
+        List of spaces
     """
 
     def __init__(self, spaces):
@@ -911,6 +918,10 @@ class MixedTensorProductSpace(object):
         self.backward = VectorTransform([space.backward for space in spaces])
         self.backward_uniform = VectorTransform([space.backward_uniform for space in spaces])
         self.scalar_product = VectorTransform([space.scalar_product for space in spaces])
+
+    @property
+    def is_composite_space(self):
+        return 1
 
     def eval(self, points, coefficients, output_array=None, method=0):
         """Evaluate Function at points, given expansion coefficients
@@ -929,7 +940,6 @@ class MixedTensorProductSpace(object):
             The final, method = 2, is a python implementation used only
             for verification.
         """
-
         if output_array is None:
             output_array = np.zeros((len(self.flatten()), points.shape[-1]), dtype=self.forward.input_array.dtype)
         for i, space in enumerate(self.flatten()):
@@ -974,7 +984,7 @@ class MixedTensorProductSpace(object):
     @property
     def rank(self):
         """Return rank of space"""
-        return 1
+        return None
 
     def dim(self):
         """Return dimension of ``self`` (degrees of freedom)"""
@@ -1094,20 +1104,20 @@ class VectorTensorProductSpace(MixedTensorProductSpace):
     """A special :class:`.MixedTensorProductSpace` where the number of spaces
     must equal the geometrical dimension of the problem.
 
-    For example, a TensorProductSpace created by a Cartesian product of 2 1D
+    For example, a TensorProductSpace created by a tensorproduct of 2 1D
     bases, will have vectors of length 2. A TensorProductSpace created from 3
     1D bases will have vectors of length 3.
 
     Parameters
     ----------
-    space : :class:`.TensorProductSpace`
-        Space to create vector from
+    space : :class:`.TensorProductSpace` or list of ndim :class:`.TensorProductSpace`s
+        Spaces to create vector from
 
     """
 
     def __init__(self, space):
         if isinstance(space, list):
-            warnings.warn("Use only the TensorProductSpace as argument", DeprecationWarning)
+            assert len(space) == space[0].dimensions
             spaces = space
         else:
             spaces = [space]*space.dimensions

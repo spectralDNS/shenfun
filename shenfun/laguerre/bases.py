@@ -27,14 +27,17 @@ class LaguerreBase(SpectralBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
     Note
     ----
     We are using Laguerre functions and not the regular Laguerre polynomials
@@ -49,8 +52,8 @@ class LaguerreBase(SpectralBase):
 
     """
 
-    def __init__(self, N, quad="LG", padding_factor=1, dealias_direct=False, coordinates=None):
-        SpectralBase.__init__(self, N, quad=quad, domain=(0., np.inf),
+    def __init__(self, N, quad="LG", dtype=np.float, padding_factor=1, dealias_direct=False, coordinates=None):
+        SpectralBase.__init__(self, N, quad=quad, domain=(0., np.inf), dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         self.forward = functools.partial(self.forward, fast_transform=False)
@@ -154,6 +157,7 @@ class LaguerreBase(SpectralBase):
     def get_refined(self, N):
         return self.__class__(N,
                               quad=self.quad,
+                              dtype=self.dtype,
                               padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
                               coordinates=self.coors.coordinates)
@@ -161,6 +165,7 @@ class LaguerreBase(SpectralBase):
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         return self.__class__(self.N,
                               quad=self.quad,
+                              dtype=self.dtype,
                               padding_factor=padding_factor,
                               dealias_direct=dealias_direct,
                               coordinates=self.coors.coordinates)
@@ -181,14 +186,17 @@ class Basis(LaguerreBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
 
     Note
     ----
@@ -203,15 +211,15 @@ class Basis(LaguerreBase):
     polynomials of order k, respectively.
     """
 
-    def __init__(self, N, quad="LG", padding_factor=1, dealias_direct=False, coordinates=None):
-        LaguerreBase.__init__(self, N, quad=quad, padding_factor=padding_factor,
+    def __init__(self, N, quad="LG", dtype=np.float, padding_factor=1, dealias_direct=False, coordinates=None):
+        LaguerreBase.__init__(self, N, quad=quad, dtype=dtype, padding_factor=padding_factor,
                               dealias_direct=dealias_direct, coordinates=coordinates)
-        self.plan(int(N*padding_factor), 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, dtype, {})
 
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
-            output_array = np.zeros(x.shape)
+            output_array = np.zeros(x.shape, dtype=self.dtype)
         output_array[:] = lag.lagval(x, u)*np.exp(-x/2)
         return output_array
 
@@ -241,22 +249,25 @@ class ShenDirichletBasis(LaguerreBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
 
     """
-    def __init__(self, N, quad="LG", bc=(0., 0.), padding_factor=1,
+    def __init__(self, N, quad="LG", bc=(0., 0.), dtype=np.float, padding_factor=1,
                  dealias_direct=False, coordinates=None):
-        LaguerreBase.__init__(self, N, quad=quad, padding_factor=padding_factor,
+        LaguerreBase.__init__(self, N, dtype=dtype, quad=quad, padding_factor=padding_factor,
                               dealias_direct=dealias_direct, coordinates=coordinates)
         self.LT = Basis(N, quad)
-        self.plan(int(N*padding_factor), 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -294,7 +305,7 @@ class ShenDirichletBasis(LaguerreBase):
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
-            output_array = np.zeros(x.shape)
+            output_array = np.zeros(x.shape, dtype=self.dtype)
         w_hat = work[(u, 0, True)]
         w_hat[1:] = u[:-1]
         output_array[:] = lag.lagval(x, u) - lag.lagval(x, w_hat)
@@ -321,4 +332,4 @@ class ShenDirichletBasis(LaguerreBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_orthogonal(self):
-        return Basis(self.N, quad=self.quad, coordinates=self.coors.coordinates)
+        return Basis(self.N, quad=self.quad, dtype=self.dtype, coordinates=self.coors.coordinates)

@@ -76,20 +76,23 @@ class JacobiBase(SpectralBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
 
     """
 
-    def __init__(self, N, quad="JG", alpha=0, beta=0, domain=(-1., 1.),
+    def __init__(self, N, quad="JG", alpha=0, beta=0, domain=(-1., 1.), dtype=np.float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
-        SpectralBase.__init__(self, N, quad=quad, domain=domain,
+        SpectralBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         self.alpha = alpha
@@ -109,6 +112,7 @@ class JacobiBase(SpectralBase):
         return self.__class__(N,
                               quad=self.quad,
                               domain=self.domain,
+                              dtype=self.dtype,
                               padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
                               coordinates=self.coors.coordinates,
@@ -119,6 +123,7 @@ class JacobiBase(SpectralBase):
         return self.__class__(self.N,
                               quad=self.quad,
                               domain=self.domain,
+                              dtype=dtype,
                               padding_factor=padding_factor,
                               dealias_direct=dealias_direct,
                               coordinates=self.coors.coordinates,
@@ -244,27 +249,31 @@ class Basis(JacobiBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
     """
 
     def __init__(self, N, quad="JG", alpha=-0.5, beta=-0.5, domain=(-1., 1.),
-                 padding_factor=1, dealias_direct=False, coordinates=None):
-        JacobiBase.__init__(self, N, quad=quad, alpha=alpha, beta=beta, domain=domain,
+                 dtype=np.float, padding_factor=1, dealias_direct=False, coordinates=None):
+        JacobiBase.__init__(self, N, quad=quad, alpha=alpha, beta=beta, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
                             coordinates=coordinates)
-        self.plan(int(N*padding_factor), 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, dtype, {})
 
     def get_refined(self, N):
         return self.__class__(N,
                               quad=self.quad,
                               domain=self.domain,
+                              dtype=self.dtype,
                               padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
                               coordinates=self.coors.coordinates,
@@ -301,25 +310,28 @@ class ShenDirichletBasis(JacobiBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
 
     """
-    def __init__(self, N, quad='JG', bc=(0, 0), domain=(-1., 1.),
+    def __init__(self, N, quad='JG', bc=(0, 0), domain=(-1., 1.), dtype=np.float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
-        JacobiBase.__init__(self, N, quad=quad, alpha=-1, beta=-1, domain=domain,
+        JacobiBase.__init__(self, N, quad=quad, alpha=-1, beta=-1, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
                             coordinates=coordinates)
         assert bc in ((0, 0), 'Dirichlet')
         from shenfun.tensorproductspace import BoundaryValues
         self.bc = BoundaryValues(self, bc=bc)
-        self.plan(int(N*padding_factor), 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -329,6 +341,7 @@ class ShenDirichletBasis(JacobiBase):
         return self.__class__(N,
                               quad=self.quad,
                               domain=self.domain,
+                              dtype=self.dtype,
                               padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
                               coordinates=self.coors.coordinates,
@@ -338,6 +351,7 @@ class ShenDirichletBasis(JacobiBase):
         return self.__class__(self.N,
                               quad=self.quad,
                               domain=self.domain,
+                              dtype=self.dtype,
                               padding_factor=padding_factor,
                               dealias_direct=dealias_direct,
                               coordinates=self.coors.coordinates,
@@ -427,7 +441,7 @@ class ShenDirichletBasis(JacobiBase):
         return output_array
 
     def get_orthogonal(self):
-        return Basis(self.N, alpha=self.alpha+1, beta=self.beta+1, domain=self.domain, coordinates=self.coors.coordinates)
+        return Basis(self.N, alpha=self.alpha+1, beta=self.beta+1, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
 
     def vandermonde_scalar_product(self, input_array, output_array):
         SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
@@ -451,14 +465,17 @@ class ShenBiharmonicBasis(JacobiBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
 
     Note
     ----
@@ -466,13 +483,13 @@ class ShenBiharmonicBasis(JacobiBase):
     inner products are computed without weights, for alpha=beta=0.
 
     """
-    def __init__(self, N, quad='JG', bc=(0, 0, 0, 0), domain=(-1., 1.), padding_factor=1,
-                 dealias_direct=False, coordinates=None):
-        JacobiBase.__init__(self, N, quad=quad, alpha=-2, beta=-2, domain=domain,
+    def __init__(self, N, quad='JG', bc=(0, 0, 0, 0), domain=(-1., 1.), dtype=np.float,
+                 padding_factor=1, dealias_direct=False, coordinates=None):
+        JacobiBase.__init__(self, N, quad=quad, alpha=-2, beta=-2, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
                             coordinates=coordinates)
         assert bc in ((0, 0, 0, 0), 'Biharmonic')
-        self.plan(int(N*padding_factor), 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -557,7 +574,7 @@ class ShenBiharmonicBasis(JacobiBase):
         return output_array
 
     def get_orthogonal(self):
-        return Basis(self.N, alpha=0, beta=0, domain=self.domain, coordinates=self.coors.coordinates)
+        return Basis(self.N, alpha=0, beta=0, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
 
 
 class ShenOrder6Basis(JacobiBase):
@@ -578,14 +595,17 @@ class ShenOrder6Basis(JacobiBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
 
     Note
     ----
@@ -593,12 +613,12 @@ class ShenOrder6Basis(JacobiBase):
     inner products are computed without weights, for alpha=beta=0.
 
     """
-    def __init__(self, N, quad='JG', domain=(-1., 1.), padding_factor=1, dealias_direct=False,
+    def __init__(self, N, quad='JG', domain=(-1., 1.), dtype=np.float, padding_factor=1, dealias_direct=False,
                  coordinates=None):
-        JacobiBase.__init__(self, N, quad=quad, alpha=-3, beta=-3, domain=domain,
+        JacobiBase.__init__(self, N, quad=quad, alpha=-3, beta=-3, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
                             coordinates=coordinates)
-        self.plan(int(N*padding_factor), 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -665,7 +685,7 @@ class ShenOrder6Basis(JacobiBase):
         return points, weights
 
     def get_orthogonal(self):
-        return Basis(self.N, alpha=0, beta=0, domain=self.domain, coordinates=self.coors.coordinates)
+        return Basis(self.N, alpha=0, beta=0, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
 
     def vandermonde_scalar_product(self, input_array, output_array):
         SpectralBase.vandermonde_scalar_product(self, input_array, output_array)

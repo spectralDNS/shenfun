@@ -62,7 +62,6 @@ def test_curl(typecode):
 
     w = Array(Tk)
     w = Tk.backward(w_hat, w)
-    #from IPython import embed; embed()
     assert allclose(w, curl_)
 
     u_hat = Function(Tk)
@@ -89,7 +88,7 @@ def test_curl2():
     X = T.local_mesh(True)
     K = T.local_wavenumbers(False)
     Tk = VectorTensorProductSpace(T)
-    TTk = MixedTensorProductSpace([T, T, TT])
+    TTk = VectorTensorProductSpace([T, T, TT])
 
     U = Array(Tk)
     U_hat = Function(Tk)
