@@ -231,38 +231,39 @@ class SpectralBase(object):
             For padding backward transform (for dealiasing)
         domain : 2-tuple of floats, optional
             The computational domain
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
         dealias_direct : bool, optional
             If True, then set all upper 2/3 wavenumbers to zero before backward
             transform. Cannot be used if padding_factor is different than 1.
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
 
-        where theta and rv are the first and second items in the 2-tuple.
+            where theta and rv are the first and second items in the 2-tuple.
 
     """
     # pylint: disable=method-hidden, too-many-instance-attributes
 
-    def __init__(self, N, quad='', padding_factor=1, domain=(-1., 1.),
+    def __init__(self, N, quad='', padding_factor=1, domain=(-1., 1.), dtype=None,
                  dealias_direct=False, coordinates=None):
         self.N = N
         self.domain = domain
         self.quad = quad
         self.axis = 0
-        self.xfftn_fwd = None
-        self.xfftn_bck = None
         self.bc = None
         self.padding_factor = np.floor(N*padding_factor)/N
         self.dealias_direct = dealias_direct
         self._mass = None         # Mass matrix (if needed)
+        self._M = 1.0             # Normalization factor
         self._xfftn_fwd = None    # external forward transform function
         self._xfftn_bck = None    # external backward transform function
-        self._M = 1.0             # Normalization factor
         self.hi = np.ones(1, dtype=object)  # Integral measure (in addition to weight)
         coors = coordinates if coordinates is not None else ((sp.Symbol('x', real=True),),)*2
         self.coors = Coordinates(*coors)
@@ -343,7 +344,7 @@ class SpectralBase(object):
         return X
 
     def curvilinear_mesh(self, uniform=False):
-        """Return curvilinear mesh of of basis
+        """Return curvilinear mesh of basis
 
         Parameters
         ----------
@@ -923,7 +924,7 @@ class SpectralBase(object):
 
         """
         if output_array is None:
-            output_array = np.zeros(x.shape, dtype=self.forward.input_array.dtype)
+            output_array = np.zeros(x.shape, dtype=self.dtype)
         x = self.map_reference_domain(x)
         return self.vandermonde_evaluate_expansion(x, u, output_array)
 
@@ -1004,6 +1005,11 @@ class SpectralBase(object):
         return R/L
 
     @property
+    def dtype(self):
+        """Return datatype basis is planned for"""
+        return self.forward.input_array.dtype
+
+    @property
     def dimensions(self):
         """Return the dimensions (the number of bases) of the
         :class:`.TensorProductSpace` class this basis is planned for.
@@ -1037,6 +1043,10 @@ class SpectralBase(object):
     @property
     def is_orthogonal(self):
         return False
+
+    @property
+    def is_composite_space(self):
+        return 0
 
     @property
     def has_nonhomogeneous_bcs(self):
@@ -1179,6 +1189,7 @@ class SpectralBase(object):
         return self.__class__(self.N,
                               quad=self.quad,
                               domain=self.domain,
+                              dtype=self.dtype,
                               padding_factor=padding_factor,
                               dealias_direct=dealias_direct,
                               coordinates=self.coors.coordinates)
@@ -1199,6 +1210,7 @@ class SpectralBase(object):
         return self.__class__(N,
                               quad=self.quad,
                               domain=self.domain,
+                              dtype=self.dtype,
                               padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
                               coordinates=self.coors.coordinates)
@@ -1297,8 +1309,12 @@ class MixedBasis(object):
         return self.bases[0].dimensions
 
     @property
-    def rank(self):
+    def is_composite_space(self):
         return 1
+
+    @property
+    def rank(self):
+        return None
 
     @property
     def dimensions(self):

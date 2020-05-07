@@ -76,24 +76,25 @@ class FourierBase(SpectralBase):
             corresponds to a 3/2-rule for dealiasing.
         domain : 2-tuple of floats, optional
             The computational domain.
+        dtype : data-type, optional
         dealias_direct : bool, optional
             True for dealiasing using 2/3-rule. Must be used with
             padding_factor = 1.
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, padding_factor=1., domain=(0, 2*np.pi),
+    def __init__(self, N, padding_factor=1., domain=(0, 2*np.pi), dtype=np.float,
                  dealias_direct=False, coordinates=None):
         self._k = None
         self._planned_axes = None  # Collapsing of axes means that this base can be used to plan transforms over several collapsed axes. Store the axes planned for here.
-        SpectralBase.__init__(self, N, padding_factor=padding_factor, dealias_direct=dealias_direct, domain=domain, coordinates=coordinates)
+        SpectralBase.__init__(self, N, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct, domain=domain, coordinates=coordinates)
 
     @staticmethod
     def family():
@@ -341,19 +342,19 @@ class R2CBasis(FourierBase):
         dealias_direct : bool, optional
             True for dealiasing using 2/3-rule. Must be used with
             padding_factor = 1.
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
     """
 
     def __init__(self, N, padding_factor=1., domain=(0., 2.*np.pi),
                  dealias_direct=False, coordinates=None):
-        FourierBase.__init__(self, N, padding_factor=padding_factor,
+        FourierBase.__init__(self, N, padding_factor=padding_factor, dtype=np.float,
                              domain=domain, dealias_direct=dealias_direct,
                              coordinates=coordinates)
         self.N = N
@@ -556,19 +557,19 @@ class C2CBasis(FourierBase):
         dealias_direct : bool, optional
             True for dealiasing using 2/3-rule. Must be used with
             padding_factor = 1.
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
     """
 
     def __init__(self, N, padding_factor=1., domain=(0., 2.*np.pi),
                  dealias_direct=False, coordinates=None):
-        FourierBase.__init__(self, N, padding_factor=padding_factor,
+        FourierBase.__init__(self, N, padding_factor=padding_factor, dtype=np.complex,
                              domain=domain, dealias_direct=dealias_direct,
                              coordinates=coordinates)
         self.N = N

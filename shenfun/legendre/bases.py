@@ -42,19 +42,22 @@ class LegendreBase(SpectralBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, quad="LG", domain=(-1., 1.), padding_factor=1,
+    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=np.float, padding_factor=1,
                  dealias_direct=False, coordinates=None):
-        SpectralBase.__init__(self, N, quad=quad, domain=domain,
+        SpectralBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         self.forward = functools.partial(self.forward, fast_transform=False)
@@ -158,7 +161,7 @@ class LegendreBase(SpectralBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_orthogonal(self):
-        return Basis(self.N, quad=self.quad, domain=self.domain, coordinates=self.coors.coordinates)
+        return Basis(self.N, quad=self.quad, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
 
 @inheritdocstrings
 class Basis(LegendreBase):
@@ -179,26 +182,29 @@ class Basis(LegendreBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, quad="LG", domain=(-1., 1.), padding_factor=1,
+    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=np.float, padding_factor=1,
                  dealias_direct=False, coordinates=None):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain,
+        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
-        self.plan(int(padding_factor*N), 0, np.float, {})
+        self.plan(int(padding_factor*N), 0, dtype, {})
 
     def eval(self, x, u, output_array=None):
         if output_array is None:
-            output_array = np.zeros(x.shape)
+            output_array = np.zeros(x.shape, dtype=self.dtype)
         x = self.map_reference_domain(x)
         output_array[:] = leg.legval(x, u)
         return output_array
@@ -233,25 +239,28 @@ class ShenDirichletBasis(LegendreBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), scaled=False,
+    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=np.float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain,
+        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
         self.LT = Basis(N, quad)
         self._scaled = scaled
         self._factor = np.ones(1)
-        self.plan(int(N*padding_factor), 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, dtype, {})
         self.bc = BoundaryValues(self, bc=bc)
 
     @staticmethod
@@ -343,7 +352,7 @@ class ShenDirichletBasis(LegendreBase):
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
-            output_array = np.zeros(x.shape)
+            output_array = np.zeros(x.shape, dtype=self.dtype)
         x = self.map_reference_domain(x)
         w_hat = work[(u, 0, True)]
         self.set_factor_array(u)
@@ -398,6 +407,7 @@ class ShenDirichletBasis(LegendreBase):
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         return ShenDirichletBasis(self.N,
                                   quad=self.quad,
+                                  dtype=self.dtype,
                                   padding_factor=padding_factor,
                                   dealias_direct=dealias_direct,
                                   domain=self.domain,
@@ -426,25 +436,28 @@ class ShenNeumannBasis(LegendreBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
     """
 
     def __init__(self, N, quad="LG", mean=0, domain=(-1., 1.), padding_factor=1,
-                 dealias_direct=False, coordinates=None):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain,
+                 dealias_direct=False, dtype=np.float, coordinates=None):
+        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         self.mean = mean
         self.LT = Basis(N, quad)
         self._factor = np.zeros(0)
-        self.plan(int(N*padding_factor), 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -518,7 +531,7 @@ class ShenNeumannBasis(LegendreBase):
 
     def eval(self, x, u, output_array=None):
         if output_array is None:
-            output_array = np.zeros(x.shape)
+            output_array = np.zeros(x.shape, dtype=self.dtype)
         x = self.map_reference_domain(x)
         w_hat = work[(u, 0, True)]
         self.set_factor_array(u)
@@ -577,25 +590,28 @@ class ShenBiharmonicBasis(LegendreBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="LG", bc=(0, 0, 0, 0), domain=(-1., 1.), padding_factor=1,
-                 dealias_direct=False, coordinates=None):
+                 dealias_direct=False, dtype=np.float, coordinates=None):
         from shenfun.tensorproductspace import BoundaryValues
-        LegendreBase.__init__(self, N, quad=quad, domain=domain,
+        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         self.LT = Basis(N, quad)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
-        self.plan(int(N*padding_factor), 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, dtype, {})
         self.bc = BoundaryValues(self, bc=bc)
 
     @staticmethod
@@ -689,7 +705,7 @@ class ShenBiharmonicBasis(LegendreBase):
 
     def eval(self, x, u, output_array=None):
         if output_array is None:
-            output_array = np.zeros(x.shape)
+            output_array = np.zeros(x.shape, dtype=self.dtype)
         x = self.map_reference_domain(x)
         w_hat = work[(u, 0, True)]
         self.set_factor_arrays(u)
@@ -763,24 +779,27 @@ class UpperDirichletBasis(LegendreBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="LG", domain=(-1., 1.),
+    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=np.float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         assert quad == "LG"
-        LegendreBase.__init__(self, N, quad=quad, domain=domain,
+        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         self.LT = Basis(N, quad)
         self._factor = np.ones(1)
-        self.plan(int(N*padding_factor), 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -841,7 +860,7 @@ class UpperDirichletBasis(LegendreBase):
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
-            output_array = np.zeros(x.shape)
+            output_array = np.zeros(x.shape, dtype=self.dtype)
         x = self.map_reference_domain(x)
         w_hat = work[(u, 0, True)]
         output_array[:] = leg.legval(x, u[:-1])
@@ -888,6 +907,7 @@ class UpperDirichletBasis(LegendreBase):
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         return ShenDirichletBasis(self.N,
                                   quad=self.quad,
+                                  dtype=self.dtype,
                                   padding_factor=padding_factor,
                                   dealias_direct=dealias_direct,
                                   coordinates=self.coors.coordinates,
@@ -913,23 +933,26 @@ class ShenBiPolarBasis(LegendreBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="LG", domain=(-1., 1.),
+    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=np.float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         assert quad == "LG"
-        LegendreBase.__init__(self, N, quad=quad, domain=domain,
+        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         self.LT = Basis(N, quad)
-        self.plan(int(N*padding_factor), 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -990,7 +1013,7 @@ class ShenBiPolarBasis(LegendreBase):
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
-            output_array = np.zeros(x.shape)
+            output_array = np.zeros(x.shape, dtype=self.dtype)
         else:
             output_array.fill(0)
         x = self.map_reference_domain(x)
@@ -1037,6 +1060,7 @@ class ShenBiPolarBasis(LegendreBase):
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         return ShenBiPolarBasis(self.N,
                                 quad=self.quad,
+                                dtype=self.dtype,
                                 padding_factor=padding_factor,
                                 dealias_direct=dealias_direct,
                                 coordinates=self.coors.coordinates,
@@ -1065,26 +1089,29 @@ class ShenBiPolar0Basis(LegendreBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="LG", domain=(-1., 1.), padding_factor=1,
-                 dealias_direct=False, coordinates=None):
+                 dealias_direct=False, dtype=np.float, coordinates=None):
         assert quad == "LG"
-        LegendreBase.__init__(self, N, quad="LG", domain=domain,
+        LegendreBase.__init__(self, N, quad="LG", domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         self.LT = Basis(N, quad)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
         self._factor3 = np.zeros(0)
-        self.plan(int(N*padding_factor), 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -1166,7 +1193,7 @@ class ShenBiPolar0Basis(LegendreBase):
 
     def eval(self, x, u, output_array=None):
         if output_array is None:
-            output_array = np.zeros(x.shape)
+            output_array = np.zeros(x.shape, dtype=self.dtype)
         x = self.map_reference_domain(x)
         w_hat = work[(u, 0, True)]
         self.set_factor_arrays(u)
@@ -1411,7 +1438,7 @@ class BCBiharmonicBasis(LegendreBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2-tuple (coordinate, position vector), optional
         Map for curvilinear coordinatesystem.
         The new coordinate variable in the new coordinate system is the first item.
         Second item is a tuple for the Cartesian position vector as function of the

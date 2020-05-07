@@ -4,6 +4,7 @@ Module for defining bases in the Chebyshev family
 from __future__ import division
 import functools
 import numpy as np
+import sympy as sp
 from numpy.polynomial import chebyshev as n_cheb
 import sympy
 from scipy.special import eval_chebyt
@@ -62,24 +63,27 @@ class ChebyshevBase(SpectralBase):
             - GC - Chebyshev-Gauss
         domain : 2-tuple of floats, optional
             The computational domain
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
         padding_factor : float, optional
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, quad="GC", domain=(-1., 1.), padding_factor=1, dealias_direct=False,
-                 coordinates=None):
+    def __init__(self, N, quad="GC", domain=(-1., 1.), dtype=np.float,
+                 padding_factor=1, dealias_direct=False, coordinates=None):
         assert quad in ('GC', 'GL')
-        SpectralBase.__init__(self, N, quad=quad, padding_factor=padding_factor,
+        SpectralBase.__init__(self, N, quad=quad, dtype=dtype, padding_factor=padding_factor,
                               dealias_direct=dealias_direct, domain=domain, coordinates=coordinates)
 
     @staticmethod
@@ -271,23 +275,26 @@ class Basis(ChebyshevBase):
             - GC - Chebyshev-Gauss
         domain : 2-tuple of floats, optional
             The computational domain
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
         padding_factor : float, optional
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, quad='GC', domain=(-1., 1.), padding_factor=1,
+    def __init__(self, N, quad='GC', domain=(-1., 1.), dtype=np.float, padding_factor=1,
                  dealias_direct=False, coordinates=None):
-        ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
+        ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
         if quad == 'GC':
@@ -297,7 +304,7 @@ class Basis(ChebyshevBase):
         else:
             self._xfftn_fwd = functools.partial(fftw.dctn, type=1)
             self._xfftn_bck = functools.partial(fftw.dctn, type=1)
-        self.plan((int(padding_factor*N),), 0, np.float, {})
+        self.plan((int(padding_factor*N),), 0, dtype, {})
 
     @staticmethod
     def derivative_coefficients(fk):
@@ -382,7 +389,7 @@ class Basis(ChebyshevBase):
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
-            output_array = np.zeros(x.shape)
+            output_array = np.zeros(x.shape, dtype=self.forward.output_array.dtype)
         x = self.map_reference_domain(x)
         output_array[:] = n_cheb.chebval(x, u)
         return output_array
@@ -412,20 +419,23 @@ class ShenDirichletBasis(ChebyshevBase):
             Boundary conditions at, respectively, x=(-1, 1).
         domain : 2-tuple of floats, optional
             The computational domain
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
         scaled : bool, optional
             Whether or not to use scaled basis
         padding_factor : float, optional
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
 
     Note
     ----
@@ -433,17 +443,17 @@ class ShenDirichletBasis(ChebyshevBase):
 
     """
 
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), scaled=False,
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=np.float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
-        ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
+        ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
-        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor = np.ones(1)
-        self.plan(int(N*padding_factor), 0, np.float, {})
         self.bc = BoundaryValues(self, bc=bc)
+        self.plan((int(padding_factor*N),), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -455,7 +465,8 @@ class ShenDirichletBasis(ChebyshevBase):
 
     def get_refined(self, N):
         return self.__class__(N, quad=self.quad,
-                              domain=self.domain, padding_factor=self.padding_factor,
+                              domain=self.domain, dtype=self.dtype,
+                              padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
                               bc=self.bc.bc, scaled=self._scaled,
                               coordinates=self.coors.coordinates)
@@ -555,7 +566,7 @@ class ShenDirichletBasis(ChebyshevBase):
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
-            output_array = np.zeros(x.shape)
+            output_array = np.zeros(x.shape, dtype=self.dtype)
         x = self.map_reference_domain(x)
         w_hat = work[(u, 0, True)]
         output_array[:] = n_cheb.chebval(x, u[:-2])
@@ -627,6 +638,7 @@ class ShenDirichletBasis(ChebyshevBase):
                                   quad=self.quad,
                                   padding_factor=padding_factor,
                                   dealias_direct=dealias_direct,
+                                  dtype=self.dtype,
                                   domain=self.domain,
                                   bc=self.bc.bc,
                                   coordinates=self.coors.coordinates)
@@ -672,28 +684,31 @@ class ShenNeumannBasis(ChebyshevBase):
             Mean value
         domain : 2-tuple of floats, optional
             The computational domain
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
         padding_factor : float, optional
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="GC", mean=0, domain=(-1., 1.), padding_factor=1,
+    def __init__(self, N, quad="GC", mean=0, domain=(-1., 1.), dtype=np.float, padding_factor=1,
                  dealias_direct=False, coordinates=None):
-        ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
+        ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
         self.mean = mean
-        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._factor = np.zeros(0)
-        self.plan(int(N*padding_factor), 0, np.float, {})
+        self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -701,7 +716,8 @@ class ShenNeumannBasis(ChebyshevBase):
 
     def get_refined(self, N):
         return self.__class__(N, quad=self.quad,
-                              domain=self.domain, padding_factor=self.padding_factor,
+                              domain=self.domain, dtype=self.dtype,
+                              padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
                               coordinates=self.coors.coordinates,
                               mean=self.mean)
@@ -818,7 +834,7 @@ class ShenNeumannBasis(ChebyshevBase):
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
-            output_array = np.zeros(x.shape)
+            output_array = np.zeros(x.shape, dtype=self.dtype)
         x = self.map_reference_domain(x)
         w_hat = work[(u, 0, True)]
         self.set_factor_array(u)
@@ -879,23 +895,34 @@ class ShenBiharmonicBasis(ChebyshevBase):
             The two Dirichlet at (-1, 1) first and then the Neumann at (-1, 1).
         domain : 2-tuple of floats, optional
             The computational domain
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
         padding_factor : float, optional
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
+
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
 
     """
-    def __init__(self, N, quad="GC", bc=(0, 0, 0, 0), domain=(-1., 1.), padding_factor=1,
-                 dealias_direct=False, coordinates=None):
+    def __init__(self, N, quad="GC", bc=(0, 0, 0, 0), domain=(-1., 1.), dtype=np.float,
+                 padding_factor=1, dealias_direct=False, coordinates=None):
         from shenfun.tensorproductspace import BoundaryValues
-        ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
+        ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
-        self.plan(int(N*padding_factor), 0, np.float, {})
         self.bc = BoundaryValues(self, bc=bc)
+        self.plan((int(padding_factor*N),), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -1044,7 +1071,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
-            output_array = np.zeros(x.shape)
+            output_array = np.zeros(x.shape, dtype=self.dtype)
         x = self.map_reference_domain(x)
         w_hat = work[(u, 0, True)]
         self.set_factor_arrays(w_hat)
@@ -1130,29 +1157,32 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
             Mean value
         domain : 2-tuple of floats, optional
             The computational domain
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
         padding_factor : float, optional
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, quad="GC", mean=0, domain=(-1., 1.), padding_factor=1,
-                 dealias_direct=False, coordinates=None):
-        ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
+    def __init__(self, N, quad="GC", mean=0, domain=(-1., 1.), dtype=np.float,
+                 padding_factor=1, dealias_direct=False, coordinates=None):
+        ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
         self.mean = mean
-        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._factor = np.zeros(0)
-        self.plan(int(N*padding_factor), 0, np.float, {})
+        self.plan((int(padding_factor*N),), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -1160,7 +1190,8 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
 
     def get_refined(self, N):
         return self.__class__(N, quad=self.quad,
-                              domain=self.domain, padding_factor=self.padding_factor,
+                              domain=self.domain, dtype=self.dtype,
+                              padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
                               coordinates=self.coors.coordinates,
                               mean=self.mean)
@@ -1261,7 +1292,7 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
-            output_array = np.zeros(x.shape)
+            output_array = np.zeros(x.shape, dtype=self.dtype)
         x = self.map_reference_domain(x)
         w_hat = work[(u, 0, True)]
         self.set_factor_array(u)
@@ -1317,32 +1348,35 @@ class UpperDirichletBasis(ChebyshevBase):
 
         domain : 2-tuple of floats, optional
             The computational domain
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
         scaled : bool, optional
             Whether or not to use scaled basis
         padding_factor : float, optional
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
 
     """
 
-    def __init__(self, N, quad="GC", domain=(-1., 1.), scaled=False,
+    def __init__(self, N, quad="GC", domain=(-1., 1.), dtype=np.float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
-        ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
+        ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor = np.ones(1)
-        self.plan(int(N*padding_factor), 0, np.float, {})
+        self.plan((int(padding_factor*N),), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -1354,7 +1388,8 @@ class UpperDirichletBasis(ChebyshevBase):
 
     def get_refined(self, N):
         return self.__class__(N, quad=self.quad,
-                              domain=self.domain, padding_factor=self.padding_factor,
+                              domain=self.domain, dtype=self.dtype,
+                              padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
                               coordinates=self.coors.coordinates,
                               scaled=self._scaled)
@@ -1437,7 +1472,7 @@ class UpperDirichletBasis(ChebyshevBase):
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
-            output_array = np.zeros(x.shape)
+            output_array = np.zeros(x.shape, dtype=self.dtype)
         x = self.map_reference_domain(x)
         w_hat = work[(u, 0, True)]
         output_array[:] = n_cheb.chebval(x, u[:-1])
@@ -1523,27 +1558,30 @@ class ShenBiPolarBasis(ChebyshevBase):
 
         domain : 2-tuple of floats, optional
             The computational domain
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
         padding_factor : float, optional
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="GC", domain=(-1., 1.),
+    def __init__(self, N, quad="GC", domain=(-1., 1.), dtype=np.float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         #assert quad == "GC"
-        ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
+        ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
-        self.plan(int(N*padding_factor), 0, np.float, {})
+        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.plan((int(padding_factor*N),), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -1612,7 +1650,7 @@ class ShenBiPolarBasis(ChebyshevBase):
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
-            output_array = np.zeros(x.shape)
+            output_array = np.zeros(x.shape, dtype=self.dtype)
         x = self.map_reference_domain(x)
         fj = self.evaluate_basis_all(x)
         output_array[:] = np.dot(fj, u)
@@ -1661,6 +1699,7 @@ class ShenBiPolarBasis(ChebyshevBase):
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         return ShenBiPolarBasis(self.N,
                                 quad=self.quad,
+                                dtype=self.dtype,
                                 padding_factor=padding_factor,
                                 dealias_direct=dealias_direct,
                                 coordinates=self.coors.coordinates,
@@ -1682,32 +1721,35 @@ class DirichletNeumannBasis(ChebyshevBase):
 
         domain : 2-tuple of floats, optional
             The computational domain
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
         scaled : bool, optional
             Whether or not to use scaled basis
         padding_factor : float, optional
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
 
     """
 
-    def __init__(self, N, quad="GC", domain=(-1., 1.), scaled=False,
+    def __init__(self, N, quad="GC", domain=(-1., 1.), dtype=np.float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
-        ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
+        ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
-        self.CT = Basis(N, quad=quad, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
-        self.plan(int(N*padding_factor), 0, np.float, {})
+        self.plan((int(padding_factor*N),), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -1719,7 +1761,9 @@ class DirichletNeumannBasis(ChebyshevBase):
 
     def get_refined(self, N):
         return self.__class__(N, quad=self.quad,
-                              domain=self.domain, padding_factor=self.padding_factor,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
                               coordinates=self.coors.coordinates,
                               scaled=self._scaled)
@@ -1823,7 +1867,7 @@ class DirichletNeumannBasis(ChebyshevBase):
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
-            output_array = np.zeros(x.shape)
+            output_array = np.zeros(x.shape, dtype=self.dtype)
         x = self.map_reference_domain(x)
         w_hat = work[(u, 0, True)]
         self.set_factor_arrays(w_hat)
@@ -1915,14 +1959,14 @@ class BCBasis(ChebyshevBase):
             The computational domain
         scaled : bool, optional
             Whether or not to use scaled basis
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
     """
 
     def __init__(self, N, quad="GC", domain=(-1., 1.), scaled=False,
@@ -2023,14 +2067,14 @@ class BCBiharmonicBasis(ChebyshevBase):
             The computational domain
         scaled : bool, optional
             Whether or not to use scaled basis
-        cordinates: 2-tuple (coordinate, position vector), optional
-        Map for curvilinear coordinatesystem.
-        The new coordinate variable in the new coordinate system is the first item.
-        Second item is a tuple for the Cartesian position vector as function of the
-        new variable in the first tuple. Example::
+        coordinates: 2-tuple (coordinate, position vector), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
 
-            theta = sp.Symbols('x', real=True, positive=True)
-            rv = (sp.cos(theta), sp.sin(theta))
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
     """
 
     def __init__(self, N, quad="GC", domain=(-1., 1.), scaled=False,
@@ -2087,7 +2131,7 @@ class BCBiharmonicBasis(ChebyshevBase):
 
     def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         assert i < 4, 'Only four bases, i < 4'
-        return self.coefficient_matrix()[i]*np.array([sympy.chebyshevt(j, x) for j in range(4)])
+        return np.sum(self.coefficient_matrix()[i]*np.array([sympy.chebyshevt(j, x) for j in range(4)]))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)

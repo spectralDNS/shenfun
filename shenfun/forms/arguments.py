@@ -69,7 +69,7 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
         only for Fourier)
     dealias_direct : bool, optional
         Use 2/3-rule dealiasing (only Fourier)
-    cordinates: 2-tuple (coordinate, position vector), optional
+    coordinates: 2-tuple (coordinate, position vector), optional
         Map for curvilinear coordinatesystem.
         The new coordinate variable in the new coordinate system is the first item.
         Second item is a tuple for the Cartesian position vector as function of the
@@ -89,6 +89,7 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
     """
     par = {'padding_factor': padding_factor,
            'dealias_direct': dealias_direct,
+           'dtype': dtype,
            'coordinates': coordinates}
     par.update(kw)
     if domain is not None:
@@ -99,6 +100,7 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
             B = fourier.bases.C2CBasis
         else:
             B = fourier.bases.R2CBasis
+        del par['dtype']
         return B(N, **par)
 
     elif family.lower() in ('chebyshev', 'c'):
@@ -330,7 +332,6 @@ class Expr(object):
     """
 
     def __init__(self, basis, terms=None, scales=None, indices=None):
-        #assert isinstance(basis, BasisFunction)
         self._basis = basis
         self._terms = terms
         self._scales = scales
@@ -368,10 +369,6 @@ class Expr(object):
         """Return scales of Expr"""
         return self._scales
 
-    def measures(self):
-        """Return measures of Expr"""
-        return self._measures
-
     @property
     def argument(self):
         """Return argument of Expr's basis"""
@@ -392,7 +389,11 @@ class Expr(object):
 
     @property
     def rank(self):
-        """Return rank of Expr's basis"""
+        """Return rank of Expr's :class:`BasisFunction`"""
+        return self._basis.rank
+
+    def basis_rank(self):
+        """Return rank of Expr's :class:`BasisFunction`"""
         return self._basis.rank
 
     def indices(self):
@@ -429,6 +430,9 @@ class Expr(object):
         from shenfun import MixedTensorProductSpace
         from shenfun.fourier.bases import R2CBasis
 
+        if len(x.shape) == 1: # 1D case
+            x = x[None, :]
+
         V = self.function_space()
         basis = self.basis()
 
@@ -455,8 +459,10 @@ class Expr(object):
                     P = test_sp[axis].evaluate_basis_derivative_all(xx, k=k)
                     if not test_sp[axis].domain_factor() == 1:
                         P *= test_sp[axis].domain_factor()**(k)
-                    M.append(P[..., V.local_slice()[axis]])
-                    if isinstance(test_sp[axis], R2CBasis):
+                    if len(x) > 1:
+                        M.append(P[..., V.local_slice()[axis]])
+
+                    if isinstance(test_sp[axis], R2CBasis) and len(x) > 1:
                         r2c = axis
                         m = test_sp[axis].N//2+1
                         if test_sp[axis].N % 2 == 0:
@@ -467,7 +473,10 @@ class Expr(object):
 
                 bv = basis if basis.rank == 0 else basis[ind[base_j]]
                 work.fill(0)
-                if len(x) == 2:
+                if len(x) == 1:
+                    work = np.dot(P, bv)
+
+                elif len(x) == 2:
                     work = evaluate.evaluate_2D(work, bv, M, r2c, last_conj_index, sl)
 
                 elif len(x) == 3:
@@ -488,9 +497,8 @@ class Expr(object):
         return output_array
 
     def __getitem__(self, i):
-        #assert self.num_components() == self.dim()
         basis = self._basis
-        if self.rank > 0:
+        if basis.rank > 0:
             basis = self._basis[i]
         else:
             basis = self._basis
@@ -651,7 +659,6 @@ class BasisFunction(object):
     def expr_rank(self):
         """Return rank of expression involving basis"""
         return Expr(self).expr_rank()
-        #return self.function_space().rank
 
     def function_space(self):
         """Return function space of BasisFunction"""
@@ -694,7 +701,7 @@ class BasisFunction(object):
         return self._offset
 
     def __getitem__(self, i):
-        assert self.rank > 0
+        #assert self.rank > 0
         basespace = self.basespace
         base = self.base
         space = self._space[i]
@@ -736,7 +743,7 @@ class TestFunction(BasisFunction):
 
     Parameters
     ----------
-    space: TensorProductSpace
+    space: :class:`TensorProductSpace` or :class:`MixedTensorProductSpace`
     index: int, optional
         Component of basis with rank > 0
     basespace : The base :class:`.MixedTensorProductSpace` if space is a
@@ -751,7 +758,7 @@ class TestFunction(BasisFunction):
         BasisFunction.__init__(self, space, index, basespace, offset, base)
 
     def __getitem__(self, i):
-        assert self.rank > 0
+        #assert self.rank > 0
         basespace = self.basespace
         base = self.base
         space = self._space[i]
@@ -770,7 +777,7 @@ class TrialFunction(BasisFunction):
 
     Parameters
     ----------
-    space: TensorProductSpace
+    space: :class:`TensorProductSpace` or :class:`MixedTensorProductSpace`
     index: int, optional
         Component of basis with rank > 0
     basespace : The base :class:`.MixedTensorProductSpace` if space is a
@@ -784,7 +791,7 @@ class TrialFunction(BasisFunction):
         BasisFunction.__init__(self, space, index, basespace, offset, base)
 
     def __getitem__(self, i):
-        assert self.rank > 0
+        #assert self.rank > 0
         basespace = self.basespace
         base = self.base
         space = self._space[i]
@@ -824,7 +831,7 @@ class ShenfunBaseArray(DistArray):
                     buffer = buf
 
             obj = DistArray.__new__(cls, shape, buffer=buffer, dtype=dtype,
-                                    rank=space.rank)
+                                    rank=space.is_composite_space)
             obj._space = space
             obj._offset = 0
             if buffer is None and isinstance(val, Number):
@@ -859,7 +866,7 @@ class ShenfunBaseArray(DistArray):
         obj = DistArray.__new__(cls, global_shape,
                                 subcomm=p0.subcomm, val=val, dtype=dtype,
                                 buffer=buffer, alignment=p0.axis,
-                                rank=space.rank)
+                                rank=space.is_composite_space)
         obj._space = space
         obj._offset = 0
         return obj

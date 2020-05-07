@@ -7,11 +7,18 @@ bases = (chebyshev.Basis,
          chebyshev.ShenNeumannBasis,
          chebyshev.ShenBiharmonicBasis,
          chebyshev.SecondNeumannBasis,
+         chebyshev.ShenBiPolarBasis,
+         chebyshev.UpperDirichletBasis,
+         chebyshev.DirichletNeumannBasis,
          chebyshev.BCBasis,
+         chebyshev.BCBiharmonicBasis,
          legendre.Basis,
          legendre.ShenDirichletBasis,
          legendre.ShenNeumannBasis,
          legendre.ShenBiharmonicBasis,
+         legendre.UpperDirichletBasis,
+         legendre.ShenBiPolarBasis,
+         legendre.ShenBiPolar0Basis,
          legendre.BCBasis,
          fourier.R2CBasis,
          fourier.C2CBasis,
@@ -48,5 +55,5 @@ def test_eval_basis_derivative(base):
         assert np.allclose(f0, f1)
 
 if __name__ == '__main__':
-    #test_eval_basis(chebyshev.ShenDirichletBasis)
-    test_eval_basis(legendre.ShenNeumannBasis)
+    test_eval_basis(chebyshev.BCBiharmonicBasis)
+    #test_eval_basis(legendre.ShenNeumannBasis)

@@ -15,7 +15,7 @@ from shenfun import *
 from shenfun.la import SolverGeneric1NP
 import sympy as sp
 
-by_parts = False
+by_parts = True
 
 # Define polar coordinates using angle along first axis and radius second
 theta, r = psi = sp.symbols('x,y', real=True, positive=True)
@@ -30,8 +30,8 @@ f = -ue.diff(r, 2) - (1/r)*ue.diff(r, 1) - (1/r**2)*ue.diff(theta, 2) + alpha*ue
 N = 32
 F = Basis(N, 'F', dtype='d')
 F0 = Basis(1, 'F', dtype='d')
-L = Basis(N, 'C', bc='Dirichlet', domain=(0, 1))
-L0 = Basis(N, 'C', bc='UpperDirichlet', domain=(0, 1))
+L = Basis(N, 'L', bc='Dirichlet', domain=(0, 1))
+L0 = Basis(N, 'L', bc='UpperDirichlet', domain=(0, 1))
 T = TensorProductSpace(comm, (F, L), axes=(1, 0), coordinates=(psi, rv))
 T0 = TensorProductSpace(MPI.COMM_SELF, (F0, L0), axes=(1, 0), coordinates=(psi, rv))
 
