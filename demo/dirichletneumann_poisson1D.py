@@ -16,7 +16,7 @@ from sympy import symbols, cos, pi
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
     Array, Function, Basis, dx
-    
+
 assert len(sys.argv) == 3, 'Call with two command-line arguments'
 assert sys.argv[-1] in ('legendre', 'chebyshev')
 assert isinstance(int(sys.argv[-2]), int)
