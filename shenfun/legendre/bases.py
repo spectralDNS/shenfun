@@ -1505,7 +1505,7 @@ class BCBiharmonicBasis(LegendreBase):
 @inheritdocstrings
 class DirichletNeumannBasis(LegendreBase):
     """Basis for mixed Dirichlet/Neumann boundary conditions
-
+	u(-1)=0, u'(1)=0
     Parameters
     ----------
         N : int
@@ -1666,6 +1666,175 @@ class DirichletNeumannBasis(LegendreBase):
     
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         return DirichletNeumannBasis(self.N,
+                                     quad=self.quad,
+                                     padding_factor=padding_factor,
+                                     dealias_direct=dealias_direct,
+                                     domain=self.domain)
+
+@inheritdocstrings
+class NeumannDirichletBasis(LegendreBase):
+    """Basis for mixed Dirichlet/Neumann boundary conditions
+	u'(-1)=0, u(1)=0
+    Parameters
+    ----------
+        N : int
+            Number of quadrature points
+        quad : str, optional
+            Type of quadrature
+
+            - LG - Legendre-Gauss
+            - GL - Legendre-Gauss-Lobatto
+
+        bc : tuple of numbers
+            Boundary conditions at edges of domain
+        domain : 2-tuple of floats, optional
+            The computational domain
+        scaled : bool, optional
+            Whether or not to scale test functions with 1/sqrt(4k+6).
+            Scaled test functions give a stiffness matrix equal to the
+            identity matrix.
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
+        cordinates: 2-tuple (coordinate, position vector), optional
+        Map for curvilinear coordinatesystem.
+        The new coordinate variable in the new coordinate system is the first item.
+        Second item is a tuple for the Cartesian position vector as function of the
+        new variable in the first tuple. Example::
+
+            theta = sp.Symbols('x', real=True, positive=True)
+            rv = (sp.cos(theta), sp.sin(theta))
+    """
+    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.),
+                 padding_factor=1, dealias_direct=False, coordinates=None):
+        LegendreBase.__init__(self, N, quad=quad, domain=domain,
+                              padding_factor=padding_factor, dealias_direct=dealias_direct,
+                              coordinates=coordinates)
+        from shenfun.tensorproductspace import BoundaryValues
+        self.LT = Basis(N, quad)
+        self._factor = np.ones(1)
+        self.plan(int(N*padding_factor), 0, np.float, {})
+        self.bc = BoundaryValues(self, bc=bc)
+
+    @staticmethod
+    def boundary_condition():
+        return 'NeumannDirichlet'
+
+    @property
+    def has_nonhomogeneous_bcs(self):
+        return self.bc.has_nonhomogeneous_bcs()
+
+    def set_factor_array(self, v):
+        """Set intermediate factor arrays"""
+        s = self.sl[self.slice()]
+        if not self._factor1.shape == v[s].shape:
+            k = self.wavenumbers().astype(float)
+            self._factor1 = ( - (2*k + 3) / (k + 2)**2 ).astype(float)
+            self._factor2 = - ( (k + 1)**2/(k + 2)**2 ).astype(float)
+            
+    def _composite_basis(self, V, argument=0):
+        P = np.zeros_like(V)
+        k = np.arange(V.shape[1]).astype(np.float)[:-2]
+        P[:, :-2] = ( V[:, :-2] -
+                     ( (2*k + 3) / (k + 2)**2) * V[:, 1:-1] -
+                     ( (k + 1)**2 / (k + 2)**2 ) * V[:, 2:] )
+        return P
+
+
+    def to_ortho(self, input_array, output_array=None):
+        if output_array is None:
+            output_array = np.zeros_like(input_array.v)
+        s0 = self.sl[slice(0, -2)]
+        s1 = self.sl[slice(2, None)]
+
+        if self.is_scaled():
+            k = self.wavenumbers()
+            output_array[s0] = input_array[s0]/np.sqrt(4*k+6)
+            output_array[s1] -= input_array[s0]/np.sqrt(4*k+6)
+
+        else:
+            output_array[s0] = input_array[s0]
+            output_array[s1] -= input_array[s0]
+
+        self.bc.add_to_orthogonal(output_array, input_array)
+        return output_array
+
+    def slice(self):
+        return slice(0, self.N-2)
+    
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+        assert i < self.N-2
+        return ( sympy.legendre(i, x) - 
+                (2*i + 3) / (i + 2)**2  * sympy.legendre(i+1, x) -
+                (i + 1)**2 / (i + 2)**2 * sympy.legendre(i+2, x))
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        output_array[:] = ( eval_legendre(i, x) - 
+                            (2*i + 3)/(i + 2)**2 * eval_legendre(i + 1, x) -
+                            (i + 1)**2/(i + 2)**2 * eval_legendre(i + 2, x) )
+        return output_array
+    
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        if x is None:
+            x = self.mesh(False, False)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = np.atleast_1d(x)
+        basis = np.zeros(self.shape(True))
+        basis[np.array([i, i+1, i+2])] = (1, - (2*i + 3)/(i + 2)**2, (i + 1)**2/(i + 2)**2 )
+        basis = leg.Legendre(basis)
+        if k > 0:
+            basis = basis.deriv(k)
+        output_array[:] = basis(x)
+        return output_array
+
+    def eval(self, x, u, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = self.map_reference_domain(x)
+        w_hat = work[(u, 0, True)]
+        self.set_factor_array(w_hat)
+        output_array[:] = leg.legval(x, u[:-2])
+        w_hat[1:-1] = self._factor1 * u[:-2]
+        output_array += leg.legval(x, w_hat)
+        w_hat[2:] = self._factor2 * u[:-2]
+        w_hat[:2] = 0
+        output_array += leg.legval(x, w_hat)
+        return output_array
+
+    def plan(self, shape, axis, dtype, options):
+        if isinstance(axis, tuple):
+            assert len(axis) == 1
+            axis = axis[0]
+        
+        if isinstance(self.forward, Transform):
+            if self.forward.input_array.shape == shape and self.axis == axis:
+                # Already planned
+                return
+        
+        self.LT.plan(shape, axis, dtype, options)
+        U, V = self.LT.forward.input_array, self.LT.forward.output_array
+        self.axis = axis
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.forward = Transform(self.forward, None, U, V, trunc_array)
+            self.backward = Transform(self.backward, None, trunc_array, V, U)
+            self.backward_uniform = Transform(self.backward_uniform, None, trunc_array, V, U)
+        else:
+            self.forward = Transform(self.forward, None, U, V, V)
+            self.backward = Transform(self.backward, None, V, V, U)
+            self.backward_uniform = Transform(self.backward_uniform, None, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
+    
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return NeumannDirichletBasis(self.N,
                                      quad=self.quad,
                                      padding_factor=padding_factor,
                                      dealias_direct=dealias_direct,
