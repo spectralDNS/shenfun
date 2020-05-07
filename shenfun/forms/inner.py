@@ -199,16 +199,28 @@ def inner(expr0, expr1, output_array=None, level=0):
         if output_array is None and trial.argument == 2:
             output_array = Function(test.function_space())
 
+        gij = test.function_space().coors.get_covariant_metric_tensor()
         if trial.argument == 2:
             # linear form
-            for (te, tr, x) in zip(test, trial, output_array):
-                x = inner(te, tr, output_array=x)
+            #for (te, tr, x) in zip(test, trial, output_array):
+            w0 = np.zeros_like(output_array[0])
+            for i, (te, x) in enumerate(zip(test, output_array)):
+                for j, tr in enumerate(trial):
+                    if gij[i, j] == 0:
+                        continue
+                    w0.fill(0)
+                    x += inner(te*gij[i, j], tr, output_array=w0)
             return output_array
 
         result = []
-        for te, tr in zip(test, trial):
-            l = inner(te, tr, level=level)
-            result += l if isinstance(l, list) else [l]
+
+        #for te, tr in zip(test, trial):
+        for i, te in enumerate(test):
+            for j, tr in enumerate(trial):
+                if gij[i, j] == 0:
+                    continue
+                l = inner(te*gij[i, j], tr, level=level)
+                result += l if isinstance(l, list) else [l]
         return result[0] if len(result) == 1 else result
 
     if output_array is None and trial.argument == 2:
@@ -246,68 +258,73 @@ def inner(expr0, expr1, output_array=None, level=0):
         uh = trial.base
 
     A = []
-    for vec, (base_test, base_trial, test_ind, trial_ind) in enumerate(zip(test.terms(), trial.terms(), test.indices(), trial.indices())): # vector/scalar
-        for test_j, b0 in enumerate(base_test):              # second index test
-            for trial_j, b1 in enumerate(base_trial):        # second index trial
-                dV = test_scale[vec, test_j]*trial_scale[vec, trial_j]*testspace.hi.prod()
-                assert len(b0) == len(b1)
-                trial_sp = trialspace
-                if isinstance(trialspace, (MixedTensorProductSpace, MixedBasis)): # could operate on a vector, e.g., div(u), where u is vector
-                    trial_sp = trialspace.flatten()[trial_ind[trial_j]]
-                test_sp = testspace
-                if isinstance(testspace, (MixedTensorProductSpace, MixedBasis)):
-                    test_sp = testspace.flatten()[test_ind[test_j]]
-                has_bcs = False
-                # Check if scale is zero
-                if dV == 0:
-                    continue
+    gij = testspace.coors.get_covariant_metric_tensor()
+    for vec_i, (base_test, test_ind) in enumerate(zip(test.terms(), test.indices())): # vector/scalar
+        for vec_j, (base_trial, trial_ind) in enumerate(zip(trial.terms(), trial.indices())):
+            g = 1 if len(test.terms()) == 1 else gij[vec_i, vec_j]
+            if g == 0:
+                continue
+            for test_j, b0 in enumerate(base_test):              # second index test
+                for trial_j, b1 in enumerate(base_trial):        # second index trial
+                    dV = test_scale[vec_i, test_j]*trial_scale[vec_j, trial_j]*testspace.hi.prod()*g
+                    assert len(b0) == len(b1)
+                    trial_sp = trialspace
+                    if isinstance(trialspace, (MixedTensorProductSpace, MixedBasis)): # could operate on a vector, e.g., div(u), where u is vector
+                        trial_sp = trialspace.flatten()[trial_ind[trial_j]]
+                    test_sp = testspace
+                    if isinstance(testspace, (MixedTensorProductSpace, MixedBasis)):
+                        test_sp = testspace.flatten()[test_ind[test_j]]
+                    has_bcs = False
+                    # Check if scale is zero
+                    if dV == 0:
+                        continue
 
-                for dv in split(dV):
-                    sc = dv['scale']
-                    scb = dv['scale']
-                    M = []
-                    DM = []
-                    for i, (a, b) in enumerate(zip(b0, b1)): # Third index, one inner for each dimension
-                        ts = trial_sp[i]
-                        tt = test_sp[i]
-                        msx = 'xyzrs'[i]
-                        msi = dv[msx]
+                    for dv in split(dV):
+                        sc = dv['scale']
+                        scb = dv['scale']
+                        M = []
+                        DM = []
+                        for i, (a, b) in enumerate(zip(b0, b1)): # Third index, one inner for each dimension
+                            ts = trial_sp[i]
+                            tt = test_sp[i]
+                            msx = 'xyzrs'[i]
+                            msi = dv[msx]
 
-                        # assemble inner product
-                        AA = inner_product((tt, a), (ts, b), msi)
-                        M.append(AA)
-                        if not abs(AA.scale-1.) < 1e-8:
-                            sc *= AA.scale
-                            AA.scale = 1.0
+                            # assemble inner product
+                            AA = inner_product((tt, a), (ts, b), msi)
+                            M.append(AA)
+                            if not abs(AA.scale-1.) < 1e-8:
+                                sc *= AA.scale
+                                AA.scale = 1.0
 
-                        if ts.has_nonhomogeneous_bcs:
-                            tsc = ts.get_bc_basis()
-                            BB = inner_product((tt, a), (tsc, b))
-                            if not abs(BB.scale-1.) < 1e-8:
-                                scb *= BB.scale
-                                BB.scale = 1.0
-                            if BB:
-                                DM.append(BB)
-                                has_bcs = True
+                            if ts.has_nonhomogeneous_bcs:
+                                tsc = ts.get_bc_basis()
+                                BB = inner_product((tt, a), (tsc, b))
+                                if not abs(BB.scale-1.) < 1e-8:
+                                    scb *= BB.scale
+                                    BB.scale = 1.0
+                                if BB:
+                                    DM.append(BB)
+                                    has_bcs = True
+                            else:
+                                DM.append(AA)
+
+                        sc = tt.broadcast_to_ndims(np.array([sc]))
+                        if len(M) == 1: # 1D case
+                            M[0].global_index = (test_ind[test_j], trial_ind[trial_j])
+                            M[0].scale = sc[0]
+                            M[0].mixedbase = testspace
+                            A.append(M[0])
                         else:
-                            DM.append(AA)
-
-                    sc = tt.broadcast_to_ndims(np.array([sc]))
-                    if len(M) == 1: # 1D case
-                        M[0].global_index = (test_ind[test_j], trial_ind[trial_j])
-                        M[0].scale = sc[0]
-                        M[0].mixedbase = testspace
-                        A.append(M[0])
-                    else:
-                        A.append(TPMatrix(M, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
-                    if has_bcs:
-                        if len(DM) == 1: # 1D case
-                            DM[0].global_index = (test_ind[test_j], trial_ind[trial_j])
-                            DM[0].scale = scb
-                            DM[0].mixedbase = testspace
-                            A.append(DM[0])
-                        else:
-                            A.append(TPMatrix(DM, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                            A.append(TPMatrix(M, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                        if has_bcs:
+                            if len(DM) == 1: # 1D case
+                                DM[0].global_index = (test_ind[test_j], trial_ind[trial_j])
+                                DM[0].scale = scb
+                                DM[0].mixedbase = testspace
+                                A.append(DM[0])
+                            else:
+                                A.append(TPMatrix(DM, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
 
     # At this point A contains all matrices of the form. The length of A is
     # the number of inner products. For each index into A there are ndim 1D

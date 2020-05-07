@@ -77,7 +77,6 @@ def div(test):
         test._indices = ind
         return test
 
-
 def grad(test):
     """Return grad(test)
 
@@ -108,7 +107,7 @@ def grad(test):
         return test
 
     elif sc.flatten().prod() == 1:
-        # If expr taken gradient of has scale 1
+        # If expr taken gradient of has scale 1 (no need to differentiate scale)
         if test.expr_rank() == 0: # if gradient of scalar
             if coors.is_orthogonal:
                 test._terms = np.repeat(terms, ndim, axis=0)
@@ -124,7 +123,7 @@ def grad(test):
                 test._terms = terms.repeat(ndim, axis=0).repeat(ndim, axis=1)
                 test._scales = sc.repeat(ndim, axis=0).repeat(ndim, axis=1)
                 test._indices = ind.repeat(ndim, axis=0).repeat(ndim, axis=1)
-                g = coors.get_contravariant_metric_tensor()
+                gt = coors.get_contravariant_metric_tensor()
                 elms = test._terms.shape[1] // ndim
                 # There are elms scalar elements that we take the gradient of
                 # Each element gives ndim*ndim new terms
@@ -132,7 +131,7 @@ def grad(test):
                     for k in range(elms):
                         for j in range(ndim):
                             test._terms[i, k*ndim+j, j] += 1
-                            test._scales[i, k*ndim+j] *= g[i%ndim, j] # g[i, j] = g[j, i]
+                            test._scales[i, k*ndim+j] *= gt[i%ndim, j] # g[i, j] = g[j, i]
                             test._scales[i, k*ndim+j] = sp.simplify(test._scales[i, k*ndim+j])
         else:
             raise NotImplementedError('Cannot (yet) take gradient of tensor in curvilinear coordinates')
@@ -146,31 +145,32 @@ def grad(test):
                 test._terms = terms.repeat(ndim, axis=0).repeat(2, axis=1)
                 test._scales = sc.repeat(ndim, axis=0).repeat(2, axis=1)
                 test._indices = ind.repeat(ndim, axis=0).repeat(2, axis=1)
-                psi = test.function_space().coors.coordinates[0]
+                psi = coors.coordinates[0]
                 elms = test._terms.shape[1] // 2
+                gt = coors.get_contravariant_metric_tensor()
                 for i in range(ndim):
                     for j in range(test._terms.shape[1]):
                         if j % 2 == 0:
                             test._terms[i, j, i] += 1
-                            test._scales[i, j] *= g[i, i]
+                            test._scales[i, j] *= gt[i, i]
                         else:
-                            test._scales[i, j] = test._scales[i, j].diff(psi[i], 1) * g[i, i]
+                            test._scales[i, j] = test._scales[i, j].diff(psi[i], 1) * gt[i, i]
 
             else:
                 test._terms = terms.repeat(ndim, axis=0).repeat(ndim*2, axis=1)
                 test._scales = sc.repeat(ndim, axis=0).repeat(ndim*2, axis=1)
                 test._indices = ind.repeat(ndim, axis=0).repeat(ndim*2, axis=1)
-                psi = test.function_space().coors.coordinates[0]
-                g = coors.get_contravariant_metric_tensor()
+                psi = coors.coordinates[0]
+                gt = coors.get_contravariant_metric_tensor()
                 elms = test._terms.shape[1] // (2*ndim)
                 for i in range(ndim):
                     for k in range(elms):
                         for j in range(ndim):
                             if k % 2 == 0:
                                 test._terms[i, k*ndim+j, j] += 1
-                                test._scales[i, k*ndim+j] *= g[i, j]
+                                test._scales[i, k*ndim+j] *= gt[i, j]
                             else:
-                                test._scales[i, k*ndim+j] = test._scales[i, k*ndim+j].diff(psi[j], 1) * g[i, j]
+                                test._scales[i, k*ndim+j] = test._scales[i, k*ndim+j].diff(psi[j], 1) * gt[i, j]
         else:
             raise NotImplementedError('Cannot (yet) take gradient of tensor in curvilinear coordinates')
 
@@ -195,8 +195,9 @@ def Dx(test, x, k=1):
 
     test = copy.copy(test)
     ndim = test.dimensions
+    coors = test.function_space().coors
 
-    if test.function_space().coors.is_cartesian:
+    if coors.is_cartesian:
         v = test.terms().copy()
         v[..., x] += k
         test._terms = v
@@ -206,7 +207,7 @@ def Dx(test, x, k=1):
         v = test._terms = np.repeat(test.terms(), 2, axis=1)
         sc = test._scales = np.repeat(test.scales(), 2, axis=1)
         test._indices = np.repeat(test.indices(), 2, axis=1)
-        psi = test.function_space().coors.coordinates[0]
+        psi = coors.coordinates[0]
         for i in range(v.shape[1]):
             if i % 2 == 0:
                 v[:, i, x] += k

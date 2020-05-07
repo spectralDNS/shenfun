@@ -19,7 +19,7 @@ theta, r = psi = sp.symbols('x,y', real=True, positive=True)
 rv = (r*sp.cos(theta), r*sp.sin(theta))
 
 N = 20
-by_parts = True
+by_parts = False
 L0 = Basis(N, 'L', bc='Biharmonic', domain=(0, np.pi/2))
 L1 = Basis(N, 'L', bc='Biharmonic', domain=(0.5, 1))
 T = TensorProductSpace(comm, (L0, L1), axes=(1, 0), coordinates=(psi, rv))
