@@ -359,7 +359,7 @@ class ShenDirichletBasis(LegendreBase):
         output_array[:] = leg.legval(x, u[:-2]*self._factor)
         w_hat[2:] = u[:-2]*self._factor
         output_array -= leg.legval(x, w_hat)
-        output_array += 0.5*(u[-1]*(1+x)+u[-2]*(1-x))
+        output_array += 0.5*(u[-1]*(1+x) + u[-2]*(1-x))
         return output_array
 
     def forward(self, input_array=None, output_array=None, fast_transform=False):
@@ -404,6 +404,17 @@ class ShenDirichletBasis(LegendreBase):
         return BCBasis(self.N, quad=self.quad, domain=self.domain,
                        scaled=self._scaled, coordinates=self.coors.coordinates)
 
+    def get_refined(self, N):
+        return ShenDirichletBasis(N,
+                                  quad=self.quad,
+                                  domain=self.domain,
+                                  dtype=self.dtype,
+                                  padding_factor=self.padding_factor,
+                                  dealias_direct=self.dealias_direct,
+                                  coordinates=self.coors.coordinates,
+                                  bc=self.bc.bc,
+                                  scaled=self._scaled)
+
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         return ShenDirichletBasis(self.N,
                                   quad=self.quad,
@@ -412,7 +423,8 @@ class ShenDirichletBasis(LegendreBase):
                                   dealias_direct=dealias_direct,
                                   domain=self.domain,
                                   coordinates=self.coors.coordinates,
-                                  bc=self.bc.bc)
+                                  bc=self.bc.bc,
+                                  scaled=self._scaled)
 
 @inheritdocstrings
 class ShenNeumannBasis(LegendreBase):
@@ -482,7 +494,7 @@ class ShenNeumannBasis(LegendreBase):
         return output
 
     def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
-        f = sympy.legendre(i, x)-(i*(i+1))/((i+2)*(i+3))*sympy.legendre(i+2, x)
+        f = sympy.legendre(i, x) - (i*(i+1))/((i+2)*(i+3))*sympy.legendre(i+2, x)
         return f
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -505,16 +517,6 @@ class ShenNeumannBasis(LegendreBase):
             basis = basis.deriv(k)
         output_array[:] = basis(x)
         return output_array
-
-    #def evaluate_expansion_all(self, input_array, output_array): # pragma: no cover
-    #    # Not used since there are no fast transforms for Legendre
-    #    w_hat = work[(input_array, 0)]
-    #    self.set_factor_array(input_array)
-    #    s0 = self.sl[slice(0, -2)]
-    #    s1 = self.sl[slice(2, None)]
-    #    w_hat[s0] = input_array[s0]
-    #    w_hat[s1] -= self._factor*input_array[s0]
-    #    output_array = self.LT.backward(w_hat)
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
@@ -565,6 +567,26 @@ class ShenNeumannBasis(LegendreBase):
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
+
+    def get_refined(self, N):
+        return ShenNeumannBasis(N,
+                                quad=self.quad,
+                                domain=self.domain,
+                                dtype=self.dtype,
+                                padding_factor=self.padding_factor,
+                                dealias_direct=self.dealias_direct,
+                                coordinates=self.coors.coordinates,
+                                mean=self.mean)
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return ShenNeumannBasis(self.N,
+                                quad=self.quad,
+                                domain=self.domain,
+                                dtype=self.dtype,
+                                padding_factor=padding_factor,
+                                dealias_direct=dealias_direct,
+                                coordinates=self.coors.coordinates,
+                                mean=self.mean)
 
 @inheritdocstrings
 class ShenBiharmonicBasis(LegendreBase):
@@ -732,6 +754,26 @@ class ShenBiharmonicBasis(LegendreBase):
     def get_bc_basis(self):
         return BCBiharmonicBasis(self.N, quad=self.quad, domain=self.domain,
                                  coordinates=self.coors.coordinates)
+
+    def get_refined(self, N):
+        return ShenBiharmonicBasis(N,
+                                   quad=self.quad,
+                                   domain=self.domain,
+                                   dtype=self.dtype,
+                                   padding_factor=self.padding_factor,
+                                   dealias_direct=self.dealias_direct,
+                                   coordinates=self.coors.coordinates,
+                                   bc=self.bc.bc)
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return ShenBiharmonicBasis(self.N,
+                                   quad=self.quad,
+                                   domain=self.domain,
+                                   dtype=self.dtype,
+                                   padding_factor=padding_factor,
+                                   dealias_direct=dealias_direct,
+                                   coordinates=self.coors.coordinates,
+                                   bc=self.bc.bc)
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
@@ -904,14 +946,6 @@ class UpperDirichletBasis(LegendreBase):
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return ShenDirichletBasis(self.N,
-                                  quad=self.quad,
-                                  dtype=self.dtype,
-                                  padding_factor=padding_factor,
-                                  dealias_direct=dealias_direct,
-                                  coordinates=self.coors.coordinates,
-                                  domain=self.domain)
 
 @inheritdocstrings
 class ShenBiPolarBasis(LegendreBase):
@@ -1057,14 +1091,6 @@ class ShenBiPolarBasis(LegendreBase):
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return ShenBiPolarBasis(self.N,
-                                quad=self.quad,
-                                dtype=self.dtype,
-                                padding_factor=padding_factor,
-                                dealias_direct=dealias_direct,
-                                coordinates=self.coors.coordinates,
-                                domain=self.domain)
 
 @inheritdocstrings
 class ShenBiPolar0Basis(LegendreBase):

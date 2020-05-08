@@ -386,7 +386,7 @@ class TensorProductSpace(PFFT):
                                            dealias_direct=dealias_direct)
                         for axis, base in enumerate(self.bases)]
         return TensorProductSpace(self.comm, padded_bases,
-                                  dtype=self.forward.output_array.dtype,
+                                  dtype=self.forward.input_array.dtype,
                                   backward_from_pencil=self.forward.output_pencil,
                                   coordinates=self.coors.coordinates)
 
@@ -398,6 +398,7 @@ class TensorProductSpace(PFFT):
         refined_bases = [base.get_refined(N[axis])
                          for axis, base in enumerate(self.bases)]
         return TensorProductSpace(self.comm, refined_bases, axes=self.axes,
+                                  dtype=self.forward.input_array.dtype,
                                   coordinates=self.coors.coordinates)
 
     def convolve(self, a_hat, b_hat, ab_hat):
@@ -862,7 +863,9 @@ class TensorProductSpace(PFFT):
         ortho = []
         for base in self.bases:
             ortho.append(base.get_orthogonal())
-        return TensorProductSpace(self.subcomm, ortho, axes=self.axes)
+        return TensorProductSpace(self.subcomm, ortho, axes=self.axes,
+                                  dtype=self.forward.input_array.dtype,
+                                  coordinates=self.coors.coordinates)
 
     @property
     def is_composite_space(self):

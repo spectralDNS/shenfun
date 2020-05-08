@@ -463,14 +463,6 @@ class ShenDirichletBasis(ChebyshevBase):
     def has_nonhomogeneous_bcs(self):
         return self.bc.has_nonhomogeneous_bcs()
 
-    def get_refined(self, N):
-        return self.__class__(N, quad=self.quad,
-                              domain=self.domain, dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              bc=self.bc.bc, scaled=self._scaled,
-                              coordinates=self.coors.coordinates)
-
     def _composite_basis(self, V, argument=0):
         P = np.zeros_like(V)
         P[:, :-2] = V[:, :-2] - V[:, 2:]
@@ -633,15 +625,27 @@ class ShenDirichletBasis(ChebyshevBase):
     def get_bc_basis(self):
         return BCBasis(self.N, quad=self.quad, domain=self.domain, coordinates=self.coors.coordinates)
 
+    def get_refined(self, N):
+        return ShenDirichletBasis(N,
+                                  quad=self.quad,
+                                  domain=self.domain,
+                                  dtype=self.dtype,
+                                  padding_factor=self.padding_factor,
+                                  dealias_direct=self.dealias_direct,
+                                  coordinates=self.coors.coordinates,
+                                  bc=self.bc.bc,
+                                  scaled=self._scaled)
+
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         return ShenDirichletBasis(self.N,
                                   quad=self.quad,
+                                  domain=self.domain,
+                                  dtype=self.dtype,
                                   padding_factor=padding_factor,
                                   dealias_direct=dealias_direct,
-                                  dtype=self.dtype,
-                                  domain=self.domain,
+                                  coordinates=self.coors.coordinates,
                                   bc=self.bc.bc,
-                                  coordinates=self.coors.coordinates)
+                                  scaled=self._scaled)
 
     def _truncation_forward(self, padded_array, trunc_array):
         if not id(trunc_array) == id(padded_array):
@@ -713,14 +717,6 @@ class ShenNeumannBasis(ChebyshevBase):
     @staticmethod
     def boundary_condition():
         return 'Neumann'
-
-    def get_refined(self, N):
-        return self.__class__(N, quad=self.quad,
-                              domain=self.domain, dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              mean=self.mean)
 
     def _composite_basis(self, V, argument=0):
         assert self.N == V.shape[1]
@@ -873,6 +869,26 @@ class ShenNeumannBasis(ChebyshevBase):
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
+    def get_refined(self, N):
+        return ShenNeumannBasis(N,
+                                quad=self.quad,
+                                domain=self.domain,
+                                dtype=self.dtype,
+                                padding_factor=self.padding_factor,
+                                dealias_direct=self.dealias_direct,
+                                coordinates=self.coors.coordinates,
+                                mean=self.mean)
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return ShenNeumannBasis(self.N,
+                                quad=self.quad,
+                                domain=self.domain,
+                                dtype=self.dtype,
+                                padding_factor=padding_factor,
+                                dealias_direct=dealias_direct,
+                                coordinates=self.coors.coordinates,
+                                mean=self.mean)
+
 
 @inheritdocstrings
 class ShenBiharmonicBasis(ChebyshevBase):
@@ -988,8 +1004,8 @@ class ShenBiharmonicBasis(ChebyshevBase):
         s = self.sl[self.slice()]
         s2 = self.sl[slice(2, self.N-2)]
         s4 = self.sl[slice(4, self.N)]
-        output[s] += self._factor1 * Tk[s2]
-        output[s] += self._factor2 * Tk[s4]
+        output[s] += self._factor1*Tk[s2]
+        output[s] += self._factor2*Tk[s4]
 
     def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
         if input_array is not None:
@@ -1085,6 +1101,26 @@ class ShenBiharmonicBasis(ChebyshevBase):
 
     def get_bc_basis(self):
         return BCBiharmonicBasis(self.N, quad=self.quad, domain=self.domain, coordinates=self.coors.coordinates)
+
+    def get_refined(self, N):
+        return ShenBiharmonicBasis(N,
+                                   quad=self.quad,
+                                   domain=self.domain,
+                                   dtype=self.dtype,
+                                   padding_factor=self.padding_factor,
+                                   dealias_direct=self.dealias_direct,
+                                   coordinates=self.coors.coordinates,
+                                   bc=self.bc.bc)
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return ShenBiharmonicBasis(self.N,
+                                   quad=self.quad,
+                                   domain=self.domain,
+                                   dtype=self.dtype,
+                                   padding_factor=padding_factor,
+                                   dealias_direct=dealias_direct,
+                                   coordinates=self.coors.coordinates,
+                                   bc=self.bc.bc)
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
@@ -1188,14 +1224,6 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
     def boundary_condition():
         return 'Neumann2'
 
-    def get_refined(self, N):
-        return self.__class__(N, quad=self.quad,
-                              domain=self.domain, dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              mean=self.mean)
-
     def _composite_basis(self, V, argument=0):
         assert self.N == V.shape[1]
         P = np.zeros_like(V)
@@ -1242,7 +1270,7 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
         self.set_factor_array(output)
         sm2 = self.sl[slice(0, -2)]
         s2p = self.sl[slice(2, None)]
-        output[sm2] -= self._factor * output[s2p]
+        output[sm2] -= self._factor*output[s2p]
 
     def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
         if input_array is not None:
@@ -1331,6 +1359,25 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
+    def get_refined(self, N):
+        return SecondNeumannBasis(N,
+                                  quad=self.quad,
+                                  domain=self.domain,
+                                  dtype=self.dtype,
+                                  padding_factor=self.padding_factor,
+                                  dealias_direct=self.dealias_direct,
+                                  coordinates=self.coors.coordinates,
+                                  mean=self.mean)
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return SecondNeumannBasis(self.N,
+                                  quad=self.quad,
+                                  domain=self.domain,
+                                  dtype=self.dtype,
+                                  padding_factor=padding_factor,
+                                  dealias_direct=dealias_direct,
+                                  coordinates=self.coors.coordinates,
+                                  mean=self.mean)
 
 @inheritdocstrings
 class UpperDirichletBasis(ChebyshevBase):
@@ -1385,14 +1432,6 @@ class UpperDirichletBasis(ChebyshevBase):
     @property
     def has_nonhomogeneous_bcs(self):
         return False
-
-    def get_refined(self, N):
-        return self.__class__(N, quad=self.quad,
-                              domain=self.domain, dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              scaled=self._scaled)
 
     def _composite_basis(self, V, argument=0):
         P = np.zeros_like(V)
@@ -1532,14 +1571,6 @@ class UpperDirichletBasis(ChebyshevBase):
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return UpperDirichletBasis(self.N,
-                                   quad=self.quad,
-                                   padding_factor=padding_factor,
-                                   dealias_direct=dealias_direct,
-                                   coordinates=self.coors.coordinates,
-                                   domain=self.domain)
 
 
 @inheritdocstrings
@@ -1696,14 +1727,6 @@ class ShenBiPolarBasis(ChebyshevBase):
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return ShenBiPolarBasis(self.N,
-                                quad=self.quad,
-                                dtype=self.dtype,
-                                padding_factor=padding_factor,
-                                dealias_direct=dealias_direct,
-                                coordinates=self.coors.coordinates,
-                                domain=self.domain)
 
 @inheritdocstrings
 class DirichletNeumannBasis(ChebyshevBase):
@@ -1759,36 +1782,27 @@ class DirichletNeumannBasis(ChebyshevBase):
     def has_nonhomogeneous_bcs(self):
         return False
 
-    def get_refined(self, N):
-        return self.__class__(N, quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              scaled=self._scaled)
-
     def set_factor_arrays(self, v):
         """Set intermediate factor arrays"""
         s = self.sl[self.slice()]
         if not self._factor1.shape == v[s].shape:
             k = self.wavenumbers().astype(float)
-            self._factor1 = ((-k**2 + (k + 2)**2)/((k + 1)**2 + (k + 2)**2)).astype(float)
-            self._factor2 = ((-k**2 - (k + 1)**2)/((k + 1)**2 + (k + 2)**2)).astype(float)
+            self._factor1 = ((-k**2 + (k+2)**2)/((k+1)**2 + (k+2)**2)).astype(float)
+            self._factor2 = ((-k**2 - (k+1)**2)/((k+1)**2 + (k+2)**2)).astype(float)
 
     def _composite_basis(self, V, argument=0):
         P = np.zeros_like(V)
         k = np.arange(V.shape[1]).astype(np.float)[:-2]
         P[:, :-2] = (V[:, :-2] +
-                     ((-k**2 + (k + 2)**2)/((k + 1)**2 + (k + 2)**2))*V[:, 1:-1] +
-                     ((-k**2 - (k + 1)**2)/((k + 1)**2 + (k + 2)**2))*V[:, 2:])
+                     ((-k**2 + (k+2)**2)/((k+1)**2 + (k+2)**2))*V[:, 1:-1] +
+                     ((-k**2 - (k+1)**2)/((k+1)**2 + (k+2)**2))*V[:, 2:])
         return P
 
     def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         assert i < self.N-2
-        return (sympy.chebyshevt(i, x)+
-               ((-i**2+(i+2)**2)/((i+1)**2+(i+2)**2))*sympy.chebyshevt(i+1, x)+
-               ((-i**2-(i+1)**2)/((i+1)**2+(i+2)**2))*sympy.chebyshevt(i+2, x))
+        return (sympy.chebyshevt(i, x) +
+                ((-i**2 + (i+2)**2) / ((i+1)**2 + (i+2)**2))*sympy.chebyshevt(i+1, x)+
+                ((-i**2 - (i+1)**2) / ((i+1)**2 + (i+2)**2))*sympy.chebyshevt(i+2, x))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -1796,8 +1810,8 @@ class DirichletNeumannBasis(ChebyshevBase):
             output_array = np.zeros(x.shape)
         w = np.arccos(x)
         output_array[:] = (np.cos(i*w)+
-                           ((-i**2+(i+2)**2)/((i+1)**2+(i+2)**2))*np.cos((i+1)*w)+
-                           ((-i**2-(i+1)**2)/((i+1)**2+(i+2)**2))*np.cos((i+2)*w))
+                           ((-i**2 + (i+2)**2)/((i+1)**2 + (i+2)**2))*np.cos((i+1)*w)+
+                           ((-i**2 - (i+1)**2)/((i+1)**2 + (i+2)**2))*np.cos((i+2)*w))
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -1807,7 +1821,7 @@ class DirichletNeumannBasis(ChebyshevBase):
             output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
         basis = np.zeros(self.shape(True))
-        basis[np.array([i, i+1, i+2])] = (1,((-i**2+(i+2)**2)/((i+1)**2+(i+2)**2)), ((-i**2-(i+1)**2)/((i+1)**2+(i+2)**2)))
+        basis[np.array([i, i+1, i+2])] = (1,((-i**2 + (i+2)**2) / ((i+1)**2 + (i+2)**2)), ((-i**2 - (i+1)**2) / ((i+1)**2 + (i+2)**2)))
         basis = n_cheb.Chebyshev(basis)
         if k > 0:
             basis = basis.deriv(k)
@@ -1931,14 +1945,6 @@ class DirichletNeumannBasis(ChebyshevBase):
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return DirichletNeumannBasis(self.N,
-                                     quad=self.quad,
-                                     padding_factor=padding_factor,
-                                     dealias_direct=dealias_direct,
-                                     coordinates=self.coors.coordinates,
-                                     domain=self.domain)
 
 
 @inheritdocstrings

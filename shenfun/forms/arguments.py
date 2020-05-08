@@ -824,10 +824,12 @@ class ShenfunBaseArray(DistArray):
                 # Evaluate sympy function on entire mesh
                 x = buffer.free_symbols.pop()
                 buffer = sp.lambdify(x, buffer)
-                buffer = buffer(space.mesh())
+                buf = buffer(space.mesh()).astype(space.forward.input_array.dtype)
+                buffer = Array(space)
+                buffer[:] = buf
                 if cls.__name__ == 'Function':
-                    buf = np.empty_like(space.forward.output_array)
-                    buf = space.forward(buffer, buf)
+                    buf = Function(space)
+                    buf = buffer.forward(buf)
                     buffer = buf
 
             obj = DistArray.__new__(cls, shape, buffer=buffer, dtype=dtype,
@@ -856,10 +858,12 @@ class ShenfunBaseArray(DistArray):
                 j = 'xyzrs'.index(str(sym))
                 m.append(mesh[j])
 
-            buffer = sp.lambdify(sym0, buffer, modules=['numpy', {'cot': cot, 'Ynm': Ynm}])(*m)
+            buf = sp.lambdify(sym0, buffer, modules=['numpy', {'cot': cot, 'Ynm': Ynm}])(*m).astype(space.forward.input_array.dtype)
+            buffer = Array(space)
+            buffer[:] = buf
             if cls.__name__ == 'Function':
-                buf = np.empty_like(space.forward.output_array)
-                buf = space.forward(buffer, buf)
+                buf = Function(space)
+                buf = buffer.forward(buf)
                 buffer = buf
 
         global_shape = space.global_shape(forward_output)

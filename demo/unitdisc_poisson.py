@@ -24,7 +24,7 @@ rv = (r*sp.cos(theta), r*sp.sin(theta))
 alpha = 2
 
 # Manufactured solution
-ue = (r*(1-r))**2*sp.cos(8*theta)-0.1*(r-1)
+ue = (r*(1-r))**2*sp.cos(2*theta)-0.0*(r-1)
 f = -ue.diff(r, 2) - (1/r)*ue.diff(r, 1) - (1/r**2)*ue.diff(theta, 2) + alpha*ue
 
 N = 32
@@ -86,10 +86,34 @@ comm.Bcast(u0_hat, root=0)
 # Transform back to real space. Broadcast 1D solution
 sl = T.local_slice(False)
 uj = u_hat.backward() + u0_hat.backward()[:, sl[1]]
-ue = Array(T, buffer=ue)
+uq = Array(T, buffer=ue)
 X = T.local_mesh(True)
-print('Error =', np.linalg.norm(uj-ue))
-assert np.linalg.norm(uj-ue) < 1e-8
+print('Error =', np.linalg.norm(uj-uq))
+assert np.linalg.norm(uj-uq) < 1e-8
+
+# Find and plot gradient of u. For this we need a space without
+# boundary conditions, and a vector space
+LT = Basis(N, 'L', domain=(0, 1))
+TT = TensorProductSpace(comm, (F, LT), axes=(1, 0), coordinates=(psi, rv))
+V = VectorTensorProductSpace(TT)
+# Get solution on space with no bc
+ua = Array(TT, buffer=uj)
+uh = ua.forward()
+dv = project(grad(uh), V)
+du = dv.backward()
+# The gradient du now contains the contravariant components of basis
+# b. Note that basis b is not normalized (it is not a unity vector)
+# To get unity vector (regular polar unit vectors), do
+#    e = b / T.hi[:, None]
+b = T.coors.get_covariant_basis()
+ui, vi = TT.local_mesh(True)
+bij = np.array(sp.lambdify(psi, b)(ui, vi))
+# Compute Cartesian gradient
+gradu = du[0]*bij[0] + du[1]*bij[1]
+# Exact Cartesian gradient
+gradue = sp.lambdify(psi, b[0]*ue.diff(theta, 1)/r**2 + b[1]*ue.diff(r, 1))(ui, vi)
+print('Error gradient', np.linalg.norm(gradu-gradue))
+assert np.linalg.norm(gradu-gradue) < 1e-7
 
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
@@ -108,10 +132,13 @@ if 'pytest' not in os.environ:
     xp = np.vstack([xx, xx[0]])
     yp = np.vstack([yy, yy[0]])
     up = np.vstack([ur, ur[0]])
+    # For vector:
+    xi, yi = TT.local_curvilinear_mesh()
 
     # plot
     plt.figure()
     plt.contourf(xp, yp, up)
+    plt.quiver(xi, yi, gradu[0], gradu[1])
     plt.colorbar()
     plt.title('Helmholtz - unitdisc')
     plt.xticks([])
