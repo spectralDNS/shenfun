@@ -7,7 +7,7 @@ The equation to solve is
 
      (\nabla^2 u, v) = (f, v)
 
-u(-1) = 0 and u'(1) = 0
+u'(-1) = 0 and u(1) = 0
 
 """
 import os
@@ -17,12 +17,11 @@ import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
     Array, Function, Basis, dx
 
-assert len(sys.argv) == 3, 'Call with two command-line arguments'
-assert sys.argv[-1] in ('legendre', 'chebyshev')
-assert isinstance(int(sys.argv[-2]), int)
+assert len(sys.argv) == 2, 'Call with two command-line arguments'
+assert isinstance(int(sys.argv[-1]), int)
 
 # Get family from args
-family = sys.argv[-1].lower()
+family = 'legendre'
 
 # Use sympy to compute a rhs, given an analytical solution
 domain = (-1., 1.)
@@ -30,13 +29,13 @@ domain = (-1., 1.)
 x = symbols("x", real=True)
 d = 2./(domain[1]-domain[0])
 x_map = -1+(x-domain[0])*d
-ue = 1-cos(5*pi*(x_map+1)/2)
+ue = 1+cos(5*pi*(x_map+1)/2)
 fe = ue.diff(x, 2)
 
 # Size of discretization
-N = int(sys.argv[-2])
+N = int(sys.argv[-1])
 
-SD = Basis(N, family=family, bc='DirichletNeumann', domain=domain)
+SD = Basis(N, family=family, bc='NeumannDirichlet', domain=domain)
 X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)
