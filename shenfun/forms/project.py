@@ -1,6 +1,8 @@
 from copy import copy
+import types
 import numpy as np
 import sympy as sp
+from scipy.special import sph_harm
 from shenfun.tensorproductspace import TensorProductSpace, MixedTensorProductSpace
 from shenfun.matrixbase import TPMatrix
 from .arguments import Expr, TestFunction, TrialFunction, BasisFunction, \
@@ -8,6 +10,9 @@ from .arguments import Expr, TestFunction, TrialFunction, BasisFunction, \
 from .inner import inner
 
 __all__ = ('project',)
+
+cot = lambda x: 1/np.tan(x)
+Ynm = lambda n, m, x, y : sph_harm(m, n, y, x)
 
 def project(uh, T, output_array=None, fill=True, use_to_ortho=True, use_assign=True):
     r"""
@@ -72,19 +77,12 @@ def project(uh, T, output_array=None, fill=True, use_to_ortho=True, use_assign=T
     elif fill:
         output_array.fill(0)
 
-    if hasattr(uh, 'evalf'):
-        # lambdify sympy function for fast execution
-        x, y, z = sp.symbols("x,y,z", real=True)
-        uh = ({1: lambda a: sp.lambdify((x,), a, 'numpy'),
-               2: lambda a: sp.lambdify((x, y), a, 'numpy'),
-               3: lambda a: sp.lambdify((x, y, z), a, 'numpy')}[len(T)])(uh)
-
-    if hasattr(uh, '__call__'):
+    if hasattr(uh, 'free_symbols'):
         # Evaluate sympy function on entire mesh
-        if isinstance(T, (TensorProductSpace, MixedTensorProductSpace)):
-            uh = Array(T, buffer=uh(*T.local_mesh(True)).astype(T.forward.input_array.dtype))
-        else:
-            uh = Array(T, buffer=uh(T.mesh()).astype(T.forward.input_array.dtype))
+        uh = Array(T, buffer=uh)
+
+    if isinstance(uh, types.LambdaType):
+        raise NotImplementedError('Do not use lambda functions in project')
 
     if isinstance(uh, Function):
         W = uh.function_space()

@@ -1,5 +1,6 @@
 from __future__ import print_function
 from time import time
+import copy
 from itertools import product
 import pytest
 import numpy as np
@@ -204,7 +205,6 @@ def test_project(typecode, dim, ST, quad):
         (2, 1): (sin(1*z)*cos(1*x)*sin(1*np.pi*y))*(1-y**2),
         (2, 2): (sin(1*x)*cos(1*y)*sin(1*np.pi*z))*(1-z**2)
         }
-    syms = {1: (x, y), 2:(x, y, z)}
     xs = {0:x, 1:y, 2:z}
 
     for shape in product(*([sizes]*dim)):
@@ -217,40 +217,31 @@ def test_project(typecode, dim, ST, quad):
             ST0 = ST(shape[-1], quad=quad)
             bases.insert(axis, ST0)
             fft = TensorProductSpace(comm, bases, dtype=typecode, axes=axes[dim][axis])
+            dfft = fft.get_orthogonal()
             X = fft.local_mesh(True)
             ue = funcs[(dim, axis)]
-            ul = lambdify(syms[dim], ue, 'numpy')
-            uq = ul(*X).astype(typecode)
+            uq = Array(fft, buffer=ue)
             uh = Function(fft)
             uh = fft.forward(uq, uh)
             due = ue.diff(xs[axis], 1)
-            dul = lambdify(syms[dim], due, 'numpy')
-            duq = dul(*X).astype(typecode)
-            uf = project(Dx(uh, axis, 1), fft)
-            uy = Array(fft)
-            uy = fft.backward(uf, uy)
-            assert np.linalg.norm(uy-duq) < 1e-5
+            duq = Array(fft, buffer=due)
+            uf = project(Dx(uh, axis, 1), dfft).backward()
+            assert np.linalg.norm(uf-duq) < 1e-5
             for ax in (x for x in range(dim+1) if x is not axis):
                 due = ue.diff(xs[axis], 1, xs[ax], 1)
-                dul = lambdify(syms[dim], due, 'numpy')
-                duq = dul(*X).astype(typecode)
-                uf = project(Dx(Dx(uh, axis, 1), ax, 1), fft)
-                uy = Array(fft)
-                uy = fft.backward(uf, uy)
-                assert np.linalg.norm(uy-duq) < 1e-5
-                uw = project(dul, fft)
-                assert np.linalg.norm(uw-uf) < 1e-5
-                uw = project(due, fft)
-                assert np.linalg.norm(uw-uf) < 1e-5
+                duq = Array(fft, buffer=due)
+                uf = project(Dx(Dx(uh, axis, 1), ax, 1), dfft).backward()
+                assert np.linalg.norm(uf-duq) < 1e-5
 
             bases.pop(axis)
             fft.destroy()
+            dfft.destroy()
 
-lagbases_and_quads = list(product(lagBasis, lagquads))
+#lagbases_and_quads = list(product(lagBasis, lagquads))
 @pytest.mark.parametrize('typecode', 'dD')
 @pytest.mark.parametrize('dim', (1, 2))
-@pytest.mark.parametrize('ST,quad', lagbases_and_quads)
-def test_project_lag(typecode, dim, ST, quad):
+#@pytest.mark.parametrize('ST,quad', lagbases_and_quads)
+def test_project_lag(typecode, dim):
     # Using sympy to compute an analytical solution
     x, y, z = symbols("x,y,z")
     sizes = (20, 17)
@@ -262,7 +253,6 @@ def test_project_lag(typecode, dim, ST, quad):
         (2, 1): (sin(2*z)*cos(4*x)*sin(2*y))*exp(-y),
         (2, 2): (sin(2*x)*cos(4*y)*sin(2*z))*exp(-z)
         }
-    syms = {1: (x, y), 2:(x, y, z)}
     xs = {0:x, 1:y, 2:z}
 
     for shape in product(*([sizes]*dim)):
@@ -272,24 +262,27 @@ def test_project_lag(typecode, dim, ST, quad):
         bases.append(Basis(shape[-1], 'F', dtype=typecode))
 
         for axis in range(dim+1):
-            ST0 = ST(3*shape[-1], quad=quad)
-            bases.insert(axis, ST0)
+            ST1 = lagBasis[1](3*shape[-1])
+            bases.insert(axis, ST1)
             fft = TensorProductSpace(comm, bases, dtype=typecode, axes=axes[dim][axis])
+            dfft = fft.get_orthogonal()
             X = fft.local_mesh(True)
             ue = funcs[(dim, axis)]
+            due = ue.diff(xs[0], 1)
             u_h = project(ue, fft)
-            ul = lambdify(syms[dim], ue, 'numpy')
-            uq = ul(*X).astype(typecode)
+            du_h = project(due, dfft)
+            du2 = project(Dx(u_h, 0, 1), dfft)
             uf = u_h.backward()
-            assert np.linalg.norm(uq-uf) < 1e-3
+            assert np.linalg.norm(du2-du_h) < 1e-3
             bases.pop(axis)
             fft.destroy()
+            dfft.destroy()
 
-hbases_and_quads = list(product(hBasis, hquads))
+#hbases_and_quads = list(product(hBasis, hquads))
 @pytest.mark.parametrize('typecode', 'dD')
 @pytest.mark.parametrize('dim', (1, 2))
-@pytest.mark.parametrize('ST,quad', hbases_and_quads)
-def test_project_hermite(typecode, dim, ST, quad):
+#@pytest.mark.parametrize('ST,quad', hbases_and_quads)
+def test_project_hermite(typecode, dim):
     # Using sympy to compute an analytical solution
     x, y, z = symbols("x,y,z")
     sizes = (20, 19)
@@ -301,7 +294,6 @@ def test_project_hermite(typecode, dim, ST, quad):
         (2, 1): (sin(2*z)*cos(4*x)*sin(2*y))*exp(-y**2/2),
         (2, 2): (sin(2*x)*cos(4*y)*sin(2*z))*exp(-z**2/2)
         }
-    syms = {1: (x, y), 2:(x, y, z)}
     xs = {0:x, 1:y, 2:z}
 
     for shape in product(*([sizes]*dim)):
@@ -311,20 +303,21 @@ def test_project_hermite(typecode, dim, ST, quad):
         bases.append(Basis(shape[-1], 'F', dtype=typecode))
 
         for axis in range(dim+1):
-            ST0 = ST(3*shape[-1], quad=quad)
+            ST0 = hBasis[0](3*shape[-1])
             bases.insert(axis, ST0)
             fft = TensorProductSpace(comm, bases, dtype=typecode, axes=axes[dim][axis])
             X = fft.local_mesh(True)
             ue = funcs[(dim, axis)]
+            due = ue.diff(xs[0], 1)
             u_h = project(ue, fft)
-            ul = lambdify(syms[dim], ue, 'numpy')
-            uq = ul(*X).astype(typecode)
-            uf = u_h.backward()
-            assert np.linalg.norm(uq-uf) < 1e-5
+            du_h = project(due, fft)
+            du2 = project(Dx(u_h, 0, 1), fft)
+
+            assert np.linalg.norm(du_h-du2) < 1e-5
             bases.pop(axis)
             fft.destroy()
 
-
+# For Neumann
 nbases_and_quads = list(product(lBasis[2:3], lquads))+list(product(cBasis[2:3], cquads))
 @pytest.mark.parametrize('typecode', 'dD')
 @pytest.mark.parametrize('dim', (1, 2))
@@ -359,29 +352,21 @@ def test_project2(typecode, dim, ST, quad):
             bases.insert(axis, ST0)
             # Spectral space must be aligned in nonperiodic direction, hence axes
             fft = TensorProductSpace(comm, bases, dtype=typecode, axes=axes[dim][axis])
+            dfft = fft.get_orthogonal()
             X = fft.local_mesh(True)
             ue = funcs[(dim, axis)]
-            ul = lambdify(syms[dim], ue, 'numpy')
-            uq = ul(*X).astype(typecode)
-            uh = Function(fft)
-            uh = fft.forward(uq, uh)
+            uh = Function(fft, buffer=ue)
             due = ue.diff(xs[axis], 1)
-            dul = lambdify(syms[dim], due, 'numpy')
-            duq = dul(*X).astype(typecode)
-            uf = project(Dx(uh, axis, 1), fft)
-            uy = Array(fft)
-            uy = fft.backward(uf, uy)
-            assert np.allclose(uy, duq, 0, 1e-3)
+            duy = Array(fft, buffer=due)
+            duf = project(Dx(uh, axis, 1), fft).backward()
+            assert np.allclose(duy, duf, 0, 1e-3), np.linalg.norm(duy-duf)
 
             # Test also several derivatives
             for ax in (x for x in range(dim+1) if x is not axis):
                 due = ue.diff(xs[ax], 1, xs[axis], 1)
-                dul = lambdify(syms[dim], due, 'numpy')
-                duq = dul(*X).astype(typecode)
-                uf = project(Dx(Dx(uh, ax, 1), axis, 1), fft)
-                uy = Array(fft)
-                uy = fft.backward(uf, uy)
-                assert np.allclose(uy, duq, 0, 1e-3)
+                duq = Array(fft, buffer=due)
+                uf = project(Dx(Dx(uh, ax, 1), axis, 1), fft).backward()
+                assert np.allclose(uf, duq, 0, 1e-3)
             bases.pop(axis)
             fft.destroy()
 
@@ -402,39 +387,21 @@ def test_project_2dirichlet(quad):
     BB = TensorProductSpace(comm, (B0, B1))
 
     X = DD.local_mesh(True)
-    ul = lambdify((x, y), ue, 'numpy')
-    uq = Array(DD)
-    uq[:] = ul(*X)
-    uh = Function(DD)
-    uh = DD.forward(uq, uh)
-
+    uh = Function(DD, buffer=ue)
     dudx_hat = project(Dx(uh, 0, 1), BD)
-    dudx = Array(BD)
-    dudx = BD.backward(dudx_hat, dudx)
-    duedx = ue.diff(x, 1)
-    duxl = lambdify((x, y), duedx, 'numpy')
-    dx = duxl(*X)
-    assert np.allclose(dx, dudx, 0, 1e-5)
+    dx = Function(BD, buffer=ue.diff(x, 1))
+    assert np.allclose(dx, dudx_hat, 0, 1e-5)
 
-    dudy_hat = project(Dx(uh, 1, 1), DB)
-    dudy = Array(DB)
-    dudy = DB.backward(dudy_hat, dudy)
-    duedy = ue.diff(y, 1)
-    duyl = lambdify((x, y), duedy, 'numpy')
-    dy = duyl(*X)
-    assert np.allclose(dy, dudy, 0, 1e-5), np.linalg.norm(dy-dudy)
+    dudy = project(Dx(uh, 1, 1), DB).backward()
+    duedy = Array(DB, buffer=ue.diff(y, 1))
+    assert np.allclose(duedy, dudy, 0, 1e-5), np.linalg.norm(dy-dudy)
 
     us_hat = Function(BB)
-    us_hat = project(uq, BB, output_array=us_hat)
-    us = Array(BB)
-    us = BB.backward(us_hat, us)
+    uq = uh.backward()
+    us = project(uq, BB, output_array=us_hat).backward()
     assert np.allclose(us, uq, 0, 1e-5)
-    dudxy_hat = project(Dx(us_hat, 0, 1) + Dx(us_hat, 1, 1), BB)
-    dudxy = Array(BB)
-    dudxy = BB.backward(dudxy_hat, dudxy)
-    duedxy = ue.diff(x, 1) + ue.diff(y, 1)
-    duxyl = lambdify((x, y), duedxy, 'numpy')
-    dxy = duxyl(*X)
+    dudxy = project(Dx(us_hat, 0, 1) + Dx(us_hat, 1, 1), BB).backward()
+    dxy = Array(BB, buffer=ue.diff(x, 1) + ue.diff(y, 1))
     assert np.allclose(dxy, dudxy, 0, 1e-5), np.linalg.norm(dxy-dudxy)
 
 @pytest.mark.parametrize('typecode', 'dD')
@@ -505,10 +472,8 @@ def test_eval_tensor(typecode, dim, ST, quad):
             X = fft.local_mesh(True)
             ue = funcs[(dim, axis)]
             ul = lambdify(syms[dim], ue, 'numpy')
-            uu = ul(*X).astype(typecode)
             uq = ul(*points).astype(typecode)
-            u_hat = Function(fft)
-            u_hat = fft.forward(uu, u_hat)
+            u_hat = Function(fft, buffer=ue)
             t0 = time()
             result = fft.eval(points, u_hat, method=0)
             t_0 += time()-t0
@@ -523,11 +488,6 @@ def test_eval_tensor(typecode, dim, ST, quad):
             assert np.allclose(uq, result, 0, 1e-3), uq/result
             result = u_hat.eval(points)
             assert np.allclose(uq, result, 0, 1e-3)
-            ua = u_hat.backward()
-            assert np.allclose(uu, ua, 0, 1e-3)
-            ua = Array(fft)
-            ua = u_hat.backward(ua)
-            assert np.allclose(uu, ua, 0, 1e-3)
 
             bases.pop(axis)
             fft.destroy()
@@ -564,10 +524,8 @@ def test_eval_fourier(typecode, dim):
         X = fft.local_mesh(True)
         ue = funcs[dim]
         ul = lambdify(syms[dim], ue, 'numpy')
-        uu = ul(*X).astype(typecode)
         uq = ul(*points).astype(typecode)
-        u_hat = Function(fft)
-        u_hat = fft.forward(uu, u_hat)
+        u_hat = Function(fft, buffer=ue)
         t0 = time()
         result = fft.eval(points, u_hat, method=0)
         t_0 += time() - t0
@@ -701,10 +659,12 @@ if __name__ == '__main__':
     #test_transform('d', 2)
     #test_shentransform('d', 2, jbases.ShenBiharmonicBasis, 'JG')
     #test_eval_expression()
-    #test_project('d', 2, lbases.Basis, 'LG')
-    #test_project2('d', 1, lbases.ShenNeumannBasis, 'LG')
-    #test_project_2dirichlet('GL')
-    test_eval_tensor('d', 1, lbases.ShenBiPolar0Basis, 'LG')
+    #test_project('d', 2, lBasis[3], 'LG')
+    #test_project_lag('d', 2)
+    #test_project_hermite('d', 2)
+    #test_project2('d', 2, lbases.ShenNeumannBasis, 'LG')
+    test_project_2dirichlet('GL')
+    #test_eval_tensor('d', 1, lbases.ShenBiPolar0Basis, 'LG')
     #test_eval_fourier('d', 3)
     #test_inner('C', 'C')
     #test_refine()
