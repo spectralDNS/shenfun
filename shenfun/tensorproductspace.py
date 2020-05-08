@@ -386,7 +386,7 @@ class TensorProductSpace(PFFT):
                                            dealias_direct=dealias_direct)
                         for axis, base in enumerate(self.bases)]
         return TensorProductSpace(self.comm, padded_bases,
-                                  dtype=self.forward.input_array.dtype,
+                                  dtype=self.forward.output_array.dtype,
                                   backward_from_pencil=self.forward.output_pencil,
                                   coordinates=self.coors.coordinates)
 
