@@ -1697,21 +1697,6 @@ class BCBasis(LegendreBase):
         return np.array([[0.5, -0.5],
                          [0.5, 0.5]])
 
-    def addmass_matrix(self, base, coors):
-        # Curvilinear part
-        hi = coors.hi.prod()
-        msx = 'xyzrs'[base.axis]
-        if not hi == 1:
-            x = hi.free_symbols.pop()
-        else:
-            x = sympy.Symbol(msx, real=True)
-        dV = split(hi)
-        assert len(dV) == 1
-        dv = dV[0]
-        msi = dv[msx]
-        a = inner_product((base, 0), (base.get_bc_basis(), 0), msi)
-        return a
-
     def _composite_basis(self, V, argument=0):
         P = np.zeros(V.shape)
         P[:, 0] = (V[:, 0] - V[:, 1])/2
