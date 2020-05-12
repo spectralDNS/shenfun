@@ -7,7 +7,7 @@ Demo - Stokes equations
 %%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Apr 21, 2020
+:Date: May 12, 2020
 
 *Summary.* The Stokes equations describe the flow of highly viscous fluids.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Stokes
@@ -267,7 +267,7 @@ plus some other helper modules, like `Numpy <https://numpy.org>`__ and `Sympy <h
     import sys
     import numpy as np
     from mpi4py import MPI
-    from sympy import symbols, sin, cos, lambdify
+    from sympy import symbols, sin, cos
     from shenfun import *
 
 We use ``Sympy`` for the manufactured solution and ``Numpy`` for testing. MPI for
@@ -296,15 +296,6 @@ solution. The chosen solution with computed right hand sides are:
     fz = uez.diff(x, 2) + uez.diff(y, 2) + uez.diff(z, 2) - pe.diff(z, 1)
     h = uex.diff(x, 1) + uey.diff(y, 1) + uez.diff(z, 1)
     
-    # Lambdify for faster evaluation
-    ulx = lambdify((x, y, z), uex, 'numpy')
-    uly = lambdify((x, y, z), uey, 'numpy')
-    ulz = lambdify((x, y, z), uez, 'numpy')
-    flx = lambdify((x, y, z), fx, 'numpy')
-    fly = lambdify((x, y, z), fy, 'numpy')
-    flz = lambdify((x, y, z), fz, 'numpy')
-    hl  = lambdify((x, y, z), h, 'numpy')
-    pl  = lambdify((x, y, z), pe, 'numpy')
 
 Bases and tensor product spaces
 -------------------------------
@@ -476,12 +467,8 @@ defined the functions :math:`\mathbf{f}` and :math:`h`, see Sec. :ref:`sec:manso
     X = TD.local_mesh(True)
     
     # Get f and h on quad points
-    fh = Array(VQ)
+    fh = Array(VQ, buffer=(fx, fy, fz, h))
     f_, h_ = fh
-    f_[0] = flx(*X)
-    f_[1] = fly(*X)
-    f_[2] = flz(*X)
-    h_[:] = hl(*X)
     
     # Compute inner products
     fh_hat = Function(VQ)
@@ -501,10 +488,8 @@ the exact solution.
     u_, p_ = up
     
     # Exact solution
-    ux = ulx(*X)
-    uy = uly(*X)
-    uz = ulz(*X)
-    pe = pl(*X)
+    ux, uy, uz = Array(V, buffer=(uex, uey, uez))
+    pe = Array(Q, buffer=pe)
     
     error = [comm.reduce(np.linalg.norm(ux-u_[0])),
              comm.reduce(np.linalg.norm(uy-u_[1])),
