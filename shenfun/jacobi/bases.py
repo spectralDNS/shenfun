@@ -123,7 +123,7 @@ class JacobiBase(SpectralBase):
         return self.__class__(self.N,
                               quad=self.quad,
                               domain=self.domain,
-                              dtype=dtype,
+                              dtype=self.dtype,
                               padding_factor=padding_factor,
                               dealias_direct=dealias_direct,
                               coordinates=self.coors.coordinates,
@@ -153,8 +153,13 @@ class JacobiBase(SpectralBase):
 
     def jacobi(self, x, alpha, beta, N):
         V = np.zeros((x.shape[0], N))
-        for n in range(N):
-            V[:, n] = eval_jacobi(n, alpha, beta, x)
+        if mode == 'numpy':
+            for n in range(N):
+                V[:, n] = eval_jacobi(n, alpha, beta, x)
+        else:
+            X = sp.symbols('x', real=True)
+            for n in range(N):
+                V[:, n] = sp.lambdify(X, sp.jacobi(n, alpha, beta, X), 'mpmath')(x)
         return V
 
     def derivative_jacobi(self, x, alpha, beta, k=1):
@@ -170,42 +175,6 @@ class JacobiBase(SpectralBase):
 
     def vandermonde(self, x):
         return self.jacobi(x, self.alpha, self.beta, self.N)
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        output_array = eval_jacobi(i, self.alpha, self.beta, x, out=output_array)
-        return output_array
-
-    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
-        # Overload always using numpy mode here
-        if x is None:
-            x = self.mesh(False, False)
-            #x = self.points_and_weights(mode=mode)[0]
-        if x.dtype == 'O':
-            x = np.array(x, dtype=np.float)
-        return self.derivative_jacobi(x, self.alpha, self.beta, k)
-        #V = np.zeros((x.shape[0], self.N))
-        #for i in range(self.N):
-        #    V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
-        #return V
-
-    def evaluate_basis_all(self, x=None, argument=0):
-        if x is None:
-            x = self.mesh(False, False)
-        return self.vandermonde(x)
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        if x is None:
-            x = self.mesh(False, False)
-            #x = self.points_and_weights(mode='mpmath')[0]
-        dj = np.prod(np.array([i+self.alpha+self.beta+1+j for j in range(k)]))
-        return dj/2**k*eval_jacobi(i-k, self.alpha+k, self.beta+k, x)
-        #X = sp.symbols('x', real=True)
-        #f = sp.jacobi(i, self.alpha, self.beta, X)
-        #output_array[:] = sp.lambdify(X, f.diff(X, k), 'mpmath')(x)
-        #return output_array
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
@@ -269,16 +238,6 @@ class Basis(JacobiBase):
                             coordinates=coordinates)
         self.plan(int(N*padding_factor), 0, dtype, {})
 
-    def get_refined(self, N):
-        return self.__class__(N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              alpha=self.alpha, beta=self.beta)
-
     @property
     def is_orthogonal(self):
         return True
@@ -288,6 +247,52 @@ class Basis(JacobiBase):
 
     def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         return sp.jacobi(i, self.alpha, self.beta, x)
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        if mode == 'numpy':
+            output_array = eval_jacobi(i, self.alpha, self.beta, x, out=output_array)
+        else:
+            X = sp.symbols('x', real=True)
+            f = self.sympy_basis(i, X)
+            output_array[:] = sp.lambdify(X, f, 'mpmath')(x)
+        return output_array
+
+    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
+        if x is None:
+            x = self.mpmath_points_and_weights(mode=mode)[0]
+        #if x.dtype == 'O':
+        #    x = np.array(x, dtype=self.dtype)
+        if mode == 'numpy':
+            return self.derivative_jacobi(x, self.alpha, self.beta, k)
+        else:
+            V = np.zeros((x.shape[0], self.N))
+            for i in range(self.N):
+                V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
+        return V
+
+    def evaluate_basis_all(self, x=None, argument=0):
+        if x is None:
+            x = self.mpmath_points_and_weights()[0]
+        return self.vandermonde(x)
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        if x is None:
+            x = self.points_and_weights(mode=mode)[0]
+        #x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape, dtype=self.dtype)
+
+        if mode == 'numpy':
+            dj = np.prod(np.array([i+self.alpha+self.beta+1+j for j in range(k)]))
+            output_array[:] = dj/2**k*eval_jacobi(i-k, self.alpha+k, self.beta+k, x)
+        else:
+            X = sp.symbols('x', real=True)
+            f = sp.jacobi(i, self.alpha, self.beta, X)
+            output_array[:] = sp.lambdify(X, f.diff(X, k), 'mpmath')(x)
+        return output_array
 
 
 class ShenDirichletBasis(JacobiBase):
@@ -379,7 +384,7 @@ class ShenDirichletBasis(JacobiBase):
         if x is None:
             x = self.mpmath_points_and_weights()[0]
         if output_array is None:
-            output_array = np.zeros(x.shape)
+            output_array = np.zeros(x.shape, dtype=self.dtype)
         X = sp.symbols('x', real=True)
         f = self.sympy_basis(i, X)
         output_array[:] = sp.lambdify(X, f.diff(X, k), mode)(x)
@@ -388,22 +393,27 @@ class ShenDirichletBasis(JacobiBase):
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
-            output_array = np.zeros(x.shape)
-        #output_array = (1-x**2)*eval_jacobi(i, -self.alpha, -self.beta, x, out=output_array)
-        mmode = 'mpmath' if x.dtype == 'O' else 'numpy'
-        X = sp.symbols('x', real=True)
-        f = self.sympy_basis(i, X)
-        #f = (1-X**2)*sp.jacobi(i, 1, 1, X)
-        output_array[:] = sp.lambdify(X, f, mmode)(x)
+            output_array = np.zeros(x.shape, dtype=self.dtype)
+        if mode == 'numpy':
+            output_array = (1-x**2)*eval_jacobi(i, -self.alpha, -self.beta, x, out=output_array)
+        else:
+            X = sp.symbols('x', real=True)
+            f = self.sympy_basis(i, X)
+            output_array[:] = sp.lambdify(X, f, 'mpmath')(x)
         return output_array
 
     def evaluate_basis_all(self, x=None, argument=0):
-        if x is None:
-            x = self.mpmath_points_and_weights()[0]
-        V = np.zeros((x.shape[0], self.N))
-        #V[:, :-2] = self.jacobi(x, -self.alpha, -self.beta, self.N-2)*(1-x**2)[:, np.newaxis]
-        for i in range(self.N-2):
-            V[:, i] = self.evaluate_basis(x, i, output_array=V[:, i])
+        if mode == 'numpy':
+            if x is None:
+                x = self.mesh(False, False)
+            V = np.zeros((x.shape[0], self.N))
+            V[:, :-2] = self.jacobi(x, 1, 1, self.N-2)*(1-x**2)[:, np.newaxis]
+        else:
+            if x is None:
+                x = self.mpmath_points_and_weights()[0]
+            V = np.zeros((x.shape[0], self.N))
+            for i in range(self.N-2):
+                V[:, i] = self.evaluate_basis(x, i, output_array=V[:, i])
         return V
 
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
@@ -513,7 +523,7 @@ class ShenBiharmonicBasis(JacobiBase):
         if x is None:
             x = self.mpmath_points_and_weights()[0]
         if output_array is None:
-            output_array = np.zeros(x.shape)
+            output_array = np.zeros(x.shape, dtype=self.dtype)
         X = sp.symbols('x', real=True)
         f = self.sympy_basis(i, X)
         output_array[:] = sp.lambdify(X, f.diff(X, k), mode)(x)
@@ -523,14 +533,26 @@ class ShenBiharmonicBasis(JacobiBase):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        output_array[:] = (1-x**2)**2*eval_jacobi(i, 2, 2, x, out=output_array)
+        if mode == 'numpy':
+            output_array[:] = (1-x**2)**2*eval_jacobi(i, 2, 2, x, out=output_array)
+        else:
+            X = sp.symbols('x', real=True)
+            f = self.sympy_basis(i, X)
+            output_array[:] = sp.lambdify(X, f, 'mpmath')(x)
         return output_array
 
     def evaluate_basis_all(self, x=None, argument=0):
-        if x is None:
-            x = self.mesh(False, False)
-        V = np.zeros((x.shape[0], self.N))
-        V[:, :-4] = self.jacobi(x, 2, 2, self.N-4)*((1-x**2)**2)[:, np.newaxis]
+        if mode == 'numpy':
+            if x is None:
+                x = self.mesh(False, False)
+            V = np.zeros((x.shape[0], self.N))
+            V[:, :-4] = self.jacobi(x, 2, 2, self.N-4)*((1-x**2)**2)[:, np.newaxis]
+        else:
+            if x is None:
+                x = self.mpmath_points_and_weights()[0]
+            V = np.zeros((x.shape[0], self.N))
+            for i in range(self.N-4):
+                V[:, i] = self.evaluate_basis(x, i, output_array=V[:, i])
         return V
 
     def vandermonde_scalar_product(self, input_array, output_array):
@@ -547,7 +569,7 @@ class ShenBiharmonicBasis(JacobiBase):
         return points, weights
 
     def mpmath_points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
-        if mode == 'numpy' and not has_quadpy:
+        if mode == 'numpy' or not has_quadpy:
             return self.points_and_weights(N=N, map_true_domain=map_true_domain, weighted=weighted, **kw)
         if N is None:
             N = self.N
@@ -652,14 +674,26 @@ class ShenOrder6Basis(JacobiBase):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        output_array[:] = (1-x**2)**3*eval_jacobi(i, 3, 3, x, out=output_array)
+        if mode == 'numpy':
+            output_array[:] = (1-x**2)**3*eval_jacobi(i, 3, 3, x, out=output_array)
+        else:
+            X = sp.symbols('x', real=True)
+            f = self.sympy_basis(i, X)
+            output_array[:] = sp.lambdify(X, f, 'mpmath')(x)
         return output_array
 
     def evaluate_basis_all(self, x=None, argument=0):
-        if x is None:
-            x = self.mesh(False, False)
-        V = np.zeros((x.shape[0], self.N))
-        V[:, :-6] = self.jacobi(x, 3, 3, self.N-6)*((1-x**2)**3)[:, np.newaxis]
+        if mode == 'numpy':
+            if x is None:
+                x = self.mesh(False, False)
+            V = np.zeros((x.shape[0], self.N))
+            V[:, :-6] = self.jacobi(x, 3, 3, self.N-6)*((1-x**2)**3)[:, np.newaxis]
+        else:
+            if x is None:
+                x = self.mpmath_points_and_weights()[0]
+            V = np.zeros((x.shape[0], self.N))
+            for i in range(self.N-6):
+                V[:, i] = self.evaluate_basis(x, i, output_array=V[:, i])
         return V
 
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):

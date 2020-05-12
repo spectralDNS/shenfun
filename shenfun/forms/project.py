@@ -1,8 +1,6 @@
 from copy import copy
 import types
 import numpy as np
-import sympy as sp
-from scipy.special import sph_harm
 from shenfun.tensorproductspace import TensorProductSpace, MixedTensorProductSpace
 from shenfun.matrixbase import TPMatrix
 from .arguments import Expr, TestFunction, TrialFunction, BasisFunction, \
@@ -11,8 +9,6 @@ from .inner import inner
 
 __all__ = ('project',)
 
-cot = lambda x: 1/np.tan(x)
-Ynm = lambda n, m, x, y : sph_harm(m, n, y, x)
 
 def project(uh, T, output_array=None, fill=True, use_to_ortho=True, use_assign=True):
     r"""

@@ -19,7 +19,7 @@ assert len(sys.argv) == 2, 'Call with one command-line argument'
 assert isinstance(int(sys.argv[-1]), int)
 
 # Use sympy to compute a rhs, given an analytical solution
-x = symbols("x")
+x = symbols("x", real=True)
 ue = sin(2*x)*exp(-x)
 fe = ue.diff(x, 2)
 

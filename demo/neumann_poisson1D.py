@@ -17,17 +17,13 @@ from sympy import symbols, sin
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis, \
     Array, Function
-try:
-    import matplotlib.pyplot as plt
-except ImportError:
-    plt = None
 
 # Collect basis from either Chebyshev or Legendre submodules
 family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
 shen = importlib.import_module('.'.join(('shenfun', family)))
 
 # Use sympy to compute a rhs, given an analytical solution
-x = symbols("x")
+x = symbols("x", real=True)
 ue = sin(np.pi*x)*(1-x**2)
 fe = ue.diff(x, 2)
 
@@ -59,7 +55,8 @@ uj = Array(SD, buffer=ue)
 print(abs(uj-u).max())
 assert np.allclose(uj, u)
 
-if plt is not None and 'pytest' not in os.environ:
+if 'pytest' not in os.environ:
+    import matplotlib.pyplot as plt
     plt.figure()
     plt.plot(X, u)
 

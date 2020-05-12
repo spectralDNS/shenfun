@@ -12,7 +12,7 @@ from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, FuncWrap, \
     islicedict, slicedict
 from shenfun.optimization.cython import Cheb
-from shenfun.utilities import inheritdocstrings
+from shenfun.utilities import inheritdocstrings, split
 
 __all__ = ['ChebyshevBase', 'Basis', 'ShenDirichletBasis',
            'ShenNeumannBasis', 'ShenBiharmonicBasis',
@@ -2014,10 +2014,6 @@ class BCBasis(ChebyshevBase):
         return np.array([[0.5, -0.5],
                          [0.5, 0.5]])
 
-    def addmass_matrix(self):
-        return np.array([[np.pi/2., np.pi/2.],
-                         [-np.pi/4., np.pi/4.]])
-
     def _composite_basis(self, V, argument=0):
         P = np.zeros(V[:, :2].shape)
         #P[:, 0] = (V[:, 0] - V[:, 1])/2
@@ -2124,13 +2120,6 @@ class BCBiharmonicBasis(ChebyshevBase):
                          [1./8., -1./16., -1./8., 1./16.],
                          [-1./8., -1./16., 1./8., 1./16.]])
 
-    @staticmethod
-    def addmass_matrix():
-        return np.pi*np.array([[0.5, 0.5, 2.08333333e-01, -2.08333333e-01],
-                               [-3.28125e-01, 3.28125e-01, -7.8125e-02, -7.8125e-02],
-                               [0, 0, -6.250e-02, 6.250e-02],
-                               [3.125e-02, -3.125e-02, 3.125e-02, 3.125e-02]])
-
     def _composite_basis(self, V, argument=0):
         P = np.tensordot(V[:, :4], self.coefficient_matrix(), (1, 1))
         return P
@@ -2143,16 +2132,10 @@ class BCBiharmonicBasis(ChebyshevBase):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        X = sympy.symbols('x', real=True)
-        f = self.sympy_basis(i, x=X)
-        output_array[:] = sympy.lambdify(X, f)(x)
+        V = self.vandermonde(x)
+        output_array[:] = np.dot(V, self.coefficient_matrix()[i])
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        X = sympy.symbols('x', real=True)
-        f = self.sympy_basis(i, x=X)
-        output_array[:] = sympy.lambdify(X, f.diff(X, k))(x)
+        output_array = SpectralBase.evaluate_basis_derivative(self, x=x, i=i, k=k, output_array=output_array)
         return output_array

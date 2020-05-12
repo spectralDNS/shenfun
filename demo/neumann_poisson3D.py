@@ -17,11 +17,8 @@ import os
 import importlib
 from sympy import symbols, cos, sin
 import numpy as np
-from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
-    Function, TensorProductSpace, Basis
-
-comm = MPI.COMM_WORLD
+    Function, TensorProductSpace, Basis, comm
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'

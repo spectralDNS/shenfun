@@ -13,11 +13,8 @@ import os
 import importlib
 from sympy import symbols, cos, sin
 import numpy as np
-from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
-    Basis, TensorProductSpace, Function
-
-comm = MPI.COMM_WORLD
+    Basis, TensorProductSpace, Function, comm
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
@@ -25,7 +22,7 @@ base = importlib.import_module('.'.join(('shenfun', family)))
 BiharmonicSolver = base.la.Biharmonic
 
 # Use sympy to compute a rhs, given an analytical solution
-x, y, z = symbols("x,y,z")
+x, y, z = symbols("x,y,z", real=True)
 ue = (sin(4*np.pi*x)*sin(6*z)*cos(4*y))*(1-x**2)
 fe = ue.diff(x, 4) + ue.diff(y, 4) + ue.diff(z, 4) + 2*ue.diff(x, 2, y, 2) + 2*ue.diff(x, 2, z, 2) + 2*ue.diff(y, 2, z, 2)
 

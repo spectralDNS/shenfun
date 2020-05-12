@@ -160,6 +160,7 @@ class TensorProductSpace(PFFT):
         self.coors = Coordinates(*coors)
         self.hi = self.coors.get_scaling_factors()
         shape = list(self.global_shape())
+        self.axes = axes
         assert shape
         assert min(shape) > 0
 
@@ -193,7 +194,6 @@ class TensorProductSpace(PFFT):
         dtype = np.dtype(dtype)
         assert dtype.char in 'fdgFDG'
 
-        self.axes = axes
         self.xfftn = []
         self.transfer = []
         self.pencil = [None, None]
@@ -203,6 +203,7 @@ class TensorProductSpace(PFFT):
             base.sl = slicedict(axis=axis, dimensions=len(self.bases))
             base.si = islicedict(axis=axis, dimensions=len(self.bases))
 
+        self.axes = axes
         if not backward_from_pencil:
             if isinstance(bases[axes[-1][-1]], C2CBasis):
                 assert np.dtype(dtype).char in 'FDG'
@@ -385,7 +386,12 @@ class TensorProductSpace(PFFT):
         padded_bases = [base.get_dealiased(padding_factor=padding_factor[axis],
                                            dealias_direct=dealias_direct)
                         for axis, base in enumerate(self.bases)]
-        return TensorProductSpace(self.comm, padded_bases,
+        # Need the correct order of the transforms in case reversed somehow
+        axes = []
+        for ax in self.axes:
+            for ai in ax:
+                axes.append(ai)
+        return TensorProductSpace(self.comm, padded_bases, axes=tuple(axes),
                                   dtype=self.forward.output_array.dtype,
                                   backward_from_pencil=self.forward.output_pencil,
                                   coordinates=self.coors.coordinates)
@@ -397,7 +403,7 @@ class TensorProductSpace(PFFT):
             assert len(N) == len(self)
         refined_bases = [base.get_refined(N[axis])
                          for axis, base in enumerate(self.bases)]
-        return TensorProductSpace(self.comm, refined_bases, axes=self.axes,
+        return TensorProductSpace(self.subcomm, refined_bases, axes=self.axes,
                                   dtype=self.forward.input_array.dtype,
                                   coordinates=self.coors.coordinates)
 
@@ -1279,7 +1285,7 @@ class BoundaryValues(object):
             self.bcs_final[:] = self.bcs
 
     def update_bcs_time(self, time):
-        tt = sp.symbols('t')
+        tt = sp.symbols('t', real=True)
         update_time = False
         for i, bci in enumerate(self.bc):
             if isinstance(bci, sp.Expr):
@@ -1340,8 +1346,9 @@ class BoundaryValues(object):
                 if isinstance(bci, sp.Expr):
                     X = T.local_mesh(True)
                     for sym in bci.free_symbols:
-                        if str(sym) == 't':
-                            bci = bci.subs({'t': self.bc_time})
+                        tt = sp.symbols('t', real=True)
+                        if sym == tt:
+                            bci = bci.subs(tt, self.bc_time)
                     sym0 = bci.free_symbols
                     lbci = sp.lambdify(sym0, bci, 'numpy')
                     Yi = []
@@ -1444,15 +1451,10 @@ class BoundaryValues(object):
             Add boundary values to this Function
 
         """
-        B = self.base.get_bc_basis()
-        M = B.addmass_matrix()
-        sl = B.slice()
-        if u.ndim > 1:
-            sl = self.base.sl[sl]
-
-        for i, row in enumerate(M):
-            for j in range(len(self.bc)):
-                u[self.base.si[i]] -= row[j]*self.bcs[j]
+        coors = self.tensorproductspace.coors if self.tensorproductspace else self.base.coors
+        M = self.base.get_bcmass_matrix(coors.hi.prod())
+        w0 = np.zeros_like(u)
+        u -= M.matvec(u, w0, axis=self.base.axis)
 
     def set_boundary_dofs(self, u, final=False):
         """Apply boundary condition after solving, fixing boundary dofs

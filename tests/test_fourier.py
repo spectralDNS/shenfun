@@ -1,5 +1,5 @@
 import pytest
-from shenfun import *
+from shenfun import Basis, TensorProductSpace, Function, np, comm, fourier
 
 
 @pytest.mark.parametrize('N', ((12,)*3, (13,)*3))

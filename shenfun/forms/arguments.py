@@ -1,5 +1,5 @@
 from numbers import Number, Integral
-from scipy.special import sph_harm
+from scipy.special import sph_harm, erf
 import numpy as np
 import sympy as sp
 from shenfun.optimization.cython import evaluate
@@ -824,7 +824,25 @@ class ShenfunBaseArray(DistArray):
             if not space.num_components() == 1:
                 shape = (space.num_components(),) + shape
 
-            if hasattr(buffer, 'free_symbols'):
+            # if a list of sympy expressions
+            if isinstance(buffer, (list, tuple)):
+                assert len(buffer) == len(space.flatten())
+                sympy_buffer = buffer
+                buffer = Array(space)
+                dtype = space.forward.input_array.dtype
+                for i, buf0 in enumerate(sympy_buffer):
+                    if isinstance(buf0, Number):
+                        buffer.v[i] = buf0
+                    elif hasattr(buf0, 'free_symbols'):
+                        x = buf0.free_symbols.pop()
+                        buffer.v[i] = sp.lambdify(x, buf0)(space.mesh()).astype(dtype)
+
+                if cls.__name__ == 'Function':
+                    buf = Function(space)
+                    buf = buffer.forward(buf)
+                    buffer = buf
+
+            elif hasattr(buffer, 'free_symbols'):
                 # Evaluate sympy function on entire mesh
                 x = buffer.free_symbols.pop()
                 buffer = sp.lambdify(x, buffer)
@@ -853,7 +871,34 @@ class ShenfunBaseArray(DistArray):
             p0 = space.backward.output_pencil
             dtype = space.forward.input_array.dtype
 
-        # Evaluate sympy function on entire mesh
+        # if a list of sympy expressions
+        if isinstance(buffer, (list, tuple)):
+            assert len(buffer) == len(space.flatten())
+            sympy_buffer = buffer
+            buffer = Array(space)
+            dtype = space.forward.input_array.dtype
+            if cls.__name__ == 'Function':
+                buff = Function(space)
+            mesh = space.local_mesh(True)
+            for i, buf0 in enumerate(sympy_buffer):
+                if isinstance(buf0, Number):
+                    buffer.v[i] = buf0
+                elif hasattr(buf0, 'free_symbols'):
+                    sym0 = buf0.free_symbols
+                    m = []
+                    for sym in sym0:
+                        j = 'xyzrs'.index(str(sym))
+                        m.append(mesh[j])
+                    buffer.v[i] = sp.lambdify(sym0, buf0, modules=['numpy', {'cot': cot, 'Ynm': Ynm, 'erf': erf}])(*m).astype(dtype)
+                else:
+                    raise NotImplementedError
+
+            if cls.__name__ == 'Function':
+                buff = Function(space)
+                buff = buffer.forward(buff)
+                buffer = buff
+
+        # if just one sympy expression
         if hasattr(buffer, 'free_symbols'):
             sym0 = buffer.free_symbols
             mesh = space.local_mesh(True)
@@ -862,7 +907,7 @@ class ShenfunBaseArray(DistArray):
                 j = 'xyzrs'.index(str(sym))
                 m.append(mesh[j])
 
-            buf = sp.lambdify(sym0, buffer, modules=['numpy', {'cot': cot, 'Ynm': Ynm}])(*m).astype(space.forward.input_array.dtype)
+            buf = sp.lambdify(sym0, buffer, modules=['numpy', {'cot': cot, 'Ynm': Ynm, 'erf': erf}])(*m).astype(space.forward.input_array.dtype)
             buffer = Array(space)
             buffer[:] = buf
             if cls.__name__ == 'Function':
