@@ -20,17 +20,14 @@ import sys
 import os
 from sympy import symbols, cos, sin, exp
 import numpy as np
-from mpi4py import MPI
 from shenfun import inner, grad, TestFunction, TrialFunction, \
-    Array, Function, Basis, TensorProductSpace, dx
-
-comm = MPI.COMM_WORLD
+    Array, Function, Basis, TensorProductSpace, dx, comm
 
 assert len(sys.argv) == 2, "Call with one command-line arguments"
 assert isinstance(int(sys.argv[-1]), int)
 
 # Use sympy to compute a rhs, given an analytical solution
-x, y = symbols("x,y")
+x, y = symbols("x,y", real=True)
 ue = cos(2*y)*sin(2*x)*exp(-x)
 fe = ue.diff(x, 2) + ue.diff(y, 2)
 

@@ -1,6 +1,8 @@
 import pytest
+import numpy as np
 import sympy as sp
-from shenfun import *
+from shenfun import chebyshev, legendre, fourier, hermite, laguerre,\
+    jacobi
 
 bases = (chebyshev.Basis,
          chebyshev.ShenDirichletBasis,
@@ -19,7 +21,10 @@ bases = (chebyshev.Basis,
          legendre.UpperDirichletBasis,
          legendre.ShenBiPolarBasis,
          legendre.ShenBiPolar0Basis,
+         legendre.NeumannDirichletBasis,
+         legendre.DirichletNeumannBasis,
          legendre.BCBasis,
+         legendre.BCBiharmonicBasis,
          fourier.R2CBasis,
          fourier.C2CBasis,
          hermite.Basis,
@@ -55,5 +60,5 @@ def test_eval_basis_derivative(base):
         assert np.allclose(f0, f1)
 
 if __name__ == '__main__':
-    test_eval_basis(chebyshev.BCBiharmonicBasis)
+    test_eval_basis_derivative(legendre.BCBiharmonicBasis)
     #test_eval_basis(legendre.ShenNeumannBasis)

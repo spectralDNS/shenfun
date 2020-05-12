@@ -1,7 +1,8 @@
 import pytest
 import numpy as np
 from mpi4py import MPI
-from shenfun import inner, div, curl, TestFunction, TrialFunction, Function, \
+import shenfun
+from shenfun import inner, div, curl, Function, \
     Array, project, Dx, Basis, TensorProductSpace, VectorTensorProductSpace, \
     MixedTensorProductSpace
 
@@ -25,8 +26,8 @@ def test_curl(typecode):
     X = T.local_mesh(True)
     K = T.local_wavenumbers()
     Tk = VectorTensorProductSpace(T)
-    u = TrialFunction(Tk)
-    v = TestFunction(Tk)
+    u = shenfun.TrialFunction(Tk)
+    v = shenfun.TestFunction(Tk)
 
     U = Array(Tk)
     U_hat = Function(Tk)

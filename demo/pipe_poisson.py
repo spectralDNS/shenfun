@@ -10,12 +10,11 @@ Using shenfun to map coordinates instead of
 directly applying r = (t+1)/2, as in the SIAM paper.
 
 """
+import sympy as sp
 import matplotlib.pyplot as plt
 import functools
-from mpi4py import MPI
 from shenfun import *
 from shenfun.la import Solver2D, SolverGeneric1NP
-import sympy as sp
 
 by_parts = False
 

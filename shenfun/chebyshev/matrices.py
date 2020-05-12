@@ -80,6 +80,8 @@ CB = bases.Basis
 SD = bases.ShenDirichletBasis
 SB = bases.ShenBiharmonicBasis
 SN = bases.ShenNeumannBasis
+BD = bases.BCBasis
+BB = bases.BCBiharmonicBasis
 
 def get_ck(N, quad):
     """Return array ck, parameter in Chebyshev expansions
@@ -1283,6 +1285,68 @@ class SBBmat(SpectralMatrix):
 
         return c
 
+@inheritdocstrings
+class BCDmat(SpectralMatrix):
+    r"""Mass matrix for inner product
+
+    .. math::
+
+        B_{kj} = (\psi_j, \phi_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_j` is the Dirichlet boundary basis and
+    :math:`\phi_k` is the Shen Dirichlet basis function.
+
+    """
+    def __init__(self, test, trial, measure=1):
+        assert isinstance(test[0], SD)
+        assert isinstance(trial[0], BD)
+        N = test[0].N
+        k = np.arange(N-2, dtype=np.float)
+        d = {0: np.array([np.pi/2, np.pi/4]),
+             1: np.array([np.pi/2]),
+            -1: np.array([-np.pi/4, 0])}
+
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+
+@inheritdocstrings
+class BCBmat(SpectralMatrix):
+    r"""Mass matrix for inner product
+
+    .. math::
+
+        B_{kj} = (\psi_j, \phi_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, 2, 3 \text{ and } k = 0, 1, ..., N-4
+
+    and :math:`\psi_j` is the Biharmonic boundary basis and
+    :math:`\phi_k` is the Shen Biharmonic basis function.
+
+    """
+    def __init__(self, test, trial, measure=1):
+        assert isinstance(test[0], SB)
+        assert isinstance(trial[0], BB)
+        N = test[0].N
+        k = np.arange(N-4, dtype=np.float)
+        d = {0: np.array([np.pi/2, np.pi*21/64, -np.pi/16, np.pi/32]),
+             1: np.array([np.pi/2, -np.pi*5/64, np.pi/16]),
+             2: np.array([np.pi*5/24, -np.pi*5/64]),
+             3: np.array([-np.pi*5/24]),
+            -1: np.array([-np.pi*21/64, 0, np.pi/32, 0]),
+            -2: np.array([0, -np.pi/32, 0, 0]),
+            -3: np.array([np.pi/32, 0, 0, 0])}
+
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+
 
 @inheritdocstrings
 class _Chebmatrix(SpectralMatrix):
@@ -1336,5 +1400,7 @@ mat = _ChebMatDict({
     ((SD, 0), (SD, 1)): CDDmat,
     ((SN, 0), (SD, 1)): CNDmat,
     ((SD, 0), (SB, 1)): CDBmat,
-    ((SD, 0), (CB, 1)): CDTmat
+    ((SD, 0), (CB, 1)): CDTmat,
+    ((SD, 0), (BD, 0)): BCDmat,
+    ((SB, 0), (BB, 0)): BCBmat,
     })

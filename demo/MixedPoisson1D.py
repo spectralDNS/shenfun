@@ -22,23 +22,16 @@ coupled and implicit.
 
 import os
 import numpy as np
-from mpi4py import MPI
-from sympy import symbols, cos, lambdify
+from sympy import symbols, cos
 from shenfun import *
 from shenfun.spectralbase import MixedBasis
 
-comm = MPI.COMM_WORLD
-x = symbols("x")
+x = symbols("x", real=True)
 
 #ue = (sin(2*x)*cos(3*y))*(1-x**2)
 ue = cos(5*x)*(1-x**2)
 dx = ue.diff(x, 1)
 fe = ue.diff(x, 2)
-
-# Lambdify for faster evaluation
-ul = lambdify(x, ue, 'numpy')
-fl = lambdify(x, fe, 'numpy')
-dxl = lambdify(x, dx, 'numpy')
 
 N = 24
 SD = Basis(N, 'L', bc=(0, 0))
@@ -49,7 +42,7 @@ X = SD.mesh(True)
 u = TrialFunction(SD)
 v = TestFunction(SD)
 A = inner(v, div(grad(u)))
-b = inner(v, Array(SD, buffer=fl(X)))
+b = inner(v, Array(SD, buffer=fe))
 u_ = Function(SD)
 u_ = A.solve(b, u_)
 ua = Array(SD)
@@ -70,9 +63,8 @@ A01 = inner(div(p), u)
 A10 = inner(q, div(g))
 
 # Get f and g on quad points
-vfj = Array(Q)
+vfj = Array(Q, buffer=(0, fe))
 vj, fj = vfj
-fj[:] = fl(X)
 
 vf_hat = Function(Q)
 v_hat, f_hat = vf_hat
@@ -82,8 +74,8 @@ M = BlockMatrix([A00, A01, A10])
 gu_hat = M.solve(vf_hat)
 gu = gu_hat.backward()
 
-uj = ul(X)
-dxj = dxl(X)
+uj = Array(SD, buffer=ue)
+dxj = Array(ST, buffer=dx)
 
 error = [comm.reduce(np.linalg.norm(uj-gu[1])),
          comm.reduce(np.linalg.norm(dxj-gu[0]))]

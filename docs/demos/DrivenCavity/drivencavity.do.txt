@@ -225,15 +225,15 @@ V0 = TensorProductSpace(comm, (D0X, D0Y))
 P = TensorProductSpace(comm, (PX, PY))
 !ec
 These tensor product spaces are all scalar valued.
-The velocity is a vector, and a vector requires a mixed basis like
-$W_1^{\bs{N}} = V_1^{\bs{N}} \times V_0^{\bs{N}}$. The mixed basis is created
+The velocity is a vector, and a vector requires a mixed vector basis like
+$W_1^{\bs{N}} = V_1^{\bs{N}} \times V_0^{\bs{N}}$. The vector basis is created
 in shenfun as
 
 !bc pycod
-W1 = MixedTensorProductSpace([V1, V0])
-W0 = MixedTensorProductSpace([V0, V0])
+W1 = VectorTensorProductSpace([V1, V0])
+W0 = VectorTensorProductSpace([V0, V0])
 !ec
-Note that the second mixed basis, $W_0^{\bs{N}} = V_0^{\bs{N}} \times V_0^{\bs{N}}$, uses
+Note that the second vector basis, $W_0^{\bs{N}} = V_0^{\bs{N}} \times V_0^{\bs{N}}$, uses
 homogeneous boundary conditions throughout.
 
 ===== Mixed variational form =====
@@ -468,12 +468,12 @@ assemble the constant boundary contribution to the right hand side
 # Create Function to hold solution
 uh_hat = Function(VQ)
 ui_hat = uh_hat[0]
-D1Y.bc.apply_after(ui_hat[0], True) # Fixes the values of the boundary dofs
+D1Y.bc.set_boundary_dofs(ui_hat[0], True) # Fixes the values of the boundary dofs
 
 # New solution (iterative)
 uh_new = Function(VQ)
 ui_new = uh_new[0]
-D1Y.bc.apply_after(ui_new[0], True)
+D1Y.bc.set_boundary_dofs(ui_new[0], True)
 
 # Compute the constant contribution to rhs due to nonhomogeneous boundary conditions
 bh_hat0 = Function(VQ)
@@ -484,7 +484,7 @@ bi_hat0 = bh_hat0[0]
 
 Note that `bh_hat0` now contains the part of the right hand side that is
 due to the non-symmetric part of assembled matrices. The line with
-`D1Y.bc.apply_after(ui_hat[0], True)` ensures the known boundary values of
+`D1Y.bc.set_boundary_dofs(ui_hat[0], True)` ensures the known boundary values of
 the solution are fixed for `ui_hat`.
 
 The nonlinear right hand side also requires some additional attention.

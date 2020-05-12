@@ -22,6 +22,7 @@ pressure.
 
 """
 import os
+import sys
 import time
 import numpy as np
 from mpi4py import MPI
@@ -31,14 +32,14 @@ from shenfun import *
 
 assert comm.Get_size() == 1, "Two non-periodic directions only have solver implemented for serial"
 
-Re = 200.
+Re = 10.
 nu = 2./Re
-alfa = 0.2 # underrelaxation factor
+alfa = 0.1 # underrelaxation factor
 N = (45, 45)
 family = 'Chebyshev'
 #family = 'Legendre'
 quad = 'GC'
-x = sympy.symbols('x')
+x = sympy.symbols('x', real='True')
 D0X = Basis(N[0], family, quad=quad, bc=(0, 0))
 #D1Y = Basis(N[1], family, quad=quad, bc=(1, 0))
 D1Y = Basis(N[1], family, quad=quad, bc=((1-x)**2*(1+x)**2, 0))
@@ -58,8 +59,8 @@ V1 = TensorProductSpace(comm, (D0X, D1Y))
 V0 = TensorProductSpace(comm, (D0X, D0Y))
 P = TensorProductSpace(comm, (PX, PY))
 
-# Create mixed space for velocity
-W1 = MixedTensorProductSpace([V1, V0])
+# Create vector space for velocity
+W1 = VectorTensorProductSpace([V1, V0])
 
 # Create mixed space for total solution
 VQ = MixedTensorProductSpace([W1, P])   # for velocity and pressure
@@ -71,8 +72,8 @@ V0p = V0.get_dealiased((1.5, 1.5))
 #V0p = V0.get_dealiased(dealias_direct=True)
 #V1p = V1 # Or do not use dealiasing at all. Makes very little difference here
 #V0p = V0
-W1p = MixedTensorProductSpace([V1p, V0p])
-W0p = MixedTensorProductSpace([V0p, V0p])
+W1p = VectorTensorProductSpace([V1p, V0p])
+W0p = VectorTensorProductSpace([V0p, V0p])
 QTp = MixedTensorProductSpace([W1p, W0p])  # for uiuj
 
 up = TrialFunction(VQ)
@@ -141,6 +142,9 @@ Alu = splu(Ai)
 uh_new[:] = uh_hat
 converged = False
 count = 0
+max_count = 1000
+if 'pytest' in os.environ:
+    max_count = 1
 t0 = time.time()
 while not converged:
     count += 1
@@ -148,7 +152,7 @@ while not converged:
     uh_new = M.solve(bh_hat, u=uh_new, constraints=((2, 0, 0),), Alu=Alu) # Constraint for component 2 of mixed space
     error = np.linalg.norm(ui_hat-ui_new)
     uh_hat[:] = alfa*uh_new + (1-alfa)*uh_hat
-    converged = abs(error) < 1e-11 or count >= 10000
+    converged = abs(error) < 1e-11 or count >= max_count
     if count % 1 == 0:
         print('Iteration %d Error %2.4e' %(count, error))
 
@@ -157,6 +161,8 @@ print('Time ', time.time()-t0)
 # Move solution to regular Function
 up = uh_hat.backward()
 u_, p_ = up
+
+if 'pytest' in os.environ: sys.exit(0)
 
 # Postprocessing
 # Solve streamfunction
@@ -199,30 +205,29 @@ while not converged:
     print("%d %d " %(xi, yi) +("%+2.7e "*4) %(xmid, ymid, psi_min, err))
     count += 1
 
-if 'pytest' not in os.environ:
-    import matplotlib.pyplot as plt
-    #f = open('plot_u_y_Ghia{}.csv'.format(int(Re)))
-    #g = np.loadtxt(f, skiprows=1, delimiter=',')
-    #plt.figure()
-    #y = 2*(g[:, 0]-0.5)
-    #plt.plot(y, g[:, 1], 'r+')
-    X = V0.local_mesh(True)
-    #x = np.vstack([np.zeros(N[0]), X[1][0]])
-    #res = ui_hat[0].eval(x)
-    #plt.plot(x[1], res)
-    #res2 = ui_hat[0].eval(np.vstack([np.zeros(len(y)), y]))
-    #plt.plot(y, res2, 'bs', mfc='None')
-    plt.figure()
-    plt.contourf(X[0], X[1], p_, 100)
-    plt.figure()
-    plt.quiver(X[0], X[1], u_[0], u_[1])
-    plt.figure()
-    plt.spy(M.diags())
-    plt.figure()
-    plt.contourf(X[0], X[1], u_[0], 100)
-    plt.figure()
-    plt.contourf(X[0], X[1], u_[1], 100)
-    plt.figure()
-    plt.contour(x, y, pp, 100)
-    plt.title('Streamfunction')
-    #plt.show()
+import matplotlib.pyplot as plt
+#f = open('plot_u_y_Ghia{}.csv'.format(int(Re)))
+#g = np.loadtxt(f, skiprows=1, delimiter=',')
+#plt.figure()
+#y = 2*(g[:, 0]-0.5)
+#plt.plot(y, g[:, 1], 'r+')
+X = V0.local_mesh(True)
+#x = np.vstack([np.zeros(N[0]), X[1][0]])
+#res = ui_hat[0].eval(x)
+#plt.plot(x[1], res)
+#res2 = ui_hat[0].eval(np.vstack([np.zeros(len(y)), y]))
+#plt.plot(y, res2, 'bs', mfc='None')
+plt.figure()
+plt.contourf(X[0], X[1], p_, 100)
+plt.figure()
+plt.quiver(X[0], X[1], u_[0], u_[1])
+plt.figure()
+plt.spy(M.diags())
+plt.figure()
+plt.contourf(X[0], X[1], u_[0], 100)
+plt.figure()
+plt.contourf(X[0], X[1], u_[1], 100)
+plt.figure()
+plt.contour(x, y, pp, 100)
+plt.title('Streamfunction')
+#plt.show()

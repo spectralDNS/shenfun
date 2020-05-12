@@ -17,11 +17,8 @@ import os
 import importlib
 from sympy import symbols, cos, sin
 import numpy as np
-from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    TensorProductSpace, Basis, Array, Function
-
-comm = MPI.COMM_WORLD
+    TensorProductSpace, Basis, Array, Function, comm
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
@@ -29,7 +26,7 @@ base = importlib.import_module('.'.join(('shenfun', family)))
 Solver = base.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
-x, y = symbols("x,y")
+x, y = symbols("x,y", real=True)
 ue = cos(5*y)*(sin(2*np.pi*x))*(1-x**2)
 fe = ue.diff(x, 2) + ue.diff(y, 2)
 

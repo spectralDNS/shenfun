@@ -4,14 +4,12 @@ Simple spectral Navier-Stokes solver
 Not implemented for efficiency. For efficiency use the Navier-Stokes
 solver in the https://github.com/spectralDNS/spectralDNS repository
 """
-from mpi4py import MPI
 import numpy as np
 from shenfun import *
 
 nu = 0.000625
 end_time = 0.1
 dt = 0.01
-comm = MPI.COMM_WORLD
 N = (2**5, 2**5, 2**5)
 
 V0 = Basis(N[0], 'F', dtype='D')

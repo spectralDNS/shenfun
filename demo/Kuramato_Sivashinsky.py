@@ -11,18 +11,14 @@ Initial condition is
 Use Fourier basis V and tensor product space VxV
 
 """
-from sympy import symbols, exp, lambdify
+from sympy import symbols, exp
 import numpy as np
 import matplotlib.pyplot as plt
-from mpi4py import MPI
 from shenfun import *
-
-comm = MPI.COMM_WORLD
 
 # Use sympy to set up initial condition
 x, y = symbols("x,y")
 ue = exp(-0.01*(x**2+y**2))        # + exp(-0.02*((x-15*np.pi)**2+(y)**2))
-ul = lambdify((x, y), ue, 'numpy')
 
 # Size of discretization
 N = (128, 128)
@@ -42,7 +38,7 @@ v = TestFunction(T)
 #TVp = TV
 
 # Create solution and work arrays
-U = Array(T)
+U = Array(T, buffer=ue)
 U_hat = Function(T)
 gradu = Array(TVp)
 K = np.array(T.local_wavenumbers(True, True, True))
@@ -60,8 +56,7 @@ def NonlinearRHS(self, U, U_hat, dU, gradu, **params):
 
 #initialize
 X = T.local_mesh(True)
-U[:] = ul(*X)
-U_hat = T.forward(U, U_hat)
+U_hat = U.forward(U_hat)
 
 # Integrate using an exponential time integrator
 plt.figure()

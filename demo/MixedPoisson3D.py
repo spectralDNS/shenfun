@@ -27,24 +27,16 @@ coupled and implicit.
 
 import os
 import numpy as np
-from mpi4py import MPI
-from sympy import symbols, sin, cos, lambdify
+from sympy import symbols, sin, cos
 from shenfun import *
 
-comm = MPI.COMM_WORLD
-x, y, z = symbols("x,y,z")
+x, y, z = symbols("x,y,z", real=True)
 
 #ue = (sin(2*x)*cos(3*y))*(1-x**2)
 ue = (sin(4*x)*cos(5*y)*sin(4*z))*(1-z**2)
 dux = ue.diff(x, 1)
 duy = ue.diff(y, 1)
 fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
-
-# Lambdify for faster evaluation
-ul = lambdify((x, y, z), ue, 'numpy')
-fl = lambdify((x, y, z), fe, 'numpy')
-duxl = lambdify((x, y, z), dux, 'numpy')
-duyl = lambdify((x, y, z), duy, 'numpy')
 
 N = (24, 24, 24)
 K0 = Basis(N[0], 'Fourier', dtype='d')
@@ -69,9 +61,8 @@ A01 = inner(div(p), u)
 A10 = inner(q, div(g))
 
 # Get f and g on quad points
-vfj = Array(Q)
+vfj = Array(Q, buffer=(0, 0, 0, fe))
 vj, fj = vfj
-fj[:] = fl(*X)
 
 vf_hat = Function(Q)
 vf_hat[1] = inner(q, fj, output_array=vf_hat[1])
@@ -82,9 +73,8 @@ gu_hat = M.solve(vf_hat)
 gu = gu_hat.backward()
 g_, u_ = gu
 
-uj = ul(*X)
-duxj = duxl(*X)
-duyj = duyl(*X)
+uj = Array(TD, buffer=ue)
+duxj, duyj, duzj = Array(VT, buffer=(dux, duy, 0))
 
 error = [comm.reduce(np.linalg.norm(uj-u_)),
          comm.reduce(np.linalg.norm(duxj-g_[0])),
