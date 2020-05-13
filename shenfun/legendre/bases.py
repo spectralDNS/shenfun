@@ -11,9 +11,9 @@ from numpy.polynomial import legendre as leg
 from scipy.special import eval_legendre
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, islicedict, \
-    slicedict
-from shenfun.spectralbase import inner_product
+    slicedict, inner_product
 from shenfun.utilities import inheritdocstrings, split
+from shenfun.forms.arguments import Function
 from .lobatto import legendre_lobatto_nodes_and_weights
 
 __all__ = ['LegendreBase', 'Basis', 'ShenDirichletBasis',
@@ -322,7 +322,10 @@ class ShenDirichletBasis(LegendreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = np.zeros_like(input_array.v)
+            output_array = Function(self.get_orthogonal())
+        else:
+            output_array.fill(0)
+
         s0 = self.sl[slice(0, -2)]
         s1 = self.sl[slice(2, None)]
 
@@ -571,7 +574,10 @@ class ShenNeumannBasis(LegendreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = np.zeros_like(input_array.v)
+            output_array = Function(self.get_orthogonal())
+        else:
+            output_array.fill(0)
+
         s0 = self.sl[slice(0, -2)]
         s1 = self.sl[slice(2, None)]
         self.set_factor_array(input_array)
@@ -767,7 +773,10 @@ class ShenBiharmonicBasis(LegendreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = np.zeros_like(input_array.v)
+            output_array = Function(self.get_orthogonal())
+        else:
+            output_array.fill(0)
+
         self.set_factor_arrays(input_array)
         output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2)
         self.bc.add_to_orthogonal(output_array, input_array)
@@ -935,7 +944,10 @@ class UpperDirichletBasis(LegendreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = np.zeros_like(input_array.v)
+            output_array = Function(self.get_orthogonal())
+        else:
+            output_array.fill(0)
+
         s0 = self.sl[slice(0, -1)]
         s1 = self.sl[slice(1, None)]
         output_array[s0] = input_array[s0]
@@ -1262,7 +1274,10 @@ class ShenBiPolar0Basis(LegendreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = np.zeros_like(input_array.v)
+            output_array = Function(self.get_orthogonal())
+        else:
+            output_array.fill(0)
+
         self.set_factor_arrays(input_array)
         output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2, self._factor3)
         return output_array
@@ -1399,7 +1414,10 @@ class DirichletNeumannBasis(LegendreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = np.zeros_like(input_array.v)
+            output_array = Function(self.get_orthogonal())
+        else:
+            output_array.fill(0)
+
         s0 = self.sl[slice(0, -2)]
         s1 = self.sl[slice(2, None)]
 
@@ -1564,7 +1582,10 @@ class NeumannDirichletBasis(LegendreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = np.zeros_like(input_array.v)
+            output_array = Function(self.get_orthogonal())
+        else:
+            output_array.fill(0)
+
         s0 = self.sl[slice(0, -2)]
         s1 = self.sl[slice(2, None)]
 

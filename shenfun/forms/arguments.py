@@ -942,12 +942,6 @@ class ShenfunBaseArray(DistArray):
         if self.base is None:
             return None
 
-        #if self.base.shape == self.shape:
-        #    return None
-
-        #if self.rank > 0:
-        #    return None
-
         if self.function_space().num_components() > 1:
             return None
 
@@ -1068,6 +1062,22 @@ class Function(ShenfunBaseArray, BasisFunction):
     def __init__(self, space, val=0, buffer=None):
         BasisFunction.__init__(self, space, offset=0)
 
+    def set_boundary_dofs(self):
+        space = self.function_space()
+        if space.is_composite_space:
+            for i, s in enumerate(space.flatten()):
+                bases = s.bases if hasattr(s, 'bases') else [s]
+                for base in bases:
+                    if base.has_nonhomogeneous_bcs:
+                        base.bc.set_boundary_dofs(self.v[i], True)
+
+        else:
+            bases = space.bases if hasattr(space, 'bases') else [space]
+            for base in bases:
+                if base.has_nonhomogeneous_bcs:
+                    base.bc.set_boundary_dofs(self, True)
+        return self
+
     @property
     def forward_output(self):
         return True
@@ -1116,35 +1126,29 @@ class Function(ShenfunBaseArray, BasisFunction):
         """Project Function to orthogonal basis"""
         space = self.function_space()
         if output_array is None:
-            output_array = Function(space)
+            output_array = Function(space.get_orthogonal())
 
         # In case of mixed space make a loop
-        if space.rank > 0:
-            spaces = space.flatten()
-            # output_array will now loop over first index
-        else:
-            spaces = [space]
-            output_array = [output_array]
-            self = [self]
+        if space.num_components() > 1:
+            for x, subfunction in zip(output_array, self):
+                x = subfunction.to_ortho(x)
+            return output_array
 
-        for i, space in enumerate(spaces):
-            if space.dimensions > 1:
-                naxes = space.get_nonperiodic_axes()
-                axis = naxes[0]
-                base = space.bases[axis]
-                if not base.is_orthogonal:
-                    output_array[i] = base.to_ortho(self[i], output_array[i])
-                if len(naxes) > 1:
-                    input_array = np.zeros_like(output_array[i].__array__())
-                    for axis in naxes[1:]:
-                        base = space.bases[axis]
-                        input_array[:] = output_array[i]
-                        if not base.is_orthogonal:
-                            output_array[i] = base.to_ortho(input_array, output_array[i])
-            else:
-                output_array[i] = space.to_ortho(self[i], output_array[i])
-        if isinstance(output_array, list):
-            return output_array[0]
+        if space.dimensions > 1:
+            naxes = space.get_nonperiodic_axes()
+            axis = naxes[0]
+            base = space.bases[axis]
+            if not base.is_orthogonal:
+                output_array = base.to_ortho(self, output_array)
+            if len(naxes) > 1:
+                input_array = np.zeros_like(output_array.v)
+                for axis in naxes[1:]:
+                    base = space.bases[axis]
+                    input_array[:] = output_array
+                    if not base.is_orthogonal:
+                        output_array = base.to_ortho(input_array, output_array)
+        else:
+            output_array = space.to_ortho(self, output_array)
         return output_array
 
     def mask_nyquist(self, mask=None):
