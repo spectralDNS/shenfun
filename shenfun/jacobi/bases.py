@@ -36,6 +36,7 @@ from scipy.special import eval_jacobi, roots_jacobi #, gamma
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
 from shenfun.utilities import inheritdocstrings
+from shenfun.forms.arguments import Function
 
 try:
     import quadpy
@@ -441,7 +442,9 @@ class ShenDirichletBasis(JacobiBase):
     def to_ortho(self, input_array, output_array=None):
         assert self.alpha == -1 and self.beta == -1
         if output_array is None:
-            output_array = np.zeros_like(input_array.v)
+            output_array = Function(self.get_orthogonal())
+        else:
+            output_array.fill(0)
         k = self.wavenumbers().astype(np.float)
         s0 = self.sl[slice(0, -2)]
         s1 = self.sl[slice(2, None)]
@@ -583,7 +586,9 @@ class ShenBiharmonicBasis(JacobiBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = np.zeros_like(input_array.v)
+            output_array = Function(self.get_orthogonal())
+        else:
+            output_array.fill(0)
         k = self.wavenumbers().astype(np.float)
         _factor0 = 4*(k+2)*(k+1)/(2*k+5)/(2*k+3)
         _factor1 = (-2*(2*k+5)/(2*k+7))

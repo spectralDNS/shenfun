@@ -13,6 +13,7 @@ from shenfun.spectralbase import SpectralBase, work, Transform, FuncWrap, \
     islicedict, slicedict
 from shenfun.optimization.cython import Cheb
 from shenfun.utilities import inheritdocstrings, split
+from shenfun.forms.arguments import Function
 
 __all__ = ['ChebyshevBase', 'Basis', 'ShenDirichletBasis',
            'ShenNeumannBasis', 'ShenBiharmonicBasis',
@@ -542,7 +543,7 @@ class ShenDirichletBasis(ChebyshevBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = np.zeros_like(input_array.__array__())
+            output_array = Function(self.get_orthogonal())
         else:
             output_array.fill(0)
         s0 = self.sl[slice(0, -2)]
@@ -814,7 +815,7 @@ class ShenNeumannBasis(ChebyshevBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = np.zeros_like(input_array.v)
+            output_array = Function(self.get_orthogonal())
         else:
             output_array.fill(0)
         s0 = self.sl[slice(0, -2)]
@@ -1048,7 +1049,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = np.zeros_like(input_array.v)
+            output_array = Function(self.get_orthogonal())
         else:
             output_array.fill(0)
         self.set_factor_arrays(input_array)
@@ -1304,7 +1305,7 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = np.zeros_like(input_array.v)
+            output_array = Function(self.get_orthogonal())
         else:
             output_array.fill(0)
         s0 = self.sl[slice(0, -2)]
@@ -1496,7 +1497,7 @@ class UpperDirichletBasis(ChebyshevBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = np.zeros_like(input_array.__array__())
+            output_array = Function(self.get_orthogonal())
         else:
             output_array.fill(0)
         s0 = self.sl[slice(0, -1)]
@@ -1868,7 +1869,7 @@ class DirichletNeumannBasis(ChebyshevBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = np.zeros_like(input_array.__array__())
+            output_array = Function(self.get_orthogonal())
         else:
             output_array.fill(0)
         self.set_factor_arrays(input_array)

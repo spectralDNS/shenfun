@@ -1097,6 +1097,12 @@ class MixedTensorProductSpace(object):
     def get_refined(self, N):
         raise NotImplementedError
 
+    def get_orthogonal(self):
+        raise NotImplementedError
+
+    def get_dealiased(self):
+        raise NotImplementedError
+
     def __getitem__(self, i):
         return self.spaces[i]
 
@@ -1158,10 +1164,19 @@ class VectorTensorProductSpace(MixedTensorProductSpace):
         return s
 
     def get_refined(self, N):
-        return VectorTensorProductSpace(self.spaces[0].get_refined(N))
+        if np.all([s == self.spaces[0] for s in self.spaces[1:]]):
+            return VectorTensorProductSpace(self.spaces[0].get_refined(N))
+        return VectorTensorProductSpace([s.get_refined(N) for s in self.spaces])
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return VectorTensorProductSpace(self.spaces[0].get_dealiased(padding_factor, dealias_direct))
+        if np.all([s == self.spaces[0] for s in self.spaces[1:]]):
+            return VectorTensorProductSpace(self.spaces[0].get_dealiased(padding_factor, dealias_direct))
+        return VectorTensorProductSpace([s.get_dealiased(padding_factor, dealias_direct) for s in self.spaces])
+
+    def get_orthogonal(self):
+        if np.all([s == self.spaces[0] for s in self.spaces[1:]]):
+            return VectorTensorProductSpace(self.spaces[0].get_orthogonal())
+        return VectorTensorProductSpace([s.get_orthogonal() for s in self.spaces])
 
 class VectorTransform(object):
 

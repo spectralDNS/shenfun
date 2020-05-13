@@ -6,13 +6,14 @@ from scipy.special import eval_laguerre
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, islicedict, slicedict
 from shenfun.utilities import inheritdocstrings
+from shenfun.forms.arguments import Function
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
 
 @inheritdocstrings
 class LaguerreBase(SpectralBase):
-    """Base class for all Laguerre bases
+    r"""Base class for all Laguerre bases
 
     Parameters
     ----------
@@ -49,9 +50,7 @@ class LaguerreBase(SpectralBase):
 
     where :math:`L_k` and :math:`P_k` are the Laguerre function and Laguerre
     polynomials of order k, respectively.
-
     """
-
     def __init__(self, N, quad="LG", dtype=np.float, padding_factor=1, dealias_direct=False, coordinates=None):
         SpectralBase.__init__(self, N, quad=quad, domain=(0., np.inf), dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -281,7 +280,9 @@ class ShenDirichletBasis(LaguerreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = np.zeros_like(input_array.__array__())
+            output_array = Function(self.get_orthogonal())
+        else:
+            output_array.fill(0)
         s0 = self.sl[slice(0, -1)]
         s1 = self.sl[slice(1, None)]
         output_array[s0] = input_array[s0]

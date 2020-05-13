@@ -34,7 +34,7 @@ assert comm.Get_size() == 1, "Two non-periodic directions only have solver imple
 
 Re = 10.
 nu = 2./Re
-alfa = 0.1 # underrelaxation factor
+alfa = 0.2 # underrelaxation factor
 N = (45, 45)
 family = 'Chebyshev'
 #family = 'Legendre'
@@ -99,14 +99,14 @@ bc_mats = extract_bc_matrices([A00, A01, A10])
 M = BlockMatrix(A00+A01+A10)
 
 # Create Function to hold solution
-uh_hat = Function(VQ)
+uh_hat = Function(VQ).set_boundary_dofs()
 ui_hat = uh_hat[0]
-D1Y.bc.set_boundary_dofs(ui_hat[0], True)
+#D1Y.bc.set_boundary_dofs(ui_hat[0], True)
 
 # New solution (iterative)
-uh_new = Function(VQ)
+uh_new = Function(VQ).set_boundary_dofs()
 ui_new = uh_new[0]
-D1Y.bc.set_boundary_dofs(ui_new[0], True)
+#D1Y.bc.set_boundary_dofs(ui_new[0], True)
 
 # Compute the constant contribution to rhs due to nonhomogeneous boundary conditions
 bh_hat0 = Function(VQ)
