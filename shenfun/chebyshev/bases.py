@@ -6,13 +6,12 @@ import functools
 import numpy as np
 import sympy as sp
 from numpy.polynomial import chebyshev as n_cheb
-import sympy
 from scipy.special import eval_chebyt
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, FuncWrap, \
     islicedict, slicedict
 from shenfun.optimization.cython import Cheb
-from shenfun.utilities import inheritdocstrings, split
+from shenfun.utilities import inheritdocstrings
 from shenfun.forms.arguments import Function
 
 __all__ = ['ChebyshevBase', 'Basis', 'ShenDirichletBasis',
@@ -130,10 +129,10 @@ class ChebyshevBase(SpectralBase):
     def vandermonde(self, x):
         return n_cheb.chebvander(x, int(self.N*self.padding_factor)-1)
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
-        return sympy.chebyshevt(i, x)
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+        return sp.chebyshevt(i, x)
 
-    def sympy_weight(self, x=sympy.symbols('x', real=True)):
+    def sympy_weight(self, x=sp.symbols('x', real=True)):
         return 1/sp.sqrt(1-x**2)
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -472,10 +471,10 @@ class ShenDirichletBasis(ChebyshevBase):
             P[:, -2] = (V[:, 0] - V[:, 1])/2    # x = -1
         return P
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         assert i < self.N
         if i < self.N-2:
-            return sympy.chebyshevt(i, x) - sympy.chebyshevt(i+2, x)
+            return sp.chebyshevt(i, x) - sp.chebyshevt(i+2, x)
         if i == self.N-2:
             return 0.5*(1-x)
         return 0.5*(1+x)
@@ -726,9 +725,9 @@ class ShenNeumannBasis(ChebyshevBase):
         P[:, :-2] = V[:, :-2] - (k[:-2]/(k[:-2]+2))**2*V[:, 2:]
         return P
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         if 0 < i < self.N-2:
-            return sympy.chebyshevt(i, x) - (i/(i+2))**2*sympy.chebyshevt(i+2, x)
+            return sp.chebyshevt(i, x) - (i/(i+2))**2*sp.chebyshevt(i+2, x)
         return 0
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -957,11 +956,11 @@ class ShenBiharmonicBasis(ChebyshevBase):
             P[:, -4:] = np.tensordot(V[:, :4], BCBiharmonicBasis.coefficient_matrix(), (1, 1))
         return P
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         if i < self.N-4:
-            f = sympy.chebyshevt(i, x) - (2*(i+2)/(i+3))*sympy.chebyshevt(i+2, x) + (i+1)/(i+3)*sympy.chebyshevt(i+4, x)
+            f = sp.chebyshevt(i, x) - (2*(i+2)/(i+3))*sp.chebyshevt(i+2, x) + (i+1)/(i+3)*sp.chebyshevt(i+4, x)
         else:
-            f = BCBiharmonicBasis.coefficient_matrix()[i]*np.array([sympy.chebyshevt(j, x) for j in range(4)])
+            f = BCBiharmonicBasis.coefficient_matrix()[i]*np.array([sp.chebyshevt(j, x) for j in range(4)])
         return f
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -1232,8 +1231,8 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
         P[:, :-2] = V[:, :-2] - (k[:-2]/(k[:-2]+2))**2*(k[:-2]**2-1)/((k[:-2]+2)**2-1)*V[:, 2:]
         return P
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
-        return sympy.chebyshevt(i, x) - (i/(i+2))**2*(i**2-1)/((i+2)**2-1)*sympy.chebyshevt(i+2, x)
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+        return sp.chebyshevt(i, x) - (i/(i+2))**2*(i**2-1)/((i+2)**2-1)*sp.chebyshevt(i+2, x)
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -1439,9 +1438,9 @@ class UpperDirichletBasis(ChebyshevBase):
         P[:, :-1] = V[:, :-1] - V[:, 1:]
         return P
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         assert i < self.N-1
-        return sympy.chebyshevt(i, x) - sympy.chebyshevt(i+1, x)
+        return sp.chebyshevt(i, x) - sp.chebyshevt(i+1, x)
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -1629,17 +1628,17 @@ class ShenBiPolarBasis(ChebyshevBase):
     def slice(self):
         return slice(0, self.N-4)
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
-        f = (1-x)**2*(1+x)**2*(sympy.chebyshevt(i+1, x).diff(x, 1))
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+        f = (1-x)**2*(1+x)**2*(sp.chebyshevt(i+1, x).diff(x, 1))
         return f
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        X = sympy.symbols('x', real=True)
+        X = sp.symbols('x', real=True)
         f = self.sympy_basis(i, X)
-        output_array[:] = sympy.lambdify(X, f)(x)
+        output_array[:] = sp.lambdify(X, f)(x)
         return output_array
 
     def evaluate_basis_all(self, x=None, argument=0):
@@ -1657,9 +1656,9 @@ class ShenBiPolarBasis(ChebyshevBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
-        X = sympy.symbols('x', real=True)
+        X = sp.symbols('x', real=True)
         f = self.sympy_basis(i, X).diff(X, k)
-        output_array[:] = sympy.lambdify(X, f)(x)
+        output_array[:] = sp.lambdify(X, f)(x)
         return output_array
 
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
@@ -1799,11 +1798,11 @@ class DirichletNeumannBasis(ChebyshevBase):
                      ((-k**2 - (k+1)**2)/((k+1)**2 + (k+2)**2))*V[:, 2:])
         return P
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         assert i < self.N-2
-        return (sympy.chebyshevt(i, x) +
-                ((-i**2 + (i+2)**2) / ((i+1)**2 + (i+2)**2))*sympy.chebyshevt(i+1, x)+
-                ((-i**2 - (i+1)**2) / ((i+1)**2 + (i+2)**2))*sympy.chebyshevt(i+2, x))
+        return (sp.chebyshevt(i, x) +
+                ((-i**2 + (i+2)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+1, x)+
+                ((-i**2 - (i+1)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+2, x))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -2022,7 +2021,7 @@ class BCBasis(ChebyshevBase):
         P[:] = np.tensordot(V[:, :2], self.coefficient_matrix(), (1, 1))
         return P
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         if i == 0:
             return 0.5*(1-x)
         elif i == 1:
@@ -2125,9 +2124,9 @@ class BCBiharmonicBasis(ChebyshevBase):
         P = np.tensordot(V[:, :4], self.coefficient_matrix(), (1, 1))
         return P
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         assert i < 4, 'Only four bases, i < 4'
-        return np.sum(self.coefficient_matrix()[i]*np.array([sympy.chebyshevt(j, x) for j in range(4)]))
+        return np.sum(self.coefficient_matrix()[i]*np.array([sp.chebyshevt(j, x) for j in range(4)]))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)

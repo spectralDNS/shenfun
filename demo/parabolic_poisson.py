@@ -4,7 +4,6 @@ Solve Poisson's equation on parabolic domain
 """
 
 import matplotlib.pyplot as plt
-import functools
 from shenfun import *
 from shenfun.la import SolverGeneric2NP
 import sympy as sp

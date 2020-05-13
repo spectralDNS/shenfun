@@ -25,7 +25,6 @@ import os
 import sys
 import time
 import numpy as np
-from mpi4py import MPI
 from scipy.sparse.linalg import splu
 import sympy
 from shenfun import *

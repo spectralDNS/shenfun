@@ -204,7 +204,6 @@ for computing the (weighted) scalar product.
 #pylint: disable=unused-argument, not-callable, no-self-use, protected-access, too-many-public-methods, missing-docstring
 
 import importlib
-import warnings
 import sympy as sp
 import numpy as np
 from mpi4py_fft import fftw
@@ -1119,10 +1118,6 @@ class SpectralBase(object):
 
     def get_bcmass_matrix(self, hi=1):
         msx = 'xyzrs'[self.axis]
-        if not hi == 1:
-            x = hi.free_symbols.pop()
-        else:
-            x = sp.Symbol(msx, real=True)
         dV = split(hi)
         assert len(dV) == 1
         dv = dV[0]

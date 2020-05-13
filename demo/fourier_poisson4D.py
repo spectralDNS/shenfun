@@ -12,7 +12,7 @@ V^4 is a 4-dimensional tensorproductspace.
 
 """
 import os
-from sympy import symbols, cos, sin, lambdify
+from sympy import symbols, cos, sin
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis, \
     TensorProductSpace, Array, Function, dx, comm

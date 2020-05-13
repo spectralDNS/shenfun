@@ -3,12 +3,11 @@ Module for implementation of the :class:`.TensorProductSpace` class and
 related methods.
 """
 from numbers import Number
-import warnings
 import functools
 import sympy as sp
 import numpy as np
 from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun.utilities import apply_mask, split
+from shenfun.utilities import apply_mask
 from shenfun.forms.arguments import Function, Array
 from shenfun.optimization.cython import evaluate
 from shenfun.spectralbase import slicedict, islicedict, SpectralBase

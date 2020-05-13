@@ -67,7 +67,6 @@ from __future__ import division
 
 import functools
 import numpy as np
-import sympy as sp
 from shenfun.optimization import cython
 from shenfun.matrixbase import SpectralMatrix
 from shenfun.utilities import inheritdocstrings
@@ -1306,8 +1305,6 @@ class BCDmat(SpectralMatrix):
     def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], BD)
-        N = test[0].N
-        k = np.arange(N-2, dtype=np.float)
         d = {0: np.array([np.pi/2, np.pi/4]),
              1: np.array([np.pi/2]),
             -1: np.array([-np.pi/4, 0])}
