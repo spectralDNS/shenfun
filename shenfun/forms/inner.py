@@ -4,7 +4,6 @@ weighted inner product.
 """
 from numbers import Number
 import numpy as np
-import sympy as sp
 from shenfun.spectralbase import inner_product, SpectralBase, MixedBasis
 from shenfun.matrixbase import TPMatrix
 from shenfun.tensorproductspace import TensorProductSpace, MixedTensorProductSpace

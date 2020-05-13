@@ -57,11 +57,9 @@ def div(test):
         sc = np.repeat(sc, 2, axis=1)
         ind = np.repeat(ind, 2, axis=1)
         psi = test.function_space().coors.coordinates[0]
-        gt = coors.get_contravariant_metric_tensor()
         sg = coors.get_sqrt_g()
 
         for i, s in enumerate(v):
-            ll = [k for k in range(ndim) if not k==i]
             for j in range(v.shape[1]):
                 if j%2 == 0:
                     s[j, i%ndim] += 1
@@ -95,7 +93,6 @@ def grad(test):
     sc = test.scales().copy()
     ind = test.indices().copy()
     ndim = test.dimensions
-    hi = test.function_space().hi
     coors = test.function_space().coors
 
     if coors.is_cartesian:
@@ -194,7 +191,6 @@ def Dx(test, x, k=1):
         test = Expr(test)
 
     test = copy.copy(test)
-    ndim = test.dimensions
     coors = test.function_space().coors
 
     if coors.is_cartesian:

@@ -30,7 +30,6 @@ and for stability they are approximated using error functions.
 from sympy import symbols
 from sympy.functions import erf
 import numpy as np
-import scipy
 import matplotlib.pyplot as plt
 from mpi4py_fft import generate_xdmf
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \

@@ -11,7 +11,6 @@ Use Fourier basis V and find u in VxV such that
 """
 from sympy import symbols, exp
 import matplotlib.pyplot as plt
-import numpy as np
 from mpi4py_fft import generate_xdmf, fftw
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
     TensorProductSpace, Array, Function, ETDRK4, HDF5File, Basis, comm

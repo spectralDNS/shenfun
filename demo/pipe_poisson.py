@@ -12,9 +12,8 @@ directly applying r = (t+1)/2, as in the SIAM paper.
 """
 import sympy as sp
 import matplotlib.pyplot as plt
-import functools
 from shenfun import *
-from shenfun.la import Solver2D, SolverGeneric1NP
+from shenfun.la import SolverGeneric1NP
 
 by_parts = False
 

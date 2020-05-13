@@ -11,8 +11,8 @@ from numpy.polynomial import legendre as leg
 from scipy.special import eval_legendre
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, islicedict, \
-    slicedict, inner_product
-from shenfun.utilities import inheritdocstrings, split
+    slicedict
+from shenfun.utilities import inheritdocstrings
 from shenfun.forms.arguments import Function
 from .lobatto import legendre_lobatto_nodes_and_weights
 

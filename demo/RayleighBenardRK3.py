@@ -97,7 +97,6 @@ class RayleighBenard(object):
     def assemble(self):
         u = TrialFunction(self.TB)
         v = TestFunction(self.TB)
-        sv = TrialFunction(self.CD)
         p = TrialFunction(self.TT)
         q = TestFunction(self.TT)
         nu = self.nu
