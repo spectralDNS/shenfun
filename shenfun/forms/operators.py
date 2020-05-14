@@ -26,9 +26,9 @@ def div(test):
 
     test = copy.copy(test)
 
-    v = test.terms().copy()
-    sc = test.scales().copy()
-    ind = test.indices().copy()
+    #v = np.array(test.terms())
+    sc = test.scales()
+    ind = test.indices()
     ndim = test.dimensions
     hi = test.function_space().hi
     coors = test.function_space().coors
@@ -36,14 +36,31 @@ def div(test):
     if hi.prod() == 1:
         # Cartesian
         if ndim == 1:      # 1D
+            v = np.array(test.terms())
             v += 1
+            v = v.tolist()
 
         else:
-            for i, s in enumerate(v):
-                s[..., i%ndim] += 1
-            v = v.reshape((v.shape[0]//ndim, v.shape[1]*ndim, ndim))
-            sc = sc.reshape((sc.shape[0]//ndim, sc.shape[1]*ndim))
-            ind = ind.reshape((ind.shape[0]//ndim, ind.shape[1]*ndim))
+
+            num_terms = test.num_terms()
+            for i in range(test.num_components()):
+                for j in range(num_terms[i]):
+                    test.terms()[i][j][i%ndim] += 1
+
+            v = [[] for i in range(test.num_components()//ndim)]
+            sc = [[] for i in range(test.num_components()//ndim)]
+            ind = [[] for i in range(test.num_components()//ndim)]
+            for i in range(test.num_components()):
+                v[i//ndim] += test.terms()[i]
+                sc[i//ndim] += test.scales()[i]
+                ind[i//ndim] += test.indices()[i]
+
+            #for i, s in enumerate(v):
+            #    s[..., i%ndim] += 1
+            #shape = (v.shape[0]//ndim, v.shape[1]*ndim, ndim)
+            #v = v.reshape(shape)
+            #sc = sc.reshape(shape)
+            #ind = ind.reshape(shape)
 
         test._terms = v
         test._scales = sc
@@ -92,9 +109,9 @@ def grad(test):
 
     test = copy.copy(test)
 
-    terms = test.terms().copy()
-    sc = test.scales().copy()
-    ind = test.indices().copy()
+    terms = np.array(test.terms())
+    sc = np.array(test.scales())
+    ind = np.array(test.indices())
     ndim = test.dimensions
     coors = test.function_space().coors
 
@@ -197,21 +214,34 @@ def Dx(test, x, k=1):
     coors = test.function_space().coors
 
     if coors.is_cartesian:
-        v = test.terms().copy()
+        v = np.array(test.terms())
         v[..., x] += k
-        test._terms = v
+        test._terms = v.tolist()
 
     else:
         assert test.expr_rank() < 1, 'Cannot (yet) take derivative of tensor in curvilinear coordinates'
-        v = test._terms = np.repeat(test.terms(), 2, axis=1)
-        sc = test._scales = np.repeat(test.scales(), 2, axis=1)
-        test._indices = np.repeat(test.indices(), 2, axis=1)
+        #v = test._terms = np.repeat(test.terms(), 2, axis=1)
+        #sc = test._scales = np.repeat(test.scales(), 2, axis=1)
+        #test._indices = np.repeat(test.indices(), 2, axis=1)
         psi = coors.coordinates[0]
-        for i in range(v.shape[1]):
-            if i % 2 == 0:
-                v[:, i, x] += k
-            else:
-                sc[:, i] = sp.diff(sc[:, i], psi[x], 1)
+        #for i in range(v.shape[1]):
+        #    if i % 2 == 0:
+        #        v[:, i, x] += k
+        #    else:
+        #        sc[:, i] = sp.diff(sc[:, i], psi[x], 1)
+        v = test.terms()
+        sc = test.scales()
+        ind = test.indices()
+        num_terms = test.num_terms()
+        num_comp = test.num_components()
+        for i in range(num_comp):
+            for j in range(num_terms[i]):
+                sc0 = sp.diff(sc[i][j], psi[x], 1)
+                if not sc0 == 0:
+                    v[i].append(v[i][j])
+                    sc[i].append(sc0)
+                    ind[i].append(ind[i][j])
+                v[i][j][x] += 1
 
     return test
 
@@ -244,9 +274,9 @@ def curl(test):
             w0 = Dx(test[2], 1, 1) - Dx(test[1], 2, 1)
             w1 = Dx(test[0], 2, 1) - Dx(test[2], 0, 1)
             w2 = Dx(test[1], 0, 1) - Dx(test[0], 1, 1)
-            test._terms = np.concatenate((w0.terms(), w1.terms(), w2.terms()), axis=0)
-            test._scales = np.concatenate((w0.scales(), w1.scales(), w2.scales()), axis=0)
-            test._indices = np.concatenate((w0.indices(), w1.indices(), w2.indices()), axis=0)
+            test._terms = w0.terms()+w1.terms()+w2.terms()
+            test._scales = w0.scales()+w1.scales()+w2.scales()
+            test._indices = w0.indices()+w1.indices()+w2.indices()
         else:
             assert test.dimensions == 2
             test = Dx(test[1], 0, 1) - Dx(test[0], 1, 1)
@@ -260,9 +290,10 @@ def curl(test):
                 w0 = (hi[2]**2*Dx(test[2], 1, 1) + test[2]*sp.diff(hi[2]**2, psi[1], 1) - hi[1]**3*Dx(test[1], 2, 1) - test[1]*sp.diff(hi[1]**2, psi[2], 1))/sg
                 w1 = (hi[0]**2*Dx(test[0], 2, 1) + test[0]*sp.diff(hi[0]**2, psi[2], 1) - hi[2]**3*Dx(test[2], 0, 1) - test[2]*sp.diff(hi[2]**2, psi[0], 1))/sg
                 w2 = (hi[1]**2*Dx(test[1], 0, 1) + test[1]*sp.diff(hi[1]**2, psi[0], 1) - hi[0]**3*Dx(test[0], 1, 1) - test[0]*sp.diff(hi[0]**2, psi[1], 1))/sg
-                test._terms = np.concatenate((w0.terms(), w1.terms(), w2.terms()), axis=0)
-                test._scales = np.concatenate((w0.scales(), w1.scales(), w2.scales()), axis=0)
-                test._indices = np.concatenate((w0.indices(), w1.indices(), w2.indices()), axis=0)
+                test._terms = w0.terms()+w1.terms()+w2.terms()
+                test._scales = w0.scales()+w1.scales()+w2.scales()
+                test._indices = w0.indices()+w1.indices()+w2.indices()
+
             else:
                 assert test.dimensions == 2
                 test = (hi[1]**2*Dx(test[1], 0, 1) + test[1]*sp.diff(hi[1]**2, psi[0], 1) - hi[0]**2*Dx(test[0], 1, 1) - test[0]*sp.diff(hi[0]**2, psi[1], 1))/sg
