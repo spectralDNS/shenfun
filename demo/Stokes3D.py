@@ -25,12 +25,10 @@ on the pressure. The second is removed by fixing :math:`\hat{p}_{0, 0, N-1} = 0`
 import os
 import sys
 import numpy as np
-from mpi4py import MPI
-from sympy import symbols, sin, cos, lambdify
+from sympy import symbols, sin, cos
 from shenfun import *
 
-comm = MPI.COMM_WORLD
-x, y, z = symbols("x,y,z")
+x, y, z = symbols("x,y,z", real=True)
 
 # Some right hand side (manufactured solution)
 uex = sin(2*y)*(1-z**2)
@@ -41,16 +39,6 @@ fx = uex.diff(x, 2) + uex.diff(y, 2) + uex.diff(z, 2) - pe.diff(x, 1)
 fy = uey.diff(x, 2) + uey.diff(y, 2) + uey.diff(z, 2) - pe.diff(y, 1)
 fz = uez.diff(x, 2) + uez.diff(y, 2) + uez.diff(z, 2) - pe.diff(z, 1)
 h = uex.diff(x, 1) + uey.diff(y, 1) + uez.diff(z, 1)
-
-# Lambdify for faster evaluation
-ulx = lambdify((x, y, z), uex, 'numpy')
-uly = lambdify((x, y, z), uey, 'numpy')
-ulz = lambdify((x, y, z), uez, 'numpy')
-flx = lambdify((x, y, z), fx, 'numpy')
-fly = lambdify((x, y, z), fy, 'numpy')
-flz = lambdify((x, y, z), fz, 'numpy')
-hl = lambdify((x, y, z), h, 'numpy')
-pl = lambdify((x, y, z), pe, 'numpy')
 
 N = (20, 20, 20)
 family = sys.argv[-1] if len(sys.argv) == 2 else 'Legendre'
@@ -84,12 +72,8 @@ D = inner(q, div(u))
 M = BlockMatrix(A+G+D)
 
 # Get f and h on quad points
-fh = Array(VQ)
+fh = Array(VQ, buffer=(fx, fy, fz, h))
 f_, h_ = fh
-f_[0] = flx(*X)
-f_[1] = fly(*X)
-f_[2] = flz(*X)
-h_[:] = hl(*X)
 
 fh_hat = Function(VQ)
 f_hat, h_hat = fh_hat
@@ -102,10 +86,8 @@ up = up_hat.backward()
 u_, p_ = up
 
 # Exact solution
-ux = ulx(*X)
-uy = uly(*X)
-uz = ulz(*X)
-pe = pl(*X)
+ux, uy, uz = Array(V, buffer=(uex, uey, uez))
+pe = Array(Q, buffer=pe)
 
 error = [comm.reduce(np.linalg.norm(ux-u_[0])),
          comm.reduce(np.linalg.norm(uy-u_[1])),

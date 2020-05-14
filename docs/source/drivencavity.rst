@@ -7,7 +7,7 @@ Demo - Lid driven cavity
 ========================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Apr 21, 2020
+:Date: May 12, 2020
 
 *Summary.* The lid driven cavity is a classical benchmark for Navier Stokes solvers.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the lid
@@ -258,16 +258,16 @@ With shenfun the tensor product spaces are created as
     P = TensorProductSpace(comm, (PX, PY))
 
 These tensor product spaces are all scalar valued.
-The velocity is a vector, and a vector requires a mixed basis like
-:math:`W_1^{\boldsymbol{N}} = V_1^{\boldsymbol{N}} \times V_0^{\boldsymbol{N}}`. The mixed basis is created
+The velocity is a vector, and a vector requires a mixed vector basis like
+:math:`W_1^{\boldsymbol{N}} = V_1^{\boldsymbol{N}} \times V_0^{\boldsymbol{N}}`. The vector basis is created
 in shenfun as
 
 .. code-block:: python
 
-    W1 = MixedTensorProductSpace([V1, V0])
-    W0 = MixedTensorProductSpace([V0, V0])
+    W1 = VectorTensorProductSpace([V1, V0])
+    W0 = VectorTensorProductSpace([V0, V0])
 
-Note that the second mixed basis, :math:`W_0^{\boldsymbol{N}} = V_0^{\boldsymbol{N}} \times V_0^{\boldsymbol{N}}`, uses
+Note that the second vector basis, :math:`W_0^{\boldsymbol{N}} = V_0^{\boldsymbol{N}} \times V_0^{\boldsymbol{N}}`, uses
 homogeneous boundary conditions throughout.
 
 .. _sec:mixedform:
@@ -566,12 +566,12 @@ assemble the constant boundary contribution to the right hand side
     # Create Function to hold solution
     uh_hat = Function(VQ)
     ui_hat = uh_hat[0]
-    D1Y.bc.apply_after(ui_hat[0], True) # Fixes the values of the boundary dofs
+    D1Y.bc.set_boundary_dofs(ui_hat[0], True) # Fixes the values of the boundary dofs
     
     # New solution (iterative)
     uh_new = Function(VQ)
     ui_new = uh_new[0]
-    D1Y.bc.apply_after(ui_new[0], True)
+    D1Y.bc.set_boundary_dofs(ui_new[0], True)
     
     # Compute the constant contribution to rhs due to nonhomogeneous boundary conditions
     bh_hat0 = Function(VQ)
@@ -581,7 +581,7 @@ assemble the constant boundary contribution to the right hand side
 
 Note that ``bh_hat0`` now contains the part of the right hand side that is
 due to the non-symmetric part of assembled matrices. The line with
-``D1Y.bc.apply_after(ui_hat[0], True)`` ensures the known boundary values of
+``D1Y.bc.set_boundary_dofs(ui_hat[0], True)`` ensures the known boundary values of
 the solution are fixed for ``ui_hat``.
 
 The nonlinear right hand side also requires some additional attention.

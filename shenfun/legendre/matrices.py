@@ -80,6 +80,8 @@ SD = bases.ShenDirichletBasis
 SB = bases.ShenBiharmonicBasis
 SN = bases.ShenNeumannBasis
 SU = bases.UpperDirichletBasis
+CD = bases.BCBasis
+CB = bases.BCBiharmonicBasis
 
 x = sp.symbols('x', real=True)
 xp = sp.symbols('x', real=True, positive=True)
@@ -851,6 +853,73 @@ class BDDrp1mat(SpectralMatrix):
 
 
 @inheritdocstrings
+class BCDmat(SpectralMatrix):
+    r"""Mass matrix for inner product
+
+    .. math::
+
+        B_{kj} = (\psi_j, \phi_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_j` is the Dirichlet boundary basis and
+    :math:`\phi_k` is the Shen Dirichlet basis function.
+
+    """
+    def __init__(self, test, trial, measure=1):
+        assert isinstance(test[0], SD)
+        assert isinstance(trial[0], CD)
+        N = test[0].N
+        k = np.arange(N-2, dtype=np.float)
+        if not test[0].is_scaled():
+            d = {0: np.array([1, 1./3.]),
+                 1: np.array([1.0]),
+                 -1: np.array([-1./3., 0])}
+        else:
+            d = {0: np.array([1./np.sqrt(6.), 1./3./np.sqrt(10.)]),
+                 1: np.array([1./np.sqrt(6.)]),
+                 -1: np.array([-1./3./np.sqrt(10.), 0])}
+
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+
+@inheritdocstrings
+class BCBmat(SpectralMatrix):
+    r"""Mass matrix for inner product
+
+    .. math::
+
+        B_{kj} = (\psi_j, \phi_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, 2, 3 \text{ and } k = 0, 1, ..., N-4
+
+    and :math:`\psi_j` is the Biharmonic boundary basis and
+    :math:`\phi_k` is the Shen Biharmonic basis function.
+
+    """
+    def __init__(self, test, trial, measure=1):
+        assert isinstance(test[0], SB)
+        assert isinstance(trial[0], CB)
+        N = test[0].N
+        k = np.arange(N-4, dtype=np.float)
+        d = {0: np.array([1, 4/9, -1/15, 1/35]),
+             1: np.array([1, -1/9, 1/15]),
+             2: np.array([3/7, -1/9]),
+             3: np.array([-3/7]),
+            -1: np.array([-4/9, 0, 1/35, 0]),
+            -2: np.array([0, -1/35, 0, 0]),
+            -3: np.array([1/35, 0, 0, 0])}
+
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+
+@inheritdocstrings
 class _Legmatrix(SpectralMatrix):
     def __init__(self, test, trial, measure=1):
         SpectralMatrix.__init__(self, {}, test, trial, measure=measure)
@@ -915,4 +984,6 @@ mat = _LegMatDict({
     ((SU, 1), (SU, 1), (0, 1), xp): functools.partial(AUUrp1mat, scale=0.5),
     ((SU, 0), (SU, 0), (-1, 1), 1+x): BUUrp1mat,
     ((SU, 0), (SU, 0), (0, 1), xp): functools.partial(BUUrp1mat, scale=0.5),
+    ((SD, 0), (CD, 0)): BCDmat,
+    ((SB, 0), (CB, 0)): BCBmat,
     })

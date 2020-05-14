@@ -3,7 +3,8 @@ import numpy as np
 from mpi4py import MPI
 import pytest
 from mpi4py_fft import generate_xdmf
-from shenfun import *
+from shenfun import Basis, TensorProductSpace, ShenfunFile, Function,\
+    Array, MixedTensorProductSpace, VectorTensorProductSpace
 
 N = (12, 13, 14, 15)
 comm = MPI.COMM_WORLD

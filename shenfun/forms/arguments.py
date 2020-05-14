@@ -1,5 +1,5 @@
 from numbers import Number, Integral
-from scipy.special import sph_harm
+from scipy.special import sph_harm, erf
 import numpy as np
 import sympy as sp
 from shenfun.optimization.cython import evaluate
@@ -826,7 +826,25 @@ class ShenfunBaseArray(DistArray):
             if not space.num_components() == 1:
                 shape = (space.num_components(),) + shape
 
-            if hasattr(buffer, 'free_symbols'):
+            # if a list of sympy expressions
+            if isinstance(buffer, (list, tuple)):
+                assert len(buffer) == len(space.flatten())
+                sympy_buffer = buffer
+                buffer = Array(space)
+                dtype = space.forward.input_array.dtype
+                for i, buf0 in enumerate(sympy_buffer):
+                    if isinstance(buf0, Number):
+                        buffer.v[i] = buf0
+                    elif hasattr(buf0, 'free_symbols'):
+                        x = buf0.free_symbols.pop()
+                        buffer.v[i] = sp.lambdify(x, buf0)(space.mesh()).astype(dtype)
+
+                if cls.__name__ == 'Function':
+                    buf = Function(space)
+                    buf = buffer.forward(buf)
+                    buffer = buf
+
+            elif hasattr(buffer, 'free_symbols'):
                 # Evaluate sympy function on entire mesh
                 x = buffer.free_symbols.pop()
                 buffer = sp.lambdify(x, buffer)
@@ -855,7 +873,34 @@ class ShenfunBaseArray(DistArray):
             p0 = space.backward.output_pencil
             dtype = space.forward.input_array.dtype
 
-        # Evaluate sympy function on entire mesh
+        # if a list of sympy expressions
+        if isinstance(buffer, (list, tuple)):
+            assert len(buffer) == len(space.flatten())
+            sympy_buffer = buffer
+            buffer = Array(space)
+            dtype = space.forward.input_array.dtype
+            if cls.__name__ == 'Function':
+                buff = Function(space)
+            mesh = space.local_mesh(True)
+            for i, buf0 in enumerate(sympy_buffer):
+                if isinstance(buf0, Number):
+                    buffer.v[i] = buf0
+                elif hasattr(buf0, 'free_symbols'):
+                    sym0 = buf0.free_symbols
+                    m = []
+                    for sym in sym0:
+                        j = 'xyzrs'.index(str(sym))
+                        m.append(mesh[j])
+                    buffer.v[i] = sp.lambdify(sym0, buf0, modules=['numpy', {'cot': cot, 'Ynm': Ynm, 'erf': erf}])(*m).astype(dtype)
+                else:
+                    raise NotImplementedError
+
+            if cls.__name__ == 'Function':
+                buff = Function(space)
+                buff = buffer.forward(buff)
+                buffer = buff
+
+        # if just one sympy expression
         if hasattr(buffer, 'free_symbols'):
             sym0 = buffer.free_symbols
             mesh = space.local_mesh(True)
@@ -864,7 +909,7 @@ class ShenfunBaseArray(DistArray):
                 j = 'xyzrs'.index(str(sym))
                 m.append(mesh[j])
 
-            buf = sp.lambdify(sym0, buffer, modules=['numpy', {'cot': cot, 'Ynm': Ynm}])(*m).astype(space.forward.input_array.dtype)
+            buf = sp.lambdify(sym0, buffer, modules=['numpy', {'cot': cot, 'Ynm': Ynm, 'erf': erf}])(*m).astype(space.forward.input_array.dtype)
             buffer = Array(space)
             buffer[:] = buf
             if cls.__name__ == 'Function':
@@ -898,12 +943,6 @@ class ShenfunBaseArray(DistArray):
         """Return index for scalar into mixed base space"""
         if self.base is None:
             return None
-
-        #if self.base.shape == self.shape:
-        #    return None
-
-        #if self.rank > 0:
-        #    return None
 
         if self.function_space().num_components() > 1:
             return None
@@ -1025,6 +1064,22 @@ class Function(ShenfunBaseArray, BasisFunction):
     def __init__(self, space, val=0, buffer=None):
         BasisFunction.__init__(self, space, offset=0)
 
+    def set_boundary_dofs(self):
+        space = self.function_space()
+        if space.is_composite_space:
+            for i, s in enumerate(space.flatten()):
+                bases = s.bases if hasattr(s, 'bases') else [s]
+                for base in bases:
+                    if base.has_nonhomogeneous_bcs:
+                        base.bc.set_boundary_dofs(self.v[i], True)
+
+        else:
+            bases = space.bases if hasattr(space, 'bases') else [space]
+            for base in bases:
+                if base.has_nonhomogeneous_bcs:
+                    base.bc.set_boundary_dofs(self, True)
+        return self
+
     @property
     def forward_output(self):
         return True
@@ -1073,35 +1128,29 @@ class Function(ShenfunBaseArray, BasisFunction):
         """Project Function to orthogonal basis"""
         space = self.function_space()
         if output_array is None:
-            output_array = Function(space)
+            output_array = Function(space.get_orthogonal())
 
         # In case of mixed space make a loop
-        if space.rank > 0:
-            spaces = space.flatten()
-            # output_array will now loop over first index
-        else:
-            spaces = [space]
-            output_array = [output_array]
-            self = [self]
+        if space.num_components() > 1:
+            for x, subfunction in zip(output_array, self):
+                x = subfunction.to_ortho(x)
+            return output_array
 
-        for i, space in enumerate(spaces):
-            if space.dimensions > 1:
-                naxes = space.get_nonperiodic_axes()
-                axis = naxes[0]
-                base = space.bases[axis]
-                if not base.is_orthogonal:
-                    output_array[i] = base.to_ortho(self[i], output_array[i])
-                if len(naxes) > 1:
-                    input_array = np.zeros_like(output_array[i].__array__())
-                    for axis in naxes[1:]:
-                        base = space.bases[axis]
-                        input_array[:] = output_array[i]
-                        if not base.is_orthogonal:
-                            output_array[i] = base.to_ortho(input_array, output_array[i])
-            else:
-                output_array[i] = space.to_ortho(self[i], output_array[i])
-        if isinstance(output_array, list):
-            return output_array[0]
+        if space.dimensions > 1:
+            naxes = space.get_nonperiodic_axes()
+            axis = naxes[0]
+            base = space.bases[axis]
+            if not base.is_orthogonal:
+                output_array = base.to_ortho(self, output_array)
+            if len(naxes) > 1:
+                input_array = np.zeros_like(output_array.v)
+                for axis in naxes[1:]:
+                    base = space.bases[axis]
+                    input_array[:] = output_array
+                    if not base.is_orthogonal:
+                        output_array = base.to_ortho(input_array, output_array)
+        else:
+            output_array = space.to_ortho(self, output_array)
         return output_array
 
     def mask_nyquist(self, mask=None):

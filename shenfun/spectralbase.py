@@ -204,7 +204,6 @@ for computing the (weighted) scalar product.
 #pylint: disable=unused-argument, not-callable, no-self-use, protected-access, too-many-public-methods, missing-docstring
 
 import importlib
-import warnings
 import sympy as sp
 import numpy as np
 from mpi4py_fft import fftw
@@ -583,7 +582,13 @@ class SpectralBase(object):
                 output_array
 
         """
-        raise NotImplementedError
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape, dtype=self.dtype)
+        X = sp.symbols('x', real=True)
+        f = self.sympy_basis(i, X)
+        output_array[:] = sp.lambdify(X, f)(x)
+        return output_array
 
     def evaluate_basis_all(self, x=None, argument=0):
         """Evaluate basis at ``x`` or all quadrature points
@@ -624,13 +629,13 @@ class SpectralBase(object):
                 output_array
 
         """
-        warnings.warn('Using slow sympy evaluate_basis_derivative')
+        #warnings.warn('Using slow sympy evaluate_basis_derivative')
         if x is None:
             x = self.mesh(False, False)
         if output_array is None:
-            output_array = np.zeros(x.shape)
+            output_array = np.zeros(x.shape, dtype=self.dtype)
         x = np.atleast_1d(x)
-        X = sp.symbols('x')
+        X = sp.symbols('x', real=True)
         basis = self.sympy_basis(i=i, x=X).diff(X, k)
         output_array[:] = sp.lambdify(X, basis, 'numpy')(x)
         return output_array
@@ -1111,6 +1116,14 @@ class SpectralBase(object):
     def __hash__(self):
         return hash((self.N, self.quad, self.family()))
 
+    def get_bcmass_matrix(self, hi=1):
+        msx = 'xyzrs'[self.axis]
+        dV = split(hi)
+        assert len(dV) == 1
+        dv = dV[0]
+        msi = dv[msx]
+        return inner_product((self, 0), (self.get_bc_basis(), 0), msi)
+
     def get_measured_weights(self, N=None, measure=1):
         """Return weights times `measure`
 
@@ -1343,6 +1356,7 @@ class VectorBasisTransform(object):
         for i, transform in enumerate(self._transforms):
             output_array[i] = transform(input_array[i], output_array[i], **kw)
         return output_array
+
 
 class islicedict(dict):
     """Return a tuple of slices, broadcasted to ``dimensions`` number of

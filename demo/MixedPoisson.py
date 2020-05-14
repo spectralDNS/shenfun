@@ -27,12 +27,10 @@ coupled and implicit.
 import os
 import sys
 import numpy as np
-from mpi4py import MPI
-from sympy import symbols, sin, cos, lambdify
+from sympy import symbols, sin, cos
 from shenfun import *
 
-comm = MPI.COMM_WORLD
-x, y = symbols("x,y")
+x, y = symbols("x,y", real=True)
 
 family = sys.argv[-1].lower()
 assert len(sys.argv) == 4, "Call with three command-line arguments: N[0], N[1] and family (Chebyshev/Legendre)"
@@ -73,9 +71,8 @@ else:
 A10 = inner(q, div(g))
 
 # Get f and g on quad points
-vfj = Array(Q)
+vfj = Array(Q, buffer=(0, 0, fe))
 vj, fj = vfj
-fj[:] = lambdify((x, y), fe)(*X)
 
 vf_hat = Function(Q)
 v_hat, f_hat = vf_hat

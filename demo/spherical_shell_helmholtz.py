@@ -5,7 +5,6 @@ Using spherical coordinates
 
 """
 import os
-from mpi4py import MPI
 from shenfun import *
 from shenfun.la import SolverGeneric1NP
 import sympy as sp
@@ -67,7 +66,6 @@ if 'pytest' not in os.environ:
     u_hat2 = u_hat.refine([N*3, M*3])
     ur = u_hat2.backward(uniform=True)
     from mayavi import mlab
-    import matplotlib.pyplot as plt
     xx, yy, zz = u_hat2.function_space().local_curvilinear_mesh(uniform=True)
     # Wrap periodic direction around
     if T.bases[1].domain == (0, 2*np.pi):

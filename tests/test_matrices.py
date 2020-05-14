@@ -21,7 +21,7 @@ from shenfun.jacobi import bases as jbases
 from shenfun.chebyshev import la as cla
 from shenfun.legendre import la as lla
 from shenfun import div, grad, inner, TensorProductSpace, Basis, SparseMatrix, \
-    TrialFunction, TestFunction, Function
+    Function
 from shenfun.spectralbase import inner_product
 
 cBasis = (cbases.Basis,
@@ -117,7 +117,6 @@ def test_mat(key, mat, quad):
     testfunction = (t0(N, quad=quad), test[1])
     trialfunction = (t1(N, quad=quad), trial[1])
     mat = mat(testfunction, trialfunction, measure=measure)
-
     shenfun.check_sanity(mat, testfunction, trialfunction, measure)
     if test[0].family() == 'Legendre' and test[0].boundary_condition() == 'Dirichlet':
         testfunction = (test[0](N, quad=quad, scaled=True), test[1])
@@ -132,7 +131,7 @@ def test_mat(key, mat, quad):
 @pytest.mark.parametrize('k', range(5))
 def test_cmatvec(b0, b1, quad, format, dim, k):
     """Test matrix-vector product"""
-    global c, c1, d, d1
+    global c, c1
     b0 = b0(N, quad=quad)
     b1 = b1(N, quad=quad)
     mat = inner_product((b0, 0), (b1, k))
@@ -164,7 +163,7 @@ def test_cmatvec(b0, b1, quad, format, dim, k):
 @pytest.mark.parametrize('k0,k1', product((0, 1, 2), (0, 1, 2)))
 def test_lmatvec(b0, b1, quad, format, dim, k0, k1):
     """Test matrix-vector product"""
-    global c, c1, d, d1
+    global c, c1
     b0 = b0(N, quad=quad)
     b1 = b1(N, quad=quad)
     mat = inner_product((b0, k0), (b1, k1))
@@ -197,7 +196,7 @@ def test_lmatvec(b0, b1, quad, format, dim, k0, k1):
 @pytest.mark.parametrize('k0,k1', product((0, 1, 2), (0, 1, 2)))
 def test_lagmatvec(b0, b1, quad, format, dim, k0, k1):
     """Test matrix-vector product"""
-    global c, c1, d, d1
+    global c, c1
     b0 = b0(N, quad=quad)
     b1 = b1(N, quad=quad)
     mat = inner_product((b0, k0), (b1, k1))
@@ -229,7 +228,7 @@ def test_lagmatvec(b0, b1, quad, format, dim, k0, k1):
 @pytest.mark.parametrize('k0,k1', product((0, 1, 2), (0, 1, 2)))
 def test_hmatvec(b0, b1, quad, format, dim, k0, k1):
     """Test matrix-vector product"""
-    global c, c1, d, d1
+    global c, c1
     b0 = b0(N, quad=quad)
     b1 = b1(N, quad=quad)
     mat = inner_product((b0, k0), (b1, k1))
@@ -261,7 +260,7 @@ def test_hmatvec(b0, b1, quad, format, dim, k0, k1):
 @pytest.mark.parametrize('k0,k1', product((0, 1, 2), (0, 1, 2)))
 def test_jmatvec(b0, b1, quad, format, dim, k0, k1):
     """Testq matrix-vector product"""
-    global c, c1, d, d1
+    global c, c1
     b0 = b0(N, quad=quad)
     b1 = b1(N, quad=quad)
     mat = inner_product((b0, k0), (b1, k1))
@@ -355,8 +354,8 @@ def test_mul2():
     c = mat * v
     assert np.allclose(c, 3)
     SD = Basis(8, "L", bc=(0, 0), scaled=True)
-    u = TrialFunction(SD)
-    v = TestFunction(SD)
+    u = shenfun.TrialFunction(SD)
+    v = shenfun.TestFunction(SD)
     mat = inner(grad(u), grad(v))
     z = Function(SD, val=1)
     c = mat * z
@@ -417,8 +416,8 @@ def test_div(key, mat, quad):
                          list(product(lBasis, lquads))+list(product(lagBasis, lagquads)))
 def test_div2(basis, quad):
     B = basis(8, quad=quad)
-    u = TrialFunction(B)
-    v = TestFunction(B)
+    u = shenfun.TrialFunction(B)
+    v = shenfun.TestFunction(B)
     m = inner(u, v)
     z = Function(B, val=1)
     c = m / z
@@ -552,8 +551,8 @@ def test_helmholtz3D(family, axis):
     bases[allaxes3D[axis][1]] = K1
     bases[allaxes3D[axis][2]] = K2
     T = TensorProductSpace(subcomms, bases, axes=allaxes3D[axis])
-    u = TrialFunction(T)
-    v = TestFunction(T)
+    u = shenfun.TrialFunction(T)
+    v = shenfun.TestFunction(T)
     if family == 'chebyshev':
         mat = inner(v, div(grad(u)))
     else:
@@ -591,8 +590,8 @@ def test_helmholtz2D(family, axis):
     bases = [K1]
     bases.insert(axis, SD)
     T = TensorProductSpace(subcomms, bases, axes=allaxes2D[axis])
-    u = TrialFunction(T)
-    v = TestFunction(T)
+    u = shenfun.TrialFunction(T)
+    v = shenfun.TestFunction(T)
     if family == 'chebyshev':
         mat = inner(v, div(grad(u)))
     else:
@@ -633,8 +632,8 @@ def test_biharmonic3D(family, axis):
     bases[allaxes3D[axis][1]] = K1
     bases[allaxes3D[axis][2]] = K2
     T = TensorProductSpace(subcomms, bases, axes=allaxes3D[axis])
-    u = TrialFunction(T)
-    v = TestFunction(T)
+    u = shenfun.TrialFunction(T)
+    v = shenfun.TestFunction(T)
     if family == 'chebyshev':
         mat = inner(v, div(grad(div(grad(u)))))
     else:
@@ -669,8 +668,8 @@ def test_biharmonic2D(family, axis):
     bases = [K1]
     bases.insert(axis, SD)
     T = TensorProductSpace(subcomms, bases, axes=allaxes2D[axis])
-    u = TrialFunction(T)
-    v = TestFunction(T)
+    u = shenfun.TrialFunction(T)
+    v = shenfun.TestFunction(T)
     if family == 'chebyshev':
         mat = inner(v, div(grad(div(grad(u)))))
     else:
@@ -696,7 +695,7 @@ def test_biharmonic2D(family, axis):
 if __name__ == '__main__':
     import sympy as sp
     x = sp.symbols('x', real=True, positive=True)
-    test_mat(((lBasis[1], 1), (lBasis[1], 1), (-1, 1), 1+x), lmatrices.ADDrp1mat, 'LG')
+    test_mat(((cbases.ShenDirichletBasis, 0), (cbases.BCBasis, 0)), cmatrices.BCDmat, 'GC')
     #test_cmatvec(cBasis[3], cBasis[1], 'GC', 'cython', 3, 0)
     #test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
     #test_hmatvec(hBasis[0], hBasis[0], 'HG', 'self', 3, 1, 1)

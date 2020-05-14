@@ -27,29 +27,22 @@ Initial conditions are given as
 and for stability they are approximated using error functions.
 
 """
-from sympy import Symbol, lambdify
+from sympy import symbols
 from sympy.functions import erf
 import numpy as np
-import scipy
 import matplotlib.pyplot as plt
-from mpi4py import MPI
 from mpi4py_fft import generate_xdmf
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    HDF5File, ETDRK4, TensorProductSpace, VectorTensorProductSpace, Basis, Array
-
-comm = MPI.COMM_WORLD
+    HDF5File, ETDRK4, TensorProductSpace, VectorTensorProductSpace, Basis, Array, \
+    comm
 
 # Use sympy to set up initial condition
-x = Symbol("x")
-y = Symbol("y")
+x, y = symbols("x,y", real=True)
 
 # Initial conditions
 a = 0.0001
 u0 = 0.5*(1-((0.5*(erf((x-0.04)/a)+1) - 0.5*(erf((x+0.04)/a)+1))*(0.5*(erf((y-0.04)/a)+1) - 0.5*(erf((y+0.04)/a)+1))))+0.5
 v0 = 0.25*(0.5*(erf((x-0.04)/a)+1) - 0.5*(erf((x+0.04)/a)+1))*(0.5*(erf((y-0.04)/a)+1) - 0.5*(erf((y+0.04)/a)+1))
-
-ul = lambdify((x, y), u0, modules=['numpy', {'erf': scipy.special.erf}])
-vl = lambdify((x, y), v0, modules=['numpy', {'erf': scipy.special.erf}])
 
 # Size of discretization
 N = (200, 200)
@@ -74,7 +67,7 @@ vv = TestFunction(TV)
 uu = TrialFunction(TV)
 
 # Declare solution arrays and work arrays
-UV = Array(TV)
+UV = Array(TV, buffer=(u0, v0))
 UVp = Array(TVp)
 U, V = UV  # views into vector components
 UV_hat = Function(TV)
@@ -86,9 +79,7 @@ e2 = 0.00001
 b0 = 0.03
 
 #initialize
-U[:] = ul(*X)
-V[:] = vl(*X)
-UV_hat = TV.forward(UV, UV_hat)
+UV_hat = UV.forward(UV_hat)
 
 def LinearRHS(self, alpha1, alpha2, **params):
     L = inner(vv, (e1, e2)*div(grad(uu)))

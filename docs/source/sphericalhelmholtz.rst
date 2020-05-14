@@ -7,7 +7,7 @@ Demo - Helmholtz equation on the unit sphere
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Apr 21, 2020
+:Date: May 12, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the
 Helmholtz equation on the surface of a unit sphere, using spherical
@@ -17,7 +17,7 @@ If requested the solver will run in parallel using MPI.
 
 .. _fig:helmholtz:
 
-.. figure:: https://rawgit.com/spectralDNS/spectralutilities/master/figures/sphere.png
+.. figure:: https://rawgit.com/spectralDNS/spectralutilities/master/figures/spherewhite4.png
    :width: 700
 
    *Helmholtz on the unit sphere*

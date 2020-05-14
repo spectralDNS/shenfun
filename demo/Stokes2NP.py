@@ -22,12 +22,10 @@ pressure.
 """
 import os
 import numpy as np
-from mpi4py import MPI
-from sympy import symbols, sin, cos, lambdify
+from sympy import symbols, sin, cos
 from shenfun import *
 
-comm = MPI.COMM_WORLD
-x, y = symbols("x,y")
+x, y = symbols("x,y", real=True)
 
 assert comm.Get_size() == 1, "Two non-periodic directions only have solver implemented for serial"
 
@@ -38,14 +36,6 @@ pe = -0.1*sin(2*x)*sin(4*y)
 fx = -uex.diff(x, 2) - uex.diff(y, 2) - pe.diff(x, 1)
 fy = -uey.diff(x, 2) - uey.diff(y, 2) - pe.diff(y, 1)
 h = uex.diff(x, 1) + uey.diff(y, 1)
-
-# Lambdify for faster evaluation
-ulx = lambdify((x, y), uex, 'numpy')
-uly = lambdify((x, y), uey, 'numpy')
-flx = lambdify((x, y), fx, 'numpy')
-fly = lambdify((x, y), fy, 'numpy')
-hl = lambdify((x, y), h, 'numpy')
-pl = lambdify((x, y), pe, 'numpy')
 
 N = (38, 38)
 #family = 'Chebyshev'
@@ -88,11 +78,8 @@ A10 = inner(q, div(u))
 M = BlockMatrix(A00+A01+A10)
 
 # Assemble right hand side
-fh = Array(VQ)
+fh = Array(VQ, buffer=(fx, fy, h))
 f_, h_ = fh
-f_[0] = flx(*X)
-f_[1] = fly(*X)
-h_[:] = hl(*X)
 fh_hat = Function(VQ)
 f_hat, h_hat = fh_hat
 f_hat = inner(v, f_, output_array=f_hat)
@@ -110,9 +97,8 @@ up = uh_hat.backward()
 u_, p_ = up
 
 # Exact solution
-ux = ulx(*X)
-uy = uly(*X)
-pe = pl(*X)
+ux, uy = Array(V, buffer=(uex, uey))
+pe = Array(Q, buffer=pe)
 
 # Compute error
 error = [comm.reduce(np.linalg.norm(ux-u_[0])),

@@ -394,7 +394,7 @@ def test_project_2dirichlet(quad):
 
     dudy = project(Dx(uh, 1, 1), DB).backward()
     duedy = Array(DB, buffer=ue.diff(y, 1))
-    assert np.allclose(duedy, dudy, 0, 1e-5), np.linalg.norm(dy-dudy)
+    assert np.allclose(duedy, dudy, 0, 1e-5)
 
     us_hat = Function(BB)
     uq = uh.backward()
