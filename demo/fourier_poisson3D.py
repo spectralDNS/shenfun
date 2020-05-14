@@ -14,14 +14,11 @@ VxVxV is a tensorproductspace.
 import os
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
-from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis, \
-    TensorProductSpace, Array, Function, dx
-
-comm = MPI.COMM_WORLD
+    TensorProductSpace, Array, Function, dx, comm
 
 # Use sympy to compute a rhs, given an analytical solution
-x, y, z = symbols("x,y,z")
+x, y, z = symbols("x,y,z", real=True)
 ue = cos(4*x) + sin(4*y) + sin(6*z)
 fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
 

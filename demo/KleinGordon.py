@@ -16,20 +16,17 @@ Using the Fourier basis for all three spatial directions.
 from time import time
 import numpy as np
 import matplotlib.pyplot as plt
-from sympy import symbols, exp, lambdify
-from mpi4py import MPI
+from sympy import symbols, exp
 from shenfun import *
 from mpi4py_fft import generate_xdmf
 from spectralDNS.utilities import Timer
 
-comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 timer = Timer()
 
 # Use sympy to set up initial condition
-x, y, z = symbols("x,y,z")
+x, y, z = symbols("x,y,z", real=True)
 ue = 0.1*exp(-(x**2 + y**2 + z**2))
-ul = lambdify((x, y, z), ue, 'numpy')
 
 # Size of discretization
 N = (32, 32, 32)
@@ -41,7 +38,7 @@ threads = 1
 K0 = Basis(N[0], 'F', dtype='D', domain=(-2*np.pi, 2*np.pi))
 K1 = Basis(N[1], 'F', dtype='D', domain=(-2*np.pi, 2*np.pi))
 K2 = Basis(N[2], 'F', dtype='d', domain=(-2*np.pi, 2*np.pi))
-T = TensorProductSpace(comm, (K0, K1, K2), slab=True,
+T = TensorProductSpace(comm, (K0, K1, K2), axes=(0, 1, 2),
                        **{'planner_effort': 'FFTW_MEASURE',
                           'threads': threads,
                           'collapse_fourier': True})
@@ -52,7 +49,7 @@ TV = VectorTensorProductSpace(T)
 Tp = T.get_dealiased((1.5, 1.5, 1.5))
 
 X = T.local_mesh(True)
-fu = Array(TT)
+fu = Array(TT, buffer=(0, ue))
 f, u = fu
 up = Array(Tp)
 
@@ -62,13 +59,10 @@ dfu = Function(TT)
 df, du = dfu
 
 fu_hat = Function(TT)
+fu_hat = fu.forward()
 f_hat, u_hat = fu_hat
 
 gradu = Array(TV)
-
-# initialize (f initialized to zero, so all set)
-u[:] = ul(*X)
-u_hat = T.forward(u, u_hat)
 
 uh = TrialFunction(T)
 vh = TestFunction(T)

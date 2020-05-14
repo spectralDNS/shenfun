@@ -4,7 +4,6 @@ weighted inner product.
 """
 from numbers import Number
 import numpy as np
-import sympy as sp
 from shenfun.spectralbase import inner_product, SpectralBase, MixedBasis
 from shenfun.matrixbase import TPMatrix
 from shenfun.tensorproductspace import TensorProductSpace, MixedTensorProductSpace
@@ -299,7 +298,7 @@ def inner(expr0, expr1, output_array=None, level=0):
 
                             if ts.has_nonhomogeneous_bcs:
                                 tsc = ts.get_bc_basis()
-                                BB = inner_product((tt, a), (tsc, b))
+                                BB = inner_product((tt, a), (tsc, b), msi)
                                 if not abs(BB.scale-1.) < 1e-8:
                                     scb *= BB.scale
                                     BB.scale = 1.0

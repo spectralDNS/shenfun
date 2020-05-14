@@ -23,8 +23,8 @@ family = sys.argv[-1].lower()
 
 # Use sympy to compute a rhs, given an analytical solution
 domain = (-1., 1.)
-a = 0.
-b = -0.
+a = 1.
+b = -1.
 if family == 'jacobi':
     a = 0
     b = 0

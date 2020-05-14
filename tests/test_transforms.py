@@ -9,6 +9,7 @@ from shenfun.chebyshev import bases as cbases
 from shenfun.legendre import bases as lbases
 from shenfun.laguerre import bases as labases
 from shenfun.fourier import bases as fbases
+from shenfun.jacobi import bases as jbases
 from shenfun.la import TDMA
 from shenfun.spectralbase import inner_product
 
@@ -41,6 +42,11 @@ laBasis = (labases.Basis,
 fBasis = (fbases.R2CBasis,
           fbases.C2CBasis)
 
+jBasis = (jbases.Basis,
+          jbases.ShenDirichletBasis,
+          jbases.ShenBiharmonicBasis,
+          jbases.ShenOrder6Basis)
+
 cquads = ('GC', 'GL')
 lquads = ('LG', 'GL')
 laquads = ('LG',)
@@ -50,7 +56,8 @@ all_bases_and_quads = (list(product(laBasis, laquads))
                      +list(product(lBasisLG, ('LG',)))
                      +list(product(cBasis, cquads))
                      +list(product(cBasisGC, ('GC',)))
-                     +list(product(fBasis, ('',))))
+                     +list(product(fBasis, ('',)))
+                     +list(product(jBasis, ('JG',))))
 
 cbases2 = list(list(i[0]) + [i[1]] for i in product(list(product(cBasis, cBasis)), cquads))
 cbases2 += list(list(i[0]) + [i[1]] for i in product(list(product(cBasisGC, cBasisGC)), ('GC',)))
@@ -133,7 +140,7 @@ def test_eval(ST, quad):
     if not ST.family() == 'fourier':
         kwargs['quad'] = quad
     ST = ST(N, **kwargs)
-    points, weights = ST.points_and_weights(N)
+    points, weights = ST.mpmath_points_and_weights(N)
     fk = shenfun.Function(ST)
     fj = shenfun.Array(ST)
     fj[:] = np.random.random(fj.shape[0])
@@ -217,7 +224,7 @@ def test_massmatrices(test, trial, quad):
     u0 = np.zeros(N)
     u0 = test.scalar_product(fj, u0)
     s = test.slice()
-    assert np.allclose(u0[s], u2[s], 1e-6)
+    assert np.allclose(u0[s], u2[s], 1e-5)
 
     # Multidimensional version
     fj = fj.repeat(N*N).reshape((N, N, N)) + 1j*fj.repeat(N*N).reshape((N, N, N))
@@ -591,9 +598,9 @@ if __name__ == '__main__':
     # test_convolve(fbases.R2CBasis, 8)
     #test_ADDmat(cbases.ShenNeumannBasis, "GL")
     #test_CDDmat("GL")
-    test_massmatrices(cBasisGC[1], cBasisGC[0], 'GC')
+    #test_massmatrices(cBasisGC[1], cBasisGC[0], 'GC')
     #test_transforms(cBasis[1], 'GC', 2)
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[1], 'GC')
-    #test_eval(lBasisLG[1], 'LG')
+    test_eval(lBasis[2], 'GL')
     #test_axis(cBasis[1], 'GC', 0)

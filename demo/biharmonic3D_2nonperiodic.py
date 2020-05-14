@@ -11,14 +11,11 @@ Use Shen's Biharmonic basis for both non-periodic directions.
 """
 import sys
 import os
-from sympy import symbols, cos, sin, lambdify
+from sympy import symbols, cos, sin
 import numpy as np
-from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
-    Function, TensorProductSpace, Basis
+    Function, TensorProductSpace, Basis, comm
 from shenfun.la import SolverGeneric2NP
-
-comm = MPI.COMM_WORLD
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
@@ -27,9 +24,6 @@ family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
 x, y, z = symbols("x,y,z")
 ue = (sin(2*np.pi*z)*sin(4*np.pi*y)*cos(4*x))*(1-y**2)*(1-z**2)
 fe = ue.diff(x, 4) + ue.diff(y, 4) + ue.diff(z, 4) + 2*ue.diff(x, 2, y, 2) + 2*ue.diff(x, 2, z, 2) + 2*ue.diff(y, 2, z, 2)
-
-# Lambdify for faster evaluation
-ul = lambdify((x, y, z), ue, 'numpy')
 
 # Size of discretization
 N = (36, 36, 36)

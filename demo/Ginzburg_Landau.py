@@ -9,26 +9,22 @@ Use Fourier basis V and find u in VxV such that
 
 
 """
-from sympy import symbols, exp, lambdify
+from sympy import symbols, exp
 import matplotlib.pyplot as plt
-from mpi4py import MPI
 from mpi4py_fft import generate_xdmf, fftw
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    TensorProductSpace, Array, Function, ETDRK4, HDF5File, Basis
-
-comm = MPI.COMM_WORLD
+    TensorProductSpace, Array, Function, ETDRK4, HDF5File, Basis, comm
 
 # Use sympy to set up initial condition
 x, y = symbols("x,y")
 #ue = (1j*x + y)*exp(-0.03*(x**2+y**2))
 ue = (x + y)*exp(-0.03*(x**2+y**2))
-ul = lambdify((x, y), ue, 'numpy')
 
 # Size of discretization
 N = (129, 129)
 
-K0 = Basis(N[0], 'F', dtype='D', domain=(-50., 50.))
-K1 = Basis(N[1], 'F', dtype='D', domain=(-50., 50.))
+K0 = Basis(N[0], 'F', dtype='D', domain=(-50, 50))
+K1 = Basis(N[1], 'F', dtype='D', domain=(-50, 50))
 T = TensorProductSpace(comm, (K0, K1), **{'planner_effort': 'FFTW_MEASURE'})
 
 Tp = T.get_dealiased((1.5, 1.5))
@@ -46,12 +42,11 @@ except:
 #Tp = T
 
 X = T.local_mesh(True)
-U = Array(T)
+U = Array(T, buffer=ue)
 Up = Array(Tp)
 U_hat = Function(T)
 
 #initialize
-U[:] = ul(*X)
 U_hat = T.forward(U, U_hat)
 
 def LinearRHS(self, **par):
@@ -94,5 +89,6 @@ if __name__ == '__main__':
     integrator = ETDRK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
     integrator.setup(dt)
     U_hat = integrator.solve(U, U_hat, dt, (0, end_time))
-    generate_xdmf("Ginzburg_Landau_{}.h5".format(N[0]))
+    if comm.Get_rank() == 0:
+        generate_xdmf("Ginzburg_Landau_{}.h5".format(N[0]))
     fftw.export_wisdom('GL.wisdom')

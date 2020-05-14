@@ -12,16 +12,13 @@ V^4 is a 4-dimensional tensorproductspace.
 
 """
 import os
-from sympy import symbols, cos, sin, lambdify
+from sympy import symbols, cos, sin
 import numpy as np
-from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis, \
-    TensorProductSpace, Array, Function, dx
-
-comm = MPI.COMM_WORLD
+    TensorProductSpace, Array, Function, dx, comm
 
 # Use sympy to compute a rhs, given an analytical solution
-x, y, z, r = symbols("x,y,z,r")
+x, y, z, r = symbols("x,y,z,r", real=True)
 ue = cos(4*x) + sin(4*y) + sin(6*z) + cos(6*r)
 fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2) + ue.diff(r, 2)
 
@@ -53,8 +50,6 @@ uq = T.backward(f_hat)
 uj = Array(T, buffer=ue)
 print(np.sqrt(dx((uj-uq)**2)))
 assert np.allclose(uj, uq)
-
-print(f_hat.commsizes, fj.commsizes)
 
 if 'pytest' not in os.environ and comm.Get_size() == 1:
     import matplotlib.pyplot as plt

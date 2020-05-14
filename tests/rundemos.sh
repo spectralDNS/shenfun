@@ -71,6 +71,7 @@ python neumanndirichlet_poisson1D.py 24 legendre
 python spherical_shell_helmholtz.py
 
 python NavierStokes.py
+python NavierStokesDrivenCavity.py
 
 python MixedPoisson.py 24 25 legendre
 python MixedPoisson.py 24 25 chebyshev

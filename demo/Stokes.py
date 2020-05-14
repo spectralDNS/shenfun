@@ -26,12 +26,10 @@ on the pressure. The second is removed by fixing :math:`\hat{p}_{0, N-1} = 0`.
 import os
 import sys
 import numpy as np
-from mpi4py import MPI
-from sympy import symbols, sin, lambdify
+from sympy import symbols, sin
 from shenfun import *
 
-comm = MPI.COMM_WORLD
-x, y = symbols("x,y")
+x, y = symbols("x,y", real=True)
 
 # Some right hand side (manufactured solution)
 uex = sin(2*y)*(1-y**2)
@@ -40,14 +38,6 @@ pe = -0.1*sin(2*x)
 fx = -uex.diff(x, 2) - uex.diff(y, 2) - pe.diff(x, 1)
 fy = -uey.diff(x, 2) - uey.diff(y, 2) - pe.diff(y, 1)
 h = uex.diff(x, 1) + uey.diff(y, 1)
-
-# Lambdify for faster evaluation
-ulx = lambdify((x, y), uex, 'numpy')
-uly = lambdify((x, y), uey, 'numpy')
-flx = lambdify((x, y), fx, 'numpy')
-fly = lambdify((x, y), fy, 'numpy')
-hl = lambdify((x, y), h, 'numpy')
-pl = lambdify((x, y), pe, 'numpy')
 
 N = (20, 20)
 family = sys.argv[-1] if len(sys.argv) == 2 else 'Legendre'
@@ -80,11 +70,8 @@ A10 = inner(q, div(u))
 M = BlockMatrix(A00+A01+A10)
 
 # Get f and h on quad points
-fh = Array(VQ)
+fh = Array(VQ, buffer=(fx, fy, h))
 f_, h_ = fh
-f_[0] = flx(*X)
-f_[1] = fly(*X)
-h_[:] = hl(*X)
 
 fh_hat = Function(VQ)
 f_hat, h_hat = fh_hat
@@ -98,9 +85,8 @@ up_ = up_hat.backward()
 u_, p_ = up_
 
 # Exact solution
-ux = ulx(*X)
-uy = uly(*X)
-pe = pl(*X)
+ux, uy = Array(V, buffer=(uex, uey))
+pe = Array(Q, buffer=pe)
 
 error = [comm.reduce(np.linalg.norm(ux-u_[0])),
          comm.reduce(np.linalg.norm(uy-u_[1])),

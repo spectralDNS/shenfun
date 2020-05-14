@@ -19,12 +19,9 @@ import sys
 import os
 from sympy import symbols, sin, exp
 import numpy as np
-from mpi4py import MPI
 from shenfun import inner, grad, TestFunction, TrialFunction, \
-    Array, Function, Basis, TensorProductSpace, dx
+    Array, Function, Basis, TensorProductSpace, dx, comm
 from shenfun.la import SolverGeneric2NP
-
-comm = MPI.COMM_WORLD
 
 assert comm.Get_size() == 1, "Two non-periodic directions only have solver implemented for serial"
 
@@ -32,7 +29,7 @@ assert len(sys.argv) == 2, "Call with one command-line arguments"
 assert isinstance(int(sys.argv[-1]), int)
 
 # Use sympy to compute a rhs, given an analytical solution
-x, y = symbols("x,y")
+x, y = symbols("x,y", real=True)
 ue = sin(4*np.pi*y)*sin(2*x)*exp(-x)
 fe = ue.diff(x, 2) + ue.diff(y, 2)
 
