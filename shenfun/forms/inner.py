@@ -17,7 +17,7 @@ __all__ = ('inner',)
 
 def inner(expr0, expr1, output_array=None, level=0):
     r"""
-    Return weighted discrete inner product of linear or bilinear form
+    Return (weighted) discrete inner product of linear or bilinear form
 
     .. math::
 
@@ -48,12 +48,13 @@ def inner(expr0, expr1, output_array=None, level=0):
         :class:`.Function`) an Array or a number. With expressions (Expr) on a
         BasisFunction we typically mean terms like div(u) or grad(u), where
         u is any one of the different types of BasisFunction.
-        One of ``expr0`` or ``expr1`` need to be an expression on a
-        TestFunction. If the second then involves a TrialFunction, a matrix is
-        returned. If one of ``expr0``/``expr1`` involves a TestFunction and the
-        other one is an expression on a Function, or a plain Array, then a
-        linear form is assembled and a Function is returned.
-        If either expr0 or expr1 is a number (typically 1) or a tuple of
+        If one of ``expr0``/``expr1`` involves a TestFunction and the other one
+        involves a TrialFunction, then a tensor product matrix (or a list of
+        tensor product matrices) is returned.
+        If one of ``expr0``/``expr1`` involves a TestFunction and the other one
+        involves a Function, or a plain Array, then a linear form is assembled
+        and a Function is returned.
+        If one of ``expr0``/``expr1`` is a number (typically 1), or a tuple of
         numbers for a vector, then the inner product represents a non-weighted
         integral over the domain. If a single number, then the other expression
         must be a scalar Array or a Function. If a tuple of numbers, then the
@@ -201,7 +202,6 @@ def inner(expr0, expr1, output_array=None, level=0):
         gij = test.function_space().coors.get_covariant_metric_tensor()
         if trial.argument == 2:
             # linear form
-            #for (te, tr, x) in zip(test, trial, output_array):
             w0 = np.zeros_like(output_array[0])
             for i, (te, x) in enumerate(zip(test, output_array)):
                 for j, tr in enumerate(trial):
@@ -213,7 +213,6 @@ def inner(expr0, expr1, output_array=None, level=0):
 
         result = []
 
-        #for te, tr in zip(test, trial):
         for i, te in enumerate(test):
             for j, tr in enumerate(trial):
                 if gij[i, j] == 0:
@@ -235,8 +234,6 @@ def inner(expr0, expr1, output_array=None, level=0):
                 output_array = space.scalar_product(trial, output_array)
                 return output_array
             trial = trial.forward()
-
-    # If trial is an Expr with terms, then compute using bilinear form and matvec
 
     assert isinstance(trial, (Expr, BasisFunction))
     assert isinstance(test, (Expr, BasisFunction))
@@ -376,9 +373,11 @@ def inner(expr0, expr1, output_array=None, level=0):
 
     A = B
 
+    # Bilinear form, return matrices
     if trial.argument == 1:
         return A[0] if len(A) == 1 else A
 
+    # Linear form, return output_array
     wh = np.zeros_like(output_array)
     for b in A:
         if uh.rank > 0:
