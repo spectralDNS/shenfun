@@ -1,4 +1,5 @@
 from numbers import Number, Integral
+from copy import copy
 from scipy.special import sph_harm, erf
 import numpy as np
 import sympy as sp
@@ -343,14 +344,14 @@ class Expr(object):
         ndim = self.function_space().dimensions
         if terms is None:
             self._terms = np.zeros((self.function_space().num_components(), 1, ndim),
-                                   dtype=np.int)
+                                   dtype=np.int).tolist()
         if scales is None:
-            self._scales = np.ones((self.function_space().num_components(), 1), dtype=object)
+            self._scales = np.ones((self.function_space().num_components(), 1), dtype=object).tolist()
 
         if indices is None:
-            self._indices = basis.offset()+np.arange(self.function_space().num_components())[:, np.newaxis]
+            self._indices = (basis.offset()+np.arange(self.function_space().num_components())[:, np.newaxis]).tolist()
 
-        assert np.prod(self._scales.shape) == self.num_terms()*self.num_components()
+        #assert np.prod(self._scales.shape) == self.num_terms()*self.num_components()
 
     def basis(self):
         """Return basis of Expr"""
@@ -381,14 +382,14 @@ class Expr(object):
     def expr_rank(self):
         """Return rank of Expr"""
         if self.dimensions == 1:
-            assert self._terms.shape[0] < 3
-            return self._terms.shape[0]-1
+            assert len(self._terms) < 3
+            return len(self._terms)-1
 
-        if self._terms.shape[0] == 1:
+        if len(self._terms) == 1:
             return 0
-        if self._terms.shape[0] == self._terms.shape[-1]:
+        if len(self._terms) == len(self._terms[0][0]):
             return 1
-        if self._terms.shape[0] == self._terms.shape[-1]**2:
+        if len(self._terms) == len(self._terms[0][0])**2:
             return 2
 
     @property
@@ -406,16 +407,16 @@ class Expr(object):
 
     def num_components(self):
         """Return number of components in Expr"""
-        return self._terms.shape[0]
+        return len(self._terms)
 
     def num_terms(self):
         """Return number of terms in Expr"""
-        return self._terms.shape[1]
+        return [len(terms) for terms in self._terms]
 
     @property
     def dimensions(self):
         """Return ndim of Expr"""
-        return self._terms.shape[2]
+        return len(self._terms[0][0])
 
     def index(self):
         if self.num_components() == 1:
@@ -508,9 +509,9 @@ class Expr(object):
             basis = self._basis
         if self.expr_rank() == 1:
             return Expr(basis,
-                        self._terms[i][np.newaxis, :, :],
-                        self._scales[i][np.newaxis, :],
-                        self._indices[i][np.newaxis, :])
+                        [self._terms[i]],
+                        [self._scales[i]],
+                        [self._indices[i]])
 
         elif self.expr_rank() == 2:
             ndim = self.dimensions
@@ -522,7 +523,7 @@ class Expr(object):
             raise NotImplementedError
 
     def __mul__(self, a):
-        sc = self.scales().copy()
+        sc = np.array(self.scales())
         if self.expr_rank() == 0:
             sc = sc * sp.sympify(a)
 
@@ -535,13 +536,13 @@ class Expr(object):
             else:
                 sc *= sp.sympify(a)
 
-        return Expr(self._basis, self._terms.copy(), sc, self._indices.copy())
+        return Expr(self._basis, self._terms.copy(), sc.tolist(), self._indices.copy())
 
     def __rmul__(self, a):
         return self.__mul__(a)
 
     def __imul__(self, a):
-        sc = self.scales()
+        sc = np.array(self.scales())
         if self.expr_rank() == 0:
             sc *= sp.sympify(a)
 
@@ -553,6 +554,8 @@ class Expr(object):
 
             else:
                 sc *= sp.sympify(a)
+
+        self._scales = sc.tolist()
 
         return self
 
@@ -568,10 +571,15 @@ class Expr(object):
         else:
             assert id(self._basis.base) == id(a._basis.base)
             basis = self._basis.base
-        return Expr(basis,
-                    np.concatenate((self.terms(), a.terms()), axis=1),
-                    np.concatenate((self.scales(), a.scales()), axis=1),
-                    np.concatenate((self.indices(), a.indices()), axis=1))
+
+        # Concatenate terms
+        terms, scales, indices = [], [], []
+        for i in range(self.num_components()):
+            terms.append(self._terms[i] + a.terms()[i])
+            scales.append(self._scales[i] + a.scales()[i])
+            indices.append(self._indices[i] + a.indices()[i])
+
+        return Expr(basis, terms, scales, indices)
 
     def __iadd__(self, a):
         assert isinstance(a, (Expr, BasisFunction))
@@ -586,9 +594,10 @@ class Expr(object):
             assert id(self._basis.base) == id(a._basis.base)
             basis = self._basis.base
         self._basis = basis
-        self._terms = np.concatenate((self.terms(), a.terms()), axis=1)
-        self._scales = np.concatenate((self.scales(), a.scales()), axis=1)
-        self._indices = np.concatenate((self.indices(), a.indices()), axis=1)
+        for i in range(self.num_components()):
+            self._terms[i] += a.terms()[i]
+            self._scales[i] += a.scales()[i]
+            self._indices[i] += a.indices()[i]
         return self
 
     def __sub__(self, a):
@@ -603,10 +612,15 @@ class Expr(object):
         else:
             assert id(self._basis.base) == id(a._basis.base)
             basis = self._basis.base
-        return Expr(basis,
-                    np.concatenate((self.terms(), a.terms()), axis=1),
-                    np.concatenate((self.scales(), -a.scales()), axis=1),
-                    np.concatenate((self.indices(), a.indices()), axis=1))
+
+        # Concatenate terms
+        terms, scales, indices = [], [], []
+        for i in range(self.num_components()):
+            terms.append(self._terms[i] + a.terms()[i])
+            scales.append(self._scales[i] + (-np.array(a.scales()[i])).tolist())
+            indices.append(self._indices[i] + a.indices()[i])
+
+        return Expr(basis, terms, scales, indices)
 
     def __isub__(self, a):
         assert isinstance(a, (Expr, BasisFunction))
@@ -621,13 +635,15 @@ class Expr(object):
             assert id(self._basis.base) == id(a._basis.base)
             basis = self._basis.base
         self._basis = basis
-        self._terms = np.concatenate((self.terms(), a.terms()), axis=1)
-        self._scales = np.concatenate((self.scales(), -a.scales()), axis=1)
-        self._indices = np.concatenate((self.indices(), a.indices()), axis=1)
+        for i in range(self.num_components()):
+            self._terms[i] += a.terms()[i]
+            self._scales[i] += (-np.array(a.scales()[i])).tolist()
+            self._indices[i] += a.indices()[i]
+
         return self
 
     def __neg__(self):
-        return Expr(self.basis(), self.terms().copy(), -self.scales().copy(),
+        return Expr(self.basis(), self.terms().copy(), (-np.array(self.scales())).tolist,
                     self.indices().copy())
 
 
