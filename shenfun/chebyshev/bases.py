@@ -2016,11 +2016,11 @@ class NeumannDirichletBasis(ChebyshevBase):
                      ((-k**2 - (k+1)**2)/((k+1)**2 + (k+2)**2))*V[:, 2:])
         return P
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         assert i < self.N-2
-        return (sympy.chebyshevt(i, x) -
-                ((-i**2 + (i+2)**2) / ((i+1)**2 + (i+2)**2))*sympy.chebyshevt(i+1, x)+
-                ((-i**2 - (i+1)**2) / ((i+1)**2 + (i+2)**2))*sympy.chebyshevt(i+2, x))
+        return (sp.chebyshevt(i, x) -
+                ((-i**2 + (i+2)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+1, x)+
+                ((-i**2 - (i+1)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+2, x))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
