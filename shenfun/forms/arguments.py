@@ -135,6 +135,8 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
                 B = chebyshev.bases.ShenBiPolarBasis
             elif bc.lower() == 'dirichletneumann':
                 B = chebyshev.bases.DirichletNeumannBasis
+            elif bc.lower() == 'neumanndirichlet':
+                B = chebyshev.bases.NeumannDirichletBasis
 
         else:
             raise NotImplementedError
