@@ -53,6 +53,9 @@ def div(test):
     else:
         assert test.expr_rank() < 2, 'Cannot (yet) take divergence of higher order tensor in curvilinear coordinates'
 
+        # Each term in test will lead to at least one, but possibly 2 new terms
+        # Collect a list of new terms that are nonzero and ine the end put together
+        # new array of terms
         v = np.repeat(v, 2, axis=1)
         sc = np.repeat(sc, 2, axis=1)
         ind = np.repeat(ind, 2, axis=1)
