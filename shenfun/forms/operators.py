@@ -25,47 +25,22 @@ def div(test):
         test = Expr(test)
 
     test = copy.copy(test)
-
-    #v = np.array(test.terms())
-    sc = test.scales()
-    ind = test.indices()
     ndim = test.dimensions
-    hi = test.function_space().hi
     coors = test.function_space().coors
 
-    if hi.prod() == 1:
+    if coors.is_cartesian:
         # Cartesian
         if ndim == 1:      # 1D
             v = np.array(test.terms())
             v += 1
-            v = v.tolist()
+            test._terms = v.tolist()
+            return test
 
         else:
-
-            num_terms = test.num_terms()
-            for i in range(test.num_components()):
-                for j in range(num_terms[i]):
-                    test.terms()[i][j][i%ndim] += 1
-
-            v = [[] for i in range(test.num_components()//ndim)]
-            sc = [[] for i in range(test.num_components()//ndim)]
-            ind = [[] for i in range(test.num_components()//ndim)]
-            for i in range(test.num_components()):
-                v[i//ndim] += test.terms()[i]
-                sc[i//ndim] += test.scales()[i]
-                ind[i//ndim] += test.indices()[i]
-
-            #for i, s in enumerate(v):
-            #    s[..., i%ndim] += 1
-            #shape = (v.shape[0]//ndim, v.shape[1]*ndim, ndim)
-            #v = v.reshape(shape)
-            #sc = sc.reshape(shape)
-            #ind = ind.reshape(shape)
-
-        test._terms = v
-        test._scales = sc
-        test._indices = ind
-        return test
+            d = Dx(test[0], 0, 1)
+            for i in range(1, ndim):
+                d += Dx(test[i], i, 1)
+            return d
 
     else:
         assert test.expr_rank() < 2, 'Cannot (yet) take divergence of higher order tensor in curvilinear coordinates'
@@ -73,27 +48,11 @@ def div(test):
         # Each term in test will lead to at least one, but possibly 2 new terms
         # Collect a list of new terms that are nonzero and ine the end put together
         # new array of terms
-        v = np.repeat(v, 2, axis=1)
-        sc = np.repeat(sc, 2, axis=1)
-        ind = np.repeat(ind, 2, axis=1)
-        psi = test.function_space().coors.coordinates[0]
         sg = coors.get_sqrt_g()
-
-        for i, s in enumerate(v):
-            for j in range(v.shape[1]):
-                if j%2 == 0:
-                    s[j, i%ndim] += 1
-                else:
-                    ms2 = sp.simplify(sc[i, j]*sg)
-                    sc[i, j] = sp.simplify(ms2.diff(psi[i%ndim], 1) / sg)
-
-        v = v.reshape((v.shape[0]//ndim, v.shape[1]*ndim, ndim))
-        sc = sc.reshape((sc.shape[0]//ndim, sc.shape[1]*ndim))
-        ind = ind.reshape((ind.shape[0]//ndim, ind.shape[1]*ndim))
-        test._terms = v
-        test._scales = sc
-        test._indices = ind
-        return test
+        d = Dx(test[0]*sg, 0, 1)*(1/sg)
+        for i in range(1, ndim):
+            d += Dx(test[i]*sg, i, 1)*(1/sg)
+        return d
 
 def grad(test):
     """Return grad(test)
@@ -108,91 +67,48 @@ def grad(test):
         test = Expr(test)
 
     test = copy.copy(test)
-
-    terms = np.array(test.terms())
-    sc = np.array(test.scales())
-    ind = np.array(test.indices())
     ndim = test.dimensions
     coors = test.function_space().coors
 
     if coors.is_cartesian:
-        test._terms = np.repeat(terms, ndim, axis=0)
-        test._scales = np.repeat(sc, ndim, axis=0)
-        test._indices = np.repeat(ind, ndim, axis=0)
-        for i, s in enumerate(test._terms):
-            s[..., i%ndim] += 1
-        return test
 
-    elif sc.flatten().prod() == 1:
-        # If expr taken gradient of has scale 1 (no need to differentiate scale)
-        if test.expr_rank() == 0: # if gradient of scalar
-            if coors.is_orthogonal:
-                test._terms = np.repeat(terms, ndim, axis=0)
-                test._scales = np.repeat(sc, ndim, axis=0)
-                test._indices = np.repeat(ind, ndim, axis=0)
-                gt = coors.get_contravariant_metric_tensor()
-                for i, s in enumerate(test._terms):
-                    s[..., i%ndim] += 1
+        d = [Dx(test, 0, 1)]
+        for i in range(1, ndim):
+            d.append(Dx(test, i, 1))
 
-                for i, s in enumerate(test._scales):
-                    s[:] *= gt[i%ndim, i%ndim]
-            else:
-                test._terms = terms.repeat(ndim, axis=0).repeat(ndim, axis=1)
-                test._scales = sc.repeat(ndim, axis=0).repeat(ndim, axis=1)
-                test._indices = ind.repeat(ndim, axis=0).repeat(ndim, axis=1)
-                gt = coors.get_contravariant_metric_tensor()
-                elms = test._terms.shape[1] // ndim
-                # There are elms scalar elements that we take the gradient of
-                # Each element gives ndim*ndim new terms
-                for i in range(ndim):
-                    for k in range(elms):
-                        for j in range(ndim):
-                            test._terms[i, k*ndim+j, j] += 1
-                            test._scales[i, k*ndim+j] *= gt[i%ndim, j] # g[i, j] = g[j, i]
-                            test._scales[i, k*ndim+j] = sp.simplify(test._scales[i, k*ndim+j])
-        else:
-            raise NotImplementedError('Cannot (yet) take gradient of tensor in curvilinear coordinates')
+        terms, scales, indices = [], [], []
+        for i in range(ndim):
+            terms += d[i]._terms
+            scales += d[i]._scales
+            indices += d[i]._indices
+        test._terms = terms
+        test._scales = scales
+        test._indices = indices
 
         return test
 
     else:
-        # Expr taken gradient of has measures itself
-        if test.expr_rank() == 0: # if gradient of scalar
-            if coors.is_orthogonal:
-                test._terms = terms.repeat(ndim, axis=0).repeat(2, axis=1)
-                test._scales = sc.repeat(ndim, axis=0).repeat(2, axis=1)
-                test._indices = ind.repeat(ndim, axis=0).repeat(2, axis=1)
-                psi = coors.coordinates[0]
-                elms = test._terms.shape[1] // 2
-                gt = coors.get_contravariant_metric_tensor()
-                for i in range(ndim):
-                    for j in range(test._terms.shape[1]):
-                        if j % 2 == 0:
-                            test._terms[i, j, i] += 1
-                            test._scales[i, j] *= gt[i, i]
-                        else:
-                            test._scales[i, j] = test._scales[i, j].diff(psi[i], 1) * gt[i, i]
+        assert test.expr_rank() < 2, 'Cannot (yet) take gradient of higher order tensor in curvilinear coordinates'
 
-            else:
-                test._terms = terms.repeat(ndim, axis=0).repeat(ndim*2, axis=1)
-                test._scales = sc.repeat(ndim, axis=0).repeat(ndim*2, axis=1)
-                test._indices = ind.repeat(ndim, axis=0).repeat(ndim*2, axis=1)
-                psi = coors.coordinates[0]
-                gt = coors.get_contravariant_metric_tensor()
-                elms = test._terms.shape[1] // (2*ndim)
-                for i in range(ndim):
-                    for k in range(elms):
-                        for j in range(ndim):
-                            if k % 2 == 0:
-                                test._terms[i, k*ndim+j, j] += 1
-                                test._scales[i, k*ndim+j] *= gt[i, j]
-                            else:
-                                test._scales[i, k*ndim+j] = test._scales[i, k*ndim+j].diff(psi[j], 1) * gt[i, j]
-        else:
-            raise NotImplementedError('Cannot (yet) take gradient of tensor in curvilinear coordinates')
+        gt = coors.get_contravariant_metric_tensor()
+        d = []
+        for i in range(ndim):
+            di = Dx(test, 0, 1)*gt[0, i]
+            for j in range(1, ndim):
+                di += Dx(test, j, 1)*gt[j, i]
+            d.append(di)
+
+        terms, scales, indices = [], [], []
+        for i in range(ndim):
+            terms += d[i]._terms
+            scales += d[i]._scales
+            indices += d[i]._indices
+
+        test._terms = terms
+        test._scales = scales
+        test._indices = indices
 
     return test
-
 
 def Dx(test, x, k=1):
     """Return k'th order partial derivative in direction x
@@ -220,28 +136,23 @@ def Dx(test, x, k=1):
 
     else:
         assert test.expr_rank() < 1, 'Cannot (yet) take derivative of tensor in curvilinear coordinates'
-        #v = test._terms = np.repeat(test.terms(), 2, axis=1)
-        #sc = test._scales = np.repeat(test.scales(), 2, axis=1)
-        #test._indices = np.repeat(test.indices(), 2, axis=1)
         psi = coors.coordinates[0]
-        #for i in range(v.shape[1]):
-        #    if i % 2 == 0:
-        #        v[:, i, x] += k
-        #    else:
-        #        sc[:, i] = sp.diff(sc[:, i], psi[x], 1)
-        v = test.terms()
-        sc = test.scales()
-        ind = test.indices()
+        v = copy.deepcopy(test.terms())
+        sc = copy.deepcopy(test.scales())
+        ind = copy.deepcopy(test.indices())
         num_terms = test.num_terms()
         num_comp = test.num_components()
         for i in range(num_comp):
             for j in range(num_terms[i]):
-                sc0 = sp.diff(sc[i][j], psi[x], 1)
+                sc0 = sp.simplify(sp.diff(sc[i][j], psi[x], 1))
                 if not sc0 == 0:
-                    v[i].append(v[i][j])
+                    v[i].append(copy.deepcopy(v[i][j]))
                     sc[i].append(sc0)
                     ind[i].append(ind[i][j])
                 v[i][j][x] += 1
+        test._terms = v
+        test._scales = sc
+        test._indices = ind
 
     return test
 
@@ -287,9 +198,9 @@ def curl(test):
         sg = coors.get_sqrt_g()
         if coors.is_orthogonal:
             if test.dimensions == 3:
-                w0 = (hi[2]**2*Dx(test[2], 1, 1) + test[2]*sp.diff(hi[2]**2, psi[1], 1) - hi[1]**3*Dx(test[1], 2, 1) - test[1]*sp.diff(hi[1]**2, psi[2], 1))/sg
-                w1 = (hi[0]**2*Dx(test[0], 2, 1) + test[0]*sp.diff(hi[0]**2, psi[2], 1) - hi[2]**3*Dx(test[2], 0, 1) - test[2]*sp.diff(hi[2]**2, psi[0], 1))/sg
-                w2 = (hi[1]**2*Dx(test[1], 0, 1) + test[1]*sp.diff(hi[1]**2, psi[0], 1) - hi[0]**3*Dx(test[0], 1, 1) - test[0]*sp.diff(hi[0]**2, psi[1], 1))/sg
+                w0 = (hi[2]**2*Dx(test[2], 1, 1) + test[2]*sp.diff(hi[2]**2, psi[1], 1) - hi[1]**2*Dx(test[1], 2, 1) - test[1]*sp.diff(hi[1]**2, psi[2], 1))/sg
+                w1 = (hi[0]**2*Dx(test[0], 2, 1) + test[0]*sp.diff(hi[0]**2, psi[2], 1) - hi[2]**2*Dx(test[2], 0, 1) - test[2]*sp.diff(hi[2]**2, psi[0], 1))/sg
+                w2 = (hi[1]**2*Dx(test[1], 0, 1) + test[1]*sp.diff(hi[1]**2, psi[0], 1) - hi[0]**2*Dx(test[0], 1, 1) - test[0]*sp.diff(hi[0]**2, psi[1], 1))/sg
                 test._terms = w0.terms()+w1.terms()+w2.terms()
                 test._scales = w0.scales()+w1.scales()+w2.scales()
                 test._indices = w0.indices()+w1.indices()+w2.indices()

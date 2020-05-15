@@ -189,7 +189,7 @@ def inner(expr0, expr1, output_array=None, level=0):
     if isinstance(test, BasisFunction):
         recursive = test.rank > 0
     elif isinstance(test, Expr):
-        recursive = test.basis_rank() > 0
+        recursive = test.function_space().is_composite_space
     if isinstance(trial, Array):
         assert trial.rank == test.rank
     elif isinstance(trial, BasisFunction):
@@ -262,7 +262,7 @@ def inner(expr0, expr1, output_array=None, level=0):
                 continue
             for test_j, b0 in enumerate(base_test):              # second index test
                 for trial_j, b1 in enumerate(base_trial):        # second index trial
-                    dV = test_scale[vec_i, test_j]*trial_scale[vec_j, trial_j]*testspace.hi.prod()*g
+                    dV = test_scale[vec_i][test_j]*trial_scale[vec_j][trial_j]*testspace.hi.prod()*g
                     assert len(b0) == len(b1)
                     trial_sp = trialspace
                     if isinstance(trialspace, (MixedTensorProductSpace, MixedBasis)): # could operate on a vector, e.g., div(u), where u is vector
