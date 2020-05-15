@@ -93,10 +93,15 @@ def grad(test):
         gt = coors.get_contravariant_metric_tensor()
         d = []
         for i in range(ndim):
-            di = Dx(test, 0, 1)*gt[0, i]
-            for j in range(1, ndim):
-                di += Dx(test, j, 1)*gt[j, i]
-            d.append(di)
+            di = []
+            for j in range(ndim):
+                sc = gt[j, i]
+                if not sc == 0:
+                    di.append(Dx(test, j, 1)*sc)
+            dj = di[0]
+            for j in range(1, len(di)):
+                dj += di[j]
+            d.append(dj)
 
         terms, scales, indices = [], [], []
         for i in range(ndim):
@@ -198,16 +203,16 @@ def curl(test):
         sg = coors.get_sqrt_g()
         if coors.is_orthogonal:
             if test.dimensions == 3:
-                w0 = (hi[2]**2*Dx(test[2], 1, 1) + test[2]*sp.diff(hi[2]**2, psi[1], 1) - hi[1]**2*Dx(test[1], 2, 1) - test[1]*sp.diff(hi[1]**2, psi[2], 1))/sg
-                w1 = (hi[0]**2*Dx(test[0], 2, 1) + test[0]*sp.diff(hi[0]**2, psi[2], 1) - hi[2]**2*Dx(test[2], 0, 1) - test[2]*sp.diff(hi[2]**2, psi[0], 1))/sg
-                w2 = (hi[1]**2*Dx(test[1], 0, 1) + test[1]*sp.diff(hi[1]**2, psi[0], 1) - hi[0]**2*Dx(test[0], 1, 1) - test[0]*sp.diff(hi[0]**2, psi[1], 1))/sg
+                w0 = (Dx(test[2]*hi[2]**2, 1, 1) - Dx(test[1]*hi[1]**2, 2, 1))*(1/sg)
+                w1 = (Dx(test[0]*hi[0]**2, 2, 1) - Dx(test[2]*hi[2]**2, 0, 1))*(1/sg)
+                w2 = (Dx(test[1]*hi[1]**2, 0, 1) - Dx(test[0]*hi[0]**2, 1, 1))*(1/sg)
                 test._terms = w0.terms()+w1.terms()+w2.terms()
                 test._scales = w0.scales()+w1.scales()+w2.scales()
                 test._indices = w0.indices()+w1.indices()+w2.indices()
 
             else:
                 assert test.dimensions == 2
-                test = (hi[1]**2*Dx(test[1], 0, 1) + test[1]*sp.diff(hi[1]**2, psi[0], 1) - hi[0]**2*Dx(test[0], 1, 1) - test[0]*sp.diff(hi[0]**2, psi[1], 1))/sg
+                test = (Dx(test[1]*hi[1]**2, 0, 1) - Dx(test[0]*hi[0]**2, 1, 1))*(1/sg)
         else:
             raise NotImplementedError
 
