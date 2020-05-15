@@ -272,41 +272,52 @@ class Expr(object):
     ----------
     basis : :class:`.BasisFunction`
         :class:`.TestFunction`, :class:`.TrialFunction` or :class:`.Function`
-    terms : Numpy array of ndim = 3
-        Describes operations performed in Expr
+    terms : list of list of lists of length dimension
+        Describes the differential operations performed on the basis function
+        in the `Expr`
 
-        - Index 0: Vector component. If Expr is rank = 0, then terms.shape[0] = 1.
-          For vectors it equals ndim
+        The triply nested `terms` lists are such that
 
-        - Index 1: One for each term in the form. For example `div(grad(u))`
-          has three terms in 3D:
+        - the outermost list represents a tensor component. There is one item for
+          each tensor component. If the Expr is a scalar with rank = 0, then
+          len(terms) = 1. For vectors it equals the number of dimensions and
+          for second order tensors it equals ndim**2
+
+        - the second nested list represents the different terms in the form, that
+          may be more than one. For example, the scalar valued `div(grad(u))` has
+          three terms in 3D:
 
         .. math::
 
            \partial^2u/\partial x^2 + \partial^2u/\partial y^2 + \partial^2u/\partial z^2
 
-        - Index 2: The operations stored as an array of length = dim
+        - the last inner list represents the differential operations for each term
+          and each tensor component, stored for each as a list of length = dim
 
         The Expr `div(grad(u))`, where u is a scalar, is as such represented
-        as an array of shape (1, 3, 3), 1 meaning it's a scalar, the first 3
+        as a nested list of shapes (1, 3, 3), 1 meaning it's a scalar, the first 3
         because the Expr consists of the sum of three terms, and the last 3
         because it is 3D. The entire representation is::
 
-           array([[[2, 0, 0],
-                   [0, 2, 0],
-                   [0, 0, 2]]])
+            [[[2, 0, 0],
+              [0, 2, 0],
+              [0, 0, 2]]]
 
         where the first [2, 0, 0] term has two derivatives in first direction
         and none in the others, the second [0, 2, 0] has two derivatives in
-        second direction, etc.
+        second direction, and the last [0, 0, 2] has two derivatives in the
+        last direction and none in the others.
 
-    scales :  Numpy array of shape == terms.shape[:2]
+    scales :  list of lists
         Representing a scalar multiply of each inner product. Note that
-        the scalar can be a function of coordinates (using sympy).
+        the scalar can also be a function of coordinates (using sympy).
+        There is one scale for each term in each tensor component, and as
+        such it is a list of lists.
 
-    indices : Numpy array of shape == terms.shape[:2]
+    indices : list of lists
         Index into MixedTensorProductSpace. Only used when basis of form has
-        rank > 0
+        rank > 0. There is one index for each term in each tensor component,
+        and as such it is a list of lists.
 
     Examples
     --------
@@ -320,16 +331,10 @@ class Expr(object):
     >>> v = TestFunction(T)
     >>> e = div(grad(v))
     >>> e.terms()
-    array([[[2, 0, 0],
-            [0, 2, 0],
-            [0, 0, 2]]])
+    [[[2, 0, 0], [0, 2, 0], [0, 0, 2]]]
     >>> e2 = grad(v)
     >>> e2.terms()
-    array([[[1, 0, 0]],
-    <BLANKLINE>
-           [[0, 1, 0]],
-    <BLANKLINE>
-           [[0, 0, 1]]])
+    [[[1, 0, 0]], [[0, 1, 0]], [[0, 0, 1]]]
 
     Note that `e2` in the example has shape (3, 1, 3). The first 3 because it
     is a vector, the 1 because each vector item contains one term, and the
