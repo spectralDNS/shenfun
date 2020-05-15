@@ -152,7 +152,7 @@ def test_eval(ST, quad):
     fj = ST.backward(fk, fj, fast_transform=False)
     fk = ST.forward(fj, fk, fast_transform=False)
     f = ST.eval(points, fk)
-    assert np.allclose(fj, f)
+    assert np.allclose(fj, f, rtol=1e-5, atol=1e-6)
 
 @pytest.mark.parametrize('basis, quad', cl_nonortho)
 #@pytest.mark.xfail(raises=AssertionError)
@@ -368,7 +368,7 @@ def test_CDDmat(quad):
     cs2 = np.zeros(M)
     cs2 = SD.scalar_product(dudx_j, cs2)
     s = SD.slice()
-    assert np.allclose(cs[s], cs2[s])
+    assert np.allclose(cs[s], cs2[s], rtol=1e-5, atol=1e-6)
 
     cs = TDMASolver(cs)
     du = np.zeros(M)
@@ -418,7 +418,7 @@ def test_CXXmat(test, trial):
     cs2 = np.zeros(N)
     cs2 = S1.scalar_product(df, cs2)
     s = S1.slice()
-    assert np.allclose(cs[s], cs2[s])
+    assert np.allclose(cs[s], cs2[s], rtol=1e-5, atol=1e-6)
 
     # Multidimensional version
     f_hat = f_hat.repeat(4*4).reshape((N, 4, 4)) + 1j*f_hat.repeat(4*4).reshape((N, 4, 4))
@@ -476,7 +476,7 @@ def test_ADDmat(ST, quad):
     c = np.zeros_like(u1)
     c = A.matvec(u1, c)
     s = ST.slice()
-    assert np.allclose(c[s], f_hat[s])
+    assert np.allclose(c[s], f_hat[s], rtol=1e-5, atol=1e-6)
 
     # Multidimensional
     c_hat = f_hat.copy()
