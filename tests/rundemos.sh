@@ -66,7 +66,8 @@ python unitdisc_poisson.py
 python unitdisc_biharmonic.py
 python dirichletneumann_poisson1D.py 24 chebyshev
 python dirichletneumann_poisson1D.py 24 legendre
-python neumanndirichlet_poisson1D.py 24
+python neumanndirichlet_poisson1D.py 24 chebyshev
+python neumanndirichlet_poisson1D.py 24 legendre
 python spherical_shell_helmholtz.py
 
 python NavierStokes.py
