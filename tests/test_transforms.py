@@ -279,10 +279,10 @@ def test_transforms(ST, quad, dim):
     u1 = shenfun.Array(ST0)
     u0 = ST0.forward(fj, u0)
     u1 = ST0.backward(u0, u1)
-    assert np.allclose(fj, u1)
+    assert np.allclose(fj, u1, rtol=1e-5, atol=1e-6)
     u0 = ST0.forward(fj, u0)
     u1 = ST0.backward(u0, u1)
-    assert np.allclose(fj, u1)
+    assert np.allclose(fj, u1, rtol=1e-5, atol=1e-6)
 
     # Multidimensional version
     for axis in range(dim):
@@ -302,7 +302,7 @@ def test_transforms(ST, quad, dim):
         cc = [0,]*dim
         cc[axis] = slice(None)
         cc = tuple(cc)
-        assert np.allclose(fij[cc], u11[cc])
+        assert np.allclose(fij[cc], u11[cc], rtol=1e-5, atol=1e-6)
         del ST1
 
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
@@ -333,7 +333,7 @@ def test_axis(ST, quad, axis):
     ck = B.solve(fk, ck, axis=axis)
     cc = [0,]*3
     cc[axis] = slice(None)
-    assert np.allclose(ck[tuple(cc)], c)
+    assert np.allclose(ck[tuple(cc)], c, rtol=1e-5, atol=1e-6)
 
 @pytest.mark.parametrize('quad', cquads)
 def test_CDDmat(quad):
@@ -430,7 +430,7 @@ def test_CXXmat(test, trial):
     S1.plan((N, 4, 4), 0, np.complex, {})
     cs2 = S1.scalar_product(df, cs2)
 
-    assert np.allclose(cs[s], cs2[s])
+    assert np.allclose(cs[s], cs2[s], rtol=1e-5, atol=1e-6)
 
 dirichlet_with_quads = (list(product([cbases.ShenNeumannBasis, cbases.ShenDirichletBasis], cquads)) +
                         list(product([lbases.ShenNeumannBasis, lbases.ShenDirichletBasis], lquads)))
@@ -465,7 +465,7 @@ def test_ADDmat(ST, quad):
     u_hat = np.zeros_like(f_hat)
     u_hat = A.solve(f_hat, u_hat)
 
-    assert np.allclose(c_hat[s], u_hat[s])
+    assert np.allclose(c_hat[s], u_hat[s], rtol=1e-5, atol=1e-6)
 
     u0 = np.zeros(M)
     u0 = ST.backward(u_hat, u0)
@@ -482,7 +482,7 @@ def test_ADDmat(ST, quad):
     c_hat = f_hat.copy()
     c_hat = c_hat.repeat(M).reshape((M, M)).transpose()
     c_hat = A.solve(c_hat, axis=1)
-    assert np.allclose(c_hat[0, s], u_hat[s])
+    assert np.allclose(c_hat[0, s], u_hat[s], rtol=1e-5, atol=1e-6)
 
 biharmonic_with_quads = (list(product([cbases.ShenBiharmonicBasis], cquads)) +
                          list(product([lbases.ShenBiharmonicBasis], lquads)))
@@ -511,7 +511,7 @@ def test_SBBmat(SB, quad):
     u0 = np.zeros(M)
     u0 = SB.backward(u_hat, u0)
 
-    assert np.allclose(u0, uj)
+    assert np.allclose(u0, uj, rtol=1e-5, atol=1e-6)
 
     u1 = np.zeros(M)
     u1 = SB.forward(uj, u1)
@@ -591,7 +591,7 @@ def test_ABBmat(SB, quad):
     z0_hat[:-4] = solve(AA, b[:-4])
     z0 = np.zeros(M)
     z0 = SB.backward(z0_hat, z0)
-    assert np.allclose(z0, u0)
+    assert np.allclose(z0, u0, rtol=1e-5, atol=1e-6)
 
 if __name__ == '__main__':
     #test_to_ortho(cBasis[1], 'GC')
