@@ -29,7 +29,7 @@ def div(test):
     coors = test.function_space().coors
 
     if coors.is_cartesian:
-        # Cartesian
+
         if ndim == 1:      # 1D
             v = np.array(test.terms())
             v += 1
@@ -45,9 +45,6 @@ def div(test):
     else:
         assert test.expr_rank() < 2, 'Cannot (yet) take divergence of higher order tensor in curvilinear coordinates'
 
-        # Each term in test will lead to at least one, but possibly 2 new terms
-        # Collect a list of new terms that are nonzero and ine the end put together
-        # new array of terms
         sg = coors.get_sqrt_g()
         d = Dx(test[0]*sg, 0, 1)*(1/sg)
         for i in range(1, ndim):
@@ -60,6 +57,11 @@ def grad(test):
     Parameters
     ----------
     test: Expr or BasisFunction
+
+    Note
+    ----
+    Increases the rank of Expr by one
+
     """
     assert isinstance(test, (Expr, BasisFunction))
 
@@ -178,12 +180,9 @@ def curl(test):
     test = copy.copy(test)
 
     assert test.expr_rank() > 0
-    assert test.num_components() == test.dimensions  # vector
+    assert test.num_components() == test.dimensions
 
     coors = test.function_space().coors
-    hi = coors.hi
-
-    # Note - need to make curvilinear in terms of covariant vector
 
     if coors.is_cartesian:
         if test.dimensions == 3:
@@ -199,6 +198,7 @@ def curl(test):
 
     else:
         assert test.expr_rank() < 2, 'Cannot (yet) take curl of higher order tensor in curvilinear coordinates'
+        hi = coors.hi
         psi = coors.psi
         sg = coors.get_sqrt_g()
         if coors.is_orthogonal:
