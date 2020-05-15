@@ -514,16 +514,16 @@ class Expr(object):
             basis = self._basis
         if self.expr_rank() == 1:
             return Expr(basis,
-                        [self._terms[i]],
-                        [self._scales[i]],
-                        [self._indices[i]])
+                        [copy.deepcopy(self._terms[i])],
+                        [copy.deepcopy(self._scales[i])],
+                        [copy.deepcopy(self._indices[i])])
 
         elif self.expr_rank() == 2:
             ndim = self.dimensions
             return Expr(basis,
-                        self._terms[i*ndim:(i+1)*ndim],
-                        self._scales[i*ndim:(i+1)*ndim],
-                        self._indices[i*ndim:(i+1)*ndim])
+                        copy.deepcopy(self._terms[i*ndim:(i+1)*ndim]),
+                        copy.deepcopy(self._scales[i*ndim:(i+1)*ndim]),
+                        copy.deepcopy(self._indices[i*ndim:(i+1)*ndim]))
         else:
             raise NotImplementedError
 

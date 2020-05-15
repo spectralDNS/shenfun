@@ -76,4 +76,4 @@ if 'pytest' not in os.environ:
     mlab.figure(bgcolor=(1, 1, 1), size=(400, 400))
     mlab.mesh(xx, yy, zz, scalars=ur.real, colormap='jet')
     mlab.savefig('spherewhite.tiff')
-    mlab.show()
+    #mlab.show()
