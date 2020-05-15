@@ -1,4 +1,5 @@
 from numbers import Number, Integral
+import copy
 from scipy.special import sph_harm, erf
 import numpy as np
 import sympy as sp
@@ -273,41 +274,52 @@ class Expr(object):
     ----------
     basis : :class:`.BasisFunction`
         :class:`.TestFunction`, :class:`.TrialFunction` or :class:`.Function`
-    terms : Numpy array of ndim = 3
-        Describes operations performed in Expr
+    terms : list of list of lists of length dimension
+        Describes the differential operations performed on the basis function
+        in the `Expr`
 
-        - Index 0: Vector component. If Expr is rank = 0, then terms.shape[0] = 1.
-          For vectors it equals ndim
+        The triply nested `terms` lists are such that
 
-        - Index 1: One for each term in the form. For example `div(grad(u))`
-          has three terms in 3D:
+        - the outermost list represents a tensor component. There is one item for
+          each tensor component. If the Expr is a scalar with rank = 0, then
+          len(terms) = 1. For vectors it equals the number of dimensions and
+          for second order tensors it equals ndim**2
+
+        - the second nested list represents the different terms in the form, that
+          may be more than one. For example, the scalar valued `div(grad(u))` has
+          three terms in 3D:
 
         .. math::
 
            \partial^2u/\partial x^2 + \partial^2u/\partial y^2 + \partial^2u/\partial z^2
 
-        - Index 2: The operations stored as an array of length = dim
+        - the last inner list represents the differential operations for each term
+          and each tensor component, stored for each as a list of length = dim
 
         The Expr `div(grad(u))`, where u is a scalar, is as such represented
-        as an array of shape (1, 3, 3), 1 meaning it's a scalar, the first 3
+        as a nested list of shapes (1, 3, 3), 1 meaning it's a scalar, the first 3
         because the Expr consists of the sum of three terms, and the last 3
         because it is 3D. The entire representation is::
 
-           array([[[2, 0, 0],
-                   [0, 2, 0],
-                   [0, 0, 2]]])
+            [[[2, 0, 0],
+              [0, 2, 0],
+              [0, 0, 2]]]
 
         where the first [2, 0, 0] term has two derivatives in first direction
         and none in the others, the second [0, 2, 0] has two derivatives in
-        second direction, etc.
+        second direction, and the last [0, 0, 2] has two derivatives in the
+        last direction and none in the others.
 
-    scales :  Numpy array of shape == terms.shape[:2]
+    scales :  list of lists
         Representing a scalar multiply of each inner product. Note that
-        the scalar can be a function of coordinates (using sympy).
+        the scalar can also be a function of coordinates (using sympy).
+        There is one scale for each term in each tensor component, and as
+        such it is a list of lists.
 
-    indices : Numpy array of shape == terms.shape[:2]
+    indices : list of lists
         Index into MixedTensorProductSpace. Only used when basis of form has
-        rank > 0
+        rank > 0. There is one index for each term in each tensor component,
+        and as such it is a list of lists.
 
     Examples
     --------
@@ -321,16 +333,10 @@ class Expr(object):
     >>> v = TestFunction(T)
     >>> e = div(grad(v))
     >>> e.terms()
-    array([[[2, 0, 0],
-            [0, 2, 0],
-            [0, 0, 2]]])
+    [[[2, 0, 0], [0, 2, 0], [0, 0, 2]]]
     >>> e2 = grad(v)
     >>> e2.terms()
-    array([[[1, 0, 0]],
-    <BLANKLINE>
-           [[0, 1, 0]],
-    <BLANKLINE>
-           [[0, 0, 1]]])
+    [[[1, 0, 0]], [[0, 1, 0]], [[0, 0, 1]]]
 
     Note that `e2` in the example has shape (3, 1, 3). The first 3 because it
     is a vector, the 1 because each vector item contains one term, and the
@@ -345,14 +351,14 @@ class Expr(object):
         ndim = self.function_space().dimensions
         if terms is None:
             self._terms = np.zeros((self.function_space().num_components(), 1, ndim),
-                                   dtype=np.int)
+                                   dtype=np.int).tolist()
         if scales is None:
-            self._scales = np.ones((self.function_space().num_components(), 1), dtype=object)
+            self._scales = np.ones((self.function_space().num_components(), 1), dtype=object).tolist()
 
         if indices is None:
-            self._indices = basis.offset()+np.arange(self.function_space().num_components())[:, np.newaxis]
+            self._indices = (basis.offset()+np.arange(self.function_space().num_components())[:, np.newaxis]).tolist()
 
-        assert np.prod(self._scales.shape) == self.num_terms()*self.num_components()
+        #assert np.prod(self._scales.shape) == self.num_terms()*self.num_components()
 
     def basis(self):
         """Return basis of Expr"""
@@ -383,14 +389,14 @@ class Expr(object):
     def expr_rank(self):
         """Return rank of Expr"""
         if self.dimensions == 1:
-            assert self._terms.shape[0] < 3
-            return self._terms.shape[0]-1
+            assert len(self._terms) < 3
+            return len(self._terms)-1
 
-        if self._terms.shape[0] == 1:
+        if len(self._terms) == 1:
             return 0
-        if self._terms.shape[0] == self._terms.shape[-1]:
+        if len(self._terms) == len(self._terms[0][0]):
             return 1
-        if self._terms.shape[0] == self._terms.shape[-1]**2:
+        if len(self._terms) == len(self._terms[0][0])**2:
             return 2
 
     @property
@@ -408,16 +414,16 @@ class Expr(object):
 
     def num_components(self):
         """Return number of components in Expr"""
-        return self._terms.shape[0]
+        return len(self._terms)
 
     def num_terms(self):
         """Return number of terms in Expr"""
-        return self._terms.shape[1]
+        return [len(terms) for terms in self._terms]
 
     @property
     def dimensions(self):
         """Return ndim of Expr"""
-        return self._terms.shape[2]
+        return len(self._terms[0][0])
 
     def index(self):
         if self.num_components() == 1:
@@ -488,7 +494,7 @@ class Expr(object):
                 elif len(x) == 3:
                     work = evaluate.evaluate_3D(work, bv, M, r2c, last_conj_index, sl)
 
-                sc = self.scales()[vec, base_j]
+                sc = self.scales()[vec][base_j]
                 if not hasattr(sc, 'free_symbols'):
                     sc = float(sc)
                 else:
@@ -504,57 +510,59 @@ class Expr(object):
 
     def __getitem__(self, i):
         basis = self._basis
-        if basis.rank > 0:
+        if basis.function_space().is_composite_space > 0:
             basis = self._basis[i]
         else:
             basis = self._basis
         if self.expr_rank() == 1:
             return Expr(basis,
-                        self._terms[i][np.newaxis, :, :],
-                        self._scales[i][np.newaxis, :],
-                        self._indices[i][np.newaxis, :])
+                        [copy.deepcopy(self._terms[i])],
+                        [copy.deepcopy(self._scales[i])],
+                        [copy.deepcopy(self._indices[i])])
 
         elif self.expr_rank() == 2:
             ndim = self.dimensions
             return Expr(basis,
-                        self._terms[i*ndim:(i+1)*ndim],
-                        self._scales[i*ndim:(i+1)*ndim],
-                        self._indices[i*ndim:(i+1)*ndim])
+                        copy.deepcopy(self._terms[i*ndim:(i+1)*ndim]),
+                        copy.deepcopy(self._scales[i*ndim:(i+1)*ndim]),
+                        copy.deepcopy(self._indices[i*ndim:(i+1)*ndim]))
         else:
             raise NotImplementedError
 
     def __mul__(self, a):
-        sc = self.scales().copy()
+        sc = np.array(self.scales())
         if self.expr_rank() == 0:
-            sc = sc * sp.sympify(a)
+            sc = sc*sp.sympify(a)
 
         else:
             if isinstance(a, tuple):
                 assert len(a) == self.num_components()
                 for i in range(self.num_components()):
-                    sc[i] = sc[i] * sp.sympify(a[i])
+                    sc[i] = sc[i]*sp.sympify(a[i])
 
             else:
-                sc *= sp.sympify(a)
+                sc = sc*sp.sympify(a)
 
-        return Expr(self._basis, self._terms.copy(), sc, self._indices.copy())
+        return Expr(self._basis, copy.deepcopy(self._terms), sc.tolist(), copy.deepcopy(self._indices))
 
     def __rmul__(self, a):
         return self.__mul__(a)
 
     def __imul__(self, a):
-        sc = self.scales()
+        sc = np.array(self.scales())
         if self.expr_rank() == 0:
-            sc *= sp.sympify(a)
+            sc = sc*sp.sympify(a)
 
         else:
             if isinstance(a, tuple):
                 assert len(a) == self.dimensions
                 for i in range(self.dimensions):
-                    sc[i] = sc[i] * sp.sympify(a[i])
+                    sc[i] = sc[i]*sp.sympify(a[i])
 
             else:
-                sc *= sp.sympify(a)
+                sc = sc*sp.sympify(a)
+
+        self._scales = sc.tolist()
 
         return self
 
@@ -563,34 +571,40 @@ class Expr(object):
         if not isinstance(a, Expr):
             a = Expr(a)
         assert self.num_components() == a.num_components()
-        assert self.function_space() == a.function_space()
+        #assert self.function_space() == a.function_space()
         assert self.argument == a.argument
         if id(self._basis) == id(a._basis):
             basis = self._basis
         else:
             assert id(self._basis.base) == id(a._basis.base)
             basis = self._basis.base
-        return Expr(basis,
-                    np.concatenate((self.terms(), a.terms()), axis=1),
-                    np.concatenate((self.scales(), a.scales()), axis=1),
-                    np.concatenate((self.indices(), a.indices()), axis=1))
+
+        # Concatenate terms
+        terms, scales, indices = [], [], []
+        for i in range(self.num_components()):
+            terms.append(self._terms[i] + a.terms()[i])
+            scales.append(self._scales[i] + a.scales()[i])
+            indices.append(self._indices[i] + a.indices()[i])
+
+        return Expr(basis, terms, scales, indices)
 
     def __iadd__(self, a):
         assert isinstance(a, (Expr, BasisFunction))
         if not isinstance(a, Expr):
             a = Expr(a)
         assert self.num_components() == a.num_components()
-        assert self.function_space() == a.function_space()
+        #assert self.function_space() == a.function_space()
         assert self.argument == a.argument
-        if id(self._basis) == id(a._basis):
-            basis = self._basis
-        else:
-            assert id(self._basis.base) == id(a._basis.base)
-            basis = self._basis.base
-        self._basis = basis
-        self._terms = np.concatenate((self.terms(), a.terms()), axis=1)
-        self._scales = np.concatenate((self.scales(), a.scales()), axis=1)
-        self._indices = np.concatenate((self.indices(), a.indices()), axis=1)
+        #if id(self._basis) == id(a._basis):
+        #    basis = self._basis
+        #else:
+        #    assert id(self.base) == id(a.base)
+        #    basis = self.base
+        self._basis = self.base
+        for i in range(self.num_components()):
+            self._terms[i] += a.terms()[i]
+            self._scales[i] += a.scales()[i]
+            self._indices[i] += a.indices()[i]
         return self
 
     def __sub__(self, a):
@@ -605,10 +619,15 @@ class Expr(object):
         else:
             assert id(self._basis.base) == id(a._basis.base)
             basis = self._basis.base
-        return Expr(basis,
-                    np.concatenate((self.terms(), a.terms()), axis=1),
-                    np.concatenate((self.scales(), -a.scales()), axis=1),
-                    np.concatenate((self.indices(), a.indices()), axis=1))
+
+        # Concatenate terms
+        terms, scales, indices = [], [], []
+        for i in range(self.num_components()):
+            terms.append(self._terms[i] + a.terms()[i])
+            scales.append(self._scales[i] + (-np.array(a.scales()[i])).tolist())
+            indices.append(self._indices[i] + a.indices()[i])
+
+        return Expr(basis, terms, scales, indices)
 
     def __isub__(self, a):
         assert isinstance(a, (Expr, BasisFunction))
@@ -623,14 +642,16 @@ class Expr(object):
             assert id(self._basis.base) == id(a._basis.base)
             basis = self._basis.base
         self._basis = basis
-        self._terms = np.concatenate((self.terms(), a.terms()), axis=1)
-        self._scales = np.concatenate((self.scales(), -a.scales()), axis=1)
-        self._indices = np.concatenate((self.indices(), a.indices()), axis=1)
+        for i in range(self.num_components()):
+            self._terms[i] += a.terms()[i]
+            self._scales[i] += (-np.array(a.scales()[i])).tolist()
+            self._indices[i] += a.indices()[i]
+
         return self
 
     def __neg__(self):
-        return Expr(self.basis(), self.terms().copy(), -self.scales().copy(),
-                    self.indices().copy())
+        return Expr(self.basis(), copy.deepcopy(self.terms()), (-np.array(self.scales())).tolist(),
+                    copy.deepcopy(self.indices()))
 
 
 class BasisFunction(object):
@@ -707,14 +728,14 @@ class BasisFunction(object):
         return self._offset
 
     def __getitem__(self, i):
-        #assert self.rank > 0
+        assert self.function_space().is_composite_space
         basespace = self.basespace
         base = self.base
         space = self._space[i]
         offset = self._offset
         for k in range(i):
             offset += self._space[k].num_components()
-        t0 = BasisFunction(space, i, basespace, offset, base)
+        t0 = self.__class__(space, 0, basespace, offset, base)
         return t0
 
     def __mul__(self, a):
@@ -763,17 +784,6 @@ class TestFunction(BasisFunction):
     def __init__(self, space, index=0, basespace=None, offset=0, base=None):
         BasisFunction.__init__(self, space, index, basespace, offset, base)
 
-    def __getitem__(self, i):
-        #assert self.rank > 0
-        basespace = self.basespace
-        base = self.base
-        space = self._space[i]
-        offset = self._offset
-        for k in range(i):
-            offset += self._space[k].num_components()
-        t0 = TestFunction(space, i, basespace, offset, base)
-        return t0
-
     @property
     def argument(self):
         return 0
@@ -795,17 +805,6 @@ class TrialFunction(BasisFunction):
     """
     def __init__(self, space, index=0, basespace=None, offset=0, base=None):
         BasisFunction.__init__(self, space, index, basespace, offset, base)
-
-    def __getitem__(self, i):
-        #assert self.rank > 0
-        basespace = self.basespace
-        base = self.base
-        space = self._space[i]
-        offset = self._offset
-        for k in range(i):
-            offset += self._space[k].num_components()
-        t0 = TrialFunction(space, i, basespace, offset, base)
-        return t0
 
     @property
     def argument(self):
