@@ -1793,25 +1793,25 @@ class DirichletNeumannBasis(ChebyshevBase):
     def _composite_basis(self, V, argument=0):
         P = np.zeros_like(V)
         k = np.arange(V.shape[1]).astype(np.float)[:-2]
-        P[:, :-2] = (V[:, :-2] +
-                     ((-k**2 + (k+2)**2)/((k+1)**2 + (k+2)**2))*V[:, 1:-1] +
-                     ((-k**2 - (k+1)**2)/((k+1)**2 + (k+2)**2))*V[:, 2:])
+        P[:, :-2] = (V[:, :-2]
+                     + ((-k**2 + (k+2)**2)/((k+1)**2 + (k+2)**2))*V[:, 1:-1]
+                     + ((-k**2 - (k+1)**2)/((k+1)**2 + (k+2)**2))*V[:, 2:])
         return P
 
     def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         assert i < self.N-2
-        return (sp.chebyshevt(i, x) +
-                ((-i**2 + (i+2)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+1, x)+
-                ((-i**2 - (i+1)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+2, x))
+        return (sp.chebyshevt(i, x)
+                + ((-i**2 + (i+2)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+1, x)
+                + ((-i**2 - (i+1)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+2, x))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
         w = np.arccos(x)
-        output_array[:] = (np.cos(i*w)+
-                           ((-i**2 + (i+2)**2)/((i+1)**2 + (i+2)**2))*np.cos((i+1)*w)+
-                           ((-i**2 - (i+1)**2)/((i+1)**2 + (i+2)**2))*np.cos((i+2)*w))
+        output_array[:] = (np.cos(i*w)
+                           + ((-i**2 + (i+2)**2)/((i+1)**2 + (i+2)**2))*np.cos((i+1)*w)
+                           + ((-i**2 - (i+1)**2)/((i+1)**2 + (i+2)**2))*np.cos((i+2)*w))
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -2011,25 +2011,25 @@ class NeumannDirichletBasis(ChebyshevBase):
     def _composite_basis(self, V, argument=0):
         P = np.zeros_like(V)
         k = np.arange(V.shape[1]).astype(np.float)[:-2]
-        P[:, :-2] = (V[:, :-2] -
-                     ((-k**2 + (k+2)**2)/((k+1)**2 + (k+2)**2))*V[:, 1:-1] +
-                     ((-k**2 - (k+1)**2)/((k+1)**2 + (k+2)**2))*V[:, 2:])
+        P[:, :-2] = (V[:, :-2] 
+                     - ((-k**2 + (k+2)**2)/((k+1)**2 + (k+2)**2))*V[:, 1:-1]
+                     + ((-k**2 - (k+1)**2)/((k+1)**2 + (k+2)**2))*V[:, 2:])
         return P
 
     def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         assert i < self.N-2
-        return (sp.chebyshevt(i, x) -
-                ((-i**2 + (i+2)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+1, x)+
-                ((-i**2 - (i+1)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+2, x))
+        return (sp.chebyshevt(i, x)
+                - ((-i**2 + (i+2)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+1, x)
+                + ((-i**2 - (i+1)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+2, x))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
         w = np.arccos(x)
-        output_array[:] = (np.cos(i*w)-
-                           ((-i**2 + (i+2)**2)/((i+1)**2 + (i+2)**2))*np.cos((i+1)*w)+
-                           ((-i**2 - (i+1)**2)/((i+1)**2 + (i+2)**2))*np.cos((i+2)*w))
+        output_array[:] = (np.cos(i*w)
+                           - ((-i**2 + (i+2)**2)/((i+1)**2 + (i+2)**2))*np.cos((i+1)*w)
+                           + ((-i**2 - (i+1)**2)/((i+1)**2 + (i+2)**2))*np.cos((i+2)*w))
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
