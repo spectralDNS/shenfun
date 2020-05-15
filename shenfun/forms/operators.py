@@ -74,8 +74,8 @@ def grad(test):
 
     if coors.is_cartesian:
 
-        d = [Dx(test, 0, 1)]
-        for i in range(1, ndim):
+        d = []
+        for i in range(ndim):
             d.append(Dx(test, i, 1))
 
         terms, scales, indices = [], [], []
@@ -143,13 +143,12 @@ def Dx(test, x, k=1):
 
     else:
         assert test.expr_rank() < 1, 'Cannot (yet) take derivative of tensor in curvilinear coordinates'
-        psi = coors.coordinates[0]
+        psi = coors.psi
         v = copy.deepcopy(test.terms())
         sc = copy.deepcopy(test.scales())
         ind = copy.deepcopy(test.indices())
         num_terms = test.num_terms()
-        num_comp = test.num_components()
-        for i in range(num_comp):
+        for i in range(test.num_components()):
             for j in range(num_terms[i]):
                 sc0 = sp.simplify(sp.diff(sc[i][j], psi[x], 1))
                 if not sc0 == 0:
