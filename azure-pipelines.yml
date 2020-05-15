@@ -76,7 +76,7 @@ jobs:
       reportDirectory: '$(System.DefaultWorkingDirectory)/**/htmlcov'
 
   - bash: |
-      if [ $PYTHON_VERSION == 3.7 -a -z "$CODECOV_TOKEN" ]; then
+      if [ $PYTHON_VERSION == 3.7 ] && [ ! -z "$CODECOV_TOKEN" ]; then
         source activate shenfun
         pip install codecov codacy-coverage
         codecov -t $(CODECOV_TOKEN)
