@@ -17,11 +17,12 @@ import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
     Array, Function, Basis, dx
 
-assert len(sys.argv) == 2, 'Call with two command-line arguments'
-assert isinstance(int(sys.argv[-1]), int)
+assert len(sys.argv) == 3, 'Call with two command-line arguments'
+assert sys.argv[-1] in ('legendre', 'chebyshev')
+assert isinstance(int(sys.argv[-2]), int)
 
 # Get family from args
-family = 'legendre'
+family = sys.argv[-1].lower()
 
 # Use sympy to compute a rhs, given an analytical solution
 domain = (-1., 1.)
@@ -33,7 +34,7 @@ ue = 1+cos(5*pi*(x_map+1)/2)
 fe = ue.diff(x, 2)
 
 # Size of discretization
-N = int(sys.argv[-1])
+N = int(sys.argv[-2])
 
 SD = Basis(N, family=family, bc='NeumannDirichlet', domain=domain)
 X = SD.mesh()
