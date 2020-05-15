@@ -1,8 +1,9 @@
 import pytest
 import numpy as np
+import sympy as sp
 from mpi4py import MPI
 import shenfun
-from shenfun import inner, div, curl, Function, \
+from shenfun import inner, div, curl, grad, Function, \
     Array, project, Dx, Basis, TensorProductSpace, VectorTensorProductSpace, \
     MixedTensorProductSpace
 
@@ -128,6 +129,41 @@ def test_curl2():
     w = TTk.backward(w_hat, w)
     assert allclose(w, curl_)
 
+def test_curl_cc():
+    theta, phi = sp.symbols('x,y', real=True, positive=True)
+    psi = (theta, phi)
+    r = 1
+    rv = (r*sp.sin(theta)*sp.cos(phi), r*sp.sin(theta)*sp.sin(phi), r*sp.cos(theta))
+
+    # Manufactured solution
+    sph = sp.functions.special.spherical_harmonics.Ynm
+    ue = sph(6, 3, theta, phi)
+
+    N, M = 16, 12
+    L0 = Basis(N, 'C', domain=(0, np.pi))
+    F1 = Basis(M, 'F', dtype='D')
+    T = TensorProductSpace(comm, (L0, F1), coordinates=(psi, rv))
+    u_hat = Function(T, buffer=ue)
+    du = project(curl(grad(u_hat)), T)
+    assert np.linalg.norm(du) < 1e-10
+
+    r, theta, z = psi = sp.symbols('x,y,z', real=True, positive=True)
+    rv = (r*sp.cos(theta), r*sp.sin(theta), z)
+
+    # Manufactured solution
+    ue = (r*(1-r)*sp.cos(4*theta)-1*(r-1))*sp.cos(4*z)
+
+    N = 12
+    F0 = Basis(N, 'F', dtype='D')
+    F1 = Basis(N, 'F', dtype='d')
+    L = Basis(N, 'L', bc='Dirichlet', domain=(0, 1))
+    T = TensorProductSpace(comm, (L, F0, F1), coordinates=(psi, rv))
+    T1 = T.get_orthogonal()
+    V = VectorTensorProductSpace(T1)
+    u_hat = Function(T, buffer=ue)
+    du = project(curl(grad(u_hat)), V)
+    assert np.linalg.norm(du) < 1e-10
+
 if __name__ == '__main__':
-    test_curl('g')
+    test_curl('d')
     test_curl2()
