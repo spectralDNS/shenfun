@@ -1,5 +1,5 @@
 from numbers import Number, Integral
-from copy import copy
+import copy
 from scipy.special import sph_harm, erf
 import numpy as np
 import sympy as sp
@@ -487,7 +487,7 @@ class Expr(object):
                 elif len(x) == 3:
                     work = evaluate.evaluate_3D(work, bv, M, r2c, last_conj_index, sl)
 
-                sc = self.scales()[vec, base_j]
+                sc = self.scales()[vec][base_j]
                 if not hasattr(sc, 'free_symbols'):
                     sc = float(sc)
                 else:
@@ -503,7 +503,7 @@ class Expr(object):
 
     def __getitem__(self, i):
         basis = self._basis
-        if basis.rank > 0:
+        if basis.function_space().is_composite_space > 0:
             basis = self._basis[i]
         else:
             basis = self._basis
@@ -525,18 +525,18 @@ class Expr(object):
     def __mul__(self, a):
         sc = np.array(self.scales())
         if self.expr_rank() == 0:
-            sc = sc * sp.sympify(a)
+            sc = sc*sp.sympify(a)
 
         else:
             if isinstance(a, tuple):
                 assert len(a) == self.num_components()
                 for i in range(self.num_components()):
-                    sc[i] = sc[i] * sp.sympify(a[i])
+                    sc[i] = sc[i]*sp.sympify(a[i])
 
             else:
-                sc *= sp.sympify(a)
+                sc = sc*sp.sympify(a)
 
-        return Expr(self._basis, self._terms.copy(), sc.tolist(), self._indices.copy())
+        return Expr(self._basis, copy.deepcopy(self._terms), sc.tolist(), copy.deepcopy(self._indices))
 
     def __rmul__(self, a):
         return self.__mul__(a)
@@ -544,16 +544,16 @@ class Expr(object):
     def __imul__(self, a):
         sc = np.array(self.scales())
         if self.expr_rank() == 0:
-            sc *= sp.sympify(a)
+            sc = sc*sp.sympify(a)
 
         else:
             if isinstance(a, tuple):
                 assert len(a) == self.dimensions
                 for i in range(self.dimensions):
-                    sc[i] = sc[i] * sp.sympify(a[i])
+                    sc[i] = sc[i]*sp.sympify(a[i])
 
             else:
-                sc *= sp.sympify(a)
+                sc = sc*sp.sympify(a)
 
         self._scales = sc.tolist()
 
@@ -564,7 +564,7 @@ class Expr(object):
         if not isinstance(a, Expr):
             a = Expr(a)
         assert self.num_components() == a.num_components()
-        assert self.function_space() == a.function_space()
+        #assert self.function_space() == a.function_space()
         assert self.argument == a.argument
         if id(self._basis) == id(a._basis):
             basis = self._basis
@@ -586,14 +586,14 @@ class Expr(object):
         if not isinstance(a, Expr):
             a = Expr(a)
         assert self.num_components() == a.num_components()
-        assert self.function_space() == a.function_space()
+        #assert self.function_space() == a.function_space()
         assert self.argument == a.argument
-        if id(self._basis) == id(a._basis):
-            basis = self._basis
-        else:
-            assert id(self._basis.base) == id(a._basis.base)
-            basis = self._basis.base
-        self._basis = basis
+        #if id(self._basis) == id(a._basis):
+        #    basis = self._basis
+        #else:
+        #    assert id(self.base) == id(a.base)
+        #    basis = self.base
+        self._basis = self.base
         for i in range(self.num_components()):
             self._terms[i] += a.terms()[i]
             self._scales[i] += a.scales()[i]
@@ -643,8 +643,8 @@ class Expr(object):
         return self
 
     def __neg__(self):
-        return Expr(self.basis(), self.terms().copy(), (-np.array(self.scales())).tolist,
-                    self.indices().copy())
+        return Expr(self.basis(), copy.deepcopy(self.terms()), (-np.array(self.scales())).tolist(),
+                    copy.deepcopy(self.indices()))
 
 
 class BasisFunction(object):
@@ -721,14 +721,14 @@ class BasisFunction(object):
         return self._offset
 
     def __getitem__(self, i):
-        #assert self.rank > 0
+        assert self.function_space().is_composite_space
         basespace = self.basespace
         base = self.base
         space = self._space[i]
         offset = self._offset
         for k in range(i):
             offset += self._space[k].num_components()
-        t0 = BasisFunction(space, i, basespace, offset, base)
+        t0 = self.__class__(space, 0, basespace, offset, base)
         return t0
 
     def __mul__(self, a):
@@ -777,17 +777,6 @@ class TestFunction(BasisFunction):
     def __init__(self, space, index=0, basespace=None, offset=0, base=None):
         BasisFunction.__init__(self, space, index, basespace, offset, base)
 
-    def __getitem__(self, i):
-        #assert self.rank > 0
-        basespace = self.basespace
-        base = self.base
-        space = self._space[i]
-        offset = self._offset
-        for k in range(i):
-            offset += self._space[k].num_components()
-        t0 = TestFunction(space, i, basespace, offset, base)
-        return t0
-
     @property
     def argument(self):
         return 0
@@ -809,17 +798,6 @@ class TrialFunction(BasisFunction):
     """
     def __init__(self, space, index=0, basespace=None, offset=0, base=None):
         BasisFunction.__init__(self, space, index, basespace, offset, base)
-
-    def __getitem__(self, i):
-        #assert self.rank > 0
-        basespace = self.basespace
-        base = self.base
-        space = self._space[i]
-        offset = self._offset
-        for k in range(i):
-            offset += self._space[k].num_components()
-        t0 = TrialFunction(space, i, basespace, offset, base)
-        return t0
 
     @property
     def argument(self):
