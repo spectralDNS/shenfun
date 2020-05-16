@@ -131,6 +131,6 @@ class Coordinates(object):
         for i in range(len(self.psi)):
             for j in range(len(self.psi)):
                 for k in range(len(self.psi)):
-                    ct[i, j, k] = sp.simplify(np.dot(np.array([bij.diff(self.psi[j], 1) for bij in b[i]]), bt[k]))
+                    ct[k, i, j] = sp.simplify(np.dot(np.array([bij.diff(self.psi[j], 1) for bij in b[i]]), bt[k]))
         self._ct = ct
         return ct

@@ -10,6 +10,16 @@ __all__ = ('div', 'grad', 'Dx', 'curl')
 
 #pylint: disable=protected-access
 
+def _expr_from_vector_components(comp, basis):
+    """Return Expr composed of vector components `comp`
+    """
+    terms, scales, indices = [], [], []
+    for i in range(len(comp)):
+        terms += comp[i]._terms
+        scales += comp[i]._scales
+        indices += comp[i]._indices
+    return Expr(basis, terms, scales, indices)
+
 def div(test):
     """Return div(test)
 
@@ -24,7 +34,7 @@ def div(test):
     if isinstance(test, BasisFunction):
         test = Expr(test)
 
-    test = copy.copy(test)
+    #test = copy.copy(test)
     ndim = test.dimensions
     coors = test.function_space().coors
 
@@ -37,10 +47,18 @@ def div(test):
             return test
 
         else:
-            d = Dx(test[0], 0, 1)
-            for i in range(1, ndim):
-                d += Dx(test[i], i, 1)
-            return d
+            if test.num_components() == ndim**2: # second rank tensor
+                dv = []
+                for i in range(ndim):
+                    dv.append(div(test[i]))
+
+                return _expr_from_vector_components(dv, test.base)
+
+            else: # vector
+                d = Dx(test[0], 0, 1)
+                for i in range(1, ndim):
+                    d += Dx(test[i], i, 1)
+                return d
 
     else:
         assert test.expr_rank() < 2, 'Cannot (yet) take divergence of higher order tensor in curvilinear coordinates'
@@ -68,54 +86,60 @@ def grad(test):
     if isinstance(test, BasisFunction):
         test = Expr(test)
 
-    test = copy.copy(test)
+    #test = copy.copy(test)
     ndim = test.dimensions
     coors = test.function_space().coors
 
     if coors.is_cartesian:
 
         d = []
-        for i in range(ndim):
-            d.append(Dx(test, i, 1))
-
-        terms, scales, indices = [], [], []
-        for i in range(ndim):
-            terms += d[i]._terms
-            scales += d[i]._scales
-            indices += d[i]._indices
-        test._terms = terms
-        test._scales = scales
-        test._indices = indices
-
-        return test
+        if test.num_components() > 1:
+            for i in range(test.num_components()):
+                for j in range(ndim):
+                    d.append(Dx(test[i], j, 1))
+        else:
+           for i in range(ndim):
+               d.append(Dx(test, i, 1))
 
     else:
-        assert test.expr_rank() < 2, 'Cannot (yet) take gradient of higher order tensor in curvilinear coordinates'
+        #assert test.expr_rank() < 2, 'Cannot (yet) take gradient of higher order tensor in curvilinear coordinates'
 
         gt = coors.get_contravariant_metric_tensor()
-        d = []
-        for i in range(ndim):
-            di = []
-            for j in range(ndim):
-                sc = gt[j, i]
-                if not sc == 0:
-                    di.append(Dx(test, j, 1)*sc)
-            dj = di[0]
-            for j in range(1, len(di)):
-                dj += di[j]
-            d.append(dj)
 
-        terms, scales, indices = [], [], []
-        for i in range(ndim):
-            terms += d[i]._terms
-            scales += d[i]._scales
-            indices += d[i]._indices
+        if test.num_components() == 3:
+            ct = coors.get_christoffel_second()
+            d = []
+            for i in range(ndim):
+                vi = test[i]
+                for j in range(ndim):
+                    dj = []
+                    for l in range(ndim):
+                        sc = gt[l, j]
+                        if not sc == 0:
+                            dj.append(Dx(vi, l, 1)*sc)
+                        for k in range(ndim):
+                            if not sc*ct[i, k, l] == 0:
+                                dj.append(test[k]*(sc*ct[i, j, k]))
 
-        test._terms = terms
-        test._scales = scales
-        test._indices = indices
+                    di = dj[0]
+                    for j in range(1, len(dj)):
+                        di += dj[j]
+                    d.append(di)
 
-    return test
+        else:
+            d = []
+            for i in range(ndim):
+                dj = []
+                for j in range(ndim):
+                    sc = gt[j, i]
+                    if not sc == 0:
+                        dj.append(Dx(test, j, 1)*sc)
+                di = dj[0]
+                for j in range(1, len(dj)):
+                    di += dj[j]
+                d.append(di)
+
+    return _expr_from_vector_components(d, test.base)
 
 def Dx(test, x, k=1):
     """Return k'th order partial derivative in direction x
@@ -162,7 +186,6 @@ def Dx(test, x, k=1):
 
     return test
 
-
 def curl(test):
     """Return curl of test
 
@@ -198,7 +221,6 @@ def curl(test):
     else:
         assert test.expr_rank() < 2, 'Cannot (yet) take curl of higher order tensor in curvilinear coordinates'
         hi = coors.hi
-        psi = coors.psi
         sg = coors.get_sqrt_g()
         if coors.is_orthogonal:
             if test.dimensions == 3:
