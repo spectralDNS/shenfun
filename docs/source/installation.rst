@@ -100,6 +100,15 @@ Note that parallel HDF5 and NetCDF4 often are available as modules on
 supercomputers. Otherwise, see the respective packages for how to install
 with support for MPI.
 
+For plotting some of figures, which are generated in the Demos, `matplotlib`_ is
+required. This package is not part of the conda package but can be easily
+installed using
+
+::
+
+    conda install matplotlib
+
+
 Test installation
 -----------------
 
@@ -137,6 +146,7 @@ The tests are run automatically on every commit to github, see
 .. _HDF5: https://www.hdfgroup.org
 .. _netCDF4: http://unidata.github.io/netcdf4-python/
 .. _h5py: https://www.h5py.org
+.. _matplotlib: https://matplotlib.org
 .. _mpich: https://www.mpich.org
 .. _openmpi: https://www.open-mpi.org
 .. _numpy: https://www.numpy.org
