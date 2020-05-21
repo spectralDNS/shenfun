@@ -201,9 +201,10 @@ to define an analytical solution
 alpha = 2
 sph = sp.functions.special.spherical_harmonics.Ynm
 ue = sph(6, 3, theta, phi)
-f = - ue.diff(theta, 2) - (1/sp.tan(theta))*ue.diff(theta, 1) - (1/sp.sin(theta)**2)*ue.diff(phi, 2) + alpha*ue
 
 # Compute the right hand side on the quadrature mesh
+# That is, compute f = -div(grad(ue)) + alpha*ue
+f = (-div(grad(u))+alpha*u).tosympy(basis=ue, psi=psi)
 fj = Array(T, buffer=f)
 
 # Take scalar product
