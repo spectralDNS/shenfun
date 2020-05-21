@@ -100,14 +100,11 @@ Note that parallel HDF5 and NetCDF4 often are available as modules on
 supercomputers. Otherwise, see the respective packages for how to install
 with support for MPI.
 
-For plotting some of figures, which are generated in the Demos, `matplotlib`_ is
-required. This package is not part of the conda package but can be easily
-installed using
+Some of the plots in the Demos are created using the matplotlib_ library. Matplotlib is not a required dependency, but it may be easily installed from conda using
 
 ::
 
     conda install matplotlib
-
 
 Test installation
 -----------------
