@@ -35,15 +35,14 @@ base = importlib.import_module('.'.join(('shenfun', family)))
 Solver = base.la.Helmholtz
 regtest = True
 
-# Use sympy to compute a rhs, given an analytical solution
+# Use sympy for manufactured solution
 a = -1
 b = 1
 if family == 'jacobi':
     a = 0
     b = 0
-x, y, z = symbols("x,y,z")
+x, y, z = symbols("x,y,z", real=True)
 ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-y**2) + a*(1 - y)/2. + b*(1 + y)/2.
-fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
 
 # Size of discretization
 N = int(sys.argv[-2])
@@ -58,6 +57,9 @@ T = TensorProductSpace(subcomms, (K1, SD, K2), axes=(1, 0, 2))
 X = T.local_mesh()
 u = TrialFunction(T)
 v = TestFunction(T)
+
+# Get manufactured right hand side
+fe = div(grad(u)).tosympy(basis=ue)
 
 K = T.local_wavenumbers()
 

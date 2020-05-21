@@ -430,6 +430,102 @@ class Expr(object):
             return self._basis.offset()
         return None
 
+    def latexprint(self, x=None, funcname='u'):
+        s = ""
+        x = 'xyzrst' if x is None else x
+        for i, vec in enumerate(self.terms()):
+            if self.num_components() > 1:
+                s += '\\left( '
+
+            for j, term in enumerate(vec):
+                sc = self.scales()[i][j]
+                k = self.indices()[i][j]
+                if not sc == 1:
+                    scp = sp.latex(sc)
+                    if scp.startswith('-'):
+                        s = s.rstrip('+')
+                    s += scp
+                t = np.array(term)
+                cmp = funcname
+                if self.num_components() > 1:
+                    cmp = funcname + '_{%s}'%(x[k])
+                if np.sum(t) == 0:
+                    s += cmp
+                else:
+                    p = '^'+str(np.sum(t)) if np.sum(t) > 1 else ' '
+                    s += "\\frac{\partial%s%s}"%(p, cmp)
+                    for j, ti in enumerate(t):
+                        if ti > 0:
+                            tt = '^'+str(ti) if ti > 1 else ' '
+                            s += "{\\partial%s%s}"%(tt, x[j])
+                s += '+'
+            if self.num_components() > 1:
+                s = s.rstrip('+')
+                s += "\\right) \\mathbf{b}_{%d}"%(i)
+                s += '+'
+
+        return s.rstrip('+')
+
+    def tosympy(self, basis=None, psi=sp.symbols('x,y,z,r,s', real=True)):
+        """Return self evaluated with a sympy basis
+
+        Parameters
+        ----------
+        basis : sympy Expr or string
+            if sympy Expr, then use this directly
+            if str, then use that as name for a generic sympy Function
+        psi : tuple of sympy Symbols
+
+        Examples
+        --------
+        >>> from shenfun import Basis, TensorProductSpace
+        >>> import sympy as sp
+        >>> theta, r = psi = sp.symbols('x,y', real=True, positive=True)
+        >>> rv = (r*sp.cos(theta), r*sp.sin(theta))
+        >>> F0 = Basis(8, 'F', dtype='d')
+        >>> T0 = Basis(8, 'C')
+        >>> T = TensorProductSpace(comm, (F0, T0), coordinates=(psi, rv))
+        >>> u = TrialFunction(T)
+        >>> ue = r*sp.cos(theta)
+        >>> du = div(grad(u))
+        >>> du.tosympy()
+        Derivative(u(x, y), (y, 2)) + Derivative(u(x, y), y)/y + Derivative(u(x, y), (x, 2))/y**2
+        >>> du.tosympy(basis=ue, psi=psi)
+        0
+
+        """
+        s = sp.S(0)
+        is_vector = self.rank
+        ndim = self.dimensions
+        if basis is None:
+            basis = 'u'
+
+        if isinstance(basis, str):
+            # Create sympy Function
+            st = basis
+            if is_vector:
+                basis = []
+                for i in range(self.dimensions):
+                    basis.append(sp.Function(st+'xyzrs'[i])(*psi[:self.dimensions]))
+            else:
+                basis = [sp.Function(st)(*psi[:self.dimensions])]
+        else:
+            if isinstance(basis, sp.Expr):
+                basis = [basis]
+            assert len(basis) == ndim**self.rank
+
+        for i, vec in enumerate(self.terms()):
+            for j, term in enumerate(vec):
+                sc = self.scales()[i][j]
+                k = self.indices()[i][j]
+                b0 = basis[k]
+                tt = tuple([psi[n] for n, l in enumerate(term) for m in range(l)])
+                if np.sum(term) > 0:
+                    s += sc*sp.diff(b0, *tt)
+                else:
+                    s += sc*b0
+        return s
+
     def eval(self, x, output_array=None):
         """Return expression evaluated on x
 
@@ -593,13 +689,7 @@ class Expr(object):
         if not isinstance(a, Expr):
             a = Expr(a)
         assert self.num_components() == a.num_components()
-        #assert self.function_space() == a.function_space()
         assert self.argument == a.argument
-        #if id(self._basis) == id(a._basis):
-        #    basis = self._basis
-        #else:
-        #    assert id(self.base) == id(a.base)
-        #    basis = self.base
         self._basis = self.base
         for i in range(self.num_components()):
             self._terms[i] += a.terms()[i]
@@ -652,6 +742,60 @@ class Expr(object):
     def __neg__(self):
         return Expr(self.basis(), copy.deepcopy(self.terms()), (-np.array(self.scales())).tolist(),
                     copy.deepcopy(self.indices()))
+
+    def simplify(self):
+        """Join terms, that are otherwise equal, using scale"""
+        if np.array(self.num_terms()).prod() == 1:
+            return
+
+        tms = []
+        inds = []
+        scs = []
+        for vec, (terms, indices, scales) in enumerate(zip(self.terms(), self.indices(), self.scales())):
+            tms.append([])
+            inds.append([])
+            scs.append([])
+            for i, (term, ind, sc) in enumerate(zip(terms, indices, scales)):
+                match = []
+                if i > 0:
+                    match = np.where((np.array(term) == np.array(tms[-1])).prod(axis=1) == 1)[0]
+                if len(match) > 0:
+                    k = match[0]
+                    if inds[-1][k] == ind:
+                        scs[-1][k] += sc
+                        if scs[-1][k] == 0: # Remove if scale is zero
+                            scs[-1].pop(k)
+                            tms[-1].pop(k)
+                            inds[-1].pop(k)
+                        continue
+                tms[-1].append(term)
+                inds[-1].append(ind)
+                scs[-1].append(sc)
+        self._terms = tms
+        self._indices = inds
+        self._scales = scs
+        return
+
+    def __eq__(self, a):
+        if self.base != a.base:
+            return False
+        if self.num_components() != a.num_components():
+            return False
+        if not np.all(self.num_terms() == a.num_terms()):
+            return False
+        for s0, q0 in zip(self.scales(), a.scales()):
+            for si, qi in zip(s0, q0):
+                if si != qi:
+                    return False
+        for s0, q0 in zip(self.indices(), a.indices()):
+            for si, qi in zip(s0, q0):
+                if si != qi:
+                    return False
+        for t0, p0 in zip(self.terms(), a.terms()):
+            for ti, pi in zip(t0, p0):
+                if not np.all(ti == pi):
+                    return False
+        return True
 
 
 class BasisFunction(object):

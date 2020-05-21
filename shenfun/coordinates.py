@@ -127,7 +127,7 @@ class Coordinates(object):
             return self._ct
         b = self.get_covariant_basis()
         bt = self.get_contravariant_basis()
-        ct = np.zeros((len(self.psi),)*len(self.psi), object)
+        ct = np.zeros((len(self.psi),)*3, object)
         for i in range(len(self.psi)):
             for j in range(len(self.psi)):
                 for k in range(len(self.psi)):
