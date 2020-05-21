@@ -276,8 +276,8 @@ def inner(expr0, expr1, output_array=None, level=0):
                         continue
 
                     for dv in split(dV):
-                        sc = dv['scale']
-                        scb = dv['scale']
+                        sc = dv['coeff']
+                        scb = dv['coeff']
                         M = []
                         DM = []
                         for i, (a, b) in enumerate(zip(b0, b1)): # Third index, one inner for each dimension

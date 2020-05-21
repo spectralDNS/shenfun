@@ -25,7 +25,6 @@ alpha = 2
 
 # Manufactured solution
 ue = (r*(1-r))**2*sp.cos(2*theta)-0.0*(r-1)
-f = -ue.diff(r, 2) - (1/r)*ue.diff(r, 1) - (1/r**2)*ue.diff(theta, 2) + alpha*ue
 
 N = 32
 F = Basis(N, 'F', dtype='d')
@@ -41,6 +40,8 @@ v0 = TestFunction(T0)
 u0 = TrialFunction(T0)
 
 # Compute the right hand side on the quadrature mesh
+# f = -ue.diff(r, 2) - (1/r)*ue.diff(r, 1) - (1/r**2)*ue.diff(theta, 2) + alpha*ue
+f = (-div(grad(u))+alpha*u).tosympy(basis=ue, psi=psi)
 fj = Array(T, buffer=f)
 
 # Take scalar product

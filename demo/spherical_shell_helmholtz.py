@@ -23,7 +23,7 @@ alpha = 2
 sph = sp.functions.special.spherical_harmonics.Ynm
 ue = sph(6, 3, theta, phi)
 #ue = sp.cos(8*(sp.sin(theta)*sp.cos(phi) + sp.sin(theta)*sp.sin(phi) + sp.cos(theta)))
-g = - ue.diff(theta, 2) - (1/sp.tan(theta))*ue.diff(theta, 1) - (1/sp.sin(theta)**2)*ue.diff(phi, 2) + alpha*ue
+#g = - ue.diff(theta, 2) - (1/sp.tan(theta))*ue.diff(theta, 1) - (1/sp.sin(theta)**2)*ue.diff(phi, 2) + alpha*ue
 
 N, M = 60, 40
 L0 = Basis(N, 'C', domain=(0, np.pi))
@@ -34,6 +34,7 @@ v = TestFunction(T)
 u = TrialFunction(T)
 
 # Compute the right hand side on the quadrature mesh
+g = (-div(grad(u))+alpha*u).tosympy(basis=ue, psi=psi)
 gj = Array(T, buffer=g)
 
 # Take scalar product

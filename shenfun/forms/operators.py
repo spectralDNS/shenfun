@@ -58,15 +58,41 @@ def div(test):
                 d = Dx(test[0], 0, 1)
                 for i in range(1, ndim):
                     d += Dx(test[i], i, 1)
+                d.simplify()
                 return d
 
     else:
-        assert test.expr_rank() < 2, 'Cannot (yet) take divergence of higher order tensor in curvilinear coordinates'
 
-        sg = coors.get_sqrt_g()
-        d = Dx(test[0]*sg, 0, 1)*(1/sg)
-        for i in range(1, ndim):
-            d += Dx(test[i]*sg, i, 1)*(1/sg)
+        if test.num_components() == ndim**2:
+
+            ct = coors.get_christoffel_second()
+            d = []
+            for i in range(ndim):
+                di = []
+                for j in range(ndim):
+                    Sij = test[i][j]
+                    di.append(Dx(Sij, j, 1))
+                    for k in range(ndim):
+                        Sik = test[i][k]
+                        Sjk = test[j][k]
+                        if not ct[i, k, j] == 0:
+                            di.append(Sjk*ct[i, k, j])
+                        if not ct[k, k, j] == 0:
+                            di.append(Sij*ct[k, k, j])
+
+                dj = di[0]
+                for j in range(1, len(di)):
+                    dj += di[j]
+                dj.simplify()
+                d.append(dj)
+            return _expr_from_vector_components(d, test.base)
+
+        else:
+            sg = coors.get_sqrt_g()
+            d = Dx(test[0]*sg, 0, 1)*(1/sg)
+            for i in range(1, ndim):
+                d += Dx(test[i]*sg, i, 1)*(1/sg)
+        d.simplify()
         return d
 
 def grad(test):
@@ -106,7 +132,7 @@ def grad(test):
 
         gt = coors.get_contravariant_metric_tensor()
 
-        if test.num_components() == 3:
+        if test.num_components() == ndim:
             ct = coors.get_christoffel_second()
             d = []
             for i in range(ndim):
@@ -139,7 +165,9 @@ def grad(test):
                     di += dj[j]
                 d.append(di)
 
-    return _expr_from_vector_components(d, test.base)
+    dv = _expr_from_vector_components(d, test.base)
+    dv.simplify()
+    return dv
 
 def Dx(test, x, k=1):
     """Return k'th order partial derivative in direction x
@@ -174,12 +202,12 @@ def Dx(test, x, k=1):
         num_terms = test.num_terms()
         for i in range(test.num_components()):
             for j in range(num_terms[i]):
-                sc0 = sp.simplify(sp.diff(sc[i][j], psi[x], 1))
+                sc0 = sp.simplify(sp.diff(sc[i][j], psi[x], k))
                 if not sc0 == 0:
                     v[i].append(copy.deepcopy(v[i][j]))
                     sc[i].append(sc0)
                     ind[i].append(ind[i][j])
-                v[i][j][x] += 1
+                v[i][j][x] += k
         test._terms = v
         test._scales = sc
         test._indices = ind
