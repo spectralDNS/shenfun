@@ -430,9 +430,13 @@ class Expr(object):
             return self._basis.offset()
         return None
 
-    def latexprint(self, x=None, funcname='u'):
+    def latexprint(self, symbol_names=None, funcname='u'):
         s = ""
-        x = 'xyzrst' if x is None else x
+        x = 'xyzrst'
+        symbols = {k: k for k in x}
+        if symbol_names is not None:
+            symbols = {str(k): val for k, val in symbol_names.items()}
+
         for i, vec in enumerate(self.terms()):
             if self.num_components() > 1:
                 s += '\\left( '
@@ -441,14 +445,14 @@ class Expr(object):
                 sc = self.scales()[i][j]
                 k = self.indices()[i][j]
                 if not sc == 1:
-                    scp = sp.latex(sc)
+                    scp = sp.latex(sc, symbol_names=symbol_names)
                     if scp.startswith('-'):
                         s = s.rstrip('+')
                     s += scp
                 t = np.array(term)
                 cmp = funcname
                 if self.num_components() > 1:
-                    cmp = funcname + '_{%s}'%(x[k])
+                    cmp = funcname + '_{%s}'%(symbols[x[k]])
                 if np.sum(t) == 0:
                     s += cmp
                 else:
@@ -457,7 +461,7 @@ class Expr(object):
                     for j, ti in enumerate(t):
                         if ti > 0:
                             tt = '^'+str(ti) if ti > 1 else ' '
-                            s += "{\\partial%s%s}"%(tt, x[j])
+                            s += "{\\partial%s%s}"%(tt, symbols[x[j]])
                 s += '+'
             if self.num_components() > 1:
                 s = s.rstrip('+')
