@@ -18,4 +18,7 @@ def test_cylinder():
     V = VectorTensorProductSpace(T)
     u = TrialFunction(V)
     du = div(grad(u))
-    assert du.latexprint() == '\\left( \\frac{\\partial^2u_{x}}{\\partial^2x}+\\frac{1}{x}\\frac{\\partial u_{x}}{\\partial x}+\\frac{1}{x^{2}}\\frac{\\partial^2u_{x}}{\\partial^2y}- \\frac{2}{x}\\frac{\\partial u_{y}}{\\partial y}- \\frac{1}{x^{2}}u_{x}+\\frac{\\partial^2u_{x}}{\\partial^2z}\\right) \\mathbf{b}_{0}+\\left( \\frac{\\partial^2u_{y}}{\\partial^2x}+\\frac{3}{x}\\frac{\\partial u_{y}}{\\partial x}+\\frac{2}{x^{3}}\\frac{\\partial u_{x}}{\\partial y}+\\frac{1}{x^{2}}\\frac{\\partial^2u_{y}}{\\partial^2y}+\\frac{\\partial^2u_{y}}{\\partial^2z}\\right) \\mathbf{b}_{1}+\\left( \\frac{\\partial^2u_{z}}{\\partial^2x}+\\frac{1}{x}\\frac{\\partial u_{z}}{\\partial x}+\\frac{1}{x^{2}}\\frac{\\partial^2u_{z}}{\\partial^2y}+\\frac{\\partial^2u_{z}}{\\partial^2z}\\right) \\mathbf{b}_{2}'
+    assert du.latexprint() == '\\left( \\frac{\\partial^2u_{x}}{\\partial^2x}+\\frac{1}{x}\\frac{\\partial u_{x}}{\\partial x}+\\frac{1}{x^{2}}\\frac{\\partial^2u_{x}}{\\partial^2y}- \\frac{2}{x}\\frac{\\partial u_{y}}{\\partial y}- \\frac{1}{x^{2}}u_{x}+\\frac{\\partial^2u_{x}}{\\partial^2z}\\right) \\mathbf{b}_{x}+\\left( \\frac{\\partial^2u_{y}}{\\partial^2x}+\\frac{3}{x}\\frac{\\partial u_{y}}{\\partial x}+\\frac{2}{x^{3}}\\frac{\\partial u_{x}}{\\partial y}+\\frac{1}{x^{2}}\\frac{\\partial^2u_{y}}{\\partial^2y}+\\frac{\\partial^2u_{y}}{\\partial^2z}\\right) \\mathbf{b}_{y}+\\left( \\frac{\\partial^2u_{z}}{\\partial^2x}+\\frac{1}{x}\\frac{\\partial u_{z}}{\\partial x}+\\frac{1}{x^{2}}\\frac{\\partial^2u_{z}}{\\partial^2y}+\\frac{\\partial^2u_{z}}{\\partial^2z}\\right) \\mathbf{b}_{z}'
+
+if __name__ == '__main__':
+    test_cylinder()
