@@ -457,15 +457,16 @@ class Expr(object):
                     s += cmp
                 else:
                     p = '^'+str(np.sum(t)) if np.sum(t) > 1 else ' '
-                    s += "\\frac{\partial%s%s}"%(p, cmp)
+                    s += "\\frac{\partial%s%s}{"%(p, cmp)
                     for j, ti in enumerate(t):
                         if ti > 0:
                             tt = '^'+str(ti) if ti > 1 else ' '
-                            s += "{\\partial%s%s}"%(tt, symbols[x[j]])
+                            s += "\\partial%s%s"%(tt, symbols[x[j]])
+                    s += "}"
                 s += '+'
             if self.num_components() > 1:
                 s = s.rstrip('+')
-                s += "\\right) \\mathbf{b}_{%d}"%(i)
+                s += "\\right) \\mathbf{b}_{%s}"%(symbols[x[i]])
                 s += '+'
 
         return s.rstrip('+')

@@ -25,23 +25,25 @@ L0 = Basis(N, 'L', bc='BiPolar0', domain=(0, 1))
 T = TensorProductSpace(comm, (F, L), axes=(1, 0), coordinates=(psi, rv))
 T0 = TensorProductSpace(MPI.COMM_SELF, (F0, L0), axes=(1, 0), coordinates=(psi, rv))
 
-# Manufactured solution
-ue = (r*(1-r))**4*(1+sp.cos(8*theta))
-
-# Right hand side of numerical solution
-g = (ue.diff(r, 4)
-     + (2/r**2)*ue.diff(r, 2, theta, 2)
-     + 1/r**4*ue.diff(theta, 4)
-     + (2/r)*ue.diff(r, 3)
-     - 2/r**3*ue.diff(r, 1, theta, 2)
-     - 1/r**2*ue.diff(r, 2)
-     + 4/r**4*ue.diff(theta, 2)
-     + 1/r**3*ue.diff(r, 1))
-
 v = TestFunction(T)
 u = TrialFunction(T)
 v0 = TestFunction(T0)
 u0 = TrialFunction(T0)
+
+# Manufactured solution
+ue = (r*(1-r))**4*(1+sp.cos(8*theta))
+
+# Right hand side of numerical solution
+g = div(grad(div(grad(u)))).tosympy(basis=ue, psi=psi)
+
+#g = (ue.diff(r, 4)
+#     + (2/r**2)*ue.diff(r, 2, theta, 2)
+#     + 1/r**4*ue.diff(theta, 4)
+#     + (2/r)*ue.diff(r, 3)
+#     - 2/r**3*ue.diff(r, 1, theta, 2)
+#     - 1/r**2*ue.diff(r, 2)
+#     + 4/r**4*ue.diff(theta, 2)
+#     + 1/r**3*ue.diff(r, 1))
 
 # Compute the right hand side on the quadrature mesh
 gj = Array(T, buffer=g)
