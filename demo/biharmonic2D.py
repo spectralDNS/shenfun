@@ -13,11 +13,8 @@ import os
 import importlib
 from sympy import symbols, cos, sin, chebyshevt
 import numpy as np
-from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
-    Function, TensorProductSpace, Basis, extract_bc_matrices
-
-comm = MPI.COMM_WORLD
+    Function, TensorProductSpace, Basis, extract_bc_matrices, comm
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
@@ -25,7 +22,7 @@ base = importlib.import_module('.'.join(('shenfun', family)))
 BiharmonicSolver = base.la.Biharmonic
 
 # Use sympy to compute a rhs, given an analytical solution
-x, y = symbols("x,y")
+x, y = symbols("x,y", real=True)
 a = 1
 b = -1
 if family == 'jacobi':
@@ -58,11 +55,10 @@ f_hat = inner(v, fj)
 # Get left hand side of biharmonic equation
 matrices = inner(v, div(grad(div(grad(u)))))
 
-u_hat = Function(T)           # Solution spectral space
+u_hat = Function(T).set_boundary_dofs() # Solution spectral space
 
 if SD.has_nonhomogeneous_bcs:
     bc_mats = extract_bc_matrices([matrices])
-    SD.bc.set_boundary_dofs(u_hat, final=True)
     w0 = np.zeros_like(u_hat)
     for mat in bc_mats:
         f_hat -= mat.matvec(u_hat, w0)

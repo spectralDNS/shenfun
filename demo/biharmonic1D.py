@@ -64,14 +64,12 @@ f_hat = inner(v, fj)
 matrices = inner(v, aa*Dx(u, 0, 4) + bb*Dx(u, 0, 2) + cc*u)
 
 # Function to hold the solution
-u_hat = Function(SD)
+u_hat = Function(SD).set_boundary_dofs()
 
 # Some work required for inhomogeneous boundary conditions only
 if SD.has_nonhomogeneous_bcs:
     bc_mats = extract_bc_matrices([matrices])
 
-    # Add boundary terms to the known right hand side
-    SD.bc.set_boundary_dofs(u_hat, final=True)   # Fixes boundary dofs in u_hat
     w0 = np.zeros_like(u_hat)
     for m in bc_mats:
         f_hat -= m.matvec(u_hat, w0)
