@@ -79,7 +79,6 @@ def div(test):
                         Sij = test[i][j]
                         di.append(Dx(Sij, j, 1))
                         for k in range(ndim):
-                            Sik = test[i][k]
                             Sjk = test[j][k]
                             if not ct[i, k, j] == 0:
                                 di.append(Sjk*ct[i, k, j])

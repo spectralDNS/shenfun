@@ -148,8 +148,6 @@ class Coordinates(object):
             symbols = symbol_names
 
         k = {0: '\\mathbf{i}', 1: '\\mathbf{j}', 2: '\\mathbf{k}'}
-        if psi is None:
-            t = {0: 'x', 1: 'y', 2: 'z'}
         m = '\\begin{equation*}'
         for i, p in enumerate(psi):
             if covariant:

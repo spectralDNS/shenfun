@@ -1332,8 +1332,6 @@ class BCBmat(SpectralMatrix):
     def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], BB)
-        N = test[0].N
-        k = np.arange(N-4, dtype=np.float)
         d = {0: np.array([np.pi/2, np.pi*21/64, -np.pi/16, np.pi/32]),
              1: np.array([np.pi/2, -np.pi*5/64, np.pi/16]),
              2: np.array([np.pi*5/24, -np.pi*5/64]),
@@ -1341,7 +1339,6 @@ class BCBmat(SpectralMatrix):
             -1: np.array([-np.pi*21/64, 0, np.pi/32, 0]),
             -2: np.array([0, -np.pi/32, 0, 0]),
             -3: np.array([np.pi/32, 0, 0, 0])}
-
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 

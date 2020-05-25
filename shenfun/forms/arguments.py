@@ -759,7 +759,7 @@ class Expr(object):
         tms = []
         inds = []
         scs = []
-        for vec, (terms, indices, scales) in enumerate(zip(self.terms(), self.indices(), self.scales())):
+        for (terms, indices, scales) in zip(self.terms(), self.indices(), self.scales()):
             tms.append([])
             inds.append([])
             scs.append([])
