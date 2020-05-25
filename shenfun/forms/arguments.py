@@ -472,7 +472,7 @@ class Expr(object):
                 s += "\\right) \\mathbf{b}_{%s} \\\\"%(symbols[x[i]])
                 s += '+'
 
-        return r"""\begin{equation} %s \end{equation}"""%(s.rstrip('+'))
+        return r"""\begin{equation*} %s \end{equation*}"""%(s.rstrip('+'))
 
     def tosympy(self, basis=None, psi=sp.symbols('x,y,z,r,s', real=True)):
         """Return self evaluated with a sympy basis
