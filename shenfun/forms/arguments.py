@@ -446,18 +446,21 @@ class Expr(object):
                 k = self.indices()[i][j]
                 if not sc == 1:
                     scp = sp.latex(sc, symbol_names=symbol_names)
-                    if scp.startswith('-'):
+
+                    if isinstance(sc, sp.Add):
+                        scp = "\\left( %s \\right)"%(scp)
+                    elif scp.startswith('-'):
                         s = s.rstrip('+')
                     s += scp
                 t = np.array(term)
                 cmp = funcname
                 if self.num_components() > 1:
-                    cmp = funcname + '_{%s}'%(symbols[x[k]])
+                    cmp = funcname + '^{%s}'%(symbols[x[k]])
                 if np.sum(t) == 0:
                     s += cmp
                 else:
                     p = '^'+str(np.sum(t)) if np.sum(t) > 1 else ' '
-                    s += "\\frac{\partial%s%s}{"%(p, cmp)
+                    s += "\\frac{\\partial%s%s}{"%(p, cmp)
                     for j, ti in enumerate(t):
                         if ti > 0:
                             tt = '^'+str(ti) if ti > 1 else ' '
@@ -466,10 +469,10 @@ class Expr(object):
                 s += '+'
             if self.num_components() > 1:
                 s = s.rstrip('+')
-                s += "\\right) \\mathbf{b}_{%s}"%(symbols[x[i]])
+                s += "\\right) \\mathbf{b}_{%s} \\\\"%(symbols[x[i]])
                 s += '+'
 
-        return s.rstrip('+')
+        return r"""\begin{equation} %s \end{equation}"""%(s.rstrip('+'))
 
     def tosympy(self, basis=None, psi=sp.symbols('x,y,z,r,s', real=True)):
         """Return self evaluated with a sympy basis
