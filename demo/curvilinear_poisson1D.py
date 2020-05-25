@@ -27,13 +27,15 @@ rv = (sp.sin(2*t), sp.cos(2*t), 0.5*t)
 N = 200
 L = Basis(N, 'C', bc=(0, 0), domain=(0, 2*np.pi), coordinates=((t,), rv))
 
-# Compute rhs for manufactured solution
-ue = sp.sin(8*t)
-g = L.coors.get_sqrt_g()
-f = -1/g*sp.diff(1/g*ue.diff(t, 1), t, 1)
-
 u = TrialFunction(L)
 v = TestFunction(L)
+
+# Compute rhs for manufactured solution
+ue = sp.sin(8*t)
+g = L.coors.get_sqrt_det_g()
+f = -1/g*sp.diff(1/g*ue.diff(t, 1), t, 1)
+#or
+#f = (-div(grad(u))).tosympy(basis=ue, psi=(t,))
 
 fj = Array(L, buffer=f)
 f_hat = inner(v, fj)
@@ -50,6 +52,7 @@ else:
 uj = u_hat.backward()
 uq = Array(L, buffer=ue)
 print('Error = ', np.linalg.norm(uj-uq))
+assert np.linalg.norm(uj-uq) < 1e-8
 uj = u_hat.backward(uniform=True)
 X = L.curvilinear_mesh(uniform=True)
 

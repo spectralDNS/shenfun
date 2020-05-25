@@ -63,36 +63,42 @@ def div(test):
 
     else:
 
-        if test.num_components() == ndim**2:
-
-            ct = coors.get_christoffel_second()
-            d = []
-            for i in range(ndim):
-                di = []
-                for j in range(ndim):
-                    Sij = test[i][j]
-                    di.append(Dx(Sij, j, 1))
-                    for k in range(ndim):
-                        Sik = test[i][k]
-                        Sjk = test[j][k]
-                        if not ct[i, k, j] == 0:
-                            di.append(Sjk*ct[i, k, j])
-                        if not ct[k, k, j] == 0:
-                            di.append(Sij*ct[k, k, j])
-
-                dj = di[0]
-                for j in range(1, len(di)):
-                    dj += di[j]
-                dj.simplify()
-                d.append(dj)
-            return _expr_from_vector_components(d, test.base)
+        if ndim == 1:      # 1D
+            sg = coors.get_sqrt_det_g()
+            d = Dx(test*sg, 0, 1)*(1/sg)
+            return d
 
         else:
-            sg = coors.get_sqrt_g()
-            d = Dx(test[0]*sg, 0, 1)*(1/sg)
-            for i in range(1, ndim):
-                d += Dx(test[i]*sg, i, 1)*(1/sg)
-        d.simplify()
+            if test.num_components() == ndim**2:
+
+                ct = coors.get_christoffel_second()
+                d = []
+                for i in range(ndim):
+                    di = []
+                    for j in range(ndim):
+                        Sij = test[i][j]
+                        di.append(Dx(Sij, j, 1))
+                        for k in range(ndim):
+                            Sik = test[i][k]
+                            Sjk = test[j][k]
+                            if not ct[i, k, j] == 0:
+                                di.append(Sjk*ct[i, k, j])
+                            if not ct[k, k, j] == 0:
+                                di.append(Sij*ct[k, k, j])
+
+                    dj = di[0]
+                    for j in range(1, len(di)):
+                        dj += di[j]
+                    dj.simplify()
+                    d.append(dj)
+                return _expr_from_vector_components(d, test.base)
+
+            else:
+                sg = coors.get_sqrt_det_g()
+                d = Dx(test[0]*sg, 0, 1)*(1/sg)
+                for i in range(1, ndim):
+                    d += Dx(test[i]*sg, i, 1)*(1/sg)
+            d.simplify()
         return d
 
 def grad(test):
@@ -128,11 +134,10 @@ def grad(test):
                d.append(Dx(test, i, 1))
 
     else:
-        #assert test.expr_rank() < 2, 'Cannot (yet) take gradient of higher order tensor in curvilinear coordinates'
 
         gt = coors.get_contravariant_metric_tensor()
 
-        if test.num_components() == ndim:
+        if test.num_components() > 1:
             ct = coors.get_christoffel_second()
             d = []
             for i in range(ndim):
@@ -249,7 +254,7 @@ def curl(test):
     else:
         assert test.expr_rank() < 2, 'Cannot (yet) take curl of higher order tensor in curvilinear coordinates'
         hi = coors.hi
-        sg = coors.get_sqrt_g()
+        sg = coors.get_sqrt_det_g()
         if coors.is_orthogonal:
             if test.dimensions == 3:
                 w0 = (Dx(test[2]*hi[2]**2, 1, 1) - Dx(test[1]*hi[1]**2, 2, 1))*(1/sg)
