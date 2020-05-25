@@ -69,6 +69,7 @@ python dirichletneumann_poisson1D.py 24 legendre
 python neumanndirichlet_poisson1D.py 24 chebyshev
 python neumanndirichlet_poisson1D.py 24 legendre
 python spherical_shell_helmholtz.py
+python curvilinear_poisson1D.py
 
 python NavierStokes.py
 python NavierStokesDrivenCavity.py

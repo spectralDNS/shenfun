@@ -49,13 +49,15 @@ class Coordinates(object):
     def is_cartesian(self):
         return sp.Matrix(self.get_covariant_metric_tensor()).is_Identity
 
-    def get_g(self):
+    def get_det_g(self, covariant=True):
         """Return determinant of covariant metric tensor"""
-        return sp.Matrix(self.get_covariant_metric_tensor()).det()
+        if covariant:
+            return sp.Matrix(self.get_covariant_metric_tensor()).det()
+        return sp.Matrix(self.get_contravariant_metric_tensor()).det()
 
-    def get_sqrt_g(self):
+    def get_sqrt_det_g(self, covariant=True):
         """Return square root of determinant of covariant metric tensor"""
-        g = self.get_g()
+        g = self.get_det_g(covariant)
         return sp.simplify(sp.srepr(sp.sqrt(g)).replace('Abs', ''))
 
     def get_cartesian_basis(self):
@@ -134,3 +136,32 @@ class Coordinates(object):
                     ct[k, i, j] = sp.simplify(np.dot(np.array([bij.diff(self.psi[j], 1) for bij in b[i]]), bt[k]))
         self._ct = ct
         return ct
+
+    def latex_basis_vectors(self, symbol_names=None, covariant=True):
+        if covariant:
+            b = self.get_covariant_basis()
+        else:
+            b = self.get_contravariant_basis()
+        psi = self.psi
+        symbols = {p: str(p) for p in psi}
+        if symbol_names is not None:
+            symbols = symbol_names
+
+        k = {0: '\\mathbf{i}', 1: '\\mathbf{j}', 2: '\\mathbf{k}'}
+        if psi is None:
+            t = {0: 'x', 1: 'y', 2: 'z'}
+        m = '\\begin{equation*}'
+        for i, p in enumerate(psi):
+            if covariant:
+                m += '\\mathbf{b}_{%s}='%(symbols[p])
+            else:
+                m += '\\mathbf{b}^{%s}='%(symbols[p])
+            for j in range(len(psi)):
+                if b[i, j] == 1:
+                    m += (k[j]+'+')
+                elif b[i, j] != 0:
+                    m += (sp.latex(b[i, j], symbol_names=symbols)+'\,'+k[j]+'+')
+            m = m.rstrip('+')
+            m += ' \\\ '
+        m += '\\end{equation*}'
+        return r'%s'%(m)

@@ -430,7 +430,7 @@ class Expr(object):
             return self._basis.offset()
         return None
 
-    def latexprint(self, symbol_names=None, funcname='u'):
+    def tolatex(self, symbol_names=None, funcname='u'):
         s = ""
         x = 'xyzrst'
         symbols = {k: k for k in x}
