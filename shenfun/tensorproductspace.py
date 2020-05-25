@@ -1099,7 +1099,7 @@ class MixedTensorProductSpace(object):
     def get_orthogonal(self):
         raise NotImplementedError
 
-    def get_dealiased(self):
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         raise NotImplementedError
 
     def __getitem__(self, i):

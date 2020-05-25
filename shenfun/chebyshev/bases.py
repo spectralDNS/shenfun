@@ -2011,7 +2011,7 @@ class NeumannDirichletBasis(ChebyshevBase):
     def _composite_basis(self, V, argument=0):
         P = np.zeros_like(V)
         k = np.arange(V.shape[1]).astype(np.float)[:-2]
-        P[:, :-2] = (V[:, :-2] 
+        P[:, :-2] = (V[:, :-2]
                      - ((-k**2 + (k+2)**2)/((k+1)**2 + (k+2)**2))*V[:, 1:-1]
                      + ((-k**2 - (k+1)**2)/((k+1)**2 + (k+2)**2))*V[:, 2:])
         return P

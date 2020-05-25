@@ -1383,7 +1383,8 @@ class DirichletNeumannBasis(LegendreBase):
                               coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
         self.LT = Basis(N, quad)
-        self._factor = np.ones(1)
+        self._factor1 = np.ones(1)
+        self._factor2 = np.ones(1)
         self.plan(int(N*padding_factor), 0, np.float, {})
         self.bc = BoundaryValues(self, bc=bc)
 
