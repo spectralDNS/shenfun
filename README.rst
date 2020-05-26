@@ -4,6 +4,8 @@ Shenfun
     :target: https://app.codacy.com/app/mikaem/shenfunutm_source=github.com&utm_medium=referral&utm_content=spectralDNS/shenfun&utm_campaign=badger
 .. image:: https://dev.azure.com/spectralDNS/shenfun/_apis/build/status/spectralDNS.shenfun?branchName=master
     :target: https://dev.azure.com/spectralDNS/shenfun
+.. image:: https://github.com/spectralDNS/shenfun/workflows/github-CI/badge.svg?branch=master
+    :target: https://github.com/spectralDNS/shenfun
 .. image:: https://codecov.io/gh/spectralDNS/shenfun/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/spectralDNS/shenfun
 .. image:: https://anaconda.org/conda-forge/shenfun/badges/platforms.svg
