@@ -4,6 +4,7 @@ weighted inner product.
 """
 from numbers import Number
 import numpy as np
+import sympy as sp
 from shenfun.spectralbase import inner_product, SpectralBase, MixedBasis
 from shenfun.matrixbase import TPMatrix
 from shenfun.tensorproductspace import TensorProductSpace, MixedTensorProductSpace
@@ -284,7 +285,7 @@ def inner(expr0, expr1, output_array=None, level=0):
                             ts = trial_sp[i]
                             tt = test_sp[i]
                             msx = 'xyzrs'[i]
-                            msi = dv[msx]
+                            msi = sp.simplify(dv[msx])
 
                             # assemble inner product
                             AA = inner_product((tt, a), (ts, b), msi)
@@ -358,7 +359,10 @@ def inner(expr0, expr1, output_array=None, level=0):
 
     for tpmat in A:
         if isinstance(tpmat, TPMatrix):
-            tpmat.simplify_fourier_matrices()
+            try:
+                tpmat.simplify_fourier_matrices()
+            except KeyError:
+                continue
 
     # Add equal matrices
     B = [A[0]]

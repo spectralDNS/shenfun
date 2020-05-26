@@ -1476,7 +1476,7 @@ def inner_product(test, trial, measure=1):
         x0 = x0.pop()
         x = sp.symbols('x', real=x0.is_real, positive=x0.is_positive)
         measure = measure.subs(x0, x)
-        if measure.subs(x, 1) < 0:
+        if measure.subs(x, 1).evalf() < 0:
             sc = -1
             measure *= sc
         key = key + (test[0].domain, measure)

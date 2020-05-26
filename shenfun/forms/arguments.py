@@ -438,6 +438,10 @@ class Expr(object):
             symbols = {str(k): val for k, val in symbol_names.items()}
 
         for i, vec in enumerate(self.terms()):
+            if self.num_terms()[i] == 0:
+                s += '0 \\mathbf{b}_{%s} \\\\ +'%(symbols[x[i]])
+                continue
+
             if self.num_components() > 1:
                 s += '\\left( '
 
@@ -508,6 +512,9 @@ class Expr(object):
         if basis is None:
             basis = 'u'
 
+        if self.expr_rank() > 0:
+            b = self.function_space().coors.get_covariant_basis()
+
         if isinstance(basis, str):
             # Create sympy Function
             st = basis
@@ -528,10 +535,16 @@ class Expr(object):
                 k = self.indices()[i][j]
                 b0 = basis[k]
                 tt = tuple([psi[n] for n, l in enumerate(term) for m in range(l)])
+                bi = 1
+                if self.expr_rank() > 0:
+                    bi = b[i%ndim]
                 if np.sum(term) > 0:
-                    s += sc*sp.diff(b0, *tt)
+                    s += sp.simplify(sc*sp.diff(b0, *tt)*bi)
                 else:
-                    s += sc*b0
+                    s += sp.simplify(sc*b0*bi)
+
+        if isinstance(s, sp.ImmutableDenseNDimArray):
+            s = s.tolist()
         return s
 
     def eval(self, x, output_array=None):
@@ -753,7 +766,7 @@ class Expr(object):
 
     def simplify(self):
         """Join terms, that are otherwise equal, using scale"""
-        if np.array(self.num_terms()).prod() == 1:
+        if np.all(np.array(self.num_terms()) == 1):
             return
 
         tms = []
@@ -767,18 +780,21 @@ class Expr(object):
                 match = []
                 if i > 0:
                     match = np.where((np.array(term) == np.array(tms[-1])).prod(axis=1) == 1)[0]
+                    matchi = np.where( ind == np.array(inds[-1]))[0]
+                    match = np.intersect1d(match, matchi)
                 if len(match) > 0:
                     k = match[0]
-                    if inds[-1][k] == ind:
-                        scs[-1][k] += sc
-                        if scs[-1][k] == 0: # Remove if scale is zero
-                            scs[-1].pop(k)
-                            tms[-1].pop(k)
-                            inds[-1].pop(k)
-                        continue
+                    assert inds[-1][k] == ind
+                    scs[-1][k] += sc
+                    scs[-1][k] = sp.simplify(scs[-1][k])
+                    if scs[-1][k] == 0: # Remove if scale is zero
+                        scs[-1].pop(k)
+                        tms[-1].pop(k)
+                        inds[-1].pop(k)
+                    continue
                 tms[-1].append(term)
                 inds[-1].append(ind)
-                scs[-1].append(sc)
+                scs[-1].append(sp.simplify(sc))
         self._terms = tms
         self._indices = inds
         self._scales = scs

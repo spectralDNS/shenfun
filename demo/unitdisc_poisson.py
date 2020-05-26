@@ -24,7 +24,7 @@ rv = (r*sp.cos(theta), r*sp.sin(theta))
 alpha = 2
 
 # Manufactured solution
-ue = (r*(1-r))**2*sp.cos(2*theta)-0.0*(r-1)
+ue = (r*(1-r))**2*sp.cos(8*theta)-0.1*(r-1)
 
 N = 32
 F = Basis(N, 'F', dtype='d')
@@ -88,14 +88,14 @@ comm.Bcast(u0_hat, root=0)
 sl = T.local_slice(False)
 uj = u_hat.backward() + u0_hat.backward()[:, sl[1]]
 uq = Array(T, buffer=ue)
-X = T.local_mesh(True)
 print('Error =', np.linalg.norm(uj-uq))
 assert np.linalg.norm(uj-uq) < 1e-8
 
 # Find and plot gradient of u. For this we need a space without
 # boundary conditions, and a vector space
-LT = Basis(N, 'L', domain=(0, 1))
-TT = TensorProductSpace(comm, (F, LT), axes=(1, 0), coordinates=(psi, rv))
+#LT = Basis(N, 'L', domain=(0, 1))
+#TT = TensorProductSpace(comm, (F, LT), axes=(1, 0), coordinates=(psi, rv))
+TT = T.get_orthogonal()
 V = VectorTensorProductSpace(TT)
 # Get solution on space with no bc
 ua = Array(TT, buffer=uj)
@@ -112,7 +112,8 @@ bij = np.array(sp.lambdify(psi, b)(ui, vi))
 # Compute Cartesian gradient
 gradu = du[0]*bij[0] + du[1]*bij[1]
 # Exact Cartesian gradient
-gradue = sp.lambdify(psi, b[0]*ue.diff(theta, 1)/r**2 + b[1]*ue.diff(r, 1))(ui, vi)
+gradue = Array(V, buffer=list(b[0]*ue.diff(theta, 1)/r**2 + b[1]*ue.diff(r, 1)))
+#gradue = Array(V, buffer=grad(u).tosympy(basis=ue, psi=psi))
 print('Error gradient', np.linalg.norm(gradu-gradue))
 assert np.linalg.norm(gradu-gradue) < 1e-7
 
@@ -139,7 +140,7 @@ if 'pytest' not in os.environ:
     # plot
     plt.figure()
     plt.contourf(xp, yp, up)
-    plt.quiver(xi, yi, gradu[0], gradu[1])
+    plt.quiver(xi, yi, gradu[0], gradu[1], scale=40, pivot='mid', color='white')
     plt.colorbar()
     plt.title('Helmholtz - unitdisc')
     plt.xticks([])

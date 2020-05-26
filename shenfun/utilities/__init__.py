@@ -224,8 +224,10 @@ def split(measures):
     ms = ms if isinstance(ms, tuple) else [ms]
     result = []
     for m in ms:
+        if sp.simplify(m) == 0:
+            continue
         d = {'coeff': m} if isinstance(m, Number) else sp.separatevars(m, dict=True)
-        d = defaultdict(lambda: 1, {str(k): v for k, v in d.items()})
+        d = defaultdict(lambda: 1, {str(k): sp.simplify(v) for k, v in d.items()})
         dc = d['coeff']
         d['coeff'] = int(dc) if isinstance(dc, (sp.Integer, int)) else float(dc)
         result.append(d)

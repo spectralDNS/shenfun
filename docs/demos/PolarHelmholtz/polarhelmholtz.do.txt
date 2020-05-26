@@ -10,7 +10,7 @@ a single Python file "unitdisc_poisson.py":
 "https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_poisson.py",
 and the numerical method is described in more detail by J. Shen cite{shen3}.
 
-FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/figures/Helmholtzdisc.png, width=700 frac=1] Poisson on the unit disc. label{fig:helmholtz}
+FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/figures/Helmholtzdisc.png, width=700 frac=1] Helmholtz on the unit disc. label{fig:helmholtz}
 
 TOC: on
 
@@ -250,7 +250,7 @@ the default domain for the Fourier bases is already the
 required $(0, 2\pi)$.
 
 !bc pycod
-N = 16
+N = 32
 F = Basis(N, 'F', dtype='d')
 F0 = Basis(1, 'F', dtype='d')
 L = Basis(N, 'L', bc='Dirichlet', domain=(0, 1))
@@ -365,12 +365,98 @@ through
 
 !bc pycod
 ue = Array(T, buffer=ue)
-X = T.local_mesh(True)
 print('Error =', np.linalg.norm(uj-ue))
+# ---> Error = 7.45930806417765e-15
 !ec
 
-And we can refine the solution to make it look better,
-and plot on the unit disc, leading to Figure ref{fig:helmholtz}.
+We can also get the gradient of the solution. For this we need
+a space without boundary conditions, and a vector space
+!bc pycod
+TT = T.get_orthogonal()
+V = VectorTensorProductSpace(TT)
+!ec
+
+Notice that we do not have the solution in one single space
+in spectral space, since it is a combination of `u_hat` and
+`u0_hat`. For this reason we first transform the solution from
+real space `uj` to the new orthogonal space `TT`
+
+!bc pycod
+ua = Array(TT, buffer=uj)
+uh = ua.forward()
+!ec
+
+With the solution as a ${cls('Function')} we can simply project
+the gradient to `V`
+
+!bc pycod
+dv = project(grad(uh), V)
+du = dv.backward()
+!ec
+
+Note that the gradient `du` now contains the contravariant components
+of the covariant basis vector `b`. The basis vector `b` is not normalized
+(it's length is not unity).
+
+!bc pycod
+b = T.coors.get_covariant_basis()
+!ec
+
+The basis vectors are, in fact
+
+!bt
+\begin{equation*}
+\mathbf{b}_{\theta}=- r \sin{\left(\theta \right)}\,\mathbf{i}+r \cos{\left(\theta \right)}\,\mathbf{j} \\ \mathbf{b}_{r}=\cos{\left(\theta \right)}\,\mathbf{i}+\sin{\left(\theta \right)}\,\mathbf{j}
+\end{equation*}
+!et
+
+and we see that they are given in terms of the Cartesian unit vectors.
+The gradient we have computed is (and yes, it should be $r^2$ because we
+do not have unit vectors)
+
+!bt
+\begin{equation}
+\nabla u = \underbrace{\frac{1}{r^2}\frac{\partial u}{\partial \theta}}_{du[0]}\mathbf{b}_{\theta} + \underbrace{\frac{\partial u}{\partial r}}_{du[1]} \mathbf{b}_{r}
+\label{eq:gradu}
+\end{equation}
+!et
+
+Now it makes sense to plot the solution and its gradient in Cartesian
+instead of computational coordinates. To this end we need to
+project the gradient to a Cartesian basis
+
+!bt
+\begin{align*}
+\frac{\partial u}{\partial x} &= \nabla u \cdot \mathbf{i},\\
+\frac{\partial u}{\partial y} &= \nabla u \cdot \mathbf{j}.
+\end{align*}
+!et
+
+We compute the Cartesian gradient by assembling (ref{eq:gradu})
+on the computational grid
+
+!bc pycod
+ui, vi = TT.local_mesh(True)
+bij = np.array(sp.lambdify(psi, b)(ui, vi))
+gradu = du[0]*bij[0] + du[1]*bij[1]
+!ec
+
+Because of the way the vectors are stored, `gradu[0]` will now
+contain $\nabla u \cdot \mathbf{i}$ and
+`gradu[1]` will contain $\nabla u \cdot \mathbf{j}$.
+To validate we compute the exact gradient and compute
+the error norm
+
+!bc pycod
+gradue = Array(V, buffer=list(b[0]*ue.diff(theta, 1)/r**2 + b[1]*ue.diff(r, 1)))
+#or alternatively
+#gradue = Array(V, buffer=grad(u).tosympy(basis=ue, psi=psi))
+print('Error gradient', np.linalg.norm(gradu-gradue))
+# ---> Error gradient 1.0856774538980375e-08
+!ec
+
+We now refine the solution to make it look better,
+and plot on the unit disc.
 
 !bc pycod
 u_hat2 = u_hat.refine([N*3, N*3])
@@ -383,10 +469,13 @@ xx, yy = u_hat2.function_space().local_curvilinear_mesh()
 xp = np.vstack([xx, xx[0]])
 yp = np.vstack([yy, yy[0]])
 up = np.vstack([ur, ur[0]])
+# For vector no need to wrap around and no need to refine:
+xi, yi = TT.local_curvilinear_mesh()
 
 # plot
 plt.figure()
 plt.contourf(xp, yp, up)
+plt.quiver(xi, yi, gradu[0], gradu[1], scale=40, pivot='mid', color='white')
 plt.colorbar()
 plt.title('Helmholtz - unitdisc')
 plt.xticks([])
@@ -395,6 +484,7 @@ plt.axis('off')
 plt.show()
 !ec
 
+FIGURE: [https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/Helmholtz_polar_with_vectors.png, width=700, frac=1] Solution of Helmholtz equation, with gradient.
 
 #======= Bibliography =======
 
