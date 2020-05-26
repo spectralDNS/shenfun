@@ -269,4 +269,5 @@ def curl(test):
         else:
             raise NotImplementedError
 
+    test.simplify()
     return test

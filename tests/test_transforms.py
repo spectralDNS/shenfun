@@ -224,7 +224,7 @@ def test_massmatrices(test, trial, quad):
     u0 = np.zeros(N)
     u0 = test.scalar_product(fj, u0)
     s = test.slice()
-    assert np.allclose(u0[s], u2[s], 1e-5)
+    assert np.allclose(u0[s], u2[s], rtol=1e-5, atol=1e-6)
 
     # Multidimensional version
     fj = fj.repeat(N*N).reshape((N, N, N)) + 1j*fj.repeat(N*N).reshape((N, N, N))
