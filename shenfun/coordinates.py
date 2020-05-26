@@ -148,12 +148,12 @@ class Coordinates(object):
             symbols = symbol_names
 
         k = {0: '\\mathbf{i}', 1: '\\mathbf{j}', 2: '\\mathbf{k}'}
-        m = '\\begin{equation*}'
+        m = '\\begin{align*}'
         for i, p in enumerate(psi):
             if covariant:
-                m += '\\mathbf{b}_{%s}='%(symbols[p])
+                m += '\\mathbf{b}_{%s}&='%(symbols[p])
             else:
-                m += '\\mathbf{b}^{%s}='%(symbols[p])
+                m += '\\mathbf{b}^{%s}&='%(symbols[p])
             for j in range(len(psi)):
                 if b[i, j] == 1:
                     m += (k[j]+'+')
@@ -161,5 +161,5 @@ class Coordinates(object):
                     m += (sp.latex(b[i, j], symbol_names=symbols)+'\,'+k[j]+'+')
             m = m.rstrip('+')
             m += ' \\\ '
-        m += '\\end{equation*}'
+        m += '\\end{align*}'
         return r'%s'%(m)
