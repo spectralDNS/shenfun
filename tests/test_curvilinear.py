@@ -2,12 +2,8 @@ import pytest
 import numpy as np
 import sympy as sp
 from shenfun import Basis, TensorProductSpace, TrialFunction, div, grad, \
-    curl, comm, VectorTensorProductSpace, TestFunction, Function, inner, \
-    BlockMatrix
-
-# Cylindrical
-
-# Spherical
+    curl, comm, VectorTensorProductSpace, Function, inner, \
+    BlockMatrix, TestFunction as _TestFunction
 
 def get_function_space(space='cylinder'):
     if space == 'cylinder':
@@ -31,7 +27,6 @@ def get_function_space(space='cylinder'):
     return T
 
 def test_cylinder():
-    N = 6
     T = get_function_space('cylinder')
     u = TrialFunction(T)
     du = div(grad(u))
@@ -51,7 +46,7 @@ def test_vector_laplace(space):
     T = get_function_space(space)
     V = VectorTensorProductSpace(T)
     u = TrialFunction(V)
-    v = TestFunction(V)
+    v = _TestFunction(V)
     du = div(grad(u))
     dv = grad(div(u)) - curl(curl(u))
     u_hat = Function(V)

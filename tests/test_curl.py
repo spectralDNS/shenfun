@@ -144,8 +144,8 @@ def test_curl_cc():
     F1 = Basis(M, 'F', dtype='D')
     T = TensorProductSpace(comm, (L0, F1), coordinates=(psi, rv))
     u_hat = Function(T, buffer=ue)
-    du = project(curl(grad(u_hat)), T)
-    assert np.linalg.norm(du) < 1e-10
+    du = curl(grad(u_hat))
+    du.terms() == [[]]
 
     r, theta, z = psi = sp.symbols('x,y,z', real=True, positive=True)
     rv = (r*sp.cos(theta), r*sp.sin(theta), z)
@@ -165,5 +165,6 @@ def test_curl_cc():
     assert np.linalg.norm(du) < 1e-10
 
 if __name__ == '__main__':
-    test_curl('d')
-    test_curl2()
+    #test_curl('d')
+    #test_curl2()
+    test_curl_cc()
