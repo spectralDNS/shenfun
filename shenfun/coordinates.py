@@ -11,9 +11,10 @@ class Coordinates(object):
     rv : tuple
         The position vector in terms of the new coordinates
     """
-    def __init__(self, psi, rv):
+    def __init__(self, psi, rv, assumptions=True):
         self._psi = psi
         self._rv = rv
+        self._assumptions = assumptions
         self._hi = None
         self._b = None
         self._bt = None
@@ -58,7 +59,8 @@ class Coordinates(object):
     def get_sqrt_det_g(self, covariant=True):
         """Return square root of determinant of covariant metric tensor"""
         g = self.get_det_g(covariant)
-        return sp.simplify(sp.srepr(sp.sqrt(g)).replace('Abs', ''))
+        return sp.refine(sp.simplify(sp.sqrt(g)), self._assumptions)
+        #return sp.simplify(sp.srepr(sp.sqrt(g)).replace('Abs', ''))
 
     def get_cartesian_basis(self):
         """Return Cartesian basis vectors"""
@@ -70,7 +72,9 @@ class Coordinates(object):
             return self._hi
         hi = np.zeros_like(self.psi)
         for i, s in enumerate(np.sum(self.b**2, axis=1)):
-            hi[i] = sp.simplify(sp.srepr(sp.simplify(sp.sqrt(s))).replace('Abs', ''))
+            #hi[i] = sp.simplify(sp.srepr(sp.simplify(sp.sqrt(s))).replace('Abs', ''))
+            hi[i] = sp.refine(sp.simplify(sp.sqrt(s)), self._assumptions)
+
         self._hi = hi
         return hi
 
@@ -158,7 +162,12 @@ class Coordinates(object):
                 if b[i, j] == 1:
                     m += (k[j]+'+')
                 elif b[i, j] != 0:
-                    m += (sp.latex(b[i, j], symbol_names=symbols)+'\,'+k[j]+'+')
+                    sl = sp.latex(b[i, j], symbol_names=symbols)
+                    if sl.startswith('-'):
+                        m = m.rstrip('+')
+                    if isinstance(b[i, j], sp.Add):
+                        sl = '\\left(%s\\right)'%(sl)
+                    m += (sl+'\,'+k[j]+'+')
             m = m.rstrip('+')
             m += ' \\\ '
         m += '\\end{align*}'

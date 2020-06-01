@@ -59,7 +59,7 @@ class LegendreBase(SpectralBase):
         dtype : data-type, optional
             Type of input data in real physical space. Will be overloaded when
             basis is part of a :class:`.TensorProductSpace`.
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -213,7 +213,7 @@ class Basis(LegendreBase):
         dtype : data-type, optional
             Type of input data in real physical space. Will be overloaded when
             basis is part of a :class:`.TensorProductSpace`.
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -270,7 +270,7 @@ class ShenDirichletBasis(LegendreBase):
         dtype : data-type, optional
             Type of input data in real physical space. Will be overloaded when
             basis is part of a :class:`.TensorProductSpace`.
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -505,7 +505,7 @@ class ShenNeumannBasis(LegendreBase):
         dtype : data-type, optional
             Type of input data in real physical space. Will be overloaded when
             basis is part of a :class:`.TensorProductSpace`.
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -672,7 +672,7 @@ class ShenBiharmonicBasis(LegendreBase):
         dtype : data-type, optional
             Type of input data in real physical space. Will be overloaded when
             basis is part of a :class:`.TensorProductSpace`.
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -907,7 +907,7 @@ class UpperDirichletBasis(LegendreBase):
         dtype : data-type, optional
             Type of input data in real physical space. Will be overloaded when
             basis is part of a :class:`.TensorProductSpace`.
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -1056,7 +1056,7 @@ class ShenBiPolarBasis(LegendreBase):
         dtype : data-type, optional
             Type of input data in real physical space. Will be overloaded when
             basis is part of a :class:`.TensorProductSpace`.
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -1193,7 +1193,7 @@ class ShenBiPolar0Basis(LegendreBase):
         dtype : data-type, optional
             Type of input data in real physical space. Will be overloaded when
             basis is part of a :class:`.TensorProductSpace`.
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -1367,7 +1367,7 @@ class DirichletNeumannBasis(LegendreBase):
         dtype : data-type, optional
             Type of input data in real physical space. Will be overloaded when
             basis is part of a :class:`.TensorProductSpace`.
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -1537,7 +1537,7 @@ class NeumannDirichletBasis(LegendreBase):
         dtype : data-type, optional
             Type of input data in real physical space. Will be overloaded when
             basis is part of a :class:`.TensorProductSpace`.
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -1778,7 +1778,7 @@ class BCBiharmonicBasis(LegendreBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the

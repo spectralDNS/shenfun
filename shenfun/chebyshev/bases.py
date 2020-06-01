@@ -70,7 +70,7 @@ class ChebyshevBase(SpectralBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -282,7 +282,7 @@ class Basis(ChebyshevBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -428,7 +428,7 @@ class ShenDirichletBasis(ChebyshevBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -695,7 +695,7 @@ class ShenNeumannBasis(ChebyshevBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -918,7 +918,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -1200,7 +1200,7 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -1404,7 +1404,7 @@ class UpperDirichletBasis(ChebyshevBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -1596,7 +1596,7 @@ class ShenBiPolarBasis(ChebyshevBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -1753,7 +1753,7 @@ class DirichletNeumannBasis(ChebyshevBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -1971,7 +1971,7 @@ class NeumannDirichletBasis(ChebyshevBase):
             Factor for padding backward transforms.
         dealias_direct : bool, optional
             Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -2183,7 +2183,7 @@ class BCBasis(ChebyshevBase):
             The computational domain
         scaled : bool, optional
             Whether or not to use scaled basis
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -2287,7 +2287,7 @@ class BCBiharmonicBasis(ChebyshevBase):
             The computational domain
         scaled : bool, optional
             Whether or not to use scaled basis
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the

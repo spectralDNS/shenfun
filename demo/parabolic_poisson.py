@@ -18,12 +18,13 @@ L0 = Basis(N, 'L', bc=(0, 0), domain=(0, 1))
 L1 = Basis(N, 'L', bc=(0, 0), domain=(-1, 1))
 T = TensorProductSpace(comm, (L0, L1), axes=(1, 0), coordinates=(psi, rv))
 
-# Manufactured solution
-ue = (tau*(1-tau))**2*(1-sigma**2)**1*sp.sin(4*sp.pi*sigma)
-g = (ue.diff(tau, 2)+ue.diff(sigma, 2))/(tau**2+sigma**2)
-
 v = TestFunction(T)
 u = TrialFunction(T)
+
+# Manufactured solution
+ue = (tau*(1-tau))**2*(1-sigma**2)**1*sp.sin(4*sp.pi*sigma)
+#g = (ue.diff(tau, 2)+ue.diff(sigma, 2))/(tau**2+sigma**2)
+g = (div(grad(u))).tosympy(basis=ue, psi=psi)
 
 # Compute the right hand side on the quadrature mesh
 gj = Array(T, buffer=g)

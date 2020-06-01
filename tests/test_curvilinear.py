@@ -22,7 +22,7 @@ def get_function_space(space='cylinder'):
         F = Basis(N, 'F', dtype='d')
         L0 = Basis(N, 'L', domain=(0, 1))
         L1 = Basis(N, 'L', domain=(0, np.pi))
-        T = TensorProductSpace(comm, (L0, L1, F), coordinates=(psi, rv))
+        T = TensorProductSpace(comm, (L0, L1, F), coordinates=(psi, rv, sp.Q.positive(sp.sin(theta))))
 
     return T
 
@@ -30,11 +30,11 @@ def test_cylinder():
     T = get_function_space('cylinder')
     u = TrialFunction(T)
     du = div(grad(u))
-    assert du.tolatex() == '\\begin{equation*} \\frac{\\partial^2u}{\\partial^2x}+\\frac{1}{x}\\frac{\\partial u}{\\partial x}+\\frac{1}{x^{2}}\\frac{\\partial^2u}{\\partial^2y}+\\frac{\\partial^2u}{\\partial^2z} \\end{equation*}'
+    assert du.tolatex() == '\\begin{equation*} \\frac{\\partial^2 u}{\\partial^2x}+\\frac{1}{x}\\frac{\\partial  u}{\\partial x}+\\frac{1}{x^{2}}\\frac{\\partial^2 u}{\\partial^2y}+\\frac{\\partial^2 u}{\\partial^2z} \\end{equation*}'
     V = VectorTensorProductSpace(T)
     u = TrialFunction(V)
     du = div(grad(u))
-    assert du.tolatex() == '\\begin{equation*} \\left( \\frac{\\partial^2u^{x}}{\\partial^2x}+\\frac{1}{x}\\frac{\\partial u^{x}}{\\partial x}+\\frac{1}{x^{2}}\\frac{\\partial^2u^{x}}{\\partial^2y}- \\frac{2}{x}\\frac{\\partial u^{y}}{\\partial y}- \\frac{1}{x^{2}}u^{x}+\\frac{\\partial^2u^{x}}{\\partial^2z}\\right) \\mathbf{b}_{x} \\\\+\\left( \\frac{\\partial^2u^{y}}{\\partial^2x}+\\frac{3}{x}\\frac{\\partial u^{y}}{\\partial x}+\\frac{2}{x^{3}}\\frac{\\partial u^{x}}{\\partial y}+\\frac{1}{x^{2}}\\frac{\\partial^2u^{y}}{\\partial^2y}+\\frac{\\partial^2u^{y}}{\\partial^2z}\\right) \\mathbf{b}_{y} \\\\+\\left( \\frac{\\partial^2u^{z}}{\\partial^2x}+\\frac{1}{x}\\frac{\\partial u^{z}}{\\partial x}+\\frac{1}{x^{2}}\\frac{\\partial^2u^{z}}{\\partial^2y}+\\frac{\\partial^2u^{z}}{\\partial^2z}\\right) \\mathbf{b}_{z} \\\\ \\end{equation*}'
+    assert du.tolatex() == '\\begin{equation*} \\left( \\frac{\\partial^2 u^{x}}{\\partial^2x}+\\frac{1}{x}\\frac{\\partial  u^{x}}{\\partial x}+\\frac{1}{x^{2}}\\frac{\\partial^2 u^{x}}{\\partial^2y}- \\frac{2}{x}\\frac{\\partial  u^{y}}{\\partial y}- \\frac{1}{x^{2}}u^{x}+\\frac{\\partial^2 u^{x}}{\\partial^2z}\\right) \\mathbf{b}_{x} \\\\+\\left( \\frac{\\partial^2 u^{y}}{\\partial^2x}+\\frac{3}{x}\\frac{\\partial  u^{y}}{\\partial x}+\\frac{2}{x^{3}}\\frac{\\partial  u^{x}}{\\partial y}+\\frac{1}{x^{2}}\\frac{\\partial^2 u^{y}}{\\partial^2y}+\\frac{\\partial^2 u^{y}}{\\partial^2z}\\right) \\mathbf{b}_{y} \\\\+\\left( \\frac{\\partial^2 u^{z}}{\\partial^2x}+\\frac{1}{x}\\frac{\\partial  u^{z}}{\\partial x}+\\frac{1}{x^{2}}\\frac{\\partial^2 u^{z}}{\\partial^2y}+\\frac{\\partial^2 u^{z}}{\\partial^2z}\\right) \\mathbf{b}_{z} \\\\ \\end{equation*}'
 
 @pytest.mark.parametrize('space', ('cylinder', 'sphere'))
 def test_vector_laplace(space):
@@ -62,5 +62,5 @@ def test_vector_laplace(space):
     assert np.linalg.norm(b0-b1) < 1e-8
 
 if __name__ == '__main__':
-    #test_cylinder()
-    test_vector_laplace('sphere')
+    test_cylinder()
+    #test_vector_laplace('sphere')

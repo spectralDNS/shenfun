@@ -220,43 +220,43 @@ def integrate_sympy(f, d):
         return sp.integrate(f, d)
 
 def split(measures):
-    ms = sp.sympify(measures).expand()
-    ms = ms if isinstance(ms, tuple) else [ms]
-    result = []
-    for m in ms:
-        if sp.simplify(m) == 0:
-            continue
-        d = {'coeff': m} if isinstance(m, Number) else sp.separatevars(m, dict=True)
-        d = defaultdict(lambda: 1, {str(k): sp.simplify(v) for k, v in d.items()})
-        dc = d['coeff']
-        d['coeff'] = int(dc) if isinstance(dc, (sp.Integer, int)) else float(dc)
-        result.append(d)
-    return result
-
-    #def _split(mss, result):
-    #    for ms in mss:
-    #        ms = sp.sympify(ms)
-    #        if isinstance(ms, sp.Mul):
-    #            # Multiplication of two or more terms
-    #            result = _split(ms.args, result)
-    #            continue
-
-    #        # Something else with only one symbol
-    #        sym = ms.free_symbols
-    #        assert len(sym) <= 1
-    #        if len(sym) == 1:
-    #            sym = sym.pop()
-    #            result[str(sym)] *= ms
-    #        else:
-    #            ms = int(ms) if isinstance(ms, sp.Integer) else float(ms)
-    #            result['coeff'] *= ms
-    #    return result
-
     #ms = sp.sympify(measures).expand()
+    #ms = ms if isinstance(ms, tuple) else [ms]
     #result = []
-    #if isinstance(ms, sp.Add):
-    #    for arg in ms.args:
-    #        result.append(_split([arg], defaultdict(lambda: 1)))
-    #else:
-    #    result.append(_split([ms], defaultdict(lambda: 1)))
+    #for m in ms:
+    #    if sp.simplify(m) == 0:
+    #        continue
+    #    d = {'coeff': m} if isinstance(m, Number) else sp.separatevars(m, dict=True)
+    #    d = defaultdict(lambda: 1, {str(k): sp.simplify(v) for k, v in d.items()})
+    #    dc = d['coeff']
+    #    d['coeff'] = int(dc) if isinstance(dc, (sp.Integer, int)) else float(dc)
+    #    result.append(d)
     #return result
+
+    def _split(mss, result):
+        for ms in mss:
+            ms = sp.sympify(ms)
+            if isinstance(ms, sp.Mul):
+                # Multiplication of two or more terms
+                result = _split(ms.args, result)
+                continue
+
+            # Something else with only one symbol
+            sym = ms.free_symbols
+            assert len(sym) <= 1
+            if len(sym) == 1:
+                sym = sym.pop()
+                result[str(sym)] *= ms
+            else:
+                ms = int(ms) if isinstance(ms, sp.Integer) else float(ms)
+                result['coeff'] *= ms
+        return result
+
+    ms = sp.sympify(measures).expand()
+    result = []
+    if isinstance(ms, sp.Add):
+        for arg in ms.args:
+            result.append(_split([arg], defaultdict(lambda: 1)))
+    else:
+        result.append(_split([ms], defaultdict(lambda: 1)))
+    return result

@@ -620,6 +620,7 @@ class SpectralMatrix(SparseMatrix):
         shape = (test[0].dim(), trial[0].dim())
         if d == {}:
             D = get_dense_matrix(test, trial, measure)[:shape[0], :shape[1]]
+            #D = get_dense_matrix_sympy(test, trial, measure)[:shape[0], :shape[1]]
             d = extract_diagonal_matrix(D)
         SparseMatrix.__init__(self, d, shape, scale)
         if shape[0] == shape[1]:
@@ -690,6 +691,10 @@ class SpectralMatrix(SparseMatrix):
             return False
         if self.get_key() != a.get_key():
             return False
+        if not np.array(list(self.keys())).shape == np.array(list(a.keys())).shape:
+            return False
+        #if not np.all(np.array(list(self.keys())) == np.array(list(a.keys()))):
+        #    return False
         if np.linalg.norm(self[list(self.keys())[0]] - a[list(self.keys())[0]]) > 1e-8:
             return False
         return True
@@ -1521,7 +1526,7 @@ def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-8):
 
     return SparseMatrix(d, M.shape)
 
-def get_dense_matrix_sympy(test, trial, measure=1, x=sp.symbols('x', real=True)):
+def get_dense_matrix_sympy(test, trial, measure=1):
     """Return dense matrix automatically computed from basis
 
     Parameters
@@ -1543,22 +1548,28 @@ def get_dense_matrix_sympy(test, trial, measure=1, x=sp.symbols('x', real=True))
     measure : Sympy expression of coordinate, or number, optional
         Additional weight to integral. For example, in cylindrical
         coordinates an additional measure is the radius `r`.
-    x : Sympy Symbol, optional
     """
     N = test[0].slice().stop - test[0].slice().start
     M = trial[0].slice().stop - trial[0].slice().start
-    V = np.zeros((N, M))
+    V = np.zeros((N, M), dtype=test[0].dtype)
 
     if not measure == 1:
         if isinstance(measure, sp.Expr):
+            s = measure.free_symbols
+            assert len(s) == 1
+            x = s.pop()
             xm = test[0].map_true_domain(x)
             measure = measure.subs(x, xm)
         else:
             assert isinstance(measure, Number)
+            x = sp.Symbol('x', real=True)
+
     for i in range(test[0].slice().start, test[0].slice().stop):
         pi = test[0].sympy_basis(i, x=x)
         for j in range(trial[0].slice().start, trial[0].slice().stop):
-            pj = trial[0].sympy_basis(j, x=x)
-            V[i, j] = integrate_sympy(sp.simplify(measure*pi.diff(x, test[1])*pj.diff(x, trial[1])),
-                                      (x, test[0].reference_domain()[0], test[0].reference_domain()[1]))
+            pj = np.conj(trial[0].sympy_basis(j, x=x))
+            integrand = sp.simplify(measure*pi.diff(x, test[1])*pj.diff(x, trial[1]))
+            V[i, j] = integrate_sympy(integrand,
+                                      (x, test[0].sympy_reference_domain()[0], test[0].sympy_reference_domain()[1]))
+
     return V
