@@ -236,7 +236,7 @@ class SpectralBase(object):
         dealias_direct : bool, optional
             If True, then set all upper 2/3 wavenumbers to zero before backward
             transform. Cannot be used if padding_factor is different than 1.
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -245,7 +245,14 @@ class SpectralBase(object):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
 
-            where theta and rv are the first and second items in the 2-tuple.
+            where theta and rv are the first and second items in the tuple.
+            If a third item is provided with the tuple, then this third item
+            is used as an additional assumption. For example, it is necessary
+            to provide the assumption `sympy.Q.positive(sympy.sin(theta))`, such
+            that sympy can evaluate `sqrt(sympy.sin(theta)**2)` to `sympy.sin(theta)`
+            and not `Abs(sympy.sin(theta))`. Different coordinates may require
+            different assumptions to help sympy when computing basis functions
+            etc.
 
     """
     # pylint: disable=method-hidden, too-many-instance-attributes
@@ -970,6 +977,9 @@ class SpectralBase(object):
     def reference_domain(self):
         """Return reference domain of basis"""
         raise NotImplementedError
+
+    def sympy_reference_domain(self):
+        return self.reference_domain()
 
     def slice(self):
         """Return index set of current basis"""

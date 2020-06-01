@@ -17,11 +17,8 @@ import os
 import importlib
 from sympy import symbols, cos, sin
 import numpy as np
-from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    Array, Function, Basis, TensorProductSpace
-
-comm = MPI.COMM_WORLD
+    Array, Function, Basis, TensorProductSpace, comm
 
 assert len(sys.argv) == 3, "Call with two command-line arguments"
 assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi')

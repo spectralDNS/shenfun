@@ -125,11 +125,10 @@ different Python version.
 
 The tests are run automatically on every commit to github, see
 
-.. image:: https://travis-ci.org/spectralDNS/shenfun.svg?branch=master
-    :target: https://travis-ci.org/spectralDNS/shenfun
-.. image:: https://circleci.com/gh/spectralDNS/shenfun.svg?style=svg
-    :target: https://circleci.com/gh/spectralDNS/shenfun
-
+.. image:: https://dev.azure.com/spectralDNS/shenfun/_apis/build/status/spectralDNS.shenfun?branchName=master
+    :target: https://dev.azure.com/spectralDNS/shenfun
+.. image:: https://github.com/spectralDNS/shenfun/workflows/github-CI/badge.svg?branch=master
+    :target: https://github.com/spectralDNS/shenfun
 
 .. _github: https://github.com/spectralDNS/shenfun
 .. _mpi4py-fft: https://bitbucket.org/mpi4py/mpi4py-fft

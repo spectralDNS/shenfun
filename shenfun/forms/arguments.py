@@ -70,7 +70,7 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
         only for Fourier)
     dealias_direct : bool, optional
         Use 2/3-rule dealiasing (only Fourier)
-    coordinates: 2-tuple (coordinate, position vector), optional
+    coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
         Map for curvilinear coordinatesystem.
         The new coordinate variable in the new coordinate system is the first item.
         Second item is a tuple for the Cartesian position vector as function of the
@@ -438,7 +438,7 @@ class Expr(object):
             symbols = {str(k): val for k, val in symbol_names.items()}
 
         for i, vec in enumerate(self.terms()):
-            if self.num_terms()[i] == 0:
+            if self.num_terms()[i] == 0 and self.num_components() > 1:
                 s += '0 \\mathbf{b}_{%s} \\\\ +'%(symbols[x[i]])
                 continue
 
@@ -464,7 +464,7 @@ class Expr(object):
                     s += cmp
                 else:
                     p = '^'+str(np.sum(t)) if np.sum(t) > 1 else ' '
-                    s += "\\frac{\\partial%s%s}{"%(p, cmp)
+                    s += "\\frac{\\partial%s %s}{"%(p, cmp)
                     for j, ti in enumerate(t):
                         if ti > 0:
                             tt = '^'+str(ti) if ti > 1 else ' '
@@ -778,7 +778,7 @@ class Expr(object):
             scs.append([])
             for i, (term, ind, sc) in enumerate(zip(terms, indices, scales)):
                 match = []
-                if i > 0:
+                if len(tms[-1]) > 0:
                     match = np.where((np.array(term) == np.array(tms[-1])).prod(axis=1) == 1)[0]
                     matchi = np.where( ind == np.array(inds[-1]))[0]
                     match = np.intersect1d(match, matchi)
@@ -792,9 +792,11 @@ class Expr(object):
                         tms[-1].pop(k)
                         inds[-1].pop(k)
                     continue
-                tms[-1].append(term)
-                inds[-1].append(ind)
-                scs[-1].append(sp.simplify(sc))
+                sc = sp.simplify(sc)
+                if not sc == 0:
+                    tms[-1].append(term)
+                    inds[-1].append(ind)
+                    scs[-1].append(sc)
         self._terms = tms
         self._indices = inds
         self._scales = scs

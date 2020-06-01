@@ -133,7 +133,7 @@ class TensorProductSpace(PFFT):
         Pencil distribution in spectral space. This is primarily intended
         for a padded space, where the spectral distribution must be
         equal to the non-padded space.
-    coordinates: two tuples, optional
+    coordinates: 2- or 3-tuple, optional
         Map for curvilinear coordinatesystem.
         First tuple are the coordinate variables in the new coordinate system
         Second tuple are the Cartesian coordinates as functions of the variables
@@ -143,6 +143,13 @@ class TensorProductSpace(PFFT):
             rv = (r*sp.cos(theta), r*sp.sin(theta))
 
         where psi and rv are the first and second tuples, respectively.
+        If a third item is provided with the tuple, then this third item
+        is used as an additional assumption. For example, it is necessary
+        to provide the assumption `sympy.Q.positive(sympy.sin(theta))`, such
+        that sympy can evaluate `sqrt(sympy.sin(theta)**2)` to `sympy.sin(theta)`
+        and not `Abs(sympy.sin(theta))`. Different coordinates may require
+        different assumptions to help sympy when computing basis functions
+        etc.
 
     kw : dict, optional
         Dictionary that can be used to plan transforms. Input to method

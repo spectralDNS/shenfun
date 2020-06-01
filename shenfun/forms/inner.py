@@ -275,7 +275,6 @@ def inner(expr0, expr1, output_array=None, level=0):
                     # Check if scale is zero
                     if dV == 0:
                         continue
-
                     for dv in split(dV):
                         sc = dv['coeff']
                         scb = dv['coeff']

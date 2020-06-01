@@ -80,7 +80,7 @@ class FourierBase(SpectralBase):
         dealias_direct : bool, optional
             True for dealiasing using 2/3-rule. Must be used with
             padding_factor = 1.
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -113,7 +113,8 @@ class FourierBase(SpectralBase):
         return points, np.array([2*np.pi/N])
 
     def sympy_basis(self, i=0, x=sp.symbols('x')):
-        return sp.exp(1j*i*x)
+        k = self.wavenumbers(False, False, False)
+        return sp.exp(sp.I*k[i]*x)
 
     def sympy_weight(self, x=sp.symbols('x')):
         return 2*sp.pi/self.N
@@ -207,8 +208,35 @@ class FourierBase(SpectralBase):
         SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
         output_array *= 0.5/np.pi
 
+    def get_measured_weights(self, N=None, measure=1):
+        """Return weights times `measure`
+
+        Parameters
+        ----------
+        N : integer, optional
+            The number of quadrature points
+        measure : None or `sympy.Expr`
+        """
+        if N is None:
+            N = self.N
+        xm, wj = self.mpmath_points_and_weights(N, map_true_domain=True)
+        if measure == 1:
+            return wj/(2*np.pi)
+
+        s = measure.free_symbols
+        assert len(s) == 1
+        s = s.pop()
+        xj = sp.lambdify(s, measure)(xm)
+        if wj.shape[0] == 1:
+            wj = np.broadcast_to(wj, xj.shape).copy()
+        wj *= (xj/(2*np.pi))
+        return wj
+
     def reference_domain(self):
         return (0., 2*np.pi)
+
+    def sympy_reference_domain(self):
+        return (0, 2*sp.pi)
 
     @property
     def is_orthogonal(self):
@@ -342,7 +370,7 @@ class R2CBasis(FourierBase):
         dealias_direct : bool, optional
             True for dealiasing using 2/3-rule. Must be used with
             padding_factor = 1.
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
@@ -557,7 +585,7 @@ class C2CBasis(FourierBase):
         dealias_direct : bool, optional
             True for dealiasing using 2/3-rule. Must be used with
             padding_factor = 1.
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the

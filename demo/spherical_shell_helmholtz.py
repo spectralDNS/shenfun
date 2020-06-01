@@ -28,7 +28,7 @@ ue = sph(6, 3, theta, phi)
 N, M = 60, 40
 L0 = Basis(N, 'C', domain=(0, np.pi))
 F1 = Basis(M, 'F', dtype='D')
-T = TensorProductSpace(comm, (L0, F1), coordinates=(psi, rv))
+T = TensorProductSpace(comm, (L0, F1), coordinates=(psi, rv, sp.Q.positive(sp.sin(theta))))
 
 v = TestFunction(T)
 u = TrialFunction(T)

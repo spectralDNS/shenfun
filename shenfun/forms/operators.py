@@ -254,20 +254,47 @@ def curl(test):
         assert test.expr_rank() < 2, 'Cannot (yet) take curl of higher order tensor in curvilinear coordinates'
         hi = coors.hi
         sg = coors.get_sqrt_det_g()
-        if coors.is_orthogonal:
+        #if coors.is_orthogonal:
+        if False:
             if test.dimensions == 3:
                 w0 = (Dx(test[2]*hi[2]**2, 1, 1) - Dx(test[1]*hi[1]**2, 2, 1))*(1/sg)
                 w1 = (Dx(test[0]*hi[0]**2, 2, 1) - Dx(test[2]*hi[2]**2, 0, 1))*(1/sg)
                 w2 = (Dx(test[1]*hi[1]**2, 0, 1) - Dx(test[0]*hi[0]**2, 1, 1))*(1/sg)
-                test._terms = w0.terms()+w1.terms()+w2.terms()
-                test._scales = w0.scales()+w1.scales()+w2.scales()
-                test._indices = w0.indices()+w1.indices()+w2.indices()
-
+                test = _expr_from_vector_components([w0, w1, w2], test.base)
             else:
                 assert test.dimensions == 2
                 test = (Dx(test[1]*hi[1]**2, 0, 1) - Dx(test[0]*hi[0]**2, 1, 1))*(1/sg)
         else:
-            raise NotImplementedError
+            g = coors.get_covariant_metric_tensor()
+
+            if test.dimensions == 3:
+                ct = coors.get_christoffel_second()
+                w0 = np.sum([(Dx(test[i]*g[2, i], 1, 1) - Dx(test[i]*g[1, i], 2, 1))*(1/sg) for i in range(3)])
+                w1 = np.sum([(Dx(test[i]*g[0, i], 2, 1) - Dx(test[i]*g[2, i], 0, 1))*(1/sg) for i in range(3)])
+                w2 = np.sum([(Dx(test[i]*g[1, i], 0, 1) - Dx(test[i]*g[0, i], 1, 1))*(1/sg) for i in range(3)])
+                # Don't think this double loop is needed due to symmetry of Christoffel?
+                #for i in range(3):
+                #    for k in range(3):
+                #        w0 += (ct[i, 1, 2]*g[i, k]*test[k] - ct[i, 2, 1]*g[i, k]*test[k])*(1/sg)
+                #        w1 += (ct[i, 2, 0]*g[i, k]*test[k] - ct[i, 0, 2]*g[i, k]*test[k])*(1/sg)
+                #        w2 += (ct[i, 0, 1]*g[i, k]*test[k] - ct[i, 1, 0]*g[i, k]*test[k])*(1/sg)
+
+                # This is an alternative (more complicated way):
+                #gt = coors.get_contravariant_metric_tensor()
+                #ww0 = grad(g[0, 0]*test[0] + g[0, 1]*test[1] + g[0, 2]*test[2])
+                #ww1 = grad(g[1, 0]*test[0] + g[1, 1]*test[1] + g[1, 2]*test[2])
+                #ww2 = grad(g[2, 0]*test[0] + g[2, 1]*test[1] + g[2, 2]*test[2])
+                #d0 = sg*(ww0[1]*gt[0, 2] + ww1[1]*gt[1, 2] + ww2[1]*gt[2, 2] - ww0[2]*gt[0, 1] - ww1[2]*gt[1, 1] - ww2[2]*gt[2, 1])
+                #d1 = sg*(ww0[2]*gt[0, 0] + ww1[2]*gt[1, 0] + ww2[2]*gt[2, 0] - ww0[0]*gt[0, 2] - ww1[0]*gt[1, 2] - ww2[0]*gt[2, 2])
+                #d2 = sg*(ww0[0]*gt[0, 1] + ww1[0]*gt[1, 1] + ww2[0]*gt[2, 1] - ww0[1]*gt[0, 0] - ww1[1]*gt[1, 0] - ww2[1]*gt[2, 0])
+                #w0 = d0*gt[0, 0] + d1*gt[1, 0] + d2*gt[2, 0]
+                #w1 = d0*gt[0, 1] + d1*gt[1, 1] + d2*gt[2, 1]
+                #w2 = d0*gt[0, 2] + d1*gt[1, 2] + d2*gt[2, 2]
+
+                test = _expr_from_vector_components([w0, w1, w2], test.base)
+            else:
+                assert test.dimensions == 2
+                test = np.sum([(Dx(test[i]*g[1, i], 0, 1) - Dx(test[i]*g[0, i], 1, 1))*(1/sg) for i in range(2)])
 
     test.simplify()
     return test

@@ -35,7 +35,7 @@ class Basis(SpectralBase):
         dtype : data-type, optional
             Type of input data in real physical space. Will be overloaded when
             basis is part of a :class:`.TensorProductSpace`.
-        coordinates: 2-tuple (coordinate, position vector), optional
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
             Second item is a tuple for the Cartesian position vector as function of the
