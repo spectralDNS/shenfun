@@ -5,10 +5,10 @@ DATE: today
 __Summary.__
 This is a demonstration of how the Python module "shenfun":
 "https://github.com/spectralDNS/shenfun" can be used to solve the
-Helmholtz equation on the surface of a unit sphere, using spherical
+Helmholtz equation on a unit sphere, using spherical
 coordinates. This demo is implemented in
-a single Python file "spherical_shell_helmholtz.py":
-"https://github.com/spectralDNS/shenfun/blob/master/demo/spherical_shell_helmholtz.py".
+a single Python file "sphere_helmholtz.py":
+"https://github.com/spectralDNS/shenfun/blob/master/demo/sphere_helmholtz.py".
 If requested the solver will run in parallel using MPI.
 
 FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/figures/spherewhite4.png, width=700 frac=1] Helmholtz on the unit sphere. label{fig:helmholtz}
@@ -121,8 +121,8 @@ spherical coordinates with an integral measure of $d\sigma=\sin \theta d\theta d
 ======= Implementation in shenfun =======
 label{demo:sphericalimplementation}
 
-A complete implementation is found in the file "spherical_shell_helmholtz.py":
-"https://github.com/spectralDNS/shenfun/blob/master/demo/spherical_shell_helmholtz.py".
+A complete implementation is found in the file "sphere_helmholtz.py":
+"https://github.com/spectralDNS/shenfun/blob/master/demo/sphere_helmholtz.py".
 Here we give a brief explanation for the implementation. Start by
 importing all functionality from "shenfun":"https://github.com/spectralDNS/shenfun"
 and "sympy":"https://sympy.org", where Sympy is required for handeling the

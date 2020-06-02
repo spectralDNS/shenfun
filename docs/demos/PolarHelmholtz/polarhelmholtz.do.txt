@@ -6,8 +6,8 @@ __Summary.__
 This is a demonstration of how the Python module "shenfun":
 "https://github.com/spectralDNS/shenfun" can be used to solve the
 Helmholtz equation on a circular disc, using polar coordinates. This demo is implemented in
-a single Python file "unitdisc_poisson.py":
-"https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_poisson.py",
+a single Python file "unitdisc_helmholtz.py":
+"https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_helmholtz.py",
 and the numerical method is described in more detail by J. Shen cite{shen3}.
 
 FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/figures/Helmholtzdisc.png, width=700 frac=1] Helmholtz on the unit disc. label{fig:helmholtz}
@@ -224,8 +224,8 @@ $(1-t^2)^{-0.5}$ for the Chebyshev bases.
 ======= Implementation in shenfun =======
 label{demo:polarimplementation}
 
-A complete implementation is found in the file "unitdisc_poisson.py":
-"https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_poisson.py".
+A complete implementation is found in the file "unitdisc_helmholtz.py":
+"https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_helmholtz.py".
 Here we give a brief explanation for the implementation. Start by
 importing all functionality from "shenfun":"https://github.com/spectralDNS/shenfun"
 and "sympy":"https://sympy.org", where Sympy is required for handeling the

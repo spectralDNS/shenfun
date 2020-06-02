@@ -7,7 +7,7 @@ Demo - Lid driven cavity
 ========================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 21, 2020
+:Date: Jun 2, 2020
 
 *Summary.* The lid driven cavity is a classical benchmark for Navier Stokes solvers.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the lid
@@ -563,15 +563,14 @@ assemble the constant boundary contribution to the right hand side
 
 .. code-block:: python
 
-    # Create Function to hold solution
-    uh_hat = Function(VQ)
+    # Create Function to hold solution. Use set_boundary_dofs to fix the degrees
+    # of freedom in uh_hat that determines the boundary conditions.
+    uh_hat = Function(VQ).set_boundary_dofs()
     ui_hat = uh_hat[0]
-    D1Y.bc.set_boundary_dofs(ui_hat[0], True) # Fixes the values of the boundary dofs
     
     # New solution (iterative)
-    uh_new = Function(VQ)
+    uh_new = Function(VQ).set_boundary_dofs()
     ui_new = uh_new[0]
-    D1Y.bc.set_boundary_dofs(ui_new[0], True)
     
     # Compute the constant contribution to rhs due to nonhomogeneous boundary conditions
     bh_hat0 = Function(VQ)
@@ -580,9 +579,9 @@ assemble the constant boundary contribution to the right hand side
     
 
 Note that ``bh_hat0`` now contains the part of the right hand side that is
-due to the non-symmetric part of assembled matrices. The line with
-``D1Y.bc.set_boundary_dofs(ui_hat[0], True)`` ensures the known boundary values of
-the solution are fixed for ``ui_hat``.
+due to the non-symmetric part of assembled matrices. The appended
+``set_boundary_dofs()`` ensures the known boundary values of
+the solution are fixed for ``ui_hat`` and ``ui_new``.
 
 The nonlinear right hand side also requires some additional attention.
 Nonlinear terms are usually computed in physical space before transforming

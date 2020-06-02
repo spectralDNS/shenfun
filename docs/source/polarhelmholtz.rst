@@ -7,11 +7,11 @@ Demo - Helmholtz equation in polar coordinates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 21, 2020
+:Date: Jun 2, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the
 Helmholtz equation on a circular disc, using polar coordinates. This demo is implemented in
-a single Python file `unitdisc_poisson.py <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_poisson.py>`__,
+a single Python file `unitdisc_helmholtz.py <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_helmholtz.py>`__,
 and the numerical method is described in more detail by J. Shen :cite:`shen3`.
 
 .. _fig:helmholtz:
@@ -19,7 +19,7 @@ and the numerical method is described in more detail by J. Shen :cite:`shen3`.
 .. figure:: https://rawgit.com/spectralDNS/spectralutilities/master/figures/Helmholtzdisc.png
    :width: 700
 
-   *Poisson on the unit disc*
+   *Helmholtz on the unit disc*
 
 .. _demo:polar_helmholtz:
 
@@ -294,7 +294,7 @@ Furthermore, the weight :math:`w(t)` will be unity for the Legendre basis and
 Implementation in shenfun
 =========================
 
-A complete implementation is found in the file `unitdisc_poisson.py <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_poisson.py>`__.
+A complete implementation is found in the file `unitdisc_helmholtz.py <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_helmholtz.py>`__.
 Here we give a brief explanation for the implementation. Start by
 importing all functionality from `shenfun <https://github.com/spectralDNS/shenfun>`__
 and `sympy <https://sympy.org>`__, where Sympy is required for handeling the
@@ -319,7 +319,7 @@ required :math:`(0, 2\pi)`.
 
 .. code-block:: python
 
-    N = 16
+    N = 32
     F = Basis(N, 'F', dtype='d')
     F0 = Basis(1, 'F', dtype='d')
     L = Basis(N, 'L', bc='Dirichlet', domain=(0, 1))
@@ -434,11 +434,97 @@ through
 .. code-block:: python
 
     ue = Array(T, buffer=ue)
-    X = T.local_mesh(True)
     print('Error =', np.linalg.norm(uj-ue))
+    # ---> Error = 7.45930806417765e-15
 
-And we can refine the solution to make it look better,
-and plot on the unit disc, leading to Figure :ref:`fig:helmholtz`.
+We can also get the gradient of the solution. For this we need
+a space without boundary conditions, and a vector space
+
+.. code-block:: python
+
+    TT = T.get_orthogonal()
+    V = VectorTensorProductSpace(TT)
+
+Notice that we do not have the solution in one single space
+in spectral space, since it is a combination of ``u_hat`` and
+``u0_hat``. For this reason we first transform the solution from
+real space ``uj`` to the new orthogonal space ``TT``
+
+.. code-block:: python
+
+    ua = Array(TT, buffer=uj)
+    uh = ua.forward()
+
+With the solution as a :class:`.Function` we can simply project
+the gradient to ``V``
+
+.. code-block:: python
+
+    dv = project(grad(uh), V)
+    du = dv.backward()
+
+Note that the gradient ``du`` now contains the contravariant components
+of the covariant basis vector ``b``. The basis vector ``b`` is not normalized
+(it's length is not unity).
+
+.. code-block:: python
+
+    b = T.coors.get_covariant_basis()
+
+The basis vectors are, in fact
+
+.. math::
+        
+        \mathbf{b}_{\theta}=- r \sin{\left(\theta \right)}\,\mathbf{i}+r \cos{\left(\theta \right)}\,\mathbf{j} \\ \mathbf{b}_{r}=\cos{\left(\theta \right)}\,\mathbf{i}+\sin{\left(\theta \right)}\,\mathbf{j}
+        
+
+and we see that they are given in terms of the Cartesian unit vectors.
+The gradient we have computed is (and yes, it should be :math:`r^2` because we
+do not have unit vectors)
+
+.. math::
+   :label: eq:gradu
+
+        
+        \nabla u = \underbrace{\frac{1}{r^2}\frac{\partial u}{\partial \theta}}_{du[0]}\mathbf{b}_{\theta} + \underbrace{\frac{\partial u}{\partial r}}_{du[1]} \mathbf{b}_{r}
+        \
+        
+
+Now it makes sense to plot the solution and its gradient in Cartesian
+instead of computational coordinates. To this end we need to
+project the gradient to a Cartesian basis
+
+.. math::
+        \begin{align*}
+        \frac{\partial u}{\partial x} &= \nabla u \cdot \mathbf{i},\\ 
+        \frac{\partial u}{\partial y} &= \nabla u \cdot \mathbf{j}.
+        \end{align*}
+
+We compute the Cartesian gradient by assembling :eq:`eq:gradu`
+on the computational grid
+
+.. code-block:: python
+
+    ui, vi = TT.local_mesh(True)
+    bij = np.array(sp.lambdify(psi, b)(ui, vi))
+    gradu = du[0]*bij[0] + du[1]*bij[1]
+
+Because of the way the vectors are stored, ``gradu[0]`` will now
+contain :math:`\nabla u \cdot \mathbf{i}` and
+``gradu[1]`` will contain :math:`\nabla u \cdot \mathbf{j}`.
+To validate we compute the exact gradient and compute
+the error norm
+
+.. code-block:: python
+
+    gradue = Array(V, buffer=list(b[0]*ue.diff(theta, 1)/r**2 + b[1]*ue.diff(r, 1)))
+    #or alternatively
+    #gradue = Array(V, buffer=grad(u).tosympy(basis=ue, psi=psi))
+    print('Error gradient', np.linalg.norm(gradu-gradue))
+    # ---> Error gradient 1.0856774538980375e-08
+
+We now refine the solution to make it look better,
+and plot on the unit disc.
 
 .. code-block:: python
 
@@ -452,15 +538,23 @@ and plot on the unit disc, leading to Figure :ref:`fig:helmholtz`.
     xp = np.vstack([xx, xx[0]])
     yp = np.vstack([yy, yy[0]])
     up = np.vstack([ur, ur[0]])
+    # For vector no need to wrap around and no need to refine:
+    xi, yi = TT.local_curvilinear_mesh()
     
     # plot
     plt.figure()
     plt.contourf(xp, yp, up)
+    plt.quiver(xi, yi, gradu[0], gradu[1], scale=40, pivot='mid', color='white')
     plt.colorbar()
     plt.title('Helmholtz - unitdisc')
     plt.xticks([])
     plt.yticks([])
     plt.axis('off')
     plt.show()
+
+.. figure:: https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/Helmholtz_polar_with_vectors.png
+   :width: 700
+
+   Solution of Helmholtz equation, with gradient
 
 .. ======= Bibliography =======
