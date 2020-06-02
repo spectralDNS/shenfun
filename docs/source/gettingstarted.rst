@@ -389,17 +389,69 @@ both Legendre and Chebyshev bases, see the extended demo :ref:`Demo - 3D Poisson
 or the demo programs `dirichlet_poisson2D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson2D.py>`_
 and `dirichlet_poisson3D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py>`_.
 
-Polar, cylindrical and spherical coordinates
---------------------------------------------
-Shenfun can be used to solve scalar equations using polar, cylindrical
+Curvilinear coordinates
+-----------------------
+Shenfun can be used to solve equations using curvilinear
+coordinates, like polar, cylindrical
 and spherical coordinates. The feature was added April 2020, and is still rather
-experimental. There are currently demos for solving both `Helmholtz's
-equation <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_poisson.py>`_
+experimental. The curvilinear coordinates are defined by the user, who
+needs to provide a map, i.e., the position vector, between new coordinates and
+the Cartesian coordinates. The basis functions of the new coordinates need not
+be orthogonal, but non-orthogonal is not widely tested so use with care.
+In shenfun we use non-normalized natural (covariant) basis vectors. For this
+reason the equations may look a little bit different than usual. For example,
+in cylindrical coordinates we have the position vector
+
+.. math::
+    :label: eq:cylpositionvector
+
+    \vec{r} = r \cos \theta \, \mathbf{i} + r \sin \theta \,\mathbf{j} + z \,\mathbf{k},
+
+where :math:`\mathbf{i, j, k}` are the Cartesian unit vectors.
+
+The covariant basis vectors are
+
+.. math::
+    :label: eq:covbasis
+
+    \mathbf{b}_r &= \frac{\partial \vec{r}}{ \partial r}, \\
+    \mathbf{b}_{\theta} &= \frac{\partial \vec{r}}{ \partial \theta }, \\
+    \mathbf{b}_z &= \frac{\partial \vec{r}}{ \partial z},
+
+leading to
+
+.. math::
+    :label: eq:bbasis
+
+    \mathbf{b}_{r}&=\cos{\left(\theta \right)}\,\mathbf{i}+\sin{\left(\theta \right)}\,\mathbf{j}, \\ \mathbf{b}_{\theta}&=- r \sin{\left(\theta \right)}\,\mathbf{i}+r \cos{\left(\theta \right)}\,\mathbf{j}, \\ \mathbf{b}_{z}&=\mathbf{k}.
+
+We see that :math:`|\mathbf{b}_{\theta}| = r` and not unity.
+
+A vector :math:`\vec{u}` in this basis is given as
+
+.. math::
+    :label: eq:vecu
+
+    \vec{u} = u^r \mathbf{b}_r + u^{\theta} \mathbf{b}_{\theta} + u^{z} \mathbf{b}_z,
+
+and the vector Laplacian :math:`\nabla^2 \vec{u}` is
+
+.. math::
+    :label: eq:veclaplacian
+
+    \left( \frac{\partial^2 u^{r}}{\partial^2r}+\frac{1}{r}\frac{\partial  u^{r}}{\partial r}+\frac{1}{r^{2}}\frac{\partial^2 u^{r}}{\partial^2\theta}- \frac{2}{r}\frac{\partial  u^{\theta}}{\partial \theta}- \frac{1}{r^{2}}u^{r}+\frac{\partial^2 u^{r}}{\partial^2z}\right) \mathbf{b}_{r} \\+\left( \frac{\partial^2 u^{\theta}}{\partial^2r}+\frac{3}{r}\frac{\partial  u^{\theta}}{\partial r}+\frac{2}{r^{3}}\frac{\partial  u^{r}}{\partial \theta}+\frac{1}{r^{2}}\frac{\partial^2 u^{\theta}}{\partial^2\theta}+\frac{\partial^2 u^{\theta}}{\partial^2z}\right) \mathbf{b}_{\theta} \\+\left( \frac{\partial^2 u^{z}}{\partial^2r}+\frac{1}{r}\frac{\partial  u^{z}}{\partial r}+\frac{1}{r^{2}}\frac{\partial^2 u^{z}}{\partial^2\theta}+\frac{\partial^2 u^{z}}{\partial^2z}\right) \mathbf{b}_{z}.
+
+which is slightly different from what you see in most textbooks, which are using
+normalized basis vectors.
+
+There are currently curvilinear demos for solving both `Helmholtz's
+equation <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_helmholtz.py>`_
 and the `biharmonic equation <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_biharmonic.py>`_
 on a circular disc, a solver for `3D Poisson equation in a pipe <https://github.com/spectralDNS/shenfun/blob/master/demo/pipe_poisson.py>`_,
 and a solver for the `biharmonic equation on a part of the disc <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_biharmonic2NP.py>`_.
-Also, the Helmholtz equation solved on the surface of the unit sphere using
-spherical coordinates is shown `here <https://github.com/spectralDNS/shenfun/blob/master/demo/spherical_shell_helmholtz.py>`_.
+Also, the Helmholtz equation solved on the unit sphere using
+spherical coordinates is shown `here <https://github.com/spectralDNS/shenfun/blob/master/demo/sphere_helmholtz.py>`_,
+and on the torus `here <https://github.com/spectralDNS/shenfun/blob/master/binder/torus.ipynb>`_.
 A solution from solving the biharmonic equation with homogeneous
 Dirichlet boundary conditions on :math:`(\theta, r) \in [0, \pi/2] \times [0.5, 1]`
 is shown below.
