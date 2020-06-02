@@ -7,12 +7,12 @@ Demo - Helmholtz equation on the unit sphere
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: May 21, 2020
+:Date: Jun 2, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the
-Helmholtz equation on the surface of a unit sphere, using spherical
+Helmholtz equation on a unit sphere, using spherical
 coordinates. This demo is implemented in
-a single Python file `spherical_shell_helmholtz.py <https://github.com/spectralDNS/shenfun/blob/master/demo/spherical_shell_helmholtz.py>`__.
+a single Python file `sphere_helmholtz.py <https://github.com/spectralDNS/shenfun/blob/master/demo/sphere_helmholtz.py>`__.
 If requested the solver will run in parallel using MPI.
 
 .. _fig:helmholtz:
@@ -139,7 +139,7 @@ spherical coordinates with an integral measure of :math:`d\sigma=\sin \theta d\t
 Implementation in shenfun
 =========================
 
-A complete implementation is found in the file `spherical_shell_helmholtz.py <https://github.com/spectralDNS/shenfun/blob/master/demo/spherical_shell_helmholtz.py>`__.
+A complete implementation is found in the file `sphere_helmholtz.py <https://github.com/spectralDNS/shenfun/blob/master/demo/sphere_helmholtz.py>`__.
 Here we give a brief explanation for the implementation. Start by
 importing all functionality from `shenfun <https://github.com/spectralDNS/shenfun>`__
 and `sympy <https://sympy.org>`__, where Sympy is required for handeling the
@@ -217,9 +217,10 @@ to define an analytical solution
     alpha = 2
     sph = sp.functions.special.spherical_harmonics.Ynm
     ue = sph(6, 3, theta, phi)
-    f = - ue.diff(theta, 2) - (1/sp.tan(theta))*ue.diff(theta, 1) - (1/sp.sin(theta)**2)*ue.diff(phi, 2) + alpha*ue
     
     # Compute the right hand side on the quadrature mesh
+    # That is, compute f = -div(grad(ue)) + alpha*ue
+    f = (-div(grad(u))+alpha*u).tosympy(basis=ue, psi=psi)
     fj = Array(T, buffer=f)
     
     # Take scalar product
