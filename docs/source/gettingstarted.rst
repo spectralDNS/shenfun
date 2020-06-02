@@ -444,6 +444,29 @@ and the vector Laplacian :math:`\nabla^2 \vec{u}` is
 which is slightly different from what you see in most textbooks, which are using
 normalized basis vectors.
 
+Note that once the curvilinear map has been created, shenfun's operators
+:func:`.div`, :func:`.grad` and :func:`.curl` work out of the box with
+no additional effort. So you do not have to implement messy equations
+that look like :eq:`eq:veclaplacian` directly. Take the example with
+the cylindrical coordinates. The vector Laplacian `du` is implemented
+for some random 3-dimensional space as::
+
+    from shenfun import *
+    import sympy as sp
+
+    r, theta, z = psi = sp.symbols('x,y,z', real=True, positive=True)
+    rv = (r*sp.cos(theta), r*sp.sin(theta), z)
+
+    N = 10
+    F0 = Basis(N, 'F', dtype='d')
+    F1 = Basis(N, 'F', dtype='D')
+    L = Basis(N, 'L', domain=(0, 1))
+    T = TensorProductSpace(comm, (L, F1, F0), coordinates=(psi, rv))
+    V = VectorTensorProductSpace(T)
+    u = TrialFunction(V)
+    du = div(grad(u))
+
+
 There are currently curvilinear demos for solving both `Helmholtz's
 equation <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_helmholtz.py>`_
 and the `biharmonic equation <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_biharmonic.py>`_
