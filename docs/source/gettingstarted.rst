@@ -405,18 +405,17 @@ in cylindrical coordinates we have the position vector
 .. math::
     :label: eq:cylpositionvector
 
-    \vec{r} = r \cos \theta \, \mathbf{i} + r \sin \theta \,\mathbf{j} + z \,\mathbf{k},
+    \mathbf{r} = r \cos \theta \, \mathbf{i} + r \sin \theta \,\mathbf{j} + z \,\mathbf{k},
 
-where :math:`\mathbf{i, j, k}` are the Cartesian unit vectors.
-
-The covariant basis vectors are
+where :math:`\mathbf{i, j, k}` are the Cartesian unit vectors and :math:`r, \theta, z`
+are the new coordinates. The covariant basis vectors are then
 
 .. math::
     :label: eq:covbasis
 
-    \mathbf{b}_r &= \frac{\partial \vec{r}}{ \partial r}, \\
-    \mathbf{b}_{\theta} &= \frac{\partial \vec{r}}{ \partial \theta }, \\
-    \mathbf{b}_z &= \frac{\partial \vec{r}}{ \partial z},
+    \mathbf{b}_r &= \frac{\partial \mathbf{r}}{ \partial r}, \\
+    \mathbf{b}_{\theta} &= \frac{\partial \mathbf{r}}{ \partial \theta }, \\
+    \mathbf{b}_z &= \frac{\partial \mathbf{r}}{ \partial z},
 
 leading to
 
@@ -427,14 +426,14 @@ leading to
 
 We see that :math:`|\mathbf{b}_{\theta}| = r` and not unity.
 
-A vector :math:`\vec{u}` in this basis is given as
+A vector :math:`\mathbf{u}` in this basis is given as
 
 .. math::
     :label: eq:vecu
 
-    \vec{u} = u^r \mathbf{b}_r + u^{\theta} \mathbf{b}_{\theta} + u^{z} \mathbf{b}_z,
+    \mathbf{u} = u^r \mathbf{b}_r + u^{\theta} \mathbf{b}_{\theta} + u^{z} \mathbf{b}_z,
 
-and the vector Laplacian :math:`\nabla^2 \vec{u}` is
+and the vector Laplacian :math:`\nabla^2 \mathbf{u}` is
 
 .. math::
     :label: eq:veclaplacian
@@ -448,8 +447,8 @@ Note that once the curvilinear map has been created, shenfun's operators
 :func:`.div`, :func:`.grad` and :func:`.curl` work out of the box with
 no additional effort. So you do not have to implement messy equations
 that look like :eq:`eq:veclaplacian` directly. Take the example with
-the cylindrical coordinates. The vector Laplacian `du` is implemented
-for some random 3-dimensional space as::
+cylindrical coordinates. The vector Laplacian can be implemented
+as::
 
     from shenfun import *
     import sympy as sp

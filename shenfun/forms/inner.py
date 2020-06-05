@@ -312,7 +312,7 @@ def inner(expr0, expr1, output_array=None, level=0):
                             M[0].mixedbase = testspace
                             A.append(M[0])
                         else:
-                            A.append(TPMatrix(M, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                            A.append(TPMatrix(M, test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
                         if has_bcs:
                             if len(DM) == 1: # 1D case
                                 DM[0].global_index = (test_ind[test_j], trial_ind[trial_j])
@@ -320,7 +320,7 @@ def inner(expr0, expr1, output_array=None, level=0):
                                 DM[0].mixedbase = testspace
                                 A.append(DM[0])
                             else:
-                                A.append(TPMatrix(DM, test_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                                A.append(TPMatrix(DM, test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
 
     # At this point A contains all matrices of the form. The length of A is
     # the number of inner products. For each index into A there are ndim 1D
@@ -359,7 +359,7 @@ def inner(expr0, expr1, output_array=None, level=0):
     for tpmat in A:
         if isinstance(tpmat, TPMatrix):
             try:
-                tpmat.simplify_fourier_matrices()
+                tpmat.simplify_diagonal_matrices()
             except KeyError:
                 continue
 

@@ -12,7 +12,7 @@ directly applying r = (t+1)/2, as in the SIAM paper.
 """
 import os
 from shenfun import *
-from shenfun.la import SolverGeneric1NP
+from shenfun.la import SolverGeneric1ND
 import sympy as sp
 
 by_parts = True
@@ -74,13 +74,13 @@ else:
 # Solve
 # case m > 0
 u_hat = Function(T)
-Sol1 = SolverGeneric1NP(mats)
+Sol1 = SolverGeneric1ND(mats)
 u_hat = Sol1(f_hat, u_hat)
 
 # case m = 0
 u0_hat = Function(T0)
 if comm.Get_rank() == 0:
-    Sol0 = SolverGeneric1NP(mats0)
+    Sol0 = SolverGeneric1ND(mats0)
     u0_hat = Sol0(f0_hat, u0_hat)
 comm.Bcast(u0_hat, root=0)
 

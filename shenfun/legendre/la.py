@@ -129,8 +129,6 @@ class Helmholtz(object):
     """
 
     def __init__(self, *args, **kwargs):
-        local_shape = kwargs.get('local_shape', None)
-
         args = list(args)
         for i, arg in enumerate(args):
             if hasattr(arg, 'is_bc_matrix'):
@@ -164,10 +162,7 @@ class Helmholtz(object):
         self.axis = A.axis
         shape = [1]
         T = A.tensorproductspace
-        if local_shape is not None:
-            shape = list(local_shape)
-            shape[A.axis] = 1
-        elif T is not None:
+        if T is not None:
             shape = list(T.shape(True))
             shape[A.axis] = 1
 
@@ -352,7 +347,7 @@ class Biharmonic(object):
         self.B = M['BBBmat']
 
         if len(args) == 3:
-            S_scale = np.atleast_1d(self.S.scale).item()
+            S_scale = self.S.scale
             A_scale = self.A.scale
             B_scale = self.B.scale
             if isinstance(self.S, TPMatrix):

@@ -15,7 +15,7 @@ from sympy import symbols, cos, sin
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
     Function, TensorProductSpace, Basis, comm
-from shenfun.la import SolverGeneric2NP
+from shenfun.la import SolverGeneric2ND
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
@@ -47,7 +47,7 @@ f_hat = inner(v, fj)
 matrices = inner(v, div(grad(div(grad(u)))))
 
 # Create linear algebra solver
-H = SolverGeneric2NP(matrices)
+H = SolverGeneric2ND(matrices)
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space

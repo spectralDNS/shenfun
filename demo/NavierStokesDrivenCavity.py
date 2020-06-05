@@ -167,7 +167,7 @@ r = TestFunction(V0)
 s = TrialFunction(V0)
 S = inner(r, div(grad(s)))
 h = inner(r, -curl(ui_hat))
-H = la.SolverGeneric2NP(S)
+H = la.SolverGeneric2ND(S)
 phi_h = H(h)
 phi = phi_h.backward()
 # Compute vorticity

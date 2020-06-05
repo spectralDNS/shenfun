@@ -14,7 +14,7 @@ import numpy as np
 from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, Basis, \
     TensorProductSpace, Array
-from shenfun.la import SolverGeneric2NP
+from shenfun.la import SolverGeneric2ND
 
 comm = MPI.COMM_WORLD
 
@@ -27,7 +27,7 @@ if family == 'legendre':
     base = importlib.import_module('.'.join(('shenfun', family)))
     Solver = base.la.Helmholtz_2dirichlet
 else:
-    Solver = SolverGeneric2NP
+    Solver = SolverGeneric2ND
 
 # Use sympy to compute a rhs, given an analytical solution
 a = 1.

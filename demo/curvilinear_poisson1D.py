@@ -21,8 +21,8 @@ from shenfun import *
 import sympy as sp
 
 t = sp.Symbol('x', real=True, positive=True)
-#rv = (t, t+sp.sin(t))
-rv = (sp.sin(2*t), sp.cos(2*t), 0.5*t)
+rv = (t, t+sp.sin(t))
+#rv = (sp.sin(2*t), sp.cos(2*t), 0.5*t)
 
 N = 200
 L = Basis(N, 'C', bc=(0, 0), domain=(0, 2*np.pi), coordinates=((t,), rv))
@@ -67,7 +67,7 @@ if 'pytest' not in os.environ:
         ax.set_yticks(np.linspace(-1, 1, 5))
         plt.title("Poisson's equation on a coil")
     elif len(rv) == 2:
-       ax.plot(X[0], X[1], uj, 'b')
-       ax.plot(X[0], X[1], 'r')
+        ax.plot(X[0], X[1], uj, 'b')
+        ax.plot(X[0], X[1], 'r')
 
     plt.show()

@@ -166,5 +166,5 @@ def test_curl_cc():
 
 if __name__ == '__main__':
     #test_curl('d')
-    #test_curl2()
-    test_curl_cc()
+    test_curl2()
+    #test_curl_cc()
