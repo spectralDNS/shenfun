@@ -353,9 +353,9 @@ class NeumannSolve(object):
         #u /= self.A.scale
         return u
 
-class SolverGeneric2NP(object):
-    """Generic solver for tensorproductspaces consisting of (currently) two
-    non-periodic bases.
+class SolverGeneric2ND(object):
+    """Generic solver for problems consisting of tensorproduct matrices
+    containing two non-diagonal submatrices.
 
     Parameters
     ----------
@@ -364,8 +364,8 @@ class SolverGeneric2NP(object):
 
     Note
     ----
-    In addition to two non-periodic directions, the solver can also handle one
-    periodic direction.
+    In addition to two non-diagonal matrices, the solver can also handle one
+    additional diagonal matrix (one Fourier matrix).
     """
 
     def __init__(self, mats):
@@ -400,24 +400,24 @@ class SolverGeneric2NP(object):
             s0 = tuple(base.slice() for base in self.T)
             u[s0] = sp.linalg.spsolve(self.M, b[s0].flatten()).reshape(self.T.dims())
         elif u.ndim == 3:
-            naxes = self.T.get_nonperiodic_axes()
-            periodic_axis = np.setxor1d([0, 1, 2], naxes)
-            assert len(periodic_axis) == 1
-            periodic_axis = periodic_axis[0]
-            M = self.T.shape(True)[periodic_axis]
+            naxes = self.T.get_nondiagonal_axes()
+            diagonal_axis = np.setxor1d([0, 1, 2], naxes)
+            assert len(diagonal_axis) == 1
+            diagonal_axis = diagonal_axis[0]
+            M = self.T.shape(True)[diagonal_axis]
             sc = [0, 0, 0]
             for i in range(M):
                 m = self.mats[0]
                 M0 = sp.kron(m.mats[naxes[0]].diags(), m.mats[naxes[1]].diags())
-                sc[periodic_axis] = i if m.scale.shape[periodic_axis] > 1 else 0
+                sc[diagonal_axis] = i if m.scale.shape[diagonal_axis] > 1 else 0
                 M0 *= m.scale[tuple(sc)]
                 for m in self.mats[1:]:
                     M1 = sp.kron(m.mats[naxes[0]].diags(), m.mats[naxes[1]].diags())
-                    sc[periodic_axis] = i if m.scale.shape[periodic_axis] > 1 else 0
+                    sc[diagonal_axis] = i if m.scale.shape[diagonal_axis] > 1 else 0
                     M1 *= m.scale[tuple(sc)]
                     M0 = M0 + M1
                 s0 = [base.slice() for base in self.T]
-                s0[periodic_axis] = i
+                s0[diagonal_axis] = i
                 shape = np.take(self.T.dims(), naxes)
                 u[tuple(s0)] = sp.linalg.spsolve(M0, b[tuple(s0)].flatten()).reshape(shape)
         return u
@@ -546,9 +546,9 @@ class TDMA_O(object):
         return u
 
 
-class SolverGeneric1NP(object):
-    """Generic solver for tensorproductspaces consisting of only one
-    non-periodic space.
+class SolverGeneric1ND(object):
+    """Generic solver for tensorproduct matrices consisting of
+    non-diagonal matrices along only one axis.
 
     Parameters
     ----------
@@ -557,9 +557,9 @@ class SolverGeneric1NP(object):
 
     Note
     ----
-    In addition to the one non-periodic direction, the solver can also handle
-    up to two periodic directions. Also, this Python version of the solver is
-    not very efficient. Consider using Cython.
+    In addition to the one non-diagonal direction, the solver can also handle
+    up to two diagonal (Fourier) directions. Also, this Python version of the
+    solver is not very efficient. Consider implementing in Cython.
 
     """
 
@@ -568,7 +568,7 @@ class SolverGeneric1NP(object):
         m = mats[0]
         if m.naxes == []:
             for tpmat in mats:
-                tpmat.simplify_fourier_matrices()
+                tpmat.simplify_diagonal_matrices()
 
         self.mats = mats
 
@@ -581,7 +581,7 @@ class SolverGeneric1NP(object):
 
         if u.ndim == 2:
             if m.naxes[0] == 0:
-                # non-periodic in axis=0
+                # non-diagonal in axis=0
                 for i in range(b.shape[1]):
                     MM = None
                     for mat in self.mats:
@@ -594,7 +594,7 @@ class SolverGeneric1NP(object):
                     u[sl, i] = MM.solve(b[sl, i], u[sl, i])
 
             else:
-                # non-periodic in axis=1
+                # non-diagonal in axis=1
                 for i in range(b.shape[0]):
                     MM = None
                     for mat in self.mats:
@@ -608,7 +608,7 @@ class SolverGeneric1NP(object):
 
         elif u.ndim == 3:
             if m.naxes[0] == 0:
-                # non-periodic in axis=0
+                # non-diagonal in axis=0
                 for i in range(b.shape[1]):
                     for j in range(b.shape[2]):
                         MM = None
@@ -622,7 +622,7 @@ class SolverGeneric1NP(object):
                         u[sl, i, j] = MM.solve(b[sl, i, j], u[sl, i, j])
 
             elif m.naxes[0] == 1:
-                # non-periodic in axis=1
+                # non-diagonal in axis=1
                 for i in range(b.shape[0]):
                     for j in range(b.shape[2]):
                         MM = None
@@ -636,7 +636,7 @@ class SolverGeneric1NP(object):
                         u[i, sl, j] = MM.solve(b[i, sl, j], u[i, sl, j])
 
             elif m.naxes[0] == 2:
-                # non-periodic in axis=2
+                # non-diagonal in axis=2
                 for i in range(b.shape[0]):
                     for j in range(b.shape[1]):
                         MM = None

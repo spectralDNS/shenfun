@@ -152,12 +152,12 @@ class Coordinates(object):
             symbols = symbol_names
 
         k = {0: '\\mathbf{i}', 1: '\\mathbf{j}', 2: '\\mathbf{k}'}
-        m = '\\begin{align*}'
+        m = ' '
         for i, p in enumerate(psi):
             if covariant:
-                m += '\\mathbf{b}_{%s}&='%(symbols[p])
+                m += '\\mathbf{b}_{%s} ='%(symbols[p])
             else:
-                m += '\\mathbf{b}^{%s}&='%(symbols[p])
+                m += '\\mathbf{b}^{%s} ='%(symbols[p])
             for j in range(len(psi)):
                 if b[i, j] == 1:
                     m += (k[j]+'+')
@@ -167,8 +167,8 @@ class Coordinates(object):
                         m = m.rstrip('+')
                     if isinstance(b[i, j], sp.Add):
                         sl = '\\left(%s\\right)'%(sl)
-                    m += (sl+'\,'+k[j]+'+')
+                    m += (sl+'\\,'+k[j]+'+')
             m = m.rstrip('+')
-            m += ' \\\ '
-        m += '\\end{align*}'
+            m += ' \\\\ '
+        m += ' '
         return r'%s'%(m)

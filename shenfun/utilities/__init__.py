@@ -217,6 +217,7 @@ def integrate_sympy(f, d):
         p = sp.Poly(f, d[0]).integrate()
         return p(d[2]) - p(d[1])
     except sp.PolynomialError:
+        #return sp.Integral(f, d).evalf()
         return sp.integrate(f, d)
 
 def split(measures):

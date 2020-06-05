@@ -864,6 +864,22 @@ class TensorProductSpace(PFFT):
                 axes.append(axis)
         return axes
 
+    def get_nondiagonal_axes(self):
+        """Return list of axes that may contain non-diagonal matrices"""
+        axes = []
+        if isinstance(self.hi.prod(), sp.Expr):
+            x = 'xyzrs'
+            sym = self.hi.prod().free_symbols
+            msaxes = set()
+            for s in sym:
+                msaxes.add(x.index(str(s)))
+        for axis, base in enumerate(self):
+            if not base.family() == 'fourier':
+                axes.append(axis)
+            if base.family() == 'fourier' and (axis in msaxes):
+                axes.append(axis)
+        return axes
+
     @property
     def is_orthogonal(self):
         ortho = True

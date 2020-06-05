@@ -458,7 +458,8 @@ class Expr(object):
                     s += scp
                 t = np.array(term)
                 cmp = funcname
-                if self.num_components() > 1:
+                #if self.num_components() > 1:
+                if self.rank > 0:
                     cmp = funcname + '^{%s}'%(symbols[x[k]])
                 if np.sum(t) == 0:
                     s += cmp
@@ -476,7 +477,7 @@ class Expr(object):
                 s += "\\right) \\mathbf{b}_{%s} \\\\"%(symbols[x[i]])
                 s += '+'
 
-        return r"""\begin{equation*} %s \end{equation*}"""%(s.rstrip('+'))
+        return r"""%s"""%(s.rstrip('+'))
 
     def tosympy(self, basis=None, psi=sp.symbols('x,y,z,r,s', real=True)):
         """Return self evaluated with a sympy basis
