@@ -10,7 +10,7 @@ J Shen, SIAM J. Sci Comput. 18, 6, 1583-1604
 
 import matplotlib.pyplot as plt
 from shenfun import *
-from shenfun.la import SolverGeneric2NP
+from shenfun.la import SolverGeneric2ND
 import sympy as sp
 
 # Define polar coordinates using angle along first axis and radius second
@@ -54,7 +54,7 @@ else:
 
 # Solve
 u_hat = Function(T)
-Sol1 = SolverGeneric2NP(mats)
+Sol1 = SolverGeneric2ND(mats)
 u_hat = Sol1(g_hat, u_hat)
 
 # Transform back to real space.

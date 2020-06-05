@@ -13,7 +13,7 @@ from sympy import symbols, sin
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
     Function, TensorProductSpace, Basis, comm
-from shenfun.la import SolverGeneric2NP
+from shenfun.la import SolverGeneric2ND
 
 assert comm.Get_size() == 1, "Two non-periodic directions only have solver implemented for serial"
 
@@ -45,7 +45,7 @@ f_hat = inner(v, fj)
 matrices = inner(v, div(grad(div(grad(u)))))
 
 # Create linear algebra solver
-H = SolverGeneric2NP(matrices)
+H = SolverGeneric2ND(matrices)
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space

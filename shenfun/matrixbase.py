@@ -454,15 +454,9 @@ class SparseMatrix(dict):
         return self.__hash__() == a.__hash__()
 
     def scale_array(self, c):
-        if isinstance(self.scale, Number):
-            if self.scale not in (1.0, 1):
-                c *= self.scale
-        else:
-            if np.prod(self.scale.shape) == 1: # array with only one number
-                if self.scale not in (1.0, 1):
-                    c *= self.scale
-            else:
-                c *= self.scale
+        assert isinstance(self.scale, Number)
+        if abs(self.scale-1) > 1e-8:
+            c *= self.scale
 
     def solve(self, b, u=None, axis=0):
         """Solve matrix system Au = b
@@ -514,13 +508,14 @@ class SparseMatrix(dict):
 
     def isdiagonal(self):
         if len(self) == 1:
-            return True
+            if (0 in self):
+                return True
         return False
 
     def isidentity(self):
         if not len(self) == 1:
             return False
-        if 0 not in self:
+        if (0 not in self):
             return False
         d = self[0]
         if np.all(d == 1):
@@ -681,8 +676,8 @@ class SpectralMatrix(SparseMatrix):
             return  self.__class__.__name__
         return self.__hash__()
 
-    def simplify_fourier_matrices(self):
-        if self.testfunction[0].family() == 'fourier':
+    def simplify_diagonal_matrices(self):
+        if self.isdiagonal():
             self.scale = self.scale*self[0]
             self[0] = 1
 
@@ -722,7 +717,6 @@ class SpectralMatrix(SparseMatrix):
     def __add__(self, y):
         """Return copy of self.__add__(y) <==> self+y"""
         assert isinstance(y, dict)
-        # Check is the same matrix
         if self == y:
             f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
                                self.trialfunction, self.scale+y.scale)
@@ -741,7 +735,6 @@ class SpectralMatrix(SparseMatrix):
     def __sub__(self, y):
         """Return copy of self.__sub__(y) <==> self-y"""
         assert isinstance(y, dict)
-        # Check is the same matrix
         if self == y:
             f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
                                self.trialfunction, self.scale-y.scale)
@@ -771,6 +764,16 @@ class Identity(SparseMatrix):
     """
     def __init__(self, shape, scale=1):
         SparseMatrix.__init__(self, {0:1}, shape, scale)
+
+    def solve(self, b, u=None, axis=0):
+        if u is None:
+            u = b
+        else:
+            assert u.shape == b.shape
+            u[:] = b
+        u *= (1/self.scale)
+        return u
+
 
 class BlockMatrix(object):
     r"""A class for block matrices
@@ -1058,7 +1061,6 @@ class BlockMatrix(object):
             assert isinstance(con[0], Integral)
             assert isinstance(con[1], Integral)
             assert isinstance(con[2], Number)
-            #assert tp[con[0]].bases[axis].boundary_condition().lower() in ('', 'periodic')
         N = self.global_shape[axis]
         gi = np.zeros(N, dtype=b.dtype)
         go = np.zeros(N, dtype=b.dtype)
@@ -1203,8 +1205,10 @@ class TPMatrix(object):
         Instances of :class:`.SpectralMatrix` or :class:`.SparseMatrix`
         The length of ``mats`` is the number of dimensions of the
         :class:`.TensorProductSpace`
-    space : Function space
+    testspace : Function space
         The test :class:`.TensorProductSpace`
+    trialspace : Function space
+        The trial :class:`.TensorProductSpace`
     scale : array, optional
         Scalar multiple of matrices. Must have ndim equal to the number of
         dimensions in the :class:`.TensorProductSpace`, and the shape must be 1
@@ -1214,23 +1218,24 @@ class TPMatrix(object):
     mixedbase : :class:`.MixedTensorProductSpace`, optional
          Instance of the base space
     """
-    def __init__(self, mats, space, scale=1.0, global_index=None, mixedbase=None):
+    def __init__(self, mats, testspace, trialspace, scale=1.0, global_index=None, mixedbase=None):
         assert isinstance(mats, (list, tuple))
-        assert len(mats) == len(space)
+        assert len(mats) == len(testspace)
         self.mats = mats
-        self.space = space
+        self.space = testspace
+        self.trialspace = trialspace
         self.scale = scale
         self.pmat = 1
         self.naxes = []
         self.global_index = global_index
         self.mixedbase = mixedbase
 
-    def simplify_fourier_matrices(self):
+    def simplify_diagonal_matrices(self):
         self.naxes = []
         for axis, mat in enumerate(self.mats):
             if not mat:
                 continue
-            if self.space[axis].family() == 'fourier':
+            if axis not in self.space.get_nondiagonal_axes():
                 if self.dimensions == 1: # Don't bother with the 1D case
                     continue
                 else:
@@ -1240,6 +1245,7 @@ class TPMatrix(object):
                         d *= mat.scale
                     self.scale = self.scale*d
                     self.mats[axis] = Identity(mat.shape)
+
             else:
                 self.naxes.append(axis)
         # Decomposition
@@ -1257,20 +1263,23 @@ class TPMatrix(object):
         if len(self.naxes) == 1:
             self.pmat = self.mats[self.naxes[0]]
 
-        elif len(self.naxes) == 2: # 2 nonperiodic, experimental
+        elif len(self.naxes) == 2: # 2 nondiagonal
             self.pmat = self.mats
 
     def solve(self, b, u=None):
+
         if len(self.naxes) == 0:
+            sl = tuple([s.slice() for s in self.trialspace.bases])
             d = self.scale
             with np.errstate(divide='ignore'):
                 d = 1./self.scale
             d = np.where(np.isfinite(d), d, 0)
+            if u is None:
+                from .forms.arguments import Function
+                u = Function(self.space)
 
-            if u is not None:
-                u[:] = b * d
-                return u
-            return b * d
+            u[sl] = b[sl] * d[sl]
+            return u
 
         elif len(self.naxes) == 1:
             axis = self.naxes[0]
@@ -1281,8 +1290,8 @@ class TPMatrix(object):
             return u
 
         elif len(self.naxes) == 2:
-            from shenfun.la import SolverGeneric2NP
-            H = SolverGeneric2NP([self])
+            from shenfun.la import SolverGeneric2ND
+            H = SolverGeneric2ND([self])
             u = H(b, u)
             return u
 
@@ -1322,8 +1331,16 @@ class TPMatrix(object):
         return c
 
     def get_key(self):
-        assert len(self.naxes) == 1
-        return self.pmat.get_key()
+        """Return key of the one nondiagonal matrix in the TPMatrix
+
+        Note
+        ----
+        Raises an error of there are more than one single nondiagonal matrix
+        in TPMatrix.
+        """
+        naxis = self.space.get_nondiagonal_axes()
+        assert len(naxis) == 1
+        return self.mats[naxis[0]].get_key()
 
     def isidentity(self):
         return np.all([m.isidentity() for m in self.mats])
@@ -1493,7 +1510,7 @@ def get_dense_matrix(test, trial, measure=1):
     ws = test[0].get_measured_weights(N, measure)
     v = test[0].evaluate_basis_derivative_all(x=x, k=test[1])
     u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])
-    return np.dot(v.T*ws[np.newaxis, :], np.conj(u))
+    return np.dot(np.conj(v.T)*ws[np.newaxis, :], u)
 
 def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-8):
     """Return SparseMatrix version of dense matrix ``M``
@@ -1551,7 +1568,8 @@ def get_dense_matrix_sympy(test, trial, measure=1):
     """
     N = test[0].slice().stop - test[0].slice().start
     M = trial[0].slice().stop - trial[0].slice().start
-    V = np.zeros((N, M), dtype=test[0].dtype)
+    V = np.zeros((N, M), dtype=test[0].forward.output_array.dtype)
+    x = sp.Symbol('x', real=True)
 
     if not measure == 1:
         if isinstance(measure, sp.Expr):
@@ -1562,12 +1580,14 @@ def get_dense_matrix_sympy(test, trial, measure=1):
             measure = measure.subs(x, xm)
         else:
             assert isinstance(measure, Number)
-            x = sp.Symbol('x', real=True)
+
+    if test[0].family() == 'fourier':
+        measure *= (1/(2*sp.pi))
 
     for i in range(test[0].slice().start, test[0].slice().stop):
-        pi = test[0].sympy_basis(i, x=x)
+        pi = np.conj(test[0].sympy_basis(i, x=x))
         for j in range(trial[0].slice().start, trial[0].slice().stop):
-            pj = np.conj(trial[0].sympy_basis(j, x=x))
+            pj = trial[0].sympy_basis(j, x=x)
             integrand = sp.simplify(measure*pi.diff(x, test[1])*pj.diff(x, trial[1]))
             V[i, j] = integrate_sympy(integrand,
                                       (x, test[0].sympy_reference_domain()[0], test[0].sympy_reference_domain()[1]))
