@@ -21,8 +21,8 @@ from shenfun import *
 import sympy as sp
 
 t = sp.Symbol('x', real=True, positive=True)
-rv = (t, t+sp.sin(t))
-#rv = (sp.sin(2*t), sp.cos(2*t), 0.5*t)
+#rv = (t, t+sp.sin(t))
+rv = (sp.sin(2*t), sp.cos(2*t), 0.5*t)
 
 N = 200
 L = Basis(N, 'C', bc=(0, 0), domain=(0, 2*np.pi), coordinates=((t,), rv))

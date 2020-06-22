@@ -9,7 +9,6 @@ import functools
 import numpy as np
 import sympy as sp
 from shenfun.matrixbase import SpectralMatrix
-from shenfun.utilities import inheritdocstrings
 from . import bases
 
 R2C = bases.R2CBasis
@@ -17,7 +16,7 @@ C2C = bases.C2CBasis
 
 xp = sp.Symbol('x', real=True, positive=True)
 
-@inheritdocstrings
+
 class Acos2mat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -38,7 +37,7 @@ class Acos2mat(SpectralMatrix):
              -(N-2): -0.25*k[:2]**2}
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
-@inheritdocstrings
+
 class Acosmat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -57,7 +56,7 @@ class Acosmat(SpectralMatrix):
              N-1: -0.5*k[-1]**2}
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
-@inheritdocstrings
+
 class Csinmat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -76,7 +75,7 @@ class Csinmat(SpectralMatrix):
              N-1: -0.5}
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
-@inheritdocstrings
+
 class Csincosmat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -96,7 +95,7 @@ class Csincosmat(SpectralMatrix):
              -(N-2): -0.25*k[:2]}
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
-@inheritdocstrings
+
 class Bcos2mat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -117,7 +116,7 @@ class Bcos2mat(SpectralMatrix):
              -(N-2): 0.25}
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
-@inheritdocstrings
+
 class Bcosmat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -138,7 +137,6 @@ class Bcosmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
-@inheritdocstrings
 class _Fouriermatrix(SpectralMatrix):
     def __init__(self, test, trial, measure=1):
         N = test[0].N
