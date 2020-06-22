@@ -168,7 +168,6 @@ class _Fouriermatrix(SpectralMatrix):
 
     def solve(self, b, u=None, axis=0):
         N = self.shape[0]
-        assert N == b.shape[axis]
 
         if u is None:
             u = b

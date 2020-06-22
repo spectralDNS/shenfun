@@ -71,9 +71,10 @@ cl_nonortho = (list(product(laBasis[1:], laquads))
              +list(product(cBasisGC, ('GC',))))
 
 class ABC(object):
-    def __init__(self, dim):
+    def __init__(self, dim, coors):
         self.dim = dim
-        self.hi = np.ones(1)
+        self.coors = coors
+        self.sg = coors.sg
     @property
     def dimensions(self):
         return self.dim
@@ -231,7 +232,7 @@ def test_massmatrices(test, trial, quad):
     f_hat = f_hat.repeat(N*N).reshape((N, N, N)) + 1j*f_hat.repeat(N*N).reshape((N, N, N))
 
     test.plan((N,)*3, 0, np.complex, {})
-    test.tensorproductspace = ABC(3)
+    test.tensorproductspace = ABC(3, test.coors)
     u0 = np.zeros((N,)*3, dtype=np.complex)
 
     u0 = test.scalar_product(fj, u0)
@@ -291,7 +292,7 @@ def test_transforms(ST, quad, dim):
         fij = np.broadcast_to(fj[tuple(bc)], (N,)*dim).copy()
 
         ST1 = ST(N, **kwargs)
-        ST1.tensorproductspace = ABC(dim)
+        ST1.tensorproductspace = ABC(dim, ST0.coors)
         ST1.plan((N,)*dim, axis, fij.dtype, {})
 
         u00 = shenfun.Function(ST1)
@@ -324,7 +325,7 @@ def test_axis(ST, quad, axis):
     f0 = shenfun.Array(ST)
     bc = [np.newaxis,]*3
     bc[axis] = slice(None)
-    ST.tensorproductspace = ABC(3)
+    ST.tensorproductspace = ABC(3, ST.coors)
     ST.plan((N,)*3, axis, f0.dtype, {})
     if ST.has_nonhomogeneous_bcs:
         ST.bc.set_tensor_bcs(ST, ST) # To set Dirichlet boundary conditions on multidimensional array
@@ -426,7 +427,7 @@ def test_CXXmat(test, trial):
     cs = np.zeros_like(f_hat)
     cs = Cm.matvec(f_hat, cs)
     cs2 = np.zeros((N, 4, 4), dtype=np.complex)
-    S1.tensorproductspace = ABC(3)
+    S1.tensorproductspace = ABC(3, S1.coors)
     S1.plan((N, 4, 4), 0, np.complex, {})
     cs2 = S1.scalar_product(df, cs2)
 
@@ -599,8 +600,8 @@ if __name__ == '__main__':
     #test_ADDmat(cbases.ShenNeumannBasis, "GL")
     #test_CDDmat("GL")
     #test_massmatrices(cBasisGC[1], cBasisGC[0], 'GC')
-    #test_transforms(cBasis[1], 'GC', 2)
+    test_transforms(fBasis[0], '', 2)
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[1], 'GC')
-    test_eval(lBasisLG[1], 'LG')
+    #test_eval(lBasisLG[1], 'LG')
     #test_axis(cBasis[1], 'GC', 0)

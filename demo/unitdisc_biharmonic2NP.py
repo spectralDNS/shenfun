@@ -17,8 +17,8 @@ import sympy as sp
 theta, r = psi = sp.symbols('x,y', real=True, positive=True)
 rv = (r*sp.cos(theta), r*sp.sin(theta))
 
-N = 20
-by_parts = False
+N = 100
+by_parts = True
 L0 = Basis(N, 'L', bc='Biharmonic', domain=(0, np.pi/2))
 L1 = Basis(N, 'L', bc='Biharmonic', domain=(0.5, 1))
 T = TensorProductSpace(comm, (L0, L1), axes=(1, 0), coordinates=(psi, rv))
@@ -40,17 +40,18 @@ v = TestFunction(T)
 u = TrialFunction(T)
 
 # Compute the right hand side on the quadrature mesh
-gj = Array(T, buffer=g)
+# Note - r**3 leads to sparse matrix
+gj = Array(T, buffer=g*r**3)
 
 # Take scalar product
 g_hat = Function(T)
 g_hat = inner(v, gj, output_array=g_hat)
 
 if by_parts:
-    mats = inner(div(grad(v)), div(grad(u)))
+    mats = inner(div(grad(v*r**3)), div(grad(u)))
 
 else:
-    mats = inner(v, div(grad(div(grad(u)))))
+    mats = inner(v, div(grad(div(grad(u))))*r**3)
 
 # Solve
 u_hat = Function(T)
@@ -62,6 +63,10 @@ uj = u_hat.backward()
 uq = Array(T, buffer=ue)
 X = T.local_mesh(True)
 print('Error =', np.linalg.norm(uj-uq))
+
+print('Bandwidth')
+for mat in mats:
+    print(len(mat.mats[0]), len(mat.mats[1]))
 
 theta0, r0 = X[0], X[1]
 x0, y0 = r0*np.cos(theta0), r0*np.sin(theta0)

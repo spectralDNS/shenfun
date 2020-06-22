@@ -3,6 +3,7 @@ import numpy as np
 import sympy as sp
 from mpi4py import MPI
 import shenfun
+from shenfun import inner, div, grad, curl
 
 N = 8
 comm = MPI.COMM_WORLD
@@ -115,12 +116,27 @@ def test_index(u):
     assert va1.function_space() is u.function_space()[1]
     assert va2.function_space() is u.function_space()[2]
 
+
+def test_inner():
+    v = shenfun.TestFunction(TT)
+    u = shenfun.TrialFunction(TT)
+    p = shenfun.TrialFunction(T)
+    q = shenfun.TestFunction(T)
+    A = inner(div(u), div(v))
+    B = inner(grad(u), grad(v))
+    C = inner(q, div(u))
+    D = inner(curl(v), curl(u))
+    E = inner(grad(q), grad(p))
+    F = inner(v, grad(div(u)))
+
+
 if __name__ == '__main__':
     # test_mul(u2)
-    test_imul(u2)
+    # test_imul(u2)
     # test_add(u2)
     # test_iadd(u2)
     # test_sub(u2)
     # test_isub(u2)
     # test_neg(u2)
     # test_index(vf)
+    test_inner()

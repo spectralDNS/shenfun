@@ -7,7 +7,7 @@ Demo - Helmholtz equation in polar coordinates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Jun 2, 2020
+:Date: Jun 7, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the
 Helmholtz equation on a circular disc, using polar coordinates. This demo is implemented in
@@ -81,17 +81,32 @@ a periodic Fourier expansion in :math:`\exp(\imath k \theta)` for the
 azimuthal direction. The polar basis functions are as such
 
 .. math::
+   :label: _auto4
+
+        
         v_{kj}(\theta, r) = \exp(\imath k \theta) \psi_j(r),
+        
+        
 
 and we look for solutions
 
 .. math::
+   :label: _auto5
+
+        
         u(\theta, r) = \sum_{k} \sum_{j} \hat{u}_{kj} v_{kj}(\theta, r).
+        
+        
 
 A discrete Fourier approximation space with :math:`N` basis functions is then
 
 .. math::
+   :label: _auto6
+
+        
         V_F^N = \text{span} \{\exp(\imath k \theta)\}, \text{ for } k \in K,
+        
+        
 
 where :math:`K = \{-N/2, -N/2+1, \ldots, N/2-1\}`. Since the solution :math:`u(\theta, r)`
 is real, there is Hermitian symmetry and :math:`\hat{u}_{k,j} = \hat{u}_{k,-j}^*`
@@ -104,7 +119,12 @@ The radial basis is more tricky, because there is a nontrivial 'boundary'
 condition (pole condition) that needs to be applied at the center of the disc :math:`(r=0)`
 
 .. math::
+   :label: _auto7
+
+        
         \frac{\partial u(\theta, 0)}{\partial \theta} = 0.
+        
+        
 
 To apply this condition we split the solution into Fourier
 coefficients with wavenumber 0 and :math:`K\backslash \{0\}`,
@@ -112,19 +132,29 @@ remembering that the Fourier basis function with :math:`k=0` is
 simply 1
 
 .. math::
+   :label: _auto8
+
+        
         u(\theta, r) = \sum_{j} \left( \hat{u}_{0j} \psi_{j}(r) + \sum_{k=1}^{N/2} \hat{u}_{kj} \exp(\imath k \theta) \psi_j(r) \right).
+        
+        
 
 We then apply a different radial basis for the two :math:`\psi`'s in
 the above equation (renaming the first :math:`\overline{\psi}`)
 
 .. math::
+   :label: _auto9
+
+        
         u(\theta, r) = \sum_{j} \left( \hat{u}_{0j} \overline{\psi}_{j}(r) + \sum_{k=1}^{N/2} \hat{u}_{kj} \exp(\imath k \theta) \psi_j(r) \right).
+        
+        
 
 Note that the first term :math:`\sum_{j} \hat{u}_{0j} \overline{\psi}_{j}(r)` is independent
 of :math:`\theta`. Now, to enforce conditions
 
 .. math::
-   :label: _auto4
+   :label: _auto10
 
         
         u(\theta, a) = 0, 
@@ -132,7 +162,7 @@ of :math:`\theta`. Now, to enforce conditions
         
 
 .. math::
-   :label: _auto5
+   :label: _auto11
 
           
         \frac{\partial u(\theta, 0)}{\partial \theta} = 0,
@@ -143,7 +173,7 @@ it is sufficient for the two bases (:math:`\overline{\psi}` and :math:`\psi`) to
 satisfy
 
 .. math::
-   :label: _auto6
+   :label: _auto12
 
         
         \overline{\psi}_j(a) = 0, 
@@ -151,7 +181,7 @@ satisfy
         
 
 .. math::
-   :label: _auto7
+   :label: _auto13
 
           
         \psi_j(a) = 0,
@@ -159,7 +189,7 @@ satisfy
         
 
 .. math::
-   :label: _auto8
+   :label: _auto14
 
           
         \psi_j(0) = 0.
@@ -172,7 +202,7 @@ If :math:`\phi_j(x)` is used for either the Legendre polynomial :math:`L_j(x)` o
 Chebyshev polynomial of the first kind :math:`T_j(x)`, we can have
 
 .. math::
-   :label: _auto9
+   :label: _auto15
 
         
         \overline{\psi}_j(r) = \phi_j(2r/a-1) - \phi_{j+1}(2r/a-1), \text{ for } j \in 0, 1, \ldots N-1, 
@@ -190,7 +220,7 @@ Chebyshev polynomial of the first kind :math:`T_j(x)`, we can have
 Define the following approximation spaces for the radial direction
 
 .. math::
-   :label: _auto10
+   :label: _auto16
 
         
         V_D^N = \text{span} \{\psi_j\}_{j=0}^{N-3} 
@@ -198,7 +228,7 @@ Define the following approximation spaces for the radial direction
         
 
 .. math::
-   :label: _auto11
+   :label: _auto17
 
           
         V_U^N = \text{span} \{\overline{\psi}_j\}_{j=0}^{N-2} 
@@ -206,7 +236,7 @@ Define the following approximation spaces for the radial direction
         
 
 .. math::
-   :label: _auto12
+   :label: _auto18
 
           
         
@@ -215,7 +245,7 @@ Define the following approximation spaces for the radial direction
 and split the function space for the azimuthal direction into
 
 .. math::
-   :label: _auto13
+   :label: _auto19
 
         
         V_F^0 =  \text{span}\{1\}, 
@@ -223,7 +253,7 @@ and split the function space for the azimuthal direction into
         
 
 .. math::
-   :label: _auto14
+   :label: _auto20
 
           
         V_F^{1} = \text{span} \{\exp(\imath k \theta)\}, \text{ for } k \in K \backslash \{0\}.
@@ -233,7 +263,7 @@ and split the function space for the azimuthal direction into
 We then look for solutions
 
 .. math::
-   :label: _auto15
+   :label: _auto21
 
         
         u(\theta, r) = u^0(r) + u^1(\theta, r),
@@ -243,7 +273,7 @@ We then look for solutions
 where
 
 .. math::
-   :label: _auto16
+   :label: _auto22
 
         
         u^0(r) = \sum_{j=0}^{N-2} \hat{u}^0_j \overline{\psi}_j(r), 
@@ -251,7 +281,7 @@ where
         
 
 .. math::
-   :label: _auto17
+   :label: _auto23
 
           
         u^1(\theta, r) = \sum_{j=0}^{N-3}\sum_{k=1}^{N/2} \hat{u}^1_{kj} \exp(\imath k \theta) \psi_j(r) .
@@ -487,7 +517,7 @@ do not have unit vectors)
 
         
         \nabla u = \underbrace{\frac{1}{r^2}\frac{\partial u}{\partial \theta}}_{du[0]}\mathbf{b}_{\theta} + \underbrace{\frac{\partial u}{\partial r}}_{du[1]} \mathbf{b}_{r}
-        \
+        
         
 
 Now it makes sense to plot the solution and its gradient in Cartesian
