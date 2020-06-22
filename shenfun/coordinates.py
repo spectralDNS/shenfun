@@ -21,6 +21,8 @@ class Coordinates(object):
         self._g = None
         self._gt = None
         self._ct = None
+        self._det_g = {True: None, False: None}
+        self._sqrt_det_g = {True: None, False: None}
 
     @property
     def b(self):
@@ -29,6 +31,10 @@ class Coordinates(object):
     @property
     def hi(self):
         return self.get_scaling_factors()
+
+    @property
+    def sg(self):
+        return self.get_sqrt_det_g(True)
 
     @property
     def coordinates(self):
@@ -52,15 +58,24 @@ class Coordinates(object):
 
     def get_det_g(self, covariant=True):
         """Return determinant of covariant metric tensor"""
+        if self._det_g[covariant] is not None:
+            return self._det_g[covariant]
         if covariant:
-            return sp.Matrix(self.get_covariant_metric_tensor()).det()
-        return sp.Matrix(self.get_contravariant_metric_tensor()).det()
+            g = sp.Matrix(self.get_covariant_metric_tensor()).det()
+        else:
+            g = sp.Matrix(self.get_contravariant_metric_tensor()).det()
+        g = sp.refine(g, self._assumptions)
+        g = sp.simplify(g)
+        self._det_g[covariant] = g
+        return g
 
     def get_sqrt_det_g(self, covariant=True):
         """Return square root of determinant of covariant metric tensor"""
+        if self._sqrt_det_g[covariant] is not None:
+            return self._sqrt_det_g[covariant]
         g = self.get_det_g(covariant)
-        return sp.refine(sp.simplify(sp.sqrt(g)), self._assumptions)
-        #return sp.simplify(sp.srepr(sp.sqrt(g)).replace('Abs', ''))
+        self._sqrt_det_g[covariant] = sp.refine(sp.simplify(sp.sqrt(g)), self._assumptions)
+        return self._sqrt_det_g[covariant]
 
     def get_cartesian_basis(self):
         """Return Cartesian basis vectors"""
@@ -71,9 +86,12 @@ class Coordinates(object):
         if self._hi is not None:
             return self._hi
         hi = np.zeros_like(self.psi)
+        u = sp.Wild('x')
+
         for i, s in enumerate(np.sum(self.b**2, axis=1)):
-            #hi[i] = sp.simplify(sp.srepr(sp.simplify(sp.sqrt(s))).replace('Abs', ''))
-            hi[i] = sp.refine(sp.simplify(sp.sqrt(s)), self._assumptions)
+            hi[i] = sp.refine(sp.sqrt(sp.simplify(s)), self._assumptions)
+            hi[i] = sp.simplify(hi[i].replace(sp.cosh(u)**2, 1+sp.sinh(u)**2))
+            hi[i] = sp.simplify(hi[i].replace(sp.sinh(u)**2, (sp.cosh(2*u)-1)/2))
 
         self._hi = hi
         return hi
@@ -112,9 +130,12 @@ class Coordinates(object):
             return self._g
         g = np.zeros((len(self.psi), len(self.psi)), dtype=object)
         b = self.b
+        u = sp.Wild('x')
         for i in range(len(self.psi)):
             for j in range(len(self.psi)):
                 g[i, j] = sp.simplify(np.dot(b[i], b[j]))
+                g[i, j] = sp.simplify(g[i, j].replace(sp.cosh(u)**2, 1+sp.sinh(u)**2))
+                g[i, j] = sp.simplify(g[i, j].replace(sp.sinh(u)**2, (sp.cosh(2*u)-1)/2))
         self._g = g
         return g
 
@@ -123,7 +144,11 @@ class Coordinates(object):
         if self._gt is not None:
             return self._gt
         g = self.get_covariant_metric_tensor()
-        gt = np.array(sp.Matrix(g).inv())
+        gt = sp.Matrix(g).inv()
+        for i in range(gt.shape[0]):
+            for j in range(gt.shape[1]):
+                gt[i, j] = sp.simplify(gt[i, j])
+        gt = np.array(gt)
         self._gt = gt
         return gt
 

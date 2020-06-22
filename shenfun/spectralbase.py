@@ -273,7 +273,8 @@ class SpectralBase(object):
         self.hi = np.ones(1, dtype=object)  # Integral measure (in addition to weight)
         coors = coordinates if coordinates is not None else ((sp.Symbol('x', real=True),),)*2
         self.coors = Coordinates(*coors)
-        self.hi = self.coors.get_scaling_factors()
+        self.hi = self.coors.hi
+        self.sg = self.coors.sg
         self.si = islicedict()
         self.sl = slicedict()
         self._tensorproductspace = None     # link if belonging to TensorProductSpace
@@ -464,9 +465,9 @@ class SpectralBase(object):
 
         """
         self.scalar_product(input_array, fast_transform=fast_transform)
-        self.apply_inverse_mass(self.forward.tmp_array)
         self._truncation_forward(self.forward.tmp_array,
                                  self.forward.output_array)
+        self.apply_inverse_mass(self.forward.output_array)
 
         if output_array is not None:
             output_array[...] = self.forward.output_array
@@ -774,7 +775,6 @@ class SpectralBase(object):
         if self._mass is None:
             B = self.get_mass_matrix()
             self._mass = B((self, 0), (self, 0))
-
         array = self._mass.solve(array, axis=self.axis)
         return array
 
@@ -1091,10 +1091,10 @@ class SpectralBase(object):
 
     def get_mass_matrix(self):
         mat = self._get_mat()
-        dx = self.hi.prod()
+        dx = self.coors.get_sqrt_det_g()
         key = ((self.__class__, 0), (self.__class__, 0))
         if self.tensorproductspace:
-            dx = self.tensorproductspace.hi.prod()
+            dx = self.tensorproductspace.coors.get_sqrt_det_g()
             msdict = split(dx)
             assert len(msdict) == 1
             dx = msdict[0]['xyzrs'[self.axis]]
@@ -1126,9 +1126,9 @@ class SpectralBase(object):
     def __hash__(self):
         return hash((self.N, self.quad, self.family()))
 
-    def get_bcmass_matrix(self, hi=1):
+    def get_bcmass_matrix(self, dx=1):
         msx = 'xyzrs'[self.axis]
-        dV = split(hi)
+        dV = split(dx)
         assert len(dV) == 1
         dv = dV[0]
         msi = dv[msx]
@@ -1153,8 +1153,8 @@ class SpectralBase(object):
         assert len(s) == 1
         s = s.pop()
         xj = sp.lambdify(s, measure)(xm)
-        if wj.shape[0] == 1:
-            wj = np.broadcast_to(wj, xj.shape).copy()
+        #if wj.shape[0] == 1:
+        #    wj = np.broadcast_to(wj, xj.shape).copy()
         wj *= xj
         return wj
 
@@ -1176,7 +1176,7 @@ class SpectralBase(object):
         if self.tensorproductspace:
             return array
 
-        measure = self.hi.prod()
+        measure = self.coors.get_sqrt_det_g()
         if measure == 1:
             return array
 

@@ -13,8 +13,7 @@ by_parts = False
 
 # Define spherical coordinates
 r = 1
-theta, phi = sp.symbols('x,y', real=True, positive=True)
-psi = (theta, phi)
+theta, phi = psi =sp.symbols('x,y', real=True, positive=True)
 rv = (r*sp.sin(theta)*sp.cos(phi), r*sp.sin(theta)*sp.sin(phi), r*sp.cos(theta))
 
 alpha = 2

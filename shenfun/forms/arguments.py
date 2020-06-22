@@ -174,6 +174,8 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
                 B = legendre.bases.ShenBiharmonicBasis
             elif bc.lower() == 'upperdirichlet':
                 B = legendre.bases.UpperDirichletBasis
+            elif bc.lower() == 'upperdirichletneumann':
+                B = legendre.bases.UpperDirichletNeumannBasis
             elif bc.lower() == 'bipolar':
                 B = legendre.bases.ShenBiPolarBasis
             elif bc.lower() == 'bipolar0':
@@ -430,7 +432,7 @@ class Expr(object):
             return self._basis.offset()
         return None
 
-    def tolatex(self, symbol_names=None, funcname='u'):
+    def tolatex(self, symbol_names=None, funcname='u', replace=None):
         s = ""
         x = 'xyzrst'
         symbols = {k: k for k in x}
@@ -449,6 +451,11 @@ class Expr(object):
                 sc = self.scales()[i][j]
                 k = self.indices()[i][j]
                 if not sc == 1:
+                    if replace is not None:
+                        for repl in replace:
+                            assert len(repl) == 2
+                            sc = sc.replace(*repl)
+                        sc = sp.simplify(sc)
                     scp = sp.latex(sc, symbol_names=symbol_names)
 
                     if isinstance(sc, sp.Add):
@@ -459,6 +466,7 @@ class Expr(object):
                 t = np.array(term)
                 cmp = funcname
                 #if self.num_components() > 1:
+
                 if self.rank > 0:
                     cmp = funcname + '^{%s}'%(symbols[x[k]])
                 if np.sum(t) == 0:
@@ -469,7 +477,7 @@ class Expr(object):
                     for j, ti in enumerate(t):
                         if ti > 0:
                             tt = '^'+str(ti) if ti > 1 else ' '
-                            s += "\\partial%s%s"%(tt, symbols[x[j]])
+                            s += "\\partial %s%s "%(symbols[x[j]], tt)
                     s += "}"
                 s += '+'
             if self.num_components() > 1:
@@ -530,6 +538,7 @@ class Expr(object):
                 basis = [basis]
             assert len(basis) == ndim**self.rank
 
+        assumptions = self.function_space().coors._assumptions
         for i, vec in enumerate(self.terms()):
             for j, term in enumerate(vec):
                 sc = self.scales()[i][j]
@@ -540,9 +549,16 @@ class Expr(object):
                 if self.expr_rank() > 0:
                     bi = b[i%ndim]
                 if np.sum(term) > 0:
-                    s += sp.simplify(sc*sp.diff(b0, *tt)*bi)
+                    sf = sc*bi*sp.diff(b0, *tt)
+                    #ss = sp.simplify(sp.refine(sf, assumptions))
+                    ss = sp.refine(sf, assumptions)
+                    s += ss
+
                 else:
-                    s += sp.simplify(sc*b0*bi)
+                    sf = sc*b0*bi
+                    #ss = sp.simplify(sp.refine(, assumptions))
+                    ss = sp.refine(sf, assumptions)
+                    s += ss
 
         if isinstance(s, sp.ImmutableDenseNDimArray):
             s = s.tolist()
@@ -649,6 +665,7 @@ class Expr(object):
 
     def __mul__(self, a):
         sc = np.array(self.scales())
+        assumptions = self.function_space().coors._assumptions
         if self.expr_rank() == 0:
             sc = sc*sp.sympify(a)
 
@@ -661,6 +678,10 @@ class Expr(object):
             else:
                 sc = sc*sp.sympify(a)
 
+        for i in range(sc.shape[0]):
+            for j in range(sc.shape[1]):
+                sc[i, j] = sp.simplify(sp.refine(sc[i, j], assumptions))
+
         return Expr(self._basis, copy.deepcopy(self._terms), sc.tolist(), copy.deepcopy(self._indices))
 
     def __rmul__(self, a):
@@ -668,6 +689,7 @@ class Expr(object):
 
     def __imul__(self, a):
         sc = np.array(self.scales())
+        assumptions = self.function_space().coors._assumptions
         if self.expr_rank() == 0:
             sc = sc*sp.sympify(a)
 
@@ -679,6 +701,10 @@ class Expr(object):
 
             else:
                 sc = sc*sp.sympify(a)
+
+        for i in range(sc.shape[0]):
+            for j in range(sc.shape[1]):
+                sc[i, j] = sp.simplify(sp.refine(sc[i, j], assumptions))
 
         self._scales = sc.tolist()
 
@@ -788,12 +814,14 @@ class Expr(object):
                     assert inds[-1][k] == ind
                     scs[-1][k] += sc
                     scs[-1][k] = sp.simplify(scs[-1][k])
+                    scs[-1][k] = sp.refine(scs[-1][k], self.function_space().coors._assumptions)
                     if scs[-1][k] == 0: # Remove if scale is zero
                         scs[-1].pop(k)
                         tms[-1].pop(k)
                         inds[-1].pop(k)
                     continue
                 sc = sp.simplify(sc)
+                sc = sp.refine(sc, self.function_space().coors._assumptions)
                 if not sc == 0:
                     tms[-1].append(term)
                     inds[-1].append(ind)
@@ -1078,7 +1106,6 @@ class ShenfunBaseArray(DistArray):
             for sym in sym0:
                 j = 'xyzrs'.index(str(sym))
                 m.append(mesh[j])
-
             buf = sp.lambdify(sym0, buffer, modules=['numpy', {'cot': cot, 'Ynm': Ynm, 'erf': erf}])(*m).astype(space.forward.input_array.dtype)
             buffer = Array(space)
             buffer[:] = buf

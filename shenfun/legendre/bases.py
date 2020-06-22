@@ -20,7 +20,8 @@ __all__ = ['LegendreBase', 'Basis', 'ShenDirichletBasis',
            'ShenBiharmonicBasis', 'ShenNeumannBasis',
            'ShenBiPolarBasis', 'ShenBiPolar0Basis',
            'NeumannDirichletBasis', 'DirichletNeumannBasis',
-           'UpperDirichletBasis', 'BCBasis', 'BCBiharmonicBasis']
+           'UpperDirichletBasis',
+           'BCBasis', 'BCBiharmonicBasis']
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
@@ -398,8 +399,8 @@ class ShenDirichletBasis(LegendreBase):
         u = self.scalar_product.tmp_array
         self.bc.set_boundary_dofs(u, False)
         self.bc.add_mass_rhs(u)
-        self.apply_inverse_mass(u)
         self._truncation_forward(u, self.forward.output_array)
+        self.apply_inverse_mass(self.forward.output_array)
         if output_array is not None:
             output_array[...] = self.forward.output_array
             return output_array
@@ -804,8 +805,8 @@ class ShenBiharmonicBasis(LegendreBase):
         u = self.scalar_product.tmp_array
         self.bc.set_boundary_dofs(self.forward.output_array, False)
         self.bc.add_mass_rhs(u)
-        self.apply_inverse_mass(u)
         self._truncation_forward(u, self.forward.output_array)
+        self.apply_inverse_mass(self.forward.output_array)
         if output_array is not None:
             output_array[...] = self.forward.output_array
             return output_array
@@ -999,8 +1000,8 @@ class UpperDirichletBasis(LegendreBase):
     def forward(self, input_array=None, output_array=None, fast_transform=False):
         self.scalar_product(input_array, fast_transform=fast_transform)
         u = self.scalar_product.tmp_array
-        self.apply_inverse_mass(u)
         self._truncation_forward(u, self.forward.output_array)
+        self.apply_inverse_mass(self.forward.output_array)
         if output_array is not None:
             output_array[...] = self.forward.output_array
             return output_array
@@ -1133,8 +1134,8 @@ class ShenBiPolarBasis(LegendreBase):
     def forward(self, input_array=None, output_array=None, fast_transform=False):
         self.scalar_product(input_array, fast_transform=fast_transform)
         u = self.scalar_product.tmp_array
-        self.apply_inverse_mass(u)
         self._truncation_forward(u, self.forward.output_array)
+        self.apply_inverse_mass(self.forward.output_array)
         if output_array is not None:
             output_array[...] = self.forward.output_array
             return output_array
@@ -1305,8 +1306,8 @@ class ShenBiPolar0Basis(LegendreBase):
     def forward(self, input_array=None, output_array=None, fast_transform=False):
         self.scalar_product(input_array, fast_transform=fast_transform)
         u = self.scalar_product.tmp_array
-        self.apply_inverse_mass(u)
         self._truncation_forward(u, self.forward.output_array)
+        self.apply_inverse_mass(self.forward.output_array)
         if output_array is not None:
             output_array[...] = self.forward.output_array
             return output_array
@@ -1337,6 +1338,7 @@ class ShenBiPolar0Basis(LegendreBase):
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
+
 
 @inheritdocstrings
 class DirichletNeumannBasis(LegendreBase):
@@ -1412,6 +1414,14 @@ class DirichletNeumannBasis(LegendreBase):
                      -((k+1)**2/(k+2)**2)*V[:, 2:])
         return P
 
+    def set_w_hat(self, w_hat, fk, f1, f2):
+        s = self.sl[self.slice()]
+        s1 = self.sl[slice(1, -1)]
+        s2 = self.sl[slice(2, None)]
+        w_hat[s] = fk[s]
+        w_hat[s1] += f1*fk[s]
+        w_hat[s2] += f2*fk[s]
+        return w_hat
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
@@ -1419,18 +1429,8 @@ class DirichletNeumannBasis(LegendreBase):
         else:
             output_array.fill(0)
 
-        s0 = self.sl[slice(0, -2)]
-        s1 = self.sl[slice(2, None)]
-
-        if self.is_scaled():
-            k = self.wavenumbers()
-            output_array[s0] = input_array[s0]/np.sqrt(4*k+6)
-            output_array[s1] -= input_array[s0]/np.sqrt(4*k+6)
-
-        else:
-            output_array[s0] = input_array[s0]
-            output_array[s1] -= input_array[s0]
-
+        self.set_factor_arrays(input_array)
+        output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2)
         self.bc.add_to_orthogonal(output_array, input_array)
         return output_array
 
@@ -1581,24 +1581,23 @@ class NeumannDirichletBasis(LegendreBase):
                      -((k+1)**2/(k+2)**2)*V[:, 2:])
         return P
 
+    def set_w_hat(self, w_hat, fk, f1, f2): # pragma: no cover
+        s = self.sl[self.slice()]
+        s1 = self.sl[slice(1, -1)]
+        s2 = self.sl[slice(2, None)]
+        w_hat[s] = fk[s]
+        w_hat[s1] += f1*fk[s]
+        w_hat[s2] += f2*fk[s]
+        return w_hat
+
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
             output_array = Function(self.get_orthogonal())
         else:
             output_array.fill(0)
 
-        s0 = self.sl[slice(0, -2)]
-        s1 = self.sl[slice(2, None)]
-
-        if self.is_scaled():
-            k = self.wavenumbers()
-            output_array[s0] = input_array[s0]/np.sqrt(4*k+6)
-            output_array[s1] -= input_array[s0]/np.sqrt(4*k+6)
-
-        else:
-            output_array[s0] = input_array[s0]
-            output_array[s1] -= input_array[s0]
-
+        self.set_factor_arrays(input_array)
+        output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2)
         self.bc.add_to_orthogonal(output_array, input_array)
         return output_array
 

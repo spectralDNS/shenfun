@@ -347,12 +347,13 @@ class Basis(ChebyshevBase):
         fd = self.backward(ck)
         return fd.copy()
 
-    def apply_inverse_mass(self, array):
-        array *= (2/np.pi)
-        array[self.si[0]] /= 2
-        if self.quad == 'GL':
-            array[self.si[-1]] /= 2
-        return array
+    # Comment due to curvilinear issues
+    #def apply_inverse_mass(self, array):
+    #    array *= (2/np.pi)
+    #    array[self.si[0]] /= 2
+    #    if self.quad == 'GL':
+    #        array[self.si[-1]] /= 2
+    #    return array
 
     def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
@@ -571,8 +572,8 @@ class ShenDirichletBasis(ChebyshevBase):
         self.scalar_product(input_array, fast_transform=fast_transform)
         u = self.scalar_product.tmp_array
         self.bc.add_mass_rhs(u)
-        self.apply_inverse_mass(u)
         self._truncation_forward(u, self.forward.output_array)
+        self.apply_inverse_mass(self.forward.output_array)
         self.bc.set_boundary_dofs(self.forward.output_array, False)
         if output_array is not None:
             output_array[...] = self.forward.output_array
@@ -1073,8 +1074,8 @@ class ShenBiharmonicBasis(ChebyshevBase):
         self.scalar_product(input_array, fast_transform=fast_transform)
         u = self.scalar_product.tmp_array
         self.bc.add_mass_rhs(u)
-        self.apply_inverse_mass(u)
         self._truncation_forward(u, self.forward.output_array)
+        self.apply_inverse_mass(self.forward.output_array)
         self.bc.set_boundary_dofs(self.forward.output_array, False)
         if output_array is not None:
             output_array[...] = self.forward.output_array
@@ -1522,8 +1523,8 @@ class UpperDirichletBasis(ChebyshevBase):
     def forward(self, input_array=None, output_array=None, fast_transform=True):
         self.scalar_product(input_array, fast_transform=fast_transform)
         u = self.scalar_product.tmp_array
-        self.apply_inverse_mass(u)
         self._truncation_forward(u, self.forward.output_array)
+        self.apply_inverse_mass(self.forward.output_array)
         if output_array is not None:
             output_array[...] = self.forward.output_array
             return output_array
@@ -1690,8 +1691,8 @@ class ShenBiPolarBasis(ChebyshevBase):
     def forward(self, input_array=None, output_array=None, fast_transform=False):
         self.scalar_product(input_array, fast_transform=fast_transform)
         u = self.scalar_product.tmp_array
-        self.apply_inverse_mass(u)
         self._truncation_forward(u, self.forward.output_array)
+        self.apply_inverse_mass(self.forward.output_array)
         if output_array is not None:
             output_array[...] = self.forward.output_array
             return output_array
@@ -1896,8 +1897,8 @@ class DirichletNeumannBasis(ChebyshevBase):
     def forward(self, input_array=None, output_array=None, fast_transform=True):
         self.scalar_product(input_array, fast_transform=fast_transform)
         u = self.scalar_product.tmp_array
-        self.apply_inverse_mass(u)
         self._truncation_forward(u, self.forward.output_array)
+        self.apply_inverse_mass(self.forward.output_array)
         if output_array is not None:
             output_array[...] = self.forward.output_array
             return output_array
@@ -2114,8 +2115,8 @@ class NeumannDirichletBasis(ChebyshevBase):
     def forward(self, input_array=None, output_array=None, fast_transform=True):
         self.scalar_product(input_array, fast_transform=fast_transform)
         u = self.scalar_product.tmp_array
-        self.apply_inverse_mass(u)
         self._truncation_forward(u, self.forward.output_array)
+        self.apply_inverse_mass(self.forward.output_array)
         if output_array is not None:
             output_array[...] = self.forward.output_array
             return output_array

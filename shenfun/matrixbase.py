@@ -852,7 +852,7 @@ class BlockMatrix(object):
         self.mixedbase = mixedbase = tpmats[0][0].mixedbase
         self.dims = dims = mixedbase.num_components()
         self.mats = np.zeros((dims, dims), dtype=int).tolist()
-        tps = mixedbase.flatten()
+        tps = mixedbase.flatten() if hasattr(mixedbase, 'flatten') else [mixedbase]
         offset = [np.zeros(tps[0].dimensions, dtype=int)]
         for i, tp in enumerate(tps):
             dims = tp.dim() if not hasattr(tp, 'dims') else tp.dims() # 1D basis does not have dims()

@@ -79,9 +79,9 @@ def div(test):
                         Sij = test[i][j]
                         di.append(Dx(Sij, j, 1))
                         for k in range(ndim):
-                            Sjk = test[j][k]
-                            if not ct[i, k, j] == 0:
-                                di.append(Sjk*ct[i, k, j])
+                            Skj = test[k][j]
+                            if not ct[i, j, k] == 0:
+                                di.append(Skj*ct[i, j, k])
                             if not ct[k, k, j] == 0:
                                 di.append(Sij*ct[k, k, j])
 
@@ -149,7 +149,7 @@ def grad(test):
                             dj.append(Dx(vi, l, 1)*sc)
                         for k in range(ndim):
                             if not sc*ct[i, k, l] == 0:
-                                dj.append(test[k]*(sc*ct[i, j, k]))
+                                dj.append(test[k]*(sc*ct[i, k, l]))
 
                     di = dj[0]
                     for j in range(1, len(dj)):
@@ -204,9 +204,14 @@ def Dx(test, x, k=1):
         sc = copy.deepcopy(test.scales())
         ind = copy.deepcopy(test.indices())
         num_terms = test.num_terms()
+        #u = sp.Wild('x')
         for i in range(test.num_components()):
             for j in range(num_terms[i]):
                 sc0 = sp.simplify(sp.diff(sc[i][j], psi[x], k))
+                sc0 = sp.refine(sc0, coors._assumptions)
+                #sc0 = sp.simplify(sc0.replace(sp.cosh(u)**2, 1+sp.sinh(u)**2))
+                #sc0 = sp.simplify(sc0.replace(sp.sinh(u)**2, (sp.cosh(2*u)-1)/2))
+
                 if not sc0 == 0:
                     v[i].append(copy.deepcopy(v[i][j]))
                     sc[i].append(sc0)

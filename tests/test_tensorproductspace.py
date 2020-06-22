@@ -81,36 +81,39 @@ def test_transform(typecode, dim):
             V = TM.backward(F, V)
             assert allclose(V, U)
 
-            fft.destroy()
+            fftp = fft.get_dealiased(padding_factor=1.5)
 
-            padding = 1.5
-            bases = []
-            for n in shape[:-1]:
-                bases.append(Basis(n, 'F', dtype=typecode.upper(), padding_factor=padding))
-            bases.append(Basis(shape[-1], 'F', dtype=typecode, padding_factor=padding))
+            #fft.destroy()
 
-            fft = TensorProductSpace(comm, bases, dtype=typecode)
+            #padding = 1.5
+            #bases = []
+            #for n in shape[:-1]:
+            #    bases.append(Basis(n, 'F', dtype=typecode.upper(), padding_factor=padding))
+            #bases.append(Basis(shape[-1], 'F', dtype=typecode, padding_factor=padding))
+
+            #fft = TensorProductSpace(comm, bases, dtype=typecode)
 
             if comm.rank == 0:
-                grid = [c.size for c in fft.subcomm]
+                grid = [c.size for c in fftp.subcomm]
                 print('grid:{} shape:{} typecode:{}'
                       .format(grid, shape, typecode))
 
-            U = random_like(fft.forward.input_array)
-            F = fft.forward(U)
+            U = random_like(fftp.forward.input_array)
+            F = fftp.forward(U)
 
             Fc = F.copy()
-            V = fft.backward(F)
-            F = fft.forward(V)
+            V = fftp.backward(F)
+            F = fftp.forward(V)
             assert allclose(F, Fc)
 
             # Alternative method
-            fft.backward.input_array[...] = F
-            fft.backward()
-            fft.forward()
-            V = fft.forward.output_array
+            fftp.backward.input_array[...] = F
+            fftp.backward()
+            fftp.forward()
+            V = fftp.forward.output_array
             assert allclose(F, V)
 
+            fftp.destroy()
             fft.destroy()
 
 cBasis = (cbases.Basis,
@@ -655,7 +658,7 @@ def test_eval_expression():
     assert np.allclose(f1, f2, 1e-7)
 
 if __name__ == '__main__':
-    #test_transform('f', 3)
+    test_transform('f', 3)
     #test_transform('d', 2)
     #test_shentransform('d', 2, jbases.ShenBiharmonicBasis, 'JG')
     #test_eval_expression()
@@ -667,5 +670,5 @@ if __name__ == '__main__':
     #test_eval_tensor('d', 1, lbases.ShenBiPolar0Basis, 'LG')
     #test_eval_fourier('d', 3)
     #test_inner('C', 'C')
-    test_refine()
+    #test_refine()
     #test_assign('C')
