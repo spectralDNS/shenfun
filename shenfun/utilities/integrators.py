@@ -22,7 +22,6 @@ where :math:`u` is the solution, :math:`L` is a linear operator and
 import types
 import numpy as np
 from shenfun import Function, TPMatrix
-from shenfun import inheritdocstrings
 
 __all__ = ('RK4', 'ETDRK4', 'ETD')
 
@@ -79,7 +78,7 @@ class IntegratorBase(object):
         """
         pass
 
-@inheritdocstrings
+
 class ETD(IntegratorBase):
     """Exponential time differencing Euler method
 
@@ -153,7 +152,7 @@ class ETD(IntegratorBase):
             self.update(u, u_hat, t, tstep, **self.params)
         return u_hat
 
-@inheritdocstrings
+
 class ETDRK4(IntegratorBase):
     """Exponential time differencing Runge-Kutta 4'th order method
 
@@ -257,7 +256,7 @@ class ETDRK4(IntegratorBase):
             self.update(u, u_hat, t, tstep, **self.params)
         return u_hat
 
-@inheritdocstrings
+
 class RK4(IntegratorBase):
     """Regular 4'th order Runge-Kutta integrator
 
