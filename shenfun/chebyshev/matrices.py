@@ -69,7 +69,6 @@ import functools
 import numpy as np
 from shenfun.optimization import cython
 from shenfun.matrixbase import SpectralMatrix
-from shenfun.utilities import inheritdocstrings
 from shenfun.la import TDMA as neumann_TDMA
 from .la import TDMA
 from . import bases
@@ -105,7 +104,7 @@ def dmax(N, M, d):
     Z = min(N, M)
     return Z-abs(d)+min(max((M-N)*int(d/abs(d)), 0), abs(d))
 
-@inheritdocstrings
+
 class BDDmat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -171,7 +170,6 @@ class BDDmat(SpectralMatrix):
         return c
 
 
-@inheritdocstrings
 class BNDmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -213,7 +211,6 @@ class BNDmat(SpectralMatrix):
         return c
 
 
-@inheritdocstrings
 class BDNmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -266,7 +263,6 @@ class BDNmat(SpectralMatrix):
         return c
 
 
-@inheritdocstrings
 class BNTmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -300,7 +296,6 @@ class BNTmat(SpectralMatrix):
         return c
 
 
-@inheritdocstrings
 class BNBmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -334,7 +329,6 @@ class BNBmat(SpectralMatrix):
         return c
 
 
-@inheritdocstrings
 class BTTmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -388,7 +382,6 @@ class BTTmat(SpectralMatrix):
         u[ss] = b[ss]*d[sl]
         return u
 
-@inheritdocstrings
 class BNNmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -432,7 +425,6 @@ class BNNmat(SpectralMatrix):
         return c
 
 
-@inheritdocstrings
 class BDTmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -461,7 +453,6 @@ class BDTmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
-@inheritdocstrings
 class BTDmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -490,7 +481,6 @@ class BTDmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
-@inheritdocstrings
 class BTNmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -518,7 +508,6 @@ class BTNmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
-@inheritdocstrings
 class BBBmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -596,7 +585,6 @@ class BBBmat(SpectralMatrix):
         return c
 
 
-@inheritdocstrings
 class BBDmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -659,7 +647,7 @@ class BBDmat(SpectralMatrix):
 
         return c
 
-@inheritdocstrings
+
 class CDNmat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -704,7 +692,6 @@ class CDNmat(SpectralMatrix):
         return c
 
 
-@inheritdocstrings
 class CDDmat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -760,7 +747,6 @@ class CDDmat(SpectralMatrix):
         return c
 
 
-@inheritdocstrings
 class CNDmat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -799,7 +785,6 @@ class CNDmat(SpectralMatrix):
         return c
 
 
-@inheritdocstrings
 class CTDmat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -853,7 +838,6 @@ class CDTmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
-@inheritdocstrings
 class CBDmat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -909,7 +893,6 @@ class CBDmat(SpectralMatrix):
         return c
 
 
-@inheritdocstrings
 class CDBmat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -966,7 +949,6 @@ class CDBmat(SpectralMatrix):
         return c
 
 
-@inheritdocstrings
 class ABBmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
@@ -1026,7 +1008,6 @@ class ABBmat(SpectralMatrix):
         return c
 
 
-@inheritdocstrings
 class ADDmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
@@ -1122,7 +1103,6 @@ class ADDmat(SpectralMatrix):
         return u
 
 
-@inheritdocstrings
 class ANNmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
@@ -1210,7 +1190,6 @@ class ANNmat(SpectralMatrix):
         return u
 
 
-@inheritdocstrings
 class ATTmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
@@ -1238,7 +1217,6 @@ class ATTmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
-@inheritdocstrings
 class SBBmat(SpectralMatrix):
     r"""Biharmonic matrix for inner product
 
@@ -1284,7 +1262,7 @@ class SBBmat(SpectralMatrix):
 
         return c
 
-@inheritdocstrings
+
 class BCDmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -1311,7 +1289,7 @@ class BCDmat(SpectralMatrix):
 
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
-@inheritdocstrings
+
 class BCBmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -1342,7 +1320,6 @@ class BCBmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
-@inheritdocstrings
 class _Chebmatrix(SpectralMatrix):
     def __init__(self, test, trial, measure=1):
         SpectralMatrix.__init__(self, {}, test, trial, measure=measure)

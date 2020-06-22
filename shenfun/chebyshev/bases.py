@@ -11,7 +11,6 @@ from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, FuncWrap, \
     islicedict, slicedict
 from shenfun.optimization.cython import Cheb
-from shenfun.utilities import inheritdocstrings
 from shenfun.forms.arguments import Function
 
 __all__ = ['ChebyshevBase', 'Basis', 'ShenDirichletBasis',
@@ -48,7 +47,6 @@ class DCTWrap(FuncWrap):
         return self.output_array
 
 
-@inheritdocstrings
 class ChebyshevBase(SpectralBase):
     """Abstract base class for all Chebyshev bases
 
@@ -260,7 +258,6 @@ class ChebyshevBase(SpectralBase):
         return Basis(self.N, quad=self.quad, domain=self.domain, coordinates=self.coors.coordinates)
 
 
-@inheritdocstrings
 class Basis(ChebyshevBase):
     """Basis for regular Chebyshev series
 
@@ -402,7 +399,7 @@ class Basis(ChebyshevBase):
     def get_orthogonal(self):
         return self
 
-@inheritdocstrings
+
 class ShenDirichletBasis(ChebyshevBase):
     """Shen basis for Dirichlet boundary conditions
 
@@ -671,7 +668,7 @@ class ShenDirichletBasis(ChebyshevBase):
             su = self.sl[slice(2*self.N//3, self.N-2)]
             padded_array[su] = 0
 
-@inheritdocstrings
+
 class ShenNeumannBasis(ChebyshevBase):
     """Shen basis for homogeneous Neumann boundary conditions
 
@@ -891,7 +888,6 @@ class ShenNeumannBasis(ChebyshevBase):
                                 mean=self.mean)
 
 
-@inheritdocstrings
 class ShenBiharmonicBasis(ChebyshevBase):
     """Shen biharmonic basis
 
@@ -1176,7 +1172,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
             su = self.sl[slice(2*self.N//3, self.N-4)]
             padded_array[su] = 0
 
-@inheritdocstrings
+
 class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
     """Shen basis for homogeneous second order Neumann boundary conditions
 
@@ -1380,7 +1376,7 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
                                   coordinates=self.coors.coordinates,
                                   mean=self.mean)
 
-@inheritdocstrings
+
 class UpperDirichletBasis(ChebyshevBase):
     """Basis with homogeneous Dirichlet on upper edge (x=1) of boundary
 
@@ -1574,7 +1570,6 @@ class UpperDirichletBasis(ChebyshevBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
-@inheritdocstrings
 class ShenBiPolarBasis(ChebyshevBase):
     """Basis for the Biharmonic equation in polar coordinates
 
@@ -1729,7 +1724,6 @@ class ShenBiPolarBasis(ChebyshevBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
-@inheritdocstrings
 class DirichletNeumannBasis(ChebyshevBase):
     """Basis for mixed Dirichlet/Neumann boundary conditions
 
@@ -1947,7 +1941,7 @@ class DirichletNeumannBasis(ChebyshevBase):
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
-@inheritdocstrings
+
 class NeumannDirichletBasis(ChebyshevBase):
     """Basis for mixed Neumann/Dirichlet boundary conditions
 
@@ -2166,7 +2160,6 @@ class NeumannDirichletBasis(ChebyshevBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
-@inheritdocstrings
 class BCBasis(ChebyshevBase):
     """Basis for Dirichlet boundary conditions
 
@@ -2270,7 +2263,7 @@ class BCBasis(ChebyshevBase):
             output_array[:] = 0
         return output_array
 
-@inheritdocstrings
+
 class BCBiharmonicBasis(ChebyshevBase):
     """Basis for inhomogeneous Biharmonic boundary conditions
 
