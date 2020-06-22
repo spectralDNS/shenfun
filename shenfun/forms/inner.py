@@ -6,7 +6,7 @@ from numbers import Number
 import numpy as np
 import sympy as sp
 from shenfun.spectralbase import inner_product, SpectralBase, MixedBasis
-from shenfun.matrixbase import TPMatrix
+from shenfun.matrixbase import TPMatrix, Identity
 from shenfun.tensorproductspace import TensorProductSpace, MixedTensorProductSpace
 from shenfun.utilities import dx, split
 from .arguments import Expr, Function, BasisFunction, Array
@@ -195,6 +195,8 @@ def inner(expr0, expr1, output_array=None, level=0):
         assert trial.rank == test.rank
     elif isinstance(trial, BasisFunction):
         recursive *= (trial.expr_rank() > 0)
+    if test.expr_rank() == 0:
+        recursive = False
 
     if recursive: # Use recursive algorithm for vector expressions of expr_rank > 0, e.g., inner(v, grad(u))
         if output_array is None and trial.argument == 2:
@@ -263,7 +265,8 @@ def inner(expr0, expr1, output_array=None, level=0):
                 continue
             for test_j, b0 in enumerate(base_test):              # second index test
                 for trial_j, b1 in enumerate(base_trial):        # second index trial
-                    dV = test_scale[vec_i][test_j]*trial_scale[vec_j][trial_j]*testspace.hi.prod()*g
+                    dV = sp.simplify(test_scale[vec_i][test_j]*trial_scale[vec_j][trial_j]*testspace.coors.get_sqrt_det_g()*g)
+                    dV = sp.refine(dV, testspace.coors._assumptions)
                     assert len(b0) == len(b1)
                     trial_sp = trialspace
                     if isinstance(trialspace, (MixedTensorProductSpace, MixedBasis)): # could operate on a vector, e.g., div(u), where u is vector
@@ -288,6 +291,9 @@ def inner(expr0, expr1, output_array=None, level=0):
 
                             # assemble inner product
                             AA = inner_product((tt, a), (ts, b), msi)
+                            if len(AA) == 0:
+                                AA = Identity(AA.shape, scale=0)
+
                             M.append(AA)
                             if not abs(AA.scale-1.) < 1e-8:
                                 sc *= AA.scale

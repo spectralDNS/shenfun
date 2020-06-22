@@ -43,9 +43,9 @@ class CurvilinearTransform(Transform):
         self._T = T
 
     @property
-    def hi(self):
+    def sg(self):
         """Return scaling factors of Transform"""
-        return self._T.hi
+        return self._T.coors.get_sqrt_det_g()
 
     @property
     def local_mesh(self):
@@ -55,7 +55,7 @@ class CurvilinearTransform(Transform):
     def get_measured_input_array(self):
         """Weigh input array with integral measure
         """
-        dx = self.hi.prod()
+        dx = self.sg
         mesh = self.local_mesh
         if dx == 1:
             return
@@ -164,7 +164,8 @@ class TensorProductSpace(PFFT):
         self.bases = bases
         coors = coordinates if coordinates is not None else (psi[:len(bases)],)*2
         self.coors = Coordinates(*coors)
-        self.hi = self.coors.get_scaling_factors()
+        self.hi = self.coors.hi
+        self.sg = self.coors.sg
         shape = list(self.global_shape())
         self.axes = axes
         assert shape
@@ -333,7 +334,7 @@ class TensorProductSpace(PFFT):
         subshape = list(pencil.subshape)
         if isinstance(xfftn, R2CBasis):
             subshape[axes[-1]] = int(np.floor(xfftn.N*xfftn.padding_factor))
-            dtype = np.float
+            #dtype = dtype
         else:
             subshape[axes[-1]] = int(np.floor(subshape[axes[-1]]*xfftn.padding_factor))
         self.xfftn[-1].plan(subshape, axes, dtype, kw)
@@ -350,7 +351,7 @@ class TensorProductSpace(PFFT):
             subshape = list(pencilB.subshape)
             if isinstance(xfftn, R2CBasis):
                 subshape[axes[-1]] = int(np.floor(xfftn.N*xfftn.padding_factor))
-                dtype = np.float
+                dtype = np.dtype(dtype.char.lower())
             else:
                 subshape[axes[-1]] = int(np.floor(subshape[axes[-1]]*xfftn.padding_factor))
             xfftn.plan(subshape, axes, dtype, kw)
@@ -753,6 +754,10 @@ class TensorProductSpace(PFFT):
         """Return number of elements in :class:`.TensorProductSpace`"""
         return np.prod(self.shape(forward_output))
 
+    def slice(self):
+        """The slices of dofs for each dimension"""
+        return tuple(base.slice() for base in self.bases)
+
     def global_shape(self, forward_output=False):
         """Return global shape of arrays for TensorProductSpace
 
@@ -764,10 +769,7 @@ class TensorProductSpace(PFFT):
             space, i.e., the input to a forward transform.
 
         """
-        #if not forward_output:
-        #    return tuple([int(np.round(base.shape(forward_output)*base.padding_factor)) for base in self])
         return tuple([base.shape(forward_output) for base in self])
-        #return self.shape(forward_output)
 
     def mask_nyquist(self, u_hat, mask=None):
         """Return Function `u_hat` with zero Nyquist coefficients
@@ -821,7 +823,7 @@ class TensorProductSpace(PFFT):
         ----------
         u : Array
         """
-        dx = self.hi.prod()
+        dx = self.coors.get_sqrt_det_g()
         mesh = self.local_mesh(True)
         if dx == 1:
             return
@@ -1090,6 +1092,10 @@ class MixedTensorProductSpace(object):
         """
         s = self.flatten()[0].local_slice(forward_output)
         return (slice(None),) + s
+
+    def slice(self):
+        """The slices of dofs for each dimension"""
+        return tuple(space.slice() for space in self.flatten())
 
     def num_components(self):
         """Return number of spaces in mixed space"""
@@ -1394,16 +1400,6 @@ class BoundaryValues(object):
                         Yi.append(X[k][this_base.si[j]])
                     f_bci = lbci(*Yi)
 
-                    #x, y, z, tt = sp.symbols("x,y,z,t")
-                    #sym0 = [sym for sym in (x, y, z) if sym in bci.free_symbols]
-                    #if tt in bci.free_symbols:
-                    #    bci = bci.subs({'t': self.bc_time})
-                    #lbci = sp.lambdify(sym0, bci, 'numpy')
-                    #Yi = []
-                    #for i, ax in enumerate((x, y, z)):
-                    #    if ax in bci.free_symbols:
-                    #        Yi.append(X[i][this_base.si[j]])
-                    #f_bci = lbci(*Yi)
                     # Put the Dirichlet value in the position of the bc dofs
                     if s.stop == int(this_base.N*this_base.padding_factor):
                         b[this_base.si[-(len(self.bc))+j]] = f_bci
@@ -1489,7 +1485,7 @@ class BoundaryValues(object):
 
         """
         coors = self.tensorproductspace.coors if self.tensorproductspace else self.base.coors
-        M = self.base.get_bcmass_matrix(coors.hi.prod())
+        M = self.base.get_bcmass_matrix(coors.get_sqrt_det_g())
         w0 = np.zeros_like(u)
         u -= M.matvec(u, w0, axis=self.base.axis)
 

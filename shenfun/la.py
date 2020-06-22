@@ -2,7 +2,7 @@ r"""
 This module contains linear algebra solvers for SparseMatrixes
 """
 import numpy as np
-import scipy.sparse as sp
+import scipy.sparse as scp
 from scipy.sparse.linalg import spsolve
 from shenfun.optimization import optimizer
 from shenfun.matrixbase import SparseMatrix
@@ -368,21 +368,10 @@ class SolverGeneric2ND(object):
     additional diagonal matrix (one Fourier matrix).
     """
 
-    def __init__(self, mats):
-        self.mats = mats
-        m = mats[0]
-        #assert len(m.naxes) == 2
-        self.T = T = m.space
-        ndim = T.dimensions
-        if ndim == 2:
-            m = mats[0]
-            M0 = sp.kron(m.mats[0].diags(), m.mats[1].diags())
-            M0 *= np.atleast_1d(m.scale).item()
-            for m in mats[1:]:
-                M1 = sp.kron(m.mats[0].diags(), m.mats[1].diags())
-                M1 *= np.atleast_1d(m.scale).item()
-                M0 = M0 + M1
-            self.M = M0
+    def __init__(self, tpmats):
+        self.tpmats = tpmats
+        self.T = T = tpmats[0].space
+        self.M = None
 
     def matvec(self, u, c):
         c.fill(0)
@@ -391,35 +380,64 @@ class SolverGeneric2ND(object):
             c[s0] = self.M.dot(u[s0].flatten()).reshape(self.T.dims())
         return c
 
-    def __call__(self, b, u=None):
+    def get_diagonal_axis(self):
+        naxes = self.T.get_nondiagonal_axes()
+        diagonal_axis = np.setxor1d([0, 1, 2], naxes)
+        assert len(diagonal_axis) == 1
+        return diagonal_axis[0]
+
+    def diags(self, i, format='csr'):
+        """Return matrix for given index `i` in diagonal direction"""
+        if self.T.dimensions == 2:
+            # In 2D there's just 1 matrix, store and reuse
+            if self.M is not None:
+                return self.M
+            m = self.tpmats[0]
+            M0 = scp.kron(m.mats[0].diags(format), m.mats[1].diags(format))
+            M0 *= np.atleast_1d(m.scale).item()
+            for m in self.tpmats[1:]:
+                M1 = scp.kron(m.mats[0].diags(format), m.mats[1].diags(format))
+                M1 *= np.atleast_1d(m.scale).item()
+                M0 = M0 + M1
+            self.M = M0
+            return self.M
+
+        else:
+            # 1 matrix per Fourier coefficient
+            naxes = self.T.get_nondiagonal_axes()
+            m = self.tpmats[0]
+            diagonal_axis = self.get_diagonal_axis()
+            sc = [0, 0, 0]
+            sc[diagonal_axis] = i if m.scale.shape[diagonal_axis] > 1 else 0
+            M0 = scp.kron(m.mats[naxes[0]].diags(format), m.mats[naxes[1]].diags(format))
+            M0 *= m.scale[tuple(sc)]
+            for m in self.tpmats[1:]:
+                M1 = scp.kron(m.mats[naxes[0]].diags(format), m.mats[naxes[1]].diags(format))
+                sc[diagonal_axis] = i if m.scale.shape[diagonal_axis] > 1 else 0
+                M1 *= m.scale[tuple(sc)]
+                M0 = M0 + M1
+            return M0
+
+    def __call__(self, b, u=None, format='csr'):
         if u is None:
             u = b
         else:
             assert u.shape == b.shape
         if u.ndim == 2:
-            s0 = tuple(base.slice() for base in self.T)
-            u[s0] = sp.linalg.spsolve(self.M, b[s0].flatten()).reshape(self.T.dims())
+            s0 = self.T.slice()
+            M = self.diags(0, format=format)
+            u[s0] = scp.linalg.spsolve(M, b[s0].flatten()).reshape(self.T.dims())
+
         elif u.ndim == 3:
             naxes = self.T.get_nondiagonal_axes()
-            diagonal_axis = np.setxor1d([0, 1, 2], naxes)
-            assert len(diagonal_axis) == 1
-            diagonal_axis = diagonal_axis[0]
-            M = self.T.shape(True)[diagonal_axis]
-            sc = [0, 0, 0]
-            for i in range(M):
-                m = self.mats[0]
-                M0 = sp.kron(m.mats[naxes[0]].diags(), m.mats[naxes[1]].diags())
-                sc[diagonal_axis] = i if m.scale.shape[diagonal_axis] > 1 else 0
-                M0 *= m.scale[tuple(sc)]
-                for m in self.mats[1:]:
-                    M1 = sp.kron(m.mats[naxes[0]].diags(), m.mats[naxes[1]].diags())
-                    sc[diagonal_axis] = i if m.scale.shape[diagonal_axis] > 1 else 0
-                    M1 *= m.scale[tuple(sc)]
-                    M0 = M0 + M1
-                s0 = [base.slice() for base in self.T]
+            diagonal_axis = self.get_diagonal_axis()
+            s0 = list(self.T.slice())
+            for i in range(self.T.shape(True)[diagonal_axis]):
+                m = self.tpmats[0]
+                M0 = self.diags(i, format=format)
                 s0[diagonal_axis] = i
                 shape = np.take(self.T.dims(), naxes)
-                u[tuple(s0)] = sp.linalg.spsolve(M0, b[tuple(s0)].flatten()).reshape(shape)
+                u[tuple(s0)] = scp.linalg.spsolve(M0, b[tuple(s0)].flatten()).reshape(shape)
         return u
 
 class Solver2D(object):
@@ -432,17 +450,17 @@ class Solver2D(object):
 
     """
 
-    def __init__(self, mats):
-        self.mats = mats
-        m = mats[0]
+    def __init__(self, tpmats):
+        self.tpmats = tpmats
+        m = tpmats[0]
         self.T = T = m.space
         ndim = T.dimensions
         assert ndim == 2
         assert np.atleast_1d(m.scale).size == 1, "Use level = 2 with :func:`.inner`"
-        M0 = sp.kron(m.mats[0].diags(), m.mats[1].diags())
+        M0 = scp.kron(m.mats[0].diags(), m.mats[1].diags())
         M0 *= np.atleast_1d(m.scale).item()
-        for m in mats[1:]:
-            M1 = sp.kron(m.mats[0].diags(), m.mats[1].diags())
+        for m in tpmats[1:]:
+            M1 = scp.kron(m.mats[0].diags(), m.mats[1].diags())
             assert np.atleast_1d(m.scale).size == 1, "Use level = 2 with :func:`.inner`"
             M1 *= np.atleast_1d(m.scale).item()
             M0 = M0 + M1
@@ -460,7 +478,7 @@ class Solver2D(object):
         else:
             assert u.shape == b.shape
         s0 = tuple(base.slice() for base in self.T)
-        u[s0] = sp.linalg.spsolve(self.M, b[s0].flatten()).reshape(self.T.dims())
+        u[s0] = scp.linalg.spsolve(self.M, b[s0].flatten()).reshape(self.T.dims())
         return u
 
 

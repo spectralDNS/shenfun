@@ -6,7 +6,7 @@ name=polarhelmholtz
 
 all: ${name}.html
 
-${name}.pdf: ${name}.tex
+${name}.pdf: ${name}.do.txt
 	doconce format pdflatex ${name} --latex_code_style=pyg-yellowgray --movie_prefix=https://github.com/spectralDNS/spectralutilities/blob/master/movies/
 	pdflatex -shell-escape ${name}
 	bibtex ${name}
