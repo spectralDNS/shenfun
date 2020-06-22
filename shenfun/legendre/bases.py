@@ -12,7 +12,6 @@ from scipy.special import eval_legendre
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, islicedict, \
     slicedict
-from shenfun.utilities import inheritdocstrings
 from shenfun.forms.arguments import Function
 from .lobatto import legendre_lobatto_nodes_and_weights
 
@@ -37,7 +36,7 @@ except:
 mode = os.environ.get('SHENFUN_LEGENDRE_MODE', 'numpy')
 mode = mode if has_quadpy else 'numpy'
 
-@inheritdocstrings
+
 class LegendreBase(SpectralBase):
     """Base class for all Legendre bases
 
@@ -192,7 +191,7 @@ class LegendreBase(SpectralBase):
     def get_orthogonal(self):
         return Basis(self.N, quad=self.quad, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
 
-@inheritdocstrings
+
 class Basis(LegendreBase):
     """Basis for regular Legendre series
 
@@ -242,7 +241,7 @@ class Basis(LegendreBase):
     def is_orthogonal(self):
         return True
 
-@inheritdocstrings
+
 class ShenDirichletBasis(LegendreBase):
     """Shen Legendre basis for Dirichlet boundary conditions
 
@@ -481,7 +480,7 @@ class ShenDirichletBasis(LegendreBase):
             su = self.sl[slice(2*self.N//3, self.N-2)]
             padded_array[su] = 0
 
-@inheritdocstrings
+
 class ShenNeumannBasis(LegendreBase):
     """Shen basis for homogeneous Neumann boundary conditions
 
@@ -646,7 +645,7 @@ class ShenNeumannBasis(LegendreBase):
                                 coordinates=self.coors.coordinates,
                                 mean=self.mean)
 
-@inheritdocstrings
+
 class ShenBiharmonicBasis(LegendreBase):
     """Shen biharmonic basis
 
@@ -885,7 +884,7 @@ class ShenBiharmonicBasis(LegendreBase):
             su = self.sl[slice(2*self.N//3, self.N-4)]
             padded_array[su] = 0
 
-@inheritdocstrings
+
 class UpperDirichletBasis(LegendreBase):
     """Shen Legendre basis with homogeneous Dirichlet boundary conditions on x=1
 
@@ -1034,7 +1033,6 @@ class UpperDirichletBasis(LegendreBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
-@inheritdocstrings
 class ShenBiPolarBasis(LegendreBase):
     """Shen's Legendre basis for the Biharmonic equation in polar coordinates
 
@@ -1168,7 +1166,6 @@ class ShenBiPolarBasis(LegendreBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
-@inheritdocstrings
 class ShenBiPolar0Basis(LegendreBase):
     """Shen biharmonic basis for polar coordinates
 
@@ -1340,7 +1337,6 @@ class ShenBiPolar0Basis(LegendreBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
-@inheritdocstrings
 class DirichletNeumannBasis(LegendreBase):
     """Basis for mixed Dirichlet/Neumann boundary conditions
 	u(-1)=0, u'(1)=0
@@ -1508,7 +1504,6 @@ class DirichletNeumannBasis(LegendreBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
-@inheritdocstrings
 class NeumannDirichletBasis(LegendreBase):
     """Basis for mixed Dirichlet/Neumann boundary conditions
 	u'(-1)=0, u(1)=0
@@ -1675,7 +1670,6 @@ class NeumannDirichletBasis(LegendreBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
-@inheritdocstrings
 class BCBasis(LegendreBase):
 
     def __init__(self, N, quad="LG", scaled=False,
@@ -1755,7 +1749,7 @@ class BCBasis(LegendreBase):
             output_array[:] = 0
         return output_array
 
-@inheritdocstrings
+
 class BCBiharmonicBasis(LegendreBase):
     """Basis for inhomogeneous Biharmonic boundary conditions
 
