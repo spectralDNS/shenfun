@@ -5,10 +5,9 @@ import numpy as np
 from shenfun.optimization import optimizer
 from shenfun.optimization.cython import la
 from shenfun.la import TDMA as la_TDMA
-from shenfun.utilities import inheritdocstrings
 from shenfun.matrixbase import TPMatrix
 
-@inheritdocstrings
+
 class TDMA(la_TDMA):
 
     def __call__(self, b, u=None, axis=0):
@@ -27,6 +26,7 @@ class TDMA(la_TDMA):
         if self.mat.scale not in (1, 1.0):
             u /= self.mat.scale
         return u
+
 
 class Helmholtz(object):
     r"""Helmholtz solver
@@ -240,6 +240,7 @@ class Helmholtz(object):
     @optimizer
     def Helmholtz_matvec(v, b, alfa, beta, dd, ud, bd, axis=0):
         raise NotImplementedError("Use Cython or Numba")
+
 
 class Biharmonic(object):
     r"""Multidimensional Biharmonic solver for

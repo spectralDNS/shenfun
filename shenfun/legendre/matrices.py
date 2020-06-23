@@ -69,7 +69,6 @@ import functools
 import numpy as np
 import sympy as sp
 from shenfun.matrixbase import SpectralMatrix
-from shenfun.utilities import inheritdocstrings
 from shenfun.la import TDMA as neumann_TDMA
 from .la import TDMA
 from . import bases
@@ -88,7 +87,7 @@ xp = sp.symbols('x', real=True, positive=True)
 
 #pylint: disable=unused-variable, redefined-builtin, bad-continuation
 
-@inheritdocstrings
+
 class BLLmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -130,7 +129,6 @@ class BLLmat(SpectralMatrix):
         return u
 
 
-@inheritdocstrings
 class BDDmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -167,7 +165,6 @@ class BDDmat(SpectralMatrix):
         self.solve = TDMA(self)
 
 
-@inheritdocstrings
 class BNNmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -200,7 +197,6 @@ class BNNmat(SpectralMatrix):
         #self.solve = neumann_TDMA(self)
 
 
-@inheritdocstrings
 class BBBmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -236,7 +232,7 @@ class BBBmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
         self.solve = PDMA(self)
 
-@inheritdocstrings
+
 class BDLmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -267,7 +263,7 @@ class BDLmat(SpectralMatrix):
             d[2][-1] = -2./(N-1)*sc[N-3]
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
-@inheritdocstrings
+
 class BLDmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -299,7 +295,7 @@ class BLDmat(SpectralMatrix):
             d[-2][-1] = -2./(N-1)*sc[-3]
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
-@inheritdocstrings
+
 class ADDmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
@@ -369,7 +365,6 @@ class ADDmat(SpectralMatrix):
         return u
 
 
-@inheritdocstrings
 class ANNmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
@@ -428,7 +423,6 @@ class ANNmat(SpectralMatrix):
         return u
 
 
-@inheritdocstrings
 class ABBmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
@@ -456,7 +450,7 @@ class ABBmat(SpectralMatrix):
         d[-2] = d[2]
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
-@inheritdocstrings
+
 class GLLmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
@@ -485,7 +479,6 @@ class GLLmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
-@inheritdocstrings
 class SBBmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
@@ -510,7 +503,7 @@ class SBBmat(SpectralMatrix):
         d = {0: 2*(2*k+3)**2*(2*k+5)}
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
-@inheritdocstrings
+
 class CLLmat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -558,7 +551,6 @@ class CLLmat(SpectralMatrix):
         return c
 
 
-@inheritdocstrings
 class CLLmatT(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -584,7 +576,7 @@ class CLLmatT(SpectralMatrix):
             d[i] = 2.0
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
-@inheritdocstrings
+
 class CLDmat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -611,7 +603,7 @@ class CLDmat(SpectralMatrix):
             d[-1] = -2. / np.sqrt(4*k+6)
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
-@inheritdocstrings
+
 class CDLmat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -638,7 +630,7 @@ class CDLmat(SpectralMatrix):
             d[1] = -2. / np.sqrt(4*k+6)
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
-@inheritdocstrings
+
 class CDDmat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -666,6 +658,7 @@ class CDDmat(SpectralMatrix):
             d[1] = 2. / np.sqrt(4*k[:-1]+6)
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
+
 class ADDrp1mat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -690,6 +683,7 @@ class ADDrp1mat(SpectralMatrix):
         k = np.arange(test[0].N-2)
         d = {0: 4*k+6, 1: 2*k[:-1]+4, -1: 2*k[:-1]+4}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+
 
 class ADD2rp1mat(SpectralMatrix):
     r"""Matrix for inner product
@@ -716,6 +710,7 @@ class ADD2rp1mat(SpectralMatrix):
         d = {0: -(4*k+6), 1: -(2*k[:-1]+6), -1: -(2*k[:-1]+2)}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
+
 class ADD2Trp1mat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -741,6 +736,7 @@ class ADD2Trp1mat(SpectralMatrix):
         d = {0: -(4*k+6), -1: -(2*k[:-1]+6), 1: -(2*k[:-1]+2)}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
+
 class AUUrp1mat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -764,6 +760,7 @@ class AUUrp1mat(SpectralMatrix):
         k = np.arange(test[0].N-1)
         d = {0: 2*k+2}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+
 
 class BUUrp1mat(SpectralMatrix):
     r"""Matrix for inner product
@@ -820,6 +817,7 @@ class BDD1orp1mat(SpectralMatrix):
         d = {0: 2*(2*k+3)/(k+1)/(k+2), 1: -2/(k[:-1]+2), -1: -2/(k[:-1]+2)}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
+
 class BDDrp1mat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -852,7 +850,6 @@ class BDDrp1mat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
-@inheritdocstrings
 class BCDmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -886,7 +883,7 @@ class BCDmat(SpectralMatrix):
 
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
-@inheritdocstrings
+
 class BCBmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -919,7 +916,7 @@ class BCBmat(SpectralMatrix):
 
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
-@inheritdocstrings
+
 class _Legmatrix(SpectralMatrix):
     def __init__(self, test, trial, measure=1):
         SpectralMatrix.__init__(self, {}, test, trial, measure=measure)
