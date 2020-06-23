@@ -47,9 +47,9 @@ fe = ue.diff(x, 2) + ue.diff(y, 2)
 
 N = (int(sys.argv[-3]), int(sys.argv[-2]))
 
-K0 = Basis(N[0], 'Fourier', dtype='d')
-SD = Basis(N[1], family, bc=(0, 0))
-ST = Basis(N[1], family)
+K0 = FunctionSpace(N[0], 'Fourier', dtype='d')
+SD = FunctionSpace(N[1], family, bc=(0, 0))
+ST = FunctionSpace(N[1], family)
 
 TD = TensorProductSpace(comm, (K0, SD), axes=(1, 0))
 TT = TensorProductSpace(comm, (K0, ST), axes=(1, 0))

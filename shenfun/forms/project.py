@@ -53,12 +53,12 @@ def project(uh, T, output_array=None, fill=True, use_to_ortho=True, use_assign=T
 
     >>> import numpy as np
     >>> from mpi4py import MPI
-    >>> from shenfun import Basis, project, TensorProductSpace, Array, \
+    >>> from shenfun import FunctionSpace, project, TensorProductSpace, Array, \
     ...     Function, Dx
     >>> N = 16
     >>> comm = MPI.COMM_WORLD
-    >>> T0 = Basis(N, 'C')
-    >>> K0 = Basis(N, 'F', dtype='d')
+    >>> T0 = FunctionSpace(N, 'C')
+    >>> K0 = FunctionSpace(N, 'F', dtype='d')
     >>> T = TensorProductSpace(comm, (T0, K0))
     >>> uj = Array(T)
     >>> uj[:] = np.random.random(uj.shape)

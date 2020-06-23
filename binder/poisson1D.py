@@ -6,7 +6,7 @@ x = symbols("x")
 ue = sin(4*np.pi*x)*(1-x**2)
 fe = ue.diff(x, 2)
 
-SD = Basis(32, 'Chebyshev', bc=(0, 0))
+SD = FunctionSpace(32, 'Chebyshev', bc=(0, 0))
 u = TrialFunction(SD)
 v = TestFunction(SD)
 

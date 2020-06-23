@@ -68,9 +68,9 @@ u(x) = \sum_{k=0}^{N-1} \hat{u}_k v_k(x), label{eq:u}
 
 where $N$ is the size of the discretized problem,
 $\hat{\mathbf{u}} = \{\hat{u}_k\}_{k=0}^{N-1}$ are the unknown expansion
-coefficients, and the basis is $\text{span}\{v_k\}_{k=0}^{N-1}$.
+coefficients, and the function space is $\text{span}\{v_k\}_{k=0}^{N-1}$.
 
-The basis functions can, for example,  be constructed from
+The basis functions of the function space can, for example,  be constructed from
 "Chebyshev": "https://en.wikipedia.org/wiki/Chebyshev_polynomials", $T_k(x)$, or
 "Legendre": "https://en.wikipedia.org/wiki/Legendre_polynomials", $L_k(x)$, polynomials
 and we use the common notation $\phi_k(x)$ to represent either one of them. It turns out that
@@ -80,7 +80,7 @@ it is easiest to use basis functions with homogeneous Dirichlet boundary conditi
 v_k(x) = \phi_k(x) - \phi_{k+2}(x),
 \end{equation}
 !et
-for $k=0, 1, \ldots N-3$. This gives the basis
+for $k=0, 1, \ldots N-3$. This gives the function space
 $V^N_0 = \text{span}\{v_k(x)\}_{k=0}^{N-3}$.
 We can then add two more linear basis functions (that belong to the kernel of Poisson's equation)
 !bt
@@ -89,7 +89,7 @@ v_{N-2} &= \frac{1}{2}(\phi_0 - \phi_1), \\
 v_{N-1} &= \frac{1}{2}(\phi_0 + \phi_1).
 \end{align}
 !et
-which gives the inhomogeneous basis $V^N = \text{span}\{v_k\}_{k=0}^{N-1}$.
+which gives the inhomogeneous space $V^N = \text{span}\{v_k\}_{k=0}^{N-1}$.
 With the two linear basis functions it is easy to see that the last two degrees
 of freedom, $\hat{u}_{N-2}$ and $\hat{u}_{N-1}$, now are given as
 !bt
@@ -208,7 +208,7 @@ plus some other helper modules, like "Numpy": "https://numpy.org" and "Sympy":
 
 !bc pycod
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    project, Dx, Array, Basis
+    project, Dx, Array, FunctionSpace
 import numpy as np
 from sympy import symbols, cos, sin, exp, lambdify
 !ec
@@ -245,8 +245,8 @@ mesh from the basis itself
 
 !bc pycod
 N = 32
-SD = Basis(N, 'Chebyshev', bc=(a, b))
-#SD = Basis(N, 'Legendre', bc=(a, b))
+SD = FunctionSpace(N, 'Chebyshev', bc=(a, b))
+#SD = FunctionSpace(N, 'Legendre', bc=(a, b))
 X = SD.mesh(N)
 !ec
 
@@ -377,7 +377,7 @@ fl = lambdify(x, fe, 'numpy')
 # Size of discretization
 N = eval(sys.argv[-2])
 
-SD = Basis(N, family=family, bc=(a, b))
+SD = FunctionSpace(N, family=family, bc=(a, b))
 X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)

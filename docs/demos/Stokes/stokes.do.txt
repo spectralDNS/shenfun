@@ -245,10 +245,10 @@ of the domain is given
 !bc pycod
 N = (40, 40, 40)
 family = 'Legendre'
-K0 = Basis(N[0], 'Fourier', dtype='D', domain=(0, 2*np.pi))
-K1 = Basis(N[1], 'Fourier', dtype='d', domain=(0, 2*np.pi))
-SD = Basis(N[2], family, bc=(0, 0))
-ST = Basis(N[2], family)
+K0 = FunctionSpace(N[0], 'Fourier', dtype='D', domain=(0, 2*np.pi))
+K1 = FunctionSpace(N[1], 'Fourier', dtype='d', domain=(0, 2*np.pi))
+SD = FunctionSpace(N[2], family, bc=(0, 0))
+ST = FunctionSpace(N[2], family)
 ST.slice = lambda: slice(0, ST.N-2)
 !ec
 

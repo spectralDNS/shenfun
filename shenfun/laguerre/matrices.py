@@ -3,8 +3,8 @@ from shenfun.matrixbase import SpectralMatrix
 from shenfun.la import TDMA_O
 from . import bases
 
-LD = bases.ShenDirichletBasis
-LB = bases.Basis
+LD = bases.ShenDirichlet
+LB = bases.Orthogonal
 
 
 class BLLmat(SpectralMatrix):

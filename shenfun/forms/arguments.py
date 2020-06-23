@@ -7,16 +7,25 @@ from shenfun.optimization.cython import evaluate
 from mpi4py_fft import DistArray
 
 __all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',
-           'Array', 'Basis')
+           'Array', 'FunctionSpace', 'Basis')
 
 # Define some special functions required for spherical harmonics
 cot = lambda x: 1/np.tan(x)
 Ynm = lambda n, m, x, y : sph_harm(m, n, y, x)
+printwarning = True
 
-def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
-          scaled=None, padding_factor=1.0, dealias_direct=False,
-          coordinates=None, **kw):
-    """Return basis for one dimension
+def Basis(*args, **kwargs): #pragma: no cover
+    global printwarning
+    import warnings
+    if printwarning:
+        warnings.warn("Basis() is deprecated; use FunctionSpace().", FutureWarning)
+        printwarning = False
+    return FunctionSpace(*args, **kwargs)
+
+def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
+                  domain=None, scaled=None, padding_factor=1.0,
+                  dealias_direct=False, coordinates=None, **kw):
+    """Return function space
 
     Parameters
     ----------
@@ -31,16 +40,22 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
         - ``Fourier`` or ``F``,
         - ``Laguerre`` or ``La``,
         - ``Hermite`` or ``H``
+        - ``Jacobi`` or ``J``
 
-    bc : str or two-tuple, optional
+    bc : str or tuple, optional
         Choose one of
 
-        - two-tuple (a, b) - Dirichlet boundary condition with
-          :math:`v(-1)=a` and :math:`v(1)=b`. For solving Poisson equation.
-        - Dirichlet - Homogeneous Dirichlet
-        - Neumann - Homogeneous Neumann
-        - Biharmonic - Homogeneous Dirichlet and Neumann at both ends
-        - Polar - For basis specific to polar coordinates
+        - 2-tuple (a, b) - Dirichlet boundary condition with
+          :math:`v(-1)=a` and :math:`v(1)=b`.
+        - 4-tuple (a, b, 0, 0) - Biharmonic with the two non-zero Dirichlet
+          conditions :math:`v(-1)=a` and :math:`v(1)=b`.
+        - Dirichlet - Homogeneous Dirichlet.
+        - Neumann - Homogeneous Neumann.
+        - Biharmonic - Homogeneous Dirichlet and Neumann at both ends.
+        - UpperDirichlet - Homogeneous Dirichlet at x=1, nothing at x=-1.
+        - Polar - Homogeneous biharmonic, specifically used with polar coordinates.
+        - DirichletNeumann - Homogeneous Dirichlet at x=-1 and Neumann at x=1.
+        - NeumannDirichlet - Homogeneous Neumann at x=-1 and Dirichlet at x=1.
     dtype : str or np.dtype, optional
         The datatype of physical space (input to forward transforms)
     quad : str, optional
@@ -61,15 +76,17 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
         * For family=Hermite:
 
           - HG - Hermite-Gauss
+        * For family=Jacobi:
+
+          - JG - Jacobi-Gauss
     domain : two-tuple of floats, optional
         The computational domain
     scaled : bool
         Whether to use scaled basis (only Legendre)
     padding_factor : float, optional
-        For padding backward transform (for dealiasing, and
-        only for Fourier)
+        For padding backward transform (for dealiasing)
     dealias_direct : bool, optional
-        Use 2/3-rule dealiasing (only Fourier)
+        Use 2/3-rule dealiasing
     coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
         Map for curvilinear coordinatesystem.
         The new coordinate variable in the new coordinate system is the first item.
@@ -83,9 +100,9 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
 
     Examples
     --------
-    >>> from shenfun import Basis
-    >>> F0 = Basis(16, 'F')
-    >>> C1 = Basis(32, 'C', quad='GC')
+    >>> from shenfun import FunctionSpace
+    >>> F0 = FunctionSpace(16, 'F')
+    >>> C1 = FunctionSpace(32, 'C', quad='GC')
 
     """
     par = {'padding_factor': padding_factor,
@@ -98,9 +115,9 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
     if family.lower() in ('fourier', 'f'):
         from shenfun import fourier
         if np.dtype(dtype).char in 'FDG':
-            B = fourier.bases.C2CBasis
+            B = fourier.bases.C2C
         else:
-            B = fourier.bases.R2CBasis
+            B = fourier.bases.R2C
         del par['dtype']
         return B(N, **par)
 
@@ -111,33 +128,33 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
             par['quad'] = quad
 
         if bc is None:
-            B = chebyshev.bases.Basis
+            B = chebyshev.bases.Orthogonal
 
         elif isinstance(bc, tuple):
             assert len(bc) in (2, 4)
             par['bc'] = bc
             if len(bc) == 2:
-                B = chebyshev.bases.ShenDirichletBasis
+                B = chebyshev.bases.ShenDirichlet
             else:
-                B = chebyshev.bases.ShenBiharmonicBasis
+                B = chebyshev.bases.ShenBiharmonic
 
         elif isinstance(bc, str):
             if bc.lower() == 'dirichlet':
-                B = chebyshev.bases.ShenDirichletBasis
+                B = chebyshev.bases.ShenDirichlet
             elif bc.lower() == 'neumann':
-                B = chebyshev.bases.ShenNeumannBasis
+                B = chebyshev.bases.ShenNeumann
             elif bc.lower() == 'neumann2':
-                B = chebyshev.bases.SecondNeumannBasis
+                B = chebyshev.bases.SecondNeumann
             elif bc.lower() == 'biharmonic':
-                B = chebyshev.bases.ShenBiharmonicBasis
+                B = chebyshev.bases.ShenBiharmonic
             elif bc.lower() == 'upperdirichlet':
-                B = chebyshev.bases.UpperDirichletBasis
+                B = chebyshev.bases.UpperDirichlet
             elif bc.lower() == 'bipolar':
-                B = chebyshev.bases.ShenBiPolarBasis
+                B = chebyshev.bases.ShenBiPolar
             elif bc.lower() == 'dirichletneumann':
-                B = chebyshev.bases.DirichletNeumannBasis
+                B = chebyshev.bases.DirichletNeumann
             elif bc.lower() == 'neumanndirichlet':
-                B = chebyshev.bases.NeumannDirichletBasis
+                B = chebyshev.bases.NeumannDirichlet
 
         else:
             raise NotImplementedError
@@ -155,35 +172,35 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
             par['scaled'] = scaled
 
         if bc is None:
-            B = legendre.bases.Basis
+            B = legendre.bases.Orthogonal
 
         elif isinstance(bc, tuple):
             assert len(bc) in (2, 4)
             par['bc'] = bc
             if len(bc) == 2:
-                B = legendre.bases.ShenDirichletBasis
+                B = legendre.bases.ShenDirichlet
             else:
-                B = legendre.bases.ShenBiharmonicBasis
+                B = legendre.bases.ShenBiharmonic
 
         elif isinstance(bc, str):
             if bc.lower() == 'dirichlet':
-                B = legendre.bases.ShenDirichletBasis
+                B = legendre.bases.ShenDirichlet
             elif bc.lower() == 'neumann':
-                B = legendre.bases.ShenNeumannBasis
+                B = legendre.bases.ShenNeumann
             elif bc.lower() == 'biharmonic':
-                B = legendre.bases.ShenBiharmonicBasis
+                B = legendre.bases.ShenBiharmonic
             elif bc.lower() == 'upperdirichlet':
-                B = legendre.bases.UpperDirichletBasis
+                B = legendre.bases.UpperDirichlet
             elif bc.lower() == 'upperdirichletneumann':
-                B = legendre.bases.UpperDirichletNeumannBasis
+                B = legendre.bases.UpperDirichletNeumann
             elif bc.lower() == 'bipolar':
-                B = legendre.bases.ShenBiPolarBasis
+                B = legendre.bases.ShenBiPolar
             elif bc.lower() == 'bipolar0':
-                B = legendre.bases.ShenBiPolar0Basis
+                B = legendre.bases.ShenBiPolar0
             elif bc.lower() == 'dirichletneumann':
-                B = legendre.bases.DirichletNeumannBasis
+                B = legendre.bases.DirichletNeumann
             elif bc.lower() == 'neumanndirichlet':
-                B = legendre.bases.NeumannDirichletBasis
+                B = legendre.bases.NeumannDirichlet
 
         return B(N, **par)
 
@@ -194,16 +211,16 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
             par['quad'] = quad
 
         if bc is None:
-            B = laguerre.bases.Basis
+            B = laguerre.bases.Orthogonal
 
         elif isinstance(bc, tuple):
             assert len(bc) == 2
             par['bc'] = bc
-            B = laguerre.bases.ShenDirichletBasis
+            B = laguerre.bases.ShenDirichlet
 
         elif isinstance(bc, str):
             if bc.lower() == 'dirichlet':
-                B = laguerre.bases.ShenDirichletBasis
+                B = laguerre.bases.ShenDirichlet
 
         else:
             raise NotImplementedError
@@ -216,7 +233,7 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
             assert quad in ('HG',)
             par['quad'] = quad
 
-        B = hermite.bases.Basis
+        B = hermite.bases.Orthogonal
 
         if isinstance(bc, tuple):
             assert len(bc) == 2
@@ -237,24 +254,24 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
             par['quad'] = quad
 
         if bc is None:
-            B = jacobi.bases.Basis
+            B = jacobi.bases.Orthogonal
 
         elif isinstance(bc, tuple):
             assert len(bc) in (2, 4)
             par['bc'] = bc
             if len(bc) == 2:
-                B = jacobi.bases.ShenDirichletBasis
+                B = jacobi.bases.ShenDirichlet
             else:
                 assert np.all([abs(bci)<1e-12 for bci in bc])
-                B = jacobi.bases.ShenBiharmonicBasis
+                B = jacobi.bases.ShenBiharmonic
 
         elif isinstance(bc, str):
             if bc.lower() == 'dirichlet':
-                B = jacobi.bases.ShenDirichletBasis
+                B = jacobi.bases.ShenDirichlet
             elif bc.lower() == 'biharmonic':
-                B = jacobi.bases.ShenBiharmonicBasis
+                B = jacobi.bases.ShenBiharmonic
             elif bc.lower() == '6th order':
-                B = jacobi.bases.ShenOrder6Basis
+                B = jacobi.bases.ShenOrder6
             else:
                 raise NotImplementedError
 
@@ -328,9 +345,9 @@ class Expr(object):
     >>> from shenfun import *
     >>> from mpi4py import MPI
     >>> comm = MPI.COMM_WORLD
-    >>> C0 = Basis(16, 'F', dtype='D')
-    >>> C1 = Basis(16, 'F', dtype='D')
-    >>> R0 = Basis(16, 'F', dtype='d')
+    >>> C0 = FunctionSpace(16, 'F', dtype='D')
+    >>> C1 = FunctionSpace(16, 'F', dtype='D')
+    >>> R0 = FunctionSpace(16, 'F', dtype='d')
     >>> T = TensorProductSpace(comm, (C0, C1, R0))
     >>> v = TestFunction(T)
     >>> e = div(grad(v))
@@ -499,12 +516,12 @@ class Expr(object):
 
         Examples
         --------
-        >>> from shenfun import Basis, TensorProductSpace
+        >>> from shenfun import FunctionSpace, TensorProductSpace
         >>> import sympy as sp
         >>> theta, r = psi = sp.symbols('x,y', real=True, positive=True)
         >>> rv = (r*sp.cos(theta), r*sp.sin(theta))
-        >>> F0 = Basis(8, 'F', dtype='d')
-        >>> T0 = Basis(8, 'C')
+        >>> F0 = FunctionSpace(8, 'F', dtype='d')
+        >>> T0 = FunctionSpace(8, 'C')
         >>> T = TensorProductSpace(comm, (F0, T0), coordinates=(psi, rv))
         >>> u = TrialFunction(T)
         >>> ue = r*sp.cos(theta)
@@ -574,7 +591,7 @@ class Expr(object):
 
         """
         from shenfun import MixedTensorProductSpace
-        from shenfun.fourier.bases import R2CBasis
+        from shenfun.fourier.bases import R2C
 
         if len(x.shape) == 1: # 1D case
             x = x[None, :]
@@ -608,7 +625,7 @@ class Expr(object):
                     if len(x) > 1:
                         M.append(P[..., V.local_slice()[axis]])
 
-                    if isinstance(test_sp[axis], R2CBasis) and len(x) > 1:
+                    if isinstance(test_sp[axis], R2C) and len(x) > 1:
                         r2c = axis
                         m = test_sp[axis].N//2+1
                         if test_sp[axis].N % 2 == 0:
@@ -1246,12 +1263,12 @@ class Function(ShenfunBaseArray, BasisFunction):
     Examples
     --------
     >>> from mpi4py import MPI
-    >>> from shenfun import Basis, TensorProductSpace, Function
-    >>> K0 = Basis(8, 'F', dtype='D')
-    >>> K1 = Basis(8, 'F', dtype='d')
+    >>> from shenfun import FunctionSpace, TensorProductSpace, Function
+    >>> K0 = FunctionSpace(8, 'F', dtype='D')
+    >>> K1 = FunctionSpace(8, 'F', dtype='d')
     >>> T = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
     >>> u = Function(T)
-    >>> K2 = Basis(8, 'C', bc=(0, 0))
+    >>> K2 = FunctionSpace(8, 'C', bc=(0, 0))
     >>> T2 = TensorProductSpace(MPI.COMM_WORLD, [K0, K1, K2])
     >>> v = Function(T2)
 
@@ -1295,8 +1312,8 @@ class Function(ShenfunBaseArray, BasisFunction):
         Examples
         --------
         >>> import sympy as sp
-        >>> K0 = Basis(9, 'F', dtype='D')
-        >>> K1 = Basis(8, 'F', dtype='d')
+        >>> K0 = FunctionSpace(9, 'F', dtype='D')
+        >>> K1 = FunctionSpace(8, 'F', dtype='d')
         >>> T = TensorProductSpace(MPI.COMM_WORLD, [K0, K1], axes=(0, 1))
         >>> X = T.local_mesh()
         >>> x, y = sp.symbols("x,y")
@@ -1411,7 +1428,7 @@ class Function(ShenfunBaseArray, BasisFunction):
         returned array is padded with zeros.
 
         """
-        from shenfun.fourier.bases import R2CBasis
+        from shenfun.fourier.bases import R2C
         from shenfun import VectorTensorProductSpace
 
         if self.ndim == 1:
@@ -1441,7 +1458,7 @@ class Function(ShenfunBaseArray, BasisFunction):
         base = space.bases[axes[0]]
         global_shape = list(self.global_shape) # Global shape in spectral space
         factor = N[axes[0]]/self.function_space().bases[axes[0]].N
-        if isinstance(base, R2CBasis):
+        if isinstance(base, R2C):
             global_shape[axes[0]] = int((2*global_shape[axes[0]]-2)*factor)//2+1
         else:
             global_shape[axes[0]] = int(global_shape[axes[0]]*factor)
@@ -1459,7 +1476,7 @@ class Function(ShenfunBaseArray, BasisFunction):
 
             # Get a new padded array
             base = space.bases[ax]
-            if isinstance(base, R2CBasis):
+            if isinstance(base, R2C):
                 global_shape[ax] = int(base.N*factor)//2+1
             else:
                 global_shape[ax] = int(global_shape[ax]*factor)
@@ -1553,8 +1570,8 @@ class Array(ShenfunBaseArray):
     --------
     >>> from mpi4py import MPI
     >>> from shenfun import Basis, TensorProductSpace, Function
-    >>> K0 = Basis(8, 'F', dtype='D')
-    >>> K1 = Basis(8, 'F', dtype='d')
+    >>> K0 = FunctionSpace(8, 'F', dtype='D')
+    >>> K1 = FunctionSpace(8, 'F', dtype='d')
     >>> FFT = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
     >>> u = Array(FFT)
     """

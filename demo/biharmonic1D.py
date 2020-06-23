@@ -11,7 +11,7 @@ import os
 import importlib
 from sympy import symbols, sin, chebyshevt
 import numpy as np
-from shenfun import inner, Dx, TestFunction, TrialFunction, Basis, Array, \
+from shenfun import inner, Dx, TestFunction, TrialFunction, FunctionSpace, Array, \
     Function, extract_bc_matrices
 
 assert len(sys.argv) == 3
@@ -49,7 +49,7 @@ fe = aa*ue.diff(x, 4) + bb*ue.diff(x, 2) + cc*ue
 # Size of discretization
 N = int(sys.argv[-2])
 
-SD = Basis(N, family=family, bc=(a, b, 0, 0), domain=domain)
+SD = FunctionSpace(N, family=family, bc=(a, b, 0, 0), domain=domain)
 X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)

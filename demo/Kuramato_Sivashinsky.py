@@ -23,8 +23,8 @@ ue = exp(-0.01*(x**2+y**2))        # + exp(-0.02*((x-15*np.pi)**2+(y)**2))
 # Size of discretization
 N = (128, 128)
 
-K0 = Basis(N[0], 'F', dtype='D', domain=(-30*np.pi, 30*np.pi))
-K1 = Basis(N[1], 'F', dtype='d', domain=(-30*np.pi, 30*np.pi))
+K0 = FunctionSpace(N[0], 'F', dtype='D', domain=(-30*np.pi, 30*np.pi))
+K1 = FunctionSpace(N[1], 'F', dtype='d', domain=(-30*np.pi, 30*np.pi))
 T = TensorProductSpace(comm, (K0, K1), **{'planner_effort': 'FFTW_MEASURE'})
 TV = VectorTensorProductSpace(T)
 

@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 import sympy as sp
-from shenfun import Basis, TensorProductSpace, TrialFunction, div, grad, \
+from shenfun import FunctionSpace, TensorProductSpace, TrialFunction, div, grad, \
     curl, comm, VectorTensorProductSpace, Function, inner, \
     BlockMatrix, TestFunction as _TestFunction
 
@@ -10,18 +10,18 @@ def get_function_space(space='cylinder'):
         r, theta, z = psi = sp.symbols('x,y,z', real=True, positive=True)
         rv = (r*sp.cos(theta), r*sp.sin(theta), z)
         N = 6
-        F0 = Basis(N, 'F', dtype='D')
-        F1 = Basis(N, 'F', dtype='d')
-        L = Basis(N, 'L', domain=(0, 1))
+        F0 = FunctionSpace(N, 'F', dtype='D')
+        F1 = FunctionSpace(N, 'F', dtype='d')
+        L = FunctionSpace(N, 'L', domain=(0, 1))
         T = TensorProductSpace(comm, (L, F0, F1), coordinates=(psi, rv))
 
     elif space == 'sphere':
         r, theta, phi = psi = sp.symbols('x,y,z', real=True, positive=True)
         rv = (r*sp.sin(theta)*sp.cos(phi), r*sp.sin(theta)*sp.sin(phi), r*sp.cos(theta))
         N = 6
-        F = Basis(N, 'F', dtype='d')
-        L0 = Basis(N, 'L', domain=(0, 1))
-        L1 = Basis(N, 'L', domain=(0, np.pi))
+        F = FunctionSpace(N, 'F', dtype='d')
+        L0 = FunctionSpace(N, 'L', domain=(0, 1))
+        L1 = FunctionSpace(N, 'L', domain=(0, np.pi))
         T = TensorProductSpace(comm, (L0, L1, F), coordinates=(psi, rv, sp.Q.positive(sp.sin(theta))))
 
     return T
