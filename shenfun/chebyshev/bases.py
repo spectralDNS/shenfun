@@ -14,7 +14,7 @@ from shenfun.optimization.cython import Cheb
 from shenfun.utilities import inheritdocstrings
 from shenfun.forms.arguments import Function
 
-__all__ = ['ChebyshevBase', 'Basis', 'ShenDirichletBasis',
+__all__ = ['ChebyshevBase', 'Orthogonal', 'ShenDirichletBasis',
            'ShenNeumannBasis', 'ShenBiharmonicBasis',
            'SecondNeumannBasis', 'UpperDirichletBasis',
            'ShenBiPolarBasis', 'BCBasis', 'BCBiharmonicBasis',
@@ -257,11 +257,11 @@ class ChebyshevBase(SpectralBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_orthogonal(self):
-        return Basis(self.N, quad=self.quad, domain=self.domain, coordinates=self.coors.coordinates)
+        return Orthogonal(self.N, quad=self.quad, domain=self.domain, coordinates=self.coors.coordinates)
 
 
 @inheritdocstrings
-class Basis(ChebyshevBase):
+class Orthogonal(ChebyshevBase):
     """Basis for regular Chebyshev series
 
     Parameters
@@ -450,7 +450,7 @@ class ShenDirichletBasis(ChebyshevBase):
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
-        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor = np.ones(1)
         self.bc = BoundaryValues(self, bc=bc)
@@ -711,7 +711,7 @@ class ShenNeumannBasis(ChebyshevBase):
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
         self.mean = mean
-        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._factor = np.zeros(0)
         self.plan(int(N*padding_factor), 0, dtype, {})
 
@@ -935,7 +935,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
         self.bc = BoundaryValues(self, bc=bc)
@@ -1217,7 +1217,7 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
         self.mean = mean
-        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._factor = np.zeros(0)
         self.plan((int(padding_factor*N),), 0, dtype, {})
 
@@ -1421,7 +1421,7 @@ class UpperDirichletBasis(ChebyshevBase):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor = np.ones(1)
         self.plan((int(padding_factor*N),), 0, dtype, {})
@@ -1612,7 +1612,7 @@ class ShenBiPolarBasis(ChebyshevBase):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self.plan((int(padding_factor*N),), 0, dtype, {})
 
     @staticmethod
@@ -1769,7 +1769,7 @@ class DirichletNeumannBasis(ChebyshevBase):
                  padding_factor=1, dealias_direct=False, coordinates=None):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
-        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
@@ -1987,7 +1987,7 @@ class NeumannDirichletBasis(ChebyshevBase):
                  padding_factor=1, dealias_direct=False, coordinates=None):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
-        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)

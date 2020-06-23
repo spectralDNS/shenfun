@@ -7,7 +7,7 @@ from shenfun.utilities import inheritdocstrings
 from . import bases
 from ..legendre.la import TDMA
 
-JB = bases.Basis
+JB = bases.Orthogonal
 SD = bases.ShenDirichletBasis
 SB = bases.ShenBiharmonicBasis
 

@@ -12,7 +12,7 @@ import importlib
 from sympy import symbols, cos, sin
 import numpy as np
 from mpi4py import MPI
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, Basis, \
+from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, FunctionSpace, \
     TensorProductSpace, Array
 from shenfun.la import SolverGeneric2ND
 
@@ -38,8 +38,8 @@ fe = a*ue - ue.diff(x, 2) - ue.diff(y, 2)
 # Size of discretization
 N = (int(sys.argv[-3]), int(sys.argv[-2]))
 
-SD0 = Basis(N[0], family, bc=(0, 0), scaled=True)
-SD1 = Basis(N[1], family, bc=(0, 0), scaled=True)
+SD0 = FunctionSpace(N[0], family, bc=(0, 0), scaled=True)
+SD1 = FunctionSpace(N[1], family, bc=(0, 0), scaled=True)
 
 T = TensorProductSpace(comm, (SD0, SD1), axes=(1, 0))
 X = T.local_mesh(True)

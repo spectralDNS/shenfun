@@ -14,7 +14,7 @@ import importlib
 from sympy import symbols, cos, sin
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
-    Basis, TensorProductSpace, Function, comm
+    FunctionSpace, TensorProductSpace, Function, comm
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
@@ -32,9 +32,9 @@ N = (36, 36, 36)
 if family == 'chebyshev':
     assert N[0] % 2 == 0, "Biharmonic solver only implemented for even numbers"
 
-SD = Basis(N[0], family=family, bc='Biharmonic')
-K1 = Basis(N[1], family='F', dtype='D')
-K2 = Basis(N[2], family='F', dtype='d')
+SD = FunctionSpace(N[0], family=family, bc='Biharmonic')
+K1 = FunctionSpace(N[1], family='F', dtype='D')
+K2 = FunctionSpace(N[2], family='F', dtype='d')
 T = TensorProductSpace(comm, (SD, K1, K2), axes=(0, 1, 2))
 
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D

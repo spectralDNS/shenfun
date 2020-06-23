@@ -170,8 +170,8 @@ class LaguerreBase(SpectralBase):
                               coordinates=self.coors.coordinates)
 
 @inheritdocstrings
-class Basis(LaguerreBase):
-    r"""Basis for regular Laguerre functions
+class Orthogonal(LaguerreBase):
+    r"""Function space for regular Laguerre functions
 
     Parameters
     ----------
@@ -265,7 +265,7 @@ class ShenDirichletBasis(LaguerreBase):
                  dealias_direct=False, coordinates=None):
         LaguerreBase.__init__(self, N, dtype=dtype, quad=quad, padding_factor=padding_factor,
                               dealias_direct=dealias_direct, coordinates=coordinates)
-        self.LT = Basis(N, quad)
+        self.LT = Orthogonal(N, quad)
         self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
@@ -333,4 +333,4 @@ class ShenDirichletBasis(LaguerreBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_orthogonal(self):
-        return Basis(self.N, quad=self.quad, dtype=self.dtype, coordinates=self.coors.coordinates)
+        return Orthogonal(self.N, quad=self.quad, dtype=self.dtype, coordinates=self.coors.coordinates)

@@ -18,7 +18,7 @@ solution that is either real or complex.
 import os
 from sympy import Symbol, cos, sin, lambdify
 import numpy as np
-from shenfun import inner, grad, TestFunction, TrialFunction, Basis, Function, \
+from shenfun import inner, grad, TestFunction, TrialFunction, FunctionSpace, Function, \
     Array
 
 # Use sympy to compute a rhs, given an analytical solution
@@ -31,7 +31,7 @@ fe = ue.diff(x, 2)
 N = 40
 
 dtype = {True: np.complex, False: np.float}[ue.has(1j)]
-ST = Basis(N, dtype=dtype, domain=(-2*np.pi, 2*np.pi))
+ST = FunctionSpace(N, dtype=dtype, domain=(-2*np.pi, 2*np.pi))
 u = TrialFunction(ST)
 v = TestFunction(ST)
 

@@ -17,7 +17,7 @@ from shenfun.spectralbase import inner_product
 N = 33
 x = Symbol("x")
 
-cBasis = (cbases.Basis,
+cBasis = (cbases.Orthogonal,
           cbases.ShenDirichletBasis,
           cbases.ShenNeumannBasis,
           cbases.ShenBiharmonicBasis)
@@ -26,7 +26,7 @@ cBasis = (cbases.Basis,
 cBasisGC = (cbases.UpperDirichletBasis,
             cbases.ShenBiPolarBasis)
 
-lBasis = (lbases.Basis,
+lBasis = (lbases.Orthogonal,
           lbases.ShenDirichletBasis,
           lbases.ShenBiharmonicBasis,
           lbases.ShenNeumannBasis)
@@ -36,13 +36,13 @@ lBasisLG = (lbases.UpperDirichletBasis,
             lbases.ShenBiPolarBasis,
             lbases.ShenBiPolar0Basis)
 
-laBasis = (labases.Basis,
+laBasis = (labases.Orthogonal,
            labases.ShenDirichletBasis)
 
 fBasis = (fbases.R2CBasis,
           fbases.C2CBasis)
 
-jBasis = (jbases.Basis,
+jBasis = (jbases.Orthogonal,
           jbases.ShenDirichletBasis,
           jbases.ShenBiharmonicBasis,
           jbases.ShenOrder6Basis)
@@ -193,7 +193,7 @@ def test_to_ortho(basis, quad):
     b1_hat = shenfun.project(a_hat, TC, output_array=b1_hat, fill=False, use_to_ortho=False)
     assert np.linalg.norm(b0_hat-b1_hat) < 1e-10
 
-    F0 = shenfun.Basis(N, 'F')
+    F0 = shenfun.FunctionSpace(N, 'F')
     TD = shenfun.TensorProductSpace(shenfun.comm, (B0, F0))
     TC = shenfun.TensorProductSpace(shenfun.comm, (B1, F0))
     a = shenfun.Array(TD)

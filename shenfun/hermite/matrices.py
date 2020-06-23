@@ -6,7 +6,7 @@ from shenfun.utilities import inheritdocstrings
 from shenfun.la import TDMA
 from . import bases
 
-HB = bases.Basis
+HB = bases.Orthogonal
 
 @inheritdocstrings
 class BHHmat(SpectralMatrix):

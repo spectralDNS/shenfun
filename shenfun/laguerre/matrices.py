@@ -5,7 +5,7 @@ from shenfun.la import TDMA_O
 from . import bases
 
 LD = bases.ShenDirichletBasis
-LB = bases.Basis
+LB = bases.Orthogonal
 
 
 @inheritdocstrings

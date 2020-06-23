@@ -5,9 +5,9 @@ from shenfun import *
 from mpl_toolkits.mplot3d import axes3d
 
 N = 256
-T = Basis(N, 'F', dtype='d')
+T = FunctionSpace(N, 'F', dtype='d')
 #Tp = T
-Tp = Basis(N, 'F', dtype='d', padding_factor=1.5)
+Tp = FunctionSpace(N, 'F', dtype='d', padding_factor=1.5)
 x = T.points_and_weights()[0]
 u = TrialFunction(T)
 v = TestFunction(T)

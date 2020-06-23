@@ -28,7 +28,7 @@ import importlib
 from sympy import symbols, sin
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    Array, Function, Basis, dx
+    Array, Function, FunctionSpace, dx
 
 assert len(sys.argv) == 3
 assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi')
@@ -48,7 +48,7 @@ fe = alfa*ue - ue.diff(x, 2)
 # Size of discretization
 N = int(sys.argv[-2])
 
-SD = Basis(N, family=family, bc='Dirichlet')
+SD = FunctionSpace(N, family=family, bc='Dirichlet')
 X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)
