@@ -18,7 +18,7 @@ import importlib
 from sympy import symbols, cos, sin
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
-    Function, TensorProductSpace, Basis, comm
+    Function, TensorProductSpace, FunctionSpace, comm
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
@@ -33,9 +33,9 @@ fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
 # Size of discretization
 N = (32, 32, 32)
 
-SD = Basis(N[0], family=family, bc='Neumann')
-K1 = Basis(N[1], family='F', dtype='D')
-K2 = Basis(N[2], family='F', dtype='d')
+SD = FunctionSpace(N[0], family=family, bc='Neumann')
+K1 = FunctionSpace(N[1], family='F', dtype='D')
+K2 = FunctionSpace(N[2], family='F', dtype='d')
 T = TensorProductSpace(comm, (SD, K1, K2))
 X = T.local_mesh(True)
 u = TrialFunction(T)

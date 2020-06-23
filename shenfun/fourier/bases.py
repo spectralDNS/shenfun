@@ -1,5 +1,5 @@
 """
-Module for defining bases in the Fourier family
+Module for defining function spaces in the Fourier family
 """
 import sympy as sp
 import numpy as np
@@ -7,7 +7,7 @@ from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
 from shenfun.optimization.cython import convolve
 
-__all__ = ['FourierBase', 'R2CBasis', 'C2CBasis']
+__all__ = ['FourierBase', 'R2C', 'C2C']
 
 #pylint: disable=method-hidden, no-member, line-too-long, arguments-differ
 
@@ -353,8 +353,8 @@ class FourierBase(SpectralBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
-class R2CBasis(FourierBase):
-    """Fourier basis class for real to complex transforms
+class R2C(FourierBase):
+    """Fourier function space for real to complex transforms
 
     Parameters
     ----------
@@ -477,7 +477,7 @@ class R2CBasis(FourierBase):
                            Function values on points
             last_conj_index : int
                               The last index to sum over for conj part
-                              (R2CBasis only)
+                              (R2C only)
             offset : int
                      Global offset (MPI)
 
@@ -568,8 +568,8 @@ class R2CBasis(FourierBase):
         return uv
 
 
-class C2CBasis(FourierBase):
-    """Fourier basis class for complex to complex transforms
+class C2C(FourierBase):
+    """Fourier function space for complex to complex transforms
 
     Parameters
     ----------

@@ -15,7 +15,7 @@ import sys
 from sympy import symbols, cos, pi
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    Array, Function, Basis, dx
+    Array, Function, FunctionSpace, dx
 
 assert len(sys.argv) == 3, 'Call with two command-line arguments'
 assert sys.argv[-1] in ('legendre', 'chebyshev')
@@ -36,7 +36,7 @@ fe = ue.diff(x, 2)
 # Size of discretization
 N = int(sys.argv[-2])
 
-SD = Basis(N, family=family, bc='NeumannDirichlet', domain=domain)
+SD = FunctionSpace(N, family=family, bc='NeumannDirichlet', domain=domain)
 X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)

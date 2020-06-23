@@ -4,8 +4,8 @@ import sympy as sp
 from mpi4py import MPI
 import shenfun
 from shenfun import inner, div, curl, grad, Function, \
-    Array, project, Dx, Basis, TensorProductSpace, VectorTensorProductSpace, \
-    MixedTensorProductSpace
+    Array, project, Dx, TensorProductSpace, VectorTensorProductSpace, \
+    MixedTensorProductSpace, FunctionSpace
 
 comm = MPI.COMM_WORLD
 # Set global size of the computational box
@@ -20,9 +20,9 @@ def allclose(a, b):
 
 @pytest.mark.parametrize('typecode', 'fdg')
 def test_curl(typecode):
-    K0 = Basis(N[0], 'F', dtype=typecode.upper())
-    K1 = Basis(N[1], 'F', dtype=typecode.upper())
-    K2 = Basis(N[2], 'F', dtype=typecode)
+    K0 = FunctionSpace(N[0], 'F', dtype=typecode.upper())
+    K1 = FunctionSpace(N[1], 'F', dtype=typecode.upper())
+    K2 = FunctionSpace(N[2], 'F', dtype=typecode)
     T = TensorProductSpace(comm, (K0, K1, K2), dtype=typecode)
     X = T.local_mesh(True)
     K = T.local_wavenumbers()
@@ -80,10 +80,10 @@ def test_curl(typecode):
 def test_curl2():
     # Test projection of curl
 
-    K0 = Basis(N[0], 'C', bc=(0, 0))
-    K1 = Basis(N[1], 'F', dtype='D')
-    K2 = Basis(N[2], 'F', dtype='d')
-    K3 = Basis(N[0], 'C')
+    K0 = FunctionSpace(N[0], 'C', bc=(0, 0))
+    K1 = FunctionSpace(N[1], 'F', dtype='D')
+    K2 = FunctionSpace(N[2], 'F', dtype='d')
+    K3 = FunctionSpace(N[0], 'C')
 
     T = TensorProductSpace(comm, (K0, K1, K2))
     TT = TensorProductSpace(comm, (K3, K1, K2))
@@ -140,8 +140,8 @@ def test_curl_cc():
     ue = sph(6, 3, theta, phi)
 
     N, M = 16, 12
-    L0 = Basis(N, 'C', domain=(0, np.pi))
-    F1 = Basis(M, 'F', dtype='D')
+    L0 = FunctionSpace(N, 'C', domain=(0, np.pi))
+    F1 = FunctionSpace(M, 'F', dtype='D')
     T = TensorProductSpace(comm, (L0, F1), coordinates=(psi, rv))
     u_hat = Function(T, buffer=ue)
     du = curl(grad(u_hat))
@@ -154,9 +154,9 @@ def test_curl_cc():
     ue = (r*(1-r)*sp.cos(4*theta)-1*(r-1))*sp.cos(4*z)
 
     N = 12
-    F0 = Basis(N, 'F', dtype='D')
-    F1 = Basis(N, 'F', dtype='d')
-    L = Basis(N, 'L', bc='Dirichlet', domain=(0, 1))
+    F0 = FunctionSpace(N, 'F', dtype='D')
+    F1 = FunctionSpace(N, 'F', dtype='d')
+    L = FunctionSpace(N, 'L', bc='Dirichlet', domain=(0, 1))
     T = TensorProductSpace(comm, (L, F0, F1), coordinates=(psi, rv))
     T1 = T.get_orthogonal()
     V = VectorTensorProductSpace(T1)

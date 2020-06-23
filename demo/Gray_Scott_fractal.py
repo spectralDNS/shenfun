@@ -33,7 +33,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpi4py_fft import generate_xdmf
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    HDF5File, ETDRK4, TensorProductSpace, VectorTensorProductSpace, Basis, Array, \
+    HDF5File, ETDRK4, TensorProductSpace, VectorTensorProductSpace, FunctionSpace, Array, \
     comm
 
 # Use sympy to set up initial condition
@@ -47,8 +47,8 @@ v0 = 0.25*(0.5*(erf((x-0.04)/a)+1) - 0.5*(erf((x+0.04)/a)+1))*(0.5*(erf((y-0.04)
 # Size of discretization
 N = (200, 200)
 
-K0 = Basis(N[0], 'F', dtype='D', domain=(-1., 1.))
-K1 = Basis(N[1], 'F', dtype='d', domain=(-1., 1.))
+K0 = FunctionSpace(N[0], 'F', dtype='D', domain=(-1., 1.))
+K1 = FunctionSpace(N[1], 'F', dtype='d', domain=(-1., 1.))
 T = TensorProductSpace(comm, (K0, K1))
 X = T.local_mesh(True)
 u = TrialFunction(T)

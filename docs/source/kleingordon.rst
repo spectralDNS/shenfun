@@ -7,7 +7,7 @@ Demo - Cubic nonlinear Klein-Gordon equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Jun 7, 2020
+:Date: Jun 23, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Klein-Gordon equation, in a triply periodic domain. The demo is implemented in
@@ -440,9 +440,9 @@ real data is now complex. We may start implementing the solver as follows
     N = (32, 32, 32)
     
     # Create bases
-    K0 = Basis(N[0], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
-    K1 = Basis(N[1], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
-    K2 = Basis(N[2], 'F', domain=(-2*np.pi, 2*np.pi), dtype='d')
+    K0 = FunctionSpace(N[0], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
+    K1 = FunctionSpace(N[1], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
+    K2 = FunctionSpace(N[2], 'F', domain=(-2*np.pi, 2*np.pi), dtype='d')
 
 We now have three instances ``K0``, ``K1`` and ``K2``, corresponding to the space
 :eq:`eq:kg:Vn`, that each can be used to solve
@@ -632,9 +632,9 @@ decimal points at :math:`t=100`.
     # Defocusing or focusing
     gamma = 1
     
-    K0 = Basis(N[0], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
-    K1 = Basis(N[1], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
-    K2 = Basis(N[2], 'F', domain=(-2*np.pi, 2*np.pi), dtype='d')
+    K0 = FunctionSpace(N[0], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
+    K1 = FunctionSpace(N[1], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
+    K2 = FunctionSpace(N[2], 'F', domain=(-2*np.pi, 2*np.pi), dtype='d')
     T = TensorProductSpace(comm, (K0, K1, K2), slab=False,
                            **{'planner_effort': 'FFTW_MEASURE'})
     

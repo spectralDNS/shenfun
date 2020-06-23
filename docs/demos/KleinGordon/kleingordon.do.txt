@@ -373,9 +373,9 @@ import numpy as np
 N = (32, 32, 32)
 
 # Create bases
-K0 = Basis(N[0], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
-K1 = Basis(N[1], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
-K2 = Basis(N[2], 'F', domain=(-2*np.pi, 2*np.pi), dtype='d')
+K0 = FunctionSpace(N[0], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
+K1 = FunctionSpace(N[1], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
+K2 = FunctionSpace(N[2], 'F', domain=(-2*np.pi, 2*np.pi), dtype='d')
 !ec
 
 We now have three instances `K0`, `K1` and `K2`, corresponding to the space
@@ -563,9 +563,9 @@ N = (64, 64, 64)
 # Defocusing or focusing
 gamma = 1
 
-K0 = Basis(N[0], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
-K1 = Basis(N[1], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
-K2 = Basis(N[2], 'F', domain=(-2*np.pi, 2*np.pi), dtype='d')
+K0 = FunctionSpace(N[0], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
+K1 = FunctionSpace(N[1], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
+K2 = FunctionSpace(N[2], 'F', domain=(-2*np.pi, 2*np.pi), dtype='d')
 T = TensorProductSpace(comm, (K0, K1, K2), slab=False,
                        **{'planner_effort': 'FFTW_MEASURE'})
 

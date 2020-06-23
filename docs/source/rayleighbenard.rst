@@ -7,7 +7,7 @@ Demo - Rayleigh Benard
 %%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Jun 7, 2020
+:Date: Jun 23, 2020
 
 *Summary.* Rayleigh-Benard convection arise
 due to temperature gradients in a fluid. The governing equations are
@@ -466,11 +466,11 @@ but the former is known to be faster due to the existence of fast transforms.
     
     N, M = 100, 256
     family = 'Chebyshev'
-    VB = Basis(N, family, bc='Biharmonic')
-    VD = Basis(N, family, bc=(0, 0))
-    VW = Basis(N, family)
-    VT = Basis(N, family, bc=(0, 1))
-    VF = Basis(M, 'F', dtype='d')
+    VB = FunctionSpace(N, family, bc='Biharmonic')
+    VD = FunctionSpace(N, family, bc=(0, 0))
+    VW = FunctionSpace(N, family)
+    VT = FunctionSpace(N, family, bc=(0, 1))
+    VF = FunctionSpace(M, 'F', dtype='d')
 
 And then we create tensor product spaces by combining these bases (like in Eqs. :eq:`eq:WBF`-:eq:`eq:WWF`).
 
@@ -762,7 +762,7 @@ creation of ``VT`` by
     import sympy as sp
     y, t = sp.symbols('y,t')
     f = 0.9+0.1*sp.sin(2*(y))*sp.exp(-t)
-    VT = Basis(N, family, bc=(0, f))
+    VT = FunctionSpace(N, family, bc=(0, f))
 
 For merely a constant ``f`` or a ``y``-dependency, no further action is required.
 However, a time-dependent approach requires the boundary values to be

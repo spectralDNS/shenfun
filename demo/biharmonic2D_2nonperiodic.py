@@ -12,7 +12,7 @@ import os
 from sympy import symbols, sin
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
-    Function, TensorProductSpace, Basis, comm
+    Function, TensorProductSpace, FunctionSpace, comm
 from shenfun.la import SolverGeneric2ND
 
 assert comm.Get_size() == 1, "Two non-periodic directions only have solver implemented for serial"
@@ -28,8 +28,8 @@ fe = ue.diff(x, 4) + ue.diff(y, 4) + 2*ue.diff(x, 2, y, 2)
 # Size of discretization
 N = (30, 30)
 
-S0 = Basis(N[0], family=family, bc='Biharmonic')
-S1 = Basis(N[1], family=family, bc='Biharmonic')
+S0 = FunctionSpace(N[0], family=family, bc='Biharmonic')
+S1 = FunctionSpace(N[1], family=family, bc='Biharmonic')
 T = TensorProductSpace(comm, (S0, S1), axes=(0, 1))
 X = T.local_mesh(True)
 u = TrialFunction(T)

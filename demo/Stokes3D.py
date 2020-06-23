@@ -42,10 +42,10 @@ h = uex.diff(x, 1) + uey.diff(y, 1) + uez.diff(z, 1)
 
 N = (20, 20, 20)
 family = sys.argv[-1] if len(sys.argv) == 2 else 'Legendre'
-K0 = Basis(N[0], 'Fourier', dtype='D', domain=(0, 2*np.pi))
-K1 = Basis(N[1], 'Fourier', dtype='d', domain=(0, 2*np.pi))
-SD = Basis(N[2], family, bc=(0, 0))
-ST = Basis(N[2], family)
+K0 = FunctionSpace(N[0], 'Fourier', dtype='D', domain=(0, 2*np.pi))
+K1 = FunctionSpace(N[1], 'Fourier', dtype='d', domain=(0, 2*np.pi))
+SD = FunctionSpace(N[2], family, bc=(0, 0))
+ST = FunctionSpace(N[2], family)
 
 TD = TensorProductSpace(comm, (K0, K1, SD), axes=(2, 0, 1))
 Q = TensorProductSpace(comm, (K0, K1, ST), axes=(2, 0, 1))

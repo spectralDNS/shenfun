@@ -24,12 +24,12 @@ class RayleighBenard(object):
 
         # Regular spaces
         self.sol = chebyshev if family == 'C' else legendre
-        self.B0 = Basis(N[0], family, quad=quad, bc='Biharmonic')
-        self.D0 = Basis(N[0], family, quad=quad, bc=(0, 0))
-        self.C0 = Basis(N[0], family, quad=quad)
-        self.T0 = Basis(N[0], family, quad=quad, bc=bcT)
-        self.F1 = Basis(N[1], 'F', dtype='d')
-        self.D00 = Basis(N[0], family, quad=quad, bc=(0, 0))  # Streamwise velocity, not to be in tensorproductspace
+        self.B0 = FunctionSpace(N[0], family, quad=quad, bc='Biharmonic')
+        self.D0 = FunctionSpace(N[0], family, quad=quad, bc=(0, 0))
+        self.C0 = FunctionSpace(N[0], family, quad=quad)
+        self.T0 = FunctionSpace(N[0], family, quad=quad, bc=bcT)
+        self.F1 = FunctionSpace(N[1], 'F', dtype='d')
+        self.D00 = FunctionSpace(N[0], family, quad=quad, bc=(0, 0))  # Streamwise velocity, not to be in tensorproductspace
 
         # Regular tensor product spaces
         self.TB = TensorProductSpace(comm, (self.B0, self.F1)) # Wall-normal velocity

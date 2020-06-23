@@ -39,12 +39,12 @@ family = 'Chebyshev'
 #family = 'Legendre'
 quad = 'GC'
 x = sympy.symbols('x', real='True')
-D0X = Basis(N[0], family, quad=quad, bc=(0, 0))
-#D1Y = Basis(N[1], family, quad=quad, bc=(1, 0))
-D1Y = Basis(N[1], family, quad=quad, bc=((1-x)**2*(1+x)**2, 0))
-D0Y = Basis(N[1], family, quad=quad, bc=(0, 0))
-PX = Basis(N[0], family, quad=quad)
-PY = Basis(N[1], family, quad=quad)
+D0X = FunctionSpace(N[0], family, quad=quad, bc=(0, 0))
+#D1Y = FunctionSpace(N[1], family, quad=quad, bc=(1, 0))
+D1Y = FunctionSpace(N[1], family, quad=quad, bc=((1-x)**2*(1+x)**2, 0))
+D0Y = FunctionSpace(N[1], family, quad=quad, bc=(0, 0))
+PX = FunctionSpace(N[0], family, quad=quad)
+PY = FunctionSpace(N[1], family, quad=quad)
 
 # To get a P_N x P_{N-2} space, just pick the first N-2 items of the pressure basis
 # Note that this effectively sets P_N and P_{N-1} to zero, but still the basis uses

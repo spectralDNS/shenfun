@@ -1,5 +1,5 @@
 """
-Module for defining bases in the Legendre family
+Module for defining function spaces in the Legendre family
 """
 
 from __future__ import division
@@ -15,12 +15,12 @@ from shenfun.spectralbase import SpectralBase, work, Transform, islicedict, \
 from shenfun.forms.arguments import Function
 from .lobatto import legendre_lobatto_nodes_and_weights
 
-__all__ = ['LegendreBase', 'Basis', 'ShenDirichletBasis',
-           'ShenBiharmonicBasis', 'ShenNeumannBasis',
-           'ShenBiPolarBasis', 'ShenBiPolar0Basis',
-           'NeumannDirichletBasis', 'DirichletNeumannBasis',
-           'UpperDirichletBasis',
-           'BCBasis', 'BCBiharmonicBasis']
+__all__ = ['LegendreBase', 'Orthogonal', 'ShenDirichlet',
+           'ShenBiharmonic', 'ShenNeumann',
+           'ShenBiPolar', 'ShenBiPolar0',
+           'NeumannDirichlet', 'DirichletNeumann',
+           'UpperDirichlet',
+           'BCDirichlet', 'BCBiharmonic']
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
@@ -38,7 +38,7 @@ mode = mode if has_quadpy else 'numpy'
 
 
 class LegendreBase(SpectralBase):
-    """Base class for all Legendre bases
+    """Base class for all Legendre spaces
 
     Parameters
     ----------
@@ -189,11 +189,11 @@ class LegendreBase(SpectralBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_orthogonal(self):
-        return Basis(self.N, quad=self.quad, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
+        return Orthogonal(self.N, quad=self.quad, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
 
 
-class Basis(LegendreBase):
-    """Basis for regular Legendre series
+class Orthogonal(LegendreBase):
+    """Function space for regular (orthogonal) Legendre series
 
     Parameters
     ----------
@@ -242,8 +242,8 @@ class Basis(LegendreBase):
         return True
 
 
-class ShenDirichletBasis(LegendreBase):
-    """Shen Legendre basis for Dirichlet boundary conditions
+class ShenDirichlet(LegendreBase):
+    """Legendre Function space for Dirichlet boundary conditions
 
     Parameters
     ----------
@@ -285,7 +285,7 @@ class ShenDirichletBasis(LegendreBase):
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
-        self.LT = Basis(N, quad)
+        self.LT = Orthogonal(N, quad)
         self._scaled = scaled
         self._factor = np.ones(1)
         self.plan(int(N*padding_factor), 0, dtype, {})
@@ -432,30 +432,30 @@ class ShenDirichletBasis(LegendreBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_bc_basis(self):
-        return BCBasis(self.N, quad=self.quad, domain=self.domain,
+        return BCDirichlet(self.N, quad=self.quad, domain=self.domain,
                        scaled=self._scaled, coordinates=self.coors.coordinates)
 
     def get_refined(self, N):
-        return ShenDirichletBasis(N,
-                                  quad=self.quad,
-                                  domain=self.domain,
-                                  dtype=self.dtype,
-                                  padding_factor=self.padding_factor,
-                                  dealias_direct=self.dealias_direct,
-                                  coordinates=self.coors.coordinates,
-                                  bc=self.bc.bc,
-                                  scaled=self._scaled)
+        return ShenDirichlet(N,
+                             quad=self.quad,
+                             domain=self.domain,
+                             dtype=self.dtype,
+                             padding_factor=self.padding_factor,
+                             dealias_direct=self.dealias_direct,
+                             coordinates=self.coors.coordinates,
+                             bc=self.bc.bc,
+                             scaled=self._scaled)
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return ShenDirichletBasis(self.N,
-                                  quad=self.quad,
-                                  dtype=self.dtype,
-                                  padding_factor=padding_factor,
-                                  dealias_direct=dealias_direct,
-                                  domain=self.domain,
-                                  coordinates=self.coors.coordinates,
-                                  bc=self.bc.bc,
-                                  scaled=self._scaled)
+        return ShenDirichlet(self.N,
+                             quad=self.quad,
+                             dtype=self.dtype,
+                             padding_factor=padding_factor,
+                             dealias_direct=dealias_direct,
+                             domain=self.domain,
+                             coordinates=self.coors.coordinates,
+                             bc=self.bc.bc,
+                             scaled=self._scaled)
 
     def _truncation_forward(self, padded_array, trunc_array):
         if not id(trunc_array) == id(padded_array):
@@ -481,8 +481,8 @@ class ShenDirichletBasis(LegendreBase):
             padded_array[su] = 0
 
 
-class ShenNeumannBasis(LegendreBase):
-    """Shen basis for homogeneous Neumann boundary conditions
+class ShenNeumann(LegendreBase):
+    """Function space for homogeneous Neumann boundary conditions
 
     Parameters
     ----------
@@ -521,7 +521,7 @@ class ShenNeumannBasis(LegendreBase):
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         self.mean = mean
-        self.LT = Basis(N, quad)
+        self.LT = Orthogonal(N, quad)
         self._factor = np.zeros(0)
         self.plan(int(N*padding_factor), 0, dtype, {})
 
@@ -626,28 +626,28 @@ class ShenNeumannBasis(LegendreBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_refined(self, N):
-        return ShenNeumannBasis(N,
-                                quad=self.quad,
-                                domain=self.domain,
-                                dtype=self.dtype,
-                                padding_factor=self.padding_factor,
-                                dealias_direct=self.dealias_direct,
-                                coordinates=self.coors.coordinates,
-                                mean=self.mean)
+        return ShenNeumann(N,
+                           quad=self.quad,
+                           domain=self.domain,
+                           dtype=self.dtype,
+                           padding_factor=self.padding_factor,
+                           dealias_direct=self.dealias_direct,
+                           coordinates=self.coors.coordinates,
+                           mean=self.mean)
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return ShenNeumannBasis(self.N,
-                                quad=self.quad,
-                                domain=self.domain,
-                                dtype=self.dtype,
-                                padding_factor=padding_factor,
-                                dealias_direct=dealias_direct,
-                                coordinates=self.coors.coordinates,
-                                mean=self.mean)
+        return ShenNeumann(self.N,
+                           quad=self.quad,
+                           domain=self.domain,
+                           dtype=self.dtype,
+                           padding_factor=padding_factor,
+                           dealias_direct=dealias_direct,
+                           coordinates=self.coors.coordinates,
+                           mean=self.mean)
 
 
-class ShenBiharmonicBasis(LegendreBase):
-    """Shen biharmonic basis
+class ShenBiharmonic(LegendreBase):
+    """Function space for biharmonic basis
 
     Both Dirichlet and Neumann boundary conditions.
 
@@ -687,7 +687,7 @@ class ShenBiharmonicBasis(LegendreBase):
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
-        self.LT = Basis(N, quad)
+        self.LT = Orthogonal(N, quad)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
         self.plan(int(N*padding_factor), 0, dtype, {})
@@ -706,7 +706,7 @@ class ShenBiharmonicBasis(LegendreBase):
         k = np.arange(V.shape[1]).astype(np.float)[:-4]
         P[:, :-4] = V[:, :-4] - (2*(2*k+5)/(2*k+7))*V[:, 2:-2] + ((2*k+3)/(2*k+7))*V[:, 4:]
         if argument == 1:
-            P[:, -4:] = np.tensordot(V[:, :4], BCBiharmonicBasis.coefficient_matrix(), (1, 1))
+            P[:, -4:] = np.tensordot(V[:, :4], BCBiharmonic.coefficient_matrix(), (1, 1))
         return P
 
     def set_factor_arrays(self, v):
@@ -738,7 +738,7 @@ class ShenBiharmonicBasis(LegendreBase):
                  +((2*i+3.)/(2*i+7.))*sympy.legendre(i+4, x))
         else:
             f = 0
-            for j, c in enumerate(BCBiharmonicBasis.coefficient_matrix()[i-(self.N-4)]):
+            for j, c in enumerate(BCBiharmonic.coefficient_matrix()[i-(self.N-4)]):
                 f += c*sympy.legendre(j, x)
         return f
 
@@ -812,28 +812,28 @@ class ShenBiharmonicBasis(LegendreBase):
         return self.forward.output_array
 
     def get_bc_basis(self):
-        return BCBiharmonicBasis(self.N, quad=self.quad, domain=self.domain,
+        return BCBiharmonic(self.N, quad=self.quad, domain=self.domain,
                                  coordinates=self.coors.coordinates)
 
     def get_refined(self, N):
-        return ShenBiharmonicBasis(N,
-                                   quad=self.quad,
-                                   domain=self.domain,
-                                   dtype=self.dtype,
-                                   padding_factor=self.padding_factor,
-                                   dealias_direct=self.dealias_direct,
-                                   coordinates=self.coors.coordinates,
-                                   bc=self.bc.bc)
+        return ShenBiharmonic(N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates,
+                              bc=self.bc.bc)
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return ShenBiharmonicBasis(self.N,
-                                   quad=self.quad,
-                                   domain=self.domain,
-                                   dtype=self.dtype,
-                                   padding_factor=padding_factor,
-                                   dealias_direct=dealias_direct,
-                                   coordinates=self.coors.coordinates,
-                                   bc=self.bc.bc)
+        return ShenBiharmonic(self.N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=padding_factor,
+                              dealias_direct=dealias_direct,
+                              coordinates=self.coors.coordinates,
+                              bc=self.bc.bc)
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
@@ -885,8 +885,8 @@ class ShenBiharmonicBasis(LegendreBase):
             padded_array[su] = 0
 
 
-class UpperDirichletBasis(LegendreBase):
-    """Shen Legendre basis with homogeneous Dirichlet boundary conditions on x=1
+class UpperDirichlet(LegendreBase):
+    """Legendre function space with homogeneous Dirichlet boundary conditions on x=1
 
     Parameters
     ----------
@@ -922,7 +922,7 @@ class UpperDirichletBasis(LegendreBase):
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
-        self.LT = Basis(N, quad)
+        self.LT = Orthogonal(N, quad)
         self._factor = np.ones(1)
         self.plan(int(N*padding_factor), 0, dtype, {})
 
@@ -1033,8 +1033,8 @@ class UpperDirichletBasis(LegendreBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
-class ShenBiPolarBasis(LegendreBase):
-    """Shen's Legendre basis for the Biharmonic equation in polar coordinates
+class ShenBiPolar(LegendreBase):
+    """Legendre function space for the Biharmonic equation in polar coordinates
 
     Parameters
     ----------
@@ -1070,7 +1070,7 @@ class ShenBiPolarBasis(LegendreBase):
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
-        self.LT = Basis(N, quad)
+        self.LT = Orthogonal(N, quad)
         self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
@@ -1166,8 +1166,8 @@ class ShenBiPolarBasis(LegendreBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
-class ShenBiPolar0Basis(LegendreBase):
-    """Shen biharmonic basis for polar coordinates
+class ShenBiPolar0(LegendreBase):
+    """Legendre function space for biharmonic basis for polar coordinates
 
     Homogeneous Dirichlet and Neumann boundary conditions.
 
@@ -1206,7 +1206,7 @@ class ShenBiPolar0Basis(LegendreBase):
         LegendreBase.__init__(self, N, quad="LG", domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
-        self.LT = Basis(N, quad)
+        self.LT = Orthogonal(N, quad)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
         self._factor3 = np.zeros(0)
@@ -1337,8 +1337,8 @@ class ShenBiPolar0Basis(LegendreBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
-class DirichletNeumannBasis(LegendreBase):
-    """Basis for mixed Dirichlet/Neumann boundary conditions
+class DirichletNeumann(LegendreBase):
+    """Function space for mixed Dirichlet/Neumann boundary conditions
 	u(-1)=0, u'(1)=0
     Parameters
     ----------
@@ -1380,7 +1380,7 @@ class DirichletNeumannBasis(LegendreBase):
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
-        self.LT = Basis(N, quad)
+        self.LT = Orthogonal(N, quad)
         self._factor1 = np.ones(1)
         self._factor2 = np.ones(1)
         self.plan(int(N*padding_factor), 0, np.float, {})
@@ -1504,8 +1504,8 @@ class DirichletNeumannBasis(LegendreBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
-class NeumannDirichletBasis(LegendreBase):
-    """Basis for mixed Dirichlet/Neumann boundary conditions
+class NeumannDirichlet(LegendreBase):
+    """Function space for mixed Dirichlet/Neumann boundary conditions
 	u'(-1)=0, u(1)=0
     Parameters
     ----------
@@ -1547,7 +1547,7 @@ class NeumannDirichletBasis(LegendreBase):
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
-        self.LT = Basis(N, quad)
+        self.LT = Orthogonal(N, quad)
         self._factor = np.ones(1)
         self.plan(int(N*padding_factor), 0, np.float, {})
         self.bc = BoundaryValues(self, bc=bc)
@@ -1670,7 +1670,7 @@ class NeumannDirichletBasis(LegendreBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
-class BCBasis(LegendreBase):
+class BCDirichlet(LegendreBase):
 
     def __init__(self, N, quad="LG", scaled=False,
                  domain=(-1., 1.), coordinates=None):
@@ -1750,8 +1750,8 @@ class BCBasis(LegendreBase):
         return output_array
 
 
-class BCBiharmonicBasis(LegendreBase):
-    """Basis for inhomogeneous Biharmonic boundary conditions
+class BCBiharmonic(LegendreBase):
+    """Function space for inhomogeneous Biharmonic boundary conditions
 
     Parameters
     ----------

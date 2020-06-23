@@ -37,7 +37,7 @@ elif sol == 1:
 # Size of discretization
 N = int(sys.argv[-1])
 
-SD = Basis(N, 'J', bc='6th order', domain=domain)
+SD = FunctionSpace(N, 'J', bc='6th order', domain=domain)
 X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)
@@ -62,5 +62,5 @@ uq = Array(SD, buffer=ue)
 print(np.linalg.norm(u_hat.backward()-uq))
 assert np.linalg.norm(u_hat.backward()-uq) < 1e-8
 
-B0 = Basis(N, 'J', alpha=0, beta=0)
+B0 = FunctionSpace(N, 'J', alpha=0, beta=0)
 u_b = project(u_hat, B0)

@@ -5,7 +5,7 @@ weighted inner product.
 from numbers import Number
 import numpy as np
 import sympy as sp
-from shenfun.spectralbase import inner_product, SpectralBase, MixedBasis
+from shenfun.spectralbase import inner_product, SpectralBase, MixedFunctionSpace
 from shenfun.matrixbase import TPMatrix, Identity
 from shenfun.tensorproductspace import TensorProductSpace, MixedTensorProductSpace
 from shenfun.utilities import dx, split
@@ -98,9 +98,9 @@ def inner(expr0, expr1, output_array=None, level=0):
     -------
     Compute mass matrix of Shen's Chebyshev Dirichlet basis:
 
-    >>> from shenfun import Basis
+    >>> from shenfun import FunctionSpace
     >>> from shenfun import TestFunction, TrialFunction
-    >>> SD = Basis(6, 'Chebyshev', bc=(0, 0))
+    >>> SD = FunctionSpace(6, 'Chebyshev', bc=(0, 0))
     >>> u = TrialFunction(SD)
     >>> v = TestFunction(SD)
     >>> B = inner(v, u)
@@ -269,10 +269,10 @@ def inner(expr0, expr1, output_array=None, level=0):
                     dV = sp.refine(dV, testspace.coors._assumptions)
                     assert len(b0) == len(b1)
                     trial_sp = trialspace
-                    if isinstance(trialspace, (MixedTensorProductSpace, MixedBasis)): # could operate on a vector, e.g., div(u), where u is vector
+                    if isinstance(trialspace, (MixedTensorProductSpace, MixedFunctionSpace)): # could operate on a vector, e.g., div(u), where u is vector
                         trial_sp = trialspace.flatten()[trial_ind[trial_j]]
                     test_sp = testspace
-                    if isinstance(testspace, (MixedTensorProductSpace, MixedBasis)):
+                    if isinstance(testspace, (MixedTensorProductSpace, MixedFunctionSpace)):
                         test_sp = testspace.flatten()[test_ind[test_j]]
                     has_bcs = False
                     # Check if scale is zero
@@ -341,8 +341,8 @@ def inner(expr0, expr1, output_array=None, level=0):
     #           TPMatrix([(v[0], u[0])_x, (v[1], u[1]'')_y])]
     #
     # where v[0], v[1] are the test functions in x- and y-directions,
-    # respectively. For example, v[0] could be a ShenDirichletBasis and v[1]
-    # could be a FourierBasis. Same for u.
+    # respectively. For example, v[0] could be a ShenDirichlet and v[1]
+    # could be a Fourier space. Same for u.
     #
     # There are now two possibilities, either a linear or a bilinear form.
     # A linear form has trial.argument == 2, whereas a bilinear form has
