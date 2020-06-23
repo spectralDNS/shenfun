@@ -9,7 +9,7 @@ pip:
 	twine upload dist/*
 
 tag:
-	git tag $(VERSION)
+	git tag -f $(VERSION)
 	git push --tags
 
 publish: tag pip
