@@ -7,9 +7,9 @@ from mpi4py_fft import generate_xdmf
 N = (24, 25, 26)
 backend = 'netcdf'
 nsteps = 1
-K0 = Basis(N[0], 'F', dtype='D')
-K1 = Basis(N[1], 'F', dtype='D')
-K2 = Basis(N[2], 'F', dtype='d')
+K0 = FunctionSpace(N[0], 'F', dtype='D')
+K1 = FunctionSpace(N[1], 'F', dtype='D')
+K2 = FunctionSpace(N[2], 'F', dtype='d')
 T = TensorProductSpace(MPI.COMM_WORLD, (K0, K1, K2))
 TT = MixedTensorProductSpace([T, T])
 TV = VectorTensorProductSpace(T)
@@ -46,10 +46,10 @@ if backend == 'hdf5' and MPI.COMM_WORLD.Get_rank() == 0:
     generate_xdmf('vecfile.h5')
 
 N = (8, 24, 25, 26)
-K0 = Basis(N[0], 'F', dtype='D')
-K1 = Basis(N[1], 'F', dtype='D')
-K2 = Basis(N[2], 'F', dtype='D')
-K3 = Basis(N[3], 'F', dtype='d')
+K0 = FunctionSpace(N[0], 'F', dtype='D')
+K1 = FunctionSpace(N[1], 'F', dtype='D')
+K2 = FunctionSpace(N[2], 'F', dtype='D')
+K3 = FunctionSpace(N[3], 'F', dtype='d')
 
 T = TensorProductSpace(MPI.COMM_WORLD, (K0, K1, K2, K3))
 TT = MixedTensorProductSpace([T, T])
@@ -78,8 +78,8 @@ if backend == 'hdf5' and MPI.COMM_WORLD.Get_rank() == 0:
     generate_xdmf('mix4Dfile.h5')
 
 N = (14, 16)
-K0 = Basis(N[0], 'F', dtype='D')
-K1 = Basis(N[1], 'F', dtype='d')
+K0 = FunctionSpace(N[0], 'F', dtype='D')
+K1 = FunctionSpace(N[1], 'F', dtype='d')
 T = TensorProductSpace(MPI.COMM_WORLD, (K0, K1))
 TT = MixedTensorProductSpace([T, T])
 d2file_s = ShenfunFile('my2Dfile', T, backend=backend, mode='w')

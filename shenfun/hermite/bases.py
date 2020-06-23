@@ -9,7 +9,7 @@ from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
 
-class Basis(SpectralBase):
+class Orthogonal(SpectralBase):
     """Base class for Hermite functions
 
     Parameters

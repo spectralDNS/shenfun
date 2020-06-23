@@ -20,7 +20,7 @@ from sympy import symbols, cos, sin
 import numpy as np
 from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
-    Function, Basis, TensorProductSpace, dx
+    Function, FunctionSpace, TensorProductSpace, dx
 from mpi4py_fft.pencil import Subcomm
 
 comm = MPI.COMM_WORLD
@@ -49,9 +49,9 @@ N = int(sys.argv[-2])
 N = [N, N+1, N+2]
 #N = (14, 15, 16)
 
-SD = Basis(N[1], family=family, bc=(a, b))
-K1 = Basis(N[0], family='F', dtype='D')
-K2 = Basis(N[2], family='F', dtype='d')
+SD = FunctionSpace(N[1], family=family, bc=(a, b))
+K1 = FunctionSpace(N[0], family='F', dtype='D')
+K2 = FunctionSpace(N[2], family='F', dtype='d')
 subcomms = Subcomm(MPI.COMM_WORLD, [0, 0, 1])
 T = TensorProductSpace(subcomms, (K1, SD, K2), axes=(1, 0, 2))
 X = T.local_mesh()

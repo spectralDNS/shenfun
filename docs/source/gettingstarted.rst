@@ -20,30 +20,30 @@ most important everyday tools are
 	* :func:`.div`
 	* :func:`.grad`
 	* :func:`.project`
-	* :func:`.Basis`
+	* :func:`.FunctionSpace`
 
-A good place to get started is by creating a :func:`.Basis`. There are six families of
-bases: Fourier, Chebyshev, Legendre, Laguerre, Hermite and Jacobi. All bases are
+A good place to get started is by creating a :func:`.FunctionSpace`. There are six families of
+function spaces: Fourier, Chebyshev, Legendre, Laguerre, Hermite and Jacobi. All spaces are
 defined on a one-dimensional
 domain, with their own basis functions and quadrature points. For example, we have
-the regular Chebyshev basis :math:`\{T_k\}_{k=0}^{N-1}`, where :math:`T_k` is the
-:math:`k`'th Chebyshev polynomial of the first kind. To create such a basis with
-8 quadrature points  (i.e., :math:`\{T_k\}_{k=0}^{7}`) do::
+the regular orthogonal Chebyshev space :math:`\text{span}\{T_k\}_{k=0}^{N-1}`, where :math:`T_k` is the
+:math:`k`'th Chebyshev polynomial of the first kind. To create such a function space with
+8 quadrature points do::
 
-    from shenfun import Basis
+    from shenfun import FunctionSpace
     N = 8
-    T = Basis(N, 'Chebyshev', bc=None)
+    T = FunctionSpace(N, 'Chebyshev', bc=None)
 
 Here ``bc=None`` is used to indicate that there are no boundary conditions associated
-with this basis, which is the default, so it could just as well have been left out.
+with this space, which is the default, so it could just as well have been left out.
 To create
-a regular Legendre basis (i.e., :math:`\{L_k\}_{k=0}^{N-1}`, where :math:`L_k` is the
-:math:`k`'th Legendre polynomial), just replace
-``Chebyshev`` with ``Legendre`` above. And to create a Fourier basis, just use
+a regular orthogonal Legendre function space (i.e., :math:`\text{span}\{L_k\}_{k=0}^{N-1}`,
+where :math:`L_k` is the :math:`k`'th Legendre polynomial), just replace
+``Chebyshev`` with ``Legendre`` above. And to create a Fourier function space, just use
 ``Fourier``.
 
-The basis :math:`T = \{T_k\}_{k=0}^{N-1}` has many useful methods associated
-with it, and we may experiment a little. A :class:`.Function` ``u`` using basis
+The function space :math:`T = \text{span}\{T_k\}_{k=0}^{N-1}` has many useful methods associated
+with it, and we may experiment a little. A :class:`.Function` ``u`` using the basis in
 :math:`T` has expansion
 
 .. math::
@@ -79,14 +79,15 @@ The Sympy function ``u`` can now be evaluated on the quadrature points of basis
       [ 0.92387953  0.38268343 -0.38268343 -0.92387953 -0.92387953 -0.38268343
         0.38268343  0.92387953]
 
-We see that ``ue`` is an :class:`.Array` on the basis ``T``, and not a
+We see that ``ue`` is an :class:`.Array` on the function space ``T``, and not a
 :class:`.Function`. The :class:`.Array` and :class:`Function` classes
-are both subclasses of Numpy's `ndarray <https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.ndarray.html>`_, and represent the two arrays associated
+are both subclasses of Numpy's `ndarray <https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.ndarray.html>`_,
+and represent the two arrays associated
 with the spectral Galerkin function, like :eq:`eq:sum8`.
-The :class:`.Function` represent the entire spectral Galerkin function, with
+The :class:`.Function` represents the entire spectral Galerkin function, with
 array values corresponding to the expansion coefficients :math:`\hat{u}`.
-The :class:`.Array` represent the spectral Galerkin function evaluated
-on the quadrature mesh of the basis ``T``, i.e., here
+The :class:`.Array` represents the spectral Galerkin function evaluated
+on the quadrature mesh of the function space ``T``, i.e., here
 :math:`u(x_i), \forall \, i \in 0, 1, \ldots, 7`.
 
 We now want to find the :class:`.Function` ``uh`` corresponding to
@@ -196,7 +197,7 @@ test function vs an :class:`.Array`. To illustrate, lets create some forms,
 where all except the last one is ok::
 
     from shenfun import Dx
-    T = Basis(12, 'Legendre')
+    T = FunctionSpace(12, 'Legendre')
     u = TrialFunction(T)
     v = TestFunction(T)
     uf = Function(T)
@@ -265,8 +266,8 @@ outer products of one-dimensional basis functions. We
 create tensor product spaces using the class :class:`.TensorProductSpace`::
 
     N, M = (12, 16)
-    C0 = Basis(N, 'L', bc=(0, 0), scaled=True)
-    K0 = Basis(M, 'F', dtype='d')
+    C0 = FunctionSpace(N, 'L', bc=(0, 0), scaled=True)
+    K0 = FunctionSpace(M, 'F', dtype='d')
     T = TensorProductSpace(comm, (C0, K0))
 
 Associated with this is a Cartesian mesh :math:`[-1, 1] \times [0, 2\pi]`. We use
@@ -381,7 +382,7 @@ linear algebra problem to solve for :math:`\hat{u}_{kl}`, for all :math:`k`.
 Of course, this solve needs to be carried out for all :math:`l`.
 
 Note that there is a generic solver available for the system
-:eq:`eq:multisystem` in :class:`.SolverGeneric2NP` that makes no
+:eq:`eq:multisystem` in :class:`.SolverGeneric2ND` that makes no
 assumptions on diagonality. However, this solver will, naturally, be
 quite a bit slower than a tailored solver that takes advantage of
 diagonality. For the Poisson equation such solvers are available for
@@ -457,9 +458,9 @@ as::
     rv = (r*sp.cos(theta), r*sp.sin(theta), z)
 
     N = 10
-    F0 = Basis(N, 'F', dtype='d')
-    F1 = Basis(N, 'F', dtype='D')
-    L = Basis(N, 'L', domain=(0, 1))
+    F0 = FunctionSpace(N, 'F', dtype='d')
+    F1 = FunctionSpace(N, 'F', dtype='D')
+    L = FunctionSpace(N, 'L', domain=(0, 1))
     T = TensorProductSpace(comm, (L, F1, F0), coordinates=(psi, rv))
     V = VectorTensorProductSpace(T)
     u = TrialFunction(V)
@@ -487,7 +488,7 @@ Coupled problems
 
 With Shenfun it is possible to solve equations coupled and implicit using the
 :class:`.MixedTensorProductSpace` class for multidimensional problems and
-:class:`.MixedBasis` for one-dimensional problems. As an example, lets consider
+:class:`.MixedFunctionSpace` for one-dimensional problems. As an example, lets consider
 a mixed formulation of the Poisson equation. The Poisson equation is given as
 always as
 
@@ -527,9 +528,9 @@ implicit treatment of :math:`(\sigma, u)`::
     from shenfun import VectorTensorProductSpace, MixedTensorProductSpace
     N, M = (16, 24)
     family = 'Legendre'
-    SD = Basis(N[0], family, bc=(0, 0))
-    ST = Basis(N[0], family)
-    K0 = Basis(N[1], 'Fourier', dtype='d')
+    SD = FunctionSpace(N[0], family, bc=(0, 0))
+    ST = FunctionSpace(N[0], family)
+    K0 = FunctionSpace(N[1], 'Fourier', dtype='d')
     TD = TensorProductSpace(comm, (SD, K0), axes=(0, 1))
     TT = TensorProductSpace(comm, (ST, K0), axes=(0, 1))
     VT = VectorTensorProductSpace(TT)
@@ -659,7 +660,7 @@ we start by creating the necessary basis and test and trial functions
     from shenfun import *
 
     N = 256
-    T = Basis(N, 'F', dtype='d')
+    T = FunctionSpace(N, 'F', dtype='d')
     u = TrialFunction(T)
     v = TestFunction(T)
     u_ = Array(T)
@@ -727,13 +728,11 @@ decomposition, and we use 4 CPUs (``mpirun -np 4 python mpitest.py``, if we
 store the code in this section as ``mpitest.py``)::
 
     from shenfun import *
-    from mpi4py import MPI
     from mpi4py_fft import generate_xdmf
-    comm = MPI.COMM_WORLD
     N = (20, 40, 60)
-    K0 = Basis(N[0], 'F', dtype='D', domain=(0, 1))
-    K1 = Basis(N[1], 'F', dtype='D', domain=(0, 2))
-    K2 = Basis(N[2], 'F', dtype='d', domain=(0, 3))
+    K0 = FunctionSpace(N[0], 'F', dtype='D', domain=(0, 1))
+    K1 = FunctionSpace(N[1], 'F', dtype='D', domain=(0, 2))
+    K2 = FunctionSpace(N[2], 'F', dtype='d', domain=(0, 3))
     T0 = TensorProductSpace(comm, (K0, K1, K2), axes=(0, 1, 2), slab=True)
     T1 = TensorProductSpace(comm, (K0, K1, K2), axes=(1, 0, 2), slab=True)
 
@@ -881,9 +880,9 @@ TensorProductSpace with Fourier bases in all directions::
     from shenfun import *
     from mpi4py import MPI
     N = (24, 25, 26)
-    K0 = Basis(N[0], 'F', dtype='D')
-    K1 = Basis(N[1], 'F', dtype='D')
-    K2 = Basis(N[2], 'F', dtype='d')
+    K0 = FunctionSpace(N[0], 'F', dtype='D')
+    K1 = FunctionSpace(N[1], 'F', dtype='D')
+    K2 = FunctionSpace(N[2], 'F', dtype='d')
     T = TensorProductSpace(MPI.COMM_WORLD, (K0, K1, K2))
     fl = ShenfunFile('myh5file', T, backend='hdf5', mode='w')
 
@@ -1061,9 +1060,9 @@ the fluid velocity::
 
     comm = MPI.COMM_WORLD
     N = (32, 64, 128)
-    V0 = Basis(N[0], 'F', dtype='D')
-    V1 = Basis(N[1], 'F', dtype='D')
-    V2 = Basis(N[2], 'F', dtype='d')
+    V0 = FunctionSpace(N[0], 'F', dtype='D')
+    V1 = FunctionSpace(N[1], 'F', dtype='D')
+    V2 = FunctionSpace(N[2], 'F', dtype='d')
     T = TensorProductSpace(comm, (V0, V1, V2))
     TV = VectorTensorProductSpace(T)
     U = Array(TV)

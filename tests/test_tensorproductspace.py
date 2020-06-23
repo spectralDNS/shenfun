@@ -12,7 +12,7 @@ from shenfun.legendre import bases as lbases
 from shenfun.laguerre import bases as lagbases
 from shenfun.hermite import bases as hbases
 from shenfun.jacobi import bases as jbases
-from shenfun import Function, project, Dx, Array, Basis, TensorProductSpace, \
+from shenfun import Function, project, Dx, Array, FunctionSpace, TensorProductSpace, \
    VectorTensorProductSpace, MixedTensorProductSpace, inner
 
 comm = MPI.COMM_WORLD
@@ -40,8 +40,8 @@ def test_transform(typecode, dim):
         for shape in product(*([sizes]*dim)):
             bases = []
             for n in shape[:-1]:
-                bases.append(Basis(n, 'F', dtype=typecode.upper()))
-            bases.append(Basis(shape[-1], 'F', dtype=typecode))
+                bases.append(FunctionSpace(n, 'F', dtype=typecode.upper()))
+            bases.append(FunctionSpace(shape[-1], 'F', dtype=typecode))
 
             fft = TensorProductSpace(comm, bases, dtype=typecode, slab=slab)
 
@@ -88,8 +88,8 @@ def test_transform(typecode, dim):
             #padding = 1.5
             #bases = []
             #for n in shape[:-1]:
-            #    bases.append(Basis(n, 'F', dtype=typecode.upper(), padding_factor=padding))
-            #bases.append(Basis(shape[-1], 'F', dtype=typecode, padding_factor=padding))
+            #    bases.append(FunctionSpace(n, 'F', dtype=typecode.upper(), padding_factor=padding))
+            #bases.append(FunctionSpace(shape[-1], 'F', dtype=typecode, padding_factor=padding))
 
             #fft = TensorProductSpace(comm, bases, dtype=typecode)
 
@@ -116,34 +116,34 @@ def test_transform(typecode, dim):
             fftp.destroy()
             fft.destroy()
 
-cBasis = (cbases.Basis,
-          cbases.ShenDirichletBasis,
-          cbases.ShenNeumannBasis,
-          cbases.ShenBiharmonicBasis)
+cBasis = (cbases.Orthogonal,
+          cbases.ShenDirichlet,
+          cbases.ShenNeumann,
+          cbases.ShenBiharmonic)
 
 # Bases with only GC quadrature
-cBasisGC = (cbases.UpperDirichletBasis,
-            cbases.ShenBiPolarBasis)
+cBasisGC = (cbases.UpperDirichlet,
+            cbases.ShenBiPolar)
 
-lBasis = (lbases.Basis,
-          lbases.ShenDirichletBasis,
-          lbases.ShenNeumannBasis,
-          lbases.ShenBiharmonicBasis)
+lBasis = (lbases.Orthogonal,
+          lbases.ShenDirichlet,
+          lbases.ShenNeumann,
+          lbases.ShenBiharmonic)
 
 # Bases with only LG quadrature
-lBasisLG = (lbases.UpperDirichletBasis,
-            lbases.ShenBiPolarBasis,
-            lbases.ShenBiPolar0Basis)
+lBasisLG = (lbases.UpperDirichlet,
+            lbases.ShenBiPolar,
+            lbases.ShenBiPolar0)
 
-lagBasis = (lagbases.Basis,
-            lagbases.ShenDirichletBasis)
+lagBasis = (lagbases.Orthogonal,
+            lagbases.ShenDirichlet)
 
-hBasis = (hbases.Basis,)
+hBasis = (hbases.Orthogonal,)
 
-jBasis = (jbases.Basis,
-          jbases.ShenDirichletBasis,
-          jbases.ShenBiharmonicBasis,
-          jbases.ShenOrder6Basis)
+jBasis = (jbases.Orthogonal,
+          jbases.ShenDirichlet,
+          jbases.ShenBiharmonic,
+          jbases.ShenOrder6)
 
 cquads = ('GC', 'GL')
 lquads = ('LG', 'GL')
@@ -166,8 +166,8 @@ def test_shentransform(typecode, dim, ST, quad):
     for shape in product(*([sizes]*dim)):
         bases = []
         for n in shape[:-1]:
-            bases.append(Basis(n, 'F', dtype=typecode.upper()))
-        bases.append(Basis(shape[-1], 'F', dtype=typecode))
+            bases.append(FunctionSpace(n, 'F', dtype=typecode.upper()))
+        bases.append(FunctionSpace(shape[-1], 'F', dtype=typecode))
 
         for axis in range(dim+1):
             ST0 = ST(shape[-1], quad=quad)
@@ -213,8 +213,8 @@ def test_project(typecode, dim, ST, quad):
     for shape in product(*([sizes]*dim)):
         bases = []
         for n in shape[:-1]:
-            bases.append(Basis(n, 'F', dtype=typecode.upper()))
-        bases.append(Basis(shape[-1], 'F', dtype=typecode))
+            bases.append(FunctionSpace(n, 'F', dtype=typecode.upper()))
+        bases.append(FunctionSpace(shape[-1], 'F', dtype=typecode))
 
         for axis in range(dim+1):
             ST0 = ST(shape[-1], quad=quad)
@@ -261,8 +261,8 @@ def test_project_lag(typecode, dim):
     for shape in product(*([sizes]*dim)):
         bases = []
         for n in shape[:-1]:
-            bases.append(Basis(n, 'F', dtype=typecode.upper()))
-        bases.append(Basis(shape[-1], 'F', dtype=typecode))
+            bases.append(FunctionSpace(n, 'F', dtype=typecode.upper()))
+        bases.append(FunctionSpace(shape[-1], 'F', dtype=typecode))
 
         for axis in range(dim+1):
             ST1 = lagBasis[1](3*shape[-1])
@@ -302,8 +302,8 @@ def test_project_hermite(typecode, dim):
     for shape in product(*([sizes]*dim)):
         bases = []
         for n in shape[:-1]:
-            bases.append(Basis(n, 'F', dtype=typecode.upper()))
-        bases.append(Basis(shape[-1], 'F', dtype=typecode))
+            bases.append(FunctionSpace(n, 'F', dtype=typecode.upper()))
+        bases.append(FunctionSpace(shape[-1], 'F', dtype=typecode))
 
         for axis in range(dim+1):
             ST0 = hBasis[0](3*shape[-1])
@@ -347,8 +347,8 @@ def test_project2(typecode, dim, ST, quad):
     for shape in product(*([sizes]*dim)):
         bases = []
         for n in shape[:-1]:
-            bases.append(Basis(n, 'F', dtype=typecode.upper()))
-        bases.append(Basis(shape[-1], 'F', dtype=typecode))
+            bases.append(FunctionSpace(n, 'F', dtype=typecode.upper()))
+        bases.append(FunctionSpace(shape[-1], 'F', dtype=typecode))
 
         for axis in range(dim+1):
             ST0 = ST(shape[-1], quad=quad)
@@ -379,10 +379,10 @@ def test_project_2dirichlet(quad):
     ue = (cos(4*y)*sin(2*x))*(1-x**2)*(1-y**2)
     sizes = (18, 17)
 
-    D0 = lbases.ShenDirichletBasis(sizes[0], quad=quad)
-    D1 = lbases.ShenDirichletBasis(sizes[1], quad=quad)
-    B0 = lbases.Basis(sizes[0], quad=quad)
-    B1 = lbases.Basis(sizes[1], quad=quad)
+    D0 = lbases.ShenDirichlet(sizes[0], quad=quad)
+    D1 = lbases.ShenDirichlet(sizes[1], quad=quad)
+    B0 = lbases.Orthogonal(sizes[0], quad=quad)
+    B1 = lbases.Orthogonal(sizes[1], quad=quad)
 
     DD = TensorProductSpace(comm, (D0, D1))
     BD = TensorProductSpace(comm, (B0, D1))
@@ -460,8 +460,8 @@ def test_eval_tensor(typecode, dim, ST, quad):
         #for shape in ((64, 64),):
         bases = []
         for n in shape[:-1]:
-            bases.append(Basis(n, 'F', dtype=typecode.upper()))
-        bases.append(Basis(shape[-1], 'F', dtype=typecode))
+            bases.append(FunctionSpace(n, 'F', dtype=typecode.upper()))
+        bases.append(FunctionSpace(shape[-1], 'F', dtype=typecode))
 
         for axis in range(dim+1):
             #for axis in (0,):
@@ -520,9 +520,9 @@ def test_eval_fourier(typecode, dim):
     for shape in product(*([sizes]*dim)):
         bases = []
         for n in shape[:-1]:
-            bases.append(Basis(n, 'F', dtype=typecode.upper()))
+            bases.append(FunctionSpace(n, 'F', dtype=typecode.upper()))
 
-        bases.append(Basis(shape[-1], 'F', dtype=typecode))
+        bases.append(FunctionSpace(shape[-1], 'F', dtype=typecode))
         fft = TensorProductSpace(comm, bases, dtype=typecode)
         X = fft.local_mesh(True)
         ue = funcs[dim]
@@ -549,14 +549,14 @@ def test_eval_fourier(typecode, dim):
 @pytest.mark.parametrize('f0,f1', product(*([('C', 'L', 'F')])*2))
 def test_inner(f0, f1):
     if f0 == 'F' and f1 == 'F':
-        B0 = Basis(8, f0, dtype='D', domain=(-2*np.pi, 2*np.pi))
+        B0 = FunctionSpace(8, f0, dtype='D', domain=(-2*np.pi, 2*np.pi))
     else:
-        B0 = Basis(8, f0)
+        B0 = FunctionSpace(8, f0)
     c = Array(B0, val=1)
     d = inner(1, c)
     assert abs(d-(B0.domain[1]-B0.domain[0])) < 1e-7
 
-    B1 = Basis(8, f1)
+    B1 = FunctionSpace(8, f1)
     T = TensorProductSpace(comm, (B0, B1))
     a0 = Array(T, val=1)
     c0 = inner(1, a0)
@@ -564,7 +564,7 @@ def test_inner(f0, f1):
     assert abs(c0-np.prod(L)) < 1e-7
 
     if not (f0 == 'F' or f1 == 'F'):
-        B2 = Basis(8, f1, domain=(-2, 2))
+        B2 = FunctionSpace(8, f1, domain=(-2, 2))
         T = TensorProductSpace(comm, (B0, B1, B2))
         a0 = Array(T, val=1)
         c0 = inner(1, a0)
@@ -581,8 +581,8 @@ def test_assign(fam):
             continue
         tol = 1e-12 if fam in ('C', 'L', 'F') else 1e-5
         N = (10, 12)
-        B0 = Basis(N[0], fam, dtype=dtype, bc=bc)
-        B1 = Basis(N[1], fam, dtype=dtype, bc=bc)
+        B0 = FunctionSpace(N[0], fam, dtype=dtype, bc=bc)
+        B1 = FunctionSpace(N[1], fam, dtype=dtype, bc=bc)
         u_hat = Function(B0)
         u_hat[1:4] = 1
         ub_hat = Function(B1)
@@ -607,9 +607,9 @@ def test_assign(fam):
 def test_refine():
     assert comm.Get_size() < 7
     N = (8, 9, 10)
-    F0 = Basis(8, 'F', dtype='D')
-    F1 = Basis(9, 'F', dtype='D')
-    F2 = Basis(10, 'F', dtype='d')
+    F0 = FunctionSpace(8, 'F', dtype='D')
+    F1 = FunctionSpace(9, 'F', dtype='D')
+    F2 = FunctionSpace(10, 'F', dtype='d')
     T = TensorProductSpace(comm, (F0, F1, F2), slab=True, collapse_fourier=True)
     u_hat = Function(T)
     u = Array(T)
@@ -635,9 +635,9 @@ def test_eval_expression():
     import sympy as sp
     from shenfun import div, grad
     x, y, z = sp.symbols('x,y,z')
-    B0 = Basis(16, 'C')
-    B1 = Basis(17, 'C')
-    B2 = Basis(20, 'F', dtype='d')
+    B0 = FunctionSpace(16, 'C')
+    B1 = FunctionSpace(17, 'C')
+    B2 = FunctionSpace(20, 'F', dtype='d')
 
     TB = TensorProductSpace(comm, (B0, B1, B2))
 

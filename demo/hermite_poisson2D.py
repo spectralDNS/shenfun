@@ -19,7 +19,7 @@ from mpi4py import MPI
 from sympy import symbols, exp, hermite, cos
 import numpy as np
 from shenfun import inner, grad, TestFunction, TrialFunction, \
-    Array, Function, Basis, TensorProductSpace
+    Array, Function, FunctionSpace, TensorProductSpace
 
 assert len(sys.argv) == 2, 'Call with one command-line argument'
 assert isinstance(int(sys.argv[-1]), int)
@@ -35,8 +35,8 @@ fe = ue.diff(x, 2)+ue.diff(y, 2)
 # Size of discretization
 N = int(sys.argv[-1])
 
-SD = Basis(N, 'Hermite')
-K0 = Basis(N, 'Fourier', dtype='d')
+SD = FunctionSpace(N, 'Hermite')
+K0 = FunctionSpace(N, 'Fourier', dtype='d')
 T = TensorProductSpace(comm, (SD, K0), axes=(0, 1))
 X = T.local_mesh(True)
 u = TrialFunction(T)
