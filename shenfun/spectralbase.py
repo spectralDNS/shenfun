@@ -13,12 +13,12 @@ basis function in the basis. It is also called a test function, whereas :math:`u
 often is called a trial function.
 
 Chebyshev:
-    ChebyshevBasis:
+    Orthogonal:
         basis functions: :math:`\phi_k = T_k`
 
         basis: :math:`span(T_k, k=0,1,..., N-1)`
 
-    ShenDirichletBasis:
+    ShenDirichlet:
         basis functions:
             :math:`\phi_k = T_k-T_{k+2}`
 
@@ -26,7 +26,7 @@ Chebyshev:
 
             :math:`\phi_{N-1} = 0.5(T_0-T_1)` for Poisson's equation
 
-        basis: :math:`span(\phi_k, k=0,1,...,N-1)`
+        space: :math:`span(\phi_k, k=0,1,...,N-1)`
 
         where :math:`u(1)=a, u(-1)=b`, such that :math:`\hat{u}_{N-2}=a,
         \hat{u}_{N-1}=b`.
@@ -38,35 +38,35 @@ Chebyshev:
         are in the kernel of the Poisson operator. For homogeneous boundary
         conditions :math:`\phi_{N-2}` and :math:`\phi_{N-1}` are simply ignored.
 
-    ShenNeumannBasis:
+    ShenNeumann:
         basis function:
             :math:`\phi_k = T_k-\left(\frac{k}{k+2}\right)^2T_{k+2}`
 
-        basis:
+        space:
             :math:`span(\phi_k, k=1,2,...,N-3)`
 
         Homogeneous Neumann boundary conditions, :math:`u'(\pm 1) = 0`, and
         zero weighted mean: :math:`\int_{-1}^{1}u(x)w(x)dx = 0`.
 
-    ShenBiharmonicBasis:
+    ShenBiharmonic:
         basis function:
             :math:`\phi_k = T_k - \frac{2(k+2)}{k+3}T_{k+2} + \frac{k+1}{k+3}T_{k+4}`
 
-        basis:
+        space:
             :math:`span(\phi_k, k=0,1,...,N-5)`
 
         Homogeneous Dirichlet and Neumann, :math:`u(\pm 1)=0` and
         :math:`u'(\pm 1)=0`.
 
 Legendre:
-    LegendreBasis:
+    Orthogonal:
         basis function:
             :math:`\phi_k = L_k`
 
-        basis:
+        space:
             :math:`span(L_k, k=0,1,...N-1)`
 
-    ShenDirichletBasis:
+    ShenDirichlet:
         basis function:
             :math:`\phi_k = L_k-L_{k+2}`
 
@@ -74,7 +74,7 @@ Legendre:
 
             :math:`\phi_{N-1} = 0.5(L_0-L_1)`, for Poisson's equation
 
-        basis:
+        space:
             :math:`span(\phi_k, k=0,1,...,N-1)`
 
         where :math:`u(1)=a, u(-1)=b`, such that
@@ -87,104 +87,104 @@ Legendre:
         are in the kernel of the Poisson operator. For homogeneous boundary
         conditions :math:`\phi_{N-2}` and :math:`\phi_{N-1}` are simply ignored.
 
-    ShenNeumannBasis:
+    ShenNeumann:
         basis function:
             :math:`\phi_k = L_k-\frac{k(k+1)}{(k+2)(k+3)}L_{k+2}`
 
-        basis:
+        space:
             :math:`span(\phi_k, k=1,2,...,N-3)`
 
         Homogeneous Neumann boundary conditions, :math:`u'(\pm 1) = 0`, and
         zero mean: :math:`\int_{-1}^{1}u(x)dx = 0`.
 
-    ShenBiharmonicBasis:
+    ShenBiharmonic:
         basis function:
             :math:`\phi_k = L_k - \frac{2(2k+5)}{2k+7}L_{k+2} + \frac{2k+3}{2k+7}L_{k+4}`
 
-        basis:
+        space:
             :math:`span(\phi_k, k=0,1,...,N-5)`
 
         Homogeneous Dirichlet and Neumann, :math:`u(\pm 1)=0` and
         :math:`u'(\pm 1)=0`.
 
 Laguerre:
-    LaguerreBasis:
+    Orthogonal:
         basis function:
             :math:`\phi_k(x) = L_k(x) \cdot \exp(-x)`
 
-        basis:
+        space:
             :math:`span(L_k, k=0,1,...N-1)`
 
         where :math:`L_k` is the Laguerre polynomial of order k.
 
-    ShenDirichletBasis:
+    ShenDirichlet:
         basis function:
             :math:`\phi_k = (L_k-L_{k+1})\cdot \exp(-x)`
 
-        basis:
+        space:
             :math:`span(\phi_k, k=0,1,...,N-2)`
 
         Homogeneous Dirichlet for domain [0, inf).
 
 Hermite:
-    Basis:
+    Orthogonal:
         basis function:
             :math:`\phi_k(x) = H_k(x) \cdot \exp(-x^2/2)/(\pi^{0.25}\sqrt{2^k k!})`
 
-        basis:
+        space:
             :math:`span(\phi_k, k=0,1,...N-1)`
 
         where :math:`H_k` is the Hermite polynomial of order k.
 
 Jacobi:
-    Basis:
+    Orthogonal:
         basis function:
             :math:`\phi_k = J_k(\alpha, \beta)`
 
-        basis:
+        space:
             :math:`span(L_k, k=0,1,...N-1)`
 
         where :math:`J_k(\alpha, \beta)` is the regular Jacobi polynomial and
         :math:`\alpha > -1` and :math:`\beta > -1`.
 
-    ShenDirichletBasis:
+    ShenDirichlet:
         basis function:
             :math:`\phi_k = j_k(-1, -1)`
 
-        basis:
+        space:
             :math:`span(\phi_k, k=0,1,...,N-3)`
 
         where :math:`j_k` is the generalized Jacobi polynomial
 
-    ShenBiharmonicBasis:
+    ShenBiharmonic:
         basis function:
             :math:`\phi_k = j_k(-2, -2)`
 
-        basis:
+        space:
             :math:`span(\phi_k, k=0,1,...,N-5)`
 
         Homogeneous Dirichlet and Neumann, :math:`u(\pm 1)=0` and
         :math:`u'(\pm 1)=0`.
 
-    ShenOrder6Basis:
+    ShenOrder6:
         basis function:
             :math:`\phi_k = j_k(-3, -3)`
 
-        basis:
+        space:
             :math:`span(\phi_k, k=0,1,...,N-7)`
 
         Homogeneous :math:`u(\pm 1)=u'(\pm 1)=u''(\pm 1)=0`.
 
 Fourier:
-    R2CBasis and C2CBasis:
+    R2C and C2C:
         basis function:
             :math:`\phi_k = exp(ikx)`
 
-        basis:
+        space:
             :math:`span(\phi_k, k=-N/2, -N/2+1, ..., N/2-1)`
 
         Note that if N is even, then the Nyquist frequency (-N/2) requires
-        special attention for the R2CBasis. We should then have been using
+        special attention for the R2C space. We should then have been using
         a Fourier interpolator that symmetrizes by adding and extra
         :math:`\phi_{N/2}` and by multiplying :math:`\phi_{N/2}` and
         :math:`\phi_{-N/2}` with 0.5. This effectively sets the
@@ -193,7 +193,7 @@ Fourier:
         the :func:`.SpectralBase.mask_nyquist` function that effectively sets the
         Nyquist frequency to zero (if N is even).
 
-    R2CBasis and C2CBasis are the same, but R2CBasis is used on real physical
+    R2C and C2C are the same, but R2C is used on real physical
     data and it takes advantage of Hermitian symmetry,
     :math:`\hat{u}_{-k} = conj(\hat{u}_k)`, for :math:`k = 1, ..., N/2`
 
@@ -400,8 +400,8 @@ class SpectralBase(object):
         >>> import numpy as np
         >>> from shenfun import Basis, TensorProductSpace
         >>> from mpi4py import MPI
-        >>> K0 = Basis(8, 'F', dtype='D')
-        >>> K1 = Basis(8, 'F', dtype='d')
+        >>> K0 = FunctionSpace(8, 'F', dtype='D')
+        >>> K1 = FunctionSpace(8, 'F', dtype='d')
         >>> T = TensorProductSpace(MPI.COMM_WORLD, (K0, K1))
         >>> x = np.arange(4)
         >>> y = K0.broadcast_to_ndims(x)
@@ -1257,7 +1257,7 @@ class SpectralBase(object):
             padded_array[su] = 0
 
 
-class MixedBasis(object):
+class MixedFunctionSpace(object):
     """Class for composite bases in 1D
 
     Parameters
@@ -1273,7 +1273,7 @@ class MixedBasis(object):
         self.scalar_product = VectorBasisTransform([basis.scalar_product for basis in bases])
 
     def dims(self):
-        """Return dimensions (degrees of freedom) for MixedBasis"""
+        """Return dimensions (degrees of freedom) for MixedFunctionSpace"""
         s = []
         for space in self.flatten():
             s.append(space.dim())
@@ -1287,7 +1287,7 @@ class MixedBasis(object):
         return s
 
     def shape(self, forward_output=False):
-        """Return shape of arrays for MixedBasis
+        """Return shape of arrays for MixedFunctionSpace
 
         Parameters
         ----------

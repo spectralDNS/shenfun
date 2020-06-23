@@ -11,8 +11,8 @@ import sympy as sp
 from shenfun.matrixbase import SpectralMatrix
 from . import bases
 
-R2C = bases.R2CBasis
-C2C = bases.C2CBasis
+R2C = bases.R2C
+C2C = bases.C2C
 
 xp = sp.Symbol('x', real=True, positive=True)
 

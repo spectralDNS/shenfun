@@ -12,9 +12,9 @@ end_time = 0.1
 dt = 0.01
 N = (2**5, 2**5, 2**5)
 
-V0 = Basis(N[0], 'F', dtype='D')
-V1 = Basis(N[1], 'F', dtype='D')
-V2 = Basis(N[2], 'F', dtype='d')
+V0 = FunctionSpace(N[0], 'F', dtype='D')
+V1 = FunctionSpace(N[1], 'F', dtype='D')
+V2 = FunctionSpace(N[2], 'F', dtype='d')
 T = TensorProductSpace(comm, (V0, V1, V2), **{'planner_effort': 'FFTW_MEASURE'})
 TV = VectorTensorProductSpace(T)
 u = TrialFunction(T)

@@ -585,7 +585,7 @@ class SpectralMatrix(SparseMatrix):
     The matrices can be automatically created using, e.g., for the mass
     matrix of the Dirichlet space::
 
-        SD = ShenDirichletBasis
+        SD = ShenDirichlet
         N = 16
         M = SpectralMatrix({}, (SD(N), 0), (SD(N), 0))
 
@@ -627,7 +627,7 @@ class SpectralMatrix(SparseMatrix):
         ss = [slice(None)]*len(v.shape)
         ss[axis] = u.slice()
         c = super(SpectralMatrix, self).matvec(v[tuple(ss)], c, format=format, axis=axis)
-        if self.testfunction[0].__class__.__name__ == 'ShenNeumannBasis':
+        if self.testfunction[0].__class__.__name__ == 'ShenNeumann':
             ss[axis] = 0
             c[tuple(ss)] = 0
         return c
@@ -828,10 +828,10 @@ class BlockMatrix(object):
     >>> from mpi4py import MPI
     >>> comm = MPI.COMM_WORLD
     >>> N = (24, 24, 24)
-    >>> K0 = Basis(N[0], 'Fourier', dtype='d')
-    >>> K1 = Basis(N[1], 'Fourier', dtype='D')
-    >>> SD = Basis(N[2], 'Legendre', bc=(0, 0))
-    >>> ST = Basis(N[2], 'Legendre')
+    >>> K0 = FunctionSpace(N[0], 'Fourier', dtype='d')
+    >>> K1 = FunctionSpace(N[1], 'Fourier', dtype='D')
+    >>> SD = FunctionSpace(N[2], 'Legendre', bc=(0, 0))
+    >>> ST = FunctionSpace(N[2], 'Legendre')
     >>> TD = TensorProductSpace(comm, (K0, K1, SD), axes=(2, 1, 0))
     >>> TT = TensorProductSpace(comm, (K0, K1, ST), axes=(2, 1, 0))
     >>> VT = VectorTensorProductSpace(TD)
@@ -963,7 +963,7 @@ class BlockMatrix(object):
             The format of the returned matrix. See `Scipy sparse matrices <https://docs.scipy.org/doc/scipy/reference/sparse.html>`_
 
         """
-        from .spectralbase import MixedBasis
+        from .spectralbase import MixedFunctionSpace
         bm = []
         for mi in self.mats:
             bm.append([])
@@ -972,7 +972,7 @@ class BlockMatrix(object):
                     bm[-1].append(None)
                 else:
                     m = mij[0]
-                    if isinstance(self.mixedbase, MixedBasis):
+                    if isinstance(self.mixedbase, MixedFunctionSpace):
                         d = m.diags(format)
                         for mj in mij[1:]:
                             d = d + mj.diags(format)

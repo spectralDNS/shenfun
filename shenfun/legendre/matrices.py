@@ -31,7 +31,7 @@ as
 
 >>> import numpy as np
 >>> from shenfun.legendre.matrices import mat
->>> from shenfun.legendre.bases import ShenDirichletBasis as SD
+>>> from shenfun.legendre.bases import ShenDirichlet as SD
 >>> B = mat[((SD, 0), (SD, 0))]
 
 and an instance of the matrix can be created as
@@ -74,13 +74,13 @@ from .la import TDMA
 from . import bases
 
 # Short names for instances of bases
-LB = bases.Basis
-SD = bases.ShenDirichletBasis
-SB = bases.ShenBiharmonicBasis
-SN = bases.ShenNeumannBasis
-SU = bases.UpperDirichletBasis
-CD = bases.BCBasis
-CB = bases.BCBiharmonicBasis
+LB = bases.Orthogonal
+SD = bases.ShenDirichlet
+SB = bases.ShenBiharmonic
+SN = bases.ShenNeumann
+SU = bases.UpperDirichlet
+CD = bases.BCDirichlet
+CB = bases.BCBiharmonic
 
 x = sp.symbols('x', real=True)
 xp = sp.symbols('x', real=True, positive=True)

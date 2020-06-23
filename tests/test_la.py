@@ -3,7 +3,7 @@ from scipy.linalg import solve
 import pytest
 from shenfun.chebyshev.la import PDMA
 from shenfun import inner, TestFunction, TrialFunction, div, grad, \
-    SparseMatrix, Basis, Function, Array
+    SparseMatrix, FunctionSpace, Function, Array
 np.warnings.filterwarnings('ignore')
 
 N = 32
@@ -12,7 +12,7 @@ quads = ('GC', 'GL')
 
 @pytest.mark.parametrize('quad', quads)
 def test_PDMA(quad):
-    SB = Basis(N, 'C', bc='Biharmonic', quad=quad)
+    SB = FunctionSpace(N, 'C', bc='Biharmonic', quad=quad)
     u = TrialFunction(SB)
     v = TestFunction(SB)
     points, weights = SB.points_and_weights(N)
@@ -38,7 +38,7 @@ def test_PDMA(quad):
 
 @pytest.mark.parametrize('quad', quads)
 def test_solve(quad):
-    SD = Basis(N, 'C', bc=(0, 0), quad=quad)
+    SD = FunctionSpace(N, 'C', bc=(0, 0), quad=quad)
     u = TrialFunction(SD)
     v = TestFunction(SD)
     A = inner(div(grad(u)), v)

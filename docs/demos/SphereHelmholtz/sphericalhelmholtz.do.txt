@@ -149,8 +149,8 @@ $V^N \otimes V_F^N$.
 
 !bc pycod
 N, M = 40, 30
-L0 = Basis(N, 'C', domain=(0, np.pi))
-F1 = Basis(M, 'F', dtype='D')
+L0 = FunctionSpace(N, 'C', domain=(0, np.pi))
+F1 = FunctionSpace(M, 'F', dtype='D')
 T = TensorProductSpace(comm, (L0, F1), coordinates=(psi, rv))
 
 !ec
@@ -177,7 +177,7 @@ Here `mats` will be a list containing several tensor product
 matrices in the form of
 ${cls('TPMatrix')}. Since there is only one directions with
 non-diagonal matrices ($\theta$-direction) we
-can use the generic ${cls('SolverGeneric1NP')} solver.
+can use the generic ${cls('SolverGeneric1ND')} solver.
 Note that some of the non-diagonal matrices will be dense,
 which is a weakness of the current method. Also note
 that with Legendre one can use integration by parts
@@ -212,7 +212,7 @@ f_hat = Function(T)
 f_hat = inner(v, fj, output_array=f_hat)
 
 u_hat = Function(T)
-Sol = SolverGeneric1NP(mats)
+Sol = SolverGeneric1ND(mats)
 u_hat = Sol(f_hat, u_hat)
 !ec
 
