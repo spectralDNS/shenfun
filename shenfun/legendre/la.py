@@ -4,11 +4,10 @@ import numpy as np
 import scipy.linalg as scipy_la
 from shenfun.optimization import optimizer
 from shenfun.optimization.cython import la
-from shenfun.utilities import inheritdocstrings
 from shenfun.la import TDMA as la_TDMA
 from shenfun.matrixbase import TPMatrix
 
-@inheritdocstrings
+
 class TDMA(la_TDMA):
     """Tridiagonal matrix solver
 
@@ -249,6 +248,7 @@ class Helmholtz(object):
         c = self.B.matvec(v, c)
         c += c1
         return c
+
 
 class Biharmonic(object):
     r"""Multidimensional Biharmonic solver for

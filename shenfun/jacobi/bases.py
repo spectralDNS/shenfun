@@ -35,7 +35,6 @@ import sympy as sp
 from scipy.special import eval_jacobi, roots_jacobi #, gamma
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
-from shenfun.utilities import inheritdocstrings
 from shenfun.forms.arguments import Function
 
 try:
@@ -55,7 +54,7 @@ mode = mode if has_quadpy else 'numpy'
 __all__ = ['JacobiBase', 'Orthogonal', 'ShenDirichletBasis', 'ShenBiharmonicBasis',
            'ShenOrder6Basis', 'mode', 'has_quadpy', 'mp']
 
-@inheritdocstrings
+
 class JacobiBase(SpectralBase):
     """Base class for all Jacobi bases
 
@@ -202,7 +201,7 @@ class JacobiBase(SpectralBase):
     def get_orthogonal(self):
         return Orthogonal(self.N, alpha=self.alpha, beta=self.beta, domain=self.domain)
 
-@inheritdocstrings
+
 class Orthogonal(JacobiBase):
     """Basis for regular (orthogonal) Jacobi functions
 
@@ -459,6 +458,7 @@ class ShenDirichletBasis(JacobiBase):
     def vandermonde_scalar_product(self, input_array, output_array):
         SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
         output_array[self.sl[slice(-2, None)]] = 0
+
 
 class ShenBiharmonicBasis(JacobiBase):
     """Basis for Biharmonic boundary conditions

@@ -2,13 +2,12 @@ import functools
 import numpy as np
 from shenfun.matrixbase import SpectralMatrix
 from shenfun.optimization.cython import Matvec
-from shenfun.utilities import inheritdocstrings
 from shenfun.la import TDMA
 from . import bases
 
 HB = bases.Orthogonal
 
-@inheritdocstrings
+
 class BHHmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -48,7 +47,7 @@ class BHHmat(SpectralMatrix):
         self.scale_array(c)
         return c
 
-@inheritdocstrings
+
 class AHHmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -110,7 +109,7 @@ class AHHmat(SpectralMatrix):
 
         return c
 
-@inheritdocstrings
+
 class _Hermatrix(SpectralMatrix):
     def __init__(self, test, trial, measure=1):
         SpectralMatrix.__init__(self, {}, test, trial, measure=measure)

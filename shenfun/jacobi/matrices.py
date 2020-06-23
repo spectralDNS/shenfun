@@ -2,7 +2,6 @@ import functools
 import numpy as np
 from scipy.special import gamma
 from shenfun.matrixbase import SpectralMatrix
-from shenfun.utilities import inheritdocstrings
 
 from . import bases
 from ..legendre.la import TDMA
@@ -11,7 +10,7 @@ JB = bases.Orthogonal
 SD = bases.ShenDirichletBasis
 SB = bases.ShenBiharmonicBasis
 
-@inheritdocstrings
+
 class BJJmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -79,7 +78,7 @@ class BJJmat(SpectralMatrix):
 
         return u
 
-@inheritdocstrings
+
 class BDDmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -108,7 +107,7 @@ class BDDmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial)
         self.solve = TDMA(self)
 
-@inheritdocstrings
+
 class ADDmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
@@ -165,7 +164,7 @@ class ADDmat(SpectralMatrix):
 
         return u
 
-@inheritdocstrings
+
 class BBBmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -204,7 +203,7 @@ class BBBmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial)
         self.solve = PDMA(self)
 
-@inheritdocstrings
+
 class ABBmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
@@ -236,7 +235,6 @@ class ABBmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale)
 
 
-@inheritdocstrings
 class SBBmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
@@ -261,7 +259,7 @@ class SBBmat(SpectralMatrix):
         d = {0: 32*(k+2)**2*(k+1)**2/(2*k+5)}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale)
 
-@inheritdocstrings
+
 class OBBmat(SpectralMatrix):
     r"""Matrix for inner product
 
@@ -288,7 +286,6 @@ class OBBmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial)
 
 
-@inheritdocstrings
 class _Jacmatrix(SpectralMatrix):
     def __init__(self, test, trial, measure=1):
         SpectralMatrix.__init__(self, {}, test, trial, measure=measure)

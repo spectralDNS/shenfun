@@ -1,6 +1,5 @@
 import functools
 from shenfun.matrixbase import SpectralMatrix
-from shenfun.utilities import inheritdocstrings
 from shenfun.la import TDMA_O
 from . import bases
 
@@ -8,7 +7,6 @@ LD = bases.ShenDirichletBasis
 LB = bases.Orthogonal
 
 
-@inheritdocstrings
 class BLLmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -46,7 +44,6 @@ class BLLmat(SpectralMatrix):
         return c
 
 
-@inheritdocstrings
 class BDDmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -70,7 +67,7 @@ class BDDmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial)
         self.solve = TDMA_O(self)
 
-@inheritdocstrings
+
 class ADDmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -97,7 +94,6 @@ class ADDmat(SpectralMatrix):
         self.solve = TDMA_O(self)
 
 
-@inheritdocstrings
 class _Lagmatrix(SpectralMatrix):
     def __init__(self, test, trial, measure=1):
         SpectralMatrix.__init__(self, {}, test, trial, measure=measure)
