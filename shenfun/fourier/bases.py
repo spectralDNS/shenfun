@@ -1,5 +1,5 @@
 """
-Module for defining bases in the Fourier family
+Module for defining function spaces in the Fourier family
 """
 import sympy as sp
 import numpy as np
@@ -477,7 +477,7 @@ class R2C(FourierBase):
                            Function values on points
             last_conj_index : int
                               The last index to sum over for conj part
-                              (R2CBasis only)
+                              (R2C only)
             offset : int
                      Global offset (MPI)
 

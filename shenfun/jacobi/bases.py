@@ -1,5 +1,5 @@
 """
-Module for bases of generalized Jacobi type
+Module for function spaces of generalized Jacobi type
 
 Note the environment variable
 
@@ -56,7 +56,7 @@ __all__ = ['JacobiBase', 'Orthogonal', 'ShenDirichlet', 'ShenBiharmonic',
 
 
 class JacobiBase(SpectralBase):
-    """Base class for all Jacobi bases
+    """Base class for all Jacobi spaces
 
     Parameters
     ----------
