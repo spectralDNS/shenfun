@@ -12,7 +12,7 @@ import sys
 from sympy import symbols, sin
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    Array, Function, Basis, dx
+    Array, Function, FunctionSpace, dx
 
 assert len(sys.argv) == 3, 'Call with two command-line arguments'
 assert sys.argv[-1] in ('legendre', 'chebyshev', 'jacobi')
@@ -38,7 +38,7 @@ fe = ue.diff(x, 2)
 # Size of discretization
 N = int(sys.argv[-2])
 
-SD = Basis(N, family=family, bc=(a, b), domain=domain, scaled=True)
+SD = FunctionSpace(N, family=family, bc=(a, b), domain=domain, scaled=True)
 X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)

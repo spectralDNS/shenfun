@@ -1,5 +1,5 @@
 """
-Module for defining bases in the Chebyshev family
+Module for defining function spaces in the Chebyshev family
 """
 from __future__ import division
 import functools
@@ -13,11 +13,11 @@ from shenfun.spectralbase import SpectralBase, work, Transform, FuncWrap, \
 from shenfun.optimization.cython import Cheb
 from shenfun.forms.arguments import Function
 
-__all__ = ['ChebyshevBase', 'Basis', 'ShenDirichletBasis',
-           'ShenNeumannBasis', 'ShenBiharmonicBasis',
-           'SecondNeumannBasis', 'UpperDirichletBasis',
-           'ShenBiPolarBasis', 'BCBasis', 'BCBiharmonicBasis',
-           'DirichletNeumannBasis']
+__all__ = ['ChebyshevBase', 'Orthogonal', 'ShenDirichlet',
+           'ShenNeumann', 'ShenBiharmonic',
+           'SecondNeumann', 'UpperDirichlet',
+           'ShenBiPolar', 'BCDirichlet', 'BCBiharmonic',
+           'DirichletNeumann']
 
 #pylint: disable=abstract-method, not-callable, method-hidden, no-self-use, cyclic-import
 
@@ -48,7 +48,7 @@ class DCTWrap(FuncWrap):
 
 
 class ChebyshevBase(SpectralBase):
-    """Abstract base class for all Chebyshev bases
+    """Abstract base class for all Chebyshev spaces
 
     Parameters
     ----------
@@ -255,10 +255,10 @@ class ChebyshevBase(SpectralBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_orthogonal(self):
-        return Basis(self.N, quad=self.quad, domain=self.domain, coordinates=self.coors.coordinates)
+        return Orthogonal(self.N, quad=self.quad, domain=self.domain, coordinates=self.coors.coordinates)
 
 
-class Basis(ChebyshevBase):
+class Orthogonal(ChebyshevBase):
     """Basis for regular Chebyshev series
 
     Parameters
@@ -400,8 +400,8 @@ class Basis(ChebyshevBase):
         return self
 
 
-class ShenDirichletBasis(ChebyshevBase):
-    """Shen basis for Dirichlet boundary conditions
+class ShenDirichlet(ChebyshevBase):
+    """Function space for Dirichlet boundary conditions
 
     Parameters
     ----------
@@ -447,7 +447,7 @@ class ShenDirichletBasis(ChebyshevBase):
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
-        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor = np.ones(1)
         self.bc = BoundaryValues(self, bc=bc)
@@ -621,29 +621,29 @@ class ShenDirichletBasis(ChebyshevBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_bc_basis(self):
-        return BCBasis(self.N, quad=self.quad, domain=self.domain, coordinates=self.coors.coordinates)
+        return BCDirichlet(self.N, quad=self.quad, domain=self.domain, coordinates=self.coors.coordinates)
 
     def get_refined(self, N):
-        return ShenDirichletBasis(N,
-                                  quad=self.quad,
-                                  domain=self.domain,
-                                  dtype=self.dtype,
-                                  padding_factor=self.padding_factor,
-                                  dealias_direct=self.dealias_direct,
-                                  coordinates=self.coors.coordinates,
-                                  bc=self.bc.bc,
-                                  scaled=self._scaled)
+        return ShenDirichlet(N,
+                             quad=self.quad,
+                             domain=self.domain,
+                             dtype=self.dtype,
+                             padding_factor=self.padding_factor,
+                             dealias_direct=self.dealias_direct,
+                             coordinates=self.coors.coordinates,
+                             bc=self.bc.bc,
+                             scaled=self._scaled)
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return ShenDirichletBasis(self.N,
-                                  quad=self.quad,
-                                  domain=self.domain,
-                                  dtype=self.dtype,
-                                  padding_factor=padding_factor,
-                                  dealias_direct=dealias_direct,
-                                  coordinates=self.coors.coordinates,
-                                  bc=self.bc.bc,
-                                  scaled=self._scaled)
+        return ShenDirichlet(self.N,
+                             quad=self.quad,
+                             domain=self.domain,
+                             dtype=self.dtype,
+                             padding_factor=padding_factor,
+                             dealias_direct=dealias_direct,
+                             coordinates=self.coors.coordinates,
+                             bc=self.bc.bc,
+                             scaled=self._scaled)
 
     def _truncation_forward(self, padded_array, trunc_array):
         if not id(trunc_array) == id(padded_array):
@@ -669,8 +669,8 @@ class ShenDirichletBasis(ChebyshevBase):
             padded_array[su] = 0
 
 
-class ShenNeumannBasis(ChebyshevBase):
-    """Shen basis for homogeneous Neumann boundary conditions
+class ShenNeumann(ChebyshevBase):
+    """Function space for homogeneous Neumann boundary conditions
 
     Parameters
     ----------
@@ -708,7 +708,7 @@ class ShenNeumannBasis(ChebyshevBase):
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
         self.mean = mean
-        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._factor = np.zeros(0)
         self.plan(int(N*padding_factor), 0, dtype, {})
 
@@ -868,28 +868,28 @@ class ShenNeumannBasis(ChebyshevBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_refined(self, N):
-        return ShenNeumannBasis(N,
-                                quad=self.quad,
-                                domain=self.domain,
-                                dtype=self.dtype,
-                                padding_factor=self.padding_factor,
-                                dealias_direct=self.dealias_direct,
-                                coordinates=self.coors.coordinates,
-                                mean=self.mean)
+        return ShenNeumann(N,
+                           quad=self.quad,
+                           domain=self.domain,
+                           dtype=self.dtype,
+                           padding_factor=self.padding_factor,
+                           dealias_direct=self.dealias_direct,
+                           coordinates=self.coors.coordinates,
+                           mean=self.mean)
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return ShenNeumannBasis(self.N,
-                                quad=self.quad,
-                                domain=self.domain,
-                                dtype=self.dtype,
-                                padding_factor=padding_factor,
-                                dealias_direct=dealias_direct,
-                                coordinates=self.coors.coordinates,
-                                mean=self.mean)
+        return ShenNeumann(self.N,
+                           quad=self.quad,
+                           domain=self.domain,
+                           dtype=self.dtype,
+                           padding_factor=padding_factor,
+                           dealias_direct=dealias_direct,
+                           coordinates=self.coors.coordinates,
+                           mean=self.mean)
 
 
-class ShenBiharmonicBasis(ChebyshevBase):
-    """Shen biharmonic basis
+class ShenBiharmonic(ChebyshevBase):
+    """Function space for biharmonic equation
 
     Using 2 Dirichlet and 2 Neumann boundary conditions. All possibly
     nonhomogeneous.
@@ -931,7 +931,7 @@ class ShenBiharmonicBasis(ChebyshevBase):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
         self.bc = BoundaryValues(self, bc=bc)
@@ -950,14 +950,14 @@ class ShenBiharmonicBasis(ChebyshevBase):
         k = np.arange(V.shape[1]).astype(np.float)[:-4]
         P[:, :-4] = V[:, :-4] - (2*(k+2)/(k+3))*V[:, 2:-2] + ((k+1)/(k+3))*V[:, 4:]
         if argument == 1: # if trial function
-            P[:, -4:] = np.tensordot(V[:, :4], BCBiharmonicBasis.coefficient_matrix(), (1, 1))
+            P[:, -4:] = np.tensordot(V[:, :4], BCBiharmonic.coefficient_matrix(), (1, 1))
         return P
 
     def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         if i < self.N-4:
             f = sp.chebyshevt(i, x) - (2*(i+2)/(i+3))*sp.chebyshevt(i+2, x) + (i+1)/(i+3)*sp.chebyshevt(i+4, x)
         else:
-            f = BCBiharmonicBasis.coefficient_matrix()[i]*np.array([sp.chebyshevt(j, x) for j in range(4)])
+            f = BCBiharmonic.coefficient_matrix()[i]*np.array([sp.chebyshevt(j, x) for j in range(4)])
         return f
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -1097,27 +1097,27 @@ class ShenBiharmonicBasis(ChebyshevBase):
         return output_array
 
     def get_bc_basis(self):
-        return BCBiharmonicBasis(self.N, quad=self.quad, domain=self.domain, coordinates=self.coors.coordinates)
+        return BCBiharmonic(self.N, quad=self.quad, domain=self.domain, coordinates=self.coors.coordinates)
 
     def get_refined(self, N):
-        return ShenBiharmonicBasis(N,
-                                   quad=self.quad,
-                                   domain=self.domain,
-                                   dtype=self.dtype,
-                                   padding_factor=self.padding_factor,
-                                   dealias_direct=self.dealias_direct,
-                                   coordinates=self.coors.coordinates,
-                                   bc=self.bc.bc)
+        return ShenBiharmonic(N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates,
+                              bc=self.bc.bc)
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return ShenBiharmonicBasis(self.N,
-                                   quad=self.quad,
-                                   domain=self.domain,
-                                   dtype=self.dtype,
-                                   padding_factor=padding_factor,
-                                   dealias_direct=dealias_direct,
-                                   coordinates=self.coors.coordinates,
-                                   bc=self.bc.bc)
+        return ShenBiharmonic(self.N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=padding_factor,
+                              dealias_direct=dealias_direct,
+                              coordinates=self.coors.coordinates,
+                              bc=self.bc.bc)
 
     def plan(self, shape, axis, dtype, options):
         if isinstance(axis, tuple):
@@ -1173,8 +1173,8 @@ class ShenBiharmonicBasis(ChebyshevBase):
             padded_array[su] = 0
 
 
-class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
-    """Shen basis for homogeneous second order Neumann boundary conditions
+class SecondNeumann(ChebyshevBase): #pragma: no cover
+    """Function space for homogeneous second order Neumann boundary conditions
 
     Parameters
     ----------
@@ -1213,7 +1213,7 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
         self.mean = mean
-        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._factor = np.zeros(0)
         self.plan((int(padding_factor*N),), 0, dtype, {})
 
@@ -1357,28 +1357,28 @@ class SecondNeumannBasis(ChebyshevBase): #pragma: no cover
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_refined(self, N):
-        return SecondNeumannBasis(N,
-                                  quad=self.quad,
-                                  domain=self.domain,
-                                  dtype=self.dtype,
-                                  padding_factor=self.padding_factor,
-                                  dealias_direct=self.dealias_direct,
-                                  coordinates=self.coors.coordinates,
-                                  mean=self.mean)
+        return SecondNeumann(N,
+                             quad=self.quad,
+                             domain=self.domain,
+                             dtype=self.dtype,
+                             padding_factor=self.padding_factor,
+                             dealias_direct=self.dealias_direct,
+                             coordinates=self.coors.coordinates,
+                             mean=self.mean)
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return SecondNeumannBasis(self.N,
-                                  quad=self.quad,
-                                  domain=self.domain,
-                                  dtype=self.dtype,
-                                  padding_factor=padding_factor,
-                                  dealias_direct=dealias_direct,
-                                  coordinates=self.coors.coordinates,
-                                  mean=self.mean)
+        return SecondNeumann(self.N,
+                             quad=self.quad,
+                             domain=self.domain,
+                             dtype=self.dtype,
+                             padding_factor=padding_factor,
+                             dealias_direct=dealias_direct,
+                             coordinates=self.coors.coordinates,
+                             mean=self.mean)
 
 
-class UpperDirichletBasis(ChebyshevBase):
-    """Basis with homogeneous Dirichlet on upper edge (x=1) of boundary
+class UpperDirichlet(ChebyshevBase):
+    """Function space with homogeneous Dirichlet on upper edge (x=1) of boundary
 
     Parameters
     ----------
@@ -1417,7 +1417,7 @@ class UpperDirichletBasis(ChebyshevBase):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor = np.ones(1)
         self.plan((int(padding_factor*N),), 0, dtype, {})
@@ -1570,8 +1570,8 @@ class UpperDirichletBasis(ChebyshevBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
-class ShenBiPolarBasis(ChebyshevBase):
-    """Basis for the Biharmonic equation in polar coordinates
+class ShenBiPolar(ChebyshevBase):
+    """Function space for the Biharmonic equation in polar coordinates
 
     Parameters
     ----------
@@ -1607,7 +1607,7 @@ class ShenBiPolarBasis(ChebyshevBase):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self.plan((int(padding_factor*N),), 0, dtype, {})
 
     @staticmethod
@@ -1724,8 +1724,8 @@ class ShenBiPolarBasis(ChebyshevBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
-class DirichletNeumannBasis(ChebyshevBase):
-    """Basis for mixed Dirichlet/Neumann boundary conditions
+class DirichletNeumann(ChebyshevBase):
+    """Function space for mixed Dirichlet/Neumann boundary conditions
 
     Parameters
     ----------
@@ -1763,7 +1763,7 @@ class DirichletNeumannBasis(ChebyshevBase):
                  padding_factor=1, dealias_direct=False, coordinates=None):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
-        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
@@ -1942,8 +1942,8 @@ class DirichletNeumannBasis(ChebyshevBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
-class NeumannDirichletBasis(ChebyshevBase):
-    """Basis for mixed Neumann/Dirichlet boundary conditions
+class NeumannDirichlet(ChebyshevBase):
+    """Function space for mixed Neumann/Dirichlet boundary conditions
 
     Parameters
     ----------
@@ -1981,7 +1981,7 @@ class NeumannDirichletBasis(ChebyshevBase):
                  padding_factor=1, dealias_direct=False, coordinates=None):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
-        self.CT = Basis(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
@@ -2160,8 +2160,8 @@ class NeumannDirichletBasis(ChebyshevBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
-class BCBasis(ChebyshevBase):
-    """Basis for Dirichlet boundary conditions
+class BCDirichlet(ChebyshevBase):
+    """Function space for Dirichlet boundary conditions
 
     Parameters
     ----------
@@ -2264,8 +2264,8 @@ class BCBasis(ChebyshevBase):
         return output_array
 
 
-class BCBiharmonicBasis(ChebyshevBase):
-    """Basis for inhomogeneous Biharmonic boundary conditions
+class BCBiharmonic(ChebyshevBase):
+    """Function space for inhomogeneous Biharmonic boundary conditions
 
     Parameters
     ----------

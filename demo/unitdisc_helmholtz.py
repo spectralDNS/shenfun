@@ -27,10 +27,10 @@ alpha = 2
 ue = (r*(1-r))**2*sp.cos(8*theta)-0.1*(r-1)
 
 N = 32
-F = Basis(N, 'F', dtype='d')
-F0 = Basis(1, 'F', dtype='d')
-L = Basis(N, 'L', bc='Dirichlet', domain=(0, 1))
-L0 = Basis(N, 'L', bc='UpperDirichlet', domain=(0, 1))
+F = FunctionSpace(N, 'F', dtype='d')
+F0 = FunctionSpace(1, 'F', dtype='d')
+L = FunctionSpace(N, 'L', bc='Dirichlet', domain=(0, 1))
+L0 = FunctionSpace(N, 'L', bc='UpperDirichlet', domain=(0, 1))
 T = TensorProductSpace(comm, (F, L), axes=(1, 0), coordinates=(psi, rv))
 T0 = TensorProductSpace(MPI.COMM_SELF, (F0, L0), axes=(1, 0), coordinates=(psi, rv))
 
@@ -93,7 +93,7 @@ assert np.linalg.norm(uj-uq) < 1e-8
 
 # Find and plot gradient of u. For this we need a space without
 # boundary conditions, and a vector space
-#LT = Basis(N, 'L', domain=(0, 1))
+#LT = FunctionSpace(N, 'L', domain=(0, 1))
 #TT = TensorProductSpace(comm, (F, LT), axes=(1, 0), coordinates=(psi, rv))
 TT = T.get_orthogonal()
 V = VectorTensorProductSpace(TT)

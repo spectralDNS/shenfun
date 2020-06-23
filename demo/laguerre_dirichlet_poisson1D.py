@@ -13,7 +13,7 @@ import sys
 from sympy import symbols, sin, exp, lambdify
 import numpy as np
 from shenfun import inner, grad, TestFunction, TrialFunction, \
-    Array, Function, Basis, dx
+    Array, Function, FunctionSpace, dx
 
 assert len(sys.argv) == 2, 'Call with one command-line argument'
 assert isinstance(int(sys.argv[-1]), int)
@@ -26,7 +26,7 @@ fe = ue.diff(x, 2)
 # Size of discretization
 N = int(sys.argv[-1])
 
-SD = Basis(N, 'Laguerre', bc=(0, 0))
+SD = FunctionSpace(N, 'Laguerre', bc=(0, 0))
 X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)

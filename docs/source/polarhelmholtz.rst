@@ -7,7 +7,7 @@ Demo - Helmholtz equation in polar coordinates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Jun 7, 2020
+:Date: Jun 23, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the
 Helmholtz equation on a circular disc, using polar coordinates. This demo is implemented in
@@ -350,10 +350,10 @@ required :math:`(0, 2\pi)`.
 .. code-block:: python
 
     N = 32
-    F = Basis(N, 'F', dtype='d')
-    F0 = Basis(1, 'F', dtype='d')
-    L = Basis(N, 'L', bc='Dirichlet', domain=(0, 1))
-    L0 = Basis(N, 'L', bc='UpperDirichlet', domain=(0, 1))
+    F = FunctionSpace(N, 'F', dtype='d')
+    F0 = FunctionSpace(1, 'F', dtype='d')
+    L = FunctionSpace(N, 'L', bc='Dirichlet', domain=(0, 1))
+    L0 = FunctionSpace(N, 'L', bc='UpperDirichlet', domain=(0, 1))
     T = TensorProductSpace(comm, (F, L), axes=(1, 0), coordinates=(psi, rv))
     T0 = TensorProductSpace(MPI.COMM_SELF, (F0, L0), axes=(1, 0), coordinates=(psi, rv))
 
@@ -398,7 +398,7 @@ is remarkably similar to the mathematics.
 Here ``mats`` and ``mats0`` will contain several tensor product
 matrices in the form of
 :class:`.TPMatrix`. Since there is only one non-periodic direction
-the matrices can be easily solved using :class:`.SolverGeneric1NP`.
+the matrices can be easily solved using :class:`.SolverGeneric1ND`.
 But first we need to define the function :math:`f(\theta, r)`.
 To this end we use sympy and the method of
 manufactured solution to define a possible solution ``ue``,
@@ -437,13 +437,13 @@ linear system of equations
 .. code-block:: python
 
     u_hat = Function(T)
-    Sol1 = SolverGeneric1NP(mats)
+    Sol1 = SolverGeneric1ND(mats)
     u_hat = Sol1(f_hat, u_hat)
     
     # case k = 0
     u0_hat = Function(T0)
     if comm.Get_rank() == 0:
-        Sol0 = SolverGeneric1NP(mats0)
+        Sol0 = SolverGeneric1ND(mats0)
         u0_hat = Sol0(f0_hat, u0_hat)
     comm.Bcast(u0_hat, root=0)
 

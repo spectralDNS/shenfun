@@ -24,7 +24,7 @@ def energy_fourier(u, T):
     if not hasattr(T, 'comm'):
         # Just a 1D basis
         assert u.ndim == 1
-        if isinstance(T, R2CBasis):
+        if isinstance(T, R2C):
             if u.shape[0] % 2 == 0:
                 result = (2*np.sum(abs(u[1:-1])**2) +
                           np.sum(abs(u[0])**2) +
@@ -41,7 +41,7 @@ def energy_fourier(u, T):
     assert np.all([isinstance(base, FourierBase) for base in T.bases])
     real = False
     for axis, base in enumerate(T.bases):
-        if isinstance(base, R2CBasis):
+        if isinstance(base, R2C):
             real = True
             break
 

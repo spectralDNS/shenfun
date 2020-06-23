@@ -6,9 +6,9 @@ from shenfun.matrixbase import SpectralMatrix
 from . import bases
 from ..legendre.la import TDMA
 
-JB = bases.Basis
-SD = bases.ShenDirichletBasis
-SB = bases.ShenBiharmonicBasis
+JB = bases.Orthogonal
+SD = bases.ShenDirichlet
+SB = bases.ShenBiharmonic
 
 
 class BJJmat(SpectralMatrix):
