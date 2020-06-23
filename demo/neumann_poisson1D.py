@@ -15,7 +15,7 @@ import os
 import importlib
 from sympy import symbols, sin
 import numpy as np
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis, \
+from shenfun import inner, div, grad, TestFunction, TrialFunction, FunctionSpace, \
     Array, Function
 
 # Collect basis from either Chebyshev or Legendre submodules
@@ -30,7 +30,7 @@ fe = ue.diff(x, 2)
 # Size of discretization
 N = 32
 
-SD = Basis(N, family=family, bc='Neumann')
+SD = FunctionSpace(N, family=family, bc='Neumann')
 X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)

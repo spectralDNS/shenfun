@@ -35,9 +35,9 @@ N = (32, 32, 32)
 gamma = 1
 threads = 1
 
-K0 = Basis(N[0], 'F', dtype='D', domain=(-2*np.pi, 2*np.pi))
-K1 = Basis(N[1], 'F', dtype='D', domain=(-2*np.pi, 2*np.pi))
-K2 = Basis(N[2], 'F', dtype='d', domain=(-2*np.pi, 2*np.pi))
+K0 = FunctionSpace(N[0], 'F', dtype='D', domain=(-2*np.pi, 2*np.pi))
+K1 = FunctionSpace(N[1], 'F', dtype='D', domain=(-2*np.pi, 2*np.pi))
+K2 = FunctionSpace(N[2], 'F', dtype='d', domain=(-2*np.pi, 2*np.pi))
 T = TensorProductSpace(comm, (K0, K1, K2), axes=(0, 1, 2),
                        **{'planner_effort': 'FFTW_MEASURE',
                           'threads': threads,

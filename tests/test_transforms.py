@@ -17,35 +17,35 @@ from shenfun.spectralbase import inner_product
 N = 33
 x = Symbol("x")
 
-cBasis = (cbases.Basis,
-          cbases.ShenDirichletBasis,
-          cbases.ShenNeumannBasis,
-          cbases.ShenBiharmonicBasis)
+cBasis = (cbases.Orthogonal,
+          cbases.ShenDirichlet,
+          cbases.ShenNeumann,
+          cbases.ShenBiharmonic)
 
 # Bases with only GC quadrature
-cBasisGC = (cbases.UpperDirichletBasis,
-            cbases.ShenBiPolarBasis)
+cBasisGC = (cbases.UpperDirichlet,
+            cbases.ShenBiPolar)
 
-lBasis = (lbases.Basis,
-          lbases.ShenDirichletBasis,
-          lbases.ShenBiharmonicBasis,
-          lbases.ShenNeumannBasis)
+lBasis = (lbases.Orthogonal,
+          lbases.ShenDirichlet,
+          lbases.ShenBiharmonic,
+          lbases.ShenNeumann)
 
 # Bases with only LG quadrature
-lBasisLG = (lbases.UpperDirichletBasis,
-            lbases.ShenBiPolarBasis,
-            lbases.ShenBiPolar0Basis)
+lBasisLG = (lbases.UpperDirichlet,
+            lbases.ShenBiPolar,
+            lbases.ShenBiPolar0)
 
-laBasis = (labases.Basis,
-           labases.ShenDirichletBasis)
+laBasis = (labases.Orthogonal,
+           labases.ShenDirichlet)
 
-fBasis = (fbases.R2CBasis,
-          fbases.C2CBasis)
+fBasis = (fbases.R2C,
+          fbases.C2C)
 
-jBasis = (jbases.Basis,
-          jbases.ShenDirichletBasis,
-          jbases.ShenBiharmonicBasis,
-          jbases.ShenOrder6Basis)
+jBasis = (jbases.Orthogonal,
+          jbases.ShenDirichlet,
+          jbases.ShenBiharmonic,
+          jbases.ShenOrder6)
 
 cquads = ('GC', 'GL')
 lquads = ('LG', 'GL')
@@ -89,7 +89,7 @@ def test_convolve(basis, N):
     M = u0.shape[0]
     u0[:] = np.random.rand(M) + 1j*np.random.rand(M)
     u1[:] = np.random.rand(M) + 1j*np.random.rand(M)
-    if isinstance(FFT, fbases.R2CBasis):
+    if isinstance(FFT, fbases.R2C):
         # Make sure spectral data corresponds to real input
         u0[0] = u0[0].real
         u1[0] = u1[0].real
@@ -104,7 +104,7 @@ def test_convolve(basis, N):
 
     # Compare. Should be identical after truncation if no aliasing
     uv3 = np.zeros_like(uv2)
-    if isinstance(FFT, fbases.R2CBasis):
+    if isinstance(FFT, fbases.R2C):
         uv3[:] = uv1[:N//2+1]
         if N % 2 == 0:
             uv3[-1] *= 2
@@ -193,7 +193,7 @@ def test_to_ortho(basis, quad):
     b1_hat = shenfun.project(a_hat, TC, output_array=b1_hat, fill=False, use_to_ortho=False)
     assert np.linalg.norm(b0_hat-b1_hat) < 1e-10
 
-    F0 = shenfun.Basis(N, 'F')
+    F0 = shenfun.FunctionSpace(N, 'F')
     TD = shenfun.TensorProductSpace(shenfun.comm, (B0, F0))
     TC = shenfun.TensorProductSpace(shenfun.comm, (B1, F0))
     a = shenfun.Array(TD)
@@ -339,7 +339,7 @@ def test_axis(ST, quad, axis):
 @pytest.mark.parametrize('quad', cquads)
 def test_CDDmat(quad):
     M = 128
-    SD = cbases.ShenDirichletBasis(M, quad=quad)
+    SD = cbases.ShenDirichlet(M, quad=quad)
     u = (1-x**2)*sin(np.pi*6*x)
     dudx = u.diff(x, 1)
     points, weights = SD.points_and_weights(M)
@@ -433,8 +433,8 @@ def test_CXXmat(test, trial):
 
     assert np.allclose(cs[s], cs2[s], rtol=1e-5, atol=1e-6)
 
-dirichlet_with_quads = (list(product([cbases.ShenNeumannBasis, cbases.ShenDirichletBasis], cquads)) +
-                        list(product([lbases.ShenNeumannBasis, lbases.ShenDirichletBasis], lquads)))
+dirichlet_with_quads = (list(product([cbases.ShenNeumann, cbases.ShenDirichlet], cquads)) +
+                        list(product([lbases.ShenNeumann, lbases.ShenDirichlet], lquads)))
 
 @pytest.mark.parametrize('ST,quad', dirichlet_with_quads)
 def test_ADDmat(ST, quad):
@@ -485,8 +485,8 @@ def test_ADDmat(ST, quad):
     c_hat = A.solve(c_hat, axis=1)
     assert np.allclose(c_hat[0, s], u_hat[s], rtol=1e-5, atol=1e-6)
 
-biharmonic_with_quads = (list(product([cbases.ShenBiharmonicBasis], cquads)) +
-                         list(product([lbases.ShenBiharmonicBasis], lquads)))
+biharmonic_with_quads = (list(product([cbases.ShenBiharmonic], cquads)) +
+                         list(product([lbases.ShenBiharmonic], lquads)))
 
 @pytest.mark.parametrize('SB,quad', biharmonic_with_quads)
 def test_SBBmat(SB, quad):
@@ -596,11 +596,12 @@ def test_ABBmat(SB, quad):
 
 if __name__ == '__main__':
     #test_to_ortho(cBasis[1], 'GC')
-    # test_convolve(fbases.R2CBasis, 8)
+    # test_convolve(fbases.R2C, 8)
     #test_ADDmat(cbases.ShenNeumannBasis, "GL")
     #test_CDDmat("GL")
     #test_massmatrices(cBasisGC[1], cBasisGC[0], 'GC')
-    test_transforms(fBasis[0], '', 2)
+    test_CXXmat(cBasis[2], cBasis[3])
+    #test_transforms(fBasis[0], '', 2)
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[1], 'GC')
     #test_eval(lBasisLG[1], 'LG')

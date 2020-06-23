@@ -14,7 +14,7 @@ V^5 is a 5-dimensional tensorproductspace.
 import os
 from sympy import symbols, cos, sin
 import numpy as np
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis, \
+from shenfun import inner, div, grad, TestFunction, TrialFunction, FunctionSpace, \
     TensorProductSpace, Array, Function, dx, comm
 
 # Use sympy to compute a rhs, given an analytical solution
@@ -25,11 +25,11 @@ fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2) + ue.diff(r, 2) + ue.diff(s, 
 # Size of discretization
 N = (8, 10, 12, 14, 12)
 
-K0 = Basis(N[0], 'F', dtype='D')
-K1 = Basis(N[1], 'F', dtype='D')
-K2 = Basis(N[2], 'F', dtype='D')
-K3 = Basis(N[3], 'F', dtype='D')
-K4 = Basis(N[4], 'F', dtype='d')
+K0 = FunctionSpace(N[0], 'F', dtype='D')
+K1 = FunctionSpace(N[1], 'F', dtype='D')
+K2 = FunctionSpace(N[2], 'F', dtype='D')
+K3 = FunctionSpace(N[3], 'F', dtype='D')
+K4 = FunctionSpace(N[4], 'F', dtype='d')
 T = TensorProductSpace(comm, (K0, K1, K2, K3, K4))
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)

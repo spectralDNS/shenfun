@@ -69,7 +69,8 @@ Note that this is a regular linear system of algebra equations
 
 where the matrix :math:`A \in \mathbb{R}^{N \times N}`.
 
-The choice of basis functions :math:`v(\boldsymbol{x})` is highly central to the method.
+The choice of basis functions :math:`v(\boldsymbol{x})` (or function space :math:`V_N`)
+is highly central to the method.
 For the Galerkin method to be *spectral*, the basis is usually chosen as linear
 combinations of Chebyshev, Legendre, Laguerre, Hermite, Jacobi or trigonometric functions.
 In one spatial dimension typical choices for :math:`\phi_k` are
@@ -96,7 +97,13 @@ Neumann boundary condition :math:`u'(\pm 1)=0` are
     \phi_k &= L_k-\frac{k(k+1)}{(k+2)(k+3)}L_{k+2}
 
 Shenfun contains classes for working with several such bases, to be used for
-different equations and boundary conditions.
+different equations and boundary conditions. More precisely, for a
+problem at hand the user chooses a function space, :math:`V_N`, which is the
+span of a set of basis functions. Associated with the function space is a
+domain (e.g., :math:`[-1, 1]`), and a weighted inner product. The weights
+:math:`w(x)` are chosen under the hood, and specifically for each basis. For example,
+Chebyshev functions use the weight :math:`1/\sqrt{1-x^2}`, whereas Legendre
+functions use a constant weight.
 
 Complete demonstration programs that solves the Poisson equation
 :eq:`eq:poisson1`, and some other problems can be found by following these
@@ -115,26 +122,57 @@ links
 Tensor products
 ---------------
 
-If the problem is two-dimensional, then we need two basis functions, one per
-dimension. If we call the basis function along :math:`x`-direction :math:`\mathcal{X}(x)`
-and along :math:`y`-direction :math:`\mathcal{Y}(y)`, a test function can then be
-computed as
+If the problem is two-dimensional, then we use two function spaces and create
+tensor product spaces. For example, if we choose the function spaces
+:math:`X_N` and :math:`Y_M`, for the first and second dimension, respectively,
+then the tensor product space :math:`W_P` will be
 
 .. math::
 
-   v(x, y) = \mathcal{X}(x) \mathcal{Y}(y).
+    W_{P} = X_N \otimes Y_M
 
-If we now have a problem that has Dirichlet boundaries in the :math:`x`-direction
-and periodic boundaries in the :math:`y`-direction, then we can choose
-:math:`\mathcal{X}_k(x) = T_k-T_{k+2}`, for :math:`k \in \mathcal{I}^{N-2}` (
-with :math:`N-2` because :math:`T_{k+2}` then equals :math:`T_{N}` for :math:`k=N-2`),
-:math:`\mathcal{Y}_l(y) = \exp(\imath l y)` for :math:`l \in \mathcal{I}^M`
+where :math:`P=N \cdot M` and :math:`\otimes` represents a tensor product.
+
+A generic basis for :math:`X_N` will be
+
+.. math::
+
+    \{ \mathcal{X}_j(x) \}_{j \in \mathcal{I}^N}
+
+and for :math:`Y_M`
+
+.. math::
+
+    \{ \mathcal{Y}_k(y) \}_{k \in \mathcal{I}^M}
+
+Note that we are here using the :math:`y`-coordinate for the
+:math:`Y_M` basis, because this basis is used along the
+second axis of the tensor product space :math:`W_P`
+
+A basis for :math:`W_P` will then be
+
+.. math::
+
+    \{ \mathcal{X}_j(x) \mathcal{Y}_k(y) \}_{(j, k) \in \mathcal{I}^N \times \mathcal{I}^M}
+
+A test function :math:`v \in W_P` is as such
+
+.. math::
+
+   v_{jk}(x, y) = \mathcal{X}_j(x) \mathcal{Y}_k(y) \text{ for } (j, k) \in \mathcal{I}^N \times \mathcal{I}^M
+
+Assume now that we have a Cartesian domain :math:`\Omega = \{ (x, y) : (x, y) \in [-1, 1] \times [0, 2 \pi]\}`,
+with homogeneous Dirichlet boundary conditions along :math:`x=\pm 1` and periodic boundaries
+in the :math:`y`-direction. We can now choose basis functions
+:math:`\mathcal{X}_j(x) = T_j-T_{j+2}`, for :math:`j \in \mathcal{I}^{N-2}` (
+with :math:`N-2` because :math:`T_{j+2}` then equals :math:`T_{N}` for :math:`j=N-2`),
+and :math:`\mathcal{Y}_k(y) = \exp(\imath k y)` for :math:`k \in \mathcal{I}^M`
 and a tensor product test function is then
 
 .. math::
    :label: eq:v2D
 
-   v_{kl}(x, y) = (T_k(x) - T_{k+2}(x)) \exp(\imath l y), \text{ for } (k, l) \in \mathcal{I}^{N-2} \times \mathcal{I}^M.
+   v_{jk}(x, y) = (T_j(x) - T_{j+2}(x)) \exp(\imath k y), \text{ for } (j, k) \in \mathcal{I}^{N-2} \times \mathcal{I}^M.
 
 In other words, we choose one test function per spatial dimension and create
 global basis functions by taking the outer products (or tensor products) of these individual
@@ -142,10 +180,7 @@ test functions. Since global basis functions simply are the tensor products of
 one-dimensional basis functions, it is trivial to move to even higher-dimensional spaces.
 The multi-dimensional basis functions then form a basis for a multi-dimensional
 tensor product space. The associated domains are similarily formed by taking
-Cartesian products of the one-dimensional domains. For example, if the one-dimensional
-domains in :math:`x`- and :math:`y`-directions are :math:`[-1, 1]` and :math:`[0, 2\pi]`, then
-the two-dimensional domain formed from these two are :math:`[-1, 1] \times [0, 2\pi]`,
-where :math:`\times` represents a Cartesian product.
+Cartesian products of the one-dimensional domains.
 
 The one-dimensional domains are discretized using the quadrature points of the
 chosen basis functions. If the meshes in :math:`x`- and :math:`y`-directions are
@@ -158,32 +193,28 @@ notation it is given as
 
     x \times y = \left\{(x_i, y_j) \,|\, (i, j) \in \mathcal{I}^N \times \mathcal{I}^M\right\}.
 
-With shenfun a user chooses the appropriate bases for each dimension of the
-problem, and may then combine these bases into tensor product spaces and Cartesian
-product domains. For
+With shenfun a user chooses the appropriate function spaces (with associated bases)
+for each dimension of the problem, and may then combine these bases into tensor
+product spaces and Cartesian product domains. For
 example, to create the required spaces for the aforementioned domain, with Dirichlet in
 :math:`x`- and periodic in :math:`y`-direction, we need the following:
 
 .. math::
 
     N, M &= (16, 16) \\
-    B^N(x) &= \text{span}\{T_k(x)-T_{k+2}(x)\}_{k\in \mathcal{I}^{N-2}} \\
-    B^M(y) &= \text{span}\{\exp(\imath l y)\}_{l\in \mathcal{I}^M} \\
-    V(x, y) &= B^N(x) \otimes B^M(y)
-
-where :math:`\otimes` represents a tensor product.
+    X_N(x) &= \text{span}\{T_k(x)-T_{k+2}(x)\}_{k\in \mathcal{I}^{N-2}} \\
+    Y_M(y) &= \text{span}\{\exp(\imath l y)\}_{l\in \mathcal{I}^M} \\
+    W_P(x, y) &= X_N(x) \otimes Y_M(y)
 
 This can be implemented in `shenfun` as follows::
 
-    from shenfun import Basis, TensorProductSpace
-    from mpi4py import MPI
-    comm = MPI.COMM_WORLD
+    from shenfun import comm, FunctionSpace, TensorProductSpace
     N, M = (16, 16)
-    BN = Basis(N, 'Chebyshev', bc=(0, 0))
-    BM = Basis(M, 'Fourier', dtype='d')
-    V = TensorProductSpace(comm, (BN, BM))
+    XN = FunctionSpace(N, 'Chebyshev', bc=(0, 0))
+    YM = FunctionSpace(M, 'Fourier', dtype='d')
+    W = TensorProductSpace(comm, (XN, YM))
 
-Note that the Chebyshev basis is created using :math:`N` and not :math:`N-2`. The
+Note that the Chebyshev space is created using :math:`N` and not :math:`N-2`. The
 chosen boundary condition ``bc=(0, 0)`` ensures that only :math:`N-2` bases will be used.
 The Fourier basis ``BM`` has been defined for real inputs to a
 forward transform, which is ensured by the ``dtype`` keyword being set to ``d``
@@ -202,11 +233,11 @@ with more than one processor, e.g., like::
 
     mpirun -np 4 python filename.py
 
-In this case the tensor product space ``V`` will be distributed
+In this case the tensor product space ``W_P`` will be distributed
 with the *slab* method (since the problem is 2D) and it
 can here use a maximum of 9 CPUs. The maximum is 9 since the last dimension is
 transformed from 16 real numbers to 9 complex, using the Hermitian symmetry of
-real transforms, i.e., the shape of a transformed array in the V space will be
+real transforms, i.e., the shape of a transformed array in the ``W_P`` space will be
 (14, 9). You can read more about MPI in the later section :ref:`MPI`.
 
 Tribute

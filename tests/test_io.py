@@ -3,7 +3,7 @@ import numpy as np
 from mpi4py import MPI
 import pytest
 from mpi4py_fft import generate_xdmf
-from shenfun import Basis, TensorProductSpace, ShenfunFile, Function,\
+from shenfun import FunctionSpace, TensorProductSpace, ShenfunFile, Function,\
     Array, MixedTensorProductSpace, VectorTensorProductSpace
 
 N = (12, 13, 14, 15)
@@ -29,8 +29,8 @@ reader = functools.partial(ShenfunFile, mode='r')
 def test_regular_2D(backend, forward_output):
     if (backend == 'netcdf4' and forward_output is True) or skip[backend]:
         return
-    K0 = Basis(N[0], 'F')
-    K1 = Basis(N[1], 'C', bc=(0, 0))
+    K0 = FunctionSpace(N[0], 'F')
+    K1 = FunctionSpace(N[1], 'C', bc=(0, 0))
     T = TensorProductSpace(comm, (K0, K1))
     filename = 'test2Dr_{}'.format(ex[forward_output])
     hfile = writer(filename, T, backend=backend)
@@ -52,8 +52,8 @@ def test_regular_2D(backend, forward_output):
 def test_mixed_2D(backend, forward_output, as_scalar):
     if (backend == 'netcdf4' and forward_output is True) or skip[backend]:
         return
-    K0 = Basis(N[0], 'F')
-    K1 = Basis(N[1], 'C')
+    K0 = FunctionSpace(N[0], 'F')
+    K1 = FunctionSpace(N[1], 'C')
     T = TensorProductSpace(comm, (K0, K1))
     TT = MixedTensorProductSpace([T, T])
     filename = 'test2Dm_{}'.format(ex[forward_output])
@@ -82,9 +82,9 @@ def test_mixed_2D(backend, forward_output, as_scalar):
 def test_regular_3D(backend, forward_output):
     if (backend == 'netcdf4' and forward_output is True) or skip[backend]:
         return
-    K0 = Basis(N[0], 'F', dtype='D', domain=(0, np.pi))
-    K1 = Basis(N[1], 'F', dtype='d', domain=(0, 2*np.pi))
-    K2 = Basis(N[2], 'C', dtype='d', bc=(0, 0))
+    K0 = FunctionSpace(N[0], 'F', dtype='D', domain=(0, np.pi))
+    K1 = FunctionSpace(N[1], 'F', dtype='d', domain=(0, 2*np.pi))
+    K2 = FunctionSpace(N[2], 'C', dtype='d', bc=(0, 0))
     T = TensorProductSpace(comm, (K0, K1, K2))
     filename = 'test3Dr_{}'.format(ex[forward_output])
     hfile = writer(filename, T, backend=backend)
@@ -111,9 +111,9 @@ def test_regular_3D(backend, forward_output):
 def test_mixed_3D(backend, forward_output, as_scalar):
     if (backend == 'netcdf4' and forward_output is True) or skip[backend]:
         return
-    K0 = Basis(N[0], 'F', dtype='D', domain=(0, np.pi))
-    K1 = Basis(N[1], 'F', dtype='d', domain=(0, 2*np.pi))
-    K2 = Basis(N[2], 'C')
+    K0 = FunctionSpace(N[0], 'F', dtype='D', domain=(0, np.pi))
+    K1 = FunctionSpace(N[1], 'F', dtype='d', domain=(0, 2*np.pi))
+    K2 = FunctionSpace(N[2], 'C')
     T = TensorProductSpace(comm, (K0, K1, K2))
     TT = VectorTensorProductSpace(T)
     filename = 'test3Dm_{}'.format(ex[forward_output])

@@ -23,9 +23,9 @@ u = (1-r**4)*sp.cos(4*theta)-0*(r-1)/2
 g = -u.diff(r, 2) - (1/(r+1))*u.diff(r, 1) - (1/(r+1)**2)*u.diff(theta, 2) + beta*u
 
 N = 12
-F = Basis(N, 'F', dtype='d')
-L = Basis(N, 'L', bc='Dirichlet')
-L0 = Basis(N, 'L', bc='UpperDirichlet')
+F = FunctionSpace(N, 'F', dtype='d')
+L = FunctionSpace(N, 'L', bc='Dirichlet')
+L0 = FunctionSpace(N, 'L', bc='UpperDirichlet')
 T = TensorProductSpace(comm, (F, L), axes=(1, 0))
 
 # Compute the right hand side on the quadrature mesh

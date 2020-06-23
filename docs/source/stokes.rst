@@ -7,7 +7,7 @@ Demo - Stokes equations
 %%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Jun 7, 2020
+:Date: Jun 23, 2020
 
 *Summary.* The Stokes equations describe the flow of highly viscous fluids.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Stokes
@@ -308,10 +308,10 @@ of the domain is given
 
     N = (40, 40, 40)
     family = 'Legendre'
-    K0 = Basis(N[0], 'Fourier', dtype='D', domain=(0, 2*np.pi))
-    K1 = Basis(N[1], 'Fourier', dtype='d', domain=(0, 2*np.pi))
-    SD = Basis(N[2], family, bc=(0, 0))
-    ST = Basis(N[2], family)
+    K0 = FunctionSpace(N[0], 'Fourier', dtype='D', domain=(0, 2*np.pi))
+    K1 = FunctionSpace(N[1], 'Fourier', dtype='d', domain=(0, 2*np.pi))
+    SD = FunctionSpace(N[2], family, bc=(0, 0))
+    ST = FunctionSpace(N[2], family)
     ST.slice = lambda: slice(0, ST.N-2)
 
 Note that the last line of code is there to ensure that only the first

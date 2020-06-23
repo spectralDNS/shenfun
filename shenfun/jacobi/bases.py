@@ -1,5 +1,5 @@
 """
-Module for bases of generalized Jacobi type
+Module for function spaces of generalized Jacobi type
 
 Note the environment variable
 
@@ -51,12 +51,12 @@ mode = mode if has_quadpy else 'numpy'
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
-__all__ = ['JacobiBase', 'Basis', 'ShenDirichletBasis', 'ShenBiharmonicBasis',
-           'ShenOrder6Basis', 'mode', 'has_quadpy', 'mp']
+__all__ = ['JacobiBase', 'Orthogonal', 'ShenDirichlet', 'ShenBiharmonic',
+           'ShenOrder6', 'mode', 'has_quadpy', 'mp']
 
 
 class JacobiBase(SpectralBase):
-    """Base class for all Jacobi bases
+    """Base class for all Jacobi spaces
 
     Parameters
     ----------
@@ -199,11 +199,11 @@ class JacobiBase(SpectralBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_orthogonal(self):
-        return Basis(self.N, alpha=self.alpha, beta=self.beta, domain=self.domain)
+        return Orthogonal(self.N, alpha=self.alpha, beta=self.beta, domain=self.domain)
 
 
-class Basis(JacobiBase):
-    """Basis for regular (orthogonal) Jacobi functions
+class Orthogonal(JacobiBase):
+    """Function space for regular (orthogonal) Jacobi functions
 
     Parameters
     ----------
@@ -295,8 +295,8 @@ class Basis(JacobiBase):
         return output_array
 
 
-class ShenDirichletBasis(JacobiBase):
-    """Jacobi basis for Dirichlet boundary conditions
+class ShenDirichlet(JacobiBase):
+    """Jacobi function space for Dirichlet boundary conditions
 
     Parameters
     ----------
@@ -453,15 +453,15 @@ class ShenDirichletBasis(JacobiBase):
         return output_array
 
     def get_orthogonal(self):
-        return Basis(self.N, alpha=self.alpha+1, beta=self.beta+1, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
+        return Orthogonal(self.N, alpha=self.alpha+1, beta=self.beta+1, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
 
     def vandermonde_scalar_product(self, input_array, output_array):
         SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
         output_array[self.sl[slice(-2, None)]] = 0
 
 
-class ShenBiharmonicBasis(JacobiBase):
-    """Basis for Biharmonic boundary conditions
+class ShenBiharmonic(JacobiBase):
+    """Function space for Biharmonic boundary conditions
 
     Parameters
     ----------
@@ -601,11 +601,11 @@ class ShenBiharmonicBasis(JacobiBase):
         return output_array
 
     def get_orthogonal(self):
-        return Basis(self.N, alpha=0, beta=0, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
+        return Orthogonal(self.N, alpha=0, beta=0, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
 
 
-class ShenOrder6Basis(JacobiBase):
-    """Basis for 6th order equation
+class ShenOrder6(JacobiBase):
+    """Function space for 6th order equation
 
     Parameters
     ----------
@@ -724,7 +724,7 @@ class ShenOrder6Basis(JacobiBase):
         return points, weights
 
     def get_orthogonal(self):
-        return Basis(self.N, alpha=0, beta=0, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
+        return Orthogonal(self.N, alpha=0, beta=0, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
 
     def vandermonde_scalar_product(self, input_array, output_array):
         SpectralBase.vandermonde_scalar_product(self, input_array, output_array)

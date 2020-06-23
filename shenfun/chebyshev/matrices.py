@@ -30,7 +30,7 @@ to be applied to each. As such the mass matrix BDDmat may be looked up
 as
 
 >>> from shenfun.chebyshev.matrices import mat
->>> from shenfun.chebyshev.bases import ShenDirichletBasis as SD
+>>> from shenfun.chebyshev.bases import ShenDirichlet as SD
 >>> B = mat[((SD, 0), (SD, 0))]
 
 and an instance of the matrix can be created as
@@ -74,12 +74,12 @@ from .la import TDMA
 from . import bases
 
 # Short names for instances of bases
-CB = bases.Basis
-SD = bases.ShenDirichletBasis
-SB = bases.ShenBiharmonicBasis
-SN = bases.ShenNeumannBasis
-BD = bases.BCBasis
-BB = bases.BCBiharmonicBasis
+CB = bases.Orthogonal
+SD = bases.ShenDirichlet
+SB = bases.ShenBiharmonic
+SN = bases.ShenNeumann
+BD = bases.BCDirichlet
+BB = bases.BCBiharmonic
 
 def get_ck(N, quad):
     """Return array ck, parameter in Chebyshev expansions

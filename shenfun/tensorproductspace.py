@@ -6,7 +6,7 @@ from numbers import Number
 import functools
 import sympy as sp
 import numpy as np
-from shenfun.fourier.bases import R2CBasis, C2CBasis
+from shenfun.fourier.bases import R2C, C2C
 from shenfun.utilities import apply_mask
 from shenfun.forms.arguments import Function, Array
 from shenfun.optimization.cython import evaluate
@@ -196,7 +196,7 @@ class TensorProductSpace(PFFT):
             assert sorted(axes[i]) == sorted(set(axes[i]))
 
         if dtype is None:
-            dtype = np.complex if isinstance(bases[axes[-1][-1]], C2CBasis) else np.float
+            dtype = np.complex if isinstance(bases[axes[-1][-1]], C2C) else np.float
 
         dtype = np.dtype(dtype)
         assert dtype.char in 'fdgFDG'
@@ -212,9 +212,9 @@ class TensorProductSpace(PFFT):
 
         self.axes = axes
         if not backward_from_pencil:
-            if isinstance(bases[axes[-1][-1]], C2CBasis):
+            if isinstance(bases[axes[-1][-1]], C2C):
                 assert np.dtype(dtype).char in 'FDG'
-            elif isinstance(bases[axes[-1][-1]], R2CBasis):
+            elif isinstance(bases[axes[-1][-1]], R2C):
                 assert np.dtype(dtype).char in 'fdg'
 
             if isinstance(comm, Subcomm):
@@ -332,7 +332,7 @@ class TensorProductSpace(PFFT):
         self.xfftn.append(xfftn)
         self.subcomm = pencil.subcomm
         subshape = list(pencil.subshape)
-        if isinstance(xfftn, R2CBasis):
+        if isinstance(xfftn, R2C):
             subshape[axes[-1]] = int(np.floor(xfftn.N*xfftn.padding_factor))
             #dtype = dtype
         else:
@@ -349,7 +349,7 @@ class TensorProductSpace(PFFT):
             transBA = pencilA.transfer(pencilB, dtype)
             xfftn = self.bases[axes[-1]]
             subshape = list(pencilB.subshape)
-            if isinstance(xfftn, R2CBasis):
+            if isinstance(xfftn, R2C):
                 subshape[axes[-1]] = int(np.floor(xfftn.N*xfftn.padding_factor))
                 dtype = np.dtype(dtype.char.lower())
             else:
@@ -500,7 +500,7 @@ class TensorProductSpace(PFFT):
             x = base.map_reference_domain(points[axis])
             D = base.evaluate_basis_all(x=x, argument=1)
             P = D[..., self.local_slice()[axis]]
-            if isinstance(base, R2CBasis):
+            if isinstance(base, R2C):
                 M = base.N//2+1
                 if base.N % 2 == 0:
                     last_conj_index = M-1
@@ -517,7 +517,7 @@ class TensorProductSpace(PFFT):
 
             if len(out) == 0:
                 out = np.tensordot(P, coefficients, (1, axis))
-                if isinstance(base, R2CBasis):
+                if isinstance(base, R2C):
                     ss = [slice(None)]*len(self)
                     ss[axis] = slice(sl, st)
                     out += np.conj(np.tensordot(P[tuple(sp)], coefficients[tuple(ss)], (1, axis)))
@@ -526,7 +526,7 @@ class TensorProductSpace(PFFT):
             else:
                 k = np.count_nonzero([m < axis for m in previous_axes])
                 if len(self) == 2:
-                    if not isinstance(base, R2CBasis):
+                    if not isinstance(base, R2C):
                         out2 = np.sum(P*out, axis=-1)
                     else:
                         sp = tuple(sp)
@@ -539,7 +539,7 @@ class TensorProductSpace(PFFT):
                     if len(out.shape) == 3:
                         kk = 1 if axis-k == 1 else 2
                         sx[kk] = np.newaxis
-                    if not isinstance(base, R2CBasis):
+                    if not isinstance(base, R2C):
                         out2 = np.sum(P[tuple(sx)]*out, axis=1+axis-k)
                     else:
                         out2 = np.sum(P[tuple(sx)].real*out.real - P[tuple(sx)].imag*out.imag, axis=1+axis-k)
@@ -573,7 +573,7 @@ class TensorProductSpace(PFFT):
         w = []
         for base in self:
             axis = base.axis
-            if isinstance(base, R2CBasis):
+            if isinstance(base, R2C):
                 r2c = axis
                 M = base.N//2+1
                 if base.N % 2 == 0:
@@ -614,7 +614,7 @@ class TensorProductSpace(PFFT):
             x = base.map_reference_domain(points[axis])
             D = base.evaluate_basis_all(x=x)
             P.append(D[..., self.local_slice()[axis]])
-            if isinstance(base, R2CBasis):
+            if isinstance(base, R2C):
                 r2c = axis
                 M = base.N//2+1
                 if base.N % 2 == 0:
@@ -1530,10 +1530,10 @@ def some_basic_tests():
 
     comm = MPI.COMM_WORLD
     N = 8
-    K0 = C2CBasis(N)
-    K1 = C2CBasis(N)
-    K2 = C2CBasis(N)
-    K3 = R2CBasis(N)
+    K0 = C2C(N)
+    K1 = C2C(N)
+    K2 = C2C(N)
+    K3 = R2C(N)
     T = TensorProductSpace(comm, (K0, K1, K2, K3))
 
     # Create data on rank 0 for testing
@@ -1567,10 +1567,10 @@ def some_basic_tests():
 
     # Padding
     # Needs new instances of bases because arrays have new sizes
-    Kp0 = C2CBasis(N, padding_factor=1.5)
-    Kp1 = C2CBasis(N, padding_factor=1.5)
-    Kp2 = C2CBasis(N, padding_factor=1.5)
-    Kp3 = R2CBasis(N, padding_factor=1.5)
+    Kp0 = C2C(N, padding_factor=1.5)
+    Kp1 = C2C(N, padding_factor=1.5)
+    Kp2 = C2C(N, padding_factor=1.5)
+    Kp3 = R2C(N, padding_factor=1.5)
     Tp = TensorProductSpace(comm, (Kp0, Kp1, Kp2, Kp3))
 
     f_g_pad = Tp.backward(f_hat)
