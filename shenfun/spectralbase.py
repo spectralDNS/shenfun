@@ -400,8 +400,8 @@ class SpectralBase(object):
         >>> import numpy as np
         >>> from shenfun import Basis, TensorProductSpace
         >>> from mpi4py import MPI
-        >>> K0 = Basis(8, 'F', dtype='D')
-        >>> K1 = Basis(8, 'F', dtype='d')
+        >>> K0 = FunctionSpace(8, 'F', dtype='D')
+        >>> K1 = FunctionSpace(8, 'F', dtype='d')
         >>> T = TensorProductSpace(MPI.COMM_WORLD, (K0, K1))
         >>> x = np.arange(4)
         >>> y = K0.broadcast_to_ndims(x)
@@ -1257,7 +1257,7 @@ class SpectralBase(object):
             padded_array[su] = 0
 
 
-class MixedBasis(object):
+class MixedFunctionSpace(object):
     """Class for composite bases in 1D
 
     Parameters
@@ -1273,7 +1273,7 @@ class MixedBasis(object):
         self.scalar_product = VectorBasisTransform([basis.scalar_product for basis in bases])
 
     def dims(self):
-        """Return dimensions (degrees of freedom) for MixedBasis"""
+        """Return dimensions (degrees of freedom) for MixedFunctionSpace"""
         s = []
         for space in self.flatten():
             s.append(space.dim())
@@ -1287,7 +1287,7 @@ class MixedBasis(object):
         return s
 
     def shape(self, forward_output=False):
-        """Return shape of arrays for MixedBasis
+        """Return shape of arrays for MixedFunctionSpace
 
         Parameters
         ----------

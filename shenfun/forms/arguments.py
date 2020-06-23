@@ -7,16 +7,25 @@ from shenfun.optimization.cython import evaluate
 from mpi4py_fft import DistArray
 
 __all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',
-           'Array', 'Basis')
+           'Array', 'FunctionSpace', 'Basis')
 
 # Define some special functions required for spherical harmonics
 cot = lambda x: 1/np.tan(x)
 Ynm = lambda n, m, x, y : sph_harm(m, n, y, x)
+printwarning = True
 
-def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
-          scaled=None, padding_factor=1.0, dealias_direct=False,
-          coordinates=None, **kw):
-    """Return basis for one dimension
+def Basis(*args, **kwargs): #pragma: no cover
+    global printwarning
+    import warnings
+    if printwarning:
+        warnings.warn("Basis() is deprecated; use FunctionSpace().", FutureWarning)
+        printwarning = False
+    return FunctionSpace(*args, **kwargs)
+
+def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
+                  domain=None, scaled=None, padding_factor=1.0,
+                  dealias_direct=False, coordinates=None, **kw):
+    """Return function space
 
     Parameters
     ----------
@@ -31,16 +40,22 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
         - ``Fourier`` or ``F``,
         - ``Laguerre`` or ``La``,
         - ``Hermite`` or ``H``
+        - ``Jacobi`` or ``J``
 
-    bc : str or two-tuple, optional
+    bc : str or tuple, optional
         Choose one of
 
-        - two-tuple (a, b) - Dirichlet boundary condition with
-          :math:`v(-1)=a` and :math:`v(1)=b`. For solving Poisson equation.
-        - Dirichlet - Homogeneous Dirichlet
-        - Neumann - Homogeneous Neumann
-        - Biharmonic - Homogeneous Dirichlet and Neumann at both ends
-        - Polar - For basis specific to polar coordinates
+        - 2-tuple (a, b) - Dirichlet boundary condition with
+          :math:`v(-1)=a` and :math:`v(1)=b`.
+        - 4-tuple (a, b, 0, 0) - Biharmonic with the two non-zero Dirichlet
+          conditions :math:`v(-1)=a` and :math:`v(1)=b`.
+        - Dirichlet - Homogeneous Dirichlet.
+        - Neumann - Homogeneous Neumann.
+        - Biharmonic - Homogeneous Dirichlet and Neumann at both ends.
+        - UpperDirichlet - Homogeneous Dirichlet at x=1, nothing at x=-1.
+        - Polar - Homogeneous biharmonic, specifically used with polar coordinates.
+        - DirichletNeumann - Homogeneous Dirichlet at x=-1 and Neumann at x=1.
+        - NeumannDirichlet - Homogeneous Neumann at x=-1 and Dirichlet at x=1.
     dtype : str or np.dtype, optional
         The datatype of physical space (input to forward transforms)
     quad : str, optional
@@ -61,15 +76,17 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
         * For family=Hermite:
 
           - HG - Hermite-Gauss
+        * For family=Jacobi:
+
+          - JG - Jacobi-Gauss
     domain : two-tuple of floats, optional
         The computational domain
     scaled : bool
         Whether to use scaled basis (only Legendre)
     padding_factor : float, optional
-        For padding backward transform (for dealiasing, and
-        only for Fourier)
+        For padding backward transform (for dealiasing)
     dealias_direct : bool, optional
-        Use 2/3-rule dealiasing (only Fourier)
+        Use 2/3-rule dealiasing
     coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
         Map for curvilinear coordinatesystem.
         The new coordinate variable in the new coordinate system is the first item.
@@ -83,9 +100,9 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
 
     Examples
     --------
-    >>> from shenfun import Basis
-    >>> F0 = Basis(16, 'F')
-    >>> C1 = Basis(32, 'C', quad='GC')
+    >>> from shenfun import FunctionSpace
+    >>> F0 = FunctionSpace(16, 'F')
+    >>> C1 = FunctionSpace(32, 'C', quad='GC')
 
     """
     par = {'padding_factor': padding_factor,
@@ -111,7 +128,7 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
             par['quad'] = quad
 
         if bc is None:
-            B = chebyshev.bases.Basis
+            B = chebyshev.bases.Orthogonal
 
         elif isinstance(bc, tuple):
             assert len(bc) in (2, 4)
@@ -155,7 +172,7 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
             par['scaled'] = scaled
 
         if bc is None:
-            B = legendre.bases.Basis
+            B = legendre.bases.Orthogonal
 
         elif isinstance(bc, tuple):
             assert len(bc) in (2, 4)
@@ -194,7 +211,7 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
             par['quad'] = quad
 
         if bc is None:
-            B = laguerre.bases.Basis
+            B = laguerre.bases.Orthogonal
 
         elif isinstance(bc, tuple):
             assert len(bc) == 2
@@ -216,7 +233,7 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
             assert quad in ('HG',)
             par['quad'] = quad
 
-        B = hermite.bases.Basis
+        B = hermite.bases.Orthogonal
 
         if isinstance(bc, tuple):
             assert len(bc) == 2
@@ -237,7 +254,7 @@ def Basis(N, family='Fourier', bc=None, dtype='d', quad=None, domain=None,
             par['quad'] = quad
 
         if bc is None:
-            B = jacobi.bases.Basis
+            B = jacobi.bases.Orthogonal
 
         elif isinstance(bc, tuple):
             assert len(bc) in (2, 4)
@@ -328,9 +345,9 @@ class Expr(object):
     >>> from shenfun import *
     >>> from mpi4py import MPI
     >>> comm = MPI.COMM_WORLD
-    >>> C0 = Basis(16, 'F', dtype='D')
-    >>> C1 = Basis(16, 'F', dtype='D')
-    >>> R0 = Basis(16, 'F', dtype='d')
+    >>> C0 = FunctionSpace(16, 'F', dtype='D')
+    >>> C1 = FunctionSpace(16, 'F', dtype='D')
+    >>> R0 = FunctionSpace(16, 'F', dtype='d')
     >>> T = TensorProductSpace(comm, (C0, C1, R0))
     >>> v = TestFunction(T)
     >>> e = div(grad(v))
@@ -503,8 +520,8 @@ class Expr(object):
         >>> import sympy as sp
         >>> theta, r = psi = sp.symbols('x,y', real=True, positive=True)
         >>> rv = (r*sp.cos(theta), r*sp.sin(theta))
-        >>> F0 = Basis(8, 'F', dtype='d')
-        >>> T0 = Basis(8, 'C')
+        >>> F0 = FunctionSpace(8, 'F', dtype='d')
+        >>> T0 = FunctionSpace(8, 'C')
         >>> T = TensorProductSpace(comm, (F0, T0), coordinates=(psi, rv))
         >>> u = TrialFunction(T)
         >>> ue = r*sp.cos(theta)
@@ -1247,11 +1264,11 @@ class Function(ShenfunBaseArray, BasisFunction):
     --------
     >>> from mpi4py import MPI
     >>> from shenfun import Basis, TensorProductSpace, Function
-    >>> K0 = Basis(8, 'F', dtype='D')
-    >>> K1 = Basis(8, 'F', dtype='d')
+    >>> K0 = FunctionSpace(8, 'F', dtype='D')
+    >>> K1 = FunctionSpace(8, 'F', dtype='d')
     >>> T = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
     >>> u = Function(T)
-    >>> K2 = Basis(8, 'C', bc=(0, 0))
+    >>> K2 = FunctionSpace(8, 'C', bc=(0, 0))
     >>> T2 = TensorProductSpace(MPI.COMM_WORLD, [K0, K1, K2])
     >>> v = Function(T2)
 
@@ -1295,8 +1312,8 @@ class Function(ShenfunBaseArray, BasisFunction):
         Examples
         --------
         >>> import sympy as sp
-        >>> K0 = Basis(9, 'F', dtype='D')
-        >>> K1 = Basis(8, 'F', dtype='d')
+        >>> K0 = FunctionSpace(9, 'F', dtype='D')
+        >>> K1 = FunctionSpace(8, 'F', dtype='d')
         >>> T = TensorProductSpace(MPI.COMM_WORLD, [K0, K1], axes=(0, 1))
         >>> X = T.local_mesh()
         >>> x, y = sp.symbols("x,y")
@@ -1553,8 +1570,8 @@ class Array(ShenfunBaseArray):
     --------
     >>> from mpi4py import MPI
     >>> from shenfun import Basis, TensorProductSpace, Function
-    >>> K0 = Basis(8, 'F', dtype='D')
-    >>> K1 = Basis(8, 'F', dtype='d')
+    >>> K0 = FunctionSpace(8, 'F', dtype='D')
+    >>> K1 = FunctionSpace(8, 'F', dtype='d')
     >>> FFT = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
     >>> u = Array(FFT)
     """

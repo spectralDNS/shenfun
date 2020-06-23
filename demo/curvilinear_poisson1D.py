@@ -25,7 +25,7 @@ t = sp.Symbol('x', real=True, positive=True)
 rv = (sp.sin(2*t), sp.cos(2*t), 0.5*t)
 
 N = 200
-L = Basis(N, 'C', bc=(0, 0), domain=(0, 2*np.pi), coordinates=((t,), rv))
+L = FunctionSpace(N, 'C', bc=(0, 0), domain=(0, 2*np.pi), coordinates=((t,), rv))
 
 u = TrialFunction(L)
 v = TestFunction(L)

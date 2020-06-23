@@ -16,7 +16,7 @@ from shenfun.utilities import inheritdocstrings
 from shenfun.forms.arguments import Function
 from .lobatto import legendre_lobatto_nodes_and_weights
 
-__all__ = ['LegendreBase', 'Basis', 'ShenDirichletBasis',
+__all__ = ['LegendreBase', 'Orthogonal', 'ShenDirichletBasis',
            'ShenBiharmonicBasis', 'ShenNeumannBasis',
            'ShenBiPolarBasis', 'ShenBiPolar0Basis',
            'NeumannDirichletBasis', 'DirichletNeumannBasis',
@@ -190,11 +190,11 @@ class LegendreBase(SpectralBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_orthogonal(self):
-        return Basis(self.N, quad=self.quad, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
+        return Orthogonal(self.N, quad=self.quad, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
 
 @inheritdocstrings
-class Basis(LegendreBase):
-    """Basis for regular Legendre series
+class Orthogonal(LegendreBase):
+    """Function space for regular (orthogonal) Legendre series
 
     Parameters
     ----------
@@ -286,7 +286,7 @@ class ShenDirichletBasis(LegendreBase):
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
-        self.LT = Basis(N, quad)
+        self.LT = Orthogonal(N, quad)
         self._scaled = scaled
         self._factor = np.ones(1)
         self.plan(int(N*padding_factor), 0, dtype, {})
@@ -522,7 +522,7 @@ class ShenNeumannBasis(LegendreBase):
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         self.mean = mean
-        self.LT = Basis(N, quad)
+        self.LT = Orthogonal(N, quad)
         self._factor = np.zeros(0)
         self.plan(int(N*padding_factor), 0, dtype, {})
 
@@ -688,7 +688,7 @@ class ShenBiharmonicBasis(LegendreBase):
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
-        self.LT = Basis(N, quad)
+        self.LT = Orthogonal(N, quad)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
         self.plan(int(N*padding_factor), 0, dtype, {})
@@ -923,7 +923,7 @@ class UpperDirichletBasis(LegendreBase):
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
-        self.LT = Basis(N, quad)
+        self.LT = Orthogonal(N, quad)
         self._factor = np.ones(1)
         self.plan(int(N*padding_factor), 0, dtype, {})
 
@@ -1072,7 +1072,7 @@ class ShenBiPolarBasis(LegendreBase):
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
-        self.LT = Basis(N, quad)
+        self.LT = Orthogonal(N, quad)
         self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
@@ -1209,7 +1209,7 @@ class ShenBiPolar0Basis(LegendreBase):
         LegendreBase.__init__(self, N, quad="LG", domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
-        self.LT = Basis(N, quad)
+        self.LT = Orthogonal(N, quad)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
         self._factor3 = np.zeros(0)
@@ -1384,7 +1384,7 @@ class DirichletNeumannBasis(LegendreBase):
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
-        self.LT = Basis(N, quad)
+        self.LT = Orthogonal(N, quad)
         self._factor1 = np.ones(1)
         self._factor2 = np.ones(1)
         self.plan(int(N*padding_factor), 0, np.float, {})
@@ -1552,7 +1552,7 @@ class NeumannDirichletBasis(LegendreBase):
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
-        self.LT = Basis(N, quad)
+        self.LT = Orthogonal(N, quad)
         self._factor = np.ones(1)
         self.plan(int(N*padding_factor), 0, np.float, {})
         self.bc = BoundaryValues(self, bc=bc)

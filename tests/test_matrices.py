@@ -20,11 +20,11 @@ from shenfun.jacobi import matrices as jmatrices
 from shenfun.jacobi import bases as jbases
 from shenfun.chebyshev import la as cla
 from shenfun.legendre import la as lla
-from shenfun import div, grad, inner, TensorProductSpace, Basis, SparseMatrix, \
+from shenfun import div, grad, inner, TensorProductSpace, FunctionSpace, SparseMatrix, \
     Function
 from shenfun.spectralbase import inner_product
 
-cBasis = (cbases.Basis,
+cBasis = (cbases.Orthogonal,
           cbases.ShenDirichletBasis,
           cbases.ShenNeumannBasis,
           cbases.ShenBiharmonicBasis)
@@ -33,7 +33,7 @@ cBasis = (cbases.Basis,
 cBasisGC = (cbases.UpperDirichletBasis,
             cbases.ShenBiPolarBasis)
 
-lBasis = (lbases.Basis,
+lBasis = (lbases.Orthogonal,
           lbases.ShenDirichletBasis,
           functools.partial(lbases.ShenDirichletBasis, scaled=True),
           lbases.ShenBiharmonicBasis,
@@ -44,12 +44,12 @@ lBasisLG = (lbases.UpperDirichletBasis,
             lbases.ShenBiPolarBasis,
             lbases.ShenBiPolar0Basis)
 
-lagBasis = (lagbases.Basis,
+lagBasis = (lagbases.Orthogonal,
             lagbases.ShenDirichletBasis)
 
-hBasis = (hbases.Basis,)
+hBasis = (hbases.Orthogonal,)
 
-jBasis = (jbases.Basis,
+jBasis = (jbases.Orthogonal,
           jbases.ShenDirichletBasis,
           jbases.ShenBiharmonicBasis,
           jbases.ShenOrder6Basis)
@@ -353,7 +353,7 @@ def test_mul2():
     mat = SparseMatrix({-2:1, -1:1, 0: 1, 1:1, 2:1}, (3, 3))
     c = mat * v
     assert np.allclose(c, 3)
-    SD = Basis(8, "L", bc=(0, 0), scaled=True)
+    SD = FunctionSpace(8, "L", bc=(0, 0), scaled=True)
     u = shenfun.TrialFunction(SD)
     v = shenfun.TestFunction(SD)
     mat = inner(grad(u), grad(v))
@@ -542,9 +542,9 @@ def test_helmholtz3D(family, axis):
     if family == 'chebyshev':
         la = cla
     N = (8, 9, 10)
-    SD = Basis(N[allaxes3D[axis][0]], family=family, bc=(0, 0))
-    K1 = Basis(N[allaxes3D[axis][1]], family='F', dtype='D')
-    K2 = Basis(N[allaxes3D[axis][2]], family='F', dtype='d')
+    SD = FunctionSpace(N[allaxes3D[axis][0]], family=family, bc=(0, 0))
+    K1 = FunctionSpace(N[allaxes3D[axis][1]], family='F', dtype='D')
+    K2 = FunctionSpace(N[allaxes3D[axis][2]], family='F', dtype='d')
     subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, [0, 1, 1])
     bases = [0]*3
     bases[allaxes3D[axis][0]] = SD
@@ -584,8 +584,8 @@ def test_helmholtz2D(family, axis):
     if family == 'chebyshev':
         la = cla
     N = (8, 9)
-    SD = Basis(N[axis], family=family, bc=(0, 0))
-    K1 = Basis(N[(axis+1)%2], family='F', dtype='d')
+    SD = FunctionSpace(N[axis], family=family, bc=(0, 0))
+    K1 = FunctionSpace(N[(axis+1)%2], family='F', dtype='d')
     subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, allaxes2D[axis])
     bases = [K1]
     bases.insert(axis, SD)
@@ -623,9 +623,9 @@ def test_biharmonic3D(family, axis):
     if family == 'chebyshev':
         la = cla
     N = (16, 16, 16)
-    SD = Basis(N[allaxes3D[axis][0]], family=family, bc='Biharmonic')
-    K1 = Basis(N[allaxes3D[axis][1]], family='F', dtype='D')
-    K2 = Basis(N[allaxes3D[axis][2]], family='F', dtype='d')
+    SD = FunctionSpace(N[allaxes3D[axis][0]], family=family, bc='Biharmonic')
+    K1 = FunctionSpace(N[allaxes3D[axis][1]], family='F', dtype='D')
+    K2 = FunctionSpace(N[allaxes3D[axis][2]], family='F', dtype='d')
     subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, [0, 1, 1])
     bases = [0]*3
     bases[allaxes3D[axis][0]] = SD
@@ -662,8 +662,8 @@ def test_biharmonic2D(family, axis):
     if family == 'chebyshev':
         la = cla
     N = (16, 16)
-    SD = Basis(N[axis], family=family, bc='Biharmonic')
-    K1 = Basis(N[(axis+1)%2], family='F', dtype='d')
+    SD = FunctionSpace(N[axis], family=family, bc='Biharmonic')
+    K1 = FunctionSpace(N[(axis+1)%2], family='F', dtype='d')
     subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, allaxes2D[axis])
     bases = [K1]
     bases.insert(axis, SD)

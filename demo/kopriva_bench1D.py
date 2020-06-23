@@ -4,7 +4,7 @@ from shenfun import inner, div, grad, Function, Array, TestFunction, Basis
 
 
 def main(N, dt=0.005, end_time=2, dealias_initial=True, plot_result=False):
-    SD = Basis(N, 'F', dtype='D')
+    SD = FunctionSpace(N, 'F', dtype='D')
     X = SD.points_and_weights()[0]
     v = TestFunction(SD)
     U = Array(SD)

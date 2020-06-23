@@ -24,7 +24,7 @@ import os
 import numpy as np
 from sympy import symbols, cos
 from shenfun import *
-from shenfun.spectralbase import MixedBasis
+from shenfun.spectralbase import MixedFunctionSpace
 
 x = symbols("x", real=True)
 
@@ -34,8 +34,8 @@ dx = ue.diff(x, 1)
 fe = ue.diff(x, 2)
 
 N = 24
-SD = Basis(N, 'L', bc=(0, 0))
-ST = Basis(N, 'L')
+SD = FunctionSpace(N, 'L', bc=(0, 0))
+ST = FunctionSpace(N, 'L')
 X = SD.mesh(True)
 
 # Solve first regularly
@@ -49,7 +49,7 @@ ua = Array(SD)
 ua = u_.backward(ua)
 
 # Now solved in mixed formulation
-Q = MixedBasis([ST, SD])
+Q = MixedFunctionSpace([ST, SD])
 
 gu = TrialFunction(Q)
 pq = TestFunction(Q)

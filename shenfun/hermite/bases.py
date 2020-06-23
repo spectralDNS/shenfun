@@ -11,7 +11,7 @@ from shenfun.utilities import inheritdocstrings
 
 
 @inheritdocstrings
-class Basis(SpectralBase):
+class Orthogonal(SpectralBase):
     """Base class for Hermite functions
 
     Parameters

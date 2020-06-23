@@ -13,7 +13,7 @@ from sympy import symbols, exp
 import matplotlib.pyplot as plt
 from mpi4py_fft import generate_xdmf, fftw
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    TensorProductSpace, Array, Function, ETDRK4, HDF5File, Basis, comm
+    TensorProductSpace, Array, Function, ETDRK4, HDF5File, FunctionSpace, comm
 
 # Use sympy to set up initial condition
 x, y = symbols("x,y")
@@ -23,8 +23,8 @@ ue = (x + y)*exp(-0.03*(x**2+y**2))
 # Size of discretization
 N = (129, 129)
 
-K0 = Basis(N[0], 'F', dtype='D', domain=(-50, 50))
-K1 = Basis(N[1], 'F', dtype='D', domain=(-50, 50))
+K0 = FunctionSpace(N[0], 'F', dtype='D', domain=(-50, 50))
+K1 = FunctionSpace(N[1], 'F', dtype='D', domain=(-50, 50))
 T = TensorProductSpace(comm, (K0, K1), **{'planner_effort': 'FFTW_MEASURE'})
 
 Tp = T.get_dealiased((1.5, 1.5))

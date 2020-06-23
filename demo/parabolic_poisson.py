@@ -14,8 +14,8 @@ rv = (tau*sigma, (tau**2-sigma**2)/2)
 
 N = 40
 by_parts = True
-L0 = Basis(N, 'L', bc=(0, 0), domain=(0, 1))
-L1 = Basis(N, 'L', bc=(0, 0), domain=(-1, 1))
+L0 = FunctionSpace(N, 'L', bc=(0, 0), domain=(0, 1))
+L1 = FunctionSpace(N, 'L', bc=(0, 0), domain=(-1, 1))
 T = TensorProductSpace(comm, (L0, L1), axes=(1, 0), coordinates=(psi, rv))
 
 v = TestFunction(T)

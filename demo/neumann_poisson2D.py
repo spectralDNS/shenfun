@@ -18,7 +18,7 @@ import importlib
 from sympy import symbols, cos, sin
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    TensorProductSpace, Basis, Array, Function, comm
+    TensorProductSpace, FunctionSpace, Array, Function, comm
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
@@ -33,8 +33,8 @@ fe = ue.diff(x, 2) + ue.diff(y, 2)
 # Size of discretization
 N = (31, 32)
 
-SD = Basis(N[0], family=family, bc='Neumann')
-K1 = Basis(N[1], family='F', dtype='d')
+SD = FunctionSpace(N[0], family=family, bc='Neumann')
+K1 = FunctionSpace(N[1], family='F', dtype='d')
 T = TensorProductSpace(comm, (SD, K1))
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)

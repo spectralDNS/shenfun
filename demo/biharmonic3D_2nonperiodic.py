@@ -14,7 +14,7 @@ import os
 from sympy import symbols, cos, sin
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
-    Function, TensorProductSpace, Basis, comm
+    Function, TensorProductSpace, FunctionSpace, comm
 from shenfun.la import SolverGeneric2ND
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
@@ -28,9 +28,9 @@ fe = ue.diff(x, 4) + ue.diff(y, 4) + ue.diff(z, 4) + 2*ue.diff(x, 2, y, 2) + 2*u
 # Size of discretization
 N = (36, 36, 36)
 
-K0 = Basis(N[0], 'Fourier', dtype='d')
-S0 = Basis(N[1], family=family, bc='Biharmonic')
-S1 = Basis(N[2], family=family, bc='Biharmonic')
+K0 = FunctionSpace(N[0], 'Fourier', dtype='d')
+S0 = FunctionSpace(N[1], family=family, bc='Biharmonic')
+S1 = FunctionSpace(N[2], family=family, bc='Biharmonic')
 
 T = TensorProductSpace(comm, (K0, S0, S1), axes=(1, 0, 2), slab=True)
 X = T.local_mesh(True)

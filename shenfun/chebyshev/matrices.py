@@ -75,7 +75,7 @@ from .la import TDMA
 from . import bases
 
 # Short names for instances of bases
-CB = bases.Basis
+CB = bases.Orthogonal
 SD = bases.ShenDirichletBasis
 SB = bases.ShenBiharmonicBasis
 SN = bases.ShenNeumannBasis

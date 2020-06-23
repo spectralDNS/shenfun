@@ -52,7 +52,7 @@ mode = mode if has_quadpy else 'numpy'
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
-__all__ = ['JacobiBase', 'Basis', 'ShenDirichletBasis', 'ShenBiharmonicBasis',
+__all__ = ['JacobiBase', 'Orthogonal', 'ShenDirichletBasis', 'ShenBiharmonicBasis',
            'ShenOrder6Basis', 'mode', 'has_quadpy', 'mp']
 
 @inheritdocstrings
@@ -200,10 +200,10 @@ class JacobiBase(SpectralBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_orthogonal(self):
-        return Basis(self.N, alpha=self.alpha, beta=self.beta, domain=self.domain)
+        return Orthogonal(self.N, alpha=self.alpha, beta=self.beta, domain=self.domain)
 
 @inheritdocstrings
-class Basis(JacobiBase):
+class Orthogonal(JacobiBase):
     """Basis for regular (orthogonal) Jacobi functions
 
     Parameters
@@ -454,7 +454,7 @@ class ShenDirichletBasis(JacobiBase):
         return output_array
 
     def get_orthogonal(self):
-        return Basis(self.N, alpha=self.alpha+1, beta=self.beta+1, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
+        return Orthogonal(self.N, alpha=self.alpha+1, beta=self.beta+1, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
 
     def vandermonde_scalar_product(self, input_array, output_array):
         SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
@@ -601,7 +601,7 @@ class ShenBiharmonicBasis(JacobiBase):
         return output_array
 
     def get_orthogonal(self):
-        return Basis(self.N, alpha=0, beta=0, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
+        return Orthogonal(self.N, alpha=0, beta=0, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
 
 
 class ShenOrder6Basis(JacobiBase):
@@ -724,7 +724,7 @@ class ShenOrder6Basis(JacobiBase):
         return points, weights
 
     def get_orthogonal(self):
-        return Basis(self.N, alpha=0, beta=0, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
+        return Orthogonal(self.N, alpha=0, beta=0, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
 
     def vandermonde_scalar_product(self, input_array, output_array):
         SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
