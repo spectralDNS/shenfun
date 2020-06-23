@@ -231,8 +231,8 @@ class Orthogonal(LaguerreBase):
         return self
 
 
-class ShenDirichletBasis(LaguerreBase):
-    """Shen Laguerre basis for Dirichlet boundary conditions
+class ShenDirichlet(LaguerreBase):
+    """Laguerre function space for Dirichlet boundary conditions
 
     Parameters
     ----------

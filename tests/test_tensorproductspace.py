@@ -117,33 +117,33 @@ def test_transform(typecode, dim):
             fft.destroy()
 
 cBasis = (cbases.Orthogonal,
-          cbases.ShenDirichletBasis,
-          cbases.ShenNeumannBasis,
-          cbases.ShenBiharmonicBasis)
+          cbases.ShenDirichlet,
+          cbases.ShenNeumann,
+          cbases.ShenBiharmonic)
 
 # Bases with only GC quadrature
-cBasisGC = (cbases.UpperDirichletBasis,
-            cbases.ShenBiPolarBasis)
+cBasisGC = (cbases.UpperDirichlet,
+            cbases.ShenBiPolar)
 
 lBasis = (lbases.Orthogonal,
-          lbases.ShenDirichletBasis,
-          lbases.ShenNeumannBasis,
-          lbases.ShenBiharmonicBasis)
+          lbases.ShenDirichlet,
+          lbases.ShenNeumann,
+          lbases.ShenBiharmonic)
 
 # Bases with only LG quadrature
-lBasisLG = (lbases.UpperDirichletBasis,
-            lbases.ShenBiPolarBasis,
-            lbases.ShenBiPolar0Basis)
+lBasisLG = (lbases.UpperDirichlet,
+            lbases.ShenBiPolar,
+            lbases.ShenBiPolar0)
 
 lagBasis = (lagbases.Orthogonal,
-            lagbases.ShenDirichletBasis)
+            lagbases.ShenDirichlet)
 
 hBasis = (hbases.Orthogonal,)
 
 jBasis = (jbases.Orthogonal,
-          jbases.ShenDirichletBasis,
-          jbases.ShenBiharmonicBasis,
-          jbases.ShenOrder6Basis)
+          jbases.ShenDirichlet,
+          jbases.ShenBiharmonic,
+          jbases.ShenOrder6)
 
 cquads = ('GC', 'GL')
 lquads = ('LG', 'GL')
@@ -379,8 +379,8 @@ def test_project_2dirichlet(quad):
     ue = (cos(4*y)*sin(2*x))*(1-x**2)*(1-y**2)
     sizes = (18, 17)
 
-    D0 = lbases.ShenDirichletBasis(sizes[0], quad=quad)
-    D1 = lbases.ShenDirichletBasis(sizes[1], quad=quad)
+    D0 = lbases.ShenDirichlet(sizes[0], quad=quad)
+    D1 = lbases.ShenDirichlet(sizes[1], quad=quad)
     B0 = lbases.Orthogonal(sizes[0], quad=quad)
     B1 = lbases.Orthogonal(sizes[1], quad=quad)
 

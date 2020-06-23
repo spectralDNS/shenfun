@@ -78,8 +78,6 @@ functionality
 !bc pycod
 import matplotlib.pyplot as plt
 from shenfun import *
-from mpi4py import MPI
-comm = MPI.COMM_WORLD
 !ec
 
 Note that MPI for Python ("mpi4py" : "https://bitbucket.org/mpi4py/mpi4py")
@@ -135,8 +133,8 @@ $D_0^{N_1}(y)=\text{span}\{L_l-L_{l+2}\}_{l=0}^{N_1-2}$ as
 N = (51, 51)
 family = 'Legendre' # or use 'Chebyshev'
 quad = 'LG'         # for Chebyshev use 'GC' or 'GL'
-D0X = Basis(N[0], family, quad=quad, bc=(0, 0))
-D0Y = Basis(N[1], family, quad=quad, bc=(0, 0))
+D0X = FunctionSpace(N[0], family, quad=quad, bc=(0, 0))
+D0Y = FunctionSpace(N[1], family, quad=quad, bc=(0, 0))
 !ec
 
 The spaces are here the same, but we will use `D0X` in the $x$-direction and
@@ -163,7 +161,7 @@ using both additional basis functions. We create the space
 $D_1^{N_1}(y)=\text{span}\{\mathcal{Y}_l(y)\}_{l=0}^{N_1-1}$ as
 
 !bc pycod
-D1Y = Basis(N[1], family, quad=quad, bc=(1, 0))
+D1Y = FunctionSpace(N[1], family, quad=quad, bc=(1, 0))
 !ec
 
 where `bc=(1, 0)` fixes the values for $y=1$ and $y=-1$, respectively.
@@ -175,7 +173,7 @@ quite straight forward do
 !bc pycod
 import sympy
 x = sympy.symbols('x')
-#D1Y = Basis(N[1], family, quad=quad, bc=((1-x)**2*(1+x)**2, 0))
+#D1Y = FunctionSpace(N[1], family, quad=quad, bc=((1-x)**2*(1+x)**2, 0))
 !ec
 
 Uncomment the last line to run the regularized boundary conditions.
@@ -196,8 +194,8 @@ The bases $P^{N_0}(x)=\text{span}\{L_k(x)\}_{k=0}^{N_0-3}$ and
 $P^{N_1}(y)=\text{span}\{L_l(y)\}_{l=0}^{N_1-3}$ are created as
 
 !bc pycod
-PX = Basis(N[0], family, quad=quad)
-PY = Basis(N[1], family, quad=quad)
+PX = FunctionSpace(N[0], family, quad=quad)
+PY = FunctionSpace(N[1], family, quad=quad)
 PX.slice = lambda: slice(0, N[0]-2)
 PY.slice = lambda: slice(0, N[1]-2)
 !ec

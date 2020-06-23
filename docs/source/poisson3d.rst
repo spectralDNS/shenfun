@@ -7,7 +7,7 @@ Demo - 3D Poisson's equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Jun 7, 2020
+:Date: Jun 23, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve a 3D Poisson
 equation in a 3D tensor product domain that has homogeneous Dirichlet boundary
@@ -359,7 +359,7 @@ plus some other helper modules, like `Numpy <https://numpy.org>`__ and `Sympy <h
     import numpy as np
     from shenfun.tensorproductspace import TensorProductSpace
     from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \ 
-        project, Dx, Basis
+        project, Dx, FunctionSpace
     from mpi4py import MPI
 
 We use ``Sympy`` for the manufactured solution and ``Numpy`` for testing. MPI for
@@ -404,10 +404,10 @@ From these three bases a :class:`.TensorProductSpace` is created.
     # Size of discretization
     N = [14, 15, 16]
     
-    SD = Basis(N[0], 'Chebyshev', bc=(0, 0))
-    #SD = Basis(N[0], 'Legendre', bc=(0, 0))
-    K1 = Basis(N[1], 'Fourier', dtype='D')
-    K2 = Basis(N[2], 'Fourier', dtype='d')
+    SD = FunctionSpace(N[0], 'Chebyshev', bc=(0, 0))
+    #SD = FunctionSpace(N[0], 'Legendre', bc=(0, 0))
+    K1 = FunctionSpace(N[1], 'Fourier', dtype='D')
+    K2 = FunctionSpace(N[2], 'Fourier', dtype='d')
     T = TensorProductSpace(comm, (SD, K1, K2), axes=(0, 1, 2))
     X = T.local_mesh()
 
@@ -669,9 +669,9 @@ or similarly with ``chebyshev`` instead of ``legendre``.
     N = int(sys.argv[-2])
     N = [N, N, N]
     
-    SD = Basis(N[0], family=family, bc=(a, b))
-    K1 = Basis(N[1], family='F', dtype='D')
-    K2 = Basis(N[2], family='F', dtype='d')
+    SD = FunctionSpace(N[0], family=family, bc=(a, b))
+    K1 = FunctionSpace(N[1], family='F', dtype='D')
+    K2 = FunctionSpace(N[2], family='F', dtype='d')
     T = TensorProductSpace(comm, (K1, K2, SD), axes=(0, 1, 2), slab=True)
     X = T.local_mesh()
     u = TrialFunction(T)
