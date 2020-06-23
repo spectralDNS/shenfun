@@ -11,7 +11,7 @@ from shenfun.forms.arguments import Function
 
 
 class LaguerreBase(SpectralBase):
-    r"""Base class for all Laguerre bases
+    r"""Base class for all Laguerre spaces
 
     Parameters
     ----------

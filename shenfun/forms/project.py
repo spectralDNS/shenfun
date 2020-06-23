@@ -53,7 +53,7 @@ def project(uh, T, output_array=None, fill=True, use_to_ortho=True, use_assign=T
 
     >>> import numpy as np
     >>> from mpi4py import MPI
-    >>> from shenfun import Basis, project, TensorProductSpace, Array, \
+    >>> from shenfun import FunctionSpace, project, TensorProductSpace, Array, \
     ...     Function, Dx
     >>> N = 16
     >>> comm = MPI.COMM_WORLD
