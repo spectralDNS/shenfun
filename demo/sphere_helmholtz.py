@@ -25,8 +25,8 @@ ue = sph(6, 3, theta, phi)
 #g = - ue.diff(theta, 2) - (1/sp.tan(theta))*ue.diff(theta, 1) - (1/sp.sin(theta)**2)*ue.diff(phi, 2) + alpha*ue
 
 N, M = 60, 40
-L0 = Basis(N, 'C', domain=(0, np.pi))
-F1 = Basis(M, 'F', dtype='D')
+L0 = FunctionSpace(N, 'C', domain=(0, np.pi))
+F1 = FunctionSpace(M, 'F', dtype='D')
 T = TensorProductSpace(comm, (L0, F1), coordinates=(psi, rv, sp.Q.positive(sp.sin(theta))))
 
 v = TestFunction(T)

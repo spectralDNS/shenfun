@@ -355,7 +355,7 @@ class FourierBase(SpectralBase):
 
 
 class R2CBasis(FourierBase):
-    """Fourier basis class for real to complex transforms
+    """Fourier function space for real to complex transforms
 
     Parameters
     ----------
@@ -570,7 +570,7 @@ class R2CBasis(FourierBase):
 
 
 class C2CBasis(FourierBase):
-    """Fourier basis class for complex to complex transforms
+    """Fourier function space for complex to complex transforms
 
     Parameters
     ----------

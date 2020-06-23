@@ -8,7 +8,7 @@ from shenfun import inner, div, grad, curl
 N = 8
 comm = MPI.COMM_WORLD
 
-V = shenfun.Basis(N, 'C')
+V = shenfun.FunctionSpace(N, 'C')
 u0 = shenfun.TrialFunction(V)
 
 T = shenfun.TensorProductSpace(comm, (V, V))
@@ -90,10 +90,10 @@ def test_neg(basis):
     e2 = -e
     assert np.allclose(np.array(e.scales()).astype(np.int), (-np.array(e2.scales())).astype(np.int))
 
-K0 = shenfun.Basis(N, 'F', dtype='D')
-K1 = shenfun.Basis(N, 'F', dtype='D')
-K2 = shenfun.Basis(N, 'F', dtype='d')
-K3 = shenfun.Basis(N, 'C', dtype='d')
+K0 = shenfun.FunctionSpace(N, 'F', dtype='D')
+K1 = shenfun.FunctionSpace(N, 'F', dtype='D')
+K2 = shenfun.FunctionSpace(N, 'F', dtype='d')
+K3 = shenfun.FunctionSpace(N, 'C', dtype='d')
 T = shenfun.TensorProductSpace(comm, (K0, K1, K2))
 C = shenfun.TensorProductSpace(comm, (K1, K2, K3))
 TT = shenfun.VectorTensorProductSpace(T)

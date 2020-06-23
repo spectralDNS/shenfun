@@ -20,7 +20,7 @@ import os
 from sympy import symbols, sin, exp
 import numpy as np
 from shenfun import inner, grad, TestFunction, TrialFunction, \
-    Array, Function, Basis, TensorProductSpace, dx, comm
+    Array, Function, FunctionSpace, TensorProductSpace, dx, comm
 from shenfun.la import SolverGeneric2ND
 
 assert comm.Get_size() == 1, "Two non-periodic directions only have solver implemented for serial"
@@ -36,8 +36,8 @@ fe = ue.diff(x, 2) + ue.diff(y, 2)
 # Size of discretization
 N = (int(sys.argv[-1]), int(sys.argv[-1])//2)
 
-D0 = Basis(N[0], 'Laguerre', bc=(0, 0))
-D1 = Basis(N[1], 'Legendre', bc=(0, 0))
+D0 = FunctionSpace(N[0], 'Laguerre', bc=(0, 0))
+D1 = FunctionSpace(N[1], 'Legendre', bc=(0, 0))
 T = TensorProductSpace(comm, (D0, D1), axes=(0, 1))
 X = T.local_mesh(True)
 u = TrialFunction(T)

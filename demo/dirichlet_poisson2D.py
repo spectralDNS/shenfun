@@ -18,7 +18,7 @@ import importlib
 from sympy import symbols, cos, sin
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    Array, Function, Basis, TensorProductSpace, comm
+    Array, Function, FunctionSpace, TensorProductSpace, comm
 
 assert len(sys.argv) == 3, "Call with two command-line arguments"
 assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi')
@@ -42,8 +42,8 @@ fe = ue.diff(x, 2) + ue.diff(y, 2)
 # Size of discretization
 N = (int(sys.argv[-2]), int(sys.argv[-2])+1)
 
-SD = Basis(N[0], family=family, scaled=True, bc=(a, b))
-K1 = Basis(N[1], family='F', dtype='d', domain=(-2*np.pi, 2*np.pi))
+SD = FunctionSpace(N[0], family=family, scaled=True, bc=(a, b))
+K1 = FunctionSpace(N[1], family='F', dtype='d', domain=(-2*np.pi, 2*np.pi))
 T = TensorProductSpace(comm, (SD, K1), axes=(0, 1))
 X = T.local_mesh(True)
 u = TrialFunction(T)

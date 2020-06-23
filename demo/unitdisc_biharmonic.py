@@ -18,10 +18,10 @@ rv = (r*sp.cos(theta), r*sp.sin(theta))
 
 N = 20
 by_parts = False
-F = Basis(N, 'F', dtype='d')
-F0 = Basis(1, 'F', dtype='d')
-L = Basis(N, 'L', bc='Bipolar', domain=(0, 1))
-L0 = Basis(N, 'L', bc='BiPolar0', domain=(0, 1))
+F = FunctionSpace(N, 'F', dtype='d')
+F0 = FunctionSpace(1, 'F', dtype='d')
+L = FunctionSpace(N, 'L', bc='Bipolar', domain=(0, 1))
+L0 = FunctionSpace(N, 'L', bc='BiPolar0', domain=(0, 1))
 T = TensorProductSpace(comm, (F, L), axes=(1, 0), coordinates=(psi, rv))
 T0 = TensorProductSpace(MPI.COMM_SELF, (F0, L0), axes=(1, 0), coordinates=(psi, rv))
 

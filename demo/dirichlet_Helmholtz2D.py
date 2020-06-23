@@ -18,7 +18,7 @@ import importlib
 from sympy import symbols, cos, sin
 import numpy as np
 from mpi4py import MPI
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Basis, \
+from shenfun import inner, div, grad, TestFunction, TrialFunction, FunctionSpace, \
     Array, Function, TensorProductSpace, dx
 
 comm = MPI.COMM_WORLD
@@ -41,8 +41,8 @@ fe = alpha*ue - ue.diff(x, 2) - ue.diff(y, 2)
 # Size of discretization
 N = (int(sys.argv[-2]),)*2
 
-SD = Basis(N[0], family, bc=(0, 0), scaled=True)
-K1 = Basis(N[1], 'F', dtype='d')
+SD = FunctionSpace(N[0], family, bc=(0, 0), scaled=True)
+K1 = FunctionSpace(N[1], 'F', dtype='d')
 T = TensorProductSpace(comm, (SD, K1), axes=(0, 1))
 X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)

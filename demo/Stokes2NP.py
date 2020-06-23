@@ -40,10 +40,10 @@ h = uex.diff(x, 1) + uey.diff(y, 1)
 N = (38, 38)
 #family = 'Chebyshev'
 family = 'Legendre'
-D0X = Basis(N[0], family, bc=(0, 0), scaled=True)
-D0Y = Basis(N[1], family, bc=(0, 0), scaled=True)
-PX = Basis(N[0], family)
-PY = Basis(N[1], family)
+D0X = FunctionSpace(N[0], family, bc=(0, 0), scaled=True)
+D0Y = FunctionSpace(N[1], family, bc=(0, 0), scaled=True)
+PX = FunctionSpace(N[0], family)
+PY = FunctionSpace(N[1], family)
 
 # To get a P_N x P_{N-2} space, just pick the first N-2 items of the pressure basis
 # Note that this effectively sets P_N and P_{N-1} to zero, but still the basis uses
