@@ -5,12 +5,10 @@ from numpy.polynomial import hermite
 from scipy.special import eval_hermite, factorial
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
-from shenfun.utilities import inheritdocstrings
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
 
-@inheritdocstrings
 class Orthogonal(SpectralBase):
     """Base class for Hermite functions
 
@@ -57,7 +55,6 @@ class Orthogonal(SpectralBase):
     polynomials of order k, respectively.
 
     """
-
     def __init__(self, N, quad="HG", bc=(0., 0.), dtype=np.float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         SpectralBase.__init__(self, N, quad=quad, domain=(-np.inf, np.inf), dtype=dtype,

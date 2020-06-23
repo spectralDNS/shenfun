@@ -148,7 +148,7 @@ import sympy as sp
 from scipy.sparse import bmat, dia_matrix, kron, diags as sp_diags
 from scipy.sparse.linalg import spsolve
 from mpi4py import MPI
-from .utilities import inheritdocstrings, integrate_sympy
+from .utilities import integrate_sympy
 
 __all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix',
            'check_sanity', 'get_dense_matrix', 'TPMatrix', 'BlockMatrix',
@@ -541,7 +541,7 @@ class SparseMatrix(dict):
         return self
 
 
-@inheritdocstrings
+
 class SpectralMatrix(SparseMatrix):
     r"""Base class for inner product matrices.
 

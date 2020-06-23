@@ -5,13 +5,11 @@ from numpy.polynomial import laguerre as lag
 from scipy.special import eval_laguerre
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, islicedict, slicedict
-from shenfun.utilities import inheritdocstrings
 from shenfun.forms.arguments import Function
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
 
-@inheritdocstrings
 class LaguerreBase(SpectralBase):
     r"""Base class for all Laguerre bases
 
@@ -169,7 +167,7 @@ class LaguerreBase(SpectralBase):
                               dealias_direct=dealias_direct,
                               coordinates=self.coors.coordinates)
 
-@inheritdocstrings
+
 class Orthogonal(LaguerreBase):
     r"""Function space for regular Laguerre functions
 
@@ -232,7 +230,7 @@ class Orthogonal(LaguerreBase):
     def get_orthogonal(self):
         return self
 
-@inheritdocstrings
+
 class ShenDirichletBasis(LaguerreBase):
     """Shen Laguerre basis for Dirichlet boundary conditions
 

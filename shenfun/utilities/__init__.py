@@ -13,30 +13,9 @@ import sympy as sp
 from scipy.fftpack import dct
 from shenfun.optimization import optimizer
 
-__all__ = ['inheritdocstrings', 'dx', 'clenshaw_curtis1D', 'CachedArrayDict',
+__all__ = ['dx', 'clenshaw_curtis1D', 'CachedArrayDict',
            'outer', 'apply_mask', 'integrate_sympy']
 
-def inheritdocstrings(cls):
-    """Method used for inheriting docstrings from parent class
-
-    Use as decorator::
-
-         @inheritdocstrings
-         class Child(Parent):
-
-    and Child will use the same docstrings as parent even if
-    a method is overloaded. The Child class may overload the
-    docstring as well and a new docstring defined for a method
-    in Child will overload the Parent.
-    """
-    for name, func in vars(cls).items():
-        if isinstance(func, types.FunctionType) and not func.__doc__:
-            for parent in cls.__bases__:
-                parfunc = getattr(parent, name, None)
-                if parfunc and getattr(parfunc, '__doc__', None):
-                    func.__doc__ = parfunc.__doc__
-                    break
-    return cls
 
 def dx(u):
     r"""Compute integral of u over domain
