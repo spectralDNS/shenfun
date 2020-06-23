@@ -75,11 +75,11 @@ from . import bases
 
 # Short names for instances of bases
 CB = bases.Orthogonal
-SD = bases.ShenDirichletBasis
-SB = bases.ShenBiharmonicBasis
-SN = bases.ShenNeumannBasis
-BD = bases.BCBasis
-BB = bases.BCBiharmonicBasis
+SD = bases.ShenDirichlet
+SB = bases.ShenBiharmonic
+SN = bases.ShenNeumann
+BD = bases.BCDirichlet
+BB = bases.BCBiharmonic
 
 def get_ck(N, quad):
     """Return array ck, parameter in Chebyshev expansions

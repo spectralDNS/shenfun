@@ -7,7 +7,7 @@ Demo - Lid driven cavity
 ========================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Jun 7, 2020
+:Date: Jun 23, 2020
 
 *Summary.* The lid driven cavity is a classical benchmark for Navier Stokes solvers.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the lid
@@ -63,8 +63,6 @@ functionality
 
     import matplotlib.pyplot as plt
     from shenfun import *
-    from mpi4py import MPI
-    comm = MPI.COMM_WORLD
 
 Note that MPI for Python (`mpi4py <https://bitbucket.org/mpi4py/mpi4py>`__)
 is a requirement for shenfun, but the current solver cannot be used with more
@@ -133,8 +131,8 @@ With shenfun we create these homogeneous spaces, :math:`D_0^{N_0}(x)=\text{span}
     N = (51, 51)
     family = 'Legendre' # or use 'Chebyshev'
     quad = 'LG'         # for Chebyshev use 'GC' or 'GL'
-    D0X = Basis(N[0], family, quad=quad, bc=(0, 0))
-    D0Y = Basis(N[1], family, quad=quad, bc=(0, 0))
+    D0X = FunctionSpace(N[0], family, quad=quad, bc=(0, 0))
+    D0Y = FunctionSpace(N[1], family, quad=quad, bc=(0, 0))
 
 The spaces are here the same, but we will use ``D0X`` in the :math:`x`-direction and
 ``D0Y`` in the :math:`y`-direction. But before we use these bases in
@@ -177,7 +175,7 @@ using both additional basis functions. We create the space
 
 .. code-block:: python
 
-    D1Y = Basis(N[1], family, quad=quad, bc=(1, 0))
+    D1Y = FunctionSpace(N[1], family, quad=quad, bc=(1, 0))
 
 where ``bc=(1, 0)`` fixes the values for :math:`y=1` and :math:`y=-1`, respectively.
 For a regularized lid driven cavity the velocity of the top lid is
@@ -189,7 +187,7 @@ quite straight forward do
 
     import sympy
     x = sympy.symbols('x')
-    #D1Y = Basis(N[1], family, quad=quad, bc=((1-x)**2*(1+x)**2, 0))
+    #D1Y = FunctionSpace(N[1], family, quad=quad, bc=((1-x)**2*(1+x)**2, 0))
 
 Uncomment the last line to run the regularized boundary conditions.
 Otherwise, there is no difference at all between the regular and the
@@ -210,8 +208,8 @@ The bases :math:`P^{N_0}(x)=\text{span}\{L_k(x)\}_{k=0}^{N_0-3}` and
 
 .. code-block:: python
 
-    PX = Basis(N[0], family, quad=quad)
-    PY = Basis(N[1], family, quad=quad)
+    PX = FunctionSpace(N[0], family, quad=quad)
+    PY = FunctionSpace(N[1], family, quad=quad)
     PX.slice = lambda: slice(0, N[0]-2)
     PY.slice = lambda: slice(0, N[1]-2)
 

@@ -7,7 +7,7 @@ Demo - 1D Poisson's equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Jun 7, 2020
+:Date: Jun 23, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Poisson's
 equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as
@@ -60,9 +60,9 @@ And then we look for solutions like
 
 where :math:`N` is the size of the discretized problem,
 :math:`\hat{\mathbf{u}} = \{\hat{u}_k\}_{k=0}^{N-1}` are the unknown expansion
-coefficients, and the basis is :math:`\text{span}\{v_k\}_{k=0}^{N-1}`.
+coefficients, and the function space is :math:`\text{span}\{v_k\}_{k=0}^{N-1}`.
 
-The basis functions can, for example,  be constructed from
+The basis functions of the function space can, for example,  be constructed from
 `Chebyshev <https://en.wikipedia.org/wiki/Chebyshev_polynomials>`__, :math:`T_k(x)`, or
 `Legendre <https://en.wikipedia.org/wiki/Legendre_polynomials>`__, :math:`L_k(x)`, polynomials
 and we use the common notation :math:`\phi_k(x)` to represent either one of them. It turns out that
@@ -76,7 +76,7 @@ it is easiest to use basis functions with homogeneous Dirichlet boundary conditi
         
         
 
-for :math:`k=0, 1, \ldots N-3`. This gives the basis
+for :math:`k=0, 1, \ldots N-3`. This gives the function space
 :math:`V^N_0 = \text{span}\{v_k(x)\}_{k=0}^{N-3}`.
 We can then add two more linear basis functions (that belong to the kernel of Poisson's equation)
 
@@ -96,7 +96,7 @@ We can then add two more linear basis functions (that belong to the kernel of Po
         
         
 
-which gives the inhomogeneous basis :math:`V^N = \text{span}\{v_k\}_{k=0}^{N-1}`.
+which gives the inhomogeneous space :math:`V^N = \text{span}\{v_k\}_{k=0}^{N-1}`.
 With the two linear basis functions it is easy to see that the last two degrees
 of freedom, :math:`\hat{u}_{N-2}` and :math:`\hat{u}_{N-1}`, now are given as
 
@@ -248,7 +248,7 @@ plus some other helper modules, like `Numpy <https://numpy.org>`__ and `Sympy <h
 .. code-block:: python
 
     from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \ 
-        project, Dx, Array, Basis
+        project, Dx, Array, FunctionSpace
     import numpy as np
     from sympy import symbols, cos, sin, exp, lambdify
 
@@ -288,8 +288,8 @@ mesh from the basis itself
 .. code-block:: python
 
     N = 32
-    SD = Basis(N, 'Chebyshev', bc=(a, b))
-    #SD = Basis(N, 'Legendre', bc=(a, b))
+    SD = FunctionSpace(N, 'Chebyshev', bc=(a, b))
+    #SD = FunctionSpace(N, 'Legendre', bc=(a, b))
     X = SD.mesh(N)
 
 Note that we can either choose a Legendre or a Chebyshev basis.

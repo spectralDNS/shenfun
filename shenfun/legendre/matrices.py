@@ -75,12 +75,12 @@ from . import bases
 
 # Short names for instances of bases
 LB = bases.Orthogonal
-SD = bases.ShenDirichletBasis
-SB = bases.ShenBiharmonicBasis
-SN = bases.ShenNeumannBasis
-SU = bases.UpperDirichletBasis
-CD = bases.BCBasis
-CB = bases.BCBiharmonicBasis
+SD = bases.ShenDirichlet
+SB = bases.ShenBiharmonic
+SN = bases.ShenNeumann
+SU = bases.UpperDirichlet
+CD = bases.BCDirichlet
+CB = bases.BCBiharmonic
 
 x = sp.symbols('x', real=True)
 xp = sp.symbols('x', real=True, positive=True)

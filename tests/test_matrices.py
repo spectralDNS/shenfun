@@ -25,34 +25,34 @@ from shenfun import div, grad, inner, TensorProductSpace, FunctionSpace, SparseM
 from shenfun.spectralbase import inner_product
 
 cBasis = (cbases.Orthogonal,
-          cbases.ShenDirichletBasis,
-          cbases.ShenNeumannBasis,
-          cbases.ShenBiharmonicBasis)
+          cbases.ShenDirichlet,
+          cbases.ShenNeumann,
+          cbases.ShenBiharmonic)
 
 # Bases with only GC quadrature
-cBasisGC = (cbases.UpperDirichletBasis,
-            cbases.ShenBiPolarBasis)
+cBasisGC = (cbases.UpperDirichlet,
+            cbases.ShenBiPolar)
 
 lBasis = (lbases.Orthogonal,
-          lbases.ShenDirichletBasis,
-          functools.partial(lbases.ShenDirichletBasis, scaled=True),
-          lbases.ShenBiharmonicBasis,
-          lbases.ShenNeumannBasis)
+          lbases.ShenDirichlet,
+          functools.partial(lbases.ShenDirichlet, scaled=True),
+          lbases.ShenBiharmonic,
+          lbases.ShenNeumann)
 
 # Bases with only LG quadrature
-lBasisLG = (lbases.UpperDirichletBasis,
-            lbases.ShenBiPolarBasis,
-            lbases.ShenBiPolar0Basis)
+lBasisLG = (lbases.UpperDirichlet,
+            lbases.ShenBiPolar,
+            lbases.ShenBiPolar0)
 
 lagBasis = (lagbases.Orthogonal,
-            lagbases.ShenDirichletBasis)
+            lagbases.ShenDirichlet)
 
 hBasis = (hbases.Orthogonal,)
 
 jBasis = (jbases.Orthogonal,
-          jbases.ShenDirichletBasis,
-          jbases.ShenBiharmonicBasis,
-          jbases.ShenOrder6Basis)
+          jbases.ShenDirichlet,
+          jbases.ShenBiharmonic,
+          jbases.ShenOrder6)
 
 cquads = ('GC', 'GL')
 lquads = ('LG', 'GL')
@@ -695,7 +695,7 @@ def test_biharmonic2D(family, axis):
 if __name__ == '__main__':
     import sympy as sp
     x = sp.symbols('x', real=True, positive=True)
-    test_mat(((cbases.ShenDirichletBasis, 0), (cbases.BCBasis, 0)), cmatrices.BCDmat, 'GC')
+    test_mat(((cbases.ShenDirichletBasis, 0), (cbases.BCDirichlet, 0)), cmatrices.BCDmat, 'GC')
     #test_cmatvec(cBasis[3], cBasis[1], 'GC', 'cython', 3, 0)
     #test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
     #test_hmatvec(hBasis[0], hBasis[0], 'HG', 'self', 3, 1, 1)
