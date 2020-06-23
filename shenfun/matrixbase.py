@@ -585,7 +585,7 @@ class SpectralMatrix(SparseMatrix):
     The matrices can be automatically created using, e.g., for the mass
     matrix of the Dirichlet space::
 
-        SD = ShenDirichletBasis
+        SD = ShenDirichlet
         N = 16
         M = SpectralMatrix({}, (SD(N), 0), (SD(N), 0))
 
@@ -627,7 +627,7 @@ class SpectralMatrix(SparseMatrix):
         ss = [slice(None)]*len(v.shape)
         ss[axis] = u.slice()
         c = super(SpectralMatrix, self).matvec(v[tuple(ss)], c, format=format, axis=axis)
-        if self.testfunction[0].__class__.__name__ == 'ShenNeumannBasis':
+        if self.testfunction[0].__class__.__name__ == 'ShenNeumann':
             ss[axis] = 0
             c[tuple(ss)] = 0
         return c

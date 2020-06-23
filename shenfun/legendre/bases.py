@@ -1,5 +1,5 @@
 """
-Module for defining bases in the Legendre family
+Module for defining function spaces in the Legendre family
 """
 
 from __future__ import division
@@ -38,7 +38,7 @@ mode = mode if has_quadpy else 'numpy'
 
 
 class LegendreBase(SpectralBase):
-    """Base class for all Legendre bases
+    """Base class for all Legendre spaces
 
     Parameters
     ----------

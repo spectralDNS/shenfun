@@ -516,7 +516,7 @@ class Expr(object):
 
         Examples
         --------
-        >>> from shenfun import Basis, TensorProductSpace
+        >>> from shenfun import FunctionSpace, TensorProductSpace
         >>> import sympy as sp
         >>> theta, r = psi = sp.symbols('x,y', real=True, positive=True)
         >>> rv = (r*sp.cos(theta), r*sp.sin(theta))
@@ -1263,7 +1263,7 @@ class Function(ShenfunBaseArray, BasisFunction):
     Examples
     --------
     >>> from mpi4py import MPI
-    >>> from shenfun import Basis, TensorProductSpace, Function
+    >>> from shenfun import FunctionSpace, TensorProductSpace, Function
     >>> K0 = FunctionSpace(8, 'F', dtype='D')
     >>> K1 = FunctionSpace(8, 'F', dtype='d')
     >>> T = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])

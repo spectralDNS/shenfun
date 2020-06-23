@@ -419,7 +419,6 @@ def test_CXXmat(test, trial):
     cs2 = np.zeros(N)
     cs2 = S1.scalar_product(df, cs2)
     s = S1.slice()
-    from IPython import embed; embed()
     assert np.allclose(cs[s], cs2[s], rtol=1e-5, atol=1e-6)
 
     # Multidimensional version

@@ -98,7 +98,7 @@ def inner(expr0, expr1, output_array=None, level=0):
     -------
     Compute mass matrix of Shen's Chebyshev Dirichlet basis:
 
-    >>> from shenfun import Basis
+    >>> from shenfun import FunctionSpace
     >>> from shenfun import TestFunction, TrialFunction
     >>> SD = FunctionSpace(6, 'Chebyshev', bc=(0, 0))
     >>> u = TrialFunction(SD)
@@ -341,8 +341,8 @@ def inner(expr0, expr1, output_array=None, level=0):
     #           TPMatrix([(v[0], u[0])_x, (v[1], u[1]'')_y])]
     #
     # where v[0], v[1] are the test functions in x- and y-directions,
-    # respectively. For example, v[0] could be a ShenDirichletBasis and v[1]
-    # could be a FourierBasis. Same for u.
+    # respectively. For example, v[0] could be a ShenDirichlet and v[1]
+    # could be a Fourier space. Same for u.
     #
     # There are now two possibilities, either a linear or a bilinear form.
     # A linear form has trial.argument == 2, whereas a bilinear form has

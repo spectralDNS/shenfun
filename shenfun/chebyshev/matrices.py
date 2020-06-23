@@ -30,7 +30,7 @@ to be applied to each. As such the mass matrix BDDmat may be looked up
 as
 
 >>> from shenfun.chebyshev.matrices import mat
->>> from shenfun.chebyshev.bases import ShenDirichletBasis as SD
+>>> from shenfun.chebyshev.bases import ShenDirichlet as SD
 >>> B = mat[((SD, 0), (SD, 0))]
 
 and an instance of the matrix can be created as

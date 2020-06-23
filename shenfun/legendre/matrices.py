@@ -31,7 +31,7 @@ as
 
 >>> import numpy as np
 >>> from shenfun.legendre.matrices import mat
->>> from shenfun.legendre.bases import ShenDirichletBasis as SD
+>>> from shenfun.legendre.bases import ShenDirichlet as SD
 >>> B = mat[((SD, 0), (SD, 0))]
 
 and an instance of the matrix can be created as

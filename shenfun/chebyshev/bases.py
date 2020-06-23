@@ -1,5 +1,5 @@
 """
-Module for defining bases in the Chebyshev family
+Module for defining function spaces in the Chebyshev family
 """
 from __future__ import division
 import functools
@@ -48,7 +48,7 @@ class DCTWrap(FuncWrap):
 
 
 class ChebyshevBase(SpectralBase):
-    """Abstract base class for all Chebyshev bases
+    """Abstract base class for all Chebyshev spaces
 
     Parameters
     ----------
