@@ -7,7 +7,7 @@ Demo - Helmholtz equation on the unit sphere
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Jun 7, 2020
+:Date: Jun 23, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the
 Helmholtz equation on a unit sphere, using spherical
@@ -166,8 +166,8 @@ the next step, which is the creation of tensorproductspaces
 .. code-block:: python
 
     N, M = 40, 30
-    L0 = Basis(N, 'C', domain=(0, np.pi))
-    F1 = Basis(M, 'F', dtype='D')
+    L0 = FunctionSpace(N, 'C', domain=(0, np.pi))
+    F1 = FunctionSpace(M, 'F', dtype='D')
     T = TensorProductSpace(comm, (L0, F1), coordinates=(psi, rv))
     
 
@@ -193,7 +193,7 @@ Here ``mats`` will be a list containing several tensor product
 matrices in the form of
 :class:`.TPMatrix`. Since there is only one directions with
 non-diagonal matrices (:math:`\theta`-direction) we
-can use the generic :class:`.SolverGeneric1NP` solver.
+can use the generic :class:`.SolverGeneric1ND` solver.
 Note that some of the non-diagonal matrices will be dense,
 which is a weakness of the current method. Also note
 that with Legendre one can use integration by parts
@@ -228,7 +228,7 @@ to define an analytical solution
     f_hat = inner(v, fj, output_array=f_hat)
     
     u_hat = Function(T)
-    Sol = SolverGeneric1NP(mats)
+    Sol = SolverGeneric1ND(mats)
     u_hat = Sol(f_hat, u_hat)
 
 Having found the solution in spectral space all that is

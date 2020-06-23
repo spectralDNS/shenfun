@@ -7,7 +7,7 @@ from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
 from shenfun.optimization.cython import convolve
 
-__all__ = ['FourierBase', 'R2CBasis', 'C2CBasis']
+__all__ = ['FourierBase', 'R2C', 'C2C']
 
 #pylint: disable=method-hidden, no-member, line-too-long, arguments-differ
 
@@ -353,7 +353,7 @@ class FourierBase(SpectralBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
-class R2CBasis(FourierBase):
+class R2C(FourierBase):
     """Fourier function space for real to complex transforms
 
     Parameters
@@ -568,7 +568,7 @@ class R2CBasis(FourierBase):
         return uv
 
 
-class C2CBasis(FourierBase):
+class C2C(FourierBase):
     """Fourier function space for complex to complex transforms
 
     Parameters

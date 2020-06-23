@@ -115,9 +115,9 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
     if family.lower() in ('fourier', 'f'):
         from shenfun import fourier
         if np.dtype(dtype).char in 'FDG':
-            B = fourier.bases.C2CBasis
+            B = fourier.bases.C2C
         else:
-            B = fourier.bases.R2CBasis
+            B = fourier.bases.R2C
         del par['dtype']
         return B(N, **par)
 
@@ -134,27 +134,27 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             assert len(bc) in (2, 4)
             par['bc'] = bc
             if len(bc) == 2:
-                B = chebyshev.bases.ShenDirichletBasis
+                B = chebyshev.bases.ShenDirichlet
             else:
-                B = chebyshev.bases.ShenBiharmonicBasis
+                B = chebyshev.bases.ShenBiharmonic
 
         elif isinstance(bc, str):
             if bc.lower() == 'dirichlet':
-                B = chebyshev.bases.ShenDirichletBasis
+                B = chebyshev.bases.ShenDirichlet
             elif bc.lower() == 'neumann':
-                B = chebyshev.bases.ShenNeumannBasis
+                B = chebyshev.bases.ShenNeumann
             elif bc.lower() == 'neumann2':
-                B = chebyshev.bases.SecondNeumannBasis
+                B = chebyshev.bases.SecondNeumann
             elif bc.lower() == 'biharmonic':
-                B = chebyshev.bases.ShenBiharmonicBasis
+                B = chebyshev.bases.ShenBiharmonic
             elif bc.lower() == 'upperdirichlet':
-                B = chebyshev.bases.UpperDirichletBasis
+                B = chebyshev.bases.UpperDirichlet
             elif bc.lower() == 'bipolar':
-                B = chebyshev.bases.ShenBiPolarBasis
+                B = chebyshev.bases.ShenBiPolar
             elif bc.lower() == 'dirichletneumann':
-                B = chebyshev.bases.DirichletNeumannBasis
+                B = chebyshev.bases.DirichletNeumann
             elif bc.lower() == 'neumanndirichlet':
-                B = chebyshev.bases.NeumannDirichletBasis
+                B = chebyshev.bases.NeumannDirichlet
 
         else:
             raise NotImplementedError
@@ -178,29 +178,29 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             assert len(bc) in (2, 4)
             par['bc'] = bc
             if len(bc) == 2:
-                B = legendre.bases.ShenDirichletBasis
+                B = legendre.bases.ShenDirichlet
             else:
-                B = legendre.bases.ShenBiharmonicBasis
+                B = legendre.bases.ShenBiharmonic
 
         elif isinstance(bc, str):
             if bc.lower() == 'dirichlet':
-                B = legendre.bases.ShenDirichletBasis
+                B = legendre.bases.ShenDirichlet
             elif bc.lower() == 'neumann':
-                B = legendre.bases.ShenNeumannBasis
+                B = legendre.bases.ShenNeumann
             elif bc.lower() == 'biharmonic':
-                B = legendre.bases.ShenBiharmonicBasis
+                B = legendre.bases.ShenBiharmonic
             elif bc.lower() == 'upperdirichlet':
-                B = legendre.bases.UpperDirichletBasis
+                B = legendre.bases.UpperDirichlet
             elif bc.lower() == 'upperdirichletneumann':
-                B = legendre.bases.UpperDirichletNeumannBasis
+                B = legendre.bases.UpperDirichletNeumann
             elif bc.lower() == 'bipolar':
-                B = legendre.bases.ShenBiPolarBasis
+                B = legendre.bases.ShenBiPolar
             elif bc.lower() == 'bipolar0':
-                B = legendre.bases.ShenBiPolar0Basis
+                B = legendre.bases.ShenBiPolar0
             elif bc.lower() == 'dirichletneumann':
-                B = legendre.bases.DirichletNeumannBasis
+                B = legendre.bases.DirichletNeumann
             elif bc.lower() == 'neumanndirichlet':
-                B = legendre.bases.NeumannDirichletBasis
+                B = legendre.bases.NeumannDirichlet
 
         return B(N, **par)
 
@@ -216,11 +216,11 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
         elif isinstance(bc, tuple):
             assert len(bc) == 2
             par['bc'] = bc
-            B = laguerre.bases.ShenDirichletBasis
+            B = laguerre.bases.ShenDirichlet
 
         elif isinstance(bc, str):
             if bc.lower() == 'dirichlet':
-                B = laguerre.bases.ShenDirichletBasis
+                B = laguerre.bases.ShenDirichlet
 
         else:
             raise NotImplementedError
@@ -260,18 +260,18 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             assert len(bc) in (2, 4)
             par['bc'] = bc
             if len(bc) == 2:
-                B = jacobi.bases.ShenDirichletBasis
+                B = jacobi.bases.ShenDirichlet
             else:
                 assert np.all([abs(bci)<1e-12 for bci in bc])
-                B = jacobi.bases.ShenBiharmonicBasis
+                B = jacobi.bases.ShenBiharmonic
 
         elif isinstance(bc, str):
             if bc.lower() == 'dirichlet':
-                B = jacobi.bases.ShenDirichletBasis
+                B = jacobi.bases.ShenDirichlet
             elif bc.lower() == 'biharmonic':
-                B = jacobi.bases.ShenBiharmonicBasis
+                B = jacobi.bases.ShenBiharmonic
             elif bc.lower() == '6th order':
-                B = jacobi.bases.ShenOrder6Basis
+                B = jacobi.bases.ShenOrder6
             else:
                 raise NotImplementedError
 
@@ -591,7 +591,7 @@ class Expr(object):
 
         """
         from shenfun import MixedTensorProductSpace
-        from shenfun.fourier.bases import R2CBasis
+        from shenfun.fourier.bases import R2C
 
         if len(x.shape) == 1: # 1D case
             x = x[None, :]
@@ -625,7 +625,7 @@ class Expr(object):
                     if len(x) > 1:
                         M.append(P[..., V.local_slice()[axis]])
 
-                    if isinstance(test_sp[axis], R2CBasis) and len(x) > 1:
+                    if isinstance(test_sp[axis], R2C) and len(x) > 1:
                         r2c = axis
                         m = test_sp[axis].N//2+1
                         if test_sp[axis].N % 2 == 0:
@@ -1428,7 +1428,7 @@ class Function(ShenfunBaseArray, BasisFunction):
         returned array is padded with zeros.
 
         """
-        from shenfun.fourier.bases import R2CBasis
+        from shenfun.fourier.bases import R2C
         from shenfun import VectorTensorProductSpace
 
         if self.ndim == 1:
@@ -1458,7 +1458,7 @@ class Function(ShenfunBaseArray, BasisFunction):
         base = space.bases[axes[0]]
         global_shape = list(self.global_shape) # Global shape in spectral space
         factor = N[axes[0]]/self.function_space().bases[axes[0]].N
-        if isinstance(base, R2CBasis):
+        if isinstance(base, R2C):
             global_shape[axes[0]] = int((2*global_shape[axes[0]]-2)*factor)//2+1
         else:
             global_shape[axes[0]] = int(global_shape[axes[0]]*factor)
@@ -1476,7 +1476,7 @@ class Function(ShenfunBaseArray, BasisFunction):
 
             # Get a new padded array
             base = space.bases[ax]
-            if isinstance(base, R2CBasis):
+            if isinstance(base, R2C):
                 global_shape[ax] = int(base.N*factor)//2+1
             else:
                 global_shape[ax] = int(global_shape[ax]*factor)

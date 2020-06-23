@@ -51,8 +51,8 @@ mode = mode if has_quadpy else 'numpy'
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
-__all__ = ['JacobiBase', 'Orthogonal', 'ShenDirichletBasis', 'ShenBiharmonicBasis',
-           'ShenOrder6Basis', 'mode', 'has_quadpy', 'mp']
+__all__ = ['JacobiBase', 'Orthogonal', 'ShenDirichlet', 'ShenBiharmonic',
+           'ShenOrder6', 'mode', 'has_quadpy', 'mp']
 
 
 class JacobiBase(SpectralBase):
@@ -203,7 +203,7 @@ class JacobiBase(SpectralBase):
 
 
 class Orthogonal(JacobiBase):
-    """Basis for regular (orthogonal) Jacobi functions
+    """Function space for regular (orthogonal) Jacobi functions
 
     Parameters
     ----------
@@ -295,8 +295,8 @@ class Orthogonal(JacobiBase):
         return output_array
 
 
-class ShenDirichletBasis(JacobiBase):
-    """Jacobi basis for Dirichlet boundary conditions
+class ShenDirichlet(JacobiBase):
+    """Jacobi function space for Dirichlet boundary conditions
 
     Parameters
     ----------
@@ -460,8 +460,8 @@ class ShenDirichletBasis(JacobiBase):
         output_array[self.sl[slice(-2, None)]] = 0
 
 
-class ShenBiharmonicBasis(JacobiBase):
-    """Basis for Biharmonic boundary conditions
+class ShenBiharmonic(JacobiBase):
+    """Function space for Biharmonic boundary conditions
 
     Parameters
     ----------
@@ -604,8 +604,8 @@ class ShenBiharmonicBasis(JacobiBase):
         return Orthogonal(self.N, alpha=0, beta=0, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
 
 
-class ShenOrder6Basis(JacobiBase):
-    """Basis for 6th order equation
+class ShenOrder6(JacobiBase):
+    """Function space for 6th order equation
 
     Parameters
     ----------

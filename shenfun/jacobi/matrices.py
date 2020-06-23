@@ -7,8 +7,8 @@ from . import bases
 from ..legendre.la import TDMA
 
 JB = bases.Orthogonal
-SD = bases.ShenDirichletBasis
-SB = bases.ShenBiharmonicBasis
+SD = bases.ShenDirichlet
+SB = bases.ShenBiharmonic
 
 
 class BJJmat(SpectralMatrix):
