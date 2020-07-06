@@ -238,7 +238,7 @@ def test_massmatrices(test, trial, quad):
     u0 = test.scalar_product(fj, u0)
     u2 = np.zeros_like(f_hat)
     u2 = BBD.matvec(f_hat, u2)
-    assert np.linalg.norm(u2[s]-u0[s])/(N*N*N) < 1e-10
+    assert np.linalg.norm(u2[s]-u0[s])/(N*N*N) < 1e-8
     del BBD
 
 @pytest.mark.parametrize('basis', cBasis[:2])
