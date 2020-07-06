@@ -599,13 +599,14 @@ Integrators
 -----------
 
 The :mod:`.integrators` module contains some interator classes that can be
-used to integrate a solution forward in time. However, for now these integrators
-are only implemented for purely Fourier tensor product spaces.
-There are currently 3 different integrator classes
+used to integrate a solution forward in time. For now there is only one integrator
+:class:`.IRK3` that can be used for non-Fourier function spaces. The other
+three integrators can only be used for purely Fourier tensor product spaces.
 
-    * :class:`.RK4`: Runge-Kutta fourth order
-    * :class:`.ETD`: Exponential time differencing Euler method
-    * :class:`.ETDRK4`: Exponential time differencing Runge-Kutta fourth order
+    * :class:`.IRK3`: Third order implicit Runge-Kutta
+    * :class:`.RK4`: Explicit Runge-Kutta fourth order (Fourier only)
+    * :class:`.ETD`: Exponential time differencing Euler method (Fourier only)
+    * :class:`.ETDRK4`: Exponential time differencing Runge-Kutta fourth order (Fourier only)
 
 See, e.g.,
 H. Montanelli and N. Bootland "Solving periodic semilinear PDEs in 1D, 2D and
@@ -672,11 +673,11 @@ We then create two functions representing the linear and nonlinear part of
 .. code-block:: python
 
 
-    def LinearRHS(**params):
+    def LinearRHS(self, **params):
         return -inner(Dx(u, 0, 3), v)
 
     k = T.wavenumbers(scaled=True, eliminate_highest_freq=True)
-    def NonlinearRHS(u, u_hat, rhs, **params):
+    def NonlinearRHS(self, u, u_hat, rhs, **params):
         rhs.fill(0)
         u_[:] = T.backward(u_hat, u_)
         rhs = T.forward(-0.5*u_**2, rhs)
