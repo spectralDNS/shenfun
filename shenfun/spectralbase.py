@@ -1479,8 +1479,8 @@ def inner_product(test, trial, measure=1):
     Compute mass matrix of Shen's Chebyshev Dirichlet basis:
 
     >>> from shenfun.spectralbase import inner_product
-    >>> from shenfun.chebyshev.bases import ShenDirichletBasis
-    >>> SD = ShenDirichletBasis(6)
+    >>> from shenfun.chebyshev.bases import ShenDirichlet
+    >>> SD = ShenDirichlet(6)
     >>> B = inner_product((SD, 0), (SD, 0))
     >>> d = {-2: np.array([-np.pi/2]),
     ...       0: np.array([1.5*np.pi, np.pi, np.pi, np.pi]),
