@@ -49,7 +49,6 @@ TD = TensorProductSpace(comm, (K0, SD), axes=(1, 0))
 Q = TensorProductSpace(comm, (K0, ST), axes=(1, 0))
 V = VectorTensorProductSpace(TD)
 VQ = MixedTensorProductSpace([V, Q])
-X = TD.local_mesh(True)
 
 up = TrialFunction(VQ)
 vq = TestFunction(VQ)
@@ -100,6 +99,7 @@ if comm.Get_rank() == 0:
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()
+    X = TD.local_mesh(True)
     plt.contourf(X[0], X[1], p_, 100)
     plt.figure()
     plt.quiver(X[0], X[1], u_[0], u_[1])

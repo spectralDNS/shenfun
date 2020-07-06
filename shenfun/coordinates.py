@@ -1,3 +1,4 @@
+import numbers
 import sympy as sp
 import numpy as np
 
@@ -74,8 +75,16 @@ class Coordinates(object):
         if self._sqrt_det_g[covariant] is not None:
             return self._sqrt_det_g[covariant]
         g = self.get_det_g(covariant)
-        self._sqrt_det_g[covariant] = sp.refine(sp.simplify(sp.sqrt(g)), self._assumptions)
-        return self._sqrt_det_g[covariant]
+        sg = sp.refine(sp.simplify(sp.sqrt(g)), self._assumptions)
+        if isinstance(sg, numbers.Number):
+            if isinstance(sg, numbers.Real):
+                sg = np.float(sg)
+            elif isinstance(sg, numbers.Complex):
+                sg = np.complex(sg)
+            else:
+                raise NotImplementedError
+        self._sqrt_det_g[covariant] = sg
+        return sg
 
     def get_cartesian_basis(self):
         """Return Cartesian basis vectors"""

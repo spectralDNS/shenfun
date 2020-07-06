@@ -7,7 +7,8 @@ The equations to solve are
    v_t = -e2*(-div(grad(v)))**(alpha2/2) - (b+kappa)*v + u*v**2             (2)
 
 Using Fourier basis F and a vector tensor product space for u and v
-The tensor product space is FF = FxF, and the vector space is W = [FF, FF]
+The tensor product space is FF = F \otimes F, and the vector space is
+W = FF \times FF.
 The constant diffusion coefficients are e1 and e2. Furthermore, b and
 kappa are two model constants. The parameters alpha1 and alpha2 represent
 coefficients for fractional derivatives on the Laplacian.
@@ -50,7 +51,6 @@ N = (200, 200)
 K0 = FunctionSpace(N[0], 'F', dtype='D', domain=(-1., 1.))
 K1 = FunctionSpace(N[1], 'F', dtype='d', domain=(-1., 1.))
 T = TensorProductSpace(comm, (K0, K1))
-X = T.local_mesh(True)
 u = TrialFunction(T)
 v = TestFunction(T)
 
@@ -98,6 +98,7 @@ def NonlinearRHS(self, uv, uv_hat, rhs, kappa, **params):
     return rhs
 
 plt.figure()
+X = T.local_mesh(True)
 image = plt.contourf(X[0], X[1], U.real, 100)
 plt.draw()
 plt.pause(1)

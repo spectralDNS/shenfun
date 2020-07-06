@@ -3,6 +3,7 @@ Module for defining function spaces in the Fourier family
 """
 import sympy as sp
 import numpy as np
+from numbers import Number
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
 from shenfun.optimization.cython import convolve
@@ -221,6 +222,9 @@ class FourierBase(SpectralBase):
         xm, wj = self.mpmath_points_and_weights(N, map_true_domain=True)
         if measure == 1:
             return wj/(2*np.pi)
+
+        if isinstance(measure, Number):
+            return measure*wj/(2*np.pi)
 
         s = measure.free_symbols
         assert len(s) == 1

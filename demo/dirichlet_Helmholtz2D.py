@@ -34,7 +34,7 @@ Solver = base.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
 alpha = 2.
-x, y = symbols("x,y")
+x, y = symbols("x,y", real=True)
 ue = (cos(4*np.pi*x) + sin(2*y))*(1-x**2)
 fe = alpha*ue - ue.diff(x, 2) - ue.diff(y, 2)
 
@@ -44,7 +44,6 @@ N = (int(sys.argv[-2]),)*2
 SD = FunctionSpace(N[0], family, bc=(0, 0), scaled=True)
 K1 = FunctionSpace(N[1], 'F', dtype='d')
 T = TensorProductSpace(comm, (SD, K1), axes=(0, 1))
-X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)
 v = TestFunction(T)
 
@@ -75,6 +74,7 @@ assert np.allclose(uj, uq)
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()
+    X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
     plt.contourf(X[0], X[1], uq)
     plt.colorbar()
 

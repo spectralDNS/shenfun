@@ -27,7 +27,6 @@ fe = ue.diff(x, 2)
 N = int(sys.argv[-1])
 
 SD = FunctionSpace(N, 'Laguerre', bc=(0, 0))
-X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)
 

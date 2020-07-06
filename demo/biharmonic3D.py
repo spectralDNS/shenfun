@@ -37,7 +37,6 @@ K1 = FunctionSpace(N[1], family='F', dtype='D')
 K2 = FunctionSpace(N[2], family='F', dtype='d')
 T = TensorProductSpace(comm, (SD, K1, K2), axes=(0, 1, 2))
 
-X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)
 v = TestFunction(T)
 
@@ -67,6 +66,7 @@ assert np.allclose(uj, uq)
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()
+    X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
     plt.contourf(X[0][:, :, 0], X[1][:, :, 0], uq[:, :, 8])
     plt.colorbar()
 

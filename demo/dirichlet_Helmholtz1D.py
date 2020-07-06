@@ -41,7 +41,7 @@ Solver = base.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
 alfa = 2.
-x = symbols("x")
+x = symbols("x", real=True)
 ue = sin(4*np.pi*x)*(1-x**2)
 fe = alfa*ue - ue.diff(x, 2)
 
@@ -49,7 +49,6 @@ fe = alfa*ue - ue.diff(x, 2)
 N = int(sys.argv[-2])
 
 SD = FunctionSpace(N, family=family, bc='Dirichlet')
-X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)
 

@@ -33,7 +33,13 @@ using an approximation, :math:`u_N`, to the solution
 
 Here the :math:`N` expansion coefficients :math:`\hat{u}_k` are unknown
 and :math:`\{\phi_k\}_{k\in \mathcal{I}^N}, \mathcal{I}^N = 0, 1, \ldots, N-1` are
-*trial* functions. Inserting for :math:`u_N` in Eq. :eq:`eq:poisson1` we get
+*trial* functions. The trial functions are a basis for the function space
+
+.. math::
+
+    V_N = span\{\phi_k\}_{k\in \mathcal{I}^N}.
+
+Inserting for :math:`u_N` in Eq. :eq:`eq:poisson1` we get
 a residual
 
 .. math::
@@ -52,7 +58,7 @@ With the WRM we now force this residual to zero in an average sense using
 
 where :math:`\overline{v}` is the complex conjugate of :math:`v`. If we
 now choose the test functions from the same space as the trial functions,
-i.e., :math:`V_N=span\{\phi_k\}_{k\in \mathcal{I}^N}`,
+i.e., :math:`V_N`,
 then the WRM becomes the Galerkin method, and we get :math:`N` equations for
 :math:`N` unknowns :math:`\{\hat{u}_k\}_{k\in \mathcal{I}^N}`
 
@@ -98,12 +104,12 @@ Neumann boundary condition :math:`u'(\pm 1)=0` are
 
 Shenfun contains classes for working with several such bases, to be used for
 different equations and boundary conditions. More precisely, for a
-problem at hand the user chooses a function space, :math:`V_N`, which is the
-span of a set of basis functions. Associated with the function space is a
+problem at hand the user chooses a function space, :math:`V_N`.
+Associated with the function space is a
 domain (e.g., :math:`[-1, 1]`), and a weighted inner product. The weights
 :math:`w(x)` are chosen under the hood, and specifically for each basis. For example,
 Chebyshev functions use the weight :math:`1/\sqrt{1-x^2}`, whereas Legendre
-functions use a constant weight.
+and Fourier functions use a constant weight.
 
 Complete demonstration programs that solves the Poisson equation
 :eq:`eq:poisson1`, and some other problems can be found by following these
@@ -123,47 +129,55 @@ Tensor products
 ---------------
 
 If the problem is two-dimensional, then we use two function spaces and create
-tensor product spaces. For example, if we choose the function spaces
+tensor product spaces to get a two-dimensional domain.
+For example, if we choose the function spaces
 :math:`X_N` and :math:`Y_M`, for the first and second dimension, respectively,
 then the tensor product space :math:`W_P` will be
 
 .. math::
 
-    W_{P} = X_N \otimes Y_M
+    W_{P} = X_N \otimes Y_M,
 
 where :math:`P=N \cdot M` and :math:`\otimes` represents a tensor product.
+See, e.g., this `tensor product blog`_ for a simple explanation of the
+tensor product.
 
 A generic basis for :math:`X_N` will be
 
 .. math::
 
-    \{ \mathcal{X}_j(x) \}_{j \in \mathcal{I}^N}
+    \{ \mathcal{X}_j(x) \}_{j \in \mathcal{I}^N},
 
 and for :math:`Y_M`
 
 .. math::
 
-    \{ \mathcal{Y}_k(y) \}_{k \in \mathcal{I}^M}
+    \{ \mathcal{Y}_k(y) \}_{k \in \mathcal{I}^M},
 
-Note that we are here using the :math:`y`-coordinate for the
+where :math:`\mathcal{X}_j` and :math:`\mathcal{Y}_k` are some
+chosen basis functions. Note that we are here using the
+:math:`y`-coordinate for the
 :math:`Y_M` basis, because this basis is used along the
-second axis of the tensor product space :math:`W_P`
+second axis of the tensor product space :math:`W_P`.
 
 A basis for :math:`W_P` will then be
 
 .. math::
 
-    \{ \mathcal{X}_j(x) \mathcal{Y}_k(y) \}_{(j, k) \in \mathcal{I}^N \times \mathcal{I}^M}
+    \{ \mathcal{X}_j(x) \mathcal{Y}_k(y) \}_{(j, k) \in \mathcal{I}^N \times \mathcal{I}^M},
+
+where :math:`\times` represents a Cartesian product.
 
 A test function :math:`v \in W_P` is as such
 
 .. math::
 
-   v_{jk}(x, y) = \mathcal{X}_j(x) \mathcal{Y}_k(y) \text{ for } (j, k) \in \mathcal{I}^N \times \mathcal{I}^M
+   v_{jk}(x, y) = \mathcal{X}_j(x) \mathcal{Y}_k(y) \text{ for } (j, k) \in \mathcal{I}^N \times \mathcal{I}^M.
 
-Assume now that we have a Cartesian domain :math:`\Omega = \{ (x, y) : (x, y) \in [-1, 1] \times [0, 2 \pi]\}`,
-with homogeneous Dirichlet boundary conditions along :math:`x=\pm 1` and periodic boundaries
-in the :math:`y`-direction. We can now choose basis functions
+As an example, assume now that we have a Cartesian domain
+:math:`\Omega = \{ (x, y) : (x, y) \in [-1, 1] \times [0, 2 \pi]\}`,
+with homogeneous Dirichlet boundary conditions at :math:`x=\pm 1` and that the solution is
+periodic in the :math:`y`-direction. We can now choose basis functions
 :math:`\mathcal{X}_j(x) = T_j-T_{j+2}`, for :math:`j \in \mathcal{I}^{N-2}` (
 with :math:`N-2` because :math:`T_{j+2}` then equals :math:`T_{N}` for :math:`j=N-2`),
 and :math:`\mathcal{Y}_k(y) = \exp(\imath k y)` for :math:`k \in \mathcal{I}^M`
@@ -202,8 +216,8 @@ example, to create the required spaces for the aforementioned domain, with Diric
 .. math::
 
     N, M &= (16, 16) \\
-    X_N(x) &= \text{span}\{T_k(x)-T_{k+2}(x)\}_{k\in \mathcal{I}^{N-2}} \\
-    Y_M(y) &= \text{span}\{\exp(\imath l y)\}_{l\in \mathcal{I}^M} \\
+    X_N(x) &= \text{span}\{T_j(x)-T_{j+2}(x)\}_{j\in \mathcal{I}^{N-2}} \\
+    Y_M(y) &= \text{span}\{\exp(\imath k y)\}_{k\in \mathcal{I}^M} \\
     W_P(x, y) &= X_N(x) \otimes Y_M(y)
 
 This can be implemented in `shenfun` as follows::
@@ -215,8 +229,9 @@ This can be implemented in `shenfun` as follows::
     W = TensorProductSpace(comm, (XN, YM))
 
 Note that the Chebyshev space is created using :math:`N` and not :math:`N-2`. The
-chosen boundary condition ``bc=(0, 0)`` ensures that only :math:`N-2` bases will be used.
-The Fourier basis ``BM`` has been defined for real inputs to a
+chosen boundary condition ``bc=(0, 0)`` ensures that only :math:`N-2` basis
+functions will be used.
+The Fourier basis ``YM`` has been defined for real inputs to a
 forward transform, which is ensured by the ``dtype`` keyword being set to ``d``
 for double. ``dtype``
 specifies the data type that is input to the ``forward`` method, or the
@@ -261,4 +276,4 @@ spectral Galerkin method.
 .. _Demo for the Kuramato-Sivashinsky equation: https://rawgit.com/spectralDNS/shenfun/master/docs/src/KuramatoSivashinsky/kuramatosivashinsky_bootstrap.html
 .. _Demo for Poisson equation in 1D with inhomogeneous Dirichlet boundary conditions: https://rawgit.com/spectralDNS/shenfun/master/docs/src/Poisson/poisson_bootstrap.html
 .. _Demo for Poisson equation in 3D with Dirichlet in one and periodicity in remaining two dimensions: https://rawgit.com/spectralDNS/shenfun/master/docs/src/Poisson3D/poisson3d_bootstrap.html
-.. _Shenfun paper: https://rawgit.com/spectralDNS/shenfun/master/docs/shenfun_bootstrap.html
+.. _tensor product blog: https://www.math3ma.com/blog/the-tensor-product-demystified

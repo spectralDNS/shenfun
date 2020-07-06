@@ -2,7 +2,7 @@ r"""
 Solve Kuramato-Kuramato_Sivashinsky equation on [-30pi, 30pi]^2
 with periodic bcs
 
-    u_t = -div(grad(u)) - div(grad(div(grad(u)))) - |grad(u)|^2    (1)
+    u_t = -div(grad(u)) - div(grad(div(grad(u)))) - 0.5*|grad(u)|^2    (1)
 
 Initial condition is
 
@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from shenfun import *
 
 # Use sympy to set up initial condition
-x, y = symbols("x,y")
+x, y = symbols("x,y", real=True)
 ue = exp(-0.01*(x**2+y**2))        # + exp(-0.02*((x-15*np.pi)**2+(y)**2))
 
 # Size of discretization
@@ -42,6 +42,7 @@ U = Array(T, buffer=ue)
 U_hat = Function(T)
 gradu = Array(TVp)
 K = np.array(T.local_wavenumbers(True, True, True))
+mask = T.get_mask_nyquist()
 
 def LinearRHS(self, **params):
     # Assemble diagonal bilinear forms
@@ -52,11 +53,13 @@ def NonlinearRHS(self, U, U_hat, dU, gradu, **params):
     # Assemble nonlinear term
     gradu = TVp.backward(1j*K*U_hat, gradu)
     dU = Tp.forward(0.5*(gradu[0]*gradu[0]+gradu[1]*gradu[1]), dU)
+    dU.mask_nyquist(mask)
     return -dU
 
 #initialize
 X = T.local_mesh(True)
 U_hat = U.forward(U_hat)
+U_hat.mask_nyquist(mask)
 
 # Integrate using an exponential time integrator
 plt.figure()
@@ -68,10 +71,11 @@ def update(self, u, u_hat, t, tstep, plot_step, **params):
     if tstep % plot_step == 0 and plot_step > 0:
         u = u_hat.backward(u)
         image.ax.clear()
-        image.ax.contourf(X[0], X[1], U, 256, cmap=cm)
+        image.ax.contourf(X[0], X[1], u, 256, cmap=cm)
         plt.pause(1e-6)
         self.params['count'] += 1
         #plt.savefig('Kuramato_Sivashinsky_N_{}_{}.png'.format(N[0], self.params['count']))
+        print('Energy =', dx(u**2))
 
 if __name__ == '__main__':
     par = {'plot_step': 100,

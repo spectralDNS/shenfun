@@ -28,7 +28,6 @@ N = (64, 64)
 K0 = FunctionSpace(N[0], family='F', dtype='D', domain=(-2*np.pi, 2*np.pi))
 K1 = FunctionSpace(N[1], family='F', dtype='d', domain=(-2*np.pi, 2*np.pi))
 T = TensorProductSpace(comm, (K0, K1), axes=(0, 1))
-X = T.local_mesh(True)
 u = TrialFunction(T)
 v = TestFunction(T)
 
@@ -63,6 +62,7 @@ print(np.sqrt(dx((uj-uq)**2)))
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()
+    X = T.local_mesh(True)
     plt.contourf(X[0], X[1], uq)
     plt.colorbar()
 

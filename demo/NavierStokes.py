@@ -26,7 +26,6 @@ P_hat = Function(T)
 curl_hat = Function(TV)
 W = Array(TV)
 curl_ = Array(TV)
-X = T.local_mesh(True)
 A = inner(grad(u), grad(v))
 
 def LinearRHS(self, **params):
@@ -47,6 +46,7 @@ def NonlinearRHS(self, U, U_hat, dU, **params):
     return dU
 
 if __name__ == '__main__':
+    X = T.local_mesh(True)
     for i, integrator in enumerate((ETD, RK4, ETDRK4)):
         # Initialization
         U[0] = np.sin(X[0])*np.cos(X[1])*np.cos(X[2])

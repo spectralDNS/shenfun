@@ -255,11 +255,12 @@ class ChebyshevBase(SpectralBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_orthogonal(self):
-        return Orthogonal(self.N, quad=self.quad, domain=self.domain, coordinates=self.coors.coordinates)
+        return Orthogonal(self.N, quad=self.quad, domain=self.domain,
+                          coordinates=self.coors.coordinates)
 
 
 class Orthogonal(ChebyshevBase):
-    """Basis for regular Chebyshev series
+    """Function space for regular Chebyshev series
 
     Parameters
     ----------

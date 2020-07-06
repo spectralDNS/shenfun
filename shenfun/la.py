@@ -3,7 +3,7 @@ This module contains linear algebra solvers for SparseMatrixes
 """
 import numpy as np
 import scipy.sparse as scp
-from scipy.sparse.linalg import spsolve
+from scipy.sparse.linalg import spsolve, splu
 from shenfun.optimization import optimizer
 from shenfun.matrixbase import SparseMatrix
 
@@ -590,6 +590,10 @@ class SolverGeneric1ND(object):
 
         self.mats = mats
 
+        # For time-dependent solver, store all generated matrices and reuse
+        # This takes a lot of memory, so for now it's only implemented for 2D
+        self.MM = None
+
     def __call__(self, b, u=None):
         if u is None:
             u = b
@@ -600,29 +604,49 @@ class SolverGeneric1ND(object):
         if u.ndim == 2:
             if m.naxes[0] == 0:
                 # non-diagonal in axis=0
-                for i in range(b.shape[1]):
-                    MM = None
-                    for mat in self.mats:
-                        sc = mat.scale[0, i] if mat.scale.shape[1] > 1 else mat.scale[0, 0]
-                        if MM:
-                            MM += sc*mat.mats[0]
-                        else:
-                            MM = sc*mat.mats[0]
-                    sl = mat.space.bases[0].slice()
-                    u[sl, i] = MM.solve(b[sl, i], u[sl, i])
+                if self.MM is None:
+                    self.MM = []
+                    for i in range(b.shape[1]):
+                        MM = None
+                        for mat in self.mats:
+                            sc = mat.scale[0, i] if mat.scale.shape[1] > 1 else mat.scale[0, 0]
+                            if MM:
+                                MM += sc*mat.mats[0]
+                            else:
+                                MM = sc*mat.mats[0]
+                        sl = m.space.bases[0].slice()
+                        MM._lu = splu(MM.diags('csc'))
+                        u[sl, i] = MM.solve(b[sl, i], u[sl, i], use_lu=True)
+                        self.MM.append(MM)
+
+                else:
+                    for i in range(b.shape[1]):
+                        sl = m.space.bases[0].slice()
+                        u[sl, i] = self.MM[i].solve(b[sl, i], u[sl, i], use_lu=True)
 
             else:
-                # non-diagonal in axis=1
-                for i in range(b.shape[0]):
-                    MM = None
-                    for mat in self.mats:
-                        sc = mat.scale[i, 0] if mat.scale.shape[0] > 1 else mat.scale[0, 0]
-                        if MM:
-                            MM += sc*mat.mats[1]
-                        else:
-                            MM = sc*mat.mats[1]
-                    sl = mat.space.bases[1].slice()
-                    u[i, sl] = MM.solve(b[i, sl], u[i, sl])
+                if self.MM is None:
+                    # non-diagonal in axis=1
+                    self.MM = []
+                    for i in range(b.shape[0]):
+                        MM = None
+                        for mat in self.mats:
+                            sc = mat.scale[i, 0] if mat.scale.shape[0] > 1 else mat.scale[0, 0]
+                            if MM:
+                                MM += sc*mat.mats[1]
+                            else:
+                                MM = sc*mat.mats[1]
+                        sl = m.space.bases[1].slice()
+                        u[i, sl] = MM.solve(b[i, sl], u[i, sl])
+                        MM._lu = splu(MM.diags('csc'))
+                        MM.solve(b[i, sl], u[i, sl], use_lu=True)
+                        self.MM.append(MM)
+
+                else:
+                    for i in range(b.shape[0]):
+                        sl = m.space.bases[1].slice()
+                        u[i, sl] = self.MM[i].solve(b[i, sl], u[i, sl], use_lu=True)
+
 
         elif u.ndim == 3:
             if m.naxes[0] == 0:
