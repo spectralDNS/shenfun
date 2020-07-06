@@ -148,8 +148,8 @@ if __name__ == '__main__':
     d = {
         'N': (128, 256),
         'refineplot': 2,
-        'dt': 0.5,
-        'filename': 'GLMR128_256E',
+        'dt': 0.2,
+        'filename': 'GLMR128_256A',
         'modplot': 10,
         'modsave': 10,
         'family': 'C',
@@ -157,7 +157,7 @@ if __name__ == '__main__':
         }
     c = GinzburgLandau(**d)
     c.initialize()
-    c.solve(c.ub, c.u_hat, c.dt, (0, 10))
+    c.solve(c.ub, c.u_hat, c.dt, (0, 500))
     print('Computing time %2.4f'%(time()-t0))
     if comm.Get_rank() == 0:
         generate_xdmf('_'.join((d['filename'], 'U'))+'.h5')
