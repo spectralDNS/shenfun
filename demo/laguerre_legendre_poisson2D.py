@@ -39,7 +39,6 @@ N = (int(sys.argv[-1]), int(sys.argv[-1])//2)
 D0 = FunctionSpace(N[0], 'Laguerre', bc=(0, 0))
 D1 = FunctionSpace(N[1], 'Legendre', bc=(0, 0))
 T = TensorProductSpace(comm, (D0, D1), axes=(0, 1))
-X = T.local_mesh(True)
 u = TrialFunction(T)
 v = TestFunction(T)
 
@@ -68,6 +67,7 @@ assert np.sqrt(dx((uj-uq)**2)) < 1e-5
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()
+    X = T.local_mesh(True)
     plt.contourf(X[0], X[1], uq)
     plt.colorbar()
 

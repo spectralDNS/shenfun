@@ -35,8 +35,6 @@ ST = FunctionSpace(N, dtype=dtype, domain=(-2*np.pi, 2*np.pi))
 u = TrialFunction(ST)
 v = TestFunction(ST)
 
-X = ST.mesh()
-
 # Get f on quad points and exact solution
 fj = Array(ST, buffer=fe)
 uj = Array(ST, buffer=ue)
@@ -63,6 +61,7 @@ assert np.allclose(p, lambdify(x, ue)(point))
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()
+    X = ST.mesh()
     plt.plot(X, uj.real)
     plt.title("U")
     plt.figure()

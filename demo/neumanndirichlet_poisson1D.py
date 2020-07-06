@@ -37,7 +37,6 @@ fe = ue.diff(x, 2)
 N = int(sys.argv[-2])
 
 SD = FunctionSpace(N, family=family, bc='NeumannDirichlet', domain=domain)
-X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)
 

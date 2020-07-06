@@ -16,7 +16,7 @@ from shenfun import inner, div, grad, TestFunction, TrialFunction, \
     TensorProductSpace, Array, Function, ETDRK4, HDF5File, FunctionSpace, comm
 
 # Use sympy to set up initial condition
-x, y = symbols("x,y")
+x, y = symbols("x,y", real=True)
 #ue = (1j*x + y)*exp(-0.03*(x**2+y**2))
 ue = (x + y)*exp(-0.03*(x**2+y**2))
 

@@ -1,6 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from shenfun import inner, div, grad, Function, Array, TestFunction, Basis
+from shenfun import inner, div, grad, Function, Array, TestFunction, FunctionSpace
 
 
 def main(N, dt=0.005, end_time=2, dealias_initial=True, plot_result=False):

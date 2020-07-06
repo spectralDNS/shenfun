@@ -83,7 +83,7 @@ class LegendreBase(SpectralBase):
         return 'legendre'
 
     def reference_domain(self):
-        return (-1., 1.)
+        return (-1, 1)
 
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
@@ -1257,10 +1257,8 @@ class ShenBiPolar0(LegendreBase):
                 -(2*i+3)*(i+4)/(2*i+5)/(i+2)*sympy.legendre(i+1, x)
                 -i*(i+1)/(i+2)/(i+3)*sympy.legendre(i+2, x)
                 +(i+1)*(2*i+3)/(i+3)/(2*i+5)*sympy.legendre(i+3, x))
-        #return (sympy.legendre(i, x)
-        #        -(2*i+3)*(i+4)/(2*i+5)*sympy.legendre(i+1, x)
-        #        -i*(i+1)/(i+2)/(i+3)*sympy.legendre(i+2, x)
-        #        +(i+1)*(i+2)*(2*i+3)/(i+3)/(2*i+5)*sympy.legendre(i+3, x))
+        #return
+        # (sympy.legendre(i, x) -(2*i+3)*(i+4)/(2*i+5)*sympy.legendre(i+1, x) -i*(i+1)/(i+2)/(i+3)*sympy.legendre(i+2, x) +(i+1)*(i+2)*(2*i+3)/(i+3)/(2*i+5)*sympy.legendre(i+3, x))
 
     def evaluate_basis(self, x=None, i=0, output_array=None):
         output_array = SpectralBase.evaluate_basis(self, x=x, i=i, output_array=output_array)

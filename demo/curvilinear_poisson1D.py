@@ -53,13 +53,14 @@ uj = u_hat.backward()
 uq = Array(L, buffer=ue)
 print('Error = ', np.linalg.norm(uj-uq))
 assert np.linalg.norm(uj-uq) < 1e-8
-uj = u_hat.backward(uniform=True)
-X = L.curvilinear_mesh(uniform=True)
 
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     fig = plt.figure(figsize=(4, 3))
     ax = fig.add_subplot(111, projection='3d')
+    uj = u_hat.backward(uniform=True)
+    X = L.curvilinear_mesh(uniform=True)
+
     if len(rv) == 3:
         ax.plot(X[0], X[1], X[2], 'r')
         ax.plot(X[0], X[1], X[2]+uj, 'b')

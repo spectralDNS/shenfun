@@ -45,7 +45,6 @@ N = (int(sys.argv[-2]), int(sys.argv[-2])+1)
 SD = FunctionSpace(N[0], family=family, scaled=True, bc=(a, b))
 K1 = FunctionSpace(N[1], family='F', dtype='d', domain=(-2*np.pi, 2*np.pi))
 T = TensorProductSpace(comm, (SD, K1), axes=(0, 1))
-X = T.local_mesh(True)
 u = TrialFunction(T)
 v = TestFunction(T)
 
@@ -75,6 +74,7 @@ assert np.allclose(uj, uq)
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()
+    X = T.local_mesh(True)
     plt.contourf(X[0], X[1], uq)
     plt.colorbar()
 

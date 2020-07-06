@@ -204,6 +204,7 @@ for computing the (weighted) scalar product.
 #pylint: disable=unused-argument, not-callable, no-self-use, protected-access, too-many-public-methods, missing-docstring
 
 import importlib
+from numbers import Number
 import sympy as sp
 import numpy as np
 from mpi4py_fft import fftw
@@ -1098,13 +1099,17 @@ class SpectralBase(object):
             msdict = split(dx)
             assert len(msdict) == 1
             dx = msdict[0]['xyzrs'[self.axis]]
+            if self.axis == 0:
+                dx *= msdict[0]['coeff']
         if not dx == 1:
-            x0 = dx.free_symbols
-            if len(x0) > 1:
-                raise NotImplementedError("Cannot use forward for Curvilinear coordinates with unseparable measure - Use inner with mass matrix for tensor product space")
-            x0 = x0.pop()
-            x = sp.symbols('x', real=x0.is_real, positive=x0.is_positive)
-            dx = dx.subs(x0, x)
+            if not isinstance(dx, Number):
+                assert hasattr(dx, 'free_symbols')
+                x0 = dx.free_symbols
+                if len(x0) > 1:
+                    raise NotImplementedError("Cannot use forward for Curvilinear coordinates with unseparable measure - Use inner with mass matrix for tensor product space")
+                x0 = x0.pop()
+                x = sp.symbols('x', real=x0.is_real, positive=x0.is_positive)
+                dx = dx.subs(x0, x)
             key = key + (self.domain, dx)
 
         return mat[key]
@@ -1149,12 +1154,14 @@ class SpectralBase(object):
         if measure == 1:
             return wj
 
+        if isinstance(measure, Number):
+            wj *= measure
+            return wj
+
         s = measure.free_symbols
         assert len(s) == 1
         s = s.pop()
         xj = sp.lambdify(s, measure)(xm)
-        #if wj.shape[0] == 1:
-        #    wj = np.broadcast_to(wj, xj.shape).copy()
         wj *= xj
         return wj
 
@@ -1178,6 +1185,10 @@ class SpectralBase(object):
 
         measure = self.coors.get_sqrt_det_g()
         if measure == 1:
+            return array
+
+        if isinstance(measure, Number):
+            array *= measure
             return array
 
         xm = self.mpmath_points_and_weights(self.N, map_true_domain=True)[0]

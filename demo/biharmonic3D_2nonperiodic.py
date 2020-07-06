@@ -33,7 +33,6 @@ S0 = FunctionSpace(N[1], family=family, bc='Biharmonic')
 S1 = FunctionSpace(N[2], family=family, bc='Biharmonic')
 
 T = TensorProductSpace(comm, (K0, S0, S1), axes=(1, 0, 2), slab=True)
-X = T.local_mesh(True)
 u = TrialFunction(T)
 v = TestFunction(T)
 
@@ -62,6 +61,7 @@ assert np.allclose(uj, uq)
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()
+    X = T.local_mesh(True)
     plt.contourf(X[0][:, :, 0], X[1][:, :, 0], uq[:, :, 8])
     plt.colorbar()
 

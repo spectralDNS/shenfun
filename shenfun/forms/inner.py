@@ -211,7 +211,7 @@ def inner(expr0, expr1, output_array=None, level=0):
                     if gij[i, j] == 0:
                         continue
                     w0.fill(0)
-                    x += inner(te*gij[i, j], tr, output_array=w0)
+                    x += inner(te, tr*gij[i, j], output_array=w0)
             return output_array
 
         result = []
@@ -220,7 +220,7 @@ def inner(expr0, expr1, output_array=None, level=0):
             for j, tr in enumerate(trial):
                 if gij[i, j] == 0:
                     continue
-                l = inner(te*gij[i, j], tr, level=level)
+                l = inner(te, tr*gij[i, j], level=level)
                 result += l if isinstance(l, list) else [l]
         return result[0] if len(result) == 1 else result
 

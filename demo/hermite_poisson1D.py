@@ -23,7 +23,7 @@ assert len(sys.argv) == 2, 'Call with one command-line argument'
 assert isinstance(int(sys.argv[-1]), int)
 
 # Use sympy to compute a rhs, given an analytical solution
-x = symbols("x")
+x = symbols("x", real=True)
 #ue = sin(4*x)*exp(-x**2)
 ue = hermite(4, x)*exp(-x**2/2)
 fe = ue.diff(x, 2)
@@ -32,7 +32,6 @@ fe = ue.diff(x, 2)
 N = int(sys.argv[-1])
 
 SD = FunctionSpace(N, 'Hermite')
-X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)
 

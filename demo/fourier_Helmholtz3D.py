@@ -25,7 +25,7 @@ from shenfun import inner, div, grad, TestFunction, TrialFunction, FunctionSpace
 comm = MPI.COMM_WORLD
 
 # Use sympy to compute a rhs, given an analytical solution
-x, y, z = symbols("x,y,z")
+x, y, z = symbols("x,y,z", real=True)
 ue = cos(4*x) + sin(4*y) + sin(6*z)
 fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2) + ue
 
@@ -36,7 +36,6 @@ K0 = FunctionSpace(N, 'F', dtype='D')
 K1 = FunctionSpace(N, 'F', dtype='D')
 K2 = FunctionSpace(N, 'F', dtype='d')
 T = TensorProductSpace(comm, (K0, K1, K2), slab=True)
-X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
 u = TrialFunction(T)
 v = TestFunction(T)
 
@@ -60,6 +59,7 @@ assert np.allclose(uj, uq)
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()
+    X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
     plt.contourf(X[0][:, :, 0], X[1][:, :, 0], uq[:, :, 0])
     plt.colorbar()
 
