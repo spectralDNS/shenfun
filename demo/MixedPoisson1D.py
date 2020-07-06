@@ -36,7 +36,6 @@ fe = ue.diff(x, 2)
 N = 24
 SD = FunctionSpace(N, 'L', bc=(0, 0))
 ST = FunctionSpace(N, 'L')
-X = SD.mesh(True)
 
 # Solve first regularly
 u = TrialFunction(SD)
@@ -89,6 +88,7 @@ if comm.Get_rank() == 0:
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()
+    X = SD.mesh(True)
     plt.plot(X, gu[1])
     plt.figure()
     plt.spy(M.diags().toarray()) # The matrix for given Fourier wavenumber

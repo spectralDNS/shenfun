@@ -34,7 +34,6 @@ def div(test):
     if isinstance(test, BasisFunction):
         test = Expr(test)
 
-    #test = copy.copy(test)
     ndim = test.dimensions
     coors = test.function_space().coors
 
@@ -117,7 +116,6 @@ def grad(test):
     if isinstance(test, BasisFunction):
         test = Expr(test)
 
-    #test = copy.copy(test)
     ndim = test.dimensions
     coors = test.function_space().coors
 
@@ -186,6 +184,11 @@ def Dx(test, x, k=1):
     """
     assert isinstance(test, (Expr, BasisFunction))
 
+    if k > 1:
+        for l in range(k):
+            test = Dx(test, x, 1)
+        return test
+
     if isinstance(test, BasisFunction):
         test = Expr(test)
 
@@ -204,13 +207,10 @@ def Dx(test, x, k=1):
         sc = copy.deepcopy(test.scales())
         ind = copy.deepcopy(test.indices())
         num_terms = test.num_terms()
-        #u = sp.Wild('x')
         for i in range(test.num_components()):
             for j in range(num_terms[i]):
                 sc0 = sp.simplify(sp.diff(sc[i][j], psi[x], k))
                 sc0 = sp.refine(sc0, coors._assumptions)
-                #sc0 = sp.simplify(sc0.replace(sp.cosh(u)**2, 1+sp.sinh(u)**2))
-                #sc0 = sp.simplify(sc0.replace(sp.sinh(u)**2, (sp.cosh(2*u)-1)/2))
 
                 if not sc0 == 0:
                     v[i].append(copy.deepcopy(v[i][j]))
@@ -259,8 +259,7 @@ def curl(test):
         assert test.expr_rank() < 2, 'Cannot (yet) take curl of higher order tensor in curvilinear coordinates'
         hi = coors.hi
         sg = coors.get_sqrt_det_g()
-        #if coors.is_orthogonal:
-        if False:
+        if coors.is_orthogonal:
             if test.dimensions == 3:
                 w0 = (Dx(test[2]*hi[2]**2, 1, 1) - Dx(test[1]*hi[1]**2, 2, 1))*(1/sg)
                 w1 = (Dx(test[0]*hi[0]**2, 2, 1) - Dx(test[2]*hi[2]**2, 0, 1))*(1/sg)

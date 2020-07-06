@@ -48,7 +48,6 @@ TD = TensorProductSpace(comm, (K0, K1, SD), axes=(2, 1, 0))
 TT = TensorProductSpace(comm, (K0, K1, ST), axes=(2, 1, 0))
 VT = VectorTensorProductSpace(TT)
 Q = MixedTensorProductSpace([VT, TD])
-X = TD.local_mesh(True)
 
 gu = TrialFunction(Q)
 pq = TestFunction(Q)
@@ -88,6 +87,7 @@ if comm.Get_rank() == 0:
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()
+    X = TD.local_mesh(True)
     plt.contourf(X[0][:, :, 0], X[1][:, :, 0], u_[:, :, 0])
     plt.figure()
     plt.spy(M.diags((4, 4, 0)).toarray()) # The matrix for given Fourier wavenumber

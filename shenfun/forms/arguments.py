@@ -1440,6 +1440,11 @@ class Function(ShenfunBaseArray, BasisFunction):
             output_array = self.assign(output_array)
             return output_array
 
+        if isinstance(N, Number):
+            N = (N,)*len(self)
+        elif isinstance(N, (tuple, list, np.ndarray)):
+            assert len(N) == len(self.function_space())
+
         space = self.function_space()
 
         if isinstance(space, VectorTensorProductSpace):

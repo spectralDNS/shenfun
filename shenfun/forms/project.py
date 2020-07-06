@@ -2,7 +2,7 @@ from copy import copy
 import types
 import numpy as np
 from shenfun.tensorproductspace import TensorProductSpace
-from shenfun.matrixbase import TPMatrix
+from shenfun.matrixbase import TPMatrix, BlockMatrix, SpectralMatrix
 from .arguments import Expr, TestFunction, TrialFunction, BasisFunction, \
     Function, Array
 from .inner import inner
@@ -150,10 +150,15 @@ def project(uh, T, output_array=None, fill=True, use_to_ortho=True, use_assign=T
             transAB.backward(output_arrayB2, output_array)
             return output_array
 
-    # Just zero or one non-periodic direction
-    if v.rank == 0:
+    if isinstance(B, (TPMatrix, SpectralMatrix)):
         output_array = B.solve(output_array, output_array)
-    else:
+
+    elif T.coors.is_orthogonal and (len(output_array) == len(B)):
         for oa, b in zip(output_array, B):
             oa = b.solve(oa, oa)
+
+    else:
+        M = BlockMatrix(B)
+        output_array = M.solve(output_array, output_array)
+
     return output_array

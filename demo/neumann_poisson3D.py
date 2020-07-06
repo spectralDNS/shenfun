@@ -26,7 +26,7 @@ base = importlib.import_module('.'.join(('shenfun', family)))
 Solver = base.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
-x, y, z = symbols("x,y,z")
+x, y, z = symbols("x,y,z", real=True)
 ue = sin(6*z)*cos(4*y)*sin(2*np.pi*x)*(1-x**2)
 fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
 
@@ -37,7 +37,6 @@ SD = FunctionSpace(N[0], family=family, bc='Neumann')
 K1 = FunctionSpace(N[1], family='F', dtype='D')
 K2 = FunctionSpace(N[2], family='F', dtype='d')
 T = TensorProductSpace(comm, (SD, K1, K2))
-X = T.local_mesh(True)
 u = TrialFunction(T)
 v = TestFunction(T)
 
@@ -66,6 +65,7 @@ assert np.allclose(uj, u)
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()
+    X = T.local_mesh(True)
     plt.contourf(X[0][:, :, 0], X[1][:, :, 0], u[:, :, 2])
     plt.colorbar()
 

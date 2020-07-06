@@ -20,10 +20,8 @@ from sympy import symbols, cos, sin
 import numpy as np
 from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
-    Function, FunctionSpace, TensorProductSpace, dx
+    Function, FunctionSpace, TensorProductSpace, dx, comm
 from mpi4py_fft.pencil import Subcomm
-
-comm = MPI.COMM_WORLD
 
 assert len(sys.argv) == 3
 assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi')
@@ -54,7 +52,6 @@ K1 = FunctionSpace(N[0], family='F', dtype='D')
 K2 = FunctionSpace(N[2], family='F', dtype='d')
 subcomms = Subcomm(MPI.COMM_WORLD, [0, 0, 1])
 T = TensorProductSpace(subcomms, (K1, SD, K2), axes=(1, 0, 2))
-X = T.local_mesh()
 u = TrialFunction(T)
 v = TestFunction(T)
 
@@ -91,6 +88,7 @@ assert np.allclose(uj, uq)
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()
+    X = T.local_mesh()
     plt.contourf(X[2][0, 0, :], X[0][:, 0, 0], uq[:, 2, :])
     plt.colorbar()
 

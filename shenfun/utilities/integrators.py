@@ -21,9 +21,9 @@ where :math:`u` is the solution, :math:`L` is a linear operator and
 """
 import types
 import numpy as np
-from shenfun import Function, TPMatrix
+from shenfun import Function, TPMatrix, TrialFunction, TestFunction, inner, la
 
-__all__ = ('RK4', 'ETDRK4', 'ETD')
+__all__ = ('IRK3', 'RK4', 'ETDRK4', 'ETD')
 
 #pylint: disable=unused-variable
 
@@ -45,18 +45,30 @@ class IntegratorBase(object):
     """
 
     def __init__(self, T,
-                 L=lambda *args, **kwargs: 0,
-                 N=lambda *args, **kwargs: 0,
-                 update=lambda *args, **kwargs: None,
+                 L=None,
+                 N=None,
+                 update=None,
                  **params):
         _p = {'call_update': -1,
               'dt': 0}
         _p.update(params)
         self.params = _p
         self.T = T
-        self.LinearRHS = types.MethodType(L, self)
-        self.NonlinearRHS = types.MethodType(N, self)
-        self.update = types.MethodType(update, self)
+        if L is not None:
+            self.LinearRHS = types.MethodType(L, self)
+        if N is not None:
+            self.NonlinearRHS = types.MethodType(N, self)
+        if update is not None:
+            self.update = types.MethodType(update, self)
+
+    def update(self, u, u_hat, t, tstep, **par):
+        pass
+
+    def LinearRHS(self, *args, **kwargs):
+        pass
+
+    def NonlinearRHS(self, *args, **kwargs):
+        pass
 
     def setup(self, dt):
         """Set up solver"""
@@ -79,6 +91,94 @@ class IntegratorBase(object):
         pass
 
 
+class IRK3(IntegratorBase):
+    """Third order implicit Runge Kutta
+
+    Parameters
+    ----------
+        T : TensorProductSpace
+        L : function of TrialFunction(T)
+            To compute linear part of right hand side
+        N : function
+            To compute nonlinear part of right hand side
+        update : function
+                 To be called at the end of a timestep
+        params : dictionary
+                 Any relevant keyword arguments
+
+    """
+    def __init__(self, T,
+                 L=None,
+                 N=None,
+                 update=None,
+                 **params):
+        IntegratorBase.__init__(self, T, L=L, N=N, update=update, **params)
+        self.dU = Function(T)
+        self.dU1 = Function(T)
+        self.a = (8./15., 5./12., 3./4.)
+        self.b = (0.0, -17./60., -5./12.)
+        self.c = (0., 8./15., 2./3., 1)
+        self.solver = None
+        self.rhs_mats = None
+        self.w0 = Function(self.T).v
+        self.mask = self.T.get_mask_nyquist()
+
+    def setup(self, dt):
+        self.params['dt'] = dt
+        u = TrialFunction(self.T)
+        v = TestFunction(self.T)
+
+        # Note that we are here assembling implicit left hand side matrices,
+        # as well as matrices that can be used to assemble the right hande side
+        # much faster through matrix-vector products
+
+        a, b = self.a, self.b
+        self.solver = []
+        for rk in range(3):
+            mats = inner(v, u - ((a[rk]+b[rk])*dt/2)*self.LinearRHS(u))
+            if len(mats[0].naxes) == 1:
+                self.solver.append(la.SolverGeneric1ND(mats))
+            elif len(mats[0].naxes) == 2:
+                self.solver.append(la.SolverGeneric2ND(mats))
+            else:
+                raise NotImplementedError
+
+        self.rhs_mats = []
+        for rk in range(3):
+            self.rhs_mats.append(inner(v, u + ((a[rk]+b[rk])*dt/2)*self.LinearRHS(u)))
+
+        self.mass = inner(u, v)
+
+    def compute_rhs(self, u, u_hat, dU, dU1, rk):
+        a = self.a[rk]
+        b = self.b[rk]
+        dt = self.params['dt']
+        dU = self.NonlinearRHS(u, u_hat, dU, **self.params)
+        dU.mask_nyquist(self.mask)
+        w1 = dU*a*dt + self.dU1*b*dt
+        self.dU1[:] = dU
+        return w1
+
+    def solve(self, u, u_hat, dt, trange):
+        if self.solver is None or abs(self.params['dt']-dt) > 1e-12:
+            self.setup(dt)
+        t, end_time = trange
+        tstep = 0
+        while t < end_time-1e-8:
+            # Fix the new bcs in the solutions. Don't have to fix padded T_p because it is assembled from T_1 and T_2
+            for rk in range(3):
+                dU = self.compute_rhs(u, u_hat, self.dU, self.dU1, rk)
+                for mat in self.rhs_mats[rk]:
+                    w0 = mat.matvec(u_hat, self.w0)
+                    dU += w0
+                u_hat = self.solver[rk](dU, u_hat)
+                u_hat.mask_nyquist(self.mask)
+
+            t += self.dt
+            tstep += 1
+            self.update(u, u_hat, t, tstep, **self.params)
+
+
 class ETD(IntegratorBase):
     """Exponential time differencing Euler method
 
@@ -99,9 +199,9 @@ class ETD(IntegratorBase):
     """
 
     def __init__(self, T,
-                 L=lambda *args, **kwargs: 0,
-                 N=lambda *args, **kwargs: 0,
-                 update=lambda *args, **kwargs: None,
+                 L=None,
+                 N=None,
+                 update=None,
                  **params):
         IntegratorBase.__init__(self, T, L=L, N=N, update=update, **params)
         self.dU = Function(T)
@@ -172,9 +272,9 @@ class ETDRK4(IntegratorBase):
             Any relevant keyword arguments
     """
     def __init__(self, T,
-                 L=lambda *args, **kwargs: 0,
-                 N=lambda *args, **kwargs: 0,
-                 update=lambda *args, **kwargs: None,
+                 L=None,
+                 N=None,
+                 update=None,
                  **params):
         IntegratorBase.__init__(self, T, L=L, N=N, update=update, **params)
         self.U_hat0 = Function(T)
@@ -199,7 +299,6 @@ class ETDRK4(IntegratorBase):
         hL = L*dt
         self.ehL = np.exp(hL)
         self.ehL_h = np.exp(hL/2.)
-
         M = 50
         psi = self.psi = np.zeros((4,) + hL.shape, dtype=np.float)
         for k in range(1, M+1):
@@ -238,6 +337,7 @@ class ETDRK4(IntegratorBase):
         while t < end_time-1e-8:
             t += dt
             tstep += 1
+
             self.U_hat0[:] = u_hat*self.ehL_h
             self.U_hat1[:] = u_hat*self.ehL
             for rk in range(4):
@@ -273,9 +373,9 @@ class RK4(IntegratorBase):
             Any relevant keyword arguments
     """
     def __init__(self, T,
-                 L=lambda *args, **kwargs: 0,
-                 N=lambda *args, **kwargs: 0,
-                 update=lambda *args, **kwargs: None,
+                 L=None,
+                 N=None,
+                 update=None,
                  **params):
         IntegratorBase.__init__(self, T, L=L, N=N, update=update, **params)
         self.U_hat0 = Function(T)

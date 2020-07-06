@@ -458,7 +458,7 @@ class SparseMatrix(dict):
         if abs(self.scale-1) > 1e-8:
             c *= self.scale
 
-    def solve(self, b, u=None, axis=0):
+    def solve(self, b, u=None, axis=0, use_lu=False):
         """Solve matrix system Au = b
 
         where A is the current matrix (self)
@@ -473,6 +473,8 @@ class SparseMatrix(dict):
         axis : int, optional
             The axis over which to solve for if b and u are multi-
             dimensional
+        use_lu : bool, optional
+            Look for already computed LU-matrix
 
         Note
         ----
@@ -494,11 +496,25 @@ class SparseMatrix(dict):
                 b = np.moveaxis(b, axis, 0)
 
         if b.ndim == 1:
-            u[:] = spsolve(self.diags('csr'), b)
+            if use_lu:
+                if b.dtype.char in 'FDG':
+                    u.real[:] = self._lu.solve(b.real)
+                    u.imag[:] = self._lu.solve(b.imag)
+                else:
+                    u[:] = self._lu.solve(b)
+            else:
+                u[:] = spsolve(self.diags('csc'), b)
         else:
             N = b.shape[0]
             P = np.prod(b.shape[1:])
-            u[:] = spsolve(self.diags('csr'), b.reshape((N, P))).reshape(u.shape)
+            if use_lu:
+                if b.dtype.char in 'FDG':
+                    u.real[:] = self._lu.solve(b.real.reshape((N, P))).reshape(u.shape)
+                    u.imag[:] = self._lu.solve(b.imag.reshape((N, P))).reshape(u.shape)
+                else:
+                    u[:] = self._lu.solve(b.reshape((N, P))).reshape(u.shape)
+            else:
+                u[:] = spsolve(self.diags('csc'), b.reshape((N, P))).reshape(u.shape)
 
         if axis > 0:
             u = np.moveaxis(u, 0, axis)
@@ -1363,7 +1379,7 @@ class TPMatrix(object):
     def __mul__(self, a):
         """Returns copy of self.__mul__(a) <==> self*a"""
         if isinstance(a, Number):
-            TPMatrix(self.mats, self.space, self.scale*a,
+            TPMatrix(self.mats, self.space, self.trialspace, self.scale*a,
                      self.global_index, self.mixedbase)
 
         elif isinstance(a, np.ndarray):
@@ -1389,7 +1405,7 @@ class TPMatrix(object):
     def __div__(self, a):
         """Returns copy self.__div__(a) <==> self/a"""
         if isinstance(a, Number):
-            return TPMatrix(self.mats, self.space, self.scale/a,
+            return TPMatrix(self.mats, self.space, self.trialspace, self.scale/a,
                             self.global_index, self.mixedbase)
         elif isinstance(a, np.ndarray):
             b = np.zeros_like(a)
@@ -1427,7 +1443,7 @@ class TPMatrix(object):
         """Return copy of self.__add__(a) <==> self+a"""
         assert isinstance(a, TPMatrix)
         assert self == a
-        return TPMatrix(self.mats, self.space, self.scale+a.scale,
+        return TPMatrix(self.mats, self.space, self.trialspace, self.scale+a.scale,
                         self.global_index, self.mixedbase)
 
     def __iadd__(self, a):
@@ -1441,7 +1457,7 @@ class TPMatrix(object):
         """Return copy of self.__sub__(a) <==> self-a"""
         assert isinstance(a, TPMatrix)
         assert self == a
-        return TPMatrix(self.mats, self.space, self.scale-a.scale,
+        return TPMatrix(self.mats, self.space, self.trialspace, self.scale-a.scale,
                         self.global_index, self.mixedbase)
 
     def __isub__(self, a):
@@ -1450,6 +1466,12 @@ class TPMatrix(object):
         assert self == a
         self.scale = self.scale - a.scale
         return self
+
+    def diags(self, format='csr'):
+        if self.dimensions == 2:
+            return kron(self.mats[0].diags(format=format), self.mats[1].diags(format=format))
+        elif self.dimensions == 3:
+            return kron(self.mats[0].diags(format=format), kron(self.mats[1].diags(format=format), self.mats[2].diags(format=format)))
 
 
 def check_sanity(A, test, trial, measure=1):
@@ -1512,7 +1534,7 @@ def get_dense_matrix(test, trial, measure=1):
     u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])
     return np.dot(np.conj(v.T)*ws[np.newaxis, :], u)
 
-def extract_diagonal_matrix(M, abstol=1e-8, reltol=1e-8):
+def extract_diagonal_matrix(M, abstol=1e-14, reltol=1e-10):
     """Return SparseMatrix version of dense matrix ``M``
 
     Parameters

@@ -15,19 +15,16 @@ The equation to solve for a Hermite x Fourier basis is
 """
 import os
 import sys
-from mpi4py import MPI
 from sympy import symbols, exp, hermite, cos
 import numpy as np
 from shenfun import inner, grad, TestFunction, TrialFunction, \
-    Array, Function, FunctionSpace, TensorProductSpace
+    Array, Function, FunctionSpace, TensorProductSpace, comm
 
 assert len(sys.argv) == 2, 'Call with one command-line argument'
 assert isinstance(int(sys.argv[-1]), int)
 
-comm = MPI.COMM_WORLD
-
 # Use sympy to compute a rhs, given an analytical solution
-x, y = symbols("x,y")
+x, y = symbols("x,y", real=True)
 #ue = sin(4*x)*exp(-x**2)
 ue = cos(4*y)*hermite(4, x)*exp(-x**2/2)
 fe = ue.diff(x, 2)+ue.diff(y, 2)
@@ -38,7 +35,6 @@ N = int(sys.argv[-1])
 SD = FunctionSpace(N, 'Hermite')
 K0 = FunctionSpace(N, 'Fourier', dtype='d')
 T = TensorProductSpace(comm, (SD, K0), axes=(0, 1))
-X = T.local_mesh(True)
 u = TrialFunction(T)
 v = TestFunction(T)
 
@@ -67,6 +63,7 @@ print('Error ', np.linalg.norm(uj-uq))
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()
+    X = T.local_mesh(True)
     plt.contourf(X[0], X[1], uq)
     plt.colorbar()
 

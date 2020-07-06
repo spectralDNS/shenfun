@@ -31,7 +31,7 @@ else:
 
 # Use sympy to compute a rhs, given an analytical solution
 a = 1.
-x, y = symbols("x,y")
+x, y = symbols("x,y", real=True)
 ue = (cos(4*y)*sin(2*x))*(1-x**2)*(1-y**2)
 fe = a*ue - ue.diff(x, 2) - ue.diff(y, 2)
 
@@ -42,7 +42,6 @@ SD0 = FunctionSpace(N[0], family, bc=(0, 0), scaled=True)
 SD1 = FunctionSpace(N[1], family, bc=(0, 0), scaled=True)
 
 T = TensorProductSpace(comm, (SD0, SD1), axes=(1, 0))
-X = T.local_mesh(True)
 u = TrialFunction(T)
 v = TestFunction(T)
 
@@ -75,6 +74,7 @@ assert np.allclose(uj, uq)
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()
+    X = T.local_mesh(True)
     plt.contourf(X[0], X[1], uq)
     plt.colorbar()
 

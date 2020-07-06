@@ -48,7 +48,6 @@ TV = VectorTensorProductSpace(T)
 
 Tp = T.get_dealiased((1.5, 1.5, 1.5))
 
-X = T.local_mesh(True)
 fu = Array(TT, buffer=(0, ue))
 f, u = fu
 up = Array(Tp)
@@ -84,6 +83,7 @@ def NonlinearRHS(self, fu, fu_hat, dfu_hat, **par):
     du_hat[:] = f_hat
     return dfu_hat
 
+X = T.local_mesh(True)
 if rank == 0:
     plt.figure()
     image = plt.contourf(X[1][..., 0], X[0][..., 0], u[..., N[2]//2], 100)

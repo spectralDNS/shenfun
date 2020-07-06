@@ -31,7 +31,6 @@ fe = ue.diff(x, 2)
 N = 32
 
 SD = FunctionSpace(N, family=family, bc='Neumann')
-X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)
 
@@ -58,6 +57,7 @@ assert np.allclose(uj, u)
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()
+    X = SD.mesh()
     plt.plot(X, u)
 
     plt.figure()

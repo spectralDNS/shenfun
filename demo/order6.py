@@ -20,7 +20,7 @@ assert isinstance(int(sys.argv[-1]), int)
 
 # Manufactured solution that satisfies boundary conditions
 sol = 0
-x = symbols("x")
+x = symbols("x", real=True)
 
 if sol == 0:
     domain = (-1., 1.)

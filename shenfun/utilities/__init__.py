@@ -14,7 +14,7 @@ from scipy.fftpack import dct
 from shenfun.optimization import optimizer
 
 __all__ = ['dx', 'clenshaw_curtis1D', 'CachedArrayDict',
-           'outer', 'apply_mask', 'integrate_sympy']
+           'outer', 'apply_mask', 'integrate_sympy', 'mayavi_show']
 
 
 def dx(u):
@@ -240,3 +240,11 @@ def split(measures):
     else:
         result.append(_split([ms], defaultdict(lambda: 1)))
     return result
+
+def mayavi_show():
+    """
+    Return show function that updates the mayavi figure in the background.
+    """
+    from pyface.api import GUI
+    from mayavi import mlab
+    return mlab.show(GUI().stop_event_loop)
