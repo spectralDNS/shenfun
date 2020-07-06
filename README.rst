@@ -34,6 +34,12 @@ Note that there is now also support for solving equations using curvilinear coor
     :alt: Solution of Poisson's equation on a spherical shell
 .. image:: https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/torus2.png
     :alt: Solution of Poisson's equation on the surface of a torus
+
+For a more psychedelic experience, have a look at the simulation of the Ginzburg-Landau equation on the sphere:
+
+.. image:: https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/GLimage.png
+    :target: https://youtu.be/odsIoHVcqek
+    :alt: Ginzburg-Landau spherical coordinates 
     
 Installation
 ------------
