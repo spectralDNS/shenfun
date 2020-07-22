@@ -457,6 +457,24 @@ class ShenDirichlet(LegendreBase):
                              bc=self.bc.bc,
                              scaled=self._scaled)
 
+    def get_unplanned(self):
+        """Return unplanned space (otherwise as self)
+
+        Returns
+        -------
+        SpectralBase
+            The space to be used for dealiasing
+        """
+        return self.__class__(self.N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates,
+                              bc=self.bc.bc,
+                              scaled=self._scaled)
+
     def _truncation_forward(self, padded_array, trunc_array):
         if not id(trunc_array) == id(padded_array):
             trunc_array.fill(0)
@@ -645,6 +663,23 @@ class ShenNeumann(LegendreBase):
                            coordinates=self.coors.coordinates,
                            mean=self.mean)
 
+    def get_unplanned(self):
+        """Return unplanned space (otherwise as self)
+
+        Returns
+        -------
+        SpectralBase
+            The space to be used for dealiasing
+        """
+        return self.__class__(self.N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates,
+                              mean=self.mean)
+
 
 class ShenBiharmonic(LegendreBase):
     """Function space for biharmonic basis
@@ -832,6 +867,23 @@ class ShenBiharmonic(LegendreBase):
                               dtype=self.dtype,
                               padding_factor=padding_factor,
                               dealias_direct=dealias_direct,
+                              coordinates=self.coors.coordinates,
+                              bc=self.bc.bc)
+
+    def get_unplanned(self):
+        """Return unplanned space (otherwise as self)
+
+        Returns
+        -------
+        SpectralBase
+            The space to be used for dealiasing
+        """
+        return self.__class__(self.N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
                               coordinates=self.coors.coordinates,
                               bc=self.bc.bc)
 

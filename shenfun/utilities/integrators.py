@@ -1,6 +1,7 @@
 r"""
 Module for some integrators.
 
+    - IRK3:     Implicit third order Runge-Kutta
     - RK4:      Runge-Kutta fourth order
     - ETD:      Exponential time differencing Euler method
     - ETDRK4:   Exponential time differencing Runge-Kutta fourth order
@@ -17,6 +18,11 @@ Integrators are set up to solve equations like
 
 where :math:`u` is the solution, :math:`L` is a linear operator and
 :math:`N(u)` is the nonlinear part of the right hand side.
+
+Note
+----
+`RK4`, `ETD` and `ETDRK4` can only be used with Fourier function spaces,
+as they assume all matrices are diagonal.
 
 """
 import types
@@ -165,7 +171,6 @@ class IRK3(IntegratorBase):
         t, end_time = trange
         tstep = 0
         while t < end_time-1e-8:
-            # Fix the new bcs in the solutions. Don't have to fix padded T_p because it is assembled from T_1 and T_2
             for rk in range(3):
                 dU = self.compute_rhs(u, u_hat, self.dU, self.dU1, rk)
                 for mat in self.rhs_mats[rk]:

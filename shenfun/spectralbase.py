@@ -1166,13 +1166,11 @@ class SpectralBase(object):
         return wj
 
     def get_measured_array(self, array):
-        """Return weights times `measure`
+        """Return `array` times Jacobian
 
         Parameters
         ----------
-        N : integer, optional
-            The number of quadrature points
-        measure : None or `sympy.Expr`
+        array : array
 
         Note
         ----
@@ -1242,6 +1240,22 @@ class SpectralBase(object):
             A new space with new number of quadrature points, otherwise as self.
         """
         return self.__class__(N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates)
+
+    def get_unplanned(self):
+        """Return unplanned space (otherwise as self)
+
+        Returns
+        -------
+        SpectralBase
+            The space to be used for dealiasing
+        """
+        return self.__class__(self.N,
                               quad=self.quad,
                               domain=self.domain,
                               dtype=self.dtype,

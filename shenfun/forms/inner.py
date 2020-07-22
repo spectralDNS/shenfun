@@ -326,7 +326,12 @@ def inner(expr0, expr1, output_array=None, level=0):
                                 DM[0].mixedbase = testspace
                                 A.append(DM[0])
                             else:
-                                A.append(TPMatrix(DM, test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                                if len(test_sp.get_nonhomogeneous_axes()) == 1:
+                                    A.append(TPMatrix(DM, test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                                elif len(test_sp.get_nonhomogeneous_axes()) == 2:
+                                    A.append(TPMatrix([M[0], DM[1]], test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                                    A.append(TPMatrix([DM[0], M[1]], test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                                    A.append(TPMatrix(DM, test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
 
     # At this point A contains all matrices of the form. The length of A is
     # the number of inner products. For each index into A there are ndim 1D

@@ -32,7 +32,7 @@ def extract_bc_matrices(mats):
 
     bc_mats = []
     for a in mats:
-        for b in a:
+        for b in a.copy():
             if isinstance(b, SparseMatrix):
                 if b.trialfunction[0].boundary_condition() == 'Apply':
                     bc_mats.append(b)

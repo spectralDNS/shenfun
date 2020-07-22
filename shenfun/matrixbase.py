@@ -1534,7 +1534,7 @@ def get_dense_matrix(test, trial, measure=1):
     u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])
     return np.dot(np.conj(v.T)*ws[np.newaxis, :], u)
 
-def extract_diagonal_matrix(M, abstol=1e-14, reltol=1e-10):
+def extract_diagonal_matrix(M, abstol=1e-14, reltol=1e-12):
     """Return SparseMatrix version of dense matrix ``M``
 
     Parameters

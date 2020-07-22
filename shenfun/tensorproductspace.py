@@ -302,8 +302,7 @@ class TensorProductSpace(PFFT):
         else:
             self.configure_backwards(backward_from_pencil, dtype, kw)
 
-        for i, base in enumerate(bases):
-            base.axis = i
+        for base in self.xfftn:
             if base.has_nonhomogeneous_bcs:
                 base.bc.set_tensor_bcs(base, self)
 
@@ -882,6 +881,13 @@ class TensorProductSpace(PFFT):
                 axes.append(axis)
         return axes
 
+    def get_nonhomogeneous_axes(self):
+        axes = []
+        for axis, base in enumerate(self):
+            if base.has_nonhomogeneous_bcs:
+                axes.append(axis)
+        return axes
+
     @property
     def is_orthogonal(self):
         ortho = True
@@ -1411,51 +1417,76 @@ class BoundaryValues(object):
                 else:
                     raise NotImplementedError
 
-            if number_of_bases_after_this == 0:
-                # Dirichlet base is the first to be transformed
-                b_hat = b
+            if len(T.get_nonhomogeneous_axes()) == 1:
+                if number_of_bases_after_this == 0:
+                    # Dirichlet base is the first to be transformed
+                    b_hat = b
 
-            elif number_of_bases_after_this == 1:
+                elif number_of_bases_after_this == 1:
+                    T.forward._xfftn[0].input_array[...] = b
+
+                    T.forward._xfftn[0]()
+                    arrayA = T.forward._xfftn[0].output_array
+                    arrayB = T.forward._xfftn[1].input_array
+                    T.forward._transfer[0](arrayA, arrayB)
+                    b_hat = arrayB.copy()
+
+                elif number_of_bases_after_this == 2:
+                    T.forward._xfftn[0].input_array[...] = b
+
+                    T.forward._xfftn[0]()
+                    arrayA = T.forward._xfftn[0].output_array
+                    arrayB = T.forward._xfftn[1].input_array
+                    T.forward._transfer[0](arrayA, arrayB)
+
+                    T.forward._xfftn[1]()
+                    arrayA = T.forward._xfftn[1].output_array
+                    arrayB = T.forward._xfftn[2].input_array
+                    T.forward._transfer[1](arrayA, arrayB)
+                    b_hat = arrayB.copy()
+
+                # Now b_hat contains the correct slices in slm1 and slm2
+                # These are the values to use on intermediate steps. If for example the Dirichlet space is squeezed between two Fourier spaces
+                for i in range(len(self.bc)):
+                    self.bcs[i] = b_hat[this_base.si[-(len(self.bc))+i]].copy()
+
+                # Final (the values to set on fully transformed functions)
                 T.forward._xfftn[0].input_array[...] = b
+                for i in range(len(T.forward._transfer)):
 
-                T.forward._xfftn[0]()
-                arrayA = T.forward._xfftn[0].output_array
-                arrayB = T.forward._xfftn[1].input_array
-                T.forward._transfer[0](arrayA, arrayB)
-                b_hat = arrayB.copy()
+                    T.forward._xfftn[i]()
+                    arrayA = T.forward._xfftn[i].output_array
+                    arrayB = T.forward._xfftn[i+1].input_array
+                    T.forward._transfer[i](arrayA, arrayB)
 
-            elif number_of_bases_after_this == 2:
-                T.forward._xfftn[0].input_array[...] = b
+                T.forward._xfftn[-1]()
+                b_hat = T.forward._xfftn[-1].output_array
+                for i in range(len(self.bc)):
+                    self.bcs_final[i] = b_hat[this_base.si[-(len(self.bc))+i]].copy()
 
-                T.forward._xfftn[0]()
-                arrayA = T.forward._xfftn[0].output_array
-                arrayB = T.forward._xfftn[1].input_array
-                T.forward._transfer[0](arrayA, arrayB)
+            else: # 2 non-homogeneous directions
+                assert len(T.bases) == 2, 'Only implemented for 2D'
+                from shenfun import project
+                bases = []
+                for axis, base in enumerate(T.bases):
+                    if not base is this_base:
+                        bases.append(base.get_unplanned())
 
-                T.forward._xfftn[1]()
-                arrayA = T.forward._xfftn[1].output_array
-                arrayB = T.forward._xfftn[2].input_array
-                T.forward._transfer[1](arrayA, arrayB)
-                b_hat = arrayB.copy()
+                other_base = bases[0]
+                ua = Array(other_base)
+                for j, bcj in enumerate(other_base.bc.bc.copy()):
+                    xj = this_base.domain[j]
+                    sym = sp.sympify(bcj).free_symbols
+                    if len(sym) == 1:
+                        s = bcj.subs(sym.pop(), xj)
+                        other_base.bc.bc[j] = s
+                        other_base.bc.bcs[j] = s
+                        other_base.bc.bcs_final[j] = s
 
-            # Now b_hat contains the correct slices in slm1 and slm2
-            # These are the values to use on intermediate steps. If for example the Dirichlet space is squeezed between two Fourier spaces
-            for i in range(len(self.bc)):
-                self.bcs[i] = b_hat[this_base.si[-(len(self.bc))+i]].copy()
+                for j in range(len(self.bc)):
+                    ua[:] = b[this_base.si[-(len(self.bc))+j]]
+                    self.bcs_final[j] = project(ua, other_base)
 
-            # Final (the values to set on fully transformed functions)
-            T.forward._xfftn[0].input_array[...] = b
-            for i in range(len(T.forward._transfer)):
-
-                T.forward._xfftn[i]()
-                arrayA = T.forward._xfftn[i].output_array
-                arrayB = T.forward._xfftn[i+1].input_array
-                T.forward._transfer[i](arrayA, arrayB)
-
-            T.forward._xfftn[-1]()
-            b_hat = T.forward._xfftn[-1].output_array
-            for i in range(len(self.bc)):
-                self.bcs_final[i] = b_hat[this_base.si[-(len(self.bc))+i]].copy()
 
     def add_to_orthogonal(self, u, uh):
         """Add contribution from boundary functions to `u`

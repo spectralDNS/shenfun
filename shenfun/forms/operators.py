@@ -6,7 +6,7 @@ import sympy as sp
 import copy
 from .arguments import Expr, BasisFunction
 
-__all__ = ('div', 'grad', 'Dx', 'curl')
+__all__ = ('div', 'grad', 'symgrad', 'Dx', 'curl')
 
 #pylint: disable=protected-access
 
@@ -98,6 +98,36 @@ def div(test):
                     d += Dx(test[i]*sg, i, 1)*(1/sg)
             d.simplify()
         return d
+
+def symgrad(test):
+    """Return the symmetric part of grad(test)
+    Parameters
+    ----------
+    test: Expr or BasisFunction
+    Note
+    ----
+    Increases the rank of Expr by one
+    """
+    assert isinstance(test, (Expr, BasisFunction))
+    if isinstance(test, BasisFunction):
+        test = Expr(test)
+    ndim = test.dimensions
+    coors = test.function_space().coors
+    if coors.is_cartesian:
+        d = []
+        if test.num_components() > 1:
+            for i in range(test.num_components()):
+                for j in range(ndim):
+                    d.append( 1/2 * ( Dx(test[i], j, 1) + Dx(test[j], i, 1) ) )
+        else:
+           raise ValueError("The symmetric part of the gradient of a scalar "
+                            "function does not exist.")
+    else:
+        raise NotImplementedError("This method is only implemented for a "
+                                  "Cartesian geometry.")
+    dv = _expr_from_vector_components(d, test.base)
+    dv.simplify()
+    return dv
 
 def grad(test):
     """Return grad(test)
