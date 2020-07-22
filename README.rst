@@ -35,7 +35,7 @@ Note that there is now also support for solving equations using curvilinear coor
 .. image:: https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/torus2.png
     :alt: Solution of Poisson's equation on the surface of a torus
 
-For a more psychedelic experience, have a look at the simulation of the Ginzburg-Landau equation on the sphere:
+For a more psychedelic experience, have a look at the `simulation <https://github.com/spectralDNS/shenfun/blob/master/demo/Ginzburg_Landau_sphere_IRK3.py>`_ of the Ginzburg-Landau equation on the sphere (click for Youtube-video):
 
 .. image:: https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/GLimage.png
     :target: https://youtu.be/odsIoHVcqek
@@ -49,7 +49,7 @@ Shenfun can be installed using either `pip <https://pypi.org/project/pip/>`_ or 
 Dependencies
 ------------
 
-    * `Python <https://www.python.org/>`_ 2.7, 3.3 or above. Test suits are run with Python 2.7, 3.6, 3.7 and 3.8.
+    * `Python <https://www.python.org/>`_ 3.3 or above. Test suits are run with Python 3.6, 3.7 and 3.8.
     * A functional MPI 2.x/3.x implementation like `MPICH <https://www.mpich.org>`_ or `Open MPI <https://www.open-mpi.org>`_ built with shared/dynamic libraries.
     * `FFTW <http://www.fftw.org/>`_ version 3, also built with shared/dynamic libraries.
     * Python modules:
