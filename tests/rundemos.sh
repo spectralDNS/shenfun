@@ -83,6 +83,7 @@ python MixedPoisson1D.py chebyshev
 python Stokes.py legendre
 python Stokes.py chebyshev
 
+if ! [ "$(uname)" == "Darwin" ]; then
 mpirun -np 4 python dirichlet_poisson2D.py 24 chebyshev
 mpirun -np 4 python dirichlet_poisson3D.py 24 chebyshev
 mpirun -np 4 python dirichlet_poisson2D.py 24 legendre
@@ -110,4 +111,6 @@ mpirun -np 4 python MixedPoisson3D.py legendre
 mpirun -np 4 python MixedPoisson3D.py chebyshev
 mpirun -np 4 python laguerre_dirichlet_poisson2D.py 70
 mpirun -np 4 python hermite_poisson2D.py 36
+fi
+
 pushd $PWD/../tests
