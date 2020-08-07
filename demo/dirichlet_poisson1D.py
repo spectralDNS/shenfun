@@ -22,7 +22,7 @@ assert isinstance(int(sys.argv[-2]), int)
 family = sys.argv[-1].lower()
 
 # Use sympy to compute a rhs, given an analytical solution
-domain = (-1., 1.)
+domain = (0., 4.)
 a = 1.
 b = -1.
 if family == 'jacobi':

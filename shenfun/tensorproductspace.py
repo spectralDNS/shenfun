@@ -14,6 +14,9 @@ from shenfun.spectralbase import slicedict, islicedict, SpectralBase
 from shenfun.coordinates import Coordinates
 from mpi4py_fft.mpifft import Transform, PFFT
 from mpi4py_fft.pencil import Subcomm, Pencil
+from mpi4py import MPI
+
+comm = MPI.COMM_WORLD
 
 __all__ = ('TensorProductSpace', 'VectorTensorProductSpace',
            'MixedTensorProductSpace', 'Convolve')
@@ -169,7 +172,11 @@ class TensorProductSpace(PFFT):
         shape = list(self.global_shape())
         self.axes = axes
         assert shape
-        assert min(shape) > 0
+        #assert min(shape) > 0
+        if min(shape) == 0:
+            self.subcomm = comm
+            self._dtype = dtype
+            return
 
         if axes is not None:
             axes = list(axes) if np.ndim(axes) else [axes]
@@ -294,10 +301,6 @@ class TensorProductSpace(PFFT):
                 [o.scalar_product for o in self.xfftn],
                 [o.forward for o in self.transfer],
                 self.pencil)
-            self.backward_uniform = Transform(
-                [o.backward_uniform for o in self.xfftn[::-1]],
-                [o.backward for o in self.transfer[::-1]],
-                self.pencil[::-1])
 
         else:
             self.configure_backwards(backward_from_pencil, dtype, kw)
@@ -379,10 +382,6 @@ class TensorProductSpace(PFFT):
             [o.scalar_product for o in self.xfftn[::-1]],
             [o.forward for o in self.transfer[::-1]],
             self.pencil[::-1])
-        self.backward_uniform = Transform(
-            [o.backward_uniform for o in self.xfftn],
-            [o.forward for o in self.transfer],
-            self.pencil)
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         if isinstance(padding_factor, Number):
@@ -404,14 +403,20 @@ class TensorProductSpace(PFFT):
 
     def get_refined(self, N):
         if isinstance(N, Number):
-            N = (N,)*len(self)
+            N = N*np.array(self.global_shape())
         elif isinstance(N, (tuple, list, np.ndarray)):
             assert len(N) == len(self)
         refined_bases = [base.get_refined(N[axis])
                          for axis, base in enumerate(self.bases)]
         return TensorProductSpace(self.subcomm, refined_bases, axes=self.axes,
-                                  dtype=self.forward.input_array.dtype,
+                                  dtype=self.dtype(),
                                   coordinates=self.coors.coordinates)
+
+    def dtype(self, forward_output=False):
+        """Return datatype function space is planned for"""
+        if hasattr(self, 'forward'):
+            return PFFT.dtype(self, forward_output)
+        return self._dtype
 
     def convolve(self, a_hat, b_hat, ab_hat):
         """Convolution of a_hat and b_hat
@@ -550,7 +555,7 @@ class TensorProductSpace(PFFT):
                 out = out2
             previous_axes.append(axis)
         output_array[:] = out
-        output_array = self.comm.allreduce(output_array)
+        output_array = comm.allreduce(output_array)
         return output_array
 
 
@@ -590,7 +595,7 @@ class TensorProductSpace(PFFT):
             output_array = evaluate.evaluate_lm_3D(list(self.bases), output_array, coefficients, x[0], x[1], x[2], w[0], w[1], w[2], r2c, last_conj_index, sl)
 
         output_array = np.atleast_1d(output_array)
-        output_array = self.comm.allreduce(output_array)
+        output_array = comm.allreduce(output_array)
         return output_array
 
     def _eval_cython(self, points, coefficients, output_array):
@@ -628,7 +633,7 @@ class TensorProductSpace(PFFT):
             output_array = evaluate.evaluate_3D(output_array, coefficients, P, r2c, last_conj_index, sl)
 
         output_array = np.atleast_1d(output_array)
-        output_array = self.comm.allreduce(output_array)
+        output_array = comm.allreduce(output_array)
         return output_array
 
     def wavenumbers(self, scaled=False, eliminate_highest_freq=False):
@@ -903,6 +908,53 @@ class TensorProductSpace(PFFT):
                                   dtype=self.forward.input_array.dtype,
                                   coordinates=self.coors.coordinates)
 
+    def get_adaptive(self, fun=None, reltol=1e-12, abstol=1e-15):
+        """Return space (otherwise as self) with number of quadrature points
+        determined by fitting `fun`
+
+        Returns
+        -------
+        TensorProductSpace
+            A new space with adaptively found number of quadrature points
+
+        Note
+        ----
+        Only spaces defined with N=0 quadrature points are adapted, the
+        others are kept as is
+
+        Example
+        -------
+        >>> from shenfun import FunctionSpace, Function, TensorProductSpace, comm
+        >>> import sympy as sp
+        >>> r, theta = psi = sp.symbols('x,y', real=True, positive=True)
+        >>> rv = (r*sp.cos(theta), r*sp.sin(theta))
+        >>> B0 = FunctionSpace(0, 'C', domain=(0, 1))
+        >>> F0 = FunctionSpace(0, 'F', dtype='d')
+        >>> T = TensorProductSpace(comm, (B0, F0), coordinates=(psi, rv))
+        >>> u = Function(T, buffer=((1-r)*r)**4*(sp.cos(10*theta)))
+        >>> print(u.global_shape)
+        (9, 11)
+
+        """
+        domains = [base.domain for base in self.bases]
+        sym0 = fun.free_symbols
+        syms = [str(i) for i in sym0]
+        sd = {str(sym): sym for sym in sym0}
+        Tj = []
+        for axis, base in enumerate(self.bases):
+            # First remove all other axes from the function
+            otheraxes = list(range(len(self.bases)))
+            otheraxes.remove(axis)
+            fj = fun.copy()
+            for ax in otheraxes:
+                fj = fj.subs(sd['xyzrs'[ax]], 0.5*(domains[ax][1]-domains[ax][0]))
+            if base.N == 0:
+                Tj.append(base.get_adaptive(fun=fj, reltol=reltol, abstol=abstol))
+            else:
+                Tj.append(base)
+        return TensorProductSpace(self.subcomm, Tj, axes=self.axes,
+                                  coordinates=self.coors.coordinates)
+
     @property
     def is_composite_space(self):
         return 0
@@ -955,7 +1007,6 @@ class MixedTensorProductSpace(object):
         self.spaces = spaces
         self.forward = VectorTransform([space.forward for space in spaces])
         self.backward = VectorTransform([space.backward for space in spaces])
-        self.backward_uniform = VectorTransform([space.backward_uniform for space in spaces])
         self.scalar_product = VectorTransform([space.scalar_product for space in spaces])
 
     @property
@@ -1482,6 +1533,10 @@ class BoundaryValues(object):
                         other_base.bc.bc[j] = s
                         other_base.bc.bcs[j] = s
                         other_base.bc.bcs_final[j] = s
+                    else:
+                        other_base.bc.bc[j] = bcj
+                        other_base.bc.bcs[j] = bcj
+                        other_base.bc.bcs_final[j] = bcj
 
                 for j in range(len(self.bc)):
                     ua[:] = b[this_base.si[-(len(self.bc))+j]]
@@ -1518,6 +1573,7 @@ class BoundaryValues(object):
         coors = self.tensorproductspace.coors if self.tensorproductspace else self.base.coors
         M = self.base.get_bcmass_matrix(coors.get_sqrt_det_g())
         w0 = np.zeros_like(u)
+        self.set_boundary_dofs(u)
         u -= M.matvec(u, w0, axis=self.base.axis)
 
     def set_boundary_dofs(self, u, final=False):

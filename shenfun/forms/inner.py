@@ -359,10 +359,7 @@ def inner(expr0, expr1, output_array=None, level=0):
     # Considering again the tensor product space with ShenDirichlet and Fourier,
     # the list A will contain matrices as shown above. If Fourier is associated
     # with index 1, then (v[1], u[1])_y and (v[1], u[1]'')_y will be diagonal
-    # whereas (v[0], u[0]'')_x and (v[0], u[0])_x will in general not. These
-    # two matrices are usually termed the stiffness and mass matrices, and they
-    # have been implemented in chebyshev/matrices.py or legendre/matrices.py,
-    # where they are called ADDmat and BDDmat, respectively.
+    # whereas (v[0], u[0]'')_x and (v[0], u[0])_x will in general not.
 
     if level == 2 and trial.argument == 1: # No processing of matrices
         return A

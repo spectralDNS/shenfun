@@ -658,7 +658,7 @@ def test_eval_expression():
     assert np.allclose(f1, f2, 1e-7)
 
 if __name__ == '__main__':
-    test_transform('f', 3)
+    #test_transform('f', 3)
     #test_transform('d', 2)
     #test_shentransform('d', 2, jbases.ShenBiharmonicBasis, 'JG')
     #test_eval_expression()
@@ -669,6 +669,6 @@ if __name__ == '__main__':
     #test_project_2dirichlet('GL')
     #test_eval_tensor('d', 1, lbases.ShenBiPolar0Basis, 'LG')
     #test_eval_fourier('d', 3)
-    #test_inner('C', 'C')
+    test_inner('C', 'F')
     #test_refine()
     #test_assign('C')

@@ -15,7 +15,7 @@ DEMO          = Poisson/poisson.rst \
 				KuramatoSivashinsky/kuramatosivashinsky.rst \
 				Stokes/stokes.rst DrivenCavity/drivencavity.rst \
 				RayleighBenard/rayleighbenard.rst \
-				Stokes/stokes.ipynb DrivenCavity/drivencavity.ipynb
+				Functions/functions.ipynb
 
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
@@ -30,7 +30,8 @@ help:
 
 %.ipynb:
 	doconce format ipynb demos/$(basename $@).do.txt
-	cp demos/$(basename $@).ipynb ../binder/
+	jupyter nbconvert --inplace --execute demos/${basename $@}.ipynb
+	cp demos/$(basename $@).ipynb source/
 
 publish:
 	cd demos && publish export papers.bib && cd ..
