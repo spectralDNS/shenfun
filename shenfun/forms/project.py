@@ -106,7 +106,7 @@ def project(uh, T, output_array=None, fill=True, use_to_ortho=True, use_assign=T
                 pass
 
     if isinstance(uh, np.ndarray) and not isinstance(uh, (Array, Function)):
-        assert np.all(uh.shape == T.shape(False))
+        #assert np.all(uh.shape == T.shape(False))
         uh = Array(T, buffer=uh)
 
     if isinstance(uh, Array):

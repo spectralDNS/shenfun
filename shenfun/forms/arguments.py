@@ -1,6 +1,6 @@
 from numbers import Number, Integral
 import copy
-from scipy.special import sph_harm, erf
+from scipy.special import sph_harm, erf, airy
 import numpy as np
 import sympy as sp
 from shenfun.optimization.cython import evaluate
@@ -12,6 +12,7 @@ __all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',
 # Define some special functions required for spherical harmonics
 cot = lambda x: 1/np.tan(x)
 Ynm = lambda n, m, x, y : sph_harm(m, n, y, x)
+airyai = lambda x: airy(x)[0]
 printwarning = True
 
 def Basis(*args, **kwargs): #pragma: no cover
@@ -1028,9 +1029,12 @@ class TrialFunction(BasisFunction):
 
 class ShenfunBaseArray(DistArray):
 
-    def __new__(cls, space, val=0, buffer=None):
+    def __new__(cls, space, val=0, buffer=None, reltol=1e-12, abstol=1e-15):
 
         if hasattr(space, 'points_and_weights'): # 1D case
+            if space.N == 0:
+                space = space.get_adaptive(fun=buffer, reltol=reltol, abstol=abstol)
+
             if cls.__name__ == 'Function':
                 dtype = space.forward.output_array.dtype
                 shape = space.forward.output_array.shape
@@ -1079,6 +1083,9 @@ class ShenfunBaseArray(DistArray):
                 obj[:] = val
             return obj
 
+        if min(space.global_shape()) == 0:
+            space = space.get_adaptive(fun=buffer, reltol=reltol, abstol=abstol)
+
         if cls.__name__ == 'Function':
             forward_output = True
             p0 = space.forward.output_pencil
@@ -1106,7 +1113,7 @@ class ShenfunBaseArray(DistArray):
                     for sym in sym0:
                         j = 'xyzrs'.index(str(sym))
                         m.append(mesh[j])
-                    buffer.v[i] = sp.lambdify(sym0, buf0, modules=['numpy', {'cot': cot, 'Ynm': Ynm, 'erf': erf}])(*m).astype(dtype)
+                    buffer.v[i] = sp.lambdify(sym0, buf0, modules=['numpy', {'airyai': airyai, 'cot': cot, 'Ynm': Ynm, 'erf': erf}])(*m).astype(dtype)
                 else:
                     raise NotImplementedError
 
@@ -1123,7 +1130,7 @@ class ShenfunBaseArray(DistArray):
             for sym in sym0:
                 j = 'xyzrs'.index(str(sym))
                 m.append(mesh[j])
-            buf = sp.lambdify(sym0, buffer, modules=['numpy', {'cot': cot, 'Ynm': Ynm, 'erf': erf}])(*m).astype(space.forward.input_array.dtype)
+            buf = sp.lambdify(sym0, buffer, modules=['numpy', {'airyai': airyai, 'cot': cot, 'Ynm': Ynm, 'erf': erf}])(*m).astype(space.forward.input_array.dtype)
             buffer = Array(space)
             buffer[:] = buf
             if cls.__name__ == 'Function':
@@ -1143,7 +1150,6 @@ class ShenfunBaseArray(DistArray):
     def __array_finalize__(self, obj):
         if obj is None:
             return
-
         self._space = getattr(obj, '_space', None)
         self._rank = getattr(obj, '_rank', None)
         self._p0 = getattr(obj, '_p0', None)
@@ -1275,8 +1281,8 @@ class Function(ShenfunBaseArray, BasisFunction):
     """
     # pylint: disable=too-few-public-methods,too-many-arguments
 
-    def __init__(self, space, val=0, buffer=None):
-        BasisFunction.__init__(self, space, offset=0)
+    def __init__(self, space, val=0, buffer=None, reltol=1e-12, abstol=1e-15):
+        BasisFunction.__init__(self, self._space, offset=0)
 
     def set_boundary_dofs(self):
         space = self.function_space()
@@ -1297,6 +1303,9 @@ class Function(ShenfunBaseArray, BasisFunction):
     @property
     def forward_output(self):
         return True
+
+    def __call__(self, x, output_array=None):
+        return self.eval(x, output_array=output_array)
 
     def eval(self, x, output_array=None):
         """Evaluate Function at points
@@ -1327,14 +1336,35 @@ class Function(ShenfunBaseArray, BasisFunction):
         """
         return self.function_space().eval(x, self, output_array)
 
-    def backward(self, output_array=None, uniform=False):
-        """Return Function evaluated on quadrature mesh"""
+    def backward(self, output_array=None, kind='normal'):
+        """Return Function evaluated on some quadrature mesh
+
+        Parameters
+        ----------
+        output_array : array, optional
+            Return array, Function evaluated on mesh
+        kind : str or function space
+            There are three kinds of backward transforms
+
+            - 'normal' - evaluate Function on its quadrature mesh
+            - 'uniform' - evaluate Function on uniform mesh
+            - function space - evaluate Function on the quadrature mesh of the
+              given function space. This could be a :func:`.FunctionSpace`
+              if 1D, or a :class:`.TensorProductSpace` if multidimensional.
+
+        """
         space = self.function_space()
+        if hasattr(kind, 'mesh'):
+            if output_array is None:
+                output_array = Array(kind)
+            output_array = space.backward(self, output_array, kind=kind)
+            return output_array
+        assert isinstance(kind, str)
         if output_array is None:
             output_array = Array(space)
-        if uniform is True:
-            output_array = space.backward_uniform(self, output_array)
-        else:
+        if kind.lower() == 'uniform':
+            output_array = space.backward(self, output_array, kind='uniform')
+        elif kind.lower() == 'normal':
             output_array = space.backward(self, output_array)
         return output_array
 
@@ -1600,3 +1630,4 @@ class Array(ShenfunBaseArray):
         of this Arrays space in a :class:`.MixedTensorProductSpace`.
         """
         return self._offset
+

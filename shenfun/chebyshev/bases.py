@@ -130,7 +130,7 @@ class ChebyshevBase(SpectralBase):
     def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         return sp.chebyshevt(i, x)
 
-    def sympy_weight(self, x=sp.symbols('x', real=True)):
+    def weight(self, x=sp.symbols('x', real=True)):
         return 1/sp.sqrt(1-x**2)
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -180,6 +180,9 @@ class ChebyshevBase(SpectralBase):
         return (-1., 1.)
 
     def plan(self, shape, axis, dtype, options):
+        if shape in (0, (0,)):
+            return
+
         if isinstance(axis, tuple):
             assert len(axis) == 1
             axis = axis[-1]
@@ -245,11 +248,9 @@ class ChebyshevBase(SpectralBase):
             trunc_array = self._get_truncarray(shape, V.dtype)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, trunc_array, V, U)
         else:
             self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
             self.backward = Transform(self.backward, xfftn_bck, V, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
@@ -592,6 +593,10 @@ class ShenDirichlet(ChebyshevBase):
         return self.backward.output_array
 
     def plan(self, shape, axis, dtype, options):
+
+        if shape in (0, (0,)):
+            return
+
         if isinstance(axis, tuple):
             assert len(axis) == 1
             axis = axis[-1]
@@ -612,11 +617,9 @@ class ShenDirichlet(ChebyshevBase):
             trunc_array = self._get_truncarray(shape, V.dtype)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, trunc_array, V, U)
         else:
             self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
             self.backward = Transform(self.backward, xfftn_bck, V, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
@@ -857,6 +860,9 @@ class ShenNeumann(ChebyshevBase):
         return output_array
 
     def plan(self, shape, axis, dtype, options):
+        if shape in (0, (0,)):
+            return
+
         if isinstance(axis, tuple):
             assert len(axis) == 1
             axis = axis[0]
@@ -877,11 +883,9 @@ class ShenNeumann(ChebyshevBase):
             trunc_array = self._get_truncarray(shape, V.dtype)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, trunc_array, V, U)
         else:
             self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
             self.backward = Transform(self.backward, xfftn_bck, V, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
@@ -1173,6 +1177,9 @@ class ShenBiharmonic(ChebyshevBase):
                               bc=self.bc.bc)
 
     def plan(self, shape, axis, dtype, options):
+        if shape in (0, (0,)):
+            return
+
         if isinstance(axis, tuple):
             assert len(axis) == 1
             axis = axis[-1]
@@ -1193,11 +1200,9 @@ class ShenBiharmonic(ChebyshevBase):
             trunc_array = self._get_truncarray(shape, V.dtype)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, trunc_array, V, U)
         else:
             self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
             self.backward = Transform(self.backward, xfftn_bck, V, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
@@ -1380,6 +1385,9 @@ class SecondNeumann(ChebyshevBase): #pragma: no cover
         return output_array
 
     def plan(self, shape, axis, dtype, options):
+        if shape in (0, (0,)):
+            return
+
         if isinstance(axis, tuple):
             assert len(axis) == 1
             axis = axis[0]
@@ -1400,11 +1408,9 @@ class SecondNeumann(ChebyshevBase): #pragma: no cover
             trunc_array = self._get_truncarray(shape, V.dtype)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, trunc_array, V, U)
         else:
             self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
             self.backward = Transform(self.backward, xfftn_bck, V, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
@@ -1593,6 +1599,9 @@ class UpperDirichlet(ChebyshevBase):
         return self.backward.output_array
 
     def plan(self, shape, axis, dtype, options):
+        if shape in (0, (0,)):
+            return
+
         if isinstance(axis, tuple):
             assert len(axis) == 1
             axis = axis[-1]
@@ -1613,11 +1622,9 @@ class UpperDirichlet(ChebyshevBase):
             trunc_array = self._get_truncarray(shape, V.dtype)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, trunc_array, V, U)
         else:
             self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
             self.backward = Transform(self.backward, xfftn_bck, V, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
@@ -1747,6 +1754,9 @@ class ShenBiPolar(ChebyshevBase):
         return self.forward.output_array
 
     def plan(self, shape, axis, dtype, options):
+        if shape in (0, (0,)):
+            return
+
         if isinstance(axis, tuple):
             assert len(axis) == 1
             axis = axis[-1]
@@ -1767,11 +1777,9 @@ class ShenBiPolar(ChebyshevBase):
             trunc_array = self._get_truncarray(shape, V.dtype)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, trunc_array, V, U)
         else:
             self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
             self.backward = Transform(self.backward, xfftn_bck, V, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
@@ -1965,6 +1973,9 @@ class DirichletNeumann(ChebyshevBase):
         return self.backward.output_array
 
     def plan(self, shape, axis, dtype, options):
+        if shape in (0, (0,)):
+            return
+
         if isinstance(axis, tuple):
             assert len(axis) == 1
             axis = axis[-1]
@@ -1985,11 +1996,9 @@ class DirichletNeumann(ChebyshevBase):
             trunc_array = self._get_truncarray(shape, V.dtype)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, trunc_array, V, U)
         else:
             self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
             self.backward = Transform(self.backward, xfftn_bck, V, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
@@ -2183,6 +2192,9 @@ class NeumannDirichlet(ChebyshevBase):
         return self.backward.output_array
 
     def plan(self, shape, axis, dtype, options):
+        if shape in (0, (0,)):
+            return
+
         if isinstance(axis, tuple):
             assert len(axis) == 1
             axis = axis[-1]
@@ -2203,11 +2215,9 @@ class NeumannDirichlet(ChebyshevBase):
             trunc_array = self._get_truncarray(shape, V.dtype)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, trunc_array, V, U)
         else:
             self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
             self.backward = Transform(self.backward, xfftn_bck, V, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, V, V, U)
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
@@ -2247,6 +2257,9 @@ class BCDirichlet(ChebyshevBase):
         self.plan(N, 0, np.float, {})
 
     def plan(self, shape, axis, dtype, options):
+        if shape in (0, (0,)):
+            return
+
         if isinstance(axis, tuple):
             assert len(axis) == 1
             axis = axis[-1]
@@ -2350,6 +2363,9 @@ class BCBiharmonic(ChebyshevBase):
         self.plan(N, 0, np.float, {})
 
     def plan(self, shape, axis, dtype, options):
+        if shape in (0, (0,)):
+            return
+
         if isinstance(axis, tuple):
             assert len(axis) == 1
             axis = axis[-1]

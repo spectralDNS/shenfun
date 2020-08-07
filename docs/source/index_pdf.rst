@@ -16,6 +16,7 @@ Demos
    :maxdepth: 1
 
    poisson
+   functions
    kleingordon
    poisson3d
    polarhelmholtz

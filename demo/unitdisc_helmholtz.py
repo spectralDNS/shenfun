@@ -50,8 +50,8 @@ f_hat = inner(v, fj, output_array=f_hat)
 if T.local_slice(True)[0].start == 0: # The processor that owns k=0
     f_hat[0] = 0
 
-# For m=0 we solve only a 1D equation. Do the scalar product fo Fourier coefficient 0 by hand (or sympy)
-# Since F0 only has one item, it is not sufficient to do a regular inner product.
+# For m=0 we solve only a 1D equation. Do the scalar product for Fourier coefficient 0 by hand (or sympy)
+# Since F0 only has one item, it is not sufficient to do a numerical inner product.
 if comm.Get_rank() == 0:
     f0_hat = Function(T0)
     gt = sp.lambdify(r, sp.integrate(f, (theta, 0, 2*sp.pi))/2/sp.pi)(L0.mesh())

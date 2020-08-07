@@ -265,13 +265,13 @@ class SpectralBase(object):
         self.quad = quad
         self.axis = 0
         self.bc = None
-        self.padding_factor = np.floor(N*padding_factor)/N
+        self.padding_factor = np.floor(N*padding_factor)/N if N > 0 else 1
         self.dealias_direct = dealias_direct
         self._mass = None         # Mass matrix (if needed)
+        self._dtype = dtype
         self._M = 1.0             # Normalization factor
         self._xfftn_fwd = None    # external forward transform function
         self._xfftn_bck = None    # external backward transform function
-        self.hi = np.ones(1, dtype=object)  # Integral measure (in addition to weight)
         coors = coordinates if coordinates is not None else ((sp.Symbol('x', real=True),),)*2
         self.coors = Coordinates(*coors)
         self.hi = self.coors.hi
@@ -296,6 +296,11 @@ class SpectralBase(object):
             weighted : bool, optional
                 Whether to use quadrature weights for a weighted inner product
                 (default), or a regular, non-weighted inner product.
+
+        Note
+        ----
+        The weight of the space is included in the returned quadrature weights.
+
         """
         raise NotImplementedError
 
@@ -360,10 +365,10 @@ class SpectralBase(object):
             Use uniform mesh
         """
         x = self.mesh(uniform=uniform)
-        psi = self.coors.coordinates[0]
+        psi = self.coors.psi
         xx = []
-        for rv in self.coors.coordinates[1]:
-            xx.append(sp.lambdify(psi, rv)(x))
+        for rvi in self.coors.rv:
+            xx.append(sp.lambdify(psi, rvi)(x))
         return xx
 
     def wavenumbers(self, bcast=True, **kw):
@@ -399,11 +404,10 @@ class SpectralBase(object):
         Example
         -------
         >>> import numpy as np
-        >>> from shenfun import Basis, TensorProductSpace
-        >>> from mpi4py import MPI
+        >>> from shenfun import Basis, TensorProductSpace, comm
         >>> K0 = FunctionSpace(8, 'F', dtype='D')
         >>> K1 = FunctionSpace(8, 'F', dtype='d')
-        >>> T = TensorProductSpace(MPI.COMM_WORLD, (K0, K1))
+        >>> T = TensorProductSpace(comm, (K0, K1))
         >>> x = np.arange(4)
         >>> y = K0.broadcast_to_ndims(x)
         >>> print(y.shape)
@@ -475,7 +479,7 @@ class SpectralBase(object):
             return output_array
         return self.forward.output_array
 
-    def backward(self, input_array=None, output_array=None, fast_transform=True):
+    def backward(self, input_array=None, output_array=None, fast_transform=True, kind='normal'):
         """Compute backward (inverse) transform
 
         Parameters
@@ -500,43 +504,20 @@ class SpectralBase(object):
         self._padding_backward(self.backward.input_array,
                                self.backward.tmp_array)
 
-        self.evaluate_expansion_all(self.backward.tmp_array,
-                                    self.backward.output_array,
-                                    fast_transform=fast_transform)
-
-        if output_array is not None:
-            output_array[...] = self.backward.output_array
-            return output_array
-        return self.backward.output_array
-
-    def backward_uniform(self, input_array=None, output_array=None):
-        """Evaluate function on uniform mesh
-
-        Parameters
-        ----------
-            input_array : array, optional
-                Expansion coefficients
-            output_array : array, optional
-                Function values on quadrature mesh
-
-        Note
-        ----
-        If input_array/output_array are not given, then use predefined arrays
-        as planned with self.plan
-
-        """
-        if self.family() == 'fourier': # Fourier is already using uniform mesh. Use fast transform.
-            return self.backward(input_array, output_array)
-
-        if input_array is not None:
-            self.backward.input_array[...] = input_array
-
-        self._padding_backward(self.backward.input_array,
-                               self.backward.tmp_array)
-
-        self.vandermonde_evaluate_expansion_all(self.backward.tmp_array,
-                                                self.backward.output_array,
-                                                x=self.mesh(bcast=False, map_true_domain=False, uniform=True))
+        if kind == 'normal':
+            self.evaluate_expansion_all(self.backward.tmp_array,
+                                        self.backward.output_array,
+                                        fast_transform=fast_transform)
+        else:
+            if kind == 'uniform':
+                mesh = self.mesh(bcast=False, map_true_domain=False, uniform=True)
+            else:
+                mesh = kind.mesh()
+                if len(kind) > 1:
+                    mesh = np.squeeze(mesh[self.axis])
+            self.vandermonde_evaluate_expansion_all(self.backward.tmp_array,
+                                                    self.backward.output_array,
+                                                    x=mesh)
 
         if output_array is not None:
             output_array[...] = self.backward.output_array
@@ -814,6 +795,9 @@ class SpectralBase(object):
             options : dict
                 Options for planning transforms
         """
+        if shape in (0, (0,)):
+            return
+
         if isinstance(axis, tuple):
             axis = axis[0]
 
@@ -880,11 +864,9 @@ class SpectralBase(object):
             trunc_array = self._get_truncarray(shape, V.dtype)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, trunc_array, V, U)
         else:
             self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
             self.backward = Transform(self.backward, xfftn_bck, V, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, xfftn_bck, V, V, U)
 
         # scalar_product is not padded, just the forward/backward
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
@@ -957,7 +939,7 @@ class SpectralBase(object):
             x = a + (x-c)/self.domain_factor()
         return x
 
-    def sympy_basis(self, i=0, x=None):
+    def sympy_basis(self, i=0, x=sp.Symbol('x', real=True)):
         """Return basis function `i` as sympy function
 
         Parameters
@@ -968,22 +950,23 @@ class SpectralBase(object):
         """
         raise NotImplementedError
 
-    def sympy_basis_all(self, x=None):
+    def sympy_basis_all(self, x=sp.Symbol('x', real=True)):
         """Return all basis functions as sympy functions"""
         return np.array([self.sympy_basis(i, x=x) for i in range(self.slice().start, self.slice().stop)])
 
-    def sympy_weight(self, x=None):
+    def weight(self, x=None):
+        """Weight of inner product space"""
         return 1
 
     def reference_domain(self):
-        """Return reference domain of basis"""
+        """Return reference domain of space"""
         raise NotImplementedError
 
     def sympy_reference_domain(self):
         return self.reference_domain()
 
     def slice(self):
-        """Return index set of current basis"""
+        """Return index set of current space"""
         return slice(0, self.N)
 
     def dim(self):
@@ -1022,13 +1005,15 @@ class SpectralBase(object):
 
     @property
     def dtype(self):
-        """Return datatype basis is planned for"""
-        return self.forward.input_array.dtype
+        """Return datatype function space is planned for"""
+        if hasattr(self.forward, 'input_array'):
+            return self.forward.input_array.dtype
+        return self._dtype
 
     @property
     def dimensions(self):
         """Return the dimensions (the number of bases) of the
-        :class:`.TensorProductSpace` class this basis is planned for.
+        :class:`.TensorProductSpace` class this space is planned for.
         """
         if self.tensorproductspace:
             return self.tensorproductspace.dimensions
@@ -1036,13 +1021,13 @@ class SpectralBase(object):
 
     @property
     def tensorproductspace(self):
-        """Return the last :class:`.TensorProductSpace` this basis has been
+        """Return the last :class:`.TensorProductSpace` this space has been
         planned for (if planned)
 
         Note
         ----
-        A basis may be part of several :class:`.TensorProductSpace`s, but they
-        all need to be of the same global shape.
+        A 1D function space may be part of several :class:`.TensorProductSpace`s,
+        but they all need to be of the same global shape.
         """
         return self._tensorproductspace
 
@@ -1070,16 +1055,16 @@ class SpectralBase(object):
 
     @property
     def rank(self):
-        """Return tensor rank of basis"""
+        """Return tensor rank of function space"""
         return 0
 
     @property
     def ndim(self):
-        """Return ndim of basis"""
+        """Return ndim of space"""
         return 1
 
     def num_components(self):
-        """Return number of components for basis"""
+        """Return number of components for function space"""
         return 1
 
     @staticmethod
@@ -1253,7 +1238,7 @@ class SpectralBase(object):
         Returns
         -------
         SpectralBase
-            The space to be used for dealiasing
+            Space not planned for a :class:`.TensorProductSpace`
         """
         return self.__class__(self.N,
                               quad=self.quad,
@@ -1262,6 +1247,49 @@ class SpectralBase(object):
                               padding_factor=self.padding_factor,
                               dealias_direct=self.dealias_direct,
                               coordinates=self.coors.coordinates)
+
+    def get_adaptive(self, fun=None, reltol=1e-12, abstol=1e-15):
+        """Return space (otherwise as self) with number of quadrature points
+        determined by fitting `fun`
+
+        Returns
+        -------
+        SpectralBase
+            A new space with adaptively found number of quadrature points
+        """
+        from shenfun import Function
+        assert isinstance(fun, sp.Expr)
+        assert self.N == 0
+        T = self.get_refined(5)
+        converged = False
+        count = 0
+        points = np.random.random(8)
+        points = T.domain[0] + points*(T.domain[1]-T.domain[0])
+        sym = fun.free_symbols
+        assert len(sym) == 1
+        x = sym.pop()
+        fx = sp.lambdify(x, fun)
+        while (not converged) and count < 12:
+            T = T.get_refined(int(1.7*T.N))
+            u = Function(T, buffer=fun)
+            res = T.eval(points, u)
+            exact = fx(points)
+            energy = np.linalg.norm(res-exact)
+            #print(T.N, energy)
+            converged = energy**2 < abstol
+            count += 1
+
+        # trim trailing zeros (if any)
+        trailing_zeros = T.count_trailing_zeros(u, reltol, abstol)
+        T = T.get_refined(T.N - trailing_zeros)
+        return T
+
+    def count_trailing_zeros(self, u, reltol=1e-12, abstol=1e-15):
+        assert u.function_space() == self
+        assert u.ndim == 1
+        a = abs(u[self.slice()])
+        ua = (a < reltol*a.max()) | (a < abstol)
+        return np.argmin(ua[::-1])
 
     def _truncation_forward(self, padded_array, trunc_array):
         if not id(trunc_array) == id(padded_array):

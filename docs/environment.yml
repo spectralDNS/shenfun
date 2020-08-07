@@ -5,6 +5,7 @@ channels:
   - defaults
 
 dependencies:
+  - pip
   - cython
   - fftw
   - numpy
@@ -13,5 +14,6 @@ dependencies:
   - mpi4py
   - mpi4py-fft
   - Sphinx==2.2.*
+  - nbsphinx
   - pip:
     - sphinxcontrib-bibtex
