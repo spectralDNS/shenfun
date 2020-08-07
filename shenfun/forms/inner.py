@@ -18,18 +18,23 @@ __all__ = ('inner',)
 
 def inner(expr0, expr1, output_array=None, level=0):
     r"""
-    Return (weighted) discrete inner product of linear or bilinear form
+    Return (weighted or unweighted) discrete inner product of kind
 
     .. math::
 
-        (f, g)_w^N = \sum_{i\in\mathcal{I}}f(x_i) \overline{g}(x_i) w_i \approx \int_{\Omega} g\, \overline{f}\, w\, dx
+        (f, g)_w^N = \sum_{i\in\mathcal{I}}f(x_i) \overline{g}(x_i) w_i \approx \int_{\Omega} f\, \overline{g}\, w\, dx
 
     where :math:`\mathcal{I}=0, 1, \ldots, N, N \in \mathbb{Z}^+`, :math:`f`
-    is an expression linear in a :class:`.TestFunction`, and :math:`g` is an
-    expression that is linear in :class:`.TrialFunction` or :class:`.Function`,
-    or it is simply an :class:`.Array` (a solution interpolated on the
+    is a number or an expression linear in a :class:`.TestFunction`,
+    and :math:`g` is an expression that is linear in :class:`.TrialFunction`
+    or :class:`.Function`, or it is simply an :class:`.Array` (a solution interpolated on the
     quadrature mesh in physical space). :math:`w` is a weight associated with
     chosen basis, and :math:`w_i` are quadrature weights.
+
+    Note
+    ----
+        If :math:`f` is a number (typically one) and :math:`g` an :class:`.Array`, then `inner`
+        represents an unweighted, regular integral over the domain.
 
     If the expressions are created in a multidimensional :class:`.TensorProductSpace`,
     then the sum above is over all dimensions. In 2D it becomes:
@@ -42,8 +47,7 @@ def inner(expr0, expr1, output_array=None, level=0):
 
     Parameters
     ----------
-    expr0, expr1 : :class:`.Expr`, :class:`.BasisFunction`, :class:`.Array`
-        or number.
+    expr0, expr1 : :class:`.Expr`, :class:`.BasisFunction`, :class:`.Array`, number
         Either one can be an expression involving a
         BasisFunction (:class:`.TestFunction`, :class:`.TrialFunction` or
         :class:`.Function`) an Array or a number. With expressions (Expr) on a
@@ -98,8 +102,8 @@ def inner(expr0, expr1, output_array=None, level=0):
     -------
     Compute mass matrix of Shen's Chebyshev Dirichlet basis:
 
-    >>> from shenfun import FunctionSpace
-    >>> from shenfun import TestFunction, TrialFunction
+    >>> from shenfun import FunctionSpace, TensorProductSpace
+    >>> from shenfun import TestFunction, TrialFunction, Array
     >>> SD = FunctionSpace(6, 'Chebyshev', bc=(0, 0))
     >>> u = TrialFunction(SD)
     >>> v = TestFunction(SD)
@@ -109,6 +113,13 @@ def inner(expr0, expr1, output_array=None, level=0):
     ...       2: np.array([-np.pi/2])}
     >>> [np.all(abs(B[k]-v) < 1e-7) for k, v in d.items()]
     [True, True, True]
+
+    # Compute unweighted integral
+    >>> F = FunctionSpace(10, 'F', domain=(0, 2*np.pi))
+    >>> T = TensorProductSpace(comm, (SD, F))
+    >>> area = inner(1, Array(T, val=1))
+    >>> print('Area of domain =', area)
+    Area of domain = 12.56637061435917
 
     """
     # Wrap a pure numpy array in Array
