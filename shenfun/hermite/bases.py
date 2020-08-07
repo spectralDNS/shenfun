@@ -170,6 +170,9 @@ class Orthogonal(SpectralBase):
         return V
 
     def plan(self, shape, axis, dtype, options):
+        if shape in (0, (0,)):
+            return
+
         if isinstance(axis, tuple):
             assert len(axis) == 1
             axis = axis[0]
@@ -188,11 +191,9 @@ class Orthogonal(SpectralBase):
             trunc_array = self._get_truncarray(shape, V.dtype)
             self.forward = Transform(self.forward, None, U, V, trunc_array)
             self.backward = Transform(self.backward, None, trunc_array, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, None, trunc_array, V, U)
         else:
             self.forward = Transform(self.forward, None, U, V, V)
             self.backward = Transform(self.backward, None, V, V, U)
-            self.backward_uniform = Transform(self.backward_uniform, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)

@@ -1,13 +1,11 @@
 import pytest
 import numpy as np
 import sympy as sp
-from mpi4py import MPI
 import shenfun
 from shenfun import inner, div, curl, grad, Function, \
     Array, project, Dx, TensorProductSpace, VectorTensorProductSpace, \
-    MixedTensorProductSpace, FunctionSpace
+    MixedTensorProductSpace, FunctionSpace, comm
 
-comm = MPI.COMM_WORLD
 # Set global size of the computational box
 M = 4
 N = [2**M, 2**M, 2**M]

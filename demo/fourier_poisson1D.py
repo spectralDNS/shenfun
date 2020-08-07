@@ -22,7 +22,7 @@ from shenfun import inner, grad, TestFunction, TrialFunction, FunctionSpace, Fun
     Array
 
 # Use sympy to compute a rhs, given an analytical solution
-x = Symbol("x")
+x = Symbol("x", real=True)
 ue = cos(4*x) + 1j*sin(6*x)
 #ue = cos(4*x)
 fe = ue.diff(x, 2)

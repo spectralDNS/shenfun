@@ -110,14 +110,16 @@ class FourierBase(SpectralBase):
         points = np.arange(N, dtype=np.float)*2*np.pi/N
         if map_true_domain is True:
             points = self.map_true_domain(points)
+        if weighted:
+            return points, np.array([1/N])
         return points, np.array([2*np.pi/N])
 
-    def sympy_basis(self, i=0, x=sp.symbols('x')):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         k = self.wavenumbers(False, False, False)
         return sp.exp(sp.I*k[i]*x)
 
-    def sympy_weight(self, x=sp.symbols('x')):
-        return 2*sp.pi/self.N
+    def weight(self, x=sp.symbols('x', real=True)):
+        return 1/(2*sp.pi)
 
     def evaluate_basis(self, x=None, i=0, output_array=None):
         if x is None:
@@ -204,37 +206,6 @@ class FourierBase(SpectralBase):
         output *= M
         assert input_array is self.scalar_product.xfftn.input_array
 
-    def vandermonde_scalar_product(self, input_array, output_array):
-        SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
-        output_array *= 0.5/np.pi
-
-    def get_measured_weights(self, N=None, measure=1):
-        """Return weights times `measure`
-
-        Parameters
-        ----------
-        N : integer, optional
-            The number of quadrature points
-        measure : None or `sympy.Expr`
-        """
-        if N is None:
-            N = self.N
-        xm, wj = self.mpmath_points_and_weights(N, map_true_domain=True)
-        if measure == 1:
-            return wj/(2*np.pi)
-
-        if isinstance(measure, Number):
-            return measure*wj/(2*np.pi)
-
-        s = measure.free_symbols
-        assert len(s) == 1
-        s = s.pop()
-        xj = sp.lambdify(s, measure)(xm)
-        if wj.shape[0] == 1:
-            wj = np.broadcast_to(wj, xj.shape).copy()
-        wj *= (xj/(2*np.pi))
-        return wj
-
     def reference_domain(self):
         return (0., 2*np.pi)
 
@@ -280,6 +251,9 @@ class FourierBase(SpectralBase):
         return u_hat
 
     def plan(self, shape, axis, dtype, options):
+        if shape in (0, (0,)):
+            return
+
         if isinstance(axis, int):
             axis = [axis]
         s = list(np.take(shape, axis))
@@ -344,12 +318,10 @@ class FourierBase(SpectralBase):
             trunc_array = self._get_truncarray(shape, V.dtype)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
-            self.backward_uniform = self.backward
 
         else:
             self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
             self.backward = Transform(self.backward, xfftn_bck, V, V, U)
-            self.backward_uniform = self.backward
 
         # scalar_product is not padded, just the forward/backward
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
@@ -638,6 +610,13 @@ class C2C(FourierBase):
         if forward_output:
             return self.N
         return int(np.floor(self.padding_factor*self.N))
+
+    def count_trailing_zeros(self, u, reltol=1e-12, abstol=1e-15):
+        assert u.function_space() == self
+        assert u.ndim == 1
+        a = abs(u[self.slice()])
+        ua = (a < reltol*a.max()) | (a < abstol)
+        return np.argmin(ua[self.N//2:]) + np.argmin(ua[:self.N//2][::-1])
 
     def _truncation_forward(self, padded_array, trunc_array):
         if not id(trunc_array) == id(padded_array):

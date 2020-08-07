@@ -131,6 +131,9 @@ class LaguerreBase(SpectralBase):
         return V
 
     def plan(self, shape, axis, dtype, options):
+        if shape in (0, (0,)):
+            return
+
         if isinstance(axis, tuple):
             assert len(axis) == 1
             axis = axis[0]
@@ -312,6 +315,9 @@ class ShenDirichlet(LaguerreBase):
         return output_array
 
     def plan(self, shape, axis, dtype, options):
+        if shape in (0, (0,)):
+            return
+
         if isinstance(axis, tuple):
             assert len(axis) == 1
             axis = axis[0]

@@ -1525,7 +1525,7 @@ def get_dense_matrix(test, trial, measure=1):
         As test, but representing matrix column.
     measure : Sympy expression of coordinate, or number, optional
         Additional weight to integral. For example, in cylindrical
-        coordinates an additional measure is the readius `r`.
+        coordinates an additional measure is the radius `r`.
     """
     N = test[0].N
     x = test[0].mpmath_points_and_weights(N, map_true_domain=False)[0]
@@ -1603,8 +1603,8 @@ def get_dense_matrix_sympy(test, trial, measure=1):
         else:
             assert isinstance(measure, Number)
 
-    if test[0].family() == 'fourier':
-        measure *= (1/(2*sp.pi))
+    # Weight of weighted space
+    measure *= test[0].weight()
 
     for i in range(test[0].slice().start, test[0].slice().stop):
         pi = np.conj(test[0].sympy_basis(i, x=x))
