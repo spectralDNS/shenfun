@@ -17,6 +17,7 @@ Demos
 
    poisson
    functions
+   surfaceintegration
    kleingordon
    poisson3d
    polarhelmholtz
