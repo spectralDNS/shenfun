@@ -41,10 +41,36 @@ def func(x):
 ===== Introduction =====
 
 A lesser known fact about "shenfun": "https://github.com/spectralDNS/shenfun" is
-that it can be used to perform regular integrals with
+that it can be used to perform regular, unweighted, integrals with
 spectral accuracy. With the newly added curvilinear coordinates
-we can now integrate over highly complex lines and surfaces
+we can now also integrate over highly complex lines and surfaces
 embedded in 3D space.
+
+To integrate over a domain in shenfun we use the
+"inner": "https://shenfun.readthedocs.io/en/latest/shenfun.forms.html#shenfun.forms.inner.inner"
+function, with a constant test function. For
+example, if we create some function space on the line from
+0 to 1, then we can get this length using `inner`
+
+!bc pycod
+from shenfun import *
+B = FunctionSpace(10, 'C', domain=(0, 1))
+length = inner(1, Array(B, val=1))
+print('Length of domain =', length)
+!ec
+
+Not very impressive, but the same goes for multidimensional
+tensor product domains
+
+!bc pycod
+F = FunctionSpace(10, 'F', domain=(0, 2*np.pi))
+T = TensorProductSpace(comm, (B, F))
+area = inner(1, Array(T, val=1))
+print('Area of domain =', area)
+!ec
+
+Still not very impressive, but moving to curvilinear coordinates
+it all starts to become more interesting.
 
 Consider a 3D function $f(x,y,z) \in \mathbb{R}^3$ and
 a 2D surface (not neccessarily plane) $S(u, v)$,
@@ -57,19 +83,19 @@ vector $\mathbf{r}$ can be used to parametrize $S$
 
 where $\mathbf{i}, \mathbf{j}, \mathbf{k}$ are the Cartesian unit vectors.
 The two new coordinates $u$ and $v$ are functions of $x, y, z$,
-and they each have a domain
+and they each have a one-dimensional domain
 
 !bt
 u \in D_u \quad v \in D_v.
 !et
 
-The exact domain depends on the problem at hand. The computational
-domain is $D=D_u \times D_v$.
+The exact size of the domain depends on the problem at hand. The computational
+domain of the surface $S$ is $D=D_u \times D_v$.
 
 A surface integral of $f$ over $S$ can now be written
 
 !bt
-\int_S f(x, y, z) d\Omega = \int_D f(x(u, v), y(u, v), z(u, v)) \left|\frac{\partial \mathbf{r}}{\partial u} \times \frac{\partial \mathbf{r}}{\partial v} \right| dudv
+\int_S f(x, y, z) dxdydz = \int_D f(x(u, v), y(u, v), z(u, v)) \left|\frac{\partial \mathbf{r}}{\partial u} \times \frac{\partial \mathbf{r}}{\partial v} \right| dudv
 !et
 
 With shenfun such integrals are trivial, even for highly complex
@@ -83,7 +109,7 @@ over the unit sphere. We use regular spherical coordinates,
 !bt
 \begin{align*}
 0 &\gt \theta \gt \pi \\
-0 &\gt \phi \gt \2 \pi \\
+0 &\gt \phi \gt 2\pi \\
 x(\theta, \phi) &= \sin \theta \cos \phi \\
 y(\theta, \phi) &= \sin theta \sin \phi \\
 z(\theta, \phi) &= \cos theta
@@ -94,7 +120,6 @@ The straight forward implementation of a function space for
 the unit sphere reads
 
 !bc pycod
-from shenfun import *
 import sympy as sp
 
 theta, phi = psi =sp.symbols('x,y', real=True, positive=True)
@@ -175,9 +200,9 @@ vector
 
 !bt
 \begin{align*}
-\mathbf{r} = (5 (1-\frac{v}{2 \pi}) \cos 2v \frac{1+\cos u}{4} + \cos 2v) \mathbf{i} \\
-  &+(5(1-\frac{v}{2 \pi) \sin 2v \frac{1+\cos u}{4} + \sin 2v) \mathbf{j},\\
-  &+(10 \frac{v}{2 \pi} + 5(1-\frac{v}{2 \pi}) \frac{\sin u}{4} + 15) \mathbf{k}
+\mathbf{r} &= \left(\left(\frac{5}{4}-\frac{5 v}{8 \pi}\right)  \cos 2v(1+\cos u) + \cos 2v \right) \mathbf{i} \\
+  &+\left(\left(\frac{5}{4}-\frac{5 v}{8 \pi}\right) \sin 2v (1+\cos u) + \sin 2v \right) \mathbf{j},\\
+  &+\left(\frac{10 v}{2 \pi} + \left(\frac{5}{4}-\frac{5 v}{8 \pi}\right) \sin u + 15\right) \mathbf{k}
 \end{align*}
 !et
 
@@ -196,8 +221,8 @@ rv = (5*(1-v/(2*sp.pi))*sp.cos(2*v)*(1+sp.cos(u))/4 + sp.cos(2*v),
       5*(1-v/(2*sp.pi))*sp.sin(2*v)*(1+sp.cos(u))/4 + sp.sin(2*v),
       10*v/(2*sp.pi) + 5*(1-v/(2*sp.pi))*sp.sin(u)/4 + 15)
 
-B0 = FunctionSpace(30, 'C', domain=(0, 2*np.pi))
-B1 = FunctionSpace(30, 'C', domain=(-2*np.pi, 2*np.pi))
+B0 = FunctionSpace(100, 'C', domain=(0, 2*np.pi))
+B1 = FunctionSpace(100, 'C', domain=(-2*np.pi, 2*np.pi))
 T = TensorProductSpace(comm, (B0, B1), coordinates=(psi, rv, sp.Q.positive(v-2*sp.pi)))
 
 f = rv[0]+rv[1]+rv[2]
@@ -206,18 +231,17 @@ I = inner(1, fb)
 print(I)
 !ec
 
-which agrees with chebfun's result. We can plot the
+which agrees very well with chebfun's result. We can plot the
 seashell using mayavi. Unfortunately mayavi is a little tricky
 to use with readthedocs, so instead of generating the plot
-with the code below, we link here instead to an image.
+with the code below, we link here instead to a previously
+generated image.
 
 !bc
 from mayavi import mlab
-T2 = T.get_refined(3*np.array(T.global_shape()))
-f2 = Array(T2, buffer=f)
-xx, yy, zz = T2.local_curvilinear_mesh()
+xx, yy, zz = T.local_curvilinear_mesh()
 mlab.figure(bgcolor=(1, 1, 1), size=(400, 400))
-mlab.mesh(xx, yy, zz, scalars=f2, colormap='jet')
+mlab.mesh(xx, yy, zz, scalars=fb, colormap='jet')
 mlab.show()
 !ec
 
