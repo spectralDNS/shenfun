@@ -108,11 +108,11 @@ over the unit sphere. We use regular spherical coordinates,
 
 !bt
 \begin{align*}
-0 &\gt \theta \gt \pi \\
-0 &\gt \phi \gt 2\pi \\
+0 &\ge \theta \ge \pi \\
+0 &\ge \phi \ge 2\pi \\
 x(\theta, \phi) &= \sin \theta \cos \phi \\
-y(\theta, \phi) &= \sin theta \sin \phi \\
-z(\theta, \phi) &= \cos theta
+y(\theta, \phi) &= \sin \theta \sin \phi \\
+z(\theta, \phi) &= \cos \theta
 \end{align*}
 !et
 
@@ -174,7 +174,7 @@ and the surface is defined by
 \mathbf{r} = u \cos v \mathbf{i} + u \sin v \mathbf{j} + v \mathbf{k}
 !et
 
-with $0 \gt u \gt 2, 0 \gt v 2\pi$.
+with $0 \ge u \ge 2, 0 \ge v \ge 2\pi$.
 
 The implementation is only a few lines, and we end by comparing
 to the exact solution $14 \pi /3$
@@ -206,7 +206,7 @@ vector
 \end{align*}
 !et
 
-for $0 \gt u \gt 2 \pi, -2 \pi \gt v \gt 2 \pi$.
+for $0 \ge u \ge 2 \pi, -2 \pi \ge v \ge 2 \pi$.
 
 The function $f$ is now defined as
 
