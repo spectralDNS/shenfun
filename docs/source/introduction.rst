@@ -116,6 +116,8 @@ Complete demonstration programs that solves the Poisson equation
 links
 
     * :ref:`Demo - 1D Poisson's equation`
+    * :ref:`Demo - Working with Functions`
+    * :ref:`Demo - Integration of functions`
     * :ref:`Demo - 3D Poisson's equation`
     * :ref:`Demo - Helmholtz equation in polar coordinates`
     * :ref:`Demo - Helmholtz equation on the unit sphere`

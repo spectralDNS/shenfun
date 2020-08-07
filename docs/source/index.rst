@@ -47,6 +47,7 @@ Document build status
 
    poisson
    functions
+   surfaceintegration
    kleingordon
    poisson3d
    polarhelmholtz

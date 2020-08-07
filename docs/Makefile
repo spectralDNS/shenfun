@@ -15,7 +15,8 @@ DEMO          = Poisson/poisson.rst \
 				KuramatoSivashinsky/kuramatosivashinsky.rst \
 				Stokes/stokes.rst DrivenCavity/drivencavity.rst \
 				RayleighBenard/rayleighbenard.rst \
-				Functions/functions.ipynb
+				Functions/functions.ipynb \
+				Integration/surfaceintegration.ipynb
 
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
