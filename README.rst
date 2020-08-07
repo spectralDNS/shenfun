@@ -41,6 +41,11 @@ For a more psychedelic experience, have a look at the `simulation <https://githu
     :target: https://youtu.be/odsIoHVcqek
     :alt: Ginzburg-Landau spherical coordinates 
     
+And for regular integration over complex surfaces, like the seashell below, see `the documentation <https://shenfun.readthedocs.io/en/latest/surfaceintegration.html>`_.
+
+.. image:: https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/seashell3.png
+    :alt: The surface of a seashell
+    
 Installation
 ------------
 
