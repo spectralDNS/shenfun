@@ -32,17 +32,17 @@ Poisson's equation is given as
 .. math::
    :label: eq:poisson
 
-
-        \nabla^2 u(x) = f(x) \quad \text{for }\, x \in [-1, 1],
-
+        
+        \nabla^2 u(x) = f(x) \quad \text{for }\, x \in [-1, 1], 
+        
 
 .. math::
    :label: _auto1
 
-
+          
         u(-1)=a, u(1)=b, \notag
-
-
+        
+        
 
 where :math:`u(x)` is the solution, :math:`f(x)` is a function and :math:`a, b` are two possibly
 non-zero constants.
@@ -54,9 +54,9 @@ And then we look for solutions like
 .. math::
    :label: eq:u
 
-
-        u(x) = \sum_{k=0}^{N-1} \hat{u}_k v_k(x),
-
+        
+        u(x) = \sum_{k=0}^{N-1} \hat{u}_k v_k(x), 
+        
 
 where :math:`N` is the size of the discretized problem,
 :math:`\hat{\mathbf{u}} = \{\hat{u}_k\}_{k=0}^{N-1}` are the unknown expansion
@@ -71,10 +71,10 @@ it is easiest to use basis functions with homogeneous Dirichlet boundary conditi
 .. math::
    :label: _auto2
 
-
+        
         v_k(x) = \phi_k(x) - \phi_{k+2}(x),
-
-
+        
+        
 
 for :math:`k=0, 1, \ldots N-3`. This gives the function space
 :math:`V^N_0 = \text{span}\{v_k(x)\}_{k=0}^{N-3}`.
@@ -83,18 +83,18 @@ We can then add two more linear basis functions (that belong to the kernel of Po
 .. math::
    :label: _auto3
 
-
-        v_{N-2} = \frac{1}{2}(\phi_0 - \phi_1),
-
-
+        
+        v_{N-2} = \frac{1}{2}(\phi_0 - \phi_1), 
+        
+        
 
 .. math::
    :label: _auto4
 
-
+          
         v_{N-1} = \frac{1}{2}(\phi_0 + \phi_1).
-
-
+        
+        
 
 which gives the inhomogeneous space :math:`V^N = \text{span}\{v_k\}_{k=0}^{N-1}`.
 With the two linear basis functions it is easy to see that the last two degrees
@@ -103,18 +103,18 @@ of freedom, :math:`\hat{u}_{N-2}` and :math:`\hat{u}_{N-1}`, now are given as
 .. math::
    :label: eq:dirichleta
 
-
+        
         u(-1) = \sum_{k=0}^{N-1} \hat{u}_k v_k(-1) = \hat{u}_{N-2} = a,
-
-
+         
+        
 
 .. math::
    :label: eq:dirichletb
 
-
+          
         u(+1) = \sum_{k=0}^{N-1} \hat{u}_k v_k(+1) = \hat{u}_{N-1} = b,
-
-
+        
+        
 
 and, as such, we only have to solve for :math:`\{\hat{u}_k\}_{k=0}^{N-3}`, just like
 for a problem with homogeneous boundary conditions (for homogeneous boundary condition
@@ -124,9 +124,9 @@ We now formulate a variational problem using the Galerkin method: Find :math:`u 
 .. math::
    :label: eq:varform
 
-
-        \int_{-1}^1 \nabla^2 u \, v \, w\, dx = \int_{-1}^1 f \, v\, w\, dx \quad \forall v \, \in \, V^N_0.
-
+        
+        \int_{-1}^1 \nabla^2 u \, v \, w\, dx = \int_{-1}^1 f \, v\, w\, dx \quad \forall v \, \in \, V^N_0. 
+        
 
 Note that since we only have :math:`N-3` unknowns we are only using the homogeneous test
 functions from :math:`V^N_0`.
@@ -137,10 +137,10 @@ common notation is
 .. math::
    :label: _auto5
 
-
+        
         \int_{-1}^1 u \, v \, w\, dx = \left( u, v\right)_w.
-
-
+        
+        
 
 The integral can either be computed exactly, or with quadrature. The advantage
 of the latter is that it is generally faster, and that non-linear terms may be
@@ -150,7 +150,7 @@ obtain
 
 .. math::
         \begin{align*}
-        \int_{-1}^1 u \, v \, w\, dx &\approx \left( u, v \right)_w^N, \\
+        \int_{-1}^1 u \, v \, w\, dx &\approx \left( u, v \right)_w^N, \\ 
         &\approx \sum_{j=0}^{N-1} u(x_j) v(x_j) w(x_j),
         \end{align*}
 
@@ -165,8 +165,8 @@ summation convention in step 2)
 
 .. math::
         \begin{align*}
-        \left( \nabla^2u, v \right)_w^N &= \left( \nabla^2\sum_{k=0}^{N-3}\hat{u}_k v_{k}, v_j \right)_w^N, \quad j=0,1,\ldots, N-3\\
-            &= \left(\nabla^2 v_{k}, v_j \right)_w^N \hat{u}_k, \\
+        \left( \nabla^2u, v \right)_w^N &= \left( \nabla^2\sum_{k=0}^{N-3}\hat{u}_k v_{k}, v_j \right)_w^N, \quad j=0,1,\ldots, N-3\\ 
+            &= \left(\nabla^2 v_{k}, v_j \right)_w^N \hat{u}_k, \\ 
             &= a_{jk} \hat{u}_k.
         \end{align*}
 
@@ -182,10 +182,10 @@ of :math:`u(x)` is given as
 .. math::
    :label: _auto6
 
-
+        
         A \hat{\mathbf{u}} = \tilde{\mathbf{f}}.
-
-
+        
+        
 
 Now, when the expansion coefficients :math:`\hat{\mathbf{u}}` are found by
 solving this linear system, they may be
@@ -207,9 +207,9 @@ conditions:
 .. math::
    :label: eq:u_e
 
-
-        u_e(x) = \sin(k\pi x)(1-x^2) + a(1-x)/2 + b(1+x)/2,
-
+        
+        u_e(x) = \sin(k\pi x)(1-x^2) + a(1-x)/2 + b(1+x)/2, 
+        
 
 where :math:`k` is an integer and :math:`a` and :math:`b` are constants. Now, feeding :math:`u_e` through
 the Laplace operator, we see that the last two linear terms disappear, whereas the
@@ -218,18 +218,18 @@ first term results in
 .. math::
    :label: _auto7
 
-
-         \nabla^2 u_e(x) = \frac{d^2 u_e}{dx^2},
-
-
+        
+         \nabla^2 u_e(x) = \frac{d^2 u_e}{dx^2},  
+        
+        
 
 .. math::
    :label: eq:solution
 
-
+          
                           = -4k \pi x \cos(k\pi x) - 2\sin(k\pi x) - k^2 \pi^2 (1 -
-        x^2) \sin(k \pi x).
-
+        x^2) \sin(k \pi x). 
+        
 
 Now, setting :math:`f_e(x) = \nabla^2 u_e(x)` and solving for :math:`\nabla^2 u(x) = f_e(x)`,
 we can compare the numerical solution :math:`u(x)` with the analytical solution :math:`u_e(x)`
@@ -247,7 +247,7 @@ plus some other helper modules, like `Numpy <https://numpy.org>`__ and `Sympy <h
 
 .. code-block:: python
 
-    from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
+    from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \ 
         project, Dx, Array, FunctionSpace
     import numpy as np
     from sympy import symbols, cos, sin, exp, lambdify
@@ -268,7 +268,7 @@ The exact solution :math:`u_e(x)` and the right hand side :math:`f_e(x)` are cre
     x = symbols("x")
     ue = sin(k*np.pi*x)*(1-x**2) + a*(1 - x)/2. + b*(1 + x)/2.
     fe = ue.diff(x, 2)
-
+    
 
 These solutions are now valid for a continuous domain. The next step is thus to
 discretize, using a discrete mesh :math:`\{x_j\}_{j=0}^{N-1}` and a finite number of
@@ -330,7 +330,7 @@ To this end we compute the :math:`L_2`-errornorm using the ``shenfun`` function
     u_hat = A.solve(f_hat)
     uj = SD.backward(u_hat)
     ue = Array(SD, buffer=ue)
-
+    
     print("Error=%2.16e" %(np.sqrt(dx((uj-ua)**2))))
     assert np.allclose(uj, ue)
 
@@ -357,7 +357,7 @@ with the `subprocess <https://docs.python.org/3/library/subprocess.html>`__ modu
 .. code-block:: python
 
     import subprocess
-
+    
     N = range(12, 50, 4)
     error = {}
     for basis in ('legendre', 'chebyshev'):
