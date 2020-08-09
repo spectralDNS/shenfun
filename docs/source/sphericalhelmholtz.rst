@@ -7,7 +7,11 @@ Demo - Helmholtz equation on the unit sphere
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
+<<<<<<< HEAD
 :Date: Aug 9, 2020
+=======
+:Date: Aug 7, 2020
+>>>>>>> 03ba55962b465612916ae3935e510b020f767c75
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the
 Helmholtz equation on a unit sphere, using spherical

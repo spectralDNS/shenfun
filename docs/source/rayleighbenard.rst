@@ -51,23 +51,23 @@ The governing equations solved in domain :math:`\Omega=[-1, 1]\times [0, 2\pi]` 
 .. math::
    :label: eq:momentum
 
-        
-            \frac{\partial \mathbf{u}}{\partial t} + (\mathbf{u} \cdot \nabla) \mathbf{u} = - \nabla p + \sqrt{\frac{Pr}{Ra}} \nabla^2 \mathbf{u}  + T \mathbf{i}, 
-        
+
+            \frac{\partial \mathbf{u}}{\partial t} + (\mathbf{u} \cdot \nabla) \mathbf{u} = - \nabla p + \sqrt{\frac{Pr}{Ra}} \nabla^2 \mathbf{u}  + T \mathbf{i},
+
 
 .. math::
    :label: eq:T
 
-          
-            \frac{\partial T}{\partial t} +\mathbf{u} \cdot \nabla T = \frac{1}{\sqrt{RaPr}} \nabla^2 T, 
-        
+
+            \frac{\partial T}{\partial t} +\mathbf{u} \cdot \nabla T = \frac{1}{\sqrt{RaPr}} \nabla^2 T,
+
 
 .. math::
    :label: eq:div
 
-          
-            \nabla \cdot \mathbf{u} = 0, 
-        
+
+            \nabla \cdot \mathbf{u} = 0,
+
 
 where :math:`\mathbf{u}(x, y, t) (= u\mathbf{i} + v\mathbf{j})` is the velocity vector, :math:`p(x, y, t)` is pressure, :math:`T(x, y, t)` is the temperature, and :math:`\mathbf{i}` and
 :math:`\mathbf{j}` are the unity vectors for the :math:`x` and :math:`y`-directions, respectively.
@@ -85,16 +85,16 @@ governing equations have been non-dimensionalized using the free-fall velocitysc
 The governing equations contain a non-trivial coupling between velocity, pressure and temperature.
 This coupling can be simplified by eliminating the pressure from the equation for the wall-normal velocity
 component :math:`u`. We accomplish this by taking the Laplace of the momentum equation in wall normal
-direction, using the pressure from the divergence of the momentum equation 
+direction, using the pressure from the divergence of the momentum equation
 :math:`\nabla^2 p = -\nabla \cdot \mathbf{H}+\partial T/\partial x`, where
 :math:`\mathbf{H} = (H_x, H_y) = (\mathbf{u} \cdot \nabla) \mathbf{u}`
 
 .. math::
    :label: eq:u
 
-        
-            \frac{\partial \nabla^2 {u}}{\partial t} = \frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y}  + \sqrt{\frac{Pr}{Ra}} \nabla^4 {u}  + \frac{\partial^2 T}{\partial y^2} . 
-        
+
+            \frac{\partial \nabla^2 {u}}{\partial t} = \frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y}  + \sqrt{\frac{Pr}{Ra}} \nabla^4 {u}  + \frac{\partial^2 T}{\partial y^2} .
+
 
 This equation is solved with :math:`u(\pm 1) = \partial u/\partial x(\pm 1) = 0`, where the latter follows from the
 divergence constraint. In summary, we now seem to have the following equations to solve:
@@ -102,30 +102,30 @@ divergence constraint. In summary, we now seem to have the following equations t
 .. math::
    :label: eq:u2
 
-        
-            \frac{\partial \nabla^2 {u}}{\partial t} = \frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y}  + \sqrt{\frac{Pr}{Ra}} \nabla^4 {u}  + \frac{\partial^2 T}{\partial y^2}, 
-        
+
+            \frac{\partial \nabla^2 {u}}{\partial t} = \frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y}  + \sqrt{\frac{Pr}{Ra}} \nabla^4 {u}  + \frac{\partial^2 T}{\partial y^2},
+
 
 .. math::
    :label: eq:v
 
-          
-            \frac{\partial v}{\partial t} + H_y = -  \frac{\partial p}{\partial y} + \sqrt{\frac{Pr}{Ra}} \nabla^2 v, 
-        
+
+            \frac{\partial v}{\partial t} + H_y = -  \frac{\partial p}{\partial y} + \sqrt{\frac{Pr}{Ra}} \nabla^2 v,
+
 
 .. math::
    :label: eq:T2
 
-          
-            \frac{\partial T}{\partial t} +\mathbf{u} \cdot \nabla T = \frac{1}{\sqrt{RaPr}} \nabla^2 T, 
-        
+
+            \frac{\partial T}{\partial t} +\mathbf{u} \cdot \nabla T = \frac{1}{\sqrt{RaPr}} \nabla^2 T,
+
 
 .. math::
    :label: eq:div2
 
-          
+
             \nabla \cdot \mathbf{u} = 0 .
-        
+
 
 However, we note that Eqs. :eq:`eq:u2` and :eq:`eq:T2` and :eq:`eq:div2` do not depend on pressure, and,
 apparently, on each time step we can solve :eq:`eq:u2` for :math:`u`, then :eq:`eq:div2` for :math:`v` and finally :eq:`eq:T2` for :math:`T`.
@@ -139,38 +139,38 @@ of degree less than or equal to N and introduce the following finite-dimensional
 .. math::
    :label: eq:VB
 
-        
-          V_N^B(x) = \{v \in P_N | v(\pm 1) = v´(\pm 1) = 0\},  
-        
+
+          V_N^B(x) = \{v \in P_N | v(\pm 1) = v´(\pm 1) = 0\},
+
 
 .. math::
    :label: eq:VD
 
-          
-          V_N^D(x) = \{v \in P_N | v(\pm 1) = 0\},  
-        
+
+          V_N^D(x) = \{v \in P_N | v(\pm 1) = 0\},
+
 
 .. math::
    :label: eq:VT
 
-          
-          V_N^T(x) = \{v \in P_N | v(-1) = 0, v(1) = 1\},  
-        
+
+          V_N^T(x) = \{v \in P_N | v(-1) = 0, v(1) = 1\},
+
 
 .. math::
    :label: eq:VW
 
-          
-          V_N^W(x) = \{v \in P_N\},  
-        
+
+          V_N^W(x) = \{v \in P_N\},
+
 
 .. math::
    :label: eq:VF
 
-          
-          V_M^F(y) = \{\exp(\imath l y) | l \in [-M/2, -M/2+1, \ldots M/2-1]\}. 
-        
-        
+
+          V_M^F(y) = \{\exp(\imath l y) | l \in [-M/2, -M/2+1, \ldots M/2-1]\}.
+
+
 
 Here :math:`\text{dim}(V_N^B) = N-4, \text{dim}(V_N^D) = \text{dim}(V_N^W) = N-2`, :math:`\text{dim}(V_N^T) = N`
 and :math:`\text{dim}(V_M^F)=M`. We note that
@@ -188,30 +188,30 @@ one-dimensional spaces in :eq:`eq:VB`-:eq:`eq:VF`
 .. math::
    :label: eq:WBF
 
-        
-          W_{BF} = V_N^B \otimes V_M^F,   
-        
+
+          W_{BF} = V_N^B \otimes V_M^F,
+
 
 .. math::
    :label: eq:WDF
 
-          
-          W_{DF} = V_N^D \otimes V_M^F,   
-        
+
+          W_{DF} = V_N^D \otimes V_M^F,
+
 
 .. math::
    :label: eq:WTF
 
-          
-          W_{TF} = V_N^T \otimes V_M^F,   
-        
+
+          W_{TF} = V_N^T \otimes V_M^F,
+
 
 .. math::
    :label: eq:WWF
 
-          
-          W_{WF} = V_N^W \otimes V_M^F. 
-        
+
+          W_{WF} = V_N^W \otimes V_M^F.
+
 
 Space :math:`W_{BF}` has 2D tensor product basis functions :math:`\phi_k^B(x) \exp (\imath l y)` and
 similar for the others. All in all
@@ -220,34 +220,34 @@ we get the following approximations for the unknowns
 .. math::
    :label: _auto1
 
-        
-            u_N(x, y, t) = \sum_{k \in \boldsymbol{k}_B} \sum_{l \in \boldsymbol{l}} \hat{u}_{kl}(t) \phi_k^B(x) \exp(\imath l y), 
-        
-        
+
+            u_N(x, y, t) = \sum_{k \in \boldsymbol{k}_B} \sum_{l \in \boldsymbol{l}} \hat{u}_{kl}(t) \phi_k^B(x) \exp(\imath l y),
+
+
 
 .. math::
    :label: _auto2
 
-          
-            v_N(x, y, t) = \sum_{k \in \boldsymbol{k}_D} \sum_{l \in \boldsymbol{l}} \hat{v}_{kl}(t) \phi_k^D(x) \exp(\imath l y), 
-        
-        
+
+            v_N(x, y, t) = \sum_{k \in \boldsymbol{k}_D} \sum_{l \in \boldsymbol{l}} \hat{v}_{kl}(t) \phi_k^D(x) \exp(\imath l y),
+
+
 
 .. math::
    :label: _auto3
 
-          
-            p_N(x, y, t) = \sum_{k \in \boldsymbol{k}_W} \sum_{l \in \boldsymbol{l}} \hat{p}_{kl}(t) \phi_k^W(x) \exp(\imath l y), 
-        
-        
+
+            p_N(x, y, t) = \sum_{k \in \boldsymbol{k}_W} \sum_{l \in \boldsymbol{l}} \hat{p}_{kl}(t) \phi_k^W(x) \exp(\imath l y),
+
+
 
 .. math::
    :label: _auto4
 
-          
+
             T_N(x, y, t) = \sum_{k \in \boldsymbol{k}_T} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl}(t) \phi_k^T(x) \exp(\imath l y),
-        
-        
+
+
 
 where :math:`\boldsymbol{k}_{x} = \{0, 1, \ldots \text{dim}(V_N^x)-1\}, \, \text{for} \, x\in(B, D, W, T)`
 and :math:`\boldsymbol{l} = \{-M/2, -M/2+1, \ldots, M/2-1\}`.
@@ -269,20 +269,20 @@ domain using test function :math:`q \in W_{DF}`
 .. math::
    :label: _auto5
 
-        
+
             \left < \frac{\partial u_N}{\partial x} + \frac{\partial v_N}{\partial y}, q \right > _w = 0.
-        
-        
+
+
 
 Here we are using the inner product notation
 
 .. math::
    :label: _auto6
 
-        
+
             \left < a, b \right > _w = \int_{-1}^1 \int_0^{2\pi} a \overline{b} dx_wdy_w \left(\approx \sum_{i}\sum_{j} a(x_i, y_j) \overline{b}(x_i, y_j) w(x_i) w(y_j)\right),
-        
-        
+
+
 
 where the exact form of the
 weighted scalar product depends on the chosen basis; Legendre has :math:`dx_w=dx`, Chebyshev
@@ -295,21 +295,21 @@ continuity equation becomes
 .. math::
    :label: eq:u4
 
-        
-          \int_{-1}^1 \int_{0}^{2\pi} \frac{\partial}{\partial x} \left(\sum_{k \in \boldsymbol{k}_B} \sum_{l \in \boldsymbol{l}} \hat{u}_{kl}(t) \phi_k^B(x) \exp(\imath l y) \right) \phi_m^D(x) \exp(-\imath n y) dx_w dy_w + \\ 
-          \int_{-1}^1 \int_{0}^{2\pi} \frac{\partial}{\partial y} \left(\sum_{k \in \boldsymbol{k}_D} \sum_{l \in \boldsymbol{l}} \hat{v}_{kl}(t) \phi_k^D(x) \exp(\imath l y) \right) \phi_m^D(x) \exp(-\imath n y) dx_w dy_w  = 0. 
-        
+
+          \int_{-1}^1 \int_{0}^{2\pi} \frac{\partial}{\partial x} \left(\sum_{k \in \boldsymbol{k}_B} \sum_{l \in \boldsymbol{l}} \hat{u}_{kl}(t) \phi_k^B(x) \exp(\imath l y) \right) \phi_m^D(x) \exp(-\imath n y) dx_w dy_w + \\
+          \int_{-1}^1 \int_{0}^{2\pi} \frac{\partial}{\partial y} \left(\sum_{k \in \boldsymbol{k}_D} \sum_{l \in \boldsymbol{l}} \hat{v}_{kl}(t) \phi_k^D(x) \exp(\imath l y) \right) \phi_m^D(x) \exp(-\imath n y) dx_w dy_w  = 0.
+
 
 The :math:`x` and :math:`y` domains are separable, so we can rewrite as
 
 .. math::
    :label: _auto7
 
-        
-            \sum_{k \in \boldsymbol{k}_B} \sum_{l \in \boldsymbol{l}} \int_{-1}^1 \frac{\partial \phi_k^B(x)}{\partial x}  \phi_m^D(x) dx_w \int_{0}^{2\pi} \exp(\imath l y) \exp(-\imath n y) dy_w \hat{u}_{kl} + \\ 
+
+            \sum_{k \in \boldsymbol{k}_B} \sum_{l \in \boldsymbol{l}} \int_{-1}^1 \frac{\partial \phi_k^B(x)}{\partial x}  \phi_m^D(x) dx_w \int_{0}^{2\pi} \exp(\imath l y) \exp(-\imath n y) dy_w \hat{u}_{kl} + \\
             \sum_{k \in \boldsymbol{k}_D} \sum_{l \in \boldsymbol{l}} \int_{-1}^1 \phi_k^D(x) \phi_m^D(x) dx_w   \int_{0}^{2\pi} \frac{\partial \exp(\imath l y)}{\partial y} \exp(-\imath n y) dy_w \hat{v}_{kl} = 0.
-        
-        
+
+
 
 Now perform some exact manipulations in the Fourier direction and introduce the
 1D inner product notation for the :math:`x`-direction
@@ -317,10 +317,10 @@ Now perform some exact manipulations in the Fourier direction and introduce the
 .. math::
    :label: _auto8
 
-        
+
             \left(a, b\right)_w = \int_{-1}^1 a(x) b(x) dx_w \left(\approx \sum_{j = 0}^{N-1} a(x_j)b(x_j) w(x_j)\right).
-        
-        
+
+
 
 By also simplifying the notation using summation of repeated indices,
 we get the following equation
@@ -328,21 +328,21 @@ we get the following equation
 .. math::
    :label: _auto9
 
-        
+
            \delta_{ln} \left(\frac{\partial \phi_k^B}{\partial x}, \phi_m^D \right)_w \hat{u}_{kl}
            + \imath l \delta_{ln} \left(\phi_k^D, \phi_m^D \right)_w \hat{v}_{kl}  = 0.
-        
-        
+
+
 
 Now :math:`l` must equal :math:`n` and we can simplify some more
 
 .. math::
    :label: eq:div3
 
-        
+
            \left(\frac{\partial \phi_k^B}{\partial x}, \phi_m^D \right)_w \hat{u}_{kl}
-           + \imath l \left(\phi_k^D, \phi_m^D \right)_w \hat{v}_{kl}  = 0. 
-        
+           + \imath l \left(\phi_k^D, \phi_m^D \right)_w \hat{v}_{kl}  = 0.
+
 
 We see that this equation can be solved for
 :math:`\hat{v}_{kl} \text{ for } (k, l) \in \boldsymbol{k}_D \times [1, 2, \ldots, M/2]`, but try with
@@ -355,19 +355,19 @@ Fourier coefficient 0, Eq. :eq:`eq:v` becomes
 .. math::
    :label: eq:vx
 
-        
-        \frac{\partial v}{\partial t} + N_y = \sqrt{\frac{Pr}{Ra}} \nabla^2 v. 
-        
+
+        \frac{\partial v}{\partial t} + N_y = \sqrt{\frac{Pr}{Ra}} \nabla^2 v.
+
 
 There is still one more revelation to be made from Eq. :eq:`eq:div3`. When :math:`l=0` we get
 
 .. math::
    :label: _auto10
 
-        
+
             \left(\frac{\partial \phi_k^B}{\partial x}, \phi_m^D \right)_w \hat{u}_{k,0} = 0,
-        
-        
+
+
 
 and the only way to satisfy this is if :math:`\hat{u}_{k,0}=0` for :math:`k\in\boldsymbol{k}_B`. Bottom line is
 that we only need to solve Eq. :eq:`eq:u2` for :math:`l \in \boldsymbol{l}/\{0\}`, whereas we can use
@@ -375,14 +375,14 @@ directly :math:`\hat{u}_{k,0}=0 \text{ for } k \in \boldsymbol{k}_B`.
 
 To sum up, with the solution known at :math:`t = t - \Delta t`, we solve
 
-================  ===========================  ===================================================================  
-    Equation              For unknown                                      With indices                             
-================  ===========================  ===================================================================  
- :eq:`eq:u2`       :math:`\hat{u}_{kl}(t)`      :math:`(k, l) \in \boldsymbol{k}_B \times \boldsymbol{l}/\{0\}`  
-:eq:`eq:div2`      :math:`\hat{v}_{kl}(t)`      :math:`(k, l) \in \boldsymbol{k}_D \times \boldsymbol{l}/\{0\}`  
- :eq:`eq:vx`       :math:`\hat{v}_{kl}(t)`              :math:`(k, l) \in \boldsymbol{k}_D \times \{0\}`         
- :eq:`eq:T2`       :math:`\hat{T}_{kl}(t)`         :math:`(k, l) \in \boldsymbol{k}_T \times \boldsymbol{l}`     
-================  ===========================  ===================================================================  
+================  ===========================  ===================================================================
+    Equation              For unknown                                      With indices
+================  ===========================  ===================================================================
+ :eq:`eq:u2`       :math:`\hat{u}_{kl}(t)`      :math:`(k, l) \in \boldsymbol{k}_B \times \boldsymbol{l}/\{0\}`
+:eq:`eq:div2`      :math:`\hat{v}_{kl}(t)`      :math:`(k, l) \in \boldsymbol{k}_D \times \boldsymbol{l}/\{0\}`
+ :eq:`eq:vx`       :math:`\hat{v}_{kl}(t)`              :math:`(k, l) \in \boldsymbol{k}_D \times \{0\}`
+ :eq:`eq:T2`       :math:`\hat{T}_{kl}(t)`         :math:`(k, l) \in \boldsymbol{k}_T \times \boldsymbol{l}`
+================  ===========================  ===================================================================
 
 Temporal discretization
 =======================
@@ -393,9 +393,9 @@ This method applies to any generic equation
 .. math::
    :label: eq:genericpsi
 
-        
+
          \frac{\partial \psi}{\partial t} = \mathcal{N} + \mathcal{L}\psi ,
-        
+
 
 where :math:`\mathcal{N}` and :math:`\mathcal{L}` represents the nonlinear and linear contributions, respectively.
 With time discretized as :math:`t_n = n \Delta t, \, n = 0, 1, 2, ...`, the
@@ -408,10 +408,10 @@ is then integrated from stage :math:`k` to :math:`k+1` according to
 .. math::
    :label: _auto11
 
-        
+
             \psi^{k+1} = \psi^k + a_k \mathcal{N}^k + b_k \mathcal{N}^{k-1} + \frac{a_k+b_k}{2}\mathcal{L}(\psi^{k+1}+\psi^{k}),
-        
-        
+
+
 
 which should be rearranged with the unknowns on the left hand side and the
 knowns on the right hand side
@@ -419,19 +419,19 @@ knowns on the right hand side
 .. math::
    :label: eq:rk3stages
 
-        
-            \big(1-\frac{a_k+b_k}{2}\mathcal{L}\big)\psi^{k+1} = \big(1 + \frac{a_k+b_k}{2}\mathcal{L}\big)\psi^{k} + a_k \mathcal{N}^k + b_k \mathcal{N}^{k-1}. 
-        
+
+            \big(1-\frac{a_k+b_k}{2}\mathcal{L}\big)\psi^{k+1} = \big(1 + \frac{a_k+b_k}{2}\mathcal{L}\big)\psi^{k} + a_k \mathcal{N}^k + b_k \mathcal{N}^{k-1}.
+
 
 For the three-stage third order Runge Kutta method the constants are given as
 
-====================  ====================  ======================  
-:math:`a_n/\Delta t`  :math:`b_n/\Delta t`  :math:`c_n / \Delta t`  
-====================  ====================  ======================  
-        8/15                   0                      0             
-        5/12                 −17/60                  8/15           
-        3/4                  −5/12                   2/3            
-====================  ====================  ======================  
+====================  ====================  ======================
+:math:`a_n/\Delta t`  :math:`b_n/\Delta t`  :math:`c_n / \Delta t`
+====================  ====================  ======================
+        8/15                   0                      0
+        5/12                 −17/60                  8/15
+        3/4                  −5/12                   2/3
+====================  ====================  ======================
 
 For the spectral Galerkin method used by ``shenfun`` the governing equation
 is first put in a weak variational form. This will change the appearence of
@@ -443,9 +443,9 @@ integrating (with weights) over the domain
 .. math::
    :label: eq:rk3stagesvar
 
-        
-            \Big < (1-\frac{a_k+b_k}{2}\mathcal{L})\psi^{k+1}, \phi \Big > _w = \Big < (1 + \frac{a_k+b_k}{2}\mathcal{L})\psi^{k}, \phi\Big > _w + \Big < a_k \mathcal{N}^k + b_k \mathcal{N}^{k-1}, \phi \Big > _w. 
-        
+
+            \Big < (1-\frac{a_k+b_k}{2}\mathcal{L})\psi^{k+1}, \phi \Big > _w = \Big < (1 + \frac{a_k+b_k}{2}\mathcal{L})\psi^{k}, \phi\Big > _w + \Big < a_k \mathcal{N}^k + b_k \mathcal{N}^{k-1}, \phi \Big > _w.
+
 
 Equation :eq:`eq:rk3stagesvar` is the variational form implemented by ``shenfun`` for the
 time dependent equations.
@@ -463,7 +463,7 @@ but the former is known to be faster due to the existence of fast transforms.
 .. code-block:: python
 
     from shenfun import *
-    
+
     N, M = 100, 256
     family = 'Chebyshev'
     VB = FunctionSpace(N, family, bc='Biharmonic')
@@ -499,7 +499,7 @@ We also need containers for the computed solutions. These are created as
     T_1 = Function(W_TF)   # Temperature, previous step
     H_  = Function(DD)     # Convection vector
     H_1 = Function(DD)     # Convection vector previous stage
-    
+
     # Need a container for the computed right hand side vector
     rhs_u = Function(DD).v
     rhs_T = Function(DD).v
@@ -521,14 +521,14 @@ some model constants
     a = (8./15., 5./12., 3./4.)
     b = (0.0, -17./60., -5./12.)
     c = (0., 8./15., 2./3., 1)
-    
+
     # Specify viscosity and time step size using dimensionless Ra and Pr
     Ra = 10000
     Pr = 0.7
     nu = np.sqrt(Pr/Ra)
     kappa = 1./np.sqrt(Pr*Ra)
     dt = 0.1
-    
+
     # Get one solver for each stage of the RK3
     solver = []
     for rk in range(3):
@@ -573,7 +573,7 @@ The velocity is simply transformed backwards.
 
     # Get a mask for setting Nyquist frequency to zero
     mask = W_DF.get_mask_nyquist()
-    
+
     def compute_convection(u, H):
         curl = project(Dx(u[1], 0, 1) - Dx(u[0], 1, 1), W_TF).backward()
         ub = u.backward()
@@ -600,7 +600,7 @@ and all of the right hand side, using the function ``compute_rhs_u``
         rhs[0] = w0+w1
         rhs.mask_nyquist(mask)
         return rhs
-    
+
 
 Note that we will only use ``rhs`` as a container, so it does not actually matter
 which space it has here. We're using ``.v`` to only access the Numpy array view of the Function.
@@ -628,14 +628,14 @@ each RK stage.
     for rk in range(3):
         mats0 = inner(v0, 2./(nu*(a[rk]+b[rk])*dt)*u0 - div(grad(u0)))
         solver0.append(chebyshev.la.Helmholtz(*mats0))
-    
+
     # Allocate work arrays and variables
     u00 = Function(VD)
     b0 = np.zeros((2,)+u00.shape)
     w00 = np.zeros_like(u00)
     dudx_hat = Function(W_DF)
     K = W_BF.local_wavenumbers(scaled=True)[1]
-    
+
     def compute_v(u, rk):
         if comm.Get_rank() == 0:
             u00[:] = u_[1, :, 0].real
@@ -643,7 +643,7 @@ each RK stage.
         with np.errstate(divide='ignore'):
             dudx_hat = 1j * dudx_hat / K
         u[1] = B_DD.solve(dudx_hat, u=u[1])
-    
+
         # Still have to compute for wavenumber = 0
         if comm.Get_rank() == 0:
             b0[1] = inner(v0, 2./(nu*(a[rk]+b[rj])*dt)*Expr(u00) + div(grad(u00)))
@@ -667,70 +667,70 @@ basis of the function space
 .. math::
    :label: _auto12
 
-        
-            \phi^D_{N-2} = 0.5(1+x), 
-        
-        
+
+            \phi^D_{N-2} = 0.5(1+x),
+
+
 
 .. math::
    :label: _auto13
 
-          
+
             \phi^D_{N-1} = 0.5(1-x),
-        
-        
+
+
 
 with the approximation now becoming
 
 .. math::
    :label: _auto14
 
-        
-            T_N(x, y, t) = \sum_{k=0}^{N-1} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl} \phi^D_k(x)\exp(\imath l y), 
-        
-        
+
+            T_N(x, y, t) = \sum_{k=0}^{N-1} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl} \phi^D_k(x)\exp(\imath l y),
+
+
 
 .. math::
    :label: _auto15
 
-          
+
                          = \sum_{k=0}^{N-3} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl} \phi^D_k(x)\exp(\imath l y) + \sum_{k=N-2}^{N-1} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl} \phi^D_k(x)\exp(\imath l y).
-        
-        
+
+
 
 The boundary condition requires
 
 .. math::
    :label: _auto16
 
-        
-        T_N(1, y, t) = \sum_{k=N-2}^{N-1} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl} \phi^D_k(1)\exp(\imath l y), 
-        
-        
+
+        T_N(1, y, t) = \sum_{k=N-2}^{N-1} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl} \phi^D_k(1)\exp(\imath l y),
+
+
 
 .. math::
    :label: eq:TN0
 
-          
-                     = \sum_{l \in \boldsymbol{l}} \hat{T}_{N-2, l} \exp(\imath l y), 
-        
+
+                     = \sum_{l \in \boldsymbol{l}} \hat{T}_{N-2, l} \exp(\imath l y),
+
 
 and
 
 .. math::
    :label: _auto17
 
-        
-        T_N(-1, y, t) = \sum_{k=N-2}^{N-1} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl} \phi^D_k(-1)\exp(\imath l y), 
-        
-        
+
+        T_N(-1, y, t) = \sum_{k=N-2}^{N-1} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl} \phi^D_k(-1)\exp(\imath l y),
+
+
 
 .. math::
    :label: eq:TN1
 
-          
-                      = \sum_{l \in \boldsymbol{l}} \hat{T}_{N-1, l} \exp(\imath l y). 
-        
+
+                      = \sum_{l \in \boldsymbol{l}} \hat{T}_{N-1, l} \exp(\imath l y).
+
 
 We find :math:`\hat{T}_{N-2, l}` and :math:`\hat{T}_{N-1, l}` using orthogonality. Multiply :eq:`eq:TN0` and
 :eq:`eq:TN1` by :math:`\exp(-\imath m y)` and integrate over the domain :math:`[0, 2\pi]`. We get
@@ -738,18 +738,18 @@ We find :math:`\hat{T}_{N-2, l}` and :math:`\hat{T}_{N-1, l}` using orthogonalit
 .. math::
    :label: _auto18
 
-        
-            \hat{T}_{N-2, l} = \int_{0}^{2\pi} T_N(1, y, t) \exp(-\imath l y) dy, 
-        
-        
+
+            \hat{T}_{N-2, l} = \int_{0}^{2\pi} T_N(1, y, t) \exp(-\imath l y) dy,
+
+
 
 .. math::
    :label: _auto19
 
-          
+
             \hat{T}_{N-1, l} = \int_{0}^{2\pi} T_N(-1, y, t) \exp(-\imath l y) dy.
-        
-        
+
+
 
 Using this approach it is easy to see that any inhomogeneous function :math:`T_N(\pm 1, y, t)`
 of :math:`y` and :math:`t` can be used for the boundary condition, and not just a constant.
@@ -780,18 +780,18 @@ we will have
 .. math::
    :label: _auto20
 
-        
-            \left(u, v \right)_w = \left( \sum_{k=0}^{N-1} \hat{T}_k \phi^D_k(x), \phi^D_m \right)_w, 
-        
-        
+
+            \left(u, v \right)_w = \left( \sum_{k=0}^{N-1} \hat{T}_k \phi^D_k(x), \phi^D_m \right)_w,
+
+
 
 .. math::
    :label: _auto21
 
-          
+
                                  = \sum_{k=0}^{N-3} \left(\phi^D_k(x), \phi^D_m \right)_w \hat{T}_k + \sum_{k=N-2}^{N-1} \left( \phi^D_k(x), \phi^D_m \right)_w \hat{T}_k,
-        
-        
+
+
 
 where the first term on the right hand side is the regular mass matrix for a
 homogeneous boundary condition, whereas the second term is due to the non-homogeneous.
@@ -849,7 +849,7 @@ loop that integrates the solution forward in time.
     T_b[:] = 0.5*(1-X[0]) + 0.001*np.random.randn(*T_b.shape)*(1-X[0])*(1+X[0])
     T_ = T_b.forward(T_)
     T_.mask_nyquist(mask)
-    
+
     def solve(t=0, tstep=0, end_time=1000):
         while t < end_time-1e-8:
             for rk in range(3):
@@ -862,7 +862,7 @@ loop that integrates the solution forward in time.
                 rhs_T = compute_rhs_T(u_, T_, rhs_T, rk)
                 T_ = solverT[rk](T_, rhs_T[1])
                 T_.mask_nyquist(mask)
-    
+
             t += dt
             tstep += 1
 

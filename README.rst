@@ -45,7 +45,6 @@ And for regular integration over complex surfaces, like the seashell below, see 
 
 .. image:: https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/seashell3.png
     :alt: The surface of a seashell
-
 Installation
 ------------
 

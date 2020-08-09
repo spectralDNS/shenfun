@@ -31,17 +31,17 @@ The Helmholtz equation is given as
 .. math::
    :label: eq:helmholtz
 
-        
-        -\nabla^2 u(\boldsymbol{x}) + \alpha u(\boldsymbol{x}) = f(\boldsymbol{x}) \quad \text{for }\, \boldsymbol{x}=(x, y) \in \Omega, 
-        
+
+        -\nabla^2 u(\boldsymbol{x}) + \alpha u(\boldsymbol{x}) = f(\boldsymbol{x}) \quad \text{for }\, \boldsymbol{x}=(x, y) \in \Omega,
+
 
 .. math::
    :label: _auto1
 
-          
+
         u =0 \text{ on } \partial \Omega,
-        
-        
+
+
 
 where :math:`u(\boldsymbol{x})` is the solution, :math:`f(\boldsymbol{x})` is a function and :math:`\alpha` a constant.
 The domain is a circular disc :math:`\Omega = \{(x, y): x^2+y^2 < a^2\}` with radius :math:`a`.
@@ -50,18 +50,18 @@ We use polar coordinates :math:`(\theta, r)`, defined as
 .. math::
    :label: _auto2
 
-        
-         x = r \cos \theta, 
-        
-        
+
+         x = r \cos \theta,
+
+
 
 .. math::
    :label: _auto3
 
-          
+
          y = r \sin \theta,
-        
-        
+
+
 
 which leads to a Cartesian product mesh :math:`(\theta, r) \in [0, 2\pi) \times [0, a]`
 suitable for numerical implementations. Note that the
@@ -83,30 +83,30 @@ azimuthal direction. The polar basis functions are as such
 .. math::
    :label: _auto4
 
-        
+
         v_{kj}(\theta, r) = \exp(\imath k \theta) \psi_j(r),
-        
-        
+
+
 
 and we look for solutions
 
 .. math::
    :label: _auto5
 
-        
+
         u(\theta, r) = \sum_{k} \sum_{j} \hat{u}_{kj} v_{kj}(\theta, r).
-        
-        
+
+
 
 A discrete Fourier approximation space with :math:`N` basis functions is then
 
 .. math::
    :label: _auto6
 
-        
+
         V_F^N = \text{span} \{\exp(\imath k \theta)\}, \text{ for } k \in K,
-        
-        
+
+
 
 where :math:`K = \{-N/2, -N/2+1, \ldots, N/2-1\}`. Since the solution :math:`u(\theta, r)`
 is real, there is Hermitian symmetry and :math:`\hat{u}_{k,j} = \hat{u}_{k,-j}^*`
@@ -121,10 +121,10 @@ condition (pole condition) that needs to be applied at the center of the disc :m
 .. math::
    :label: _auto7
 
-        
+
         \frac{\partial u(\theta, 0)}{\partial \theta} = 0.
-        
-        
+
+
 
 To apply this condition we split the solution into Fourier
 coefficients with wavenumber 0 and :math:`K\backslash \{0\}`,
@@ -134,10 +134,10 @@ simply 1
 .. math::
    :label: _auto8
 
-        
+
         u(\theta, r) = \sum_{j} \left( \hat{u}_{0j} \psi_{j}(r) + \sum_{k=1}^{N/2} \hat{u}_{kj} \exp(\imath k \theta) \psi_j(r) \right).
-        
-        
+
+
 
 We then apply a different radial basis for the two :math:`\psi`'s in
 the above equation (renaming the first :math:`\overline{\psi}`)
@@ -145,10 +145,10 @@ the above equation (renaming the first :math:`\overline{\psi}`)
 .. math::
    :label: _auto9
 
-        
+
         u(\theta, r) = \sum_{j} \left( \hat{u}_{0j} \overline{\psi}_{j}(r) + \sum_{k=1}^{N/2} \hat{u}_{kj} \exp(\imath k \theta) \psi_j(r) \right).
-        
-        
+
+
 
 Note that the first term :math:`\sum_{j} \hat{u}_{0j} \overline{\psi}_{j}(r)` is independent
 of :math:`\theta`. Now, to enforce conditions
@@ -156,18 +156,18 @@ of :math:`\theta`. Now, to enforce conditions
 .. math::
    :label: _auto10
 
-        
-        u(\theta, a) = 0, 
-        
-        
+
+        u(\theta, a) = 0,
+
+
 
 .. math::
    :label: _auto11
 
-          
+
         \frac{\partial u(\theta, 0)}{\partial \theta} = 0,
-        
-        
+
+
 
 it is sufficient for the two bases (:math:`\overline{\psi}` and :math:`\psi`) to
 satisfy
@@ -175,26 +175,26 @@ satisfy
 .. math::
    :label: _auto12
 
-        
-        \overline{\psi}_j(a) = 0, 
-        
-        
+
+        \overline{\psi}_j(a) = 0,
+
+
 
 .. math::
    :label: _auto13
 
-          
+
         \psi_j(a) = 0,
-        
-        
+
+
 
 .. math::
    :label: _auto14
 
-          
+
         \psi_j(0) = 0.
-        
-        
+
+
 
 Bases that satisfy these conditions can be found both with Legendre and
 Chebyshev polynomials.
@@ -204,89 +204,89 @@ Chebyshev polynomial of the first kind :math:`T_j(x)`, we can have
 .. math::
    :label: _auto15
 
-        
-        \overline{\psi}_j(r) = \phi_j(2r/a-1) - \phi_{j+1}(2r/a-1), \text{ for } j \in 0, 1, \ldots N-1, 
-        
-        
+
+        \overline{\psi}_j(r) = \phi_j(2r/a-1) - \phi_{j+1}(2r/a-1), \text{ for } j \in 0, 1, \ldots N-1,
+
+
 
 .. math::
    :label: eq:psi
 
-          
+
         \psi_j(r) = \phi_j(2r/a-1) - \phi_{j+2}(2r/a-1), \text{ for } j \in 0, 1, \ldots N-2.
-        
-        
+
+
 
 Define the following approximation spaces for the radial direction
 
 .. math::
    :label: _auto16
 
-        
-        V_D^N = \text{span} \{\psi_j\}_{j=0}^{N-3} 
-        
-        
+
+        V_D^N = \text{span} \{\psi_j\}_{j=0}^{N-3}
+
+
 
 .. math::
    :label: _auto17
 
-          
-        V_U^N = \text{span} \{\overline{\psi}_j\}_{j=0}^{N-2} 
-        
-        
+
+        V_U^N = \text{span} \{\overline{\psi}_j\}_{j=0}^{N-2}
+
+
 
 .. math::
    :label: _auto18
 
-          
-        
-        
+
+
+
 
 and split the function space for the azimuthal direction into
 
 .. math::
    :label: _auto19
 
-        
-        V_F^0 =  \text{span}\{1\}, 
-        
-        
+
+        V_F^0 =  \text{span}\{1\},
+
+
 
 .. math::
    :label: _auto20
 
-          
+
         V_F^{1} = \text{span} \{\exp(\imath k \theta)\}, \text{ for } k \in K \backslash \{0\}.
-        
-        
+
+
 
 We then look for solutions
 
 .. math::
    :label: _auto21
 
-        
+
         u(\theta, r) = u^0(r) + u^1(\theta, r),
-        
-        
+
+
 
 where
 
 .. math::
    :label: _auto22
 
-        
-        u^0(r) = \sum_{j=0}^{N-2} \hat{u}^0_j \overline{\psi}_j(r), 
-        
-        
+
+        u^0(r) = \sum_{j=0}^{N-2} \hat{u}^0_j \overline{\psi}_j(r),
+
+
 
 .. math::
    :label: _auto23
 
-          
+
         u^1(\theta, r) = \sum_{j=0}^{N-3}\sum_{k=1}^{N/2} \hat{u}^1_{kj} \exp(\imath k \theta) \psi_j(r) .
-        
-        
+
+
 
 As such the Helmholtz problem is split in two smaller problems.
 The two problems read with the spectral Galerkin method:
@@ -296,20 +296,20 @@ Find :math:`u^0 \in V_F^0 \otimes V_U^N` such that
 .. math::
    :label: eq:u0
 
-           
+
            \int_{\Omega} (-\nabla^2 u^0 + \alpha u^0) v^0 w d\sigma = \int_{\Omega} f v^0 w d\sigma, \quad \forall \, v^0 \in V_F^0 \otimes V_U^N.
-        
-           
+
+
 
 Find :math:`u^1 \in V_F^1 \otimes V_D^N` such that
 
 .. math::
    :label: eq:u1
 
-           
+
            \int_{\Omega} (-\nabla^2 u^1 + \alpha u^1) v^1 w d\sigma = \int_{\Omega} f v^1 w d\sigma, \quad \forall \, v^1 \in V_F^1 \otimes V_D^N.
-        
-           
+
+
 
 Note that integration over the domain is done using
 polar coordinates with an integral measure of :math:`d\sigma=rdrd\theta`.
@@ -334,7 +334,7 @@ polar coordinates.
 
     from shenfun import *
     import sympy as sp
-    
+
     # Define polar coordinates using angle along first axis and radius second
     theta, r = psi = sp.symbols('x,y', real=True, positive=True)
     rv = (r*sp.cos(theta), r*sp.sin(theta)) # Map to Cartesian (x, y)
@@ -390,7 +390,7 @@ is remarkably similar to the mathematics.
     u = TrialFunction(T)
     v0 = TestFunction(T0)
     u0 = TrialFunction(T0)
-    
+
     mats = inner(v, -div(grad(u))+alpha*u)
     if comm.Get_rank() == 0:
         mats0 = inner(v0, -div(grad(u0))+alpha*u0)
@@ -410,16 +410,16 @@ and then compute ``f`` exactly using exact differentiation
     alpha = 2
     ue = (r*(1-r))**2*sp.cos(8*theta)-0.1*(r-1)
     f = -ue.diff(r, 2) - (1/r)*ue.diff(r, 1) - (1/r**2)*ue.diff(theta, 2) + alpha*ue
-    
+
     # Compute the right hand side on the quadrature mesh
     fj = Array(T, buffer=f)
-    
+
     # Take scalar product
     f_hat = Function(T)
     f_hat = inner(v, fj, output_array=f_hat)
     if T.local_slice(True)[0].start == 0: # The processor that owns k=0
         f_hat[0] = 0
-    
+
     # For k=0 we solve only a 1D equation. Do the scalar product for Fourier
     # coefficient 0 by hand (or sympy).
     if comm.Get_rank() == 0:
@@ -439,7 +439,7 @@ linear system of equations
     u_hat = Function(T)
     Sol1 = SolverGeneric1ND(mats)
     u_hat = Sol1(f_hat, u_hat)
-    
+
     # case k = 0
     u0_hat = Function(T0)
     if comm.Get_rank() == 0:
@@ -504,9 +504,9 @@ of the covariant basis vector ``b``. The basis vector ``b`` is not normalized
 The basis vectors are, in fact
 
 .. math::
-        
+
         \mathbf{b}_{\theta}=- r \sin{\left(\theta \right)}\,\mathbf{i}+r \cos{\left(\theta \right)}\,\mathbf{j} \\ \mathbf{b}_{r}=\cos{\left(\theta \right)}\,\mathbf{i}+\sin{\left(\theta \right)}\,\mathbf{j}
-        
+
 
 and we see that they are given in terms of the Cartesian unit vectors.
 The gradient we have computed is (and yes, it should be :math:`r^2` because we
@@ -515,10 +515,10 @@ do not have unit vectors)
 .. math::
    :label: eq:gradu
 
-        
+
         \nabla u = \underbrace{\frac{1}{r^2}\frac{\partial u}{\partial \theta}}_{du[0]}\mathbf{b}_{\theta} + \underbrace{\frac{\partial u}{\partial r}}_{du[1]} \mathbf{b}_{r}
-        
-        
+
+
 
 Now it makes sense to plot the solution and its gradient in Cartesian
 instead of computational coordinates. To this end we need to
@@ -526,7 +526,7 @@ project the gradient to a Cartesian basis
 
 .. math::
         \begin{align*}
-        \frac{\partial u}{\partial x} &= \nabla u \cdot \mathbf{i},\\ 
+        \frac{\partial u}{\partial x} &= \nabla u \cdot \mathbf{i},\\
         \frac{\partial u}{\partial y} &= \nabla u \cdot \mathbf{j}.
         \end{align*}
 
@@ -562,7 +562,7 @@ and plot on the unit disc.
     u0_hat2 = u0_hat.refine([1, N*3])
     sl = u_hat2.function_space().local_slice(False)
     ur = u_hat2.backward() + u0_hat2.backward()[:, sl[1]]
-    
+
     # Wrap periodic plot around since it looks nicer
     xx, yy = u_hat2.function_space().local_curvilinear_mesh()
     xp = np.vstack([xx, xx[0]])
@@ -570,7 +570,7 @@ and plot on the unit disc.
     up = np.vstack([ur, ur[0]])
     # For vector no need to wrap around and no need to refine:
     xi, yi = TT.local_curvilinear_mesh()
-    
+
     # plot
     plt.figure()
     plt.contourf(xp, yp, up)

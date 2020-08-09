@@ -23,7 +23,7 @@ The nonlinear Klein-Gordon equation
 ===================================
 
 .. raw:: html
-        
+
         <embed src="https://rawgit.com/spectralDNS/spectralutilities/master/movies/KleinGordon.gif"  autoplay="false" loop="true"></embed>
         <p><em></em></p>
 
@@ -39,21 +39,21 @@ quantum field theory :cite:`abdul08`. The equation is given as
 .. math::
    :label: eq:kg
 
-        
+
         \frac{\partial^2 u}{\partial t^2} = \nabla^2 u - \gamma(u - u|u|^2) \quad
         \text{for} \, u \in
-        \Omega, 
-        
+        \Omega,
+
 
 with initial conditions
 
 .. math::
    :label: eq:init
 
-        
+
         u(\boldsymbol{x}, t=0) = u^0 \quad \text{and} \quad \frac{\partial u(\boldsymbol{x},
-        t=0)}{\partial t} = u_t^0. 
-        
+        t=0)}{\partial t} = u_t^0.
+
 
 The spatial coordinates are here denoted as :math:`\boldsymbol{x} = (x, y, z)`, and
 :math:`t` is time. The parameter :math:`\gamma=\pm 1` determines whether the equations are focusing
@@ -63,18 +63,18 @@ periodic and initial conditions will here be set as
 .. math::
    :label: _auto1
 
-        
-        u^0 = 0.1 \exp \left( -\boldsymbol{x} \cdot \boldsymbol{x} \right), 
-        
-        
+
+        u^0 = 0.1 \exp \left( -\boldsymbol{x} \cdot \boldsymbol{x} \right),
+
+
 
 .. math::
    :label: _auto2
 
-          
+
         u_t^0 = 0.
-        
-        
+
+
 
 We will solve these equations using a mixed formulation and a spectral Galerkin
 method. The mixed formulation reads
@@ -82,26 +82,26 @@ method. The mixed formulation reads
 .. math::
    :label: eq:df
 
-        
-        \frac{\partial f}{\partial t} = \nabla^2 u - \gamma (u - u|u|^2), 
-        
+
+        \frac{\partial f}{\partial t} = \nabla^2 u - \gamma (u - u|u|^2),
+
 
 .. math::
    :label: eq:du
 
-          
-        \frac{\partial u}{\partial t} = f. 
-        
+
+        \frac{\partial u}{\partial t} = f.
+
 
 The energy of the solution can be computed as
 
 .. math::
    :label: _auto3
 
-        
+
         E(u) = \int_{\Omega} \left( \frac{1}{2} f^2 + \frac{1}{2}|\nabla u|^2 + \gamma(\frac{1}{2}u^2 - \frac{1}{4}u^4) \right) dx
-        
-        
+
+
 
 and it is crucial that this energy remains constant in time.
 
@@ -125,18 +125,18 @@ with Eq. :eq:`eq:df`  and  :math:`v \in V(\Omega)` with Eq. :eq:`eq:du`, where
 .. math::
    :label: eq:df_var
 
-        
+
         \frac{\partial}{\partial t} \int_{\Omega} f\, \overline{g}\, w \,dx = \int_{\Omega}
-        \left(\nabla^2 u - \gamma( u\, - u|u|^2) \right) \overline{g} \, w \,dx,  
-        
+        \left(\nabla^2 u - \gamma( u\, - u|u|^2) \right) \overline{g} \, w \,dx,
+
 
 .. math::
    :label: eq:kg:du_var
 
-          
+
         \frac{\partial }{\partial t} \int_{\Omega} u\, \overline{v}\, w \, dx =
-        \int_{\Omega} f\, \overline{v} \, w \, dx. 
-        
+        \int_{\Omega} f\, \overline{v} \, w \, dx.
+
 
 Note that the overline is used to indicate a complex conjugate, and
 :math:`w` is a weight function associated with the test functions. The functions
@@ -145,9 +145,9 @@ to be considered as trial functions, and the integrals over the
 domain are often referred to as inner products. With inner product notation
 
 .. math::
-        
+
         \left(u, v\right) = \int_{\Omega} u \, \overline{v} \, w\, dx.
-        
+
 
 and an integration by parts on the Laplacian, the variational problem can be
 formulated as:
@@ -155,17 +155,17 @@ formulated as:
 .. math::
    :label: eq:df_var2
 
-        
+
         \frac{\partial}{\partial t} (f, g) = -(\nabla u, \nabla g)
-        -\gamma \left( u - u|u|^2, g \right),  
-        
+        -\gamma \left( u - u|u|^2, g \right),
+
 
 .. math::
    :label: eq:kg:du_var2
 
-          
-        \frac{\partial }{\partial t} (u, v) = (f, v). 
-        
+
+        \frac{\partial }{\partial t} (u, v) = (f, v).
+
 
 The time and space discretizations are
 still left open. There are numerous different approaches that one could take for
@@ -183,10 +183,10 @@ for trial and test functions, and as such we use basis functions
 .. math::
    :label: _auto4
 
-        
+
         \phi_l(x) = e^{\imath \underline{l} x}, \quad -\infty < l < \infty,
-        
-        
+
+
 
 where :math:`l` is the wavenumber, and
 :math:`\underline{l}=\frac{2\pi}{L}l` is the scaled wavenumber, scaled with domain
@@ -196,9 +196,9 @@ a finite number of test functions. A function space :math:`V^N` can be defined a
 .. math::
    :label: eq:kg:Vn
 
-        
-        V^N(x) = \text{span} \{\phi_l(x)\}_{l\in \boldsymbol{l}}, 
-        
+
+        V^N(x) = \text{span} \{\phi_l(x)\}_{l\in \boldsymbol{l}},
+
 
 where :math:`N` is chosen as an even positive integer and :math:`\boldsymbol{l} = (-N/2,
 -N/2+1, \ldots, N/2-1)`. And now, since :math:`\Omega` is a
@@ -208,9 +208,9 @@ e.g., for three dimensions
 .. math::
    :label: eq:kg:Wn
 
-        
-        W^{\boldsymbol{N}}(x, y, z) = V^N(x) \otimes V^N(y) \otimes V^N(z), 
-        
+
+        W^{\boldsymbol{N}}(x, y, z) = V^N(x) \otimes V^N(y) \otimes V^N(z),
+
 
 where :math:`\boldsymbol{N} = (N, N, N)`. Obviously, it is not necessary to use the
 same number (:math:`N`) of basis functions for each direction, but it is done here
@@ -219,12 +219,12 @@ for simplicity. A 3D tensor product basis function is now defined as
 .. math::
    :label: _auto5
 
-        
+
         \Phi_{lmn}(x,y,z) = e^{\imath \underline{l} x} e^{\imath \underline{m} y}
         e^{\imath \underline{n} z} = e^{\imath
         (\underline{l}x + \underline{m}y + \underline{n}z)}
-        
-        
+
+
 
 where the indices for :math:`y`- and :math:`z`-direction are :math:`\underline{m}=\frac{2\pi}{L}m,
 \underline{n}=\frac{2\pi}{L}n`, and :math:`\boldsymbol{m}` and :math:`\boldsymbol{n}` are the same as
@@ -237,10 +237,10 @@ We now look for solutions of the form
 .. math::
    :label: eq:usg
 
-        
+
         u(x, y, z, t) = \sum_{n=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{l=-N/2}^{N/2-1}
-        \hat{u}_{lmn} (t)\Phi_{lmn}(x,y,z). 
-        
+        \hat{u}_{lmn} (t)\Phi_{lmn}(x,y,z).
+
 
 The expansion coefficients :math:`\hat{\boldsymbol{u}} = \{\hat{u}_{lmn}(t)\}_{(l,m,n) \in \boldsymbol{l} \times \boldsymbol{m} \times \boldsymbol{n}}`
 can be related directly to the solution :math:`u(x, y, z, t)` using Fast
@@ -250,29 +250,29 @@ the solution in quadrature points corresponding to
 .. math::
    :label: _auto6
 
-        
+
          x_i = \frac{4 \pi i}{N}-2\pi \quad \forall \, i \in \boldsymbol{i},
-        \text{where}\, \boldsymbol{i}=(0,1,\ldots,N-1), 
-        
-        
+        \text{where}\, \boldsymbol{i}=(0,1,\ldots,N-1),
+
+
 
 .. math::
    :label: _auto7
 
-          
+
          y_j = \frac{4 \pi j}{N}-2\pi \quad \forall \, j \in \boldsymbol{j},
-        \text{where}\, \boldsymbol{j}=(0,1,\ldots,N-1), 
-        
-        
+        \text{where}\, \boldsymbol{j}=(0,1,\ldots,N-1),
+
+
 
 .. math::
    :label: _auto8
 
-          
+
          z_k = \frac{4 \pi k}{N}-2\pi \quad \forall \, k \in \boldsymbol{k},
         \text{where}\, \boldsymbol{k}=(0,1,\ldots,N-1).
-        
-        
+
+
 
 Note that these points are different from the standard (like :math:`2\pi j/N`) since
 the domain
@@ -281,9 +281,9 @@ is set to :math:`[-2\pi, 2\pi]^3` and not the more common :math:`[0, 2\pi]^3`. W
 .. math::
    :label: eq:uxyz
 
-        
-        \boldsymbol{u} = \mathcal{F}_k^{-1}\left(\mathcal{F}_j^{-1}\left(\mathcal{F}_i^{-1}\left(\hat{\boldsymbol{u}}\right)\right)\right) 
-        
+
+        \boldsymbol{u} = \mathcal{F}_k^{-1}\left(\mathcal{F}_j^{-1}\left(\mathcal{F}_i^{-1}\left(\hat{\boldsymbol{u}}\right)\right)\right)
+
 
 with :math:`\boldsymbol{u} = \{u(x_i, y_j, z_k)\}_{(i,j,k)\in \boldsymbol{i} \times \boldsymbol{j} \times \boldsymbol{k}}`
 and where :math:`\mathcal{F}_i^{-1}` is the inverse Fourier transform along the direction
@@ -296,11 +296,11 @@ the definition used for the inverse `Fourier transform <https://mpi4py-fft.readt
 .. math::
    :label: _auto9
 
-        
+
         u(x_j) = \sum_{l=-N/2}^{N/2-1} \hat{u}_l e^{\imath \underline{l}
         x_j}, \quad \,\, \forall \, j \in \, \boldsymbol{j}.
-        
-        
+
+
 
 Note that this differs from the definition used by, e.g.,
 `Numpy <https://docs.scipy.org/doc/numpy-1.13.0/reference/routines.fft.html>`__.
@@ -326,14 +326,14 @@ are the same and we obtain:
 .. math::
    :label: _auto10
 
-        
+
         \left(u, \Phi_{lmn}\right) = \hat{u}_{lmn} =
         \left(\frac{1}{N}\right)^3
         \mathcal{F}_l\left(\mathcal{F}_m\left(\mathcal{F}_n\left(\boldsymbol{u}\right)\right)\right)
         \quad \forall (l,m,n) \in \boldsymbol{l} \times \boldsymbol{m} \times
         \boldsymbol{n},
-        
-        
+
+
 
 From this we see that the variational forms :eq:`eq:df_var2` and :eq:`eq:kg:du_var2`
 may be written in terms of the Fourier transformed quantities :math:`\hat{\boldsymbol{u}}` and
@@ -342,44 +342,44 @@ may be written in terms of the Fourier transformed quantities :math:`\hat{\bolds
 .. math::
    :label: _auto11
 
-        
+
         (\nabla u, \nabla v) =
-        (\underline{l}^2+\underline{m}^2+\underline{n}^2)\hat{u}_{lmn}, 
-        
-        
+        (\underline{l}^2+\underline{m}^2+\underline{n}^2)\hat{u}_{lmn},
+
+
 
 .. math::
    :label: _auto12
 
-          
-        (u, v) = \hat{u}_{lmn}, 
-        
-        
+
+        (u, v) = \hat{u}_{lmn},
+
+
 
 .. math::
    :label: _auto13
 
-          
+
         (u|u|^2, v) = \widehat{u|u|^2}_{lmn}
-        
-        
+
+
 
 and as such the equations to be solved for each wavenumber can be found directly as
 
 .. math::
    :label: eq:df_var3
 
-        
+
         \frac{\partial \hat{f}_{lmn}}{\partial t}  =
-        \left(-(\underline{l}^2+\underline{m}^2+\underline{n}^2+\gamma)\hat{u}_{lnm} + \gamma \widehat{u|u|^2}_{lnm}\right),  
-        
+        \left(-(\underline{l}^2+\underline{m}^2+\underline{n}^2+\gamma)\hat{u}_{lnm} + \gamma \widehat{u|u|^2}_{lnm}\right),
+
 
 .. math::
    :label: eq:kg:du_var3
 
-          
-        \frac{\partial \hat{u}_{lnm}}{\partial t} = \hat{f}_{lnm}. 
-        
+
+        \frac{\partial \hat{u}_{lnm}}{\partial t} = \hat{f}_{lnm}.
+
 
 There is more than one way to arrive at these equations. Taking the 3D Fourier
 transform of both equations  :eq:`eq:df` and :eq:`eq:du` is one obvious way.
@@ -398,17 +398,17 @@ for all :math:`t>0`, find :math:`(f, u) \in W^N \times W^N`  such that
 .. math::
    :label: eq:dff
 
-        
+
         \frac{\partial}{\partial t} (f, g) = -(\nabla u, \nabla g)
-        -\gamma \left( u - u|u|^2, g \right),  
-        
+        -\gamma \left( u - u|u|^2, g \right),
+
 
 .. math::
    :label: eq:kg:duu
 
-          
-        \frac{\partial }{\partial t} (u, v) = (f, v) \quad \forall \, (g, v) \in W^N \times W^N. 
-        
+
+        \frac{\partial }{\partial t} (u, v) = (f, v) \quad \forall \, (g, v) \in W^N \times W^N.
+
 
 where :math:`u(x, y, z, 0)` and :math:`f(x, y, z, 0)` are given as the initial conditions
 according to Eq. :eq:`eq:init`.
@@ -435,10 +435,10 @@ real data is now complex. We may start implementing the solver as follows
     from shenfun import *
     from mpi4py import MPI
     import numpy as np
-    
+
     # Set size of discretization
     N = (32, 32, 32)
-    
+
     # Create bases
     K0 = FunctionSpace(N[0], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
     K1 = FunctionSpace(N[1], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
@@ -528,7 +528,7 @@ mathamatics.
 .. code-block:: python
 
     from sympy import symbols, exp, lambdify
-    
+
     x, y, z = symbols("x,y,z")
     ue = 0.1*exp(-(x**2 + y**2 + z**2))
     ul = lambdify((x, y, z), ue, 'numpy')
@@ -560,7 +560,7 @@ function can be implemented as
     uh = TrialFunction(T)
     vh = TestFunction(T)
     k2 = -(inner(grad(vh), grad(uh)).scale  + gamma)
-    
+
     def compute_rhs(duf_hat, uf_hat, up, Tp, w0):
         duf_hat.fill(0)
         u_hat, f_hat = uf_hat
@@ -617,50 +617,50 @@ decimal points at :math:`t=100`.
     from mpi4py import MPI
     from time import time
     from shenfun import *
-    
+
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
-    
+
     # Use sympy to set up initial condition
     x, y, z = symbols("x,y,z")
     ue = 0.1*exp(-(x**2 + y**2 + z**2))
     ul = lambdify((x, y, z), ue, 'numpy')
-    
+
     # Size of discretization
     N = (64, 64, 64)
-    
+
     # Defocusing or focusing
     gamma = 1
-    
+
     K0 = FunctionSpace(N[0], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
     K1 = FunctionSpace(N[1], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
     K2 = FunctionSpace(N[2], 'F', domain=(-2*np.pi, 2*np.pi), dtype='d')
     T = TensorProductSpace(comm, (K0, K1, K2), slab=False,
                            **{'planner_effort': 'FFTW_MEASURE'})
-    
+
     TT = MixedTensorProductSpace([T, T])
-    
+
     X = T.local_mesh(True)
     uf = Array(TT)
     u, f = uf[:]
     up = Array(T)
     duf = Function(TT)
     du, df = duf[:]
-    
+
     uf_hat = Function(TT)
     uf_hat0 = Function(TT)
     uf_hat1 = Function(TT)
     w0 = Function(T)
     u_hat, f_hat = uf_hat[:]
-    
+
     # initialize (f initialized to zero, so all set)
     u[:] = ul(*X)
     u_hat = T.forward(u, u_hat)
-    
+
     uh = TrialFunction(T)
     vh = TestFunction(T)
     k2 = -inner(grad(vh), grad(uh)).scale - gamma
-    
+
     count = 0
     def compute_rhs(duf_hat, uf_hat, up, T, w0):
         global count
@@ -673,12 +673,12 @@ decimal points at :math:`t=100`.
         df_hat += T.forward(gamma*up**3, w0)
         du_hat[:] = f_hat
         return duf_hat
-    
+
     def energy_fourier(comm, a):
         result = 2*np.sum(abs(a[..., 1:-1])**2) + np.sum(abs(a[..., 0])**2) + np.sum(abs(a[..., -1])**2)
         result =  comm.allreduce(result)
         return result
-    
+
     # Integrate using a 4th order Rung-Kutta method
     a = [1./6., 1./3., 1./3., 1./6.]         # Runge-Kutta parameter
     b = [0.5, 0.5, 1.]                       # Runge-Kutta parameter
@@ -705,7 +705,7 @@ decimal points at :math:`t=100`.
                 uf_hat[:] = uf_hat0 + b[rk]*dt*duf
             uf_hat1 += a[rk]*dt*duf
         uf_hat[:] = uf_hat1
-    
+
         if tstep % 100 == 0:
             uf = TT.backward(uf_hat, uf)
             ekin = 0.5*energy_fourier(T.comm, f_hat)
@@ -723,7 +723,7 @@ decimal points at :math:`t=100`.
                 plt.savefig('Klein_Gordon_{}_real_{}.png'.format(N[0], tstep))
                 print("Time = %2.2f Total energy = %2.8e Linear momentum %2.8e Angular momentum %2.8e" %(t, ekin+es+eg, ep, ea))
             comm.barrier()
-    
+
     print("Time ", time()-t0)
 
 .. ======= Bibliography =======

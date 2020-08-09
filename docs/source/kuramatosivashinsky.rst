@@ -18,7 +18,7 @@ The Kuramato-Sivashinsky equation
 =================================
 
 .. raw:: html
-        
+
         <embed src="https://rawgit.com/spectralDNS/spectralutilities/master/movies/Kuramato_movie_128.gif"  autoplay="false" loop="true"></embed>
         <p><em></em></p>
 
@@ -35,19 +35,19 @@ single Gaussian pulse
 .. math::
    :label: eq:ks
 
-        
+
         \frac{\partial u(\boldsymbol{x},t)}{\partial t} + \nabla^2 u(\boldsymbol{x},t) + \nabla^4
         u(\boldsymbol{x},t) + |\nabla u(\boldsymbol{x},t)|^2 = 0 \quad \text{for }\, \boldsymbol{x} \in \Omega=[-30 \pi, 30\pi]^2
-         
-        
+
+
 
 .. math::
    :label: _auto1
 
-          
+
         u(\boldsymbol{x}, 0) = \exp(-0.01 \boldsymbol{x} \cdot \boldsymbol{x}) \notag
-        
-        
+
+
 
 .. _sec:spectralgalerkin:
 
@@ -65,11 +65,11 @@ is some suitable function space, and obtain
 .. math::
    :label: eq:du_var
 
-        
+
         \frac{\partial}{\partial t} \int_{\Omega} u\, \overline{v}\, w \,dx = -\int_{\Omega}
         \left(\nabla^2 u + \nabla^4 u \ + |\nabla u|^2 \right) \overline{v} \, w \,dx.
-        
-        
+
+
 
 Note that the overline is used to indicate a complex conjugate, whereas :math:`w`
 is a weight function. The function :math:`u`
@@ -77,19 +77,19 @@ is now to be considered a trial function, and the integrals over the
 domain are often referred to as inner products. With inner product notation
 
 .. math::
-        
+
         \left(u, v\right) = \int_{\Omega} u \, \overline{v} \, w \, dx.
-        
+
 
 the variational problem can be formulated as
 
 .. math::
    :label: eq:du_var2
 
-        
+
         \frac{\partial}{\partial t} (u, v) = -\left(\nabla^2 u + \nabla^4 u + |\nabla u|^2,
-        v \right). 
-        
+        v \right).
+
 
 The space and time discretizations are
 still left open. There are numerous different approaches that one could take for
@@ -105,10 +105,10 @@ Fourier basis functions
 .. math::
    :label: _auto2
 
-        
+
         \phi_l(x) = e^{\imath \underline{l} x}, \quad -\infty < l < \infty,
-        
-        
+
+
 
 where :math:`l` is the wavenumber, and :math:`\underline{l}=\frac{2\pi}{L}l` is the scaled wavenumber, scaled with domain
 length :math:`L` (here :math:`60\pi`). Since we want to solve these equations on a computer, we need to choose
@@ -117,9 +117,9 @@ a finite number of test functions. A discrete function space :math:`V^N` can be 
 .. math::
    :label: eq:Vn
 
-        
-        V^N(x) = \text{span} \{\phi_l(x)\}_{l\in \boldsymbol{l}}, 
-        
+
+        V^N(x) = \text{span} \{\phi_l(x)\}_{l\in \boldsymbol{l}},
+
 
 where :math:`N` is chosen as an even positive integer and :math:`\boldsymbol{l} = (-N/2,
 -N/2+1, \ldots, N/2-1)`. And now, since :math:`\Omega` is a
@@ -129,9 +129,9 @@ spaces:
 .. math::
    :label: eq:Wn
 
-        
-        W^{\boldsymbol{N}}(x, y) = V^N(x) \otimes V^N(y), 
-        
+
+        W^{\boldsymbol{N}}(x, y) = V^N(x) \otimes V^N(y),
+
 
 where :math:`\boldsymbol{N} = (N, N)`. Obviously, it is not necessary to use the
 same number (:math:`N`) of basis functions for each direction, but it is done here
@@ -140,11 +140,11 @@ for simplicity. A 2D tensor product basis function is now defined as
 .. math::
    :label: _auto3
 
-        
+
         \Phi_{lm}(x,y) = e^{\imath \underline{l} x} e^{\imath \underline{m} y}
         = e^{\imath (\underline{l}x + \underline{m}y )},
-        
-        
+
+
 
 where the indices for :math:`y`-direction are :math:`\underline{m}=\frac{2\pi}{L}m`, and
 :math:`\boldsymbol{m}` is the same set as :math:`\boldsymbol{l}` due to using the same number of basis functions for each direction. One
@@ -156,11 +156,11 @@ We now look for solutions of the form
 .. math::
    :label: _auto4
 
-        
+
         u(x, y) = \sum_{l=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}
         \hat{u}_{lm} \Phi_{lm}(x,y).
-        
-        
+
+
 
 The expansion coefficients :math:`\hat{u}_{lm}` can be related directly to the solution :math:`u(x,
 y)` using Fast Fourier Transforms (FFTs) if we are satisfied with obtaining
@@ -169,20 +169,20 @@ the solution in quadrature points corresponding to
 .. math::
    :label: _auto5
 
-        
+
          x_i = \frac{60 \pi i}{N}-30\pi \quad \forall \, i \in \boldsymbol{i},
-        \text{where}\, \boldsymbol{i}=(0,1,\ldots,N-1), 
-        
-        
+        \text{where}\, \boldsymbol{i}=(0,1,\ldots,N-1),
+
+
 
 .. math::
    :label: _auto6
 
-          
+
          y_j = \frac{60 \pi j}{N}-30\pi \quad \forall \, j \in \boldsymbol{j},
         \text{where}\, \boldsymbol{j}=(0,1,\ldots,N-1).
-        
-        
+
+
 
 Note that these points are different from the standard (like :math:`2\pi j/N`) since
 the domain
@@ -191,12 +191,12 @@ is set to :math:`[-30\pi, 30\pi]^2` and not the more common :math:`[0, 2\pi]^2`.
 .. math::
    :label: _auto7
 
-        
+
         u(x_i, y_j) =
         \mathcal{F}_y^{-1}\left(\mathcal{F}_x^{-1}\left(\hat{u}\right)\right)
         \, \forall\, (i,j)\in\boldsymbol{i} \times \boldsymbol{j},
-        
-        
+
+
 
 where :math:`\mathcal{F}_x^{-1}` is the inverse Fourier transform along direction
 :math:`x`, for all :math:`j \in \boldsymbol{j}`. Note that the two
@@ -208,11 +208,11 @@ the definition used for the inverse
 .. math::
    :label: _auto8
 
-        
+
         u(x_j) = \sum_{l=-N/2}^{N/2-1} \hat{u}_l e^{\imath \underline{l}
         x_j}, \quad \,\, \forall \, j \in \, \boldsymbol{j}.
-        
-        
+
+
 
 Note that this differs from the definition used by, e.g.,
 `Numpy <https://docs.scipy.org/doc/numpy-1.13.0/reference/routines.fft.html>`__.
@@ -223,13 +223,13 @@ computed using forward FFTs (using weight functions :math:`w=1/L`):
 .. math::
    :label: _auto9
 
-        
+
         \left(u, \Phi_{lm}\right) = \hat{u}_{lm} =
         \frac{1}{N^2}
         \mathcal{F}_l\left(\mathcal{F}_m\left({u}\right)\right)
         \quad \forall (l,m) \in \boldsymbol{l} \times \boldsymbol{m},
-        
-        
+
+
 
 From this we see that the variational forms
 may be written in terms of the Fourier transformed :math:`\hat{u}`. Expanding the
@@ -238,39 +238,39 @@ exact derivatives of the nabla operator, we have
 .. math::
    :label: _auto10
 
-        
+
         (\nabla^2 u, v) =
-        -(\underline{l}^2+\underline{m}^2)\hat{u}_{lm}, 
-        
-        
+        -(\underline{l}^2+\underline{m}^2)\hat{u}_{lm},
+
+
 
 .. math::
    :label: _auto11
 
-          
-        (\nabla^4 u, v) = (\underline{l}^2+\underline{m}^2)^2\hat{u}_{lm}, 
-        
-        
+
+        (\nabla^4 u, v) = (\underline{l}^2+\underline{m}^2)^2\hat{u}_{lm},
+
+
 
 .. math::
    :label: _auto12
 
-          
+
         (|\nabla u|^2, v) = \widehat{|\nabla u|^2}_{lm}
-        
-        
+
+
 
 and as such the equation to be solved for each wavenumber can be found directly as
 
 .. math::
    :label: eq:du_var3
 
-        
+
         \frac{\partial \hat{u}_{lm}}{\partial t}  =
         \left(\underline{l}^2+\underline{m}^2 -
         (\underline{l}^2+\underline{m}^2)^2\right)\hat{u}_{lm} - \widehat{|\nabla u|^2}_{lm},
-        
-        
+
+
 
 Implementation
 ==============
@@ -300,7 +300,7 @@ term.
 
     # Size of discretization
     N = (128, 128)
-    
+
     comm = MPI.COMM_WORLD
     K0 = FunctionSpace(N[0], 'F', domain=(-30*np.pi, 30*np.pi), dtype='D')
     K1 = FunctionSpace(N[1], 'F', domain=(-30*np.pi, 30*np.pi), dtype='d')
@@ -336,18 +336,18 @@ with the second when computing odd derivatives.
 .. math::
    :label: _auto13
 
-        
+
         u  = \sum_{k=-N/2}^{N/2-1} \hat{u} e^{\imath k x}
-        
-        
+
+
 
 .. math::
    :label: _auto14
 
-          
+
         u  = \sideset{}{'}\sum_{k=-N/2}^{N/2} \hat{u} e^{\imath k x}
-        
-        
+
+
 
 Here :math:`\sideset{}{'}\sum` means that the first and last items in the sum are
 divided by two. Note that the two sums are equal as they stand (due to aliasing), but only the
@@ -376,7 +376,7 @@ below, called ``LinearRHS`` and ``NonlinearRHS``
         # Assemble diagonal bilinear forms
         L = -(inner(div(grad(u))+div(grad(div(grad(u)))), v))
         return L
-    
+
     def NonlinearRHS(self, U, U_hat, dU):
         # Assemble nonlinear term
         global gradu
@@ -422,7 +422,7 @@ cool colormap:
             plt.pause(1e-6)
             count += 1
             plt.savefig('Kuramato_Sivashinsky_N_{}_{}.png'.format(N[0], count))
-    
+
 
 Now all that remains is to create the integrator and call it
 
