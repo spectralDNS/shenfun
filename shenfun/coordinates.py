@@ -39,7 +39,7 @@ class Coordinates(object):
 
     @property
     def coordinates(self):
-        return (self.psi, self.rv)
+        return (self.psi, self.rv, self._assumptions)
 
     @property
     def psi(self):
@@ -192,7 +192,7 @@ class Coordinates(object):
                 m += '\\mathbf{b}_{%s} ='%(symbols[p])
             else:
                 m += '\\mathbf{b}^{%s} ='%(symbols[p])
-            for j in range(len(psi)):
+            for j in range(b.shape[1]):
                 if b[i, j] == 1:
                     m += (k[j]+'+')
                 elif b[i, j] != 0:

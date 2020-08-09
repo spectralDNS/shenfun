@@ -11,6 +11,12 @@ curvilinear coordinates, and reproduce the integrals
 from "Chebfun":"http://www.chebfun.org/examples/approx3/SurfaceIntegral3D.html".
 
 
+!bnotice
+For all the examples below we could just as well
+use Legendre polynomials instead of Chebyshev.
+Just replace 'C' with 'L' when creating function spaces.
+!enotice
+
 TOC: on
 
 <%
@@ -108,8 +114,8 @@ over the unit sphere. We use regular spherical coordinates,
 
 !bt
 \begin{align*}
-0 &\ge \theta \ge \pi \\
-0 &\ge \phi \ge 2\pi \\
+0 &\le \theta \le \pi \\
+0 &\le \phi \le 2\pi \\
 x(\theta, \phi) &= \sin \theta \cos \phi \\
 y(\theta, \phi) &= \sin \theta \sin \phi \\
 z(\theta, \phi) &= \cos \theta
@@ -159,6 +165,33 @@ print('Error =', abs(inner(1, f)-4*np.pi/3))
 
 Not bad at all:-)
 
+To go a little deeper into the integral, we can get the
+term $\left|\frac{\partial \mathbf{r}}{\partial u} \times \frac{\partial \mathbf{r}}{\partial v} \right|$
+as
+
+!bc pycod
+print(T.coors.sg)
+!ec
+
+Here the printed variable is `x`, but this is because `theta`
+is named `x` internally by `Sympy`. This is because of the definition
+used above: `theta, phi = sp.symbols('x,y', real=True, positive=True)`.
+
+Note that $\mathbf{b}_u = \frac{\partial \mathbf{r}}{\partial u}$ and
+$\mathbf{b}_v = \frac{\partial \mathbf{r}}{\partial v}$ are the two
+basis vectors used by shenfun for the surface $S$. The basis
+vectors are obtainable as `T.coors.b`, and can also be printed
+in latex using:
+
+!bc pycod
+from IPython.display import Math
+Math(T.coors.latex_basis_vectors(covariant=True, symbol_names={theta: '\\theta', phi: '\\phi'}))
+!ec
+
+where we tell latex to print `theta` as $\theta$, and not `x`:-)
+
+From the basis vectors it should be easy to see that $\left| \mathbf{b}_{\theta} \times \mathbf{b}_{\phi} \right| = \sin \theta$.
+
 ===== Example 2 =====
 
 Next, we solve "Example 5": "http://www.math24.net/surface-integrals-of-first-kind.html"
@@ -174,7 +207,7 @@ and the surface is defined by
 \mathbf{r} = u \cos v \mathbf{i} + u \sin v \mathbf{j} + v \mathbf{k}
 !et
 
-with $0 \ge u \ge 2, 0 \ge v \ge 2\pi$.
+with $0 \le u \le 2, 0 \le v \le 2\pi$.
 
 The implementation is only a few lines, and we end by comparing
 to the exact solution $14 \pi /3$
@@ -187,6 +220,12 @@ B1 = FunctionSpace(0, 'C', domain=(0, np.pi))
 T = TensorProductSpace(comm, (B0, B1), coordinates=(psi, rv))
 f = Array(T, buffer=sp.sqrt(1+rv[0]**2+rv[1]**2))
 print('Error =', abs(inner(1, f)-14*np.pi/3))
+!ec
+
+In this case the integral measure is
+
+!bc pycod
+print(T.coors.sg)
 !ec
 
 ===== Example 3 =====
@@ -206,7 +245,7 @@ vector
 \end{align*}
 !et
 
-for $0 \ge u \ge 2 \pi, -2 \pi \ge v \ge 2 \pi$.
+for $0 \le u \le 2 \pi, -2 \pi \le v \le 2 \pi$.
 
 The function $f$ is now defined as
 
@@ -231,7 +270,17 @@ I = inner(1, fb)
 print(I)
 !ec
 
-which agrees very well with chebfun's result. We can plot the
+which agrees very well with chebfun's result. The basis vectors
+for the surface of the seashell are
+
+!bc pycod
+Math(T.coors.latex_basis_vectors(covariant=True, symbol_names={u: 'u', v: 'v'}))
+!ec
+
+which, if nothing else, shows the power of symbolic
+computing in Sympy.
+
+We can plot the
 seashell using mayavi. Unfortunately mayavi is a little tricky
 to use with readthedocs, so instead of generating the plot
 with the code below, we link here instead to a previously
