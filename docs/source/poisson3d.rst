@@ -36,33 +36,33 @@ The Poisson equation is given as
 .. math::
    :label: eq:3d:poisson
 
-        
-        \nabla^2 u(\boldsymbol{x}) = f(\boldsymbol{x}) \quad \text{for }\, \boldsymbol{x}=(x, y, z) \in \Omega, 
-        
+
+        \nabla^2 u(\boldsymbol{x}) = f(\boldsymbol{x}) \quad \text{for }\, \boldsymbol{x}=(x, y, z) \in \Omega,
+
 
 .. math::
    :label: _auto1
 
-          
-        u(\pm 1 ,y, z) =0, 
-        
-        
+
+        u(\pm 1 ,y, z) =0,
+
+
 
 .. math::
    :label: _auto2
 
-          
-        u(x, 2\pi, z) = u(x, 0, z), 
-        
-        
+
+        u(x, 2\pi, z) = u(x, 0, z),
+
+
 
 .. math::
    :label: _auto3
 
-          
+
         u(x, y, 2\pi) = u(x, y, 0),
-        
-        
+
+
 
 where :math:`u(\boldsymbol{x})` is the solution and :math:`f(\boldsymbol{x})` is a function. The domain
 :math:`\Omega = [-1, 1]\times [0, 2\pi]^2`.
@@ -87,26 +87,26 @@ one
 .. math::
    :label: _auto4
 
-        
+
         \mathcal{X}_l(x) = \phi_l(x) - \phi_{l+2}(x), \forall \, l \in \boldsymbol{l}^{N_0},
-        
-        
+
+
 
 .. math::
    :label: _auto5
 
-          
-        \mathcal{Y}_m(y) =  e^{\imath m y}, \forall \, m \in \boldsymbol{m}^{N_1}, 
-        
-        
+
+        \mathcal{Y}_m(y) =  e^{\imath m y}, \forall \, m \in \boldsymbol{m}^{N_1},
+
+
 
 .. math::
    :label: _auto6
 
-          
+
         \mathcal{Z}_n(z) = e^{\imath n z}, \forall \, n \in \boldsymbol{n}^{N_2},
-        
-        
+
+
 
 where the size of the discretized problem is :math:`\boldsymbol{N} = (N_0, N_1, N_2)`,
 :math:`\boldsymbol{l}^{N_0} = (0, 1, \ldots, N_0-3)`, :math:`\boldsymbol{m}^{N_1} =
@@ -123,54 +123,54 @@ We have the one-dimensional spaces
 .. math::
    :label: _auto7
 
-        
-        V^{N_0} = \text{span}\{ \mathcal{X}_l \}_{l\in\boldsymbol{l}^{N_0}}, 
-        
-        
+
+        V^{N_0} = \text{span}\{ \mathcal{X}_l \}_{l\in\boldsymbol{l}^{N_0}},
+
+
 
 .. math::
    :label: _auto8
 
-          
-        V^{N_1} = \text{span}\{ \mathcal{Y}_m \}_{m\in\boldsymbol{m}^{N_1}}, 
-        
-        
+
+        V^{N_1} = \text{span}\{ \mathcal{Y}_m \}_{m\in\boldsymbol{m}^{N_1}},
+
+
 
 .. math::
    :label: _auto9
 
-          
+
         V^{N_2} = \text{span}\{ \mathcal{Z}_n \}_{n\in\boldsymbol{n}^{N_2}},
-        
-        
+
+
 
 and from these we create a tensor product space :math:`W^{\boldsymbol{N}}(\boldsymbol{x})`
 
 .. math::
    :label: _auto10
 
-        
+
         W^{\boldsymbol{N}}(\boldsymbol{x}) = V^{N_0}(x) \otimes V^{N_1}(y) \otimes V^{N_2}(z).
-        
-        
+
+
 
 And then we look for discrete solutions :math:`u \in W^{\boldsymbol{N}}` like
 
 .. math::
    :label: eq:3d:u
 
-        
+
         u(\boldsymbol{x}) = \sum_{l\in \boldsymbol{l}^{N_0}} \sum_{m\in \boldsymbol{m}^{N_1}}\sum_{n\in
-        \boldsymbol{n}^{N_2}}\hat{u}_{lmn} \mathcal{X}_l(x) \mathcal{Y}_m(y) \mathcal{Z}_n(z),  
-        
+        \boldsymbol{n}^{N_2}}\hat{u}_{lmn} \mathcal{X}_l(x) \mathcal{Y}_m(y) \mathcal{Z}_n(z),
+
 
 .. math::
    :label: _auto11
 
-          
+
          = \sum_{\boldsymbol{\textsf{k}} \in \boldsymbol{k}}\hat{u}_{\boldsymbol{\textsf{k}}} v_{\boldsymbol{\textsf{k}}}(\boldsymbol{x}),
-        
-        
+
+
 
 where :math:`\hat{u}_{lmn}` are components of the expansion coefficients for :math:`u` and
 the second form, :math:`\{\hat{u}_{\boldsymbol{\textsf{k}}}\}_{\boldsymbol{\textsf{k}}\in\boldsymbol{k}}`, is a shorter,
@@ -183,11 +183,11 @@ W^{\boldsymbol{N}}` such that
 .. math::
    :label: eq:3d:varform
 
-        
+
         \int_{\Omega} \nabla^2 u \, \overline{v} \, w\, \boldsymbol{dx} = \int_{\Omega} f \,
         \overline{v}\, w\, \boldsymbol{dx} \quad
-        \forall v \, \in \, W^{\boldsymbol{N}}. 
-        
+        \forall v \, \in \, W^{\boldsymbol{N}}.
+
 
 Here :math:`\boldsymbol{dx}=dxdydz`, and the overline represents a complex conjugate, which is needed here because
 the Fourier exponentials are complex functions.
@@ -196,10 +196,10 @@ The weighted integrals, weighted by :math:`w(\boldsymbol{x})`, are called inner 
 .. math::
    :label: _auto12
 
-        
+
         \int_{\Omega} u \, \overline{v} \, w\, \boldsymbol{dx} = \langle u, v\rangle _w.
-        
-        
+
+
 
 The integral can either be computed exactly, or with quadrature. The advantage
 of the latter is that it is generally faster, and that non-linear terms may be
@@ -208,19 +208,19 @@ computed just as quickly as linear. For a linear problem, it does not make much 
 .. math::
    :label: _auto13
 
-        
+
         \int_{\Omega} u \, \overline{v} \, w\, \boldsymbol{dx} \approx \langle u, v
-        \rangle_w^{\boldsymbol{N}},  
-        
-        
+        \rangle_w^{\boldsymbol{N}},
+
+
 
 .. math::
    :label: _auto14
 
-          
+
         \approx \sum_{i=0}^{N_0-1} \sum_{j=0}^{N_1-1}\sum_{k=0}^{N_2-1} u(x_i, y_j, z_k) \overline{v}(x_i, y_j, z_k) w(x_i, y_j, z_k),
-        
-        
+
+
 
 where :math:`w(\boldsymbol{x})` now are the quadrature weights. The quadrature points
 :math:`\{x_i\}_{i=0}^{N_0-1}` are specific to the chosen basis, and even within basis there
@@ -238,8 +238,8 @@ left hand side of :eq:`eq:3d:varform`, we get
         \langle \nabla^2u, v \rangle_w^{\boldsymbol{N}} &= \left\langle \nabla^2\sum_{l\in \boldsymbol{l}^{N_0}}
         \sum_{m\in \boldsymbol{m}^{N_1}}\sum_{n\in \boldsymbol{n}^{N_2}}\hat{u}_{lmn}
         \mathcal{X}_{l} \mathcal{Y}_m \mathcal{Z}_n,
-        \mathcal{X}_{p} \mathcal{Y}_q \mathcal{Z}_r \right\rangle_w^{\boldsymbol{N}}, \\ 
-            &= \left[\left(\mathcal{X}_l^{''}, \mathcal{X}_p \right)_w^N - (m^2+n^2)\left(\mathcal{X}_l, \mathcal{X}_p \right)_w^N  \right]\delta_{mq} \delta_{nr} \hat{u}_{lmn}, \\ 
+        \mathcal{X}_{p} \mathcal{Y}_q \mathcal{Z}_r \right\rangle_w^{\boldsymbol{N}}, \\
+            &= \left[\left(\mathcal{X}_l^{''}, \mathcal{X}_p \right)_w^N - (m^2+n^2)\left(\mathcal{X}_l, \mathcal{X}_p \right)_w^N  \right]\delta_{mq} \delta_{nr} \hat{u}_{lmn}, \\
             &= \left( a_{pl} - (m^2 + n^2)b_{pl}\right) \hat{u}_{lqr},
         \end{align*}
 
@@ -248,11 +248,11 @@ where the notation :math:`(\cdot, \cdot)_w^{N_0}`
 .. math::
    :label: _auto15
 
-        
+
         b_{pl} = \left( \mathcal{X}_l, \mathcal{X}_p \right)_w^{N_0} = \sum_{i=0}^{N_0-1} \mathcal{X}_l(x_i)
         \mathcal{X}_p(x_i) w(x_i),
-        
-        
+
+
 
 is used to represent an :math:`L_2` inner product along only the first, nonperiodic,
 direction. The delta functions above come from integrating over the two periodic
@@ -262,18 +262,18 @@ inner products
 .. math::
    :label: _auto16
 
-        
+
         \int_0^{2\pi} \mathcal{Y}_m(y) \overline{\mathcal{Y}}_q(y) \frac{1}{2\pi} dy = \delta_{mq},
-        
-        
+
+
 
 .. math::
    :label: _auto17
 
-          
+
         \int_0^{2\pi} \mathcal{Z}_n(z) \overline{\mathcal{Z}}_r(z) \frac{1}{2\pi} dz = \delta_{nr},
-        
-        
+
+
 
 The Kronecker delta-function :math:`\delta_{ij}` is one for :math:`i=j` and
 zero otherwise.
@@ -283,11 +283,11 @@ The right hand side of Eq. :eq:`eq:3d:varform` is computed as
 .. math::
    :label: _auto18
 
-        
+
         \tilde{f}_{pqr} = \left\langle f, \mathcal{X}_{p}
         \mathcal{Y}_q \mathcal{Z}_r  \right \rangle_w^{\boldsymbol{N}},
-        
-        
+
+
 
 where a tilde is used because this is not a complete transform of the function
 :math:`f`, but only an inner product.
@@ -298,10 +298,10 @@ be found as follows
 .. math::
    :label: eq:AB
 
-        
+
         \left(a_{lj} - (m^2+n^2)b_{lj}\right) \hat{u}_{jmn} =
-        \tilde{f}_{lmn}\quad \forall \, (l,m,n) \in \boldsymbol{k}. 
-        
+        \tilde{f}_{lmn}\quad \forall \, (l,m,n) \in \boldsymbol{k}.
+
 
 Now, when :math:`\hat{\boldsymbol{u}} = \{\hat{u}_{\boldsymbol{\textsf{k}}}\}_{\boldsymbol{\textsf{k}} \in \boldsymbol{k}}` is
 found by solving this linear system over the
@@ -325,19 +325,19 @@ conditions:
 .. math::
    :label: eq:3d:u_e
 
-        
-        u_e(x, y, z) = \left(\cos(4x) + \sin(2y) + \sin(4z)\right)(1-x^2). 
-        
+
+        u_e(x, y, z) = \left(\cos(4x) + \sin(2y) + \sin(4z)\right)(1-x^2).
+
 
 Sending :math:`u_e` through the Laplace operator, we obtain the right hand side
 
 .. math::
    :label: eq:3d:solution
 
-        
+
          \nabla^2 u_e(x,y,z) = -16(1 - x^2) \cos(4 x) + 16 x \sin(4 x) - 2 \cos(4 x)
-                          - (1-x^2)(4 \sin(2y) + 16\sin(4z)).  
-        
+                          - (1-x^2)(4 \sin(2y) + 16\sin(4z)).
+
 
 Now, setting :math:`f_e(\boldsymbol{x}) = \nabla^2 u_e(\boldsymbol{x})` and solving for :math:`\nabla^2
 u(\boldsymbol{x}) = f_e(\boldsymbol{x})`, we can compare the numerical solution :math:`u(\boldsymbol{x})` with
@@ -358,7 +358,7 @@ plus some other helper modules, like `Numpy <https://numpy.org>`__ and `Sympy <h
     from sympy import symbols, cos, sin, exp, lambdify
     import numpy as np
     from shenfun.tensorproductspace import TensorProductSpace
-    from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \ 
+    from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
         project, Dx, FunctionSpace
     from mpi4py import MPI
 
@@ -375,7 +375,7 @@ The exact solution :math:`u_e(x, y, z)` and the right hand side :math:`f_e(x, y,
     x, y, z = symbols("x,y,z")
     ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-x**2)
     fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
-    
+
     # Lambdify for faster evaluation
     ul = lambdify((x, y, z), ue, 'numpy')
     fl = lambdify((x, y, z), fe, 'numpy')
@@ -403,7 +403,7 @@ From these three bases a :class:`.TensorProductSpace` is created.
 
     # Size of discretization
     N = [14, 15, 16]
-    
+
     SD = FunctionSpace(N[0], 'Chebyshev', bc=(0, 0))
     #SD = FunctionSpace(N[0], 'Legendre', bc=(0, 0))
     K1 = FunctionSpace(N[1], 'Fourier', dtype='D')
@@ -543,12 +543,12 @@ Finally, solve linear equation system and transform solution from spectral
 
     # Create Helmholtz linear algebra solver
     H = Solver(*matrices)
-    
+
     # Solve and transform to real space
     u_hat = Function(T)           # Solution spectral space
     u_hat = H(u_hat, f_hat)       # Solve
     uq = T.backward(u_hat)
-    
+
     # Compare with analytical solution
     uj = ul(*X)
     error = comm.reduce(np.linalg.norm(uj-uq)**2)
@@ -580,7 +580,7 @@ with the `subprocess <https://docs.python.org/3/library/subprocess.html>`__ modu
     import subprocess
     from numpy import log, array
     from matplotlib import pyplot as plt
-    
+
     N = range(8, 40, 2)
     error = {}
     for basis in ('legendre', 'chebyshev'):
@@ -594,7 +594,7 @@ with the `subprocess <https://docs.python.org/3/library/subprocess.html>`__ modu
                 print("%2.8e %2.8e %2.8f"%(error[basis][-1], 1./N[i], 0))
             if i > 0:
                 print("%2.8e %2.8e %2.8f"%(error[basis][-1], 1./N[i], log(error[basis][-1]/error[basis][-2])/log(N[i-1]/N[i])))
-    
+
 
 The error can be plotted using `matplotlib <https://matplotlib.org>`__, and the
 generated figure is shown in the summary's Fig. :ref:`fig:3d:ct0`. The spectral
@@ -634,7 +634,7 @@ or similarly with ``chebyshev`` instead of ``legendre``.
     import importlib
     from sympy import symbols, cos, sin, lambdify
     import numpy as np
-    from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \ 
+    from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
         Function, Basis, TensorProductSpace
     import time
     from mpi4py import MPI
@@ -642,33 +642,33 @@ or similarly with ``chebyshev`` instead of ``legendre``.
         import matplotlib.pyplot as plt
     except ImportError:
         plt = None
-    
+
     comm = MPI.COMM_WORLD
-    
+
     assert len(sys.argv) == 3
     assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
     assert isinstance(int(sys.argv[-2]), int)
-    
+
     # Collect basis and solver from either Chebyshev or Legendre submodules
     family = sys.argv[-1].lower()
     base = importlib.import_module('.'.join(('shenfun', family)))
     Solver = base.la.Helmholtz
-    
+
     # Use sympy to compute a rhs, given an analytical solution
     a = -0
     b = 0
     x, y, z = symbols("x,y,z")
     ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-z**2) + a*(1 + z)/2. + b*(1 - z)/2.
     fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
-    
+
     # Lambdify for faster evaluation
     ul = lambdify((x, y, z), ue, 'numpy')
     fl = lambdify((x, y, z), fe, 'numpy')
-    
+
     # Size of discretization
     N = int(sys.argv[-2])
     N = [N, N, N]
-    
+
     SD = FunctionSpace(N[0], family=family, bc=(a, b))
     K1 = FunctionSpace(N[1], family='F', dtype='D')
     K2 = FunctionSpace(N[2], family='F', dtype='d')
@@ -676,32 +676,32 @@ or similarly with ``chebyshev`` instead of ``legendre``.
     X = T.local_mesh()
     u = TrialFunction(T)
     v = TestFunction(T)
-    
+
     K = T.local_wavenumbers()
-    
+
     # Get f on quad points
     fj = Array(T, buffer=fl(*X))
-    
+
     # Compute right hand side of Poisson equation
     f_hat = inner(v, fj)
     if family == 'legendre':
         f_hat *= -1.
-    
+
     # Get left hand side of Poisson equation
     if family == 'chebyshev':
         matrices = inner(v, div(grad(u)))
     else:
         matrices = inner(grad(v), grad(u))
-    
+
     # Create Helmholtz linear algebra solver
     H = Solver(*matrices)
-    
+
     # Solve and transform to real space
     u_hat = Function(T)           # Solution spectral space
     t0 = time.time()
     u_hat = H(u_hat, f_hat)       # Solve
     uq = T.backward(u_hat, fast_transform=False)
-    
+
     # Compare with analytical solution
     uj = ul(*X)
     error = comm.reduce(np.linalg.norm(uj-uq)**2)
