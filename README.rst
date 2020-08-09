@@ -26,7 +26,7 @@ Shenfun enables fast development of efficient and accurate PDE solvers (spectral
 
 The demo folder contains several examples for the Poisson, Helmholtz and Biharmonic equations. For extended documentation and installation instructions see `ReadTheDocs <http://shenfun.readthedocs.org>`_. Note that shenfun currently comes with the possibility to use two non-periodic directions (see `biharmonic demo <https://github.com/spectralDNS/shenfun/blob/master/demo/biharmonic2D_2nonperiodic.py>`_). Furthermore, equations may be solved coupled and implicit (see `MixedPoisson.py <https://github.com/spectralDNS/shenfun/blob/master/demo/MixedPoisson.py>`_).
 
-Note that there is now also support for solving equations using curvilinear coordinates. For example, it is possible to solve equations on a `sphere <https://github.com/spectralDNS/shenfun/blob/master/demo/sphere_helmholtz.py>`_ (using spherical coordinates), on the surface of a `torus <https://github.com/spectralDNS/shenfun/blob/master/binder/Torus.ipynb>`_, or along any `curved line in 2D/3D <https://github.com/spectralDNS/shenfun/blob/master/demo/curvilinear_poisson1D.py>`_, like for the coil show below. Actually, any new coordinates may be defined by the user as long as the coordinates lead to separable systems of equations. After defining new coordinates, operators like div, grad and curl work automatically with the new curvilinear coordinates. See also `this notebook on the sphere <https://github.com/spectralDNS/shenfun/blob/master/binder/sphere-helmholtz.ipynb>`_ or an illustration of the `vector Laplacian <https://github.com/spectralDNS/shenfun/blob/master/binder/vector-laplacian.ipynb>`_.
+Note that there is now also support for solving equations using curvilinear coordinates. For example, it is possible to solve equations on a `sphere <https://github.com/spectralDNS/shenfun/blob/master/demo/sphere_helmholtz.py>`_ (using spherical coordinates), on the surface of a `torus <https://github.com/spectralDNS/shenfun/blob/master/binder/Torus.ipynb>`_, or along any `curved line in 2D/3D <https://github.com/spectralDNS/shenfun/blob/master/demo/curvilinear_poisson1D.py>`_, like for the coil show below. Actually, any new coordinates may be defined by the user as long as the coordinates lead to separable systems of equations. After defining new coordinates, operators like div, grad and curl work automatically with the new curvilinear coordinates. See also `this notebook on the sphere <https://github.com/spectralDNS/shenfun/blob/master/binder/sphere2-helmholtz.ipynb>`_ or an illustration of the `vector Laplacian <https://github.com/spectralDNS/shenfun/blob/master/binder/vector-laplacian.ipynb>`_.
 
 .. image:: https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/smallcoil2.png
     :alt: Solution of Poisson's equation on a Coil
@@ -39,13 +39,13 @@ For a more psychedelic experience, have a look at the `simulation <https://githu
 
 .. image:: https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/GLimage.png
     :target: https://youtu.be/odsIoHVcqek
-    :alt: Ginzburg-Landau spherical coordinates 
-    
+    :alt: Ginzburg-Landau spherical coordinates
+
 And for regular integration over complex surfaces, like the seashell below, see `the documentation <https://shenfun.readthedocs.io/en/latest/surfaceintegration.html>`_.
 
 .. image:: https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/seashell3.png
     :alt: The surface of a seashell
-    
+
 Installation
 ------------
 
