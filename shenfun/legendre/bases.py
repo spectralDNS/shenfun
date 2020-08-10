@@ -19,8 +19,8 @@ __all__ = ['LegendreBase', 'Orthogonal', 'ShenDirichlet',
            'ShenBiharmonic', 'ShenNeumann',
            'ShenBiPolar', 'ShenBiPolar0',
            'NeumannDirichlet', 'DirichletNeumann',
-           'UpperDirichlet',
-           'BCDirichlet', 'BCBiharmonic']
+           'UpperDirichlet', 'BeamFixedFree',
+           'BCDirichlet', 'BCBiharmonic', 'BCBeamFixedFree']
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
@@ -1821,6 +1821,355 @@ class BCBiharmonic(LegendreBase):
                          [0.5, 0.6, 0, -0.1],
                          [1./6., -1./10., -1./6., 1./10.],
                          [-1./6., -1./10., 1./6., 1./10.]])
+
+    def _composite_basis(self, V, argument=0):
+        P = np.tensordot(V[:, :4], self.coefficient_matrix(), (1, 1))
+        return P
+
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+        if i < 4:
+            f = 0
+            for j, c in enumerate(self.coefficient_matrix()[i]):
+                f += c*sympy.legendre(j, x)
+            return f
+        else:
+            raise AttributeError('Only four bases, i < 4')
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        V = self.vandermonde(x)
+        output_array[:] = np.dot(V, self.coefficient_matrix()[i])
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        output_array = SpectralBase.evaluate_basis_derivative(self, x=x, i=i, k=k, output_array=output_array)
+        return output_array
+
+class BeamFixedFree(LegendreBase):
+    """Function space for biharmonic basis
+
+    Fulfills the following homogeneous boundary conditions:
+        
+        u(-1) = 0, u'(-1) = 0, u''(1) = 0, u'''(1) = 0.
+
+    Parameters
+    ----------
+        N : int
+            Number of quadrature points
+        quad : str, optional
+            Type of quadrature
+
+            - LG - Legendre-Gauss
+            - GL - Legendre-Gauss-Lobatto
+        4-tuple of numbers, optional
+            The values of the 4 boundary conditions at x=(-1, 1).
+            The two Dirichlet first and then the Neumann.
+        domain : 2-tuple of floats, optional
+            The computational domain
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
+
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
+    """
+    def __init__(self, N, quad="LG", bc=(0, 0, 0, 0), domain=(-1., 1.), padding_factor=1,
+                 dealias_direct=False, dtype=np.float, coordinates=None):
+        from shenfun.tensorproductspace import BoundaryValues
+        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
+                              padding_factor=padding_factor, dealias_direct=dealias_direct,
+                              coordinates=coordinates)
+        self.LT = Orthogonal(N, quad)
+        self._factor1 = np.zeros(0)
+        self._factor2 = np.zeros(0)
+        self.plan(int(N*padding_factor), 0, dtype, {})
+        self.bc = BoundaryValues(self, bc=bc)
+
+    @staticmethod
+    def boundary_condition():
+        return 'BeamFixedFree'
+
+    @property
+    def has_nonhomogeneous_bcs(self):
+        return self.bc.has_nonhomogeneous_bcs()
+
+    def _composite_basis(self, V, argument=0):
+        P = np.zeros_like(V)
+        k = np.arange(V.shape[1]).astype(np.float)[:-4]
+        P[:, :-4] = V[:, :-4] + 4*(2*k+3)/((k+3)**2)*V[:, 1:-3] - 2*(k-1)*(k+1)*(k+6)*(2*k+5)/((k+3)**2*(k+4)*(2*k+7))*V[:, 2:-2] 
+        - 4*(k+1)**2*(2*k+3)/((k+3)**2*(k+4)**2)*V[:, 3:-1] + ((k+1)**2*(k+2)**2*(2*k+3)/((k+3)**2*(k+4)**2*(2*k+7)))*V[:, 4:]
+        if argument == 1:
+            P[:, -4:] = np.tensordot(V[:, :4], BCBeamFixedFree.coefficient_matrix(), (1, 1))
+        return P
+
+    def set_factor_arrays(self, v):
+        s = self.sl[self.slice()]
+        if not self._factor1.shape == v[s].shape:
+            k = self.wavenumbers().astype(np.float)
+            self._factor1 = (4*(2*k+3)/((k+3)**2)).astype(float)
+            self._factor2 = (-(2*(k-1)*(k+1)*(k+6)*(2*k+5)/((k+3)**2*(k+4)*(2*k+7)))).astype(float)
+            self._factor3 = (- 4*(k+1)**2*(2*k+3)/((k+3)**2*(k+4)**2)).astype(float)
+            self._factor4 = ((k+1)**2*(k+2)**2*(2*k+3)/((k+3)**2*(k+4)**2*(2*k+7))).astype(float)
+
+    def scalar_product(self, input_array=None, output_array=None, fast_transform=False):
+        output = LegendreBase.scalar_product(self, input_array, output_array, False)
+        output[self.sl[slice(-4, None)]] = 0
+        return output
+
+    #@optimizer
+    def set_w_hat(self, w_hat, fk, f1, f2): # pragma: no cover
+        s = self.sl[self.slice()]
+        s2 = self.sl[slice(2, -2)]
+        s4 = self.sl[slice(4, None)]
+        w_hat[s] = fk[s]
+        w_hat[s2] += f1*fk[s]
+        w_hat[s4] += f2*fk[s]
+        return w_hat
+
+    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+        if i < self.N-4:
+            f = (sympy.legendre(i, x)
+                 +(4*(2*i+3)/((i+3)**2))*sympy.legendre(i+1, x)
+                 -(2*(i-1)*(i+1)*(i+6)*(2*i+5)/((i+3)**2*(i+4)*(2*i+7)))*sympy.legendre(i+2, x)
+                 -4*(i+1)**2*(2*i+3)/((i+3)**2*(i+4)**2)*sympy.legendre(i+3, x)
+                 +(i+1)**2*(i+2)**2*(2*i+3)/((i+3)**2*(i+4)**2*(2*i+7))*sympy.legendre(i+4, x))
+        else:
+            f = 0
+            for j, c in enumerate(BCBeamFixedFree.coefficient_matrix()[i-(self.N-4)]):
+                f += c*sympy.legendre(j, x)
+        return f
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        if i < self.N-4:
+            output_array[:] = eval_legendre(i, x) + (4*(2*i+3)/((i+3)**2))*eval_legendre(i+1, x) \
+                -(2*(i-1)*(i+1)*(i+6)*(2*i+5)/((i+3)**2*(i+4)*(2*i+7)))*eval_legendre(i+2, x) \
+                    -4*(i+1)**2*(2*i+3)/((i+3)**2*(i+4)**2)*eval_legendre(i+3, x) \
+                    +(i+1)**2*(i+2)**2*(2*i+3)/((i+3)^2*(i+4)**2*(2*i+7))*eval_legendre(i+4, x)
+        else:
+            X = sympy.symbols('x', real=True)
+            output_array[:] = sympy.lambdify(X, self.sympy_basis(i, x=X))(x)
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        if x is None:
+            x = self.mesh(False, False)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = np.atleast_1d(x)
+        if i < self.N-4:
+            basis = np.zeros(self.shape(True))
+            basis[np.array([i, i+1, i+2, i+3, i+4])] = (1, 4*(2*i+3)/((i+3)**2), -(2*(i-1)*(i+1)*(i+6)*(2*i+5)/((i+3)**2*(i+4)*(2*i+7))), \
+                                                        -4*(i+1)**2*(2*i+3)/((i+3)**2*(i+4)**2), \
+                                                            (i+1)**2*(i+2)**2*(2*i+3)/((i+3)**2*(i+4)**2*(2*i+7)))
+            basis = leg.Legendre(basis)
+            if k > 0:
+                basis = basis.deriv(k)
+            output_array[:] = basis(x)
+        else:
+            X = sympy.symbols('x', real=True)
+            output_array[:] = sympy.lambdify(X, self.sympy_basis(i, X).diff(X, k))(x)
+        return output_array
+
+    def to_ortho(self, input_array, output_array=None):
+        if output_array is None:
+            output_array = Function(self.get_orthogonal())
+        else:
+            output_array.fill(0)
+
+        self.set_factor_arrays(input_array)
+        output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2)
+        self.bc.add_to_orthogonal(output_array, input_array)
+        return output_array
+
+    def slice(self):
+        return slice(0, self.N-4)
+
+    def eval(self, x, u, output_array=None):
+        if output_array is None:
+            output_array = np.zeros(x.shape, dtype=self.dtype)
+        x = self.map_reference_domain(x)
+        w_hat = work[(u, 0, True)]
+        self.set_factor_arrays(u)
+        output_array[:] = leg.legval(x, u[:-4])
+        w_hat[2:-2] = self._factor1*u[:-4]
+        output_array += leg.legval(x, w_hat[:-2])
+        w_hat[4:] = self._factor2*u[:-4]
+        w_hat[:4] = 0
+        output_array += leg.legval(x, w_hat)
+        return output_array
+
+    def forward(self, input_array=None, output_array=None, fast_transform=False):
+        self.scalar_product(input_array, fast_transform=fast_transform)
+        u = self.scalar_product.tmp_array
+        self.bc.set_boundary_dofs(self.forward.output_array, False)
+        self.bc.add_mass_rhs(u)
+        self._truncation_forward(u, self.forward.output_array)
+        self.apply_inverse_mass(self.forward.output_array)
+        if output_array is not None:
+            output_array[...] = self.forward.output_array
+            return output_array
+        return self.forward.output_array
+
+    def get_bc_basis(self):
+        return BCBeamFixedFree(self.N, quad=self.quad, domain=self.domain,
+                                  coordinates=self.coors.coordinates)
+
+    def get_refined(self, N):
+        return BeamFixedFree(N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates,
+                              bc=self.bc.bc)
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return BeamFixedFree(self.N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=padding_factor,
+                              dealias_direct=dealias_direct,
+                              coordinates=self.coors.coordinates,
+                              bc=self.bc.bc)
+
+    def plan(self, shape, axis, dtype, options):
+        if isinstance(axis, tuple):
+            assert len(axis) == 1
+            axis = axis[0]
+
+        if isinstance(self.forward, Transform):
+            if self.forward.input_array.shape == shape and self.axis == axis:
+                # Already planned
+                return
+
+        self.LT.plan(shape, axis, dtype, options)
+        U, V = self.LT.forward.input_array, self.LT.forward.output_array
+        self.axis = axis
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.forward = Transform(self.forward, None, U, V, trunc_array)
+            self.backward = Transform(self.backward, None, trunc_array, V, U)
+            self.backward_uniform = Transform(self.backward_uniform, None, trunc_array, V, U)
+        else:
+            self.forward = Transform(self.forward, None, U, V, V)
+            self.backward = Transform(self.backward, None, V, V, U)
+            self.backward_uniform = Transform(self.backward_uniform, None, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
+
+    def _truncation_forward(self, padded_array, trunc_array):
+        if not id(trunc_array) == id(padded_array):
+            trunc_array.fill(0)
+            N = trunc_array.shape[self.axis]
+            s = self.sl[slice(0, N-4)]
+            trunc_array[s] = padded_array[s]
+            s = self.sl[slice(-4, None)]
+            trunc_array[s] = padded_array[s]
+
+    def _padding_backward(self, trunc_array, padded_array):
+        if not id(trunc_array) == id(padded_array):
+            padded_array.fill(0)
+            N = trunc_array.shape[self.axis]
+            _sn = self.sl[slice(0, N-4)]
+            padded_array[_sn] = trunc_array[_sn]
+            _sn = self.sl[slice(N-4, N)]
+            _sp = self.sl[slice(-4, None)]
+            padded_array[_sp] = trunc_array[_sn]
+
+        elif self.dealias_direct:
+            su = self.sl[slice(2*self.N//3, self.N-4)]
+            padded_array[su] = 0
+
+class BCBeamFixedFree(LegendreBase):
+    """Function space for inhomogeneous Biharmonic boundary conditions
+    u(-1), u'(-1), u''(1), u'''(1)
+    Parameters
+    ----------
+        N : int, optional
+            Number of quadrature points
+        quad : str, optional
+            Type of quadrature
+
+            - LG - Legendre-Gauss
+            - GL - Legendre-Gauss-Lobatto
+
+        domain : 2-tuple of floats, optional
+            The computational domain
+        scaled : bool, optional
+            Whether or not to use scaled basis
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
+
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
+    """
+
+    def __init__(self, N, quad="LG", domain=(-1., 1.),
+                  padding_factor=1, dealias_direct=False, coordinates=None):
+        LegendreBase.__init__(self, N, quad=quad, domain=domain,
+                              padding_factor=padding_factor, dealias_direct=dealias_direct,
+                              coordinates=coordinates)
+        self.plan(N, 0, np.float, {})
+
+    def plan(self, shape, axis, dtype, options):
+        if isinstance(axis, tuple):
+            assert len(axis) == 1
+            axis = axis[-1]
+        shape = list(shape) if np.ndim(shape) else [shape]
+        assert shape[axis] == self.shape(False)
+        U = np.zeros(shape, dtype=dtype)
+        shape[axis] = 4
+        V = np.zeros(shape, dtype=dtype)
+        self.forward = Transform(self.forward, lambda: None, U, V, V)
+        self.backward = Transform(self.backward, lambda: None, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, lambda: None, U, V, V)
+
+    def slice(self):
+        return slice(self.N-4, self.N)
+
+    def shape(self, forward_output=True):
+        if forward_output:
+            return 4
+        else:
+            return self.N
+
+    @staticmethod
+    def boundary_condition():
+        return 'Apply'
+
+    def vandermonde(self, x):
+        return leg.legvander(x, 3)
+
+    @staticmethod
+    def coefficient_matrix():
+        return np.array([[1, 0, 0, 0],
+                          [1, 1, 0, 0],
+                          [2/3, 1, 1/3, 0],
+                          [-1, -1.4, -1/3, 1/15]])
 
     def _composite_basis(self, V, argument=0):
         P = np.tensordot(V[:, :4], self.coefficient_matrix(), (1, 1))
