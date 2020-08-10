@@ -201,7 +201,15 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
                 B = legendre.bases.DirichletNeumann
             elif bc.lower() == 'neumanndirichlet':
                 B = legendre.bases.NeumannDirichlet
-
+        
+        elif isinstance(bc, list):
+            assert isinstance(bc[0], str)
+            assert isinstance(bc[1], tuple)
+            if bc[0].lower() == 'beamfixedfree':
+                assert len(bc[1]) == 4
+                par['bc']=bc[1]
+                B = legendre.bases.BeamFixedFree
+        
         return B(N, **par)
 
     elif family.lower() in ('laguerre', 'la'):
