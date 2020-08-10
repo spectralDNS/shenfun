@@ -6,15 +6,16 @@ DATE: today
 __Summary.__
 This is a demonstration of how the Python module "shenfun":
 "https://github.com/spectralDNS/shenfun" can be used to
-integrate over 2D surfaces in 3D space. We make use of
-curvilinear coordinates, and reproduce the integrals
-from "Chebfun":"http://www.chebfun.org/examples/approx3/SurfaceIntegral3D.html".
-
+integrate over 1D curves and 2D surfaces in 3D space.
+We make use of
+curvilinear coordinates, and reproduce some integrals
+performed by Behnam Hashemi with "Chebfun":"http://www.chebfun.org/examples/approx3/SurfaceIntegral3D.html".
 
 !bnotice
 For all the examples below we could just as well
 use Legendre polynomials instead of Chebyshev.
 Just replace 'C' with 'L' when creating function spaces.
+The accuracy ought to be similar.
 !enotice
 
 TOC: on
@@ -44,27 +45,52 @@ def func(x):
 %>
 % endif
 
-===== Introduction =====
+===== The inner product =====
 
 A lesser known fact about "shenfun": "https://github.com/spectralDNS/shenfun" is
 that it can be used to perform regular, unweighted, integrals with
 spectral accuracy. With the newly added curvilinear coordinates
-we can now also integrate over highly complex lines and surfaces
-embedded in 3D space.
+feature, we can now also integrate over highly complex lines and surfaces
+embedded in a higher dimensional space.
 
 To integrate over a domain in shenfun we use the
 "inner": "https://shenfun.readthedocs.io/en/latest/shenfun.forms.html#shenfun.forms.inner.inner"
-function, with a constant test function. For
-example, if we create some function space on the line from
-0 to 1, then we can get this length using `inner`
+function, with a constant test function. The `inner`
+function in shenfun is defined as an integral over the
+entire domain $\Omega$ in question
+
+!bt
+(u, v)_w = \int_{\Omega} u \overline{v} w d\Omega,
+!et
+
+for trial function $u$, test function $v$ and weight $w$.
+Also, $\overline{v}$ represents the complex conjugate of $v$, in case
+we are working with complex functions (like Fourier exponentials).
+
+The functions and weights take on different form, but if
+the test function $v$ is chosen to be a constant, e.g., $v=1$,
+then the weight is also constant, $w=1$, and the inner product becomes
+an unweighted integral of $u$ over the domain
+
+!bt
+(u, 1)_w = \int_{\Omega} u d\Omega
+!et
+
+=== Curve integrals ===
+
+For example, if we create some function space on the line from
+0 to 1, then we can get the length of this domain using `inner`
 
 !bc pycod
 from shenfun import *
 B = FunctionSpace(10, 'C', domain=(0, 1))
-length = inner(1, Array(B, val=1))
+u = Array(B, val=1)
+length = inner(u, 1)
 print('Length of domain =', length)
 !ec
 
+Since this function space `B` is Cartesian the computed
+length is simply the domain length.
 Not very impressive, but the same goes for multidimensional
 tensor product domains
 
@@ -76,7 +102,88 @@ print('Area of domain =', area)
 !ec
 
 Still not very impressive, but moving to curvilinear coordinates
-it all starts to become more interesting.
+it all starts to become more interesting. Lets
+look at a spiral $C$ embedded in $\mathbb{R}^3$, parametrized
+by one single parameter $t$
+
+!bt
+\begin{align*}
+x(t) &= \sin 2t \\
+y(t) &= \cos 2t \\
+z(t) &= \frac{t}{2} \\
+0 \le & t \le 2\pi
+\end{align*}
+!et
+
+What is the length of this spiral? The spiral can be
+seen as the red curve in the figure a few cells below.
+
+The integral over the parametrized curve $C$ can
+be written as
+
+!bt
+\int_C ds = \int_{t=0}^{2\pi} \sqrt{\left(\frac{d x}{d t}\right)^2 + \left(\frac{d y}{d t}\right)^2 + \left(\frac{d z}{d t}\right)^2} dt.
+!et
+
+We can find this integral easily using shenfun. Create
+a function space in curvilinear coordinates, providing
+the position vector $\mathbf{r} = x(t)\mathbf{i} + y(t) \mathbf{j} + z(t) \mathbf{k}$
+as input
+
+!bc pycod
+import sympy as sp
+from shenfun import *
+t = sp.Symbol('x', real=True, positive=True)
+rv = (sp.sin(2*t), sp.cos(2*t), 0.5*t)
+C = FunctionSpace(100, 'C', domain=(0, 2*np.pi), coordinates=((t,), rv))
+!ec
+
+Then compute the arclength using `inner`
+
+!bc pycod
+length = inner(1, Array(C, val=1))
+print('Length of spiral =', length)
+!ec
+
+The arclength is found to be slightly longer than $4 \pi$. Looking at the
+spiral below, the result looks reasonable.
+
+!bc pycod
+import matplotlib.pyplot as plt
+fig = plt.figure(figsize=(4, 3))
+X = C.curvilinear_mesh(uniform=True)
+ax = fig.add_subplot(111, projection='3d')
+p = ax.plot(X[0], X[1], X[2], 'r')
+hx = ax.set_xticks(np.linspace(-1, 1, 5))
+hy = ax.set_yticks(np.linspace(-1, 1, 5))
+!ec
+
+The term $\sqrt{\left(\frac{d x}{d t}\right)^2 + \left(\frac{d y}{d t}\right)^2 + \left(\frac{d z}{d t}\right)^2}$
+is actually here a constant $\sqrt{4.25}$, found in shenfun as
+
+!bc pycod
+C.coors.sg
+!ec
+
+We could also integrate a function over the spiral.
+For example, lets integrate the function $f(x, y, z)= \sin^2 x$
+
+!bt
+\int_C \sin^2 x ds = \int_{t=0}^{2\pi} \sin^2 (\sin 2t) \sqrt{\left(\frac{d x}{d t}\right)^2 + \left(\frac{d y}{d t}\right)^2 + \left(\frac{d z}{d t}\right)^2} dt
+!et
+
+!bc pycod
+inner(1, Array(C, buffer=sp.sin(rv[0])**2))
+!ec
+
+which can be easily verified using, e.g., Wolfram Alpha
+
+!bc pycod
+from IPython.display import IFrame
+IFrame("https://www.wolframalpha.com/input/?i=integrate+sin%5E2%28sin%282t%29%29+sqrt%284.25%29+from+t%3D0+to+2pi", width="500px", height="350px")
+!ec
+
+=== Surface integrals ===
 
 Consider a 3D function $f(x,y,z) \in \mathbb{R}^3$ and
 a 2D surface (not neccessarily plane) $S(u, v)$,
@@ -101,11 +208,11 @@ domain of the surface $S$ is $D=D_u \times D_v$.
 A surface integral of $f$ over $S$ can now be written
 
 !bt
-\int_S f(x, y, z) dxdydz = \int_D f(x(u, v), y(u, v), z(u, v)) \left|\frac{\partial \mathbf{r}}{\partial u} \times \frac{\partial \mathbf{r}}{\partial v} \right| dudv
+\int_S f(x, y, z) dS = \int_D f(x(u, v), y(u, v), z(u, v)) \left|\frac{\partial \mathbf{r}}{\partial u} \times \frac{\partial \mathbf{r}}{\partial v} \right| dudv,
 !et
 
-With shenfun such integrals are trivial, even for highly complex
-domains.
+where $dS$ is a surface area element. With shenfun such integrals
+are trivial, even for highly complex domains.
 
 ===== Example 1 =====
 
@@ -136,6 +243,8 @@ B1 = FunctionSpace(0, 'F', dtype='d')
 T = TensorProductSpace(comm, (B0, B1), coordinates=(psi, rv, sp.Q.positive(sp.sin(theta))))
 !ec
 
+where `sp.Q.positive(sp.sin(theta))` is a restriction that
+helps `Sympy` in computing the Jacobian required for the integral.
 We can now approximate the function $f$ on this surface
 
 !bc pycod
