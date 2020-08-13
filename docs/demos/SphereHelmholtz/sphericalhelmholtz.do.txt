@@ -40,7 +40,7 @@ def func(x):
 %>
 % endif
 
-======= Helmholtz equation =======
+===== Helmholtz equation =====
 label{demo:spherical_helmholtz}
 
 The Helmholtz equation is given as
@@ -118,7 +118,7 @@ find $u \in V^N \otimes V_F^N$ such that
 Note that integration over the domain is done using
 spherical coordinates with an integral measure of $d\sigma=\sin \theta d\theta d\phi$.
 
-======= Implementation in shenfun =======
+===== Implementation in shenfun =====
 label{demo:sphericalimplementation}
 
 A complete implementation is found in the file "sphere_helmholtz.py":
@@ -223,7 +223,7 @@ uq = Array(T, buffer=ue)
 print('Error =', np.linalg.norm(uj-uq))
 !ec
 
-======= Postprocessing =======
+===== Postprocessing =====
 We can refine the solution to make it look better,
 and plot on the unit sphere using "mayavi":"https://docs.enthought.com/mayavi/mayavi/",
 leading to Figure ref{fig:helmholtz}.
@@ -244,7 +244,7 @@ mlab.show()
 !ec
 
 
-#======= Bibliography =======
+#===== Bibliography =====
 
 ## Publish (https://bitbucket.org/logg/publish is used to
 ## handle references. The line below specifies the name of
