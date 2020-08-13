@@ -11,7 +11,7 @@ DEMO          = Poisson/poisson.rst \
                 KleinGordon/kleingordon.rst \
                 Poisson3D/poisson3d.rst \
 				PolarHelmholtz/polarhelmholtz.rst \
-				SphereHelmholtz/sphericalhelmholtz.rst \
+				SphereHelmholtz/sphericalhelmholtz.ipynb \
 				KuramatoSivashinsky/kuramatosivashinsky.rst \
 				Stokes/stokes.rst DrivenCavity/drivencavity.rst \
 				RayleighBenard/rayleighbenard.rst \
