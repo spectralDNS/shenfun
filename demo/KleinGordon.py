@@ -52,7 +52,7 @@ fu = Array(TT, buffer=(0, ue))
 f, u = fu
 up = Array(Tp)
 
-K = T.local_wavenumbers(False, True, True)
+K = np.array(T.local_wavenumbers(True, True, True))
 
 dfu = Function(TT)
 df, du = dfu
@@ -90,12 +90,16 @@ if rank == 0:
     plt.draw()
     plt.pause(1e-4)
 
+#def energy_fourier(comm, a):
+#    result = 2*np.sum(abs(a[..., 1:-1])**2) + np.sum(abs(a[..., 0])**2) + np.sum(abs(a[..., -1])**2)
+#    result =  comm.allreduce(result)
+#    return result
+
 def update(self, fu, fu_hat, t, tstep, **params):
     global gradu
 
     timer()
     transformed = False
-
     if rank == 0 and tstep % params['plot_tstep'] == 0 and params['plot_tstep'] > 0:
         fu = fu_hat.backward(fu)
         f, u = fu[:]
@@ -122,7 +126,7 @@ def update(self, fu, fu_hat, t, tstep, **params):
         f, u = fu
         f_hat, u_hat = fu_hat
         ekin = 0.5*energy_fourier(f_hat, T)
-        es = 0.5*energy_fourier(1j*(K[0]*u_hat[0]+K[1]*u_hat[1]+K[2]*u_hat[2]), T)
+        es = 0.5*energy_fourier(1j*(K*u_hat), T)
         eg = gamma*np.sum(0.5*u**2 - 0.25*u**4)/np.prod(np.array(N))
         eg = comm.allreduce(eg)
         gradu = TV.backward(1j*(K[0]*u_hat[0]+K[1]*u_hat[1]+K[2]*u_hat[2]), gradu)
@@ -142,8 +146,8 @@ if __name__ == '__main__':
            'end_time': 100.,
            'file': file0}
     dt = 0.005
-    integrator = ETDRK4(TT, N=NonlinearRHS, update=update, **par)
-    #integrator = RK4(TT, N=NonlinearRHS, update=update)
+    #integrator = ETDRK4(TT, N=NonlinearRHS, update=update, **par)
+    integrator = RK4(TT, N=NonlinearRHS, update=update, **par)
     integrator.setup(dt)
     t0 = time()
     fu_hat = integrator.solve(fu, fu_hat, dt, (0, par['end_time']))

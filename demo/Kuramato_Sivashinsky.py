@@ -62,16 +62,17 @@ U_hat = U.forward(U_hat)
 U_hat.mask_nyquist(mask)
 
 # Integrate using an exponential time integrator
-plt.figure()
-cm = plt.get_cmap('hot')
-image = plt.contourf(X[0], X[1], U, 256, cmap=cm)
-plt.draw()
-plt.pause(1e-6)
 def update(self, u, u_hat, t, tstep, plot_step, **params):
+    if not hasattr(self, 'fig'):
+        self.fig = plt.figure()
+        self.cm = plt.get_cmap('hot')
+        self.image = plt.contourf(X[0], X[1], U, 256, cmap=self.cm)
+
     if tstep % plot_step == 0 and plot_step > 0:
         u = u_hat.backward(u)
-        image.ax.clear()
-        image.ax.contourf(X[0], X[1], u, 256, cmap=cm)
+        self.image.ax.clear()
+        self.image.ax.contourf(X[0], X[1], u, 256, cmap=self.cm)
+        plt.autoscale()
         plt.pause(1e-6)
         self.params['count'] += 1
         #plt.savefig('Kuramato_Sivashinsky_N_{}_{}.png'.format(N[0], self.params['count']))

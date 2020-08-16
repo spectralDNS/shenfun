@@ -51,7 +51,7 @@ def div(test):
                 for i in range(ndim):
                     dv.append(div(test[i]))
 
-                return _expr_from_vector_components(dv, test.base)
+                return _expr_from_vector_components(dv, test.basis())
 
             else: # vector
                 d = Dx(test[0], 0, 1)
@@ -89,7 +89,7 @@ def div(test):
                         dj += di[j]
                     dj.simplify()
                     d.append(dj)
-                return _expr_from_vector_components(d, test.base)
+                return _expr_from_vector_components(d, test.basis())
 
             else:
                 sg = coors.get_sqrt_det_g()
@@ -167,7 +167,7 @@ def grad(test):
                     di += dj[j]
                 d.append(di)
 
-    dv = _expr_from_vector_components(d, test.base)
+    dv = _expr_from_vector_components(d, test.basis())
     dv.simplify()
     return dv
 
@@ -264,7 +264,7 @@ def curl(test):
                 w0 = (Dx(test[2]*hi[2]**2, 1, 1) - Dx(test[1]*hi[1]**2, 2, 1))*(1/sg)
                 w1 = (Dx(test[0]*hi[0]**2, 2, 1) - Dx(test[2]*hi[2]**2, 0, 1))*(1/sg)
                 w2 = (Dx(test[1]*hi[1]**2, 0, 1) - Dx(test[0]*hi[0]**2, 1, 1))*(1/sg)
-                test = _expr_from_vector_components([w0, w1, w2], test.base)
+                test = _expr_from_vector_components([w0, w1, w2], test.basis())
             else:
                 assert test.dimensions == 2
                 test = (Dx(test[1]*hi[1]**2, 0, 1) - Dx(test[0]*hi[0]**2, 1, 1))*(1/sg)
@@ -295,7 +295,7 @@ def curl(test):
                 #w1 = d0*gt[0, 1] + d1*gt[1, 1] + d2*gt[2, 1]
                 #w2 = d0*gt[0, 2] + d1*gt[1, 2] + d2*gt[2, 2]
 
-                test = _expr_from_vector_components([w0, w1, w2], test.base)
+                test = _expr_from_vector_components([w0, w1, w2], test.basis())
             else:
                 assert test.dimensions == 2
                 test = np.sum([(Dx(test[i]*g[1, i], 0, 1) - Dx(test[i]*g[0, i], 1, 1))*(1/sg) for i in range(2)])

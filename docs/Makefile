@@ -17,6 +17,16 @@ DEMO          = Poisson/poisson.rst \
 				RayleighBenard/rayleighbenard.rst \
 				Functions/functions.ipynb \
 				Integration/surfaceintegration.ipynb
+NDEMO         = Poisson/poisson.ipynb2 \
+                KleinGordon/kleingordon.ipynb2 \
+                Poisson3D/poisson3d.ipynb2 \
+				PolarHelmholtz/polarhelmholtz.ipynb2 \
+				SphereHelmholtz/sphericalhelmholtz.ipynb2 \
+				KuramatoSivashinsky/kuramatosivashinsky.ipynb2 \
+				Stokes/stokes.ipynb2 DrivenCavity/drivencavity.ipynb2 \
+				RayleighBenard/rayleighbenard.ipynb2 \
+				Functions/functions.ipynb2 \
+				Integration/surfaceintegration.ipynb2
 
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
@@ -34,11 +44,21 @@ help:
 	jupyter nbconvert --inplace --execute demos/${basename $@}.ipynb
 	cp demos/$(basename $@).ipynb source/
 
+%.ipynb2:
+	doconce format ipynb demos/$(basename $@).do.txt
+	#jupyter nbconvert --inplace --clear-output demos/${basename $@}.ipynb
+	jupyter nbconvert --inplace --execute demos/${basename $@}.ipynb
+	doconce subst "<div" "<a" demos/$(basename $@).ipynb
+	doconce subst "div>" "a>" demos/$(basename $@).ipynb
+	cp demos/$(basename $@).ipynb book/
+
 publish:
 	cd demos && publish export papers.bib && cd ..
 	cp demos/papers.bib source/
 
 demos: $(DEMO)
+
+ipynb: $(NDEMO)
 
 pdf:
 	@$(SPHINXBUILD) -b latex -d "$(BUILDDIR)"/doctrees $(SOURCEDIR) "$(BUILDDIR)"/latex

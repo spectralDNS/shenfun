@@ -418,7 +418,8 @@ class RK4(IntegratorBase):
             self.U_hat0[:] = self.U_hat1[:] = u_hat
             for rk in range(4):
                 dU = self.NonlinearRHS(u, u_hat, self.dU, **self.params)
-                dU += L*u_hat
+                if L:
+                    dU += L*u_hat
                 if rk < 3:
                     u_hat[:] = self.U_hat0 + self.b[rk]*dt*dU
                 self.U_hat1 += self.a[rk]*dt*dU
