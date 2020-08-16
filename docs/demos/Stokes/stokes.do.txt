@@ -236,20 +236,19 @@ h = uex.diff(x, 1) + uey.diff(y, 1) + uez.diff(z, 1)
 
 !ec
 
-===== Bases and tensor product spaces =====
+===== Tensor product spaces =====
 
-Bases are created using the ${func('Basis')} function. A choice of
+One-dimensional spaces are created using the ${func('FunctionSpace')} function. A choice of
 polynomials between Legendre or Chebyshev can be made, and the size
 of the domain is given
 
 !bc pycod
-N = (40, 40, 40)
+N = (20, 20, 20)
 family = 'Legendre'
 K0 = FunctionSpace(N[0], 'Fourier', dtype='D', domain=(0, 2*np.pi))
 K1 = FunctionSpace(N[1], 'Fourier', dtype='d', domain=(0, 2*np.pi))
 SD = FunctionSpace(N[2], family, bc=(0, 0))
 ST = FunctionSpace(N[2], family)
-ST.slice = lambda: slice(0, ST.N-2)
 !ec
 
 Note that the last line of code is there to ensure that only the first
@@ -300,7 +299,7 @@ D = inner(q, div(u))
 
 !bnotice
 The inner products may also be assembled with one single line, as
-!bc
+!bc pycod-t
 AA = inner(v, div(grad(u))) + inner(v, -grad(u)) + inner(q, div(u))
 !ec
 However, this requires addition, not subtraction, of inner products and it is not
@@ -315,7 +314,7 @@ trial function `u[0]`, the
 matrices 2 and 3 are for components 1 and the last two are for components
 2. The first two matrices are as such for
 
-!bc
+!bc pycod-t
   A[0:2] = inner(v[0], div(grad(u[0])))
 !ec
 
@@ -403,7 +402,7 @@ the exact solution.
 
 !bc pycod
 # Solve problem
-up_hat = M.solve(fh_hat, constraints=((3, 0, 0),))
+up_hat = M.solve(fh_hat, constraints=((3, 0, 0), (3, N[2]-1, 0)))
 up = up_hat.backward()
 u_, p_ = up
 

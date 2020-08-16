@@ -303,6 +303,7 @@ v = TestFunction(T)
 u = TrialFunction(T)
 v0 = TestFunction(T0)
 u0 = TrialFunction(T0)
+alpha = 1
 
 mats = inner(v, -div(grad(u))+alpha*u)
 if comm.Get_rank() == 0:
@@ -321,9 +322,9 @@ and then compute `f` exactly using exact differentiation
 !bc pycod
 
 # Manufactured solution
-alpha = 2
 ue = (r*(1-r))**2*sp.cos(8*theta)-0.1*(r-1)
-f = -ue.diff(r, 2) - (1/r)*ue.diff(r, 1) - (1/r**2)*ue.diff(theta, 2) + alpha*ue
+#f = -ue.diff(r, 2) - (1/r)*ue.diff(r, 1) - (1/r**2)*ue.diff(theta, 2) + alpha*ue
+f = (-div(grad(u))+alpha*u).tosympy(basis=ue, psi=psi)
 
 # Compute the right hand side on the quadrature mesh
 fj = Array(T, buffer=f)
@@ -339,7 +340,7 @@ if T.local_slice(True)[0].start == 0: # The processor that owns k=0
 if comm.Get_rank() == 0:
     f0_hat = Function(T0)
     gt = sp.lambdify(r, sp.integrate(f, (theta, 0, 2*sp.pi))/2/sp.pi)(L0.mesh())
-    f0_hat = L0.scalar_product(gt, f0_hat)
+    f0_hat = T0.scalar_product(gt, f0_hat)
 !ec
 
 Note that for $u^0$ we perform the interal in the $\theta$ direction
@@ -351,13 +352,13 @@ linear system of equations
 
 !bc pycod
 u_hat = Function(T)
-Sol1 = SolverGeneric1ND(mats)
+Sol1 = la.SolverGeneric1ND(mats)
 u_hat = Sol1(f_hat, u_hat)
 
 # case k = 0
 u0_hat = Function(T0)
 if comm.Get_rank() == 0:
-    Sol0 = SolverGeneric1ND(mats0)
+    Sol0 = la.SolverGeneric1ND(mats0)
     u0_hat = Sol0(f0_hat, u0_hat)
 comm.Bcast(u0_hat, root=0)
 !ec
@@ -376,9 +377,8 @@ The solution can now be compared with the exact solution
 through
 
 !bc pycod
-ue = Array(T, buffer=ue)
-print('Error =', np.linalg.norm(uj-ue))
-# ---> Error = 7.45930806417765e-15
+uq = Array(T, buffer=ue)
+print('Error =', np.linalg.norm(uj-uq))
 !ec
 
 We can also get the gradient of the solution. For this we need
@@ -464,8 +464,12 @@ gradue = Array(V, buffer=list(b[0]*ue.diff(theta, 1)/r**2 + b[1]*ue.diff(r, 1)))
 #or alternatively
 #gradue = Array(V, buffer=grad(u).tosympy(basis=ue, psi=psi))
 print('Error gradient', np.linalg.norm(gradu-gradue))
-# ---> Error gradient 1.0856774538980375e-08
 !ec
+% if FORMAT not in ("ipynb"):
+!bc pycod-t
+Error gradient 1.0727128137958557e-08
+!ec
+% endif
 
 We now refine the solution to make it look better,
 and plot on the unit disc.
@@ -485,6 +489,7 @@ up = np.vstack([ur, ur[0]])
 xi, yi = TT.local_curvilinear_mesh()
 
 # plot
+import matplotlib.pyplot as plt
 plt.figure()
 plt.contourf(xp, yp, up)
 plt.quiver(xi, yi, gradu[0], gradu[1], scale=40, pivot='mid', color='white')
@@ -496,7 +501,9 @@ plt.axis('off')
 plt.show()
 !ec
 
+% if not FORMAT in ("ipynb",):
 FIGURE: [https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/Helmholtz_polar_with_vectors.png, width=700 frac=1] Solution of Helmholtz equation, with gradient.
+% endif
 
 #======= Bibliography =======
 

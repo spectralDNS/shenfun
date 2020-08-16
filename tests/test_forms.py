@@ -98,6 +98,7 @@ T = shenfun.TensorProductSpace(comm, (K0, K1, K2))
 C = shenfun.TensorProductSpace(comm, (K1, K2, K3))
 TT = shenfun.VectorTensorProductSpace(T)
 CC = shenfun.VectorTensorProductSpace(C)
+VT = shenfun.MixedTensorProductSpace([TT, T])
 KK = shenfun.MixedTensorProductSpace([T, T, C])
 vf = shenfun.Function(TT)
 va = shenfun.Array(TT)
@@ -128,6 +129,15 @@ def test_inner():
     D = inner(curl(v), curl(u))
     E = inner(grad(q), grad(p))
     F = inner(v, grad(div(u)))
+    wq = shenfun.TrialFunction(VT)
+    w, q = wq
+    hf = shenfun.TestFunction(VT)
+    h, f = hf
+    G = inner(h, div(grad(w)))
+    H = inner(f, div(div(grad(w))))
+    I = inner(h, curl(w))
+    J = inner(curl(h), curl(w))
+    K = inner(h, grad(div(w)))
 
 
 if __name__ == '__main__':

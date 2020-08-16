@@ -264,8 +264,7 @@ from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 from shenfun.tensorproductspace import TensorProductSpace
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    project, Dx, FunctionSpace
-from mpi4py import MPI
+    project, Dx, FunctionSpace, comm, Array, chebyshev
 !ec
 
 We use `Sympy` for the manufactured solution and `Numpy` for testing. MPI for
@@ -343,11 +342,7 @@ $\{y_j\}_{j=0}^{N_1-0}$ and $\{z_k\}_{k=0}^{N_2-1}$. For example, using 4
 procesors and a processor mesh of shape $2\times 2$, then the local slices for
 each processor in spectral space are
 !bc pycod
->>> print(comm.Get_rank(), T.local_slice())
-3 [slice(0, 14, None), slice(8, 15, None), slice(5, 9, None)]
-1 [slice(0, 14, None), slice(0, 8, None), slice(5, 9, None)]
-2 [slice(0, 14, None), slice(8, 15, None), slice(0, 5, None)]
-0 [slice(0, 14, None), slice(0, 8, None), slice(0, 5, None)]
+print(comm.Get_rank(), T.local_slice())
 !ec
 where the global shape is $\bs{N}=(14, 15, 9)$ after taking advantage of
 Hermitian symmetry in the $z$-direction. So, all processors have the complete first dimension available locally, as they
@@ -356,8 +351,8 @@ axes $y$ and $z$, respectively. Processor 2 owns slices $0:8$ and $0:5$ etc. In
 real space the mesh is distributed differently. First of all the global mesh
 shape is $\bs{N}=(14, 15, 16)$, and it is distributed along the first two
 dimensions. The local slices can be inspected as
-!bc pycod
->>> print(comm.Get_rank(), T.local_slice(False))
+!bc
+print(comm.Get_rank(), T.local_slice(False))
 0 [slice(0, 7, None), slice(0, 8, None), slice(0, 16, None)]
 1 [slice(0, 7, None), slice(8, 15, None), slice(0, 16, None)]
 2 [slice(7, 14, None), slice(0, 8, None), slice(0, 16, None)]
@@ -374,13 +369,13 @@ T = TensorProductSpace(comm, (SD, K1, K2), axes=(0, 1, 2), slab=True)
 !ec
 which will lead to a mesh that is distributed along $x$-direction in real space
 and $y$-direction in spectral space. The local slices are
-!bc pycod
->>> print(comm.Get_rank(), T.local_slice()) # spectral space
+!bc
+print(comm.Get_rank(), T.local_slice()) # spectral space
 1 [slice(0, 14, None), slice(4, 8, None), slice(0, 9, None)]
 2 [slice(0, 14, None), slice(8, 12, None), slice(0, 9, None)]
 0 [slice(0, 14, None), slice(0, 4, None), slice(0, 9, None)]
 3 [slice(0, 14, None), slice(12, 15, None), slice(0, 9, None)]
->>> print(comm.Get_rank(), T.local_slice(False)) # real space
+print(comm.Get_rank(), T.local_slice(False)) # real space
 3 [slice(11, 14, None), slice(0, 15, None), slice(0, 16, None)]
 0 [slice(0, 4, None), slice(0, 15, None), slice(0, 16, None)]
 2 [slice(8, 11, None), slice(0, 15, None), slice(0, 16, None)]
@@ -429,6 +424,7 @@ Finally, solve linear equation system and transform solution from spectral
 $\hat{u}_{\ts{k}}$ vector to the real space $u(\bs{x})$ and then check how the solution corresponds with the exact solution $u_e$.
 !bc pycod
 # Create Helmholtz linear algebra solver
+Solver = chebyshev.la.Helmholtz
 H = Solver(*matrices)
 
 # Solve and transform to real space
@@ -460,7 +456,7 @@ We set up the solver to run for a list of $N=[8, 10, \ldots, 38]$, and collect
 the errornorms in arrays to be plotted. Such a script can be easily created
 with the "subprocess": "https://docs.python.org/3/library/subprocess.html" module
 
-!bc pycod
+!bc
 import subprocess
 from numpy import log, array
 from matplotlib import pyplot as plt
@@ -486,7 +482,7 @@ generated figure is shown in the summary's Fig. ref{fig:3d:ct0}. The spectral
 convergence is evident and we can see that after $N=25$ roundoff errors dominate
 as the errornorm trails off around $10^{-13}$.
 
-!bc pycod
+!bc
 plt.figure(figsize=(6, 4))
 for basis, col in zip(('legendre', 'chebyshev'), ('r', 'b')):
     plt.semilogy(N, error[basis], col, linewidth=2)
@@ -511,21 +507,20 @@ chosen as a command-line argument, is shown below.
 !ec
 or similarly with `chebyshev` instead of `legendre`.
 
-!bc pycod
+% if FORMAT in ("latex", "pdflatex", "html"):
+
+!bc
 import sys, os
 import importlib
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
-    Function, Basis, TensorProductSpace
+    Function, Basis, TensorProductSpace, comm
 import time
-from mpi4py import MPI
 try:
     import matplotlib.pyplot as plt
 except ImportError:
     plt = None
-
-comm = MPI.COMM_WORLD
 
 assert len(sys.argv) == 3
 assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
@@ -590,6 +585,15 @@ error = comm.reduce(np.linalg.norm(uj-uq)**2)
 if comm.Get_rank() == 0:
     print("Error=%2.16e" %(np.sqrt(error)))
 !ec
+
+% else:
+===== Complete solver =====
+label{sec:complete}
+A complete solver, that can use either Legendre or Chebyshev bases, chosen as a
+command-line argument, can be found "here":
+"https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py".
+
+% endif
 
 #======= Bibliography =======
 
