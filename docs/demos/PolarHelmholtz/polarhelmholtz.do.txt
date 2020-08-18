@@ -39,7 +39,7 @@ def func(x):
 %>
 % endif
 
-======= Helmholtz equation =======
+===== Helmholtz equation =====
 label{demo:polar_helmholtz}
 
 The Helmholtz equation is given as
@@ -233,7 +233,7 @@ see (ref{eq:psi}). This leads to a measure of $0.5(t+1)adtd\theta$.
 Furthermore, the weight $w(t)$ will be unity for the Legendre basis and
 $(1-t^2)^{-0.5}$ for the Chebyshev bases.
 
-======= Implementation in shenfun =======
+===== Implementation =====
 label{demo:polarimplementation}
 
 A complete implementation is found in the file "unitdisc_helmholtz.py":
@@ -372,7 +372,7 @@ sl = T.local_slice(False)
 uj = u_hat.backward() + u0_hat.backward()[:, sl[1]]
 !ec
 
-======= Postprocessing =======
+===== Postprocessing =====
 The solution can now be compared with the exact solution
 through
 

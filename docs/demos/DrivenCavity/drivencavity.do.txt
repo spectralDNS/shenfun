@@ -84,14 +84,14 @@ Note that MPI for Python ("mpi4py" : "https://bitbucket.org/mpi4py/mpi4py")
 is a requirement for shenfun, but the current solver cannot be used with more
 than one processor.
 
-===== Bases and tensor product spaces =====
+===== Tensor product spaces =====
 label{sec:bases}
 
-With the Galerkin method we need basis functions for both velocity and
+With the Galerkin method we need function spaces for both velocity and
 pressure, as well as for the
-nonlinear right hand side. A Dirichlet basis will be used for velocity,
-whereas there is no boundary restriction on the pressure basis. For both
-two-dimensional bases we will use one basis function for the $x$-direction,
+nonlinear right hand side. A Dirichlet space will be used for velocity,
+whereas there is no boundary restriction on the pressure space. For both
+two-dimensional spaces we will use one basis function for the $x$-direction,
 $\mathcal{X}_k(x)$, and one for the $y$-direction, $\mathcal{Y}_l(y)$. And
 then we create two-dimensional basis functions like
 
@@ -130,9 +130,9 @@ With shenfun we create these homogeneous spaces, $D_0^{N_0}(x)=\text{span}\{L_k-
 $D_0^{N_1}(y)=\text{span}\{L_l-L_{l+2}\}_{l=0}^{N_1-2}$ as
 
 !bc pycod
-N = (51, 51)
+N = (45, 45)
 family = 'Legendre' # or use 'Chebyshev'
-quad = 'LG'         # for Chebyshev use 'GC' or 'GL'
+quad = 'GL'         # for Chebyshev use 'GC' or 'GL'
 D0X = FunctionSpace(N[0], family, quad=quad, bc=(0, 0))
 D0Y = FunctionSpace(N[1], family, quad=quad, bc=(0, 0))
 !ec
@@ -161,7 +161,7 @@ using both additional basis functions. We create the space
 $D_1^{N_1}(y)=\text{span}\{\mathcal{Y}_l(y)\}_{l=0}^{N_1-1}$ as
 
 !bc pycod
-D1Y = FunctionSpace(N[1], family, quad=quad, bc=(1, 0))
+D1Y = FunctionSpace(N[1], family, quad=quad, bc=(0, 1))
 !ec
 
 where `bc=(1, 0)` fixes the values for $y=1$ and $y=-1$, respectively.
@@ -173,7 +173,7 @@ quite straight forward do
 !bc pycod
 import sympy
 x = sympy.symbols('x')
-#D1Y = FunctionSpace(N[1], family, quad=quad, bc=((1-x)**2*(1+x)**2, 0))
+#D1Y = FunctionSpace(N[1], family, quad=quad, bc=(0, (1-x)**2*(1+x)**2))
 !ec
 
 Uncomment the last line to run the regularized boundary conditions.
@@ -349,7 +349,7 @@ D = inner(q, div(u))
 
 !bnotice
 The inner products may also be assembled with one single line, as
-!bc
+!bc pycod-t
 AA = inner(grad(v), -nu*grad(u)) + inner(div(v), p) + inner(q, div(u))
 !ec
 But note that this requires addition, not subtraction, of inner products,
@@ -572,7 +572,7 @@ while not converged:
     uh_new = M.solve(bh_hat, u=uh_new, constraints=((2, 0, 0),), Alu=Alu) # Constraint for component 2 of mixed space
     error = np.linalg.norm(ui_hat-ui_new)
     uh_hat[:] = alfa*uh_new + (1-alfa)*uh_hat
-    converged = abs(error) < 1e-10 or count >= 10000
+    converged = abs(error) < 1e-8 or count >= 100
     print('Iteration %d Error %2.4e' %(count, error))
 
 up = uh_hat.backward()
@@ -583,14 +583,14 @@ plt.figure()
 plt.quiver(X[0], X[1], u[0], u[1])
 !ec
 
-The last three lines plots the velocity vectors that are shown
-in Figure ref{fig:drivencavity}. The solution is apparently nice
+The last three lines plots velocity vectors, like also seen in the figure ref{fig:drivencavity}
+in the top of this demo. The solution is apparently nice
 and smooth, but hidden underneath are Gibbs oscillations from the
 corner discontinuities. This is painfully obvious when switching from
 Legendre to Chebyshev polynomials. With Chebyshev the same plot looks
-like Figure ref{fig:drivencavitycheb}. However, choosing instead the
-regularized lid, the solutions will be nice and smooth, both for
-Legendre and Chebyshev polynomials.
+like the Figure ref{fig:drivencavitycheb} below. However, choosing instead the
+regularized lid, with no discontinuities, the solutions will be nice and
+smooth, both for Legendre and Chebyshev polynomials.
 
 FIGURE: [https://raw.githack.com/spectralDNS/spectralutilities/master/figures/DrivenCavityCheb.png] Velocity vectors for Re=100 using Chebyshev.   label{fig:drivencavitycheb}
 

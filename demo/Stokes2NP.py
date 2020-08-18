@@ -30,18 +30,21 @@ x, y = symbols("x,y", real=True)
 assert comm.Get_size() == 1, "Two non-periodic directions only have solver implemented for serial"
 
 # Some right hand side (manufactured solution)
-uex = (cos(4*np.pi*x)+sin(2*np.pi*y))*(1-y**2)*(1-x**2)
-uey = (sin(2*np.pi*x)+cos(6*np.pi*y))*(1-y**2)*(1-x**2)
+#uex = (cos(4*np.pi*x)+sin(2*np.pi*y))*(1-y**2)*(1-x**2)
+#uey = (sin(2*np.pi*x)+cos(6*np.pi*y))*(1-y**2)*(1-x**2)
+uex = (cos(2*np.pi*x)*sin(2*np.pi*y))*(1-y**2)*(1-x**2)
+uey = (-sin(2*np.pi*x)*cos(2*np.pi*y))*(1-x**2)
+
 pe = -0.1*sin(2*x)*sin(4*y)
 fx = -uex.diff(x, 2) - uex.diff(y, 2) - pe.diff(x, 1)
 fy = -uey.diff(x, 2) - uey.diff(y, 2) - pe.diff(y, 1)
 h = uex.diff(x, 1) + uey.diff(y, 1)
 
-N = (38, 38)
-#family = 'Chebyshev'
-family = 'Legendre'
+N = (50, 50)
+family = 'Chebyshev'
+#family = 'Legendre'
 D0X = FunctionSpace(N[0], family, bc=(0, 0), scaled=True)
-D0Y = FunctionSpace(N[1], family, bc=(0, 0), scaled=True)
+D0Y = FunctionSpace(N[1], family, bc=(-sin(2*np.pi*x)*(1-x**2), -sin(2*np.pi*x)*(1-x**2)), scaled=True)
 PX = FunctionSpace(N[0], family)
 PY = FunctionSpace(N[1], family)
 
@@ -73,6 +76,13 @@ else:
 
 A10 = inner(q, div(u))
 
+bc_mats = extract_bc_matrices([A00, A01, A10])
+
+uh_hat = Function(VQ).set_boundary_dofs()
+bh_hat0 = Function(VQ)
+BM = BlockMatrix(bc_mats)
+bh_hat0 = BM.matvec(-uh_hat, bh_hat0)
+
 # Create Block matrix
 M = BlockMatrix(A00+A01+A10)
 
@@ -85,7 +95,8 @@ f_hat = inner(v, f_, output_array=f_hat)
 h_hat = inner(q, h_, output_array=h_hat)
 
 # Solve problem
-uh_hat = Function(VQ)
+#uh_hat = Function(VQ)
+fh_hat += bh_hat0
 uh_hat = M.solve(fh_hat, u=uh_hat, constraints=((2, 0, 0),))
 #                                                (2, N[0]-1, 0),
 #                                                (2, N[0]*N[1]-1, 0),

@@ -53,7 +53,7 @@ def func(x):
 %>
 % endif
 
-======= Model problem =======
+===== The Rayleigh Bénard equations =====
 label{demo:rayleighbenard}
 
 The governing equations solved in domain $\Omega=[-1, 1]\times [0, 2\pi]$ are
@@ -81,7 +81,7 @@ $U=\sqrt{g \alpha \Delta T h}$. See cite{pandey18} for more details.
 The governing equations contain a non-trivial coupling between velocity, pressure and temperature.
 This coupling can be simplified by eliminating the pressure from the equation for the wall-normal velocity
 component $u$. We accomplish this by taking the Laplace of the momentum equation in wall normal
-direction, using the pressure from the divergence of the momentum equation 
+direction, using the pressure from the divergence of the momentum equation
 $\nabla^2 p = -\nabla \cdot \bs{H}+\partial T/\partial x$, where
 $\bs{H} = (H_x, H_y) = (\bs{u} \cdot \nabla) \bs{u}$
 
@@ -278,7 +278,7 @@ To sum up, with the solution known at $t = t - \Delta t$, we solve
 |       (ref{eq:T2})                     |     XXX $\hat{T}_{kl}(t)$        | XXX $(k, l) \in \boldsymbol{k}_T \times \boldsymbol{l}$        |
 |------------------------------------------------------------------------------------------------------------------------------------|
 
-======= Temporal discretization =======
+===== Temporal discretization =====
 
 The governing equations are integrated in time using a semi-implicit third order Runge Kutta method.
 This method applies to any generic equation
@@ -337,7 +337,7 @@ integrating (with weights) over the domain
 Equation (ref{eq:rk3stagesvar}) is the variational form implemented by `shenfun` for the
 time dependent equations.
 
-======= Shenfun implementation =======
+===== Implementation =====
 
 To get started we need instances of the approximation spaces discussed in
 Eqs. (ref{eq:VB}) - (ref{eq:WWF}). When the spaces are created we also need
@@ -364,7 +364,7 @@ And then we create tensor product spaces by combining these bases (like in Eqs. 
 W_BF = TensorProductSpace(comm, (VB, VF))    # Wall-normal velocity
 W_DF = TensorProductSpace(comm, (VD, VF))    # Streamwise velocity
 W_WF = TensorProductSpace(comm, (VW, VF))    # No bc
-W_TF = TensorProductSpace(comm, (WT, VF))    # Temperature
+W_TF = TensorProductSpace(comm, (VT, VF))    # Temperature
 BD = MixedTensorProductSpace([W_BF, W_DF])   # Velocity vector
 DD = MixedTensorProductSpace([W_DF, W_DF])   # Convection vector
 !ec
@@ -393,7 +393,7 @@ rhs_T = Function(DD).v
 In the final solver we will also use bases for dealiasing the nonlinear term,
 but we do not add that level of complexity here.
 
-===== Wall-normal velocity equation =====
+=== Wall-normal velocity equation ===
 
 We implement Eq. (ref{eq:u2}) using the three-stage Runge Kutta equation (ref{eq:rk3stagesvar}).
 To this end we first need to declare some test- and trial functions, as well as
@@ -489,7 +489,7 @@ which space it has here. We're using `.v` to only access the Numpy array view of
 Also note that `rhs[1]` contains the right hand side computed at stage `k`,
 whereas `rhs[0]` is used to remember the old value of the nonlinear part.
 
-===== Streamwise velocity =====
+=== Streamwise velocity ===
 
 The streamwise velocity is computed using Eq. (ref{eq:div3}) and (ref{eq:vx}). For efficiency we
 can here preassemble both matrices seen in (ref{eq:div3}) and reuse them every
@@ -502,15 +502,16 @@ each RK stage.
 # Assemble matrices and solvers for all stages
 B_DD = inner(TestFunction(W_DF), TrialFunction(W_DF))
 C_DB = inner(TestFunction(W_DF), Dx(TrialFunction(W_BF), 0, 1))
-v0 = TestFunction(VD)
-u0 = TrialFunction(VD)
+VD0 = FunctionSpace(N, family, bc=(0, 0))
+v0 = TestFunction(VD0)
+u0 = TrialFunction(VD0)
 solver0 = []
 for rk in range(3):
     mats0 = inner(v0, 2./(nu*(a[rk]+b[rk])*dt)*u0 - div(grad(u0)))
     solver0.append(chebyshev.la.Helmholtz(*mats0))
 
 # Allocate work arrays and variables
-u00 = Function(VD)
+u00 = Function(VD0)
 b0 = np.zeros((2,)+u00.shape)
 w00 = np.zeros_like(u00)
 dudx_hat = Function(W_DF)
@@ -536,7 +537,7 @@ def compute_v(u, rk):
     return u
 !ec
 
-===== Temperature =====
+=== Temperature ===
 
 The temperature equation (ref{eq:T}) is implemented using a Helmholtz solver.
 The main difficulty with the temperature is the non-homogeneous boundary
@@ -630,6 +631,8 @@ the temperature equation these boundary matrices are extracted using
 `solverT` list, one for each stage of the RK3 solver.
 
 !bc pycod
+q = TestFunction(W_TF)
+p = TrialFunction(W_TF)
 solverT = []
 lhs_mat = []
 for rk in range(3):
@@ -642,7 +645,8 @@ The boundary contribution to the right hand side is computed for each
 stage as
 
 !bc pycod
-rhs_T = lhs_mat[rk][0].matvec(T_, rhs_T)
+w0 = Function(W_WF)
+w0 = lhs_mat[rk][0].matvec(T_, w0)
 !ec
 
 The complete right hand side of the temperature equations can be computed as
@@ -677,7 +681,7 @@ T_b[:] = 0.5*(1-X[0]) + 0.001*np.random.randn(*T_b.shape)*(1-X[0])*(1+X[0])
 T_ = T_b.forward(T_)
 T_.mask_nyquist(mask)
 
-def solve(t=0, tstep=0, end_time=1000):
+def solve(t=0, tstep=0, end_time=100):
     while t < end_time-1e-8:
         for rk in range(3):
             rhs_u = compute_rhs_u(u_, T_, H_, rhs_u, rk)

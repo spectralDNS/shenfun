@@ -4,10 +4,10 @@
 .. Document title:
 
 Demo - Cubic nonlinear Klein-Gordon equation
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+============================================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 13, 2020
+:Date: Aug 18, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Klein-Gordon equation, in a triply periodic domain. The demo is implemented in
@@ -17,11 +17,6 @@ formulation. The discretization, and some background on the spectral Galerkin
 method is given first, before we turn to the actual details of the ``shenfun``
 implementation.
 
-.. _mov:kleingordon:
-
-The nonlinear Klein-Gordon equation
-===================================
-
 .. raw:: html
         
         <embed src="https://rawgit.com/spectralDNS/spectralutilities/master/movies/KleinGordon.gif"  autoplay="false" loop="true"></embed>
@@ -29,8 +24,8 @@ The nonlinear Klein-Gordon equation
 
 Movie showing the evolution of the solution :math:`u` from Eq. :eq:`eq:kg`, in a slice through the center of the domain, computed with the code described in this demo.
 
-Model equation
---------------
+The nonlinear Klein-Gordon equation
+-----------------------------------
 
 The cubic nonlinear Klein-Gordon equation is a wave equation important for many
 scientific applications such as solid state physics, nonlinear optics and
@@ -106,7 +101,7 @@ The energy of the solution can be computed as
 and it is crucial that this energy remains constant in time.
 
 The movie (:ref:`mov:kleingordon`) is showing the solution :math:`u`, computed with the
-code shown in the bottom of Sec. :ref:`sec:solver`.
+code shown below.
 
 .. _sec:specgal:
 
@@ -414,13 +409,14 @@ where :math:`u(x, y, z, 0)` and :math:`f(x, y, z, 0)` are given as the initial c
 according to Eq. :eq:`eq:init`.
 
 Implementation
-==============
+--------------
 
-To solve the Klein-Gordon equations we need to make use of the Fourier bases in
-:mod:`.shenfun`, and these base are found in submodule
+To solve the Klein-Gordon equations we need to make use of the Fourier function
+spaces defined in
+:mod:`.shenfun`, and these are found in submodule
 :mod:`shenfun.fourier.bases`.
 The triply periodic domain allows for Fourier in all three directions, and we
-can as such create one instance of this base class using :func:`.Basis` with
+can as such create one instance of this space using :func:`.FunctionSpace` with
 family ``Fourier``
 for each direction. However, since the initial data are real, we
 can take advantage of Hermitian symmetries and thus make use of a
@@ -433,13 +429,18 @@ real data is now complex. We may start implementing the solver as follows
 .. code-block:: python
 
     from shenfun import *
-    from mpi4py import MPI
     import numpy as np
+    import sympy as sp
     
     # Set size of discretization
     N = (32, 32, 32)
     
-    # Create bases
+    # Defocusing or focusing
+    gamma = 1
+    
+    rank = comm.Get_rank()
+    
+    # Create function spaces
     K0 = FunctionSpace(N[0], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
     K1 = FunctionSpace(N[1], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
     K2 = FunctionSpace(N[2], 'F', domain=(-2*np.pi, 2*np.pi), dtype='d')
@@ -452,8 +453,6 @@ product of these three spaces
 
 .. code-block:: python
 
-    # Create communicator
-    comm = MPI.COMM_WORLD
     T = TensorProductSpace(comm, (K0, K1, K2), **{'planner_effort':
                                                   'FFTW_MEASURE'})
 
@@ -472,20 +471,35 @@ However, since we are going to solve for a mixed system, it is convenient to als
 .. code-block:: python
 
     TT = MixedTensorProductSpace([T, T])
+    TV = VectorTensorProductSpace(T)
+
+Here the space ``TV`` will be used to compute gradients, which
+explains why it is a vector.
 
 We need containers for the solution as well as intermediate work arrays for,
-e.g., the Runge-Kutta method. Arrays are created as
+e.g., the Runge-Kutta method. Arrays are created using
+`Sympy <http://www.sympy.org/en/index.html>`__ for
+initialization. Below ``f`` is initialized to 0,
+whereas ``u = 0.1*sp.exp(-(x**2 + y**2 + z**2))``.
 
 .. code-block:: python
 
-    uf = Array(TT)           # Solution array in physical space
-    u, f = uf                # Split solution array by creating two views u and f
-    duf = Function(TT)       # Array for right hand sides
-    du, df = duf             # Split into views
-    uf_hat = Function(TT)    # Solution in spectral space
-    uf_hat0 = Function(TT)   # Work array 1
-    uf_hat1 = Function(TT)   # Work array 2
-    u_hat, f_hat = uf_hat    # Split into views
+    # Use sympy to set up initial condition
+    x, y, z = sp.symbols("x,y,z", real=True)
+    ue = 0.1*sp.exp(-(x**2 + y**2 + z**2))
+    
+    fu = Array(TT, buffer=(0, ue)) # Solution array in physical space
+    f, u = fu                # Split solution array by creating two views u and f
+    dfu = Function(TT)       # Array for right hand sides
+    df, du = dfu             # Split into views
+    Tp = T.get_dealiased((1.5, 1.5, 1.5))
+    up = Array(Tp)           # Work array
+    
+    fu_hat = Function(TT)    # Solution in spectral space
+    fu_hat = fu.forward()
+    f_hat, u_hat = fu_hat
+    
+    gradu = Array(TV)        # Solution array for gradient
 
 The :class:`.Array` class is a subclass of Numpy's `ndarray <https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html>`__,
 without much more functionality than constructors that return arrays of the
@@ -496,234 +510,102 @@ of array is returned by the :class:`.Function`
 class, that subclasses both Nympy's ndarray as well as an internal
 :class:`.BasisFunction`
 class. An instance of the :class:`.Function` represents the entire
-spectral Galerkin function :eq:`eq:usg`. As such, it can
-be used in complex variational linear forms. For example, if you want
-to compute the partial derivative :math:`\partial u/\partial x`, then this
-may be achieved by projection, i.e., find :math:`u_x \in V^N` such that
-:math:`(u_x-\partial u/\partial x, v) = 0`, for all :math:`v \in V^N`. This
-projection may be easily computed in :mod:`.shenfun` using
-
-.. code-block:: python
-
-    ux = project(Dx(u_hat, 0, 1), T)
-
-The following code, on the other hand, will raise an error since you cannot
-take the derivative of an interpolated ``Array u``, only a ``Function``
-
-.. code-block:: python
-
-    try:
-        project(Dx(u, 0, 1), T)
-    except AssertionError:
-        print("AssertionError: Dx not for Arrays")
-
-Initialization
---------------
-
-The solution array ``uf`` and its transform ``uf_hat`` need to be initialized according to Eq.
-:eq:`eq:init`. To this end it is convenient (but not required, we could just as
-easily use Numpy for this as well) to use `Sympy <http://www.sympy.org/en/index.html>`__, which is a Python library for symbolic
-mathamatics.
-
-.. code-block:: python
-
-    from sympy import symbols, exp, lambdify
-    
-    x, y, z = symbols("x,y,z")
-    ue = 0.1*exp(-(x**2 + y**2 + z**2))
-    ul = lambdify((x, y, z), ue, 'numpy')
-    X = T.local_mesh(True)
-    u[:] = Array(T, buffer=ul(*X))
-    u_hat = T.forward(u, u_hat)
-
-Here ``X`` is a list of the three mesh coordinates ``(x, y, z)`` local to the
-current processor. Each processor has its own part of the computational mesh,
-and the distribution is handled during the creation of the
-:class:`.TensorProductSpace`
-class instance ``T``. There is no need
-to do anything about the ``f/f_hat`` arrays since they are already initialized by default to
-zero. Note that calling the ``ul`` function with the argument ``*X`` is the same as
-calling with ``X[0], X[1], X[2]``.
+spectral Galerkin function :eq:`eq:usg`.
 
 .. _sec:rk:
 
 Runge-Kutta integrator
-----------------------
-A fourth order explicit Runge-Kutta integrator requires only a function that
-returns the right hand sides of :eq:`eq:df_var3` and :eq:`eq:kg:du_var3`. Such a
-function can be implemented as
+~~~~~~~~~~~~~~~~~~~~~~
+
+We use an explicit fourth order Runge-Kutta integrator,
+imported from :mod:`.integrators`. The solver
+requires one function to compute nonlinear terms,
+and one to compute linear. But here we will make
+just one function that computes both, and call it
+``NonlinearRHS``:
 
 .. code-block:: python
 
-    # focusing (+1) or defocusing (-1)
-    gamma = 1
     uh = TrialFunction(T)
     vh = TestFunction(T)
-    k2 = -(inner(grad(vh), grad(uh)).scale  + gamma)
+    L = inner(grad(vh), -grad(uh)) - inner(vh, gamma*uh)
     
-    def compute_rhs(duf_hat, uf_hat, up, Tp, w0):
-        duf_hat.fill(0)
-        u_hat, f_hat = uf_hat
-        du_hat, df_hat = duf_hat
-        df_hat[:] = k2*u_hat
+    def NonlinearRHS(self, fu, fu_hat, dfu_hat, **par):
+        global count, up
+        dfu_hat.fill(0)
+        f_hat, u_hat = fu_hat
+        df_hat, du_hat = dfu_hat
         up = Tp.backward(u_hat, up)
-        df_hat += Tp.forward(gamma*up**3, w0)
+        df_hat = Tp.forward(gamma*up**3, df_hat)
+        df_hat += L*u_hat
         du_hat[:] = f_hat
-        return duf_hat
+        return dfu_hat
 
-The code is fairly self-explanatory. ``k2`` represents the coefficients in front of
-the linear :math:`\hat{u}` in :eq:`eq:df_var3`. The output array is ``duf_hat``, and
-the input array is ``uf_hat``, whereas ``up`` and ``w0`` are work arrays. The array
-``duf_hat`` contains the right hand sides of both :eq:`eq:df_var3` and
-:eq:`eq:kg:du_var3`, where the linear and nonlinear terms are recognized in the
-code as comments ``(1)`` and ``(2)``.
-The array ``uf_hat`` contains the solution at initial and intermediate Runge-Kutta steps.
-
-With a function that returns the right hand side in place, the actual integrator
-can be implemented as
+All that is left is to write a function that is called
+on each time step, which will allow us to store intermediate
+solutions, compute intermediate energies, and plot
+intermediate solutions. Since we will plot the same plot
+many times, we create the figure first, and then simply update
+the plotted arrays in the ``update`` function.
 
 .. code-block:: python
 
-    w0 = Function(T)
-    a = [1./6., 1./3., 1./3., 1./6.]         # Runge-Kutta parameter
-    b = [0.5, 0.5, 1.]                       # Runge-Kutta parameter
-    t = 0
-    dt = 0.01
-    end_time = 1.0
-    while t < end_time-1e-8:
-        t += dt
-        uf_hat1[:] = uf_hat0[:] = uf_hat
-        for rk in range(4):
-            duf = compute_rhs(duf, uf_hat, u, T, w0)
-            if rk < 3:
-                uf_hat[:] = uf_hat0 + b[rk]*dt*duf
-            uf_hat1 += a[rk]*dt*duf
-        uf_hat[:] = uf_hat1
-
-.. _sec:solver:
-
-Complete solver
----------------
-
-A complete solver is given below, with intermediate plotting of the solution and
-intermediate computation of the total energy. Note that the total energy is unchanged to 8
-decimal points at :math:`t=100`.
-
-.. code-block:: python
-
-    from sympy import symbols, exp, lambdify
-    import numpy as np
     import matplotlib.pyplot as plt
-    from mpi4py import MPI
-    from time import time
-    from shenfun import *
-    
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    
-    # Use sympy to set up initial condition
-    x, y, z = symbols("x,y,z")
-    ue = 0.1*exp(-(x**2 + y**2 + z**2))
-    ul = lambdify((x, y, z), ue, 'numpy')
-    
-    # Size of discretization
-    N = (64, 64, 64)
-    
-    # Defocusing or focusing
-    gamma = 1
-    
-    K0 = FunctionSpace(N[0], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
-    K1 = FunctionSpace(N[1], 'F', domain=(-2*np.pi, 2*np.pi), dtype='D')
-    K2 = FunctionSpace(N[2], 'F', domain=(-2*np.pi, 2*np.pi), dtype='d')
-    T = TensorProductSpace(comm, (K0, K1, K2), slab=False,
-                           **{'planner_effort': 'FFTW_MEASURE'})
-    
-    TT = MixedTensorProductSpace([T, T])
-    
     X = T.local_mesh(True)
-    uf = Array(TT)
-    u, f = uf[:]
-    up = Array(T)
-    duf = Function(TT)
-    du, df = duf[:]
-    
-    uf_hat = Function(TT)
-    uf_hat0 = Function(TT)
-    uf_hat1 = Function(TT)
-    w0 = Function(T)
-    u_hat, f_hat = uf_hat[:]
-    
-    # initialize (f initialized to zero, so all set)
-    u[:] = ul(*X)
-    u_hat = T.forward(u, u_hat)
-    
-    uh = TrialFunction(T)
-    vh = TestFunction(T)
-    k2 = -inner(grad(vh), grad(uh)).scale - gamma
-    
-    count = 0
-    def compute_rhs(duf_hat, uf_hat, up, T, w0):
-        global count
-        count += 1
-        duf_hat.fill(0)
-        u_hat, f_hat = uf_hat[:]
-        du_hat, df_hat = duf_hat[:]
-        df_hat[:] = k2*u_hat
-        up = T.backward(u_hat, up)
-        df_hat += T.forward(gamma*up**3, w0)
-        du_hat[:] = f_hat
-        return duf_hat
-    
-    def energy_fourier(comm, a):
-        result = 2*np.sum(abs(a[..., 1:-1])**2) + np.sum(abs(a[..., 0])**2) + np.sum(abs(a[..., -1])**2)
-        result =  comm.allreduce(result)
-        return result
-    
-    # Integrate using a 4th order Rung-Kutta method
-    a = [1./6., 1./3., 1./3., 1./6.]         # Runge-Kutta parameter
-    b = [0.5, 0.5, 1.]                       # Runge-Kutta parameter
-    t = 0.0
-    dt = 0.005
-    end_time = 1.
-    tstep = 0
     if rank == 0:
         plt.figure()
-        image = plt.contourf(X[1][..., 0], X[0][..., 0], u[..., 16], 100)
+        image = plt.contourf(X[1][..., 0], X[0][..., 0], u[..., N[2]//2], 100)
         plt.draw()
-        plt.pause(1e-4)
-    t0 = time()
+        plt.pause(1e-6)
+
+The actual ``update`` function is
+
+.. code-block:: python
+
+    # Get wavenumbers
     K = np.array(T.local_wavenumbers(True, True, True))
-    TV = VectorTensorProductSpace([T, T, T])
-    gradu = Array(TV)
-    while t < end_time-1e-8:
-        t += dt
-        tstep += 1
-        uf_hat1[:] = uf_hat0[:] = uf_hat
-        for rk in range(4):
-            duf = compute_rhs(duf, uf_hat, up, T, w0)
-            if rk < 3:
-                uf_hat[:] = uf_hat0 + b[rk]*dt*duf
-            uf_hat1 += a[rk]*dt*duf
-        uf_hat[:] = uf_hat1
     
-        if tstep % 100 == 0:
-            uf = TT.backward(uf_hat, uf)
-            ekin = 0.5*energy_fourier(T.comm, f_hat)
-            es = 0.5*energy_fourier(T.comm, 1j*K*u_hat)
+    def update(self, fu, fu_hat, t, tstep, **params):
+        global gradu
+    
+        transformed = False
+        if rank == 0 and tstep % params['plot_tstep'] == 0 and params['plot_tstep'] > 0:
+            fu = fu_hat.backward(fu)
+            f, u = fu[:]
+            image.ax.clear()
+            image.ax.contourf(X[1][..., 0], X[0][..., 0], u[..., N[2]//2], 100)
+            plt.pause(1e-6)
+            transformed = True
+    
+        if tstep % params['Compute_energy'] == 0:
+            if transformed is False:
+                fu = fu_hat.backward(fu)
+            f, u = fu
+            f_hat, u_hat = fu_hat
+            ekin = 0.5*energy_fourier(f_hat, T)
+            es = 0.5*energy_fourier(1j*(K*u_hat), T)
             eg = gamma*np.sum(0.5*u**2 - 0.25*u**4)/np.prod(np.array(N))
-            eg =  comm.allreduce(eg)
-            gradu = TV.backward(1j*K*u_hat, gradu)
+            eg = comm.allreduce(eg)
+            gradu = TV.backward(1j*(K[0]*u_hat[0]+K[1]*u_hat[1]+K[2]*u_hat[2]), gradu)
             ep = comm.allreduce(np.sum(f*gradu)/np.prod(np.array(N)))
-            ea = comm.allreduce(np.sum(np.array(X)*(0.5*f**2 + 0.5*gradu**2
-                                - (0.5*u**2 - 0.25*u**4)*f))/np.prod(np.array(N)))
+            ea = comm.allreduce(np.sum(np.array(X)*(0.5*f**2 + 0.5*gradu**2 - (0.5*u**2 - 0.25*u**4)*f))/np.prod(np.array(N)))
             if rank == 0:
-                image.ax.clear()
-                image.ax.contourf(X[1][..., 0], X[0][..., 0], u[..., 16], 100)
-                plt.pause(1e-6)
-                plt.savefig('Klein_Gordon_{}_real_{}.png'.format(N[0], tstep))
                 print("Time = %2.2f Total energy = %2.8e Linear momentum %2.8e Angular momentum %2.8e" %(t, ekin+es+eg, ep, ea))
             comm.barrier()
-    
-    print("Time ", time()-t0)
+
+With all functions in place, the actual integrator
+can be created and called as
+
+.. code-block:: python
+
+    par = {'Compute_energy': 10,
+           'plot_tstep': 10,
+           'end_time': 1}
+    dt = 0.005
+    integrator = RK4(TT, N=NonlinearRHS, update=update, **par)
+    integrator.setup(dt)
+    fu_hat = integrator.solve(fu, fu_hat, dt, (0, par['end_time']))
+
+A complete solver is found `here <https://github.com/spectralDNS/shenfun/blob/master/demo/KleinGordon.py>`__.
 
 .. ======= Bibliography =======

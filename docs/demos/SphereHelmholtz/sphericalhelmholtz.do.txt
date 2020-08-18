@@ -118,7 +118,7 @@ find $u \in V^N \otimes V_F^N$ such that
 Note that integration over the domain is done using
 spherical coordinates with an integral measure of $d\sigma=\sin \theta d\theta d\phi$.
 
-===== Implementation in shenfun =====
+===== Implementation =====
 label{demo:sphericalimplementation}
 
 A complete implementation is found in the file "sphere_helmholtz.py":

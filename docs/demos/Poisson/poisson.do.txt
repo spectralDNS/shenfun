@@ -43,7 +43,6 @@ def func(x):
 % endif
 
 
-======= Model problem =======
 ===== Poisson's equation =====
 
 Poisson's equation is given as
@@ -196,9 +195,9 @@ Now, setting $f_e(x) = \nabla^2 u_e(x)$ and solving for $\nabla^2 u(x) = f_e(x)$
 we can compare the numerical solution $u(x)$ with the analytical solution $u_e(x)$
 and compute error norms.
 
-======= Implementation =======
+===== Implementation =====
 
-===== Preamble =====
+=== Preamble ===
 
 We will solve Poisson's equation using the "shenfun":
 "https://github.com/spectralDNS/shenfun" Python module. The first thing needed
@@ -215,7 +214,7 @@ from sympy import symbols, cos, sin, exp, lambdify
 
 We use `Sympy` for the manufactured solution and `Numpy` for testing.
 
-===== Manufactured solution =====
+=== Manufactured solution ===
 
 The exact solution $u_e(x)$ and the right hand side $f_e(x)$ are created using
 `Sympy` as follows
@@ -238,7 +237,7 @@ solution is known (ref{eq:solution}), we could just as well simply use `Numpy`
 to compute $f_e$ at $\{x_j\}_{j=0}^{N-1}$. However, with `Sympy` it is much
 easier to experiment and quickly change the solution.
 
-===== Discretization =====
+=== Discretization ===
 
 We create a basis with a given number of basis functions, and extract the computational
 mesh from the basis itself
@@ -252,7 +251,7 @@ X = SD.mesh(N)
 
 Note that we can either choose a Legendre or a Chebyshev basis.
 
-===== Variational formulation =====
+=== Variational formulation ===
 
 The variational problem (ref{eq:varform}) can be assembled using `shenfun`'s
 ${cls('TrialFunction')}, ${cls('TestFunction')} and ${func('inner')} functions.
@@ -272,7 +271,7 @@ Note that the `sympy` function `fe` can be used to initialize the ${cls('Array')
 (`fj = Array(SD, buffer=fe)`), because an Array
 is required as input to the ${func('inner')} function.
 
-===== Solve linear equations =====
+=== Solve linear equations ===
 
 Finally, solve linear equation system and transform solution from spectral
 $\{\hat{u}_k\}_{k=0}^{N-1}$ vector to the real space $\{u(x_j)\}_{j=0}^{N-1}$
@@ -289,7 +288,7 @@ print("Error=%2.16e" %(np.sqrt(dx((uj-ue)**2))))
 assert np.allclose(uj, ue)
 !ec
 
-===== Convergence test =====
+=== Convergence test ===
 
 A complete solver is given in Sec. ref{sec:complete}. This solver is created
 such that it takes in two commandline arguments and prints out the

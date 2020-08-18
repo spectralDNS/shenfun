@@ -46,8 +46,9 @@ help:
 
 %.ipynb2:
 	doconce format ipynb demos/$(basename $@).do.txt
-	#jupyter nbconvert --inplace --clear-output demos/${basename $@}.ipynb
-	jupyter nbconvert --inplace --execute demos/${basename $@}.ipynb
+	jupyter nbconvert --inplace --clear-output demos/${basename $@}.ipynb
+	#jupyter nbconvert --inplace --execute demos/${basename $@}.ipynb
+	doconce subst 'XXX' '   ' demos/$(basename $@).ipynb
 	doconce subst "<div" "<a" demos/$(basename $@).ipynb
 	doconce subst "div>" "a>" demos/$(basename $@).ipynb
 	cp demos/$(basename $@).ipynb book/
@@ -64,6 +65,8 @@ pdf:
 	@$(SPHINXBUILD) -b latex -d "$(BUILDDIR)"/doctrees $(SOURCEDIR) "$(BUILDDIR)"/latex
 	$(MAKE) -C "$(BUILDDIR)"/latex all-pdf LATEXMKOPTS='-interaction=nonstopmode -f'
 
+book: $(NDEMO)
+
 html: publish $(DEMO)
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
@@ -75,5 +78,5 @@ doctest:
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-%: Makefile
-	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+#%: Makefile
+#	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

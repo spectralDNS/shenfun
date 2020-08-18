@@ -40,7 +40,6 @@ def func(x):
 %>
 % endif
 
-======= The nonlinear Klein-Gordon equation =======
 % if FORMAT in ("latex", "pdflatex"):
 
 FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/Klein_Gordon_32_real_8000.png] The solution $u$ from Eq. (ref{eq:kg}), at $t=40$, in a slice through the center of the domain, computed with the code described in this demo. label{mov:kleingordon}
@@ -65,7 +64,7 @@ MOVIE: [https://rawgit.com/spectralDNS/spectralutilities/master/movies/KleinGord
 
 % endif
 
-===== Model equation =====
+===== The nonlinear Klein-Gordon equation =====
 
 The cubic nonlinear Klein-Gordon equation is a wave equation important for many
 scientific applications such as solid state physics, nonlinear optics and
@@ -355,7 +354,7 @@ for all $t>0$, find $(f, u) \in W^N \times W^N$  such that
 where $u(x, y, z, 0)$ and $f(x, y, z, 0)$ are given as the initial conditions
 according to Eq. (ref{eq:init}).
 
-======= Implementation =======
+===== Implementation =====
 
 To solve the Klein-Gordon equations we need to make use of the Fourier function
 spaces defined in
@@ -460,7 +459,7 @@ ${cls('BasisFunction')}
 class. An instance of the ${cls('Function')} represents the entire
 spectral Galerkin function (ref{eq:usg}).
 
-===== Runge-Kutta integrator =====
+=== Runge-Kutta integrator ===
 label{sec:rk}
 
 We use an explicit fourth order Runge-Kutta integrator,

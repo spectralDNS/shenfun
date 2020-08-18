@@ -42,12 +42,10 @@ def func(x):
 %>
 % endif
 
-======= Model problem =======
-
-===== Stokes equations =====
+===== Stokes' equations =====
 label{demo:stokes}
 
-The Stokes equations are given in strong form as
+Stokes' equations are given in strong form as
 
 !bt
 \begin{align*}
@@ -73,7 +71,7 @@ method of manufactured solutions. Note that the final $\int_{\Omega} p dx = 0$
 is there because there is no Dirichlet boundary condition on the pressure
 and the system of equations would otherwise be ill conditioned.
 
-To solve Stokes equations with the Galerkin method we need basis
+To solve Stokes' equations with the Galerkin method we need basis
 functions for both velocity and pressure. A
 Dirichlet basis will be used for velocity, whereas there is no boundary restriction
 on the pressure basis. For both three-dimensional bases we will use one basis
@@ -168,7 +166,7 @@ and the Legendre weight is $w_x=1$.
 The overline in $\bs{\overline{v}}$ and $\overline{q}$ represents a complex conjugate, which is needed here because
 the Fourier exponentials are complex functions.
 
-===== Mixed variational form =====
+=== Mixed variational form ===
 label{sec:mixedform}
 
 Since we are to solve for $\bs{u}$ and $p$ at the same time, we formulate a
@@ -193,9 +191,9 @@ where bilinear ($a$) and linear ($L$) forms are given as
 Note that the bilinear form will assemble to block matrices, whereas the right hand side
 linear form will assemble to block vectors.
 
-======= Implementation =======
+===== Implementation =====
 
-===== Preamble =====
+=== Preamble ===
 
 We will solve the Stokes equations using the "shenfun":
 "https://github.com/spectralDNS/shenfun" Python module. The first thing needed
@@ -215,7 +213,7 @@ from shenfun import *
 We use `Sympy` for the manufactured solution and `Numpy` for testing. MPI for
 Python (`mpi4py`) is required for running the solver with MPI.
 
-===== Manufactured solution =====
+=== Manufactured solution ===
 label{sec:mansol}
 
 The exact solutions $\bs{u}_e(\bs{x})$ and $p(\bs{x})$ are chosen to satisfy boundary
@@ -236,7 +234,7 @@ h = uex.diff(x, 1) + uey.diff(y, 1) + uez.diff(z, 1)
 
 !ec
 
-===== Tensor product spaces =====
+=== Tensor product spaces ===
 
 One-dimensional spaces are created using the ${func('FunctionSpace')} function. A choice of
 polynomials between Legendre or Chebyshev can be made, and the size
@@ -418,13 +416,15 @@ print(error)
 !ec
 
 Note that solve has a keyword argument
-`constraints=((3, 0, 0),)` that takes care of the restriction
-$\int_{\Omega} p dx = 0$ by indenting the row in M corresponding to the
-first degree of freedom for the pressure. The value $(3, 0, 0)$
+`constraints=((3, 0, 0), (3, N[2]-1), 0)` that takes care of the restriction
+$\int_{\Omega} p dx = 0$ by indenting the rows in M corresponding to the
+first and last degree of freedom for the pressure. The value $(3, 0, 0)$
 indicates that pressure is
 in block 3 of the block vector solution (the velocity vector holds
 positions 0, 1 and 2), whereas the two zeros ensures that the first dof
-(dof 0) should obtain value 0.
+(dof 0) should obtain value 0. The constraint on the highest
+wavenumber `(3, N[2]-1, 0)` is required to get a non-singular
+matrix.
 
 ===== Complete solver =====
 label{sec:3d:complete}

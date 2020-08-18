@@ -1,0 +1,15 @@
+- file: intro
+
+- part: Shenfun demos
+  chapters:
+    - file: poisson
+    - file: kleingordon
+    - file: poisson3d
+    - file: polarhelmholtz
+    - file: sphericalhelmholtz
+    - file: kuramatosivashinsky
+    - file: stokes
+    - file: drivencavity
+    - file: rayleighbenard
+    - file: functions
+    - file: surfaceintegration

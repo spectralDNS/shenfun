@@ -579,7 +579,11 @@ class ShenDirichlet(ChebyshevBase):
             return output_array
         return self.forward.output_array
 
-    def backward(self, input_array=None, output_array=None, fast_transform=True):
+    def backward(self, input_array=None, output_array=None, fast_transform=True, kind='normal'):
+        if not kind == 'normal':
+            # Use vandermonde
+            return SpectralBase.backward(self, input_array, output_array, fast_transform=False, kind=kind)
+
         if input_array is not None:
             self.backward.input_array[...] = input_array
 
@@ -819,7 +823,10 @@ class ShenNeumann(ChebyshevBase):
         self.CT.backward(w_hat)
         assert output_array is self.CT.backward.output_array
 
-    def backward(self, input_array=None, output_array=None, fast_transform=True):
+    def backward(self, input_array=None, output_array=None, fast_transform=True, kind='normal'):
+        if not kind == 'normal':
+            return SpectralBase.backward(self, input_array, output_array, fast_transform=False, kind=kind)
+
         if input_array is not None:
             self.backward.input_array[...] = input_array
 
@@ -1093,7 +1100,11 @@ class ShenBiharmonic(ChebyshevBase):
         self.bc.add_to_orthogonal(output_array, input_array)
         return output_array
 
-    def backward(self, input_array=None, output_array=None, fast_transform=True):
+    def backward(self, input_array=None, output_array=None, fast_transform=True, kind='normal'):
+        if not kind == 'normal':
+            # Use vandermonde
+            return SpectralBase.backward(self, input_array, output_array, fast_transform=False, kind=kind)
+
         if input_array is not None:
             self.backward.input_array[...] = input_array
 
@@ -1585,7 +1596,11 @@ class UpperDirichlet(ChebyshevBase):
             return output_array
         return self.forward.output_array
 
-    def backward(self, input_array=None, output_array=None, fast_transform=True):
+    def backward(self, input_array=None, output_array=None, fast_transform=True, kind='normal'):
+        if not kind == 'normal':
+            # Use vandermonde
+            return SpectralBase.backward(self, input_array, output_array, fast_transform=False, kind=kind)
+
         if input_array is not None:
             self.backward.input_array[...] = input_array
 
@@ -1959,7 +1974,11 @@ class DirichletNeumann(ChebyshevBase):
             return output_array
         return self.forward.output_array
 
-    def backward(self, input_array=None, output_array=None, fast_transform=True):
+    def backward(self, input_array=None, output_array=None, fast_transform=True, kind='normal'):
+        if not kind == 'normal':
+            # Use vandermonde
+            return SpectralBase.backward(self, input_array, output_array, fast_transform=False, kind=kind)
+
         if input_array is not None:
             self.backward.input_array[...] = input_array
 
@@ -2178,7 +2197,11 @@ class NeumannDirichlet(ChebyshevBase):
             return output_array
         return self.forward.output_array
 
-    def backward(self, input_array=None, output_array=None, fast_transform=True):
+    def backward(self, input_array=None, output_array=None, fast_transform=True, kind='normal'):
+        if not kind == 'normal':
+            # Use vandermonde
+            return SpectralBase.backward(self, input_array, output_array, fast_transform=False, kind=kind)
+
         if input_array is not None:
             self.backward.input_array[...] = input_array
 

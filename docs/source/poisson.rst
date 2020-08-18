@@ -4,14 +4,14 @@
 .. Document title:
 
 Demo - 1D Poisson's equation
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+============================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 13, 2020
+:Date: Aug 18, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Poisson's
 equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as
-shown in Figure :ref:`fig:ct0`, is demonstrated.
+shown in the figure below, is demonstrated.
 The demo is implemented in
 a single Python file `dirichlet_poisson1D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py>`__, and
 the numerical method is is described in more detail by J. Shen :cite:`shen1` and :cite:`shen95`.
@@ -22,8 +22,6 @@ the numerical method is is described in more detail by J. Shen :cite:`shen1` and
 
    *Convergence of 1D Poisson solvers for both Legendre and Chebyshev modified basis function*
 
-Model problem
-=============
 Poisson's equation
 ------------------
 
@@ -236,10 +234,10 @@ we can compare the numerical solution :math:`u(x)` with the analytical solution 
 and compute error norms.
 
 Implementation
-==============
+--------------
 
 Preamble
---------
+~~~~~~~~
 
 We will solve Poisson's equation using the `shenfun <https://github.com/spectralDNS/shenfun>`__ Python module. The first thing needed
 is then to import some of this module's functionality
@@ -248,14 +246,14 @@ plus some other helper modules, like `Numpy <https://numpy.org>`__ and `Sympy <h
 .. code-block:: python
 
     from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \ 
-        project, Dx, Array, FunctionSpace
+        project, Dx, Array, FunctionSpace, dx
     import numpy as np
     from sympy import symbols, cos, sin, exp, lambdify
 
 We use ``Sympy`` for the manufactured solution and ``Numpy`` for testing.
 
 Manufactured solution
----------------------
+~~~~~~~~~~~~~~~~~~~~~
 
 The exact solution :math:`u_e(x)` and the right hand side :math:`f_e(x)` are created using
 ``Sympy`` as follows
@@ -280,7 +278,7 @@ to compute :math:`f_e` at :math:`\{x_j\}_{j=0}^{N-1}`. However, with ``Sympy`` i
 easier to experiment and quickly change the solution.
 
 Discretization
---------------
+~~~~~~~~~~~~~~
 
 We create a basis with a given number of basis functions, and extract the computational
 mesh from the basis itself
@@ -295,7 +293,7 @@ mesh from the basis itself
 Note that we can either choose a Legendre or a Chebyshev basis.
 
 Variational formulation
------------------------
+~~~~~~~~~~~~~~~~~~~~~~~
 
 The variational problem :eq:`eq:varform` can be assembled using ``shenfun``'s
 :class:`.TrialFunction`, :class:`.TestFunction` and :func:`.inner` functions.
@@ -317,7 +315,7 @@ Note that the ``sympy`` function ``fe`` can be used to initialize the :class:`.A
 is required as input to the :func:`.inner` function.
 
 Solve linear equations
-----------------------
+~~~~~~~~~~~~~~~~~~~~~~
 
 Finally, solve linear equation system and transform solution from spectral
 :math:`\{\hat{u}_k\}_{k=0}^{N-1}` vector to the real space :math:`\{u(x_j)\}_{j=0}^{N-1}`
@@ -331,11 +329,11 @@ To this end we compute the :math:`L_2`-errornorm using the ``shenfun`` function
     uj = SD.backward(u_hat)
     ue = Array(SD, buffer=ue)
     
-    print("Error=%2.16e" %(np.sqrt(dx((uj-ua)**2))))
+    print("Error=%2.16e" %(np.sqrt(dx((uj-ue)**2))))
     assert np.allclose(uj, ue)
 
 Convergence test
-----------------
+~~~~~~~~~~~~~~~~
 
 A complete solver is given in Sec. :ref:`sec:complete`. This solver is created
 such that it takes in two commandline arguments and prints out the
@@ -388,6 +386,7 @@ The error can be plotted using `matplotlib <https://matplotlib.org>`__, and the 
 
 Complete solver
 ---------------
+
 A complete solver, that can use either Legendre or Chebyshev bases, chosen as a
 command-line argument, can be found `here <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py>`__.
 

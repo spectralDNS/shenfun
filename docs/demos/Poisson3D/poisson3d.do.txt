@@ -42,12 +42,10 @@ def func(x):
 %>
 % endif
 
-======= Model problem =======
-
-===== Poisson equation =====
+===== Poisson's equation =====
 label{demo:poisson3d}
 
-The Poisson equation is given as
+Poisson's equation is given as
 
 !bt
 \begin{align}
@@ -226,7 +224,7 @@ special structure that allows for a solution to be found very efficiently
 in the order of $\mathcal{O}(N_0-3)$ operations given $m$ and $n$, see
 cite{shen1} and cite{shen95}. Fast solvers for (ref{eq:AB}) are implemented in `shenfun` for both bases.
 
-===== Method of manufactured solutions =====
+=== Method of manufactured solutions ===
 
 In this demo we will use the method of manufactured
 solutions to demonstrate spectral accuracy of the `shenfun` bases. To
@@ -249,9 +247,9 @@ Now, setting $f_e(\bs{x}) = \nabla^2 u_e(\bs{x})$ and solving for $\nabla^2
 u(\bs{x}) = f_e(\bs{x})$, we can compare the numerical solution $u(\bs{x})$ with
 the analytical solution $u_e(\bs{x})$ and compute error norms.
 
-======= Implementation =======
+===== Implementation =====
 
-===== Preamble =====
+=== Preamble ===
 
 We will solve the Poisson problem using the "shenfun":
 "https://github.com/spectralDNS/shenfun" Python module. The first thing needed
@@ -270,7 +268,7 @@ from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
 We use `Sympy` for the manufactured solution and `Numpy` for testing. MPI for
 Python (`mpi4py`) is required for running the solver with MPI.
 
-===== Manufactured solution =====
+=== Manufactured solution ===
 
 The exact solution $u_e(x, y, z)$ and the right hand side $f_e(x, y, z)$ are created using `Sympy` as follows
 !bc pycod
@@ -295,7 +293,7 @@ solution is known (ref{eq:3d:solution}), we could just as well simply use `Numpy
 to compute $f_e$. However, with `Sympy` it is much
 easier to experiment and quickly change the solution.
 
-===== Discretization and MPI =====
+=== Discretization and MPI ===
 
 We create three bases with given size, one for each dimension of the problem.
 From these three bases a ${cls('TensorProductSpace')} is created.
@@ -386,7 +384,7 @@ Note that the *slab* decomposition is usually the fastest choice. However, the m
 number of processors with *slab* is $\min \{N_0, N_1\}$, whereas a *pencil*
 approach can be used with up to $\min \{N_1(N_2/2+1), N_0 N_1\}$ processors.
 
-===== Variational formulation =====
+=== Variational formulation ===
 
 The variational problem (ref{eq:3d:varform}) can be assembled using `shenfun`'s
 form language, which is perhaps surprisingly similar to FEniCS.
@@ -418,7 +416,7 @@ takes a real signal and transforms it taking advantage of Hermitian symmetry,
 see "rfft":
 "https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.fft.rfft.html".
 
-===== Solve linear equations =====
+=== Solve linear equations ===
 
 Finally, solve linear equation system and transform solution from spectral
 $\hat{u}_{\ts{k}}$ vector to the real space $u(\bs{x})$ and then check how the solution corresponds with the exact solution $u_e$.
@@ -439,7 +437,7 @@ if comm.Get_rank() == 0:
     print("Error=%2.16e" %(np.sqrt(error)))
 !ec
 
-===== Convergence test =====
+=== Convergence test ===
 
 A complete solver is given in Sec. ref{sec:3d:complete}. This solver is created
 such that it takes in two commandline arguments and prints out the
@@ -497,6 +495,8 @@ plt.show()
 
 # FIGURE: [poisson1D_errornorm.png] Convergence test of Legendre and Chebyshev 1D Poisson solvers. label{fig:ct}
 
+% if FORMAT in ("latex", "pdflatex", "html"):
+
 ===== Complete solver =====
 label{sec:3d:complete}
 A complete solver, that can use either Legendre or Chebyshev bases, and any quadrature size
@@ -506,8 +506,6 @@ chosen as a command-line argument, is shown below.
 >>> python dirichlet_poisson3D.py 36 legendre
 !ec
 or similarly with `chebyshev` instead of `legendre`.
-
-% if FORMAT in ("latex", "pdflatex", "html"):
 
 !bc
 import sys, os
@@ -588,7 +586,8 @@ if comm.Get_rank() == 0:
 
 % else:
 ===== Complete solver =====
-label{sec:complete}
+label{sec:3d:complete}
+
 A complete solver, that can use either Legendre or Chebyshev bases, chosen as a
 command-line argument, can be found "here":
 "https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py".
