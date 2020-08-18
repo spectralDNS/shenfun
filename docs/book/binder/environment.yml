@@ -1,1 +1,7 @@
-../../binder/environment.yml
+name: shenfun
+channels:
+  - conda-forge
+dependencies:
+  - shenfun
+  - matplotlib
+

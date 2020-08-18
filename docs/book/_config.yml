@@ -35,7 +35,7 @@ launch_buttons:
 
 repository:
   url                       : https://github.com/spectralDNS/shenfun  # The URL to your book's repository
-  path_to_book              : "/docs/book"  # A path to your book's folder, relative to the repository root.
+  path_to_book              : "docs/book"  # A path to your book's folder, relative to the repository root.
   branch                    : master  # Which branch of the repository should be used when creating links
 
 #######################################################################################
