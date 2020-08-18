@@ -4,10 +4,10 @@
 .. Document title:
 
 Demo - Stokes equations
-%%%%%%%%%%%%%%%%%%%%%%%
+=======================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 13, 2020
+:Date: Aug 18, 2020
 
 *Summary.* The Stokes equations describe the flow of highly viscous fluids.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Stokes
@@ -24,15 +24,12 @@ for the Legendre basis.
 
    *Coupled block matrix for Stokes equations*
 
-Model problem
-=============
-
 .. _demo:stokes:
 
-Stokes equations
-----------------
+Stokes' equations
+-----------------
 
-The Stokes equations are given in strong form as
+Stokes' equations are given in strong form as
 
 .. math::
         \begin{align*}
@@ -58,7 +55,7 @@ method of manufactured solutions. Note that the final :math:`\int_{\Omega} p dx 
 is there because there is no Dirichlet boundary condition on the pressure
 and the system of equations would otherwise be ill conditioned.
 
-To solve Stokes equations with the Galerkin method we need basis
+To solve Stokes' equations with the Galerkin method we need basis
 functions for both velocity and pressure. A
 Dirichlet basis will be used for velocity, whereas there is no boundary restriction
 on the pressure basis. For both three-dimensional bases we will use one basis
@@ -216,7 +213,7 @@ the Fourier exponentials are complex functions.
 .. _sec:mixedform:
 
 Mixed variational form
-----------------------
+~~~~~~~~~~~~~~~~~~~~~~
 
 Since we are to solve for :math:`\mathbf{u}` and :math:`p` at the same time, we formulate a
 mixed (coupled) problem: find :math:`(\mathbf{u}, p) \in [W_0^{\mathbf{N}}]^3 \times W^{\mathbf{N}}`
@@ -252,10 +249,10 @@ Note that the bilinear form will assemble to block matrices, whereas the right h
 linear form will assemble to block vectors.
 
 Implementation
-==============
+--------------
 
 Preamble
---------
+~~~~~~~~
 
 We will solve the Stokes equations using the `shenfun <https://github.com/spectralDNS/shenfun>`__ Python module. The first thing needed
 is then to import some of this module's functionality
@@ -276,7 +273,7 @@ Python (``mpi4py``) is required for running the solver with MPI.
 .. _sec:mansol:
 
 Manufactured solution
----------------------
+~~~~~~~~~~~~~~~~~~~~~
 
 The exact solutions :math:`\mathbf{u}_e(\mathbf{x})` and :math:`p(\mathbf{x})` are chosen to satisfy boundary
 conditions, and the right hand sides :math:`\mathbf{f}(\mathbf{x})` and :math:`h(\mathbf{x})` are then
@@ -297,22 +294,21 @@ solution. The chosen solution with computed right hand sides are:
     h = uex.diff(x, 1) + uey.diff(y, 1) + uez.diff(z, 1)
     
 
-Bases and tensor product spaces
--------------------------------
+Tensor product spaces
+~~~~~~~~~~~~~~~~~~~~~
 
-Bases are created using the :func:`.Basis` function. A choice of
+One-dimensional spaces are created using the :func:`.FunctionSpace` function. A choice of
 polynomials between Legendre or Chebyshev can be made, and the size
 of the domain is given
 
 .. code-block:: python
 
-    N = (40, 40, 40)
+    N = (20, 20, 20)
     family = 'Legendre'
     K0 = FunctionSpace(N[0], 'Fourier', dtype='D', domain=(0, 2*np.pi))
     K1 = FunctionSpace(N[1], 'Fourier', dtype='d', domain=(0, 2*np.pi))
     SD = FunctionSpace(N[2], family, bc=(0, 0))
     ST = FunctionSpace(N[2], family)
-    ST.slice = lambda: slice(0, ST.N-2)
 
 Note that the last line of code is there to ensure that only the first
 :math:`N_2-2` coefficients are used, see discussion around Eq. :eq:`eq:Zn`.
@@ -365,7 +361,7 @@ the equations may also be integrated by parts to obtain a symmetric system:
 .. note::
    The inner products may also be assembled with one single line, as
    
-   .. code-block:: text
+   .. code-block:: python
    
        AA = inner(v, div(grad(u))) + inner(v, -grad(u)) + inner(q, div(u))
    
@@ -383,7 +379,7 @@ trial function ``u[0]``, the
 matrices 2 and 3 are for components 1 and the last two are for components
 2. The first two matrices are as such for
 
-.. code-block:: text
+.. code-block:: python
 
       A[0:2] = inner(v[0], div(grad(u[0])))
 
@@ -483,7 +479,7 @@ the exact solution.
 .. code-block:: python
 
     # Solve problem
-    up_hat = M.solve(fh_hat, constraints=((3, 0, 0),))
+    up_hat = M.solve(fh_hat, constraints=((3, 0, 0), (3, N[2]-1, 0)))
     up = up_hat.backward()
     u_, p_ = up
     
@@ -498,13 +494,15 @@ the exact solution.
     print(error)
 
 Note that solve has a keyword argument
-``constraints=((3, 0, 0),)`` that takes care of the restriction
-:math:`\int_{\Omega} p dx = 0` by indenting the row in M corresponding to the
-first degree of freedom for the pressure. The value :math:`(3, 0, 0)`
+``constraints=((3, 0, 0), (3, N[2]-1), 0)`` that takes care of the restriction
+:math:`\int_{\Omega} p dx = 0` by indenting the rows in M corresponding to the
+first and last degree of freedom for the pressure. The value :math:`(3, 0, 0)`
 indicates that pressure is
 in block 3 of the block vector solution (the velocity vector holds
 positions 0, 1 and 2), whereas the two zeros ensures that the first dof
-(dof 0) should obtain value 0.
+(dof 0) should obtain value 0. The constraint on the highest
+wavenumber ``(3, N[2]-1, 0)`` is required to get a non-singular
+matrix.
 
 .. _sec:3d:complete:
 

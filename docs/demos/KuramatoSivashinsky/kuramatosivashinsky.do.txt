@@ -37,7 +37,6 @@ def func(x):
 %>
 % endif
 
-======= The Kuramato-Sivashinsky equation =======
 % if FORMAT in ("latex", "pdflatex"):
 
 FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/figures/Kuramato_Sivashinsky_128_399.png] The solution $u$ from Eq. (ref{eq:ks}), at $t=100$.
@@ -53,7 +52,7 @@ Movie showing the evolution of the solution $u$ from Eq. (ref{eq:ks}).
 MOVIE: [https://rawgit.com/spectralDNS/spectralutilities/master/movies/Kuramato_movie_128.gif] Movie showing the evolution of the solution $u$ from Eq. (ref{eq:ks}).
 % endif
 
-===== Model equation =====
+===== The Kuramato-Sivashinsky equation =====
 
 The Kuramato-Sivashinsky (KS) equation is known for its chaotic bahaviour, and it is
 often used in study of turbulence or turbulent combustion. We will here solve
@@ -240,7 +239,7 @@ label{eq:du_var3}
 \end{equation}
 !et
 
-======= Implementation =======
+===== Implementation =====
 
 The model equation (ref{eq:ks}) is implemented in shenfun using Fourier basis functions for
 both $x$ and $y$ directions. We start the solver by implementing necessary

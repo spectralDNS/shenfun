@@ -4,10 +4,10 @@
 .. Document title:
 
 Demo - Helmholtz equation in polar coordinates
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+==============================================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 13, 2020
+:Date: Aug 18, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the
 Helmholtz equation on a circular disc, using polar coordinates. This demo is implemented in
@@ -24,7 +24,7 @@ and the numerical method is described in more detail by J. Shen :cite:`shen3`.
 .. _demo:polar_helmholtz:
 
 Helmholtz equation
-==================
+------------------
 
 The Helmholtz equation is given as
 
@@ -321,8 +321,8 @@ Furthermore, the weight :math:`w(t)` will be unity for the Legendre basis and
 
 .. _demo:polarimplementation:
 
-Implementation in shenfun
-=========================
+Implementation
+--------------
 
 A complete implementation is found in the file `unitdisc_helmholtz.py <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_helmholtz.py>`__.
 Here we give a brief explanation for the implementation. Start by
@@ -390,6 +390,7 @@ is remarkably similar to the mathematics.
     u = TrialFunction(T)
     v0 = TestFunction(T0)
     u0 = TrialFunction(T0)
+    alpha = 1
     
     mats = inner(v, -div(grad(u))+alpha*u)
     if comm.Get_rank() == 0:
@@ -407,9 +408,9 @@ and then compute ``f`` exactly using exact differentiation
 .. code-block:: python
 
     # Manufactured solution
-    alpha = 2
     ue = (r*(1-r))**2*sp.cos(8*theta)-0.1*(r-1)
-    f = -ue.diff(r, 2) - (1/r)*ue.diff(r, 1) - (1/r**2)*ue.diff(theta, 2) + alpha*ue
+    #f = -ue.diff(r, 2) - (1/r)*ue.diff(r, 1) - (1/r**2)*ue.diff(theta, 2) + alpha*ue
+    f = (-div(grad(u))+alpha*u).tosympy(basis=ue, psi=psi)
     
     # Compute the right hand side on the quadrature mesh
     fj = Array(T, buffer=f)
@@ -425,7 +426,7 @@ and then compute ``f`` exactly using exact differentiation
     if comm.Get_rank() == 0:
         f0_hat = Function(T0)
         gt = sp.lambdify(r, sp.integrate(f, (theta, 0, 2*sp.pi))/2/sp.pi)(L0.mesh())
-        f0_hat = L0.scalar_product(gt, f0_hat)
+        f0_hat = T0.scalar_product(gt, f0_hat)
 
 Note that for :math:`u^0` we perform the interal in the :math:`\theta` direction
 exactly using sympy. This is necessary since one Fourier coefficient
@@ -437,13 +438,13 @@ linear system of equations
 .. code-block:: python
 
     u_hat = Function(T)
-    Sol1 = SolverGeneric1ND(mats)
+    Sol1 = la.SolverGeneric1ND(mats)
     u_hat = Sol1(f_hat, u_hat)
     
     # case k = 0
     u0_hat = Function(T0)
     if comm.Get_rank() == 0:
-        Sol0 = SolverGeneric1ND(mats0)
+        Sol0 = la.SolverGeneric1ND(mats0)
         u0_hat = Sol0(f0_hat, u0_hat)
     comm.Bcast(u0_hat, root=0)
 
@@ -457,15 +458,14 @@ left is to transform it back to real space.
     uj = u_hat.backward() + u0_hat.backward()[:, sl[1]]
 
 Postprocessing
-==============
+--------------
 The solution can now be compared with the exact solution
 through
 
 .. code-block:: python
 
-    ue = Array(T, buffer=ue)
-    print('Error =', np.linalg.norm(uj-ue))
-    # ---> Error = 7.45930806417765e-15
+    uq = Array(T, buffer=ue)
+    print('Error =', np.linalg.norm(uj-uq))
 
 We can also get the gradient of the solution. For this we need
 a space without boundary conditions, and a vector space
@@ -551,7 +551,10 @@ the error norm
     #or alternatively
     #gradue = Array(V, buffer=grad(u).tosympy(basis=ue, psi=psi))
     print('Error gradient', np.linalg.norm(gradu-gradue))
-    # ---> Error gradient 1.0856774538980375e-08
+
+.. code-block:: python
+
+    Error gradient 1.0727128137958557e-08
 
 We now refine the solution to make it look better,
 and plot on the unit disc.
@@ -572,6 +575,7 @@ and plot on the unit disc.
     xi, yi = TT.local_curvilinear_mesh()
     
     # plot
+    import matplotlib.pyplot as plt
     plt.figure()
     plt.contourf(xp, yp, up)
     plt.quiver(xi, yi, gradu[0], gradu[1], scale=40, pivot='mid', color='white')

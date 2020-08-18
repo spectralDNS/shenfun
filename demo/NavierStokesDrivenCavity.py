@@ -34,14 +34,14 @@ assert comm.Get_size() == 1, "Two non-periodic directions only have solver imple
 Re = 10.
 nu = 2./Re
 alfa = 0.2 # underrelaxation factor
-N = (45, 45)
+N = (46, 46)
 family = 'Chebyshev'
 #family = 'Legendre'
 quad = 'GC'
 x = sympy.symbols('x', real='True')
 D0X = FunctionSpace(N[0], family, quad=quad, bc=(0, 0))
-#D1Y = FunctionSpace(N[1], family, quad=quad, bc=(1, 0))
-D1Y = FunctionSpace(N[1], family, quad=quad, bc=((1-x)**2*(1+x)**2, 0))
+#D1Y = FunctionSpace(N[1], family, quad=quad, bc=(0, 1))
+D1Y = FunctionSpace(N[1], family, quad=quad, bc=(0, (1-x)**2*(1+x)**2))
 D0Y = FunctionSpace(N[1], family, quad=quad, bc=(0, 0))
 PX = FunctionSpace(N[0], family, quad=quad)
 PY = FunctionSpace(N[1], family, quad=quad)
@@ -156,7 +156,8 @@ while not converged:
 print('Time ', time.time()-t0)
 
 # Move solution to regular Function
-up = uh_hat.backward()
+up = Array(VQ)
+up = uh_hat.backward(up)
 u_, p_ = up
 
 if 'pytest' in os.environ: sys.exit(0)
@@ -224,7 +225,7 @@ plt.figure()
 plt.contourf(X[0], X[1], u_[0], 100)
 plt.figure()
 plt.contourf(X[0], X[1], u_[1], 100)
-plt.figure()
-plt.contour(x, y, pp, 100)
-plt.title('Streamfunction')
-#plt.show()
+#plt.figure()
+#plt.contour(x, y, pp, 100)
+#plt.title('Streamfunction')
+plt.show()

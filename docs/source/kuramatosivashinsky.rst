@@ -4,18 +4,15 @@
 .. Document title:
 
 Demo - Kuramato-Sivashinsky equation
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+====================================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 13, 2020
+:Date: Aug 18, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Kuramato-Sivashinsky equation, in a doubly periodic domain. The demo is implemented in
 a single Python file `KuramatoSivashinsky.py <https://github.com/spectralDNS/shenfun/blob/master/demo/Kuramato_Sivashinsky.py>`__, and it may be run
 in parallel using MPI.
-
-The Kuramato-Sivashinsky equation
-=================================
 
 .. raw:: html
         
@@ -24,8 +21,8 @@ The Kuramato-Sivashinsky equation
 
 Movie showing the evolution of the solution :math:`u` from Eq. :eq:`eq:ks`.
 
-Model equation
---------------
+The Kuramato-Sivashinsky equation
+---------------------------------
 
 The Kuramato-Sivashinsky (KS) equation is known for its chaotic bahaviour, and it is
 often used in study of turbulence or turbulent combustion. We will here solve
@@ -273,7 +270,7 @@ and as such the equation to be solved for each wavenumber can be found directly 
         
 
 Implementation
-==============
+--------------
 
 The model equation :eq:`eq:ks` is implemented in shenfun using Fourier basis functions for
 both :math:`x` and :math:`y` directions. We start the solver by implementing necessary
@@ -286,7 +283,6 @@ addition to `shenfun <https://github.com/spectralDNS/shenfun>`__:
     from sympy import symbols, exp, lambdify
     import numpy as np
     import matplotlib.pyplot as plt
-    from mpi4py import MPI
     from shenfun import *
 
 The size of the problem (in real space) is then specified, before creating
@@ -301,11 +297,12 @@ term.
     # Size of discretization
     N = (128, 128)
     
-    comm = MPI.COMM_WORLD
     K0 = FunctionSpace(N[0], 'F', domain=(-30*np.pi, 30*np.pi), dtype='D')
     K1 = FunctionSpace(N[1], 'F', domain=(-30*np.pi, 30*np.pi), dtype='d')
     T = TensorProductSpace(comm, (K0, K1), **{'planner_effort': 'FFTW_MEASURE'})
     TV = VectorTensorProductSpace([T, T])
+    Tp = T.get_dealiased((1.5, 1.5))
+    TVp = VectorTensorProductSpace(Tp)
 
 Test and trialfunctions are required for assembling the variational forms:
 
@@ -324,10 +321,16 @@ the purpose of the last keyword argument to ``local_wavenumbers`` below.
 
 .. code-block:: python
 
-    U = Array(T)
+    x, y = symbols("x,y", real=True)
+    ue = exp(-0.01*(x**2+y**2))
+    U = Array(T, buffer=ue)
     U_hat = Function(T)
-    gradu = Array(TV)
+    U_hat = U.forward(U_hat)
+    mask = T.get_mask_nyquist()
+    U_hat.mask_nyquist(mask)
+    gradu = Array(TVp)
     K = np.array(T.local_wavenumbers(True, True, eliminate_highest_freq=True))
+    X = T.local_mesh(True)
 
 Note that using this ``K`` in computing derivatives has the same effect as
 achieved by symmetrizing the Fourier series by replacing the first sum below
@@ -354,15 +357,6 @@ divided by two. Note that the two sums are equal as they stand (due to aliasing)
 latter (known as the Fourier interpolant) gives the correct (zero) derivative of
 the basis with the highest wavenumber.
 
-Sympy is used to generate an initial condition, as stated in Eq :eq:`eq:ks`
-
-.. code-block:: python
-
-    # Use sympy to set up initial condition
-    x, y = symbols("x,y")
-    ue = exp(-0.01*(x**2+y**2))
-    ul = lambdify((x, y), ue, 'numpy')
-
 Shenfun has a few integrators implemented in the :mod:`.integrators`
 submodule. Two such integrators are the 4th order explicit Runge-Kutta method
 ``RK4``, and the exponential 4th order Runge-Kutta method ``ETDRK4``. Both these
@@ -372,69 +366,55 @@ below, called ``LinearRHS`` and ``NonlinearRHS``
 
 .. code-block:: python
 
-    def LinearRHS(self):
+    def LinearRHS(self, **params):
         # Assemble diagonal bilinear forms
         L = -(inner(div(grad(u))+div(grad(div(grad(u)))), v))
         return L
     
-    def NonlinearRHS(self, U, U_hat, dU):
+    def NonlinearRHS(self, U, U_hat, dU, gradu, **params):
         # Assemble nonlinear term
-        global gradu
-        gradu = TV.backward(1j*K*U_hat, gradu)
-        dU = T.forward(0.5*(gradu[0]*gradu[0]+gradu[1]*gradu[1]), dU)
+        gradu = TVp.backward(1j*K*U_hat, gradu)
+        dU = Tp.forward(0.5*(gradu[0]*gradu[0]+gradu[1]*gradu[1]), dU)
+        dU.mask_nyquist(mask)
         return -dU
 
 The code should, hopefully, be self-explanatory.
 
-All that remains now is to initialize the solution arrays and to setup the
+All that remains now is to setup the
 integrator plus some plotting functionality for visualizing the results. Note
 that visualization is only nice when running the code in serial. For parallel,
 it is recommended to use :class:`.HDF5File`, to store intermediate results to the HDF5
 format, for later viewing in, e.g., Paraview.
 
-The solution is initialized as
-
-.. code-block:: python
-
-    #initialize
-    X = T.local_mesh(True)
-    U[:] = ul(*X)
-    U_hat = T.forward(U, U_hat)
-
-And we also create an update function for plotting intermediate results with a
+We create an update function for plotting intermediate results with a
 cool colormap:
 
 .. code-block:: python
 
     # Integrate using an exponential time integrator
-    plt.figure()
-    cm = plt.get_cmap('hot')
-    image = plt.contourf(X[0], X[1], U, 256, cmap=cm)
-    plt.draw()
-    plt.pause(1e-6)
-    count = 0
-    def update(u, u_hat, t, tstep, **params):
-        global count
+    def update(self, u, u_hat, t, tstep, **params):
+        if not hasattr(self, 'fig'):
+            self.fig = plt.figure()
+            self.cm = plt.get_cmap('hot')
+            self.image = plt.contourf(X[0], X[1], U, 256, cmap=self.cm)
         if tstep % params['plot_step'] == 0 and params['plot_step'] > 0:
-            u = T.backward(u_hat, u)
-            image.ax.clear()
-            image.ax.contourf(X[0], X[1], U, 256, cmap=cm)
+            u = u_hat.backward(u)
+            self.image.ax.clear()
+            self.image.ax.contourf(X[0], X[1], u, 256, cmap=self.cm)
             plt.pause(1e-6)
-            count += 1
-            plt.savefig('Kuramato_Sivashinsky_N_{}_{}.png'.format(N[0], count))
+            print('Energy =', dx(u**2))
     
 
 Now all that remains is to create the integrator and call it
 
 .. code-block:: python
 
-    if __name__ == '__main__':
-        par = {'plot_step': 100}
-        dt = 0.01
-        end_time = 100
-        integrator = ETDRK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
-        #integrator = RK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
-        integrator.setup(dt)
-        U_hat = integrator.solve(U, U_hat, dt, (0, end_time))
+    par = {'plot_step': 100, 'gradu': gradu}
+    dt = 0.01
+    end_time = 100
+    integrator = ETDRK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
+    #integrator = RK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
+    integrator.setup(dt)
+    U_hat = integrator.solve(U, U_hat, dt, (0, end_time))
 
 

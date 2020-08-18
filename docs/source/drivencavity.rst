@@ -7,7 +7,7 @@ Demo - Lid driven cavity
 ========================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 13, 2020
+:Date: Aug 18, 2020
 
 *Summary.* The lid driven cavity is a classical benchmark for Navier Stokes solvers.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the lid
@@ -70,14 +70,14 @@ than one processor.
 
 .. _sec:bases:
 
-Bases and tensor product spaces
--------------------------------
+Tensor product spaces
+---------------------
 
-With the Galerkin method we need basis functions for both velocity and
+With the Galerkin method we need function spaces for both velocity and
 pressure, as well as for the
-nonlinear right hand side. A Dirichlet basis will be used for velocity,
-whereas there is no boundary restriction on the pressure basis. For both
-two-dimensional bases we will use one basis function for the :math:`x`-direction,
+nonlinear right hand side. A Dirichlet space will be used for velocity,
+whereas there is no boundary restriction on the pressure space. For both
+two-dimensional spaces we will use one basis function for the :math:`x`-direction,
 :math:`\mathcal{X}_k(x)`, and one for the :math:`y`-direction, :math:`\mathcal{Y}_l(y)`. And
 then we create two-dimensional basis functions like
 
@@ -128,9 +128,9 @@ With shenfun we create these homogeneous spaces, :math:`D_0^{N_0}(x)=\text{span}
 
 .. code-block:: python
 
-    N = (51, 51)
+    N = (45, 45)
     family = 'Legendre' # or use 'Chebyshev'
-    quad = 'LG'         # for Chebyshev use 'GC' or 'GL'
+    quad = 'GL'         # for Chebyshev use 'GC' or 'GL'
     D0X = FunctionSpace(N[0], family, quad=quad, bc=(0, 0))
     D0Y = FunctionSpace(N[1], family, quad=quad, bc=(0, 0))
 
@@ -175,7 +175,7 @@ using both additional basis functions. We create the space
 
 .. code-block:: python
 
-    D1Y = FunctionSpace(N[1], family, quad=quad, bc=(1, 0))
+    D1Y = FunctionSpace(N[1], family, quad=quad, bc=(0, 1))
 
 where ``bc=(1, 0)`` fixes the values for :math:`y=1` and :math:`y=-1`, respectively.
 For a regularized lid driven cavity the velocity of the top lid is
@@ -187,7 +187,7 @@ quite straight forward do
 
     import sympy
     x = sympy.symbols('x')
-    #D1Y = FunctionSpace(N[1], family, quad=quad, bc=((1-x)**2*(1+x)**2, 0))
+    #D1Y = FunctionSpace(N[1], family, quad=quad, bc=(0, (1-x)**2*(1+x)**2))
 
 Uncomment the last line to run the regularized boundary conditions.
 Otherwise, there is no difference at all between the regular and the
@@ -428,7 +428,7 @@ viscosity, which is given here in terms of the Reynolds number:
 .. note::
    The inner products may also be assembled with one single line, as
    
-   .. code-block:: text
+   .. code-block:: python
    
        AA = inner(grad(v), -nu*grad(u)) + inner(div(v), p) + inner(q, div(u))
    
@@ -671,7 +671,7 @@ will quickly blow up. The iteration loop goes as follows
         uh_new = M.solve(bh_hat, u=uh_new, constraints=((2, 0, 0),), Alu=Alu) # Constraint for component 2 of mixed space
         error = np.linalg.norm(ui_hat-ui_new)
         uh_hat[:] = alfa*uh_new + (1-alfa)*uh_hat
-        converged = abs(error) < 1e-10 or count >= 10000
+        converged = abs(error) < 1e-8 or count >= 100
         print('Iteration %d Error %2.4e' %(count, error))
     
     up = uh_hat.backward()
@@ -681,14 +681,14 @@ will quickly blow up. The iteration loop goes as follows
     plt.figure()
     plt.quiver(X[0], X[1], u[0], u[1])
 
-The last three lines plots the velocity vectors that are shown
-in Figure :ref:`fig:drivencavity`. The solution is apparently nice
+The last three lines plots velocity vectors, like also seen in the figure :ref:`fig:drivencavity`
+in the top of this demo. The solution is apparently nice
 and smooth, but hidden underneath are Gibbs oscillations from the
 corner discontinuities. This is painfully obvious when switching from
 Legendre to Chebyshev polynomials. With Chebyshev the same plot looks
-like Figure :ref:`fig:drivencavitycheb`. However, choosing instead the
-regularized lid, the solutions will be nice and smooth, both for
-Legendre and Chebyshev polynomials.
+like the Figure :ref:`fig:drivencavitycheb` below. However, choosing instead the
+regularized lid, with no discontinuities, the solutions will be nice and
+smooth, both for Legendre and Chebyshev polynomials.
 
 .. _fig:drivencavitycheb:
 

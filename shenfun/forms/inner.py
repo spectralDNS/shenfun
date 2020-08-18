@@ -222,7 +222,7 @@ def inner(expr0, expr1, output_array=None, level=0):
                     if gij[i, j] == 0:
                         continue
                     w0.fill(0)
-                    x += inner(te, tr*gij[i, j], output_array=w0)
+                    x += inner(te*gij[i, j], tr, output_array=w0)
             return output_array
 
         result = []
@@ -258,6 +258,7 @@ def inner(expr0, expr1, output_array=None, level=0):
         test = Expr(test)
 
     assert test.expr_rank() == trial.expr_rank()
+
     testspace = test.base.function_space()
     trialspace = trial.base.function_space()
     test_scale = test.scales()
@@ -337,9 +338,9 @@ def inner(expr0, expr1, output_array=None, level=0):
                                 DM[0].mixedbase = testspace
                                 A.append(DM[0])
                             else:
-                                if len(test_sp.get_nonhomogeneous_axes()) == 1:
+                                if len(trial_sp.get_nonhomogeneous_axes()) == 1:
                                     A.append(TPMatrix(DM, test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
-                                elif len(test_sp.get_nonhomogeneous_axes()) == 2:
+                                elif len(trial_sp.get_nonhomogeneous_axes()) == 2:
                                     A.append(TPMatrix([M[0], DM[1]], test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
                                     A.append(TPMatrix([DM[0], M[1]], test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
                                     A.append(TPMatrix(DM, test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))

@@ -9,7 +9,7 @@ def energy_fourier(u, T):
 
     .. math::
 
-        \int abs(u)^2 dx = N*\sum abs(u_hat)^22
+        \int abs(u)^2 dx = N*\sum abs(u_hat)^2
 
     Parameters
     ----------

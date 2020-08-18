@@ -4,10 +4,10 @@
 .. Document title:
 
 Demo - Rayleigh Benard
-%%%%%%%%%%%%%%%%%%%%%%
+======================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 13, 2020
+:Date: Aug 18, 2020
 
 *Summary.* Rayleigh-Benard convection arise
 due to temperature gradients in a fluid. The governing equations are
@@ -43,8 +43,8 @@ has been run at a very high Rayleigh number (*Ra*), and the lower image with a l
 
 .. _demo:rayleighbenard:
 
-Model problem
-=============
+The Rayleigh Bénard equations
+-----------------------------
 
 The governing equations solved in domain :math:`\Omega=[-1, 1]\times [0, 2\pi]` are
 
@@ -85,7 +85,7 @@ governing equations have been non-dimensionalized using the free-fall velocitysc
 The governing equations contain a non-trivial coupling between velocity, pressure and temperature.
 This coupling can be simplified by eliminating the pressure from the equation for the wall-normal velocity
 component :math:`u`. We accomplish this by taking the Laplace of the momentum equation in wall normal
-direction, using the pressure from the divergence of the momentum equation 
+direction, using the pressure from the divergence of the momentum equation
 :math:`\nabla^2 p = -\nabla \cdot \mathbf{H}+\partial T/\partial x`, where
 :math:`\mathbf{H} = (H_x, H_y) = (\mathbf{u} \cdot \nabla) \mathbf{u}`
 
@@ -385,7 +385,7 @@ To sum up, with the solution known at :math:`t = t - \Delta t`, we solve
 ================  ===========================  ===================================================================  
 
 Temporal discretization
-=======================
+-----------------------
 
 The governing equations are integrated in time using a semi-implicit third order Runge Kutta method.
 This method applies to any generic equation
@@ -450,8 +450,8 @@ integrating (with weights) over the domain
 Equation :eq:`eq:rk3stagesvar` is the variational form implemented by ``shenfun`` for the
 time dependent equations.
 
-Shenfun implementation
-======================
+Implementation
+--------------
 
 To get started we need instances of the approximation spaces discussed in
 Eqs. :eq:`eq:VB` - :eq:`eq:WWF`. When the spaces are created we also need
@@ -479,7 +479,7 @@ And then we create tensor product spaces by combining these bases (like in Eqs. 
     W_BF = TensorProductSpace(comm, (VB, VF))    # Wall-normal velocity
     W_DF = TensorProductSpace(comm, (VD, VF))    # Streamwise velocity
     W_WF = TensorProductSpace(comm, (VW, VF))    # No bc
-    W_TF = TensorProductSpace(comm, (WT, VF))    # Temperature
+    W_TF = TensorProductSpace(comm, (VT, VF))    # Temperature
     BD = MixedTensorProductSpace([W_BF, W_DF])   # Velocity vector
     DD = MixedTensorProductSpace([W_DF, W_DF])   # Convection vector
 
@@ -508,7 +508,7 @@ In the final solver we will also use bases for dealiasing the nonlinear term,
 but we do not add that level of complexity here.
 
 Wall-normal velocity equation
------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We implement Eq. :eq:`eq:u2` using the three-stage Runge Kutta equation :eq:`eq:rk3stagesvar`.
 To this end we first need to declare some test- and trial functions, as well as
@@ -608,7 +608,7 @@ Also note that ``rhs[1]`` contains the right hand side computed at stage ``k``,
 whereas ``rhs[0]`` is used to remember the old value of the nonlinear part.
 
 Streamwise velocity
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 The streamwise velocity is computed using Eq. :eq:`eq:div3` and :eq:`eq:vx`. For efficiency we
 can here preassemble both matrices seen in :eq:`eq:div3` and reuse them every
@@ -622,15 +622,16 @@ each RK stage.
     # Assemble matrices and solvers for all stages
     B_DD = inner(TestFunction(W_DF), TrialFunction(W_DF))
     C_DB = inner(TestFunction(W_DF), Dx(TrialFunction(W_BF), 0, 1))
-    v0 = TestFunction(VD)
-    u0 = TrialFunction(VD)
+    VD0 = FunctionSpace(N, family, bc=(0, 0))
+    v0 = TestFunction(VD0)
+    u0 = TrialFunction(VD0)
     solver0 = []
     for rk in range(3):
         mats0 = inner(v0, 2./(nu*(a[rk]+b[rk])*dt)*u0 - div(grad(u0)))
         solver0.append(chebyshev.la.Helmholtz(*mats0))
     
     # Allocate work arrays and variables
-    u00 = Function(VD)
+    u00 = Function(VD0)
     b0 = np.zeros((2,)+u00.shape)
     w00 = np.zeros_like(u00)
     dudx_hat = Function(W_DF)
@@ -656,7 +657,7 @@ each RK stage.
         return u
 
 Temperature
------------
+~~~~~~~~~~~
 
 The temperature equation :eq:`eq:T` is implemented using a Helmholtz solver.
 The main difficulty with the temperature is the non-homogeneous boundary
@@ -804,6 +805,8 @@ the temperature equation these boundary matrices are extracted using
 
 .. code-block:: python
 
+    q = TestFunction(W_TF)
+    p = TrialFunction(W_TF)
     solverT = []
     lhs_mat = []
     for rk in range(3):
@@ -816,7 +819,8 @@ stage as
 
 .. code-block:: python
 
-    rhs_T = lhs_mat[rk][0].matvec(T_, rhs_T)
+    w0 = Function(W_WF)
+    w0 = lhs_mat[rk][0].matvec(T_, w0)
 
 The complete right hand side of the temperature equations can be computed as
 
@@ -850,7 +854,7 @@ loop that integrates the solution forward in time.
     T_ = T_b.forward(T_)
     T_.mask_nyquist(mask)
     
-    def solve(t=0, tstep=0, end_time=1000):
+    def solve(t=0, tstep=0, end_time=100):
         while t < end_time-1e-8:
             for rk in range(3):
                 rhs_u = compute_rhs_u(u_, T_, H_, rhs_u, rk)

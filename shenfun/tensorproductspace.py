@@ -305,7 +305,8 @@ class TensorProductSpace(PFFT):
         else:
             self.configure_backwards(backward_from_pencil, dtype, kw)
 
-        for base in self.xfftn:
+        for i, base in enumerate(bases):
+            base.axis = i
             if base.has_nonhomogeneous_bcs:
                 base.bc.set_tensor_bcs(base, self)
 

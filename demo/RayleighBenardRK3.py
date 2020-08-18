@@ -254,8 +254,8 @@ class RayleighBenard(object):
                 plt.pause(1e-6)
 
     def tofile(self, tstep):
-        ub = self.u_.backward(self.ub, uniform=True)
-        T_b = self.T_.backward(uniform=True)
+        ub = self.u_.backward(self.ub, kind='uniform')
+        T_b = self.T_.backward(kind='uniform')
         self.file_u.write(tstep, {'u': [ub]}, as_scalar=True)
         self.file_T.write(tstep, {'T': [T_b]})
 
@@ -307,8 +307,6 @@ class RayleighBenard2(RayleighBenard):
         # through matrix-vector products
 
         self.mats_u = []
-        self.mats_uT = []
-        self.mats_conv = []
         self.mats_rhs_T = []
         self.rhs_mat = []
         for rk in range(3):
@@ -428,7 +426,7 @@ if __name__ == '__main__':
         'family': 'C',
         'quad': 'GC'
         }
-    c = RayleighBenard2(**d)
+    c = RayleighBenard(**d)
     c.initialize(rand=0.0001)
     c.assemble()
     c.solve(end_time=200)

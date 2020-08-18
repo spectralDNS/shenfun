@@ -4,10 +4,10 @@
 .. Document title:
 
 Demo - 3D Poisson's equation
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+============================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 13, 2020
+:Date: Aug 18, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve a 3D Poisson
 equation in a 3D tensor product domain that has homogeneous Dirichlet boundary
@@ -23,15 +23,12 @@ a single Python file `dirichlet_poisson3D.py <https://github.com/spectralDNS/she
 
    *Convergence of 3D Poisson solvers for both Legendre and Chebyshev modified basis function*
 
-Model problem
-=============
-
 .. _demo:poisson3d:
 
-Poisson equation
-----------------
+Poisson's equation
+------------------
 
-The Poisson equation is given as
+Poisson's equation is given as
 
 .. math::
    :label: eq:3d:poisson
@@ -315,7 +312,7 @@ in the order of :math:`\mathcal{O}(N_0-3)` operations given :math:`m` and :math:
 :cite:`shen1` and :cite:`shen95`. Fast solvers for :eq:`eq:AB` are implemented in ``shenfun`` for both bases.
 
 Method of manufactured solutions
---------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In this demo we will use the method of manufactured
 solutions to demonstrate spectral accuracy of the ``shenfun`` bases. To
@@ -344,10 +341,10 @@ u(\boldsymbol{x}) = f_e(\boldsymbol{x})`, we can compare the numerical solution 
 the analytical solution :math:`u_e(\boldsymbol{x})` and compute error norms.
 
 Implementation
-==============
+--------------
 
 Preamble
---------
+~~~~~~~~
 
 We will solve the Poisson problem using the `shenfun <https://github.com/spectralDNS/shenfun>`__ Python module. The first thing needed
 is then to import some of this module's functionality
@@ -359,14 +356,13 @@ plus some other helper modules, like `Numpy <https://numpy.org>`__ and `Sympy <h
     import numpy as np
     from shenfun.tensorproductspace import TensorProductSpace
     from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \ 
-        project, Dx, FunctionSpace
-    from mpi4py import MPI
+        project, Dx, FunctionSpace, comm, Array, chebyshev
 
 We use ``Sympy`` for the manufactured solution and ``Numpy`` for testing. MPI for
 Python (``mpi4py``) is required for running the solver with MPI.
 
 Manufactured solution
----------------------
+~~~~~~~~~~~~~~~~~~~~~
 
 The exact solution :math:`u_e(x, y, z)` and the right hand side :math:`f_e(x, y, z)` are created using ``Sympy`` as follows
 
@@ -394,7 +390,7 @@ to compute :math:`f_e`. However, with ``Sympy`` it is much
 easier to experiment and quickly change the solution.
 
 Discretization and MPI
-----------------------
+~~~~~~~~~~~~~~~~~~~~~~
 
 We create three bases with given size, one for each dimension of the problem.
 From these three bases a :class:`.TensorProductSpace` is created.
@@ -446,11 +442,7 @@ each processor in spectral space are
 
 .. code-block:: python
 
-    >>> print(comm.Get_rank(), T.local_slice())
-    3 [slice(0, 14, None), slice(8, 15, None), slice(5, 9, None)]
-    1 [slice(0, 14, None), slice(0, 8, None), slice(5, 9, None)]
-    2 [slice(0, 14, None), slice(8, 15, None), slice(0, 5, None)]
-    0 [slice(0, 14, None), slice(0, 8, None), slice(0, 5, None)]
+    print(comm.Get_rank(), T.local_slice())
 
 where the global shape is :math:`\boldsymbol{N}=(14, 15, 9)` after taking advantage of
 Hermitian symmetry in the :math:`z`-direction. So, all processors have the complete first dimension available locally, as they
@@ -460,9 +452,9 @@ real space the mesh is distributed differently. First of all the global mesh
 shape is :math:`\boldsymbol{N}=(14, 15, 16)`, and it is distributed along the first two
 dimensions. The local slices can be inspected as
 
-.. code-block:: python
+.. code-block:: text
 
-    >>> print(comm.Get_rank(), T.local_slice(False))
+    print(comm.Get_rank(), T.local_slice(False))
     0 [slice(0, 7, None), slice(0, 8, None), slice(0, 16, None)]
     1 [slice(0, 7, None), slice(8, 15, None), slice(0, 16, None)]
     2 [slice(7, 14, None), slice(0, 8, None), slice(0, 16, None)]
@@ -482,14 +474,14 @@ needs to be made when creating the tensorproductspace as
 which will lead to a mesh that is distributed along :math:`x`-direction in real space
 and :math:`y`-direction in spectral space. The local slices are
 
-.. code-block:: python
+.. code-block:: text
 
-    >>> print(comm.Get_rank(), T.local_slice()) # spectral space
+    print(comm.Get_rank(), T.local_slice()) # spectral space
     1 [slice(0, 14, None), slice(4, 8, None), slice(0, 9, None)]
     2 [slice(0, 14, None), slice(8, 12, None), slice(0, 9, None)]
     0 [slice(0, 14, None), slice(0, 4, None), slice(0, 9, None)]
     3 [slice(0, 14, None), slice(12, 15, None), slice(0, 9, None)]
-    >>> print(comm.Get_rank(), T.local_slice(False)) # real space
+    print(comm.Get_rank(), T.local_slice(False)) # real space
     3 [slice(11, 14, None), slice(0, 15, None), slice(0, 16, None)]
     0 [slice(0, 4, None), slice(0, 15, None), slice(0, 16, None)]
     2 [slice(8, 11, None), slice(0, 15, None), slice(0, 16, None)]
@@ -500,7 +492,7 @@ number of processors with *slab* is :math:`\min \{N_0, N_1\}`, whereas a *pencil
 approach can be used with up to :math:`\min \{N_1(N_2/2+1), N_0 N_1\}` processors.
 
 Variational formulation
------------------------
+~~~~~~~~~~~~~~~~~~~~~~~
 
 The variational problem :eq:`eq:3d:varform` can be assembled using ``shenfun``'s
 form language, which is perhaps surprisingly similar to FEniCS.
@@ -534,7 +526,7 @@ takes a real signal and transforms it taking advantage of Hermitian symmetry,
 see `rfft <https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.fft.rfft.html>`__.
 
 Solve linear equations
-----------------------
+~~~~~~~~~~~~~~~~~~~~~~
 
 Finally, solve linear equation system and transform solution from spectral
 :math:`\hat{u}_{\boldsymbol{\textsf{k}}}` vector to the real space :math:`u(\boldsymbol{x})` and then check how the solution corresponds with the exact solution :math:`u_e`.
@@ -542,6 +534,7 @@ Finally, solve linear equation system and transform solution from spectral
 .. code-block:: python
 
     # Create Helmholtz linear algebra solver
+    Solver = chebyshev.la.Helmholtz
     H = Solver(*matrices)
     
     # Solve and transform to real space
@@ -556,7 +549,7 @@ Finally, solve linear equation system and transform solution from spectral
         print("Error=%2.16e" %(np.sqrt(error)))
 
 Convergence test
-----------------
+~~~~~~~~~~~~~~~~
 
 A complete solver is given in Sec. :ref:`sec:3d:complete`. This solver is created
 such that it takes in two commandline arguments and prints out the
@@ -575,7 +568,7 @@ We set up the solver to run for a list of :math:`N=[8, 10, \ldots, 38]`, and col
 the errornorms in arrays to be plotted. Such a script can be easily created
 with the `subprocess <https://docs.python.org/3/library/subprocess.html>`__ module
 
-.. code-block:: python
+.. code-block:: text
 
     import subprocess
     from numpy import log, array
@@ -601,7 +594,7 @@ generated figure is shown in the summary's Fig. :ref:`fig:3d:ct0`. The spectral
 convergence is evident and we can see that after :math:`N=25` roundoff errors dominate
 as the errornorm trails off around :math:`10^{-13}`.
 
-.. code-block:: python
+.. code-block:: text
 
     plt.figure(figsize=(6, 4))
     for basis, col in zip(('legendre', 'chebyshev'), ('r', 'b')):
@@ -619,93 +612,8 @@ as the errornorm trails off around :math:`10^{-13}`.
 
 Complete solver
 ---------------
-A complete solver, that can use either Legendre or Chebyshev bases, and any quadrature size
-chosen as a command-line argument, is shown below.
 
-.. code-block:: text
-
-    >>> python dirichlet_poisson3D.py 36 legendre
-
-or similarly with ``chebyshev`` instead of ``legendre``.
-
-.. code-block:: python
-
-    import sys, os
-    import importlib
-    from sympy import symbols, cos, sin, lambdify
-    import numpy as np
-    from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \ 
-        Function, Basis, TensorProductSpace
-    import time
-    from mpi4py import MPI
-    try:
-        import matplotlib.pyplot as plt
-    except ImportError:
-        plt = None
-    
-    comm = MPI.COMM_WORLD
-    
-    assert len(sys.argv) == 3
-    assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
-    assert isinstance(int(sys.argv[-2]), int)
-    
-    # Collect basis and solver from either Chebyshev or Legendre submodules
-    family = sys.argv[-1].lower()
-    base = importlib.import_module('.'.join(('shenfun', family)))
-    Solver = base.la.Helmholtz
-    
-    # Use sympy to compute a rhs, given an analytical solution
-    a = -0
-    b = 0
-    x, y, z = symbols("x,y,z")
-    ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-z**2) + a*(1 + z)/2. + b*(1 - z)/2.
-    fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
-    
-    # Lambdify for faster evaluation
-    ul = lambdify((x, y, z), ue, 'numpy')
-    fl = lambdify((x, y, z), fe, 'numpy')
-    
-    # Size of discretization
-    N = int(sys.argv[-2])
-    N = [N, N, N]
-    
-    SD = FunctionSpace(N[0], family=family, bc=(a, b))
-    K1 = FunctionSpace(N[1], family='F', dtype='D')
-    K2 = FunctionSpace(N[2], family='F', dtype='d')
-    T = TensorProductSpace(comm, (K1, K2, SD), axes=(0, 1, 2), slab=True)
-    X = T.local_mesh()
-    u = TrialFunction(T)
-    v = TestFunction(T)
-    
-    K = T.local_wavenumbers()
-    
-    # Get f on quad points
-    fj = Array(T, buffer=fl(*X))
-    
-    # Compute right hand side of Poisson equation
-    f_hat = inner(v, fj)
-    if family == 'legendre':
-        f_hat *= -1.
-    
-    # Get left hand side of Poisson equation
-    if family == 'chebyshev':
-        matrices = inner(v, div(grad(u)))
-    else:
-        matrices = inner(grad(v), grad(u))
-    
-    # Create Helmholtz linear algebra solver
-    H = Solver(*matrices)
-    
-    # Solve and transform to real space
-    u_hat = Function(T)           # Solution spectral space
-    t0 = time.time()
-    u_hat = H(u_hat, f_hat)       # Solve
-    uq = T.backward(u_hat, fast_transform=False)
-    
-    # Compare with analytical solution
-    uj = ul(*X)
-    error = comm.reduce(np.linalg.norm(uj-uq)**2)
-    if comm.Get_rank() == 0:
-        print("Error=%2.16e" %(np.sqrt(error)))
+A complete solver, that can use either Legendre or Chebyshev bases, chosen as a
+command-line argument, can be found `here <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py>`__.
 
 .. ======= Bibliography =======
