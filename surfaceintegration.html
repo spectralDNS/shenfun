@@ -1,0 +1,740 @@
+
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Demo - Integration of functions &#8212; Shenfun executable demos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
+    <link href="_static/css/index.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/sphinx-book-theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="_static/jupyter-sphinx.css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/sphinx-book-theme.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/togglebutton.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
+    <script src="_static/mystnb.js"></script>
+    <script src="_static/sphinx-book-theme.js"></script>
+    <script >var togglebuttonSelector = '.toggle, .admonition.dropdown, .tag_hide_input div.cell_input, .tag_hide-input div.cell_input, .tag_hide_output div.cell_output, .tag_hide-output div.cell_output, .tag_hide_cell.cell, .tag_hide-cell.cell';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"TeX": {"Macros": {"bmat": ["\\left[\\begin{array}"], "emat": ["\\end{array}\\right]"]}, "extensions": ["cancel.js", "AMSmath.js"]}})</script>
+    <script async="async" src="https://unpkg.com/thebelab@latest/lib/index.js"></script>
+    <script >
+        const thebe_selector = ".thebe,.cell"
+        const thebe_selector_input = "pre,.cell_input div.highlight"
+        const thebe_selector_output = ".output,.cell_output"
+    </script>
+    <script async="async" src="_static/sphinx-thebe.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Demo - Working with Functions" href="functions.html" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="docsearch:language" content="en">
+
+
+
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+<div class="col-12 col-md-3 bd-sidebar site-navigation show" id="site-navigation">
+    
+        <div class="navbar-brand-box">
+<a class="navbar-brand text-wrap" href="index.html">
+  
+  
+  <h1 class="site-logo" id="site-title">Shenfun executable demos</h1>
+  
+</a>
+</div>
+
+<form class="bd-search d-flex align-items-center" action="search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search this book..." aria-label="Search this book..." autocomplete="off" >
+</form>
+
+<nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <ul class="nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="intro.html">
+   Shenfun executable demos
+  </a>
+ </li>
+</ul>
+<p class="caption">
+ <span class="caption-text">
+  Shenfun demos
+ </span>
+</p>
+<ul class="current nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="poisson.html">
+   Demo - 1D Poisson’s equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="kleingordon.html">
+   Demo - Cubic nonlinear Klein-Gordon equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="poisson3d.html">
+   Demo - 3D Poisson’s equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="polarhelmholtz.html">
+   Demo - Helmholtz equation in polar coordinates
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="sphericalhelmholtz.html">
+   Demo - Helmholtz equation on the unit sphere
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="kuramatosivashinsky.html">
+   Demo - Kuramato-Sivashinsky equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="stokes.html">
+   Demo - Stokes equations
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="drivencavity.html">
+   Demo - Lid driven cavity
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="rayleighbenard.html">
+   Demo - Rayleigh Benard
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="functions.html">
+   Demo - Working with Functions
+  </a>
+ </li>
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   Demo - Integration of functions
+  </a>
+ </li>
+</ul>
+
+</nav>
+
+ <!-- To handle the deprecated key -->
+
+<div class="navbar_extra_footer">
+  Powered by <a href="https://jupyterbook.org">Jupyter Book</a>
+</div>
+
+</div>
+
+
+          
+
+
+          
+<main class="col py-md-3 pl-md-4 bd-content overflow-auto" role="main">
+    
+    <div class="row topbar fixed-top container-xl">
+    <div class="col-12 col-md-3 bd-topbar-whitespace site-navigation show">
+    </div>
+    <div class="col pl-2 topbar-main">
+        
+        <button id="navbar-toggler" class="navbar-toggler ml-0" type="button" data-toggle="collapse"
+            data-toggle="tooltip" data-placement="bottom" data-target=".site-navigation" aria-controls="navbar-menu"
+            aria-expanded="true" aria-label="Toggle navigation" aria-controls="site-navigation"
+            title="Toggle navigation" data-toggle="tooltip" data-placement="left">
+            <i class="fas fa-bars"></i>
+            <i class="fas fa-arrow-left"></i>
+            <i class="fas fa-arrow-up"></i>
+        </button>
+        
+        <div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn" aria-label="Download this page"><i
+            class="fas fa-download"></i></button>
+
+    
+    <div class="dropdown-buttons">
+        <!-- ipynb file if we had a myst markdown file -->
+        
+        <!-- Download raw file -->
+        <a class="dropdown-buttons" href="_sources/surfaceintegration.ipynb"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Download source file" data-toggle="tooltip"
+                data-placement="left">.ipynb</button></a>
+        <!-- Download PDF via print -->
+        <button type="button" id="download-print" class="btn btn-secondary topbarbtn" title="Print to PDF"
+            onClick="window.print()" data-toggle="tooltip" data-placement="left">.pdf</button>
+    </div>
+    
+</div>
+        <!-- Source interaction buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Connect with source repository"><i class="fab fa-github"></i></button>
+    <div class="dropdown-buttons sourcebuttons">
+        <a class="repository-button"
+            href="https://github.com/spectralDNS/shenfun"><button type="button" class="btn btn-secondary topbarbtn"
+                data-toggle="tooltip" data-placement="left" title="Source repository"><i
+                    class="fab fa-github"></i>repository</button></a>
+        
+        
+    </div>
+</div>
+
+
+        <!-- Full screen (wrap in <a> to have style consistency -->
+        <a class="full-screen-button"><button type="button" class="btn btn-secondary topbarbtn" data-toggle="tooltip"
+                data-placement="bottom" onclick="toggleFullScreen()" title="Fullscreen mode"><i
+                    class="fas fa-expand"></i></button></a>
+
+        <!-- Launch buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Launch interactive content"><i class="fas fa-rocket"></i></button>
+    <div class="dropdown-buttons">
+        
+        <a class="binder-button" href="https://mybinder.org/v2/gh/spectralDNS/shenfun/master?urlpath=tree/./docs/book/surfaceintegration.ipynb"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Launch Binder" data-toggle="tooltip"
+                data-placement="left"><img class="binder-button-logo"
+                    src="_static/images/logo_binder.svg"
+                    alt="Interact on binder">Binder</button></a>
+        
+        
+        
+        <button type="button" class="btn btn-secondary topbarbtn"
+            onclick="initThebeSBT()" title="Launch Thebe" data-toggle="tooltip" data-placement="left"><i
+                class="fas fa-play"></i><span style="margin-left: .4em;">Live Code</span></button>
+        
+    </div>
+</div>
+
+    </div>
+
+    <!-- Table of contents -->
+    <div class="d-none d-md-block col-md-2 bd-toc show">
+        <div class="tocsection onthispage pt-5 pb-3">
+            <i class="fas fa-list"></i> On this page
+        </div>
+        <nav id="bd-toc-nav">
+            <ul class="nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#the-inner-product">
+   The inner product
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#curve-integrals">
+     Curve integrals
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#surface-integrals">
+     Surface integrals
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#example-1">
+   Example 1
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#example-2">
+   Example 2
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#example-3">
+   Example 3
+  </a>
+ </li>
+</ul>
+
+        </nav>
+    </div>
+</div>
+    <div id="main-content" class="row">
+        <div class="col-12 col-md-9 pl-md-3 pr-md-0">
+        
+              <div>
+                
+  <!-- dom:TITLE: Demo - Integration of functions -->
+<div class="section" id="demo-integration-of-functions">
+<h1>Demo - Integration of functions<a class="headerlink" href="#demo-integration-of-functions" title="Permalink to this headline">¶</a></h1>
+<!-- dom:AUTHOR: Mikael Mortensen Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo. -->
+<!-- Author: -->  
+<p><strong>Mikael Mortensen</strong> (email: <code class="docutils literal notranslate"><span class="pre">mikaem&#64;math.uio.no</span></code>), Department of Mathematics, University of Oslo.</p>
+<p>Date: <strong>Aug 21, 2020</strong></p>
+<p>Copyright 2020, Mikael Mortensen. Released under CC Attribution 4.0 license</p>
+<p><strong>Summary.</strong> This is a demonstration of how the Python module <a class="reference external" href="https://github.com/spectralDNS/shenfun">shenfun</a> can be used to
+integrate over 1D curves and 2D surfaces in 3D space.
+We make use of
+curvilinear coordinates, and reproduce some integrals
+performed by Behnam Hashemi with <a class="reference external" href="http://www.chebfun.org/examples/approx3/SurfaceIntegral3D.html">Chebfun</a>.</p>
+<p><strong>Notice.</strong></p>
+<p>For all the examples below we could just as well
+use Legendre polynomials instead of Chebyshev.
+Just replace ‘C’ with ‘L’ when creating function spaces.
+The accuracy ought to be similar.</p>
+<div class="section" id="the-inner-product">
+<h2>The inner product<a class="headerlink" href="#the-inner-product" title="Permalink to this headline">¶</a></h2>
+<p>A lesser known fact about <a class="reference external" href="https://github.com/spectralDNS/shenfun">shenfun</a> is
+that it can be used to perform regular, unweighted, integrals with
+spectral accuracy. With the newly added curvilinear coordinates
+feature, we can now also integrate over highly complex lines and surfaces
+embedded in a higher dimensional space.</p>
+<p>To integrate over a domain in shenfun we use the
+<a class="reference external" href="https://shenfun.readthedocs.io/en/latest/shenfun.forms.html#shenfun.forms.inner.inner">inner</a>
+function, with a constant test function. The <code class="docutils literal notranslate"><span class="pre">inner</span></code>
+function in shenfun is defined as an integral over the
+entire domain <span class="math notranslate nohighlight">\(\Omega\)</span> in question</p>
+<div class="math notranslate nohighlight">
+\[
+(u, v)_w = \int_{\Omega} u \overline{v} w d\Omega,
+\]</div>
+<p>for trial function <span class="math notranslate nohighlight">\(u\)</span>, test function <span class="math notranslate nohighlight">\(v\)</span> and weight <span class="math notranslate nohighlight">\(w\)</span>.
+Also, <span class="math notranslate nohighlight">\(\overline{v}\)</span> represents the complex conjugate of <span class="math notranslate nohighlight">\(v\)</span>, in case
+we are working with complex functions (like Fourier exponentials).</p>
+<p>The functions and weights take on different form, but if
+the test function <span class="math notranslate nohighlight">\(v\)</span> is chosen to be a constant, e.g., <span class="math notranslate nohighlight">\(v=1\)</span>,
+then the weight is also constant, <span class="math notranslate nohighlight">\(w=1\)</span>, and the inner product becomes
+an unweighted integral of <span class="math notranslate nohighlight">\(u\)</span> over the domain</p>
+<div class="math notranslate nohighlight">
+\[
+(u, 1)_w = \int_{\Omega} u d\Omega
+\]</div>
+<div class="section" id="curve-integrals">
+<h3>Curve integrals<a class="headerlink" href="#curve-integrals" title="Permalink to this headline">¶</a></h3>
+<p>For example, if we create some function space on the line from
+0 to 1, then we can get the length of this domain using <code class="docutils literal notranslate"><span class="pre">inner</span></code></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">shenfun</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="n">B</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="n">u</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">length</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Length of domain =&#39;</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Since this function space <code class="docutils literal notranslate"><span class="pre">B</span></code> is Cartesian the computed
+length is simply the domain length.
+Not very impressive, but the same goes for multidimensional
+tensor product domains</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">F</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;F&#39;</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">TensorProductSpace</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="p">(</span><span class="n">B</span><span class="p">,</span> <span class="n">F</span><span class="p">))</span>
+<span class="n">area</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Array</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Area of domain =&#39;</span><span class="p">,</span> <span class="n">area</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Still not very impressive, but moving to curvilinear coordinates
+it all starts to become more interesting. Lets
+look at a spiral <span class="math notranslate nohighlight">\(C\)</span> embedded in <span class="math notranslate nohighlight">\(\mathbb{R}^3\)</span>, parametrized
+by one single parameter <span class="math notranslate nohighlight">\(t\)</span></p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+x(t) &amp;= \sin 2t \\ 
+y(t) &amp;= \cos 2t \\ 
+z(t) &amp;= \frac{t}{2} \\ 
+0 \le &amp; t \le 2\pi
+\end{align*}
+\end{split}\]</div>
+<p>What is the length of this spiral? The spiral can be
+seen as the red curve in the figure a few cells below.</p>
+<p>The integral over the parametrized curve <span class="math notranslate nohighlight">\(C\)</span> can
+be written as</p>
+<div class="math notranslate nohighlight">
+\[
+\int_C ds = \int_{t=0}^{2\pi} \sqrt{\left(\frac{d x}{d t}\right)^2 + \left(\frac{d y}{d t}\right)^2 + \left(\frac{d z}{d t}\right)^2} dt.
+\]</div>
+<p>We can find this integral easily using shenfun. Create
+a function space in curvilinear coordinates, providing
+the position vector <span class="math notranslate nohighlight">\(\mathbf{r} = x(t)\mathbf{i} + y(t) \mathbf{j} + z(t) \mathbf{k}\)</span>
+as input</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sympy</span> <span class="k">as</span> <span class="nn">sp</span>
+<span class="kn">from</span> <span class="nn">shenfun</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">real</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">positive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">rv</span> <span class="o">=</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">t</span><span class="p">),</span> <span class="n">sp</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">t</span><span class="p">),</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+<span class="n">C</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">),</span> <span class="n">coordinates</span><span class="o">=</span><span class="p">((</span><span class="n">t</span><span class="p">,),</span> <span class="n">rv</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Then compute the arclength using <code class="docutils literal notranslate"><span class="pre">inner</span></code></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">length</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Array</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Length of spiral =&#39;</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>The arclength is found to be slightly longer than <span class="math notranslate nohighlight">\(4 \pi\)</span>. Looking at the
+spiral below, the result looks reasonable.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">curvilinear_mesh</span><span class="p">(</span><span class="n">uniform</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">)</span>
+<span class="n">p</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">X</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span>
+<span class="n">hx</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">hy</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>The term <span class="math notranslate nohighlight">\(\sqrt{\left(\frac{d x}{d t}\right)^2 + \left(\frac{d y}{d t}\right)^2 + \left(\frac{d z}{d t}\right)^2}\)</span>
+is actually here a constant <span class="math notranslate nohighlight">\(\sqrt{4.25}\)</span>, found in shenfun as</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">C</span><span class="o">.</span><span class="n">coors</span><span class="o">.</span><span class="n">sg</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We could also integrate a function over the spiral.
+For example, lets integrate the function <span class="math notranslate nohighlight">\(f(x, y, z)= \sin^2 x\)</span></p>
+<div class="math notranslate nohighlight">
+\[
+\int_C \sin^2 x ds = \int_{t=0}^{2\pi} \sin^2 (\sin 2t) \sqrt{\left(\frac{d x}{d t}\right)^2 + \left(\frac{d y}{d t}\right)^2 + \left(\frac{d z}{d t}\right)^2} dt
+\]</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">inner</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Array</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">buffer</span><span class="o">=</span><span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">rv</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>which can be easily verified using, e.g., Wolfram Alpha</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">IFrame</span>
+<span class="n">IFrame</span><span class="p">(</span><span class="s2">&quot;https://www.wolframalpha.com/input/?i=integrate+sin</span><span class="si">%5E</span><span class="s2">2</span><span class="si">%28s</span><span class="s2">in%282t</span><span class="si">%29%</span><span class="s2">29+sqrt</span><span class="si">%284.25%</span><span class="s2">29+from+t%3D0+to+2pi&quot;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s2">&quot;500px&quot;</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="s2">&quot;350px&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="surface-integrals">
+<h3>Surface integrals<a class="headerlink" href="#surface-integrals" title="Permalink to this headline">¶</a></h3>
+<p>Consider a 3D function <span class="math notranslate nohighlight">\(f(x,y,z) \in \mathbb{R}^3\)</span> and
+a 2D surface (not neccessarily plane) <span class="math notranslate nohighlight">\(S(u, v)\)</span>,
+parametrized in two new coordinates <span class="math notranslate nohighlight">\(u\)</span> and <span class="math notranslate nohighlight">\(v\)</span>. A position
+vector <span class="math notranslate nohighlight">\(\mathbf{r}\)</span> can be used to parametrize <span class="math notranslate nohighlight">\(S\)</span></p>
+<div class="math notranslate nohighlight">
+\[
+\mathbf{r} = x(u, v) \,\mathbf{i} + y(u, v) \,\mathbf{j} + z(u, v) \,\mathbf{k},
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(\mathbf{i}, \mathbf{j}, \mathbf{k}\)</span> are the Cartesian unit vectors.
+The two new coordinates <span class="math notranslate nohighlight">\(u\)</span> and <span class="math notranslate nohighlight">\(v\)</span> are functions of <span class="math notranslate nohighlight">\(x, y, z\)</span>,
+and they each have a one-dimensional domain</p>
+<div class="math notranslate nohighlight">
+\[
+u \in D_u \quad v \in D_v.
+\]</div>
+<p>The exact size of the domain depends on the problem at hand. The computational
+domain of the surface <span class="math notranslate nohighlight">\(S\)</span> is <span class="math notranslate nohighlight">\(D=D_u \times D_v\)</span>.</p>
+<p>A surface integral of <span class="math notranslate nohighlight">\(f\)</span> over <span class="math notranslate nohighlight">\(S\)</span> can now be written</p>
+<div class="math notranslate nohighlight">
+\[
+\int_S f(x, y, z) dS = \int_D f(x(u, v), y(u, v), z(u, v)) \left|\frac{\partial \mathbf{r}}{\partial u} \times \frac{\partial \mathbf{r}}{\partial v} \right| dudv,
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(dS\)</span> is a surface area element. With shenfun such integrals
+are trivial, even for highly complex domains.</p>
+</div>
+</div>
+<div class="section" id="example-1">
+<h2>Example 1<a class="headerlink" href="#example-1" title="Permalink to this headline">¶</a></h2>
+<p>Consider first the surface integral of <span class="math notranslate nohighlight">\(f(x,y,z)=x^2\)</span>
+over the unit sphere. We use regular spherical coordinates,</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+0 &amp;\le \theta \le \pi \\ 
+0 &amp;\le \phi \le 2\pi \\ 
+x(\theta, \phi) &amp;= \sin \theta \cos \phi \\ 
+y(\theta, \phi) &amp;= \sin \theta \sin \phi \\ 
+z(\theta, \phi) &amp;= \cos \theta
+\end{align*}
+\end{split}\]</div>
+<p>The straight forward implementation of a function space for
+the unit sphere reads</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sympy</span> <span class="k">as</span> <span class="nn">sp</span>
+
+<span class="n">theta</span><span class="p">,</span> <span class="n">phi</span> <span class="o">=</span> <span class="n">psi</span> <span class="o">=</span><span class="n">sp</span><span class="o">.</span><span class="n">symbols</span><span class="p">(</span><span class="s1">&#39;x,y&#39;</span><span class="p">,</span> <span class="n">real</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">positive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">rv</span> <span class="o">=</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">phi</span><span class="p">),</span> <span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">phi</span><span class="p">),</span> <span class="n">sp</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">))</span>
+
+<span class="n">B0</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>
+<span class="n">B1</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;F&#39;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;d&#39;</span><span class="p">)</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">TensorProductSpace</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="p">(</span><span class="n">B0</span><span class="p">,</span> <span class="n">B1</span><span class="p">),</span> <span class="n">coordinates</span><span class="o">=</span><span class="p">(</span><span class="n">psi</span><span class="p">,</span> <span class="n">rv</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Q</span><span class="o">.</span><span class="n">positive</span><span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">))))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">sp.Q.positive(sp.sin(theta))</span></code> is a restriction that
+helps <code class="docutils literal notranslate"><span class="pre">Sympy</span></code> in computing the Jacobian required for the integral.
+We can now approximate the function <span class="math notranslate nohighlight">\(f\)</span> on this surface</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">f</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">buffer</span><span class="o">=</span><span class="n">rv</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>and we can integrate over <span class="math notranslate nohighlight">\(S\)</span></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">I</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>and finally compare to the exact result, which is <span class="math notranslate nohighlight">\(4 \pi / 3\)</span></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error =&#39;</span><span class="p">,</span> <span class="nb">abs</span><span class="p">(</span><span class="n">I</span><span class="o">-</span><span class="mi">4</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">3</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Note that we can here achieve better accuracy by using
+more quadrature points. For example by refining <code class="docutils literal notranslate"><span class="pre">f</span></code></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">T</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">get_refined</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">global_shape</span><span class="p">))</span>
+<span class="n">f</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">buffer</span><span class="o">=</span><span class="n">rv</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error =&#39;</span><span class="p">,</span> <span class="nb">abs</span><span class="p">(</span><span class="n">inner</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span><span class="o">-</span><span class="mi">4</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">3</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Not bad at all:-)</p>
+<p>To go a little deeper into the integral, we can get the
+term <span class="math notranslate nohighlight">\(\left|\frac{\partial \mathbf{r}}{\partial u} \times \frac{\partial \mathbf{r}}{\partial v} \right|\)</span>
+as</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">coors</span><span class="o">.</span><span class="n">sg</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Here the printed variable is <code class="docutils literal notranslate"><span class="pre">x</span></code>, but this is because <code class="docutils literal notranslate"><span class="pre">theta</span></code>
+is named <code class="docutils literal notranslate"><span class="pre">x</span></code> internally by <code class="docutils literal notranslate"><span class="pre">Sympy</span></code>. This is because of the definition
+used above: <code class="docutils literal notranslate"><span class="pre">theta,</span> <span class="pre">phi</span> <span class="pre">=</span> <span class="pre">sp.symbols('x,y',</span> <span class="pre">real=True,</span> <span class="pre">positive=True)</span></code>.</p>
+<p>Note that <span class="math notranslate nohighlight">\(\mathbf{b}_u = \frac{\partial \mathbf{r}}{\partial u}\)</span> and
+<span class="math notranslate nohighlight">\(\mathbf{b}_v = \frac{\partial \mathbf{r}}{\partial v}\)</span> are the two
+basis vectors used by shenfun for the surface <span class="math notranslate nohighlight">\(S\)</span>. The basis
+vectors are obtainable as <code class="docutils literal notranslate"><span class="pre">T.coors.b</span></code>, and can also be printed
+in latex using:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">Math</span>
+<span class="n">Math</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">coors</span><span class="o">.</span><span class="n">latex_basis_vectors</span><span class="p">(</span><span class="n">covariant</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">symbol_names</span><span class="o">=</span><span class="p">{</span><span class="n">theta</span><span class="p">:</span> <span class="s1">&#39;</span><span class="se">\\</span><span class="s1">theta&#39;</span><span class="p">,</span> <span class="n">phi</span><span class="p">:</span> <span class="s1">&#39;</span><span class="se">\\</span><span class="s1">phi&#39;</span><span class="p">}))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>where we tell latex to print <code class="docutils literal notranslate"><span class="pre">theta</span></code> as <span class="math notranslate nohighlight">\(\theta\)</span>, and not <code class="docutils literal notranslate"><span class="pre">x</span></code>:-)</p>
+<p>From the basis vectors it should be easy to see that <span class="math notranslate nohighlight">\(\left| \mathbf{b}_{\theta} \times \mathbf{b}_{\phi} \right| = \sin \theta\)</span>.</p>
+</div>
+<div class="section" id="example-2">
+<h2>Example 2<a class="headerlink" href="#example-2" title="Permalink to this headline">¶</a></h2>
+<p>Next, we solve <a class="reference external" href="http://www.math24.net/surface-integrals-of-first-kind.html">Example 5</a>
+from the online resources at math24.net. Here</p>
+<div class="math notranslate nohighlight">
+\[
+f = \sqrt{1+x^2+y^2}
+\]</div>
+<p>and the surface is defined by</p>
+<div class="math notranslate nohighlight">
+\[
+\mathbf{r} = u \cos v \mathbf{i} + u \sin v \mathbf{j} + v \mathbf{k}
+\]</div>
+<p>with <span class="math notranslate nohighlight">\(0 \le u \le 2, 0 \le v \le 2\pi\)</span>.</p>
+<p>The implementation is only a few lines, and we end by comparing
+to the exact solution <span class="math notranslate nohighlight">\(14 \pi /3\)</span></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">u</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">psi</span> <span class="o">=</span><span class="n">sp</span><span class="o">.</span><span class="n">symbols</span><span class="p">(</span><span class="s1">&#39;x,y&#39;</span><span class="p">,</span> <span class="n">real</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">positive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">rv</span> <span class="o">=</span> <span class="p">(</span><span class="n">u</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="n">u</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="n">v</span><span class="p">)</span>
+<span class="n">B0</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">B1</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">TensorProductSpace</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="p">(</span><span class="n">B0</span><span class="p">,</span> <span class="n">B1</span><span class="p">),</span> <span class="n">coordinates</span><span class="o">=</span><span class="p">(</span><span class="n">psi</span><span class="p">,</span> <span class="n">rv</span><span class="p">))</span>
+<span class="n">f</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">buffer</span><span class="o">=</span><span class="n">sp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">rv</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="n">rv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error =&#39;</span><span class="p">,</span> <span class="nb">abs</span><span class="p">(</span><span class="n">inner</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span><span class="o">-</span><span class="mi">14</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">3</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>In this case the integral measure is</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">coors</span><span class="o">.</span><span class="n">sg</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="example-3">
+<h2>Example 3<a class="headerlink" href="#example-3" title="Permalink to this headline">¶</a></h2>
+<p>In this third example we use a surface that
+looks like a seashell. Again, the example is taken from
+<a class="reference external" href="http://www.chebfun.org/examples/approx3/SurfaceIntegral3D.html">chebfun</a>.</p>
+<p>The surface of the seashell is parametrized with position
+vector</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+\mathbf{r} &amp;= \left(\left(\frac{5}{4}-\frac{5 v}{8 \pi}\right)  \cos 2v(1+\cos u) + \cos 2v \right) \mathbf{i} \\ 
+  &amp;+\left(\left(\frac{5}{4}-\frac{5 v}{8 \pi}\right) \sin 2v (1+\cos u) + \sin 2v \right) \mathbf{j},\\ 
+  &amp;+\left(\frac{10 v}{2 \pi} + \left(\frac{5}{4}-\frac{5 v}{8 \pi}\right) \sin u + 15\right) \mathbf{k}
+\end{align*}
+\end{split}\]</div>
+<p>for <span class="math notranslate nohighlight">\(0 \le u \le 2 \pi, -2 \pi \le v \le 2 \pi\)</span>.</p>
+<p>The function <span class="math notranslate nohighlight">\(f\)</span> is now defined as</p>
+<div class="math notranslate nohighlight">
+\[
+f(x,y,z) = x+y+z
+\]</div>
+<p>The implementation is</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rv</span> <span class="o">=</span> <span class="p">(</span><span class="mi">5</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">v</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">v</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">sp</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">u</span><span class="p">))</span><span class="o">/</span><span class="mi">4</span> <span class="o">+</span> <span class="n">sp</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">v</span><span class="p">),</span>
+      <span class="mi">5</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">v</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">v</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">sp</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">u</span><span class="p">))</span><span class="o">/</span><span class="mi">4</span> <span class="o">+</span> <span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">v</span><span class="p">),</span>
+      <span class="mi">10</span><span class="o">*</span><span class="n">v</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">+</span> <span class="mi">5</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">v</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">u</span><span class="p">)</span><span class="o">/</span><span class="mi">4</span> <span class="o">+</span> <span class="mi">15</span><span class="p">)</span>
+
+<span class="n">B0</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>
+<span class="n">B1</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">TensorProductSpace</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="p">(</span><span class="n">B0</span><span class="p">,</span> <span class="n">B1</span><span class="p">),</span> <span class="n">coordinates</span><span class="o">=</span><span class="p">(</span><span class="n">psi</span><span class="p">,</span> <span class="n">rv</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">Q</span><span class="o">.</span><span class="n">positive</span><span class="p">(</span><span class="n">v</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">pi</span><span class="p">)))</span>
+
+<span class="n">f</span> <span class="o">=</span> <span class="n">rv</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">rv</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">rv</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+<span class="n">fb</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">buffer</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+<span class="n">I</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">fb</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">I</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>which agrees very well with chebfun’s result. The basis vectors
+for the surface of the seashell are</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Math</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">coors</span><span class="o">.</span><span class="n">latex_basis_vectors</span><span class="p">(</span><span class="n">covariant</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">symbol_names</span><span class="o">=</span><span class="p">{</span><span class="n">u</span><span class="p">:</span> <span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="s1">&#39;v&#39;</span><span class="p">}))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>which, if nothing else, shows the power of symbolic
+computing in Sympy.</p>
+<p>We can plot the
+seashell using mayavi. Unfortunately mayavi is a little tricky
+to use with readthedocs, so instead of generating the plot
+with the code below, we link here instead to a previously
+generated image.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>    from mayavi import mlab
+    xx, yy, zz = T.local_curvilinear_mesh()
+    mlab.figure(bgcolor=(1, 1, 1), size=(400, 400))
+    mlab.mesh(xx, yy, zz, scalars=fb, colormap=&#39;jet&#39;)
+    mlab.show()
+</pre></div>
+</div>
+<!-- dom:FIGURE: [https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/seashell3.png] -->
+<!-- begin figure -->
+<p></p>
+<img src="https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/seashell3.png" >
+<!-- end figure -->
+<!-- ======= Bibliography ======= --></div>
+</div>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "spectralDNS/shenfun",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            kernelName: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+              </div>
+              
+        </div>
+    </div>
+    
+    
+    <div class='prev-next-bottom'>
+        
+    <a class='left-prev' id="prev-link" href="functions.html" title="previous page">Demo - Working with Functions</a>
+
+    </div>
+    <footer class="footer mt-5 mt-md-0">
+    <div class="container">
+      <p>
+        
+          By Mikael Mortensen<br/>
+        
+            &copy; Copyright 2020.<br/>
+      </p>
+    </div>
+  </footer>
+</main>
+
+
+      </div>
+    </div>
+
+    <script src="_static/js/index.js"></script>
+    
+  </body>
+</html>

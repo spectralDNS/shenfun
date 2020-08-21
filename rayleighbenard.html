@@ -1,0 +1,1246 @@
+
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Demo - Rayleigh Benard &#8212; Shenfun executable demos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
+    <link href="_static/css/index.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/sphinx-book-theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="_static/jupyter-sphinx.css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/sphinx-book-theme.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/togglebutton.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
+    <script src="_static/mystnb.js"></script>
+    <script src="_static/sphinx-book-theme.js"></script>
+    <script >var togglebuttonSelector = '.toggle, .admonition.dropdown, .tag_hide_input div.cell_input, .tag_hide-input div.cell_input, .tag_hide_output div.cell_output, .tag_hide-output div.cell_output, .tag_hide_cell.cell, .tag_hide-cell.cell';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"TeX": {"Macros": {"bmat": ["\\left[\\begin{array}"], "emat": ["\\end{array}\\right]"]}, "extensions": ["cancel.js", "AMSmath.js"]}})</script>
+    <script async="async" src="https://unpkg.com/thebelab@latest/lib/index.js"></script>
+    <script >
+        const thebe_selector = ".thebe,.cell"
+        const thebe_selector_input = "pre,.cell_input div.highlight"
+        const thebe_selector_output = ".output,.cell_output"
+    </script>
+    <script async="async" src="_static/sphinx-thebe.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Demo - Working with Functions" href="functions.html" />
+    <link rel="prev" title="Demo - Lid driven cavity" href="drivencavity.html" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="docsearch:language" content="en">
+
+
+
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+<div class="col-12 col-md-3 bd-sidebar site-navigation show" id="site-navigation">
+    
+        <div class="navbar-brand-box">
+<a class="navbar-brand text-wrap" href="index.html">
+  
+  
+  <h1 class="site-logo" id="site-title">Shenfun executable demos</h1>
+  
+</a>
+</div>
+
+<form class="bd-search d-flex align-items-center" action="search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search this book..." aria-label="Search this book..." autocomplete="off" >
+</form>
+
+<nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <ul class="nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="intro.html">
+   Shenfun executable demos
+  </a>
+ </li>
+</ul>
+<p class="caption">
+ <span class="caption-text">
+  Shenfun demos
+ </span>
+</p>
+<ul class="current nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="poisson.html">
+   Demo - 1D Poisson’s equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="kleingordon.html">
+   Demo - Cubic nonlinear Klein-Gordon equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="poisson3d.html">
+   Demo - 3D Poisson’s equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="polarhelmholtz.html">
+   Demo - Helmholtz equation in polar coordinates
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="sphericalhelmholtz.html">
+   Demo - Helmholtz equation on the unit sphere
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="kuramatosivashinsky.html">
+   Demo - Kuramato-Sivashinsky equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="stokes.html">
+   Demo - Stokes equations
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="drivencavity.html">
+   Demo - Lid driven cavity
+  </a>
+ </li>
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   Demo - Rayleigh Benard
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="functions.html">
+   Demo - Working with Functions
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="surfaceintegration.html">
+   Demo - Integration of functions
+  </a>
+ </li>
+</ul>
+
+</nav>
+
+ <!-- To handle the deprecated key -->
+
+<div class="navbar_extra_footer">
+  Powered by <a href="https://jupyterbook.org">Jupyter Book</a>
+</div>
+
+</div>
+
+
+          
+
+
+          
+<main class="col py-md-3 pl-md-4 bd-content overflow-auto" role="main">
+    
+    <div class="row topbar fixed-top container-xl">
+    <div class="col-12 col-md-3 bd-topbar-whitespace site-navigation show">
+    </div>
+    <div class="col pl-2 topbar-main">
+        
+        <button id="navbar-toggler" class="navbar-toggler ml-0" type="button" data-toggle="collapse"
+            data-toggle="tooltip" data-placement="bottom" data-target=".site-navigation" aria-controls="navbar-menu"
+            aria-expanded="true" aria-label="Toggle navigation" aria-controls="site-navigation"
+            title="Toggle navigation" data-toggle="tooltip" data-placement="left">
+            <i class="fas fa-bars"></i>
+            <i class="fas fa-arrow-left"></i>
+            <i class="fas fa-arrow-up"></i>
+        </button>
+        
+        <div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn" aria-label="Download this page"><i
+            class="fas fa-download"></i></button>
+
+    
+    <div class="dropdown-buttons">
+        <!-- ipynb file if we had a myst markdown file -->
+        
+        <!-- Download raw file -->
+        <a class="dropdown-buttons" href="_sources/rayleighbenard.ipynb"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Download source file" data-toggle="tooltip"
+                data-placement="left">.ipynb</button></a>
+        <!-- Download PDF via print -->
+        <button type="button" id="download-print" class="btn btn-secondary topbarbtn" title="Print to PDF"
+            onClick="window.print()" data-toggle="tooltip" data-placement="left">.pdf</button>
+    </div>
+    
+</div>
+        <!-- Source interaction buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Connect with source repository"><i class="fab fa-github"></i></button>
+    <div class="dropdown-buttons sourcebuttons">
+        <a class="repository-button"
+            href="https://github.com/spectralDNS/shenfun"><button type="button" class="btn btn-secondary topbarbtn"
+                data-toggle="tooltip" data-placement="left" title="Source repository"><i
+                    class="fab fa-github"></i>repository</button></a>
+        
+        
+    </div>
+</div>
+
+
+        <!-- Full screen (wrap in <a> to have style consistency -->
+        <a class="full-screen-button"><button type="button" class="btn btn-secondary topbarbtn" data-toggle="tooltip"
+                data-placement="bottom" onclick="toggleFullScreen()" title="Fullscreen mode"><i
+                    class="fas fa-expand"></i></button></a>
+
+        <!-- Launch buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Launch interactive content"><i class="fas fa-rocket"></i></button>
+    <div class="dropdown-buttons">
+        
+        <a class="binder-button" href="https://mybinder.org/v2/gh/spectralDNS/shenfun/master?urlpath=tree/./docs/book/rayleighbenard.ipynb"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Launch Binder" data-toggle="tooltip"
+                data-placement="left"><img class="binder-button-logo"
+                    src="_static/images/logo_binder.svg"
+                    alt="Interact on binder">Binder</button></a>
+        
+        
+        
+        <button type="button" class="btn btn-secondary topbarbtn"
+            onclick="initThebeSBT()" title="Launch Thebe" data-toggle="tooltip" data-placement="left"><i
+                class="fas fa-play"></i><span style="margin-left: .4em;">Live Code</span></button>
+        
+    </div>
+</div>
+
+    </div>
+
+    <!-- Table of contents -->
+    <div class="d-none d-md-block col-md-2 bd-toc show">
+        <div class="tocsection onthispage pt-5 pb-3">
+            <i class="fas fa-list"></i> On this page
+        </div>
+        <nav id="bd-toc-nav">
+            <ul class="nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#the-rayleigh-benard-equations">
+   The Rayleigh Bénard equations
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#implementation">
+   Implementation
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#wall-normal-velocity-equation">
+     Wall-normal velocity equation
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#streamwise-velocity">
+     Streamwise velocity
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#temperature">
+     Temperature
+    </a>
+   </li>
+  </ul>
+ </li>
+</ul>
+
+        </nav>
+    </div>
+</div>
+    <div id="main-content" class="row">
+        <div class="col-12 col-md-9 pl-md-3 pr-md-0">
+        
+              <div>
+                
+  <!-- dom:TITLE: Demo - Rayleigh Benard -->
+<div class="section" id="demo-rayleigh-benard">
+<h1>Demo - Rayleigh Benard<a class="headerlink" href="#demo-rayleigh-benard" title="Permalink to this headline">¶</a></h1>
+<!-- dom:AUTHOR: Mikael Mortensen Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo. -->
+<!-- Author: -->  
+<p><strong>Mikael Mortensen</strong> (email: <code class="docutils literal notranslate"><span class="pre">mikaem&#64;math.uio.no</span></code>), Department of Mathematics, University of Oslo.</p>
+<p>Date: <strong>Aug 21, 2020</strong></p>
+<p>Copyright 2020, Mikael Mortensen. Released under CC Attribution 4.0 license</p>
+<p><strong>Summary.</strong> Rayleigh-Benard convection arise
+due to temperature gradients in a fluid. The governing equations are
+Navier-Stokes coupled (through buoyancy) with an additional temperature
+equation derived from the first law of thermodynamics, using a linear
+correlation between density and temperature.</p>
+<p>This is a demonstration of how the Python module <a class="reference external" href="https://github.com/spectralDNS/shenfun">shenfun</a> can be used to solve for
+these Rayleigh-Benard cells in a 2D channel with two walls of
+different temperature in one direction, and periodicity in the other direction.
+The solver described runs with MPI
+without any further considerations required from the user.
+Note that there is a more physically realistic 3D solver implemented within
+<a class="reference external" href="https://github.com/spectralDNS/spectralDNS/blob/master/spectralDNS/solvers/KMMRK3_RB.py">the spectralDNS project</a>.
+To allow for some simple optimizations, the solver described in this demo has been implemented in a class in the
+<a class="reference external" href="https://github.com/spectralDNS/shenfun/blob/master/demo/RayleighBenardRK3.py">RayleighBenardRk3.py</a>
+module in the demo folder of shenfun. Below are two example solutions, where the first (movie)
+has been run at a very high Rayleigh number (<em>Ra</em>), and the lower image with a low <em>Ra</em> (laminar).</p>
+<!-- dom:FIGURE: [https://raw.githack.com/spectralDNS/spectralutilities/master/movies/RB_100x256_100k_fire.png, width=800] Temperature fluctuations in the Rayleigh Benard flow. The top and bottom walls are kept at different temperatures and this sets up the Rayleigh-Benard convection. The simulation is run at *Ra* =100,000, *Pr* =0.7 with 100 and 256 quadrature points in *x* and *y*-directions, respectively. <a id="fig:RB"></a> -->
+<!-- begin figure -->
+<p><a id="fig:RB"></a></p>
+<p>Temperature fluctuations in the Rayleigh Benard flow. The top and bottom walls are kept at different temperatures and this sets up the Rayleigh-Benard convection. The simulation is run at <em>Ra</em> =100,000, <em>Pr</em> =0.7 with 100 and 256 quadrature points in <em>x</em> and <em>y</em>-directions, respectively.</p>
+<img src="https://raw.githack.com/spectralDNS/spectralutilities/master/movies/RB_100x256_100k_fire.png" width=800>
+<!-- end figure -->
+<!-- dom:FIGURE: [https://raw.githack.com/spectralDNS/spectralutilities/master/figures/RB_40x128_100_fire.png, width=800] Convection cells for a laminar flow. The simulation is run at *Ra* =100, *Pr* =0.7 with 40 and 128 quadrature points in *x* and *y*-directions, respectively. <a id="fig:RB_lam"></a> -->
+<!-- begin figure -->
+<p><a id="fig:RB_lam"></a></p>
+<p>Convection cells for a laminar flow. The simulation is run at <em>Ra</em> =100, <em>Pr</em> =0.7 with 40 and 128 quadrature points in <em>x</em> and <em>y</em>-directions, respectively.</p>
+<img src="https://raw.githack.com/spectralDNS/spectralutilities/master/figures/RB_40x128_100_fire.png" width=800>
+<!-- end figure -->
+<div class="section" id="the-rayleigh-benard-equations">
+<h2>The Rayleigh Bénard equations<a class="headerlink" href="#the-rayleigh-benard-equations" title="Permalink to this headline">¶</a></h2>
+<p><a id="demo:rayleighbenard"></a></p>
+<p>The governing equations solved in domain <span class="math notranslate nohighlight">\(\Omega=[-1, 1]\times [0, 2\pi]\)</span> are</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:momentum"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+    \frac{\partial \mathbf{u}}{\partial t} + (\mathbf{u} \cdot \nabla) \mathbf{u} = - \nabla p + \sqrt{\frac{Pr}{Ra}} \nabla^2 \mathbf{u}  + T \mathbf{i}, \label{eq:momentum} \tag{1}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:T"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+    \frac{\partial T}{\partial t} +\mathbf{u} \cdot \nabla T = \frac{1}{\sqrt{RaPr}} \nabla^2 T, \label{eq:T} \tag{2}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:div"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+    \nabla \cdot \mathbf{u} = 0, \label{eq:div} \tag{3}
+\end{equation}
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(\mathbf{u}(x, y, t) (= u\mathbf{i} + v\mathbf{j})\)</span> is the velocity vector, <span class="math notranslate nohighlight">\(p(x, y, t)\)</span> is pressure, <span class="math notranslate nohighlight">\(T(x, y, t)\)</span> is the temperature, and <span class="math notranslate nohighlight">\(\mathbf{i}\)</span> and
+<span class="math notranslate nohighlight">\(\mathbf{j}\)</span> are the unity vectors for the <span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(y\)</span>-directions, respectively.</p>
+<p>The equations are complemented with boundary conditions <span class="math notranslate nohighlight">\(\mathbf{u}(\pm 1, y, t) = (0, 0), \mathbf{u}(x, 2 \pi, t) = \mathbf{u}(x, 0, t), T(1, y, t) = 1, T(-1, y, t) =  0, T(x, 2 \pi, t) = T(x, 0, t)\)</span>.
+Note that these equations have been non-dimensionalized according to <a class="reference external" href="#pandey18">[pandey18]</a>, using dimensionless
+Rayleigh number <span class="math notranslate nohighlight">\(Ra=g \alpha \Delta T h^3/(\nu \kappa)\)</span> and Prandtl number <span class="math notranslate nohighlight">\(Pr=\nu/\kappa\)</span>. Here
+<span class="math notranslate nohighlight">\(g \mathbf{i}\)</span> is the vector accelleration of gravity, <span class="math notranslate nohighlight">\(\Delta T\)</span> is the temperature difference between
+the top and bottom walls, <span class="math notranslate nohighlight">\(h\)</span> is the hight of the channel in <span class="math notranslate nohighlight">\(x\)</span>-direction, <span class="math notranslate nohighlight">\(\nu\)</span> is the
+dynamic viscosity coefficient, <span class="math notranslate nohighlight">\(\kappa\)</span> is the heat transfer coefficient and <span class="math notranslate nohighlight">\(\alpha\)</span> is the
+thermal expansion coefficient. Note that the
+governing equations have been non-dimensionalized using the free-fall velocityscale
+<span class="math notranslate nohighlight">\(U=\sqrt{g \alpha \Delta T h}\)</span>. See <a class="reference external" href="#pandey18">[pandey18]</a> for more details.</p>
+<p>The governing equations contain a non-trivial coupling between velocity, pressure and temperature.
+This coupling can be simplified by eliminating the pressure from the equation for the wall-normal velocity
+component <span class="math notranslate nohighlight">\(u\)</span>. We accomplish this by taking the Laplace of the momentum equation in wall normal
+direction, using the pressure from the divergence of the momentum equation
+<span class="math notranslate nohighlight">\(\nabla^2 p = -\nabla \cdot \mathbf{H}+\partial T/\partial x\)</span>, where
+<span class="math notranslate nohighlight">\(\mathbf{H} = (H_x, H_y) = (\mathbf{u} \cdot \nabla) \mathbf{u}\)</span></p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:u"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+    \frac{\partial \nabla^2 {u}}{\partial t} = \frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y}  + \sqrt{\frac{Pr}{Ra}} \nabla^4 {u}  + \frac{\partial^2 T}{\partial y^2} . \label{eq:u} \tag{4}
+\end{equation}
+\]</div>
+<p>This equation is solved with <span class="math notranslate nohighlight">\(u(\pm 1) = \partial u/\partial x(\pm 1) = 0\)</span>, where the latter follows from the
+divergence constraint. In summary, we now seem to have the following equations to solve:</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:u2"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+    \frac{\partial \nabla^2 {u}}{\partial t} = \frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y}  + \sqrt{\frac{Pr}{Ra}} \nabla^4 {u}  + \frac{\partial^2 T}{\partial y^2}, \label{eq:u2} \tag{5}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:v"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+    \frac{\partial v}{\partial t} + H_y = -  \frac{\partial p}{\partial y} + \sqrt{\frac{Pr}{Ra}} \nabla^2 v, \label{eq:v} \tag{6}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:T2"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+    \frac{\partial T}{\partial t} +\mathbf{u} \cdot \nabla T = \frac{1}{\sqrt{RaPr}} \nabla^2 T, \label{eq:T2} \tag{7}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:div2"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+    \nabla \cdot \mathbf{u} = 0 \label{eq:div2} \tag{8}.
+\end{equation}
+\]</div>
+<p>However, we note that Eqs. (<a class="reference external" href="#eq:u2">5</a>) and (<a class="reference external" href="#eq:T2">7</a>) and (<a class="reference external" href="#eq:div2">8</a>) do not depend on pressure, and,
+apparently, on each time step we can solve (<a class="reference external" href="#eq:u2">5</a>) for <span class="math notranslate nohighlight">\(u\)</span>, then (<a class="reference external" href="#eq:div2">8</a>) for <span class="math notranslate nohighlight">\(v\)</span> and finally (<a class="reference external" href="#eq:T2">7</a>) for <span class="math notranslate nohighlight">\(T\)</span>.
+So what do we need (<a class="reference external" href="#eq:v">6</a>) for? It appears to have become redundant from the elimination of the
+pressure from Eq. (<a class="reference external" href="#eq:u2">5</a>). It turns out that this is actually almost completely true, but
+(<a class="reference external" href="#eq:u2">5</a>), (<a class="reference external" href="#eq:T2">7</a>) and (<a class="reference external" href="#eq:div2">8</a>) can only provide closure for all but one of the
+Fourier coefficients. To see this it is necessary to introduce some discretization and basis functions
+that will be used to solve the problem. To this end we use <span class="math notranslate nohighlight">\(P_N\)</span>, which is the set of all real polynomials
+of degree less than or equal to N and introduce the following finite-dimensional approximation spaces</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:VB"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+  V_N^B(x) = \{v \in P_N | v(\pm 1) = v´(\pm 1) = 0\}, \label{eq:VB} \tag{9} 
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:VD"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+  V_N^D(x) = \{v \in P_N | v(\pm 1) = 0\}, \label{eq:VD} \tag{10} 
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:VT"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+  V_N^T(x) = \{v \in P_N | v(-1) = 0, v(1) = 1\}, \label{eq:VT} \tag{11} 
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:VW"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+  V_N^W(x) = \{v \in P_N\}, \label{eq:VW} \tag{12} 
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:VF"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+  V_M^F(y) = \{\exp(\imath l y) | l \in [-M/2, -M/2+1, \ldots M/2-1]\}. \label{eq:VF} \tag{13}
+\end{equation}
+\]</div>
+<p>Here <span class="math notranslate nohighlight">\(\text{dim}(V_N^B) = N-4, \text{dim}(V_N^D) = \text{dim}(V_N^W) = N-2\)</span>, <span class="math notranslate nohighlight">\(\text{dim}(V_N^T) = N\)</span>
+and <span class="math notranslate nohighlight">\(\text{dim}(V_M^F)=M\)</span>. We note that
+<span class="math notranslate nohighlight">\(V_N^B, V_N^D, V_N^W\)</span> and <span class="math notranslate nohighlight">\(V_N^T\)</span> can be used to approximate <span class="math notranslate nohighlight">\(u, v, T\)</span> and <span class="math notranslate nohighlight">\(p\)</span>, respectively, in the <span class="math notranslate nohighlight">\(x\)</span>-direction.
+Also note that for <span class="math notranslate nohighlight">\(V_M^F\)</span> it is assumed that <span class="math notranslate nohighlight">\(M\)</span> is an even number.</p>
+<p>We can now choose basis functions for the spaces, using Shen’s composite bases for either Legendre or
+Chebyshev polynomials. For the Fourier space the basis functions are already given. We leave the actual choice
+of basis as an implementation option for later. For now we use <span class="math notranslate nohighlight">\(\phi^B(x), \phi^D(x), \phi^W\)</span> and <span class="math notranslate nohighlight">\(\phi^T(x)\)</span>
+as common notation for basis functions in spaces <span class="math notranslate nohighlight">\(V_N^B, V_N^D, V_N^W\)</span> and <span class="math notranslate nohighlight">\(V_N^T\)</span>, respectively.</p>
+<p>To get the required approximation spaces for the entire domain we use tensor products of the
+one-dimensional spaces in (<a class="reference external" href="#eq:VB">9</a>)-(<a class="reference external" href="#eq:VF">13</a>)</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:WBF"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+  W_{BF} = V_N^B \otimes V_M^F, \label{eq:WBF} \tag{14}  
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:WDF"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+  W_{DF} = V_N^D \otimes V_M^F, \label{eq:WDF} \tag{15}  
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:WTF"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+  W_{TF} = V_N^T \otimes V_M^F, \label{eq:WTF} \tag{16}  
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:WWF"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+  W_{WF} = V_N^W \otimes V_M^F. \label{eq:WWF} \tag{17}
+\end{equation}
+\]</div>
+<p>Space <span class="math notranslate nohighlight">\(W_{BF}\)</span> has 2D tensor product basis functions <span class="math notranslate nohighlight">\(\phi_k^B(x) \exp (\imath l y)\)</span> and
+similar for the others. All in all
+we get the following approximations for the unknowns</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto1"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+    u_N(x, y, t) = \sum_{k \in \boldsymbol{k}_B} \sum_{l \in \boldsymbol{l}} \hat{u}_{kl}(t) \phi_k^B(x) \exp(\imath l y), 
+\label{_auto1} \tag{18}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto2"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+    v_N(x, y, t) = \sum_{k \in \boldsymbol{k}_D} \sum_{l \in \boldsymbol{l}} \hat{v}_{kl}(t) \phi_k^D(x) \exp(\imath l y), 
+\label{_auto2} \tag{19}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto3"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+    p_N(x, y, t) = \sum_{k \in \boldsymbol{k}_W} \sum_{l \in \boldsymbol{l}} \hat{p}_{kl}(t) \phi_k^W(x) \exp(\imath l y), 
+\label{_auto3} \tag{20}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto4"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+    T_N(x, y, t) = \sum_{k \in \boldsymbol{k}_T} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl}(t) \phi_k^T(x) \exp(\imath l y),
+\label{_auto4} \tag{21}
+\end{equation}
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(\boldsymbol{k}_{x} = \{0, 1, \ldots \text{dim}(V_N^x)-1\}, \, \text{for} \, x\in(B, D, W, T)\)</span>
+and <span class="math notranslate nohighlight">\(\boldsymbol{l} = \{-M/2, -M/2+1, \ldots, M/2-1\}\)</span>.
+Note that since the problem is defined in real space we will have Hermitian symmetry. This means
+that <span class="math notranslate nohighlight">\(\hat{u}_{k, l} = \overline{\hat{u}}_{k, -l}\)</span>, with an overbar being a complex conjugate,
+and similar for <span class="math notranslate nohighlight">\(\hat{v}_{kl}, \hat{p}_{kl}\)</span> and
+<span class="math notranslate nohighlight">\(\hat{T}_{kl}\)</span>. For this reason we can get away with
+solving for only the positive <span class="math notranslate nohighlight">\(l\)</span>’s, as long as we remember that the sum in the end goes over both positive
+and negative <span class="math notranslate nohighlight">\(l's\)</span>. This is actually automatically taken care of by the FFT provider and is
+not much of an additional complexity in the implementation. So from now on <span class="math notranslate nohighlight">\(\boldsymbol{l} = \{0, 1, \ldots, M/2\}\)</span>.</p>
+<p>We can now take a look at why Eq. (<a class="reference external" href="#eq:v">6</a>) is needed. If we first solve (<a class="reference external" href="#eq:u2">5</a>) for
+<span class="math notranslate nohighlight">\(\hat{u}_{kl}(t), (k, l) \in \boldsymbol{k}_B \times \boldsymbol{l}\)</span>, then we can use (<a class="reference external" href="#eq:div2">8</a>) to
+solve for <span class="math notranslate nohighlight">\(\hat{v}_{kl}(t)\)</span>. But here there is a problem. We can see this by creating the variational
+form required to solve (<a class="reference external" href="#eq:div2">8</a>) by the spectral Galerkin method. To this end make <span class="math notranslate nohighlight">\(v=v_N\)</span> in (<a class="reference external" href="#eq:div2">8</a>)
+a trial function, use <span class="math notranslate nohighlight">\(u=u_N\)</span> a known function and take the weighted inner product over the
+domain using test function <span class="math notranslate nohighlight">\(q \in W_{DF}\)</span></p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto5"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+    \left &lt; \frac{\partial u_N}{\partial x} + \frac{\partial v_N}{\partial y}, q \right &gt; _w = 0.
+\label{_auto5} \tag{22}
+\end{equation}
+\]</div>
+<p>Here we are using the inner product notation</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto6"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+    \left &lt; a, b \right &gt; _w = \int_{-1}^1 \int_0^{2\pi} a \overline{b} dx_wdy_w \left(\approx \sum_{i}\sum_{j} a(x_i, y_j) \overline{b}(x_i, y_j) w(x_i) w(y_j)\right),
+\label{_auto6} \tag{23}
+\end{equation}
+\]</div>
+<p>where the exact form of the
+weighted scalar product depends on the chosen basis; Legendre has <span class="math notranslate nohighlight">\(dx_w=dx\)</span>, Chebyshev
+<span class="math notranslate nohighlight">\(dx_w = dx/\sqrt{1-x^2}\)</span> and Fourier <span class="math notranslate nohighlight">\(dy_w=dy/2/\pi\)</span>. The bases also have associated quadrature weights
+<span class="math notranslate nohighlight">\(\{w(x_i) \}_{i=0}^{N-1}\)</span> and <span class="math notranslate nohighlight">\(\{w(y_j)\}_{j=0}^{M-1}\)</span> that are used to approximate the integrals.</p>
+<p>Inserting now for the known <span class="math notranslate nohighlight">\(u_N\)</span>, the unknown <span class="math notranslate nohighlight">\(v_N\)</span>, and <span class="math notranslate nohighlight">\(q=\phi_m^D(x) \exp(\imath n y)\)</span> the
+continuity equation becomes</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:u4"></a></p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{equation}
+  \int_{-1}^1 \int_{0}^{2\pi} \frac{\partial}{\partial x} \left(\sum_{k \in \boldsymbol{k}_B} \sum_{l \in \boldsymbol{l}} \hat{u}_{kl}(t) \phi_k^B(x) \exp(\imath l y) \right) \phi_m^D(x) \exp(-\imath n y) dx_w dy_w + \\ 
+  \int_{-1}^1 \int_{0}^{2\pi} \frac{\partial}{\partial y} \left(\sum_{k \in \boldsymbol{k}_D} \sum_{l \in \boldsymbol{l}} \hat{v}_{kl}(t) \phi_k^D(x) \exp(\imath l y) \right) \phi_m^D(x) \exp(-\imath n y) dx_w dy_w  = 0. \label{eq:u4} \tag{24}
+\end{equation}
+\end{split}\]</div>
+<p>The <span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(y\)</span> domains are separable, so we can rewrite as</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto7"></a></p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{equation}
+    \sum_{k \in \boldsymbol{k}_B} \sum_{l \in \boldsymbol{l}} \int_{-1}^1 \frac{\partial \phi_k^B(x)}{\partial x}  \phi_m^D(x) dx_w \int_{0}^{2\pi} \exp(\imath l y) \exp(-\imath n y) dy_w \hat{u}_{kl} + \\ 
+    \sum_{k \in \boldsymbol{k}_D} \sum_{l \in \boldsymbol{l}} \int_{-1}^1 \phi_k^D(x) \phi_m^D(x) dx_w   \int_{0}^{2\pi} \frac{\partial \exp(\imath l y)}{\partial y} \exp(-\imath n y) dy_w \hat{v}_{kl} = 0.
+\label{_auto7} \tag{25}
+\end{equation}
+\end{split}\]</div>
+<p>Now perform some exact manipulations in the Fourier direction and introduce the
+1D inner product notation for the <span class="math notranslate nohighlight">\(x\)</span>-direction</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto8"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+    \left(a, b\right)_w = \int_{-1}^1 a(x) b(x) dx_w \left(\approx \sum_{j = 0}^{N-1} a(x_j)b(x_j) w(x_j)\right).
+\label{_auto8} \tag{26}
+\end{equation}
+\]</div>
+<p>By also simplifying the notation using summation of repeated indices,
+we get the following equation</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto9"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+   \delta_{ln} \left(\frac{\partial \phi_k^B}{\partial x}, \phi_m^D \right)_w \hat{u}_{kl}
+   + \imath l \delta_{ln} \left(\phi_k^D, \phi_m^D \right)_w \hat{v}_{kl}  = 0.
+\label{_auto9} \tag{27}
+\end{equation}
+\]</div>
+<p>Now <span class="math notranslate nohighlight">\(l\)</span> must equal <span class="math notranslate nohighlight">\(n\)</span> and we can simplify some more</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:div3"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+   \left(\frac{\partial \phi_k^B}{\partial x}, \phi_m^D \right)_w \hat{u}_{kl}
+   + \imath l \left(\phi_k^D, \phi_m^D \right)_w \hat{v}_{kl}  = 0. \label{eq:div3} \tag{28}
+\end{equation}
+\]</div>
+<p>We see that this equation can be solved for
+<span class="math notranslate nohighlight">\(\hat{v}_{kl} \text{ for } (k, l) \in \boldsymbol{k}_D \times [1, 2, \ldots, M/2]\)</span>, but try with
+<span class="math notranslate nohighlight">\(l=0\)</span> and you hit division by zero, which obviously is not allowed. And this is the reason
+why Eq. (<a class="reference external" href="#eq:v">6</a>) is still needed, to solve for <span class="math notranslate nohighlight">\(\hat{v}_{k,0}\)</span>! Fortunately,
+since <span class="math notranslate nohighlight">\(\exp(\imath 0 y) = 1\)</span>, the pressure derivative <span class="math notranslate nohighlight">\(\frac{\partial p}{\partial y} = 0\)</span>,
+and as such the pressure is still not required. When used only for
+Fourier coefficient 0, Eq. (<a class="reference external" href="#eq:v">6</a>) becomes</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:vx"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\frac{\partial v}{\partial t} + N_y = \sqrt{\frac{Pr}{Ra}} \nabla^2 v. \label{eq:vx} \tag{29}
+\end{equation}
+\]</div>
+<p>There is still one more revelation to be made from Eq. (<a class="reference external" href="#eq:div3">28</a>). When <span class="math notranslate nohighlight">\(l=0\)</span> we get</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto10"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+    \left(\frac{\partial \phi_k^B}{\partial x}, \phi_m^D \right)_w \hat{u}_{k,0} = 0,
+\label{_auto10} \tag{30}
+\end{equation}
+\]</div>
+<p>and the only way to satisfy this is if <span class="math notranslate nohighlight">\(\hat{u}_{k,0}=0\)</span> for <span class="math notranslate nohighlight">\(k\in\boldsymbol{k}_B\)</span>. Bottom line is
+that we only need to solve Eq. (<a class="reference external" href="#eq:u2">5</a>) for <span class="math notranslate nohighlight">\(l \in \boldsymbol{l}/\{0\}\)</span>, whereas we can use
+directly <span class="math notranslate nohighlight">\(\hat{u}_{k,0}=0 \text{ for } k \in \boldsymbol{k}_B\)</span>.</p>
+<p>To sum up, with the solution known at <span class="math notranslate nohighlight">\(t = t - \Delta t\)</span>, we solve</p>
+<table border="1">
+<thead>
+<tr><th align="center">       Equation      </th> <th align="center">     For unknown     </th> <th align="center">                         With indices                        </th> </tr>
+</thead>
+<tbody>
+<tr><td align="center">   ([5](#eq:u2))        </td> <td align="center">       $\hat{u}_{kl}(t)$    </td> <td align="center">       $(k, l) \in \boldsymbol{k}_B \times \boldsymbol{l}/\{0\}$    </td> </tr>
+<tr><td align="center">   ([8](#eq:div2))    </td> <td align="center">       $\hat{v}_{kl}(t)$    </td> <td align="center">       $(k, l) \in \boldsymbol{k}_D \times \boldsymbol{l}/\{0\}$    </td> </tr>
+<tr><td align="center">   ([29](#eq:vx))        </td> <td align="center">       $\hat{v}_{kl}(t)$    </td> <td align="center">       $(k, l) \in \boldsymbol{k}_D \times \{0\}$                   </td> </tr>
+<tr><td align="center">   ([7](#eq:T2))        </td> <td align="center">       $\hat{T}_{kl}(t)$    </td> <td align="center">       $(k, l) \in \boldsymbol{k}_T \times \boldsymbol{l}$          </td> </tr>
+</tbody>
+</table>
+## Temporal discretization
+<p>The governing equations are integrated in time using a semi-implicit third order Runge Kutta method.
+This method applies to any generic equation</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:genericpsi"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+ \frac{\partial \psi}{\partial t} = \mathcal{N} + \mathcal{L}\psi \label{eq:genericpsi} \tag{31},
+\end{equation}
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(\mathcal{N}\)</span> and <span class="math notranslate nohighlight">\(\mathcal{L}\)</span> represents the nonlinear and linear contributions, respectively.
+With time discretized as <span class="math notranslate nohighlight">\(t_n = n \Delta t, \, n = 0, 1, 2, ...\)</span>, the
+Runge Kutta method also subdivides each timestep into stages
+<span class="math notranslate nohighlight">\(t_n^k = t_n + c_k \Delta t, \, k = (0, 1, .., N_s-1)\)</span>, where <span class="math notranslate nohighlight">\(N_s\)</span> is
+the number of stages. The third order Runge Kutta method implemented here uses three stages.
+On one timestep the generic equation (<a class="reference external" href="#eq:genericpsi">31</a>)
+is then integrated from stage <span class="math notranslate nohighlight">\(k\)</span> to <span class="math notranslate nohighlight">\(k+1\)</span> according to</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto11"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+    \psi^{k+1} = \psi^k + a_k \mathcal{N}^k + b_k \mathcal{N}^{k-1} + \frac{a_k+b_k}{2}\mathcal{L}(\psi^{k+1}+\psi^{k}),
+\label{_auto11} \tag{32}
+\end{equation}
+\]</div>
+<p>which should be rearranged with the unknowns on the left hand side and the
+knowns on the right hand side</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:rk3stages"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+    \big(1-\frac{a_k+b_k}{2}\mathcal{L}\big)\psi^{k+1} = \big(1 + \frac{a_k+b_k}{2}\mathcal{L}\big)\psi^{k} + a_k \mathcal{N}^k + b_k \mathcal{N}^{k-1}. \label{eq:rk3stages} \tag{33}
+\end{equation}
+\]</div>
+<p>For the three-stage third order Runge Kutta method the constants are given as</p>
+<table border="1">
+<thead>
+<tr><th align="center">$a_n/\Delta t$</th> <th align="center">$b_n/\Delta t$</th> <th align="center">$c_n / \Delta t$</th> </tr>
+</thead>
+<tbody>
+<tr><td align="center">   8/15              </td> <td align="center">   0                 </td> <td align="center">   0                   </td> </tr>
+<tr><td align="center">   5/12              </td> <td align="center">   −17/60            </td> <td align="center">   8/15                </td> </tr>
+<tr><td align="center">   3/4               </td> <td align="center">   −5/12             </td> <td align="center">   2/3                 </td> </tr>
+</tbody>
+</table>
+For the spectral Galerkin method used by `shenfun` the governing equation
+is first put in a weak variational form. This will change the appearence of
+Eq. ([33](#eq:rk3stages)) slightly. If $\phi$ is a test function, $\psi^{k+1}$
+the trial function, and $\psi^{k}$ a known function, then the variational form
+of ([33](#eq:rk3stages)) is obtained by multiplying ([33](#eq:rk3stages)) by $\phi$ and
+integrating (with weights) over the domain<!-- Equation labels as ordinary links -->
+<p><a id="eq:rk3stagesvar"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+    \Big &lt; (1-\frac{a_k+b_k}{2}\mathcal{L})\psi^{k+1}, \phi \Big &gt; _w = \Big &lt; (1 + \frac{a_k+b_k}{2}\mathcal{L})\psi^{k}, \phi\Big &gt; _w + \Big &lt; a_k \mathcal{N}^k + b_k \mathcal{N}^{k-1}, \phi \Big &gt; _w. \label{eq:rk3stagesvar} \tag{34}
+\end{equation}
+\]</div>
+<p>Equation (<a class="reference external" href="#eq:rk3stagesvar">34</a>) is the variational form implemented by <code class="docutils literal notranslate"><span class="pre">shenfun</span></code> for the
+time dependent equations.</p>
+</div>
+<div class="section" id="implementation">
+<h2>Implementation<a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>To get started we need instances of the approximation spaces discussed in
+Eqs. (<a class="reference external" href="#eq:VB">9</a>) - (<a class="reference external" href="#eq:WWF">17</a>). When the spaces are created we also need
+to specify the family and the dimension of each space. Here we simply
+choose Chebyshev and Fourier with 100 and 256 quadrature points in <span class="math notranslate nohighlight">\(x\)</span> and
+<span class="math notranslate nohighlight">\(y\)</span>-directions, respectively. We could replace ‘Chebyshev’ by ‘Legendre’,
+but the former is known to be faster due to the existence of fast transforms.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">shenfun</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">N</span><span class="p">,</span> <span class="n">M</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">256</span>
+<span class="n">family</span> <span class="o">=</span> <span class="s1">&#39;Chebyshev&#39;</span>
+<span class="n">VB</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">family</span><span class="p">,</span> <span class="n">bc</span><span class="o">=</span><span class="s1">&#39;Biharmonic&#39;</span><span class="p">)</span>
+<span class="n">VD</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">family</span><span class="p">,</span> <span class="n">bc</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<span class="n">VW</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">family</span><span class="p">)</span>
+<span class="n">VT</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">family</span><span class="p">,</span> <span class="n">bc</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="n">VF</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="s1">&#39;F&#39;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;d&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>And then we create tensor product spaces by combining these bases (like in Eqs. (<a class="reference external" href="#eq:WBF">14</a>)-(<a class="reference external" href="#eq:WWF">17</a>)).</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">W_BF</span> <span class="o">=</span> <span class="n">TensorProductSpace</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="p">(</span><span class="n">VB</span><span class="p">,</span> <span class="n">VF</span><span class="p">))</span>    <span class="c1"># Wall-normal velocity</span>
+<span class="n">W_DF</span> <span class="o">=</span> <span class="n">TensorProductSpace</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="p">(</span><span class="n">VD</span><span class="p">,</span> <span class="n">VF</span><span class="p">))</span>    <span class="c1"># Streamwise velocity</span>
+<span class="n">W_WF</span> <span class="o">=</span> <span class="n">TensorProductSpace</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="p">(</span><span class="n">VW</span><span class="p">,</span> <span class="n">VF</span><span class="p">))</span>    <span class="c1"># No bc</span>
+<span class="n">W_TF</span> <span class="o">=</span> <span class="n">TensorProductSpace</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="p">(</span><span class="n">VT</span><span class="p">,</span> <span class="n">VF</span><span class="p">))</span>    <span class="c1"># Temperature</span>
+<span class="n">BD</span> <span class="o">=</span> <span class="n">MixedTensorProductSpace</span><span class="p">([</span><span class="n">W_BF</span><span class="p">,</span> <span class="n">W_DF</span><span class="p">])</span>   <span class="c1"># Velocity vector</span>
+<span class="n">DD</span> <span class="o">=</span> <span class="n">MixedTensorProductSpace</span><span class="p">([</span><span class="n">W_DF</span><span class="p">,</span> <span class="n">W_DF</span><span class="p">])</span>   <span class="c1"># Convection vector</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Here the last two lines create mixed tensor product spaces by the
+Cartesian products <code class="docutils literal notranslate"><span class="pre">BD</span> <span class="pre">=</span> <span class="pre">W_BF</span></code> <span class="math notranslate nohighlight">\(\times\)</span> <code class="docutils literal notranslate"><span class="pre">W_DF</span></code> and <code class="docutils literal notranslate"><span class="pre">DD</span> <span class="pre">=</span> <span class="pre">W_DF</span></code> <span class="math notranslate nohighlight">\(\times\)</span> <code class="docutils literal notranslate"><span class="pre">W_DF</span></code>.
+These mixed space will be used to hold the velocity and convection vectors,
+but we will not solve the equations in a coupled manner and continue in the
+segregated approach outlined above.</p>
+<p>We also need containers for the computed solutions. These are created as</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">u_</span>  <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">BD</span><span class="p">)</span>     <span class="c1"># Velocity vector, two components</span>
+<span class="n">u_1</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">BD</span><span class="p">)</span>     <span class="c1"># Velocity vector, previous step</span>
+<span class="n">T_</span>  <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">W_TF</span><span class="p">)</span>   <span class="c1"># Temperature</span>
+<span class="n">T_1</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">W_TF</span><span class="p">)</span>   <span class="c1"># Temperature, previous step</span>
+<span class="n">H_</span>  <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">DD</span><span class="p">)</span>     <span class="c1"># Convection vector</span>
+<span class="n">H_1</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">DD</span><span class="p">)</span>     <span class="c1"># Convection vector previous stage</span>
+
+<span class="c1"># Need a container for the computed right hand side vector</span>
+<span class="n">rhs_u</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">DD</span><span class="p">)</span><span class="o">.</span><span class="n">v</span>
+<span class="n">rhs_T</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">DD</span><span class="p">)</span><span class="o">.</span><span class="n">v</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>In the final solver we will also use bases for dealiasing the nonlinear term,
+but we do not add that level of complexity here.</p>
+<div class="section" id="wall-normal-velocity-equation">
+<h3>Wall-normal velocity equation<a class="headerlink" href="#wall-normal-velocity-equation" title="Permalink to this headline">¶</a></h3>
+<p>We implement Eq. (<a class="reference external" href="#eq:u2">5</a>) using the three-stage Runge Kutta equation (<a class="reference external" href="#eq:rk3stagesvar">34</a>).
+To this end we first need to declare some test- and trial functions, as well as
+some model constants</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">u</span> <span class="o">=</span> <span class="n">TrialFunction</span><span class="p">(</span><span class="n">W_BF</span><span class="p">)</span>
+<span class="n">v</span> <span class="o">=</span> <span class="n">TestFunction</span><span class="p">(</span><span class="n">W_BF</span><span class="p">)</span>
+<span class="n">a</span> <span class="o">=</span> <span class="p">(</span><span class="mf">8.</span><span class="o">/</span><span class="mf">15.</span><span class="p">,</span> <span class="mf">5.</span><span class="o">/</span><span class="mf">12.</span><span class="p">,</span> <span class="mf">3.</span><span class="o">/</span><span class="mf">4.</span><span class="p">)</span>
+<span class="n">b</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">17.</span><span class="o">/</span><span class="mf">60.</span><span class="p">,</span> <span class="o">-</span><span class="mf">5.</span><span class="o">/</span><span class="mf">12.</span><span class="p">)</span>
+<span class="n">c</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">8.</span><span class="o">/</span><span class="mf">15.</span><span class="p">,</span> <span class="mf">2.</span><span class="o">/</span><span class="mf">3.</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># Specify viscosity and time step size using dimensionless Ra and Pr</span>
+<span class="n">Ra</span> <span class="o">=</span> <span class="mi">10000</span>
+<span class="n">Pr</span> <span class="o">=</span> <span class="mf">0.7</span>
+<span class="n">nu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">Pr</span><span class="o">/</span><span class="n">Ra</span><span class="p">)</span>
+<span class="n">kappa</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">Pr</span><span class="o">*</span><span class="n">Ra</span><span class="p">)</span>
+<span class="n">dt</span> <span class="o">=</span> <span class="mf">0.1</span>
+
+<span class="c1"># Get one solver for each stage of the RK3</span>
+<span class="n">solver</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">rk</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+    <span class="n">mats</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">div</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">))</span> <span class="o">-</span> <span class="p">((</span><span class="n">a</span><span class="p">[</span><span class="n">rk</span><span class="p">]</span><span class="o">+</span><span class="n">b</span><span class="p">[</span><span class="n">rk</span><span class="p">])</span><span class="o">*</span><span class="n">nu</span><span class="o">*</span><span class="n">dt</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span><span class="o">*</span><span class="n">div</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">div</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">)))),</span> <span class="n">v</span><span class="p">)</span>
+    <span class="n">solver</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chebyshev</span><span class="o">.</span><span class="n">la</span><span class="o">.</span><span class="n">Biharmonic</span><span class="p">(</span><span class="o">*</span><span class="n">mats</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Notice the one-to-one resemblance with the left hand side of (<a class="reference external" href="#eq:rk3stagesvar">34</a>), where <span class="math notranslate nohighlight">\(\psi^{k+1}\)</span>
+now has been replaced by <span class="math notranslate nohighlight">\(\nabla^2 u\)</span> (or <code class="docutils literal notranslate"><span class="pre">div(grad(u))</span></code>) from Eq. (<a class="reference external" href="#eq:u2">5</a>).
+For each stage we assemble a list of tensor product matrices <code class="docutils literal notranslate"><span class="pre">mats</span></code>, and in <code class="docutils literal notranslate"><span class="pre">chebyshev.la</span></code>
+there is available a very fast direct solver for exactly this type of (biharmonic)
+matrices. The solver is created with <code class="docutils literal notranslate"><span class="pre">chebyshev.la.Biharmonic(*mats)</span></code>, and here
+the necessary LU-decomposition is carried out for later use and reuse on each time step.</p>
+<p>The right hand side depends on the solution on the previous stage, and the
+convection on two previous stages. The linear part (first term on right hand side of (<a class="reference external" href="#eq:rk3stages">33</a>))
+can be assembled as</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">inner</span><span class="p">(</span><span class="n">div</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u_</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="o">+</span> <span class="p">((</span><span class="n">a</span><span class="p">[</span><span class="n">rk</span><span class="p">]</span><span class="o">+</span><span class="n">b</span><span class="p">[</span><span class="n">rk</span><span class="p">])</span><span class="o">*</span><span class="n">nu</span><span class="o">*</span><span class="n">dt</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span><span class="o">*</span><span class="n">div</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">div</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u_</span><span class="p">[</span><span class="mi">0</span><span class="p">])))),</span> <span class="n">v</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>The remaining parts <span class="math notranslate nohighlight">\(\frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y} + \frac{\partial^2 T}{\partial y^2}\)</span>
+end up in the nonlinear <span class="math notranslate nohighlight">\(\mathcal{N}\)</span>. The nonlinear convection term <span class="math notranslate nohighlight">\(\boldsymbol{H}\)</span> can be computed in many different ways.
+Here we will make use of
+the identity <span class="math notranslate nohighlight">\((\boldsymbol{u} \cdot \nabla) \boldsymbol{u} = -\boldsymbol{u} \times (\nabla \times \boldsymbol{u}) + 0.5 \nabla\boldsymbol{u} \cdot \boldsymbol{u}\)</span>,
+where <span class="math notranslate nohighlight">\(0.5 \nabla \boldsymbol{u} \cdot \boldsymbol{u}\)</span> can be added to the eliminated pressure and as such
+be neglected. Compute <span class="math notranslate nohighlight">\(\boldsymbol{H} = -\boldsymbol{u} \times (\nabla \times \boldsymbol{u})\)</span> by first evaluating
+the velocity and the curl in real space. The curl is obtained by projection of <span class="math notranslate nohighlight">\(\nabla \times \boldsymbol{u}\)</span>
+to the no-boundary-condition space <code class="docutils literal notranslate"><span class="pre">W_TF</span></code>, followed by a backward transform to real space.
+The velocity is simply transformed backwards.</p>
+<p><strong>Notice.</strong></p>
+<p>If dealiasing is required, it should be used here to create padded backwards transforms of the curl and the velocity,
+before computing the nonlinear term in real space. The nonlinear product should then be forward transformed with
+truncation. To get a space for dealiasing, simply use, e.g., <code class="docutils literal notranslate"><span class="pre">W_BF.get_dealiased()</span></code>.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get a mask for setting Nyquist frequency to zero</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="n">W_DF</span><span class="o">.</span><span class="n">get_mask_nyquist</span><span class="p">()</span>
+
+<span class="k">def</span> <span class="nf">compute_convection</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">H</span><span class="p">):</span>
+    <span class="n">curl</span> <span class="o">=</span> <span class="n">project</span><span class="p">(</span><span class="n">Dx</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">Dx</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">W_TF</span><span class="p">)</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+    <span class="n">ub</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+    <span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">W_DF</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="o">-</span><span class="n">curl</span><span class="o">*</span><span class="n">ub</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">H</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">W_DF</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">curl</span><span class="o">*</span><span class="n">ub</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">H</span><span class="o">.</span><span class="n">mask_nyquist</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">H</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Note that the convection has a homogeneous Dirichlet boundary condition in the
+non-periodic direction. With convection computed we can assemble <span class="math notranslate nohighlight">\(\mathcal{N}\)</span>
+and all of the right hand side, using the function <code class="docutils literal notranslate"><span class="pre">compute_rhs_u</span></code></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>
+<span class="k">def</span> <span class="nf">compute_rhs_u</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">rhs</span><span class="p">,</span> <span class="n">rk</span><span class="p">):</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">TestFunction</span><span class="p">(</span><span class="n">W_BF</span><span class="p">)</span>
+    <span class="n">H</span> <span class="o">=</span> <span class="n">compute_convection</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">H</span><span class="p">)</span>
+    <span class="n">rhs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">rhs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">div</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="o">+</span> <span class="p">((</span><span class="n">a</span><span class="p">[</span><span class="n">rk</span><span class="p">]</span><span class="o">+</span><span class="n">b</span><span class="p">[</span><span class="n">rk</span><span class="p">])</span><span class="o">*</span><span class="n">nu</span><span class="o">*</span><span class="n">dt</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span><span class="o">*</span><span class="n">div</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">div</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">])))))</span>
+    <span class="n">w0</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Dx</span><span class="p">(</span><span class="n">Dx</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">Dx</span><span class="p">(</span><span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">w1</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Dx</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">rhs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="n">a</span><span class="p">[</span><span class="n">rk</span><span class="p">]</span><span class="o">*</span><span class="n">dt</span><span class="o">*</span><span class="p">(</span><span class="n">w0</span><span class="o">+</span><span class="n">w1</span><span class="p">)</span>
+    <span class="n">rhs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="n">b</span><span class="p">[</span><span class="n">rk</span><span class="p">]</span><span class="o">*</span><span class="n">dt</span><span class="o">*</span><span class="n">rhs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">rhs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">w0</span><span class="o">+</span><span class="n">w1</span>
+    <span class="n">rhs</span><span class="o">.</span><span class="n">mask_nyquist</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">rhs</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Note that we will only use <code class="docutils literal notranslate"><span class="pre">rhs</span></code> as a container, so it does not actually matter
+which space it has here. We’re using <code class="docutils literal notranslate"><span class="pre">.v</span></code> to only access the Numpy array view of the Function.
+Also note that <code class="docutils literal notranslate"><span class="pre">rhs[1]</span></code> contains the right hand side computed at stage <code class="docutils literal notranslate"><span class="pre">k</span></code>,
+whereas <code class="docutils literal notranslate"><span class="pre">rhs[0]</span></code> is used to remember the old value of the nonlinear part.</p>
+</div>
+<div class="section" id="streamwise-velocity">
+<h3>Streamwise velocity<a class="headerlink" href="#streamwise-velocity" title="Permalink to this headline">¶</a></h3>
+<p>The streamwise velocity is computed using Eq. (<a class="reference external" href="#eq:div3">28</a>) and (<a class="reference external" href="#eq:vx">29</a>). For efficiency we
+can here preassemble both matrices seen in (<a class="reference external" href="#eq:div3">28</a>) and reuse them every
+time the streamwise velocity is being computed. We will also need the
+wavenumber <span class="math notranslate nohighlight">\(\boldsymbol{l}\)</span>, here retrived using <code class="docutils literal notranslate"><span class="pre">W_BF.local_wavenumbers(scaled=True)</span></code>.
+For (<a class="reference external" href="#eq:vx">29</a>) we preassemble the required Helmholtz solvers, one for
+each RK stage.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Assemble matrices and solvers for all stages</span>
+<span class="n">B_DD</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">TestFunction</span><span class="p">(</span><span class="n">W_DF</span><span class="p">),</span> <span class="n">TrialFunction</span><span class="p">(</span><span class="n">W_DF</span><span class="p">))</span>
+<span class="n">C_DB</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">TestFunction</span><span class="p">(</span><span class="n">W_DF</span><span class="p">),</span> <span class="n">Dx</span><span class="p">(</span><span class="n">TrialFunction</span><span class="p">(</span><span class="n">W_BF</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="n">VD0</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">family</span><span class="p">,</span> <span class="n">bc</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<span class="n">v0</span> <span class="o">=</span> <span class="n">TestFunction</span><span class="p">(</span><span class="n">VD0</span><span class="p">)</span>
+<span class="n">u0</span> <span class="o">=</span> <span class="n">TrialFunction</span><span class="p">(</span><span class="n">VD0</span><span class="p">)</span>
+<span class="n">solver0</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">rk</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+    <span class="n">mats0</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v0</span><span class="p">,</span> <span class="mf">2.</span><span class="o">/</span><span class="p">(</span><span class="n">nu</span><span class="o">*</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">rk</span><span class="p">]</span><span class="o">+</span><span class="n">b</span><span class="p">[</span><span class="n">rk</span><span class="p">])</span><span class="o">*</span><span class="n">dt</span><span class="p">)</span><span class="o">*</span><span class="n">u0</span> <span class="o">-</span> <span class="n">div</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u0</span><span class="p">)))</span>
+    <span class="n">solver0</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chebyshev</span><span class="o">.</span><span class="n">la</span><span class="o">.</span><span class="n">Helmholtz</span><span class="p">(</span><span class="o">*</span><span class="n">mats0</span><span class="p">))</span>
+
+<span class="c1"># Allocate work arrays and variables</span>
+<span class="n">u00</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">VD0</span><span class="p">)</span>
+<span class="n">b0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,)</span><span class="o">+</span><span class="n">u00</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="n">w00</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">u00</span><span class="p">)</span>
+<span class="n">dudx_hat</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">W_DF</span><span class="p">)</span>
+<span class="n">K</span> <span class="o">=</span> <span class="n">W_BF</span><span class="o">.</span><span class="n">local_wavenumbers</span><span class="p">(</span><span class="n">scaled</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">compute_v</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">rk</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">u00</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">u_</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">real</span>
+    <span class="n">dudx_hat</span> <span class="o">=</span> <span class="n">C_DB</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dudx_hat</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">divide</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">):</span>
+        <span class="n">dudx_hat</span> <span class="o">=</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">dudx_hat</span> <span class="o">/</span> <span class="n">K</span>
+    <span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">B_DD</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">dudx_hat</span><span class="p">,</span> <span class="n">u</span><span class="o">=</span><span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="c1"># Still have to compute for wavenumber = 0</span>
+    <span class="k">if</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">b0</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v0</span><span class="p">,</span> <span class="mf">2.</span><span class="o">/</span><span class="p">(</span><span class="n">nu</span><span class="o">*</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">rk</span><span class="p">]</span><span class="o">+</span><span class="n">b</span><span class="p">[</span><span class="n">rj</span><span class="p">])</span><span class="o">*</span><span class="n">dt</span><span class="p">)</span><span class="o">*</span><span class="n">Expr</span><span class="p">(</span><span class="n">u00</span><span class="p">)</span> <span class="o">+</span> <span class="n">div</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u00</span><span class="p">)))</span>
+        <span class="n">w00</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v0</span><span class="p">,</span> <span class="n">H_</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="n">b0</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-=</span> <span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">a</span><span class="o">/</span><span class="n">nu</span><span class="o">/</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">rk</span><span class="p">]</span><span class="o">+</span><span class="n">b</span><span class="p">[</span><span class="n">rk</span><span class="p">]))</span><span class="o">*</span><span class="n">w00</span>
+        <span class="n">b0</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-=</span> <span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">b</span><span class="o">/</span><span class="n">nu</span><span class="o">/</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">rk</span><span class="p">]</span><span class="o">+</span><span class="n">b</span><span class="p">[</span><span class="n">rk</span><span class="p">]))</span><span class="o">*</span><span class="n">b0</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">u00</span> <span class="o">=</span> <span class="n">solver0</span><span class="p">[</span><span class="n">rk</span><span class="p">](</span><span class="n">u00</span><span class="p">,</span> <span class="n">b0</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">u00</span>
+        <span class="n">b0</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">w00</span>
+    <span class="k">return</span> <span class="n">u</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="temperature">
+<h3>Temperature<a class="headerlink" href="#temperature" title="Permalink to this headline">¶</a></h3>
+<p>The temperature equation (<a class="reference external" href="#eq:T">2</a>) is implemented using a Helmholtz solver.
+The main difficulty with the temperature is the non-homogeneous boundary
+condition that requires special attention. A non-zero Dirichlet boundary
+condition is implemented by adding two basis functions to the
+basis of the function space</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto12"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+    \phi^D_{N-2} = 0.5(1+x), 
+\label{_auto12} \tag{35}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto13"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+    \phi^D_{N-1} = 0.5(1-x),
+\label{_auto13} \tag{36}
+\end{equation}
+\]</div>
+<p>with the approximation now becoming</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto14"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+    T_N(x, y, t) = \sum_{k=0}^{N-1} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl} \phi^D_k(x)\exp(\imath l y), 
+\label{_auto14} \tag{37}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto15"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+                 = \sum_{k=0}^{N-3} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl} \phi^D_k(x)\exp(\imath l y) + \sum_{k=N-2}^{N-1} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl} \phi^D_k(x)\exp(\imath l y).
+\label{_auto15} \tag{38}
+\end{equation}
+\]</div>
+<p>The boundary condition requires</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto16"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+T_N(1, y, t) = \sum_{k=N-2}^{N-1} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl} \phi^D_k(1)\exp(\imath l y), 
+\label{_auto16} \tag{39}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:TN0"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+             = \sum_{l \in \boldsymbol{l}} \hat{T}_{N-2, l} \exp(\imath l y), \label{eq:TN0} \tag{40}
+\end{equation}
+\]</div>
+<p>and</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto17"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+T_N(-1, y, t) = \sum_{k=N-2}^{N-1} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl} \phi^D_k(-1)\exp(\imath l y), 
+\label{_auto17} \tag{41}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:TN1"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+              = \sum_{l \in \boldsymbol{l}} \hat{T}_{N-1, l} \exp(\imath l y). \label{eq:TN1} \tag{42}
+\end{equation}
+\]</div>
+<p>We find <span class="math notranslate nohighlight">\(\hat{T}_{N-2, l}\)</span> and <span class="math notranslate nohighlight">\(\hat{T}_{N-1, l}\)</span> using orthogonality. Multiply (<a class="reference external" href="#eq:TN0">40</a>) and
+(<a class="reference external" href="#eq:TN1">42</a>) by <span class="math notranslate nohighlight">\(\exp(-\imath m y)\)</span> and integrate over the domain <span class="math notranslate nohighlight">\([0, 2\pi]\)</span>. We get</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto18"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+    \hat{T}_{N-2, l} = \int_{0}^{2\pi} T_N(1, y, t) \exp(-\imath l y) dy, 
+\label{_auto18} \tag{43}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto19"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+    \hat{T}_{N-1, l} = \int_{0}^{2\pi} T_N(-1, y, t) \exp(-\imath l y) dy.
+\label{_auto19} \tag{44}
+\end{equation}
+\]</div>
+<p>Using this approach it is easy to see that any inhomogeneous function <span class="math notranslate nohighlight">\(T_N(\pm 1, y, t)\)</span>
+of <span class="math notranslate nohighlight">\(y\)</span> and <span class="math notranslate nohighlight">\(t\)</span> can be used for the boundary condition, and not just a constant.
+To implement a non-constant Dirichlet boundary condition, the <code class="docutils literal notranslate"><span class="pre">Basis</span></code> function
+can take any <code class="docutils literal notranslate"><span class="pre">sympy</span></code> function of <code class="docutils literal notranslate"><span class="pre">(y,</span> <span class="pre">t)</span></code>, for exampel by replacing the
+creation of <code class="docutils literal notranslate"><span class="pre">VT</span></code> by</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sympy</span> <span class="k">as</span> <span class="nn">sp</span>
+<span class="n">y</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">symbols</span><span class="p">(</span><span class="s1">&#39;y,t&#39;</span><span class="p">)</span>
+<span class="n">f</span> <span class="o">=</span> <span class="mf">0.9</span><span class="o">+</span><span class="mf">0.1</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">y</span><span class="p">))</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">t</span><span class="p">)</span>
+<span class="n">VT</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">family</span><span class="p">,</span> <span class="n">bc</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">f</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>For merely a constant <code class="docutils literal notranslate"><span class="pre">f</span></code> or a <code class="docutils literal notranslate"><span class="pre">y</span></code>-dependency, no further action is required.
+However, a time-dependent approach requires the boundary values to be
+updated each time step. To this end there is the function
+<code class="docutils literal notranslate"><span class="pre">BoundaryValues.update_bcs_time</span></code>, used to update the boundary values to the new time.
+Here we will assume a time-independent boundary condition, but the
+final implementation will contain the time-dependent option.</p>
+<p>Due to the non-zero boundary conditions there are also a few additional
+things to be aware of. Assembling the coefficient matrices will also
+assemble the matrices for the two boundary test functions. That is,
+for the 1D mass matrix with $u=\sum_{k=0}^{N-1}\hat{T}_k \phi^D_k $ and <span class="math notranslate nohighlight">\(v=\phi^D_m\)</span>,
+we will have</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto20"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+    \left(u, v \right)_w = \left( \sum_{k=0}^{N-1} \hat{T}_k \phi^D_k(x), \phi^D_m \right)_w, 
+\label{_auto20} \tag{45}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto21"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+                         = \sum_{k=0}^{N-3} \left(\phi^D_k(x), \phi^D_m \right)_w \hat{T}_k + \sum_{k=N-2}^{N-1} \left( \phi^D_k(x), \phi^D_m \right)_w \hat{T}_k,
+\label{_auto21} \tag{46}
+\end{equation}
+\]</div>
+<p>where the first term on the right hand side is the regular mass matrix for a
+homogeneous boundary condition, whereas the second term is due to the non-homogeneous.
+Since <span class="math notranslate nohighlight">\(\hat{T}_{N-2}\)</span> and <span class="math notranslate nohighlight">\(\hat{T}_{N-1}\)</span> are known, the second term contributes to
+the right hand side of a system of equations. All boundary matrices can be extracted
+from the lists of tensor product matrices returned by <code class="docutils literal notranslate"><span class="pre">inner</span></code>. For
+the temperature equation these boundary matrices are extracted using
+<code class="docutils literal notranslate"><span class="pre">extract_bc_matrices</span></code> below. The regular solver is placed in the
+<code class="docutils literal notranslate"><span class="pre">solverT</span></code> list, one for each stage of the RK3 solver.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">q</span> <span class="o">=</span> <span class="n">TestFunction</span><span class="p">(</span><span class="n">W_TF</span><span class="p">)</span>
+<span class="n">p</span> <span class="o">=</span> <span class="n">TrialFunction</span><span class="p">(</span><span class="n">W_TF</span><span class="p">)</span>
+<span class="n">solverT</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">lhs_mat</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">rk</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+    <span class="n">matsT</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="mf">2.</span><span class="o">/</span><span class="p">(</span><span class="n">kappa</span><span class="o">*</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">rk</span><span class="p">]</span><span class="o">+</span><span class="n">b</span><span class="p">[</span><span class="n">rk</span><span class="p">])</span><span class="o">*</span><span class="n">dt</span><span class="p">)</span><span class="o">*</span><span class="n">p</span> <span class="o">-</span> <span class="n">div</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">p</span><span class="p">)))</span>
+    <span class="n">lhs_mat</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">extract_bc_matrices</span><span class="p">([</span><span class="n">matsT</span><span class="p">]))</span>
+    <span class="n">solverT</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chebyshev</span><span class="o">.</span><span class="n">la</span><span class="o">.</span><span class="n">Helmholtz</span><span class="p">(</span><span class="o">*</span><span class="n">matsT</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>The boundary contribution to the right hand side is computed for each
+stage as</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">w0</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">W_WF</span><span class="p">)</span>
+<span class="n">w0</span> <span class="o">=</span> <span class="n">lhs_mat</span><span class="p">[</span><span class="n">rk</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="n">T_</span><span class="p">,</span> <span class="n">w0</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>The complete right hand side of the temperature equations can be computed as</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">compute_rhs_T</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">rhs</span><span class="p">,</span> <span class="n">rk</span><span class="p">):</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">TestFunction</span><span class="p">(</span><span class="n">W_TF</span><span class="p">)</span>
+    <span class="n">rhs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="mf">2.</span><span class="o">/</span><span class="p">(</span><span class="n">kappa</span><span class="o">*</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">rk</span><span class="p">]</span><span class="o">+</span><span class="n">b</span><span class="p">[</span><span class="n">rk</span><span class="p">])</span><span class="o">*</span><span class="n">dt</span><span class="p">)</span><span class="o">*</span><span class="n">Expr</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="o">+</span><span class="n">div</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">T</span><span class="p">)))</span>
+    <span class="n">rhs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-=</span> <span class="n">lhs_mat</span><span class="p">[</span><span class="n">rk</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">w0</span><span class="p">)</span>
+    <span class="n">ub</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+    <span class="n">Tb</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+    <span class="n">uT_</span> <span class="o">=</span> <span class="n">BD</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">ub</span><span class="o">*</span><span class="n">Tb</span><span class="p">)</span>
+    <span class="n">w0</span><span class="p">[:]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">w0</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">div</span><span class="p">(</span><span class="n">uT_</span><span class="p">),</span> <span class="n">output_array</span><span class="o">=</span><span class="n">w0</span><span class="p">)</span>
+    <span class="n">rhs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-=</span> <span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">a</span><span class="o">/</span><span class="n">kappa</span><span class="o">/</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">rk</span><span class="p">]</span><span class="o">+</span><span class="n">b</span><span class="p">[</span><span class="n">rk</span><span class="p">]))</span><span class="o">*</span><span class="n">w0</span>
+    <span class="n">rhs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-=</span> <span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">b</span><span class="o">/</span><span class="n">kappa</span><span class="o">/</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">rk</span><span class="p">]</span><span class="o">+</span><span class="n">b</span><span class="p">[</span><span class="n">rk</span><span class="p">]))</span><span class="o">*</span><span class="n">rhs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">rhs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">w0</span>
+    <span class="n">rhs</span><span class="o">.</span><span class="n">mask_nyquist</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">rhs</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We now have all the pieces required to solve the Rayleigh Benard problem.
+It only remains to perform an initialization and then create a solver
+loop that integrates the solution forward in time.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>
+<span class="c1"># initialization</span>
+<span class="n">T_b</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">W_TF</span><span class="p">)</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">W_TF</span><span class="o">.</span><span class="n">local_mesh</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">T_b</span><span class="p">[:]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="mf">0.001</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="o">*</span><span class="n">T_b</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">T_</span> <span class="o">=</span> <span class="n">T_b</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">T_</span><span class="p">)</span>
+<span class="n">T_</span><span class="o">.</span><span class="n">mask_nyquist</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">tstep</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">end_time</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
+    <span class="k">while</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="n">end_time</span><span class="o">-</span><span class="mf">1e-8</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">rk</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+            <span class="n">rhs_u</span> <span class="o">=</span> <span class="n">compute_rhs_u</span><span class="p">(</span><span class="n">u_</span><span class="p">,</span> <span class="n">T_</span><span class="p">,</span> <span class="n">H_</span><span class="p">,</span> <span class="n">rhs_u</span><span class="p">,</span> <span class="n">rk</span><span class="p">)</span>
+            <span class="n">u_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">solver</span><span class="p">[</span><span class="n">rk</span><span class="p">](</span><span class="n">u_</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">rhs_u</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">u_</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">u_</span> <span class="o">=</span> <span class="n">compute_v</span><span class="p">(</span><span class="n">u_</span><span class="p">,</span> <span class="n">rk</span><span class="p">)</span>
+            <span class="n">u_</span><span class="o">.</span><span class="n">mask_nyquist</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
+            <span class="n">rhs_T</span> <span class="o">=</span> <span class="n">compute_rhs_T</span><span class="p">(</span><span class="n">u_</span><span class="p">,</span> <span class="n">T_</span><span class="p">,</span> <span class="n">rhs_T</span><span class="p">,</span> <span class="n">rk</span><span class="p">)</span>
+            <span class="n">T_</span> <span class="o">=</span> <span class="n">solverT</span><span class="p">[</span><span class="n">rk</span><span class="p">](</span><span class="n">T_</span><span class="p">,</span> <span class="n">rhs_T</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">T_</span><span class="o">.</span><span class="n">mask_nyquist</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
+
+        <span class="n">t</span> <span class="o">+=</span> <span class="n">dt</span>
+        <span class="n">tstep</span> <span class="o">+=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>A complete solver implemented in a solver class can be found in
+<a class="reference external" href="https://github.com/spectralDNS/shenfun/blob/master/demo/RayleighBenardRK3.py">RayleighBenardRk3.py</a>,
+where some of the terms discussed in this demo have been optimized some more for speed.
+Note that in the final solver it is also possible to use a <span class="math notranslate nohighlight">\((y, t)\)</span>-dependent boundary condition
+for the hot wall. And the solver can also be configured to store intermediate results to
+an <code class="docutils literal notranslate"><span class="pre">HDF5</span></code> format that later can be visualized in, e.g., Paraview. The movie in the
+beginning of this demo has been created in Paraview.</p>
+<!-- ======= Bibliography ======= -->
+<ol class="simple">
+<li><p><a id="pandey18"></a> <strong>A. Pandey, J. D. Scheel and J. Schumacher</strong>.
+Turbulent Superstructures in Rayleigh-B’enard Convection,
+<em>Nature Communications</em>,
+9(1),
+pp. 2118,
+<a class="reference external" href="http://dx.doi.org/10.1038/s41467-018-04478-0">doi: 10.1038/s41467-018-04478-0</a>,
+2018.</p></li>
+</ol>
+</div>
+</div>
+</div>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "spectralDNS/shenfun",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            kernelName: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+              </div>
+              
+        </div>
+    </div>
+    
+    
+    <div class='prev-next-bottom'>
+        
+    <a class='left-prev' id="prev-link" href="drivencavity.html" title="previous page">Demo - Lid driven cavity</a>
+    <a class='right-next' id="next-link" href="functions.html" title="next page">Demo - Working with Functions</a>
+
+    </div>
+    <footer class="footer mt-5 mt-md-0">
+    <div class="container">
+      <p>
+        
+          By Mikael Mortensen<br/>
+        
+            &copy; Copyright 2020.<br/>
+      </p>
+    </div>
+  </footer>
+</main>
+
+
+      </div>
+    </div>
+
+    <script src="_static/js/index.js"></script>
+    
+  </body>
+</html>

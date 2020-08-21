@@ -1,0 +1,993 @@
+
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Demo - 3D Poisson’s equation &#8212; Shenfun executable demos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
+    <link href="_static/css/index.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/sphinx-book-theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="_static/jupyter-sphinx.css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/sphinx-book-theme.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/togglebutton.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
+    <script src="_static/mystnb.js"></script>
+    <script src="_static/sphinx-book-theme.js"></script>
+    <script >var togglebuttonSelector = '.toggle, .admonition.dropdown, .tag_hide_input div.cell_input, .tag_hide-input div.cell_input, .tag_hide_output div.cell_output, .tag_hide-output div.cell_output, .tag_hide_cell.cell, .tag_hide-cell.cell';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"TeX": {"Macros": {"bmat": ["\\left[\\begin{array}"], "emat": ["\\end{array}\\right]"]}, "extensions": ["cancel.js", "AMSmath.js"]}})</script>
+    <script async="async" src="https://unpkg.com/thebelab@latest/lib/index.js"></script>
+    <script >
+        const thebe_selector = ".thebe,.cell"
+        const thebe_selector_input = "pre,.cell_input div.highlight"
+        const thebe_selector_output = ".output,.cell_output"
+    </script>
+    <script async="async" src="_static/sphinx-thebe.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Demo - Helmholtz equation in polar coordinates" href="polarhelmholtz.html" />
+    <link rel="prev" title="Demo - Cubic nonlinear Klein-Gordon equation" href="kleingordon.html" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="docsearch:language" content="en">
+
+
+
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+<div class="col-12 col-md-3 bd-sidebar site-navigation show" id="site-navigation">
+    
+        <div class="navbar-brand-box">
+<a class="navbar-brand text-wrap" href="index.html">
+  
+  
+  <h1 class="site-logo" id="site-title">Shenfun executable demos</h1>
+  
+</a>
+</div>
+
+<form class="bd-search d-flex align-items-center" action="search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search this book..." aria-label="Search this book..." autocomplete="off" >
+</form>
+
+<nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <ul class="nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="intro.html">
+   Shenfun executable demos
+  </a>
+ </li>
+</ul>
+<p class="caption">
+ <span class="caption-text">
+  Shenfun demos
+ </span>
+</p>
+<ul class="current nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="poisson.html">
+   Demo - 1D Poisson’s equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="kleingordon.html">
+   Demo - Cubic nonlinear Klein-Gordon equation
+  </a>
+ </li>
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   Demo - 3D Poisson’s equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="polarhelmholtz.html">
+   Demo - Helmholtz equation in polar coordinates
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="sphericalhelmholtz.html">
+   Demo - Helmholtz equation on the unit sphere
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="kuramatosivashinsky.html">
+   Demo - Kuramato-Sivashinsky equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="stokes.html">
+   Demo - Stokes equations
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="drivencavity.html">
+   Demo - Lid driven cavity
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="rayleighbenard.html">
+   Demo - Rayleigh Benard
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="functions.html">
+   Demo - Working with Functions
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="surfaceintegration.html">
+   Demo - Integration of functions
+  </a>
+ </li>
+</ul>
+
+</nav>
+
+ <!-- To handle the deprecated key -->
+
+<div class="navbar_extra_footer">
+  Powered by <a href="https://jupyterbook.org">Jupyter Book</a>
+</div>
+
+</div>
+
+
+          
+
+
+          
+<main class="col py-md-3 pl-md-4 bd-content overflow-auto" role="main">
+    
+    <div class="row topbar fixed-top container-xl">
+    <div class="col-12 col-md-3 bd-topbar-whitespace site-navigation show">
+    </div>
+    <div class="col pl-2 topbar-main">
+        
+        <button id="navbar-toggler" class="navbar-toggler ml-0" type="button" data-toggle="collapse"
+            data-toggle="tooltip" data-placement="bottom" data-target=".site-navigation" aria-controls="navbar-menu"
+            aria-expanded="true" aria-label="Toggle navigation" aria-controls="site-navigation"
+            title="Toggle navigation" data-toggle="tooltip" data-placement="left">
+            <i class="fas fa-bars"></i>
+            <i class="fas fa-arrow-left"></i>
+            <i class="fas fa-arrow-up"></i>
+        </button>
+        
+        <div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn" aria-label="Download this page"><i
+            class="fas fa-download"></i></button>
+
+    
+    <div class="dropdown-buttons">
+        <!-- ipynb file if we had a myst markdown file -->
+        
+        <!-- Download raw file -->
+        <a class="dropdown-buttons" href="_sources/poisson3d.ipynb"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Download source file" data-toggle="tooltip"
+                data-placement="left">.ipynb</button></a>
+        <!-- Download PDF via print -->
+        <button type="button" id="download-print" class="btn btn-secondary topbarbtn" title="Print to PDF"
+            onClick="window.print()" data-toggle="tooltip" data-placement="left">.pdf</button>
+    </div>
+    
+</div>
+        <!-- Source interaction buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Connect with source repository"><i class="fab fa-github"></i></button>
+    <div class="dropdown-buttons sourcebuttons">
+        <a class="repository-button"
+            href="https://github.com/spectralDNS/shenfun"><button type="button" class="btn btn-secondary topbarbtn"
+                data-toggle="tooltip" data-placement="left" title="Source repository"><i
+                    class="fab fa-github"></i>repository</button></a>
+        
+        
+    </div>
+</div>
+
+
+        <!-- Full screen (wrap in <a> to have style consistency -->
+        <a class="full-screen-button"><button type="button" class="btn btn-secondary topbarbtn" data-toggle="tooltip"
+                data-placement="bottom" onclick="toggleFullScreen()" title="Fullscreen mode"><i
+                    class="fas fa-expand"></i></button></a>
+
+        <!-- Launch buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Launch interactive content"><i class="fas fa-rocket"></i></button>
+    <div class="dropdown-buttons">
+        
+        <a class="binder-button" href="https://mybinder.org/v2/gh/spectralDNS/shenfun/master?urlpath=tree/./docs/book/poisson3d.ipynb"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Launch Binder" data-toggle="tooltip"
+                data-placement="left"><img class="binder-button-logo"
+                    src="_static/images/logo_binder.svg"
+                    alt="Interact on binder">Binder</button></a>
+        
+        
+        
+        <button type="button" class="btn btn-secondary topbarbtn"
+            onclick="initThebeSBT()" title="Launch Thebe" data-toggle="tooltip" data-placement="left"><i
+                class="fas fa-play"></i><span style="margin-left: .4em;">Live Code</span></button>
+        
+    </div>
+</div>
+
+    </div>
+
+    <!-- Table of contents -->
+    <div class="d-none d-md-block col-md-2 bd-toc show">
+        <div class="tocsection onthispage pt-5 pb-3">
+            <i class="fas fa-list"></i> On this page
+        </div>
+        <nav id="bd-toc-nav">
+            <ul class="nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#poisson-s-equation">
+   Poisson’s equation
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#method-of-manufactured-solutions">
+     Method of manufactured solutions
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#implementation">
+   Implementation
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#preamble">
+     Preamble
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#manufactured-solution">
+     Manufactured solution
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#discretization-and-mpi">
+     Discretization and MPI
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#variational-formulation">
+     Variational formulation
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#solve-linear-equations">
+     Solve linear equations
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#convergence-test">
+     Convergence test
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#complete-solver">
+   Complete solver
+  </a>
+ </li>
+</ul>
+
+        </nav>
+    </div>
+</div>
+    <div id="main-content" class="row">
+        <div class="col-12 col-md-9 pl-md-3 pr-md-0">
+        
+              <div>
+                
+  <!-- dom:TITLE: Demo - 3D Poisson's equation -->
+<div class="section" id="demo-3d-poisson-s-equation">
+<h1>Demo - 3D Poisson’s equation<a class="headerlink" href="#demo-3d-poisson-s-equation" title="Permalink to this headline">¶</a></h1>
+<!-- dom:AUTHOR: Mikael Mortensen Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo. -->
+<!-- Author: -->  
+<p><strong>Mikael Mortensen</strong> (email: <code class="docutils literal notranslate"><span class="pre">mikaem&#64;math.uio.no</span></code>), Department of Mathematics, University of Oslo.</p>
+<p>Date: <strong>Aug 21, 2020</strong></p>
+<p>Copyright 2020, Mikael Mortensen. Released under CC Attribution 4.0 license</p>
+<p><strong>Summary.</strong> This is a demonstration of how the Python module <a class="reference external" href="https://github.com/spectralDNS/shenfun">shenfun</a> can be used to solve a 3D Poisson
+equation in a 3D tensor product domain that has homogeneous Dirichlet boundary
+conditions in one direction and periodicity in the
+remaining two. The solver described runs with MPI without any further
+considerations required from the user. Spectral convergence, as shown in <a class="reference external" href="#fig:3d:ct0">Figure</a>, is demonstrated.
+The demo is implemented in
+a single Python file <a class="reference external" href="https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py">dirichlet_poisson3D.py</a>, and the numerical method is is described in more detail by J. Shen <a class="reference external" href="#shen1">[shen1]</a> and <a class="reference external" href="#shen95">[shen95]</a>.</p>
+<!-- dom:FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/figures/poisson3D_errornorm.png] Convergence of 3D Poisson solvers for both Legendre and Chebyshev modified basis function. <a id="fig:3d:ct0"></a> -->
+<!-- begin figure -->
+<p><a id="fig:3d:ct0"></a></p>
+<p>Convergence of 3D Poisson solvers for both Legendre and Chebyshev modified basis function.</p>
+<img src="https://rawgit.com/spectralDNS/spectralutilities/master/figures/poisson3D_errornorm.png" >
+<!-- end figure -->
+<div class="section" id="poisson-s-equation">
+<h2>Poisson’s equation<a class="headerlink" href="#poisson-s-equation" title="Permalink to this headline">¶</a></h2>
+<p><a id="demo:poisson3d"></a></p>
+<p>Poisson’s equation is given as</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:3d:poisson"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\nabla^2 u(\boldsymbol{x}) = f(\boldsymbol{x}) \quad \text{for }\, \boldsymbol{x}=(x, y, z) \in \Omega, \label{eq:3d:poisson} \tag{1}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto1"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+u(\pm 1 ,y, z) =0, 
+\label{_auto1} \tag{2}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto2"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+u(x, 2\pi, z) = u(x, 0, z), 
+\label{_auto2} \tag{3}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto3"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+u(x, y, 2\pi) = u(x, y, 0),
+\label{_auto3} \tag{4}
+\end{equation}
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(u(\boldsymbol{x})\)</span> is the solution and <span class="math notranslate nohighlight">\(f(\boldsymbol{x})\)</span> is a function. The domain
+<span class="math notranslate nohighlight">\(\Omega = [-1, 1]\times [0, 2\pi]^2\)</span>.</p>
+<p>To solve Eq. (<a class="reference external" href="#eq:3d:poisson">1</a>) with the Galerkin method we need smooth basis
+functions, <span class="math notranslate nohighlight">\(v(\boldsymbol{x})\)</span>, that live
+in the Hilbert space <span class="math notranslate nohighlight">\(H^1(\Omega)\)</span> and that satisfy the given boundary
+conditions. To this end we will use one basis function for the <span class="math notranslate nohighlight">\(x\)</span>-direction,
+<span class="math notranslate nohighlight">\(\mathcal{X}(x)\)</span>,
+one for the <span class="math notranslate nohighlight">\(y\)</span>-direction, <span class="math notranslate nohighlight">\(\mathcal{Y}(y)\)</span>, and one for the <span class="math notranslate nohighlight">\(z\)</span>-direction,
+<span class="math notranslate nohighlight">\(\mathcal{Z}(z)\)</span>. And
+then we create three-dimensional basis functions like</p>
+<div class="math notranslate nohighlight">
+\[
+v(x, y, z) = \mathcal{X}(x) \mathcal{Y}(y) \mathcal{Z} (z).
+\]</div>
+<p>The basis functions <span class="math notranslate nohighlight">\(\mathcal{Y}(y)\)</span> and <span class="math notranslate nohighlight">\(\mathcal{Z}(z)\)</span> are chosen as Fourier exponentials, since these
+functions are periodic. Likewise, the basis functions <span class="math notranslate nohighlight">\(\mathcal{X}(x)\)</span> are chosen as
+modified Legendre or Chebyshev polynomials, using <span class="math notranslate nohighlight">\(\phi_l(x)\)</span> to refer to either
+one</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto4"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\mathcal{X}_l(x) = \phi_l(x) - \phi_{l+2}(x), \forall \, l \in \boldsymbol{l}^{N_0},
+\label{_auto4} \tag{5}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto5"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+\mathcal{Y}_m(y) =  e^{\imath m y}, \forall \, m \in \boldsymbol{m}^{N_1}, 
+\label{_auto5} \tag{6}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto6"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+\mathcal{Z}_n(z) = e^{\imath n z}, \forall \, n \in \boldsymbol{n}^{N_2},
+\label{_auto6} \tag{7}
+\end{equation}
+\]</div>
+<p>where the size of the discretized problem is <span class="math notranslate nohighlight">\(\boldsymbol{N} = (N_0, N_1, N_2)\)</span>,
+<span class="math notranslate nohighlight">\(\boldsymbol{l}^{N_0} = (0, 1, \ldots, N_0-3)\)</span>, <span class="math notranslate nohighlight">\(\boldsymbol{m}^{N_1} =
+(-N_1/2, -N_1/2+1, \ldots, N_1/2-1)\)</span> and <span class="math notranslate nohighlight">\(\boldsymbol{n}^{N_2} = (-N_2/2, -N_2/2+1,
+\ldots, N_2/2-1)\)</span>. However, due to <a class="reference external" href="https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.fft.rfft.html#numpy.fft.rfft">Hermitian symmetry</a>, we only store <span class="math notranslate nohighlight">\(N_2/2+1\)</span>
+wavenumbers in the <span class="math notranslate nohighlight">\(z\)</span>-direction, such that <span class="math notranslate nohighlight">\(\boldsymbol{n}^{N_2} = (0, 1, \ldots,
+N_2/2)\)</span>. We refer to the Cartesian wavenumber mesh on vector form as <span class="math notranslate nohighlight">\(\boldsymbol{k}\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[
+\boldsymbol{k} = \{(l, m, n)\, | \,(l, m, n)  \in \boldsymbol{l}^{N_0} \times \boldsymbol{m}^{N_1} \times \boldsymbol{n}^{N_2}\}.
+\]</div>
+<p>We have the one-dimensional spaces</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto7"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+V^{N_0} = \text{span}\{ \mathcal{X}_l \}_{l\in\boldsymbol{l}^{N_0}}, 
+\label{_auto7} \tag{8}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto8"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+V^{N_1} = \text{span}\{ \mathcal{Y}_m \}_{m\in\boldsymbol{m}^{N_1}}, 
+\label{_auto8} \tag{9}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto9"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+V^{N_2} = \text{span}\{ \mathcal{Z}_n \}_{n\in\boldsymbol{n}^{N_2}},
+\label{_auto9} \tag{10}
+\end{equation}
+\]</div>
+<p>and from these we create a tensor product space <span class="math notranslate nohighlight">\(W^{\boldsymbol{N}}(\boldsymbol{x})\)</span></p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto10"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+W^{\boldsymbol{N}}(\boldsymbol{x}) = V^{N_0}(x) \otimes V^{N_1}(y) \otimes V^{N_2}(z).
+\label{_auto10} \tag{11}
+\end{equation}
+\]</div>
+<p>And then we look for discrete solutions <span class="math notranslate nohighlight">\(u \in W^{\boldsymbol{N}}\)</span> like</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:3d:u"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+u(\boldsymbol{x}) = \sum_{l\in \boldsymbol{l}^{N_0}} \sum_{m\in \boldsymbol{m}^{N_1}}\sum_{n\in
+\boldsymbol{n}^{N_2}}\hat{u}_{lmn} \mathcal{X}_l(x) \mathcal{Y}_m(y) \mathcal{Z}_n(z), \label{eq:3d:u} \tag{12} 
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto11"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+ = \sum_{\boldsymbol{\textsf{k}} \in \boldsymbol{k}}\hat{u}_{\boldsymbol{\textsf{k}}} v_{\boldsymbol{\textsf{k}}}(\boldsymbol{x}),
+\label{_auto11} \tag{13}
+\end{equation}
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(\hat{u}_{lmn}\)</span> are components of the expansion coefficients for <span class="math notranslate nohighlight">\(u\)</span> and
+the second form, <span class="math notranslate nohighlight">\(\{\hat{u}_{\boldsymbol{\textsf{k}}}\}_{\boldsymbol{\textsf{k}}\in\boldsymbol{k}}\)</span>, is a shorter,
+simplified notation, with sans-serif <span class="math notranslate nohighlight">\(\boldsymbol{\textsf{k}}=(l, m, n)\)</span>.
+The expansion coefficients are the unknowns in the spectral Galerkin method.</p>
+<p>We now formulate a variational problem using the Galerkin method: Find <span class="math notranslate nohighlight">\(u \in
+W^{\boldsymbol{N}}\)</span> such that</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:3d:varform"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\int_{\Omega} \nabla^2 u \, \overline{v} \, w\, \boldsymbol{dx} = \int_{\Omega} f \,
+\overline{v}\, w\, \boldsymbol{dx} \quad
+\forall v \, \in \, W^{\boldsymbol{N}}. \label{eq:3d:varform} \tag{14}
+\end{equation}
+\]</div>
+<p>Here <span class="math notranslate nohighlight">\(\boldsymbol{dx}=dxdydz\)</span>, and the overline represents a complex conjugate, which is needed here because
+the Fourier exponentials are complex functions.
+The weighted integrals, weighted by <span class="math notranslate nohighlight">\(w(\boldsymbol{x})\)</span>, are called inner products, and a common notation is</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto12"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\int_{\Omega} u \, \overline{v} \, w\, \boldsymbol{dx} = \langle u, v\rangle _w.
+\label{_auto12} \tag{15}
+\end{equation}
+\]</div>
+<p>The integral can either be computed exactly, or with quadrature. The advantage
+of the latter is that it is generally faster, and that non-linear terms may be
+computed just as quickly as linear. For a linear problem, it does not make much of a difference, if any at all. Approximating the integral with quadrature, we obtain</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto13"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\int_{\Omega} u \, \overline{v} \, w\, \boldsymbol{dx} \approx \langle u, v
+\rangle_w^{\boldsymbol{N}},  
+\label{_auto13} \tag{16}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto14"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+\approx \sum_{i=0}^{N_0-1} \sum_{j=0}^{N_1-1}\sum_{k=0}^{N_2-1} u(x_i, y_j, z_k) \overline{v}(x_i, y_j, z_k) w(x_i, y_j, z_k),
+\label{_auto14} \tag{17}
+\end{equation}
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(w(\boldsymbol{x})\)</span> now are the quadrature weights. The quadrature points
+<span class="math notranslate nohighlight">\(\{x_i\}_{i=0}^{N_0-1}\)</span> are specific to the chosen basis, and even within basis there
+are two different choices based on which quadrature rule is selected, either
+Gauss or Gauss-Lobatto. The quadrature points for the Fourier bases are the
+uniform <span class="math notranslate nohighlight">\(\{y_j\}_{j=0}^{N_1-1}=2\pi j / N_1\)</span> and <span class="math notranslate nohighlight">\(\{z_k\}_{k=0}^{N_2-1} = 2 \pi
+k/N_2\)</span>.</p>
+<p>Inserting for test function (<a class="reference external" href="#eq:3d:u">12</a>) and trialfunction
+<span class="math notranslate nohighlight">\(v_{pqr} = \mathcal{X}_{p} \mathcal{Y}_q \mathcal{Z}_r\)</span> on the
+left hand side of (<a class="reference external" href="#eq:3d:varform">14</a>), we get</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+\langle \nabla^2u, v \rangle_w^{\boldsymbol{N}} &amp;= \left\langle \nabla^2\sum_{l\in \boldsymbol{l}^{N_0}}
+\sum_{m\in \boldsymbol{m}^{N_1}}\sum_{n\in \boldsymbol{n}^{N_2}}\hat{u}_{lmn}
+\mathcal{X}_{l} \mathcal{Y}_m \mathcal{Z}_n,
+\mathcal{X}_{p} \mathcal{Y}_q \mathcal{Z}_r \right\rangle_w^{\boldsymbol{N}}, \\ 
+    &amp;= \left[\left(\mathcal{X}_l^{''}, \mathcal{X}_p \right)_w^N - (m^2+n^2)\left(\mathcal{X}_l, \mathcal{X}_p \right)_w^N  \right]\delta_{mq} \delta_{nr} \hat{u}_{lmn}, \\ 
+    &amp;= \left( a_{pl} - (m^2 + n^2)b_{pl}\right) \hat{u}_{lqr},
+\end{align*}
+\end{split}\]</div>
+<p>where the notation <span class="math notranslate nohighlight">\((\cdot, \cdot)_w^{N_0}\)</span></p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto15"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+b_{pl} = \left( \mathcal{X}_l, \mathcal{X}_p \right)_w^{N_0} = \sum_{i=0}^{N_0-1} \mathcal{X}_l(x_i)
+\mathcal{X}_p(x_i) w(x_i),
+\label{_auto15} \tag{18}
+\end{equation}
+\]</div>
+<p>is used to represent an <span class="math notranslate nohighlight">\(L_2\)</span> inner product along only the first, nonperiodic,
+direction. The delta functions above come from integrating over the two periodic
+directions, where we use constant weight functions <span class="math notranslate nohighlight">\(w=1/(2\pi)\)</span> in the
+inner products</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto16"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\int_0^{2\pi} \mathcal{Y}_m(y) \overline{\mathcal{Y}}_q(y) \frac{1}{2\pi} dy = \delta_{mq},
+\label{_auto16} \tag{19}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto17"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+\int_0^{2\pi} \mathcal{Z}_n(z) \overline{\mathcal{Z}}_r(z) \frac{1}{2\pi} dz = \delta_{nr},
+\label{_auto17} \tag{20}
+\end{equation}
+\]</div>
+<p>The Kronecker delta-function <span class="math notranslate nohighlight">\(\delta_{ij}\)</span> is one for <span class="math notranslate nohighlight">\(i=j\)</span> and
+zero otherwise.</p>
+<p>The right hand side of Eq. (<a class="reference external" href="#eq:3d:varform">14</a>) is computed as</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto18"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\tilde{f}_{pqr} = \left\langle f, \mathcal{X}_{p}
+\mathcal{Y}_q \mathcal{Z}_r  \right \rangle_w^{\boldsymbol{N}},
+\label{_auto18} \tag{21}
+\end{equation}
+\]</div>
+<p>where a tilde is used because this is not a complete transform of the function
+<span class="math notranslate nohighlight">\(f\)</span>, but only an inner product.</p>
+<p>The linear system of equations to solve for the expansion coefficients can now
+be found as follows</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:AB"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\left(a_{lj} - (m^2+n^2)b_{lj}\right) \hat{u}_{jmn} =
+\tilde{f}_{lmn}\quad \forall \, (l,m,n) \in \boldsymbol{k}. \label{eq:AB} \tag{22}
+\end{equation}
+\]</div>
+<p>Now, when <span class="math notranslate nohighlight">\(\hat{\boldsymbol{u}} = \{\hat{u}_{\boldsymbol{\textsf{k}}}\}_{\boldsymbol{\textsf{k}} \in \boldsymbol{k}}\)</span> is
+found by solving this linear system over the
+entire computational mesh, it may be
+transformed to real space <span class="math notranslate nohighlight">\(u(\boldsymbol{x})\)</span> using (<a class="reference external" href="#eq:3d:u">12</a>). Note that the matrices
+<span class="math notranslate nohighlight">\(A \in \mathbb{R}^{N_0-3 \times N_0-3}\)</span> and <span class="math notranslate nohighlight">\(B \in \mathbb{R}^{N_0-3 \times N_0-3}\)</span>
+differ for Legendre or Chebyshev bases, but
+for either case they have a
+special structure that allows for a solution to be found very efficiently
+in the order of <span class="math notranslate nohighlight">\(\mathcal{O}(N_0-3)\)</span> operations given <span class="math notranslate nohighlight">\(m\)</span> and <span class="math notranslate nohighlight">\(n\)</span>, see
+<a class="reference external" href="#shen1">[shen1]</a> and <a class="reference external" href="#shen95">[shen95]</a>. Fast solvers for (<a class="reference external" href="#eq:AB">22</a>) are implemented in <code class="docutils literal notranslate"><span class="pre">shenfun</span></code> for both bases.</p>
+<div class="section" id="method-of-manufactured-solutions">
+<h3>Method of manufactured solutions<a class="headerlink" href="#method-of-manufactured-solutions" title="Permalink to this headline">¶</a></h3>
+<p>In this demo we will use the method of manufactured
+solutions to demonstrate spectral accuracy of the <code class="docutils literal notranslate"><span class="pre">shenfun</span></code> bases. To
+this end we choose a smooth analytical function that satisfies the given boundary
+conditions:</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:3d:u_e"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+u_e(x, y, z) = \left(\cos(4x) + \sin(2y) + \sin(4z)\right)(1-x^2). \label{eq:3d:u_e} \tag{23}
+\end{equation}
+\]</div>
+<p>Sending <span class="math notranslate nohighlight">\(u_e\)</span> through the Laplace operator, we obtain the right hand side</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:3d:solution"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+ \nabla^2 u_e(x,y,z) = -16(1 - x^2) \cos(4 x) + 16 x \sin(4 x) - 2 \cos(4 x)
+                  - (1-x^2)(4 \sin(2y) + 16\sin(4z)).  \label{eq:3d:solution} \tag{24}
+\end{equation}
+\]</div>
+<p>Now, setting <span class="math notranslate nohighlight">\(f_e(\boldsymbol{x}) = \nabla^2 u_e(\boldsymbol{x})\)</span> and solving for <span class="math notranslate nohighlight">\(\nabla^2
+u(\boldsymbol{x}) = f_e(\boldsymbol{x})\)</span>, we can compare the numerical solution <span class="math notranslate nohighlight">\(u(\boldsymbol{x})\)</span> with
+the analytical solution <span class="math notranslate nohighlight">\(u_e(\boldsymbol{x})\)</span> and compute error norms.</p>
+</div>
+</div>
+<div class="section" id="implementation">
+<h2>Implementation<a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="preamble">
+<h3>Preamble<a class="headerlink" href="#preamble" title="Permalink to this headline">¶</a></h3>
+<p>We will solve the Poisson problem using the <a class="reference external" href="https://github.com/spectralDNS/shenfun">shenfun</a> Python module. The first thing needed
+is then to import some of this module’s functionality
+plus some other helper modules, like <a class="reference external" href="https://numpy.org">Numpy</a> and <a class="reference external" href="https://sympy.org">Sympy</a>:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">symbols</span><span class="p">,</span> <span class="n">cos</span><span class="p">,</span> <span class="n">sin</span><span class="p">,</span> <span class="n">exp</span><span class="p">,</span> <span class="n">lambdify</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">shenfun.tensorproductspace</span> <span class="kn">import</span> <span class="n">TensorProductSpace</span>
+<span class="kn">from</span> <span class="nn">shenfun</span> <span class="kn">import</span> <span class="n">inner</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">grad</span><span class="p">,</span> <span class="n">TestFunction</span><span class="p">,</span> <span class="n">TrialFunction</span><span class="p">,</span> <span class="n">Function</span><span class="p">,</span> \
+    <span class="n">project</span><span class="p">,</span> <span class="n">Dx</span><span class="p">,</span> <span class="n">FunctionSpace</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">Array</span><span class="p">,</span> <span class="n">chebyshev</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We use <code class="docutils literal notranslate"><span class="pre">Sympy</span></code> for the manufactured solution and <code class="docutils literal notranslate"><span class="pre">Numpy</span></code> for testing. MPI for
+Python (<code class="docutils literal notranslate"><span class="pre">mpi4py</span></code>) is required for running the solver with MPI.</p>
+</div>
+<div class="section" id="manufactured-solution">
+<h3>Manufactured solution<a class="headerlink" href="#manufactured-solution" title="Permalink to this headline">¶</a></h3>
+<p>The exact solution <span class="math notranslate nohighlight">\(u_e(x, y, z)\)</span> and the right hand side <span class="math notranslate nohighlight">\(f_e(x, y, z)\)</span> are created using <code class="docutils literal notranslate"><span class="pre">Sympy</span></code> as follows</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">(</span><span class="s2">&quot;x,y,z&quot;</span><span class="p">)</span>
+<span class="n">ue</span> <span class="o">=</span> <span class="p">(</span><span class="n">cos</span><span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">y</span><span class="p">)</span> <span class="o">+</span> <span class="n">sin</span><span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="n">z</span><span class="p">))</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">fe</span> <span class="o">=</span> <span class="n">ue</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">ue</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">ue</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="c1"># Lambdify for faster evaluation</span>
+<span class="n">ul</span> <span class="o">=</span> <span class="n">lambdify</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">),</span> <span class="n">ue</span><span class="p">,</span> <span class="s1">&#39;numpy&#39;</span><span class="p">)</span>
+<span class="n">fl</span> <span class="o">=</span> <span class="n">lambdify</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">),</span> <span class="n">fe</span><span class="p">,</span> <span class="s1">&#39;numpy&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>These solutions are now valid for a continuous domain. The next step is thus to
+discretize, using the computational mesh</p>
+<div class="math notranslate nohighlight">
+\[
+(x_i, y_j, z_k)\, \forall \, (i, j, k) \in [0, 1,\ldots, N_0-1] \times [0, 1, \ldots, N_1-1] \times [0, 1, \ldots, N_2-1]
+\]</div>
+<p>and a finite number of basis functions.</p>
+<p>Note that it is not mandatory to use <code class="docutils literal notranslate"><span class="pre">Sympy</span></code> for the manufactured solution. Since the
+solution is known (<a class="reference external" href="#eq:3d:solution">24</a>), we could just as well simply use <code class="docutils literal notranslate"><span class="pre">Numpy</span></code>
+to compute <span class="math notranslate nohighlight">\(f_e\)</span>. However, with <code class="docutils literal notranslate"><span class="pre">Sympy</span></code> it is much
+easier to experiment and quickly change the solution.</p>
+</div>
+<div class="section" id="discretization-and-mpi">
+<h3>Discretization and MPI<a class="headerlink" href="#discretization-and-mpi" title="Permalink to this headline">¶</a></h3>
+<p>We create three bases with given size, one for each dimension of the problem.
+From these three bases a <code class="docutils literal notranslate"><span class="pre">TensorProductSpace</span></code> is created.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Size of discretization</span>
+<span class="n">N</span> <span class="o">=</span> <span class="p">[</span><span class="mi">14</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">16</span><span class="p">]</span>
+
+<span class="n">SD</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;Chebyshev&#39;</span><span class="p">,</span> <span class="n">bc</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<span class="c1">#SD = FunctionSpace(N[0], &#39;Legendre&#39;, bc=(0, 0))</span>
+<span class="n">K1</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;Fourier&#39;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;D&#39;</span><span class="p">)</span>
+<span class="n">K2</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="s1">&#39;Fourier&#39;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;d&#39;</span><span class="p">)</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">TensorProductSpace</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="p">(</span><span class="n">SD</span><span class="p">,</span> <span class="n">K1</span><span class="p">,</span> <span class="n">K2</span><span class="p">),</span> <span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">local_mesh</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Note that we can either choose a Legendre or a Chebyshev basis for the
+nonperiodic direction. The
+<code class="docutils literal notranslate"><span class="pre">TensorProductSpace</span></code> class takes an MPI communicator as first argument and the
+computational mesh is distributed internally using the <code class="docutils literal notranslate"><span class="pre">pencil</span></code> method. The
+<code class="docutils literal notranslate"><span class="pre">T.local_mesh</span></code> method returns the mesh local to each processor. The <code class="docutils literal notranslate"><span class="pre">axes</span></code>
+keyword determines the order of transforms going back and forth between real and
+spectral space. With <code class="docutils literal notranslate"><span class="pre">axes=(0,</span> <span class="pre">1,</span> <span class="pre">2)</span></code> and a forward transform (from real space
+to spectral, i.e., from <span class="math notranslate nohighlight">\(u\)</span> to <span class="math notranslate nohighlight">\(\hat{u}\)</span>) axis 2 is transformed first and then 1
+and 0, respectively.</p>
+<p>The manufactured solution is created with Dirichlet boundary conditions in the
+<span class="math notranslate nohighlight">\(x\)</span>-direction, and for this reason <code class="docutils literal notranslate"><span class="pre">SD</span></code> is the first basis in <code class="docutils literal notranslate"><span class="pre">T</span></code>. We could just
+as well have put the nonperiodic direction along either <span class="math notranslate nohighlight">\(y\)</span>- or <span class="math notranslate nohighlight">\(z\)</span>-direction,
+though, but this would then require that the order of the transformed axes be
+changed as well. For example, putting the Dirichlet direction along <span class="math notranslate nohighlight">\(y\)</span>, we
+would need to create the tensorproductspace as</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">T</span> <span class="o">=</span> <span class="n">TensorProductSpace</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="p">(</span><span class="n">K1</span><span class="p">,</span> <span class="n">SD</span><span class="p">,</span> <span class="n">K2</span><span class="p">),</span> <span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>such that the Dirichlet direction is the last to be transformed. The reason for
+this is that only the Dirichlet direction leads to matrices that need to be
+inverted (or solved). And for this we need the entire data array along the Dirichlet
+direction to be local to the processor. If the <code class="docutils literal notranslate"><span class="pre">SD</span></code> basis is the last to be
+transformed, then the data will be aligned in this direction, whereas the other
+two directions may both, or just one of them, be distributed.</p>
+<p>Note that <code class="docutils literal notranslate"><span class="pre">X</span></code> is a list containing local values of the arrays <span class="math notranslate nohighlight">\(\{x_i\}_{i=0}^{N_0-1}\)</span>,
+<span class="math notranslate nohighlight">\(\{y_j\}_{j=0}^{N_1-0}\)</span> and <span class="math notranslate nohighlight">\(\{z_k\}_{k=0}^{N_2-1}\)</span>. For example, using 4
+procesors and a processor mesh of shape <span class="math notranslate nohighlight">\(2\times 2\)</span>, then the local slices for
+each processor in spectral space are</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">(),</span> <span class="n">T</span><span class="o">.</span><span class="n">local_slice</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>where the global shape is <span class="math notranslate nohighlight">\(\boldsymbol{N}=(14, 15, 9)\)</span> after taking advantage of
+Hermitian symmetry in the <span class="math notranslate nohighlight">\(z\)</span>-direction. So, all processors have the complete first dimension available locally, as they
+should. Furthermore, processor three owns the slices from <span class="math notranslate nohighlight">\(8:15\)</span> and <span class="math notranslate nohighlight">\(5:9\)</span> along
+axes <span class="math notranslate nohighlight">\(y\)</span> and <span class="math notranslate nohighlight">\(z\)</span>, respectively. Processor 2 owns slices <span class="math notranslate nohighlight">\(0:8\)</span> and <span class="math notranslate nohighlight">\(0:5\)</span> etc. In
+real space the mesh is distributed differently. First of all the global mesh
+shape is <span class="math notranslate nohighlight">\(\boldsymbol{N}=(14, 15, 16)\)</span>, and it is distributed along the first two
+dimensions. The local slices can be inspected as</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>    print(comm.Get_rank(), T.local_slice(False))
+    0 [slice(0, 7, None), slice(0, 8, None), slice(0, 16, None)]
+    1 [slice(0, 7, None), slice(8, 15, None), slice(0, 16, None)]
+    2 [slice(7, 14, None), slice(0, 8, None), slice(0, 16, None)]
+    3 [slice(7, 14, None), slice(8, 15, None), slice(0, 16, None)]
+</pre></div>
+</div>
+<p>Since two directions are distributed, both in spectral and real space, we say
+that we have a two-dimensional decomposition (here a <span class="math notranslate nohighlight">\(2\times 2\)</span> shaped
+processor mesh) and the
+MPI distribution is of type <em>pencil</em>. It is also possible to choose a <em>slab</em>
+decomposition, where only one dimension of the array is distributed. This choice
+needs to be made when creating the tensorproductspace as</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">T</span> <span class="o">=</span> <span class="n">TensorProductSpace</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="p">(</span><span class="n">SD</span><span class="p">,</span> <span class="n">K1</span><span class="p">,</span> <span class="n">K2</span><span class="p">),</span> <span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">slab</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>which will lead to a mesh that is distributed along <span class="math notranslate nohighlight">\(x\)</span>-direction in real space
+and <span class="math notranslate nohighlight">\(y\)</span>-direction in spectral space. The local slices are</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>    print(comm.Get_rank(), T.local_slice()) # spectral space
+    1 [slice(0, 14, None), slice(4, 8, None), slice(0, 9, None)]
+    2 [slice(0, 14, None), slice(8, 12, None), slice(0, 9, None)]
+    0 [slice(0, 14, None), slice(0, 4, None), slice(0, 9, None)]
+    3 [slice(0, 14, None), slice(12, 15, None), slice(0, 9, None)]
+    print(comm.Get_rank(), T.local_slice(False)) # real space
+    3 [slice(11, 14, None), slice(0, 15, None), slice(0, 16, None)]
+    0 [slice(0, 4, None), slice(0, 15, None), slice(0, 16, None)]
+    2 [slice(8, 11, None), slice(0, 15, None), slice(0, 16, None)]
+    1 [slice(4, 8, None), slice(0, 15, None), slice(0, 16, None)]
+</pre></div>
+</div>
+<p>Note that the <em>slab</em> decomposition is usually the fastest choice. However, the maximum
+number of processors with <em>slab</em> is <span class="math notranslate nohighlight">\(\min \{N_0, N_1\}\)</span>, whereas a <em>pencil</em>
+approach can be used with up to <span class="math notranslate nohighlight">\(\min \{N_1(N_2/2+1), N_0 N_1\}\)</span> processors.</p>
+</div>
+<div class="section" id="variational-formulation">
+<h3>Variational formulation<a class="headerlink" href="#variational-formulation" title="Permalink to this headline">¶</a></h3>
+<p>The variational problem (<a class="reference external" href="#eq:3d:varform">14</a>) can be assembled using <code class="docutils literal notranslate"><span class="pre">shenfun</span></code>’s
+form language, which is perhaps surprisingly similar to FEniCS.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">u</span> <span class="o">=</span> <span class="n">TrialFunction</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+<span class="n">v</span> <span class="o">=</span> <span class="n">TestFunction</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+<span class="n">K</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">local_wavenumbers</span><span class="p">()</span>
+<span class="c1"># Get f on quad points</span>
+<span class="n">fj</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">buffer</span><span class="o">=</span><span class="n">fl</span><span class="p">(</span><span class="o">*</span><span class="n">X</span><span class="p">))</span>
+<span class="c1"># Compute right hand side of Poisson equation</span>
+<span class="n">f_hat</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">fj</span><span class="p">)</span>
+<span class="c1"># Get left hand side of Poisson equation</span>
+<span class="n">matrices</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">div</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">)))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>The Laplacian operator is recognized as <code class="docutils literal notranslate"><span class="pre">div(grad)</span></code>. The <code class="docutils literal notranslate"><span class="pre">matrices</span></code> object is a
+dictionary representing the left hand side of (<a class="reference external" href="#eq:AB">22</a>), and there are two
+keys: (<code class="docutils literal notranslate"><span class="pre">ADDmat</span></code>, <code class="docutils literal notranslate"><span class="pre">BDDmat</span></code>). The value of <code class="docutils literal notranslate"><span class="pre">matrices[&quot;ADDmat&quot;]</span></code> is an object of
+type <code class="docutils literal notranslate"><span class="pre">SpectralMatrix</span></code>,
+which is <code class="docutils literal notranslate"><span class="pre">shenfun</span></code>’s type for a matrix. This matrix represents <span class="math notranslate nohighlight">\(A_{lj}\)</span>, see
+(<a class="reference external" href="#eq:AB">22</a>), and it has an attribute <code class="docutils literal notranslate"><span class="pre">scale</span></code> that is
+equal to <span class="math notranslate nohighlight">\((2\pi)^2\)</span> (also see (<a class="reference external" href="#eq:AB">22</a>)).  The other key in matrices
+is <code class="docutils literal notranslate"><span class="pre">BDDmat</span></code>, and the value here is a <code class="docutils literal notranslate"><span class="pre">SpectralMatrix</span></code> representing <span class="math notranslate nohighlight">\(B_{lj}\)</span> from
+(<a class="reference external" href="#eq:AB">22</a>). This matrix has an attribute <code class="docutils literal notranslate"><span class="pre">scale</span></code> that is equal to <span class="math notranslate nohighlight">\(m^2+n^2\)</span>.
+This <code class="docutils literal notranslate"><span class="pre">scale</span></code> is stored as a numpy array of shape <span class="math notranslate nohighlight">\((1, 15, 9)\)</span>, representing the
+set
+<span class="math notranslate nohighlight">\(\{m^2+n^2: (m, n) \in \boldsymbol{m}^{N_1} \times \boldsymbol{n}^{N_2}\}\)</span>. Note that <span class="math notranslate nohighlight">\(\boldsymbol{n}^{N_2}\)</span> is stored
+simply as an array of length <span class="math notranslate nohighlight">\(N_2/2+1\)</span> (here 9), since the transform in direction <span class="math notranslate nohighlight">\(z\)</span>
+takes a real signal and transforms it taking advantage of Hermitian symmetry,
+see <a class="reference external" href="https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.fft.rfft.html">rfft</a>.</p>
+</div>
+<div class="section" id="solve-linear-equations">
+<h3>Solve linear equations<a class="headerlink" href="#solve-linear-equations" title="Permalink to this headline">¶</a></h3>
+<p>Finally, solve linear equation system and transform solution from spectral
+<span class="math notranslate nohighlight">\(\hat{u}_{\boldsymbol{\textsf{k}}}\)</span> vector to the real space <span class="math notranslate nohighlight">\(u(\boldsymbol{x})\)</span> and then check how the solution corresponds with the exact solution <span class="math notranslate nohighlight">\(u_e\)</span>.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create Helmholtz linear algebra solver</span>
+<span class="n">Solver</span> <span class="o">=</span> <span class="n">chebyshev</span><span class="o">.</span><span class="n">la</span><span class="o">.</span><span class="n">Helmholtz</span>
+<span class="n">H</span> <span class="o">=</span> <span class="n">Solver</span><span class="p">(</span><span class="o">*</span><span class="n">matrices</span><span class="p">)</span>
+
+<span class="c1"># Solve and transform to real space</span>
+<span class="n">u_hat</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>           <span class="c1"># Solution spectral space</span>
+<span class="n">u_hat</span> <span class="o">=</span> <span class="n">H</span><span class="p">(</span><span class="n">u_hat</span><span class="p">,</span> <span class="n">f_hat</span><span class="p">)</span>       <span class="c1"># Solve</span>
+<span class="n">uq</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">u_hat</span><span class="p">)</span>
+
+<span class="c1"># Compare with analytical solution</span>
+<span class="n">uj</span> <span class="o">=</span> <span class="n">ul</span><span class="p">(</span><span class="o">*</span><span class="n">X</span><span class="p">)</span>
+<span class="n">error</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">uj</span><span class="o">-</span><span class="n">uq</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error=</span><span class="si">%2.16e</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">error</span><span class="p">)))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="convergence-test">
+<h3>Convergence test<a class="headerlink" href="#convergence-test" title="Permalink to this headline">¶</a></h3>
+<p>A complete solver is given in Sec. <a class="reference external" href="#sec:3d:complete">Complete solver</a>. This solver is created
+such that it takes in two commandline arguments and prints out the
+<span class="math notranslate nohighlight">\(L_2\)</span>-errornorm of the solution in the end. We can use this to write a short
+script that performs a convergence test. The solver is run like</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>    &gt;&gt;&gt; python dirichlet_poisson3D.py 32 legendre
+    Error=6.5955040031498912e-10
+</pre></div>
+</div>
+<p>for a discretization of size <span class="math notranslate nohighlight">\(\boldsymbol{N}= N^3 = 32^3\)</span> and for the Legendre basis.
+Alternatively, change <code class="docutils literal notranslate"><span class="pre">legendre</span></code> to <code class="docutils literal notranslate"><span class="pre">chebyshev</span></code> for the Chebyshev basis.</p>
+<p>We set up the solver to run for a list of <span class="math notranslate nohighlight">\(N=[8, 10, \ldots, 38]\)</span>, and collect
+the errornorms in arrays to be plotted. Such a script can be easily created
+with the <a class="reference external" href="https://docs.python.org/3/library/subprocess.html">subprocess</a> module</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>    %matplotlib inline
+    
+    import subprocess
+    from numpy import log, array
+    from matplotlib import pyplot as plt
+    
+    N = range(8, 40, 2)
+    error = {}
+    for basis in (&#39;legendre&#39;, &#39;chebyshev&#39;):
+        error[basis] = []
+        for i in range(len(N)):
+            output = subprocess.check_output(&quot;python dirichlet_poisson3D.py {} {}&quot;.format(N[i], basis), shell=True)
+            exec(output) # Error is printed as &quot;Error=%2.16e&quot;%(np.linalg.norm(uj-ua))
+            error[basis].append(Error)
+            if i == 0:
+                print(&quot;Error          hmin           r       &quot;)
+                print(&quot;%2.8e %2.8e %2.8f&quot;%(error[basis][-1], 1./N[i], 0))
+            if i &gt; 0:
+                print(&quot;%2.8e %2.8e %2.8f&quot;%(error[basis][-1], 1./N[i], log(error[basis][-1]/error[basis][-2])/log(N[i-1]/N[i])))
+</pre></div>
+</div>
+<p>The error can be plotted using <a class="reference external" href="https://matplotlib.org">matplotlib</a>, and the
+generated figure is shown in the summary’s Fig. <a class="reference external" href="#fig:3d:ct0">fig:3d:ct0</a>. The spectral
+convergence is evident and we can see that after <span class="math notranslate nohighlight">\(N=25\)</span> roundoff errors dominate
+as the errornorm trails off around <span class="math notranslate nohighlight">\(10^{-13}\)</span>.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>    plt.figure(figsize=(6, 4))
+    for basis, col in zip((&#39;legendre&#39;, &#39;chebyshev&#39;), (&#39;r&#39;, &#39;b&#39;)):
+        plt.semilogy(N, error[basis], col, linewidth=2)
+    plt.title(&#39;Convergence of Poisson solvers 3D&#39;)
+    plt.xlabel(&#39;N&#39;)
+    plt.ylabel(&#39;Error norm&#39;)
+    plt.legend((&#39;Legendre&#39;, &#39;Chebyshev&#39;))
+    plt.savefig(&#39;poisson3D_errornorm.png&#39;)
+    plt.show()
+</pre></div>
+</div>
+<!-- FIGURE: [poisson1D_errornorm.png] Convergence test of Legendre and Chebyshev 1D Poisson solvers. <a id="fig:ct"></a> -->
+</div>
+</div>
+<div class="section" id="complete-solver">
+<h2>Complete solver<a class="headerlink" href="#complete-solver" title="Permalink to this headline">¶</a></h2>
+<p><a id="sec:3d:complete"></a></p>
+<p>A complete solver, that can use either Legendre or Chebyshev bases, chosen as a
+command-line argument, can be found <a class="reference external" href="https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py">here</a>.</p>
+<!-- ======= Bibliography ======= -->
+<ol class="simple">
+<li><p><a id="shen1"></a> <strong>J. Shen</strong>.
+Efficient Spectral-Galerkin Method I. Direct Solvers of Second- and Fourth-Order Equations Using Legendre Polynomials,
+<em>SIAM Journal on Scientific Computing</em>,
+15(6),
+pp. 1489-1505,
+<a class="reference external" href="http://dx.doi.org/10.1137/0915089">doi: 10.1137/0915089</a>,
+1994.</p></li>
+<li><p><a id="shen95"></a> <strong>J. Shen</strong>.
+Efficient Spectral-Galerkin Method II. Direct Solvers of Second- and Fourth-Order Equations Using Chebyshev Polynomials,
+<em>SIAM Journal on Scientific Computing</em>,
+16(1),
+pp. 74-87,
+<a class="reference external" href="http://dx.doi.org/10.1137/0916006">doi: 10.1137/0916006</a>,
+1995.</p></li>
+</ol>
+</div>
+</div>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "spectralDNS/shenfun",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            kernelName: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+              </div>
+              
+        </div>
+    </div>
+    
+    
+    <div class='prev-next-bottom'>
+        
+    <a class='left-prev' id="prev-link" href="kleingordon.html" title="previous page">Demo - Cubic nonlinear Klein-Gordon equation</a>
+    <a class='right-next' id="next-link" href="polarhelmholtz.html" title="next page">Demo - Helmholtz equation in polar coordinates</a>
+
+    </div>
+    <footer class="footer mt-5 mt-md-0">
+    <div class="container">
+      <p>
+        
+          By Mikael Mortensen<br/>
+        
+            &copy; Copyright 2020.<br/>
+      </p>
+    </div>
+  </footer>
+</main>
+
+
+      </div>
+    </div>
+
+    <script src="_static/js/index.js"></script>
+    
+  </body>
+</html>

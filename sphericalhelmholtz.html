@@ -1,0 +1,585 @@
+
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Demo - Helmholtz equation on the unit sphere &#8212; Shenfun executable demos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
+    <link href="_static/css/index.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/sphinx-book-theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="_static/jupyter-sphinx.css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/sphinx-book-theme.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/togglebutton.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
+    <script src="_static/mystnb.js"></script>
+    <script src="_static/sphinx-book-theme.js"></script>
+    <script >var togglebuttonSelector = '.toggle, .admonition.dropdown, .tag_hide_input div.cell_input, .tag_hide-input div.cell_input, .tag_hide_output div.cell_output, .tag_hide-output div.cell_output, .tag_hide_cell.cell, .tag_hide-cell.cell';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"TeX": {"Macros": {"bmat": ["\\left[\\begin{array}"], "emat": ["\\end{array}\\right]"]}, "extensions": ["cancel.js", "AMSmath.js"]}})</script>
+    <script async="async" src="https://unpkg.com/thebelab@latest/lib/index.js"></script>
+    <script >
+        const thebe_selector = ".thebe,.cell"
+        const thebe_selector_input = "pre,.cell_input div.highlight"
+        const thebe_selector_output = ".output,.cell_output"
+    </script>
+    <script async="async" src="_static/sphinx-thebe.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Demo - Kuramato-Sivashinsky equation" href="kuramatosivashinsky.html" />
+    <link rel="prev" title="Demo - Helmholtz equation in polar coordinates" href="polarhelmholtz.html" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="docsearch:language" content="en">
+
+
+
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+<div class="col-12 col-md-3 bd-sidebar site-navigation show" id="site-navigation">
+    
+        <div class="navbar-brand-box">
+<a class="navbar-brand text-wrap" href="index.html">
+  
+  
+  <h1 class="site-logo" id="site-title">Shenfun executable demos</h1>
+  
+</a>
+</div>
+
+<form class="bd-search d-flex align-items-center" action="search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search this book..." aria-label="Search this book..." autocomplete="off" >
+</form>
+
+<nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <ul class="nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="intro.html">
+   Shenfun executable demos
+  </a>
+ </li>
+</ul>
+<p class="caption">
+ <span class="caption-text">
+  Shenfun demos
+ </span>
+</p>
+<ul class="current nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="poisson.html">
+   Demo - 1D Poisson’s equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="kleingordon.html">
+   Demo - Cubic nonlinear Klein-Gordon equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="poisson3d.html">
+   Demo - 3D Poisson’s equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="polarhelmholtz.html">
+   Demo - Helmholtz equation in polar coordinates
+  </a>
+ </li>
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   Demo - Helmholtz equation on the unit sphere
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="kuramatosivashinsky.html">
+   Demo - Kuramato-Sivashinsky equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="stokes.html">
+   Demo - Stokes equations
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="drivencavity.html">
+   Demo - Lid driven cavity
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="rayleighbenard.html">
+   Demo - Rayleigh Benard
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="functions.html">
+   Demo - Working with Functions
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="surfaceintegration.html">
+   Demo - Integration of functions
+  </a>
+ </li>
+</ul>
+
+</nav>
+
+ <!-- To handle the deprecated key -->
+
+<div class="navbar_extra_footer">
+  Powered by <a href="https://jupyterbook.org">Jupyter Book</a>
+</div>
+
+</div>
+
+
+          
+
+
+          
+<main class="col py-md-3 pl-md-4 bd-content overflow-auto" role="main">
+    
+    <div class="row topbar fixed-top container-xl">
+    <div class="col-12 col-md-3 bd-topbar-whitespace site-navigation show">
+    </div>
+    <div class="col pl-2 topbar-main">
+        
+        <button id="navbar-toggler" class="navbar-toggler ml-0" type="button" data-toggle="collapse"
+            data-toggle="tooltip" data-placement="bottom" data-target=".site-navigation" aria-controls="navbar-menu"
+            aria-expanded="true" aria-label="Toggle navigation" aria-controls="site-navigation"
+            title="Toggle navigation" data-toggle="tooltip" data-placement="left">
+            <i class="fas fa-bars"></i>
+            <i class="fas fa-arrow-left"></i>
+            <i class="fas fa-arrow-up"></i>
+        </button>
+        
+        <div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn" aria-label="Download this page"><i
+            class="fas fa-download"></i></button>
+
+    
+    <div class="dropdown-buttons">
+        <!-- ipynb file if we had a myst markdown file -->
+        
+        <!-- Download raw file -->
+        <a class="dropdown-buttons" href="_sources/sphericalhelmholtz.ipynb"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Download source file" data-toggle="tooltip"
+                data-placement="left">.ipynb</button></a>
+        <!-- Download PDF via print -->
+        <button type="button" id="download-print" class="btn btn-secondary topbarbtn" title="Print to PDF"
+            onClick="window.print()" data-toggle="tooltip" data-placement="left">.pdf</button>
+    </div>
+    
+</div>
+        <!-- Source interaction buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Connect with source repository"><i class="fab fa-github"></i></button>
+    <div class="dropdown-buttons sourcebuttons">
+        <a class="repository-button"
+            href="https://github.com/spectralDNS/shenfun"><button type="button" class="btn btn-secondary topbarbtn"
+                data-toggle="tooltip" data-placement="left" title="Source repository"><i
+                    class="fab fa-github"></i>repository</button></a>
+        
+        
+    </div>
+</div>
+
+
+        <!-- Full screen (wrap in <a> to have style consistency -->
+        <a class="full-screen-button"><button type="button" class="btn btn-secondary topbarbtn" data-toggle="tooltip"
+                data-placement="bottom" onclick="toggleFullScreen()" title="Fullscreen mode"><i
+                    class="fas fa-expand"></i></button></a>
+
+        <!-- Launch buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Launch interactive content"><i class="fas fa-rocket"></i></button>
+    <div class="dropdown-buttons">
+        
+        <a class="binder-button" href="https://mybinder.org/v2/gh/spectralDNS/shenfun/master?urlpath=tree/./docs/book/sphericalhelmholtz.ipynb"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Launch Binder" data-toggle="tooltip"
+                data-placement="left"><img class="binder-button-logo"
+                    src="_static/images/logo_binder.svg"
+                    alt="Interact on binder">Binder</button></a>
+        
+        
+        
+        <button type="button" class="btn btn-secondary topbarbtn"
+            onclick="initThebeSBT()" title="Launch Thebe" data-toggle="tooltip" data-placement="left"><i
+                class="fas fa-play"></i><span style="margin-left: .4em;">Live Code</span></button>
+        
+    </div>
+</div>
+
+    </div>
+
+    <!-- Table of contents -->
+    <div class="d-none d-md-block col-md-2 bd-toc show">
+        <div class="tocsection onthispage pt-5 pb-3">
+            <i class="fas fa-list"></i> On this page
+        </div>
+        <nav id="bd-toc-nav">
+            <ul class="nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#helmholtz-equation">
+   Helmholtz equation
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#implementation">
+   Implementation
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#postprocessing">
+   Postprocessing
+  </a>
+ </li>
+</ul>
+
+        </nav>
+    </div>
+</div>
+    <div id="main-content" class="row">
+        <div class="col-12 col-md-9 pl-md-3 pr-md-0">
+        
+              <div>
+                
+  <!-- dom:TITLE: Demo - Helmholtz equation on the unit sphere -->
+<div class="section" id="demo-helmholtz-equation-on-the-unit-sphere">
+<h1>Demo - Helmholtz equation on the unit sphere<a class="headerlink" href="#demo-helmholtz-equation-on-the-unit-sphere" title="Permalink to this headline">¶</a></h1>
+<!-- dom:AUTHOR: Mikael Mortensen Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo. -->
+<!-- Author: -->  
+<p><strong>Mikael Mortensen</strong> (email: <code class="docutils literal notranslate"><span class="pre">mikaem&#64;math.uio.no</span></code>), Department of Mathematics, University of Oslo.</p>
+<p>Date: <strong>Aug 21, 2020</strong></p>
+<p>Copyright 2020, Mikael Mortensen. Released under CC Attribution 4.0 license</p>
+<p><strong>Summary.</strong> This is a demonstration of how the Python module <a class="reference external" href="https://github.com/spectralDNS/shenfun">shenfun</a> can be used to solve the
+Helmholtz equation on a unit sphere, using spherical
+coordinates. This demo is implemented in
+a single Python file <a class="reference external" href="https://github.com/spectralDNS/shenfun/blob/master/demo/sphere_helmholtz.py">sphere_helmholtz.py</a>.
+If requested the solver will run in parallel using MPI.</p>
+<!-- dom:FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/figures/spherewhite4.png, width=700 frac=1] Helmholtz on the unit sphere. <a id="fig:helmholtz"></a> -->
+<!-- begin figure -->
+<p><a id="fig:helmholtz"></a></p>
+<p>Helmholtz on the unit sphere.</p>
+<img src="https://rawgit.com/spectralDNS/spectralutilities/master/figures/spherewhite4.png" width=700>
+<!-- end figure -->
+<div class="section" id="helmholtz-equation">
+<h2>Helmholtz equation<a class="headerlink" href="#helmholtz-equation" title="Permalink to this headline">¶</a></h2>
+<p><a id="demo:spherical_helmholtz"></a></p>
+<p>The Helmholtz equation is given as</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:helmholtz"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+-\nabla^2 u(\boldsymbol{x}) + \alpha u(\boldsymbol{x}) = f(\boldsymbol{x}) \quad \text{for }\, \boldsymbol{x} \in \Omega = \{(x, y, z): x^2+y^2+z^2 = 1\}, \label{eq:helmholtz} \tag{1}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto1"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+\label{_auto1} \tag{2}
+\end{equation}
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(u(\boldsymbol{x})\)</span> is the solution, <span class="math notranslate nohighlight">\(f(\boldsymbol{x})\)</span> is a function and <span class="math notranslate nohighlight">\(\alpha\)</span> a constant.
+We use spherical coordinates <span class="math notranslate nohighlight">\((\theta, \phi)\)</span>, defined as</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto2"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+ x = r \sin \theta \cos \phi , 
+\label{_auto2} \tag{3}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto3"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+ y = r \sin \theta \sin \phi, 
+\label{_auto3} \tag{4}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto4"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+ z = r \cos \theta
+\label{_auto4} \tag{5}
+\end{equation}
+\]</div>
+<p>which (with <span class="math notranslate nohighlight">\(r=1\)</span>) leads to a 2D Cartesian product mesh <span class="math notranslate nohighlight">\((\theta, \phi) \in (0, \pi) \times [0, 2\pi)\)</span>
+suitable for numerical implementations. There are no boundary
+conditions on the problem under consideration.
+However, with the chosen Cartesian mesh, periodic
+boundary conditions are required for the <span class="math notranslate nohighlight">\(\phi\)</span>-direction. As such,
+the <span class="math notranslate nohighlight">\(\phi\)</span>-direction will use a Fourier basis <span class="math notranslate nohighlight">\(\exp(\imath k \phi)\)</span>.</p>
+<p>A regular Chebyshev or Legendre basis
+<span class="math notranslate nohighlight">\(\psi_j(\theta) = \gamma_j(2\theta/\pi-1)\)</span> will be
+used for the <span class="math notranslate nohighlight">\(\theta\)</span>-direction, where <span class="math notranslate nohighlight">\(\gamma_j\)</span> could be either
+the Chebyshev polynomial of first kind <span class="math notranslate nohighlight">\(T_j\)</span> or the Legendre
+polynomial <span class="math notranslate nohighlight">\(L_j\)</span>. Note the mapping from real coordinates <span class="math notranslate nohighlight">\(\theta\)</span>
+to computational coordinates in domain <span class="math notranslate nohighlight">\([-1, 1]\)</span>.</p>
+<p>The spherical basis functions are as such</p>
+<div class="math notranslate nohighlight">
+\[
+v_{jk}(\theta, \phi) = \psi_j(\theta) \exp(\imath k \phi),
+\]</div>
+<p>and we look for solutions</p>
+<div class="math notranslate nohighlight">
+\[
+u(\theta, \phi) = \sum_{j} \sum_{k} \hat{u}_{jk} v_{jk}(\theta, \phi).
+\]</div>
+<p>A discrete Fourier approximation space with <span class="math notranslate nohighlight">\(N\)</span> basis functions is then</p>
+<div class="math notranslate nohighlight">
+\[
+V_F^N = \text{span} \{\exp(\imath k \theta)\}, \text{ for } k \in K,
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(K = \{-N/2, -N/2+1, \ldots, N/2-1\}\)</span>. For this demo we assume
+that the solution is complex, and as such there is no simplification
+possible for Hermitian symmetry.</p>
+<p>The following approximation space is used for the <span class="math notranslate nohighlight">\(\theta\)</span>-direction</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto5"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+V^N = \text{span} \{\psi_j\}_{j=0}^{N-1} 
+\label{_auto5} \tag{6}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto6"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+\label{_auto6} \tag{7}
+\end{equation}
+\]</div>
+<p>and the variational formulation of the problem reads:
+find <span class="math notranslate nohighlight">\(u \in V^N \otimes V_F^N\)</span> such that</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:u0"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+   \int_{\Omega} (-\nabla^2 u + \alpha u) v w d\sigma = \int_{\Omega} f v w d\sigma, \quad \forall \, v \in V^N \otimes V_F^N.
+\label{eq:u0} \tag{8}
+   \end{equation}
+\]</div>
+<p>Note that integration over the domain is done using
+spherical coordinates with an integral measure of <span class="math notranslate nohighlight">\(d\sigma=\sin \theta d\theta d\phi\)</span>.</p>
+</div>
+<div class="section" id="implementation">
+<h2>Implementation<a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p><a id="demo:sphericalimplementation"></a></p>
+<p>A complete implementation is found in the file <a class="reference external" href="https://github.com/spectralDNS/shenfun/blob/master/demo/sphere_helmholtz.py">sphere_helmholtz.py</a>.
+Here we give a brief explanation for the implementation. Start by
+importing all functionality from <a class="reference external" href="https://github.com/spectralDNS/shenfun">shenfun</a>
+and <a class="reference external" href="https://sympy.org">sympy</a>, where Sympy is required for handeling the
+spherical coordinates.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">shenfun</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">sympy</span> <span class="k">as</span> <span class="nn">sp</span>
+
+<span class="c1"># Define spherical coordinates with unit radius</span>
+<span class="n">r</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">theta</span><span class="p">,</span> <span class="n">phi</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">symbols</span><span class="p">(</span><span class="s1">&#39;x,y&#39;</span><span class="p">,</span> <span class="n">real</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">positive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">psi</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">phi</span><span class="p">)</span>
+<span class="n">rv</span> <span class="o">=</span> <span class="p">(</span><span class="n">r</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">phi</span><span class="p">),</span> <span class="n">r</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">phi</span><span class="p">),</span> <span class="n">r</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Note that the position vector <code class="docutils literal notranslate"><span class="pre">rv</span></code> has three components (for <span class="math notranslate nohighlight">\((x, y, z)\)</span>)
+even though the computational domain is only 2D.
+Also note that Sympy symbols are both positive and real, and <span class="math notranslate nohighlight">\(\theta\)</span> is
+chosen to be along the first axis and <span class="math notranslate nohighlight">\(\phi\)</span> second. This has to agree with
+the next step, which is the creation of tensorproductspaces
+<span class="math notranslate nohighlight">\(V^N \otimes V_F^N\)</span>.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">N</span><span class="p">,</span> <span class="n">M</span> <span class="o">=</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">30</span>
+<span class="n">L0</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>
+<span class="n">F1</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="s1">&#39;F&#39;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;D&#39;</span><span class="p">)</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">TensorProductSpace</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="p">(</span><span class="n">L0</span><span class="p">,</span> <span class="n">F1</span><span class="p">),</span> <span class="n">coordinates</span><span class="o">=</span><span class="p">(</span><span class="n">psi</span><span class="p">,</span> <span class="n">rv</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Spherical coordinates are ensured by feeding <code class="docutils literal notranslate"><span class="pre">coordinates=(psi,</span> <span class="pre">rv)</span></code>
+to <code class="docutils literal notranslate"><span class="pre">TensorProductSpace</span></code>. Operators like <code class="docutils literal notranslate"><span class="pre">div</span></code>
+<code class="docutils literal notranslate"><span class="pre">grad</span></code> and  <code class="docutils literal notranslate"><span class="pre">curl</span></code> will now work on
+items of <code class="docutils literal notranslate"><span class="pre">Function</span></code>, <code class="docutils literal notranslate"><span class="pre">TestFunction</span></code> and
+<code class="docutils literal notranslate"><span class="pre">TrialFunction</span></code> using a spherical coordinate system.</p>
+<p>To define the equation (<a class="reference external" href="#eq:u0">8</a>) we first declare
+these test- and trialfunctions, and then use code that
+is very similar to the mathematics.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alpha</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">v</span> <span class="o">=</span> <span class="n">TestFunction</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+<span class="n">u</span> <span class="o">=</span> <span class="n">TrialFunction</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+
+<span class="n">mats</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="o">-</span><span class="n">div</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">))</span><span class="o">+</span><span class="n">alpha</span><span class="o">*</span><span class="n">u</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Here <code class="docutils literal notranslate"><span class="pre">mats</span></code> will be a list containing several tensor product
+matrices in the form of
+<code class="docutils literal notranslate"><span class="pre">TPMatrix</span></code>. Since there is only one directions with
+non-diagonal matrices (<span class="math notranslate nohighlight">\(\theta\)</span>-direction) we
+can use the generic <code class="docutils literal notranslate"><span class="pre">SolverGeneric1ND</span></code> solver.
+Note that some of the non-diagonal matrices will be dense,
+which is a weakness of the current method. Also note
+that with Legendre one can use integration by parts
+instead</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span>        <span class="n">mats</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
+        <span class="n">mats</span> <span class="o">+=</span> <span class="p">[</span><span class="n">inner</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">alpha</span><span class="o">*</span><span class="n">u</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p>To solve the problem we also need to define the function <span class="math notranslate nohighlight">\(f(\theta, r)\)</span>.
+To this end we use sympy and the method of
+manufactured solution to define a possible solution <code class="docutils literal notranslate"><span class="pre">ue</span></code>,
+and then compute <code class="docutils literal notranslate"><span class="pre">f</span></code> exactly using exact differentiation. We use
+the <a class="reference external" href="https://docs.sympy.org/latest/modules/functions/special.html#spherical-harmonics">spherical harmonics function</a>
+to define an analytical solution</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alpha</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">sph</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">functions</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">spherical_harmonics</span><span class="o">.</span><span class="n">Ynm</span>
+<span class="n">ue</span> <span class="o">=</span> <span class="n">sph</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">phi</span><span class="p">)</span>
+
+<span class="c1"># Compute the right hand side on the quadrature mesh</span>
+<span class="c1"># That is, compute f = -div(grad(ue)) + alpha*ue</span>
+<span class="n">f</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">div</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">))</span><span class="o">+</span><span class="n">alpha</span><span class="o">*</span><span class="n">u</span><span class="p">)</span><span class="o">.</span><span class="n">tosympy</span><span class="p">(</span><span class="n">basis</span><span class="o">=</span><span class="n">ue</span><span class="p">,</span> <span class="n">psi</span><span class="o">=</span><span class="n">psi</span><span class="p">)</span>
+<span class="n">fj</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">buffer</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+
+<span class="c1"># Take scalar product</span>
+<span class="n">f_hat</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+<span class="n">f_hat</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">fj</span><span class="p">,</span> <span class="n">output_array</span><span class="o">=</span><span class="n">f_hat</span><span class="p">)</span>
+
+<span class="n">u_hat</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+<span class="n">Sol</span> <span class="o">=</span> <span class="n">la</span><span class="o">.</span><span class="n">SolverGeneric1ND</span><span class="p">(</span><span class="n">mats</span><span class="p">)</span>
+<span class="n">u_hat</span> <span class="o">=</span> <span class="n">Sol</span><span class="p">(</span><span class="n">f_hat</span><span class="p">,</span> <span class="n">u_hat</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Having found the solution in spectral space all that is
+left is to transform it back to real space.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">uj</span> <span class="o">=</span> <span class="n">u_hat</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+<span class="n">uq</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">buffer</span><span class="o">=</span><span class="n">ue</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error =&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">uj</span><span class="o">-</span><span class="n">uq</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="postprocessing">
+<h2>Postprocessing<a class="headerlink" href="#postprocessing" title="Permalink to this headline">¶</a></h2>
+<p>We can refine the solution to make it look better,
+and plot on the unit sphere using <a class="reference external" href="https://docs.enthought.com/mayavi/mayavi/">mayavi</a>,
+leading to the figure in the top of this demo.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span>        <span class="n">u_hat2</span> <span class="o">=</span> <span class="n">u_hat</span><span class="o">.</span><span class="n">refine</span><span class="p">([</span><span class="n">N</span><span class="o">*</span><span class="mi">2</span><span class="p">,</span> <span class="n">M</span><span class="o">*</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">ur</span> <span class="o">=</span> <span class="n">u_hat2</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+        <span class="kn">from</span> <span class="nn">mayavi</span> <span class="kn">import</span> <span class="n">mlab</span>
+        <span class="n">xx</span><span class="p">,</span> <span class="n">yy</span><span class="p">,</span> <span class="n">zz</span> <span class="o">=</span> <span class="n">u_hat2</span><span class="o">.</span><span class="n">function_space</span><span class="p">()</span><span class="o">.</span><span class="n">local_curvilinear_mesh</span><span class="p">()</span>
+        <span class="c1"># Wrap periodic direction around</span>
+        <span class="k">if</span> <span class="n">T</span><span class="o">.</span><span class="n">bases</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">domain</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">):</span>
+            <span class="n">xx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">xx</span><span class="p">,</span> <span class="n">xx</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">][:,</span> <span class="kc">None</span><span class="p">]])</span>
+            <span class="n">yy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">yy</span><span class="p">,</span> <span class="n">yy</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">][:,</span> <span class="kc">None</span><span class="p">]])</span>
+            <span class="n">zz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">zz</span><span class="p">,</span> <span class="n">zz</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">][:,</span> <span class="kc">None</span><span class="p">]])</span>
+            <span class="n">ur</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">ur</span><span class="p">,</span> <span class="n">ur</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">][:,</span> <span class="kc">None</span><span class="p">]])</span>
+        <span class="n">mlab</span><span class="o">.</span><span class="n">mesh</span><span class="p">(</span><span class="n">xx</span><span class="p">,</span> <span class="n">yy</span><span class="p">,</span> <span class="n">zz</span><span class="p">,</span> <span class="n">scalars</span><span class="o">=</span><span class="n">ur</span><span class="o">.</span><span class="n">imag</span><span class="p">,</span> <span class="n">colormap</span><span class="o">=</span><span class="s1">&#39;jet&#39;</span><span class="p">)</span>
+        <span class="n">mlab</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<!-- ===== Bibliography ===== --></div>
+</div>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "spectralDNS/shenfun",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            kernelName: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+              </div>
+              
+        </div>
+    </div>
+    
+    
+    <div class='prev-next-bottom'>
+        
+    <a class='left-prev' id="prev-link" href="polarhelmholtz.html" title="previous page">Demo - Helmholtz equation in polar coordinates</a>
+    <a class='right-next' id="next-link" href="kuramatosivashinsky.html" title="next page">Demo - Kuramato-Sivashinsky equation</a>
+
+    </div>
+    <footer class="footer mt-5 mt-md-0">
+    <div class="container">
+      <p>
+        
+          By Mikael Mortensen<br/>
+        
+            &copy; Copyright 2020.<br/>
+      </p>
+    </div>
+  </footer>
+</main>
+
+
+      </div>
+    </div>
+
+    <script src="_static/js/index.js"></script>
+    
+  </body>
+</html>

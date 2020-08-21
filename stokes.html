@@ -1,0 +1,855 @@
+
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Demo - Stokes equations &#8212; Shenfun executable demos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
+    <link href="_static/css/index.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/sphinx-book-theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="_static/jupyter-sphinx.css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/sphinx-book-theme.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/togglebutton.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
+    <script src="_static/mystnb.js"></script>
+    <script src="_static/sphinx-book-theme.js"></script>
+    <script >var togglebuttonSelector = '.toggle, .admonition.dropdown, .tag_hide_input div.cell_input, .tag_hide-input div.cell_input, .tag_hide_output div.cell_output, .tag_hide-output div.cell_output, .tag_hide_cell.cell, .tag_hide-cell.cell';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"TeX": {"Macros": {"bmat": ["\\left[\\begin{array}"], "emat": ["\\end{array}\\right]"]}, "extensions": ["cancel.js", "AMSmath.js"]}})</script>
+    <script async="async" src="https://unpkg.com/thebelab@latest/lib/index.js"></script>
+    <script >
+        const thebe_selector = ".thebe,.cell"
+        const thebe_selector_input = "pre,.cell_input div.highlight"
+        const thebe_selector_output = ".output,.cell_output"
+    </script>
+    <script async="async" src="_static/sphinx-thebe.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Demo - Lid driven cavity" href="drivencavity.html" />
+    <link rel="prev" title="Demo - Kuramato-Sivashinsky equation" href="kuramatosivashinsky.html" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="docsearch:language" content="en">
+
+
+
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+<div class="col-12 col-md-3 bd-sidebar site-navigation show" id="site-navigation">
+    
+        <div class="navbar-brand-box">
+<a class="navbar-brand text-wrap" href="index.html">
+  
+  
+  <h1 class="site-logo" id="site-title">Shenfun executable demos</h1>
+  
+</a>
+</div>
+
+<form class="bd-search d-flex align-items-center" action="search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search this book..." aria-label="Search this book..." autocomplete="off" >
+</form>
+
+<nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <ul class="nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="intro.html">
+   Shenfun executable demos
+  </a>
+ </li>
+</ul>
+<p class="caption">
+ <span class="caption-text">
+  Shenfun demos
+ </span>
+</p>
+<ul class="current nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="poisson.html">
+   Demo - 1D Poisson’s equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="kleingordon.html">
+   Demo - Cubic nonlinear Klein-Gordon equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="poisson3d.html">
+   Demo - 3D Poisson’s equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="polarhelmholtz.html">
+   Demo - Helmholtz equation in polar coordinates
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="sphericalhelmholtz.html">
+   Demo - Helmholtz equation on the unit sphere
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="kuramatosivashinsky.html">
+   Demo - Kuramato-Sivashinsky equation
+  </a>
+ </li>
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   Demo - Stokes equations
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="drivencavity.html">
+   Demo - Lid driven cavity
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="rayleighbenard.html">
+   Demo - Rayleigh Benard
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="functions.html">
+   Demo - Working with Functions
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="surfaceintegration.html">
+   Demo - Integration of functions
+  </a>
+ </li>
+</ul>
+
+</nav>
+
+ <!-- To handle the deprecated key -->
+
+<div class="navbar_extra_footer">
+  Powered by <a href="https://jupyterbook.org">Jupyter Book</a>
+</div>
+
+</div>
+
+
+          
+
+
+          
+<main class="col py-md-3 pl-md-4 bd-content overflow-auto" role="main">
+    
+    <div class="row topbar fixed-top container-xl">
+    <div class="col-12 col-md-3 bd-topbar-whitespace site-navigation show">
+    </div>
+    <div class="col pl-2 topbar-main">
+        
+        <button id="navbar-toggler" class="navbar-toggler ml-0" type="button" data-toggle="collapse"
+            data-toggle="tooltip" data-placement="bottom" data-target=".site-navigation" aria-controls="navbar-menu"
+            aria-expanded="true" aria-label="Toggle navigation" aria-controls="site-navigation"
+            title="Toggle navigation" data-toggle="tooltip" data-placement="left">
+            <i class="fas fa-bars"></i>
+            <i class="fas fa-arrow-left"></i>
+            <i class="fas fa-arrow-up"></i>
+        </button>
+        
+        <div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn" aria-label="Download this page"><i
+            class="fas fa-download"></i></button>
+
+    
+    <div class="dropdown-buttons">
+        <!-- ipynb file if we had a myst markdown file -->
+        
+        <!-- Download raw file -->
+        <a class="dropdown-buttons" href="_sources/stokes.ipynb"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Download source file" data-toggle="tooltip"
+                data-placement="left">.ipynb</button></a>
+        <!-- Download PDF via print -->
+        <button type="button" id="download-print" class="btn btn-secondary topbarbtn" title="Print to PDF"
+            onClick="window.print()" data-toggle="tooltip" data-placement="left">.pdf</button>
+    </div>
+    
+</div>
+        <!-- Source interaction buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Connect with source repository"><i class="fab fa-github"></i></button>
+    <div class="dropdown-buttons sourcebuttons">
+        <a class="repository-button"
+            href="https://github.com/spectralDNS/shenfun"><button type="button" class="btn btn-secondary topbarbtn"
+                data-toggle="tooltip" data-placement="left" title="Source repository"><i
+                    class="fab fa-github"></i>repository</button></a>
+        
+        
+    </div>
+</div>
+
+
+        <!-- Full screen (wrap in <a> to have style consistency -->
+        <a class="full-screen-button"><button type="button" class="btn btn-secondary topbarbtn" data-toggle="tooltip"
+                data-placement="bottom" onclick="toggleFullScreen()" title="Fullscreen mode"><i
+                    class="fas fa-expand"></i></button></a>
+
+        <!-- Launch buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Launch interactive content"><i class="fas fa-rocket"></i></button>
+    <div class="dropdown-buttons">
+        
+        <a class="binder-button" href="https://mybinder.org/v2/gh/spectralDNS/shenfun/master?urlpath=tree/./docs/book/stokes.ipynb"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Launch Binder" data-toggle="tooltip"
+                data-placement="left"><img class="binder-button-logo"
+                    src="_static/images/logo_binder.svg"
+                    alt="Interact on binder">Binder</button></a>
+        
+        
+        
+        <button type="button" class="btn btn-secondary topbarbtn"
+            onclick="initThebeSBT()" title="Launch Thebe" data-toggle="tooltip" data-placement="left"><i
+                class="fas fa-play"></i><span style="margin-left: .4em;">Live Code</span></button>
+        
+    </div>
+</div>
+
+    </div>
+
+    <!-- Table of contents -->
+    <div class="d-none d-md-block col-md-2 bd-toc show">
+        <div class="tocsection onthispage pt-5 pb-3">
+            <i class="fas fa-list"></i> On this page
+        </div>
+        <nav id="bd-toc-nav">
+            <ul class="nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#stokes-equations">
+   Stokes’ equations
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#mixed-variational-form">
+     Mixed variational form
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#implementation">
+   Implementation
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#preamble">
+     Preamble
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#manufactured-solution">
+     Manufactured solution
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#tensor-product-spaces">
+     Tensor product spaces
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#complete-solver">
+   Complete solver
+  </a>
+ </li>
+</ul>
+
+        </nav>
+    </div>
+</div>
+    <div id="main-content" class="row">
+        <div class="col-12 col-md-9 pl-md-3 pr-md-0">
+        
+              <div>
+                
+  <!-- dom:TITLE: Demo - Stokes equations -->
+<div class="section" id="demo-stokes-equations">
+<h1>Demo - Stokes equations<a class="headerlink" href="#demo-stokes-equations" title="Permalink to this headline">¶</a></h1>
+<!-- dom:AUTHOR: Mikael Mortensen Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo. -->
+<!-- Author: -->  
+<p><strong>Mikael Mortensen</strong> (email: <code class="docutils literal notranslate"><span class="pre">mikaem&#64;math.uio.no</span></code>), Department of Mathematics, University of Oslo.</p>
+<p>Date: <strong>Aug 21, 2020</strong></p>
+<p>Copyright 2020, Mikael Mortensen. Released under CC Attribution 4.0 license</p>
+<p><strong>Summary.</strong> The Stokes equations describe the flow of highly viscous fluids.
+This is a demonstration of how the Python module <a class="reference external" href="https://github.com/spectralDNS/shenfun">shenfun</a> can be used to solve Stokes
+equations using a  mixed (coupled) basis in a 3D tensor product domain.
+We assume homogeneous Dirichlet boundary conditions in one direction
+and periodicity in the remaining two. The solver described runs with MPI
+without any further considerations required from the user.
+The solver assembles a block matrix with sparsity pattern as shown below
+for the Legendre basis.</p>
+<!-- dom:FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/figures/BlockMat.png] Coupled block matrix for Stokes equations. <a id="fig:BlockMat"></a> -->
+<!-- begin figure -->
+<p><a id="fig:BlockMat"></a></p>
+<p>Coupled block matrix for Stokes equations.</p>
+<img src="https://rawgit.com/spectralDNS/spectralutilities/master/figures/BlockMat.png" >
+<!-- end figure -->
+<div class="section" id="stokes-equations">
+<h2>Stokes’ equations<a class="headerlink" href="#stokes-equations" title="Permalink to this headline">¶</a></h2>
+<p><a id="demo:stokes"></a></p>
+<p>Stokes’ equations are given in strong form as</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+\nabla^2 \mathbf{u} - \nabla p &amp;= \mathbf{f} \quad \text{in }  \Omega, \\ 
+\nabla \cdot \mathbf{u} &amp;= h \quad \text{in } \Omega  \\ 
+\int_{\Omega} p dx &amp;= 0
+\end{align*}
+\end{split}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\mathbf{u}\)</span> and <span class="math notranslate nohighlight">\(p\)</span> are, respectively, the
+fluid velocity vector and pressure, and the domain
+<span class="math notranslate nohighlight">\(\Omega = [0, 2\pi]^2 \times [-1, 1]\)</span>. The flow is assumed periodic
+in <span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(y\)</span>-directions, whereas there is a no-slip homogeneous Dirichlet
+boundary condition on <span class="math notranslate nohighlight">\(\mathbf{u}\)</span> on the boundaries of the <span class="math notranslate nohighlight">\(z\)</span>-direction, i.e.,
+<span class="math notranslate nohighlight">\(\mathbf{u}(x, y, \pm 1) = (0, 0, 0)\)</span>. (Note that we can configure shenfun with
+non-periodicity in any of the three directions. However, since we are to
+solve linear algebraic systems in the non-periodic direction, there is a speed
+benefit from having the nonperiodic direction last. This has to do with Numpy
+using a C-style row-major storage of arrays by default.)
+The right hand side vector <span class="math notranslate nohighlight">\(\mathbf{f}(\mathbf{x})\)</span> is an external applied body force.
+The right hand side <span class="math notranslate nohighlight">\(h\)</span> is usually zero in the regular Stokes equations. Here
+we include it because it will be nonzero in the verification, which is using the
+method of manufactured solutions. Note that the final <span class="math notranslate nohighlight">\(\int_{\Omega} p dx = 0\)</span>
+is there because there is no Dirichlet boundary condition on the pressure
+and the system of equations would otherwise be ill conditioned.</p>
+<p>To solve Stokes’ equations with the Galerkin method we need basis
+functions for both velocity and pressure. A
+Dirichlet basis will be used for velocity, whereas there is no boundary restriction
+on the pressure basis. For both three-dimensional bases we will use one basis
+function for the <span class="math notranslate nohighlight">\(x\)</span>-direction,
+<span class="math notranslate nohighlight">\(\mathcal{X}(x)\)</span>, one for the <span class="math notranslate nohighlight">\(y\)</span>-direction, <span class="math notranslate nohighlight">\(\mathcal{Y}(y)\)</span>, and one for the
+<span class="math notranslate nohighlight">\(z\)</span>-direction, <span class="math notranslate nohighlight">\(\mathcal{Z}(z)\)</span>. And
+then we create three-dimensional basis functions like</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto1"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+v(x, y, z) = \mathcal{X}(x) \mathcal{Y}(y) \mathcal{Z} (z).
+\label{_auto1} \tag{1}
+\end{equation}
+\]</div>
+<p>The basis functions <span class="math notranslate nohighlight">\(\mathcal{X}(x)\)</span> and <span class="math notranslate nohighlight">\(\mathcal{Y}(y)\)</span> are chosen as Fourier
+exponentials, since these functions are periodic:</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto2"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\mathcal{X}_l(x) = e^{\imath l x}, \forall \, l \in \mathbf{l}^{N_0}, 
+\label{_auto2} \tag{2}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto3"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+\mathcal{Y}_m(y) =  e^{\imath m y}, \forall \, m \in \mathbf{m}^{N_1},
+\label{_auto3} \tag{3}
+\end{equation}
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(\mathbf{l}^{N_0} = (-N_0/2, -N_0/2+1, \ldots, N_0/2-1)\)</span> and
+<span class="math notranslate nohighlight">\(\mathbf{m}^{N_1} = (-N_1/2, -N_1/2+1, \ldots, N_1/2-1)\)</span>.
+The size of the discretized problem in real physical space is
+<span class="math notranslate nohighlight">\(\mathbf{N} = (N_0, N_1, N_2)\)</span>, i.e., there are <span class="math notranslate nohighlight">\(N_0 \cdot N_1 \cdot N_2\)</span> quadrature points
+in total.</p>
+<p>The basis functions for <span class="math notranslate nohighlight">\(\mathcal{Z}(z)\)</span> remain to be decided.
+For the velocity we need homogeneous Dirichlet boundary conditions, and for this
+we use composite Legendre or Chebyshev polynomials</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto4"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\mathcal{Z}^0_n(z) = \phi_n(z) - \phi_{n+2}(z), \forall \, n \in \mathbf{n}^{N_2-2},
+\label{_auto4} \tag{4}
+\end{equation}
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(\phi_n\)</span> is the n’th Legendre or Chebyshev polynomial of the first kind.
+<span class="math notranslate nohighlight">\(\mathbf{n}^{N_2-2} = (0, 1, \ldots, N_2-3)\)</span>, and the zero on <span class="math notranslate nohighlight">\(\mathcal{Z}^0\)</span>
+is there to indicate the zero value on the boundary.</p>
+<p>The pressure basis that comes with no restrictions for the boundary is a
+little trickier. The reason for this has to do with
+inf-sup stability. The obvious choice of basis is the regular Legendre or
+Chebyshev basis, which is denoted as</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:Zn"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\mathcal{Z}_n(z) = \phi_n(z),  \forall \, n \in \mathbf{n}^{N_2}. \label{eq:Zn} \tag{5}
+\end{equation}
+\]</div>
+<p>The problem is that for the natural choice of <span class="math notranslate nohighlight">\(n \in (0, 1, \ldots, N_2-1)\)</span>
+there is a nullspace and one degree of freedom remains unresolved. It turns out
+that the proper choice for the pressure basis is simply (<a class="reference external" href="#eq:Zn">5</a>) for
+<span class="math notranslate nohighlight">\(n \in \mathbf{n}^{N_2-2}\)</span>. (Also remember that we have to fix <span class="math notranslate nohighlight">\(\int_{\Omega} p dx = 0\)</span>.)</p>
+<p>With given basis functions we obtain the spaces</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto5"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+V^{N_0} = \text{span}\{ \mathcal{X}_l \}_{l\in\mathbf{l}^{N_0}}, 
+\label{_auto5} \tag{6}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto6"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+V^{N_1} = \text{span}\{ \mathcal{Y}_m \}_{m\in\mathbf{m}^{N_1}}, 
+\label{_auto6} \tag{7}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto7"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+V^{N_2} = \text{span}\{ \mathcal{Z}_n \}_{n\in\mathbf{n}^{N_2-2}}, 
+\label{_auto7} \tag{8}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto8"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+V_0^{N_2} = \text{span}\{ \mathcal{Z}^0_n \}_{n\in\mathbf{n}^{N_2-2}},
+\label{_auto8} \tag{9}
+\end{equation}
+\]</div>
+<p>and from these we create two different tensor product spaces</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto9"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+W_0^{\mathbf{N}}(\mathbf{x}) = V^{N_0}(x) \otimes V^{N_1}(y) \otimes V_0^{N_2}(z), 
+\label{_auto9} \tag{10}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto10"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+W^{\mathbf{N}}(\mathbf{x}) = V^{N_0}(x) \otimes V^{N_1}(y) \otimes V^{N_2}(z).
+\label{_auto10} \tag{11}
+\end{equation}
+\]</div>
+<p>The velocity vector is using a mixed basis, such that we will look for
+solutions <span class="math notranslate nohighlight">\(\mathbf{u} \in [W_0^{\mathbf{N}}]^3 \, (=W_0^{\mathbf{N}} \times W_0^{\mathbf{N}} \times W_0^{\mathbf{N}})\)</span>,
+whereas we look for the pressure
+<span class="math notranslate nohighlight">\(p \in W^{\mathbf{N}}\)</span>. We now formulate a variational problem using the Galerkin method: Find
+<span class="math notranslate nohighlight">\(\mathbf{u} \in [W_0^{\mathbf{N}}]^3\)</span> and <span class="math notranslate nohighlight">\(p \in W^{\mathbf{N}}\)</span> such that</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:varform"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\int_{\Omega} (\nabla^2 \mathbf{u} - \nabla p ) \cdot \overline{\mathbf{v}} \, dx_w = \int_{\Omega} \mathbf{f} \cdot \overline{\mathbf{v}}\, dx_w \quad\forall \mathbf{v} \, \in \, [W_0^{\mathbf{N}}]^3, \label{eq:varform} \tag{12} 
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto11"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+\int_{\Omega} \nabla \cdot \mathbf{u} \, \overline{q} \, dx_w = \int_{\Omega} h \overline{q} \, dx_w \quad\forall q \, \in \, W^{\mathbf{N}}.
+\label{_auto11} \tag{13}
+\end{equation}
+\]</div>
+<p>Here <span class="math notranslate nohighlight">\(dx_w=w_xdxw_ydyw_zdz\)</span> represents a weighted measure, with weights <span class="math notranslate nohighlight">\(w_x(x), w_y(y), w_z(z)\)</span>.
+Note that it is only Chebyshev polynomials that
+make use of a non-constant weight <span class="math notranslate nohighlight">\(w_x=1/\sqrt{1-x^2}\)</span>. The Fourier weights are <span class="math notranslate nohighlight">\(w_y=w_z=1/(2\pi)\)</span>
+and the Legendre weight is <span class="math notranslate nohighlight">\(w_x=1\)</span>.
+The overline in <span class="math notranslate nohighlight">\(\mathbf{\overline{v}}\)</span> and <span class="math notranslate nohighlight">\(\overline{q}\)</span> represents a complex conjugate, which is needed here because
+the Fourier exponentials are complex functions.</p>
+<div class="section" id="mixed-variational-form">
+<h3>Mixed variational form<a class="headerlink" href="#mixed-variational-form" title="Permalink to this headline">¶</a></h3>
+<p><a id="sec:mixedform"></a></p>
+<p>Since we are to solve for <span class="math notranslate nohighlight">\(\mathbf{u}\)</span> and <span class="math notranslate nohighlight">\(p\)</span> at the same time, we formulate a
+mixed (coupled) problem: find <span class="math notranslate nohighlight">\((\mathbf{u}, p) \in [W_0^{\mathbf{N}}]^3 \times W^{\mathbf{N}}\)</span>
+such that</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto12"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+a((\mathbf{u}, p), (\mathbf{v}, q)) = L((\mathbf{v}, q)) \quad \forall (\mathbf{v}, q) \in [W_0^{\mathbf{N}}]^3 \times W^{\mathbf{N}},
+\label{_auto12} \tag{14}
+\end{equation}
+\]</div>
+<p>where bilinear (<span class="math notranslate nohighlight">\(a\)</span>) and linear (<span class="math notranslate nohighlight">\(L\)</span>) forms are given as</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto13"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+    a((\mathbf{u}, p), (\mathbf{v}, q)) = \int_{\Omega} (\nabla^2 \mathbf{u} - \nabla p) \cdot \overline{\mathbf{v}} \, dx_w + \int_{\Omega} \nabla \cdot \mathbf{u} \, \overline{q} \, dx_w, 
+\label{_auto13} \tag{15}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto14"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+    L((\mathbf{v}, q)) = \int_{\Omega} \mathbf{f} \cdot \overline{\mathbf{v}}\, dx_w + \int_{\Omega} h \overline{q} \, dx_w.
+\label{_auto14} \tag{16}
+\end{equation}
+\]</div>
+<p>Note that the bilinear form will assemble to block matrices, whereas the right hand side
+linear form will assemble to block vectors.</p>
+</div>
+</div>
+<div class="section" id="implementation">
+<h2>Implementation<a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="preamble">
+<h3>Preamble<a class="headerlink" href="#preamble" title="Permalink to this headline">¶</a></h3>
+<p>We will solve the Stokes equations using the <a class="reference external" href="https://github.com/spectralDNS/shenfun">shenfun</a> Python module. The first thing needed
+is then to import some of this module’s functionality
+plus some other helper modules, like <a class="reference external" href="https://numpy.org">Numpy</a> and <a class="reference external" href="https://sympy.org">Sympy</a>:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">mpi4py</span> <span class="kn">import</span> <span class="n">MPI</span>
+<span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">symbols</span><span class="p">,</span> <span class="n">sin</span><span class="p">,</span> <span class="n">cos</span>
+<span class="kn">from</span> <span class="nn">shenfun</span> <span class="kn">import</span> <span class="o">*</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We use <code class="docutils literal notranslate"><span class="pre">Sympy</span></code> for the manufactured solution and <code class="docutils literal notranslate"><span class="pre">Numpy</span></code> for testing. MPI for
+Python (<code class="docutils literal notranslate"><span class="pre">mpi4py</span></code>) is required for running the solver with MPI.</p>
+</div>
+<div class="section" id="manufactured-solution">
+<h3>Manufactured solution<a class="headerlink" href="#manufactured-solution" title="Permalink to this headline">¶</a></h3>
+<p><a id="sec:mansol"></a></p>
+<p>The exact solutions <span class="math notranslate nohighlight">\(\mathbf{u}_e(\mathbf{x})\)</span> and <span class="math notranslate nohighlight">\(p(\mathbf{x})\)</span> are chosen to satisfy boundary
+conditions, and the right hand sides <span class="math notranslate nohighlight">\(\mathbf{f}(\mathbf{x})\)</span> and <span class="math notranslate nohighlight">\(h(\mathbf{x})\)</span> are then
+computed exactly using <code class="docutils literal notranslate"><span class="pre">Sympy</span></code>. These exact right hand sides will then be used to
+compute a numerical solution that can be verified against the manufactured
+solution. The chosen solution with computed right hand sides are:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">(</span><span class="s1">&#39;x,y,z&#39;</span><span class="p">)</span>
+<span class="n">uex</span> <span class="o">=</span> <span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">y</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">z</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">uey</span> <span class="o">=</span> <span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">z</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">uez</span> <span class="o">=</span> <span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">z</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">z</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">pe</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.1</span><span class="o">*</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="n">cos</span><span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="n">y</span><span class="p">)</span>
+<span class="n">fx</span> <span class="o">=</span> <span class="n">uex</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">uex</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">uex</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">pe</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">fy</span> <span class="o">=</span> <span class="n">uey</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">uey</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">uey</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">pe</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">fz</span> <span class="o">=</span> <span class="n">uez</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">uez</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">uez</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">pe</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">h</span> <span class="o">=</span> <span class="n">uex</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">uey</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">uez</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="tensor-product-spaces">
+<h3>Tensor product spaces<a class="headerlink" href="#tensor-product-spaces" title="Permalink to this headline">¶</a></h3>
+<p>One-dimensional spaces are created using the <code class="docutils literal notranslate"><span class="pre">FunctionSpace</span></code> function. A choice of
+polynomials between Legendre or Chebyshev can be made, and the size
+of the domain is given</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">N</span> <span class="o">=</span> <span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="n">family</span> <span class="o">=</span> <span class="s1">&#39;Legendre&#39;</span>
+<span class="n">K0</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;Fourier&#39;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;D&#39;</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>
+<span class="n">K1</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;Fourier&#39;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>
+<span class="n">SD</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">family</span><span class="p">,</span> <span class="n">bc</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<span class="n">ST</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">family</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Note that the last line of code is there to ensure that only the first
+<span class="math notranslate nohighlight">\(N_2-2\)</span> coefficients are used, see discussion around Eq. (<a class="reference external" href="#eq:Zn">5</a>).
+At the same time, we ensure that we are still using <span class="math notranslate nohighlight">\(N_2\)</span>
+quadrature points, the same as for the Dirichlet basis.</p>
+<p>Next the one-dimensional spaces are used to create two tensor product spaces Q = <span class="math notranslate nohighlight">\(W^{\mathbf{N}}\)</span>
+and TD = <span class="math notranslate nohighlight">\(W_0^{\mathbf{N}}\)</span>, one vector V = <span class="math notranslate nohighlight">\([W_0^{\mathbf{N}}]^3\)</span> and one mixed
+space  VQ = V <span class="math notranslate nohighlight">\(\times\)</span> Q.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">TD</span> <span class="o">=</span> <span class="n">TensorProductSpace</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="p">(</span><span class="n">K0</span><span class="p">,</span> <span class="n">K1</span><span class="p">,</span> <span class="n">SD</span><span class="p">),</span> <span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="n">Q</span> <span class="o">=</span> <span class="n">TensorProductSpace</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="p">(</span><span class="n">K0</span><span class="p">,</span> <span class="n">K1</span><span class="p">,</span> <span class="n">ST</span><span class="p">),</span> <span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="n">V</span> <span class="o">=</span> <span class="n">VectorTensorProductSpace</span><span class="p">(</span><span class="n">TD</span><span class="p">)</span>
+<span class="n">VQ</span> <span class="o">=</span> <span class="n">MixedTensorProductSpace</span><span class="p">([</span><span class="n">V</span><span class="p">,</span> <span class="n">Q</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Note that we choose to transform axes in the order <span class="math notranslate nohighlight">\(1, 0, 2\)</span>. This is to ensure
+that the fully transformed arrays are aligned in the non-periodic direction 2.
+And we need the arrays aligned in this direction, because this is the only
+direction where there are tensor product matrices that are non-diagonal. All
+Fourier matrices are, naturally, diagonal.</p>
+<p>Test- and trialfunctions are created much like in a regular, non-mixed,
+formulation. However, one has to create one test- and trialfunction for
+the mixed space, and then split them up afterwards</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">up</span> <span class="o">=</span> <span class="n">TrialFunction</span><span class="p">(</span><span class="n">VQ</span><span class="p">)</span>
+<span class="n">vq</span> <span class="o">=</span> <span class="n">TestFunction</span><span class="p">(</span><span class="n">VQ</span><span class="p">)</span>
+<span class="n">u</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="n">up</span>
+<span class="n">v</span><span class="p">,</span> <span class="n">q</span> <span class="o">=</span> <span class="n">vq</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>With the basisfunctions in place we may assemble the different blocks of the
+final coefficient matrix. Since Legendre is using a constant weight function,
+the equations may also be integrated by parts to obtain a symmetric system:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">family</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;chebyshev&#39;</span><span class="p">:</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">div</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">)))</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="o">-</span><span class="n">grad</span><span class="p">(</span><span class="n">p</span><span class="p">))</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="o">-</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">div</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="n">p</span><span class="p">)</span>
+<span class="n">D</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">div</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p><strong>Notice.</strong></p>
+<p>The inner products may also be assembled with one single line, as</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span>        <span class="n">AA</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">div</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">)))</span> <span class="o">+</span> <span class="n">inner</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="o">-</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">))</span> <span class="o">+</span> <span class="n">inner</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">div</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>However, this requires addition, not subtraction, of inner products and it is not
+possible to move the negation to -inner(v, grad(u))</p>
+<p>The assembled subsystems <code class="docutils literal notranslate"><span class="pre">A,</span> <span class="pre">G</span></code> and <code class="docutils literal notranslate"><span class="pre">D</span></code> are lists containg the different blocks of
+the complete, coupled matrix. <code class="docutils literal notranslate"><span class="pre">A</span></code> actually contains 6
+tensor product matrices of type <code class="docutils literal notranslate"><span class="pre">TPMatrix</span></code>. The first two
+matrices are for vector component zero of the test function <code class="docutils literal notranslate"><span class="pre">v[0]</span></code> and
+trial function <code class="docutils literal notranslate"><span class="pre">u[0]</span></code>, the
+matrices 2 and 3 are for components 1 and the last two are for components
+2. The first two matrices are as such for</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span>        <span class="n">A</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">div</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
+</pre></div>
+</div>
+<p>Breaking it down the inner product is mathematically</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:partialeq1"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\label{eq:partialeq1} \tag{17}
+\int_{\Omega} \mathbf{v}[0] \left(\frac{\partial^2 \mathbf{u}[0]}{\partial x^2} + \frac{\partial^2 \mathbf{u}[0]}{\partial y^2} + \frac{\partial^2 \mathbf{u}[0]}{\partial z^2}\right) w_x dx w_y dy w_z dz.
+\end{equation}
+\]</div>
+<p>If we now use test function <span class="math notranslate nohighlight">\(\mathbf{v}[0]\)</span></p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto15"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\mathbf{v}[0]_{lmn} = \mathcal{X}_l \mathcal{Y}_m \mathcal{Z}_n,
+\label{_auto15} \tag{18}
+\end{equation}
+\]</div>
+<p>and trialfunction</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto16"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\mathbf{u}[0]_{pqr} = \sum_{p} \sum_{q} \sum_{r} \hat{\mathbf{u}}[0]_{pqr} \mathcal{X}_p \mathcal{Y}_q \mathcal{Z}_r,
+\label{_auto16} \tag{19}
+\end{equation}
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(\hat{\mathbf{u}}\)</span> are the unknown degrees of freedom, and then insert these functions
+into (<a class="reference external" href="#eq:partialeq1">17</a>), then we obtain after
+performing some exact evaluations over the periodic directions</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto17"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+ \Big( \underbrace{-\left(l^2 \delta_{lp} + m^2 \delta_{mq} \right) \int_{-1}^{1} \mathcal{Z}_r(z) \mathcal{Z}_n(z) w_z dz}_{A[0]} + \underbrace{\delta_{lp} \delta_{mq} \int_{-1}^{1} \frac{\partial^2 \mathcal{Z}_r(z)}{\partial z^2} \mathcal{Z}_n(z) w_z dz}_{A[1]} \Big) \hat{\mathbf{u}}[0]_{pqr},
+\label{_auto17} \tag{20}
+\end{equation}
+\]</div>
+<p>Similarly for components 1 and 2 of the test and trial vectors, leading to 6 tensor
+product matrices in total for <code class="docutils literal notranslate"><span class="pre">A</span></code>. Similarly, we get three components of <code class="docutils literal notranslate"><span class="pre">G</span></code>
+and  three of <code class="docutils literal notranslate"><span class="pre">D</span></code>.</p>
+<p>Eliminating the Fourier diagonal matrices, we are left with block matrices like</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:bmatrix"></a></p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+H(l, m) =
+  \begin{bmatrix}
+      A[0]+A[1] &amp; 0 &amp; 0 &amp; G[0] \\ \label{eq:bmatrix} \tag{21}
+      0 &amp; A[2]+A[3] &amp; 0 &amp; G[1] \\ 
+      0 &amp; 0 &amp;  A[4]+A[5] &amp; G[2] \\ 
+      D[0] &amp; D[1] &amp; D[2] &amp; 0
+  \end{bmatrix}
+\end{split}\]</div>
+<p>Note that there will be one large block matrix <span class="math notranslate nohighlight">\(H(l, m)\)</span> for each Fourier
+wavenumber combination <span class="math notranslate nohighlight">\((l, m)\)</span>. To solve the problem in the end we will need to
+loop over these wavenumbers and solve the assembled linear systems one by one.
+An example of the block matrix, for <span class="math notranslate nohighlight">\(l=m=5\)</span> and <span class="math notranslate nohighlight">\(\mathbf{N}=(20, 20, 20)\)</span> is given
+in Fig. <a class="reference external" href="#fig:BlockMat">fig:BlockMat</a>.</p>
+<p>In the end we create a block matrix through</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">M</span> <span class="o">=</span> <span class="n">BlockMatrix</span><span class="p">(</span><span class="n">A</span><span class="o">+</span><span class="n">G</span><span class="o">+</span><span class="n">D</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>The right hand side can easily be assembled since we have already
+defined the functions <span class="math notranslate nohighlight">\(\mathbf{f}\)</span> and <span class="math notranslate nohighlight">\(h\)</span>, see Sec. <a class="reference external" href="#sec:mansol">Manufactured solution</a></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get mesh (quadrature points)</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">TD</span><span class="o">.</span><span class="n">local_mesh</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Get f and h on quad points</span>
+<span class="n">fh</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">VQ</span><span class="p">,</span> <span class="n">buffer</span><span class="o">=</span><span class="p">(</span><span class="n">fx</span><span class="p">,</span> <span class="n">fy</span><span class="p">,</span> <span class="n">fz</span><span class="p">,</span> <span class="n">h</span><span class="p">))</span>
+<span class="n">f_</span><span class="p">,</span> <span class="n">h_</span> <span class="o">=</span> <span class="n">fh</span>
+
+<span class="c1"># Compute inner products</span>
+<span class="n">fh_hat</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">VQ</span><span class="p">)</span>
+<span class="n">f_hat</span><span class="p">,</span> <span class="n">h_hat</span> <span class="o">=</span> <span class="n">fh_hat</span>
+<span class="n">f_hat</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">f_</span><span class="p">,</span> <span class="n">output_array</span><span class="o">=</span><span class="n">f_hat</span><span class="p">)</span>
+<span class="n">h_hat</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">h_</span><span class="p">,</span> <span class="n">output_array</span><span class="o">=</span><span class="n">h_hat</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>In the end all that is left is to solve and compare with
+the exact solution.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Solve problem</span>
+<span class="n">up_hat</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">fh_hat</span><span class="p">,</span> <span class="n">constraints</span><span class="o">=</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">N</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)))</span>
+<span class="n">up</span> <span class="o">=</span> <span class="n">up_hat</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+<span class="n">u_</span><span class="p">,</span> <span class="n">p_</span> <span class="o">=</span> <span class="n">up</span>
+
+<span class="c1"># Exact solution</span>
+<span class="n">ux</span><span class="p">,</span> <span class="n">uy</span><span class="p">,</span> <span class="n">uz</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">V</span><span class="p">,</span> <span class="n">buffer</span><span class="o">=</span><span class="p">(</span><span class="n">uex</span><span class="p">,</span> <span class="n">uey</span><span class="p">,</span> <span class="n">uez</span><span class="p">))</span>
+<span class="n">pe</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">Q</span><span class="p">,</span> <span class="n">buffer</span><span class="o">=</span><span class="n">pe</span><span class="p">)</span>
+
+<span class="n">error</span> <span class="o">=</span> <span class="p">[</span><span class="n">comm</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">ux</span><span class="o">-</span><span class="n">u_</span><span class="p">[</span><span class="mi">0</span><span class="p">])),</span>
+         <span class="n">comm</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">uy</span><span class="o">-</span><span class="n">u_</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span>
+         <span class="n">comm</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">uz</span><span class="o">-</span><span class="n">u_</span><span class="p">[</span><span class="mi">2</span><span class="p">])),</span>
+         <span class="n">comm</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">pe</span><span class="o">-</span><span class="n">p_</span><span class="p">))]</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Note that solve has a keyword argument
+<code class="docutils literal notranslate"><span class="pre">constraints=((3,</span> <span class="pre">0,</span> <span class="pre">0),</span> <span class="pre">(3,</span> <span class="pre">N[2]-1),</span> <span class="pre">0)</span></code> that takes care of the restriction
+<span class="math notranslate nohighlight">\(\int_{\Omega} p dx = 0\)</span> by indenting the rows in M corresponding to the
+first and last degree of freedom for the pressure. The value <span class="math notranslate nohighlight">\((3, 0, 0)\)</span>
+indicates that pressure is
+in block 3 of the block vector solution (the velocity vector holds
+positions 0, 1 and 2), whereas the two zeros ensures that the first dof
+(dof 0) should obtain value 0. The constraint on the highest
+wavenumber <code class="docutils literal notranslate"><span class="pre">(3,</span> <span class="pre">N[2]-1,</span> <span class="pre">0)</span></code> is required to get a non-singular
+matrix.</p>
+</div>
+</div>
+<div class="section" id="complete-solver">
+<h2>Complete solver<a class="headerlink" href="#complete-solver" title="Permalink to this headline">¶</a></h2>
+<p><a id="sec:3d:complete"></a></p>
+<p>A complete solver can be found in demo <a class="reference external" href="https://github.com/spectralDNS/shenfun/blob/master/demo/Stokes3D.py">Stokes3D.py</a>.</p>
+</div>
+</div>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "spectralDNS/shenfun",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            kernelName: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+              </div>
+              
+        </div>
+    </div>
+    
+    
+    <div class='prev-next-bottom'>
+        
+    <a class='left-prev' id="prev-link" href="kuramatosivashinsky.html" title="previous page">Demo - Kuramato-Sivashinsky equation</a>
+    <a class='right-next' id="next-link" href="drivencavity.html" title="next page">Demo - Lid driven cavity</a>
+
+    </div>
+    <footer class="footer mt-5 mt-md-0">
+    <div class="container">
+      <p>
+        
+          By Mikael Mortensen<br/>
+        
+            &copy; Copyright 2020.<br/>
+      </p>
+    </div>
+  </footer>
+</main>
+
+
+      </div>
+    </div>
+
+    <script src="_static/js/index.js"></script>
+    
+  </body>
+</html>

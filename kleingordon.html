@@ -1,0 +1,977 @@
+
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Demo - Cubic nonlinear Klein-Gordon equation &#8212; Shenfun executable demos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
+    <link href="_static/css/index.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/sphinx-book-theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="_static/jupyter-sphinx.css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/sphinx-book-theme.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/togglebutton.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
+    <script src="_static/mystnb.js"></script>
+    <script src="_static/sphinx-book-theme.js"></script>
+    <script >var togglebuttonSelector = '.toggle, .admonition.dropdown, .tag_hide_input div.cell_input, .tag_hide-input div.cell_input, .tag_hide_output div.cell_output, .tag_hide-output div.cell_output, .tag_hide_cell.cell, .tag_hide-cell.cell';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"TeX": {"Macros": {"bmat": ["\\left[\\begin{array}"], "emat": ["\\end{array}\\right]"]}, "extensions": ["cancel.js", "AMSmath.js"]}})</script>
+    <script async="async" src="https://unpkg.com/thebelab@latest/lib/index.js"></script>
+    <script >
+        const thebe_selector = ".thebe,.cell"
+        const thebe_selector_input = "pre,.cell_input div.highlight"
+        const thebe_selector_output = ".output,.cell_output"
+    </script>
+    <script async="async" src="_static/sphinx-thebe.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Demo - 3D Poisson’s equation" href="poisson3d.html" />
+    <link rel="prev" title="Demo - 1D Poisson’s equation" href="poisson.html" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="docsearch:language" content="en">
+
+
+
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+<div class="col-12 col-md-3 bd-sidebar site-navigation show" id="site-navigation">
+    
+        <div class="navbar-brand-box">
+<a class="navbar-brand text-wrap" href="index.html">
+  
+  
+  <h1 class="site-logo" id="site-title">Shenfun executable demos</h1>
+  
+</a>
+</div>
+
+<form class="bd-search d-flex align-items-center" action="search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search this book..." aria-label="Search this book..." autocomplete="off" >
+</form>
+
+<nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <ul class="nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="intro.html">
+   Shenfun executable demos
+  </a>
+ </li>
+</ul>
+<p class="caption">
+ <span class="caption-text">
+  Shenfun demos
+ </span>
+</p>
+<ul class="current nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="poisson.html">
+   Demo - 1D Poisson’s equation
+  </a>
+ </li>
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   Demo - Cubic nonlinear Klein-Gordon equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="poisson3d.html">
+   Demo - 3D Poisson’s equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="polarhelmholtz.html">
+   Demo - Helmholtz equation in polar coordinates
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="sphericalhelmholtz.html">
+   Demo - Helmholtz equation on the unit sphere
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="kuramatosivashinsky.html">
+   Demo - Kuramato-Sivashinsky equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="stokes.html">
+   Demo - Stokes equations
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="drivencavity.html">
+   Demo - Lid driven cavity
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="rayleighbenard.html">
+   Demo - Rayleigh Benard
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="functions.html">
+   Demo - Working with Functions
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="surfaceintegration.html">
+   Demo - Integration of functions
+  </a>
+ </li>
+</ul>
+
+</nav>
+
+ <!-- To handle the deprecated key -->
+
+<div class="navbar_extra_footer">
+  Powered by <a href="https://jupyterbook.org">Jupyter Book</a>
+</div>
+
+</div>
+
+
+          
+
+
+          
+<main class="col py-md-3 pl-md-4 bd-content overflow-auto" role="main">
+    
+    <div class="row topbar fixed-top container-xl">
+    <div class="col-12 col-md-3 bd-topbar-whitespace site-navigation show">
+    </div>
+    <div class="col pl-2 topbar-main">
+        
+        <button id="navbar-toggler" class="navbar-toggler ml-0" type="button" data-toggle="collapse"
+            data-toggle="tooltip" data-placement="bottom" data-target=".site-navigation" aria-controls="navbar-menu"
+            aria-expanded="true" aria-label="Toggle navigation" aria-controls="site-navigation"
+            title="Toggle navigation" data-toggle="tooltip" data-placement="left">
+            <i class="fas fa-bars"></i>
+            <i class="fas fa-arrow-left"></i>
+            <i class="fas fa-arrow-up"></i>
+        </button>
+        
+        <div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn" aria-label="Download this page"><i
+            class="fas fa-download"></i></button>
+
+    
+    <div class="dropdown-buttons">
+        <!-- ipynb file if we had a myst markdown file -->
+        
+        <!-- Download raw file -->
+        <a class="dropdown-buttons" href="_sources/kleingordon.ipynb"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Download source file" data-toggle="tooltip"
+                data-placement="left">.ipynb</button></a>
+        <!-- Download PDF via print -->
+        <button type="button" id="download-print" class="btn btn-secondary topbarbtn" title="Print to PDF"
+            onClick="window.print()" data-toggle="tooltip" data-placement="left">.pdf</button>
+    </div>
+    
+</div>
+        <!-- Source interaction buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Connect with source repository"><i class="fab fa-github"></i></button>
+    <div class="dropdown-buttons sourcebuttons">
+        <a class="repository-button"
+            href="https://github.com/spectralDNS/shenfun"><button type="button" class="btn btn-secondary topbarbtn"
+                data-toggle="tooltip" data-placement="left" title="Source repository"><i
+                    class="fab fa-github"></i>repository</button></a>
+        
+        
+    </div>
+</div>
+
+
+        <!-- Full screen (wrap in <a> to have style consistency -->
+        <a class="full-screen-button"><button type="button" class="btn btn-secondary topbarbtn" data-toggle="tooltip"
+                data-placement="bottom" onclick="toggleFullScreen()" title="Fullscreen mode"><i
+                    class="fas fa-expand"></i></button></a>
+
+        <!-- Launch buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Launch interactive content"><i class="fas fa-rocket"></i></button>
+    <div class="dropdown-buttons">
+        
+        <a class="binder-button" href="https://mybinder.org/v2/gh/spectralDNS/shenfun/master?urlpath=tree/./docs/book/kleingordon.ipynb"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Launch Binder" data-toggle="tooltip"
+                data-placement="left"><img class="binder-button-logo"
+                    src="_static/images/logo_binder.svg"
+                    alt="Interact on binder">Binder</button></a>
+        
+        
+        
+        <button type="button" class="btn btn-secondary topbarbtn"
+            onclick="initThebeSBT()" title="Launch Thebe" data-toggle="tooltip" data-placement="left"><i
+                class="fas fa-play"></i><span style="margin-left: .4em;">Live Code</span></button>
+        
+    </div>
+</div>
+
+    </div>
+
+    <!-- Table of contents -->
+    <div class="d-none d-md-block col-md-2 bd-toc show">
+        <div class="tocsection onthispage pt-5 pb-3">
+            <i class="fas fa-list"></i> On this page
+        </div>
+        <nav id="bd-toc-nav">
+            <ul class="nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#the-nonlinear-klein-gordon-equation">
+   The nonlinear Klein-Gordon equation
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#spectral-galerkin-formulation">
+   Spectral Galerkin formulation
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#discretization">
+   Discretization
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#implementation">
+   Implementation
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#runge-kutta-integrator">
+     Runge-Kutta integrator
+    </a>
+   </li>
+  </ul>
+ </li>
+</ul>
+
+        </nav>
+    </div>
+</div>
+    <div id="main-content" class="row">
+        <div class="col-12 col-md-9 pl-md-3 pr-md-0">
+        
+              <div>
+                
+  <!-- dom:TITLE: Demo - Cubic nonlinear Klein-Gordon equation -->
+<div class="section" id="demo-cubic-nonlinear-klein-gordon-equation">
+<h1>Demo - Cubic nonlinear Klein-Gordon equation<a class="headerlink" href="#demo-cubic-nonlinear-klein-gordon-equation" title="Permalink to this headline">¶</a></h1>
+<!-- dom:AUTHOR: Mikael Mortensen Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo. -->
+<!-- Author: -->  
+<p><strong>Mikael Mortensen</strong> (email: <code class="docutils literal notranslate"><span class="pre">mikaem&#64;math.uio.no</span></code>), Department of Mathematics, University of Oslo.</p>
+<p>Date: <strong>Aug 21, 2020</strong></p>
+<p>Copyright 2020, Mikael Mortensen. Released under CC Attribution 4.0 license</p>
+<p><strong>Summary.</strong> This is a demonstration of how the Python module <a class="reference external" href="https://github.com/spectralDNS/shenfun">shenfun</a> can be used to solve the time-dependent,
+nonlinear Klein-Gordon equation, in a triply periodic domain. The demo is implemented in
+a single Python file <a class="reference external" href="https://github.com/spectralDNS/shenfun/blob/master/demo/KleinGordon.py">KleinGordon.py</a>, and it may be run
+in parallel using MPI. The Klein-Gordon equation is solved using a mixed
+formulation. The discretization, and some background on the spectral Galerkin
+method is given first, before we turn to the actual details of the <code class="docutils literal notranslate"><span class="pre">shenfun</span></code>
+implementation.</p>
+<p><a id="mov:kleingordon"></a></p>
+<!-- dom:MOVIE: [https://rawgit.com/spectralDNS/spectralutilities/master/movies/KleinGordon.gif] -->
+<!-- begin movie --><div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">HTML</span>
+<span class="n">_s</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">&lt;embed src=&quot;https://rawgit.com/spectralDNS/spectralutilities/master/movies/KleinGordon.gif&quot;  autoplay=&quot;false&quot; loop=&quot;true&quot;&gt;&lt;/embed&gt;</span>
+<span class="s2">&lt;p&gt;&lt;em&gt;&lt;/em&gt;&lt;/p&gt;</span>
+<span class="s2">&quot;&quot;&quot;</span>
+<span class="n">HTML</span><span class="p">(</span><span class="n">_s</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<!-- end movie -->
+<p>Movie showing the evolution of the solution <span class="math notranslate nohighlight">\(u\)</span> from the Klein-Gordon equation, in a slice through the center of the domain, computed with the code described in this demo.</p>
+<div class="section" id="the-nonlinear-klein-gordon-equation">
+<h2>The nonlinear Klein-Gordon equation<a class="headerlink" href="#the-nonlinear-klein-gordon-equation" title="Permalink to this headline">¶</a></h2>
+<p>The cubic nonlinear Klein-Gordon equation is a wave equation important for many
+scientific applications such as solid state physics, nonlinear optics and
+quantum field theory <a class="reference external" href="#abdul08">[abdul08]</a>. The equation is given as</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:kg"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\frac{\partial^2 u}{\partial t^2} = \nabla^2 u - \gamma(u - u|u|^2) \quad
+\text{for} \, u \in
+\Omega, \label{eq:kg} \tag{1}
+\end{equation}
+\]</div>
+<p>with initial conditions</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:init"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+u(\boldsymbol{x}, t=0) = u^0 \quad \text{and} \quad \frac{\partial u(\boldsymbol{x},
+t=0)}{\partial t} = u_t^0. \label{eq:init} \tag{2}
+\end{equation}
+\]</div>
+<p>The spatial coordinates are here denoted as <span class="math notranslate nohighlight">\(\boldsymbol{x} = (x, y, z)\)</span>, and
+<span class="math notranslate nohighlight">\(t\)</span> is time. The parameter <span class="math notranslate nohighlight">\(\gamma=\pm 1\)</span> determines whether the equations are focusing
+(<span class="math notranslate nohighlight">\(+1\)</span>) or defocusing (<span class="math notranslate nohighlight">\(-1\)</span>) (in the movie we have used <span class="math notranslate nohighlight">\(\gamma=1\)</span>). The domain <span class="math notranslate nohighlight">\(\Omega=[-2\pi, 2\pi]^3\)</span> is triply
+periodic and initial conditions will here be set as</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto1"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+u^0 = 0.1 \exp \left( -\boldsymbol{x} \cdot \boldsymbol{x} \right), 
+\label{_auto1} \tag{3}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto2"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+u_t^0 = 0.
+\label{_auto2} \tag{4}
+\end{equation}
+\]</div>
+<p>We will solve these equations using a mixed formulation and a spectral Galerkin
+method. The mixed formulation reads</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:df"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\frac{\partial f}{\partial t} = \nabla^2 u - \gamma (u - u|u|^2), \label{eq:df} \tag{5}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:du"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+\frac{\partial u}{\partial t} = f. \label{eq:du} \tag{6}
+\end{equation}
+\]</div>
+<p>The energy of the solution can be computed as</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto3"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+E(u) = \int_{\Omega} \left( \frac{1}{2} f^2 + \frac{1}{2}|\nabla u|^2 + \gamma(\frac{1}{2}u^2 - \frac{1}{4}u^4) \right) dx
+\label{_auto3} \tag{7}
+\end{equation}
+\]</div>
+<p>and it is crucial that this energy remains constant in time.</p>
+<p>The movie (<a class="reference external" href="#mov:kleingordon">mov:kleingordon</a>) is showing the solution <span class="math notranslate nohighlight">\(u\)</span>, computed with the
+code shown below.</p>
+</div>
+<div class="section" id="spectral-galerkin-formulation">
+<h2>Spectral Galerkin formulation<a class="headerlink" href="#spectral-galerkin-formulation" title="Permalink to this headline">¶</a></h2>
+<p><a id="sec:specgal"></a>
+The PDEs in (<a class="reference external" href="#eq:df">5</a>) and (<a class="reference external" href="#eq:du">6</a>) can be solved with many different
+numerical methods. We will here use the <a class="reference external" href="https://github.com/spectralDNS/shenfun">shenfun</a> software and this software makes use of
+the spectral Galerkin method. Being a Galerkin method, we need to reshape the
+governing equations into proper variational forms, and this is done by
+multiplying  (<a class="reference external" href="#eq:df">5</a>) and (<a class="reference external" href="#eq:du">6</a>) with the complex conjugate of proper
+test functions and then integrating
+over the domain. To this end we use testfunctions <span class="math notranslate nohighlight">\(g\in V(\Omega)\)</span>
+with Eq. (<a class="reference external" href="#eq:df">5</a>)  and  <span class="math notranslate nohighlight">\(v \in V(\Omega)\)</span> with Eq. (<a class="reference external" href="#eq:du">6</a>), where
+<span class="math notranslate nohighlight">\(V(\omega)\)</span> is a suitable function space, and obtain</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:df_var"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\frac{\partial}{\partial t} \int_{\Omega} f\, \overline{g}\, w \,dx = \int_{\Omega}
+\left(\nabla^2 u - \gamma( u\, - u|u|^2) \right) \overline{g} \, w \,dx, \label{eq:df_var} \tag{8} 
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:kg:du_var"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+\frac{\partial }{\partial t} \int_{\Omega} u\, \overline{v}\, w \, dx =
+\int_{\Omega} f\, \overline{v} \, w \, dx. \label{eq:kg:du_var} \tag{9}
+\end{equation}
+\]</div>
+<p>Note that the overline is used to indicate a complex conjugate, and
+<span class="math notranslate nohighlight">\(w\)</span> is a weight function associated with the test functions. The functions
+<span class="math notranslate nohighlight">\(f\)</span> and <span class="math notranslate nohighlight">\(u\)</span> are now
+to be considered as trial functions, and the integrals over the
+domain are often referred to as inner products. With inner product notation</p>
+<div class="math notranslate nohighlight">
+\[
+\left(u, v\right) = \int_{\Omega} u \, \overline{v} \, w\, dx.
+\]</div>
+<p>and an integration by parts on the Laplacian, the variational problem can be
+formulated as:</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:df_var2"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\frac{\partial}{\partial t} (f, g) = -(\nabla u, \nabla g)
+-\gamma \left( u - u|u|^2, g \right), \label{eq:df_var2} \tag{10} 
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:kg:du_var2"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+\frac{\partial }{\partial t} (u, v) = (f, v). \label{eq:kg:du_var2} \tag{11}
+\end{equation}
+\]</div>
+<p>The time and space discretizations are
+still left open. There are numerous different approaches that one could take for
+discretizing in time, and the first two terms on the right hand side of
+(<a class="reference external" href="#eq:df_var2">10</a>) can easily be treated implicitly as well as explicitly. However,
+the approach we will follow in Sec. (<a class="reference external" href="#sec:rk">Runge-Kutta integrator</a>) is a fully explicit 4th order <a class="reference external" href="https://en.wikipedia.org/wiki/Runge-Kutta_methods">Runge-Kutta</a> method.</p>
+</div>
+<div class="section" id="discretization">
+<h2>Discretization<a class="headerlink" href="#discretization" title="Permalink to this headline">¶</a></h2>
+<p>To find a numerical solution we need to discretize the continuous problem
+(<a class="reference external" href="#eq:df_var2">10</a>) and (<a class="reference external" href="#eq:kg:du_var2">11</a>) in space as well as time. Since the
+problem is triply periodic, Fourier exponentials are normally the best choice
+for trial and test functions, and as such we use basis functions</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto4"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\phi_l(x) = e^{\imath \underline{l} x}, \quad -\infty &lt; l &lt; \infty,
+\label{_auto4} \tag{12}
+\end{equation}
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(l\)</span> is the wavenumber, and
+<span class="math notranslate nohighlight">\(\underline{l}=\frac{2\pi}{L}l\)</span> is the scaled wavenumber, scaled with domain
+length <span class="math notranslate nohighlight">\(L\)</span> (here <span class="math notranslate nohighlight">\(4\pi\)</span>). Since we want to solve these equations on a computer, we need to choose
+a finite number of test functions. A function space <span class="math notranslate nohighlight">\(V^N\)</span> can be defined as</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:kg:Vn"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+V^N(x) = \text{span} \{\phi_l(x)\}_{l\in \boldsymbol{l}}, \label{eq:kg:Vn} \tag{13}
+\end{equation}
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(N\)</span> is chosen as an even positive integer and <span class="math notranslate nohighlight">\(\boldsymbol{l} = (-N/2,
+-N/2+1, \ldots, N/2-1)\)</span>. And now, since <span class="math notranslate nohighlight">\(\Omega\)</span> is a
+three-dimensional domain, we can create tensor products of such bases to get,
+e.g., for three dimensions</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:kg:Wn"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+W^{\boldsymbol{N}}(x, y, z) = V^N(x) \otimes V^N(y) \otimes V^N(z), \label{eq:kg:Wn} \tag{14}
+\end{equation}
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(\boldsymbol{N} = (N, N, N)\)</span>. Obviously, it is not necessary to use the
+same number (<span class="math notranslate nohighlight">\(N\)</span>) of basis functions for each direction, but it is done here
+for simplicity. A 3D tensor product basis function is now defined as</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto5"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\Phi_{lmn}(x,y,z) = e^{\imath \underline{l} x} e^{\imath \underline{m} y}
+e^{\imath \underline{n} z} = e^{\imath
+(\underline{l}x + \underline{m}y + \underline{n}z)}
+\label{_auto5} \tag{15}
+\end{equation}
+\]</div>
+<p>where the indices for <span class="math notranslate nohighlight">\(y\)</span>- and <span class="math notranslate nohighlight">\(z\)</span>-direction are <span class="math notranslate nohighlight">\(\underline{m}=\frac{2\pi}{L}m,
+\underline{n}=\frac{2\pi}{L}n\)</span>, and <span class="math notranslate nohighlight">\(\boldsymbol{m}\)</span> and <span class="math notranslate nohighlight">\(\boldsymbol{n}\)</span> are the same as
+<span class="math notranslate nohighlight">\(\boldsymbol{l}\)</span> due to using the same number of basis functions for each direction. One
+distinction, though, is that for the <span class="math notranslate nohighlight">\(z\)</span>-direction expansion coefficients are only stored for
+<span class="math notranslate nohighlight">\(n=(0, 1, \ldots, N/2)\)</span> due to Hermitian symmetry (real input data).</p>
+<p>We now look for solutions of the form</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:usg"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+u(x, y, z, t) = \sum_{n=-N/2}^{N/2-1}\sum_{m=-N/2}^{N/2-1}\sum_{l=-N/2}^{N/2-1}
+\hat{u}_{lmn} (t)\Phi_{lmn}(x,y,z). \label{eq:usg} \tag{16}
+\end{equation}
+\]</div>
+<p>The expansion coefficients <span class="math notranslate nohighlight">\(\hat{\boldsymbol{u}} = \{\hat{u}_{lmn}(t)\}_{(l,m,n) \in \boldsymbol{l} \times \boldsymbol{m} \times \boldsymbol{n}}\)</span>
+can be related directly to the solution <span class="math notranslate nohighlight">\(u(x, y, z, t)\)</span> using Fast
+Fourier Transforms (FFTs) if we are satisfied with obtaining
+the solution in quadrature points corresponding to</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto6"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+ x_i = \frac{4 \pi i}{N}-2\pi \quad \forall \, i \in \boldsymbol{i},
+\text{where}\, \boldsymbol{i}=(0,1,\ldots,N-1), 
+\label{_auto6} \tag{17}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto7"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+ y_j = \frac{4 \pi j}{N}-2\pi \quad \forall \, j \in \boldsymbol{j},
+\text{where}\, \boldsymbol{j}=(0,1,\ldots,N-1), 
+\label{_auto7} \tag{18}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto8"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+ z_k = \frac{4 \pi k}{N}-2\pi \quad \forall \, k \in \boldsymbol{k},
+\text{where}\, \boldsymbol{k}=(0,1,\ldots,N-1).
+\label{_auto8} \tag{19}
+\end{equation}
+\]</div>
+<p>Note that these points are different from the standard (like <span class="math notranslate nohighlight">\(2\pi j/N\)</span>) since
+the domain
+is set to <span class="math notranslate nohighlight">\([-2\pi, 2\pi]^3\)</span> and not the more common <span class="math notranslate nohighlight">\([0, 2\pi]^3\)</span>. We have</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:uxyz"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\boldsymbol{u} = \mathcal{F}_k^{-1}\left(\mathcal{F}_j^{-1}\left(\mathcal{F}_i^{-1}\left(\hat{\boldsymbol{u}}\right)\right)\right) \label{eq:uxyz} \tag{20}
+\end{equation}
+\]</div>
+<p>with <span class="math notranslate nohighlight">\(\boldsymbol{u} = \{u(x_i, y_j, z_k)\}_{(i,j,k)\in \boldsymbol{i} \times \boldsymbol{j} \times \boldsymbol{k}}\)</span>
+and where <span class="math notranslate nohighlight">\(\mathcal{F}_i^{-1}\)</span> is the inverse Fourier transform along the direction
+of index <span class="math notranslate nohighlight">\(i\)</span>, for
+all <span class="math notranslate nohighlight">\((j, k) \in \boldsymbol{j} \times \boldsymbol{k}\)</span>. Note that the three
+inverse FFTs are performed sequentially, one direction at the time, and that there is no
+scaling factor due to
+the definition used for the inverse <a class="reference external" href="https://mpi4py-fft.readthedocs.io/en/latest/dft.html">Fourier transform</a></p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto9"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+u(x_j) = \sum_{l=-N/2}^{N/2-1} \hat{u}_l e^{\imath \underline{l}
+x_j}, \quad \,\, \forall \, j \in \, \boldsymbol{j}.
+\label{_auto9} \tag{21}
+\end{equation}
+\]</div>
+<p>Note that this differs from the definition used by, e.g.,
+<a class="reference external" href="https://docs.scipy.org/doc/numpy-1.13.0/reference/routines.fft.html">Numpy</a>.</p>
+<p>The inner products used in Eqs. (<a class="reference external" href="#eq:df_var2">10</a>), (<a class="reference external" href="#eq:kg:du_var2">11</a>) may be
+computed using forward FFTs. However, there is a tiny detail that deserves
+a comment. The regular Fourier inner product is given as</p>
+<div class="math notranslate nohighlight">
+\[
+\int_{0}^{L} e^{\imath \underline{k}x} e^{- \imath \underline{l}x} dx = L\, \delta_{kl}
+\]</div>
+<p>where a weight function is chosen as <span class="math notranslate nohighlight">\(w(x) = 1\)</span> and <span class="math notranslate nohighlight">\(\delta_{kl}\)</span> equals unity
+for <span class="math notranslate nohighlight">\(k=l\)</span> and zero otherwise. In Shenfun we choose instead to use a weight
+function <span class="math notranslate nohighlight">\(w(x)=1/L\)</span>, such that the weighted inner product integrates to
+unity:</p>
+<div class="math notranslate nohighlight">
+\[
+\int_{0}^{L} e^{\imath \underline{k}x} e^{- \imath \underline{l}x} \frac{1}{L} dx = \delta_{kl}.
+\]</div>
+<p>With this weight function the scalar product and the forward transform
+are the same and we obtain:</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto10"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\left(u, \Phi_{lmn}\right) = \hat{u}_{lmn} =
+\left(\frac{1}{N}\right)^3
+\mathcal{F}_l\left(\mathcal{F}_m\left(\mathcal{F}_n\left(\boldsymbol{u}\right)\right)\right)
+\quad \forall (l,m,n) \in \boldsymbol{l} \times \boldsymbol{m} \times
+\boldsymbol{n},
+\label{_auto10} \tag{22}
+\end{equation}
+\]</div>
+<p>From this we see that the variational forms (<a class="reference external" href="#eq:df_var2">10</a>) and (<a class="reference external" href="#eq:kg:du_var2">11</a>)
+may be written in terms of the Fourier transformed quantities <span class="math notranslate nohighlight">\(\hat{\boldsymbol{u}}\)</span> and
+<span class="math notranslate nohighlight">\(\hat{\boldsymbol{f}}\)</span>. Expanding the exact derivatives of the nabla operator, we have</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto11"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+(\nabla u, \nabla v) =
+(\underline{l}^2+\underline{m}^2+\underline{n}^2)\hat{u}_{lmn}, 
+\label{_auto11} \tag{23}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto12"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+(u, v) = \hat{u}_{lmn}, 
+\label{_auto12} \tag{24}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto13"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+(u|u|^2, v) = \widehat{u|u|^2}_{lmn}
+\label{_auto13} \tag{25}
+\end{equation}
+\]</div>
+<p>and as such the equations to be solved for each wavenumber can be found directly as</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:df_var3"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\frac{\partial \hat{f}_{lmn}}{\partial t}  =
+\left(-(\underline{l}^2+\underline{m}^2+\underline{n}^2+\gamma)\hat{u}_{lnm} + \gamma \widehat{u|u|^2}_{lnm}\right), \label{eq:df_var3} \tag{26} 
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:kg:du_var3"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+\frac{\partial \hat{u}_{lnm}}{\partial t} = \hat{f}_{lnm}. \label{eq:kg:du_var3} \tag{27}
+\end{equation}
+\]</div>
+<p>There is more than one way to arrive at these equations. Taking the 3D Fourier
+transform of both equations  (<a class="reference external" href="#eq:df">5</a>) and (<a class="reference external" href="#eq:du">6</a>) is one obvious way.
+With the Python module <a class="reference external" href="https://github.com/spectralDNS/shenfun">shenfun</a>, one can work with the
+inner products as seen in (<a class="reference external" href="#eq:df_var2">10</a>) and (<a class="reference external" href="#eq:kg:du_var2">11</a>), or the Fourier
+transforms directly. See for example Sec. <a class="reference external" href="#sec:rk">Runge-Kutta integrator</a> for how <span class="math notranslate nohighlight">\((\nabla u, \nabla
+v)\)</span> can be
+implemented.  In short, <code class="docutils literal notranslate"><span class="pre">shenfun</span></code> contains all the tools required to work with
+the spectral Galerkin method, and we will now see how <code class="docutils literal notranslate"><span class="pre">shenfun</span></code> can be used to solve
+the Klein-Gordon equation.</p>
+<p>For completion, we note that the discretized problem to solve can be formulated
+with the Galerkin method as:
+for all <span class="math notranslate nohighlight">\(t&gt;0\)</span>, find <span class="math notranslate nohighlight">\((f, u) \in W^N \times W^N\)</span>  such that</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:dff"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\frac{\partial}{\partial t} (f, g) = -(\nabla u, \nabla g)
+-\gamma \left( u - u|u|^2, g \right), \label{eq:dff} \tag{28} 
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:kg:duu"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+\frac{\partial }{\partial t} (u, v) = (f, v) \quad \forall \, (g, v) \in W^N \times W^N. \label{eq:kg:duu} \tag{29}
+\end{equation}
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(u(x, y, z, 0)\)</span> and <span class="math notranslate nohighlight">\(f(x, y, z, 0)\)</span> are given as the initial conditions
+according to Eq. (<a class="reference external" href="#eq:init">2</a>).</p>
+</div>
+<div class="section" id="implementation">
+<h2>Implementation<a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>To solve the Klein-Gordon equations we need to make use of the Fourier function
+spaces defined in
+<code class="docutils literal notranslate"><span class="pre">shenfun</span></code>, and these are found in submodule
+<code class="docutils literal notranslate"><span class="pre">shenfun.fourier.bases</span></code>.
+The triply periodic domain allows for Fourier in all three directions, and we
+can as such create one instance of this space using <code class="docutils literal notranslate"><span class="pre">FunctionSpace</span></code> with
+family <code class="docutils literal notranslate"><span class="pre">Fourier</span></code>
+for each direction. However, since the initial data are real, we
+can take advantage of Hermitian symmetries and thus make use of a
+real to complex class for one (but only one) of the directions, by specifying
+<code class="docutils literal notranslate"><span class="pre">dtype='d'</span></code>. We can only make use of the
+real-to-complex class for the direction that we choose to transform first with the forward
+FFT, and the reason is obviously that the output from a forward transform of
+real data is now complex. We may start implementing the solver as follows</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">shenfun</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">sympy</span> <span class="k">as</span> <span class="nn">sp</span>
+
+<span class="c1"># Set size of discretization</span>
+<span class="n">N</span> <span class="o">=</span> <span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">)</span>
+
+<span class="c1"># Defocusing or focusing</span>
+<span class="n">gamma</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="n">rank</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">Get_rank</span><span class="p">()</span>
+
+<span class="c1"># Create function spaces</span>
+<span class="n">K0</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s1">&#39;F&#39;</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;D&#39;</span><span class="p">)</span>
+<span class="n">K1</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;F&#39;</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;D&#39;</span><span class="p">)</span>
+<span class="n">K2</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="s1">&#39;F&#39;</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;d&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We now have three instances <code class="docutils literal notranslate"><span class="pre">K0</span></code>, <code class="docutils literal notranslate"><span class="pre">K1</span></code> and <code class="docutils literal notranslate"><span class="pre">K2</span></code>, corresponding to the space
+(<a class="reference external" href="#eq:kg:Vn">13</a>), that each can be used to solve
+one-dimensional problems. However, we want to solve a 3D problem, and for this
+we need a tensor product space, like (<a class="reference external" href="#eq:kg:Wn">14</a>), created as a tensor
+product of these three spaces</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">T</span> <span class="o">=</span> <span class="n">TensorProductSpace</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="p">(</span><span class="n">K0</span><span class="p">,</span> <span class="n">K1</span><span class="p">,</span> <span class="n">K2</span><span class="p">),</span> <span class="o">**</span><span class="p">{</span><span class="s1">&#39;planner_effort&#39;</span><span class="p">:</span>
+                                              <span class="s1">&#39;FFTW_MEASURE&#39;</span><span class="p">})</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Here the <code class="docutils literal notranslate"><span class="pre">planner_effort</span></code>, which is a flag used by <a class="reference external" href="http://www.fftw.org">FFTW</a>, is optional. Possibel choices are from the list
+(<code class="docutils literal notranslate"><span class="pre">FFTW_ESTIMATE</span></code>, <code class="docutils literal notranslate"><span class="pre">FFTW_MEASURE</span></code>, <code class="docutils literal notranslate"><span class="pre">FFTW_PATIENT</span></code>, <code class="docutils literal notranslate"><span class="pre">FFTW_EXHAUSTIVE</span></code>), and the
+flag determines how much effort FFTW puts in looking for an optimal algorithm
+for the current platform. Note that it is also possible to use FFTW <a class="reference external" href="http://www.fftw.org/fftw3_doc/Wisdom.html#Wisdom">wisdom</a> with
+<code class="docutils literal notranslate"><span class="pre">shenfun</span></code>, and as such, for production, one may perform exhaustive planning once
+and then simply import the result of that planning later, as wisdom.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">TensorProductSpace</span></code> instance <code class="docutils literal notranslate"><span class="pre">T</span></code> contains pretty much all we need for
+computing inner products or fast transforms between real and wavenumber space.
+However, since we are going to solve for a mixed system, it is convenient to also use the
+<code class="docutils literal notranslate"><span class="pre">MixedTensorProductSpace</span></code> class</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">TT</span> <span class="o">=</span> <span class="n">MixedTensorProductSpace</span><span class="p">([</span><span class="n">T</span><span class="p">,</span> <span class="n">T</span><span class="p">])</span>
+<span class="n">TV</span> <span class="o">=</span> <span class="n">VectorTensorProductSpace</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Here the space <code class="docutils literal notranslate"><span class="pre">TV</span></code> will be used to compute gradients, which
+explains why it is a vector.</p>
+<p>We need containers for the solution as well as intermediate work arrays for,
+e.g., the Runge-Kutta method. Arrays are created using
+<a class="reference external" href="http://www.sympy.org/en/index.html">Sympy</a> for
+initialization. Below <code class="docutils literal notranslate"><span class="pre">f</span></code> is initialized to 0,
+whereas <code class="docutils literal notranslate"><span class="pre">u</span> <span class="pre">=</span> <span class="pre">0.1*sp.exp(-(x**2</span> <span class="pre">+</span> <span class="pre">y**2</span> <span class="pre">+</span> <span class="pre">z**2))</span></code>.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use sympy to set up initial condition</span>
+<span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">symbols</span><span class="p">(</span><span class="s2">&quot;x,y,z&quot;</span><span class="p">,</span> <span class="n">real</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">ue</span> <span class="o">=</span> <span class="mf">0.1</span><span class="o">*</span><span class="n">sp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">z</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+
+<span class="n">fu</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">TT</span><span class="p">,</span> <span class="n">buffer</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ue</span><span class="p">))</span> <span class="c1"># Solution array in physical space</span>
+<span class="n">f</span><span class="p">,</span> <span class="n">u</span> <span class="o">=</span> <span class="n">fu</span>                <span class="c1"># Split solution array by creating two views u and f</span>
+<span class="n">dfu</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">TT</span><span class="p">)</span>       <span class="c1"># Array for right hand sides</span>
+<span class="n">df</span><span class="p">,</span> <span class="n">du</span> <span class="o">=</span> <span class="n">dfu</span>             <span class="c1"># Split into views</span>
+<span class="n">Tp</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">get_dealiased</span><span class="p">((</span><span class="mf">1.5</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">))</span>
+<span class="n">up</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">Tp</span><span class="p">)</span>           <span class="c1"># Work array</span>
+
+<span class="n">fu_hat</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">TT</span><span class="p">)</span>    <span class="c1"># Solution in spectral space</span>
+<span class="n">fu_hat</span> <span class="o">=</span> <span class="n">fu</span><span class="o">.</span><span class="n">forward</span><span class="p">()</span>
+<span class="n">f_hat</span><span class="p">,</span> <span class="n">u_hat</span> <span class="o">=</span> <span class="n">fu_hat</span>
+
+<span class="n">gradu</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">TV</span><span class="p">)</span>        <span class="c1"># Solution array for gradient</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">Array</span></code> class is a subclass of Numpy’s <a class="reference external" href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html">ndarray</a>,
+without much more functionality than constructors that return arrays of the
+correct shape according to the basis used in the construction. The
+<code class="docutils literal notranslate"><span class="pre">Array</span></code> represents the left hand side of (<a class="reference external" href="#eq:usg">16</a>),
+evaluated on the quadrature mesh. A different type
+of array is returned by the <code class="docutils literal notranslate"><span class="pre">Function</span></code>
+class, that subclasses both Nympy’s ndarray as well as an internal
+<code class="docutils literal notranslate"><span class="pre">BasisFunction</span></code>
+class. An instance of the <code class="docutils literal notranslate"><span class="pre">Function</span></code> represents the entire
+spectral Galerkin function (<a class="reference external" href="#eq:usg">16</a>).</p>
+<div class="section" id="runge-kutta-integrator">
+<h3>Runge-Kutta integrator<a class="headerlink" href="#runge-kutta-integrator" title="Permalink to this headline">¶</a></h3>
+<p><a id="sec:rk"></a></p>
+<p>We use an explicit fourth order Runge-Kutta integrator,
+imported from <code class="docutils literal notranslate"><span class="pre">integrators</span></code>. The solver
+requires one function to compute nonlinear terms,
+and one to compute linear. But here we will make
+just one function that computes both, and call it
+<code class="docutils literal notranslate"><span class="pre">NonlinearRHS</span></code>:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">uh</span> <span class="o">=</span> <span class="n">TrialFunction</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+<span class="n">vh</span> <span class="o">=</span> <span class="n">TestFunction</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+<span class="n">L</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">vh</span><span class="p">),</span> <span class="o">-</span><span class="n">grad</span><span class="p">(</span><span class="n">uh</span><span class="p">))</span> <span class="o">-</span> <span class="n">inner</span><span class="p">(</span><span class="n">vh</span><span class="p">,</span> <span class="n">gamma</span><span class="o">*</span><span class="n">uh</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">NonlinearRHS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fu</span><span class="p">,</span> <span class="n">fu_hat</span><span class="p">,</span> <span class="n">dfu_hat</span><span class="p">,</span> <span class="o">**</span><span class="n">par</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">count</span><span class="p">,</span> <span class="n">up</span>
+    <span class="n">dfu_hat</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">f_hat</span><span class="p">,</span> <span class="n">u_hat</span> <span class="o">=</span> <span class="n">fu_hat</span>
+    <span class="n">df_hat</span><span class="p">,</span> <span class="n">du_hat</span> <span class="o">=</span> <span class="n">dfu_hat</span>
+    <span class="n">up</span> <span class="o">=</span> <span class="n">Tp</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">u_hat</span><span class="p">,</span> <span class="n">up</span><span class="p">)</span>
+    <span class="n">df_hat</span> <span class="o">=</span> <span class="n">Tp</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">gamma</span><span class="o">*</span><span class="n">up</span><span class="o">**</span><span class="mi">3</span><span class="p">,</span> <span class="n">df_hat</span><span class="p">)</span>
+    <span class="n">df_hat</span> <span class="o">+=</span> <span class="n">L</span><span class="o">*</span><span class="n">u_hat</span>
+    <span class="n">du_hat</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">f_hat</span>
+    <span class="k">return</span> <span class="n">dfu_hat</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>All that is left is to write a function that is called
+on each time step, which will allow us to store intermediate
+solutions, compute intermediate energies, and plot
+intermediate solutions. Since we will plot the same plot
+many times, we create the figure first, and then simply update
+the plotted arrays in the <code class="docutils literal notranslate"><span class="pre">update</span></code> function.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">local_mesh</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">image</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">u</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">N</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">//</span><span class="mi">2</span><span class="p">],</span> <span class="mi">100</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">pause</span><span class="p">(</span><span class="mf">1e-6</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>The actual <code class="docutils literal notranslate"><span class="pre">update</span></code> function is</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get wavenumbers</span>
+<span class="n">K</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">T</span><span class="o">.</span><span class="n">local_wavenumbers</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fu</span><span class="p">,</span> <span class="n">fu_hat</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">tstep</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">gradu</span>
+
+    <span class="n">transformed</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">tstep</span> <span class="o">%</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;plot_tstep&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;plot_tstep&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">fu</span> <span class="o">=</span> <span class="n">fu_hat</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">fu</span><span class="p">)</span>
+        <span class="n">f</span><span class="p">,</span> <span class="n">u</span> <span class="o">=</span> <span class="n">fu</span><span class="p">[:]</span>
+        <span class="n">image</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="n">image</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">u</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">N</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">//</span><span class="mi">2</span><span class="p">],</span> <span class="mi">100</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">pause</span><span class="p">(</span><span class="mf">1e-6</span><span class="p">)</span>
+        <span class="n">transformed</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">if</span> <span class="n">tstep</span> <span class="o">%</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;Compute_energy&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">transformed</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="n">fu</span> <span class="o">=</span> <span class="n">fu_hat</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">fu</span><span class="p">)</span>
+        <span class="n">f</span><span class="p">,</span> <span class="n">u</span> <span class="o">=</span> <span class="n">fu</span>
+        <span class="n">f_hat</span><span class="p">,</span> <span class="n">u_hat</span> <span class="o">=</span> <span class="n">fu_hat</span>
+        <span class="n">ekin</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">energy_fourier</span><span class="p">(</span><span class="n">f_hat</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
+        <span class="n">es</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">energy_fourier</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="p">(</span><span class="n">K</span><span class="o">*</span><span class="n">u_hat</span><span class="p">),</span> <span class="n">T</span><span class="p">)</span>
+        <span class="n">eg</span> <span class="o">=</span> <span class="n">gamma</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="n">u</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="mf">0.25</span><span class="o">*</span><span class="n">u</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">N</span><span class="p">))</span>
+        <span class="n">eg</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">eg</span><span class="p">)</span>
+        <span class="n">gradu</span> <span class="o">=</span> <span class="n">TV</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="p">(</span><span class="n">K</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">u_hat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">K</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">u_hat</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">K</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">u_hat</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span> <span class="n">gradu</span><span class="p">)</span>
+        <span class="n">ep</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">f</span><span class="o">*</span><span class="n">gradu</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">N</span><span class="p">)))</span>
+        <span class="n">ea</span> <span class="o">=</span> <span class="n">comm</span><span class="o">.</span><span class="n">allreduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">X</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="n">f</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">gradu</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="n">u</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="mf">0.25</span><span class="o">*</span><span class="n">u</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span><span class="o">*</span><span class="n">f</span><span class="p">))</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">N</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Time = </span><span class="si">%2.2f</span><span class="s2"> Total energy = </span><span class="si">%2.8e</span><span class="s2"> Linear momentum </span><span class="si">%2.8e</span><span class="s2"> Angular momentum </span><span class="si">%2.8e</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">ekin</span><span class="o">+</span><span class="n">es</span><span class="o">+</span><span class="n">eg</span><span class="p">,</span> <span class="n">ep</span><span class="p">,</span> <span class="n">ea</span><span class="p">))</span>
+        <span class="n">comm</span><span class="o">.</span><span class="n">barrier</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>With all functions in place, the actual integrator
+can be created and called as</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">par</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Compute_energy&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+       <span class="s1">&#39;plot_tstep&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+       <span class="s1">&#39;end_time&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+<span class="n">dt</span> <span class="o">=</span> <span class="mf">0.005</span>
+<span class="n">integrator</span> <span class="o">=</span> <span class="n">RK4</span><span class="p">(</span><span class="n">TT</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="n">NonlinearRHS</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="n">update</span><span class="p">,</span> <span class="o">**</span><span class="n">par</span><span class="p">)</span>
+<span class="n">integrator</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+<span class="n">fu_hat</span> <span class="o">=</span> <span class="n">integrator</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">fu</span><span class="p">,</span> <span class="n">fu_hat</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">par</span><span class="p">[</span><span class="s1">&#39;end_time&#39;</span><span class="p">]))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>A complete solver is found <a class="reference external" href="https://github.com/spectralDNS/shenfun/blob/master/demo/KleinGordon.py">here</a>.</p>
+<!-- ======= Bibliography ======= -->
+<ol class="simple">
+<li><p><a id="abdul08"></a> <strong>A.-M. Wazwaz</strong>.
+New Travelling Wave Solutions to the Boussinesq and the Klein-Gordon Equations,
+<em>Communications in Nonlinear Science and Numerical Simulation</em>,
+13(5),
+pp. 889-901,
+<a class="reference external" href="http://dx.doi.org/10.1016/j.cnsns.2006.08.005">doi: 10.1016/j.cnsns.2006.08.005</a>,
+2008.</p></li>
+</ol>
+</div>
+</div>
+</div>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "spectralDNS/shenfun",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            kernelName: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+              </div>
+              
+        </div>
+    </div>
+    
+    
+    <div class='prev-next-bottom'>
+        
+    <a class='left-prev' id="prev-link" href="poisson.html" title="previous page">Demo - 1D Poisson’s equation</a>
+    <a class='right-next' id="next-link" href="poisson3d.html" title="next page">Demo - 3D Poisson’s equation</a>
+
+    </div>
+    <footer class="footer mt-5 mt-md-0">
+    <div class="container">
+      <p>
+        
+          By Mikael Mortensen<br/>
+        
+            &copy; Copyright 2020.<br/>
+      </p>
+    </div>
+  </footer>
+</main>
+
+
+      </div>
+    </div>
+
+    <script src="_static/js/index.js"></script>
+    
+  </body>
+</html>

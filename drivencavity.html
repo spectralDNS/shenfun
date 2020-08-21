@@ -1,0 +1,1040 @@
+
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Demo - Lid driven cavity &#8212; Shenfun executable demos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
+    <link href="_static/css/index.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/sphinx-book-theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="_static/jupyter-sphinx.css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/sphinx-book-theme.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/togglebutton.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
+    <script src="_static/mystnb.js"></script>
+    <script src="_static/sphinx-book-theme.js"></script>
+    <script >var togglebuttonSelector = '.toggle, .admonition.dropdown, .tag_hide_input div.cell_input, .tag_hide-input div.cell_input, .tag_hide_output div.cell_output, .tag_hide-output div.cell_output, .tag_hide_cell.cell, .tag_hide-cell.cell';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"TeX": {"Macros": {"bmat": ["\\left[\\begin{array}"], "emat": ["\\end{array}\\right]"]}, "extensions": ["cancel.js", "AMSmath.js"]}})</script>
+    <script async="async" src="https://unpkg.com/thebelab@latest/lib/index.js"></script>
+    <script >
+        const thebe_selector = ".thebe,.cell"
+        const thebe_selector_input = "pre,.cell_input div.highlight"
+        const thebe_selector_output = ".output,.cell_output"
+    </script>
+    <script async="async" src="_static/sphinx-thebe.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Demo - Rayleigh Benard" href="rayleighbenard.html" />
+    <link rel="prev" title="Demo - Stokes equations" href="stokes.html" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="docsearch:language" content="en">
+
+
+
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+<div class="col-12 col-md-3 bd-sidebar site-navigation show" id="site-navigation">
+    
+        <div class="navbar-brand-box">
+<a class="navbar-brand text-wrap" href="index.html">
+  
+  
+  <h1 class="site-logo" id="site-title">Shenfun executable demos</h1>
+  
+</a>
+</div>
+
+<form class="bd-search d-flex align-items-center" action="search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search this book..." aria-label="Search this book..." autocomplete="off" >
+</form>
+
+<nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <ul class="nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="intro.html">
+   Shenfun executable demos
+  </a>
+ </li>
+</ul>
+<p class="caption">
+ <span class="caption-text">
+  Shenfun demos
+ </span>
+</p>
+<ul class="current nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="poisson.html">
+   Demo - 1D Poisson’s equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="kleingordon.html">
+   Demo - Cubic nonlinear Klein-Gordon equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="poisson3d.html">
+   Demo - 3D Poisson’s equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="polarhelmholtz.html">
+   Demo - Helmholtz equation in polar coordinates
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="sphericalhelmholtz.html">
+   Demo - Helmholtz equation on the unit sphere
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="kuramatosivashinsky.html">
+   Demo - Kuramato-Sivashinsky equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="stokes.html">
+   Demo - Stokes equations
+  </a>
+ </li>
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   Demo - Lid driven cavity
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="rayleighbenard.html">
+   Demo - Rayleigh Benard
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="functions.html">
+   Demo - Working with Functions
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="surfaceintegration.html">
+   Demo - Integration of functions
+  </a>
+ </li>
+</ul>
+
+</nav>
+
+ <!-- To handle the deprecated key -->
+
+<div class="navbar_extra_footer">
+  Powered by <a href="https://jupyterbook.org">Jupyter Book</a>
+</div>
+
+</div>
+
+
+          
+
+
+          
+<main class="col py-md-3 pl-md-4 bd-content overflow-auto" role="main">
+    
+    <div class="row topbar fixed-top container-xl">
+    <div class="col-12 col-md-3 bd-topbar-whitespace site-navigation show">
+    </div>
+    <div class="col pl-2 topbar-main">
+        
+        <button id="navbar-toggler" class="navbar-toggler ml-0" type="button" data-toggle="collapse"
+            data-toggle="tooltip" data-placement="bottom" data-target=".site-navigation" aria-controls="navbar-menu"
+            aria-expanded="true" aria-label="Toggle navigation" aria-controls="site-navigation"
+            title="Toggle navigation" data-toggle="tooltip" data-placement="left">
+            <i class="fas fa-bars"></i>
+            <i class="fas fa-arrow-left"></i>
+            <i class="fas fa-arrow-up"></i>
+        </button>
+        
+        <div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn" aria-label="Download this page"><i
+            class="fas fa-download"></i></button>
+
+    
+    <div class="dropdown-buttons">
+        <!-- ipynb file if we had a myst markdown file -->
+        
+        <!-- Download raw file -->
+        <a class="dropdown-buttons" href="_sources/drivencavity.ipynb"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Download source file" data-toggle="tooltip"
+                data-placement="left">.ipynb</button></a>
+        <!-- Download PDF via print -->
+        <button type="button" id="download-print" class="btn btn-secondary topbarbtn" title="Print to PDF"
+            onClick="window.print()" data-toggle="tooltip" data-placement="left">.pdf</button>
+    </div>
+    
+</div>
+        <!-- Source interaction buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Connect with source repository"><i class="fab fa-github"></i></button>
+    <div class="dropdown-buttons sourcebuttons">
+        <a class="repository-button"
+            href="https://github.com/spectralDNS/shenfun"><button type="button" class="btn btn-secondary topbarbtn"
+                data-toggle="tooltip" data-placement="left" title="Source repository"><i
+                    class="fab fa-github"></i>repository</button></a>
+        
+        
+    </div>
+</div>
+
+
+        <!-- Full screen (wrap in <a> to have style consistency -->
+        <a class="full-screen-button"><button type="button" class="btn btn-secondary topbarbtn" data-toggle="tooltip"
+                data-placement="bottom" onclick="toggleFullScreen()" title="Fullscreen mode"><i
+                    class="fas fa-expand"></i></button></a>
+
+        <!-- Launch buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Launch interactive content"><i class="fas fa-rocket"></i></button>
+    <div class="dropdown-buttons">
+        
+        <a class="binder-button" href="https://mybinder.org/v2/gh/spectralDNS/shenfun/master?urlpath=tree/./docs/book/drivencavity.ipynb"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Launch Binder" data-toggle="tooltip"
+                data-placement="left"><img class="binder-button-logo"
+                    src="_static/images/logo_binder.svg"
+                    alt="Interact on binder">Binder</button></a>
+        
+        
+        
+        <button type="button" class="btn btn-secondary topbarbtn"
+            onclick="initThebeSBT()" title="Launch Thebe" data-toggle="tooltip" data-placement="left"><i
+                class="fas fa-play"></i><span style="margin-left: .4em;">Live Code</span></button>
+        
+    </div>
+</div>
+
+    </div>
+
+    <!-- Table of contents -->
+    <div class="d-none d-md-block col-md-2 bd-toc show">
+        <div class="tocsection onthispage pt-5 pb-3">
+            <i class="fas fa-list"></i> On this page
+        </div>
+        <nav id="bd-toc-nav">
+            <ul class="nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#navier-stokes-equations">
+   Navier Stokes equations
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#tensor-product-spaces">
+   Tensor product spaces
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#mixed-variational-form">
+   Mixed variational form
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#implementation-of-solver">
+   Implementation of solver
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#complete-solver">
+   Complete solver
+  </a>
+ </li>
+</ul>
+
+        </nav>
+    </div>
+</div>
+    <div id="main-content" class="row">
+        <div class="col-12 col-md-9 pl-md-3 pr-md-0">
+        
+              <div>
+                
+  <!-- dom:TITLE: Demo - Lid driven cavity -->
+<div class="section" id="demo-lid-driven-cavity">
+<h1>Demo - Lid driven cavity<a class="headerlink" href="#demo-lid-driven-cavity" title="Permalink to this headline">¶</a></h1>
+<!-- dom:AUTHOR: Mikael Mortensen Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo. -->
+<!-- Author: -->  
+<p><strong>Mikael Mortensen</strong> (email: <code class="docutils literal notranslate"><span class="pre">mikaem&#64;math.uio.no</span></code>), Department of Mathematics, University of Oslo.</p>
+<p>Date: <strong>Aug 21, 2020</strong></p>
+<p>Copyright 2020, Mikael Mortensen. Released under CC Attribution 4.0 license</p>
+<p><strong>Summary.</strong> The lid driven cavity is a classical benchmark for Navier Stokes solvers.
+This is a demonstration of how the Python module <a class="reference external" href="https://github.com/spectralDNS/shenfun">shenfun</a> can be used to solve the lid
+driven cavity problem with full spectral accuracy using a mixed (coupled) basis
+in a 2D tensor product domain. The demo also shows how to use mixed
+tensor product spaces for vector valued equations. Note that the regular
+lid driven cavity, where the top wall has constant velocity and the
+remaining three walls are stationary, has a singularity at the two
+upper corners, where the velocity is discontinuous.
+Due to their global nature, spectral methods
+are usually not very good at handling problems with discontinuities, and
+for this reason we will also look at a regularized lid driven cavity,
+where the top lid moves according to <span class="math notranslate nohighlight">\((1-x)^2(1+x)^2\)</span>, thus removing
+the corner discontinuities.</p>
+<!-- dom:FIGURE: [https://raw.githack.com/spectralDNS/spectralutilities/master/figures/DrivenCavity.png] Velocity vectors for $Re=100$.   <a id="fig:drivencavity"></a> -->
+<!-- begin figure -->
+<p><a id="fig:drivencavity"></a></p>
+<p>Velocity vectors for $Re=100$.</p>
+<img src="https://raw.githack.com/spectralDNS/spectralutilities/master/figures/DrivenCavity.png" >
+<!-- end figure -->
+<div class="section" id="navier-stokes-equations">
+<h2>Navier Stokes equations<a class="headerlink" href="#navier-stokes-equations" title="Permalink to this headline">¶</a></h2>
+<p><a id="demo:navierstokes"></a></p>
+<p>The nonlinear steady Navier Stokes equations are given in strong form as</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+\nu \nabla^2 \boldsymbol{u} - \nabla p &amp;= \nabla \cdot \boldsymbol{u} \boldsymbol{u} \quad \text{in }  \Omega , \\ 
+\nabla \cdot \boldsymbol{u} &amp;= 0 \quad \text{in } \Omega  \\ 
+\int_{\Omega} p dx &amp;= 0 \\ 
+\boldsymbol{u}(x, y=1) = (1, 0) \, &amp;\text{ or }\, \boldsymbol{u}(x, y=1) = ((1-x)^2(1+x)^2, 0) \\ 
+\boldsymbol{u}(x, y=-1) &amp;= (0, 0) \\ 
+\boldsymbol{u}(x=\pm 1, y) &amp;= (0, 0)
+\end{align*}
+\end{split}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\boldsymbol{u}, p\)</span> and <span class="math notranslate nohighlight">\(\nu\)</span> are, respectively, the
+fluid velocity vector, pressure and kinematic viscosity. The domain
+<span class="math notranslate nohighlight">\(\Omega = [-1, 1]^2\)</span> and the nonlinear term <span class="math notranslate nohighlight">\(\boldsymbol{u} \boldsymbol{u}\)</span> is the
+outer product of vector <span class="math notranslate nohighlight">\(\boldsymbol{u}\)</span> with itself. Note that the final
+<span class="math notranslate nohighlight">\(\int_{\Omega} p dx = 0\)</span> is there because there is no Dirichlet boundary
+condition on the pressure and the system of equations would otherwise be
+ill conditioned.</p>
+<p>We want to solve these steady nonlinear Navier Stokes equations with the Galerkin
+method, using the <a class="reference external" href="https://github.com/spectralDNS/shenfun">shenfun</a> Python
+package. The first thing we need to do then is to import all of shenfun’s
+functionality</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">shenfun</span> <span class="kn">import</span> <span class="o">*</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Note that MPI for Python (<a class="reference external" href="https://bitbucket.org/mpi4py/mpi4py">mpi4py</a>)
+is a requirement for shenfun, but the current solver cannot be used with more
+than one processor.</p>
+</div>
+<div class="section" id="tensor-product-spaces">
+<h2>Tensor product spaces<a class="headerlink" href="#tensor-product-spaces" title="Permalink to this headline">¶</a></h2>
+<p><a id="sec:bases"></a></p>
+<p>With the Galerkin method we need function spaces for both velocity and
+pressure, as well as for the
+nonlinear right hand side. A Dirichlet space will be used for velocity,
+whereas there is no boundary restriction on the pressure space. For both
+two-dimensional spaces we will use one basis function for the <span class="math notranslate nohighlight">\(x\)</span>-direction,
+<span class="math notranslate nohighlight">\(\mathcal{X}_k(x)\)</span>, and one for the <span class="math notranslate nohighlight">\(y\)</span>-direction, <span class="math notranslate nohighlight">\(\mathcal{Y}_l(y)\)</span>. And
+then we create two-dimensional basis functions like</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:nstestfunction"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+v_{kl}(x, y) = \mathcal{X}_k(x) \mathcal{Y}_l(y),  \label{eq:nstestfunction} \tag{1}
+\end{equation}
+\]</div>
+<p>and solutions (trial functions) as</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:nstrialfunction"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+    u(x, y) = \sum_{k}\sum_{l} \hat{u}_{kl} v_{kl}(x, y). \label{eq:nstrialfunction} \tag{2}
+\end{equation}
+\]</div>
+<p>For the homogeneous Dirichlet boundary condition the basis functions
+<span class="math notranslate nohighlight">\(\mathcal{X}_k(x)\)</span> and <span class="math notranslate nohighlight">\(\mathcal{Y}_l(y)\)</span> are chosen as composite
+Legendre polynomials (we could also use Chebyshev):</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:D0"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\mathcal{X}_k(x) = L_k(x) - L_{k+2}(x), \quad \forall \, k \in \boldsymbol{k}^{N_0-2}, \label{eq:D0} \tag{3} 
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:D1"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+\mathcal{Y}_l(y) = L_l(y) - L_{l+2}(y), \quad \forall \, l \in \boldsymbol{l}^{N_1-2}, \label{eq:D1} \tag{4}
+\end{equation}
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(\boldsymbol{k}^{N_0-2} = (0, 1, \ldots, N_0-3)\)</span>, <span class="math notranslate nohighlight">\(\boldsymbol{l}^{N_1-2} = (0, 1, \ldots, N_1-3)\)</span>
+and <span class="math notranslate nohighlight">\(N = (N_0, N_1)\)</span> is the number
+of quadrature points in each direction. Note that <span class="math notranslate nohighlight">\(N_0\)</span> and <span class="math notranslate nohighlight">\(N_1\)</span> do not need
+to be the same. The basis funciton (<a class="reference external" href="#eq:D0">3</a>) satisfies
+the homogeneous Dirichlet boundary conditions at <span class="math notranslate nohighlight">\(x=\pm 1\)</span> and (<a class="reference external" href="#eq:D1">4</a>) the same
+at <span class="math notranslate nohighlight">\(y=\pm 1\)</span>. As such, the basis function <span class="math notranslate nohighlight">\(v_{kl}(x, y)\)</span> satisfies the homogeneous Dirichlet boundary
+condition for the entire domain.</p>
+<p>With shenfun we create these homogeneous spaces, <span class="math notranslate nohighlight">\(D_0^{N_0}(x)=\text{span}\{L_k-L_{k+2}\}_{k=0}^{N_0-2}\)</span> and
+<span class="math notranslate nohighlight">\(D_0^{N_1}(y)=\text{span}\{L_l-L_{l+2}\}_{l=0}^{N_1-2}\)</span> as</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">N</span> <span class="o">=</span> <span class="p">(</span><span class="mi">45</span><span class="p">,</span> <span class="mi">45</span><span class="p">)</span>
+<span class="n">family</span> <span class="o">=</span> <span class="s1">&#39;Legendre&#39;</span> <span class="c1"># or use &#39;Chebyshev&#39;</span>
+<span class="n">quad</span> <span class="o">=</span> <span class="s1">&#39;GL&#39;</span>         <span class="c1"># for Chebyshev use &#39;GC&#39; or &#39;GL&#39;</span>
+<span class="n">D0X</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">family</span><span class="p">,</span> <span class="n">quad</span><span class="o">=</span><span class="n">quad</span><span class="p">,</span> <span class="n">bc</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<span class="n">D0Y</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">family</span><span class="p">,</span> <span class="n">quad</span><span class="o">=</span><span class="n">quad</span><span class="p">,</span> <span class="n">bc</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>The spaces are here the same, but we will use <code class="docutils literal notranslate"><span class="pre">D0X</span></code> in the <span class="math notranslate nohighlight">\(x\)</span>-direction and
+<code class="docutils literal notranslate"><span class="pre">D0Y</span></code> in the <span class="math notranslate nohighlight">\(y\)</span>-direction. But before we use these bases in
+tensor product spaces, they remain identical as long as <span class="math notranslate nohighlight">\(N_0 = N_1\)</span>.</p>
+<p>Special attention is required by the moving lid. To get a solution
+with nonzero boundary condition at <span class="math notranslate nohighlight">\(y=1\)</span> we need to add one more basis function
+that satisfies that solution. In general, a nonzero boundary condition
+can be added on both sides of the domain using the following basis</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto1"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\mathcal{Y}_l(y) = L_l(y) - L_{l+2}(y), \quad \forall \, l \in \boldsymbol{l}^{N_1-2}. 
+\label{_auto1} \tag{5}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto2"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+\mathcal{Y}_{N_1-2}(y) = (L_0+L_1)/2 \quad \left(=(1+y)/2\right), 
+\label{_auto2} \tag{6}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto3"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+\mathcal{Y}_{N_1-1}(y) = (L_0-L_1)/2 \quad \left(=(1-y)/2\right).
+\label{_auto3} \tag{7}
+\end{equation}
+\]</div>
+<p>And then the unknown component <span class="math notranslate nohighlight">\(N_1-2\)</span> decides the value at <span class="math notranslate nohighlight">\(y=1\)</span>, whereas
+the unknown at <span class="math notranslate nohighlight">\(N_1-1\)</span> decides the value at <span class="math notranslate nohighlight">\(y=-1\)</span>. Here we only need to
+add the <span class="math notranslate nohighlight">\(N_1-2\)</span> component, but for generality this is implemented in shenfun
+using both additional basis functions. We create the space
+<span class="math notranslate nohighlight">\(D_1^{N_1}(y)=\text{span}\{\mathcal{Y}_l(y)\}_{l=0}^{N_1-1}\)</span> as</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">D1Y</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">family</span><span class="p">,</span> <span class="n">quad</span><span class="o">=</span><span class="n">quad</span><span class="p">,</span> <span class="n">bc</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">bc=(1,</span> <span class="pre">0)</span></code> fixes the values for <span class="math notranslate nohighlight">\(y=1\)</span> and <span class="math notranslate nohighlight">\(y=-1\)</span>, respectively.
+For a regularized lid driven cavity the velocity of the top lid is
+<span class="math notranslate nohighlight">\((1-x)^2(1+x)^2\)</span> and not unity. To implement this boundary condition
+instead, we can make use of <a class="reference external" href="https://www.sympy.org">sympy</a> and
+quite straight forward do</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sympy</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">sympy</span><span class="o">.</span><span class="n">symbols</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">)</span>
+<span class="c1">#D1Y = FunctionSpace(N[1], family, quad=quad, bc=(0, (1-x)**2*(1+x)**2))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Uncomment the last line to run the regularized boundary conditions.
+Otherwise, there is no difference at all between the regular and the
+regularized lid driven cavity implementations.</p>
+<p>The pressure basis that comes with no restrictions for the boundary is a
+little trickier. The reason for this has to do with
+inf-sup stability. The obvious choice of basis functions are the
+regular Legendre polynomials <span class="math notranslate nohighlight">\(L_k(x)\)</span> in <span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(L_l(y)\)</span> in the
+<span class="math notranslate nohighlight">\(y\)</span>-directions. The problem is that for the natural choice of
+<span class="math notranslate nohighlight">\((k, l) \in \boldsymbol{k}^{N_0} \times \boldsymbol{l}^{N_1}\)</span>
+there are nullspaces and the problem is not well-defined. It turns out
+that the proper choice for the pressure basis is simply the regular
+Legendre basis functions, but for
+<span class="math notranslate nohighlight">\((k, l) \in \boldsymbol{k}^{N_0-2} \times \boldsymbol{l}^{N_1-2}\)</span>.
+The bases <span class="math notranslate nohighlight">\(P^{N_0}(x)=\text{span}\{L_k(x)\}_{k=0}^{N_0-3}\)</span> and
+<span class="math notranslate nohighlight">\(P^{N_1}(y)=\text{span}\{L_l(y)\}_{l=0}^{N_1-3}\)</span> are created as</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PX</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">family</span><span class="p">,</span> <span class="n">quad</span><span class="o">=</span><span class="n">quad</span><span class="p">)</span>
+<span class="n">PY</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">family</span><span class="p">,</span> <span class="n">quad</span><span class="o">=</span><span class="n">quad</span><span class="p">)</span>
+<span class="n">PX</span><span class="o">.</span><span class="n">slice</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">N</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">PY</span><span class="o">.</span><span class="n">slice</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">N</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Note that we still use these spaces with the same <span class="math notranslate nohighlight">\(N_0 \cdot N_1\)</span>
+quadrature points in real space, but the two highest frequencies have
+been set to zero.</p>
+<p>We have now created all relevant function spaces for the problem at hand.
+It remains to combine these spaces into tensor product spaces, and to
+combine tensor product spaces into mixed (coupled) tensor product
+spaces. From the Dirichlet bases we create two different tensor
+product spaces, whereas one is enough for the pressure</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto4"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+V_{1}^{\boldsymbol{N}}(\boldsymbol{x}) = D_0^{N_0}(x) \otimes D_1^{N_1}(y), 
+\label{_auto4} \tag{8}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto5"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+V_{0}^{\boldsymbol{N}}(\boldsymbol{x}) = D_0^{N_0}(x) \otimes D_0^{N_1}(y), 
+\label{_auto5} \tag{9}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto6"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+P^{\boldsymbol{N}}(\boldsymbol{x}) = P^{N_0}(x) \otimes P^{N_1}(y).
+\label{_auto6} \tag{10}
+\end{equation}
+\]</div>
+<p>With shenfun the tensor product spaces are created as</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">V1</span> <span class="o">=</span> <span class="n">TensorProductSpace</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="p">(</span><span class="n">D0X</span><span class="p">,</span> <span class="n">D1Y</span><span class="p">))</span>
+<span class="n">V0</span> <span class="o">=</span> <span class="n">TensorProductSpace</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="p">(</span><span class="n">D0X</span><span class="p">,</span> <span class="n">D0Y</span><span class="p">))</span>
+<span class="n">P</span> <span class="o">=</span> <span class="n">TensorProductSpace</span><span class="p">(</span><span class="n">comm</span><span class="p">,</span> <span class="p">(</span><span class="n">PX</span><span class="p">,</span> <span class="n">PY</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>These tensor product spaces are all scalar valued.
+The velocity is a vector, and a vector requires a mixed vector basis like
+<span class="math notranslate nohighlight">\(W_1^{\boldsymbol{N}} = V_1^{\boldsymbol{N}} \times V_0^{\boldsymbol{N}}\)</span>. The vector basis is created
+in shenfun as</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">W1</span> <span class="o">=</span> <span class="n">VectorTensorProductSpace</span><span class="p">([</span><span class="n">V1</span><span class="p">,</span> <span class="n">V0</span><span class="p">])</span>
+<span class="n">W0</span> <span class="o">=</span> <span class="n">VectorTensorProductSpace</span><span class="p">([</span><span class="n">V0</span><span class="p">,</span> <span class="n">V0</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Note that the second vector basis, <span class="math notranslate nohighlight">\(W_0^{\boldsymbol{N}} = V_0^{\boldsymbol{N}} \times V_0^{\boldsymbol{N}}\)</span>, uses
+homogeneous boundary conditions throughout.</p>
+</div>
+<div class="section" id="mixed-variational-form">
+<h2>Mixed variational form<a class="headerlink" href="#mixed-variational-form" title="Permalink to this headline">¶</a></h2>
+<p><a id="sec:mixedform"></a></p>
+<p>We now formulate a variational problem using the
+Galerkin method: Find
+<span class="math notranslate nohighlight">\(\boldsymbol{u} \in W_1^{\boldsymbol{N}}\)</span> and <span class="math notranslate nohighlight">\(p \in P^{\boldsymbol{N}}\)</span> such that</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:nsvarform"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\int_{\Omega} (\nu \nabla^2 \boldsymbol{u} - \nabla p ) \cdot \boldsymbol{v} \, dxdy = \int_{\Omega} (\nabla \cdot \boldsymbol{u}\boldsymbol{u}) \cdot \boldsymbol{v}\, dxdy \quad\forall \boldsymbol{v} \, \in \, W_0^{\boldsymbol{N}}, \label{eq:nsvarform} \tag{11} 
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto7"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+\int_{\Omega} \nabla \cdot \boldsymbol{u} \, q \, dxdy = 0 \quad\forall q \, \in \, P^{\boldsymbol{N}}.
+\label{_auto7} \tag{12}
+\end{equation}
+\]</div>
+<p>Note that we are using test functions <span class="math notranslate nohighlight">\(\boldsymbol{v}\)</span> with homogeneous
+boundary conditions.</p>
+<p>The first obvious issue with Eq (<a class="reference external" href="#eq:nsvarform">11</a>) is the nonlinearity.
+In other words we will
+need to linearize and iterate to be able to solve these equations with
+the Galerkin method. To this end we will introduce the solution on
+iteration <span class="math notranslate nohighlight">\(k \in [0, 1, \ldots]\)</span> as <span class="math notranslate nohighlight">\(\boldsymbol{u}^k\)</span> and compute the nonlinearity
+using only known solutions
+<span class="math notranslate nohighlight">\(\int_{\Omega} (\nabla \cdot \boldsymbol{u}^k\boldsymbol{u}^k) \cdot \boldsymbol{v}\, dxdy\)</span>.
+Using further integration by parts we end up with the equations to solve
+for iteration number <span class="math notranslate nohighlight">\(k+1\)</span> (using <span class="math notranslate nohighlight">\(\boldsymbol{u} = \boldsymbol{u}^{k+1}\)</span> and <span class="math notranslate nohighlight">\(p=p^{k+1}\)</span>
+for simplicity)</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:nsvarform2"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+-\int_{\Omega} \nu \nabla \boldsymbol{u} \, \colon \nabla \boldsymbol{v} \, dxdy + \int_{\Omega} p \nabla \cdot \boldsymbol{v} \, dxdy = \int_{\Omega} (\nabla \cdot \boldsymbol{u}^k\boldsymbol{u}^k) \cdot \boldsymbol{v}\, dxdy \quad\forall \boldsymbol{v} \, \in \, W_0^{\boldsymbol{N}}, \label{eq:nsvarform2} \tag{13} 
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto8"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+\int_{\Omega} \nabla \cdot \boldsymbol{u} \, q \, dxdy = 0 \quad\forall q \, \in \, P^{\boldsymbol{N}}.
+\label{_auto8} \tag{14}
+\end{equation}
+\]</div>
+<p>Note that the nonlinear term may also be integrated by parts and
+evaluated as <span class="math notranslate nohighlight">\(\int_{\Omega}-\boldsymbol{u}^k\boldsymbol{u}^k  \, \colon \nabla \boldsymbol{v} \, dxdy\)</span>. All
+boundary integrals disappear since we are using test functions with
+homogeneous boundary conditions.</p>
+<p>Since we are to solve for <span class="math notranslate nohighlight">\(\boldsymbol{u}\)</span> and <span class="math notranslate nohighlight">\(p\)</span> at the same time, we formulate a
+mixed (coupled) problem: find <span class="math notranslate nohighlight">\((\boldsymbol{u}, p) \in W_1^{\boldsymbol{N}} \times P^{\boldsymbol{N}}\)</span>
+such that</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto9"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+a((\boldsymbol{u}, p), (\boldsymbol{v}, q)) = L((\boldsymbol{v}, q)) \quad \forall (\boldsymbol{v}, q) \in W_0^{\boldsymbol{N}} \times P^{\boldsymbol{N}},
+\label{_auto9} \tag{15}
+\end{equation}
+\]</div>
+<p>where bilinear (<span class="math notranslate nohighlight">\(a\)</span>) and linear (<span class="math notranslate nohighlight">\(L\)</span>) forms are given as</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto10"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+    a((\boldsymbol{u}, p), (\boldsymbol{v}, q)) = -\int_{\Omega} \nu \nabla \boldsymbol{u} \, \colon \nabla \boldsymbol{v} \, dxdy + \int_{\Omega} p \nabla \cdot \boldsymbol{v} \, dxdy + \int_{\Omega} \nabla \cdot \boldsymbol{u} \, q \, dxdy, 
+\label{_auto10} \tag{16}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto11"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+    L((\boldsymbol{v}, q); \boldsymbol{u}^{k}) = \int_{\Omega} (\nabla \cdot \boldsymbol{u}^{k}\boldsymbol{u}^{k}) \cdot \boldsymbol{v}\, dxdy.
+\label{_auto11} \tag{17}
+\end{equation}
+\]</div>
+<p>Note that the bilinear form will assemble to a block matrix, whereas the right hand side
+linear form will assemble to a block vector. The bilinear form does not change
+with the solution and as such it does not need to be reassembled inside
+an iteration loop.</p>
+<p>The algorithm used to solve the equations are:</p>
+<ul class="simple">
+<li><p>Set <span class="math notranslate nohighlight">\(k = 0\)</span></p></li>
+<li><p>Guess <span class="math notranslate nohighlight">\(\boldsymbol{u}^0 = (0, 0)\)</span></p></li>
+<li><p>while not converged:</p>
+<ul>
+<li><p>assemble <span class="math notranslate nohighlight">\(L((\boldsymbol{v}, q); \boldsymbol{u}^{k})\)</span></p></li>
+<li><p>solve <span class="math notranslate nohighlight">\(a((\boldsymbol{u}, p), (\boldsymbol{v}, q)) = L((\boldsymbol{v}, q); \boldsymbol{u}^{k})\)</span> for <span class="math notranslate nohighlight">\(\boldsymbol{u}^{k+1}, p^{k+1}\)</span></p></li>
+<li><p>compute error = <span class="math notranslate nohighlight">\(\int_{\Omega} (\boldsymbol{u}^{k+1}-\boldsymbol{u}^{k})^2 \, dxdy\)</span></p></li>
+<li><p>if error <span class="math notranslate nohighlight">\(&lt;\)</span> some tolerance then converged = True</p></li>
+<li><p><span class="math notranslate nohighlight">\(k\)</span> += <span class="math notranslate nohighlight">\(1\)</span></p></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="implementation-of-solver">
+<h2>Implementation of solver<a class="headerlink" href="#implementation-of-solver" title="Permalink to this headline">¶</a></h2>
+<p>We will now implement the coupled variational problem described in previous
+sections. First of all, since we want to solve for the velocity and pressure
+in a coupled solver, we have to
+create a mixed tensor product space <span class="math notranslate nohighlight">\(VQ = W_1^{\boldsymbol{N}} \times P^{\boldsymbol{N}}\)</span> that
+couples velocity and pressure</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">VQ</span> <span class="o">=</span> <span class="n">MixedTensorProductSpace</span><span class="p">([</span><span class="n">W1</span><span class="p">,</span> <span class="n">P</span><span class="p">])</span>    <span class="c1"># Coupling velocity and pressure</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We can now create test- and trialfunctions for the coupled space <span class="math notranslate nohighlight">\(VQ\)</span>,
+and then split them up into components afterwards:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">up</span> <span class="o">=</span> <span class="n">TrialFunction</span><span class="p">(</span><span class="n">VQ</span><span class="p">)</span>
+<span class="n">vq</span> <span class="o">=</span> <span class="n">TestFunction</span><span class="p">(</span><span class="n">VQ</span><span class="p">)</span>
+<span class="n">u</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="n">up</span>
+<span class="n">v</span><span class="p">,</span> <span class="n">q</span> <span class="o">=</span> <span class="n">vq</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p><strong>Notice.</strong></p>
+<p>The test function <code class="docutils literal notranslate"><span class="pre">v</span></code> is using homogeneous Dirichlet boundary conditions even
+though it is derived from <code class="docutils literal notranslate"><span class="pre">VQ</span></code>, which contains <code class="docutils literal notranslate"><span class="pre">W1</span></code>. It is currently not (and will
+probably never be) possible to use test functions with inhomogeneous
+boundary conditions.</p>
+<p>With the basisfunctions in place we may assemble the different blocks of the
+final coefficient matrix. For this we also need to specify the kinematic
+viscosity, which is given here in terms of the Reynolds number:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Re</span> <span class="o">=</span> <span class="mf">100.</span>
+<span class="n">nu</span> <span class="o">=</span> <span class="mf">2.</span><span class="o">/</span><span class="n">Re</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="o">-</span><span class="n">nu</span><span class="o">*</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
+<span class="n">G</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">div</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="n">p</span><span class="p">)</span>
+<span class="n">D</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">div</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p><strong>Notice.</strong></p>
+<p>The inner products may also be assembled with one single line, as</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span>        <span class="n">AA</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="o">-</span><span class="n">nu</span><span class="o">*</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">))</span> <span class="o">+</span> <span class="n">inner</span><span class="p">(</span><span class="n">div</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="n">p</span><span class="p">)</span> <span class="o">+</span> <span class="n">inner</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">div</span><span class="p">(</span><span class="n">u</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>But note that this requires addition, not subtraction, of inner products,
+and it is not possible to move the negation to <code class="docutils literal notranslate"><span class="pre">-inner(grad(v),</span> <span class="pre">nu*grad(u))</span></code>.
+This is because the <code class="docutils literal notranslate"><span class="pre">inner</span></code> function returns a list of
+tensor product matrices of type <code class="docutils literal notranslate"><span class="pre">TPMatrix</span></code>, and you cannot
+negate a list.</p>
+<p>The assembled subsystems <code class="docutils literal notranslate"><span class="pre">A,</span> <span class="pre">G</span></code> and <code class="docutils literal notranslate"><span class="pre">D</span></code> are lists containg the different blocks of
+the complete, coupled, coefficient matrix. <code class="docutils literal notranslate"><span class="pre">A</span></code> actually contains 4
+tensor product matrices of type <code class="docutils literal notranslate"><span class="pre">TPMatrix</span></code>. The first two
+matrices are for vector component zero of the test function <code class="docutils literal notranslate"><span class="pre">v[0]</span></code> and
+trial function <code class="docutils literal notranslate"><span class="pre">u[0]</span></code>, the
+matrices 2 and 3 are for components 1. The first two matrices are as such for</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>      A[0:2] = inner(grad(v[0]), -nu*grad(u[0]))
+</pre></div>
+</div>
+<p>Breaking it down the inner product is mathematically</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:partialeq1"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\label{eq:partialeq1} \tag{18}
+\int_{\Omega}-\nu \left(\frac{\partial \boldsymbol{v}[0]}{\partial x}, \frac{\partial \boldsymbol{v}[0]}{\partial y}\right) \cdot \left(\frac{\partial \boldsymbol{u}[0]}{\partial x}, \frac{\partial \boldsymbol{u}[0]}{\partial y}\right) dx dy .
+\end{equation}
+\]</div>
+<p>We can now insert for test function <span class="math notranslate nohighlight">\(\boldsymbol{v}[0]\)</span></p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto12"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\boldsymbol{v}[0]_{kl} = \mathcal{X}_k \mathcal{Y}_l, \quad (k, l) \in \boldsymbol{k}^{N_0-2} \times \boldsymbol{l}^{N_1-2}
+\label{_auto12} \tag{19}
+\end{equation}
+\]</div>
+<p>and trialfunction</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto13"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\boldsymbol{u}[0]_{mn} = \sum_{m=0}^{N_0-3} \sum_{n=0}^{N_1-1} \hat{\boldsymbol{u}}[0]_{mn} \mathcal{X}_m \mathcal{Y}_n,
+\label{_auto13} \tag{20}
+\end{equation}
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(\hat{\boldsymbol{u}}\)</span> are the unknown degrees of freedom for the velocity vector.
+Notice that the sum over the second
+index runs all the way to <span class="math notranslate nohighlight">\(N_1-1\)</span>, whereas the other indices runs to either
+<span class="math notranslate nohighlight">\(N_0-3\)</span> or <span class="math notranslate nohighlight">\(N_1-3\)</span>. This is because of the additional basis functions required
+for the inhomogeneous boundary condition.</p>
+<p>Inserting for these basis functions into (<a class="reference external" href="#eq:partialeq1">18</a>), we obtain after a few trivial
+manipulations</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto14"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+ -\sum_{m=0}^{N_0-3} \sum_{n=0}^{N_1-1} \nu \Big( \underbrace{\int_{-1}^{1} \frac{\partial \mathcal{X}_k(x)}{\partial x} \frac{\partial \mathcal{X}_m}{\partial x} dx \int_{-1}^{1} \mathcal{Y}_l \mathcal{Y}_n dy}_{A[0]} +  \underbrace{\int_{-1}^{1} \mathcal{X}_k(x) X_m(x) dx \int_{-1}^{1} \frac{\partial \mathcal{Y}_l}{\partial y} \frac{\partial \mathcal{Y}_n}{\partial y} dy}_{A[1]}  \Big) \hat{\boldsymbol{u}}[0]_{mn}.
+\label{_auto14} \tag{21}
+\end{equation}
+\]</div>
+<p>We see that each tensor product matrix (both A[0] and A[1]) is composed as
+outer products of two smaller matrices, one for each dimension.
+The first tensor product matrix, A[0], is</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto15"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+    \underbrace{\int_{-1}^{1} \frac{\partial \mathcal{X}_k(x)}{\partial x} \frac{\partial \mathcal{X}_m}{\partial x} dx}_{c_{km}} \underbrace{\int_{-1}^{1} \mathcal{Y}_l \mathcal{Y}_n dy}_{f_{ln}}
+\label{_auto15} \tag{22}
+\end{equation}
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(C\in \mathbb{R}^{N_0-2 \times N_1-2}\)</span> and <span class="math notranslate nohighlight">\(F \in \mathbb{R}^{N_0-2 \times N_1}\)</span>.
+Note that due to the inhomogeneous boundary conditions this last matrix <span class="math notranslate nohighlight">\(F\)</span>
+is actually not square. However, remember that all contributions from the two highest
+degrees of freedom (<span class="math notranslate nohighlight">\(\hat{\boldsymbol{u}}[0]_{m,N_1-2}\)</span> and <span class="math notranslate nohighlight">\(\hat{\boldsymbol{u}}[0]_{m,N_1-1}\)</span>) are already
+known and they can, as such, be  moved directly over to the right hand side of the
+linear algebra system that is to be solved. More precisely, we can split the
+tensor product matrix into two contributions and obtain</p>
+<div class="math notranslate nohighlight">
+\[
+\sum_{m=0}^{N_0-3}\sum_{n=0}^{N_1-1} c_{km}f_{ln} \hat{\boldsymbol{u}}[0]_{m, n} = \sum_{m=0}^{N_0-3}\sum_{n=0}^{N_1-3}c_{km}f_{ln}\hat{\boldsymbol{u}}[0]_{m, n} + \sum_{m=0}^{N_0-3}\sum_{n=N_1-2}^{N_1-1}c_{km}f_{ln}\hat{\boldsymbol{u}}[0]_{m, n}, \quad \forall (k, l) \in \boldsymbol{k}^{N_0-2} \times \boldsymbol{l}^{N_1-2},
+\]</div>
+<p>where the first term on the right hand side is square and the second term is known and
+can be moved to the right hand side of the linear algebra equation system.</p>
+<p>All the parts of the matrices that are to be moved to the right hand side
+can be extracted from A, G and D as follows</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Extract the boundary matrices</span>
+<span class="n">bc_mats</span> <span class="o">=</span> <span class="n">extract_bc_matrices</span><span class="p">([</span><span class="n">A</span><span class="p">,</span> <span class="n">G</span><span class="p">,</span> <span class="n">D</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>These matrices are applied to the solution below (see <code class="docutils literal notranslate"><span class="pre">BlockMatrix</span> <span class="pre">BM</span></code>).
+Furthermore, this leaves us with square submatrices (A, G, D), which make up a
+symmetric block matrix</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:nsbmatrix"></a></p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+M =
+  \begin{bmatrix}
+      A[0]+A[1] &amp; 0 &amp; G[0] \\ \label{eq:nsbmatrix} \tag{23}
+      0 &amp; A[2]+A[3] &amp; G[1] \\ 
+      D[0] &amp; D[1] &amp; 0
+  \end{bmatrix}
+\end{split}\]</div>
+<p>This matrix, and the matrix responsible for the boundary degrees of freedom,
+can be assembled from the pieces we already have as</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">M</span> <span class="o">=</span> <span class="n">BlockMatrix</span><span class="p">(</span><span class="n">A</span><span class="o">+</span><span class="n">G</span><span class="o">+</span><span class="n">D</span><span class="p">)</span>
+<span class="n">BM</span> <span class="o">=</span> <span class="n">BlockMatrix</span><span class="p">(</span><span class="n">bc_mats</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We now have all the matrices we need in order to solve the Navier Stokes equations.
+However, we also need some work arrays for iterations and we need to
+assemble the constant boundary contribution to the right hand side</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create Function to hold solution. Use set_boundary_dofs to fix the degrees</span>
+<span class="c1"># of freedom in uh_hat that determines the boundary conditions.</span>
+<span class="n">uh_hat</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">VQ</span><span class="p">)</span><span class="o">.</span><span class="n">set_boundary_dofs</span><span class="p">()</span>
+<span class="n">ui_hat</span> <span class="o">=</span> <span class="n">uh_hat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="c1"># New solution (iterative)</span>
+<span class="n">uh_new</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">VQ</span><span class="p">)</span><span class="o">.</span><span class="n">set_boundary_dofs</span><span class="p">()</span>
+<span class="n">ui_new</span> <span class="o">=</span> <span class="n">uh_new</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="c1"># Compute the constant contribution to rhs due to nonhomogeneous boundary conditions</span>
+<span class="n">bh_hat0</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">VQ</span><span class="p">)</span>
+<span class="n">bh_hat0</span> <span class="o">=</span> <span class="n">BM</span><span class="o">.</span><span class="n">matvec</span><span class="p">(</span><span class="o">-</span><span class="n">uh_hat</span><span class="p">,</span> <span class="n">bh_hat0</span><span class="p">)</span> <span class="c1"># Negative because moved to right hand side</span>
+<span class="n">bi_hat0</span> <span class="o">=</span> <span class="n">bh_hat0</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Note that <code class="docutils literal notranslate"><span class="pre">bh_hat0</span></code> now contains the part of the right hand side that is
+due to the non-symmetric part of assembled matrices. The appended
+<code class="docutils literal notranslate"><span class="pre">set_boundary_dofs()</span></code> ensures the known boundary values of
+the solution are fixed for <code class="docutils literal notranslate"><span class="pre">ui_hat</span></code> and <code class="docutils literal notranslate"><span class="pre">ui_new</span></code>.</p>
+<p>The nonlinear right hand side also requires some additional attention.
+Nonlinear terms are usually computed in physical space before transforming
+to spectral. For this we need to evaluate the velocity vector on the
+quadrature mesh. We also need a rank 2 Array to hold the outer
+product <span class="math notranslate nohighlight">\(\boldsymbol{u}\boldsymbol{u}\)</span>. The required arrays and spaces are
+created as</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bh_hat</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">VQ</span><span class="p">)</span>
+
+<span class="c1"># Create arrays to hold velocity vector solution</span>
+<span class="n">ui</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">W1</span><span class="p">)</span>
+
+<span class="c1"># Create work arrays for nonlinear part</span>
+<span class="n">QT</span> <span class="o">=</span> <span class="n">MixedTensorProductSpace</span><span class="p">([</span><span class="n">W1</span><span class="p">,</span> <span class="n">W0</span><span class="p">])</span>  <span class="c1"># for uiuj</span>
+<span class="n">uiuj</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">QT</span><span class="p">)</span>
+<span class="n">uiuj_hat</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">QT</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>The right hand side <span class="math notranslate nohighlight">\(L((\boldsymbol{v}, q);\boldsymbol{u}^{k});\)</span> is computed in its
+own function <code class="docutils literal notranslate"><span class="pre">compute_rhs</span></code> as</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">compute_rhs</span><span class="p">(</span><span class="n">ui_hat</span><span class="p">,</span> <span class="n">bh_hat</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">ui</span><span class="p">,</span> <span class="n">uiuj</span><span class="p">,</span> <span class="n">uiuj_hat</span><span class="p">,</span> <span class="n">V1</span><span class="p">,</span> <span class="n">bh_hat0</span>
+    <span class="n">bh_hat</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">ui</span> <span class="o">=</span> <span class="n">W1</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">ui_hat</span><span class="p">,</span> <span class="n">ui</span><span class="p">)</span>
+    <span class="n">uiuj</span> <span class="o">=</span> <span class="n">outer</span><span class="p">(</span><span class="n">ui</span><span class="p">,</span> <span class="n">ui</span><span class="p">,</span> <span class="n">uiuj</span><span class="p">)</span>
+    <span class="n">uiuj_hat</span> <span class="o">=</span> <span class="n">uiuj</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">uiuj_hat</span><span class="p">)</span>
+    <span class="n">bi_hat</span> <span class="o">=</span> <span class="n">bh_hat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="c1">#bi_hat = inner(v, div(uiuj_hat), output_array=bi_hat)</span>
+    <span class="n">bi_hat</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="o">-</span><span class="n">uiuj_hat</span><span class="p">,</span> <span class="n">output_array</span><span class="o">=</span><span class="n">bi_hat</span><span class="p">)</span>
+    <span class="n">bh_hat</span> <span class="o">+=</span> <span class="n">bh_hat0</span>
+    <span class="k">return</span> <span class="n">bh_hat</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Here <code class="docutils literal notranslate"><span class="pre">outer</span></code> is a shenfun function that computes the
+outer product of two vectors and returns the product in a rank two
+array (here <code class="docutils literal notranslate"><span class="pre">uiuj</span></code>). With <code class="docutils literal notranslate"><span class="pre">uiuj</span></code> forward transformed to <code class="docutils literal notranslate"><span class="pre">uiuj_hat</span></code>
+we can assemble the linear form either as <code class="docutils literal notranslate"><span class="pre">inner(v,</span> <span class="pre">div(uiuj_hat)</span></code> or
+<code class="docutils literal notranslate"><span class="pre">inner(grad(v),</span> <span class="pre">-uiuj_hat)</span></code>. Also notice that the constant contribution
+from the inhomogeneous boundary condition, <code class="docutils literal notranslate"><span class="pre">bh_hat0</span></code>,
+is added to the right hand side vector.</p>
+<p>Now all that remains is to guess an initial solution and solve
+iteratively until convergence. For initial solution we simply set the
+velocity and pressure to zero and solve the Stokes equations:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">scipy.sparse.linalg</span> <span class="kn">import</span> <span class="n">splu</span>
+<span class="n">uh_hat</span><span class="p">,</span> <span class="n">Ai</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">bh_hat0</span><span class="p">,</span> <span class="n">u</span><span class="o">=</span><span class="n">uh_hat</span><span class="p">,</span> <span class="n">constraints</span><span class="o">=</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),),</span> <span class="n">return_system</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="c1"># Constraint for component 2 of mixed space</span>
+<span class="n">Alu</span> <span class="o">=</span> <span class="n">splu</span><span class="p">(</span><span class="n">Ai</span><span class="p">)</span>
+<span class="n">uh_new</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">uh_hat</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Note that the <code class="docutils literal notranslate"><span class="pre">BlockMatrix</span></code> given by <code class="docutils literal notranslate"><span class="pre">M</span></code> has a solve method that sets up
+a sparse coefficient matrix <code class="docutils literal notranslate"><span class="pre">Ai</span></code> of size <span class="math notranslate nohighlight">\(\mathbb{R}^{3(N_0-2)(N_1-2) \times 3(N_0-2)(N_1-2)}\)</span>,
+and then solves using <a class="reference external" href="http://scipy.github.io/devdocs/generated/scipy.sparse.linalg.spsolve.html#scipy.sparse.linalg.spsolve">scipy.sparse.linalg.spsolve</a>.
+The matrix <code class="docutils literal notranslate"><span class="pre">Ai</span></code> is then pre-factored for reuse with <a class="reference external" href="http://scipy.github.io/devdocs/generated/scipy.sparse.linalg.splu.html#scipy.sparse.linalg.splu">splu</a>.
+Also note that the <code class="docutils literal notranslate"><span class="pre">constraints=((2,</span> <span class="pre">0,</span> <span class="pre">0),)</span></code> keyword argument
+ensures that the pressure integrates to zero, i.e., <span class="math notranslate nohighlight">\(\int_{\Omega} pdxdy=0\)</span>.
+Here the number 2 tells us that block component 2 in the mixed space
+(the pressure) should be integrated, dof 0 should be fixed, and it
+should be fixed to 0.</p>
+<p>With an initial solution from the Stokes equations we are ready to start iterating.
+However, for convergence it is necessary to add some underrelaxation <span class="math notranslate nohighlight">\(\alpha\)</span>,
+and update the solution each time step as</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+\hat{\boldsymbol{u}}^{k+1} &amp;= \alpha \hat{\boldsymbol{u}}^* + (1-\alpha)\hat{\boldsymbol{u}}^{k},\\ 
+\hat{p}^{k+1} &amp;= \alpha \hat{p}^* + (1-\alpha)\hat{p}^{k},
+\end{align*}
+\end{split}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\hat{\boldsymbol{u}}^*\)</span> and <span class="math notranslate nohighlight">\(\hat{p}^*\)</span> are the newly computed velocity
+and pressure returned from <code class="docutils literal notranslate"><span class="pre">M.solve</span></code>. Without underrelaxation the solution
+will quickly blow up. The iteration loop goes as follows</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">converged</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">alfa</span> <span class="o">=</span> <span class="mf">0.5</span>
+<span class="k">while</span> <span class="ow">not</span> <span class="n">converged</span><span class="p">:</span>
+    <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">bh_hat</span> <span class="o">=</span> <span class="n">compute_rhs</span><span class="p">(</span><span class="n">ui_hat</span><span class="p">,</span> <span class="n">bh_hat</span><span class="p">)</span>
+    <span class="n">uh_new</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">bh_hat</span><span class="p">,</span> <span class="n">u</span><span class="o">=</span><span class="n">uh_new</span><span class="p">,</span> <span class="n">constraints</span><span class="o">=</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),),</span> <span class="n">Alu</span><span class="o">=</span><span class="n">Alu</span><span class="p">)</span> <span class="c1"># Constraint for component 2 of mixed space</span>
+    <span class="n">error</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">ui_hat</span><span class="o">-</span><span class="n">ui_new</span><span class="p">)</span>
+    <span class="n">uh_hat</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">alfa</span><span class="o">*</span><span class="n">uh_new</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">alfa</span><span class="p">)</span><span class="o">*</span><span class="n">uh_hat</span>
+    <span class="n">converged</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">error</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-8</span> <span class="ow">or</span> <span class="n">count</span> <span class="o">&gt;=</span> <span class="mi">100</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Iteration </span><span class="si">%d</span><span class="s1"> Error </span><span class="si">%2.4e</span><span class="s1">&#39;</span> <span class="o">%</span><span class="p">(</span><span class="n">count</span><span class="p">,</span> <span class="n">error</span><span class="p">))</span>
+
+<span class="n">up</span> <span class="o">=</span> <span class="n">uh_hat</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+<span class="n">u</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="n">up</span>
+
+<span class="n">X</span> <span class="o">=</span> <span class="n">V0</span><span class="o">.</span><span class="n">local_mesh</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">quiver</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">u</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">u</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>The last three lines plots velocity vectors, like also seen in the <a class="reference external" href="#fig:drivencavity">figure</a>
+in the top of this demo. The solution is apparently nice
+and smooth, but hidden underneath are Gibbs oscillations from the
+corner discontinuities. This is painfully obvious when switching from
+Legendre to Chebyshev polynomials. With Chebyshev the same plot looks
+like the <a class="reference external" href="#fig:drivencavitycheb">Figure</a> below. However, choosing instead the
+regularized lid, with no discontinuities, the solutions will be nice and
+smooth, both for Legendre and Chebyshev polynomials.</p>
+<!-- dom:FIGURE: [https://raw.githack.com/spectralDNS/spectralutilities/master/figures/DrivenCavityCheb.png] Velocity vectors for Re=100 using Chebyshev.   <a id="fig:drivencavitycheb"></a> -->
+<!-- begin figure -->
+<p><a id="fig:drivencavitycheb"></a></p>
+<p>Velocity vectors for Re=100 using Chebyshev.</p>
+<img src="https://raw.githack.com/spectralDNS/spectralutilities/master/figures/DrivenCavityCheb.png" >
+<!-- end figure -->
+</div>
+<div class="section" id="complete-solver">
+<h2>Complete solver<a class="headerlink" href="#complete-solver" title="Permalink to this headline">¶</a></h2>
+<p><a id="sec:nscomplete"></a></p>
+<p>A complete solver can be found in demo <a class="reference external" href="https://github.com/spectralDNS/shenfun/blob/master/demo/NavierStokesDrivenCavity.py">NavierStokesDrivenCavity.py</a>.</p>
+</div>
+</div>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "spectralDNS/shenfun",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            kernelName: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+              </div>
+              
+        </div>
+    </div>
+    
+    
+    <div class='prev-next-bottom'>
+        
+    <a class='left-prev' id="prev-link" href="stokes.html" title="previous page">Demo - Stokes equations</a>
+    <a class='right-next' id="next-link" href="rayleighbenard.html" title="next page">Demo - Rayleigh Benard</a>
+
+    </div>
+    <footer class="footer mt-5 mt-md-0">
+    <div class="container">
+      <p>
+        
+          By Mikael Mortensen<br/>
+        
+            &copy; Copyright 2020.<br/>
+      </p>
+    </div>
+  </footer>
+</main>
+
+
+      </div>
+    </div>
+
+    <script src="_static/js/index.js"></script>
+    
+  </body>
+</html>

@@ -1,0 +1,760 @@
+
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Demo - 1D Poisson’s equation &#8212; Shenfun executable demos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
+    <link href="_static/css/index.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/sphinx-book-theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="_static/jupyter-sphinx.css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/sphinx-book-theme.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/togglebutton.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
+    <script src="_static/mystnb.js"></script>
+    <script src="_static/sphinx-book-theme.js"></script>
+    <script >var togglebuttonSelector = '.toggle, .admonition.dropdown, .tag_hide_input div.cell_input, .tag_hide-input div.cell_input, .tag_hide_output div.cell_output, .tag_hide-output div.cell_output, .tag_hide_cell.cell, .tag_hide-cell.cell';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"TeX": {"Macros": {"bmat": ["\\left[\\begin{array}"], "emat": ["\\end{array}\\right]"]}, "extensions": ["cancel.js", "AMSmath.js"]}})</script>
+    <script async="async" src="https://unpkg.com/thebelab@latest/lib/index.js"></script>
+    <script >
+        const thebe_selector = ".thebe,.cell"
+        const thebe_selector_input = "pre,.cell_input div.highlight"
+        const thebe_selector_output = ".output,.cell_output"
+    </script>
+    <script async="async" src="_static/sphinx-thebe.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Demo - Cubic nonlinear Klein-Gordon equation" href="kleingordon.html" />
+    <link rel="prev" title="Shenfun executable demos" href="intro.html" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="docsearch:language" content="en">
+
+
+
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+<div class="col-12 col-md-3 bd-sidebar site-navigation show" id="site-navigation">
+    
+        <div class="navbar-brand-box">
+<a class="navbar-brand text-wrap" href="index.html">
+  
+  
+  <h1 class="site-logo" id="site-title">Shenfun executable demos</h1>
+  
+</a>
+</div>
+
+<form class="bd-search d-flex align-items-center" action="search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search this book..." aria-label="Search this book..." autocomplete="off" >
+</form>
+
+<nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <ul class="nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="intro.html">
+   Shenfun executable demos
+  </a>
+ </li>
+</ul>
+<p class="caption">
+ <span class="caption-text">
+  Shenfun demos
+ </span>
+</p>
+<ul class="current nav sidenav_l1">
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   Demo - 1D Poisson’s equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="kleingordon.html">
+   Demo - Cubic nonlinear Klein-Gordon equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="poisson3d.html">
+   Demo - 3D Poisson’s equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="polarhelmholtz.html">
+   Demo - Helmholtz equation in polar coordinates
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="sphericalhelmholtz.html">
+   Demo - Helmholtz equation on the unit sphere
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="kuramatosivashinsky.html">
+   Demo - Kuramato-Sivashinsky equation
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="stokes.html">
+   Demo - Stokes equations
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="drivencavity.html">
+   Demo - Lid driven cavity
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="rayleighbenard.html">
+   Demo - Rayleigh Benard
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="functions.html">
+   Demo - Working with Functions
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="surfaceintegration.html">
+   Demo - Integration of functions
+  </a>
+ </li>
+</ul>
+
+</nav>
+
+ <!-- To handle the deprecated key -->
+
+<div class="navbar_extra_footer">
+  Powered by <a href="https://jupyterbook.org">Jupyter Book</a>
+</div>
+
+</div>
+
+
+          
+
+
+          
+<main class="col py-md-3 pl-md-4 bd-content overflow-auto" role="main">
+    
+    <div class="row topbar fixed-top container-xl">
+    <div class="col-12 col-md-3 bd-topbar-whitespace site-navigation show">
+    </div>
+    <div class="col pl-2 topbar-main">
+        
+        <button id="navbar-toggler" class="navbar-toggler ml-0" type="button" data-toggle="collapse"
+            data-toggle="tooltip" data-placement="bottom" data-target=".site-navigation" aria-controls="navbar-menu"
+            aria-expanded="true" aria-label="Toggle navigation" aria-controls="site-navigation"
+            title="Toggle navigation" data-toggle="tooltip" data-placement="left">
+            <i class="fas fa-bars"></i>
+            <i class="fas fa-arrow-left"></i>
+            <i class="fas fa-arrow-up"></i>
+        </button>
+        
+        <div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn" aria-label="Download this page"><i
+            class="fas fa-download"></i></button>
+
+    
+    <div class="dropdown-buttons">
+        <!-- ipynb file if we had a myst markdown file -->
+        
+        <!-- Download raw file -->
+        <a class="dropdown-buttons" href="_sources/poisson.ipynb"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Download source file" data-toggle="tooltip"
+                data-placement="left">.ipynb</button></a>
+        <!-- Download PDF via print -->
+        <button type="button" id="download-print" class="btn btn-secondary topbarbtn" title="Print to PDF"
+            onClick="window.print()" data-toggle="tooltip" data-placement="left">.pdf</button>
+    </div>
+    
+</div>
+        <!-- Source interaction buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Connect with source repository"><i class="fab fa-github"></i></button>
+    <div class="dropdown-buttons sourcebuttons">
+        <a class="repository-button"
+            href="https://github.com/spectralDNS/shenfun"><button type="button" class="btn btn-secondary topbarbtn"
+                data-toggle="tooltip" data-placement="left" title="Source repository"><i
+                    class="fab fa-github"></i>repository</button></a>
+        
+        
+    </div>
+</div>
+
+
+        <!-- Full screen (wrap in <a> to have style consistency -->
+        <a class="full-screen-button"><button type="button" class="btn btn-secondary topbarbtn" data-toggle="tooltip"
+                data-placement="bottom" onclick="toggleFullScreen()" title="Fullscreen mode"><i
+                    class="fas fa-expand"></i></button></a>
+
+        <!-- Launch buttons -->
+
+<div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn"
+        aria-label="Launch interactive content"><i class="fas fa-rocket"></i></button>
+    <div class="dropdown-buttons">
+        
+        <a class="binder-button" href="https://mybinder.org/v2/gh/spectralDNS/shenfun/master?urlpath=tree/./docs/book/poisson.ipynb"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Launch Binder" data-toggle="tooltip"
+                data-placement="left"><img class="binder-button-logo"
+                    src="_static/images/logo_binder.svg"
+                    alt="Interact on binder">Binder</button></a>
+        
+        
+        
+        <button type="button" class="btn btn-secondary topbarbtn"
+            onclick="initThebeSBT()" title="Launch Thebe" data-toggle="tooltip" data-placement="left"><i
+                class="fas fa-play"></i><span style="margin-left: .4em;">Live Code</span></button>
+        
+    </div>
+</div>
+
+    </div>
+
+    <!-- Table of contents -->
+    <div class="d-none d-md-block col-md-2 bd-toc show">
+        <div class="tocsection onthispage pt-5 pb-3">
+            <i class="fas fa-list"></i> On this page
+        </div>
+        <nav id="bd-toc-nav">
+            <ul class="nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#poisson-s-equation">
+   Poisson’s equation
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#method-of-manufactured-solutions">
+   Method of manufactured solutions
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#implementation">
+   Implementation
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#preamble">
+     Preamble
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#manufactured-solution">
+     Manufactured solution
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#discretization">
+     Discretization
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#variational-formulation">
+     Variational formulation
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#solve-linear-equations">
+     Solve linear equations
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#convergence-test">
+     Convergence test
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#complete-solver">
+   Complete solver
+  </a>
+ </li>
+</ul>
+
+        </nav>
+    </div>
+</div>
+    <div id="main-content" class="row">
+        <div class="col-12 col-md-9 pl-md-3 pr-md-0">
+        
+              <div>
+                
+  <!-- dom:TITLE: Demo - 1D Poisson's equation -->
+<div class="section" id="demo-1d-poisson-s-equation">
+<h1>Demo - 1D Poisson’s equation<a class="headerlink" href="#demo-1d-poisson-s-equation" title="Permalink to this headline">¶</a></h1>
+<!-- dom:AUTHOR: Mikael Mortensen Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo. -->
+<!-- Author: -->  
+<p><strong>Mikael Mortensen</strong> (email: <code class="docutils literal notranslate"><span class="pre">mikaem&#64;math.uio.no</span></code>), Department of Mathematics, University of Oslo.</p>
+<p>Date: <strong>Aug 21, 2020</strong></p>
+<p>Copyright 2020, Mikael Mortensen. Released under CC Attribution 4.0 license</p>
+<p><strong>Summary.</strong> This is a demonstration of how the Python module <a class="reference external" href="https://github.com/spectralDNS/shenfun">shenfun</a> can be used to solve Poisson’s
+equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as
+shown in the figure below, is demonstrated.
+The demo is implemented in
+a single Python file <a class="reference external" href="https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py">dirichlet_poisson1D.py</a>, and
+the numerical method is is described in more detail by J. Shen <a class="reference external" href="#shen1">[shen1]</a> and <a class="reference external" href="#shen95">[shen95]</a>.</p>
+<!-- dom:FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/figures/poisson1D_errornorm.png] Convergence of 1D Poisson solvers for both Legendre and Chebyshev modified basis function. <a id="fig:ct0"></a> -->
+<!-- begin figure -->
+<p><a id="fig:ct0"></a></p>
+<p>Convergence of 1D Poisson solvers for both Legendre and Chebyshev modified basis function.</p>
+<img src="https://rawgit.com/spectralDNS/spectralutilities/master/figures/poisson1D_errornorm.png" >
+<!-- end figure -->
+<div class="section" id="poisson-s-equation">
+<h2>Poisson’s equation<a class="headerlink" href="#poisson-s-equation" title="Permalink to this headline">¶</a></h2>
+<p>Poisson’s equation is given as</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:poisson"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\nabla^2 u(x) = f(x) \quad \text{for }\, x \in [-1, 1], \label{eq:poisson} \tag{1}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto1"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+u(-1)=a, u(1)=b, \notag
+\label{_auto1} \tag{2}
+\end{equation}
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(u(x)\)</span> is the solution, <span class="math notranslate nohighlight">\(f(x)\)</span> is a function and <span class="math notranslate nohighlight">\(a, b\)</span> are two possibly
+non-zero constants.</p>
+<p>To solve Eq. (<a class="reference external" href="#eq:poisson">1</a>) with the Galerkin method we need smooth continuously
+differentiable basis functions, <span class="math notranslate nohighlight">\(v_k\)</span>, that satisfy the given boundary conditions.
+And then we look for solutions like</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:u"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+u(x) = \sum_{k=0}^{N-1} \hat{u}_k v_k(x), \label{eq:u} \tag{3}
+\end{equation}
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(N\)</span> is the size of the discretized problem,
+<span class="math notranslate nohighlight">\(\hat{\mathbf{u}} = \{\hat{u}_k\}_{k=0}^{N-1}\)</span> are the unknown expansion
+coefficients, and the function space is <span class="math notranslate nohighlight">\(\text{span}\{v_k\}_{k=0}^{N-1}\)</span>.</p>
+<p>The basis functions of the function space can, for example,  be constructed from
+<a class="reference external" href="https://en.wikipedia.org/wiki/Chebyshev_polynomials">Chebyshev</a>, <span class="math notranslate nohighlight">\(T_k(x)\)</span>, or
+<a class="reference external" href="https://en.wikipedia.org/wiki/Legendre_polynomials">Legendre</a>, <span class="math notranslate nohighlight">\(L_k(x)\)</span>, polynomials
+and we use the common notation <span class="math notranslate nohighlight">\(\phi_k(x)\)</span> to represent either one of them. It turns out that
+it is easiest to use basis functions with homogeneous Dirichlet boundary conditions</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto2"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+v_k(x) = \phi_k(x) - \phi_{k+2}(x),
+\label{_auto2} \tag{4}
+\end{equation}
+\]</div>
+<p>for <span class="math notranslate nohighlight">\(k=0, 1, \ldots N-3\)</span>. This gives the function space
+<span class="math notranslate nohighlight">\(V^N_0 = \text{span}\{v_k(x)\}_{k=0}^{N-3}\)</span>.
+We can then add two more linear basis functions (that belong to the kernel of Poisson’s equation)</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto3"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+v_{N-2} = \frac{1}{2}(\phi_0 - \phi_1), 
+\label{_auto3} \tag{5}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto4"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+v_{N-1} = \frac{1}{2}(\phi_0 + \phi_1).
+\label{_auto4} \tag{6}
+\end{equation}
+\]</div>
+<p>which gives the inhomogeneous space <span class="math notranslate nohighlight">\(V^N = \text{span}\{v_k\}_{k=0}^{N-1}\)</span>.
+With the two linear basis functions it is easy to see that the last two degrees
+of freedom, <span class="math notranslate nohighlight">\(\hat{u}_{N-2}\)</span> and <span class="math notranslate nohighlight">\(\hat{u}_{N-1}\)</span>, now are given as</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:dirichleta"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+u(-1) = \sum_{k=0}^{N-1} \hat{u}_k v_k(-1) = \hat{u}_{N-2} = a,
+\label{eq:dirichleta} \tag{7} 
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:dirichletb"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+u(+1) = \sum_{k=0}^{N-1} \hat{u}_k v_k(+1) = \hat{u}_{N-1} = b,
+\label{eq:dirichletb} \tag{8}
+\end{equation}
+\]</div>
+<p>and, as such, we only have to solve for <span class="math notranslate nohighlight">\(\{\hat{u}_k\}_{k=0}^{N-3}\)</span>, just like
+for a problem with homogeneous boundary conditions (for homogeneous boundary condition
+we simply have <span class="math notranslate nohighlight">\(\hat{u}_{N-2} = \hat{u}_{N-1} = 0\)</span>).
+We now formulate a variational problem using the Galerkin method: Find <span class="math notranslate nohighlight">\(u \in V^N\)</span> such that</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:varform"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\int_{-1}^1 \nabla^2 u \, v \, w\, dx = \int_{-1}^1 f \, v\, w\, dx \quad \forall v \, \in \, V^N_0. \label{eq:varform} \tag{9}
+\end{equation}
+\]</div>
+<p>Note that since we only have <span class="math notranslate nohighlight">\(N-3\)</span> unknowns we are only using the homogeneous test
+functions from <span class="math notranslate nohighlight">\(V^N_0\)</span>.</p>
+<p>The weighted integrals, weighted by <span class="math notranslate nohighlight">\(w(x)\)</span>, are called inner products, and a
+common notation is</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto5"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+\int_{-1}^1 u \, v \, w\, dx = \left( u, v\right)_w.
+\label{_auto5} \tag{10}
+\end{equation}
+\]</div>
+<p>The integral can either be computed exactly, or with quadrature. The advantage
+of the latter is that it is generally faster, and that non-linear terms may be
+computed just as quickly as linear. For a linear problem, it does not make much
+of a difference, if any at all. Approximating the integral with quadrature, we
+obtain</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+\int_{-1}^1 u \, v \, w\, dx &amp;\approx \left( u, v \right)_w^N, \\ 
+&amp;\approx \sum_{j=0}^{N-1} u(x_j) v(x_j) w(x_j),
+\end{align*}
+\end{split}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\{w(x_j)\}_{j=0}^{N-1}\)</span> are quadrature weights.
+The quadrature points <span class="math notranslate nohighlight">\(\{x_j\}_{j=0}^{N-1}\)</span>
+are specific to the chosen basis, and even within basis there are two different
+choices based on which quadrature rule is selected, either Gauss or Gauss-Lobatto.</p>
+<p>Inserting for test and trialfunctions, we get the following bilinear form and
+matrix <span class="math notranslate nohighlight">\(A\in\mathbb{R}^{N-3\times N-3}\)</span> for the Laplacian (using the
+summation convention in step 2)</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}
+\begin{align*}
+\left( \nabla^2u, v \right)_w^N &amp;= \left( \nabla^2\sum_{k=0}^{N-3}\hat{u}_k v_{k}, v_j \right)_w^N, \quad j=0,1,\ldots, N-3\\ 
+    &amp;= \left(\nabla^2 v_{k}, v_j \right)_w^N \hat{u}_k, \\ 
+    &amp;= a_{jk} \hat{u}_k.
+\end{align*}
+\end{split}\]</div>
+<p>Note that the sum in <span class="math notranslate nohighlight">\(a_{jk} \hat{u}_{k}\)</span> runs over <span class="math notranslate nohighlight">\(k=0, 1, \ldots, N-3\)</span> since
+the second derivatives of <span class="math notranslate nohighlight">\(v_{N-1}\)</span> and <span class="math notranslate nohighlight">\(v_{N}\)</span> are zero.
+The right hand side linear form and vector is computed as <span class="math notranslate nohighlight">\(\tilde{f}_j = (f,
+v_j)_w^N\)</span>, for <span class="math notranslate nohighlight">\(j=0,1,\ldots, N-3\)</span>, where a tilde is used because this is not
+a complete transform of the function <span class="math notranslate nohighlight">\(f\)</span>, but only an inner product.</p>
+<p>The linear system of equations to solve for the expansion coefficients
+of <span class="math notranslate nohighlight">\(u(x)\)</span> is given as</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto6"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+A \hat{\mathbf{u}} = \tilde{\mathbf{f}}.
+\label{_auto6} \tag{11}
+\end{equation}
+\]</div>
+<p>Now, when the expansion coefficients <span class="math notranslate nohighlight">\(\hat{\mathbf{u}}\)</span> are found by
+solving this linear system, they may be
+transformed to real space <span class="math notranslate nohighlight">\(u(x)\)</span> using (<a class="reference external" href="#eq:u">3</a>), and here the contributions
+from <span class="math notranslate nohighlight">\(\hat{u}_{N-2}\)</span> and <span class="math notranslate nohighlight">\(\hat{u}_{N-1}\)</span> must be accounted for. Note that the matrix
+<span class="math notranslate nohighlight">\(A\)</span> (different for Legendre or Chebyshev) has a very special structure that
+allows for a solution to be found very efficiently in order of <span class="math notranslate nohighlight">\(\mathcal{O}(N)\)</span>
+operations, see <a class="reference external" href="#shen1">[shen1]</a> and <a class="reference external" href="#shen95">[shen95]</a>. These solvers are implemented in
+shenfun for both bases.</p>
+</div>
+<div class="section" id="method-of-manufactured-solutions">
+<h2>Method of manufactured solutions<a class="headerlink" href="#method-of-manufactured-solutions" title="Permalink to this headline">¶</a></h2>
+<p>In this demo we will use the method of manufactured
+solutions to demonstrate spectral accuracy of the <code class="docutils literal notranslate"><span class="pre">shenfun</span></code> Dirichlet bases. To
+this end we choose an analytical function that satisfies the given boundary
+conditions:</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:u_e"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+u_e(x) = \sin(k\pi x)(1-x^2) + a(1-x)/2 + b(1+x)/2, \label{eq:u_e} \tag{12}
+\end{equation}
+\]</div>
+<p>where <span class="math notranslate nohighlight">\(k\)</span> is an integer and <span class="math notranslate nohighlight">\(a\)</span> and <span class="math notranslate nohighlight">\(b\)</span> are constants. Now, feeding <span class="math notranslate nohighlight">\(u_e\)</span> through
+the Laplace operator, we see that the last two linear terms disappear, whereas the
+first term results in</p>
+<!-- Equation labels as ordinary links -->
+<p><a id="_auto7"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}
+ \nabla^2 u_e(x) = \frac{d^2 u_e}{dx^2},  
+\label{_auto7} \tag{13}
+\end{equation}
+\]</div>
+<!-- Equation labels as ordinary links -->
+<p><a id="eq:solution"></a></p>
+<div class="math notranslate nohighlight">
+\[
+\begin{equation}  
+                  = -4k \pi x \cos(k\pi x) - 2\sin(k\pi x) - k^2 \pi^2 (1 -
+x^2) \sin(k \pi x). \label{eq:solution} \tag{14}
+\end{equation}
+\]</div>
+<p>Now, setting <span class="math notranslate nohighlight">\(f_e(x) = \nabla^2 u_e(x)\)</span> and solving for <span class="math notranslate nohighlight">\(\nabla^2 u(x) = f_e(x)\)</span>,
+we can compare the numerical solution <span class="math notranslate nohighlight">\(u(x)\)</span> with the analytical solution <span class="math notranslate nohighlight">\(u_e(x)\)</span>
+and compute error norms.</p>
+</div>
+<div class="section" id="implementation">
+<h2>Implementation<a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="preamble">
+<h3>Preamble<a class="headerlink" href="#preamble" title="Permalink to this headline">¶</a></h3>
+<p>We will solve Poisson’s equation using the <a class="reference external" href="https://github.com/spectralDNS/shenfun">shenfun</a> Python module. The first thing needed
+is then to import some of this module’s functionality
+plus some other helper modules, like <a class="reference external" href="https://numpy.org">Numpy</a> and <a class="reference external" href="https://sympy.org">Sympy</a>:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">shenfun</span> <span class="kn">import</span> <span class="n">inner</span><span class="p">,</span> <span class="n">div</span><span class="p">,</span> <span class="n">grad</span><span class="p">,</span> <span class="n">TestFunction</span><span class="p">,</span> <span class="n">TrialFunction</span><span class="p">,</span> <span class="n">Function</span><span class="p">,</span> \
+    <span class="n">project</span><span class="p">,</span> <span class="n">Dx</span><span class="p">,</span> <span class="n">Array</span><span class="p">,</span> <span class="n">FunctionSpace</span><span class="p">,</span> <span class="n">dx</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">symbols</span><span class="p">,</span> <span class="n">cos</span><span class="p">,</span> <span class="n">sin</span><span class="p">,</span> <span class="n">exp</span><span class="p">,</span> <span class="n">lambdify</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>We use <code class="docutils literal notranslate"><span class="pre">Sympy</span></code> for the manufactured solution and <code class="docutils literal notranslate"><span class="pre">Numpy</span></code> for testing.</p>
+</div>
+<div class="section" id="manufactured-solution">
+<h3>Manufactured solution<a class="headerlink" href="#manufactured-solution" title="Permalink to this headline">¶</a></h3>
+<p>The exact solution <span class="math notranslate nohighlight">\(u_e(x)\)</span> and the right hand side <span class="math notranslate nohighlight">\(f_e(x)\)</span> are created using
+<code class="docutils literal notranslate"><span class="pre">Sympy</span></code> as follows</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">a</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+<span class="n">b</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">k</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)</span>
+<span class="n">ue</span> <span class="o">=</span> <span class="n">sin</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">x</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">a</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">x</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span> <span class="o">+</span> <span class="n">b</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">x</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span>
+<span class="n">fe</span> <span class="o">=</span> <span class="n">ue</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>These solutions are now valid for a continuous domain. The next step is thus to
+discretize, using a discrete mesh <span class="math notranslate nohighlight">\(\{x_j\}_{j=0}^{N-1}\)</span> and a finite number of
+basis functions.</p>
+<p>Note that it is not mandatory to use <code class="docutils literal notranslate"><span class="pre">Sympy</span></code> for the manufactured solution. Since the
+solution is known (<a class="reference external" href="#eq:solution">14</a>), we could just as well simply use <code class="docutils literal notranslate"><span class="pre">Numpy</span></code>
+to compute <span class="math notranslate nohighlight">\(f_e\)</span> at <span class="math notranslate nohighlight">\(\{x_j\}_{j=0}^{N-1}\)</span>. However, with <code class="docutils literal notranslate"><span class="pre">Sympy</span></code> it is much
+easier to experiment and quickly change the solution.</p>
+</div>
+<div class="section" id="discretization">
+<h3>Discretization<a class="headerlink" href="#discretization" title="Permalink to this headline">¶</a></h3>
+<p>We create a basis with a given number of basis functions, and extract the computational
+mesh from the basis itself</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">N</span> <span class="o">=</span> <span class="mi">32</span>
+<span class="n">SD</span> <span class="o">=</span> <span class="n">FunctionSpace</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="s1">&#39;Chebyshev&#39;</span><span class="p">,</span> <span class="n">bc</span><span class="o">=</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">))</span>
+<span class="c1">#SD = FunctionSpace(N, &#39;Legendre&#39;, bc=(a, b))</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">SD</span><span class="o">.</span><span class="n">mesh</span><span class="p">(</span><span class="n">N</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Note that we can either choose a Legendre or a Chebyshev basis.</p>
+</div>
+<div class="section" id="variational-formulation">
+<h3>Variational formulation<a class="headerlink" href="#variational-formulation" title="Permalink to this headline">¶</a></h3>
+<p>The variational problem (<a class="reference external" href="#eq:varform">9</a>) can be assembled using <code class="docutils literal notranslate"><span class="pre">shenfun</span></code>’s
+<code class="docutils literal notranslate"><span class="pre">TrialFunction</span></code>, <code class="docutils literal notranslate"><span class="pre">TestFunction</span></code> and <code class="docutils literal notranslate"><span class="pre">inner</span></code> functions.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">u</span> <span class="o">=</span> <span class="n">TrialFunction</span><span class="p">(</span><span class="n">SD</span><span class="p">)</span>
+<span class="n">v</span> <span class="o">=</span> <span class="n">TestFunction</span><span class="p">(</span><span class="n">SD</span><span class="p">)</span>
+<span class="c1"># Assemble left hand side matrix</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">div</span><span class="p">(</span><span class="n">grad</span><span class="p">(</span><span class="n">u</span><span class="p">)))</span>
+<span class="c1"># Assemble right hand side</span>
+<span class="n">fj</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">SD</span><span class="p">,</span> <span class="n">buffer</span><span class="o">=</span><span class="n">fe</span><span class="p">)</span>
+<span class="n">f_hat</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span><span class="n">SD</span><span class="p">)</span>
+<span class="n">f_hat</span> <span class="o">=</span> <span class="n">inner</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">fj</span><span class="p">,</span> <span class="n">output_array</span><span class="o">=</span><span class="n">f_hat</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Note that the <code class="docutils literal notranslate"><span class="pre">sympy</span></code> function <code class="docutils literal notranslate"><span class="pre">fe</span></code> can be used to initialize the <code class="docutils literal notranslate"><span class="pre">Array</span></code>
+<code class="docutils literal notranslate"><span class="pre">fj</span></code>. We wrap this Numpy array in an <code class="docutils literal notranslate"><span class="pre">Array</span></code> class
+(<code class="docutils literal notranslate"><span class="pre">fj</span> <span class="pre">=</span> <span class="pre">Array(SD,</span> <span class="pre">buffer=fe)</span></code>), because an Array
+is required as input to the <code class="docutils literal notranslate"><span class="pre">inner</span></code> function.</p>
+</div>
+<div class="section" id="solve-linear-equations">
+<h3>Solve linear equations<a class="headerlink" href="#solve-linear-equations" title="Permalink to this headline">¶</a></h3>
+<p>Finally, solve linear equation system and transform solution from spectral
+<span class="math notranslate nohighlight">\(\{\hat{u}_k\}_{k=0}^{N-1}\)</span> vector to the real space <span class="math notranslate nohighlight">\(\{u(x_j)\}_{j=0}^{N-1}\)</span>
+and then check how the solution corresponds with the exact solution <span class="math notranslate nohighlight">\(u_e\)</span>.
+To this end we compute the <span class="math notranslate nohighlight">\(L_2\)</span>-errornorm using the <code class="docutils literal notranslate"><span class="pre">shenfun</span></code> function
+<code class="docutils literal notranslate"><span class="pre">dx</span></code></p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">u_hat</span> <span class="o">=</span> <span class="n">A</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">f_hat</span><span class="p">)</span>
+<span class="n">uj</span> <span class="o">=</span> <span class="n">SD</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">u_hat</span><span class="p">)</span>
+<span class="n">ue</span> <span class="o">=</span> <span class="n">Array</span><span class="p">(</span><span class="n">SD</span><span class="p">,</span> <span class="n">buffer</span><span class="o">=</span><span class="n">ue</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error=</span><span class="si">%2.16e</span><span class="s2">&quot;</span> <span class="o">%</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">dx</span><span class="p">((</span><span class="n">uj</span><span class="o">-</span><span class="n">ue</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))))</span>
+<span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">uj</span><span class="p">,</span> <span class="n">ue</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="convergence-test">
+<h3>Convergence test<a class="headerlink" href="#convergence-test" title="Permalink to this headline">¶</a></h3>
+<p>A complete solver is given in Sec. <a class="reference external" href="#sec:complete">Complete solver</a>. This solver is created
+such that it takes in two commandline arguments and prints out the
+<span class="math notranslate nohighlight">\(L_2\)</span>-errornorm of the solution in the end. We can use this to write a short
+script that performs a convergence test. The solver is run like</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>    &gt;&gt;&gt; python dirichlet_poisson1D.py 32 legendre
+    Error=1.8132185245826562e-10
+</pre></div>
+</div>
+<p>for a discretization of size <span class="math notranslate nohighlight">\(N=32\)</span> and for the Legendre basis. Alternatively,
+change <code class="docutils literal notranslate"><span class="pre">legendre</span></code> to <code class="docutils literal notranslate"><span class="pre">chebyshev</span></code> for the Chebyshev basis.</p>
+<p>We set up the solver to run for a list of <span class="math notranslate nohighlight">\(N=[12, 16, \ldots, 48]\)</span>, and collect
+the errornorms in arrays to be plotted. Such a script can be easily created
+with the <a class="reference external" href="https://docs.python.org/3/library/subprocess.html">subprocess</a> module</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span>        <span class="kn">import</span> <span class="nn">subprocess</span>
+        
+        <span class="n">N</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">basis</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;legendre&#39;</span><span class="p">,</span> <span class="s1">&#39;chebyshev&#39;</span><span class="p">):</span>
+            <span class="n">error</span><span class="p">[</span><span class="n">basis</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">N</span><span class="p">)):</span>
+                <span class="n">output</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="s2">&quot;python dirichlet_poisson1D.py </span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">N</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">basis</span><span class="p">),</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">exec</span><span class="p">(</span><span class="n">output</span><span class="p">)</span> <span class="c1"># Error is printed as &quot;Error=%2.16e&quot;%(np.linalg.norm(uj-ua))</span>
+                <span class="n">error</span><span class="p">[</span><span class="n">basis</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Error</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The error can be plotted using <a class="reference external" href="https://matplotlib.org">matplotlib</a>, and the generated figure is shown in the summary’s Fig. <a class="reference external" href="#fig:ct0">fig:ct0</a>. The spectral convergence is evident and we can see that after <span class="math notranslate nohighlight">\(N=40\)</span> roundoff errors dominate as the errornorm trails off around <span class="math notranslate nohighlight">\(10^{-14}\)</span>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span>        <span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+        
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">basis</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">((</span><span class="s1">&#39;legendre&#39;</span><span class="p">,</span> <span class="s1">&#39;chebyshev&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">)):</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">semilogy</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">error</span><span class="p">[</span><span class="n">basis</span><span class="p">],</span> <span class="n">col</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Convergence of Poisson solvers 1D&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;N&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Error norm&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;poisson1D_errornorm.png&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">((</span><span class="s1">&#39;Legendre&#39;</span><span class="p">,</span> <span class="s1">&#39;Chebyshev&#39;</span><span class="p">))</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<!-- FIGURE: [poisson1D_errornorm.png] Convergence test of Legendre and Chebyshev 1D Poisson solvers. <a id="fig:ct"></a> -->
+</div>
+</div>
+<div class="section" id="complete-solver">
+<h2>Complete solver<a class="headerlink" href="#complete-solver" title="Permalink to this headline">¶</a></h2>
+<p><a id="sec:complete"></a></p>
+<p>A complete solver, that can use either Legendre or Chebyshev bases, chosen as a
+command-line argument, can be found <a class="reference external" href="https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py">here</a>.</p>
+<!-- ======= Bibliography ======= -->
+<ol class="simple">
+<li><p><a id="shen1"></a> <strong>J. Shen</strong>.
+Efficient Spectral-Galerkin Method I. Direct Solvers of Second- and Fourth-Order Equations Using Legendre Polynomials,
+<em>SIAM Journal on Scientific Computing</em>,
+15(6),
+pp. 1489-1505,
+<a class="reference external" href="http://dx.doi.org/10.1137/0915089">doi: 10.1137/0915089</a>,
+1994.</p></li>
+<li><p><a id="shen95"></a> <strong>J. Shen</strong>.
+Efficient Spectral-Galerkin Method II. Direct Solvers of Second- and Fourth-Order Equations Using Chebyshev Polynomials,
+<em>SIAM Journal on Scientific Computing</em>,
+16(1),
+pp. 74-87,
+<a class="reference external" href="http://dx.doi.org/10.1137/0916006">doi: 10.1137/0916006</a>,
+1995.</p></li>
+</ol>
+</div>
+</div>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "spectralDNS/shenfun",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            kernelName: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+              </div>
+              
+        </div>
+    </div>
+    
+    
+    <div class='prev-next-bottom'>
+        
+    <a class='left-prev' id="prev-link" href="intro.html" title="previous page">Shenfun executable demos</a>
+    <a class='right-next' id="next-link" href="kleingordon.html" title="next page">Demo - Cubic nonlinear Klein-Gordon equation</a>
+
+    </div>
+    <footer class="footer mt-5 mt-md-0">
+    <div class="container">
+      <p>
+        
+          By Mikael Mortensen<br/>
+        
+            &copy; Copyright 2020.<br/>
+      </p>
+    </div>
+  </footer>
+</main>
+
+
+      </div>
+    </div>
+
+    <script src="_static/js/index.js"></script>
+    
+  </body>
+</html>
