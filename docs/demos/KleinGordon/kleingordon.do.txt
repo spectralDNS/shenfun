@@ -54,7 +54,7 @@ Movie showing the evolution of the solution $u$ from Eq. (ref{eq:kg}), in a slic
 % elif FORMAT in ("ipynb"):
 label{mov:kleingordon}
 
-MOVIE: [https://rawgit.com/spectralDNS/spectralutilities/master/movies/KleinGordon.gif]
+FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/movies/KleinGordon.gif]
 
 Movie showing the evolution of the solution $u$ from the Klein-Gordon equation, in a slice through the center of the domain, computed with the code described in this demo.
 
