@@ -51,7 +51,9 @@ help:
 	doconce subst 'XXX' '   ' demos/$(basename $@).ipynb
 	doconce subst "<div" "<a" demos/$(basename $@).ipynb
 	doconce subst "div>" "a>" demos/$(basename $@).ipynb
-	cp demos/$(basename $@).ipynb book/
+	#doconce subst '<!--.*-->' '' demos/$(basename $@).ipynb
+	#python add_metadata.py demos/$(basename $@).ipynb
+	cp demos/$(basename $@).ipynb ../../shenfun-demos/content/
 
 publish:
 	cd demos && publish export papers.bib && cd ..
@@ -60,6 +62,7 @@ publish:
 demos: $(DEMO)
 
 ipynb: $(NDEMO)
+	make -C ../../shenfun-demos book
 
 pdf:
 	@$(SPHINXBUILD) -b latex -d "$(BUILDDIR)"/doctrees $(SOURCEDIR) "$(BUILDDIR)"/latex
