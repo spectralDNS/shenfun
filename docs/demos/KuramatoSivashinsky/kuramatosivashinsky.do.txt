@@ -358,6 +358,19 @@ def update(self, u, u_hat, t, tstep, **params):
 !ec
 Now all that remains is to create the integrator and call it
 
+% if FORMAT in ("ipynb",):
+!bc pycod
+par = {'plot_step': 100, 'gradu': gradu}
+dt = 0.01
+end_time = 1
+integrator = ETDRK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
+#integrator = RK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
+integrator.setup(dt)
+U_hat = integrator.solve(U, U_hat, dt, (0, end_time))
+!ec
+
+% else:
+
 !bc pycod
 par = {'plot_step': 100, 'gradu': gradu}
 dt = 0.01
@@ -367,3 +380,4 @@ integrator = ETDRK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
 integrator.setup(dt)
 U_hat = integrator.solve(U, U_hat, dt, (0, end_time))
 !ec
+% endif
