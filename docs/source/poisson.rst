@@ -7,7 +7,7 @@ Demo - 1D Poisson's equation
 ============================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 18, 2020
+:Date: Aug 21, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Poisson's
 equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as
@@ -15,6 +15,9 @@ shown in the figure below, is demonstrated.
 The demo is implemented in
 a single Python file `dirichlet_poisson1D.py <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py>`__, and
 the numerical method is is described in more detail by J. Shen :cite:`shen1` and :cite:`shen95`.
+
+Please note that there is also a `live version <https://mikaem.github.io/shenfun-demos/content/poisson.html>`__
+of this demo, where you may play with the code interactively.
 
 .. _fig:ct0:
 
@@ -288,7 +291,6 @@ mesh from the basis itself
     N = 32
     SD = FunctionSpace(N, 'Chebyshev', bc=(a, b))
     #SD = FunctionSpace(N, 'Legendre', bc=(a, b))
-    X = SD.mesh(N)
 
 Note that we can either choose a Legendre or a Chebyshev basis.
 
@@ -327,60 +329,78 @@ To this end we compute the :math:`L_2`-errornorm using the ``shenfun`` function
 
     u_hat = A.solve(f_hat)
     uj = SD.backward(u_hat)
-    ue = Array(SD, buffer=ue)
+    ua = Array(SD, buffer=ue)
     
-    print("Error=%2.16e" %(np.sqrt(dx((uj-ue)**2))))
-    assert np.allclose(uj, ue)
+    print("Error=%2.16e" %(np.sqrt(dx((uj-ua)**2))))
 
 Convergence test
 ~~~~~~~~~~~~~~~~
 
-A complete solver is given in Sec. :ref:`sec:complete`. This solver is created
-such that it takes in two commandline arguments and prints out the
-:math:`L_2`-errornorm of the solution in the end. We can use this to write a short
-script that performs a convergence test. The solver is run like
-
-.. code-block:: text
-
-    >>> python dirichlet_poisson1D.py 32 legendre
-    Error=1.8132185245826562e-10
-
-for a discretization of size :math:`N=32` and for the Legendre basis. Alternatively,
-change ``legendre`` to ``chebyshev`` for the Chebyshev basis.
-
-We set up the solver to run for a list of :math:`N=[12, 16, \ldots, 48]`, and collect
-the errornorms in arrays to be plotted. Such a script can be easily created
-with the `subprocess <https://docs.python.org/3/library/subprocess.html>`__ module
+To do a convergence test we will now create a function ``main``, that takes the
+number of quadrature points as parameter, and prints out
+the error.
 
 .. code-block:: python
 
-    import subprocess
+    def main(N, family='Chebyshev'):
+        SD = FunctionSpace(N, family=family, bc=(a, b))
+        u = TrialFunction(SD)
+        v = TestFunction(SD)
+    
+        # Get f on quad points
+        fj = Array(SD, buffer=fe)
+    
+        # Compute right hand side of Poisson's equation
+        f_hat = Function(SD)
+        f_hat = inner(v, fj, output_array=f_hat)
+    
+        # Get left hand side of Poisson's equation
+        A = inner(v, div(grad(u)))
+    
+        f_hat = A.solve(f_hat)
+        uj = SD.backward(f_hat)
+    
+        # Compare with analytical solution
+        ua = Array(SD, buffer=ue)
+        l2_error = np.linalg.norm(uj-ua)
+        return l2_error
+
+For example, we find the error of a Chebyshev discretization
+using 12 quadrature points as
+
+.. code-block:: python
+
+    main(12, 'Chebyshev')
+
+To get the convergence we call ``main`` for a list
+of :math:`N=[12, 16, \ldots, 48]`, and collect the errornorms in
+arrays to be plotted. The error can be plotted using
+`matplotlib <https://matplotlib.org>`__, and the generated
+figure is also shown in this demos summary.
+
+.. code-block:: python
+
+    import matplotlib.pyplot as plt
     
     N = range(12, 50, 4)
     error = {}
     for basis in ('legendre', 'chebyshev'):
         error[basis] = []
         for i in range(len(N)):
-            output = subprocess.check_output("python dirichlet_poisson1D.py {} {}".format(N[i], basis), shell=True)
-            exec(output) # Error is printed as "Error=%2.16e"%(np.linalg.norm(uj-ua))
-            error[basis].append(Error)
-
-The error can be plotted using `matplotlib <https://matplotlib.org>`__, and the generated figure is shown in the summary's Fig. :ref:`fig:ct0`. The spectral convergence is evident and we can see that after :math:`N=40` roundoff errors dominate as the errornorm trails off around :math:`10^{-14}`.
-
-.. code-block:: python
-
-    import matplotlib.pyplot as plt
+            errN = main(N[i], basis)
+            error[basis].append(errN)
+    
     plt.figure(figsize=(6, 4))
     for basis, col in zip(('legendre', 'chebyshev'), ('r', 'b')):
         plt.semilogy(N, error[basis], col, linewidth=2)
     plt.title('Convergence of Poisson solvers 1D')
     plt.xlabel('N')
     plt.ylabel('Error norm')
-    plt.savefig('poisson1D_errornorm.png')
     plt.legend(('Legendre', 'Chebyshev'))
     plt.show()
 
-.. FIGURE: [poisson1D_errornorm.png] Convergence test of Legendre and Chebyshev 1D Poisson solvers.
+The spectral convergence is evident and we can see that
+after :math:`N=40` roundoff errors dominate as the errornorm trails off around :math:`10^{-14}`.
 
 .. _sec:complete:
 
@@ -388,6 +408,6 @@ Complete solver
 ---------------
 
 A complete solver, that can use either Legendre or Chebyshev bases, chosen as a
-command-line argument, can be found `here <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py>`__.
+command-line argument, can also be found `here <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py>`__.
 
 .. ======= Bibliography =======
