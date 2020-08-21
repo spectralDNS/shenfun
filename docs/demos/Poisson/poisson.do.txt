@@ -13,6 +13,13 @@ a single Python file "dirichlet_poisson1D.py":
 "https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py", and
 the numerical method is is described in more detail by J. Shen cite{shen1} and cite{shen95}.
 
+% if FORMAT not in ("ipynb",):
+
+Please note that there is also a "live version":"https://mikaem.github.io/shenfun-demos/content/poisson.html"
+of this demo, where you may play with the code interactively.
+
+% endif
+
 FIGURE: [https://rawgit.com/spectralDNS/spectralutilities/master/figures/poisson1D_errornorm.png] Convergence of 1D Poisson solvers for both Legendre and Chebyshev modified basis function. label{fig:ct0}
 
 TOC: on
@@ -40,6 +47,7 @@ def func(x):
         return ':func:'+'`'+x+'`'
     return ':func:'+'`'+'.'+x+'`'
 %>
+
 % endif
 
 
@@ -246,7 +254,6 @@ mesh from the basis itself
 N = 32
 SD = FunctionSpace(N, 'Chebyshev', bc=(a, b))
 #SD = FunctionSpace(N, 'Legendre', bc=(a, b))
-X = SD.mesh(N)
 !ec
 
 Note that we can either choose a Legendre or a Chebyshev basis.
@@ -282,137 +289,86 @@ ${func('dx')}
 !bc pycod
 u_hat = A.solve(f_hat)
 uj = SD.backward(u_hat)
-ue = Array(SD, buffer=ue)
+ua = Array(SD, buffer=ue)
 
-print("Error=%2.16e" %(np.sqrt(dx((uj-ue)**2))))
-assert np.allclose(uj, ue)
+print("Error=%2.16e" %(np.sqrt(dx((uj-ua)**2))))
 !ec
 
 === Convergence test ===
 
-A complete solver is given in Sec. ref{sec:complete}. This solver is created
-such that it takes in two commandline arguments and prints out the
-$L_2$-errornorm of the solution in the end. We can use this to write a short
-script that performs a convergence test. The solver is run like
-!bc
->>> python dirichlet_poisson1D.py 32 legendre
-Error=1.8132185245826562e-10
+To do a convergence test we will now create a function `main`, that takes the
+number of quadrature points as parameter, and prints out
+the error.
+
+!bc pycod
+def main(N, family='Chebyshev'):
+    SD = FunctionSpace(N, family=family, bc=(a, b))
+    u = TrialFunction(SD)
+    v = TestFunction(SD)
+
+    # Get f on quad points
+    fj = Array(SD, buffer=fe)
+
+    # Compute right hand side of Poisson's equation
+    f_hat = Function(SD)
+    f_hat = inner(v, fj, output_array=f_hat)
+
+    # Get left hand side of Poisson's equation
+    A = inner(v, div(grad(u)))
+
+    f_hat = A.solve(f_hat)
+    uj = SD.backward(f_hat)
+
+    # Compare with analytical solution
+    ua = Array(SD, buffer=ue)
+    l2_error = np.linalg.norm(uj-ua)
+    return l2_error
 !ec
-for a discretization of size $N=32$ and for the Legendre basis. Alternatively,
-change `legendre` to `chebyshev` for the Chebyshev basis.
 
-We set up the solver to run for a list of $N=[12, 16, \ldots, 48]$, and collect
-the errornorms in arrays to be plotted. Such a script can be easily created
-with the "subprocess": "https://docs.python.org/3/library/subprocess.html" module
+For example, we find the error of a Chebyshev discretization
+using 12 quadrature points as
 
-!bc pycod-t
-import subprocess
+!bc pycod
+main(12, 'Chebyshev')
+!ec
+
+To get the convergence we call `main` for a list
+of $N=[12, 16, \ldots, 48]$, and collect the errornorms in
+arrays to be plotted. The error can be plotted using
+"matplotlib": "https://matplotlib.org", and the generated
+figure is also shown in this demos summary.
+
+
+!bc pycod
+import matplotlib.pyplot as plt
 
 N = range(12, 50, 4)
 error = {}
 for basis in ('legendre', 'chebyshev'):
     error[basis] = []
     for i in range(len(N)):
-        output = subprocess.check_output("python dirichlet_poisson1D.py {} {}".format(N[i], basis), shell=True)
-        exec(output) # Error is printed as "Error=%2.16e"%(np.linalg.norm(uj-ua))
-        error[basis].append(Error)
-!ec
+        errN = main(N[i], basis)
+        error[basis].append(errN)
 
-The error can be plotted using "matplotlib": "https://matplotlib.org", and the generated figure is shown in the summary's Fig. ref{fig:ct0}. The spectral convergence is evident and we can see that after $N=40$ roundoff errors dominate as the errornorm trails off around $10^{-14}$.
-
-!bc pycod-t
-import matplotlib.pyplot as plt
 plt.figure(figsize=(6, 4))
 for basis, col in zip(('legendre', 'chebyshev'), ('r', 'b')):
     plt.semilogy(N, error[basis], col, linewidth=2)
 plt.title('Convergence of Poisson solvers 1D')
 plt.xlabel('N')
 plt.ylabel('Error norm')
-plt.savefig('poisson1D_errornorm.png')
 plt.legend(('Legendre', 'Chebyshev'))
 plt.show()
 !ec
 
-# FIGURE: [poisson1D_errornorm.png] Convergence test of Legendre and Chebyshev 1D Poisson solvers. label{fig:ct}
+The spectral convergence is evident and we can see that
+after $N=40$ roundoff errors dominate as the errornorm trails off around $10^{-14}$.
 
-% if FORMAT in ("latex", "pdflatex", "html"):
-
-===== Complete solver =====
-label{sec:complete}
-A complete solver, that can use either Legendre or Chebyshev bases, chosen as a command-line argument, is shown below.
-
-!bc
->>> python dirichlet_poisson1D.py legendre
-!ec
-or similarly with `chebyshev` instead of `legendre`.
-
-!bc pycod-t
-import sys
-import importlib
-from sympy import symbols, cos, sin, exp, lambdify
-import numpy as np
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    project, Dx, Array, Basis
-
-assert len(sys.argv) == 3
-assert sys.argv[-1] in ('legendre', 'chebyshev')
-assert isinstance(eval(sys.argv[-2]), int)
-
-# Get family from args
-family = sys.argv[-1].lower()
-
-# Use sympy to compute a rhs, given an analytical solution
-a=-1
-b=1
-x = symbols("x")
-ue = sin(4*np.pi*x)*(1-x**2) + a*(1 + x)/2. + b*(1 - x)/2.
-#ue = (1-x**2)
-fe = ue.diff(x, 2)
-
-# Lambdify for faster evaluation
-ul = lambdify(x, ue, 'numpy')
-fl = lambdify(x, fe, 'numpy')
-
-# Size of discretization
-N = eval(sys.argv[-2])
-
-SD = FunctionSpace(N, family=family, bc=(a, b))
-X = SD.mesh()
-u = TrialFunction(SD)
-v = TestFunction(SD)
-
-# Get f on quad points
-fj = Array(SD, buffer=fl(X))
-
-# Compute right hand side of Poisson's equation
-f_hat = Function(SD)
-f_hat = inner(v, fj, output_array=f_hat)
-if family == 'legendre':
-    f_hat *= -1.
-
-# Get left hand side of Poisson's equation
-if family == 'chebyshev':
-    A = inner(v, div(grad(u)))
-else:
-    A = inner(grad(v), grad(u))
-
-f_hat = A.solve(f_hat)
-uj = SD.backward(f_hat)
-
-# Compare with analytical solution
-ua = ul(X)
-print("Error=%2.16e" %(np.linalg.norm(uj-ua)))
-!ec
-
-% else:
 
 ===== Complete solver =====
 label{sec:complete}
 
 A complete solver, that can use either Legendre or Chebyshev bases, chosen as a
-command-line argument, can be found "here":"https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py".
-
-% endif
+command-line argument, can also be found "here":"https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson1D.py".
 
 #======= Bibliography =======
 

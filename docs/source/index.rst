@@ -45,6 +45,7 @@ Document build status
    :caption: Demos:
    :maxdepth: 1
 
+   jupbook
    poisson
    functions
    surfaceintegration
