@@ -61,8 +61,8 @@ publish:
 
 demos: $(DEMO)
 
-ipynb: $(NDEMO)
-	make -C ../../shenfun-demos book
+#ipynb: $(NDEMO)
+#	make -C ../../shenfun-demos book
 
 pdf:
 	@$(SPHINXBUILD) -b latex -d "$(BUILDDIR)"/doctrees $(SOURCEDIR) "$(BUILDDIR)"/latex

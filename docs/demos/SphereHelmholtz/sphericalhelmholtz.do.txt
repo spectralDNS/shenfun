@@ -30,13 +30,53 @@ def mod(x):
         return ':mod:'+'`'+x+'`'
     return ':mod:'+'`'+'.'+x+'`'
 def cls(x):
-    if '.' in x:
+    if x[0] == '.':
         return ':class:'+'`'+x+'`'
     return ':class:'+'`'+'.'+x+'`'
 def func(x):
     if '.' in x:
         return ':func:'+'`'+x+'`'
     return ':func:'+'`'+'.'+x+'`'
+%>
+% elif FORMAT in ("ipynb"):
+<%
+
+def mod(xs):
+    path = r'https://shenfun.readthedocs.io/en/latest'
+    xp = xs.split('.')
+    fl = ".".join(xp[:-1]) if xs != 'shenfun' else xs
+    s = __import__(xs, globals(), locals(), [xp[-1]])
+    ss = "<a class='reference internal' href='%s/%s.html#module-%s' title=%s><code class='xref py py-mod docutils literal notranslate'><span class='pre'>%s</span></code></a>"%(path, fl, xs, xs, xs)
+    return ss
+
+def cls(xs):
+    import shenfun
+    try:
+        x = vars(shenfun)[xs]
+    except KeyError:
+        xss = xs.split('.')
+        assert len(xss) == 2
+        x0 = vars(shenfun)[xss[0]]
+        x = vars(x0)[xss[1]]
+        xs = xss[1]
+    m = x.__module__
+    xp = m.split('.')
+    fl = ".".join(xp[:-1])
+    sl = ".".join(xp+[xs])
+    path = r'https://shenfun.readthedocs.io/en/latest'
+    ss = "<a class='reference internal' href='%s/%s.html#%s.%s' title='%s.%s'><code class='xref py py-func docutils literal notranslate'><span class='pre'>%s</span></code></a>"%(path, fl, m, xs, m, xs, xs)
+    return ss
+
+def func(xs):
+    import shenfun
+    x = vars(shenfun)[xs]
+    m = x.__module__
+    xp = m.split('.')
+    fl = ".".join(xp[:-1])
+    sl = ".".join(xp+[xs])
+    path = r'https://shenfun.readthedocs.io/en/latest'
+    ss = "<a class='reference internal' href='%s/%s.html#%s.%s' title='%s.%s'><code class='xref py py-func docutils literal notranslate'><span class='pre'>%s()</span></code></a>"%(path, fl, m, xs, m, xs, xs)
+    return ss
 %>
 % endif
 
@@ -177,7 +217,7 @@ Here `mats` will be a list containing several tensor product
 matrices in the form of
 ${cls('TPMatrix')}. Since there is only one directions with
 non-diagonal matrices ($\theta$-direction) we
-can use the generic ${cls('SolverGeneric1ND')} solver.
+can use the generic ${cls('la.SolverGeneric1ND')} solver.
 Note that some of the non-diagonal matrices will be dense,
 which is a weakness of the current method. Also note
 that with Legendre one can use integration by parts

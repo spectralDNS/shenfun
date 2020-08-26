@@ -7,7 +7,7 @@ Demo - Rayleigh Benard
 ======================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 21, 2020
+:Date: Aug 26, 2020
 
 *Summary.* Rayleigh-Benard convection arise
 due to temperature gradients in a fluid. The governing equations are
@@ -52,30 +52,30 @@ The governing equations solved in domain :math:`\Omega=[-1, 1]\times [0, 2\pi]` 
    :label: eq:momentum
 
         
-            \frac{\partial \mathbf{u}}{\partial t} + (\mathbf{u} \cdot \nabla) \mathbf{u} = - \nabla p + \sqrt{\frac{Pr}{Ra}} \nabla^2 \mathbf{u}  + T \mathbf{i}, 
+            \frac{\partial \boldsymbol{u}}{\partial t} + (\boldsymbol{u} \cdot \nabla) \boldsymbol{u} = - \nabla p + \sqrt{\frac{Pr}{Ra}} \nabla^2 \boldsymbol{u}  + T \boldsymbol{i}, 
         
 
 .. math::
    :label: eq:T
 
           
-            \frac{\partial T}{\partial t} +\mathbf{u} \cdot \nabla T = \frac{1}{\sqrt{RaPr}} \nabla^2 T, 
+            \frac{\partial T}{\partial t} +\boldsymbol{u} \cdot \nabla T = \frac{1}{\sqrt{RaPr}} \nabla^2 T, 
         
 
 .. math::
    :label: eq:div
 
           
-            \nabla \cdot \mathbf{u} = 0, 
+            \nabla \cdot \boldsymbol{u} = 0, 
         
 
-where :math:`\mathbf{u}(x, y, t) (= u\mathbf{i} + v\mathbf{j})` is the velocity vector, :math:`p(x, y, t)` is pressure, :math:`T(x, y, t)` is the temperature, and :math:`\mathbf{i}` and
-:math:`\mathbf{j}` are the unity vectors for the :math:`x` and :math:`y`-directions, respectively.
+where :math:`\boldsymbol{u}(x, y, t) (= u\boldsymbol{i} + v\boldsymbol{j})` is the velocity vector, :math:`p(x, y, t)` is pressure, :math:`T(x, y, t)` is the temperature, and :math:`\boldsymbol{i}` and
+:math:`\boldsymbol{j}` are the unity vectors for the :math:`x` and :math:`y`-directions, respectively.
 
-The equations are complemented with boundary conditions :math:`\mathbf{u}(\pm 1, y, t) = (0, 0), \mathbf{u}(x, 2 \pi, t) = \mathbf{u}(x, 0, t), T(1, y, t) = 1, T(-1, y, t) =  0, T(x, 2 \pi, t) = T(x, 0, t)`.
+The equations are complemented with boundary conditions :math:`\boldsymbol{u}(\pm 1, y, t) = (0, 0), \boldsymbol{u}(x, 2 \pi, t) = \boldsymbol{u}(x, 0, t), T(1, y, t) = 1, T(-1, y, t) =  0, T(x, 2 \pi, t) = T(x, 0, t)`.
 Note that these equations have been non-dimensionalized according to :cite:`pandey18`, using dimensionless
 Rayleigh number :math:`Ra=g \alpha \Delta T h^3/(\nu \kappa)` and Prandtl number :math:`Pr=\nu/\kappa`. Here
-:math:`g \mathbf{i}` is the vector accelleration of gravity, :math:`\Delta T` is the temperature difference between
+:math:`g \boldsymbol{i}` is the vector accelleration of gravity, :math:`\Delta T` is the temperature difference between
 the top and bottom walls, :math:`h` is the hight of the channel in :math:`x`-direction, :math:`\nu` is the
 dynamic viscosity coefficient, :math:`\kappa` is the heat transfer coefficient and :math:`\alpha` is the
 thermal expansion coefficient. Note that the
@@ -86,8 +86,8 @@ The governing equations contain a non-trivial coupling between velocity, pressur
 This coupling can be simplified by eliminating the pressure from the equation for the wall-normal velocity
 component :math:`u`. We accomplish this by taking the Laplace of the momentum equation in wall normal
 direction, using the pressure from the divergence of the momentum equation
-:math:`\nabla^2 p = -\nabla \cdot \mathbf{H}+\partial T/\partial x`, where
-:math:`\mathbf{H} = (H_x, H_y) = (\mathbf{u} \cdot \nabla) \mathbf{u}`
+:math:`\nabla^2 p = -\nabla \cdot \boldsymbol{H}+\partial T/\partial x`, where
+:math:`\boldsymbol{H} = (H_x, H_y) = (\boldsymbol{u} \cdot \nabla) \boldsymbol{u}`
 
 .. math::
    :label: eq:u
@@ -117,14 +117,14 @@ divergence constraint. In summary, we now seem to have the following equations t
    :label: eq:T2
 
           
-            \frac{\partial T}{\partial t} +\mathbf{u} \cdot \nabla T = \frac{1}{\sqrt{RaPr}} \nabla^2 T, 
+            \frac{\partial T}{\partial t} +\boldsymbol{u} \cdot \nabla T = \frac{1}{\sqrt{RaPr}} \nabla^2 T, 
         
 
 .. math::
    :label: eq:div2
 
           
-            \nabla \cdot \mathbf{u} = 0 .
+            \nabla \cdot \boldsymbol{u} = 0 .
         
 
 However, we note that Eqs. :eq:`eq:u2` and :eq:`eq:T2` and :eq:`eq:div2` do not depend on pressure, and,
@@ -293,29 +293,20 @@ Inserting now for the known :math:`u_N`, the unknown :math:`v_N`, and :math:`q=\
 continuity equation becomes
 
 .. math::
-   :label: eq:u4
-
-        
           \int_{-1}^1 \int_{0}^{2\pi} \frac{\partial}{\partial x} \left(\sum_{k \in \boldsymbol{k}_B} \sum_{l \in \boldsymbol{l}} \hat{u}_{kl}(t) \phi_k^B(x) \exp(\imath l y) \right) \phi_m^D(x) \exp(-\imath n y) dx_w dy_w + \\ 
-          \int_{-1}^1 \int_{0}^{2\pi} \frac{\partial}{\partial y} \left(\sum_{k \in \boldsymbol{k}_D} \sum_{l \in \boldsymbol{l}} \hat{v}_{kl}(t) \phi_k^D(x) \exp(\imath l y) \right) \phi_m^D(x) \exp(-\imath n y) dx_w dy_w  = 0. 
-        
+          \int_{-1}^1 \int_{0}^{2\pi} \frac{\partial}{\partial y} \left(\sum_{k \in \boldsymbol{k}_D} \sum_{l \in \boldsymbol{l}} \hat{v}_{kl}(t) \phi_k^D(x) \exp(\imath l y) \right) \phi_m^D(x) \exp(-\imath n y) dx_w dy_w  = 0.
 
 The :math:`x` and :math:`y` domains are separable, so we can rewrite as
 
 .. math::
-   :label: _auto7
-
-        
             \sum_{k \in \boldsymbol{k}_B} \sum_{l \in \boldsymbol{l}} \int_{-1}^1 \frac{\partial \phi_k^B(x)}{\partial x}  \phi_m^D(x) dx_w \int_{0}^{2\pi} \exp(\imath l y) \exp(-\imath n y) dy_w \hat{u}_{kl} + \\ 
             \sum_{k \in \boldsymbol{k}_D} \sum_{l \in \boldsymbol{l}} \int_{-1}^1 \phi_k^D(x) \phi_m^D(x) dx_w   \int_{0}^{2\pi} \frac{\partial \exp(\imath l y)}{\partial y} \exp(-\imath n y) dy_w \hat{v}_{kl} = 0.
-        
-        
 
 Now perform some exact manipulations in the Fourier direction and introduce the
 1D inner product notation for the :math:`x`-direction
 
 .. math::
-   :label: _auto8
+   :label: _auto7
 
         
             \left(a, b\right)_w = \int_{-1}^1 a(x) b(x) dx_w \left(\approx \sum_{j = 0}^{N-1} a(x_j)b(x_j) w(x_j)\right).
@@ -326,7 +317,7 @@ By also simplifying the notation using summation of repeated indices,
 we get the following equation
 
 .. math::
-   :label: _auto9
+   :label: _auto8
 
         
            \delta_{ln} \left(\frac{\partial \phi_k^B}{\partial x}, \phi_m^D \right)_w \hat{u}_{kl}
@@ -362,7 +353,7 @@ Fourier coefficient 0, Eq. :eq:`eq:v` becomes
 There is still one more revelation to be made from Eq. :eq:`eq:div3`. When :math:`l=0` we get
 
 .. math::
-   :label: _auto10
+   :label: _auto9
 
         
             \left(\frac{\partial \phi_k^B}{\partial x}, \phi_m^D \right)_w \hat{u}_{k,0} = 0,
@@ -406,7 +397,7 @@ On one timestep the generic equation :eq:`eq:genericpsi`
 is then integrated from stage :math:`k` to :math:`k+1` according to
 
 .. math::
-   :label: _auto11
+   :label: _auto10
 
         
             \psi^{k+1} = \psi^k + a_k \mathcal{N}^k + b_k \mathcal{N}^{k-1} + \frac{a_k+b_k}{2}\mathcal{L}(\psi^{k+1}+\psi^{k}),
@@ -666,7 +657,7 @@ condition is implemented by adding two basis functions to the
 basis of the function space
 
 .. math::
-   :label: _auto12
+   :label: _auto11
 
         
             \phi^D_{N-2} = 0.5(1+x), 
@@ -674,7 +665,7 @@ basis of the function space
         
 
 .. math::
-   :label: _auto13
+   :label: _auto12
 
           
             \phi^D_{N-1} = 0.5(1-x),
@@ -684,7 +675,7 @@ basis of the function space
 with the approximation now becoming
 
 .. math::
-   :label: _auto14
+   :label: _auto13
 
         
             T_N(x, y, t) = \sum_{k=0}^{N-1} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl} \phi^D_k(x)\exp(\imath l y), 
@@ -692,7 +683,7 @@ with the approximation now becoming
         
 
 .. math::
-   :label: _auto15
+   :label: _auto14
 
           
                          = \sum_{k=0}^{N-3} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl} \phi^D_k(x)\exp(\imath l y) + \sum_{k=N-2}^{N-1} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl} \phi^D_k(x)\exp(\imath l y).
@@ -702,7 +693,7 @@ with the approximation now becoming
 The boundary condition requires
 
 .. math::
-   :label: _auto16
+   :label: _auto15
 
         
         T_N(1, y, t) = \sum_{k=N-2}^{N-1} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl} \phi^D_k(1)\exp(\imath l y), 
@@ -719,7 +710,7 @@ The boundary condition requires
 and
 
 .. math::
-   :label: _auto17
+   :label: _auto16
 
         
         T_N(-1, y, t) = \sum_{k=N-2}^{N-1} \sum_{l \in \boldsymbol{l}} \hat{T}_{kl} \phi^D_k(-1)\exp(\imath l y), 
@@ -737,7 +728,7 @@ We find :math:`\hat{T}_{N-2, l}` and :math:`\hat{T}_{N-1, l}` using orthogonalit
 :eq:`eq:TN1` by :math:`\exp(-\imath m y)` and integrate over the domain :math:`[0, 2\pi]`. We get
 
 .. math::
-   :label: _auto18
+   :label: _auto17
 
         
             \hat{T}_{N-2, l} = \int_{0}^{2\pi} T_N(1, y, t) \exp(-\imath l y) dy, 
@@ -745,7 +736,7 @@ We find :math:`\hat{T}_{N-2, l}` and :math:`\hat{T}_{N-1, l}` using orthogonalit
         
 
 .. math::
-   :label: _auto19
+   :label: _auto18
 
           
             \hat{T}_{N-1, l} = \int_{0}^{2\pi} T_N(-1, y, t) \exp(-\imath l y) dy.
@@ -779,7 +770,7 @@ for the 1D mass matrix with :math:`u=\sum_{k=0}^{N-1}\hat{T}_k \phi^D_k` and :ma
 we will have
 
 .. math::
-   :label: _auto20
+   :label: _auto19
 
         
             \left(u, v \right)_w = \left( \sum_{k=0}^{N-1} \hat{T}_k \phi^D_k(x), \phi^D_m \right)_w, 
@@ -787,7 +778,7 @@ we will have
         
 
 .. math::
-   :label: _auto21
+   :label: _auto20
 
           
                                  = \sum_{k=0}^{N-3} \left(\phi^D_k(x), \phi^D_m \right)_w \hat{T}_k + \sum_{k=N-2}^{N-1} \left( \phi^D_k(x), \phi^D_m \right)_w \hat{T}_k,

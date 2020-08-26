@@ -7,7 +7,7 @@ Demo - Kuramato-Sivashinsky equation
 ====================================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 21, 2020
+:Date: Aug 26, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Kuramato-Sivashinsky equation, in a doubly periodic domain. The demo is implemented in
@@ -357,7 +357,7 @@ divided by two. Note that the two sums are equal as they stand (due to aliasing)
 latter (known as the Fourier interpolant) gives the correct (zero) derivative of
 the basis with the highest wavenumber.
 
-Shenfun has a few integrators implemented in the :mod:`.integrators`
+Shenfun has a few integrators implemented in the :mod:`shenfun.utilities.integrators`
 submodule. Two such integrators are the 4th order explicit Runge-Kutta method
 ``RK4``, and the exponential 4th order Runge-Kutta method ``ETDRK4``. Both these
 integrators need two methods provided by the problem being solved, representing
