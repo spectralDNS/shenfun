@@ -20,63 +20,7 @@ The accuracy ought to be similar.
 
 TOC: on
 
-<%
-def mod(x):
-    return '`__mod__'+x+'`'
-def cls(x):
-    return '`__cls__'+x+'`'
-def func(x):
-    return '`__func__'+x+'`'
-%>
-% if FORMAT in ("sphinx"):
-<%
-def mod(x):
-    if '.' in x:
-        return ':mod:'+'`'+x+'`'
-    return ':mod:'+'`'+'.'+x+'`'
-def cls(x):
-    if '.' in x:
-        return ':class:'+'`'+x+'`'
-    return ':class:'+'`'+'.'+x+'`'
-def func(x):
-    if '.' in x:
-        return ':func:'+'`'+x+'`'
-    return ':func:'+'`'+'.'+x+'`'
-%>
-% elif FORMAT in ("ipynb"):
-<%
-
-def mod(xs):
-    path = r'https://shenfun.readthedocs.io/en/latest'
-    xp = xs.split('.')
-    fl = ".".join(xp[:-1]) if xs != 'shenfun' else xs
-    s = __import__(xs, globals(), locals(), [xp[-1]])
-    ss = "<a class='reference internal' href='%s/%s.html#module-%s' title=%s><code class='xref py py-mod docutils literal notranslate'><span class='pre'>%s</span></code></a>"%(path, fl, xs, xs, xs)
-    return ss
-
-def cls(xs):
-    import shenfun
-    x = vars(shenfun)[xs]
-    m = x.__module__
-    xp = m.split('.')
-    fl = ".".join(xp[:-1])
-    sl = ".".join(xp+[xs])
-    path = r'https://shenfun.readthedocs.io/en/latest'
-    ss = "<a class='reference internal' href='%s/%s.html#%s.%s' title='%s.%s'><code class='xref py py-func docutils literal notranslate'><span class='pre'>%s</span></code></a>"%(path, fl, m, xs, m, xs, xs)
-    return ss
-
-def func(xs):
-    import shenfun
-    x = vars(shenfun)[xs]
-    m = x.__module__
-    xp = m.split('.')
-    fl = ".".join(xp[:-1])
-    sl = ".".join(xp+[xs])
-    path = r'https://shenfun.readthedocs.io/en/latest'
-    ss = "<a class='reference internal' href='%s/%s.html#%s.%s' title='%s.%s'><code class='xref py py-func docutils literal notranslate'><span class='pre'>%s()</span></code></a>"%(path, fl, m, xs, m, xs, xs)
-    return ss
-%>
-% endif
+# #include "../preprocesser.py"
 
 ===== The inner product =====
 
@@ -87,8 +31,8 @@ feature, we can now also integrate over highly complex lines and surfaces
 embedded in a higher dimensional space.
 
 To integrate over a domain in shenfun we use the
-"inner": "https://shenfun.readthedocs.io/en/latest/shenfun.forms.html#shenfun.forms.inner.inner"
-function, with a constant test function. The `inner`
+${func('inner')}
+function, with a constant test function. The ${func('inner')}
 function in shenfun is defined as an integral over the
 entire domain $\Omega$ in question
 
@@ -171,7 +115,7 @@ rv = (sp.sin(2*t), sp.cos(2*t), 0.5*t)
 C = FunctionSpace(100, 'C', domain=(0, 2*np.pi), coordinates=((t,), rv))
 !ec
 
-Then compute the arclength using `inner`
+Then compute the arclength using ${func('inner')}
 
 !bc pycod
 length = inner(1, Array(C, val=1))

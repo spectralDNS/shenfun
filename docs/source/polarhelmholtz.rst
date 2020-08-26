@@ -399,7 +399,7 @@ is remarkably similar to the mathematics.
 Here ``mats`` and ``mats0`` will contain several tensor product
 matrices in the form of
 :class:`.TPMatrix`. Since there is only one non-periodic direction
-the matrices can be easily solved using :class:`.la.SolverGeneric1ND`.
+the matrices can be easily solved using :class:`la.SolverGeneric1ND`.
 But first we need to define the function :math:`f(\theta, r)`.
 To this end we use sympy and the method of
 manufactured solution to define a possible solution ``ue``,
