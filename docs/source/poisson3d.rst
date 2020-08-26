@@ -203,21 +203,11 @@ of the latter is that it is generally faster, and that non-linear terms may be
 computed just as quickly as linear. For a linear problem, it does not make much of a difference, if any at all. Approximating the integral with quadrature, we obtain
 
 .. math::
-   :label: _auto13
-
-        
-        \int_{\Omega} u \, \overline{v} \, w\, \boldsymbol{dx} \approx \langle u, v
-        \rangle_w^{\boldsymbol{N}},  
-        
-        
-
-.. math::
-   :label: _auto14
-
-          
-        \approx \sum_{i=0}^{N_0-1} \sum_{j=0}^{N_1-1}\sum_{k=0}^{N_2-1} u(x_i, y_j, z_k) \overline{v}(x_i, y_j, z_k) w(x_i, y_j, z_k),
-        
-        
+        \begin{align*}
+        \int_{\Omega} u \, \overline{v} \, w\, \boldsymbol{dx} &\approx \langle u, v
+        \rangle_w^{\boldsymbol{N}},  \\ 
+        &\approx \sum_{i=0}^{N_0-1} \sum_{j=0}^{N_1-1}\sum_{k=0}^{N_2-1} u(x_i, y_j, z_k) \overline{v}(x_i, y_j, z_k) w(x_i, y_j, z_k),
+        \end{align*}
 
 where :math:`w(\boldsymbol{x})` now are the quadrature weights. The quadrature points
 :math:`\{x_i\}_{i=0}^{N_0-1}` are specific to the chosen basis, and even within basis there
@@ -243,7 +233,7 @@ left hand side of :eq:`eq:3d:varform`, we get
 where the notation :math:`(\cdot, \cdot)_w^{N_0}`
 
 .. math::
-   :label: _auto15
+   :label: _auto13
 
         
         b_{pl} = \left( \mathcal{X}_l, \mathcal{X}_p \right)_w^{N_0} = \sum_{i=0}^{N_0-1} \mathcal{X}_l(x_i)
@@ -257,19 +247,17 @@ directions, where we use constant weight functions :math:`w=1/(2\pi)` in the
 inner products
 
 .. math::
-   :label: _auto16
+   :label: eq:delta0
 
         
-        \int_0^{2\pi} \mathcal{Y}_m(y) \overline{\mathcal{Y}}_q(y) \frac{1}{2\pi} dy = \delta_{mq},
-        
+        \int_0^{2\pi} \mathcal{Y}_m(y) \overline{\mathcal{Y}}_q(y) \frac{1}{2\pi} dy = \delta_{mq}, 
         
 
 .. math::
-   :label: _auto17
+   :label: eq:delta1
 
-          
-        \int_0^{2\pi} \mathcal{Z}_n(z) \overline{\mathcal{Z}}_r(z) \frac{1}{2\pi} dz = \delta_{nr},
         
+        \int_0^{2\pi} \mathcal{Z}_n(z) \overline{\mathcal{Z}}_r(z) \frac{1}{2\pi} dz = \delta_{nr}. 
         
 
 The Kronecker delta-function :math:`\delta_{ij}` is one for :math:`i=j` and
@@ -278,7 +266,7 @@ zero otherwise.
 The right hand side of Eq. :eq:`eq:3d:varform` is computed as
 
 .. math::
-   :label: _auto18
+   :label: _auto14
 
         
         \tilde{f}_{pqr} = \left\langle f, \mathcal{X}_{p}
@@ -356,7 +344,7 @@ plus some other helper modules, like `Numpy <https://numpy.org>`__ and `Sympy <h
     import numpy as np
     from shenfun.tensorproductspace import TensorProductSpace
     from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \ 
-        project, Dx, FunctionSpace, comm, Array, chebyshev
+        project, Dx, FunctionSpace, comm, Array, chebyshev, dx
 
 We use ``Sympy`` for the manufactured solution and ``Numpy`` for testing. MPI for
 Python (``mpi4py``) is required for running the solver with MPI.
@@ -371,10 +359,6 @@ The exact solution :math:`u_e(x, y, z)` and the right hand side :math:`f_e(x, y,
     x, y, z = symbols("x,y,z")
     ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-x**2)
     fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
-    
-    # Lambdify for faster evaluation
-    ul = lambdify((x, y, z), ue, 'numpy')
-    fl = lambdify((x, y, z), fe, 'numpy')
 
 These solutions are now valid for a continuous domain. The next step is thus to
 discretize, using the computational mesh
@@ -452,7 +436,7 @@ real space the mesh is distributed differently. First of all the global mesh
 shape is :math:`\boldsymbol{N}=(14, 15, 16)`, and it is distributed along the first two
 dimensions. The local slices can be inspected as
 
-.. code-block:: text
+.. code-block:: python
 
     print(comm.Get_rank(), T.local_slice(False))
     0 [slice(0, 7, None), slice(0, 8, None), slice(0, 16, None)]
@@ -501,26 +485,25 @@ form language, which is perhaps surprisingly similar to FEniCS.
 
     u = TrialFunction(T)
     v = TestFunction(T)
-    K = T.local_wavenumbers()
     # Get f on quad points
-    fj = Array(T, buffer=fl(*X))
+    fj = Array(T, buffer=fe)
     # Compute right hand side of Poisson equation
     f_hat = inner(v, fj)
     # Get left hand side of Poisson equation
     matrices = inner(v, div(grad(u)))
 
 The Laplacian operator is recognized as ``div(grad)``. The ``matrices`` object is a
-dictionary representing the left hand side of :eq:`eq:AB`, and there are two
-keys: (``ADDmat``, ``BDDmat``). The value of ``matrices["ADDmat"]`` is an object of
-type :class:`.SpectralMatrix`,
-which is ``shenfun``'s type for a matrix. This matrix represents :math:`A_{lj}`, see
-:eq:`eq:AB`, and it has an attribute ``scale`` that is
-equal to :math:`(2\pi)^2` (also see :eq:`eq:AB`).  The other key in matrices
-is ``BDDmat``, and the value here is a :class:`.SpectralMatrix` representing :math:`B_{lj}` from
-:eq:`eq:AB`. This matrix has an attribute ``scale`` that is equal to :math:`m^2+n^2`.
-This ``scale`` is stored as a numpy array of shape :math:`(1, 15, 9)`, representing the
-set
-:math:`\{m^2+n^2: (m, n) \in \boldsymbol{m}^{N_1} \times \boldsymbol{n}^{N_2}\}`. Note that :math:`\boldsymbol{n}^{N_2}` is stored
+list of two tensor product matrices, stored as instances of the class :class:`.TPMatrix`.
+The two tensor product matrices represents
+
+.. math::
+        a_{pl} \delta_{mq} \delta_{nr}\, \text{ and }\, -(m^2 + n^2)b_{pl} \delta_{mq} \delta_{nr}
+
+from Eqs. :eq:`eq:AB`, :eq:`eq:delta0` and :eq:`eq:delta1`.
+The second matrix (:math:`-(m^2 + n^2)b_{pl} \delta_{mq} \delta_{nr}`) has an
+attribute ``scale`` that is equal to :math:`-(m^2+n^2)`.
+This ``scale`` is stored as a numpy array of shape :math:`(1, 15, 9)`, representing the set
+:math:`\{-(m^2+n^2): (m, n) \in \boldsymbol{m}^{N_1} \times \boldsymbol{n}^{N_2}\}`. Note that :math:`\boldsymbol{n}^{N_2}` is stored
 simply as an array of length :math:`N_2/2+1` (here 9), since the transform in direction :math:`z`
 takes a real signal and transforms it taking advantage of Hermitian symmetry,
 see `rfft <https://docs.scipy.org/doc/numpy-1.13.0/reference/generated/numpy.fft.rfft.html>`__.
@@ -543,7 +526,7 @@ Finally, solve linear equation system and transform solution from spectral
     uq = T.backward(u_hat)
     
     # Compare with analytical solution
-    uj = ul(*X)
+    uj = Array(T, buffer=ue)
     error = comm.reduce(np.linalg.norm(uj-uq)**2)
     if comm.Get_rank() == 0:
         print("Error=%2.16e" %(np.sqrt(error)))
@@ -551,69 +534,99 @@ Finally, solve linear equation system and transform solution from spectral
 Convergence test
 ~~~~~~~~~~~~~~~~
 
-A complete solver is given in Sec. :ref:`sec:3d:complete`. This solver is created
-such that it takes in two commandline arguments and prints out the
-:math:`L_2`-errornorm of the solution in the end. We can use this to write a short
-script that performs a convergence test. The solver is run like
+To do a convergence test we will now create a function ``main``, that takes the
+number of quadrature points as parameter, and prints out
+the error.
 
-.. code-block:: text
+.. code-block:: python
 
-    >>> python dirichlet_poisson3D.py 32 legendre
-    Error=6.5955040031498912e-10
-
-for a discretization of size :math:`\boldsymbol{N}= N^3 = 32^3` and for the Legendre basis.
-Alternatively, change ``legendre`` to ``chebyshev`` for the Chebyshev basis.
-
-We set up the solver to run for a list of :math:`N=[8, 10, \ldots, 38]`, and collect
-the errornorms in arrays to be plotted. Such a script can be easily created
-with the `subprocess <https://docs.python.org/3/library/subprocess.html>`__ module
-
-.. code-block:: text
-
-    import subprocess
-    from numpy import log, array
-    from matplotlib import pyplot as plt
+    import importlib
     
-    N = range(8, 40, 2)
+    def main(N, family='Chebyshev'):
+        base = importlib.import_module('.'.join(('shenfun', family.lower())))
+        Solver = base.la.Helmholtz
+        SD = FunctionSpace(N, family=family, bc=(0, 0))
+        K1 = FunctionSpace(N, family='F', dtype='D')
+        K2 = FunctionSpace(N, family='F', dtype='d')
+        T = TensorProductSpace(comm, (SD, K1, K2), axes=(0, 1, 2))
+    
+        u = TrialFunction(T)
+        v = TestFunction(T)
+    
+        # Get f on quad points
+        fj = Array(T, buffer=fe)
+    
+        # Compute right hand side of Poisson's equation
+        f_hat = Function(T)
+        f_hat = inner(v, fj, output_array=f_hat)
+        if family == 'legendre':
+            f_hat *= -1.
+    
+        # Get left hand side of Poisson equation
+        if family.lower() == 'chebyshev':
+            matrices = inner(v, div(grad(u)))
+        else:
+            matrices = inner(grad(v), grad(u))
+    
+        # Create Helmholtz linear algebra solver
+        H = Solver(*matrices)
+    
+        # Solve and transform to real space
+        u_hat = Function(T)           # Solution spectral space
+        u_hat = H(u_hat, f_hat)       # Solve
+    
+        uj = Array(T)
+        uj = u_hat.backward(uj)
+    
+        # Compare with analytical solution
+        ua = Array(T, buffer=ue)
+        #l2_error = np.linalg.norm(uj-ua)
+        L2_error = np.sqrt(dx((uj-ua)**2))
+        return L2_error
+
+For example, we find the error of a Chebyshev discretization
+using 12 quadrature points as
+
+.. code-block:: python
+
+    main(12, 'Chebyshev')
+
+To get the convergence we call ``main`` for a list
+of :math:`N=[12, 16, \ldots, 48]`, and collect the errornorms in
+arrays to be plotted. The error can be plotted using
+`matplotlib <https://matplotlib.org>`__, and the generated
+figure is also shown in this demos summary.
+
+.. code-block:: python
+
+    import matplotlib.pyplot as plt
+    
+    N = range(12, 50, 4)
     error = {}
     for basis in ('legendre', 'chebyshev'):
         error[basis] = []
         for i in range(len(N)):
-            output = subprocess.check_output("python dirichlet_poisson3D.py {} {}".format(N[i], basis), shell=True)
-            exec(output) # Error is printed as "Error=%2.16e"%(np.linalg.norm(uj-ua))
-            error[basis].append(Error)
-            if i == 0:
-                print("Error          hmin           r       ")
-                print("%2.8e %2.8e %2.8f"%(error[basis][-1], 1./N[i], 0))
-            if i > 0:
-                print("%2.8e %2.8e %2.8f"%(error[basis][-1], 1./N[i], log(error[basis][-1]/error[basis][-2])/log(N[i-1]/N[i])))
+            errN = main(N[i], basis)
+            error[basis].append(errN)
     
-
-The error can be plotted using `matplotlib <https://matplotlib.org>`__, and the
-generated figure is shown in the summary's Fig. :ref:`fig:3d:ct0`. The spectral
-convergence is evident and we can see that after :math:`N=25` roundoff errors dominate
-as the errornorm trails off around :math:`10^{-13}`.
-
-.. code-block:: text
-
     plt.figure(figsize=(6, 4))
     for basis, col in zip(('legendre', 'chebyshev'), ('r', 'b')):
         plt.semilogy(N, error[basis], col, linewidth=2)
-    plt.title('Convergence of Poisson solvers 3D')
+    plt.title('Convergence of Poisson solvers 1D')
     plt.xlabel('N')
     plt.ylabel('Error norm')
     plt.legend(('Legendre', 'Chebyshev'))
-    plt.savefig('poisson3D_errornorm.png')
     plt.show()
 
-.. FIGURE: [poisson1D_errornorm.png] Convergence test of Legendre and Chebyshev 1D Poisson solvers.
+The spectral convergence is evident and we can see that
+after :math:`N=24` roundoff errors dominate as the errornorm trails off around :math:`10^{-14}`.
 
-.. _sec:3d:complete:
+.. _sec:complete:
 
 Complete solver
 ---------------
 
 A complete solver, that can use either Legendre or Chebyshev bases, chosen as a
-command-line argument, can be found `here <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py>`__.
+command-line argument, can also be found `here <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py>`__.
 
 .. ======= Bibliography =======
