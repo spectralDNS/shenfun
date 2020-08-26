@@ -122,11 +122,11 @@ The integral can either be computed exactly, or with quadrature. The advantage
 of the latter is that it is generally faster, and that non-linear terms may be
 computed just as quickly as linear. For a linear problem, it does not make much of a difference, if any at all. Approximating the integral with quadrature, we obtain
 !bt
-\begin{align}
+\begin{align*}
 \int_{\Omega} u \, \overline{v} \, w\, \bs{dx} &\approx \langle u, v
 \rangle_w^{\bs{N}},  \\
 &\approx \sum_{i=0}^{N_0-1} \sum_{j=0}^{N_1-1}\sum_{k=0}^{N_2-1} u(x_i, y_j, z_k) \overline{v}(x_i, y_j, z_k) w(x_i, y_j, z_k),
-\end{align}
+\end{align*}
 !et
 where $w(\bs{x})$ now are the quadrature weights. The quadrature points
 $\{x_i\}_{i=0}^{N_0-1}$ are specific to the chosen basis, and even within basis there
@@ -160,12 +160,19 @@ is used to represent an $L_2$ inner product along only the first, nonperiodic,
 direction. The delta functions above come from integrating over the two periodic
 directions, where we use constant weight functions $w=1/(2\pi)$ in the
 inner products
+
 !bt
-\begin{align}
-\int_0^{2\pi} \mathcal{Y}_m(y) \overline{\mathcal{Y}}_q(y) \frac{1}{2\pi} dy = \delta_{mq},\\
-\int_0^{2\pi} \mathcal{Z}_n(z) \overline{\mathcal{Z}}_r(z) \frac{1}{2\pi} dz = \delta_{nr},
-\end{align}
+\begin{equation}
+\int_0^{2\pi} \mathcal{Y}_m(y) \overline{\mathcal{Y}}_q(y) \frac{1}{2\pi} dy = \delta_{mq}, label{eq:delta0}
+\end{equation}
 !et
+
+!bt
+\begin{equation}
+\int_0^{2\pi} \mathcal{Z}_n(z) \overline{\mathcal{Z}}_r(z) \frac{1}{2\pi} dz = \delta_{nr}. label{eq:delta1}
+\end{equation}
+!et
+
 The Kronecker delta-function $\delta_{ij}$ is one for $i=j$ and
 zero otherwise.
 
@@ -239,7 +246,7 @@ from sympy import symbols, cos, sin, exp, lambdify
 import numpy as np
 from shenfun.tensorproductspace import TensorProductSpace
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    project, Dx, FunctionSpace, comm, Array, chebyshev
+    project, Dx, FunctionSpace, comm, Array, chebyshev, dx
 !ec
 
 We use `Sympy` for the manufactured solution and `Numpy` for testing. MPI for
@@ -252,10 +259,6 @@ The exact solution $u_e(x, y, z)$ and the right hand side $f_e(x, y, z)$ are cre
 x, y, z = symbols("x,y,z")
 ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-x**2)
 fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
-
-# Lambdify for faster evaluation
-ul = lambdify((x, y, z), ue, 'numpy')
-fl = lambdify((x, y, z), fe, 'numpy')
 !ec
 
 These solutions are now valid for a continuous domain. The next step is thus to
@@ -302,7 +305,7 @@ as well have put the nonperiodic direction along either $y$- or $z$-direction,
 though, but this would then require that the order of the transformed axes be
 changed as well. For example, putting the Dirichlet direction along $y$, we
 would need to create the tensorproductspace as
-!bc pycod
+!bc pycod-t
 T = TensorProductSpace(comm, (K1, SD, K2), axes=(1, 0, 2))
 !ec
 such that the Dirichlet direction is the last to be transformed. The reason for
@@ -326,7 +329,7 @@ axes $y$ and $z$, respectively. Processor 2 owns slices $0:8$ and $0:5$ etc. In
 real space the mesh is distributed differently. First of all the global mesh
 shape is $\bs{N}=(14, 15, 16)$, and it is distributed along the first two
 dimensions. The local slices can be inspected as
-!bc
+!bc pycod-t
 print(comm.Get_rank(), T.local_slice(False))
 0 [slice(0, 7, None), slice(0, 8, None), slice(0, 16, None)]
 1 [slice(0, 7, None), slice(8, 15, None), slice(0, 16, None)]
@@ -339,7 +342,7 @@ processor mesh) and the
 MPI distribution is of type *pencil*. It is also possible to choose a *slab*
 decomposition, where only one dimension of the array is distributed. This choice
 needs to be made when creating the tensorproductspace as
-!bc pycod
+!bc pycod-t
 T = TensorProductSpace(comm, (SD, K1, K2), axes=(0, 1, 2), slab=True)
 !ec
 which will lead to a mesh that is distributed along $x$-direction in real space
@@ -368,26 +371,26 @@ form language, which is perhaps surprisingly similar to FEniCS.
 !bc pycod
 u = TrialFunction(T)
 v = TestFunction(T)
-K = T.local_wavenumbers()
 # Get f on quad points
-fj = Array(T, buffer=fl(*X))
+fj = Array(T, buffer=fe)
 # Compute right hand side of Poisson equation
 f_hat = inner(v, fj)
 # Get left hand side of Poisson equation
 matrices = inner(v, div(grad(u)))
 !ec
 The Laplacian operator is recognized as `div(grad)`. The `matrices` object is a
-dictionary representing the left hand side of (ref{eq:AB}), and there are two
-keys: (`ADDmat`, `BDDmat`). The value of `matrices["ADDmat"]` is an object of
-type ${cls('SpectralMatrix')},
-which is `shenfun`'s type for a matrix. This matrix represents $A_{lj}$, see
-(ref{eq:AB}), and it has an attribute `scale` that is
-equal to $(2\pi)^2$ (also see (ref{eq:AB})).  The other key in matrices
-is `BDDmat`, and the value here is a ${cls('SpectralMatrix')} representing $B_{lj}$ from
-(ref{eq:AB}). This matrix has an attribute `scale` that is equal to $m^2+n^2$.
-This `scale` is stored as a numpy array of shape $(1, 15, 9)$, representing the
-set
-$\{m^2+n^2: (m, n) \in \bs{m}^{N_1} \times \bs{n}^{N_2}\}$. Note that $\bs{n}^{N_2}$ is stored
+list of two tensor product matrices, stored as instances of the class ${cls('TPMatrix')}.
+The two tensor product matrices represents
+
+!bt
+a_{pl} \delta_{mq} \delta_{nr}\, \text{ and }\, -(m^2 + n^2)b_{pl} \delta_{mq} \delta_{nr}
+!et
+
+from Eqs. (ref{eq:AB}), (ref{eq:delta0}) and (ref{eq:delta1}).
+The second matrix ($-(m^2 + n^2)b_{pl} \delta_{mq} \delta_{nr}$) has an
+attribute `scale` that is equal to $-(m^2+n^2)$.
+This `scale` is stored as a numpy array of shape $(1, 15, 9)$, representing the set
+$\{-(m^2+n^2): (m, n) \in \bs{m}^{N_1} \times \bs{n}^{N_2}\}$. Note that $\bs{n}^{N_2}$ is stored
 simply as an array of length $N_2/2+1$ (here 9), since the transform in direction $z$
 takes a real signal and transforms it taking advantage of Hermitian symmetry,
 see "rfft":
@@ -408,7 +411,7 @@ u_hat = H(u_hat, f_hat)       # Solve
 uq = T.backward(u_hat)
 
 # Compare with analytical solution
-uj = ul(*X)
+uj = Array(T, buffer=ue)
 error = comm.reduce(np.linalg.norm(uj-uq)**2)
 if comm.Get_rank() == 0:
     print("Error=%2.16e" %(np.sqrt(error)))
@@ -416,160 +419,102 @@ if comm.Get_rank() == 0:
 
 === Convergence test ===
 
-A complete solver is given in Sec. ref{sec:3d:complete}. This solver is created
-such that it takes in two commandline arguments and prints out the
-$L_2$-errornorm of the solution in the end. We can use this to write a short
-script that performs a convergence test. The solver is run like
-!bc
->>> python dirichlet_poisson3D.py 32 legendre
-Error=6.5955040031498912e-10
+To do a convergence test we will now create a function `main`, that takes the
+number of quadrature points as parameter, and prints out
+the error.
+
+!bc pycod
+import importlib
+
+def main(N, family='Chebyshev'):
+    base = importlib.import_module('.'.join(('shenfun', family.lower())))
+    Solver = base.la.Helmholtz
+    SD = FunctionSpace(N, family=family, bc=(0, 0))
+    K1 = FunctionSpace(N, family='F', dtype='D')
+    K2 = FunctionSpace(N, family='F', dtype='d')
+    T = TensorProductSpace(comm, (SD, K1, K2), axes=(0, 1, 2))
+
+    u = TrialFunction(T)
+    v = TestFunction(T)
+
+    # Get f on quad points
+    fj = Array(T, buffer=fe)
+
+    # Compute right hand side of Poisson's equation
+    f_hat = Function(T)
+    f_hat = inner(v, fj, output_array=f_hat)
+    if family == 'legendre':
+        f_hat *= -1.
+
+    # Get left hand side of Poisson equation
+    if family.lower() == 'chebyshev':
+        matrices = inner(v, div(grad(u)))
+    else:
+        matrices = inner(grad(v), grad(u))
+
+    # Create Helmholtz linear algebra solver
+    H = Solver(*matrices)
+
+    # Solve and transform to real space
+    u_hat = Function(T)           # Solution spectral space
+    u_hat = H(u_hat, f_hat)       # Solve
+
+    uj = Array(T)
+    uj = u_hat.backward(uj)
+
+    # Compare with analytical solution
+    ua = Array(T, buffer=ue)
+    #l2_error = np.linalg.norm(uj-ua)
+    L2_error = np.sqrt(dx((uj-ua)**2))
+    return L2_error
 !ec
-for a discretization of size $\bs{N}= N^3 = 32^3$ and for the Legendre basis.
-Alternatively, change `legendre` to `chebyshev` for the Chebyshev basis.
 
-We set up the solver to run for a list of $N=[8, 10, \ldots, 38]$, and collect
-the errornorms in arrays to be plotted. Such a script can be easily created
-with the "subprocess": "https://docs.python.org/3/library/subprocess.html" module
+For example, we find the error of a Chebyshev discretization
+using 12 quadrature points as
 
-!bc
-import subprocess
-from numpy import log, array
-from matplotlib import pyplot as plt
+!bc pycod
+main(12, 'Chebyshev')
+!ec
 
-N = range(8, 40, 2)
+To get the convergence we call `main` for a list
+of $N=[12, 16, \ldots, 48]$, and collect the errornorms in
+arrays to be plotted. The error can be plotted using
+"matplotlib": "https://matplotlib.org", and the generated
+figure is also shown in this demos summary.
+
+
+!bc pycod
+import matplotlib.pyplot as plt
+
+N = range(12, 50, 4)
 error = {}
 for basis in ('legendre', 'chebyshev'):
     error[basis] = []
     for i in range(len(N)):
-        output = subprocess.check_output("python dirichlet_poisson3D.py {} {}".format(N[i], basis), shell=True)
-        exec(output) # Error is printed as "Error=%2.16e"%(np.linalg.norm(uj-ua))
-        error[basis].append(Error)
-        if i == 0:
-            print("Error          hmin           r       ")
-            print("%2.8e %2.8e %2.8f"%(error[basis][-1], 1./N[i], 0))
-        if i > 0:
-            print("%2.8e %2.8e %2.8f"%(error[basis][-1], 1./N[i], log(error[basis][-1]/error[basis][-2])/log(N[i-1]/N[i])))
+        errN = main(N[i], basis)
+        error[basis].append(errN)
 
-!ec
-
-The error can be plotted using "matplotlib": "https://matplotlib.org", and the
-generated figure is shown in the summary's Fig. ref{fig:3d:ct0}. The spectral
-convergence is evident and we can see that after $N=25$ roundoff errors dominate
-as the errornorm trails off around $10^{-13}$.
-
-!bc
 plt.figure(figsize=(6, 4))
 for basis, col in zip(('legendre', 'chebyshev'), ('r', 'b')):
     plt.semilogy(N, error[basis], col, linewidth=2)
-plt.title('Convergence of Poisson solvers 3D')
+plt.title('Convergence of Poisson solvers 1D')
 plt.xlabel('N')
 plt.ylabel('Error norm')
 plt.legend(('Legendre', 'Chebyshev'))
-plt.savefig('poisson3D_errornorm.png')
 plt.show()
 !ec
 
+The spectral convergence is evident and we can see that
+after $N=24$ roundoff errors dominate as the errornorm trails off around $10^{-14}$.
 
-# FIGURE: [poisson1D_errornorm.png] Convergence test of Legendre and Chebyshev 1D Poisson solvers. label{fig:ct}
-
-% if FORMAT in ("latex", "pdflatex", "html"):
 
 ===== Complete solver =====
-label{sec:3d:complete}
-A complete solver, that can use either Legendre or Chebyshev bases, and any quadrature size
-chosen as a command-line argument, is shown below.
-
-!bc
->>> python dirichlet_poisson3D.py 36 legendre
-!ec
-or similarly with `chebyshev` instead of `legendre`.
-
-!bc
-import sys, os
-import importlib
-from sympy import symbols, cos, sin, lambdify
-import numpy as np
-from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
-    Function, Basis, TensorProductSpace, comm
-import time
-try:
-    import matplotlib.pyplot as plt
-except ImportError:
-    plt = None
-
-assert len(sys.argv) == 3
-assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
-assert isinstance(int(sys.argv[-2]), int)
-
-# Collect basis and solver from either Chebyshev or Legendre submodules
-family = sys.argv[-1].lower()
-base = importlib.import_module('.'.join(('shenfun', family)))
-Solver = base.la.Helmholtz
-
-# Use sympy to compute a rhs, given an analytical solution
-a = -0
-b = 0
-x, y, z = symbols("x,y,z")
-ue = (cos(4*x) + sin(2*y) + sin(4*z))*(1-z**2) + a*(1 + z)/2. + b*(1 - z)/2.
-fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
-
-# Lambdify for faster evaluation
-ul = lambdify((x, y, z), ue, 'numpy')
-fl = lambdify((x, y, z), fe, 'numpy')
-
-# Size of discretization
-N = int(sys.argv[-2])
-N = [N, N, N]
-
-SD = FunctionSpace(N[0], family=family, bc=(a, b))
-K1 = FunctionSpace(N[1], family='F', dtype='D')
-K2 = FunctionSpace(N[2], family='F', dtype='d')
-T = TensorProductSpace(comm, (K1, K2, SD), axes=(0, 1, 2), slab=True)
-X = T.local_mesh()
-u = TrialFunction(T)
-v = TestFunction(T)
-
-K = T.local_wavenumbers()
-
-# Get f on quad points
-fj = Array(T, buffer=fl(*X))
-
-# Compute right hand side of Poisson equation
-f_hat = inner(v, fj)
-if family == 'legendre':
-    f_hat *= -1.
-
-# Get left hand side of Poisson equation
-if family == 'chebyshev':
-    matrices = inner(v, div(grad(u)))
-else:
-    matrices = inner(grad(v), grad(u))
-
-# Create Helmholtz linear algebra solver
-H = Solver(*matrices)
-
-# Solve and transform to real space
-u_hat = Function(T)           # Solution spectral space
-t0 = time.time()
-u_hat = H(u_hat, f_hat)       # Solve
-uq = T.backward(u_hat, fast_transform=False)
-
-# Compare with analytical solution
-uj = ul(*X)
-error = comm.reduce(np.linalg.norm(uj-uq)**2)
-if comm.Get_rank() == 0:
-    print("Error=%2.16e" %(np.sqrt(error)))
-!ec
-
-% else:
-===== Complete solver =====
-label{sec:3d:complete}
+label{sec:complete}
 
 A complete solver, that can use either Legendre or Chebyshev bases, chosen as a
-command-line argument, can be found "here":
-"https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py".
+command-line argument, can also be found "here":"https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py".
 
-% endif
+
 
 #======= Bibliography =======
 

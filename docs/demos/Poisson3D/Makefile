@@ -6,6 +6,10 @@ name=poisson3d
 
 all: ${name}.html
 
+%.ipynb:
+	doconce format ipynb $(basename $@).do.txt
+	jupyter nbconvert --inplace --execute ${basename $@}.ipynb
+
 ${name}.pdf: ${name}.tex
 	doconce format pdflatex ${name} --latex_code_style=pyg-yellowgray --movie_prefix=https://github.com/spectralDNS/spectralutilities/blob/master/movies/
 	pdflatex -shell-escape ${name}
