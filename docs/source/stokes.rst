@@ -7,7 +7,7 @@ Demo - Stokes equations
 =======================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 21, 2020
+:Date: Aug 26, 2020
 
 *Summary.* The Stokes equations describe the flow of highly viscous fluids.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Stokes
@@ -33,22 +33,22 @@ Stokes' equations are given in strong form as
 
 .. math::
         \begin{align*}
-        \nabla^2 \mathbf{u} - \nabla p &= \mathbf{f} \quad \text{in }  \Omega, \\ 
-        \nabla \cdot \mathbf{u} &= h \quad \text{in } \Omega  \\ 
+        \nabla^2 \boldsymbol{u} - \nabla p &= \boldsymbol{f} \quad \text{in }  \Omega, \\ 
+        \nabla \cdot \boldsymbol{u} &= h \quad \text{in } \Omega  \\ 
         \int_{\Omega} p dx &= 0
         \end{align*}
 
-where :math:`\mathbf{u}` and :math:`p` are, respectively, the
+where :math:`\boldsymbol{u}` and :math:`p` are, respectively, the
 fluid velocity vector and pressure, and the domain
 :math:`\Omega = [0, 2\pi]^2 \times [-1, 1]`. The flow is assumed periodic
 in :math:`x` and :math:`y`-directions, whereas there is a no-slip homogeneous Dirichlet
-boundary condition on :math:`\mathbf{u}` on the boundaries of the :math:`z`-direction, i.e.,
-:math:`\mathbf{u}(x, y, \pm 1) = (0, 0, 0)`. (Note that we can configure shenfun with
+boundary condition on :math:`\boldsymbol{u}` on the boundaries of the :math:`z`-direction, i.e.,
+:math:`\boldsymbol{u}(x, y, \pm 1) = (0, 0, 0)`. (Note that we can configure shenfun with
 non-periodicity in any of the three directions. However, since we are to
 solve linear algebraic systems in the non-periodic direction, there is a speed
 benefit from having the nonperiodic direction last. This has to do with Numpy
 using a C-style row-major storage of arrays by default.)
-The right hand side vector :math:`\mathbf{f}(\mathbf{x})` is an external applied body force.
+The right hand side vector :math:`\boldsymbol{f}(\boldsymbol{x})` is an external applied body force.
 The right hand side :math:`h` is usually zero in the regular Stokes equations. Here
 we include it because it will be nonzero in the verification, which is using the
 method of manufactured solutions. Note that the final :math:`\int_{\Omega} p dx = 0`
@@ -79,7 +79,7 @@ exponentials, since these functions are periodic:
    :label: _auto2
 
         
-        \mathcal{X}_l(x) = e^{\imath l x}, \forall \, l \in \mathbf{l}^{N_0}, 
+        \mathcal{X}_l(x) = e^{\imath l x}, \forall \, l \in \boldsymbol{l}^{N_0}, 
         
         
 
@@ -87,14 +87,14 @@ exponentials, since these functions are periodic:
    :label: _auto3
 
           
-        \mathcal{Y}_m(y) =  e^{\imath m y}, \forall \, m \in \mathbf{m}^{N_1},
+        \mathcal{Y}_m(y) =  e^{\imath m y}, \forall \, m \in \boldsymbol{m}^{N_1},
         
         
 
-where :math:`\mathbf{l}^{N_0} = (-N_0/2, -N_0/2+1, \ldots, N_0/2-1)` and
-:math:`\mathbf{m}^{N_1} = (-N_1/2, -N_1/2+1, \ldots, N_1/2-1)`.
+where :math:`\boldsymbol{l}^{N_0} = (-N_0/2, -N_0/2+1, \ldots, N_0/2-1)` and
+:math:`\boldsymbol{m}^{N_1} = (-N_1/2, -N_1/2+1, \ldots, N_1/2-1)`.
 The size of the discretized problem in real physical space is
-:math:`\mathbf{N} = (N_0, N_1, N_2)`, i.e., there are :math:`N_0 \cdot N_1 \cdot N_2` quadrature points
+:math:`\boldsymbol{N} = (N_0, N_1, N_2)`, i.e., there are :math:`N_0 \cdot N_1 \cdot N_2` quadrature points
 in total.
 
 The basis functions for :math:`\mathcal{Z}(z)` remain to be decided.
@@ -105,12 +105,12 @@ we use composite Legendre or Chebyshev polynomials
    :label: _auto4
 
         
-        \mathcal{Z}^0_n(z) = \phi_n(z) - \phi_{n+2}(z), \forall \, n \in \mathbf{n}^{N_2-2},
+        \mathcal{Z}^0_n(z) = \phi_n(z) - \phi_{n+2}(z), \forall \, n \in \boldsymbol{n}^{N_2-2},
         
         
 
 where :math:`\phi_n` is the n'th Legendre or Chebyshev polynomial of the first kind.
-:math:`\mathbf{n}^{N_2-2} = (0, 1, \ldots, N_2-3)`, and the zero on :math:`\mathcal{Z}^0`
+:math:`\boldsymbol{n}^{N_2-2} = (0, 1, \ldots, N_2-3)`, and the zero on :math:`\mathcal{Z}^0`
 is there to indicate the zero value on the boundary.
 
 The pressure basis that comes with no restrictions for the boundary is a
@@ -122,13 +122,13 @@ Chebyshev basis, which is denoted as
    :label: eq:Zn
 
         
-        \mathcal{Z}_n(z) = \phi_n(z),  \forall \, n \in \mathbf{n}^{N_2}. 
+        \mathcal{Z}_n(z) = \phi_n(z),  \forall \, n \in \boldsymbol{n}^{N_2}. 
         
 
 The problem is that for the natural choice of :math:`n \in (0, 1, \ldots, N_2-1)`
 there is a nullspace and one degree of freedom remains unresolved. It turns out
 that the proper choice for the pressure basis is simply :eq:`eq:Zn` for
-:math:`n \in \mathbf{n}^{N_2-2}`. (Also remember that we have to fix :math:`\int_{\Omega} p dx = 0`.)
+:math:`n \in \boldsymbol{n}^{N_2-2}`. (Also remember that we have to fix :math:`\int_{\Omega} p dx = 0`.)
 
 With given basis functions we obtain the spaces
 
@@ -136,7 +136,7 @@ With given basis functions we obtain the spaces
    :label: _auto5
 
         
-        V^{N_0} = \text{span}\{ \mathcal{X}_l \}_{l\in\mathbf{l}^{N_0}}, 
+        V^{N_0} = \text{span}\{ \mathcal{X}_l \}_{l\in\boldsymbol{l}^{N_0}}, 
         
         
 
@@ -144,7 +144,7 @@ With given basis functions we obtain the spaces
    :label: _auto6
 
           
-        V^{N_1} = \text{span}\{ \mathcal{Y}_m \}_{m\in\mathbf{m}^{N_1}}, 
+        V^{N_1} = \text{span}\{ \mathcal{Y}_m \}_{m\in\boldsymbol{m}^{N_1}}, 
         
         
 
@@ -152,7 +152,7 @@ With given basis functions we obtain the spaces
    :label: _auto7
 
           
-        V^{N_2} = \text{span}\{ \mathcal{Z}_n \}_{n\in\mathbf{n}^{N_2-2}}, 
+        V^{N_2} = \text{span}\{ \mathcal{Z}_n \}_{n\in\boldsymbol{n}^{N_2-2}}, 
         
         
 
@@ -160,7 +160,7 @@ With given basis functions we obtain the spaces
    :label: _auto8
 
           
-        V_0^{N_2} = \text{span}\{ \mathcal{Z}^0_n \}_{n\in\mathbf{n}^{N_2-2}},
+        V_0^{N_2} = \text{span}\{ \mathcal{Z}^0_n \}_{n\in\boldsymbol{n}^{N_2-2}},
         
         
 
@@ -170,7 +170,7 @@ and from these we create two different tensor product spaces
    :label: _auto9
 
         
-        W_0^{\mathbf{N}}(\mathbf{x}) = V^{N_0}(x) \otimes V^{N_1}(y) \otimes V_0^{N_2}(z), 
+        W_0^{\boldsymbol{N}}(\boldsymbol{x}) = V^{N_0}(x) \otimes V^{N_1}(y) \otimes V_0^{N_2}(z), 
         
         
 
@@ -178,28 +178,28 @@ and from these we create two different tensor product spaces
    :label: _auto10
 
           
-        W^{\mathbf{N}}(\mathbf{x}) = V^{N_0}(x) \otimes V^{N_1}(y) \otimes V^{N_2}(z).
+        W^{\boldsymbol{N}}(\boldsymbol{x}) = V^{N_0}(x) \otimes V^{N_1}(y) \otimes V^{N_2}(z).
         
         
 
 The velocity vector is using a mixed basis, such that we will look for
-solutions :math:`\mathbf{u} \in [W_0^{\mathbf{N}}]^3 \, (=W_0^{\mathbf{N}} \times W_0^{\mathbf{N}} \times W_0^{\mathbf{N}})`,
+solutions :math:`\boldsymbol{u} \in [W_0^{\boldsymbol{N}}]^3 \, (=W_0^{\boldsymbol{N}} \times W_0^{\boldsymbol{N}} \times W_0^{\boldsymbol{N}})`,
 whereas we look for the pressure
-:math:`p \in W^{\mathbf{N}}`. We now formulate a variational problem using the Galerkin method: Find
-:math:`\mathbf{u} \in [W_0^{\mathbf{N}}]^3` and :math:`p \in W^{\mathbf{N}}` such that
+:math:`p \in W^{\boldsymbol{N}}`. We now formulate a variational problem using the Galerkin method: Find
+:math:`\boldsymbol{u} \in [W_0^{\boldsymbol{N}}]^3` and :math:`p \in W^{\boldsymbol{N}}` such that
 
 .. math::
    :label: eq:varform
 
         
-        \int_{\Omega} (\nabla^2 \mathbf{u} - \nabla p ) \cdot \overline{\mathbf{v}} \, dx_w = \int_{\Omega} \mathbf{f} \cdot \overline{\mathbf{v}}\, dx_w \quad\forall \mathbf{v} \, \in \, [W_0^{\mathbf{N}}]^3,  
+        \int_{\Omega} (\nabla^2 \boldsymbol{u} - \nabla p ) \cdot \overline{\boldsymbol{v}} \, dx_w = \int_{\Omega} \boldsymbol{f} \cdot \overline{\boldsymbol{v}}\, dx_w \quad\forall \boldsymbol{v} \, \in \, [W_0^{\boldsymbol{N}}]^3,  
         
 
 .. math::
    :label: _auto11
 
           
-        \int_{\Omega} \nabla \cdot \mathbf{u} \, \overline{q} \, dx_w = \int_{\Omega} h \overline{q} \, dx_w \quad\forall q \, \in \, W^{\mathbf{N}}.
+        \int_{\Omega} \nabla \cdot \boldsymbol{u} \, \overline{q} \, dx_w = \int_{\Omega} h \overline{q} \, dx_w \quad\forall q \, \in \, W^{\boldsymbol{N}}.
         
         
 
@@ -207,7 +207,7 @@ Here :math:`dx_w=w_xdxw_ydyw_zdz` represents a weighted measure, with weights :m
 Note that it is only Chebyshev polynomials that
 make use of a non-constant weight :math:`w_x=1/\sqrt{1-x^2}`. The Fourier weights are :math:`w_y=w_z=1/(2\pi)`
 and the Legendre weight is :math:`w_x=1`.
-The overline in :math:`\mathbf{\overline{v}}` and :math:`\overline{q}` represents a complex conjugate, which is needed here because
+The overline in :math:`\boldsymbol{\overline{v}}` and :math:`\overline{q}` represents a complex conjugate, which is needed here because
 the Fourier exponentials are complex functions.
 
 .. _sec:mixedform:
@@ -215,15 +215,15 @@ the Fourier exponentials are complex functions.
 Mixed variational form
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Since we are to solve for :math:`\mathbf{u}` and :math:`p` at the same time, we formulate a
-mixed (coupled) problem: find :math:`(\mathbf{u}, p) \in [W_0^{\mathbf{N}}]^3 \times W^{\mathbf{N}}`
+Since we are to solve for :math:`\boldsymbol{u}` and :math:`p` at the same time, we formulate a
+mixed (coupled) problem: find :math:`(\boldsymbol{u}, p) \in [W_0^{\boldsymbol{N}}]^3 \times W^{\boldsymbol{N}}`
 such that
 
 .. math::
    :label: _auto12
 
         
-        a((\mathbf{u}, p), (\mathbf{v}, q)) = L((\mathbf{v}, q)) \quad \forall (\mathbf{v}, q) \in [W_0^{\mathbf{N}}]^3 \times W^{\mathbf{N}},
+        a((\boldsymbol{u}, p), (\boldsymbol{v}, q)) = L((\boldsymbol{v}, q)) \quad \forall (\boldsymbol{v}, q) \in [W_0^{\boldsymbol{N}}]^3 \times W^{\boldsymbol{N}},
         
         
 
@@ -233,7 +233,7 @@ where bilinear (:math:`a`) and linear (:math:`L`) forms are given as
    :label: _auto13
 
         
-            a((\mathbf{u}, p), (\mathbf{v}, q)) = \int_{\Omega} (\nabla^2 \mathbf{u} - \nabla p) \cdot \overline{\mathbf{v}} \, dx_w + \int_{\Omega} \nabla \cdot \mathbf{u} \, \overline{q} \, dx_w, 
+            a((\boldsymbol{u}, p), (\boldsymbol{v}, q)) = \int_{\Omega} (\nabla^2 \boldsymbol{u} - \nabla p) \cdot \overline{\boldsymbol{v}} \, dx_w + \int_{\Omega} \nabla \cdot \boldsymbol{u} \, \overline{q} \, dx_w, 
         
         
 
@@ -241,7 +241,7 @@ where bilinear (:math:`a`) and linear (:math:`L`) forms are given as
    :label: _auto14
 
           
-            L((\mathbf{v}, q)) = \int_{\Omega} \mathbf{f} \cdot \overline{\mathbf{v}}\, dx_w + \int_{\Omega} h \overline{q} \, dx_w.
+            L((\boldsymbol{v}, q)) = \int_{\Omega} \boldsymbol{f} \cdot \overline{\boldsymbol{v}}\, dx_w + \int_{\Omega} h \overline{q} \, dx_w.
         
         
 
@@ -275,8 +275,8 @@ Python (``mpi4py``) is required for running the solver with MPI.
 Manufactured solution
 ~~~~~~~~~~~~~~~~~~~~~
 
-The exact solutions :math:`\mathbf{u}_e(\mathbf{x})` and :math:`p(\mathbf{x})` are chosen to satisfy boundary
-conditions, and the right hand sides :math:`\mathbf{f}(\mathbf{x})` and :math:`h(\mathbf{x})` are then
+The exact solutions :math:`\boldsymbol{u}_e(\boldsymbol{x})` and :math:`p(\boldsymbol{x})` are chosen to satisfy boundary
+conditions, and the right hand sides :math:`\boldsymbol{f}(\boldsymbol{x})` and :math:`h(\boldsymbol{x})` are then
 computed exactly using ``Sympy``. These exact right hand sides will then be used to
 compute a numerical solution that can be verified against the manufactured
 solution. The chosen solution with computed right hand sides are:
@@ -315,8 +315,8 @@ Note that the last line of code is there to ensure that only the first
 At the same time, we ensure that we are still using :math:`N_2`
 quadrature points, the same as for the Dirichlet basis.
 
-Next the one-dimensional spaces are used to create two tensor product spaces Q = :math:`W^{\mathbf{N}}`
-and TD = :math:`W_0^{\mathbf{N}}`, one vector V = :math:`[W_0^{\mathbf{N}}]^3` and one mixed
+Next the one-dimensional spaces are used to create two tensor product spaces Q = :math:`W^{\boldsymbol{N}}`
+and TD = :math:`W_0^{\boldsymbol{N}}`, one vector V = :math:`[W_0^{\boldsymbol{N}}]^3` and one mixed
 space  VQ = V :math:`\times` Q.
 
 .. code-block:: python
@@ -390,16 +390,16 @@ Breaking it down the inner product is mathematically
 
         
         
-        \int_{\Omega} \mathbf{v}[0] \left(\frac{\partial^2 \mathbf{u}[0]}{\partial x^2} + \frac{\partial^2 \mathbf{u}[0]}{\partial y^2} + \frac{\partial^2 \mathbf{u}[0]}{\partial z^2}\right) w_x dx w_y dy w_z dz.
+        \int_{\Omega} \boldsymbol{v}[0] \left(\frac{\partial^2 \boldsymbol{u}[0]}{\partial x^2} + \frac{\partial^2 \boldsymbol{u}[0]}{\partial y^2} + \frac{\partial^2 \boldsymbol{u}[0]}{\partial z^2}\right) w_x dx w_y dy w_z dz.
         
 
-If we now use test function :math:`\mathbf{v}[0]`
+If we now use test function :math:`\boldsymbol{v}[0]`
 
 .. math::
    :label: _auto15
 
         
-        \mathbf{v}[0]_{lmn} = \mathcal{X}_l \mathcal{Y}_m \mathcal{Z}_n,
+        \boldsymbol{v}[0]_{lmn} = \mathcal{X}_l \mathcal{Y}_m \mathcal{Z}_n,
         
         
 
@@ -409,11 +409,11 @@ and trialfunction
    :label: _auto16
 
         
-        \mathbf{u}[0]_{pqr} = \sum_{p} \sum_{q} \sum_{r} \hat{\mathbf{u}}[0]_{pqr} \mathcal{X}_p \mathcal{Y}_q \mathcal{Z}_r,
+        \boldsymbol{u}[0]_{pqr} = \sum_{p} \sum_{q} \sum_{r} \hat{\boldsymbol{u}}[0]_{pqr} \mathcal{X}_p \mathcal{Y}_q \mathcal{Z}_r,
         
         
 
-where :math:`\hat{\mathbf{u}}` are the unknown degrees of freedom, and then insert these functions
+where :math:`\hat{\boldsymbol{u}}` are the unknown degrees of freedom, and then insert these functions
 into :eq:`eq:partialeq1`, then we obtain after
 performing some exact evaluations over the periodic directions
 
@@ -421,7 +421,7 @@ performing some exact evaluations over the periodic directions
    :label: _auto17
 
         
-         \Big( \underbrace{-\left(l^2 \delta_{lp} + m^2 \delta_{mq} \right) \int_{-1}^{1} \mathcal{Z}_r(z) \mathcal{Z}_n(z) w_z dz}_{A[0]} + \underbrace{\delta_{lp} \delta_{mq} \int_{-1}^{1} \frac{\partial^2 \mathcal{Z}_r(z)}{\partial z^2} \mathcal{Z}_n(z) w_z dz}_{A[1]} \Big) \hat{\mathbf{u}}[0]_{pqr},
+         \Big( \underbrace{-\left(l^2 \delta_{lp} + m^2 \delta_{mq} \right) \int_{-1}^{1} \mathcal{Z}_r(z) \mathcal{Z}_n(z) w_z dz}_{A[0]} + \underbrace{\delta_{lp} \delta_{mq} \int_{-1}^{1} \frac{\partial^2 \mathcal{Z}_r(z)}{\partial z^2} \mathcal{Z}_n(z) w_z dz}_{A[1]} \Big) \hat{\boldsymbol{u}}[0]_{pqr},
         
         
 
@@ -432,8 +432,6 @@ and  three of ``D``.
 Eliminating the Fourier diagonal matrices, we are left with block matrices like
 
 .. math::
-   :label: eq:bmatrix
-
         H(l, m) =
           \begin{bmatrix}
               A[0]+A[1] & 0 & 0 & G[0] \\ 
@@ -445,7 +443,7 @@ Eliminating the Fourier diagonal matrices, we are left with block matrices like
 Note that there will be one large block matrix :math:`H(l, m)` for each Fourier
 wavenumber combination :math:`(l, m)`. To solve the problem in the end we will need to
 loop over these wavenumbers and solve the assembled linear systems one by one.
-An example of the block matrix, for :math:`l=m=5` and :math:`\mathbf{N}=(20, 20, 20)` is given
+An example of the block matrix, for :math:`l=m=5` and :math:`\boldsymbol{N}=(20, 20, 20)` is given
 in Fig. :ref:`fig:BlockMat`.
 
 In the end we create a block matrix through
@@ -455,7 +453,7 @@ In the end we create a block matrix through
     M = BlockMatrix(A+G+D)
 
 The right hand side can easily be assembled since we have already
-defined the functions :math:`\mathbf{f}` and :math:`h`, see Sec. :ref:`sec:mansol`
+defined the functions :math:`\boldsymbol{f}` and :math:`h`, see Sec. :ref:`sec:mansol`
 
 .. code-block:: python
 

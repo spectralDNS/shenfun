@@ -40,6 +40,39 @@ def func(x):
         return ':func:'+'`'+x+'`'
     return ':func:'+'`'+'.'+x+'`'
 %>
+% elif FORMAT in ("ipynb"):
+<%
+
+def mod(xs):
+    path = r'https://shenfun.readthedocs.io/en/latest'
+    xp = xs.split('.')
+    fl = ".".join(xp[:-1]) if xs != 'shenfun' else xs
+    s = __import__(xs, globals(), locals(), [xp[-1]])
+    ss = "<a class='reference internal' href='%s/%s.html#module-%s' title=%s><code class='xref py py-mod docutils literal notranslate'><span class='pre'>%s</span></code></a>"%(path, fl, xs, xs, xs)
+    return ss
+
+def cls(xs):
+    import shenfun
+    x = vars(shenfun)[xs]
+    m = x.__module__
+    xp = m.split('.')
+    fl = ".".join(xp[:-1])
+    sl = ".".join(xp+[xs])
+    path = r'https://shenfun.readthedocs.io/en/latest'
+    ss = "<a class='reference internal' href='%s/%s.html#%s.%s' title='%s.%s'><code class='xref py py-func docutils literal notranslate'><span class='pre'>%s</span></code></a>"%(path, fl, m, xs, m, xs, xs)
+    return ss
+
+def func(xs):
+    import shenfun
+    x = vars(shenfun)[xs]
+    m = x.__module__
+    xp = m.split('.')
+    fl = ".".join(xp[:-1])
+    sl = ".".join(xp+[xs])
+    path = r'https://shenfun.readthedocs.io/en/latest'
+    ss = "<a class='reference internal' href='%s/%s.html#%s.%s' title='%s.%s'><code class='xref py py-func docutils literal notranslate'><span class='pre'>%s()</span></code></a>"%(path, fl, m, xs, m, xs, xs)
+    return ss
+%>
 % endif
 
 ===== Stokes' equations =====
@@ -356,7 +389,7 @@ Eliminating the Fourier diagonal matrices, we are left with block matrices like
 !bt
 H(l, m) =
   \begin{bmatrix}
-      A[0]+A[1] & 0 & 0 & G[0] \\ label{eq:bmatrix}
+      A[0]+A[1] & 0 & 0 & G[0] \\
       0 & A[2]+A[3] & 0 & G[1] \\
       0 & 0 &  A[4]+A[5] & G[2] \\
       D[0] & D[1] & D[2] & 0

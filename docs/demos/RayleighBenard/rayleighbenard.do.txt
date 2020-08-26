@@ -51,6 +51,39 @@ def func(x):
         return ':func:'+'`'+x+'`'
     return ':func:'+'`'+'.'+x+'`'
 %>
+% elif FORMAT in ("ipynb"):
+<%
+
+def mod(xs):
+    path = r'https://shenfun.readthedocs.io/en/latest'
+    xp = xs.split('.')
+    fl = ".".join(xp[:-1]) if xs != 'shenfun' else xs
+    s = __import__(xs, globals(), locals(), [xp[-1]])
+    ss = "<a class='reference internal' href='%s/%s.html#module-%s' title=%s><code class='xref py py-mod docutils literal notranslate'><span class='pre'>%s</span></code></a>"%(path, fl, xs, xs, xs)
+    return ss
+
+def cls(xs):
+    import shenfun
+    x = vars(shenfun)[xs]
+    m = x.__module__
+    xp = m.split('.')
+    fl = ".".join(xp[:-1])
+    sl = ".".join(xp+[xs])
+    path = r'https://shenfun.readthedocs.io/en/latest'
+    ss = "<a class='reference internal' href='%s/%s.html#%s.%s' title='%s.%s'><code class='xref py py-func docutils literal notranslate'><span class='pre'>%s</span></code></a>"%(path, fl, m, xs, m, xs, xs)
+    return ss
+
+def func(xs):
+    import shenfun
+    x = vars(shenfun)[xs]
+    m = x.__module__
+    xp = m.split('.')
+    fl = ".".join(xp[:-1])
+    sl = ".".join(xp+[xs])
+    path = r'https://shenfun.readthedocs.io/en/latest'
+    ss = "<a class='reference internal' href='%s/%s.html#%s.%s' title='%s.%s'><code class='xref py py-func docutils literal notranslate'><span class='pre'>%s()</span></code></a>"%(path, fl, m, xs, m, xs, xs)
+    return ss
+%>
 % endif
 
 ===== The Rayleigh Bénard equations =====
@@ -198,19 +231,15 @@ Inserting now for the known $u_N$, the unknown $v_N$, and $q=\phi_m^D(x) \exp(\i
 continuity equation becomes
 
 !bt
-\begin{equation}
   \int_{-1}^1 \int_{0}^{2\pi} \frac{\partial}{\partial x} \left(\sum_{k \in \bm{k}_B} \sum_{l \in \bm{l}} \hat{u}_{kl}(t) \phi_k^B(x) \exp(\imath l y) \right) \phi_m^D(x) \exp(-\imath n y) dx_w dy_w + \\
-  \int_{-1}^1 \int_{0}^{2\pi} \frac{\partial}{\partial y} \left(\sum_{k \in \bm{k}_D} \sum_{l \in \bm{l}} \hat{v}_{kl}(t) \phi_k^D(x) \exp(\imath l y) \right) \phi_m^D(x) \exp(-\imath n y) dx_w dy_w  = 0. label{eq:u4}
-\end{equation}
+  \int_{-1}^1 \int_{0}^{2\pi} \frac{\partial}{\partial y} \left(\sum_{k \in \bm{k}_D} \sum_{l \in \bm{l}} \hat{v}_{kl}(t) \phi_k^D(x) \exp(\imath l y) \right) \phi_m^D(x) \exp(-\imath n y) dx_w dy_w  = 0.
 !et
 
 The $x$ and $y$ domains are separable, so we can rewrite as
 
 !bt
-\begin{equation}
     \sum_{k \in \bm{k}_B} \sum_{l \in \bm{l}} \int_{-1}^1 \frac{\partial \phi_k^B(x)}{\partial x}  \phi_m^D(x) dx_w \int_{0}^{2\pi} \exp(\imath l y) \exp(-\imath n y) dy_w \hat{u}_{kl} + \\
     \sum_{k \in \bm{k}_D} \sum_{l \in \bm{l}} \int_{-1}^1 \phi_k^D(x) \phi_m^D(x) dx_w   \int_{0}^{2\pi} \frac{\partial \exp(\imath l y)}{\partial y} \exp(-\imath n y) dy_w \hat{v}_{kl} = 0.
-\end{equation}
 !et
 
 Now perform some exact manipulations in the Fourier direction and introduce the
@@ -269,6 +298,27 @@ directly $\hat{u}_{k,0}=0 \text{ for } k \in \bm{k}_B$.
 
 To sum up, with the solution known at $t = t - \Delta t$, we solve
 
+% if FORMAT in ("ipynb",):
+
+<table class="table table-striped table-hover table-condensed">
+<colgroup>
+<col style="width: 20%"/>
+<col style="width: 30%"/>
+<col style="width: 50%"/>
+</colgroup>
+<thead>
+<tr><th style="text-align:center">       Equation      </th> <th style="text-align:center">     For unknown     </th> <th style="text-align:center">  With indices </th> </tr>
+</thead>
+<tbody>
+<tr><td style="text-align:center"> (<a class="reference external" href="#eq:u2">5</a>)        </td> <td style="text-align:center">       $\hat{u}_{kl}(t)$    </td> <td style="text-align:center">       $(k, l) \in \boldsymbol{k}_B \times \boldsymbol{l}/\{0\}$    </td> </tr>
+<tr><td style="text-align:center">   (<a class="reference external" href="#eq:div2">8</a>)    </td> <td style="text-align:center">       $\hat{v}_{kl}(t)$    </td> <td style="text-align:center">       $(k, l) \in \boldsymbol{k}_D \times \boldsymbol{l}/\{0\}$    </td> </tr>
+<tr><td style="text-align:center">   (<a class="reference external" href="#eq:vx">27</a>)        </td> <td style="text-align:center">       $\hat{v}_{kl}(t)$    </td> <td style="text-align:center">       $(k, l) \in \boldsymbol{k}_D \times \{0\}$                   </td> </tr>
+<tr><td style="text-align:center">   (<a class="reference external" href="#eq:T2">7</a>)        </td> <td style="text-align:center">       $\hat{T}_{kl}(t)$    </td> <td style="text-align:center">       $(k, l) \in \boldsymbol{k}_T \times \boldsymbol{l}$          </td> </tr>
+</tbody>
+</table>
+
+% else:
+
 |-----------------c---------------------------------------c-------------------------------------c------------------------------------|
 |                 Equation               |         For unknown             |           With indices                                     |
 |-----------------c------------------------------------c-------------------------------------c---------------------------------------|
@@ -277,6 +327,8 @@ To sum up, with the solution known at $t = t - \Delta t$, we solve
 |       (ref{eq:vx})                     |     XXX $\hat{v}_{kl}(t)$        | XXX $(k, l) \in \boldsymbol{k}_D \times \{0\}$                 |
 |       (ref{eq:T2})                     |     XXX $\hat{T}_{kl}(t)$        | XXX $(k, l) \in \boldsymbol{k}_T \times \boldsymbol{l}$        |
 |------------------------------------------------------------------------------------------------------------------------------------|
+
+% endif
 
 ===== Temporal discretization =====
 
@@ -313,6 +365,26 @@ knowns on the right hand side
 
 For the three-stage third order Runge Kutta method the constants are given as
 
+% if FORMAT in ("ipynb",):
+
+<table class="table table-striped table-hover table-condensed">
+<colgroup>
+<col style="width: 33%"/>
+<col style="width: 33%"/>
+<col style="width: 34%"/>
+</colgroup>
+<thead>
+<tr><th style="text-align:center">$a_n/\Delta t$</th> <th style="text-align:center">$b_n/\Delta t$</th> <th style="text-align:center">$c_n / \Delta t$</th> </tr>
+</thead>
+<tbody>
+<tr><td style="text-align:center">   8/15              </td> <td style="text-align:center">   0                 </td> <td style="text-align:center">   0                   </td> </tr>
+<tr><td style="text-align:center">   5/12              </td> <td style="text-align:center">   −17/60            </td> <td style="text-align:center">   8/15                </td> </tr>
+<tr><td style="text-align:center">   3/4               </td> <td style="text-align:center">   −5/12             </td> <td style="text-align:center">   2/3                 </td> </tr>
+</tbody>
+</table>
+
+% else:
+
 |------------------------------------------------------------|
 |   $a_n/\Delta t$   |   $b_n/\Delta t$  | $c_n / \Delta t$  |
 |---------c----------|---------c---------|-------c-----------|
@@ -320,6 +392,9 @@ For the three-stage third order Runge Kutta method the constants are given as
 |   5/12             |  −17/60           |  8/15             |
 |   3/4              |  −5/12            |  2/3              |
 |------------------------------------------------------------|
+
+% endif
+
 
 For the spectral Galerkin method used by `shenfun` the governing equation
 is first put in a weak variational form. This will change the appearence of

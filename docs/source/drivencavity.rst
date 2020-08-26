@@ -7,7 +7,7 @@ Demo - Lid driven cavity
 ========================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 21, 2020
+:Date: Aug 26, 2020
 
 *Summary.* The lid driven cavity is a classical benchmark for Navier Stokes solvers.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the lid
@@ -538,8 +538,6 @@ Furthermore, this leaves us with square submatrices (A, G, D), which make up a
 symmetric block matrix
 
 .. math::
-   :label: eq:nsbmatrix
-
         M =
           \begin{bmatrix}
               A[0]+A[1] & 0 & G[0] \\ 

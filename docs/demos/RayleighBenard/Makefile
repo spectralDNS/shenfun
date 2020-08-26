@@ -20,6 +20,7 @@ ${name}.html: ${name}.do.txt
 
 ${name}.rst: ${name}.do.txt
 	doconce format sphinx ${name} --sphinx_preserve_bib_keys
+	doconce subst 'XXX' '   ' $(basename $@).rst
 
 view:
 	open ${name}.pdf &

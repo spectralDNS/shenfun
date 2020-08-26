@@ -7,7 +7,7 @@ Demo - Helmholtz equation in polar coordinates
 ==============================================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 21, 2020
+:Date: Aug 26, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the
 Helmholtz equation on a circular disc, using polar coordinates. This demo is implemented in
@@ -399,7 +399,7 @@ is remarkably similar to the mathematics.
 Here ``mats`` and ``mats0`` will contain several tensor product
 matrices in the form of
 :class:`.TPMatrix`. Since there is only one non-periodic direction
-the matrices can be easily solved using :class:`.SolverGeneric1ND`.
+the matrices can be easily solved using :class:`.la.SolverGeneric1ND`.
 But first we need to define the function :math:`f(\theta, r)`.
 To this end we use sympy and the method of
 manufactured solution to define a possible solution ``ue``,
@@ -431,7 +431,7 @@ and then compute ``f`` exactly using exact differentiation
 Note that for :math:`u^0` we perform the interal in the :math:`\theta` direction
 exactly using sympy. This is necessary since one Fourier coefficient
 is not sufficient to do this integral numerically. For the :math:`u^1`
-case we do the integral numerically as part of the ``inner`` product.
+case we do the integral numerically as part of the :func:`.inner` product.
 With the correct right hand side assembled we can solve the
 linear system of equations
 
