@@ -275,8 +275,8 @@ easier to experiment and quickly change the solution.
 
 === Discretization and MPI ===
 
-We create three bases with given size, one for each dimension of the problem.
-From these three bases a ${cls('TensorProductSpace')} is created.
+We create three function spaces with given size, one for each dimension of the problem.
+From these three spaces a ${cls('TensorProductSpace')} is created.
 !bc pycod
 # Size of discretization
 N = [14, 15, 16]
@@ -300,7 +300,7 @@ to spectral, i.e., from $u$ to $\hat{u}$) axis 2 is transformed first and then 1
 and 0, respectively.
 
 The manufactured solution is created with Dirichlet boundary conditions in the
-$x$-direction, and for this reason `SD` is the first basis in `T`. We could just
+$x$-direction, and for this reason `SD` is the first space in `T`. We could just
 as well have put the nonperiodic direction along either $y$- or $z$-direction,
 though, but this would then require that the order of the transformed axes be
 changed as well. For example, putting the Dirichlet direction along $y$, we
@@ -316,12 +316,20 @@ transformed, then the data will be aligned in this direction, whereas the other
 two directions may both, or just one of them, be distributed.
 
 Note that `X` is a list containing local values of the arrays $\{x_i\}_{i=0}^{N_0-1}$,
-$\{y_j\}_{j=0}^{N_1-0}$ and $\{z_k\}_{k=0}^{N_2-1}$. For example, using 4
-procesors and a processor mesh of shape $2\times 2$, then the local slices for
-each processor in spectral space are
-!bc pycod
+$\{y_j\}_{j=0}^{N_1-0}$ and $\{z_k\}_{k=0}^{N_2-1}$.
+Now, it's not possible to run a jupyter notebook with more than one process,
+but we can imagine running "the complete solver": "https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py"
+with 4 procesors and a processor mesh of shape $2\times 2$.
+We would then get the following local slices for
+each processor in spectral space
+!bc pycod-t
 print(comm.Get_rank(), T.local_slice())
+3 [slice(0, 14, None), slice(8, 15, None), slice(5, 9, None)]
+1 [slice(0, 14, None), slice(0, 8, None), slice(5, 9, None)]
+2 [slice(0, 14, None), slice(8, 15, None), slice(0, 5, None)]
+0 [slice(0, 14, None), slice(0, 8, None), slice(0, 5, None)]
 !ec
+
 where the global shape is $\bs{N}=(14, 15, 9)$ after taking advantage of
 Hermitian symmetry in the $z$-direction. So, all processors have the complete first dimension available locally, as they
 should. Furthermore, processor three owns the slices from $8:15$ and $5:9$ along
@@ -345,8 +353,8 @@ needs to be made when creating the tensorproductspace as
 !bc pycod-t
 T = TensorProductSpace(comm, (SD, K1, K2), axes=(0, 1, 2), slab=True)
 !ec
-which will lead to a mesh that is distributed along $x$-direction in real space
-and $y$-direction in spectral space. The local slices are
+which would lead to a mesh that is distributed along $x$-direction in real space
+and $y$-direction in spectral space. The local slices would then be
 !bc
 print(comm.Get_rank(), T.local_slice()) # spectral space
 1 [slice(0, 14, None), slice(4, 8, None), slice(0, 9, None)]

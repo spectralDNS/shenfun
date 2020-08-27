@@ -113,8 +113,8 @@ bij = np.array(sp.lambdify(psi, b)(ui, vi))
 # Compute Cartesian gradient
 gradu = du[0]*bij[0] + du[1]*bij[1]
 # Exact Cartesian gradient
-gradue = Array(V, buffer=list(b[0]*ue.diff(theta, 1)/r**2 + b[1]*ue.diff(r, 1)))
-#gradue = Array(V, buffer=grad(u).tosympy(basis=ue, psi=psi))
+#gradue = Array(V, buffer=list(b[0]*ue.diff(theta, 1)/r**2 + b[1]*ue.diff(r, 1)))
+gradue = Array(V, buffer=list(grad(u).tosympy(basis=ue, psi=psi)))
 print('Error gradient', np.linalg.norm(gradu-gradue))
 assert np.linalg.norm(gradu-gradue) < 1e-7
 

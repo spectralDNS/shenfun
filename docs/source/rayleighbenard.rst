@@ -7,7 +7,7 @@ Demo - Rayleigh Benard
 ======================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 26, 2020
+:Date: Aug 27, 2020
 
 *Summary.* Rayleigh-Benard convection arise
 due to temperature gradients in a fluid. The governing equations are
@@ -360,7 +360,7 @@ There is still one more revelation to be made from Eq. :eq:`eq:div3`. When :math
         
         
 
-and the only way to satisfy this is if :math:`\hat{u}_{k,0}=0` for :math:`k\in\boldsymbol{k}_B`. Bottom line is
+which is trivially satisfied if :math:`\hat{u}_{k,0}=0` for :math:`k\in\boldsymbol{k}_B`. Bottom line is
 that we only need to solve Eq. :eq:`eq:u2` for :math:`l \in \boldsymbol{l}/\{0\}`, whereas we can use
 directly :math:`\hat{u}_{k,0}=0 \text{ for } k \in \boldsymbol{k}_B`.
 

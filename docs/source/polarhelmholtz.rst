@@ -7,7 +7,7 @@ Demo - Helmholtz equation in polar coordinates
 ==============================================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 26, 2020
+:Date: Aug 27, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the
 Helmholtz equation on a circular disc, using polar coordinates. This demo is implemented in
@@ -549,7 +549,7 @@ the error norm
 
     gradue = Array(V, buffer=list(b[0]*ue.diff(theta, 1)/r**2 + b[1]*ue.diff(r, 1)))
     #or alternatively
-    #gradue = Array(V, buffer=grad(u).tosympy(basis=ue, psi=psi))
+    #gradue = Array(V, buffer=list(grad(u).tosympy(basis=ue, psi=psi)))
     print('Error gradient', np.linalg.norm(gradu-gradue))
 
 .. code-block:: python

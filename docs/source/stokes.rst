@@ -7,7 +7,7 @@ Demo - Stokes equations
 =======================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 26, 2020
+:Date: Aug 27, 2020
 
 *Summary.* The Stokes equations describe the flow of highly viscous fluids.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Stokes
@@ -263,12 +263,10 @@ plus some other helper modules, like `Numpy <https://numpy.org>`__ and `Sympy <h
     import os
     import sys
     import numpy as np
-    from mpi4py import MPI
     from sympy import symbols, sin, cos
     from shenfun import *
 
-We use ``Sympy`` for the manufactured solution and ``Numpy`` for testing. MPI for
-Python (``mpi4py``) is required for running the solver with MPI.
+We use ``Sympy`` for the manufactured solution and ``Numpy`` for testing.
 
 .. _sec:mansol:
 
@@ -309,11 +307,6 @@ of the domain is given
     K1 = FunctionSpace(N[1], 'Fourier', dtype='d', domain=(0, 2*np.pi))
     SD = FunctionSpace(N[2], family, bc=(0, 0))
     ST = FunctionSpace(N[2], family)
-
-Note that the last line of code is there to ensure that only the first
-:math:`N_2-2` coefficients are used, see discussion around Eq. :eq:`eq:Zn`.
-At the same time, we ensure that we are still using :math:`N_2`
-quadrature points, the same as for the Dirichlet basis.
 
 Next the one-dimensional spaces are used to create two tensor product spaces Q = :math:`W^{\boldsymbol{N}}`
 and TD = :math:`W_0^{\boldsymbol{N}}`, one vector V = :math:`[W_0^{\boldsymbol{N}}]^3` and one mixed
@@ -357,20 +350,6 @@ the equations may also be integrated by parts to obtain a symmetric system:
         G = inner(div(v), p)
     D = inner(q, div(u))
 
-
-.. note::
-   The inner products may also be assembled with one single line, as
-   
-   .. code-block:: python
-   
-       AA = inner(v, div(grad(u))) + inner(v, -grad(u)) + inner(q, div(u))
-   
-   However, this requires addition, not subtraction, of inner products and it is not
-   possible to move the negation to -inner(v, grad(u))
-
-
-
-
 The assembled subsystems ``A, G`` and ``D`` are lists containg the different blocks of
 the complete, coupled matrix. ``A`` actually contains 6
 tensor product matrices of type :class:`.TPMatrix`. The first two
@@ -383,7 +362,7 @@ matrices 2 and 3 are for components 1 and the last two are for components
 
       A[0:2] = inner(v[0], div(grad(u[0])))
 
-Breaking it down the inner product is mathematically
+Breaking it down this inner product is mathematically
 
 .. math::
    :label: eq:partialeq1

@@ -22,7 +22,7 @@ TOC: on
 
 # #include "../preprocesser.py"
 
-FIGURE: [https://raw.githack.com/spectralDNS/spectralutilities/master/figures/DrivenCavity.png] Velocity vectors for $Re=100$.   label{fig:drivencavity}
+FIGURE: [https://raw.githack.com/spectralDNS/spectralutilities/master/figures/DrivenCavity.png] Velocity vectors for the lid driven cavity at Reynolds number 100.   label{fig:drivencavity}
 
 ===== Navier Stokes equations =====
 label{demo:navierstokes}
@@ -323,18 +323,6 @@ A = inner(grad(v), -nu*grad(u))
 G = inner(div(v), p)
 D = inner(q, div(u))
 !ec
-
-!bnotice
-The inner products may also be assembled with one single line, as
-!bc pycod-t
-AA = inner(grad(v), -nu*grad(u)) + inner(div(v), p) + inner(q, div(u))
-!ec
-But note that this requires addition, not subtraction, of inner products,
-and it is not possible to move the negation to `-inner(grad(v), nu*grad(u))`.
-This is because the ${func('inner')} function returns a list of
-tensor product matrices of type ${cls('TPMatrix')}, and you cannot
-negate a list.
-!enotice
 
 The assembled subsystems `A, G` and `D` are lists containg the different blocks of
 the complete, coupled, coefficient matrix. `A` actually contains 4

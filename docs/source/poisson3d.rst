@@ -7,7 +7,7 @@ Demo - 3D Poisson's equation
 ============================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 26, 2020
+:Date: Aug 27, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve a 3D Poisson
 equation in a 3D tensor product domain that has homogeneous Dirichlet boundary
@@ -376,8 +376,8 @@ easier to experiment and quickly change the solution.
 Discretization and MPI
 ~~~~~~~~~~~~~~~~~~~~~~
 
-We create three bases with given size, one for each dimension of the problem.
-From these three bases a :class:`.TensorProductSpace` is created.
+We create three function spaces with given size, one for each dimension of the problem.
+From these three spaces a :class:`.TensorProductSpace` is created.
 
 .. code-block:: python
 
@@ -402,7 +402,7 @@ to spectral, i.e., from :math:`u` to :math:`\hat{u}`) axis 2 is transformed firs
 and 0, respectively.
 
 The manufactured solution is created with Dirichlet boundary conditions in the
-:math:`x`-direction, and for this reason ``SD`` is the first basis in ``T``. We could just
+:math:`x`-direction, and for this reason ``SD`` is the first space in ``T``. We could just
 as well have put the nonperiodic direction along either :math:`y`- or :math:`z`-direction,
 though, but this would then require that the order of the transformed axes be
 changed as well. For example, putting the Dirichlet direction along :math:`y`, we
@@ -420,13 +420,20 @@ transformed, then the data will be aligned in this direction, whereas the other
 two directions may both, or just one of them, be distributed.
 
 Note that ``X`` is a list containing local values of the arrays :math:`\{x_i\}_{i=0}^{N_0-1}`,
-:math:`\{y_j\}_{j=0}^{N_1-0}` and :math:`\{z_k\}_{k=0}^{N_2-1}`. For example, using 4
-procesors and a processor mesh of shape :math:`2\times 2`, then the local slices for
-each processor in spectral space are
+:math:`\{y_j\}_{j=0}^{N_1-0}` and :math:`\{z_k\}_{k=0}^{N_2-1}`.
+Now, it's not possible to run a jupyter notebook with more than one process,
+but we can imagine running `the complete solver <https://github.com/spectralDNS/shenfun/blob/master/demo/dirichlet_poisson3D.py>`__
+with 4 procesors and a processor mesh of shape :math:`2\times 2`.
+We would then get the following local slices for
+each processor in spectral space
 
 .. code-block:: python
 
     print(comm.Get_rank(), T.local_slice())
+    3 [slice(0, 14, None), slice(8, 15, None), slice(5, 9, None)]
+    1 [slice(0, 14, None), slice(0, 8, None), slice(5, 9, None)]
+    2 [slice(0, 14, None), slice(8, 15, None), slice(0, 5, None)]
+    0 [slice(0, 14, None), slice(0, 8, None), slice(0, 5, None)]
 
 where the global shape is :math:`\boldsymbol{N}=(14, 15, 9)` after taking advantage of
 Hermitian symmetry in the :math:`z`-direction. So, all processors have the complete first dimension available locally, as they
@@ -455,8 +462,8 @@ needs to be made when creating the tensorproductspace as
 
     T = TensorProductSpace(comm, (SD, K1, K2), axes=(0, 1, 2), slab=True)
 
-which will lead to a mesh that is distributed along :math:`x`-direction in real space
-and :math:`y`-direction in spectral space. The local slices are
+which would lead to a mesh that is distributed along :math:`x`-direction in real space
+and :math:`y`-direction in spectral space. The local slices would then be
 
 .. code-block:: text
 
