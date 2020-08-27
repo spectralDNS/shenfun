@@ -439,7 +439,7 @@ the error norm
 !bc pycod
 gradue = Array(V, buffer=list(b[0]*ue.diff(theta, 1)/r**2 + b[1]*ue.diff(r, 1)))
 #or alternatively
-#gradue = Array(V, buffer=grad(u).tosympy(basis=ue, psi=psi))
+#gradue = Array(V, buffer=list(grad(u).tosympy(basis=ue, psi=psi)))
 print('Error gradient', np.linalg.norm(gradu-gradue))
 !ec
 % if FORMAT not in ("ipynb"):

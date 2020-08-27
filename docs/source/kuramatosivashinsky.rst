@@ -7,7 +7,7 @@ Demo - Kuramato-Sivashinsky equation
 ====================================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 26, 2020
+:Date: Aug 27, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the time-dependent,
 nonlinear Kuramato-Sivashinsky equation, in a doubly periodic domain. The demo is implemented in
@@ -275,7 +275,7 @@ Implementation
 The model equation :eq:`eq:ks` is implemented in shenfun using Fourier basis functions for
 both :math:`x` and :math:`y` directions. We start the solver by implementing necessary
 functionality from required modules like `Numpy <https://numpy.org>`__, `Sympy <https://sympy.org>`__
-`matplotlib <https://matplotlib.org>`__ and `mpi4py <https://bitbucket.org/mpi4py>`__, in
+and `matplotlib <https://matplotlib.org>`__, in
 addition to `shenfun <https://github.com/spectralDNS/shenfun>`__:
 
 .. code-block:: python
@@ -286,8 +286,8 @@ addition to `shenfun <https://github.com/spectralDNS/shenfun>`__:
     from shenfun import *
 
 The size of the problem (in real space) is then specified, before creating
-the :class:`.TensorProductSpace`, which is using a tensor product of two Fourier bases as
-basis functions. We also
+the :class:`.TensorProductSpace`, which is using a tensor product of two
+one-dimensional Fourier function spaces. We also
 create a :class:`.VectorTensorProductSpace`, since this is required for computing the
 gradient of the scalar field ``u``. The gradient is required for the nonlinear
 term.
@@ -313,7 +313,7 @@ Test and trialfunctions are required for assembling the variational forms:
 
 and some arrays are required to hold the solution. We also create an array
 ``gradu``, that will be used to compute the gradient in the nonlinear term.
-Finally, the wavenumbers are collected in list ``K``. Here one feature is worth
+Finally, the wavenumbers are collected in an array ``K``. Here one feature is worth
 mentioning. The gradient in spectral space can be computed as ``1j*K*U_hat``.
 However, since this is an odd derivative, and we are using an even number ``N``
 for the size of the domain, the highest wavenumber must be set to zero. This is

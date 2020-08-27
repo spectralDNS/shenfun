@@ -128,12 +128,13 @@ $V^N \otimes V_F^N$.
 N, M = 40, 30
 L0 = FunctionSpace(N, 'C', domain=(0, np.pi))
 F1 = FunctionSpace(M, 'F', dtype='D')
-T = TensorProductSpace(comm, (L0, F1), coordinates=(psi, rv))
+T = TensorProductSpace(comm, (L0, F1), coordinates=(psi, rv, sp.Q.positive(sp.sin(theta))))
 
 !ec
 
-Spherical coordinates are ensured by feeding `coordinates=(psi, rv)`
-to ${cls('TensorProductSpace')}. Operators like ${func('div')},
+Spherical coordinates are ensured by feeding `coordinates=(psi, rv, sp.Q.positive(sp.sin(theta)))`
+to ${cls('TensorProductSpace')}, where the restriction `sp.Q.positive(sp.sin(theta))` is there
+to help sympy. Operators like ${func('div')},
 ${func('grad')} and  ${func('curl')} will now work on
 items of ${cls('Function')}, ${cls('TestFunction')} and
 ${cls('TrialFunction')} using a spherical coordinate system.

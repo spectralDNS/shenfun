@@ -7,7 +7,7 @@ Demo - Lid driven cavity
 ========================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 26, 2020
+:Date: Aug 27, 2020
 
 *Summary.* The lid driven cavity is a classical benchmark for Navier Stokes solvers.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the lid
@@ -27,7 +27,7 @@ the corner discontinuities.
 
 .. figure:: https://raw.githack.com/spectralDNS/spectralutilities/master/figures/DrivenCavity.png
 
-   Velocity vectors for :math:`Re=100`
+   *Velocity vectors for the lid driven cavity at Reynolds number 100*
 
 .. _demo:navierstokes:
 
@@ -423,23 +423,6 @@ viscosity, which is given here in terms of the Reynolds number:
     A = inner(grad(v), -nu*grad(u))
     G = inner(div(v), p)
     D = inner(q, div(u))
-
-
-.. note::
-   The inner products may also be assembled with one single line, as
-   
-   .. code-block:: python
-   
-       AA = inner(grad(v), -nu*grad(u)) + inner(div(v), p) + inner(q, div(u))
-   
-   But note that this requires addition, not subtraction, of inner products,
-   and it is not possible to move the negation to ``-inner(grad(v), nu*grad(u))``.
-   This is because the :func:`.inner` function returns a list of
-   tensor product matrices of type :class:`.TPMatrix`, and you cannot
-   negate a list.
-
-
-
 
 The assembled subsystems ``A, G`` and ``D`` are lists containg the different blocks of
 the complete, coupled, coefficient matrix. ``A`` actually contains 4

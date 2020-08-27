@@ -66,7 +66,12 @@ length = inner(u, 1)
 print('Length of domain =', length)
 !ec
 
-Since this function space `B` is Cartesian the computed
+Note that we cannot simply do `inner(1, 1)`, because the
+`inner` function does not know about the domain, which is part
+of the ${cls('FunctionSpace')}. So to integrate `u=1`, we need to
+create `u` as an ${cls('Array')} with the constant value 1.
+
+Since the function space `B` is Cartesian the computed
 length is simply the domain length.
 Not very impressive, but the same goes for multidimensional
 tensor product domains
@@ -115,7 +120,8 @@ rv = (sp.sin(2*t), sp.cos(2*t), 0.5*t)
 C = FunctionSpace(100, 'C', domain=(0, 2*np.pi), coordinates=((t,), rv))
 !ec
 
-Then compute the arclength using ${func('inner')}
+Then compute the arclength using ${func('inner')}, again by using a constant
+testfunction 1, and a constant ${cls('Array')} `u=1`
 
 !bc pycod
 length = inner(1, Array(C, val=1))
@@ -142,7 +148,7 @@ is actually here a constant $\sqrt{4.25}$, found in shenfun as
 C.coors.sg
 !ec
 
-We could also integrate a function over the spiral.
+We could also integrate a non-constant function over the spiral.
 For example, lets integrate the function $f(x, y, z)= \sin^2 x$
 
 !bt

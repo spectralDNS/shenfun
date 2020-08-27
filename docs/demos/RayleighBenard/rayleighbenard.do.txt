@@ -236,7 +236,7 @@ There is still one more revelation to be made from Eq. (ref{eq:div3}). When $l=0
 \end{equation}
 !et
 
-and the only way to satisfy this is if $\hat{u}_{k,0}=0$ for $k\in\bm{k}_B$. Bottom line is
+which is trivially satisfied if $\hat{u}_{k,0}=0$ for $k\in\bm{k}_B$. Bottom line is
 that we only need to solve Eq. (ref{eq:u2}) for $l \in \bm{l}/\{0\}$, whereas we can use
 directly $\hat{u}_{k,0}=0 \text{ for } k \in \bm{k}_B$.
 

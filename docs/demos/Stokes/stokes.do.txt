@@ -182,13 +182,11 @@ plus some other helper modules, like "Numpy": "https://numpy.org" and "Sympy":
 import os
 import sys
 import numpy as np
-from mpi4py import MPI
 from sympy import symbols, sin, cos
 from shenfun import *
 !ec
 
-We use `Sympy` for the manufactured solution and `Numpy` for testing. MPI for
-Python (`mpi4py`) is required for running the solver with MPI.
+We use `Sympy` for the manufactured solution and `Numpy` for testing.
 
 === Manufactured solution ===
 label{sec:mansol}
@@ -225,11 +223,6 @@ K1 = FunctionSpace(N[1], 'Fourier', dtype='d', domain=(0, 2*np.pi))
 SD = FunctionSpace(N[2], family, bc=(0, 0))
 ST = FunctionSpace(N[2], family)
 !ec
-
-Note that the last line of code is there to ensure that only the first
-$N_2-2$ coefficients are used, see discussion around Eq. (ref{eq:Zn}).
-At the same time, we ensure that we are still using $N_2$
-quadrature points, the same as for the Dirichlet basis.
 
 Next the one-dimensional spaces are used to create two tensor product spaces Q = $W^{\bs{N}}$
 and TD = $W_0^{\bs{N}}$, one vector V = $[W_0^{\bs{N}}]^3$ and one mixed
@@ -272,15 +265,6 @@ else:
 D = inner(q, div(u))
 !ec
 
-!bnotice
-The inner products may also be assembled with one single line, as
-!bc pycod-t
-AA = inner(v, div(grad(u))) + inner(v, -grad(u)) + inner(q, div(u))
-!ec
-However, this requires addition, not subtraction, of inner products and it is not
-possible to move the negation to -inner(v, grad(u))
-!enotice
-
 The assembled subsystems `A, G` and `D` are lists containg the different blocks of
 the complete, coupled matrix. `A` actually contains 6
 tensor product matrices of type ${cls('TPMatrix')}. The first two
@@ -293,7 +277,7 @@ matrices 2 and 3 are for components 1 and the last two are for components
   A[0:2] = inner(v[0], div(grad(u[0])))
 !ec
 
-Breaking it down the inner product is mathematically
+Breaking it down this inner product is mathematically
 
 !bt
 \begin{equation}
