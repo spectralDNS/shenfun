@@ -490,6 +490,345 @@ def ADD_matvec2D_ptr(T[:, ::1] v,
             b_ptr = &b[i, 0]
             ADD_matvec_ptr(v_ptr, b_ptr, &dd[0], N, strides)
 
+cdef void ATT_matvec_ptr(T* v,
+                         T* b,
+                         int N,
+                         int st):
+    cdef:
+        int i, j, k
+        double p0, p1
+        T s1 = 0.0
+        T s2 = 0.0
+        T s3 = 0.0
+        T s4 = 0.0
+        T d
+
+    k = N-1
+    b[(N-1)*st] = 0
+    b[(N-2)*st] = 0
+    for k in range(N-3, -1, -1):
+        j = k+2
+        p0 = M_PI/2
+        p1 = M_PI/2*k**2
+        if j % 2 == 0:
+            s1 += j*v[j*st]
+            s3 += j**3*v[j*st]
+            b[k*st] = p0*s3 - p1*s1
+        else:
+            s2 += j*v[j*st]
+            s4 += j**3*v[j*st]
+            b[k*st] = p0*s4 - p1*s2
+
+def ATT_matvec(np.ndarray[T, ndim=1] v,
+               np.ndarray[T, ndim=1] b):
+    cdef:
+        T* v_ptr=&v[0]
+        T* b_ptr=&b[0]
+    ATT_matvec_ptr(v_ptr, b_ptr, v.shape[0], 1)
+
+def ATT_matvec3D_ptr(T[:, :, ::1] v,
+                     T[:, :, ::1] b,
+                     int axis):
+    cdef:
+        int i, j, k, strides
+        int N = v.shape[axis]
+        T* v_ptr
+        T* b_ptr
+
+    strides = v.strides[axis]/v.itemsize
+    if axis == 0:
+        for j in range(v.shape[1]):
+            for k in range(v.shape[2]):
+                v_ptr = &v[0, j, k]
+                b_ptr = &b[0, j, k]
+                ATT_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+    elif axis == 1:
+       for i in range(v.shape[0]):
+            for k in range(v.shape[2]):
+                v_ptr = &v[i, 0, k]
+                b_ptr = &b[i, 0, k]
+                ATT_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+    elif axis == 2:
+        for i in range(v.shape[0]):
+            for j in range(v.shape[1]):
+                v_ptr = &v[i, j, 0]
+                b_ptr = &b[i, j, 0]
+                ATT_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+def ATT_matvec2D_ptr(T[:, ::1] v,
+                     T[:, ::1] b,
+                     int axis):
+    cdef:
+        int i, j, k, strides
+        int N = v.shape[axis]
+        T* v_ptr
+        T* b_ptr
+
+    strides = v.strides[axis]/v.itemsize
+    if axis == 0:
+        for j in range(v.shape[1]):
+            v_ptr = &v[0, j]
+            b_ptr = &b[0, j]
+            ATT_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+    elif axis == 1:
+       for i in range(v.shape[0]):
+            v_ptr = &v[i, 0]
+            b_ptr = &b[i, 0]
+            ATT_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+cdef void GLL_matvec_ptr(T* v,
+                         T* b,
+                         int N,
+                         int st):
+    cdef:
+        int i, j, k
+        double p0, p1
+        T s1 = 0.0
+        T s2 = 0.0
+        T s3 = 0.0
+        T s4 = 0.0
+        T d
+
+    k = N-1
+    b[(N-1)*st] = 0
+    b[(N-2)*st] = 0
+    for k in range(N-3, -1, -1):
+        j = k+2
+        p0 = 2*(k+0.5)/(2*k+1)
+        p1 = p0*k*(k+1)
+        if j % 2 == 0:
+            s1 += j*(j+1)*v[j*st]
+            s3 += v[j*st]
+            b[k*st] = p0*s1 - p1*s3
+        else:
+            s2 += j*(j+1)*v[j*st]
+            s4 += v[j*st]
+            b[k*st] = p0*s2 - p1*s4
+
+def GLL_matvec(np.ndarray[T, ndim=1] v,
+               np.ndarray[T, ndim=1] b):
+    cdef:
+        T* v_ptr=&v[0]
+        T* b_ptr=&b[0]
+    GLL_matvec_ptr(v_ptr, b_ptr, v.shape[0], 1)
+
+def GLL_matvec3D_ptr(T[:, :, ::1] v,
+                     T[:, :, ::1] b,
+                     int axis):
+    cdef:
+        int i, j, k, strides
+        int N = v.shape[axis]
+        T* v_ptr
+        T* b_ptr
+
+    strides = v.strides[axis]/v.itemsize
+    if axis == 0:
+        for j in range(v.shape[1]):
+            for k in range(v.shape[2]):
+                v_ptr = &v[0, j, k]
+                b_ptr = &b[0, j, k]
+                GLL_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+    elif axis == 1:
+       for i in range(v.shape[0]):
+            for k in range(v.shape[2]):
+                v_ptr = &v[i, 0, k]
+                b_ptr = &b[i, 0, k]
+                GLL_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+    elif axis == 2:
+        for i in range(v.shape[0]):
+            for j in range(v.shape[1]):
+                v_ptr = &v[i, j, 0]
+                b_ptr = &b[i, j, 0]
+                GLL_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+def GLL_matvec2D_ptr(T[:, ::1] v,
+                     T[:, ::1] b,
+                     int axis):
+    cdef:
+        int i, j, k, strides
+        int N = v.shape[axis]
+        T* v_ptr
+        T* b_ptr
+
+    strides = v.strides[axis]/v.itemsize
+    if axis == 0:
+        for j in range(v.shape[1]):
+            v_ptr = &v[0, j]
+            b_ptr = &b[0, j]
+            GLL_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+    elif axis == 1:
+       for i in range(v.shape[0]):
+            v_ptr = &v[i, 0]
+            b_ptr = &b[i, 0]
+            GLL_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+
+cdef void CLL_matvec_ptr(T* v,
+                         T* b,
+                         int N,
+                         int st):
+    cdef:
+        int i, j, k
+        double p
+        T s1 = 0.0
+        T s2 = 0.0
+
+    b[(N-1)*st] = 0
+    for k in range(N-2, -1, -1):
+        j = k+1
+        if j % 2 == 0:
+            s1 += v[j*st]
+            b[k*st] = 2*s1
+        else:
+            s2 += v[j*st]
+            b[k*st] = 2*s2
+
+def CLL_matvec(np.ndarray[T, ndim=1] v,
+               np.ndarray[T, ndim=1] b):
+    cdef:
+        T* v_ptr=&v[0]
+        T* b_ptr=&b[0]
+    CLL_matvec_ptr(v_ptr, b_ptr, v.shape[0], 1)
+
+def CLL_matvec2D_ptr(T[:, ::1] v,
+                     T[:, ::1] b,
+                     int axis):
+    cdef:
+        int i, j, k, strides
+        int N = v.shape[axis]
+        T* v_ptr
+        T* b_ptr
+
+    strides = v.strides[axis]/v.itemsize
+    if axis == 0:
+        for j in range(v.shape[1]):
+            v_ptr = &v[0, j]
+            b_ptr = &b[0, j]
+            CLL_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+    elif axis == 1:
+       for i in range(v.shape[0]):
+            v_ptr = &v[i, 0]
+            b_ptr = &b[i, 0]
+            CLL_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+def CLL_matvec3D_ptr(T[:, :, ::1] v,
+                     T[:, :, ::1] b,
+                     int axis):
+    cdef:
+        int i, j, k, strides
+        int N = v.shape[axis]
+        T* v_ptr
+        T* b_ptr
+
+    strides = v.strides[axis]/v.itemsize
+    if axis == 0:
+        for j in range(v.shape[1]):
+            for k in range(v.shape[2]):
+                v_ptr = &v[0, j, k]
+                b_ptr = &b[0, j, k]
+                CLL_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+    elif axis == 1:
+       for i in range(v.shape[0]):
+            for k in range(v.shape[2]):
+                v_ptr = &v[i, 0, k]
+                b_ptr = &b[i, 0, k]
+                CLL_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+    elif axis == 2:
+        for i in range(v.shape[0]):
+            for j in range(v.shape[1]):
+                v_ptr = &v[i, j, 0]
+                b_ptr = &b[i, j, 0]
+                CLL_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+cdef void CTT_matvec_ptr(T* v,
+                         T* b,
+                         int N,
+                         int st):
+    cdef:
+        int i, j, k
+        double p
+        T s1 = 0.0
+        T s2 = 0.0
+
+    b[(N-1)*st] = 0
+    for k in range(N-2, -1, -1):
+        j = k+1
+        if j % 2 == 0:
+            s1 += (k+1)*v[j*st]
+            b[k*st] = M_PI*s1
+        else:
+            s2 += (k+1)*v[j*st]
+            b[k*st] = M_PI*s2
+
+def CTT_matvec(np.ndarray[T, ndim=1] v,
+               np.ndarray[T, ndim=1] b):
+    cdef:
+        T* v_ptr=&v[0]
+        T* b_ptr=&b[0]
+    CTT_matvec_ptr(v_ptr, b_ptr, v.shape[0], 1)
+
+def CTT_matvec2D_ptr(T[:, ::1] v,
+                     T[:, ::1] b,
+                     int axis):
+    cdef:
+        int i, j, k, strides
+        int N = v.shape[axis]
+        T* v_ptr
+        T* b_ptr
+
+    strides = v.strides[axis]/v.itemsize
+    if axis == 0:
+        for j in range(v.shape[1]):
+            v_ptr = &v[0, j]
+            b_ptr = &b[0, j]
+            CTT_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+    elif axis == 1:
+       for i in range(v.shape[0]):
+            v_ptr = &v[i, 0]
+            b_ptr = &b[i, 0]
+            CTT_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+def CTT_matvec3D_ptr(T[:, :, ::1] v,
+                     T[:, :, ::1] b,
+                     int axis):
+    cdef:
+        int i, j, k, strides
+        int N = v.shape[axis]
+        T* v_ptr
+        T* b_ptr
+
+    strides = v.strides[axis]/v.itemsize
+    if axis == 0:
+        for j in range(v.shape[1]):
+            for k in range(v.shape[2]):
+                v_ptr = &v[0, j, k]
+                b_ptr = &b[0, j, k]
+                CTT_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+    elif axis == 1:
+       for i in range(v.shape[0]):
+            for k in range(v.shape[2]):
+                v_ptr = &v[i, 0, k]
+                b_ptr = &b[i, 0, k]
+                CTT_matvec_ptr(v_ptr, b_ptr, N, strides)
+
+    elif axis == 2:
+        for i in range(v.shape[0]):
+            for j in range(v.shape[1]):
+                v_ptr = &v[i, j, 0]
+                b_ptr = &b[i, j, 0]
+                CTT_matvec_ptr(v_ptr, b_ptr, N, strides)
+
 cdef void Tridiagonal_matvec_ptr(T* v,
                                  T* b,
                                  real_t* ld,

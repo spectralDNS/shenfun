@@ -48,41 +48,6 @@ class DCTWrap(FuncWrap):
 
 
 class ChebyshevBase(SpectralBase):
-    """Abstract base class for all Chebyshev spaces
-
-    Parameters
-    ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
-
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
-        domain : 2-tuple of floats, optional
-            The computational domain
-        dtype : data-type, optional
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
-    """
-
-    def __init__(self, N, quad="GC", domain=(-1., 1.), dtype=np.float,
-                 padding_factor=1, dealias_direct=False, coordinates=None):
-        assert quad in ('GC', 'GL')
-        SpectralBase.__init__(self, N, quad=quad, dtype=dtype, padding_factor=padding_factor,
-                              dealias_direct=dealias_direct, domain=domain, coordinates=coordinates)
 
     @staticmethod
     def family():
@@ -177,7 +142,7 @@ class ChebyshevBase(SpectralBase):
         return V
 
     def reference_domain(self):
-        return (-1., 1.)
+        return (-1, 1)
 
     def plan(self, shape, axis, dtype, options):
         if shape in (0, (0,)):
@@ -304,47 +269,6 @@ class Orthogonal(ChebyshevBase):
             self._xfftn_fwd = functools.partial(fftw.dctn, type=1)
             self._xfftn_bck = functools.partial(fftw.dctn, type=1)
         self.plan((int(padding_factor*N),), 0, dtype, {})
-
-    @staticmethod
-    def derivative_coefficients(fk):
-        """Return coefficients of Chebyshev series for c = f'(x)
-
-        Parameters
-        ----------
-            fk : input array
-                 Coefficients of regular Chebyshev series
-
-        Returns
-        -------
-        array
-            Coefficients of derivative of fk-series
-
-        """
-        ck = np.zeros_like(fk)
-        if len(fk.shape) == 1:
-            ck = Cheb.derivative_coefficients(fk, ck)
-        elif len(fk.shape) == 3:
-            ck = Cheb.derivative_coefficients_3D(fk, ck)
-        return ck
-
-    def fast_derivative(self, fj):
-        """Return derivative of :math:`f_j = f(x_j)` at quadrature points
-        :math:`x_j`
-
-        Parameters
-        ----------
-            fj : input array
-                 Function values on quadrature mesh
-
-        Returns
-        -------
-        array
-             Array with derivatives on quadrature mesh
-        """
-        fk = self.forward(fj)
-        ck = self.derivative_coefficients(fk)
-        fd = self.backward(ck)
-        return fd.copy()
 
     # Comment due to curvilinear issues
     #def apply_inverse_mass(self, array):

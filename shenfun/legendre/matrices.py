@@ -70,6 +70,7 @@ import numpy as np
 import sympy as sp
 from shenfun.matrixbase import SpectralMatrix
 from shenfun.la import TDMA as neumann_TDMA
+from shenfun.optimization import cython
 from .la import TDMA
 from . import bases
 
@@ -450,7 +451,6 @@ class ABBmat(SpectralMatrix):
         d[-2] = d[2]
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
-
 class GLLmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
@@ -475,9 +475,24 @@ class GLLmat(SpectralMatrix):
         d = {}
         for j in range(2, N, 2):
             jj = j if trial[1] else -j
-            d[jj] = (k[:-j]+0.5)*((k[:-j]+j)*(k[:-j]+j+1) - k[:-j]*(k[:-j]+1))*2./(2*k[:-j]+1)
+            d[jj] = (k[:-j]+0.5)*(k[j:]*(k[j:]+1) - k[:-j]*(k[:-j]+1))*2./(2*k[:-j]+1)
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
+    def matvec(self, v, c, format='cython', axis=0):
+        c.fill(0)
+        trial = self.trialfunction[1]
+        if format == 'cython' and v.ndim == 3 and trial:
+            cython.Matvec.GLL_matvec3D_ptr(v, c, axis)
+            self.scale_array(c)
+        elif format == 'cython' and v.ndim == 2 and trial:
+            cython.Matvec.GLL_matvec2D_ptr(v, c, axis)
+            self.scale_array(c)
+        elif format == 'cython' and v.ndim == 1 and trial:
+            cython.Matvec.GLL_matvec(v, c)
+            self.scale_array(c)
+        else:
+            c = super(GLLmat, self).matvec(v, c, format=format, axis=axis)
+        return c
 
 class SBBmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
@@ -517,7 +532,7 @@ class CLLmat(SpectralMatrix):
 
         j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N
 
-    and :math:`\psi_k` is the Shen Legendre basis function.
+    and :math:`\psi_k` is the orthogonal Legendre basis function.
 
     """
     def __init__(self, test, trial, measure=1):
@@ -526,7 +541,7 @@ class CLLmat(SpectralMatrix):
         N = test[0].N
         d = {}
         for i in range(1, N, 2):
-            d[i] = 2.0
+            d[i] = 2
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
     def matvec(self, v, c, format='self', axis=0):
@@ -535,21 +550,27 @@ class CLLmat(SpectralMatrix):
             if axis > 0:
                 c = np.moveaxis(c, axis, 0)
                 v = np.moveaxis(v, axis, 0)
-            #s = (slice(None),) + (np.newaxis,)*(v.ndim-1) # broadcasting
             ve = v[-2:0:-2].cumsum(axis=0)
             vo = v[-1:0:-2].cumsum(axis=0)
-            c[-3::-2] = ve*2.0
-            c[-2::-2] = vo*2.0
+            c[-3::-2] = ve*2
+            c[-2::-2] = vo*2
             if axis > 0:
                 c = np.moveaxis(c, 0, axis)
                 v = np.moveaxis(v, 0, axis)
-            c *= self.scale
+            self.scale_array(c)
 
+        elif format == 'cython' and v.ndim == 3:
+            cython.Matvec.CLL_matvec3D_ptr(v, c, axis)
+            self.scale_array(c)
+        elif format == 'cython' and v.ndim == 2:
+            cython.Matvec.CLL_matvec2D_ptr(v, c, axis)
+            self.scale_array(c)
+        elif format == 'cython' and v.ndim == 1:
+            cython.Matvec.CLL_matvec(v, c)
+            self.scale_array(c)
         else:
             c = super(CLLmat, self).matvec(v, c, format=format, axis=axis)
-
         return c
-
 
 class CLLmatT(SpectralMatrix):
     r"""Matrix for inner product
@@ -564,7 +585,7 @@ class CLLmatT(SpectralMatrix):
 
         j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N
 
-    and :math:`\psi_k` is the Shen Legendre basis function.
+    and :math:`\psi_k` is the orthogonal Legendre basis function.
 
     """
     def __init__(self, test, trial, measure=1):
@@ -573,7 +594,7 @@ class CLLmatT(SpectralMatrix):
         N = test[0].N
         d = {}
         for i in range(-1, -N, -2):
-            d[i] = 2.0
+            d[i] = 2
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 

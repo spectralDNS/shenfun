@@ -1147,7 +1147,7 @@ class SpectralBase(object):
         assert len(s) == 1
         s = s.pop()
         xj = sp.lambdify(s, measure)(xm)
-        wj *= xj
+        wj = wj*xj
         return wj
 
     def get_measured_array(self, array):
