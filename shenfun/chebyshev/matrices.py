@@ -837,6 +837,46 @@ class CDTmat(SpectralMatrix):
         d = {1: np.pi*(k[:N-2]+1)}
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
+class CTTmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        C_{kj} = (T'_j, T_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N
+
+    :math:`T_k` is the Chebyshev basis function.
+    """
+    def __init__(self, test, trial, measure=1):
+        assert isinstance(test[0], CB)
+        assert isinstance(trial[0], CB)
+        N = test[0].N
+        k = np.arange(N, dtype=np.float)
+        d = {}
+        for i in range(1, N, 2):
+            d[i] = np.pi*k[i:]
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+
+    def matvec(self, v, c, format='cython', axis=0):
+        c.fill(0)
+        if format == 'cython' and v.ndim == 3:
+            cython.Matvec.CTT_matvec3D_ptr(v, c, axis)
+            self.scale_array(c)
+        elif format == 'cython' and v.ndim == 2:
+            cython.Matvec.CTT_matvec2D_ptr(v, c, axis)
+            self.scale_array(c)
+        elif format == 'cython' and v.ndim == 1:
+            cython.Matvec.CTT_matvec(v, c)
+            self.scale_array(c)
+        else:
+            c = super(CTTmat, self).matvec(v, c, format=format, axis=axis)
+        return c
+
 
 class CBDmat(SpectralMatrix):
     r"""Matrix for inner product
@@ -1216,6 +1256,22 @@ class ATTmat(SpectralMatrix):
             d[j] = k[j:]*(k[j:]**2-k[:-j]**2)*np.pi/2.
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
+    def matvec(self, v, c, format='cython', axis=0):
+        c.fill(0)
+        if format == 'cython' and v.ndim == 3:
+            cython.Matvec.ATT_matvec3D_ptr(v, c, axis)
+            self.scale_array(c)
+        elif format == 'cython' and v.ndim == 2:
+            cython.Matvec.ATT_matvec2D_ptr(v, c, axis)
+            self.scale_array(c)
+        elif format == 'cython' and v.ndim == 1:
+            cython.Matvec.ATT_matvec(v, c)
+            self.scale_array(c)
+        else:
+            c = super(ATTmat, self).matvec(v, c, format=format, axis=axis)
+        return c
+
+
 
 class SBBmat(SpectralMatrix):
     r"""Biharmonic matrix for inner product
@@ -1368,6 +1424,7 @@ mat = _ChebMatDict({
     ((SD, 0), (SN, 1)): CDNmat,
     ((SB, 0), (SD, 1)): CBDmat,
     ((CB, 0), (SD, 1)): CTDmat,
+    ((CB, 0), (CB, 1)): CTTmat,
     ((SD, 0), (SD, 1)): CDDmat,
     ((SN, 0), (SD, 1)): CNDmat,
     ((SD, 0), (SB, 1)): CDBmat,

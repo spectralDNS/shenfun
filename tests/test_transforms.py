@@ -2,7 +2,7 @@ from itertools import product
 import pytest
 from scipy.linalg import solve
 import scipy.sparse.linalg as la
-from sympy import Symbol, sin, cos, pi, lambdify
+from sympy import symbols, sin, cos, pi, lambdify
 import numpy as np
 import shenfun
 from shenfun.chebyshev import bases as cbases
@@ -15,7 +15,7 @@ from shenfun.spectralbase import inner_product
 
 
 N = 33
-x = Symbol("x")
+x, y = symbols("x,y", real=True)
 
 cBasis = (cbases.Orthogonal,
           cbases.ShenDirichlet,
@@ -338,61 +338,25 @@ def test_axis(ST, quad, axis):
 
 @pytest.mark.parametrize('quad', cquads)
 def test_CDDmat(quad):
-    M = 128
+    M = 48
     SD = cbases.ShenDirichlet(M, quad=quad)
     u = (1-x**2)*sin(np.pi*6*x)
     dudx = u.diff(x, 1)
-    points, weights = SD.points_and_weights(M)
-
-    ul = lambdify(x, u, 'numpy')
-    dudx_l = lambdify(x, dudx, 'numpy')
-    dudx_j = dudx_l(points)
-    uj = ul(points)
-
-    u_hat = shenfun.Function(SD)
-    u_hat = SD.forward(uj, u_hat)
-    uj = SD.backward(u_hat, uj)
-    u_hat = SD.forward(uj, u_hat)
-
-    uc_hat = shenfun.Function(SD)
-    uc_hat = SD.CT.forward(uj, uc_hat)
-    dudx_j = SD.CT.fast_derivative(uj)
-
-    Cm = inner_product((SD, 0), (SD, 1))
-    B = inner_product((SD, 0), (SD, 0))
-    TDMASolver = TDMA(B)
-
-    cs = np.zeros_like(u_hat)
-    cs = Cm.matvec(u_hat, cs)
-
-    # Should equal (but not exact so use extra resolution)
-    cs2 = np.zeros(M)
-    cs2 = SD.scalar_product(dudx_j, cs2)
-    s = SD.slice()
-    assert np.allclose(cs[s], cs2[s], rtol=1e-5, atol=1e-6)
-
-    cs = TDMASolver(cs)
-    du = np.zeros(M)
-    du = SD.backward(cs, du)
-
-    assert np.linalg.norm(du[s]-dudx_j[s])/M < 1e-10
+    dudx_hat = shenfun.Function(SD, buffer=dudx)
+    u_hat = shenfun.Function(SD, buffer=u)
+    ducdx_hat = shenfun.project(shenfun.Dx(u_hat, 0, 1), SD)
+    assert np.linalg.norm(ducdx_hat-dudx_hat)/M < 1e-10, np.linalg.norm(ducdx_hat-dudx_hat)/M
 
     # Multidimensional version
-    u3_hat = u_hat.repeat(4*4).reshape((M, 4, 4)) + 1j*u_hat.repeat(4*4).reshape((M, 4, 4))
-    cs = np.zeros_like(u3_hat)
-    cs = Cm.matvec(u3_hat, cs)
-    cs2 = np.zeros((M, 4, 4), dtype=np.complex)
-    du3 = dudx_j.repeat(4*4).reshape((M, 4, 4)) + 1j*dudx_j.repeat(4*4).reshape((M, 4, 4))
-    SD.plan((M, 4, 4), 0, np.complex, {})
-    cs2 = SD.scalar_product(du3, cs2)
-
-    assert np.allclose(cs[s], cs2[s], 1e-10)
-
-    cs = TDMASolver(cs)
-    d3 = np.zeros((M, 4, 4), dtype=np.complex)
-    d3 = SD.backward(cs, d3)
-
-    assert np.linalg.norm(du3[s]-d3[s])/(M*16) < 1e-10
+    SD0 = cbases.ShenDirichlet(8, quad=quad)
+    SD1 = cbases.ShenDirichlet(M, quad=quad)
+    T = shenfun.TensorProductSpace(shenfun.comm, (SD0, SD1))
+    u = (1-y**2)*sin(np.pi*6*y)
+    dudy = u.diff(y, 1)
+    dudy_hat = shenfun.Function(T, buffer=dudy)
+    u_hat = shenfun.Function(T, buffer=u)
+    ducdy_hat = shenfun.project(shenfun.Dx(u_hat, 1, 1), T)
+    assert np.linalg.norm(ducdy_hat-dudy_hat)/M < 1e-10, np.linalg.norm(ducdy_hat-dudy_hat)/M
 
 @pytest.mark.parametrize('test,trial', product(cBasis, cBasis))
 def test_CXXmat(test, trial):
@@ -415,7 +379,7 @@ def test_CXXmat(test, trial):
     f_hat = S2.forward(fj, f_hat)
     cs = np.zeros_like(f_hat)
     cs = Cm.matvec(f_hat, cs)
-    df = CT.fast_derivative(fj)
+    df = project(grad(f_hat), CT)
     cs2 = np.zeros(N)
     cs2 = S1.scalar_product(df, cs2)
     s = S1.slice()
@@ -598,9 +562,9 @@ if __name__ == '__main__':
     #test_to_ortho(cBasis[1], 'GC')
     # test_convolve(fbases.R2C, 8)
     #test_ADDmat(cbases.ShenNeumannBasis, "GL")
-    #test_CDDmat("GL")
+    test_CDDmat("GL")
     #test_massmatrices(cBasisGC[1], cBasisGC[0], 'GC')
-    test_CXXmat(cBasis[2], cBasis[3])
+    #test_CXXmat(cBasis[2], cBasis[3])
     #test_transforms(fBasis[0], '', 2)
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[1], 'GC')

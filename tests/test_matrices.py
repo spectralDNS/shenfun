@@ -163,7 +163,7 @@ def test_cmatvec(b0, b1, quad, format, dim, k):
 @pytest.mark.parametrize('k0,k1', product((0, 1, 2), (0, 1, 2)))
 def test_lmatvec(b0, b1, quad, format, dim, k0, k1):
     """Test matrix-vector product"""
-    global c, c1
+    global c, c1, a
     b0 = b0(N, quad=quad)
     b1 = b1(N, quad=quad)
     mat = inner_product((b0, k0), (b1, k1))
@@ -695,8 +695,9 @@ def test_biharmonic2D(family, axis):
 if __name__ == '__main__':
     import sympy as sp
     x = sp.symbols('x', real=True, positive=True)
-    test_mat(((cbases.ShenDirichletBasis, 0), (cbases.BCDirichlet, 0)), cmatrices.BCDmat, 'GC')
+    #test_mat(((cbases.ShenDirichlet, 0), (cbases.BCDirichlet, 0)), cmatrices.BCDmat, 'GC')
     #test_cmatvec(cBasis[3], cBasis[1], 'GC', 'cython', 3, 0)
+    test_lmatvec(lBasis[0], lBasis[0], 'LG', 'cython', 3, 2, 0)
     #test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
     #test_hmatvec(hBasis[0], hBasis[0], 'HG', 'self', 3, 1, 1)
     #test_iadd(*mats_and_quads[15])
