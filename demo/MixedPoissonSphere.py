@@ -1,4 +1,4 @@
-r"""Solve Poisson's equation using a mixed formulation
+r"""Solve Poisson's equation on a sphere using a mixed formulation
 
 The Poisson equation is in strong form
 
@@ -18,10 +18,8 @@ We solve using the mixed formulation
     u(x=2\pi, y) &= u(x=0, y) \\
     g(x=2\pi, y) &= g(x=0, y)
 
-We use a Tensorproductspace with Fourier expansions in the x-direction and a
-composite Chebyshev or Legendre basis in the y-direction for ``u``, whereas a
-regular Chebyshev or Legendre basis is used for ``g``. The equations are solved
-coupled and implicit.
+The problem is solved without boundary conditions and in spherical
+coordinates. The mixed equations are solved coupled and implicit.
 
 """
 
@@ -35,6 +33,7 @@ r = 1
 theta, phi = psi =sp.symbols('x,y', real=True, positive=True)
 rv = (r*sp.sin(theta)*sp.cos(phi), r*sp.sin(theta)*sp.sin(phi), r*sp.cos(theta))
 
+# Define a manufactured solution
 ue = rv[0]*rv[1]*rv[2]
 
 N, M = 40, 40

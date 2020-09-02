@@ -341,6 +341,11 @@ class SpectralBase(object):
                 Whether or not to map points to true domain
             uniform : bool, optional
                 Use uniform mesh instead of quadrature if True
+
+        Note
+        ----
+        For curvilinear problems this function returns the computational mesh.
+        For the corresponding Cartesian mesh, use :meth:`.SpectralBase.cartesian_mesh`
         """
         N = self.shape(False)
         if self.family() == 'fourier':
@@ -357,14 +362,20 @@ class SpectralBase(object):
         return X
 
     def cartesian_mesh(self, uniform=False):
-        """Return curvilinear mesh of basis
+        """Return Cartesian mesh
 
         Parameters
         ----------
         uniform : bool, optional
             Use uniform mesh
+
+        Note
+        ----
+        For Cartesian problems this function returns the same mesh as :meth:`.SpectralBase.mesh`
         """
         x = self.mesh(uniform=uniform)
+        if self.coors.is_cartesian:
+            return x
         psi = self.coors.psi
         xx = []
         for rvi in self.coors.rv:
