@@ -80,7 +80,7 @@ class GinzburgLandau(IRK3):
             u2_hat = self.u_hat.refine(self.refineplot*self.N)
 
         ur = u2_hat.backward(uniform=True)
-        X = u2_hat.function_space().local_curvilinear_mesh(uniform=True)
+        X = u2_hat.function_space().local_cartesian_mesh(uniform=True)
         X[0] = np.hstack([X[0], X[0][:, 0][:, None]])
         X[1] = np.hstack([X[1], X[1][:, 0][:, None]])
         X[2] = np.hstack([X[2], X[2][:, 0][:, None]])
@@ -117,7 +117,7 @@ class GinzburgLandau(IRK3):
         b2 = np.array(b2)
         df = du[0]*b1 + du[1]*b2   # Cartesian components
         df = np.concatenate([df, df[:, :, 0][:, :, None]], axis=2) # wrap periodic
-        X = self.T.local_curvilinear_mesh(uniform=True)
+        X = self.T.local_cartesian_mesh(uniform=True)
         X[0] = np.hstack([X[0], X[0][:, 0][:, None]])
         X[1] = np.hstack([X[1], X[1][:, 0][:, None]])
         X[2] = np.hstack([X[2], X[2][:, 0][:, None]])

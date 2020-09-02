@@ -5,7 +5,7 @@ from shenfun import *
 from mpi4py_fft import generate_xdmf
 
 N = (24, 25, 26)
-backend = 'netcdf'
+backend = 'hdf5'
 nsteps = 1
 K0 = FunctionSpace(N[0], 'F', dtype='D')
 K1 = FunctionSpace(N[1], 'F', dtype='D')
