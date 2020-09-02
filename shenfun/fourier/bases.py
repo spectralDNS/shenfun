@@ -197,14 +197,13 @@ class FourierBase(SpectralBase):
             self.backward.xfftn(normalise_idft=False)
         assert input_array is self.backward.xfftn.input_array
 
-    def evaluate_scalar_product(self, input_array, output_array, fast_transform=True):
+    def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
-            self.vandermonde_scalar_product(input_array, output_array)
+            self._vandermonde_scalar_product()
             return
         output = self.scalar_product.xfftn()
         M = self.get_normalization()
         output *= M
-        assert input_array is self.scalar_product.xfftn.input_array
 
     def reference_domain(self):
         return (0., 2*np.pi)

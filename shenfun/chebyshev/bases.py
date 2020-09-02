@@ -298,9 +298,9 @@ class Orthogonal(ChebyshevBase):
             s2 = self.sl[slice(1, None, 2)]
             output_array[s2] -= input_array[s0]/2
 
-    def evaluate_scalar_product(self, input_array, output_array, fast_transform=True):
+    def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
-            self.vandermonde_scalar_product(input_array, output_array)
+            self._vandermonde_scalar_product()
             return
         #assert self.N == self.scalar_product.input_array.shape[self.axis]
         out = self.scalar_product.xfftn()
@@ -434,14 +434,14 @@ class ShenDirichlet(ChebyshevBase):
         """Return True if scaled basis is used, otherwise False"""
         return False
 
-    def vandermonde_scalar_product(self, input_array, output_array):
-        SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
-        output_array[self.si[-2]] = 0
-        output_array[self.si[-1]] = 0
+    def _vandermonde_scalar_product(self):
+        SpectralBase._vandermonde_scalar_product(self)
+        self.scalar_product.output_array[self.si[-2]] = 0
+        self.scalar_product.output_array[self.si[-1]] = 0
 
-    def evaluate_scalar_product(self, input_array, output_array, fast_transform=True):
+    def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
-            self.vandermonde_scalar_product(input_array, output_array)
+            self._vandermonde_scalar_product()
             return
         output = self.CT.scalar_product(fast_transform=fast_transform)
         s0 = self.sl[slice(0, -2)]
@@ -706,9 +706,9 @@ class ShenNeumann(ChebyshevBase):
             k = self.wavenumbers().astype(float)
             self._factor = (k/(k+2))**2
 
-    def evaluate_scalar_product(self, input_array, output_array, fast_transform=True):
+    def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
-            self.vandermonde_scalar_product(input_array, output_array)
+            self._vandermonde_scalar_product()
             return
         output = self.CT.scalar_product(fast_transform=True)
         self.set_factor_array(output)
@@ -720,9 +720,7 @@ class ShenNeumann(ChebyshevBase):
         if input_array is not None:
             self.scalar_product.input_array[...] = input_array
 
-        self.evaluate_scalar_product(self.scalar_product.input_array,
-                                     self.scalar_product.output_array,
-                                     fast_transform=fast_transform)
+        self._evaluate_scalar_product(fast_transform=fast_transform)
 
         output = self.scalar_product.output_array
         output[self.si[0]] = self.mean*np.pi
@@ -961,9 +959,9 @@ class ShenBiharmonic(ChebyshevBase):
             self._factor1 = (-2*(k+2)/(k+3)).astype(float)
             self._factor2 = ((k+1)/(k+3)).astype(float)
 
-    def evaluate_scalar_product(self, input_array, output_array, fast_transform=True):
+    def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
-            self.vandermonde_scalar_product(input_array, output_array)
+            self._vandermonde_scalar_product()
             return
         output = self.CT.scalar_product(fast_transform=fast_transform)
         Tk = work[(output, 0, True)]
@@ -979,9 +977,7 @@ class ShenBiharmonic(ChebyshevBase):
         if input_array is not None:
             self.scalar_product.input_array[...] = input_array
 
-        self.evaluate_scalar_product(self.scalar_product.input_array,
-                                     self.scalar_product.output_array,
-                                     fast_transform=fast_transform)
+        self._evaluate_scalar_product(fast_transform=fast_transform)
 
         self.scalar_product.output_array[self.sl[slice(-4, None)]] = 0
 
@@ -1252,9 +1248,9 @@ class SecondNeumann(ChebyshevBase): #pragma: no cover
             k = self.wavenumbers().astype(float)
             self._factor = (k/(k+2))**2*(k**2-1)/((k+2)**2-1)
 
-    def evaluate_scalar_product(self, input_array, output_array, fast_transform=True):
+    def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
-            self.vandermonde_scalar_product(input_array, output_array)
+            self._vandermonde_scalar_product()
             return
         output = self.CT.scalar_product(fast_transform=True)
         self.set_factor_array(output)
@@ -1266,9 +1262,7 @@ class SecondNeumann(ChebyshevBase): #pragma: no cover
         if input_array is not None:
             self.scalar_product.input_array[...] = input_array
 
-        self.evaluate_scalar_product(self.scalar_product.input_array,
-                                     self.scalar_product.output_array,
-                                     fast_transform=fast_transform)
+        self._evaluate_scalar_product(fast_transform=fast_transform)
 
         output = self.scalar_product.output_array
         output[self.si[0]] = self.mean*np.pi
@@ -1459,12 +1453,12 @@ class UpperDirichlet(ChebyshevBase):
         """Return True if scaled basis is used, otherwise False"""
         return False
 
-    def vandermonde_scalar_product(self, input_array, output_array):
-        SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
+    def _vandermonde_scalar_product(self):
+        SpectralBase._vandermonde_scalar_product(self)
 
-    def evaluate_scalar_product(self, input_array, output_array, fast_transform=True):
+    def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
-            self.vandermonde_scalar_product(input_array, output_array)
+            self._vandermonde_scalar_product()
             return
         output = self.CT.scalar_product(fast_transform=fast_transform)
         s0 = self.sl[slice(0, -1)]
@@ -1670,8 +1664,8 @@ class ShenBiPolar(ChebyshevBase):
         output[self.sl[slice(-4, None)]] = 0
         return output
 
-    def vandermonde_scalar_product(self, input_array, output_array):
-        SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
+    def _vandermonde_scalar_product(self):
+        SpectralBase._vandermonde_scalar_product(self)
 
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
@@ -1837,9 +1831,9 @@ class DirichletNeumann(ChebyshevBase):
         w_hat[s2] += f2*fk[s0]
         return w_hat
 
-    def evaluate_scalar_product(self, input_array, output_array, fast_transform=True):
+    def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
-            self.vandermonde_scalar_product(input_array, output_array)
+            self._vandermonde_scalar_product()
             return
         output = self.CT.scalar_product(fast_transform=fast_transform)
         Tk = work[(output, 0, True)]
@@ -2060,9 +2054,9 @@ class NeumannDirichlet(ChebyshevBase):
         w_hat[s2] += f2*fk[s0]
         return w_hat
 
-    def evaluate_scalar_product(self, input_array, output_array, fast_transform=True):
+    def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
-            self.vandermonde_scalar_product(input_array, output_array)
+            self._vandermonde_scalar_product()
             return
         output = self.CT.scalar_product(fast_transform=fast_transform)
         Tk = work[(output, 0, True)]
