@@ -369,17 +369,16 @@ def test_CXXmat(test, trial):
     S2 = Cm.trialfunction[0]
     S1 = Cm.testfunction[0]
 
-    fj = np.random.randn(N)
+    fj = shenfun.Array(S2, buffer=np.random.randn(N))
     # project to S2
-    f_hat = np.zeros(N)
-    f_hat = S2.forward(fj, f_hat)
-    fj = S2.backward(f_hat, fj)
+    f_hat = fj.forward()
+    fj = f_hat.backward(fj)
 
     # Check S1.scalar_product(f) equals Cm*S2.forward(f)
     f_hat = S2.forward(fj, f_hat)
     cs = np.zeros_like(f_hat)
     cs = Cm.matvec(f_hat, cs)
-    df = shenfun.project(grad(f_hat), CT)
+    df = shenfun.project(shenfun.grad(f_hat), CT).backward()
     cs2 = np.zeros(N)
     cs2 = S1.scalar_product(df, cs2)
     s = S1.slice()
@@ -562,9 +561,9 @@ if __name__ == '__main__':
     #test_to_ortho(cBasis[1], 'GC')
     # test_convolve(fbases.R2C, 8)
     #test_ADDmat(cbases.ShenNeumannBasis, "GL")
-    test_CDDmat("GL")
+    #test_CDDmat("GL")
     #test_massmatrices(cBasisGC[1], cBasisGC[0], 'GC')
-    #test_CXXmat(cBasis[2], cBasis[3])
+    test_CXXmat(cBasis[2], cBasis[3])
     #test_transforms(fBasis[0], '', 2)
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[1], 'GC')

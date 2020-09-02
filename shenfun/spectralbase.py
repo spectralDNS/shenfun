@@ -452,9 +452,7 @@ class SpectralBase(object):
 
         self.scalar_product._input_array = self.get_measured_array(self.scalar_product._input_array)
 
-        self.evaluate_scalar_product(self.scalar_product.input_array,
-                                     self.scalar_product.output_array,
-                                     fast_transform=fast_transform)
+        self._evaluate_scalar_product(fast_transform=fast_transform)
 
         if output_array is not None:
             output_array[...] = self.scalar_product.output_array
@@ -661,34 +659,35 @@ class SpectralBase(object):
         """
         raise NotImplementedError
 
-    def evaluate_scalar_product(self, input_array, output_array,
-                                fast_transform=False):
+    def _evaluate_scalar_product(self, fast_transform=False):
         """Evaluate scalar product
 
         Parameters
         ----------
-            input_array : array, optional
-                Function values on quadrature mesh
-            output_array : array, optional
-                Expansion coefficients
             fast_transform : bool, optional
                 If True use fast transforms (if implemented), if
                 False use Vandermonde type
+
+        Note
+        ----
+        Using internal arrays: self.scalar_product.input_array and
+        self.scalar_product.output_array
+
         """
         assert fast_transform is False
-        self.vandermonde_scalar_product(input_array, output_array)
+        self._vandermonde_scalar_product()
 
-    def vandermonde_scalar_product(self, input_array, output_array):
+    def _vandermonde_scalar_product(self):
         """Naive implementation of scalar product
 
-        Parameters
-        ----------
-            input_array : array
-                Function values on quadrature mesh
-            output_array : array
-                Expansion coefficients
+        Note
+        ----
+        Using internal arrays: self.scalar_product.input_array and
+        self.scalar_product.output_array
 
         """
+        input_array = self.scalar_product.input_array
+        output_array = self.scalar_product.output_array
         weights = self.points_and_weights(int(self.N*self.padding_factor))[1]
         P = self.evaluate_basis_all(argument=0)
         if input_array.ndim == 1:
@@ -700,8 +699,6 @@ class SpectralBase(object):
             fc = np.moveaxis(input_array*weights[tuple(bc_shape)], self.axis, -1)
             output_array[self.sl[slice(0, self.N)]] = np.moveaxis(np.dot(fc, np.conj(P)), -1, self.axis)
             #output_array[:] = np.moveaxis(np.tensordot(input_array*weights[bc_shape], np.conj(P), (self.axis, 0)), -1, self.axis)
-
-        assert output_array is self.scalar_product.output_array
 
     def vandermonde_evaluate_expansion_all(self, input_array, output_array, x=None):
         """Naive implementation of evaluate_expansion_all
