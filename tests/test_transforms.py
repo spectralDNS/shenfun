@@ -379,7 +379,7 @@ def test_CXXmat(test, trial):
     f_hat = S2.forward(fj, f_hat)
     cs = np.zeros_like(f_hat)
     cs = Cm.matvec(f_hat, cs)
-    df = project(grad(f_hat), CT)
+    df = shenfun.project(grad(f_hat), CT)
     cs2 = np.zeros(N)
     cs2 = S1.scalar_product(df, cs2)
     s = S1.slice()
