@@ -197,11 +197,12 @@ class Coordinates(object):
                     m += (k[j]+'+')
                 elif b[i, j] != 0:
                     sl = sp.latex(b[i, j], symbol_names=symbols)
-                    if sl.startswith('-'):
+                    if sl.startswith('-') and not isinstance(b[i, j], sp.Add):
                         m = m.rstrip('+')
                     if isinstance(b[i, j], sp.Add):
                         sl = '\\left(%s\\right)'%(sl)
                     m += (sl+'\\,'+k[j]+'+')
+
             m = m.rstrip('+')
             m += ' \\\\ '
         m += ' '

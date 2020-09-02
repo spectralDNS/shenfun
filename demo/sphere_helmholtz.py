@@ -64,9 +64,9 @@ if 'pytest' not in os.environ:
     # gives more quadrature points. u_hat has NxM quadrature points, refine
     # using any higher number.
     u_hat2 = u_hat.refine([N*3, M*3])
-    ur = u_hat2.backward(uniform=True)
+    ur = u_hat2.backward(kind='uniform')
     from mayavi import mlab
-    xx, yy, zz = u_hat2.function_space().local_curvilinear_mesh(uniform=True)
+    xx, yy, zz = u_hat2.function_space().local_cartesian_mesh(uniform=True)
     # Wrap periodic direction around
     if T.bases[1].domain == (0, 2*np.pi):
         xx = np.hstack([xx, xx[:, 0][:, None]])
@@ -75,5 +75,5 @@ if 'pytest' not in os.environ:
         ur = np.hstack([ur, ur[:, 0][:, None]])
     mlab.figure(bgcolor=(1, 1, 1), size=(400, 400))
     mlab.mesh(xx, yy, zz, scalars=ur.real, colormap='jet')
-    mlab.savefig('spherewhite.tiff')
+    mlab.savefig('spherewhite.png')
     #mlab.show()

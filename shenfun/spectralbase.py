@@ -356,7 +356,7 @@ class SpectralBase(object):
             X = self.broadcast_to_ndims(X)
         return X
 
-    def curvilinear_mesh(self, uniform=False):
+    def cartesian_mesh(self, uniform=False):
         """Return curvilinear mesh of basis
 
         Parameters

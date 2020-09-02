@@ -109,7 +109,7 @@ sl = u_hat2.function_space().local_slice(False)
 ur = u_hat2.backward() + u0_hat2.backward()[sl[0], :, sl[2]]
 # Get 2D array to plot on rank 0
 ur = ur.get((slice(None), slice(None), 2))
-xx, yy, zz = u_hat2.function_space().curvilinear_mesh()
+xx, yy, zz = u_hat2.function_space().cartesian_mesh()
 
 if comm.Get_rank() == 0:
     # Wrap periodic plot around since it looks nicer

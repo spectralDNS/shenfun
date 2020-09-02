@@ -13,7 +13,7 @@ tau, sigma = psi = sp.symbols('x,y', real=True)
 rv = (tau*sigma, (tau**2-sigma**2)/2)
 
 N = 40
-by_parts = True
+by_parts = False
 L0 = FunctionSpace(N, 'L', bc=(0, 0), domain=(0, 1))
 L1 = FunctionSpace(N, 'L', bc=(0, 0), domain=(-1, 1))
 T = TensorProductSpace(comm, (L0, L1), axes=(1, 0), coordinates=(psi, rv))
@@ -27,7 +27,7 @@ ue = (tau*(1-tau))**2*(1-sigma**2)**1*sp.sin(4*sp.pi*sigma)
 g = (div(grad(u))).tosympy(basis=ue, psi=psi)
 
 # Compute the right hand side on the quadrature mesh
-gj = Array(T, buffer=g)
+gj = Array(T, buffer=g*T.sg)
 
 # Take scalar product
 g_hat = Function(T)
@@ -37,7 +37,7 @@ if by_parts:
     mats = inner(grad(v), -grad(u))
 
 else:
-    mats = inner(v, div(grad(u)))
+    mats = inner(v, div(grad(u))*T.sg)
 
 # Solve
 u_hat = Function(T)
@@ -52,7 +52,7 @@ print('Error =', np.linalg.norm(uj-uq))
 # Postprocess
 u_hat2 = u_hat.refine([N*2, N*2])
 ur = u_hat2.backward()
-xx, yy = u_hat2.function_space().local_curvilinear_mesh(True)
+xx, yy = u_hat2.function_space().local_cartesian_mesh(True)
 
 # plot
 plt.figure()

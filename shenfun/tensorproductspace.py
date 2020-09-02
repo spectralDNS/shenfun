@@ -717,7 +717,7 @@ class TensorProductSpace(PFFT):
             return [np.broadcast_to(m, self.shape(False)) for m in lm]
         return lm
 
-    def local_curvilinear_mesh(self, uniform=False):
+    def local_cartesian_mesh(self, uniform=False):
         """Return curvilinear mesh
 
         Parameters
@@ -732,7 +732,7 @@ class TensorProductSpace(PFFT):
             xx.append(sp.lambdify(psi, rv)(*X))
         return xx
 
-    def curvilinear_mesh(self, uniform=False):
+    def cartesian_mesh(self, uniform=False):
         """Return curvilinear mesh
 
         Parameters

@@ -45,6 +45,7 @@ family = 'Chebyshev'
 #family = 'Legendre'
 D0X = FunctionSpace(N[0], family, bc=(0, 0), scaled=True)
 D0Y = FunctionSpace(N[1], family, bc=(-sin(2*np.pi*x)*(1-x**2), -sin(2*np.pi*x)*(1-x**2)), scaled=True)
+D1Y = FunctionSpace(N[1], family, bc=(0, 0), scaled=True)
 PX = FunctionSpace(N[0], family)
 PY = FunctionSpace(N[1], family)
 
@@ -56,8 +57,9 @@ PX.slice = lambda: slice(0, PX.N-2)
 PY.slice = lambda: slice(0, PY.N-2)
 
 TD = TensorProductSpace(comm, (D0X, D0Y))
+TD1 = TensorProductSpace(comm, (D0X, D1Y))
 Q = TensorProductSpace(comm, (PX, PY))
-V = VectorTensorProductSpace(TD)
+V = VectorTensorProductSpace([TD1, TD])
 VQ = MixedTensorProductSpace([V, Q])
 
 up = TrialFunction(VQ)
@@ -126,7 +128,12 @@ if 'pytest' not in os.environ:
     X = TD.local_mesh(True)
     plt.contourf(X[0], X[1], p_, 100)
     plt.figure()
+    plt.contourf(X[0], X[1], pe, 100)
+
+    plt.figure()
     plt.quiver(X[0], X[1], u_[0], u_[1])
+    plt.figure()
+    plt.quiver(X[0], X[1], ux, uy)
     plt.figure()
     plt.spy(M.diags())
     plt.figure()
