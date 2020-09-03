@@ -36,6 +36,7 @@ from scipy.special import eval_jacobi, roots_jacobi #, gamma
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
 from shenfun.forms.arguments import Function
+from shenfun.chebyshev.bases import BCBiharmonic, BCDirichlet
 
 try:
     import quadpy
@@ -106,7 +107,7 @@ class JacobiBase(SpectralBase):
         return 'jacobi'
 
     def reference_domain(self):
-        return (-1., 1.)
+        return (-1, 1)
 
     def get_refined(self, N):
         return self.__class__(N,
@@ -130,9 +131,20 @@ class JacobiBase(SpectralBase):
                               alpha=self.alpha,
                               beta=self.beta)
 
+    def get_orthogonal(self):
+        return Orthogonal(self.N,
+                          quad=self.quad,
+                          domain=self.domain,
+                          dtype=self.dtype,
+                          padding_factor=self.padding_factor,
+                          dealias_direct=self.dealias_direct,
+                          coordinates=self.coors.coordinates,
+                          alpha=0,
+                          beta=0)
+
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
-            N = self.N
+            N = self.shape(False)
         assert self.quad == "JG"
         points, weights = roots_jacobi(N, self.alpha, self.beta)
         if map_true_domain is True:
@@ -143,7 +155,7 @@ class JacobiBase(SpectralBase):
         if mode == 'numpy' or not has_quadpy:
             return self.points_and_weights(N=N, map_true_domain=map_true_domain, weighted=weighted, **kw)
         if N is None:
-            N = self.N
+            N = self.shape(False)
         pw = quadpy.line_segment.gauss_jacobi(N, self.alpha, self.beta, 'mpmath')
         points = pw.points
         weights = pw.weights
@@ -174,7 +186,7 @@ class JacobiBase(SpectralBase):
         return V
 
     def vandermonde(self, x):
-        return self.jacobi(x, self.alpha, self.beta, self.N)
+        return self.jacobi(x, self.alpha, self.beta, self.shape(False))
 
     def plan(self, shape, axis, dtype, options):
         if shape in (0, (0,)):
@@ -194,14 +206,16 @@ class JacobiBase(SpectralBase):
         U.fill(0)
         V.fill(0)
         self.axis = axis
-        self.forward = Transform(self.forward, None, U, V, V)
-        self.backward = Transform(self.backward, None, V, V, U)
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.forward = Transform(self.forward, None, U, V, trunc_array)
+            self.backward = Transform(self.backward, None, trunc_array, V, U)
+        else:
+            self.forward = Transform(self.forward, None, U, V, V)
+            self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
-
-    def get_orthogonal(self):
-        return Orthogonal(self.N, alpha=self.alpha, beta=self.beta, domain=self.domain)
 
 
 class Orthogonal(JacobiBase):
@@ -244,8 +258,8 @@ class Orthogonal(JacobiBase):
     def is_orthogonal(self):
         return True
 
-    def get_orthogonal(self):
-        return self
+    #def get_orthogonal(self):
+    #    return self
 
     def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         return sp.jacobi(i, self.alpha, self.beta, x)
@@ -270,8 +284,9 @@ class Orthogonal(JacobiBase):
         if mode == 'numpy':
             return self.derivative_jacobi(x, self.alpha, self.beta, k)
         else:
-            V = np.zeros((x.shape[0], self.N))
-            for i in range(self.N):
+            N = self.shape(False)
+            V = np.zeros((x.shape[0], N))
+            for i in range(N):
                 V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
         return V
 
@@ -337,6 +352,7 @@ class ShenDirichlet(JacobiBase):
                             coordinates=coordinates)
         assert bc in ((0, 0), 'Dirichlet')
         from shenfun.tensorproductspace import BoundaryValues
+        self._bc_basis = None
         self.bc = BoundaryValues(self, bc=bc)
         self.plan(int(N*padding_factor), 0, dtype, {})
 
@@ -373,8 +389,9 @@ class ShenDirichlet(JacobiBase):
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         if x is None:
             x = self.mpmath_points_and_weights()[0]
-        V = np.zeros((x.shape[0], self.N))
-        for i in range(self.N-2):
+        N = self.shape(False)
+        V = np.zeros((x.shape[0], N))
+        for i in range(N-2):
             V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
         return V
 
@@ -413,14 +430,15 @@ class ShenDirichlet(JacobiBase):
         else:
             if x is None:
                 x = self.mpmath_points_and_weights()[0]
-            V = np.zeros((x.shape[0], self.N))
-            for i in range(self.N-2):
+            N = self.shape(False)
+            V = np.zeros((x.shape[0], N))
+            for i in range(N-2):
                 V[:, i] = self.evaluate_basis(x, i, output_array=V[:, i])
         return V
 
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
-            N = self.N
+            N = self.shape(False)
         assert self.quad == "JG"
         points, weights = roots_jacobi(N, self.alpha+1, self.beta+1)
         if map_true_domain is True:
@@ -431,7 +449,7 @@ class ShenDirichlet(JacobiBase):
         if mode == 'numpy' or not has_quadpy:
             return self.points_and_weights(N=N, map_true_domain=map_true_domain, weighted=weighted, **kw)
         if N is None:
-            N = self.N
+            N = self.shape(False)
         assert self.quad == "JG"
         pw = quadpy.line_segment.gauss_jacobi(N, self.alpha+1, self.beta+1, mode)
         points = pw.points
@@ -443,7 +461,7 @@ class ShenDirichlet(JacobiBase):
     def to_ortho(self, input_array, output_array=None):
         assert self.alpha == -1 and self.beta == -1
         if output_array is None:
-            output_array = Function(self.get_orthogonal())
+            output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
         k = self.wavenumbers().astype(np.float)
@@ -454,12 +472,16 @@ class ShenDirichlet(JacobiBase):
         output_array[s1] -= z
         return output_array
 
-    def get_orthogonal(self):
-        return Orthogonal(self.N, alpha=self.alpha+1, beta=self.beta+1, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
+    def _vandermonde_scalar_product(self):
+        SpectralBase._vandermonde_scalar_product(self)
+        self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
 
-    def vandermonde_scalar_product(self, input_array, output_array):
-        SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
-        output_array[self.sl[slice(-2, None)]] = 0
+    def get_bc_basis(self):
+        if self._bc_basis:
+            return self._bc_basis
+        self._bc_basis = BCDirichlet(self.N, quad=self.quad, domain=self.domain,
+                                     coordinates=self.coors.coordinates)
+        return self._bc_basis
 
 
 class ShenBiharmonic(JacobiBase):
@@ -499,11 +521,14 @@ class ShenBiharmonic(JacobiBase):
 
     """
     def __init__(self, N, quad='JG', bc=(0, 0, 0, 0), domain=(-1., 1.), dtype=np.float,
-                 padding_factor=1, dealias_direct=False, coordinates=None):
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         JacobiBase.__init__(self, N, quad=quad, alpha=-2, beta=-2, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
                             coordinates=coordinates)
         assert bc in ((0, 0, 0, 0), 'Biharmonic')
+        from shenfun.tensorproductspace import BoundaryValues
+        self._bc_basis = None
+        self.bc = BoundaryValues(self, bc=bc)
         self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
@@ -519,8 +544,9 @@ class ShenBiharmonic(JacobiBase):
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         if x is None:
             x = self.mpmath_points_and_weights()[0]
-        V = np.zeros((x.shape[0], self.N))
-        for i in range(self.N-4):
+        N = self.shape(False)
+        V = np.zeros((x.shape[0], N))
+        for i in range(N-4):
             V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
         return V
 
@@ -550,23 +576,25 @@ class ShenBiharmonic(JacobiBase):
         if mode == 'numpy':
             if x is None:
                 x = self.mesh(False, False)
-            V = np.zeros((x.shape[0], self.N))
-            V[:, :-4] = self.jacobi(x, 2, 2, self.N-4)*((1-x**2)**2)[:, np.newaxis]
+            N = self.shape(False)
+            V = np.zeros((x.shape[0], N))
+            V[:, :-4] = self.jacobi(x, 2, 2, N-4)*((1-x**2)**2)[:, np.newaxis]
         else:
             if x is None:
                 x = self.mpmath_points_and_weights()[0]
-            V = np.zeros((x.shape[0], self.N))
-            for i in range(self.N-4):
+            N = self.shape(False)
+            V = np.zeros((x.shape[0], N))
+            for i in range(N-4):
                 V[:, i] = self.evaluate_basis(x, i, output_array=V[:, i])
         return V
 
-    def vandermonde_scalar_product(self, input_array, output_array):
-        SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
-        output_array[self.sl[slice(-4, None)]] = 0
+    def _vandermonde_scalar_product(self):
+        SpectralBase._vandermonde_scalar_product(self)
+        self.scalar_product.output_array[self.sl[slice(-4, None)]] = 0
 
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
-            N = self.N
+            N = self.shape(False)
         assert self.quad == "JG"
         points, weights = roots_jacobi(N, 0, 0)
         if map_true_domain is True:
@@ -577,7 +605,7 @@ class ShenBiharmonic(JacobiBase):
         if mode == 'numpy' or not has_quadpy:
             return self.points_and_weights(N=N, map_true_domain=map_true_domain, weighted=weighted, **kw)
         if N is None:
-            N = self.N
+            N = self.shape(False)
         assert self.quad == "JG"
         pw = quadpy.line_segment.gauss_jacobi(N, 0, 0, 'mpmath')
         points = pw.points
@@ -588,7 +616,7 @@ class ShenBiharmonic(JacobiBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(self.get_orthogonal())
+            output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
         k = self.wavenumbers().astype(np.float)
@@ -602,8 +630,12 @@ class ShenBiharmonic(JacobiBase):
         output_array[self.sl[slice(4, None)]] += z*_factor2
         return output_array
 
-    def get_orthogonal(self):
-        return Orthogonal(self.N, alpha=0, beta=0, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
+    def get_bc_basis(self):
+        if self._bc_basis:
+            return self._bc_basis
+        self._bc_basis = BCBiharmonic(self.N, quad=self.quad, domain=self.domain,
+                                      coordinates=self.coors.coordinates)
+        return self._bc_basis
 
 
 class ShenOrder6(JacobiBase):
@@ -647,6 +679,8 @@ class ShenOrder6(JacobiBase):
         JacobiBase.__init__(self, N, quad=quad, alpha=-3, beta=-3, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
                             coordinates=coordinates)
+        from shenfun.tensorproductspace import BoundaryValues
+        self.bc = BoundaryValues(self, bc=(0,)*6)
         self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
@@ -672,8 +706,9 @@ class ShenOrder6(JacobiBase):
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         if x is None:
             x = self.mpmath_points_and_weights()[0]
-        V = np.zeros((x.shape[0], self.N))
-        for i in range(self.N-6):
+        N = self.shape(False)
+        V = np.zeros((x.shape[0], N))
+        for i in range(N-6):
             V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
         return V
 
@@ -693,19 +728,21 @@ class ShenOrder6(JacobiBase):
         if mode == 'numpy':
             if x is None:
                 x = self.mesh(False, False)
-            V = np.zeros((x.shape[0], self.N))
-            V[:, :-6] = self.jacobi(x, 3, 3, self.N-6)*((1-x**2)**3)[:, np.newaxis]
+            N = self.shape(False)
+            V = np.zeros((x.shape[0], N))
+            V[:, :-6] = self.jacobi(x, 3, 3, N-6)*((1-x**2)**3)[:, np.newaxis]
         else:
             if x is None:
                 x = self.mpmath_points_and_weights()[0]
-            V = np.zeros((x.shape[0], self.N))
-            for i in range(self.N-6):
+            N = self.shape(False)
+            V = np.zeros((x.shape[0], N))
+            for i in range(N-6):
                 V[:, i] = self.evaluate_basis(x, i, output_array=V[:, i])
         return V
 
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
-            N = self.N
+            N = self.shape(False)
         assert self.quad == "JG"
         points, weights = roots_jacobi(N, 0, 0)
         if map_true_domain is True:
@@ -716,7 +753,7 @@ class ShenOrder6(JacobiBase):
         if mode == 'numpy' or not has_quadpy:
             return self.points_and_weights(N=N, map_true_domain=map_true_domain, weighted=weighted, **kw)
         if N is None:
-            N = self.N
+            N = self.shape(False)
         assert self.quad == "JG"
         pw = quadpy.line_segment.gauss_jacobi(N, 0, 0, 'mpmath')
         points = pw.points

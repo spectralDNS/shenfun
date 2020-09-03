@@ -4,6 +4,7 @@ related methods.
 """
 from numbers import Number
 import functools
+import copy
 import sympy as sp
 import numpy as np
 from shenfun.fourier.bases import R2C, C2C
@@ -136,7 +137,7 @@ class TensorProductSpace(PFFT):
         Pencil distribution in spectral space. This is primarily intended
         for a padded space, where the spectral distribution must be
         equal to the non-padded space.
-    coordinates: 2- or 3-tuple, optional
+    coordinates : 2- or 3-tuple, optional
         Map for curvilinear coordinatesystem.
         First tuple are the coordinate variables in the new coordinate system
         Second tuple are the Cartesian coordinates as functions of the variables
@@ -153,7 +154,9 @@ class TensorProductSpace(PFFT):
         and not `Abs(sympy.sin(theta))`. Different coordinates may require
         different assumptions to help sympy when computing basis functions
         etc.
-
+    modify_spaces_inplace : bool, optional
+        Whether or not a copy should be made of the input functionspaces.
+        If True, then the input spaces will be modified inplace.
     kw : dict, optional
         Dictionary that can be used to plan transforms. Input to method
         `plan` for the bases.
@@ -161,10 +164,13 @@ class TensorProductSpace(PFFT):
     """
     def __init__(self, comm, bases, axes=None, dtype=None, slab=False,
                  collapse_fourier=False, backward_from_pencil=False,
-                 coordinates=None, **kw):
+                 coordinates=None, modify_spaces_inplace=False, **kw):
         # Note do not call __init__ of super
         self.comm = comm
         self.bases = bases
+        if not modify_spaces_inplace:
+            self.bases = tuple([base.get_unplanned() for base in bases])
+
         coors = coordinates if coordinates is not None else (psi[:len(bases)],)*2
         self.coors = Coordinates(*coors)
         self.hi = self.coors.hi
@@ -203,7 +209,7 @@ class TensorProductSpace(PFFT):
             assert sorted(axes[i]) == sorted(set(axes[i]))
 
         if dtype is None:
-            dtype = np.complex if isinstance(bases[axes[-1][-1]], C2C) else np.float
+            dtype = np.complex if isinstance(self.bases[axes[-1][-1]], C2C) else np.float
 
         dtype = np.dtype(dtype)
         assert dtype.char in 'fdgFDG'
@@ -219,9 +225,9 @@ class TensorProductSpace(PFFT):
 
         self.axes = axes
         if not backward_from_pencil:
-            if isinstance(bases[axes[-1][-1]], C2C):
+            if isinstance(self.bases[axes[-1][-1]], C2C):
                 assert np.dtype(dtype).char in 'FDG'
-            elif isinstance(bases[axes[-1][-1]], R2C):
+            elif isinstance(self.bases[axes[-1][-1]], R2C):
                 assert np.dtype(dtype).char in 'fdg'
 
             if isinstance(comm, Subcomm):
@@ -242,10 +248,10 @@ class TensorProductSpace(PFFT):
 
             # At this points axes is a tuple of tuples of length one.
             # Try to collapse some Fourier transforms into one.
-            if np.any([abs(base.padding_factor - 1.0) > 1e-6 for base in bases]):
+            if np.any([abs(base.padding_factor - 1.0) > 1e-6 for base in self.bases]):
                 collapse_fourier = False
             if collapse_fourier:
-                F = lambda ax: bases[ax].family() == 'fourier' and self.subcomm[ax].Get_size() == 1
+                F = lambda ax: self.bases[ax].family() == 'fourier' and self.subcomm[ax].Get_size() == 1
                 axis = self.axes[-1][-1]
                 groups = [list(self.axes[-1])]
                 F0 = F(axis)
@@ -305,7 +311,7 @@ class TensorProductSpace(PFFT):
         else:
             self.configure_backwards(backward_from_pencil, dtype, kw)
 
-        for i, base in enumerate(bases):
+        for i, base in enumerate(self.bases):
             base.axis = i
             if base.has_nonhomogeneous_bcs:
                 base.bc.set_tensor_bcs(base, self)
@@ -337,7 +343,7 @@ class TensorProductSpace(PFFT):
         subshape = list(pencil.subshape)
         if isinstance(xfftn, R2C):
             subshape[axes[-1]] = int(np.floor(xfftn.N*xfftn.padding_factor))
-            #dtype = dtype
+            dtype = np.dtype(dtype.char.lower())
         else:
             subshape[axes[-1]] = int(np.floor(subshape[axes[-1]]*xfftn.padding_factor))
         self.xfftn[-1].plan(subshape, axes, dtype, kw)
@@ -1375,7 +1381,7 @@ class BoundaryValues(object):
     def update_bcs(self, bc=None):
         if bc is not None:
             assert isinstance(bc, (list, tuple))
-            assert len(bc) in (2, 4)
+            assert len(bc) in (2, 4, 6)
             self.bc = list(bc)
             for i, bci in enumerate(bc):
                 if isinstance(bci, (Number, sp.Expr, np.ndarray)):
@@ -1571,10 +1577,12 @@ class BoundaryValues(object):
             Add boundary values to this Function
 
         """
+        self.set_boundary_dofs(u)
+        if not self.has_nonhomogeneous_bcs(): # there's no contribution for homogeneous bcs
+            return
         coors = self.tensorproductspace.coors if self.tensorproductspace else self.base.coors
         M = self.base.get_bcmass_matrix(coors.get_sqrt_det_g())
         w0 = np.zeros_like(u)
-        self.set_boundary_dofs(u)
         u -= M.matvec(u, w0, axis=self.base.axis)
 
     def set_boundary_dofs(self, u, final=False):

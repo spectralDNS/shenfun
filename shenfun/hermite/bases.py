@@ -10,7 +10,7 @@ from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
 
 
 class Orthogonal(SpectralBase):
-    """Base class for Hermite functions
+    r"""Base class for Hermite functions
 
     Parameters
     ----------
@@ -95,9 +95,17 @@ class Orthogonal(SpectralBase):
                               dealias_direct=dealias_direct,
                               coordinates=self.coors.coordinates)
 
+    def get_unplanned(self):
+        return self.__class__(self.N,
+                              quad=self.quad,
+                              dtype=self.dtype,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates)
+
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
-            N = self.N
+            N = self.shape(False)
         if self.quad == "HG":
             points, weights = hermite.hermgauss(N)
             if weighted:
@@ -112,7 +120,7 @@ class Orthogonal(SpectralBase):
         return 1./(np.pi**(0.25)*np.sqrt(2.**i)*np.sqrt(factorial(i)))
 
     def vandermonde(self, x):
-        V = hermite.hermvander(x, self.N-1)
+        V = hermite.hermvander(x, self.shape(False)-1)
         return V
 
     def sympy_basis(self, i=0, x=sp.symbols('x')):

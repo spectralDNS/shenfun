@@ -115,7 +115,7 @@ class LegendreBase(SpectralBase):
         return points, pw.weights
 
     def vandermonde(self, x):
-        return leg.legvander(x, self.N-1)
+        return leg.legvander(x, self.shape(False)-1)
 
     def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         return sympy.legendre(i, x)
@@ -289,6 +289,7 @@ class ShenDirichlet(LegendreBase):
         self.LT = Orthogonal(N, quad)
         self._scaled = scaled
         self._factor = np.ones(1)
+        self._bc_basis = None
         self.plan(int(N*padding_factor), 0, dtype, {})
         self.bc = BoundaryValues(self, bc=bc)
 
@@ -323,7 +324,7 @@ class ShenDirichlet(LegendreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(self.get_orthogonal())
+            output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
 
@@ -394,18 +395,6 @@ class ShenDirichlet(LegendreBase):
         output_array += 0.5*(u[-1]*(1+x) + u[-2]*(1-x))
         return output_array
 
-    def forward(self, input_array=None, output_array=None, fast_transform=False):
-        self.scalar_product(input_array, fast_transform=fast_transform)
-        u = self.scalar_product.tmp_array
-        self.bc.set_boundary_dofs(u, False)
-        self.bc.add_mass_rhs(u)
-        self._truncation_forward(u, self.forward.output_array)
-        self.apply_inverse_mass(self.forward.output_array)
-        if output_array is not None:
-            output_array[...] = self.forward.output_array
-            return output_array
-        return self.forward.output_array
-
     def plan(self, shape, axis, dtype, options):
         if shape in (0, (0,)):
             return
@@ -434,8 +423,11 @@ class ShenDirichlet(LegendreBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_bc_basis(self):
-        return BCDirichlet(self.N, quad=self.quad, domain=self.domain,
-                       scaled=self._scaled, coordinates=self.coors.coordinates)
+        if self._bc_basis:
+            return self._bc_basis
+        self._bc_basis = BCDirichlet(self.N, quad=self.quad, domain=self.domain,
+                                     scaled=self._scaled, coordinates=self.coors.coordinates)
+        return self._bc_basis
 
     def get_refined(self, N):
         return ShenDirichlet(N,
@@ -476,29 +468,6 @@ class ShenDirichlet(LegendreBase):
                               coordinates=self.coors.coordinates,
                               bc=self.bc.bc,
                               scaled=self._scaled)
-
-    def _truncation_forward(self, padded_array, trunc_array):
-        if not id(trunc_array) == id(padded_array):
-            trunc_array.fill(0)
-            N = trunc_array.shape[self.axis]
-            s = self.sl[slice(0, N-2)]
-            trunc_array[s] = padded_array[s]
-            s = self.sl[slice(-2, None)]
-            trunc_array[s] = padded_array[s]
-
-    def _padding_backward(self, trunc_array, padded_array):
-        if not id(trunc_array) == id(padded_array):
-            padded_array.fill(0)
-            N = trunc_array.shape[self.axis]
-            _sn = self.sl[slice(0, N-2)]
-            padded_array[_sn] = trunc_array[_sn]
-            _sn = self.sl[slice(N-2, N)]
-            _sp = self.sl[slice(-2, None)]
-            padded_array[_sp] = trunc_array[_sn]
-
-        elif self.dealias_direct:
-            su = self.sl[slice(2*self.N//3, self.N-2)]
-            padded_array[su] = 0
 
 
 class ShenNeumann(LegendreBase):
@@ -550,9 +519,8 @@ class ShenNeumann(LegendreBase):
         return 'Neumann'
 
     def _composite_basis(self, V, argument=0):
-        assert self.N == V.shape[1]
         P = np.zeros(V.shape)
-        k = np.arange(self.N).astype(np.float)
+        k = np.arange(V.shape[1]).astype(np.float)
         P[:, :-2] = V[:, :-2] - (k[:-2]*(k[:-2]+1)/(k[:-2]+2))/(k[:-2]+3)*V[:, 2:]
         return P
 
@@ -594,7 +562,7 @@ class ShenNeumann(LegendreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(self.get_orthogonal())
+            output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
 
@@ -728,6 +696,7 @@ class ShenBiharmonic(LegendreBase):
         self.LT = Orthogonal(N, quad)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
+        self._bc_basis = None
         self.plan(int(N*padding_factor), 0, dtype, {})
         self.bc = BoundaryValues(self, bc=bc)
 
@@ -811,7 +780,7 @@ class ShenBiharmonic(LegendreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(self.get_orthogonal())
+            output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
 
@@ -837,21 +806,12 @@ class ShenBiharmonic(LegendreBase):
         output_array += leg.legval(x, w_hat)
         return output_array
 
-    def forward(self, input_array=None, output_array=None, fast_transform=False):
-        self.scalar_product(input_array, fast_transform=fast_transform)
-        u = self.scalar_product.tmp_array
-        self.bc.set_boundary_dofs(self.forward.output_array, False)
-        self.bc.add_mass_rhs(u)
-        self._truncation_forward(u, self.forward.output_array)
-        self.apply_inverse_mass(self.forward.output_array)
-        if output_array is not None:
-            output_array[...] = self.forward.output_array
-            return output_array
-        return self.forward.output_array
-
     def get_bc_basis(self):
-        return BCBiharmonic(self.N, quad=self.quad, domain=self.domain,
-                                 coordinates=self.coors.coordinates)
+        if self._bc_basis:
+            return self._bc_basis
+        self._bc_basis = BCBiharmonic(self.N, quad=self.quad, domain=self.domain,
+                                      coordinates=self.coors.coordinates)
+        return self._bc_basis
 
     def get_refined(self, N):
         return ShenBiharmonic(N,
@@ -917,29 +877,6 @@ class ShenBiharmonic(LegendreBase):
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
-    def _truncation_forward(self, padded_array, trunc_array):
-        if not id(trunc_array) == id(padded_array):
-            trunc_array.fill(0)
-            N = trunc_array.shape[self.axis]
-            s = self.sl[slice(0, N-4)]
-            trunc_array[s] = padded_array[s]
-            s = self.sl[slice(-4, None)]
-            trunc_array[s] = padded_array[s]
-
-    def _padding_backward(self, trunc_array, padded_array):
-        if not id(trunc_array) == id(padded_array):
-            padded_array.fill(0)
-            N = trunc_array.shape[self.axis]
-            _sn = self.sl[slice(0, N-4)]
-            padded_array[_sn] = trunc_array[_sn]
-            _sn = self.sl[slice(N-4, N)]
-            _sp = self.sl[slice(-4, None)]
-            padded_array[_sp] = trunc_array[_sn]
-
-        elif self.dealias_direct:
-            su = self.sl[slice(2*self.N//3, self.N-4)]
-            padded_array[su] = 0
-
 
 class UpperDirichlet(LegendreBase):
     """Legendre function space with homogeneous Dirichlet boundary conditions on x=1
@@ -1000,7 +937,7 @@ class UpperDirichlet(LegendreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(self.get_orthogonal())
+            output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
 
@@ -1051,16 +988,6 @@ class UpperDirichlet(LegendreBase):
         w_hat[1:] = u[:-1]
         output_array -= leg.legval(x, w_hat)
         return output_array
-
-    def forward(self, input_array=None, output_array=None, fast_transform=False):
-        self.scalar_product(input_array, fast_transform=fast_transform)
-        u = self.scalar_product.tmp_array
-        self._truncation_forward(u, self.forward.output_array)
-        self.apply_inverse_mass(self.forward.output_array)
-        if output_array is not None:
-            output_array[...] = self.forward.output_array
-            return output_array
-        return self.forward.output_array
 
     def plan(self, shape, axis, dtype, options):
         if shape in (0, (0,)):
@@ -1185,16 +1112,6 @@ class ShenBiPolar(LegendreBase):
         fj = self.evaluate_basis_all(x)
         output_array[:] = np.dot(fj, u)
         return output_array
-
-    def forward(self, input_array=None, output_array=None, fast_transform=False):
-        self.scalar_product(input_array, fast_transform=fast_transform)
-        u = self.scalar_product.tmp_array
-        self._truncation_forward(u, self.forward.output_array)
-        self.apply_inverse_mass(self.forward.output_array)
-        if output_array is not None:
-            output_array[...] = self.forward.output_array
-            return output_array
-        return self.forward.output_array
 
     def plan(self, shape, axis, dtype, options):
         if shape in (0, (0,)):
@@ -1328,7 +1245,7 @@ class ShenBiPolar0(LegendreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(self.get_orthogonal())
+            output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
 
@@ -1355,16 +1272,6 @@ class ShenBiPolar0(LegendreBase):
         w_hat[:3] = 0
         output_array += leg.legval(x, w_hat)
         return output_array
-
-    def forward(self, input_array=None, output_array=None, fast_transform=False):
-        self.scalar_product(input_array, fast_transform=fast_transform)
-        u = self.scalar_product.tmp_array
-        self._truncation_forward(u, self.forward.output_array)
-        self.apply_inverse_mass(self.forward.output_array)
-        if output_array is not None:
-            output_array[...] = self.forward.output_array
-            return output_array
-        return self.forward.output_array
 
     def plan(self, shape, axis, dtype, options):
         if shape in (0, (0,)):
@@ -1478,7 +1385,7 @@ class DirichletNeumann(LegendreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(self.get_orthogonal())
+            output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
 
@@ -1645,7 +1552,7 @@ class NeumannDirichlet(LegendreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(self.get_orthogonal())
+            output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
 

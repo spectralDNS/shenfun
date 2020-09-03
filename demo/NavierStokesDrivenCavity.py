@@ -46,17 +46,17 @@ D0Y = FunctionSpace(N[1], family, quad=quad, bc=(0, 0))
 PX = FunctionSpace(N[0], family, quad=quad)
 PY = FunctionSpace(N[1], family, quad=quad)
 
+# Create tensor product spaces with different combination of bases
+V1 = TensorProductSpace(comm, (D0X, D1Y))
+V0 = TensorProductSpace(comm, (D0X, D0Y))
+P = TensorProductSpace(comm, (PX, PY), modify_spaces_inplace=True)
+
 # To get a P_N x P_{N-2} space, just pick the first N-2 items of the pressure basis
 # Note that this effectively sets P_N and P_{N-1} to zero, but still the basis uses
 # the same quadrature points as the Dirichlet basis, which is required for the inner
 # products.
 PX.slice = lambda: slice(0, PX.N-2)
 PY.slice = lambda: slice(0, PY.N-2)
-
-# Create tensor product spaces with different combination of bases
-V1 = TensorProductSpace(comm, (D0X, D1Y))
-V0 = TensorProductSpace(comm, (D0X, D0Y))
-P = TensorProductSpace(comm, (PX, PY))
 
 # Create vector space for velocity
 W1 = VectorTensorProductSpace([V1, V0])

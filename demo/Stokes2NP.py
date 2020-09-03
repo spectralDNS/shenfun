@@ -49,18 +49,18 @@ D1Y = FunctionSpace(N[1], family, bc=(0, 0), scaled=True)
 PX = FunctionSpace(N[0], family)
 PY = FunctionSpace(N[1], family)
 
+TD = TensorProductSpace(comm, (D0X, D0Y))
+TD1 = TensorProductSpace(comm, (D0X, D1Y))
+Q = TensorProductSpace(comm, (PX, PY), modify_spaces_inplace=True)
+V = VectorTensorProductSpace([TD1, TD])
+VQ = MixedTensorProductSpace([V, Q])
+
 # To get a P_N x P_{N-2} space, just pick the first N-2 items of the pressure basis
 # Note that this effectively sets P_N and P_{N-1} to zero, but still the basis uses
 # the same quadrature points as the Dirichlet basis, which is required for the inner
 # products.
 PX.slice = lambda: slice(0, PX.N-2)
 PY.slice = lambda: slice(0, PY.N-2)
-
-TD = TensorProductSpace(comm, (D0X, D0Y))
-TD1 = TensorProductSpace(comm, (D0X, D1Y))
-Q = TensorProductSpace(comm, (PX, PY))
-V = VectorTensorProductSpace([TD1, TD])
-VQ = MixedTensorProductSpace([V, Q])
 
 up = TrialFunction(VQ)
 vq = TestFunction(VQ)
