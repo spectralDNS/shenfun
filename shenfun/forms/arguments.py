@@ -1255,7 +1255,7 @@ class Function(ShenfunBaseArray, BasisFunction):
 
     Parameters
     ----------
-    space : :class:`.TensorProductSpace`
+    space : :class:`.TensorProductSpace` or :class:`.FunctionSpace`
     val : int or float
         Value used to initialize array
     buffer : Numpy array, :class:`.Function` or sympy `Expr`
@@ -1266,17 +1266,40 @@ class Function(ShenfunBaseArray, BasisFunction):
 
     .. note:: For more information, see `numpy.ndarray <https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html>`_
 
-    Examples
-    --------
-    >>> from mpi4py import MPI
-    >>> from shenfun import FunctionSpace, TensorProductSpace, Function
+    Example
+    -------
+    >>> from shenfun import comm, FunctionSpace, TensorProductSpace, Function
     >>> K0 = FunctionSpace(8, 'F', dtype='D')
     >>> K1 = FunctionSpace(8, 'F', dtype='d')
-    >>> T = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
+    >>> T = TensorProductSpace(comm, [K0, K1])
     >>> u = Function(T)
     >>> K2 = FunctionSpace(8, 'C', bc=(0, 0))
-    >>> T2 = TensorProductSpace(MPI.COMM_WORLD, [K0, K1, K2])
+    >>> T2 = TensorProductSpace(comm, [K0, K1, K2])
     >>> v = Function(T2)
+
+    You get the array the space is planned for. This is probably what you
+    expect:
+
+    >>> u = Function(K0)
+    >>> print(u.shape)
+    (8,)
+
+    But make the TensorProductSpace change K0 and K1 inplace:
+
+    >>> T = TensorProductSpace(comm, [K0, K1], modify_spaces_inplace=True)
+    >>> u = Function(K0)
+    >>> print(u.shape)
+    (8, 5)
+
+    If you want to preserve K0 as a 1D function space, then use
+    `modify_spaces_inplace=False`, which is the default behaviour.
+
+    Note
+    ----
+    The array returned will have the same shape as the arrays
+    `space` is planned for. So if you want a Function on a 1D
+    FunctionSpace, then make sure that FunctionSpace is not planned
+    for a TensorProductSpace.
 
     """
     # pylint: disable=too-few-public-methods,too-many-arguments
@@ -1603,11 +1626,10 @@ class Array(ShenfunBaseArray):
 
     Examples
     --------
-    >>> from mpi4py import MPI
-    >>> from shenfun import Basis, TensorProductSpace, Function
+    >>> from shenfun import comm, FunctionSpace, TensorProductSpace, Array
     >>> K0 = FunctionSpace(8, 'F', dtype='D')
     >>> K1 = FunctionSpace(8, 'F', dtype='d')
-    >>> FFT = TensorProductSpace(MPI.COMM_WORLD, [K0, K1])
+    >>> FFT = TensorProductSpace(comm, [K0, K1])
     >>> u = Array(FFT)
     """
 

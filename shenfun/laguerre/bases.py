@@ -80,7 +80,7 @@ class LaguerreBase(SpectralBase):
         return points, weights
 
     def vandermonde(self, x):
-        V = lag.lagvander(x, self.N-1)
+        V = lag.lagvander(x, int(self.N*self.padding_factor)-1)
         return V
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -148,8 +148,13 @@ class LaguerreBase(SpectralBase):
         U.fill(0)
         V.fill(0)
         self.axis = axis
-        self.forward = Transform(self.forward, None, U, V, V)
-        self.backward = Transform(self.backward, None, V, V, U)
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.forward = Transform(self.forward, None, U, V, trunc_array)
+            self.backward = Transform(self.backward, None, trunc_array, V, U)
+        else:
+            self.forward = Transform(self.forward, None, U, V, V)
+            self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
@@ -168,6 +173,14 @@ class LaguerreBase(SpectralBase):
                               dtype=self.dtype,
                               padding_factor=padding_factor,
                               dealias_direct=dealias_direct,
+                              coordinates=self.coors.coordinates)
+
+    def get_unplanned(self):
+        return self.__class__(self.N,
+                              quad=self.quad,
+                              dtype=self.dtype,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
                               coordinates=self.coors.coordinates)
 
 
@@ -281,7 +294,7 @@ class ShenDirichlet(LaguerreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(self.get_orthogonal())
+            output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
         s0 = self.sl[slice(0, -1)]
@@ -330,8 +343,13 @@ class ShenDirichlet(LaguerreBase):
         self.LT.plan(shape, axis, dtype, options)
         U, V = self.LT.forward.input_array, self.LT.forward.output_array
         self.axis = axis
-        self.forward = Transform(self.forward, None, U, V, V)
-        self.backward = Transform(self.backward, None, V, V, U)
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.forward = Transform(self.forward, None, U, V, trunc_array)
+            self.backward = Transform(self.backward, None, trunc_array, V, U)
+        else:
+            self.forward = Transform(self.forward, None, U, V, V)
+            self.backward = Transform(self.backward, None, V, V, U)
         self.scalar_product = Transform(self.scalar_product, None, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)

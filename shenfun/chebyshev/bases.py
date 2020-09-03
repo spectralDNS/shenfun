@@ -90,7 +90,7 @@ class ChebyshevBase(SpectralBase):
         return points, weights
 
     def vandermonde(self, x):
-        return n_cheb.chebvander(x, int(self.N*self.padding_factor)-1)
+        return n_cheb.chebvander(x, self.shape(False)-1)
 
     def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         return sp.chebyshevt(i, x)
@@ -222,6 +222,8 @@ class ChebyshevBase(SpectralBase):
 
     def get_orthogonal(self):
         return Orthogonal(self.N, quad=self.quad, domain=self.domain,
+                          padding_factor=self.padding_factor,
+                          dealias_direct=self.dealias_direct,
                           coordinates=self.coors.coordinates)
 
 
@@ -302,7 +304,6 @@ class Orthogonal(ChebyshevBase):
         if fast_transform is False:
             self._vandermonde_scalar_product()
             return
-        #assert self.N == self.scalar_product.input_array.shape[self.axis]
         out = self.scalar_product.xfftn()
         if self.quad == "GC":
             out *= (np.pi/(2*self.N*self.padding_factor))
@@ -376,6 +377,7 @@ class ShenDirichlet(ChebyshevBase):
         self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor = np.ones(1)
+        self._bc_basis = None
         self.bc = BoundaryValues(self, bc=bc)
         self.plan((int(padding_factor*N),), 0, dtype, {})
 
@@ -455,18 +457,14 @@ class ShenDirichlet(ChebyshevBase):
             self._padding_backward(input_array, self.backward.tmp_array)
             SpectralBase.evaluate_expansion_all(self, self.backward.tmp_array, output_array, False)
             return
-        w_hat = work[(input_array, 0, True)]
-        s0 = self.sl[slice(0, -2)]
-        s1 = self.sl[slice(2, None)]
-        w_hat[s0] = input_array[s0]
-        w_hat[s1] -= input_array[s0]
-        self.bc.add_to_orthogonal(w_hat, input_array) # Correct bc-values must be in input_array (as they should be before a backward transform)
+        w_hat = work[(input_array, 0, False)]
+        w_hat = self.to_ortho(input_array, w_hat)
         self.CT.backward(w_hat)
         assert output_array is self.CT.backward.output_array
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(self.get_orthogonal())
+            output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
         s0 = self.sl[slice(0, -2)]
@@ -491,19 +489,19 @@ class ShenDirichlet(ChebyshevBase):
         output_array += 0.5*(u[-1]*(1+x)+u[-2]*(1-x))
         return output_array
 
-    def forward(self, input_array=None, output_array=None, fast_transform=True):
-        self.scalar_product(input_array, fast_transform=fast_transform)
-        u = self.scalar_product.tmp_array
-        self.bc.add_mass_rhs(u)
-        self._truncation_forward(u, self.forward.output_array)
-        self.apply_inverse_mass(self.forward.output_array)
-        self.bc.set_boundary_dofs(self.forward.output_array, False)
-        if output_array is not None:
-            output_array[...] = self.forward.output_array
-            return output_array
-        return self.forward.output_array
+    #def forward(self, input_array=None, output_array=None, fast_transform=True):
+    #    self.scalar_product(input_array, fast_transform=fast_transform)
+    #    u = self.scalar_product.tmp_array
+    #    self._truncation_forward(u, self.forward.output_array)
+    #    self.bc.add_mass_rhs(self.forward.output_array)
+    #    self.apply_inverse_mass(self.forward.output_array)
+    #    if output_array is not None:
+    #        output_array[...] = self.forward.output_array
+    #        return output_array
+    #    return self.forward.output_array
 
     def backward(self, input_array=None, output_array=None, fast_transform=True, kind='normal'):
+        # Without padding backward because that is taken care of by orthogonal space
         if not kind == 'normal':
             # Use vandermonde
             return SpectralBase.backward(self, input_array, output_array, fast_transform=False, kind=kind)
@@ -553,7 +551,11 @@ class ShenDirichlet(ChebyshevBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_bc_basis(self):
-        return BCDirichlet(self.N, quad=self.quad, domain=self.domain, coordinates=self.coors.coordinates)
+        if self._bc_basis:
+            return self._bc_basis
+        self._bc_basis = BCDirichlet(self.N, quad=self.quad, domain=self.domain,
+                                     coordinates=self.coors.coordinates)
+        return self._bc_basis
 
     def get_refined(self, N):
         return ShenDirichlet(N,
@@ -594,29 +596,6 @@ class ShenDirichlet(ChebyshevBase):
                               coordinates=self.coors.coordinates,
                               bc=self.bc.bc,
                               scaled=self._scaled)
-
-    def _truncation_forward(self, padded_array, trunc_array):
-        if not id(trunc_array) == id(padded_array):
-            trunc_array.fill(0)
-            N = trunc_array.shape[self.axis]
-            s = self.sl[slice(0, N-2)]
-            trunc_array[s] = padded_array[s]
-            s = self.sl[slice(-2, None)]
-            trunc_array[s] = padded_array[s]
-
-    def _padding_backward(self, trunc_array, padded_array):
-        if not id(trunc_array) == id(padded_array):
-            padded_array.fill(0)
-            N = trunc_array.shape[self.axis]
-            _sn = self.sl[slice(0, N-2)]
-            padded_array[_sn] = trunc_array[_sn]
-            _sn = self.sl[slice(N-2, N)]
-            _sp = self.sl[slice(-2, None)]
-            padded_array[_sp] = trunc_array[_sn]
-
-        elif self.dealias_direct:
-            su = self.sl[slice(2*self.N//3, self.N-2)]
-            padded_array[su] = 0
 
 
 class ShenNeumann(ChebyshevBase):
@@ -667,9 +646,8 @@ class ShenNeumann(ChebyshevBase):
         return 'Neumann'
 
     def _composite_basis(self, V, argument=0):
-        assert self.N == V.shape[1]
         P = np.zeros_like(V)
-        k = np.arange(self.N).astype(np.float)
+        k = np.arange(V.shape[1]).astype(np.float)
         P[:, :-2] = V[:, :-2] - (k[:-2]/(k[:-2]+2))**2*V[:, 2:]
         return P
 
@@ -712,36 +690,24 @@ class ShenNeumann(ChebyshevBase):
             return
         output = self.CT.scalar_product(fast_transform=True)
         self.set_factor_array(output)
-        sm2 = self.sl[slice(0, -2)]
-        s2p = self.sl[slice(2, None)]
+        sm2 = self.sl[self.slice()]
+        s2p = self.sl[slice(2, self.N)]
         output[sm2] -= self._factor * output[s2p]
-
-    def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
-        if input_array is not None:
-            self.scalar_product.input_array[...] = input_array
-
-        self._evaluate_scalar_product(fast_transform=fast_transform)
-
-        output = self.scalar_product.output_array
         output[self.si[0]] = self.mean*np.pi
-        output[self.sl[slice(-2, None)]] = 0
+        output[self.sl[slice(self.N-2, self.N)]] = 0
 
-        if output_array is not None:
-            output_array[...] = output
-            return output_array
-        return output
+    def _vandermonde_scalar_product(self):
+        SpectralBase._vandermonde_scalar_product(self)
+        self.scalar_product.output_array[self.si[0]] = self.mean*np.pi
+        self.scalar_product.output_array[self.sl[slice(self.N-2, self.N)]] = 0
 
     def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
             self._padding_backward(input_array, self.backward.tmp_array)
             SpectralBase.evaluate_expansion_all(self, self.backward.tmp_array, output_array, False)
             return
-        w_hat = work[(input_array, 0, True)]
-        self.set_factor_array(input_array)
-        s0 = self.sl[slice(0, -2)]
-        s1 = self.sl[slice(2, None)]
-        w_hat[s0] = input_array[s0]
-        w_hat[s1] -= self._factor*input_array[s0]
+        w_hat = work[(input_array, 0, False)]
+        w_hat = self.to_ortho(input_array, w_hat)
         self.CT.backward(w_hat)
         assert output_array is self.CT.backward.output_array
 
@@ -763,11 +729,11 @@ class ShenNeumann(ChebyshevBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(self.get_orthogonal())
+            output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
-        s0 = self.sl[slice(0, -2)]
-        s1 = self.sl[slice(2, None)]
+        s0 = self.sl[slice(0, self.N-2)]
+        s1 = self.sl[slice(2, self.N)]
         self.set_factor_array(input_array)
         output_array[s0] = input_array[s0]
         output_array[s1] -= self._factor*input_array[s0]
@@ -903,6 +869,7 @@ class ShenBiharmonic(ChebyshevBase):
         self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
+        self._bc_basis = None
         self.bc = BoundaryValues(self, bc=bc)
         self.plan((int(padding_factor*N),), 0, dtype, {})
 
@@ -972,19 +939,12 @@ class ShenBiharmonic(ChebyshevBase):
         s4 = self.sl[slice(4, self.N)]
         output[s] += self._factor1*Tk[s2]
         output[s] += self._factor2*Tk[s4]
+        self.bc.set_boundary_dofs(output)
+        output[self.sl[slice(self.N-4, self.N)]] = 0
 
-    def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
-        if input_array is not None:
-            self.scalar_product.input_array[...] = input_array
-
-        self._evaluate_scalar_product(fast_transform=fast_transform)
-
-        self.scalar_product.output_array[self.sl[slice(-4, None)]] = 0
-
-        if output_array is not None:
-            output_array[...] = self.scalar_product.output_array
-            return output_array
-        return self.scalar_product.output_array
+    def _vandermonde_scalar_product(self):
+        SpectralBase._vandermonde_scalar_product(self)
+        self.bc.set_boundary_dofs(self.scalar_product.output_array)
 
     #@optimizer
     def set_w_hat(self, w_hat, fk, f1, f2):
@@ -1002,17 +962,15 @@ class ShenBiharmonic(ChebyshevBase):
             self._padding_backward(input_array, self.backward.tmp_array)
             SpectralBase.evaluate_expansion_all(self, self.backward.tmp_array, output_array, False)
             return
-        w_hat = work[(input_array, 0, True)]
-        self.set_factor_arrays(input_array)
-        w_hat = self.set_w_hat(w_hat, input_array, self._factor1, self._factor2)
-        self.bc.add_to_orthogonal(w_hat, input_array)
+        w_hat = work[(input_array, 0, False)]
+        w_hat = self.to_ortho(input_array, w_hat)
         self.CT.backward(w_hat)
         assert input_array is self.backward.input_array
         assert output_array is self.backward.output_array
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(self.get_orthogonal())
+            output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
         self.set_factor_arrays(input_array)
@@ -1037,18 +995,6 @@ class ShenBiharmonic(ChebyshevBase):
             return output_array
         return self.backward.output_array
 
-    def forward(self, input_array=None, output_array=None, fast_transform=True):
-        self.scalar_product(input_array, fast_transform=fast_transform)
-        u = self.scalar_product.tmp_array
-        self.bc.add_mass_rhs(u)
-        self._truncation_forward(u, self.forward.output_array)
-        self.apply_inverse_mass(self.forward.output_array)
-        self.bc.set_boundary_dofs(self.forward.output_array, False)
-        if output_array is not None:
-            output_array[...] = self.forward.output_array
-            return output_array
-        return self.forward.output_array
-
     def slice(self):
         return slice(0, self.N-4)
 
@@ -1068,7 +1014,11 @@ class ShenBiharmonic(ChebyshevBase):
         return output_array
 
     def get_bc_basis(self):
-        return BCBiharmonic(self.N, quad=self.quad, domain=self.domain, coordinates=self.coors.coordinates)
+        if self._bc_basis:
+            return self._bc_basis
+        self._bc_basis = BCBiharmonic(self.N, quad=self.quad, domain=self.domain,
+                                      coordinates=self.coors.coordinates)
+        return self._bc_basis
 
     def get_refined(self, N):
         return ShenBiharmonic(N,
@@ -1137,29 +1087,6 @@ class ShenBiharmonic(ChebyshevBase):
         self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
-
-    def _truncation_forward(self, padded_array, trunc_array):
-        if not id(trunc_array) == id(padded_array):
-            trunc_array.fill(0)
-            N = trunc_array.shape[self.axis]
-            s = self.sl[slice(0, N-4)]
-            trunc_array[s] = padded_array[s]
-            s = self.sl[slice(-4, None)]
-            trunc_array[s] = padded_array[s]
-
-    def _padding_backward(self, trunc_array, padded_array):
-        if not id(trunc_array) == id(padded_array):
-            padded_array.fill(0)
-            N = trunc_array.shape[self.axis]
-            _sn = self.sl[slice(0, N-4)]
-            padded_array[_sn] = trunc_array[_sn]
-            _sn = self.sl[slice(N-4, N)]
-            _sp = self.sl[slice(-4, None)]
-            padded_array[_sp] = trunc_array[_sn]
-
-        elif self.dealias_direct:
-            su = self.sl[slice(2*self.N//3, self.N-4)]
-            padded_array[su] = 0
 
 
 class SecondNeumann(ChebyshevBase): #pragma: no cover
@@ -1277,18 +1204,14 @@ class SecondNeumann(ChebyshevBase): #pragma: no cover
         if fast_transform is False:
             SpectralBase.evaluate_expansion_all(self, input_array, output_array, False)
             return
-        w_hat = work[(input_array, 0, True)]
-        self.set_factor_array(input_array)
-        s0 = self.sl[slice(0, -2)]
-        s1 = self.sl[slice(2, None)]
-        w_hat[s0] = input_array[s0]
-        w_hat[s1] -= self._factor*input_array[s0]
+        w_hat = work[(input_array, 0, False)]
+        w_hat = self.to_ortho(input_array, w_hat)
         self.CT.backward(w_hat)
         assert output_array is self.CT.backward.output_array
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(self.get_orthogonal())
+            output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
         s0 = self.sl[slice(0, -2)]
@@ -1471,17 +1394,14 @@ class UpperDirichlet(ChebyshevBase):
             self._padding_backward(input_array, self.backward.tmp_array)
             SpectralBase.evaluate_expansion_all(self, self.backward.tmp_array, output_array, False)
             return
-        w_hat = work[(input_array, 0, True)]
-        s0 = self.sl[slice(0, -1)]
-        s1 = self.sl[slice(1, None)]
-        w_hat[s0] = input_array[s0]
-        w_hat[s1] -= input_array[s0]
+        w_hat = work[(input_array, 0, False)]
+        w_hat = self.to_ortho(input_array, w_hat)
         self.CT.backward(w_hat)
         assert output_array is self.CT.backward.output_array
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(self.get_orthogonal())
+            output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
         s0 = self.sl[slice(0, -1)]
@@ -1504,15 +1424,15 @@ class UpperDirichlet(ChebyshevBase):
         output_array -= n_cheb.chebval(x, w_hat)
         return output_array
 
-    def forward(self, input_array=None, output_array=None, fast_transform=True):
-        self.scalar_product(input_array, fast_transform=fast_transform)
-        u = self.scalar_product.tmp_array
-        self._truncation_forward(u, self.forward.output_array)
-        self.apply_inverse_mass(self.forward.output_array)
-        if output_array is not None:
-            output_array[...] = self.forward.output_array
-            return output_array
-        return self.forward.output_array
+    #def forward(self, input_array=None, output_array=None, fast_transform=True):
+    #    self.scalar_product(input_array, fast_transform=fast_transform)
+    #    u = self.scalar_product.tmp_array
+    #    self._truncation_forward(u, self.forward.output_array)
+    #    self.apply_inverse_mass(self.forward.output_array)
+    #    if output_array is not None:
+    #        output_array[...] = self.forward.output_array
+    #        return output_array
+    #    return self.forward.output_array
 
     def backward(self, input_array=None, output_array=None, fast_transform=True, kind='normal'):
         if not kind == 'normal':
@@ -1676,15 +1596,15 @@ class ShenBiPolar(ChebyshevBase):
         output_array[:] = np.dot(fj, u)
         return output_array
 
-    def forward(self, input_array=None, output_array=None, fast_transform=False):
-        self.scalar_product(input_array, fast_transform=fast_transform)
-        u = self.scalar_product.tmp_array
-        self._truncation_forward(u, self.forward.output_array)
-        self.apply_inverse_mass(self.forward.output_array)
-        if output_array is not None:
-            output_array[...] = self.forward.output_array
-            return output_array
-        return self.forward.output_array
+    #def forward(self, input_array=None, output_array=None, fast_transform=False):
+    #    self.scalar_product(input_array, fast_transform=fast_transform)
+    #    u = self.scalar_product.tmp_array
+    #    self._truncation_forward(u, self.forward.output_array)
+    #    self.apply_inverse_mass(self.forward.output_array)
+    #    if output_array is not None:
+    #        output_array[...] = self.forward.output_array
+    #        return output_array
+    #    return self.forward.output_array
 
     def plan(self, shape, axis, dtype, options):
         if shape in (0, (0,)):
@@ -1850,14 +1770,13 @@ class DirichletNeumann(ChebyshevBase):
             self._padding_backward(input_array, self.backward.tmp_array)
             SpectralBase.evaluate_expansion_all(self, self.backward.tmp_array, output_array, False)
             return
-        w_hat = work[(input_array, 0, True)]
-        self.set_factor_arrays(input_array)
-        w_hat = self.set_w_hat(w_hat, input_array, self._factor1, self._factor2)
+        w_hat = work[(input_array, 0, False)]
+        w_hat = self.to_ortho(input_array, w_hat)
         self.CT.backward(w_hat)
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(self.get_orthogonal())
+            output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
         self.set_factor_arrays(input_array)
@@ -1882,15 +1801,15 @@ class DirichletNeumann(ChebyshevBase):
         output_array += n_cheb.chebval(x, w_hat)
         return output_array
 
-    def forward(self, input_array=None, output_array=None, fast_transform=True):
-        self.scalar_product(input_array, fast_transform=fast_transform)
-        u = self.scalar_product.tmp_array
-        self._truncation_forward(u, self.forward.output_array)
-        self.apply_inverse_mass(self.forward.output_array)
-        if output_array is not None:
-            output_array[...] = self.forward.output_array
-            return output_array
-        return self.forward.output_array
+    #def forward(self, input_array=None, output_array=None, fast_transform=True):
+    #    self.scalar_product(input_array, fast_transform=fast_transform)
+    #    u = self.scalar_product.tmp_array
+    #    self._truncation_forward(u, self.forward.output_array)
+    #    self.apply_inverse_mass(self.forward.output_array)
+    #    if output_array is not None:
+    #        output_array[...] = self.forward.output_array
+    #        return output_array
+    #    return self.forward.output_array
 
     def backward(self, input_array=None, output_array=None, fast_transform=True, kind='normal'):
         if not kind == 'normal':
@@ -2073,14 +1992,13 @@ class NeumannDirichlet(ChebyshevBase):
             self._padding_backward(input_array, self.backward.tmp_array)
             SpectralBase.evaluate_expansion_all(self, self.backward.tmp_array, output_array, False)
             return
-        w_hat = work[(input_array, 0, True)]
-        self.set_factor_arrays(input_array)
-        w_hat = self.set_w_hat(w_hat, input_array, self._factor1, self._factor2)
+        w_hat = work[(input_array, 0, False)]
+        w_hat = self.to_ortho(input_array, w_hat)
         self.CT.backward(w_hat)
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = np.zeros_like(input_array.__array__())
+            output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
         self.set_factor_arrays(input_array)
@@ -2105,15 +2023,15 @@ class NeumannDirichlet(ChebyshevBase):
         output_array += n_cheb.chebval(x, w_hat)
         return output_array
 
-    def forward(self, input_array=None, output_array=None, fast_transform=True):
-        self.scalar_product(input_array, fast_transform=fast_transform)
-        u = self.scalar_product.tmp_array
-        self._truncation_forward(u, self.forward.output_array)
-        self.apply_inverse_mass(self.forward.output_array)
-        if output_array is not None:
-            output_array[...] = self.forward.output_array
-            return output_array
-        return self.forward.output_array
+    #def forward(self, input_array=None, output_array=None, fast_transform=True):
+    #    self.scalar_product(input_array, fast_transform=fast_transform)
+    #    u = self.scalar_product.tmp_array
+    #    self._truncation_forward(u, self.forward.output_array)
+    #    self.apply_inverse_mass(self.forward.output_array)
+    #    if output_array is not None:
+    #        output_array[...] = self.forward.output_array
+    #        return output_array
+    #    return self.forward.output_array
 
     def backward(self, input_array=None, output_array=None, fast_transform=True, kind='normal'):
         if not kind == 'normal':

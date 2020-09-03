@@ -418,7 +418,7 @@ class SpectralBase(object):
         >>> from shenfun import Basis, TensorProductSpace, comm
         >>> K0 = FunctionSpace(8, 'F', dtype='D')
         >>> K1 = FunctionSpace(8, 'F', dtype='d')
-        >>> T = TensorProductSpace(comm, (K0, K1))
+        >>> T = TensorProductSpace(comm, (K0, K1), modify_spaces_inplace=True)
         >>> x = np.arange(4)
         >>> y = K0.broadcast_to_ndims(x)
         >>> print(y.shape)
@@ -481,8 +481,9 @@ class SpectralBase(object):
         self.scalar_product(input_array, fast_transform=fast_transform)
         self._truncation_forward(self.forward.tmp_array,
                                  self.forward.output_array)
+        if self.bc:
+            self.bc.add_mass_rhs(self.forward.output_array)
         self.apply_inverse_mass(self.forward.output_array)
-
         if output_array is not None:
             output_array[...] = self.forward.output_array
             return output_array
@@ -688,16 +689,17 @@ class SpectralBase(object):
         """
         input_array = self.scalar_product.input_array
         output_array = self.scalar_product.output_array
-        weights = self.points_and_weights(int(self.N*self.padding_factor))[1]
+        M = self.shape(False)
+        weights = self.points_and_weights(M)[1]
         P = self.evaluate_basis_all(argument=0)
         if input_array.ndim == 1:
-            output_array[slice(0, self.N)] = np.dot(input_array*weights, np.conj(P))
+            output_array[slice(0, M)] = np.dot(input_array*weights, np.conj(P))
 
         else: # broadcasting
             bc_shape = [np.newaxis,]*input_array.ndim
             bc_shape[self.axis] = slice(None)
             fc = np.moveaxis(input_array*weights[tuple(bc_shape)], self.axis, -1)
-            output_array[self.sl[slice(0, self.N)]] = np.moveaxis(np.dot(fc, np.conj(P)), -1, self.axis)
+            output_array[self.sl[slice(0, M)]] = np.moveaxis(np.dot(fc, np.conj(P)), -1, self.axis)
             #output_array[:] = np.moveaxis(np.tensordot(input_array*weights[bc_shape], np.conj(P), (self.axis, 0)), -1, self.axis)
 
     def vandermonde_evaluate_expansion_all(self, input_array, output_array, x=None):
@@ -718,7 +720,8 @@ class SpectralBase(object):
         else:
             fc = np.moveaxis(input_array, self.axis, -2)
             shape = [slice(None)]*input_array.ndim
-            shape[-2] = slice(0, self.N)
+            N = self.shape(False)
+            shape[-2] = slice(0, N)
             array = np.dot(P, fc[tuple(shape)])
             output_array[:] = np.moveaxis(array, 0, self.axis)
 
@@ -1292,6 +1295,16 @@ class SpectralBase(object):
         T = T.get_refined(T.N - trailing_zeros)
         return T
 
+    def get_orthogonal(self):
+        """Return orthogonal space (otherwise as self)
+
+        Returns
+        -------
+        SpectralBase
+            The orthogonal space in the same family, and otherwise as self.
+        """
+        raise NotImplementedError
+
     def count_trailing_zeros(self, u, reltol=1e-12, abstol=1e-15):
         assert u.function_space() == self
         assert u.ndim == 1
@@ -1302,20 +1315,31 @@ class SpectralBase(object):
     def _truncation_forward(self, padded_array, trunc_array):
         if not id(trunc_array) == id(padded_array):
             trunc_array.fill(0)
-            N = trunc_array.shape[self.axis]
-            s = self.sl[slice(0, N)]
-            trunc_array[:] = padded_array[s]
+            s = self.sl[self.slice()]
+            trunc_array[s] = padded_array[s]
 
     def _padding_backward(self, trunc_array, padded_array):
         if not id(trunc_array) == id(padded_array):
             padded_array.fill(0)
-            N = trunc_array.shape[self.axis]
-            _sn = self.sl[slice(0, N)]
-            padded_array[_sn] = trunc_array[_sn]
+            s = self.sl[self.slice()]
+            padded_array[s] = trunc_array[s]
 
         elif self.dealias_direct:
-            su = self.sl[slice(2*self.N//3, None)]
-            padded_array[su] = 0
+            s = self.sl[slice(2*self.N//3, None)]
+            padded_array[s] = 0
+
+        else:
+            return
+
+        # Fix boundary condition dofs
+        if self.bc:
+            B = self.get_bc_basis()
+            sl = B.slice()
+            nd = sl.stop - sl.start
+            if padded_array.ndim > 1:
+                sl = self.sl[sl]
+            sp = self.sl[slice(-nd, None)]
+            padded_array[sp] = trunc_array[sl]
 
 
 class MixedFunctionSpace(object):

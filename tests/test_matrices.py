@@ -550,7 +550,7 @@ def test_helmholtz3D(family, axis):
     bases[allaxes3D[axis][0]] = SD
     bases[allaxes3D[axis][1]] = K1
     bases[allaxes3D[axis][2]] = K2
-    T = TensorProductSpace(subcomms, bases, axes=allaxes3D[axis])
+    T = TensorProductSpace(subcomms, bases, axes=allaxes3D[axis], modify_spaces_inplace=True)
     u = shenfun.TrialFunction(T)
     v = shenfun.TestFunction(T)
     if family == 'chebyshev':
@@ -589,7 +589,7 @@ def test_helmholtz2D(family, axis):
     subcomms = mpi4py_fft.pencil.Subcomm(MPI.COMM_WORLD, allaxes2D[axis])
     bases = [K1]
     bases.insert(axis, SD)
-    T = TensorProductSpace(subcomms, bases, axes=allaxes2D[axis])
+    T = TensorProductSpace(subcomms, bases, axes=allaxes2D[axis], modify_spaces_inplace=True)
     u = shenfun.TrialFunction(T)
     v = shenfun.TestFunction(T)
     if family == 'chebyshev':
@@ -609,7 +609,6 @@ def test_helmholtz2D(family, axis):
     M = {d.get_key(): d for d in mat}
     g0 = M['ADDmat'].matvec(u, g0)
     g1 = M['BDDmat'].matvec(u, g1)
-
     assert np.linalg.norm(f-(g0+g1)) < 1e-12, np.linalg.norm(f-(g0+g1))
 
     uc = Function(T)
@@ -697,14 +696,14 @@ if __name__ == '__main__':
     x = sp.symbols('x', real=True, positive=True)
     #test_mat(((cbases.ShenDirichlet, 0), (cbases.BCDirichlet, 0)), cmatrices.BCDmat, 'GC')
     #test_cmatvec(cBasis[3], cBasis[1], 'GC', 'cython', 3, 0)
-    test_lmatvec(lBasis[0], lBasis[0], 'LG', 'cython', 3, 2, 0)
+    #test_lmatvec(lBasis[0], lBasis[0], 'LG', 'cython', 3, 2, 0)
     #test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
     #test_hmatvec(hBasis[0], hBasis[0], 'HG', 'self', 3, 1, 1)
     #test_iadd(*mats_and_quads[15])
     #test_sub(*mats_and_quads[15])
     #test_mul2()
     #test_div2(cBasis[0], 'GC')
-    #test_helmholtz2D('chebyshev', 0)
+    test_helmholtz2D('chebyshev', 1)
     #test_helmholtz3D('chebyshev', 0)
     #test_biharmonic3D('chebyshev', 0)
     #test_biharmonic2D('jacobi', 0)
