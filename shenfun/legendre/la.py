@@ -35,7 +35,7 @@ class TDMA(la_TDMA):
         return u
 
 
-class Helmholtz(object):
+class Helmholtz:
     r"""Helmholtz solver
 
     .. math::
@@ -250,7 +250,7 @@ class Helmholtz(object):
         return c
 
 
-class Biharmonic(object):
+class Biharmonic:
     r"""Multidimensional Biharmonic solver for
 
     .. math::
@@ -424,7 +424,7 @@ class Biharmonic(object):
         c += c1
         return c
 
-class Helmholtz_2dirichlet(object):
+class Helmholtz_2dirichlet:
     """Helmholtz solver for 2-dimensional problems with 2 Dirichlet bases.
 
     .. math::

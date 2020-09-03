@@ -1,144 +1,6 @@
 r"""
 This module contains classes for working with sparse matrices.
 
-The sparse matrices are computed as inner products of forms containing test and
-trial functions. These basis functions are chosen from the following, where we
-denote the :math:`k`'th basis function of basis V as :math:`\phi_k`:
-
-Chebyshev basis:
-    Chebyshev basis of first kind
-
-    .. math::
-
-        \phi_k &= T_k \\
-        V &= span\{\phi_k\}_{k=0}^{N}
-
-    For homogeneous Dirichlet boundary conditions:
-
-    .. math::
-
-        \phi_k &= T_k - T_{k+2} \\
-        V &= span\{\phi_k\}_{k=0}^{N-2}
-
-    For homogeneous Neumann boundary conditions:
-
-    .. math::
-
-        \phi_k &= T_k - \left(\frac{k}{k+2}\right)^2T_{k+2} \\
-        V &= span\{\phi_k\}_{k=1}^{N-2}
-
-    For Biharmonic basis with both homogeneous Dirichlet and Neumann:
-
-    .. math::
-
-        \phi_k &= T_k - 2 \frac{k+2}{k+3} T_{k+2} + \frac{k+1}{k+3} T_{k+4} \\
-        V &= span\{\phi_k\}_{k=0}^{N-4}
-
-    The scalar product is computed as a weighted inner product with
-
-    :math:`w=1/\sqrt{1-x^2}` the weights.
-
-Legendre basis:
-    Regular Legendre
-
-    .. math::
-
-        \phi_k &= L_k \\
-        V &= span\{\phi_k\}_{k=0}^{N}
-
-    Dirichlet boundary conditions
-
-    .. math::
-
-        \phi_k &= L_k-L_{k+2} \\
-        V &= span\{\phi_k\}_{k=0}^{N-2}
-
-    Homogeneous Neumann boundary conditions:
-
-    .. math::
-
-        \phi_k &= L_k - \frac{k(k+1)}{(k+2)(k+3)}L_{k+2} \\
-        V &= span\{\phi_k\}_{k=1}^{N-2}
-
-    Both homogeneous Dirichlet and Neumann:
-
-    .. math::
-
-        \psi_k &= L_k - 2 \frac{2k+5}{2k+7} L_{k+2} + \frac{2k+3}{2k+7} L_{k+4} \\
-        V &= span\{\phi_k\}_{k=0}^{N-4}
-
-Laguerre basis:
-    Regular Laguerre function
-
-    .. math::
-
-        \phi_k &= L_k \cdot \exp(-x) \\
-        V &= span\{\phi_k\}_{k=0}^{N}
-
-    Homogeneous Dirichlet boundary conditions
-
-    .. math::
-
-        \phi_k &= (L_k-L_{k+2}) \cdot \exp(-x) \\
-        V &= span\{\phi_k\}_{k=0}^{N-1}
-
-    where :math:`L_k` is the Laguerre polynomial of order k.
-
-Hermite basis:
-    Regular Hermite function
-
-    .. math::
-
-        \phi_k &= H_k \cdot \exp(-x^2/2)/(\pi^{0.25}\sqrt{2^k k!}) \\
-        V &= span\{\phi_k\}_{k=0}^{N}
-
-    where :math:`K_k` is the Hermite polynomial of order k.
-    Homogeneous Dirichlet boundary conditions on (-inf, inf)
-
-Fourier basis:
-
-    .. math::
-
-        \phi_k &= exp(ikx) \\
-        V &= span\{\phi_k\}_{k=-N/2}^{N/2-1}
-
-Jacobi basis:
-
-    Regular Jacobi polynomials
-
-    .. math::
-
-        \phi_k(x) &= J_k(x, \alpha, \beta) \\
-        V &= span\{\phi_k\}_{k=0}^{N-1}
-
-    where :math:`\alpha > -1` and :math:`\beta > -1`. :math:`J_k` is
-    the regular Jacobi polynomial
-
-    Homogeneous Dirichlet boundary conditions
-
-    .. math::
-
-        \phi_k &= j_k(x, -1, -1)
-        V &= span\{\phi_k\}_{k=0}^{N-3}
-
-    where :math:`j_k` is the generalized Jacobi polynomial
-
-    Homogeneous Dirichlet and Neumann boundary conditions
-
-    .. math::
-
-        \phi_k &= j_k(x, -2, -2)
-        V &= span\{\phi_k\}_{k=0}^{N-5}
-
-    Homogeneous Dirichlet and first and second order derivatives
-    (for 6th order equation)
-
-    .. math::
-
-        \phi_k &= j_k(x, -3, -3)
-        V &= span\{\phi_k\}_{k=0}^{N-7}
-
-
 """
 from __future__ import division
 from copy import deepcopy
@@ -791,7 +653,7 @@ class Identity(SparseMatrix):
         return u
 
 
-class BlockMatrix(object):
+class BlockMatrix:
     r"""A class for block matrices
 
     Parameters
@@ -1207,7 +1069,7 @@ class BlockMatrix(object):
 
         return A, b
 
-class TPMatrix(object):
+class TPMatrix:
     """Tensorproduct matrix
 
     A :class:`.TensorProductSpace` is the outer product of ``D`` bases.

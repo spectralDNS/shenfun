@@ -33,7 +33,7 @@ __all__ = ('IRK3', 'RK4', 'ETDRK4', 'ETD')
 
 #pylint: disable=unused-variable
 
-class IntegratorBase(object):
+class IntegratorBase:
     """Abstract base class for integrators
 
     Parameters

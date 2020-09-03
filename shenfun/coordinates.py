@@ -2,7 +2,7 @@ import numbers
 import sympy as sp
 import numpy as np
 
-class Coordinates(object):
+class Coordinates:
     """Class for handling curvilinear coordinates
 
     Parameters

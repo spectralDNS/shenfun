@@ -44,7 +44,7 @@ from . import la
 from .fourier import energy_fourier
 from .io import *
 from .matrixbase import *
-from .spectralbase import inner_product
+from .spectralbase import inner_product, MixedFunctionSpace
 from .forms import *
 from .tensorproductspace import *
 from .utilities import *
