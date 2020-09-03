@@ -282,7 +282,7 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
         raise NotImplementedError
 
 
-class Expr(object):
+class Expr:
     r"""
     Class for spectral Galerkin forms
 
@@ -871,7 +871,7 @@ class Expr(object):
         return True
 
 
-class BasisFunction(object):
+class BasisFunction:
     """Base class for arguments to shenfun's Exprs
 
     Parameters

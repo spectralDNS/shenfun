@@ -4,7 +4,7 @@ import sympy
 
 x, y, tt = sympy.symbols('x,y,t', real=True)
 
-class RayleighBenard(object):
+class RayleighBenard:
     def __init__(self, N=(32, 32), L=(2, 2*np.pi), Ra=10000., Pr=0.7, dt=0.1,
                  bcT=(0, 1), conv=0, modplot=100, modsave=1e8, filename='RB',
                  family='C', quad='GC'):

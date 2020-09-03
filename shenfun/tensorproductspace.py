@@ -998,7 +998,7 @@ class TensorProductSpace(PFFT):
         return compatible
 
 
-class MixedTensorProductSpace(object):
+class MixedTensorProductSpace:
     """Class for composite tensorproductspaces.
 
     The mixed spaces are Cartesian products of TensorproductSpaces or
@@ -1270,7 +1270,7 @@ class VectorTensorProductSpace(MixedTensorProductSpace):
             return VectorTensorProductSpace(self.spaces[0].get_orthogonal())
         return VectorTensorProductSpace([s.get_orthogonal() for s in self.spaces])
 
-class VectorTransform(object):
+class VectorTransform:
 
     __slots__ = ('_transforms',)
 
@@ -1295,7 +1295,7 @@ class VectorTransform(object):
         return output_array
 
 
-class Convolve(object):
+class Convolve:
     r"""Class for convolving without truncation.
 
     The convolution of :math:`\hat{a}` and :math:`\hat{b}` is computed by first
@@ -1356,7 +1356,7 @@ class Convolve(object):
         return ab_hat
 
 
-class BoundaryValues(object):
+class BoundaryValues:
     """Class for setting nonhomogeneous boundary conditions for a 1D Dirichlet
     base inside a multidimensional TensorProductSpace.
 

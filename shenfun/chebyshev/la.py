@@ -28,7 +28,7 @@ class TDMA(la_TDMA):
         return u
 
 
-class Helmholtz(object):
+class Helmholtz:
     r"""Helmholtz solver
 
     .. math::
@@ -242,7 +242,7 @@ class Helmholtz(object):
         raise NotImplementedError("Use Cython or Numba")
 
 
-class Biharmonic(object):
+class Biharmonic:
     r"""Multidimensional Biharmonic solver for
 
     .. math::
@@ -441,7 +441,7 @@ class Biharmonic(object):
         return c
 
 
-class PDMA(object):
+class PDMA:
     r"""Pentadiagonal matrix solver
 
     Pentadiagonal matrix with diagonals in offsets -4, -2, 0, 2, 4

@@ -7,7 +7,7 @@ from scipy.sparse.linalg import spsolve, splu
 from shenfun.optimization import optimizer
 from shenfun.matrixbase import SparseMatrix
 
-class TDMA(object):
+class TDMA:
     """Tridiagonal matrix solver
 
     Parameters
@@ -89,7 +89,7 @@ class TDMA(object):
         u /= self.mat.scale
         return u
 
-class PDMA(object):
+class PDMA:
     """Pentadiagonal matrix solver
 
     Parameters
@@ -208,7 +208,7 @@ class PDMA(object):
         u /= self.mat.scale
         return u
 
-class Solve(object):
+class Solve:
     """Solver class for matrix created by Dirichlet bases
 
     Possibly with inhomogeneous boundary values
@@ -280,7 +280,7 @@ class Solve(object):
 
         return u
 
-class NeumannSolve(object):
+class NeumannSolve:
     """Solver class for matrix created by Neumann bases
 
     Assuming Neumann test- and trialfunction, where index k=0 is used only
@@ -353,7 +353,7 @@ class NeumannSolve(object):
         #u /= self.A.scale
         return u
 
-class SolverGeneric2ND(object):
+class SolverGeneric2ND:
     """Generic solver for problems consisting of tensorproduct matrices
     containing two non-diagonal submatrices.
 
@@ -440,7 +440,7 @@ class SolverGeneric2ND(object):
                 u[tuple(s0)] = scp.linalg.spsolve(M0, b[tuple(s0)].flatten()).reshape(shape)
         return u
 
-class Solver2D(object):
+class Solver2D:
     """Generic solver for tensorproductspaces in 2D
 
     Parameters
@@ -482,7 +482,7 @@ class Solver2D(object):
         return u
 
 
-class TDMA_O(object):
+class TDMA_O:
     """Tridiagonal matrix solver
 
     Parameters
@@ -564,7 +564,7 @@ class TDMA_O(object):
         return u
 
 
-class SolverGeneric1ND(object):
+class SolverGeneric1ND:
     """Generic solver for tensorproduct matrices consisting of
     non-diagonal matrices along only one axis.
 

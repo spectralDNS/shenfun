@@ -1,204 +1,16 @@
 r"""
 This module contains classes for working with the spectral-Galerkin method
 
-There are currently classes for 11 bases and corresponding function spaces
-
-All bases have expansions
+All spectral functions have the following expansions on the line (real or complex)
 
    :math:`u(x) = \sum_{k\in\mathcal{I}}\hat{u}_{k} \phi_k(x)`
 
-where :math:`\mathcal{I}` the index set of the basis, and the index set differs from
-base to base, see function space definitions below. :math:`\phi_k` is the k't
-basis function in the basis. It is also called a test function, whereas :math:`u(x)`
-often is called a trial function.
+where :math:`\mathcal{I}` is a index set of the basis, which differs from
+space to space. :math:`\phi_k` is the k't basis function and the function
+space is the span of these basis functions. The basis function is also
+called a test function, whereas :math:`u(x)` often is called a trial function.
 
-Chebyshev:
-    Orthogonal:
-        basis functions: :math:`\phi_k = T_k`
-
-        basis: :math:`span(T_k, k=0,1,..., N-1)`
-
-    ShenDirichlet:
-        basis functions:
-            :math:`\phi_k = T_k-T_{k+2}`
-
-            :math:`\phi_{N-2} = 0.5(T_0+T_1)` for Poisson's equation
-
-            :math:`\phi_{N-1} = 0.5(T_0-T_1)` for Poisson's equation
-
-        space: :math:`span(\phi_k, k=0,1,...,N-1)`
-
-        where :math:`u(1)=a, u(-1)=b`, such that :math:`\hat{u}_{N-2}=a,
-        \hat{u}_{N-1}=b`.
-
-        Note that there are only N-2 unknown coefficients, :math:`\hat{u}_k`,
-        since :math:`\hat{u}_{N-2}` and :math:`\hat{u}_{N-1}` are determined by
-        boundary conditions. Inhomogeneous boundary conditions are possible for
-        the Poisson equation, because :math:`\phi_{N-1}` and :math:`\phi_{N-2}`
-        are in the kernel of the Poisson operator. For homogeneous boundary
-        conditions :math:`\phi_{N-2}` and :math:`\phi_{N-1}` are simply ignored.
-
-    ShenNeumann:
-        basis function:
-            :math:`\phi_k = T_k-\left(\frac{k}{k+2}\right)^2T_{k+2}`
-
-        space:
-            :math:`span(\phi_k, k=1,2,...,N-3)`
-
-        Homogeneous Neumann boundary conditions, :math:`u'(\pm 1) = 0`, and
-        zero weighted mean: :math:`\int_{-1}^{1}u(x)w(x)dx = 0`.
-
-    ShenBiharmonic:
-        basis function:
-            :math:`\phi_k = T_k - \frac{2(k+2)}{k+3}T_{k+2} + \frac{k+1}{k+3}T_{k+4}`
-
-        space:
-            :math:`span(\phi_k, k=0,1,...,N-5)`
-
-        Homogeneous Dirichlet and Neumann, :math:`u(\pm 1)=0` and
-        :math:`u'(\pm 1)=0`.
-
-Legendre:
-    Orthogonal:
-        basis function:
-            :math:`\phi_k = L_k`
-
-        space:
-            :math:`span(L_k, k=0,1,...N-1)`
-
-    ShenDirichlet:
-        basis function:
-            :math:`\phi_k = L_k-L_{k+2}`
-
-            :math:`\phi_{N-2} = 0.5(L_0+L_1)`, for Poisson's equation
-
-            :math:`\phi_{N-1} = 0.5(L_0-L_1)`, for Poisson's equation
-
-        space:
-            :math:`span(\phi_k, k=0,1,...,N-1)`
-
-        where :math:`u(1)=a, u(-1)=b`, such that
-        :math:`\hat{u}_{N-2}=a, \hat{u}_{N-1}=b`
-
-        Note that there are only N-2 unknown coefficients, :math:`\hat{u}_k`,
-        since :math:`\hat{u}_{N-2}` and :math:`\hat{u}_{N-1}` are determined by
-        boundary conditions. Inhomogeneous boundary conditions are possible for
-        the Poisson equation, because :math:`\phi_{N-1}` and :math:`\phi_{N-2}`
-        are in the kernel of the Poisson operator. For homogeneous boundary
-        conditions :math:`\phi_{N-2}` and :math:`\phi_{N-1}` are simply ignored.
-
-    ShenNeumann:
-        basis function:
-            :math:`\phi_k = L_k-\frac{k(k+1)}{(k+2)(k+3)}L_{k+2}`
-
-        space:
-            :math:`span(\phi_k, k=1,2,...,N-3)`
-
-        Homogeneous Neumann boundary conditions, :math:`u'(\pm 1) = 0`, and
-        zero mean: :math:`\int_{-1}^{1}u(x)dx = 0`.
-
-    ShenBiharmonic:
-        basis function:
-            :math:`\phi_k = L_k - \frac{2(2k+5)}{2k+7}L_{k+2} + \frac{2k+3}{2k+7}L_{k+4}`
-
-        space:
-            :math:`span(\phi_k, k=0,1,...,N-5)`
-
-        Homogeneous Dirichlet and Neumann, :math:`u(\pm 1)=0` and
-        :math:`u'(\pm 1)=0`.
-
-Laguerre:
-    Orthogonal:
-        basis function:
-            :math:`\phi_k(x) = L_k(x) \cdot \exp(-x)`
-
-        space:
-            :math:`span(L_k, k=0,1,...N-1)`
-
-        where :math:`L_k` is the Laguerre polynomial of order k.
-
-    ShenDirichlet:
-        basis function:
-            :math:`\phi_k = (L_k-L_{k+1})\cdot \exp(-x)`
-
-        space:
-            :math:`span(\phi_k, k=0,1,...,N-2)`
-
-        Homogeneous Dirichlet for domain [0, inf).
-
-Hermite:
-    Orthogonal:
-        basis function:
-            :math:`\phi_k(x) = H_k(x) \cdot \exp(-x^2/2)/(\pi^{0.25}\sqrt{2^k k!})`
-
-        space:
-            :math:`span(\phi_k, k=0,1,...N-1)`
-
-        where :math:`H_k` is the Hermite polynomial of order k.
-
-Jacobi:
-    Orthogonal:
-        basis function:
-            :math:`\phi_k = J_k(\alpha, \beta)`
-
-        space:
-            :math:`span(L_k, k=0,1,...N-1)`
-
-        where :math:`J_k(\alpha, \beta)` is the regular Jacobi polynomial and
-        :math:`\alpha > -1` and :math:`\beta > -1`.
-
-    ShenDirichlet:
-        basis function:
-            :math:`\phi_k = j_k(-1, -1)`
-
-        space:
-            :math:`span(\phi_k, k=0,1,...,N-3)`
-
-        where :math:`j_k` is the generalized Jacobi polynomial
-
-    ShenBiharmonic:
-        basis function:
-            :math:`\phi_k = j_k(-2, -2)`
-
-        space:
-            :math:`span(\phi_k, k=0,1,...,N-5)`
-
-        Homogeneous Dirichlet and Neumann, :math:`u(\pm 1)=0` and
-        :math:`u'(\pm 1)=0`.
-
-    ShenOrder6:
-        basis function:
-            :math:`\phi_k = j_k(-3, -3)`
-
-        space:
-            :math:`span(\phi_k, k=0,1,...,N-7)`
-
-        Homogeneous :math:`u(\pm 1)=u'(\pm 1)=u''(\pm 1)=0`.
-
-Fourier:
-    R2C and C2C:
-        basis function:
-            :math:`\phi_k = exp(ikx)`
-
-        space:
-            :math:`span(\phi_k, k=-N/2, -N/2+1, ..., N/2-1)`
-
-        Note that if N is even, then the Nyquist frequency (-N/2) requires
-        special attention for the R2C space. We should then have been using
-        a Fourier interpolator that symmetrizes by adding and extra
-        :math:`\phi_{N/2}` and by multiplying :math:`\phi_{N/2}` and
-        :math:`\phi_{-N/2}` with 0.5. This effectively sets the
-        Nyquist frequency (-N/2) to zero for odd derivatives. This is
-        not done automatically by shenfun. Instead we recommend using
-        the :func:`.SpectralBase.mask_nyquist` function that effectively sets the
-        Nyquist frequency to zero (if N is even).
-
-    R2C and C2C are the same, but R2C is used on real physical
-    data and it takes advantage of Hermitian symmetry,
-    :math:`\hat{u}_{-k} = conj(\hat{u}_k)`, for :math:`k = 1, ..., N/2`
-
-Each class has methods for moving (fast) between spectral and physical space, and
-for computing the (weighted) scalar product.
+See the [documentation](https://shenfun.readthedocs.io) for more details.
 
 """
 #pylint: disable=unused-argument, not-callable, no-self-use, protected-access, too-many-public-methods, missing-docstring
@@ -212,48 +24,10 @@ from .utilities import CachedArrayDict, split
 from .coordinates import Coordinates
 work = CachedArrayDict()
 
-class SpectralBase(object):
+class SpectralBase:
     """Abstract base class for all spectral function spaces
 
-    Parameters
-    ----------
-        N : int
-            Number of quadrature points
-        quad : str
-            Type of quadrature
-
-            - GL - Chebyshev-Gauss-Lobatto or Legendre-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
-            - LG - Legendre-Gauss or Laguerre-Gauss
-            - HG - Hermite-Gauss
-
-        padding_factor : float, optional
-            For padding backward transform (for dealiasing)
-        domain : 2-tuple of floats, optional
-            The computational domain
-        dtype : data-type, optional
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        dealias_direct : bool, optional
-            If True, then set all upper 2/3 wavenumbers to zero before backward
-            transform. Cannot be used if padding_factor is different than 1.
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
-
-            where theta and rv are the first and second items in the tuple.
-            If a third item is provided with the tuple, then this third item
-            is used as an additional assumption. For example, it is necessary
-            to provide the assumption `sympy.Q.positive(sympy.sin(theta))`, such
-            that sympy can evaluate `sqrt(sympy.sin(theta)**2)` to `sympy.sin(theta)`
-            and not `Abs(sympy.sin(theta))`. Different coordinates may require
-            different assumptions to help sympy when computing basis functions
-            etc.
+    Should be subclassed.
 
     """
     # pylint: disable=method-hidden, too-many-instance-attributes
@@ -1162,7 +936,7 @@ class SpectralBase(object):
         return wj
 
     def get_measured_array(self, array):
-        """Return `array` times Jacobian
+        """Return `array` times Jacobian determinant
 
         Parameters
         ----------
@@ -1342,7 +1116,7 @@ class SpectralBase(object):
             padded_array[sp] = trunc_array[sl]
 
 
-class MixedFunctionSpace(object):
+class MixedFunctionSpace:
     """Class for composite bases in 1D
 
     Parameters
@@ -1429,7 +1203,7 @@ class MixedFunctionSpace(object):
         """Return dimension of scalar space"""
         return self.bases[0].dimensions
 
-class VectorBasisTransform(object):
+class VectorBasisTransform:
 
     __slots__ = ('_transforms',)
 
@@ -1583,7 +1357,7 @@ def inner_product(test, trial, measure=1):
         A.scale *= test[0].domain_factor()**(test[1]+trial[1])
     return A
 
-class FuncWrap(object):
+class FuncWrap:
 
     # pylint: disable=too-few-public-methods, missing-docstring
 

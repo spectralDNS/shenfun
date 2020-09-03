@@ -5,7 +5,7 @@ comm = MPI.COMM_WORLD
 
 __all__ = ['LagrangianParticles']
 
-class LagrangianParticles(object):
+class LagrangianParticles:
     """Class for tracking Lagrangian particles
 
     Parameters
