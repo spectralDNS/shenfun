@@ -558,7 +558,8 @@ class SpectralBase:
         """
         from shenfun import project
         T = self.get_orthogonal()
-        output_array = project(input_array, T, output_array=output_array, use_to_ortho=False)
+        output_array = project(input_array, T, output_array=output_array,
+                               use_to_ortho=False)
         return output_array
 
     def plan(self, shape, axis, dtype, options):
