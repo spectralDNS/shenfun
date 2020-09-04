@@ -1,17 +1,7 @@
 import numpy as np
-cimport numpy as np
-#cython: boundscheck=False
-#cython: wraparound=False
-#cython: language_level=3
+from numba import jit
 
-ctypedef np.complex128_t complex_t
-ctypedef np.float64_t real_t
-ctypedef np.int64_t int_t
-ctypedef double real
-
-ctypedef fused T:
-    real_t
-    complex_t
+__all__ = ['chebval']
 
 def chebval(x, c):
     c = np.array(c, ndmin=1, copy=True)
@@ -24,16 +14,13 @@ def chebval(x, c):
     c1 = np.zeros_like(x)
     tmp = np.zeros_like(x)
     x2 = np.zeros_like(x)
-    _chebval(x, c, y, c0, c1, tmp, x2)
+    y = _chebval(x, c, y, c0, c1, tmp, x2)
     return y
 
-def _chebval(T[:] x, T[:] c, T[:] y, T[:] c0, T[:] c1,
-             T[:] tmp, T[:] x2):
-    cdef:
-        int i, j
-        int N = c.shape[0]
-        int M = x.shape[0]
-
+@jit
+def _chebval(x, c, y, c0, c1, tmp, x2):
+    N = c.shape[0]
+    M = x.shape[0]
     if N == 1:
         c0[:] = c[0]
         c1[:] = 0
@@ -52,3 +39,4 @@ def _chebval(T[:] x, T[:] c, T[:] y, T[:] c0, T[:] c1,
                 c1[j] = tmp[j] + c1[j]*x2[j]
     for j in range(M):
         y[j] = c0[j] + x[j]*c1[j]
+    return y

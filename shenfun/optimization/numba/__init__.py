@@ -4,6 +4,7 @@ from .tdma import *
 from .pdma import *
 from .helmholtz import *
 from .biharmonic import *
+from .chebyshev import *
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
 def outer2D(a, b, c, symmetric):
