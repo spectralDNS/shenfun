@@ -449,18 +449,7 @@ class SpectralBase:
         self.scalar_product.output_array
 
         """
-        assert fast_transform is False
-        self._vandermonde_scalar_product()
-
-    def _vandermonde_scalar_product(self):
-        """Naive implementation of scalar product
-
-        Note
-        ----
-        Using internal arrays: self.scalar_product.input_array and
-        self.scalar_product.output_array
-
-        """
+        # This is the slow Vandermone type implementation
         input_array = self.scalar_product.input_array
         output_array = self.scalar_product.output_array
         M = self.shape(False)

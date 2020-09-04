@@ -472,8 +472,8 @@ class ShenDirichlet(JacobiBase):
         output_array[s1] -= z
         return output_array
 
-    def _vandermonde_scalar_product(self):
-        SpectralBase._vandermonde_scalar_product(self)
+    def _evaluate_scalar_product(self, fast_transform=True):
+        SpectralBase._evaluate_scalar_product(self)
         self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
 
     def get_bc_basis(self):
@@ -588,8 +588,8 @@ class ShenBiharmonic(JacobiBase):
                 V[:, i] = self.evaluate_basis(x, i, output_array=V[:, i])
         return V
 
-    def _vandermonde_scalar_product(self):
-        SpectralBase._vandermonde_scalar_product(self)
+    def _evaluate_scalar_product(self, fast_transform=True):
+        SpectralBase._evaluate_scalar_product(self)
         self.scalar_product.output_array[self.sl[slice(-4, None)]] = 0
 
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
@@ -765,9 +765,9 @@ class ShenOrder6(JacobiBase):
     def get_orthogonal(self):
         return Orthogonal(self.N, alpha=0, beta=0, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
 
-    def vandermonde_scalar_product(self, input_array, output_array):
-        SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
-        output_array[self.sl[slice(-6, None)]] = 0
+    def _evaluate_scalar_product(self, fast_transform=True):
+        SpectralBase._evaluate_scalar_product(self)
+        self.scalar_product.output_array[self.sl[slice(-6, None)]] = 0
 
     #def to_ortho(self, input_array, output_array=None):
     #    if output_array is None:

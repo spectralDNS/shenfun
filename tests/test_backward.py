@@ -98,7 +98,8 @@ def test_padding(family):
     B = FunctionSpace(N, family, bc=(-1, 1))
     Bp = B.get_dealiased(1.5)
     u = Function(B).set_boundary_dofs()
-    u[:(N-2)] = np.random.random(N-2)
+    #u[:(N-2)] = np.random.random(N-2)
+    u[:(N-2)] = 1
     up = Array(Bp)
     up = Bp.backward(u, fast_transform=False)
     uf = Bp.forward(up, fast_transform=False)
