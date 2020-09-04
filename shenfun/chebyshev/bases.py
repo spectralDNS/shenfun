@@ -704,9 +704,9 @@ class ShenNeumann(ChebyshevBase):
         x = self.map_reference_domain(x)
         w_hat = work[(u, 0, True)]
         self.set_factor_array(u)
-        output_array[:] = n_cheb.chebval(x, u[:-2])
+        output_array[:] = chebval(x, u[:-2])
         w_hat[2:] = self._factor*u[:-2]
-        output_array -= n_cheb.chebval(x, w_hat)
+        output_array -= chebval(x, w_hat)
         return output_array
 
     def get_refined(self, N):
@@ -1000,7 +1000,6 @@ class SecondNeumann(ChebyshevBase): #pragma: no cover
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
         self.mean = mean
-        #self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self.CT = Orthogonal(int(np.floor(padding_factor*N)), quad=quad, dtype=dtype, padding_factor=1, dealias_direct=dealias_direct)
         self._factor = np.zeros(0)
         self.plan((int(padding_factor*N),), 0, dtype, {})
@@ -1090,9 +1089,9 @@ class SecondNeumann(ChebyshevBase): #pragma: no cover
         x = self.map_reference_domain(x)
         w_hat = work[(u, 0, True)]
         self.set_factor_array(u)
-        output_array[:] = n_cheb.chebval(x, u[:-2])
+        output_array[:] = chebval(x, u[:-2])
         w_hat[2:] = self._factor*u[:-2]
-        output_array -= n_cheb.chebval(x, w_hat)
+        output_array -= chebval(x, w_hat)
         return output_array
 
     def get_refined(self, N):
@@ -1156,7 +1155,6 @@ class UpperDirichlet(ChebyshevBase):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        #self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self.CT = Orthogonal(int(np.floor(padding_factor*N)), quad=quad, dtype=dtype, padding_factor=1, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor = np.ones(1)
@@ -1245,9 +1243,9 @@ class UpperDirichlet(ChebyshevBase):
             output_array = np.zeros(x.shape, dtype=self.dtype)
         x = self.map_reference_domain(x)
         w_hat = work[(u, 0, True)]
-        output_array[:] = n_cheb.chebval(x, u[:-1])
+        output_array[:] = chebval(x, u[:-1])
         w_hat[1:] = u[:-1]
-        output_array -= n_cheb.chebval(x, w_hat)
+        output_array -= chebval(x, w_hat)
         return output_array
 
 
@@ -1288,7 +1286,6 @@ class ShenBiPolar(ChebyshevBase):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        #self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self.CT = Orthogonal(int(np.floor(padding_factor*N)), quad=quad, dtype=dtype, padding_factor=1, dealias_direct=dealias_direct)
         self.plan((int(padding_factor*N),), 0, dtype, {})
 
@@ -1519,12 +1516,12 @@ class DirichletNeumann(ChebyshevBase):
         x = self.map_reference_domain(x)
         w_hat = work[(u, 0, True)]
         self.set_factor_arrays(w_hat)
-        output_array[:] = n_cheb.chebval(x, u[:-2])
+        output_array[:] = chebval(x, u[:-2])
         w_hat[1:-1] = self._factor1*u[:-2]
-        output_array += n_cheb.chebval(x, w_hat)
+        output_array += chebval(x, w_hat)
         w_hat[2:] = self._factor2*u[:-2]
         w_hat[:2] = 0
-        output_array += n_cheb.chebval(x, w_hat)
+        output_array += chebval(x, w_hat)
         return output_array
 
 
@@ -1685,12 +1682,12 @@ class NeumannDirichlet(ChebyshevBase):
         x = self.map_reference_domain(x)
         w_hat = work[(u, 0, True)]
         self.set_factor_arrays(w_hat)
-        output_array[:] = n_cheb.chebval(x, u[:-2])
+        output_array[:] = chebval(x, u[:-2])
         w_hat[1:-1] = self._factor1*u[:-2]
-        output_array += n_cheb.chebval(x, w_hat)
+        output_array += chebval(x, w_hat)
         w_hat[2:] = self._factor2*u[:-2]
         w_hat[:2] = 0
-        output_array += n_cheb.chebval(x, w_hat)
+        output_array += chebval(x, w_hat)
         return output_array
 
 
