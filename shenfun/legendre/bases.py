@@ -190,7 +190,11 @@ class LegendreBase(SpectralBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_orthogonal(self):
-        return Orthogonal(self.N, quad=self.quad, dtype=self.dtype, domain=self.domain, coordinates=self.coors.coordinates)
+        return Orthogonal(self.N, quad=self.quad, dtype=self.dtype,
+                          domain=self.domain,
+                          padding_factor=self.padding_factor,
+                          dealias_direct=self.dealias_direct,
+                          coordinates=self.coors.coordinates)
 
 
 class Orthogonal(LegendreBase):
@@ -286,7 +290,6 @@ class ShenDirichlet(LegendreBase):
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
-        self.LT = Orthogonal(N, quad)
         self._scaled = scaled
         self._factor = np.ones(1)
         self._bc_basis = None
@@ -377,10 +380,10 @@ class ShenDirichlet(LegendreBase):
             output_array /= np.sqrt(4*i+6)
         return output_array
 
-    def vandermonde_scalar_product(self, input_array, output_array):
-        SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
-        output_array[self.si[-2]] = 0
-        output_array[self.si[-1]] = 0
+    def _evaluate_scalar_product(self, fast_transform=False):
+        SpectralBase._evaluate_scalar_product(self)
+        self.scalar_product.output_array[self.si[-2]] = 0
+        self.scalar_product.output_array[self.si[-1]] = 0
 
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
@@ -394,33 +397,6 @@ class ShenDirichlet(LegendreBase):
         output_array -= leg.legval(x, w_hat)
         output_array += 0.5*(u[-1]*(1+x) + u[-2]*(1-x))
         return output_array
-
-    def plan(self, shape, axis, dtype, options):
-        if shape in (0, (0,)):
-            return
-
-        if isinstance(axis, tuple):
-            assert len(axis) == 1
-            axis = axis[0]
-
-        if isinstance(self.forward, Transform):
-            if self.forward.input_array.shape == shape and self.axis == axis:
-                # Already planned
-                return
-
-        self.LT.plan(shape, axis, dtype, options)
-        U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self.axis = axis
-        if self.padding_factor > 1.+1e-8:
-            trunc_array = self._get_truncarray(shape, V.dtype)
-            self.forward = Transform(self.forward, None, U, V, trunc_array)
-            self.backward = Transform(self.backward, None, trunc_array, V, U)
-        else:
-            self.forward = Transform(self.forward, None, U, V, V)
-            self.backward = Transform(self.backward, None, V, V, U)
-        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_bc_basis(self):
         if self._bc_basis:
@@ -510,7 +486,6 @@ class ShenNeumann(LegendreBase):
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         self.mean = mean
-        self.LT = Orthogonal(N, quad)
         self._factor = np.zeros(0)
         self.plan(int(N*padding_factor), 0, dtype, {})
 
@@ -586,33 +561,6 @@ class ShenNeumann(LegendreBase):
         w_hat[2:] = self._factor*u[:-2]
         output_array -= leg.legval(x, w_hat)
         return output_array
-
-    def plan(self, shape, axis, dtype, options):
-        if shape in (0, (0,)):
-            return
-
-        if isinstance(axis, tuple):
-            assert len(axis) == 1
-            axis = axis[0]
-
-        if isinstance(self.forward, Transform):
-            if self.forward.input_array.shape == shape and self.axis == axis:
-                # Already planned
-                return
-
-        self.LT.plan(shape, axis, dtype, options)
-        U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self.axis = axis
-        if self.padding_factor > 1.+1e-8:
-            trunc_array = self._get_truncarray(shape, V.dtype)
-            self.forward = Transform(self.forward, None, U, V, trunc_array)
-            self.backward = Transform(self.backward, None, trunc_array, V, U)
-        else:
-            self.forward = Transform(self.forward, None, U, V, V)
-            self.backward = Transform(self.backward, None, V, V, U)
-        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_refined(self, N):
         return ShenNeumann(N,
@@ -693,7 +641,6 @@ class ShenBiharmonic(LegendreBase):
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
-        self.LT = Orthogonal(N, quad)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
         self._bc_basis = None
@@ -850,33 +797,6 @@ class ShenBiharmonic(LegendreBase):
                               coordinates=self.coors.coordinates,
                               bc=self.bc.bc)
 
-    def plan(self, shape, axis, dtype, options):
-        if shape in (0, (0,)):
-            return
-
-        if isinstance(axis, tuple):
-            assert len(axis) == 1
-            axis = axis[0]
-
-        if isinstance(self.forward, Transform):
-            if self.forward.input_array.shape == shape and self.axis == axis:
-                # Already planned
-                return
-
-        self.LT.plan(shape, axis, dtype, options)
-        U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self.axis = axis
-        if self.padding_factor > 1.+1e-8:
-            trunc_array = self._get_truncarray(shape, V.dtype)
-            self.forward = Transform(self.forward, None, U, V, trunc_array)
-            self.backward = Transform(self.backward, None, trunc_array, V, U)
-        else:
-            self.forward = Transform(self.forward, None, U, V, V)
-            self.backward = Transform(self.backward, None, V, V, U)
-        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
-
 
 class UpperDirichlet(LegendreBase):
     """Legendre function space with homogeneous Dirichlet boundary conditions on x=1
@@ -915,7 +835,6 @@ class UpperDirichlet(LegendreBase):
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
-        self.LT = Orthogonal(N, quad)
         self._factor = np.ones(1)
         self.plan(int(N*padding_factor), 0, dtype, {})
 
@@ -975,8 +894,9 @@ class UpperDirichlet(LegendreBase):
         output_array[:] = basis(x)
         return output_array
 
-    def vandermonde_scalar_product(self, input_array, output_array):
-        SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
+    def _evaluate_scalar_product(self, fast_transform=False):
+        SpectralBase._evaluate_scalar_product(self)
+        self.scalar_product.output_array[self.si[-1]] = 0
 
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
@@ -988,33 +908,6 @@ class UpperDirichlet(LegendreBase):
         w_hat[1:] = u[:-1]
         output_array -= leg.legval(x, w_hat)
         return output_array
-
-    def plan(self, shape, axis, dtype, options):
-        if shape in (0, (0,)):
-            return
-
-        if isinstance(axis, tuple):
-            assert len(axis) == 1
-            axis = axis[0]
-
-        if isinstance(self.forward, Transform):
-            if self.forward.input_array.shape == shape and self.axis == axis:
-                # Already planned
-                return
-
-        self.LT.plan(shape, axis, dtype, options)
-        U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self.axis = axis
-        if self.padding_factor > 1.+1e-8:
-            trunc_array = self._get_truncarray(shape, V.dtype)
-            self.forward = Transform(self.forward, None, U, V, trunc_array)
-            self.backward = Transform(self.backward, None, trunc_array, V, U)
-        else:
-            self.forward = Transform(self.forward, None, U, V, V)
-            self.backward = Transform(self.backward, None, V, V, U)
-        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
 class ShenBiPolar(LegendreBase):
@@ -1054,7 +947,6 @@ class ShenBiPolar(LegendreBase):
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
-        self.LT = Orthogonal(N, quad)
         self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
@@ -1099,8 +991,9 @@ class ShenBiPolar(LegendreBase):
             V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
         return V
 
-    def vandermonde_scalar_product(self, input_array, output_array):
-        SpectralBase.vandermonde_scalar_product(self, input_array, output_array)
+    def _evaluate_scalar_product(self, fast_transform=False):
+        SpectralBase._evaluate_scalar_product(self)
+        self.scalar_product.output_array[self.sl[slice(-4, None)]] = 0
 
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
@@ -1113,32 +1006,6 @@ class ShenBiPolar(LegendreBase):
         output_array[:] = np.dot(fj, u)
         return output_array
 
-    def plan(self, shape, axis, dtype, options):
-        if shape in (0, (0,)):
-            return
-
-        if isinstance(axis, tuple):
-            assert len(axis) == 1
-            axis = axis[0]
-
-        if isinstance(self.forward, Transform):
-            if self.forward.input_array.shape == shape and self.axis == axis:
-                # Already planned
-                return
-
-        self.LT.plan(shape, axis, dtype, options)
-        U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self.axis = axis
-        if self.padding_factor > 1.+1e-8:
-            trunc_array = self._get_truncarray(shape, V.dtype)
-            self.forward = Transform(self.forward, None, U, V, trunc_array)
-            self.backward = Transform(self.backward, None, trunc_array, V, U)
-        else:
-            self.forward = Transform(self.forward, None, U, V, V)
-            self.backward = Transform(self.backward, None, V, V, U)
-        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
 class ShenBiPolar0(LegendreBase):
@@ -1181,7 +1048,6 @@ class ShenBiPolar0(LegendreBase):
         LegendreBase.__init__(self, N, quad="LG", domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
-        self.LT = Orthogonal(N, quad)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
         self._factor3 = np.zeros(0)
@@ -1208,11 +1074,6 @@ class ShenBiPolar0(LegendreBase):
             self._factor1 = (-(2*k+3)*(k+4)/(2*k+5)/(k+2)).astype(float)
             self._factor2 = (-k*(k+1)/(k+2)/(k+3)).astype(float)
             self._factor3 = ((k+1)*(2*k+3)/(k+3)/(2*k+5)).astype(float)
-
-    def scalar_product(self, input_array=None, output_array=None, fast_transform=False):
-        output = LegendreBase.scalar_product(self, input_array, output_array, False)
-        output[self.sl[slice(-3, None)]] = 0
-        return output
 
     #@optimizer
     def set_w_hat(self, w_hat, fk, f1, f2, f3): # pragma: no cover
@@ -1256,6 +1117,10 @@ class ShenBiPolar0(LegendreBase):
     def slice(self):
         return slice(0, self.N-3)
 
+    def _evaluate_scalar_product(self, fast_transform=False):
+        SpectralBase._evaluate_scalar_product(self)
+        self.scalar_product.output_array[self.sl[slice(-3, None)]] = 0
+
     def eval(self, x, u, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape, dtype=self.dtype)
@@ -1272,33 +1137,6 @@ class ShenBiPolar0(LegendreBase):
         w_hat[:3] = 0
         output_array += leg.legval(x, w_hat)
         return output_array
-
-    def plan(self, shape, axis, dtype, options):
-        if shape in (0, (0,)):
-            return
-
-        if isinstance(axis, tuple):
-            assert len(axis) == 1
-            axis = axis[0]
-
-        if isinstance(self.forward, Transform):
-            if self.forward.input_array.shape == shape and self.axis == axis:
-                # Already planned
-                return
-
-        self.LT.plan(shape, axis, dtype, options)
-        U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self.axis = axis
-        if self.padding_factor > 1.+1e-8:
-            trunc_array = self._get_truncarray(shape, V.dtype)
-            self.forward = Transform(self.forward, None, U, V, trunc_array)
-            self.backward = Transform(self.backward, None, trunc_array, V, U)
-        else:
-            self.forward = Transform(self.forward, None, U, V, V)
-            self.backward = Transform(self.backward, None, V, V, U)
-        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
 class DirichletNeumann(LegendreBase):
@@ -1344,7 +1182,6 @@ class DirichletNeumann(LegendreBase):
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
-        self.LT = Orthogonal(N, quad)
         self._factor1 = np.ones(1)
         self._factor2 = np.ones(1)
         self.plan(int(N*padding_factor), 0, np.float, {})
@@ -1397,6 +1234,10 @@ class DirichletNeumann(LegendreBase):
     def slice(self):
         return slice(0, self.N-2)
 
+    def _evaluate_scalar_product(self, fast_transform=False):
+        SpectralBase._evaluate_scalar_product(self)
+        self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
+
     def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         assert i < self.N-2
         return (sympy.legendre(i, x)
@@ -1441,32 +1282,6 @@ class DirichletNeumann(LegendreBase):
         output_array += leg.legval(x, w_hat)
         return output_array
 
-    def plan(self, shape, axis, dtype, options):
-        if shape in (0, (0,)):
-            return
-
-        if isinstance(axis, tuple):
-            assert len(axis) == 1
-            axis = axis[0]
-
-        if isinstance(self.forward, Transform):
-            if self.forward.input_array.shape == shape and self.axis == axis:
-                # Already planned
-                return
-
-        self.LT.plan(shape, axis, dtype, options)
-        U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self.axis = axis
-        if self.padding_factor > 1.+1e-8:
-            trunc_array = self._get_truncarray(shape, V.dtype)
-            self.forward = Transform(self.forward, None, U, V, trunc_array)
-            self.backward = Transform(self.backward, None, trunc_array, V, U)
-        else:
-            self.forward = Transform(self.forward, None, U, V, V)
-            self.backward = Transform(self.backward, None, V, V, U)
-        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
 class NeumannDirichlet(LegendreBase):
@@ -1512,7 +1327,6 @@ class NeumannDirichlet(LegendreBase):
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
-        self.LT = Orthogonal(N, quad)
         self._factor = np.ones(1)
         self.plan(int(N*padding_factor), 0, np.float, {})
         self.bc = BoundaryValues(self, bc=bc)
@@ -1564,6 +1378,10 @@ class NeumannDirichlet(LegendreBase):
     def slice(self):
         return slice(0, self.N-2)
 
+    def _evaluate_scalar_product(self, fast_transform=False):
+        SpectralBase._evaluate_scalar_product(self)
+        self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
+
     def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         assert i < self.N-2
         return (sympy.legendre(i, x)
@@ -1607,33 +1425,6 @@ class NeumannDirichlet(LegendreBase):
         w_hat[:2] = 0
         output_array += leg.legval(x, w_hat)
         return output_array
-
-    def plan(self, shape, axis, dtype, options):
-        if shape in (0, (0,)):
-            return
-
-        if isinstance(axis, tuple):
-            assert len(axis) == 1
-            axis = axis[0]
-
-        if isinstance(self.forward, Transform):
-            if self.forward.input_array.shape == shape and self.axis == axis:
-                # Already planned
-                return
-
-        self.LT.plan(shape, axis, dtype, options)
-        U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self.axis = axis
-        if self.padding_factor > 1.+1e-8:
-            trunc_array = self._get_truncarray(shape, V.dtype)
-            self.forward = Transform(self.forward, None, U, V, trunc_array)
-            self.backward = Transform(self.backward, None, trunc_array, V, U)
-        else:
-            self.forward = Transform(self.forward, None, U, V, V)
-            self.backward = Transform(self.backward, None, V, V, U)
-        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
 
 class BCDirichlet(LegendreBase):

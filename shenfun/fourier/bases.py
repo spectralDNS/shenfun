@@ -199,7 +199,7 @@ class FourierBase(SpectralBase):
 
     def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
-            self._vandermonde_scalar_product()
+            SpectralBase._evaluate_scalar_product(self)
             return
         output = self.scalar_product.xfftn()
         M = self.get_normalization()

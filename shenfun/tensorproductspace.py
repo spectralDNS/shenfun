@@ -1563,6 +1563,9 @@ class BoundaryValues:
         B = self.base.get_bc_basis()
         M = B.coefficient_matrix().T
         sl = B.slice()
+        ds = uh.shape[self.base.axis] - B.N
+        if ds > 0: # uh is padded, but B is not. Boundary dofs are in padded locations.
+            sl = slice(sl.start + ds, sl.stop + ds)
         if u.ndim > 1:
             sl = self.base.sl[sl]
         for i, row in enumerate(M):

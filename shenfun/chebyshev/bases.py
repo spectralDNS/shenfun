@@ -221,7 +221,7 @@ class ChebyshevBase(SpectralBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_orthogonal(self):
-        return Orthogonal(self.N, quad=self.quad, domain=self.domain,
+        return Orthogonal(self.N, quad=self.quad, domain=self.domain, dtype=self.dtype,
                           padding_factor=self.padding_factor,
                           dealias_direct=self.dealias_direct,
                           coordinates=self.coors.coordinates)
@@ -302,7 +302,7 @@ class Orthogonal(ChebyshevBase):
 
     def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
-            self._vandermonde_scalar_product()
+            SpectralBase._evaluate_scalar_product(self)
             return
         out = self.scalar_product.xfftn()
         if self.quad == "GC":
@@ -374,7 +374,8 @@ class ShenDirichlet(ChebyshevBase):
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
-        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(int(np.floor(padding_factor*N)), quad=quad, dtype=dtype, padding_factor=1, dealias_direct=dealias_direct)
+        #self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor = np.ones(1)
         self._bc_basis = None
@@ -436,26 +437,22 @@ class ShenDirichlet(ChebyshevBase):
         """Return True if scaled basis is used, otherwise False"""
         return False
 
-    def _vandermonde_scalar_product(self):
-        SpectralBase._vandermonde_scalar_product(self)
-        self.scalar_product.output_array[self.si[-2]] = 0
-        self.scalar_product.output_array[self.si[-1]] = 0
-
     def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
-            self._vandermonde_scalar_product()
+            SpectralBase._evaluate_scalar_product(self)
+            self.scalar_product.output_array[self.si[-2]] = 0
+            self.scalar_product.output_array[self.si[-1]] = 0
             return
         output = self.CT.scalar_product(fast_transform=fast_transform)
-        s0 = self.sl[slice(0, -2)]
-        s1 = self.sl[slice(2, None)]
+        s0 = self.sl[slice(0, self.N-2)]
+        s1 = self.sl[slice(2, self.N)]
         output[s0] -= output[s1]
         output[self.si[-2]] = 0
         output[self.si[-1]] = 0
 
     def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
-            self._padding_backward(input_array, self.backward.tmp_array)
-            SpectralBase.evaluate_expansion_all(self, self.backward.tmp_array, output_array, False)
+            SpectralBase.vandermonde_evaluate_expansion_all(self, input_array, output_array)
             return
         w_hat = work[(input_array, 0, False)]
         w_hat = self.to_ortho(input_array, w_hat)
@@ -467,8 +464,8 @@ class ShenDirichlet(ChebyshevBase):
             output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
-        s0 = self.sl[slice(0, -2)]
-        s1 = self.sl[slice(2, None)]
+        s0 = self.sl[slice(0, self.N-2)]
+        s1 = self.sl[slice(2, self.N)]
         output_array[s0] = input_array[s0]
         output_array[s1] -= input_array[s0]
         self.bc.add_to_orthogonal(output_array, input_array)
@@ -489,35 +486,6 @@ class ShenDirichlet(ChebyshevBase):
         output_array += 0.5*(u[-1]*(1+x)+u[-2]*(1-x))
         return output_array
 
-    #def forward(self, input_array=None, output_array=None, fast_transform=True):
-    #    self.scalar_product(input_array, fast_transform=fast_transform)
-    #    u = self.scalar_product.tmp_array
-    #    self._truncation_forward(u, self.forward.output_array)
-    #    self.bc.add_mass_rhs(self.forward.output_array)
-    #    self.apply_inverse_mass(self.forward.output_array)
-    #    if output_array is not None:
-    #        output_array[...] = self.forward.output_array
-    #        return output_array
-    #    return self.forward.output_array
-
-    def backward(self, input_array=None, output_array=None, fast_transform=True, kind='normal'):
-        # Without padding backward because that is taken care of by orthogonal space
-        if not kind == 'normal':
-            # Use vandermonde
-            return SpectralBase.backward(self, input_array, output_array, fast_transform=False, kind=kind)
-
-        if input_array is not None:
-            self.backward.input_array[...] = input_array
-
-        self.evaluate_expansion_all(self.backward.input_array,
-                                    self.backward.output_array,
-                                    fast_transform=fast_transform)
-
-        if output_array is not None:
-            output_array[...] = self.backward.output_array
-            return output_array
-        return self.backward.output_array
-
     def plan(self, shape, axis, dtype, options):
 
         if shape in (0, (0,)):
@@ -532,7 +500,10 @@ class ShenDirichlet(ChebyshevBase):
                 # Already planned
                 return
 
-        self.CT.plan(shape, axis, dtype, options)
+        shapeCT = list(shape)
+        shapeCT[axis] = self.shape(False)
+        self.CT.plan(tuple(shapeCT), axis, dtype, options)
+        #self.CT.plan(shape, axis, dtype, options)
         self.CT.tensorproductspace = self.tensorproductspace
         xfftn_fwd = self.CT.forward.xfftn
         xfftn_bck = self.CT.backward.xfftn
@@ -637,9 +608,10 @@ class ShenNeumann(ChebyshevBase):
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
         self.mean = mean
-        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        #self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(int(np.floor(padding_factor*N)), quad=quad, dtype=dtype, padding_factor=1, dealias_direct=dealias_direct)
         self._factor = np.zeros(0)
-        self.plan(int(N*padding_factor), 0, dtype, {})
+        self.plan((int(N*padding_factor),), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -686,7 +658,9 @@ class ShenNeumann(ChebyshevBase):
 
     def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
-            self._vandermonde_scalar_product()
+            SpectralBase._evaluate_scalar_product(self)
+            self.scalar_product.output_array[self.si[0]] = self.mean*np.pi
+            self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
             return
         output = self.CT.scalar_product(fast_transform=True)
         self.set_factor_array(output)
@@ -694,38 +668,16 @@ class ShenNeumann(ChebyshevBase):
         s2p = self.sl[slice(2, self.N)]
         output[sm2] -= self._factor * output[s2p]
         output[self.si[0]] = self.mean*np.pi
-        output[self.sl[slice(self.N-2, self.N)]] = 0
-
-    def _vandermonde_scalar_product(self):
-        SpectralBase._vandermonde_scalar_product(self)
-        self.scalar_product.output_array[self.si[0]] = self.mean*np.pi
-        self.scalar_product.output_array[self.sl[slice(self.N-2, self.N)]] = 0
+        output[self.sl[slice(-2, None)]] = 0
 
     def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
-            self._padding_backward(input_array, self.backward.tmp_array)
-            SpectralBase.evaluate_expansion_all(self, self.backward.tmp_array, output_array, False)
+            SpectralBase.vandermonde_evaluate_expansion_all(self, input_array, output_array)
             return
         w_hat = work[(input_array, 0, False)]
         w_hat = self.to_ortho(input_array, w_hat)
         self.CT.backward(w_hat)
         assert output_array is self.CT.backward.output_array
-
-    def backward(self, input_array=None, output_array=None, fast_transform=True, kind='normal'):
-        if not kind == 'normal':
-            return SpectralBase.backward(self, input_array, output_array, fast_transform=False, kind=kind)
-
-        if input_array is not None:
-            self.backward.input_array[...] = input_array
-
-        self.evaluate_expansion_all(self.backward.input_array,
-                                    self.backward.output_array,
-                                    fast_transform=fast_transform)
-
-        if output_array is not None:
-            output_array[...] = self.backward.output_array
-            return output_array
-        return self.backward.output_array
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
@@ -767,7 +719,10 @@ class ShenNeumann(ChebyshevBase):
                 # Already planned
                 return
 
-        self.CT.plan(shape, axis, dtype, options)
+        shapeCT = list(shape)
+        shapeCT[axis] = self.shape(False)
+        self.CT.plan(tuple(shapeCT), axis, dtype, options)
+        #self.CT.plan(shape, axis, dtype, options)
         self.CT.tensorproductspace = self.tensorproductspace
         xfftn_fwd = self.CT.forward.xfftn
         xfftn_bck = self.CT.backward.xfftn
@@ -866,7 +821,8 @@ class ShenBiharmonic(ChebyshevBase):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        #self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(int(np.floor(padding_factor*N)), quad=quad, dtype=dtype, padding_factor=1, dealias_direct=dealias_direct)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
         self._bc_basis = None
@@ -928,7 +884,8 @@ class ShenBiharmonic(ChebyshevBase):
 
     def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
-            self._vandermonde_scalar_product()
+            SpectralBase._evaluate_scalar_product(self)
+            self.scalar_product.output_array[self.sl[slice(-4, None)]] = 0
             return
         output = self.CT.scalar_product(fast_transform=fast_transform)
         Tk = work[(output, 0, True)]
@@ -940,11 +897,7 @@ class ShenBiharmonic(ChebyshevBase):
         output[s] += self._factor1*Tk[s2]
         output[s] += self._factor2*Tk[s4]
         self.bc.set_boundary_dofs(output)
-        output[self.sl[slice(self.N-4, self.N)]] = 0
-
-    def _vandermonde_scalar_product(self):
-        SpectralBase._vandermonde_scalar_product(self)
-        self.bc.set_boundary_dofs(self.scalar_product.output_array)
+        output[self.sl[slice(-4, None)]] = 0
 
     #@optimizer
     def set_w_hat(self, w_hat, fk, f1, f2):
@@ -959,14 +912,11 @@ class ShenBiharmonic(ChebyshevBase):
 
     def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
-            self._padding_backward(input_array, self.backward.tmp_array)
-            SpectralBase.evaluate_expansion_all(self, self.backward.tmp_array, output_array, False)
+            SpectralBase.vandermonde_evaluate_expansion_all(self, input_array, output_array)
             return
         w_hat = work[(input_array, 0, False)]
         w_hat = self.to_ortho(input_array, w_hat)
         self.CT.backward(w_hat)
-        assert input_array is self.backward.input_array
-        assert output_array is self.backward.output_array
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
@@ -977,23 +927,6 @@ class ShenBiharmonic(ChebyshevBase):
         output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2)
         self.bc.add_to_orthogonal(output_array, input_array)
         return output_array
-
-    def backward(self, input_array=None, output_array=None, fast_transform=True, kind='normal'):
-        if not kind == 'normal':
-            # Use vandermonde
-            return SpectralBase.backward(self, input_array, output_array, fast_transform=False, kind=kind)
-
-        if input_array is not None:
-            self.backward.input_array[...] = input_array
-
-        self.evaluate_expansion_all(self.backward.input_array,
-                                    self.backward.output_array,
-                                    fast_transform=fast_transform)
-
-        if output_array is not None:
-            output_array[...] = self.backward.output_array
-            return output_array
-        return self.backward.output_array
 
     def slice(self):
         return slice(0, self.N-4)
@@ -1070,7 +1003,10 @@ class ShenBiharmonic(ChebyshevBase):
                 # Already planned
                 return
 
-        self.CT.plan(shape, axis, dtype, options)
+        shapeCT = list(shape)
+        shapeCT[axis] = self.shape(False)
+        self.CT.plan(tuple(shapeCT), axis, dtype, options)
+        #self.CT.plan(shape, axis, dtype, options)
         self.CT.tensorproductspace = self.tensorproductspace
         xfftn_fwd = self.CT.forward.xfftn
         xfftn_bck = self.CT.backward.xfftn
@@ -1129,7 +1065,8 @@ class SecondNeumann(ChebyshevBase): #pragma: no cover
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
         self.mean = mean
-        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        #self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(int(np.floor(padding_factor*N)), quad=quad, dtype=dtype, padding_factor=1, dealias_direct=dealias_direct)
         self._factor = np.zeros(0)
         self.plan((int(padding_factor*N),), 0, dtype, {})
 
@@ -1177,32 +1114,19 @@ class SecondNeumann(ChebyshevBase): #pragma: no cover
 
     def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
-            self._vandermonde_scalar_product()
+            SpectralBase._evaluate_scalar_product(self)
+            self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
             return
         output = self.CT.scalar_product(fast_transform=True)
         self.set_factor_array(output)
         sm2 = self.sl[slice(0, -2)]
         s2p = self.sl[slice(2, None)]
         output[sm2] -= self._factor*output[s2p]
-
-    def scalar_product(self, input_array=None, output_array=None, fast_transform=True):
-        if input_array is not None:
-            self.scalar_product.input_array[...] = input_array
-
-        self._evaluate_scalar_product(fast_transform=fast_transform)
-
-        output = self.scalar_product.output_array
-        output[self.si[0]] = self.mean*np.pi
         output[self.sl[slice(-2, None)]] = 0
-
-        if output_array is not None:
-            output_array[...] = output
-            return output_array
-        return output
 
     def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
-            SpectralBase.evaluate_expansion_all(self, input_array, output_array, False)
+            SpectralBase.vandermonde_evaluate_expansion_all(self, input_array, output_array)
             return
         w_hat = work[(input_array, 0, False)]
         w_hat = self.to_ortho(input_array, w_hat)
@@ -1249,7 +1173,10 @@ class SecondNeumann(ChebyshevBase): #pragma: no cover
                 # Already planned
                 return
 
-        self.CT.plan(shape, axis, dtype, options)
+        shapeCT = list(shape)
+        shapeCT[axis] = self.shape(False)
+        self.CT.plan(tuple(shapeCT), axis, dtype, options)
+        #self.CT.plan(shape, axis, dtype, options)
         self.CT.tensorproductspace = self.tensorproductspace
         xfftn_fwd = self.CT.forward.xfftn
         xfftn_bck = self.CT.backward.xfftn
@@ -1328,7 +1255,8 @@ class UpperDirichlet(ChebyshevBase):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        #self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(int(np.floor(padding_factor*N)), quad=quad, dtype=dtype, padding_factor=1, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor = np.ones(1)
         self.plan((int(padding_factor*N),), 0, dtype, {})
@@ -1376,12 +1304,10 @@ class UpperDirichlet(ChebyshevBase):
         """Return True if scaled basis is used, otherwise False"""
         return False
 
-    def _vandermonde_scalar_product(self):
-        SpectralBase._vandermonde_scalar_product(self)
-
     def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
-            self._vandermonde_scalar_product()
+            SpectralBase._evaluate_scalar_product(self)
+            self.scalar_product.output_array[self.si[-1]] = 0
             return
         output = self.CT.scalar_product(fast_transform=fast_transform)
         s0 = self.sl[slice(0, -1)]
@@ -1391,8 +1317,7 @@ class UpperDirichlet(ChebyshevBase):
 
     def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
-            self._padding_backward(input_array, self.backward.tmp_array)
-            SpectralBase.evaluate_expansion_all(self, self.backward.tmp_array, output_array, False)
+            SpectralBase.vandermonde_evaluate_expansion_all(self, self.backward.tmp_array, output_array)
             return
         w_hat = work[(input_array, 0, False)]
         w_hat = self.to_ortho(input_array, w_hat)
@@ -1424,33 +1349,6 @@ class UpperDirichlet(ChebyshevBase):
         output_array -= n_cheb.chebval(x, w_hat)
         return output_array
 
-    #def forward(self, input_array=None, output_array=None, fast_transform=True):
-    #    self.scalar_product(input_array, fast_transform=fast_transform)
-    #    u = self.scalar_product.tmp_array
-    #    self._truncation_forward(u, self.forward.output_array)
-    #    self.apply_inverse_mass(self.forward.output_array)
-    #    if output_array is not None:
-    #        output_array[...] = self.forward.output_array
-    #        return output_array
-    #    return self.forward.output_array
-
-    def backward(self, input_array=None, output_array=None, fast_transform=True, kind='normal'):
-        if not kind == 'normal':
-            # Use vandermonde
-            return SpectralBase.backward(self, input_array, output_array, fast_transform=False, kind=kind)
-
-        if input_array is not None:
-            self.backward.input_array[...] = input_array
-
-        self.evaluate_expansion_all(self.backward.input_array,
-                                    self.backward.output_array,
-                                    fast_transform=fast_transform)
-
-        if output_array is not None:
-            output_array[...] = self.backward.output_array
-            return output_array
-        return self.backward.output_array
-
     def plan(self, shape, axis, dtype, options):
         if shape in (0, (0,)):
             return
@@ -1464,7 +1362,10 @@ class UpperDirichlet(ChebyshevBase):
                 # Already planned
                 return
 
-        self.CT.plan(shape, axis, dtype, options)
+        shapeCT = list(shape)
+        shapeCT[axis] = self.shape(False)
+        self.CT.plan(tuple(shapeCT), axis, dtype, options)
+        #self.CT.plan(shape, axis, dtype, options)
         self.CT.tensorproductspace = self.tensorproductspace
         xfftn_fwd = self.CT.forward.xfftn
         xfftn_bck = self.CT.backward.xfftn
@@ -1520,7 +1421,8 @@ class ShenBiPolar(ChebyshevBase):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
-        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        #self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(int(np.floor(padding_factor*N)), quad=quad, dtype=dtype, padding_factor=1, dealias_direct=dealias_direct)
         self.plan((int(padding_factor*N),), 0, dtype, {})
 
     @staticmethod
@@ -1579,13 +1481,9 @@ class ShenBiPolar(ChebyshevBase):
             output_array[:, j] = self.evaluate_basis_derivative(x, j, k, output_array=D)
         return output_array
 
-    def scalar_product(self, input_array=None, output_array=None, fast_transform=False):
-        output = SpectralBase.scalar_product(self, input_array, output_array, False)
-        output[self.sl[slice(-4, None)]] = 0
-        return output
-
-    def _vandermonde_scalar_product(self):
-        SpectralBase._vandermonde_scalar_product(self)
+    def _evaluate_scalar_product(self, fast_transform=False):
+        SpectralBase._evaluate_scalar_product(self)
+        self.scalar_product.output_array[self.sl[slice(-4, None)]] = 0
 
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
@@ -1595,16 +1493,6 @@ class ShenBiPolar(ChebyshevBase):
         fj = self.evaluate_basis_all(x)
         output_array[:] = np.dot(fj, u)
         return output_array
-
-    #def forward(self, input_array=None, output_array=None, fast_transform=False):
-    #    self.scalar_product(input_array, fast_transform=fast_transform)
-    #    u = self.scalar_product.tmp_array
-    #    self._truncation_forward(u, self.forward.output_array)
-    #    self.apply_inverse_mass(self.forward.output_array)
-    #    if output_array is not None:
-    #        output_array[...] = self.forward.output_array
-    #        return output_array
-    #    return self.forward.output_array
 
     def plan(self, shape, axis, dtype, options):
         if shape in (0, (0,)):
@@ -1619,7 +1507,10 @@ class ShenBiPolar(ChebyshevBase):
                 # Already planned
                 return
 
-        self.CT.plan(shape, axis, dtype, options)
+        shapeCT = list(shape)
+        shapeCT[axis] = self.shape(False)
+        self.CT.plan(tuple(shapeCT), axis, dtype, options)
+        #self.CT.plan(shape, axis, dtype, options)
         self.CT.tensorproductspace = self.tensorproductspace
         xfftn_fwd = self.CT.forward.xfftn
         xfftn_bck = self.CT.backward.xfftn
@@ -1677,7 +1568,8 @@ class DirichletNeumann(ChebyshevBase):
                  padding_factor=1, dealias_direct=False, coordinates=None):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
-        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        #self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(int(np.floor(padding_factor*N)), quad=quad, dtype=dtype, padding_factor=1, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
@@ -1753,7 +1645,8 @@ class DirichletNeumann(ChebyshevBase):
 
     def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
-            self._vandermonde_scalar_product()
+            SpectralBase._evaluate_scalar_product(self)
+            self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
             return
         output = self.CT.scalar_product(fast_transform=fast_transform)
         Tk = work[(output, 0, True)]
@@ -1764,11 +1657,11 @@ class DirichletNeumann(ChebyshevBase):
         s2 = self.sl[slice(2, None)]
         output[s0] += self._factor1*Tk[s1]
         output[s0] += self._factor2*Tk[s2]
+        output[self.sl[slice(-2, None)]] = 0
 
     def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
-            self._padding_backward(input_array, self.backward.tmp_array)
-            SpectralBase.evaluate_expansion_all(self, self.backward.tmp_array, output_array, False)
+            SpectralBase.vandermonde_evaluate_expansion_all(self, self.backward.tmp_array, output_array)
             return
         w_hat = work[(input_array, 0, False)]
         w_hat = self.to_ortho(input_array, w_hat)
@@ -1801,33 +1694,6 @@ class DirichletNeumann(ChebyshevBase):
         output_array += n_cheb.chebval(x, w_hat)
         return output_array
 
-    #def forward(self, input_array=None, output_array=None, fast_transform=True):
-    #    self.scalar_product(input_array, fast_transform=fast_transform)
-    #    u = self.scalar_product.tmp_array
-    #    self._truncation_forward(u, self.forward.output_array)
-    #    self.apply_inverse_mass(self.forward.output_array)
-    #    if output_array is not None:
-    #        output_array[...] = self.forward.output_array
-    #        return output_array
-    #    return self.forward.output_array
-
-    def backward(self, input_array=None, output_array=None, fast_transform=True, kind='normal'):
-        if not kind == 'normal':
-            # Use vandermonde
-            return SpectralBase.backward(self, input_array, output_array, fast_transform=False, kind=kind)
-
-        if input_array is not None:
-            self.backward.input_array[...] = input_array
-
-        self.evaluate_expansion_all(self.backward.input_array,
-                                    self.backward.output_array,
-                                    fast_transform=fast_transform)
-
-        if output_array is not None:
-            output_array[...] = self.backward.output_array
-            return output_array
-        return self.backward.output_array
-
     def plan(self, shape, axis, dtype, options):
         if shape in (0, (0,)):
             return
@@ -1841,7 +1707,10 @@ class DirichletNeumann(ChebyshevBase):
                 # Already planned
                 return
 
-        self.CT.plan(shape, axis, dtype, options)
+        shapeCT = list(shape)
+        shapeCT[axis] = self.shape(False)
+        self.CT.plan(tuple(shapeCT), axis, dtype, options)
+        #self.CT.plan(shape, axis, dtype, options)
         self.CT.tensorproductspace = self.tensorproductspace
         xfftn_fwd = self.CT.forward.xfftn
         xfftn_bck = self.CT.backward.xfftn
@@ -1899,7 +1768,8 @@ class NeumannDirichlet(ChebyshevBase):
                  padding_factor=1, dealias_direct=False, coordinates=None):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
-        self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        #self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
+        self.CT = Orthogonal(int(np.floor(padding_factor*N)), quad=quad, dtype=dtype, padding_factor=1, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
@@ -1975,7 +1845,8 @@ class NeumannDirichlet(ChebyshevBase):
 
     def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
-            self._vandermonde_scalar_product()
+            SpectralBase._evaluate_scalar_product(self)
+            self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
             return
         output = self.CT.scalar_product(fast_transform=fast_transform)
         Tk = work[(output, 0, True)]
@@ -1986,11 +1857,11 @@ class NeumannDirichlet(ChebyshevBase):
         s2 = self.sl[slice(2, None)]
         output[s0] += self._factor1*Tk[s1]
         output[s0] += self._factor2*Tk[s2]
+        output[self.sl[slice(-2, None)]] = 0
 
     def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
         if fast_transform is False:
-            self._padding_backward(input_array, self.backward.tmp_array)
-            SpectralBase.evaluate_expansion_all(self, self.backward.tmp_array, output_array, False)
+            SpectralBase.vandermonde_evaluate_expansion_all(self, self.backward.tmp_array, output_array)
             return
         w_hat = work[(input_array, 0, False)]
         w_hat = self.to_ortho(input_array, w_hat)
@@ -2023,33 +1894,6 @@ class NeumannDirichlet(ChebyshevBase):
         output_array += n_cheb.chebval(x, w_hat)
         return output_array
 
-    #def forward(self, input_array=None, output_array=None, fast_transform=True):
-    #    self.scalar_product(input_array, fast_transform=fast_transform)
-    #    u = self.scalar_product.tmp_array
-    #    self._truncation_forward(u, self.forward.output_array)
-    #    self.apply_inverse_mass(self.forward.output_array)
-    #    if output_array is not None:
-    #        output_array[...] = self.forward.output_array
-    #        return output_array
-    #    return self.forward.output_array
-
-    def backward(self, input_array=None, output_array=None, fast_transform=True, kind='normal'):
-        if not kind == 'normal':
-            # Use vandermonde
-            return SpectralBase.backward(self, input_array, output_array, fast_transform=False, kind=kind)
-
-        if input_array is not None:
-            self.backward.input_array[...] = input_array
-
-        self.evaluate_expansion_all(self.backward.input_array,
-                                    self.backward.output_array,
-                                    fast_transform=fast_transform)
-
-        if output_array is not None:
-            output_array[...] = self.backward.output_array
-            return output_array
-        return self.backward.output_array
-
     def plan(self, shape, axis, dtype, options):
         if shape in (0, (0,)):
             return
@@ -2063,7 +1907,10 @@ class NeumannDirichlet(ChebyshevBase):
                 # Already planned
                 return
 
-        self.CT.plan(shape, axis, dtype, options)
+        shapeCT = list(shape)
+        shapeCT[axis] = self.shape(False)
+        self.CT.plan(tuple(shapeCT), axis, dtype, options)
+        #self.CT.plan(shape, axis, dtype, options)
         self.CT.tensorproductspace = self.tensorproductspace
         xfftn_fwd = self.CT.forward.xfftn
         xfftn_bck = self.CT.backward.xfftn
