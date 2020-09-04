@@ -299,9 +299,9 @@ class SpectralBase:
                 mesh = kind.mesh()
                 if len(kind) > 1:
                     mesh = np.squeeze(mesh[self.axis])
-            self.vandermonde_evaluate_expansion_all(self.backward.tmp_array,
-                                                    self.backward.output_array,
-                                                    x=mesh)
+            self.evaluate_expansion_all(self.backward.tmp_array,
+                                        self.backward.output_array,
+                                        x=mesh, fast_transform=False) # cannot use fast transforms on random mesh
 
         if output_array is not None:
             output_array[...] = self.backward.output_array
@@ -434,6 +434,60 @@ class SpectralBase:
         """
         raise NotImplementedError
 
+    def evaluate_expansion_all(self, input_array, output_array,
+                               x=None, fast_transform=False):
+        r"""Evaluate expansion on 'x' or entire mesh
+
+        .. math::
+
+            u(x_j) = \sum_{k\in\mathcal{I}} \hat{u}_k T_k(x_j) \quad \text{ for all} \quad j = 0, 1, ..., N
+
+        Parameters
+        ----------
+            input_array : :math:`\hat{u}_k`
+                Expansion coefficients, or instance of :class:`.Function`
+            output_array : :math:`u(x_j)`
+                Function values on quadrature mesh, instance of :class:`.Array`
+            x : points for evaluation, optional
+                If None, use entire quadrature mesh
+            fast_transform : bool, optional
+                Whether to use fast transforms (if implemented)
+
+        """
+        P = self.evaluate_basis_all(x=x, argument=1)
+        if output_array.ndim == 1:
+            output_array = np.dot(P, input_array, out=output_array)
+        else:
+            fc = np.moveaxis(input_array, self.axis, -2)
+            shape = [slice(None)]*input_array.ndim
+            N = self.shape(False)
+            shape[-2] = slice(0, N)
+            array = np.dot(P, fc[tuple(shape)])
+            output_array[:] = np.moveaxis(array, 0, self.axis)
+
+    def eval(self, x, u, output_array=None):
+        """Evaluate :class:`.Function` ``u`` at position ``x``
+
+        Parameters
+        ----------
+            x : float or array of floats
+            u : array
+                Expansion coefficients or instance of :class:`.Function`
+            output_array : array, optional
+                Function values at points
+
+        Returns
+        -------
+            array
+                output_array
+
+        """
+        if output_array is None:
+            output_array = np.zeros(x.shape, dtype=self.dtype)
+        x = self.map_reference_domain(x)
+        self.evaluate_expansion_all(u, output_array, x, False)
+        return output_array
+
     def _evaluate_scalar_product(self, fast_transform=False):
         """Evaluate scalar product
 
@@ -464,54 +518,6 @@ class SpectralBase:
             fc = np.moveaxis(input_array*weights[tuple(bc_shape)], self.axis, -1)
             output_array[self.sl[slice(0, M)]] = np.moveaxis(np.dot(fc, np.conj(P)), -1, self.axis)
             #output_array[:] = np.moveaxis(np.tensordot(input_array*weights[bc_shape], np.conj(P), (self.axis, 0)), -1, self.axis)
-
-    def vandermonde_evaluate_expansion_all(self, input_array, output_array, x=None):
-        """Naive implementation of evaluate_expansion_all
-
-        Parameters
-        ----------
-            input_array : array
-                Expansion coefficients
-            output_array : array
-                Function values on quadrature mesh
-            x : mesh or None, optional
-
-        """
-        P = self.evaluate_basis_all(x=x, argument=1)
-        if output_array.ndim == 1:
-            output_array = np.dot(P, input_array, out=output_array)
-        else:
-            fc = np.moveaxis(input_array, self.axis, -2)
-            shape = [slice(None)]*input_array.ndim
-            N = self.shape(False)
-            shape[-2] = slice(0, N)
-            array = np.dot(P, fc[tuple(shape)])
-            output_array[:] = np.moveaxis(array, 0, self.axis)
-
-    def vandermonde_evaluate_expansion(self, points, input_array, output_array):
-        """Evaluate expansion at certain points, possibly different from
-        the quadrature points
-
-        Parameters
-        ----------
-            points : array
-                Points for evaluation
-            input_array : array
-                Expansion coefficients
-            output_array : array
-                Function values on points
-
-        """
-        P = self.evaluate_basis_all(x=points, argument=1)
-
-        if output_array.ndim == 1:
-            output_array = np.dot(P, input_array, out=output_array)
-        else:
-            fc = np.moveaxis(input_array, self.axis, -2)
-            array = np.dot(P, fc)
-            output_array[:] = np.moveaxis(array, 0, self.axis)
-
-        return output_array
 
     def apply_inverse_mass(self, array):
         """Apply inverse mass matrix
@@ -550,7 +556,10 @@ class SpectralBase:
                 output_array
 
         """
-        raise NotImplementedError
+        from shenfun import project
+        T = self.get_orthogonal()
+        output_array = project(input_array, T, output_array=output_array, use_to_ortho=False)
+        return output_array
 
     def plan(self, shape, axis, dtype, options):
         """Plan transform
@@ -654,48 +663,6 @@ class SpectralBase:
 
     def get_normalization(self):
         return self._M
-
-    def evaluate_expansion_all(self, input_array, output_array,
-                               fast_transform=False):
-        r"""Evaluate expansion on entire mesh
-
-        .. math::
-
-            u(x_j) = \sum_{k\in\mathcal{I}} \hat{u}_k T_k(x_j) \quad \text{ for all} \quad j = 0, 1, ..., N
-
-        Parameters
-        ----------
-            input_array : :math:`\hat{u}_k`
-                Expansion coefficients, or instance of :class:`.Function`
-            output_array : :math:`u(x_j)`
-                Function values on quadrature mesh, instance of :class:`.Array`
-            fast_transform : bool, optional
-                Whether to use fast transforms (if implemented)
-
-        """
-        self.vandermonde_evaluate_expansion_all(input_array, output_array)
-
-    def eval(self, x, u, output_array=None):
-        """Evaluate :class:`.Function` ``u`` at position ``x``
-
-        Parameters
-        ----------
-            x : float or array of floats
-            u : array
-                Expansion coefficients or instance of :class:`.Function`
-            output_array : array, optional
-                Function values at points
-
-        Returns
-        -------
-            array
-                output_array
-
-        """
-        if output_array is None:
-            output_array = np.zeros(x.shape, dtype=self.dtype)
-        x = self.map_reference_domain(x)
-        return self.vandermonde_evaluate_expansion(x, u, output_array)
 
     def map_reference_domain(self, x):
         """Return true point `x` mapped to reference domain"""

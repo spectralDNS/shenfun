@@ -190,13 +190,6 @@ class FourierBase(SpectralBase):
     #    """
     #    return array
 
-    def evaluate_expansion_all(self, input_array, output_array, fast_transform=True):
-        if fast_transform is False:
-            SpectralBase.evaluate_expansion_all(self, input_array, output_array, False)
-        else:
-            self.backward.xfftn(normalise_idft=False)
-        assert input_array is self.backward.xfftn.input_array
-
     def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
             SpectralBase._evaluate_scalar_product(self)
@@ -417,69 +410,31 @@ class R2C(FourierBase):
             return self.N//2+1
         return int(np.floor(self.padding_factor*self.N))
 
-    def vandermonde_evaluate_expansion_all(self, input_array, output_array, x=None):
-        assert abs(self.padding_factor-1) < 1e-8
-        assert self.N == output_array.shape[self.axis]
-        points = self.points_and_weights()[0]
-        P = self.vandermonde(points)
-        if output_array.ndim == 1:
-            output_array[:] = np.dot(P, input_array).real
-            if self.N % 2 == 0:
-                output_array += np.conj(np.dot(P[:, 1:-1], input_array[1:-1])).real
+    def evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
+        if fast_transform is False:
+            assert abs(self.padding_factor-1) < 1e-8
+            P = self.evaluate_basis_all(x=x)
+            if output_array.ndim == 1:
+                output_array[:] = np.dot(P, input_array).real
+                if self.N % 2 == 0:
+                    output_array += np.conj(np.dot(P[:, 1:-1], input_array[1:-1])).real
+                else:
+                    output_array += np.conj(np.dot(P[:, 1:], input_array[1:])).real
+
             else:
-                output_array += np.conj(np.dot(P[:, 1:], input_array[1:])).real
+                fc = np.moveaxis(input_array, self.axis, -2)
+                array = np.dot(P, fc).real
+                s = [slice(None)]*fc.ndim
+                if self.N % 2 == 0:
+                    s[-2] = slice(1, -1)
+                    array += np.conj(np.dot(P[:, 1:-1], fc[tuple(s)])).real
+                else:
+                    s[-2] = slice(1, None)
+                    array += np.conj(np.dot(P[:, 1:], fc[tuple(s)])).real
 
+                output_array[:] = np.moveaxis(array, 0, self.axis)
         else:
-            fc = np.moveaxis(input_array, self.axis, -2)
-            array = np.dot(P, fc).real
-            s = [slice(None)]*fc.ndim
-            if self.N % 2 == 0:
-                s[-2] = slice(1, -1)
-                array += np.conj(np.dot(P[:, 1:-1], fc[tuple(s)])).real
-            else:
-                s[-2] = slice(1, None)
-                array += np.conj(np.dot(P[:, 1:], fc[tuple(s)])).real
-
-            output_array[:] = np.moveaxis(array, 0, self.axis)
-
-    def vandermonde_evaluate_expansion(self, points, input_array, output_array):
-        """Evaluate expansion at certain points, possibly different from
-        the quadrature points
-
-        This method assumes the array is locally available in full, i.e., the
-        multidimensional arrays are aligned along the axis of this basis.
-
-        Parameters
-        ----------
-            P : 2D array
-                Vandermode matrix containing local points only
-            input_array : array
-                          Expansion coefficients
-            output_array : array
-                           Function values on points
-            last_conj_index : int
-                              The last index to sum over for conj part
-                              (R2C only)
-            offset : int
-                     Global offset (MPI)
-
-        Note
-        ----
-        This method is complicated by the fact that the data may not be aligned
-        along the axis of this basis.
-
-        """
-        assert abs(self.padding_factor-1) < 1e-8
-        points = self.map_reference_domain(points)
-        P = self.evaluate_basis_all(points)
-        assert output_array.ndim == 1 # Multidimensional should use vandermonde_evaluate_local_expansion
-        output_array[:] = np.dot(P, input_array).real
-        if self.N % 2 == 0:
-            output_array += np.conj(np.dot(P[:, 1:-1], input_array[1:-1])).real
-        else:
-            output_array += np.conj(np.dot(P[:, 1:], input_array[1:])).real
-
-        return output_array
+            self.backward.xfftn(normalise_idft=False)
 
     def _truncation_forward(self, padded_array, trunc_array):
         if not id(trunc_array) == id(padded_array):
@@ -588,6 +543,12 @@ class C2C(FourierBase):
         self._xfftn_bck = fftw.ifftn
         self.plan((int(padding_factor*N),), (0,), np.complex, {})
         self._slp = []
+
+    def evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
+        if fast_transform is False:
+            SpectralBase.evaluate_expansion_all(self, input_array, output_array, x, False)
+        else:
+            self.backward.xfftn(normalise_idft=False)
 
     def wavenumbers(self, bcast=True, scaled=False, eliminate_highest_freq=False):
         k = np.fft.fftfreq(self.N, 1./self.N).astype(int)

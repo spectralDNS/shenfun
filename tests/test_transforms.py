@@ -281,6 +281,9 @@ def test_transforms(ST, quad, dim):
     u0 = ST0.forward(fj, u0)
     u1 = ST0.backward(u0, u1)
     assert np.allclose(fj, u1, rtol=1e-5, atol=1e-6)
+    u0 = ST0.forward(fj, u0, fast_transform=False)
+    u1 = ST0.backward(u0, u1, fast_transform=False)
+    assert np.allclose(fj, u1, rtol=1e-5, atol=1e-6)
 
     # Multidimensional version
     for axis in range(dim):
@@ -563,6 +566,6 @@ if __name__ == '__main__':
     #test_CXXmat(cBasis[2], cBasis[3])
     #test_transforms(fBasis[0], '', 2)
     #test_project_1D(cBasis[0])
-    test_scalarproduct(cBasis[2], 'GC')
-    #test_eval(lBasisLG[1], 'LG')
+    #test_scalarproduct(cBasis[2], 'GC')
+    test_eval(cBasis[0], 'GC')
     #test_axis(cBasis[1], 'GC', 0)

@@ -5,3 +5,4 @@ from .la import TDMA_SymLU, TDMA_SymSolve, PDMA_SymLU, PDMA_SymSolve, \
 from .Matvec import Helmholtz_matvec, Biharmonic_matvec
 from .outer import outer2D, outer3D
 from .applymask import apply_mask
+from .Cheb import chebval
