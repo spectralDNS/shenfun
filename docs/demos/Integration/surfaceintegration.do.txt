@@ -134,7 +134,7 @@ spiral below, the result looks reasonable.
 !bc pycod
 import matplotlib.pyplot as plt
 fig = plt.figure(figsize=(4, 3))
-X = C.curvilinear_mesh(uniform=True)
+X = C.cartesian_mesh(uniform=True)
 ax = fig.add_subplot(111, projection='3d')
 p = ax.plot(X[0], X[1], X[2], 'r')
 hx = ax.set_xticks(np.linspace(-1, 1, 5))
@@ -380,7 +380,7 @@ generated image.
 
 !bc
 from mayavi import mlab
-xx, yy, zz = T.local_curvilinear_mesh()
+xx, yy, zz = T.local_cartesian_mesh()
 mlab.figure(bgcolor=(1, 1, 1), size=(400, 400))
 mlab.mesh(xx, yy, zz, scalars=fb, colormap='jet')
 mlab.show()

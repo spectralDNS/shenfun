@@ -432,7 +432,12 @@ class SpectralBase:
             array
                 Vandermonde matrix
         """
-        raise NotImplementedError
+        if x is None:
+            x = self.mesh(False, False)
+        V = np.zeros((x.shape[0], self.N))
+        for i in range(self.dim()):
+            V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
+        return V
 
     def evaluate_expansion_all(self, input_array, output_array,
                                x=None, fast_transform=False):
@@ -1308,7 +1313,7 @@ def inner_product(test, trial, measure=1):
         key = key + (test[0].domain, measure)
 
     mat = test[0]._get_mat()
-    A = mat[key](test, trial, measure=measure)
+    A = mat[key](test, trial)
     A.scale *= sc
     if not test[0].domain_factor() == 1:
         A.scale *= test[0].domain_factor()**(test[1]+trial[1])

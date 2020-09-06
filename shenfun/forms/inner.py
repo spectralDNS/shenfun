@@ -142,7 +142,8 @@ def inner(expr0, expr1, output_array=None, level=0):
         elif isinstance(space, SpectralBase):
             df = space.domain_factor()
         if isinstance(expr1, Function):
-            return (expr0/df)*dx(expr1.backward())
+            #return (expr0/df)*dx(expr1.backward())
+            expr1 = expr1.backward()
         if hasattr(space, 'hi'):
             if space.hi.prod() != 1:
                 expr1 = space.get_measured_array(expr1.copy())
@@ -157,7 +158,8 @@ def inner(expr0, expr1, output_array=None, level=0):
         elif isinstance(space, SpectralBase):
             df = space.domain_factor()
         if isinstance(expr0, Function):
-            return (expr1/df)*dx(expr0.backward())
+            #return (expr1/df)*dx(expr0.backward())
+            expr0 = expr0.backward()
         if hasattr(space, 'hi'):
             if space.hi.prod() != 1:
                 expr0 = space.get_measured_array(expr0.copy())

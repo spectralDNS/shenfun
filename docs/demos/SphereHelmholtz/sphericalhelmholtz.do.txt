@@ -210,7 +210,7 @@ leading to the figure in the top of this demo.
 u_hat2 = u_hat.refine([N*2, M*2])
 ur = u_hat2.backward()
 from mayavi import mlab
-xx, yy, zz = u_hat2.function_space().local_curvilinear_mesh()
+xx, yy, zz = u_hat2.function_space().local_cartesian_mesh()
 # Wrap periodic direction around
 if T.bases[1].domain == (0, 2*np.pi):
     xx = np.hstack([xx, xx[:, 0][:, None]])

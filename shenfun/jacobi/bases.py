@@ -50,6 +50,8 @@ except:
 mode = os.environ.get('SHENFUN_JACOBI_MODE', 'numpy')
 mode = mode if has_quadpy else 'numpy'
 
+_x = sp.Symbol('x', real=True)
+
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
 __all__ = ['JacobiBase', 'Orthogonal', 'ShenDirichlet', 'ShenBiharmonic',
@@ -156,9 +158,9 @@ class JacobiBase(SpectralBase):
             return self.points_and_weights(N=N, map_true_domain=map_true_domain, weighted=weighted, **kw)
         if N is None:
             N = self.shape(False)
-        pw = quadpy.line_segment.gauss_jacobi(N, self.alpha, self.beta, 'mpmath')
-        points = pw.points
-        weights = pw.weights
+        pw = quadpy.c1.gauss_jacobi(N, self.alpha, self.beta, 'mpmath')
+        points = pw.points_symbolic
+        weights = pw.weights_symbolic
         if map_true_domain is True:
             points = self.map_true_domain(points)
         return points, weights
@@ -169,9 +171,8 @@ class JacobiBase(SpectralBase):
             for n in range(N):
                 V[:, n] = eval_jacobi(n, alpha, beta, x)
         else:
-            X = sp.symbols('x', real=True)
             for n in range(N):
-                V[:, n] = sp.lambdify(X, sp.jacobi(n, alpha, beta, X), 'mpmath')(x)
+                V[:, n] = sp.lambdify(_x, sp.jacobi(n, alpha, beta, _x), 'mpmath')(x)
         return V
 
     def derivative_jacobi(self, x, alpha, beta, k=1):
@@ -261,7 +262,7 @@ class Orthogonal(JacobiBase):
     #def get_orthogonal(self):
     #    return self
 
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=_x):
         return sp.jacobi(i, self.alpha, self.beta, x)
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -271,9 +272,23 @@ class Orthogonal(JacobiBase):
         if mode == 'numpy':
             output_array = eval_jacobi(i, self.alpha, self.beta, x, out=output_array)
         else:
-            X = sp.symbols('x', real=True)
-            f = self.sympy_basis(i, X)
-            output_array[:] = sp.lambdify(X, f, 'mpmath')(x)
+            f = self.sympy_basis(i, _x)
+            output_array[:] = sp.lambdify(_x, f, 'mpmath')(x)
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        if x is None:
+            x = self.points_and_weights(mode=mode)[0]
+        #x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape, dtype=self.dtype)
+
+        if mode == 'numpy':
+            dj = np.prod(np.array([i+self.alpha+self.beta+1+j for j in range(k)]))
+            output_array[:] = dj/2**k*eval_jacobi(i-k, self.alpha+k, self.beta+k, x)
+        else:
+            f = sp.jacobi(i, self.alpha, self.beta, _x)
+            output_array[:] = sp.lambdify(_x, f.diff(_x, k), 'mpmath')(x)
         return output_array
 
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
@@ -294,22 +309,6 @@ class Orthogonal(JacobiBase):
         if x is None:
             x = self.mpmath_points_and_weights()[0]
         return self.vandermonde(x)
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        if x is None:
-            x = self.points_and_weights(mode=mode)[0]
-        #x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape, dtype=self.dtype)
-
-        if mode == 'numpy':
-            dj = np.prod(np.array([i+self.alpha+self.beta+1+j for j in range(k)]))
-            output_array[:] = dj/2**k*eval_jacobi(i-k, self.alpha+k, self.beta+k, x)
-        else:
-            X = sp.symbols('x', real=True)
-            f = sp.jacobi(i, self.alpha, self.beta, X)
-            output_array[:] = sp.lambdify(X, f.diff(X, k), 'mpmath')(x)
-        return output_array
 
 
 class ShenDirichlet(JacobiBase):
@@ -395,7 +394,7 @@ class ShenDirichlet(JacobiBase):
             V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
         return V
 
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=_x):
         return (1-x**2)*sp.jacobi(i, 1, 1, x)
         #return (1-x)**(-self.alpha)*(1+x)**(-self.beta)*sp.jacobi(i, -self.alpha, -self.beta, x)
 
@@ -404,9 +403,8 @@ class ShenDirichlet(JacobiBase):
             x = self.mpmath_points_and_weights()[0]
         if output_array is None:
             output_array = np.zeros(x.shape, dtype=self.dtype)
-        X = sp.symbols('x', real=True)
-        f = self.sympy_basis(i, X)
-        output_array[:] = sp.lambdify(X, f.diff(X, k), mode)(x)
+        f = self.sympy_basis(i, _x)
+        output_array[:] = sp.lambdify(_x, f.diff(_x, k), mode)(x)
         return output_array
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -416,9 +414,8 @@ class ShenDirichlet(JacobiBase):
         if mode == 'numpy':
             output_array = (1-x**2)*eval_jacobi(i, -self.alpha, -self.beta, x, out=output_array)
         else:
-            X = sp.symbols('x', real=True)
-            f = self.sympy_basis(i, X)
-            output_array[:] = sp.lambdify(X, f, 'mpmath')(x)
+            f = self.sympy_basis(i, _x)
+            output_array[:] = sp.lambdify(_x, f, 'mpmath')(x)
         return output_array
 
     def evaluate_basis_all(self, x=None, argument=0):
@@ -451,9 +448,9 @@ class ShenDirichlet(JacobiBase):
         if N is None:
             N = self.shape(False)
         assert self.quad == "JG"
-        pw = quadpy.line_segment.gauss_jacobi(N, self.alpha+1, self.beta+1, mode)
-        points = pw.points
-        weights = pw.weights
+        pw = quadpy.c1.gauss_jacobi(N, self.alpha+1, self.beta+1, mode)
+        points = pw.points_symbolic
+        weights = pw.weights_symbolic
         if map_true_domain is True:
             points = self.map_true_domain(points)
         return points, weights
@@ -538,7 +535,7 @@ class ShenBiharmonic(JacobiBase):
     def slice(self):
         return slice(0, self.N-4)
 
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=_x):
         return (1-x**2)**2*sp.jacobi(i, 2, 2, x)
 
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
@@ -555,9 +552,8 @@ class ShenBiharmonic(JacobiBase):
             x = self.mpmath_points_and_weights()[0]
         if output_array is None:
             output_array = np.zeros(x.shape, dtype=self.dtype)
-        X = sp.symbols('x', real=True)
-        f = self.sympy_basis(i, X)
-        output_array[:] = sp.lambdify(X, f.diff(X, k), mode)(x)
+        f = self.sympy_basis(i, _x)
+        output_array[:] = sp.lambdify(_x, f.diff(_x, k), mode)(x)
         return output_array
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -607,9 +603,9 @@ class ShenBiharmonic(JacobiBase):
         if N is None:
             N = self.shape(False)
         assert self.quad == "JG"
-        pw = quadpy.line_segment.gauss_jacobi(N, 0, 0, 'mpmath')
-        points = pw.points
-        weights = pw.weights
+        pw = quadpy.c1.gauss_jacobi(N, 0, 0, 'mpmath')
+        points = pw.points_symbolic
+        weights = pw.weights_symbolic
         if map_true_domain is True:
             points = self.map_true_domain(points)
         return points, weights
@@ -690,7 +686,7 @@ class ShenOrder6(JacobiBase):
     def slice(self):
         return slice(0, self.N-6)
 
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=_x):
         return (1-x**2)**3*sp.jacobi(i, 3, 3, x)
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -698,9 +694,8 @@ class ShenOrder6(JacobiBase):
             x = self.mpmath_points_and_weights()[0]
         if output_array is None:
             output_array = np.zeros(x.shape)
-        X = sp.symbols('x', real=True)
-        f = self.sympy_basis(i, X)
-        output_array[:] = sp.lambdify(X, f.diff(X, k), mode)(x)
+        f = self.sympy_basis(i, _x)
+        output_array[:] = sp.lambdify(_x, f.diff(_x, k), mode)(x)
         return output_array
 
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
@@ -719,9 +714,8 @@ class ShenOrder6(JacobiBase):
         if mode == 'numpy':
             output_array[:] = (1-x**2)**3*eval_jacobi(i, 3, 3, x, out=output_array)
         else:
-            X = sp.symbols('x', real=True)
-            f = self.sympy_basis(i, X)
-            output_array[:] = sp.lambdify(X, f, 'mpmath')(x)
+            f = self.sympy_basis(i, _x)
+            output_array[:] = sp.lambdify(_x, f, 'mpmath')(x)
         return output_array
 
     def evaluate_basis_all(self, x=None, argument=0):
@@ -755,9 +749,9 @@ class ShenOrder6(JacobiBase):
         if N is None:
             N = self.shape(False)
         assert self.quad == "JG"
-        pw = quadpy.line_segment.gauss_jacobi(N, 0, 0, 'mpmath')
-        points = pw.points
-        weights = pw.weights
+        pw = quadpy.c1.gauss_jacobi(N, 0, 0, 'mpmath')
+        points = pw.points_symbolic
+        weights = pw.weights_symbolic
         if map_true_domain is True:
             points = self.map_true_domain(points)
         return points, weights
