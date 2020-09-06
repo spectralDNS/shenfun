@@ -153,50 +153,37 @@ class FourierBase(SpectralBase):
         return V
 
     # Reimplemented for efficiency (smaller array in *= when truncated)
-    #def forward(self, input_array=None, output_array=None, fast_transform=True, padding_factor=1):
-    #    if padding_factor > 1:
-    #        assert self._padded_basis is not None
-    #        output_array = self._padded_basis.forward(input_array, output_array, fast_transform=fast_transform)
-    #        return output_array
+    def forward(self, input_array=None, output_array=None, fast_transform=True):
 
-    #    if fast_transform is False:
-    #        return SpectralBase.forward(self, input_array, output_array, False)
+        if fast_transform is False:
+            return SpectralBase.forward(self, input_array, output_array, False)
 
-    #    if input_array is not None:
-    #        self.forward.input_array[...] = input_array
+        if input_array is not None:
+            self.forward.input_array[...] = input_array
 
-    #    self.forward.xfftn()
-    #    self._truncation_forward(self.forward.tmp_array,
-    #                             self.forward.output_array)
-    #    M = self.get_normalization()
-    #    self.forward._output_array *= M
+        self.forward.xfftn()
+        self._truncation_forward(self.forward.tmp_array,
+                                 self.forward.output_array)
+        M = self.get_normalization()
+        self.forward._output_array *= M
 
-    #    if output_array is not None:
-    #        output_array[...] = self.forward.output_array
-    #        return output_array
-    #    return self.forward.output_array
+        self.apply_inverse_mass(self.forward.output_array)
+        if output_array is not None:
+            output_array[...] = self.forward.output_array
+            return output_array
+        return self.forward.output_array
 
-    #def apply_inverse_mass(self, array):
-    #    """Apply inverse mass
-
-    #    Note
-    #    ----
-    #    Mass matrix is identity, so do nothing
-
-    #    Parameters
-    #    ----------
-    #        array : array (input/output)
-    #                Expansion coefficients.
-    #    """
-    #    return array
+    def apply_inverse_mass(self, array):
+        if not self.coors.is_cartesian: # mass matrix may not be diagonal
+            return SpectralBase.apply_inverse_mass(self, array)
+        return array
 
     def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
             SpectralBase._evaluate_scalar_product(self)
             return
         output = self.scalar_product.xfftn()
-        M = self.get_normalization()
-        output *= M
+        output *= self.get_normalization()
 
     def reference_domain(self):
         return (0., 2*np.pi)
@@ -360,8 +347,6 @@ class R2C(FourierBase):
                              domain=domain, dealias_direct=dealias_direct,
                              coordinates=coordinates)
         self.N = N
-        #self._xfftn_fwd = pyfftw.builders.rfftn
-        #self._xfftn_bck = pyfftw.builders.irfftn
         self._xfftn_fwd = fftw.rfftn
         self._xfftn_bck = fftw.irfftn
         self._sn = []
@@ -537,8 +522,6 @@ class C2C(FourierBase):
                              domain=domain, dealias_direct=dealias_direct,
                              coordinates=coordinates)
         self.N = N
-        #self._xfftn_fwd = pyfftw.builders.fftn
-        #self._xfftn_bck = pyfftw.builders.ifftn
         self._xfftn_fwd = fftw.fftn
         self._xfftn_bck = fftw.ifftn
         self.plan((int(padding_factor*N),), (0,), np.complex, {})
