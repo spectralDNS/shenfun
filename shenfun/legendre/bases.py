@@ -77,6 +77,7 @@ class LegendreBase(SpectralBase):
         self.forward = functools.partial(self.forward, fast_transform=False)
         self.backward = functools.partial(self.backward, fast_transform=False)
         self.scalar_product = functools.partial(self.scalar_product, fast_transform=False)
+        self.plan(int(padding_factor*N), 0, dtype, {})
 
     @staticmethod
     def family():
@@ -131,19 +132,18 @@ class LegendreBase(SpectralBase):
         if x is None:
             x = self.mesh(False, False)
         V = self.vandermonde(x)
-        #assert self.N == V.shape[1]
         N, M = self.shape(False), self.shape(True)
         if k > 0:
             D = np.zeros((M, N))
             D[:-k] = leg.legder(np.eye(M, N), k)
             V = np.dot(V, D)
-        return self._composite_basis(V, argument=argument)
+        return self._composite(V, argument=argument)
 
     def evaluate_basis_all(self, x=None, argument=0):
         if x is None:
             x = self.mesh(False, False)
         V = self.vandermonde(x)
-        return self._composite_basis(V, argument=argument)
+        return self._composite(V, argument=argument)
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
         if x is None:
@@ -156,7 +156,7 @@ class LegendreBase(SpectralBase):
             basis = basis.deriv(k)
         return basis(x)
 
-    def _composite_basis(self, V, argument=0):
+    def _composite(self, V, argument=0):
         """Return composite basis, where ``V`` is primary Vandermonde matrix."""
         return V
 
@@ -233,7 +233,6 @@ class Orthogonal(LegendreBase):
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
-        self.plan(int(padding_factor*N), 0, dtype, {})
 
     def eval(self, x, u, output_array=None):
         if output_array is None:
@@ -293,7 +292,6 @@ class ShenDirichlet(LegendreBase):
         self._scaled = scaled
         self._factor = np.ones(1)
         self._bc_basis = None
-        self.plan(int(N*padding_factor), 0, dtype, {})
         self.bc = BoundaryValues(self, bc=bc)
 
     @staticmethod
@@ -313,7 +311,7 @@ class ShenDirichlet(LegendreBase):
     def is_scaled(self):
         return self._scaled
 
-    def _composite_basis(self, V, argument=0):
+    def _composite(self, V, argument=0):
         P = np.zeros(V.shape)
         if not self.is_scaled():
             P[:, :-2] = V[:, :-2] - V[:, 2:]
@@ -327,7 +325,7 @@ class ShenDirichlet(LegendreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = np.zeros_like(input_array)
         else:
             output_array.fill(0)
 
@@ -428,22 +426,15 @@ class ShenDirichlet(LegendreBase):
                              scaled=self._scaled)
 
     def get_unplanned(self):
-        """Return unplanned space (otherwise as self)
-
-        Returns
-        -------
-        SpectralBase
-            The space to be used for dealiasing
-        """
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc,
-                              scaled=self._scaled)
+        return ShenDirichlet(self.N,
+                             quad=self.quad,
+                             domain=self.domain,
+                             dtype=self.dtype,
+                             padding_factor=self.padding_factor,
+                             dealias_direct=self.dealias_direct,
+                             coordinates=self.coors.coordinates,
+                             bc=self.bc.bc,
+                             scaled=self._scaled)
 
 
 class ShenNeumann(LegendreBase):
@@ -487,13 +478,12 @@ class ShenNeumann(LegendreBase):
                               coordinates=coordinates)
         self.mean = mean
         self._factor = np.zeros(0)
-        self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
         return 'Neumann'
 
-    def _composite_basis(self, V, argument=0):
+    def _composite(self, V, argument=0):
         P = np.zeros(V.shape)
         k = np.arange(V.shape[1]).astype(np.float)
         P[:, :-2] = V[:, :-2] - (k[:-2]*(k[:-2]+1)/(k[:-2]+2))/(k[:-2]+3)*V[:, 2:]
@@ -537,7 +527,7 @@ class ShenNeumann(LegendreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = np.zeros_like(input_array)
         else:
             output_array.fill(0)
 
@@ -583,21 +573,14 @@ class ShenNeumann(LegendreBase):
                            mean=self.mean)
 
     def get_unplanned(self):
-        """Return unplanned space (otherwise as self)
-
-        Returns
-        -------
-        SpectralBase
-            The space to be used for dealiasing
-        """
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              mean=self.mean)
+        return ShenNeumann(self.N,
+                           quad=self.quad,
+                           domain=self.domain,
+                           dtype=self.dtype,
+                           padding_factor=self.padding_factor,
+                           dealias_direct=self.dealias_direct,
+                           coordinates=self.coors.coordinates,
+                           mean=self.mean)
 
 
 class ShenBiharmonic(LegendreBase):
@@ -644,7 +627,6 @@ class ShenBiharmonic(LegendreBase):
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
         self._bc_basis = None
-        self.plan(int(N*padding_factor), 0, dtype, {})
         self.bc = BoundaryValues(self, bc=bc)
 
     @staticmethod
@@ -655,7 +637,7 @@ class ShenBiharmonic(LegendreBase):
     def has_nonhomogeneous_bcs(self):
         return self.bc.has_nonhomogeneous_bcs()
 
-    def _composite_basis(self, V, argument=0):
+    def _composite(self, V, argument=0):
         P = np.zeros_like(V)
         k = np.arange(V.shape[1]).astype(np.float)[:-4]
         P[:, :-4] = V[:, :-4] - (2*(2*k+5)/(2*k+7))*V[:, 2:-2] + ((2*k+3)/(2*k+7))*V[:, 4:]
@@ -727,7 +709,7 @@ class ShenBiharmonic(LegendreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = np.zeros_like(input_array)
         else:
             output_array.fill(0)
 
@@ -781,14 +763,7 @@ class ShenBiharmonic(LegendreBase):
                               bc=self.bc.bc)
 
     def get_unplanned(self):
-        """Return unplanned space (otherwise as self)
-
-        Returns
-        -------
-        SpectralBase
-            The space to be used for dealiasing
-        """
-        return self.__class__(self.N,
+        return ShenBiharmonic(self.N,
                               quad=self.quad,
                               domain=self.domain,
                               dtype=self.dtype,
@@ -836,7 +811,6 @@ class UpperDirichlet(LegendreBase):
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         self._factor = np.ones(1)
-        self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -849,14 +823,14 @@ class UpperDirichlet(LegendreBase):
     def is_scaled(self):
         return False
 
-    def _composite_basis(self, V, argument=0):
+    def _composite(self, V, argument=0):
         P = np.zeros(V.shape)
         P[:, :-1] = V[:, :-1] - V[:, 1:]
         return P
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = np.zeros_like(input_array)
         else:
             output_array.fill(0)
 
@@ -947,7 +921,6 @@ class ShenBiPolar(LegendreBase):
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
-        self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -1007,7 +980,6 @@ class ShenBiPolar(LegendreBase):
         return output_array
 
 
-
 class ShenBiPolar0(LegendreBase):
     """Legendre function space for biharmonic basis for polar coordinates
 
@@ -1051,7 +1023,6 @@ class ShenBiPolar0(LegendreBase):
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
         self._factor3 = np.zeros(0)
-        self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -1061,7 +1032,7 @@ class ShenBiPolar0(LegendreBase):
     def has_nonhomogeneous_bcs(self):
         return False
 
-    def _composite_basis(self, V, argument=0):
+    def _composite(self, V, argument=0):
         P = np.zeros_like(V)
         k = np.arange(V.shape[1]).astype(np.float)[:-3]
         P[:, :-3] = V[:, :-3] - ((2*k+3)*(k+4)/(2*k+5)/(k+2))*V[:, 1:-2] - (k*(k+1)/(k+2)/(k+3))*V[:, 2:-1] + (k+1)*(2*k+3)/(k+3)/(2*k+5)*V[:, 3:]
@@ -1106,7 +1077,7 @@ class ShenBiPolar0(LegendreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = np.zeros_like(input_array)
         else:
             output_array.fill(0)
 
@@ -1184,7 +1155,6 @@ class DirichletNeumann(LegendreBase):
         from shenfun.tensorproductspace import BoundaryValues
         self._factor1 = np.ones(1)
         self._factor2 = np.ones(1)
-        self.plan(int(N*padding_factor), 0, np.float, {})
         self.bc = BoundaryValues(self, bc=bc)
 
     @staticmethod
@@ -1203,7 +1173,7 @@ class DirichletNeumann(LegendreBase):
             self._factor1 = ((2*k+3)/(k+2)**2).astype(float)
             self._factor2 = -((k+1)**2/(k+2)**2).astype(float)
 
-    def _composite_basis(self, V, argument=0):
+    def _composite(self, V, argument=0):
         P = np.zeros_like(V)
         k = np.arange(V.shape[1]).astype(np.float)[:-2]
         P[:, :-2] = (V[:, :-2]
@@ -1222,7 +1192,7 @@ class DirichletNeumann(LegendreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = np.zeros_like(input_array)
         else:
             output_array.fill(0)
 
@@ -1328,7 +1298,6 @@ class NeumannDirichlet(LegendreBase):
                               coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
         self._factor = np.ones(1)
-        self.plan(int(N*padding_factor), 0, np.float, {})
         self.bc = BoundaryValues(self, bc=bc)
 
     @staticmethod
@@ -1347,7 +1316,7 @@ class NeumannDirichlet(LegendreBase):
             self._factor1 = (-(2*k+3)/(k+2)**2).astype(float)
             self._factor2 = -((k+1)**2/(k+2)**2).astype(float)
 
-    def _composite_basis(self, V, argument=0):
+    def _composite(self, V, argument=0):
         P = np.zeros_like(V)
         k = np.arange(V.shape[1]).astype(np.float)[:-2]
         P[:, :-2] = (V[:, :-2]
@@ -1366,7 +1335,7 @@ class NeumannDirichlet(LegendreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = np.zeros_like(input_array)
         else:
             output_array.fill(0)
 
@@ -1433,24 +1402,6 @@ class BCDirichlet(LegendreBase):
                  domain=(-1., 1.), coordinates=None):
         LegendreBase.__init__(self, N, quad=quad, domain=domain, coordinates=coordinates)
         self._scaled = scaled
-        self.plan(N, 0, np.float, {})
-
-    def plan(self, shape, axis, dtype, options):
-
-        if shape in (0, (0,)):
-            return
-
-        if isinstance(axis, tuple):
-            assert len(axis) == 1
-            axis = axis[-1]
-        shape = list(shape) if np.ndim(shape) else [shape]
-        assert shape[axis] == self.shape(False)
-        U = np.zeros(shape, dtype=dtype)
-        shape[axis] = 2
-        V = np.zeros(shape, dtype=dtype)
-        self.forward = Transform(self.forward, lambda: None, U, V, V)
-        self.backward = Transform(self.backward, lambda: None, V, V, U)
-        self.scalar_product = Transform(self.scalar_product, lambda: None, U, V, V)
 
     def slice(self):
         return slice(self.N-2, self.N)
@@ -1473,7 +1424,7 @@ class BCDirichlet(LegendreBase):
         return np.array([[0.5, -0.5],
                          [0.5, 0.5]])
 
-    def _composite_basis(self, V, argument=0):
+    def _composite(self, V, argument=0):
         P = np.zeros(V.shape)
         P[:, 0] = (V[:, 0] - V[:, 1])/2
         P[:, 1] = (V[:, 0] + V[:, 1])/2
@@ -1547,23 +1498,6 @@ class BCBiharmonic(LegendreBase):
         LegendreBase.__init__(self, N, quad=quad, domain=domain,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
-        self.plan(N, 0, np.float, {})
-
-    def plan(self, shape, axis, dtype, options):
-        if shape in (0, (0,)):
-            return
-
-        if isinstance(axis, tuple):
-            assert len(axis) == 1
-            axis = axis[-1]
-        shape = list(shape) if np.ndim(shape) else [shape]
-        assert shape[axis] == self.shape(False)
-        U = np.zeros(shape, dtype=dtype)
-        shape[axis] = 4
-        V = np.zeros(shape, dtype=dtype)
-        self.forward = Transform(self.forward, lambda: None, U, V, V)
-        self.backward = Transform(self.backward, lambda: None, V, V, U)
-        self.scalar_product = Transform(self.scalar_product, lambda: None, U, V, V)
 
     def slice(self):
         return slice(self.N-4, self.N)
@@ -1588,7 +1522,7 @@ class BCBiharmonic(LegendreBase):
                          [1./6., -1./10., -1./6., 1./10.],
                          [-1./6., -1./10., 1./6., 1./10.]])
 
-    def _composite_basis(self, V, argument=0):
+    def _composite(self, V, argument=0):
         P = np.tensordot(V[:, :4], self.coefficient_matrix(), (1, 1))
         return P
 

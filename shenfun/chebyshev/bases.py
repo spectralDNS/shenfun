@@ -25,6 +25,8 @@ __all__ = ['ChebyshevBase', 'Orthogonal', 'ShenDirichlet',
 
 chebval = optimizer(n_cheb.chebval)
 
+xp = sp.Symbol('x', real=True)
+
 class DCTWrap(FuncWrap):
     """DCT for complex input"""
 
@@ -96,54 +98,8 @@ class ChebyshevBase(SpectralBase):
     def vandermonde(self, x):
         return n_cheb.chebvander(x, self.shape(False)-1)
 
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
-        return sp.chebyshevt(i, x)
-
-    def weight(self, x=sp.symbols('x', real=True)):
+    def weight(self, x=xp):
         return 1/sp.sqrt(1-x**2)
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        #output_array[:] = np.cos(i*np.arccos(x))
-        output_array[:] = eval_chebyt(i, x)
-        return output_array
-
-    def evaluate_basis_all(self, x=None, argument=0):
-        if x is None:
-            x = self.mesh(False, False)
-        V = self.vandermonde(x)
-        return self._composite_basis(V, argument=argument)
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        if x is None:
-            x = self.mesh(False, False)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        x = np.atleast_1d(x)
-        basis = np.zeros(self.shape(True))
-        basis[i] = 1
-        basis = n_cheb.Chebyshev(basis)
-        if k > 0:
-            basis = basis.deriv(k)
-        output_array[:] = basis(x)
-        return output_array
-
-    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
-        if x is None:
-            x = self.mesh(False, False)
-        V = self.vandermonde(x)
-        N, M = self.shape(False), self.shape(True)
-        if k > 0:
-            D = np.zeros((M, N))
-            D[:-k] = n_cheb.chebder(np.eye(M, N), k)
-            V = np.dot(V, D)
-        return self._composite_basis(V, argument=argument)
-
-    def _composite_basis(self, V, argument=0):
-        """Return composite basis, where ``V`` is primary Vandermonde matrix."""
-        return V
 
     def reference_domain(self):
         return (-1, 1)
@@ -161,25 +117,20 @@ class ChebyshevBase(SpectralBase):
                 # Already planned
                 return
 
-        shapeCT = list(shape)
-        shapeCT[axis] = self.shape(False)
-        self.CT.plan(tuple(shapeCT), axis, dtype, options)
-        self.CT.tensorproductspace = self.tensorproductspace
-        xfftn_fwd = self.CT.forward.xfftn
-        xfftn_bck = self.CT.backward.xfftn
-        U = xfftn_fwd.input_array
-        V = xfftn_fwd.output_array
+        U = self._U
+        V = self._V
+        trunc_array = self._tmp
+
         self.axis = axis
         if self.padding_factor > 1.+1e-8:
-            trunc_array = self._get_truncarray(shape, V.dtype)
-            self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
-            self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
+            self.forward = Transform(self.forward, self.xfftn_fwd, U, V, trunc_array)
+            self.backward = Transform(self.backward, self.xfftn_bck, trunc_array, V, U)
         else:
-            self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
-            self.backward = Transform(self.backward, xfftn_bck, V, V, U)
-        self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
+            self.forward = Transform(self.forward, self.xfftn_fwd, U, V, V)
+            self.backward = Transform(self.backward, self.xfftn_bck, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, self.xfftn_fwd, U, V, V)
+        self.si = islicedict(axis=self.axis, dimensions=U.ndim)
+        self.sl = slicedict(axis=self.axis, dimensions=U.ndim)
 
     def get_orthogonal(self):
         return Orthogonal(self.N, quad=self.quad, domain=self.domain, dtype=self.dtype,
@@ -241,12 +192,56 @@ class Orthogonal(ChebyshevBase):
     #        array[self.si[-1]] /= 2
     #    return array
 
+    def sympy_basis(self, i=0, x=xp):
+        return sp.chebyshevt(i, x)
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        #output_array[:] = np.cos(i*np.arccos(x))
+        output_array[:] = eval_chebyt(i, x)
+        return output_array
+
+    def evaluate_basis_all(self, x=None, argument=0):
+        if x is None:
+            x = self.mesh(False, False)
+        return self.vandermonde(x)
+        #return self._composite_basis(V, argument=argument)
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        if x is None:
+            x = self.mesh(False, False)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = np.atleast_1d(x)
+        basis = np.zeros(self.shape(True))
+        basis[i] = 1
+        basis = n_cheb.Chebyshev(basis)
+        if k > 0:
+            basis = basis.deriv(k)
+        output_array[:] = basis(x)
+        return output_array
+
+    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
+        if x is None:
+            x = self.mesh(False, False)
+        V = self.vandermonde(x)
+        N, M = self.shape(False), self.shape(True)
+        if k > 0:
+            D = np.zeros((M, N))
+            D[:-k] = n_cheb.chebder(np.eye(M, N), k)
+            V = np.dot(V, D)
+        return V
+        #return self._composite_basis(V, argument=argument)
+
     def evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
         if fast_transform is False:
             SpectralBase.evaluate_expansion_all(self, input_array, output_array, x, False)
             return
 
         output_array = self.backward.xfftn()
+
         if self.quad == "GC":
             s0 = self.sl[slice(0, 1)]
             output_array *= 0.5
@@ -267,6 +262,7 @@ class Orthogonal(ChebyshevBase):
             return
 
         out = self.scalar_product.xfftn()
+
         if self.quad == "GC":
             out *= (np.pi/(2*self.N*self.padding_factor))
 
@@ -286,8 +282,12 @@ class Orthogonal(ChebyshevBase):
     def is_orthogonal(self):
         return True
 
-    def get_orthogonal(self):
-        return self
+    def to_ortho(self, input_array, output_array=None):
+        assert input_array.__class__.__name__ == 'Orthogonal'
+        if output_array:
+            output_array[:] = input_array
+            return output_array
+        return input_array
 
     def plan(self, shape, axis, dtype, options):
         if shape in (0, (0,)):
@@ -354,19 +354,72 @@ class Orthogonal(ChebyshevBase):
             xfftn_bck = DCTWrap(xfftn_bck, V, U)
 
         self.axis = axis
-        if self.padding_factor > 1.+1e-8:
-            trunc_array = self._get_truncarray(shape, V.dtype)
-            self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
-            self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
+        if self.__class__.__name__ == 'Orthogonal':
+            if self.padding_factor > 1.+1e-8:
+                trunc_array = self._get_truncarray(shape, V.dtype)
+                self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
+                self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
+            else:
+                self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
+                self.backward = Transform(self.backward, xfftn_bck, V, V, U)
+            self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         else:
-            self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
-            self.backward = Transform(self.backward, xfftn_bck, V, V, U)
-        self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
+            self.xfftn_fwd = xfftn_fwd
+            self.xfftn_bck = xfftn_bck
+            self._U = U
+            self._V = V
+            if self.padding_factor > 1.+1e-8:
+                trunc_array = self._get_truncarray(shape, V.dtype)
+                self._tmp = trunc_array
+            else:
+                self._tmp = V
+
+        self.si = islicedict(axis=self.axis, dimensions=U.ndim)
+        self.sl = slicedict(axis=self.axis, dimensions=U.ndim)
+
+# Note that all composite spaces rely on the fast transforms of
+# the orthogonal space. For this reason we have an intermediate
+# class CompositeSpace for all composite spaces, where common code
+# is implemented and reused by all.
+
+class CompositeSpace(Orthogonal):
+    """Common class for all spaces based on composite bases"""
+
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=np.float, scaled=False,
+                 padding_factor=1, dealias_direct=False, coordinates=None):
+        Orthogonal.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
+                            padding_factor=padding_factor, dealias_direct=dealias_direct,
+                            coordinates=coordinates)
+        ChebyshevBase.plan(self, (int(padding_factor*N),), 0, dtype, {})
+
+    def plan(self, shape, axis, dtype, options):
+        Orthogonal.plan(self, shape, axis, dtype, options)
+        ChebyshevBase.plan(self, shape, axis, dtype, options)
+
+    def evaluate_basis_all(self, x=None, argument=0):
+        V = Orthogonal.evaluate_basis_all(self, x=x, argument=argument)
+        return self._composite(V, argument=argument)
+
+    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
+        V = Orthogonal.evaluate_basis_derivative_all(self, x=x, k=k, argument=argument)
+        return self._composite(V, argument=argument)
+
+    def evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
+        if fast_transform is False:
+            SpectralBase.evaluate_expansion_all(self, input_array, output_array, x, False)
+            return
+        input_array[:] = self.to_ortho(input_array)
+        Orthogonal.evaluate_expansion_all(self, input_array, output_array, x, True)
+
+    @property
+    def is_orthogonal(self):
+        return False
+
+    def _composite(self):
+        raise NotImplementedError
 
 
-class ShenDirichlet(ChebyshevBase):
+class ShenDirichlet(CompositeSpace):
     """Function space for Dirichlet boundary conditions
 
     Parameters
@@ -409,16 +462,14 @@ class ShenDirichlet(ChebyshevBase):
 
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=np.float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
-        ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
-        self.CT = Orthogonal(int(np.floor(padding_factor*N)), quad=quad, dtype=dtype, padding_factor=1, dealias_direct=dealias_direct)
         self._scaled = scaled
         self._factor = np.ones(1)
         self._bc_basis = None
         self.bc = BoundaryValues(self, bc=bc)
-        self.plan((int(padding_factor*N),), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -428,15 +479,7 @@ class ShenDirichlet(ChebyshevBase):
     def has_nonhomogeneous_bcs(self):
         return self.bc.has_nonhomogeneous_bcs()
 
-    def _composite_basis(self, V, argument=0):
-        P = np.zeros_like(V)
-        P[:, :-2] = V[:, :-2] - V[:, 2:]
-        if argument == 1: # if trial function
-            P[:, -1] = (V[:, 0] + V[:, 1])/2    # x = +1
-            P[:, -2] = (V[:, 0] - V[:, 1])/2    # x = -1
-        return P
-
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=xp):
         assert i < self.N
         if i < self.N-2:
             return sp.chebyshevt(i, x) - sp.chebyshevt(i+2, x)
@@ -475,31 +518,32 @@ class ShenDirichlet(ChebyshevBase):
         """Return True if scaled basis is used, otherwise False"""
         return False
 
+    def _composite(self, V, argument=0):
+        P = np.zeros_like(V)
+        P[:, :-2] = V[:, :-2] - V[:, 2:]
+        if argument == 1: # if trial function
+            P[:, -1] = (V[:, 0] + V[:, 1])/2    # x = +1
+            P[:, -2] = (V[:, 0] - V[:, 1])/2    # x = -1
+        return P
+
     def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
             SpectralBase._evaluate_scalar_product(self)
             self.scalar_product.output_array[self.si[-2]] = 0
             self.scalar_product.output_array[self.si[-1]] = 0
             return
-        output = self.CT.scalar_product(fast_transform=fast_transform)
+        Orthogonal._evaluate_scalar_product(self, True)
+        output = self.scalar_product.output_array
         s0 = self.sl[slice(0, self.N-2)]
         s1 = self.sl[slice(2, self.N)]
         output[s0] -= output[s1]
         output[self.si[-2]] = 0
         output[self.si[-1]] = 0
 
-    def evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
-        if fast_transform is False:
-            SpectralBase.evaluate_expansion_all(self, input_array, output_array, x, False)
-            return
-        w_hat = work[(input_array, 0, False)]
-        w_hat = self.to_ortho(input_array, w_hat)
-        self.CT.backward(w_hat)
-        assert output_array is self.CT.backward.output_array
-
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = np.zeros_like(input_array)
+            #output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
         s0 = self.sl[slice(0, self.N-2)]
@@ -561,18 +605,18 @@ class ShenDirichlet(ChebyshevBase):
         SpectralBase
             The space to be used for dealiasing
         """
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc,
-                              scaled=self._scaled)
+        return ShenDirichlet(self.N,
+                             quad=self.quad,
+                             domain=self.domain,
+                             dtype=self.dtype,
+                             padding_factor=self.padding_factor,
+                             dealias_direct=self.dealias_direct,
+                             coordinates=self.coors.coordinates,
+                             bc=self.bc.bc,
+                             scaled=self._scaled)
 
 
-class ShenNeumann(ChebyshevBase):
+class ShenNeumann(CompositeSpace):
     """Function space for homogeneous Neumann boundary conditions
 
     Parameters
@@ -607,26 +651,23 @@ class ShenNeumann(ChebyshevBase):
     """
     def __init__(self, N, quad="GC", mean=0, domain=(-1., 1.), dtype=np.float, padding_factor=1,
                  dealias_direct=False, coordinates=None):
-        ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
         self.mean = mean
-        #self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
-        self.CT = Orthogonal(int(np.floor(padding_factor*N)), quad=quad, dtype=dtype, padding_factor=1, dealias_direct=dealias_direct)
         self._factor = np.zeros(0)
-        self.plan((int(N*padding_factor),), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
         return 'Neumann'
 
-    def _composite_basis(self, V, argument=0):
+    def _composite(self, V, argument=0):
         P = np.zeros_like(V)
         k = np.arange(V.shape[1]).astype(np.float)
         P[:, :-2] = V[:, :-2] - (k[:-2]/(k[:-2]+2))**2*V[:, 2:]
         return P
 
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=xp):
         if 0 < i < self.N-2:
             return sp.chebyshevt(i, x) - (i/(i+2))**2*sp.chebyshevt(i+2, x)
         return 0
@@ -665,7 +706,9 @@ class ShenNeumann(ChebyshevBase):
             self.scalar_product.output_array[self.si[0]] = self.mean*np.pi
             self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
             return
-        output = self.CT.scalar_product(fast_transform=True)
+        #output = self.CT.scalar_product(fast_transform=True)
+        Orthogonal._evaluate_scalar_product(self, True)
+        output = self.scalar_product.output_array
         self.set_factor_array(output)
         sm2 = self.sl[self.slice()]
         s2p = self.sl[slice(2, self.N)]
@@ -673,18 +716,10 @@ class ShenNeumann(ChebyshevBase):
         output[self.si[0]] = self.mean*np.pi
         output[self.sl[slice(-2, None)]] = 0
 
-    def evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
-        if fast_transform is False:
-            SpectralBase.evaluate_expansion_all(self, input_array, output_array, x, False)
-            return
-        w_hat = work[(input_array, 0, False)]
-        w_hat = self.to_ortho(input_array, w_hat)
-        self.CT.backward(w_hat)
-        assert output_array is self.CT.backward.output_array
-
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = np.zeros_like(input_array)
+            #output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
         s0 = self.sl[slice(0, self.N-2)]
@@ -737,17 +772,17 @@ class ShenNeumann(ChebyshevBase):
         SpectralBase
             The space to be used for dealiasing
         """
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              mean=self.mean)
+        return ShenNeumann(self.N,
+                           quad=self.quad,
+                           domain=self.domain,
+                           dtype=self.dtype,
+                           padding_factor=self.padding_factor,
+                           dealias_direct=self.dealias_direct,
+                           coordinates=self.coors.coordinates,
+                           mean=self.mean)
 
 
-class ShenBiharmonic(ChebyshevBase):
+class ShenBiharmonic(CompositeSpace):
     """Function space for biharmonic equation
 
     Using 2 Dirichlet and 2 Neumann boundary conditions. All possibly
@@ -786,17 +821,14 @@ class ShenBiharmonic(ChebyshevBase):
     """
     def __init__(self, N, quad="GC", bc=(0, 0, 0, 0), domain=(-1., 1.), dtype=np.float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
-        ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
-        #self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
-        self.CT = Orthogonal(int(np.floor(padding_factor*N)), quad=quad, dtype=dtype, padding_factor=1, dealias_direct=dealias_direct)
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
         self._bc_basis = None
         self.bc = BoundaryValues(self, bc=bc)
-        self.plan((int(padding_factor*N),), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -806,7 +838,7 @@ class ShenBiharmonic(ChebyshevBase):
     def has_nonhomogeneous_bcs(self):
         return self.bc.has_nonhomogeneous_bcs()
 
-    def _composite_basis(self, V, argument=0):
+    def _composite(self, V, argument=0):
         P = np.zeros_like(V)
         k = np.arange(V.shape[1]).astype(np.float)[:-4]
         P[:, :-4] = V[:, :-4] - (2*(k+2)/(k+3))*V[:, 2:-2] + ((k+1)/(k+3))*V[:, 4:]
@@ -814,7 +846,7 @@ class ShenBiharmonic(ChebyshevBase):
             P[:, -4:] = np.tensordot(V[:, :4], BCBiharmonic.coefficient_matrix(), (1, 1))
         return P
 
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=xp):
         if i < self.N-4:
             f = sp.chebyshevt(i, x) - (2*(i+2)/(i+3))*sp.chebyshevt(i+2, x) + (i+1)/(i+3)*sp.chebyshevt(i+4, x)
         else:
@@ -856,7 +888,8 @@ class ShenBiharmonic(ChebyshevBase):
             SpectralBase._evaluate_scalar_product(self)
             self.scalar_product.output_array[self.sl[slice(-4, None)]] = 0
             return
-        output = self.CT.scalar_product(fast_transform=fast_transform)
+        Orthogonal._evaluate_scalar_product(self, True)
+        output = self.scalar_product.output_array
         Tk = work[(output, 0, True)]
         Tk[...] = output
         self.set_factor_arrays(Tk)
@@ -879,17 +912,10 @@ class ShenBiharmonic(ChebyshevBase):
         w_hat[s4] += f2*fk[s]
         return w_hat
 
-    def evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
-        if fast_transform is False:
-            SpectralBase.evaluate_expansion_all(self, input_array, output_array, x, False)
-            return
-        w_hat = work[(input_array, 0, False)]
-        w_hat = self.to_ortho(input_array, w_hat)
-        self.CT.backward(w_hat)
-
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = work[(input_array, 0, True)]
+            #output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
         self.set_factor_arrays(input_array)
@@ -943,14 +969,7 @@ class ShenBiharmonic(ChebyshevBase):
                               bc=self.bc.bc)
 
     def get_unplanned(self):
-        """Return unplanned space (otherwise as self)
-
-        Returns
-        -------
-        SpectralBase
-            The space to be used for dealiasing
-        """
-        return self.__class__(self.N,
+        return ShenBiharmonic(self.N,
                               quad=self.quad,
                               domain=self.domain,
                               dtype=self.dtype,
@@ -960,7 +979,7 @@ class ShenBiharmonic(ChebyshevBase):
                               bc=self.bc.bc)
 
 
-class SecondNeumann(ChebyshevBase): #pragma: no cover
+class SecondNeumann(CompositeSpace): #pragma: no cover
     """Function space for homogeneous second order Neumann boundary conditions
 
     Parameters
@@ -996,26 +1015,24 @@ class SecondNeumann(ChebyshevBase): #pragma: no cover
 
     def __init__(self, N, quad="GC", mean=0, domain=(-1., 1.), dtype=np.float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
-        ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
         self.mean = mean
-        self.CT = Orthogonal(int(np.floor(padding_factor*N)), quad=quad, dtype=dtype, padding_factor=1, dealias_direct=dealias_direct)
         self._factor = np.zeros(0)
-        self.plan((int(padding_factor*N),), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
         return 'Neumann2'
 
-    def _composite_basis(self, V, argument=0):
+    def _composite(self, V, argument=0):
         assert self.N == V.shape[1]
         P = np.zeros_like(V)
         k = np.arange(self.N).astype(np.float)
         P[:, :-2] = V[:, :-2] - (k[:-2]/(k[:-2]+2))**2*(k[:-2]**2-1)/((k[:-2]+2)**2-1)*V[:, 2:]
         return P
 
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=xp):
         return sp.chebyshevt(i, x) - (i/(i+2))**2*(i**2-1)/((i+2)**2-1)*sp.chebyshevt(i+2, x)
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -1051,25 +1068,18 @@ class SecondNeumann(ChebyshevBase): #pragma: no cover
             SpectralBase._evaluate_scalar_product(self)
             self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
             return
-        output = self.CT.scalar_product(fast_transform=True)
+        Orthogonal._evaluate_scalar_product(self, True)
+        output = self.scalar_product.output_array
         self.set_factor_array(output)
         sm2 = self.sl[slice(0, -2)]
         s2p = self.sl[slice(2, None)]
         output[sm2] -= self._factor*output[s2p]
         output[self.sl[slice(-2, None)]] = 0
 
-    def evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
-        if fast_transform is False:
-            SpectralBase.evaluate_expansion_all(self, input_array, output_array, x, False)
-            return
-        w_hat = work[(input_array, 0, False)]
-        w_hat = self.to_ortho(input_array, w_hat)
-        self.CT.backward(w_hat)
-        assert output_array is self.CT.backward.output_array
-
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = work[(input_array, 0, True)]
+            #output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
         s0 = self.sl[slice(0, -2)]
@@ -1114,8 +1124,19 @@ class SecondNeumann(ChebyshevBase): #pragma: no cover
                              coordinates=self.coors.coordinates,
                              mean=self.mean)
 
+    def get_unplanned(self):
+        return SecondNeumann(self.N,
+                             quad=self.quad,
+                             domain=self.domain,
+                             dtype=self.dtype,
+                             padding_factor=self.padding_factor,
+                             dealias_direct=self.dealias_direct,
+                             coordinates=self.coors.coordinates,
+                             mean=self.mean)
 
-class UpperDirichlet(ChebyshevBase):
+
+
+class UpperDirichlet(CompositeSpace):
     """Function space with homogeneous Dirichlet on upper edge (x=1) of boundary
 
     Parameters
@@ -1152,13 +1173,11 @@ class UpperDirichlet(ChebyshevBase):
 
     def __init__(self, N, quad="GC", domain=(-1., 1.), dtype=np.float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
-        ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
-        self.CT = Orthogonal(int(np.floor(padding_factor*N)), quad=quad, dtype=dtype, padding_factor=1, dealias_direct=dealias_direct)
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
         self._scaled = scaled
         self._factor = np.ones(1)
-        self.plan((int(padding_factor*N),), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -1168,12 +1187,12 @@ class UpperDirichlet(ChebyshevBase):
     def has_nonhomogeneous_bcs(self):
         return False
 
-    def _composite_basis(self, V, argument=0):
+    def _composite(self, V, argument=0):
         P = np.zeros_like(V)
         P[:, :-1] = V[:, :-1] - V[:, 1:]
         return P
 
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=xp):
         assert i < self.N-1
         return sp.chebyshevt(i, x) - sp.chebyshevt(i+1, x)
 
@@ -1208,24 +1227,17 @@ class UpperDirichlet(ChebyshevBase):
             SpectralBase._evaluate_scalar_product(self)
             self.scalar_product.output_array[self.si[-1]] = 0
             return
-        output = self.CT.scalar_product(fast_transform=fast_transform)
+        Orthogonal._evaluate_scalar_product(self, True)
+        output = self.scalar_product.output_array
         s0 = self.sl[slice(0, -1)]
         s1 = self.sl[slice(1, None)]
         output[s0] -= output[s1]
         output[self.si[-1]] = 0
 
-    def evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
-        if fast_transform is False:
-            SpectralBase.evaluate_expansion_all(self, input_array, output_array, x, False)
-            return
-        w_hat = work[(input_array, 0, False)]
-        w_hat = self.to_ortho(input_array, w_hat)
-        self.CT.backward(w_hat)
-        assert output_array is self.CT.backward.output_array
-
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = work[(input_array, 0, True)]
+            #output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
         s0 = self.sl[slice(0, -1)]
@@ -1249,7 +1261,7 @@ class UpperDirichlet(ChebyshevBase):
         return output_array
 
 
-class ShenBiPolar(ChebyshevBase):
+class ShenBiPolar(Orthogonal):
     """Function space for the Biharmonic equation in polar coordinates
 
     Parameters
@@ -1282,16 +1294,49 @@ class ShenBiPolar(ChebyshevBase):
     """
     def __init__(self, N, quad="GC", domain=(-1., 1.), dtype=np.float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
-        #assert quad == "GC"
-        ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
-        self.CT = Orthogonal(int(np.floor(padding_factor*N)), quad=quad, dtype=dtype, padding_factor=1, dealias_direct=dealias_direct)
-        self.plan((int(padding_factor*N),), 0, dtype, {})
+        self.forward = functools.partial(self.forward, fast_transform=False)
+        self.backward = functools.partial(self.backward, fast_transform=False)
+        self.scalar_product = functools.partial(self.scalar_product, fast_transform=False)
+        Orthogonal.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
+                            padding_factor=padding_factor, dealias_direct=dealias_direct,
+                            coordinates=coordinates)
+
+    def plan(self, shape, axis, dtype, options):
+        if shape in (0, (0,)):
+            return
+
+        if isinstance(axis, tuple):
+            assert len(axis) == 1
+            axis = axis[0]
+
+        if isinstance(self.forward, Transform):
+            if self.forward.input_array.shape == shape and self.axis == axis:
+                # Already planned
+                return
+
+        U = fftw.aligned(shape, dtype=dtype)
+        V = fftw.aligned(shape, dtype=dtype)
+        U.fill(0)
+        V.fill(0)
+        self.axis = axis
+        if self.padding_factor > 1.+1e-8:
+            trunc_array = self._get_truncarray(shape, V.dtype)
+            self.forward = Transform(self.forward, None, U, V, trunc_array)
+            self.backward = Transform(self.backward, None, trunc_array, V, U)
+        else:
+            self.forward = Transform(self.forward, None, U, V, V)
+            self.backward = Transform(self.backward, None, V, V, U)
+        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
+        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
+        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     @staticmethod
     def boundary_condition():
         return 'BiPolar'
+
+    @property
+    def is_orthogonal(self):
+        return False
 
     @property
     def has_nonhomogeneous_bcs(self):
@@ -1303,7 +1348,7 @@ class ShenBiPolar(ChebyshevBase):
     def slice(self):
         return slice(0, self.N-4)
 
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=xp):
         f = (1-x)**2*(1+x)**2*(sp.chebyshevt(i+1, x).diff(x, 1))
         return f
 
@@ -1311,9 +1356,8 @@ class ShenBiPolar(ChebyshevBase):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        X = sp.symbols('x', real=True)
-        f = self.sympy_basis(i, X)
-        output_array[:] = sp.lambdify(X, f)(x)
+        f = self.sympy_basis(i, xp)
+        output_array[:] = sp.lambdify(xp, f)(x)
         return output_array
 
     def evaluate_basis_all(self, x=None, argument=0):
@@ -1331,9 +1375,8 @@ class ShenBiPolar(ChebyshevBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
-        X = sp.symbols('x', real=True)
-        f = self.sympy_basis(i, X).diff(X, k)
-        output_array[:] = sp.lambdify(X, f)(x)
+        f = self.sympy_basis(i, xp).diff(xp, k)
+        output_array[:] = sp.lambdify(xp, f)(x)
         return output_array
 
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
@@ -1359,7 +1402,7 @@ class ShenBiPolar(ChebyshevBase):
         return output_array
 
 
-class DirichletNeumann(ChebyshevBase):
+class DirichletNeumann(CompositeSpace):
     """Function space for mixed Dirichlet/Neumann boundary conditions
 
     Parameters
@@ -1396,14 +1439,11 @@ class DirichletNeumann(ChebyshevBase):
 
     def __init__(self, N, quad="GC", domain=(-1., 1.), dtype=np.float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
-        ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
-        #self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
-        self.CT = Orthogonal(int(np.floor(padding_factor*N)), quad=quad, dtype=dtype, padding_factor=1, dealias_direct=dealias_direct)
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
         self._scaled = scaled
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
-        self.plan((int(padding_factor*N),), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -1421,7 +1461,7 @@ class DirichletNeumann(ChebyshevBase):
             self._factor1 = ((-k**2 + (k+2)**2)/((k+1)**2 + (k+2)**2)).astype(float)
             self._factor2 = ((-k**2 - (k+1)**2)/((k+1)**2 + (k+2)**2)).astype(float)
 
-    def _composite_basis(self, V, argument=0):
+    def _composite(self, V, argument=0):
         P = np.zeros_like(V)
         k = np.arange(V.shape[1]).astype(np.float)[:-2]
         P[:, :-2] = (V[:, :-2]
@@ -1429,7 +1469,7 @@ class DirichletNeumann(ChebyshevBase):
                      + ((-k**2 - (k+1)**2)/((k+1)**2 + (k+2)**2))*V[:, 2:])
         return P
 
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=xp):
         assert i < self.N-2
         return (sp.chebyshevt(i, x)
                 + ((-i**2 + (i+2)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+1, x)
@@ -1478,7 +1518,8 @@ class DirichletNeumann(ChebyshevBase):
             SpectralBase._evaluate_scalar_product(self)
             self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
             return
-        output = self.CT.scalar_product(fast_transform=fast_transform)
+        Orthogonal._evaluate_scalar_product(self, True)
+        output = self.scalar_product.output_array
         Tk = work[(output, 0, True)]
         Tk[...] = output
         self.set_factor_arrays(Tk)
@@ -1489,17 +1530,10 @@ class DirichletNeumann(ChebyshevBase):
         output[s0] += self._factor2*Tk[s2]
         output[self.sl[slice(-2, None)]] = 0
 
-    def evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
-        if fast_transform is False:
-            SpectralBase.evaluate_expansion_all(self, input_array, output_array, x, False)
-            return
-        w_hat = work[(input_array, 0, False)]
-        w_hat = self.to_ortho(input_array, w_hat)
-        self.CT.backward(w_hat)
-
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = work[(input_array, 0, True)]
+            #output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
         self.set_factor_arrays(input_array)
@@ -1525,7 +1559,7 @@ class DirichletNeumann(ChebyshevBase):
         return output_array
 
 
-class NeumannDirichlet(ChebyshevBase):
+class NeumannDirichlet(CompositeSpace):
     """Function space for mixed Neumann/Dirichlet boundary conditions
 
     Parameters
@@ -1562,14 +1596,11 @@ class NeumannDirichlet(ChebyshevBase):
 
     def __init__(self, N, quad="GC", domain=(-1., 1.), dtype=np.float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
-        ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
-        #self.CT = Orthogonal(N, quad=quad, dtype=dtype, padding_factor=padding_factor, dealias_direct=dealias_direct)
-        self.CT = Orthogonal(int(np.floor(padding_factor*N)), quad=quad, dtype=dtype, padding_factor=1, dealias_direct=dealias_direct)
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
         self._scaled = scaled
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
-        self.plan((int(padding_factor*N),), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -1587,7 +1618,7 @@ class NeumannDirichlet(ChebyshevBase):
             self._factor1 = (-(-k**2 + (k+2)**2)/((k+1)**2 + (k+2)**2)).astype(float)
             self._factor2 = ((-k**2 - (k+1)**2)/((k+1)**2 + (k+2)**2)).astype(float)
 
-    def _composite_basis(self, V, argument=0):
+    def _composite(self, V, argument=0):
         P = np.zeros_like(V)
         k = np.arange(V.shape[1]).astype(np.float)[:-2]
         P[:, :-2] = (V[:, :-2]
@@ -1595,7 +1626,7 @@ class NeumannDirichlet(ChebyshevBase):
                      + ((-k**2 - (k+1)**2)/((k+1)**2 + (k+2)**2))*V[:, 2:])
         return P
 
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=xp):
         assert i < self.N-2
         return (sp.chebyshevt(i, x)
                 - ((-i**2 + (i+2)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+1, x)
@@ -1644,7 +1675,8 @@ class NeumannDirichlet(ChebyshevBase):
             SpectralBase._evaluate_scalar_product(self)
             self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
             return
-        output = self.CT.scalar_product(fast_transform=fast_transform)
+        Orthogonal._evaluate_scalar_product(self, True)
+        output = self.scalar_product.output_array
         Tk = work[(output, 0, True)]
         Tk[...] = output
         self.set_factor_arrays(Tk)
@@ -1655,17 +1687,10 @@ class NeumannDirichlet(ChebyshevBase):
         output[s0] += self._factor2*Tk[s2]
         output[self.sl[slice(-2, None)]] = 0
 
-    def evaluate_expansion_all(self, input_array, output_array, x=True, fast_transform=True):
-        if fast_transform is False:
-            SpectralBase.evaluate_expansion_all(self, input_array, output_array, x, False)
-            return
-        w_hat = work[(input_array, 0, False)]
-        w_hat = self.to_ortho(input_array, w_hat)
-        self.CT.backward(w_hat)
-
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = work[(input_array, 0, True)]
+            #output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
         self.set_factor_arrays(input_array)
@@ -1691,7 +1716,7 @@ class NeumannDirichlet(ChebyshevBase):
         return output_array
 
 
-class BCDirichlet(ChebyshevBase):
+class BCDirichlet(CompositeSpace):
     """Function space for Dirichlet boundary conditions
 
     Parameters
@@ -1720,25 +1745,8 @@ class BCDirichlet(ChebyshevBase):
 
     def __init__(self, N, quad="GC", domain=(-1., 1.), scaled=False,
                  coordinates=None):
-        ChebyshevBase.__init__(self, N, quad=quad, domain=domain,
-                               coordinates=coordinates)
-        self.plan(N, 0, np.float, {})
-
-    def plan(self, shape, axis, dtype, options):
-        if shape in (0, (0,)):
-            return
-
-        if isinstance(axis, tuple):
-            assert len(axis) == 1
-            axis = axis[-1]
-        shape = list(shape) if np.ndim(shape) else [shape]
-        assert shape[axis] == self.shape(False)
-        U = np.zeros(shape, dtype=dtype)
-        shape[axis] = 2
-        V = np.zeros(shape, dtype=dtype)
-        self.forward = Transform(self.forward, lambda: None, U, V, V)
-        self.backward = Transform(self.backward, lambda: None, V, V, U)
-        self.scalar_product = Transform(self.scalar_product, lambda: None, U, V, V)
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain,
+                                coordinates=coordinates)
 
     def slice(self):
         return slice(self.N-2, self.N)
@@ -1760,14 +1768,14 @@ class BCDirichlet(ChebyshevBase):
         return np.array([[0.5, -0.5],
                          [0.5, 0.5]])
 
-    def _composite_basis(self, V, argument=0):
+    def _composite(self, V, argument=0):
         P = np.zeros(V[:, :2].shape)
         #P[:, 0] = (V[:, 0] - V[:, 1])/2
         #P[:, 1] = (V[:, 0] + V[:, 1])/2
         P[:] = np.tensordot(V[:, :2], self.coefficient_matrix(), (1, 1))
         return P
 
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=xp):
         if i == 0:
             return 0.5*(1-x)
         elif i == 1:
@@ -1798,7 +1806,7 @@ class BCDirichlet(ChebyshevBase):
         return output_array
 
 
-class BCBiharmonic(ChebyshevBase):
+class BCBiharmonic(CompositeSpace):
     """Function space for inhomogeneous Biharmonic boundary conditions
 
     Parameters
@@ -1827,24 +1835,7 @@ class BCBiharmonic(ChebyshevBase):
 
     def __init__(self, N, quad="GC", domain=(-1., 1.), scaled=False,
                  coordinates=None):
-        ChebyshevBase.__init__(self, N, quad=quad, domain=domain, coordinates=coordinates)
-        self.plan(N, 0, np.float, {})
-
-    def plan(self, shape, axis, dtype, options):
-        if shape in (0, (0,)):
-            return
-
-        if isinstance(axis, tuple):
-            assert len(axis) == 1
-            axis = axis[-1]
-        shape = list(shape) if np.ndim(shape) else [shape]
-        assert shape[axis] == self.shape(False)
-        U = np.zeros(shape, dtype=dtype)
-        shape[axis] = 4
-        V = np.zeros(shape, dtype=dtype)
-        self.forward = Transform(self.forward, lambda: None, U, V, V)
-        self.backward = Transform(self.backward, lambda: None, V, V, U)
-        self.scalar_product = Transform(self.scalar_product, lambda: None, U, V, V)
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, coordinates=coordinates)
 
     def slice(self):
         return slice(self.N-4, self.N)
@@ -1869,11 +1860,11 @@ class BCBiharmonic(ChebyshevBase):
                          [1./8., -1./16., -1./8., 1./16.],
                          [-1./8., -1./16., 1./8., 1./16.]])
 
-    def _composite_basis(self, V, argument=0):
+    def _composite(self, V, argument=0):
         P = np.tensordot(V[:, :4], self.coefficient_matrix(), (1, 1))
         return P
 
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=xp):
         assert i < 4, 'Only four bases, i < 4'
         return np.sum(self.coefficient_matrix()[i]*np.array([sp.chebyshevt(j, x) for j in range(4)]))
 

@@ -56,6 +56,7 @@ class LaguerreBase(SpectralBase):
         self.forward = functools.partial(self.forward, fast_transform=False)
         self.backward = functools.partial(self.backward, fast_transform=False)
         self.scalar_product = functools.partial(self.scalar_product, fast_transform=False)
+        self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
     def family():
@@ -117,16 +118,16 @@ class LaguerreBase(SpectralBase):
         else:
             raise NotImplementedError
 
-        return self._composite_basis(V)
+        return self._composite(V)
 
     def evaluate_basis_all(self, x=None, argument=0):
         if x is None:
             x = self.mesh(False, False)
         V = self.vandermonde(x)
         V *= np.exp(-x/2)[:, np.newaxis]
-        return self._composite_basis(V, argument)
+        return self._composite(V, argument)
 
-    def _composite_basis(self, V, argument=0):
+    def _composite(self, V, argument=0):
         """Return composite basis, where ``V`` is primary Vandermonde matrix."""
         return V
 
@@ -227,7 +228,6 @@ class Orthogonal(LaguerreBase):
     def __init__(self, N, quad="LG", dtype=np.float, padding_factor=1, dealias_direct=False, coordinates=None):
         LaguerreBase.__init__(self, N, quad=quad, dtype=dtype, padding_factor=padding_factor,
                               dealias_direct=dealias_direct, coordinates=coordinates)
-        self.plan(int(N*padding_factor), 0, dtype, {})
 
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
@@ -279,14 +279,12 @@ class ShenDirichlet(LaguerreBase):
                  dealias_direct=False, coordinates=None):
         LaguerreBase.__init__(self, N, dtype=dtype, quad=quad, padding_factor=padding_factor,
                               dealias_direct=dealias_direct, coordinates=coordinates)
-        self.LT = Orthogonal(N, quad)
-        self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
         return 'Dirichlet'
 
-    def _composite_basis(self, V, argument=0):
+    def _composite(self, V, argument=0):
         assert self.N == V.shape[1]
         P = np.zeros(V.shape)
         P[:, :-1] = V[:, :-1] - V[:, 1:]
@@ -326,33 +324,6 @@ class ShenDirichlet(LaguerreBase):
         output_array[:] = lag.lagval(x, u) - lag.lagval(x, w_hat)
         output_array *= np.exp(-x/2)
         return output_array
-
-    def plan(self, shape, axis, dtype, options):
-        if shape in (0, (0,)):
-            return
-
-        if isinstance(axis, tuple):
-            assert len(axis) == 1
-            axis = axis[0]
-
-        if isinstance(self.forward, Transform):
-            if self.forward.input_array.shape == shape and self.axis == axis:
-                # Already planned
-                return
-
-        self.LT.plan(shape, axis, dtype, options)
-        U, V = self.LT.forward.input_array, self.LT.forward.output_array
-        self.axis = axis
-        if self.padding_factor > 1.+1e-8:
-            trunc_array = self._get_truncarray(shape, V.dtype)
-            self.forward = Transform(self.forward, None, U, V, trunc_array)
-            self.backward = Transform(self.backward, None, trunc_array, V, U)
-        else:
-            self.forward = Transform(self.forward, None, U, V, V)
-            self.backward = Transform(self.backward, None, V, V, U)
-        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
-        self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
-        self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_orthogonal(self):
         return Orthogonal(self.N, quad=self.quad, dtype=self.dtype, coordinates=self.coors.coordinates)

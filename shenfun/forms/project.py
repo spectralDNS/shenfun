@@ -82,6 +82,7 @@ def project(uh, T, output_array=None, fill=True, use_to_ortho=True, use_assign=T
 
     if isinstance(uh, Function):
         W = uh.function_space()
+
         if W == T:
             output_array[:] = uh
             return output_array
