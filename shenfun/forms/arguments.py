@@ -1319,7 +1319,7 @@ class Function(ShenfunBaseArray, BasisFunction):
         else:
             bases = space.bases if hasattr(space, 'bases') else [space]
             for base in bases:
-                if base.has_nonhomogeneous_bcs:
+                if base.bc:
                     base.bc.set_boundary_dofs(self, True)
         return self
 
@@ -1409,6 +1409,9 @@ class Function(ShenfunBaseArray, BasisFunction):
             base = space.bases[axis]
             if not base.is_orthogonal:
                 output_array = base.to_ortho(self, output_array)
+            else:
+                output_array[:] = self
+
             if len(naxes) > 1:
                 input_array = np.zeros_like(output_array.v)
                 for axis in naxes[1:]:

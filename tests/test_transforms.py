@@ -558,7 +558,7 @@ def test_ABBmat(SB, quad):
     assert np.allclose(z0, u0, rtol=1e-5, atol=1e-6)
 
 if __name__ == '__main__':
-    #test_to_ortho(cBasis[1], 'GC')
+    test_to_ortho(cBasis[1], 'GC')
     # test_convolve(fbases.R2C, 8)
     #test_ADDmat(cbases.ShenNeumannBasis, "GL")
     #test_CDDmat("GL")
@@ -567,5 +567,5 @@ if __name__ == '__main__':
     #test_transforms(fBasis[0], '', 2)
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[2], 'GC')
-    test_eval(cBasis[0], 'GC')
+    #test_eval(cBasis[0], 'GC')
     #test_axis(cBasis[1], 'GC', 0)

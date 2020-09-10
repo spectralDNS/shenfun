@@ -50,7 +50,7 @@ except:
 mode = os.environ.get('SHENFUN_JACOBI_MODE', 'numpy')
 mode = mode if has_quadpy else 'numpy'
 
-_x = sp.Symbol('x', real=True)
+xp = sp.Symbol('x', real=True)
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
@@ -103,6 +103,7 @@ class JacobiBase(SpectralBase):
         self.forward = functools.partial(self.forward, fast_transform=False)
         self.backward = functools.partial(self.backward, fast_transform=False)
         self.scalar_product = functools.partial(self.scalar_product, fast_transform=False)
+        self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
     def family():
@@ -172,7 +173,7 @@ class JacobiBase(SpectralBase):
                 V[:, n] = eval_jacobi(n, alpha, beta, x)
         else:
             for n in range(N):
-                V[:, n] = sp.lambdify(_x, sp.jacobi(n, alpha, beta, _x), 'mpmath')(x)
+                V[:, n] = sp.lambdify(xp, sp.jacobi(n, alpha, beta, xp), 'mpmath')(x)
         return V
 
     def derivative_jacobi(self, x, alpha, beta, k=1):
@@ -253,7 +254,6 @@ class Orthogonal(JacobiBase):
         JacobiBase.__init__(self, N, quad=quad, alpha=alpha, beta=beta, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
                             coordinates=coordinates)
-        self.plan(int(N*padding_factor), 0, dtype, {})
 
     @property
     def is_orthogonal(self):
@@ -262,7 +262,7 @@ class Orthogonal(JacobiBase):
     #def get_orthogonal(self):
     #    return self
 
-    def sympy_basis(self, i=0, x=_x):
+    def sympy_basis(self, i=0, x=xp):
         return sp.jacobi(i, self.alpha, self.beta, x)
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -272,8 +272,8 @@ class Orthogonal(JacobiBase):
         if mode == 'numpy':
             output_array = eval_jacobi(i, self.alpha, self.beta, x, out=output_array)
         else:
-            f = self.sympy_basis(i, _x)
-            output_array[:] = sp.lambdify(_x, f, 'mpmath')(x)
+            f = self.sympy_basis(i, xp)
+            output_array[:] = sp.lambdify(xp, f, 'mpmath')(x)
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -287,8 +287,8 @@ class Orthogonal(JacobiBase):
             dj = np.prod(np.array([i+self.alpha+self.beta+1+j for j in range(k)]))
             output_array[:] = dj/2**k*eval_jacobi(i-k, self.alpha+k, self.beta+k, x)
         else:
-            f = sp.jacobi(i, self.alpha, self.beta, _x)
-            output_array[:] = sp.lambdify(_x, f.diff(_x, k), 'mpmath')(x)
+            f = sp.jacobi(i, self.alpha, self.beta, xp)
+            output_array[:] = sp.lambdify(xp, f.diff(xp, k), 'mpmath')(x)
         return output_array
 
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
@@ -353,7 +353,6 @@ class ShenDirichlet(JacobiBase):
         from shenfun.tensorproductspace import BoundaryValues
         self._bc_basis = None
         self.bc = BoundaryValues(self, bc=bc)
-        self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -394,7 +393,7 @@ class ShenDirichlet(JacobiBase):
             V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
         return V
 
-    def sympy_basis(self, i=0, x=_x):
+    def sympy_basis(self, i=0, x=xp):
         return (1-x**2)*sp.jacobi(i, 1, 1, x)
         #return (1-x)**(-self.alpha)*(1+x)**(-self.beta)*sp.jacobi(i, -self.alpha, -self.beta, x)
 
@@ -403,8 +402,8 @@ class ShenDirichlet(JacobiBase):
             x = self.mpmath_points_and_weights()[0]
         if output_array is None:
             output_array = np.zeros(x.shape, dtype=self.dtype)
-        f = self.sympy_basis(i, _x)
-        output_array[:] = sp.lambdify(_x, f.diff(_x, k), mode)(x)
+        f = self.sympy_basis(i, xp)
+        output_array[:] = sp.lambdify(xp, f.diff(xp, k), mode)(x)
         return output_array
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -414,8 +413,8 @@ class ShenDirichlet(JacobiBase):
         if mode == 'numpy':
             output_array = (1-x**2)*eval_jacobi(i, -self.alpha, -self.beta, x, out=output_array)
         else:
-            f = self.sympy_basis(i, _x)
-            output_array[:] = sp.lambdify(_x, f, 'mpmath')(x)
+            f = self.sympy_basis(i, xp)
+            output_array[:] = sp.lambdify(xp, f, 'mpmath')(x)
         return output_array
 
     def evaluate_basis_all(self, x=None, argument=0):
@@ -526,7 +525,6 @@ class ShenBiharmonic(JacobiBase):
         from shenfun.tensorproductspace import BoundaryValues
         self._bc_basis = None
         self.bc = BoundaryValues(self, bc=bc)
-        self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -535,7 +533,7 @@ class ShenBiharmonic(JacobiBase):
     def slice(self):
         return slice(0, self.N-4)
 
-    def sympy_basis(self, i=0, x=_x):
+    def sympy_basis(self, i=0, x=xp):
         return (1-x**2)**2*sp.jacobi(i, 2, 2, x)
 
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
@@ -552,8 +550,8 @@ class ShenBiharmonic(JacobiBase):
             x = self.mpmath_points_and_weights()[0]
         if output_array is None:
             output_array = np.zeros(x.shape, dtype=self.dtype)
-        f = self.sympy_basis(i, _x)
-        output_array[:] = sp.lambdify(_x, f.diff(_x, k), mode)(x)
+        f = self.sympy_basis(i, xp)
+        output_array[:] = sp.lambdify(xp, f.diff(xp, k), mode)(x)
         return output_array
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -563,9 +561,8 @@ class ShenBiharmonic(JacobiBase):
         if mode == 'numpy':
             output_array[:] = (1-x**2)**2*eval_jacobi(i, 2, 2, x, out=output_array)
         else:
-            X = sp.symbols('x', real=True)
-            f = self.sympy_basis(i, X)
-            output_array[:] = sp.lambdify(X, f, 'mpmath')(x)
+            f = self.sympy_basis(i, xp)
+            output_array[:] = sp.lambdify(xp, f, 'mpmath')(x)
         return output_array
 
     def evaluate_basis_all(self, x=None, argument=0):
@@ -677,7 +674,6 @@ class ShenOrder6(JacobiBase):
                             coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
         self.bc = BoundaryValues(self, bc=(0,)*6)
-        self.plan(int(N*padding_factor), 0, dtype, {})
 
     @staticmethod
     def boundary_condition():
@@ -686,7 +682,7 @@ class ShenOrder6(JacobiBase):
     def slice(self):
         return slice(0, self.N-6)
 
-    def sympy_basis(self, i=0, x=_x):
+    def sympy_basis(self, i=0, x=xp):
         return (1-x**2)**3*sp.jacobi(i, 3, 3, x)
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -694,8 +690,8 @@ class ShenOrder6(JacobiBase):
             x = self.mpmath_points_and_weights()[0]
         if output_array is None:
             output_array = np.zeros(x.shape)
-        f = self.sympy_basis(i, _x)
-        output_array[:] = sp.lambdify(_x, f.diff(_x, k), mode)(x)
+        f = self.sympy_basis(i, xp)
+        output_array[:] = sp.lambdify(xp, f.diff(xp, k), mode)(x)
         return output_array
 
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
@@ -714,8 +710,8 @@ class ShenOrder6(JacobiBase):
         if mode == 'numpy':
             output_array[:] = (1-x**2)**3*eval_jacobi(i, 3, 3, x, out=output_array)
         else:
-            f = self.sympy_basis(i, _x)
-            output_array[:] = sp.lambdify(_x, f, 'mpmath')(x)
+            f = self.sympy_basis(i, xp)
+            output_array[:] = sp.lambdify(xp, f, 'mpmath')(x)
         return output_array
 
     def evaluate_basis_all(self, x=None, argument=0):

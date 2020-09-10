@@ -56,7 +56,6 @@ if comm.Get_rank() == 0:
     f0_hat = Function(T0)
     gt = sp.lambdify(r, sp.integrate(f, (theta, 0, 2*sp.pi))/2/sp.pi)(L0.mesh())
     f0_hat = T0.scalar_product(gt, f0_hat)
-print(np.linalg.norm(f0_hat))
 
 # Assemble matrices.
 if by_parts:
