@@ -11,8 +11,6 @@ from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, FuncWrap, \
     islicedict, slicedict
 from shenfun.optimization import optimizer
-from shenfun.optimization.cython import Cheb
-from shenfun.forms.arguments import Function
 
 __all__ = ['ChebyshevBase', 'Orthogonal', 'ShenDirichlet',
            'ShenNeumann', 'ShenBiharmonic',
@@ -61,7 +59,7 @@ class ChebyshevBase(SpectralBase):
 
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
-            N = self.N
+            N = self.shape(False)
 
         if weighted:
             if self.quad == "GL":
@@ -408,14 +406,24 @@ class CompositeSpace(Orthogonal):
         if fast_transform is False:
             SpectralBase.evaluate_expansion_all(self, input_array, output_array, x, False)
             return
-        input_array[:] = self.to_ortho(input_array)
+        output_array = work[(input_array, 0, False)]
+        input_array[:] = self.to_ortho(input_array, output_array)
         Orthogonal.evaluate_expansion_all(self, input_array, output_array, x, True)
 
     @property
     def is_orthogonal(self):
         return False
 
-    def _composite(self):
+    def _composite(self, V, argument=0):
+        """Return Vandermonde matrix V adjusted for basis composition
+
+        Parameters
+        ----------
+        V : Vandermonde type matrix
+        argument : int
+                Zero for test and 1 for trialfunction
+
+        """
         raise NotImplementedError
 
 
@@ -543,7 +551,6 @@ class ShenDirichlet(CompositeSpace):
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
             output_array = np.zeros_like(input_array)
-            #output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
         s0 = self.sl[slice(0, self.N-2)]
@@ -719,7 +726,6 @@ class ShenNeumann(CompositeSpace):
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
             output_array = np.zeros_like(input_array)
-            #output_array = Function(input_array.function_space().get_orthogonal())
         else:
             output_array.fill(0)
         s0 = self.sl[slice(0, self.N-2)]
@@ -914,8 +920,7 @@ class ShenBiharmonic(CompositeSpace):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = work[(input_array, 0, True)]
-            #output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = np.zeros_like(input_array)
         else:
             output_array.fill(0)
         self.set_factor_arrays(input_array)
@@ -1078,8 +1083,7 @@ class SecondNeumann(CompositeSpace): #pragma: no cover
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = work[(input_array, 0, True)]
-            #output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = np.zeros_like(input_array)
         else:
             output_array.fill(0)
         s0 = self.sl[slice(0, -2)]
@@ -1236,8 +1240,7 @@ class UpperDirichlet(CompositeSpace):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = work[(input_array, 0, True)]
-            #output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = np.zeros_like(input_array)
         else:
             output_array.fill(0)
         s0 = self.sl[slice(0, -1)]
@@ -1532,8 +1535,7 @@ class DirichletNeumann(CompositeSpace):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = work[(input_array, 0, True)]
-            #output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = np.zeros_like(input_array)
         else:
             output_array.fill(0)
         self.set_factor_arrays(input_array)
@@ -1689,8 +1691,7 @@ class NeumannDirichlet(CompositeSpace):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = work[(input_array, 0, True)]
-            #output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = np.zeros_like(input_array)
         else:
             output_array.fill(0)
         self.set_factor_arrays(input_array)

@@ -24,7 +24,7 @@ def Basis(*args, **kwargs): #pragma: no cover
     return FunctionSpace(*args, **kwargs)
 
 def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
-                  domain=None, scaled=None, padding_factor=1.0,
+                  domain=None, scaled=None, padding_factor=1,
                   dealias_direct=False, coordinates=None, **kw):
     """Return function space
 
@@ -1069,18 +1069,21 @@ class ShenfunBaseArray(DistArray):
                 buffer = sp.lambdify(x, buffer)
                 buf = buffer(space.mesh()).astype(space.forward.input_array.dtype)
                 buffer = Array(space)
-                buffer[:] = buf
+                buffer.v[:] = buf
                 if cls.__name__ == 'Function':
                     buf = Function(space)
                     buf = buffer.forward(buf)
                     buffer = buf
-
+            val0 = val if isinstance(val, Number) else None
             obj = DistArray.__new__(cls, shape, buffer=buffer, dtype=dtype,
-                                    rank=space.is_composite_space)
+                                    val=val0, rank=space.is_composite_space)
             obj._space = space
             obj._offset = 0
-            if buffer is None and isinstance(val, Number):
-                obj[:] = val
+            if buffer is None and isinstance(val, (list, tuple)):
+                assert len(val) == len(obj)
+                for i, v in enumerate(val):
+                    obj.v[i] = v
+
             return obj
 
         if min(space.global_shape()) == 0:
@@ -1132,19 +1135,23 @@ class ShenfunBaseArray(DistArray):
                 m.append(mesh[j])
             buf = sp.lambdify(sym0, buffer, modules=['numpy', {'airyai': airyai, 'cot': cot, 'Ynm': Ynm, 'erf': erf}])(*m).astype(space.forward.input_array.dtype)
             buffer = Array(space)
-            buffer[:] = buf
+            buffer.v[:] = buf
             if cls.__name__ == 'Function':
                 buf = Function(space)
                 buf = buffer.forward(buf)
                 buffer = buf
 
         global_shape = space.global_shape(forward_output)
+        val0 = val if isinstance(val, Number) else None
         obj = DistArray.__new__(cls, global_shape,
-                                subcomm=p0.subcomm, val=val, dtype=dtype,
+                                subcomm=p0.subcomm, val=val0, dtype=dtype,
                                 buffer=buffer, alignment=p0.axis,
                                 rank=space.is_composite_space)
         obj._space = space
         obj._offset = 0
+        if isinstance(val, (list, tuple)):
+            for i, v in enumerate(val):
+                obj.v[i] = v
         return obj
 
     def __array_finalize__(self, obj):

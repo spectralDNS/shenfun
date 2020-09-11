@@ -61,6 +61,7 @@ class SparseMatrix(dict):
         self.shape = shape
         self._diags = dia_matrix((1, 1))
         self.scale = scale
+        self._matvec_methods = []
 
     def matvec(self, v, c, format='dia', axis=0):
         """Matrix vector product
@@ -510,7 +511,7 @@ class SpectralMatrix(SparseMatrix):
             c[tuple(ss)] = 0
         return c
 
-    def solve(self, b, u=None, axis=0):
+    def solve(self, b, u=None, axis=0, use_lu=False):
         """Solve matrix system Au = b
 
         where A is the current matrix (self)
@@ -524,13 +525,15 @@ class SpectralMatrix(SparseMatrix):
             Output array
         axis : int, optional
                The axis over which to solve for if b and u are multidimensional
+        use_lu : bool, optional
+            Look for already computed LU-matrix
 
         Note
         ----
         Vectors may be one- or multidimensional.
 
         """
-        u = self.solver(b, u=u, axis=axis)
+        u = self.solver(b, u=u, axis=axis, use_lu=use_lu)
         return u
 
     @property

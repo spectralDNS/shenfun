@@ -107,7 +107,6 @@ class Bcos2mat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, measure=1):
-        k = test[0].wavenumbers(bcast=False, scaled=False, eliminate_highest_freq=False)
         N = test[0].N
         d = {0: 0.5,
              2: 0.25,

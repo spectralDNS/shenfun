@@ -27,7 +27,9 @@ from shenfun.spectralbase import inner_product
 cBasis = (cbases.Orthogonal,
           cbases.ShenDirichlet,
           cbases.ShenNeumann,
-          cbases.ShenBiharmonic)
+          cbases.ShenBiharmonic,
+          cbases.DirichletNeumann,
+          cbases.NeumannDirichlet)
 
 # Bases with only GC quadrature
 cBasisGC = (cbases.UpperDirichlet,
@@ -59,7 +61,6 @@ lquads = ('LG', 'GL')
 lagquads = ('LG',)
 hquads = ('HG',)
 jquads = ('JG',)
-formats = ('dia', 'cython', 'python', 'self')
 
 N = 12
 k = np.arange(N).astype(float)
@@ -126,164 +127,118 @@ def test_mat(key, mat, quad):
 
 @pytest.mark.parametrize('b0,b1', cbases2)
 @pytest.mark.parametrize('quad', cquads)
-@pytest.mark.parametrize('format', formats)
-@pytest.mark.parametrize('dim', (2, 3))
 @pytest.mark.parametrize('k', range(5))
-def test_cmatvec(b0, b1, quad, format, dim, k):
+def test_cmatvec(b0, b1, quad, k):
     """Test matrix-vector product"""
     global c, c1
     b0 = b0(N, quad=quad)
     b1 = b1(N, quad=quad)
     mat = inner_product((b0, 0), (b1, k))
+    formats = mat._matvec_methods + ['python', 'csr']
     c = mat.matvec(a, c, format='csr')
-    c1 = mat.matvec(a, c1, format=format)
-    assert np.allclose(c, c1)
-    for axis in range(0, dim):
+    for format in formats:
+        c1 = mat.matvec(a, c1, format=format)
+        assert np.allclose(c, c1)
+    for dim in (2, 3):
         b, d, d1 = work[dim]
-        d.fill(0)
-        d1.fill(0)
-        d = mat.matvec(b, d, format='csr', axis=axis)
-        d1 = mat.matvec(b, d1, format=format, axis=axis)
-        assert np.allclose(d, d1)
-
-        # Test multidimensional with axis equals 1D case
-        d1.fill(0)
-        bc = [np.newaxis,]*dim
-        bc[axis] = slice(None)
-        fj = np.broadcast_to(a[tuple(bc)], (N,)*dim).copy()
-        d1 = mat.matvec(fj, d1, format=format, axis=axis)
-        cc = [0,]*dim
-        cc[axis] = slice(None)
-        assert np.allclose(c, d1[tuple(cc)])
+        for axis in range(0, dim):
+            d = mat.matvec(b, d, format='csr', axis=axis)
+            for format in formats:
+                d1 = mat.matvec(b, d1, format=format, axis=axis)
+                assert np.allclose(d, d1)
 
 @pytest.mark.parametrize('b0,b1', lbases2)
 @pytest.mark.parametrize('quad', ('LG',))
-@pytest.mark.parametrize('format', formats)
-@pytest.mark.parametrize('dim', (2, 3))
 @pytest.mark.parametrize('k0,k1', product((0, 1, 2), (0, 1, 2)))
-def test_lmatvec(b0, b1, quad, format, dim, k0, k1):
+def test_lmatvec(b0, b1, quad, k0, k1):
     """Test matrix-vector product"""
     global c, c1, a
     b0 = b0(N, quad=quad)
     b1 = b1(N, quad=quad)
     mat = inner_product((b0, k0), (b1, k1))
-    c = mat.matvec(a, c, format='csr')
-    c1 = mat.matvec(a, c1, format=format)
-    assert np.allclose(c, c1)
+    c = mat.matvec(a, c, format='dia')
+    formats = mat._matvec_methods + ['python', 'csr']
+    for format in formats:
+        c1 = mat.matvec(a, c1, format=format)
+        assert np.allclose(c, c1)
 
-    for axis in range(0, dim):
+    for dim in (2, 3):
         b, d, d1 = work[dim]
-        d.fill(0)
-        d1.fill(0)
-        d = mat.matvec(b, d, format='csr', axis=axis)
-        d1 = mat.matvec(b, d1, format=format, axis=axis)
-        assert np.allclose(d, d1)
+        for axis in range(0, dim):
+            d = mat.matvec(b, d, format='dia', axis=axis)
+            for formats in formats:
+                d1 = mat.matvec(b, d1, format=format, axis=axis)
+                assert np.allclose(d, d1)
 
-        # Test multidimensional with axis equals 1D case
-        d1.fill(0)
-        bc = [np.newaxis,]*dim
-        bc[axis] = slice(None)
-        fj = np.broadcast_to(a[tuple(bc)], (N,)*dim).copy()
-        d1 = mat.matvec(fj, d1, format=format, axis=axis)
-        cc = [0,]*dim
-        cc[axis] = slice(None)
-        assert np.allclose(c, d1[tuple(cc)])
 
 @pytest.mark.parametrize('b0,b1', lagbases2)
 @pytest.mark.parametrize('quad', lagquads)
 @pytest.mark.parametrize('format', ('dia', 'python'))
-@pytest.mark.parametrize('dim', (2, 3))
 @pytest.mark.parametrize('k0,k1', product((0, 1, 2), (0, 1, 2)))
-def test_lagmatvec(b0, b1, quad, format, dim, k0, k1):
+def test_lagmatvec(b0, b1, quad, format, k0, k1):
     """Test matrix-vector product"""
     global c, c1
     b0 = b0(N, quad=quad)
     b1 = b1(N, quad=quad)
     mat = inner_product((b0, k0), (b1, k1))
     c = mat.matvec(a, c, format='csr')
-    c1 = mat.matvec(a, c1, format=format)
-    assert np.allclose(c, c1)
-    for axis in range(0, dim):
+    formats = mat._matvec_methods + ['python', 'csr']
+    for format in formats:
+        c1 = mat.matvec(a, c1, format=format)
+        assert np.allclose(c, c1)
+    for dim in (2, 3):
         b, d, d1 = work[dim]
-        d.fill(0)
-        d1.fill(0)
-        d = mat.matvec(b, d, format='csr', axis=axis)
-        d1 = mat.matvec(b, d1, format=format, axis=axis)
-        assert np.allclose(d, d1)
-
-        # Test multidimensional with axis equals 1D case
-        d1.fill(0)
-        bc = [np.newaxis,]*dim
-        bc[axis] = slice(None)
-        fj = np.broadcast_to(a[tuple(bc)], (N,)*dim).copy()
-        d1 = mat.matvec(fj, d1, format=format, axis=axis)
-        cc = [0,]*dim
-        cc[axis] = slice(None)
-        assert np.allclose(c, d1[tuple(cc)])
+        for axis in range(0, dim):
+            d = mat.matvec(b, d, format='csr', axis=axis)
+            for format in formats:
+                d1 = mat.matvec(b, d1, format=format, axis=axis)
+                assert np.allclose(d, d1)
 
 @pytest.mark.parametrize('b0,b1', hbases2)
 @pytest.mark.parametrize('quad', hquads)
 @pytest.mark.parametrize('format', ('dia', 'python'))
-@pytest.mark.parametrize('dim', (2, 3))
 @pytest.mark.parametrize('k0,k1', product((0, 1, 2), (0, 1, 2)))
-def test_hmatvec(b0, b1, quad, format, dim, k0, k1):
+def test_hmatvec(b0, b1, quad, format, k0, k1):
     """Test matrix-vector product"""
     global c, c1
     b0 = b0(N, quad=quad)
     b1 = b1(N, quad=quad)
     mat = inner_product((b0, k0), (b1, k1))
+    formats = mat._matvec_methods + ['python', 'csr']
     c = mat.matvec(a, c, format='csr')
-    c1 = mat.matvec(a, c1, format=format)
-    assert np.allclose(c, c1)
-    for axis in range(0, dim):
+    for format in formats:
+        c1 = mat.matvec(a, c1, format=format)
+        assert np.allclose(c, c1)
+    for dim in (2, 3):
         b, d, d1 = work[dim]
-        d.fill(0)
-        d1.fill(0)
-        d = mat.matvec(b, d, format='csr', axis=axis)
-        d1 = mat.matvec(b, d1, format=format, axis=axis)
-        assert np.allclose(d, d1)
-
-        # Test multidimensional with axis equals 1D case
-        d1.fill(0)
-        bc = [np.newaxis,]*dim
-        bc[axis] = slice(None)
-        fj = np.broadcast_to(a[tuple(bc)], (N,)*dim).copy()
-        d1 = mat.matvec(fj, d1, format=format, axis=axis)
-        cc = [0,]*dim
-        cc[axis] = slice(None)
-        assert np.allclose(c, d1[tuple(cc)])
+        for axis in range(0, dim):
+            d = mat.matvec(b, d, format='csr', axis=axis)
+            for format in formats:
+                d1 = mat.matvec(b, d1, format=format, axis=axis)
+                assert np.allclose(d, d1)
 
 @pytest.mark.parametrize('b0,b1', jbases2)
 @pytest.mark.parametrize('quad', jquads)
 @pytest.mark.parametrize('format', ('dia', 'python'))
-@pytest.mark.parametrize('dim', (2,))
 @pytest.mark.parametrize('k0,k1', product((0, 1, 2), (0, 1, 2)))
-def test_jmatvec(b0, b1, quad, format, dim, k0, k1):
+def test_jmatvec(b0, b1, quad, format, k0, k1):
     """Testq matrix-vector product"""
     global c, c1
     b0 = b0(N, quad=quad)
     b1 = b1(N, quad=quad)
     mat = inner_product((b0, k0), (b1, k1))
     c = mat.matvec(a, c, format='csr')
-    c1 = mat.matvec(a, c1, format=format)
-    assert np.allclose(c, c1)
+    formats = mat._matvec_methods + ['python', 'csr']
+    for format in formats:
+        c1 = mat.matvec(a, c1, format=format)
+        assert np.allclose(c, c1)
+    dim = 2
+    b, d, d1 = work[dim]
     for axis in range(0, dim):
-        b, d, d1 = work[dim]
-        d.fill(0)
-        d1.fill(0)
         d = mat.matvec(b, d, format='csr', axis=axis)
-        d1 = mat.matvec(b, d1, format=format, axis=axis)
-        assert np.allclose(d, d1)
-
-        # Test multidimensional with axis equals 1D case
-        d1.fill(0)
-        bc = [np.newaxis,]*dim
-        bc[axis] = slice(None)
-        fj = np.broadcast_to(a[tuple(bc)], (N,)*dim).copy()
-        d1 = mat.matvec(fj, d1, format=format, axis=axis)
-        cc = [0,]*dim
-        cc[axis] = slice(None)
-        assert np.allclose(c, d1[tuple(cc)])
+        for format in formats:
+            d1 = mat.matvec(b, d1, format=format, axis=axis)
+            assert np.allclose(d, d1)
 
 def test_eq():
     m0 = SparseMatrix({0: 1, 2: 2}, (6, 6))
@@ -695,7 +650,7 @@ if __name__ == '__main__':
     import sympy as sp
     x = sp.symbols('x', real=True, positive=True)
     #test_mat(((cbases.ShenDirichlet, 0), (cbases.BCDirichlet, 0)), cmatrices.BCDmat, 'GC')
-    #test_cmatvec(cBasis[3], cBasis[1], 'GC', 'cython', 3, 0)
+    test_cmatvec(cBasis[1], cBasis[2], 'GC', 'cython', 2, 1)
     #test_lmatvec(lBasis[0], lBasis[0], 'LG', 'cython', 3, 2, 0)
     #test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
     #test_hmatvec(hBasis[0], hBasis[0], 'HG', 'self', 3, 1, 1)
@@ -703,7 +658,7 @@ if __name__ == '__main__':
     #test_sub(*mats_and_quads[15])
     #test_mul2()
     #test_div2(cBasis[0], 'GC')
-    test_helmholtz2D('chebyshev', 1)
+    #test_helmholtz2D('chebyshev', 1)
     #test_helmholtz3D('chebyshev', 0)
     #test_biharmonic3D('chebyshev', 0)
     #test_biharmonic2D('jacobi', 0)

@@ -39,7 +39,9 @@ class SpectralBase:
         self.quad = quad
         self.axis = 0
         self.bc = None
-        self.padding_factor = np.floor(N*padding_factor)/N if N > 0 else 1
+        self.padding_factor = padding_factor
+        if padding_factor is not 1:
+            self.padding_factor = np.floor(N*padding_factor)/N if N > 0 else 1
         self.dealias_direct = dealias_direct
         self._mass = None         # Mass matrix (if needed)
         self._dtype = dtype
@@ -738,7 +740,9 @@ class SpectralBase:
         """
         if forward_output:
             return self.N
-        return int(np.floor(self.padding_factor*self.N))
+        if self.padding_factor is not 1:
+            return int(np.floor(self.padding_factor*self.N))
+        return self.N
 
     def domain_factor(self):
         """Return scaling factor for domain"""

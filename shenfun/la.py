@@ -56,7 +56,7 @@ class TDMA:
         for i in range(n - 3, -1, -1):
             x[i] = (x[i] - a[i]*x[i+2])/d[i]
 
-    def __call__(self, b, u=None, axis=0):
+    def __call__(self, b, u=None, axis=0, **kw):
         """Solve matrix problem self u = b
 
         Parameters
@@ -176,7 +176,7 @@ class PDMA:
             bc[k] -= (e[k]*bc[k+2] + f[k]*bc[k+4])
         b[:] = bc.astype(float)
 
-    def __call__(self, b, u=None, axis=0):
+    def __call__(self, b, u=None, axis=0, **kw):
         """Solve matrix problem self u = b
 
         Parameters
@@ -226,7 +226,7 @@ class Solve:
         self.A = A
         self.test = test
 
-    def __call__(self, b, u=None, axis=0):
+    def __call__(self, b, u=None, axis=0, use_lu=False):
         """Solve matrix problem Au = b
 
         Parameters
@@ -257,27 +257,41 @@ class Solve:
 
         s = self.s
         assert self.A.shape[0] == b[s].shape[0]
-        A = self.A.diags('csr')
+        A = self.A.diags('csc')
         if b.ndim == 1:
-            u[s] = spsolve(A, b[s])
+            if use_lu:
+                if b.dtype.char in 'FDG':
+                    u.real[s] = self._lu.solve(b[s].real)
+                    u.imag[s] = self._lu.solve(b[s].imag)
+                else:
+                    u[s] = self._lu.solve(b[s])
+            else:
+                u[s] = spsolve(A, b[s])
+            #u[s] = spsolve(A, b[s])
+
         else:
             N = b[s].shape[0]
             P = np.prod(b[s].shape[1:])
             br = b[s].reshape((N, P))
-
-            if b.dtype is np.dtype('complex'):
-                u.real[s] = spsolve(A, br.real).reshape(u[s].shape)
-                u.imag[s] = spsolve(A, br.imag).reshape(u[s].shape)
+            if use_lu:
+                if b.dtype.char in 'FDG':
+                    u.real[s] = self._lu.solve(br.real).reshape(u[s].shape)
+                    u.imag[s] = self._lu.solve(br.imag).reshape(u[s].shape)
+                else:
+                    u[s] = self._lu.solve(br).reshape(u[s].shape)
             else:
                 u[s] = spsolve(A, br).reshape(u[s].shape)
-        #if self.test.has_nonhomogeneous_bcs:
-        #    self.test.bc.set_boundary_dofs(u, True)
+
+            #if b.dtype is np.dtype('complex'):
+            #    u.real[s] = spsolve(A, br.real).reshape(u[s].shape)
+            #    u.imag[s] = spsolve(A, br.imag).reshape(u[s].shape)
+            #else:
+            #    u[s] = spsolve(A, br).reshape(u[s].shape)
 
         if axis > 0:
             u = np.moveaxis(u, 0, axis)
             if u is not b:
                 b = np.moveaxis(b, 0, axis)
-
         return u
 
 class NeumannSolve:
@@ -299,7 +313,7 @@ class NeumannSolve:
         self.s = test.slice()
         self.A = A
 
-    def __call__(self, b, u=None, axis=0):
+    def __call__(self, b, u=None, axis=0, use_lu=False):
         """Solve matrix problem A u = b
 
         Parameters
@@ -334,15 +348,26 @@ class NeumannSolve:
         A[0, 0] = 1
 
         if b.ndim == 1:
-            u[s] = spsolve(A, b[s])
+            if use_lu:
+                if b.dtype.char in 'FDG':
+                    u.real[s] = self._lu.solve(b[s].real)
+                    u.imag[s] = self._lu.solve(b[s].imag)
+                else:
+                    u[s] = self._lu.solve(b[s])
+            else:
+                u[s] = spsolve(A, b[s])
+
         else:
             N = b[s].shape[0]
             P = np.prod(b[s].shape[1:])
             br = b[s].reshape((N, P))
 
-            if b.dtype is np.dtype('complex'):
-                u.real[s] = spsolve(A, br.real).reshape(u[s].shape)
-                u.imag[s] = spsolve(A, br.imag).reshape(u[s].shape)
+            if use_lu:
+                if b.dtype.char in 'FDG':
+                    u.real[s] = self._lu.solve(br.real).reshape(u[s].shape)
+                    u.imag[s] = self._lu.solve(br.imag).reshape(u[s].shape)
+                else:
+                    u[s] = self._lu.solve(br).reshape(u[s].shape)
             else:
                 u[s] = spsolve(A, br).reshape(u[s].shape)
 
@@ -350,7 +375,6 @@ class NeumannSolve:
             u = np.moveaxis(u, 0, axis)
             if u is not b:
                 b = np.moveaxis(b, 0, axis)
-        #u /= self.A.scale
         return u
 
 class SolverGeneric2ND:
@@ -433,7 +457,6 @@ class SolverGeneric2ND:
             diagonal_axis = self.get_diagonal_axis()
             s0 = list(self.T.slice())
             for i in range(self.T.shape(True)[diagonal_axis]):
-                m = self.tpmats[0]
                 M0 = self.diags(i, format=format)
                 s0[diagonal_axis] = i
                 shape = np.take(self.T.dims(), naxes)

@@ -130,6 +130,7 @@ class BDDmat(SpectralMatrix):
         d[-2] = d[2]
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
         self.solve = TDMA(self)
+        self._matvec_methods += ['cython', 'self']
 
     def matvec(self, v, c, format='cython', axis=0):
         N, M = self.shape
@@ -242,6 +243,7 @@ class BDNmat(SpectralMatrix):
              2: -np.pi/2}
         d[-2] = (-np.pi/2*(k/(k+2))**2)[:dmax(N-2, M-2, -2)]
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+        self._matvec_methods += ['cython']
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -349,6 +351,7 @@ class BTTmat(SpectralMatrix):
         assert isinstance(trial[0], CB)
         ck = get_ck(min(test[0].N, trial[0].N), test[0].quad)
         SpectralMatrix.__init__(self, {0: np.pi/2*ck}, test, trial)
+        self._matvec_methods += ['self']
 
     def matvec(self, v, c, format='csr', axis=0):
         c.fill(0)
@@ -541,6 +544,7 @@ class BBBmat(SpectralMatrix):
         d[-4] = d4[:dmax(N-4, M-4, -4)]
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
         self.solve = PDMA(self)
+        self._matvec_methods += ['cython', 'self']
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -614,6 +618,7 @@ class BBDmat(SpectralMatrix):
               2: -(a+b*ck[4:])*np.pi/2,
               4: b[:-2]*np.pi/2}
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+        self._matvec_methods += ['cython', 'self']
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -675,8 +680,10 @@ class CDNmat(SpectralMatrix):
         d = {-1: -((k[1:]-1)/(k[1:]+1))**2*(k[1:]+1)*np.pi,
               1: (k[:-1]+1)*np.pi}
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+        self._matvec_methods += ['cython']
 
     def matvec(self, v, c, format='cython', axis=0):
+        c.fill(0)
         if format == 'cython' and v.ndim == 3:
             cython.Matvec.CDN_matvec3D_ptr(v, c, self[-1], self[1], axis)
             self.scale_array(c)
@@ -715,6 +722,7 @@ class CDDmat(SpectralMatrix):
         d = {-1: -(k[1:N-2]+1)*np.pi,
               1: (k[:(N-3)]+1)*np.pi}
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+        self._matvec_methods += ['cython', 'self']
 
     def matvec(self, v, c, format='cython', axis=0):
         N = self.shape[0]
@@ -861,6 +869,7 @@ class CTTmat(SpectralMatrix):
         for i in range(1, N, 2):
             d[i] = np.pi*k[i:]
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+        self._matvec_methods += ['cython']
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -903,6 +912,7 @@ class CBDmat(SpectralMatrix):
               1: 2*(k[:N-4]+1)*np.pi,
               3: -(k[:N-5]+1)*np.pi}
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+        self._matvec_methods += ['cython', 'self']
 
     def matvec(self, v, c, format='cython', axis=0):
         N, M = self.shape
@@ -956,6 +966,7 @@ class CDBmat(SpectralMatrix):
              -1: -2*(k[1:-3]+1)**2/(k[1:-3]+2)*np.pi,
               1: (k[:-5]+1)*np.pi}
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+        self._matvec_methods += ['cython', 'self']
 
     def matvec(self, v, c, format='cython', axis=0):
         N, M = self.shape
@@ -1014,6 +1025,7 @@ class ABBmat(SpectralMatrix):
               0: -4*((k+1)*(k+2)**2)/(k+3)*np.pi,
               2: 2*(k[:-2]+1)*(k[:-2]+2)*np.pi}
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+        self._matvec_methods += ['cython', 'self']
 
     def matvec(self, v, c, format='cython', axis=0):
         N = self.shape[0]
@@ -1073,6 +1085,7 @@ class ADDmat(SpectralMatrix):
         for i in range(2, N-2, 2):
             d[i] = -4*np.pi*(k[:-(i+2)]+1)
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+        self._matvec_methods += ['cython']
 
         # Following storage more efficient, but requires effort in iadd/isub...
 #        d = {0: -2*np.pi*(k[:N-2]+1)*(k[:N-2]+2),
@@ -1255,6 +1268,7 @@ class ATTmat(SpectralMatrix):
         for j in range(2, N, 2):
             d[j] = k[j:]*(k[j:]**2-k[:-j]**2)*np.pi/2.
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+        self._matvec_methods += ['cython']
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -1300,6 +1314,7 @@ class SBBmat(SpectralMatrix):
             i = 8*(ki[:-j]+1)*(ki[:-j]+2)*(ki[:-j]*(ki[:-j]+4)+3*(ki[j:]+2)**2)
             d[j] = np.array(i*np.pi/(k[j:]+3))
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+        self._matvec_methods += ['cython']
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
