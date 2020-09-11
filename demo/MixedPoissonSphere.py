@@ -23,7 +23,6 @@ coordinates. The mixed equations are solved coupled and implicit.
 
 """
 
-import os
 import numpy as np
 import sympy as sp
 from shenfun import *

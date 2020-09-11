@@ -119,7 +119,9 @@ def test_transform(typecode, dim):
 cBasis = (cbases.Orthogonal,
           cbases.ShenDirichlet,
           cbases.ShenNeumann,
-          cbases.ShenBiharmonic)
+          cbases.ShenBiharmonic,
+          cbases.DirichletNeumann,
+          cbases.NeumannDirichlet)
 
 # Bases with only GC quadrature
 cBasisGC = (cbases.UpperDirichlet,
@@ -423,7 +425,9 @@ def test_eval_tensor(typecode, dim, ST, quad):
              '6th order': (1-x**2)**3*sin(np.pi*x),
              'BiPolar': (1-x**2)*sin(2*np.pi*x),
              'BiPolar0': (1-x**2)*sin(2*np.pi*x),
-             'UpperDirichlet': (1-x)*sin(np.pi*x)}
+             'UpperDirichlet': (1-x)*sin(np.pi*x),
+             'DirichletNeumann': (1-x**2)*sin(2*np.pi*x),
+             'NeumannDirichlet': (1-x**2)*sin(2*np.pi*x)}
     funcy = {'': (1-y**2)*sin(np.pi*y),
              'Dirichlet': (1-y**2)*sin(np.pi*y),
              'Neumann': (1-y**2)*sin(np.pi*y),
@@ -431,7 +435,9 @@ def test_eval_tensor(typecode, dim, ST, quad):
              '6th order': (1-y**2)**3*sin(np.pi*y),
              'BiPolar': (1-y**2)*sin(2*np.pi*y),
              'BiPolar0': (1-y**2)*sin(2*np.pi*y),
-             'UpperDirichlet': (1-y)*sin(np.pi*y)}
+             'UpperDirichlet': (1-y)*sin(np.pi*y),
+             'DirichletNeumann': (1-y**2)*sin(2*np.pi*y),
+             'NeumannDirichlet': (1-y**2)*sin(2*np.pi*y)}
     funcz = {'': (1-z**2)*sin(np.pi*z),
              'Dirichlet': (1-z**2)*sin(np.pi*z),
              'Neumann': (1-z**2)*sin(np.pi*z),
@@ -439,7 +445,9 @@ def test_eval_tensor(typecode, dim, ST, quad):
              '6th order': (1-z**2)**3*sin(np.pi*z),
              'BiPolar': (1-z**2)*sin(2*np.pi*z),
              'BiPolar0': (1-z**2)*sin(2*np.pi*z),
-             'UpperDirichlet': (1-z)*sin(np.pi*z)}
+             'UpperDirichlet': (1-z)*sin(np.pi*z),
+             'DirichletNeumann': (1-z**2)*sin(2*np.pi*z),
+             'NeumannDirichlet': (1-z**2)*sin(2*np.pi*z)}
 
     funcs = {
         (1, 0): cos(2*y)*funcx[ST.boundary_condition()],

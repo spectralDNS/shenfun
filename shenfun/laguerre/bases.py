@@ -70,7 +70,7 @@ class LaguerreBase(SpectralBase):
 
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
-            N = self.N
+            N = self.shape(False)
         if self.quad == "LG":
             points, weights = lag.laggauss(N)
             if weighted:
@@ -292,7 +292,7 @@ class ShenDirichlet(LaguerreBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = np.zeros_like(input_array)
         else:
             output_array.fill(0)
         s0 = self.sl[slice(0, -1)]

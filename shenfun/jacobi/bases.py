@@ -457,7 +457,7 @@ class ShenDirichlet(JacobiBase):
     def to_ortho(self, input_array, output_array=None):
         assert self.alpha == -1 and self.beta == -1
         if output_array is None:
-            output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = np.zeros_like(input_array)
         else:
             output_array.fill(0)
         k = self.wavenumbers().astype(np.float)
@@ -609,7 +609,7 @@ class ShenBiharmonic(JacobiBase):
 
     def to_ortho(self, input_array, output_array=None):
         if output_array is None:
-            output_array = Function(input_array.function_space().get_orthogonal())
+            output_array = np.zeros_like(input_array)
         else:
             output_array.fill(0)
         k = self.wavenumbers().astype(np.float)

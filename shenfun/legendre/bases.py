@@ -12,7 +12,6 @@ from scipy.special import eval_legendre
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, islicedict, \
     slicedict
-from shenfun.forms.arguments import Function
 from .lobatto import legendre_lobatto_nodes_and_weights
 
 __all__ = ['LegendreBase', 'Orthogonal', 'ShenDirichlet',
@@ -88,7 +87,7 @@ class LegendreBase(SpectralBase):
 
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
-            N = self.N
+            N = self.shape(False)
         if self.quad == "LG":
             points, weights = leg.leggauss(N)
         elif self.quad == "GL":
@@ -105,7 +104,7 @@ class LegendreBase(SpectralBase):
         if mode == 'numpy' or not has_quadpy:
             return self.points_and_weights(N=N, map_true_domain=map_true_domain, weighted=weighted, **kw)
         if N is None:
-            N = self.N
+            N = self.shape(False)
         if self.quad == 'LG':
             pw = quadpy.line_segment.gauss_legendre(N, 'mpmath')
         elif self.quad == 'GL':
@@ -1297,7 +1296,8 @@ class NeumannDirichlet(LegendreBase):
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
-        self._factor = np.ones(1)
+        self._factor1 = np.ones(1)
+        self._factor2 = np.ones(1)
         self.bc = BoundaryValues(self, bc=bc)
 
     @staticmethod

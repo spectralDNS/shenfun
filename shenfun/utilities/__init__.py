@@ -97,7 +97,7 @@ class CachedArrayDict(MutableMapping):
             value = self._data[newkey]
         except KeyError:
             shape, dtype, _ = newkey
-            value = np.zeros(shape, dtype=np.dtype(dtype, align=True))
+            value = np.empty(shape, dtype=np.dtype(dtype, align=True))
             self._data[newkey] = value
         if fill:
             value.fill(0)

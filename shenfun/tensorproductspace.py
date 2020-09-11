@@ -4,7 +4,6 @@ related methods.
 """
 from numbers import Number
 import functools
-import copy
 import sympy as sp
 import numpy as np
 from shenfun.fourier.bases import R2C, C2C
@@ -945,7 +944,6 @@ class TensorProductSpace(PFFT):
         """
         domains = [base.domain for base in self.bases]
         sym0 = fun.free_symbols
-        syms = [str(i) for i in sym0]
         sd = {str(sym): sym for sym in sym0}
         Tj = []
         for axis, base in enumerate(self.bases):
@@ -1625,9 +1623,7 @@ class BoundaryValues:
 
 def some_basic_tests():
     import pyfftw             #pylint: disable=import-error
-    from mpi4py import MPI
 
-    comm = MPI.COMM_WORLD
     N = 8
     K0 = C2C(N)
     K1 = C2C(N)

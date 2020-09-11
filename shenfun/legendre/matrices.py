@@ -477,6 +477,7 @@ class GLLmat(SpectralMatrix):
             jj = j if trial[1] else -j
             d[jj] = (k[:-j]+0.5)*(k[j:]*(k[j:]+1) - k[:-j]*(k[:-j]+1))*2./(2*k[:-j]+1)
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+        self._matvec_methods += ['cython']
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -543,6 +544,7 @@ class CLLmat(SpectralMatrix):
         for i in range(1, N, 2):
             d[i] = 2
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+        self._matvec_methods += ['cython', 'self']
 
     def matvec(self, v, c, format='self', axis=0):
         c.fill(0)

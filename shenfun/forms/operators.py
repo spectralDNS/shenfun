@@ -185,7 +185,7 @@ def Dx(test, x, k=1):
     assert isinstance(test, (Expr, BasisFunction))
 
     if k > 1:
-        for l in range(k):
+        for _ in range(k):
             test = Dx(test, x, 1)
         return test
 
@@ -272,11 +272,11 @@ def curl(test):
             g = coors.get_covariant_metric_tensor()
 
             if test.dimensions == 3:
-                ct = coors.get_christoffel_second()
                 w0 = np.sum([(Dx(test[i]*g[2, i], 1, 1) - Dx(test[i]*g[1, i], 2, 1))*(1/sg) for i in range(3)])
                 w1 = np.sum([(Dx(test[i]*g[0, i], 2, 1) - Dx(test[i]*g[2, i], 0, 1))*(1/sg) for i in range(3)])
                 w2 = np.sum([(Dx(test[i]*g[1, i], 0, 1) - Dx(test[i]*g[0, i], 1, 1))*(1/sg) for i in range(3)])
                 # Don't think this double loop is needed due to symmetry of Christoffel?
+                #ct = coors.get_christoffel_second()
                 #for i in range(3):
                 #    for k in range(3):
                 #        w0 += (ct[i, 1, 2]*g[i, k]*test[k] - ct[i, 2, 1]*g[i, k]*test[k])*(1/sg)

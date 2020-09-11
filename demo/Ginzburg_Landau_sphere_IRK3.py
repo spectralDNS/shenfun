@@ -59,7 +59,6 @@ class GinzburgLandau(IRK3):
         return u + div(grad(u))
 
     def NonlinearRHS(self, u, u_hat, rhs, **par):
-        v = TestFunction(self.T)
         up = self.Tp.backward(self.u_hat, self.up)
         rhs[:] = 0
         w0 = self.Tp.forward(-(1+1.5j)*up*abs(up)**2, self.w0)

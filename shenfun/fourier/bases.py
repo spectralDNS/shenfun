@@ -3,7 +3,6 @@ Module for defining function spaces in the Fourier family
 """
 import sympy as sp
 import numpy as np
-from numbers import Number
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
 from shenfun.optimization.cython import convolve
@@ -90,7 +89,7 @@ class FourierBase(SpectralBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, padding_factor=1., domain=(0, 2*np.pi), dtype=np.float,
+    def __init__(self, N, padding_factor=1, domain=(0, 2*np.pi), dtype=np.float,
                  dealias_direct=False, coordinates=None):
         self._k = None
         self._planned_axes = None  # Collapsing of axes means that this base can be used to plan transforms over several collapsed axes. Store the axes planned for here.
@@ -106,7 +105,7 @@ class FourierBase(SpectralBase):
 
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
-            N = self.N
+            N = self.shape(False)
         points = np.arange(N, dtype=np.float)*2*np.pi/N
         if map_true_domain is True:
             points = self.map_true_domain(points)
@@ -516,7 +515,7 @@ class C2C(FourierBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, padding_factor=1., domain=(0., 2.*np.pi),
+    def __init__(self, N, padding_factor=1, domain=(0., 2.*np.pi),
                  dealias_direct=False, coordinates=None):
         FourierBase.__init__(self, N, padding_factor=padding_factor, dtype=np.complex,
                              domain=domain, dealias_direct=dealias_direct,
