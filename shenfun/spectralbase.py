@@ -651,7 +651,7 @@ class SpectralBase:
 
         self.axis = axis
 
-        if self.padding_factor > 1.+1e-8:
+        if self.padding_factor is not 1:
             trunc_array = self._get_truncarray(shape, V.dtype)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
