@@ -120,7 +120,7 @@ class ChebyshevBase(SpectralBase):
         trunc_array = self._tmp
 
         self.axis = axis
-        if self.padding_factor > 1.+1e-8:
+        if self.padding_factor is not 1:
             self.forward = Transform(self.forward, self.xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, self.xfftn_bck, trunc_array, V, U)
         else:
@@ -353,7 +353,7 @@ class Orthogonal(ChebyshevBase):
 
         self.axis = axis
         if self.__class__.__name__ == 'Orthogonal':
-            if self.padding_factor > 1.+1e-8:
+            if self.padding_factor is not 1:
                 trunc_array = self._get_truncarray(shape, V.dtype)
                 self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
                 self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
@@ -366,7 +366,7 @@ class Orthogonal(ChebyshevBase):
             self.xfftn_bck = xfftn_bck
             self._U = U
             self._V = V
-            if self.padding_factor > 1.+1e-8:
+            if self.padding_factor is not 1:
                 trunc_array = self._get_truncarray(shape, V.dtype)
                 self._tmp = trunc_array
             else:
@@ -1322,7 +1322,7 @@ class ShenBiPolar(Orthogonal):
         U.fill(0)
         V.fill(0)
         self.axis = axis
-        if self.padding_factor > 1.+1e-8:
+        if self.padding_factor is not 1:
             trunc_array = self._get_truncarray(shape, V.dtype)
             self.forward = Transform(self.forward, None, U, V, trunc_array)
             self.backward = Transform(self.backward, None, trunc_array, V, U)
