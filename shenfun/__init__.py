@@ -28,7 +28,7 @@ coordinates, like polar or spherical coordinates.
 """
 #pylint: disable=wildcard-import,no-name-in-module
 
-__version__ = '3.0.5'
+__version__ = '3.0.6'
 __author__ = 'Mikael Mortensen'
 
 import numpy as np
