@@ -155,7 +155,7 @@ def test_inner():
     inner(curl(h), curl(w))
     inner(h, grad(div(w)))
 
-def test_tensor2(self):
+def test_tensor2():
     B0 = shenfun.FunctionSpace(8, 'C')
     T = shenfun.TensorProductSpace(comm, (B0, B0))
     x,y = sp.symbols('x,y')
