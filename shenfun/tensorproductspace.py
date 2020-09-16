@@ -1301,7 +1301,7 @@ class TensorSpace(VectorSpace):
 
     Parameters
     ----------
-    space : :class:`.TensorProductSpace` or list of ndim :class:`.TensorProductSpace`s
+    space : :class:`.TensorProductSpace` or list of ndim :class:`.VectorSpace`s
         Spaces to create vector from
 
     """

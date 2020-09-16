@@ -384,8 +384,8 @@ W_BF = TensorProductSpace(comm, (VB, VF))    # Wall-normal velocity
 W_DF = TensorProductSpace(comm, (VD, VF))    # Streamwise velocity
 W_WF = TensorProductSpace(comm, (VW, VF))    # No bc
 W_TF = TensorProductSpace(comm, (VT, VF))    # Temperature
-BD = CompositeSpace([W_BF, W_DF])   # Velocity vector
-DD = CompositeSpace([W_DF, W_DF])   # Convection vector
+BD = VectorSpace([W_BF, W_DF])   # Velocity vector
+DD = VectorSpace([W_DF, W_DF])   # Convection vector
 !ec
 
 Here the last two lines create mixed tensor product spaces by the
