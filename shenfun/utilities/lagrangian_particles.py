@@ -48,7 +48,7 @@ if __name__ == '__main__':
     #F1 = FunctionSpace(N[1], 'C', domain=(0., 1.))
 
     T = TensorProductSpace(comm, (F0, F1))
-    TV = VectorTensorProductSpace(T)
+    TV = VectorSpace(T)
 
     x, y = sp.symbols("x,y")
     psi = 1./np.pi*sp.sin(np.pi*x)**2*sp.sin(np.pi*y)**2 # Streamfunction

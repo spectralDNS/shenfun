@@ -337,8 +337,8 @@ class Expr:
         such it is a list of lists.
 
     indices : list of lists
-        Index into MixedTensorProductSpace. Only used when basis of form has
-        rank > 0. There is one index for each term in each tensor component,
+        Index into :class:`.CompositeSpace`. Only used when the basis of the
+        form is composite. There is one index for each term in each tensor component,
         and as such it is a list of lists.
 
     Examples
@@ -420,13 +420,9 @@ class Expr:
             return 2
 
     @property
-    def rank(self):
+    def tensor_rank(self):
         """Return rank of Expr's :class:`BasisFunction`"""
-        return self._basis.rank
-
-    def basis_rank(self):
-        """Return rank of Expr's :class:`BasisFunction`"""
-        return self._basis.rank
+        return self._basis.tensor_rank
 
     def indices(self):
         """Return indices of Expr"""
@@ -485,7 +481,7 @@ class Expr:
                 cmp = funcname
                 #if self.num_components() > 1:
 
-                if self.rank > 0:
+                if self.tensor_rank > 0:
                     cmp = funcname + '^{%s}'%(symbols[x[k]])
                 if np.sum(t) == 0:
                     s += cmp
@@ -534,7 +530,6 @@ class Expr:
 
         """
         s = sp.S(0)
-        is_vector = self.rank
         ndim = self.dimensions
         if basis is None:
             basis = 'u'
@@ -545,16 +540,18 @@ class Expr:
         if isinstance(basis, str):
             # Create sympy Function
             st = basis
-            if is_vector:
+            if self.tensor_rank == 1:
                 basis = []
                 for i in range(self.dimensions):
                     basis.append(sp.Function(st+'xyzrs'[i])(*psi[:self.dimensions]))
+            elif self.tensor_rank == 2:
+                raise NotImplementedError
             else:
                 basis = [sp.Function(st)(*psi[:self.dimensions])]
         else:
             if isinstance(basis, sp.Expr):
                 basis = [basis]
-            assert len(basis) == ndim**self.rank
+            assert len(basis) == ndim**self.tensor_rank
 
         assumptions = self.function_space().coors._assumptions
         for i, vec in enumerate(self.terms()):
@@ -591,7 +588,7 @@ class Expr:
             Array must be of shape (D, N), for  N points in D dimensions
 
         """
-        from shenfun import MixedTensorProductSpace
+        from shenfun import CompositeSpace
         from shenfun.fourier.bases import R2C
 
         if len(x.shape) == 1: # 1D case
@@ -613,7 +610,7 @@ class Expr:
             for base_j, b0 in enumerate(base):
                 M = []
                 test_sp = V
-                if isinstance(V, MixedTensorProductSpace):
+                if isinstance(V, CompositeSpace):
                     test_sp = V.flatten()[ind[base_j]]
                 r2c = -1
                 last_conj_index = -1
@@ -635,7 +632,7 @@ class Expr:
                             last_conj_index = m
                         sl = V.local_slice()[axis].start
 
-                bv = basis if basis.rank == 0 else basis[ind[base_j]]
+                bv = basis if basis.tensor_rank == 0 else basis[ind[base_j]]
                 work.fill(0)
                 if len(x) == 1:
                     work = np.dot(P, bv)
@@ -661,6 +658,9 @@ class Expr:
         return output_array
 
     def __getitem__(self, i):
+        if i >= self.dimensions:
+            raise IndexError
+
         basis = self._basis
         if basis.function_space().is_composite_space > 0:
             basis = self._basis[i]
@@ -876,11 +876,11 @@ class BasisFunction:
 
     Parameters
     ----------
-    space : :class:`.TensorProductSpace`, :class:`.MixedTensorProductSpace` or
+    space : :class:`.TensorProductSpace`, :class:`.CompositeSpace` or
         :class:`.SpectralBase`
     index : int
-        Local component of basis with rank > 0
-    basespace : The base :class:`.MixedTensorProductSpace` if space is a
+        Local component of basis in :class:`.CompositeSpace`
+    basespace : The base :class:`.CompositeSpace` if space is a
         subspace.
     offset : int
         The number of scalar spaces (i.e., :class:`.TensorProductSpace`es)
@@ -896,13 +896,13 @@ class BasisFunction:
         self._base = base
 
     @property
-    def rank(self):
-        """Return rank of basis"""
-        return self.function_space().rank
+    def tensor_rank(self):
+        """Return tensor rank of basis"""
+        return self.function_space().tensor_rank
 
     def expr_rank(self):
-        """Return rank of expression involving basis"""
-        return Expr(self).expr_rank()
+        """Return rank of basis"""
+        return self.tensor_rank
 
     def function_space(self):
         """Return function space of BasisFunction"""
@@ -940,7 +940,7 @@ class BasisFunction:
         """Return offset of this basis
 
         The offset is the number of scalar :class:`.TensorProductSpace`es ahead
-        of this space in a :class:`.MixedTensorProductSpace`.
+        of this space in a :class:`.CompositeSpace`.
         """
         return self._offset
 
@@ -987,10 +987,10 @@ class TestFunction(BasisFunction):
 
     Parameters
     ----------
-    space: :class:`TensorProductSpace` or :class:`MixedTensorProductSpace`
+    space: :class:`TensorProductSpace` or :class:`CompositeSpace`
     index: int, optional
-        Component of basis with rank > 0
-    basespace : The base :class:`.MixedTensorProductSpace` if space is a
+        Component of basis in :class:`.CompositeSpace`
+    basespace : The base :class:`.CompositeSpace` if space is a
         subspace.
     offset : int
         The number of scalar spaces (i.e., :class:`.TensorProductSpace`es)
@@ -1010,10 +1010,10 @@ class TrialFunction(BasisFunction):
 
     Parameters
     ----------
-    space: :class:`TensorProductSpace` or :class:`MixedTensorProductSpace`
+    space: :class:`TensorProductSpace` or :class:`CompositeSpace`
     index: int, optional
-        Component of basis with rank > 0
-    basespace : The base :class:`.MixedTensorProductSpace` if space is a
+        Component of basis in :class:`.CompositeSpace`
+    basespace : The base :class:`.CompositeSpace` if space is a
         subspace.
     offset : int
         The number of scalar spaces (i.e., :class:`.TensorProductSpace`es)
@@ -1149,6 +1149,7 @@ class ShenfunBaseArray(DistArray):
                                 rank=space.is_composite_space)
         obj._space = space
         obj._offset = 0
+        obj._rank = space.is_composite_space
         if isinstance(val, (list, tuple)):
             for i, v in enumerate(val):
                 obj.v[i] = v
@@ -1158,8 +1159,8 @@ class ShenfunBaseArray(DistArray):
         if obj is None:
             return
         self._space = getattr(obj, '_space', None)
-        self._rank = getattr(obj, '_rank', None)
         self._p0 = getattr(obj, '_p0', None)
+        self._rank = getattr(obj, '_rank', None)
         self._offset = getattr(obj, '_offset', None)
 
     def function_space(self):
@@ -1198,8 +1199,8 @@ class ShenfunBaseArray(DistArray):
         if self.ndim == 1:
             return np.ndarray.__getitem__(self, i)
 
-        if self.rank > 0 and isinstance(i, Integral):
-            # Return view into mixed Function
+        if self._space.is_composite_space and isinstance(i, Integral):
+            # Return view into composite Function
             space = self._space[i]
             offset = 0
             for j in range(i):
@@ -1209,8 +1210,7 @@ class ShenfunBaseArray(DistArray):
             v0 = np.ndarray.__getitem__(self, s)
             v0._space = space
             v0._offset = offset + self.offset()
-            v0._rank = self.rank - (self.ndim - v0.ndim)
-            #v0._rank = v0.ndim - self.dimensions
+            v0._rank = space.is_composite_space
             return v0
 
         return np.ndarray.__getitem__(self.v, i)
@@ -1220,6 +1220,10 @@ class ShenfunBaseArray(DistArray):
 
     def dims(self):
         return self.function_space().dims()
+
+    @property
+    def tensor_rank(self):
+        return self.function_space().tensor_rank
 
 
 class Function(ShenfunBaseArray, BasisFunction):
@@ -1443,7 +1447,7 @@ class Function(ShenfunBaseArray, BasisFunction):
             Function of possibly different shape than self. Must have
             the same function_space
         """
-        from shenfun import VectorTensorProductSpace
+        from shenfun import VectorSpace
         if self.ndim == 1:
             assert u_hat.__class__ == self.__class__
             if self.shape[0] < u_hat.shape[0]:
@@ -1457,7 +1461,7 @@ class Function(ShenfunBaseArray, BasisFunction):
         space = self.function_space()
         newspace = u_hat.function_space()
 
-        if isinstance(space, VectorTensorProductSpace):
+        if isinstance(space, VectorSpace):
             for i, self_i in enumerate(self):
                 u_hat[i] = self_i.assign(u_hat[i])
             return u_hat
@@ -1492,7 +1496,7 @@ class Function(ShenfunBaseArray, BasisFunction):
 
         """
         from shenfun.fourier.bases import R2C
-        from shenfun import VectorTensorProductSpace
+        from shenfun import VectorSpace
 
         if self.ndim == 1:
             assert isinstance(N, Number)
@@ -1510,14 +1514,14 @@ class Function(ShenfunBaseArray, BasisFunction):
 
         space = self.function_space()
 
-        if isinstance(space, VectorTensorProductSpace):
+        if isinstance(space, VectorSpace):
             if output_array is None:
                 output_array = [None]*len(self)
             for i, array in enumerate(self):
                 output_array[i] = array.refine(N, output_array=output_array[i])
             if isinstance(output_array, list):
                 T = output_array[0].function_space()
-                VT = VectorTensorProductSpace(T)
+                VT = VectorSpace(T)
                 output_array = np.array(output_array)
                 output_array = Function(VT, buffer=output_array)
             return output_array
@@ -1659,7 +1663,7 @@ class Array(ShenfunBaseArray):
         """Return offset of this basis
 
         The offset is the number of scalar :class:`.TensorProductSpace`es ahead
-        of this Arrays space in a :class:`.MixedTensorProductSpace`.
+        of this Arrays space in a :class:`.CompositeSpace`.
         """
         return self._offset
 

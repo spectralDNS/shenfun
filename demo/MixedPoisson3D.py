@@ -46,8 +46,8 @@ ST = FunctionSpace(N[2], 'Legendre')
 
 TD = TensorProductSpace(comm, (K0, K1, SD), axes=(2, 1, 0))
 TT = TensorProductSpace(comm, (K0, K1, ST), axes=(2, 1, 0))
-VT = VectorTensorProductSpace(TT)
-Q = MixedTensorProductSpace([VT, TD])
+VT = VectorSpace(TT)
+Q = CompositeSpace([VT, TD])
 
 gu = TrialFunction(Q)
 pq = TestFunction(Q)

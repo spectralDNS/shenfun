@@ -53,8 +53,8 @@ ST = FunctionSpace(N[1], family)
 
 TD = TensorProductSpace(comm, (K0, SD), axes=(1, 0))
 TT = TensorProductSpace(comm, (K0, ST), axes=(1, 0))
-VT = VectorTensorProductSpace(TT)
-Q = MixedTensorProductSpace([VT, TD])
+VT = VectorSpace(TT)
+Q = CompositeSpace([VT, TD])
 
 gu = TrialFunction(Q)
 pq = TestFunction(Q)

@@ -13,8 +13,8 @@ def ShenfunFile(name, T, backend='hdf5', mode='r', uniform=False, **kw):
         Name of file, without ending
     T : :class:`.TensorProductSpace`
         The space used for the data stored. Can also be
-        :class:`.MixedTensorProductSpace` or
-        :class:`.VectorTensorProductSpace`.
+        :class:`.CompositeSpace` or
+        :class:`.VectorSpace`.
     backend : str, optional
         ``hdf5`` or ``netcdf4``. Default is ``hdf5``.
     mode : str, optional

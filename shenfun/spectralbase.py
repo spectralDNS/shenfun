@@ -651,7 +651,7 @@ class SpectralBase:
 
         self.axis = axis
 
-        if self.padding_factor > 1.+1e-8:
+        if self.padding_factor is not 1:
             trunc_array = self._get_truncarray(shape, V.dtype)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
@@ -806,7 +806,24 @@ class SpectralBase:
 
     @property
     def rank(self):
-        """Return tensor rank of function space"""
+        """Return rank of function space
+
+        Note
+        ----
+        This is 1 for composite space and 0 otherwise
+        """
+        return 0
+
+    @property
+    def tensor_rank(self):
+        """Return tensor rank of function space
+
+        Note
+        ----
+        This is the number of free indices in the tensor, 0 for scalar,
+        1 for vector etc. It is None for a composite space that is not a
+        tensor.
+        """
         return 0
 
     @property
@@ -882,10 +899,10 @@ class SpectralBase:
         ----------
         N : integer, optional
             The number of quadrature points
-        measure : None or `sympy.Expr`
+        measure : 1 or `sympy.Expr`
         """
         if N is None:
-            N = self.N
+            N = self.shape(False)
         xm, wj = self.mpmath_points_and_weights(N, map_true_domain=True)
         if measure == 1:
             return wj
@@ -925,7 +942,8 @@ class SpectralBase:
             array *= measure
             return array
 
-        xm = self.mpmath_points_and_weights(self.N, map_true_domain=True)[0]
+        N = self.shape(False)
+        xm = self.mpmath_points_and_weights(N, map_true_domain=True)[0]
         s = measure.free_symbols
         if len(s) == 0:
             # constant
@@ -1162,6 +1180,10 @@ class MixedFunctionSpace:
 
     @property
     def rank(self):
+        return 1
+
+    @property
+    def tensor_rank(self):
         return None
 
     @property

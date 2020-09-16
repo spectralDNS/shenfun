@@ -3,8 +3,8 @@ import numpy as np
 import sympy as sp
 import shenfun
 from shenfun import inner, div, curl, grad, Function, \
-    Array, project, Dx, TensorProductSpace, VectorTensorProductSpace, \
-    MixedTensorProductSpace, FunctionSpace, comm
+    Array, project, Dx, TensorProductSpace, VectorSpace, \
+    CompositeSpace, FunctionSpace, comm
 
 # Set global size of the computational box
 M = 4
@@ -24,7 +24,7 @@ def test_curl(typecode):
     T = TensorProductSpace(comm, (K0, K1, K2), dtype=typecode)
     X = T.local_mesh(True)
     K = T.local_wavenumbers()
-    Tk = VectorTensorProductSpace(T)
+    Tk = VectorSpace(T)
     u = shenfun.TrialFunction(Tk)
     v = shenfun.TestFunction(Tk)
 
@@ -87,8 +87,8 @@ def test_curl2():
     TT = TensorProductSpace(comm, (K3, K1, K2))
     X = T.local_mesh(True)
     K = T.local_wavenumbers(False)
-    Tk = VectorTensorProductSpace(T)
-    TTk = VectorTensorProductSpace([T, T, TT])
+    Tk = VectorSpace(T)
+    TTk = VectorSpace([T, T, TT])
 
     U = Array(Tk)
     U_hat = Function(Tk)
@@ -157,7 +157,7 @@ def test_curl_cc():
     L = FunctionSpace(N, 'L', bc='Dirichlet', domain=(0, 1))
     T = TensorProductSpace(comm, (L, F0, F1), coordinates=(psi, rv))
     T1 = T.get_orthogonal()
-    V = VectorTensorProductSpace(T1)
+    V = VectorSpace(T1)
     u_hat = Function(T, buffer=ue)
     du = project(curl(grad(u_hat)), V)
     assert np.linalg.norm(du) < 1e-10

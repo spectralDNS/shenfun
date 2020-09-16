@@ -36,8 +36,8 @@ class RayleighBenard:
         self.TD = TensorProductSpace(comm, (self.D0, self.F1)) # Streamwise velocity
         self.TC = TensorProductSpace(comm, (self.C0, self.F1)) # No bc
         self.TT = TensorProductSpace(comm, (self.T0, self.F1)) # Temperature
-        self.BD = VectorTensorProductSpace([self.TB, self.TD])  # Velocity vector
-        self.CD = VectorTensorProductSpace([self.TD, self.TD])  # Convection vector
+        self.BD = VectorSpace([self.TB, self.TD])  # Velocity vector
+        self.CD = VectorSpace([self.TD, self.TD])  # Convection vector
 
         # Padded for dealiasing
         self.TBp = self.TB.get_dealiased((1.5, 1.5))
@@ -48,7 +48,7 @@ class RayleighBenard:
         #self.TDp = self.TD
         #self.TCp = self.TC
         #self.TTp = self.TT
-        self.BDp = VectorTensorProductSpace([self.TBp, self.TDp])  # Velocity vector
+        self.BDp = VectorSpace([self.TBp, self.TDp])  # Velocity vector
 
         self.u_ = Function(self.BD)
         self.ub = Array(self.BD)
