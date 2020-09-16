@@ -7,7 +7,7 @@ Demo - Rayleigh Benard
 ======================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 27, 2020
+:Date: Sep 16, 2020
 
 *Summary.* Rayleigh-Benard convection arise
 due to temperature gradients in a fluid. The governing equations are
@@ -471,8 +471,8 @@ And then we create tensor product spaces by combining these bases (like in Eqs. 
     W_DF = TensorProductSpace(comm, (VD, VF))    # Streamwise velocity
     W_WF = TensorProductSpace(comm, (VW, VF))    # No bc
     W_TF = TensorProductSpace(comm, (VT, VF))    # Temperature
-    BD = CompositeSpace([W_BF, W_DF])   # Velocity vector
-    DD = CompositeSpace([W_DF, W_DF])   # Convection vector
+    BD = VectorSpace([W_BF, W_DF])   # Velocity vector
+    DD = VectorSpace([W_DF, W_DF])   # Convection vector
 
 Here the last two lines create mixed tensor product spaces by the
 Cartesian products ``BD = W_BF`` :math:`\times` ``W_DF`` and ``DD = W_DF`` :math:`\times` ``W_DF``.
