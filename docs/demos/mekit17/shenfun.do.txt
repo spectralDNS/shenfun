@@ -757,11 +757,11 @@ du = W0.backward(du_hat , du)
 !ec
 Note that we are here using a regular Chebyshev space (`Basis`) instead of the biharmonic, to avoid enforcing erroneous boundary conditions on the solution. We could in this case also, with advantage, have chosen a Dirichlet space, since the derivative of the biharmonic problem is known to be zero on the edges of the domain (at $x=\pm 1$).
 
-All problems considered thus far have been scalar valued. With `shenfun` there is also some functionality for working with vector equations. To this end, there is a class called `VectorTensorProductSpace`, and there is an additional operator, `curl`, that can only be used on vectors:
+All problems considered thus far have been scalar valued. With `shenfun` there is also some functionality for working with vector equations. To this end, there is a class called `VectorSpace`, and there is an additional operator, `curl`, that can only be used on vectors:
 !bc pycod
 from shenfun.chebyshev.bases import ShenBiharmonicBasis
 from shenfun.fourier.bases import R2CBasis, C2CBasis
-from shenfun import Function, TensorProductSpace, VectorTensorProductSpace , curl
+from shenfun import Function, TensorProductSpace, VectorSpace , curl
 from shenfun import inner, curl, TestFunction
 import numpy as np
 from mpi4py import MPI
@@ -773,7 +773,7 @@ K1 = C2CFunctionSpace(N[1])
 K2 = R2CFunctionSpace(N[2])
 
 T = TensorProductSpace(comm, (K0, K1, K2))
-Tk = VectorTensorProductSpace([T, T, T])
+Tk = VectorSpace([T, T, T])
 
 v = TestFunction(Tk)
 u_ = Function(Tk, False)

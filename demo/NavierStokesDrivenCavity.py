@@ -59,10 +59,10 @@ PX.slice = lambda: slice(0, PX.N-2)
 PY.slice = lambda: slice(0, PY.N-2)
 
 # Create vector space for velocity
-W1 = VectorTensorProductSpace([V1, V0])
+W1 = VectorSpace([V1, V0])
 
 # Create mixed space for total solution
-VQ = MixedTensorProductSpace([W1, P])   # for velocity and pressure
+VQ = CompositeSpace([W1, P])   # for velocity and pressure
 
 # Create padded spaces for nonlinearity
 V1p = V1.get_dealiased((1.5, 1.5))
@@ -71,9 +71,9 @@ V0p = V0.get_dealiased((1.5, 1.5))
 #V0p = V0.get_dealiased(dealias_direct=True)
 #V1p = V1 # Or do not use dealiasing at all. Makes very little difference here
 #V0p = V0
-W1p = VectorTensorProductSpace([V1p, V0p])
-W0p = VectorTensorProductSpace([V0p, V0p])
-QTp = MixedTensorProductSpace([W1p, W0p])  # for uiuj
+W1p = VectorSpace([V1p, V0p])
+W0p = VectorSpace([V0p, V0p])
+QTp = TensorSpace([W1p, W0p])  # for uiuj
 
 up = TrialFunction(VQ)
 vq = TestFunction(VQ)

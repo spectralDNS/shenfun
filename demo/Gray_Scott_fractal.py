@@ -34,7 +34,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpi4py_fft import generate_xdmf
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
-    HDF5File, ETDRK4, TensorProductSpace, VectorTensorProductSpace, FunctionSpace, Array, \
+    HDF5File, ETDRK4, TensorProductSpace, VectorSpace, FunctionSpace, Array, \
     comm
 
 # Use sympy to set up initial condition
@@ -61,8 +61,8 @@ Tp = T.get_dealiased((1.5, 1.5))
 #Tp = T
 
 # Create vector spaces and a test function for the regular vector space
-TV = VectorTensorProductSpace(T)
-TVp = VectorTensorProductSpace(Tp)
+TV = VectorSpace(T)
+TVp = VectorSpace(Tp)
 vv = TestFunction(TV)
 uu = TrialFunction(TV)
 

@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import sympy as sp
 from shenfun import FunctionSpace, TensorProductSpace, TrialFunction, div, grad, \
-    curl, comm, VectorTensorProductSpace, Function, inner, \
+    curl, comm, VectorSpace, Function, inner, \
     BlockMatrix, TestFunction as _TestFunction
 
 def get_function_space(space='cylinder'):
@@ -32,7 +32,7 @@ def test_cylinder():
     u = TrialFunction(T)
     du = div(grad(u))
     assert du.tolatex() == '\\frac{\\partial^2 u}{\\partial x^2 }+\\frac{1}{x}\\frac{\\partial  u}{\\partial x  }+\\frac{1}{x^{2}}\\frac{\\partial^2 u}{\\partial y^2 }+\\frac{\\partial^2 u}{\\partial z^2 }'
-    V = VectorTensorProductSpace(T)
+    V = VectorSpace(T)
     u = TrialFunction(V)
     du = div(grad(u))
     assert du.tolatex() == '\\left( \\frac{\\partial^2 u^{x}}{\\partial x^2 }+\\frac{1}{x}\\frac{\\partial  u^{x}}{\\partial x  }+\\frac{1}{x^{2}}\\frac{\\partial^2 u^{x}}{\\partial y^2 }- \\frac{2}{x}\\frac{\\partial  u^{y}}{\\partial y  }- \\frac{1}{x^{2}}u^{x}+\\frac{\\partial^2 u^{x}}{\\partial z^2 }\\right) \\mathbf{b}_{x} \\\\+\\left( \\frac{\\partial^2 u^{y}}{\\partial x^2 }+\\frac{3}{x}\\frac{\\partial  u^{y}}{\\partial x  }+\\frac{2}{x^{3}}\\frac{\\partial  u^{x}}{\\partial y  }+\\frac{1}{x^{2}}\\frac{\\partial^2 u^{y}}{\\partial y^2 }+\\frac{\\partial^2 u^{y}}{\\partial z^2 }\\right) \\mathbf{b}_{y} \\\\+\\left( \\frac{\\partial^2 u^{z}}{\\partial x^2 }+\\frac{1}{x}\\frac{\\partial  u^{z}}{\\partial x  }+\\frac{1}{x^{2}}\\frac{\\partial^2 u^{z}}{\\partial y^2 }+\\frac{\\partial^2 u^{z}}{\\partial z^2 }\\right) \\mathbf{b}_{z} \\\\'
@@ -45,7 +45,7 @@ def test_vector_laplace(space):
 
     """
     T = get_function_space(space)
-    V = VectorTensorProductSpace(T)
+    V = VectorSpace(T)
     u = TrialFunction(V)
     v = _TestFunction(V)
     du = div(grad(u))

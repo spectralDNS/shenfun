@@ -106,7 +106,7 @@ class GinzburgLandau(IRK3):
         This requires to cast the contravariant vector components into
         Cartesian components first.
         """
-        TV = VectorTensorProductSpace(self.T)
+        TV = VectorSpace(self.T)
         du = project(grad(self.u_hat), TV).backward(uniform=True).real # Contravariant components (real part)
         b = self.T.coors.b
         ui, vi = self.T.local_mesh(broadcast=True, uniform=True)

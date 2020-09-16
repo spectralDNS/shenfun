@@ -96,7 +96,7 @@ assert np.linalg.norm(uj-uq) < 1e-8
 #LT = FunctionSpace(N, 'L', domain=(0, 1))
 #TT = TensorProductSpace(comm, (F, LT), axes=(1, 0), coordinates=(psi, rv))
 TT = T.get_orthogonal()
-V = VectorTensorProductSpace(TT)
+V = VectorSpace(TT)
 # Get solution on space with no bc
 ua = Array(TT, buffer=uj)
 uh = ua.forward()

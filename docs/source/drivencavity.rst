@@ -262,8 +262,8 @@ in shenfun as
 
 .. code-block:: python
 
-    W1 = VectorTensorProductSpace([V1, V0])
-    W0 = VectorTensorProductSpace([V0, V0])
+    W1 = VectorSpace([V1, V0])
+    W0 = VectorSpace([V0, V0])
 
 Note that the second vector basis, :math:`W_0^{\boldsymbol{N}} = V_0^{\boldsymbol{N}} \times V_0^{\boldsymbol{N}}`, uses
 homogeneous boundary conditions throughout.
@@ -390,7 +390,7 @@ couples velocity and pressure
 
 .. code-block:: python
 
-    VQ = MixedTensorProductSpace([W1, P])    # Coupling velocity and pressure
+    VQ = CompositeSpace([W1, P])    # Coupling velocity and pressure
 
 We can now create test- and trialfunctions for the coupled space :math:`VQ`,
 and then split them up into components afterwards:
@@ -577,7 +577,7 @@ created as
     ui = Array(W1)
     
     # Create work arrays for nonlinear part
-    QT = MixedTensorProductSpace([W1, W0])  # for uiuj
+    QT = CompositeSpace([W1, W0])  # for uiuj
     uiuj = Array(QT)
     uiuj_hat = Function(QT)
 

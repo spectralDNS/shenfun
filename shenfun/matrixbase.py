@@ -715,8 +715,8 @@ class BlockMatrix:
     >>> ST = FunctionSpace(N[2], 'Legendre')
     >>> TD = TensorProductSpace(comm, (K0, K1, SD), axes=(2, 1, 0))
     >>> TT = TensorProductSpace(comm, (K0, K1, ST), axes=(2, 1, 0))
-    >>> VT = VectorTensorProductSpace(TD)
-    >>> Q = MixedTensorProductSpace([VT, TD])
+    >>> VT = VectorSpace(TD)
+    >>> Q = CompositeSpace([VT, TD])
     >>> up = TrialFunction(Q)
     >>> vq = TestFunction(Q)
     >>> u, p = up
@@ -1095,8 +1095,8 @@ class TPMatrix:
         dimensions in the :class:`.TensorProductSpace`, and the shape must be 1
         along any directions with a nondiagonal matrix.
     global_index : 2-tuple, optional
-        Indices (test, trial) into mixed space :class:`.MixedTensorProductSpace`.
-    mixedbase : :class:`.MixedTensorProductSpace`, optional
+        Indices (test, trial) into mixed space :class:`.CompositeSpace`.
+    mixedbase : :class:`.CompositeSpace`, optional
          Instance of the base space
     """
     def __init__(self, mats, testspace, trialspace, scale=1.0, global_index=None, mixedbase=None):

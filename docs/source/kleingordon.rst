@@ -466,12 +466,12 @@ and then simply import the result of that planning later, as wisdom.
 The :class:`.TensorProductSpace` instance ``T`` contains pretty much all we need for
 computing inner products or fast transforms between real and wavenumber space.
 However, since we are going to solve for a mixed system, it is convenient to also use the
-:class:`.MixedTensorProductSpace` class
+:class:`.CompositeSpace` class
 
 .. code-block:: python
 
-    TT = MixedTensorProductSpace([T, T])
-    TV = VectorTensorProductSpace(T)
+    TT = CompositeSpace([T, T])
+    TV = VectorSpace(T)
 
 Here the space ``TV`` will be used to compute gradients, which
 explains why it is a vector.
