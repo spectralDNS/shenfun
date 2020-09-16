@@ -26,10 +26,10 @@ N = (128, 128)
 K0 = FunctionSpace(N[0], 'F', dtype='D', domain=(-30*np.pi, 30*np.pi))
 K1 = FunctionSpace(N[1], 'F', dtype='d', domain=(-30*np.pi, 30*np.pi))
 T = TensorProductSpace(comm, (K0, K1), **{'planner_effort': 'FFTW_MEASURE'})
-TV = VectorTensorProductSpace(T)
+TV = VectorSpace(T)
 
 Tp = T.get_dealiased((1.5, 1.5))
-TVp = VectorTensorProductSpace(Tp)
+TVp = VectorSpace(Tp)
 
 u = TrialFunction(T)
 v = TestFunction(T)

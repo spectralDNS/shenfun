@@ -234,7 +234,7 @@ from shenfun import *
 The size of the problem (in real space) is then specified, before creating
 the ${cls('TensorProductSpace')}, which is using a tensor product of two
 one-dimensional Fourier function spaces. We also
-create a ${cls('VectorTensorProductSpace')}, since this is required for computing the
+create a ${cls('VectorSpace')}, since this is required for computing the
 gradient of the scalar field `u`. The gradient is required for the nonlinear
 term.
 !bc pycod
@@ -244,9 +244,9 @@ N = (128, 128)
 K0 = FunctionSpace(N[0], 'F', domain=(-30*np.pi, 30*np.pi), dtype='D')
 K1 = FunctionSpace(N[1], 'F', domain=(-30*np.pi, 30*np.pi), dtype='d')
 T = TensorProductSpace(comm, (K0, K1), **{'planner_effort': 'FFTW_MEASURE'})
-TV = VectorTensorProductSpace([T, T])
+TV = VectorSpace([T, T])
 Tp = T.get_dealiased((1.5, 1.5))
-TVp = VectorTensorProductSpace(Tp)
+TVp = VectorSpace(Tp)
 !ec
 
 Test and trialfunctions are required for assembling the variational forms:

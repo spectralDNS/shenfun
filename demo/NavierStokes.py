@@ -16,7 +16,7 @@ V0 = FunctionSpace(N[0], 'F', dtype='D')
 V1 = FunctionSpace(N[1], 'F', dtype='D')
 V2 = FunctionSpace(N[2], 'F', dtype='d')
 T = TensorProductSpace(comm, (V0, V1, V2), **{'planner_effort': 'FFTW_MEASURE'})
-TV = VectorTensorProductSpace(T)
+TV = VectorSpace(T)
 u = TrialFunction(T)
 v = TestFunction(T)
 

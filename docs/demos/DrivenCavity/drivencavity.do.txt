@@ -205,8 +205,8 @@ $W_1^{\bs{N}} = V_1^{\bs{N}} \times V_0^{\bs{N}}$. The vector basis is created
 in shenfun as
 
 !bc pycod
-W1 = VectorTensorProductSpace([V1, V0])
-W0 = VectorTensorProductSpace([V0, V0])
+W1 = VectorSpace([V1, V0])
+W0 = VectorSpace([V0, V0])
 !ec
 Note that the second vector basis, $W_0^{\bs{N}} = V_0^{\bs{N}} \times V_0^{\bs{N}}$, uses
 homogeneous boundary conditions throughout.
@@ -292,7 +292,7 @@ create a mixed tensor product space $VQ = W_1^{\bs{N}} \times P^{\bs{N}}$ that
 couples velocity and pressure
 
 !bc pycod
-VQ = MixedTensorProductSpace([W1, P])    # Coupling velocity and pressure
+VQ = CompositeSpace([W1, P])    # Coupling velocity and pressure
 !ec
 
 We can now create test- and trialfunctions for the coupled space $VQ$,
@@ -462,7 +462,7 @@ bh_hat = Function(VQ)
 ui = Array(W1)
 
 # Create work arrays for nonlinear part
-QT = MixedTensorProductSpace([W1, W0])  # for uiuj
+QT = CompositeSpace([W1, W0])  # for uiuj
 uiuj = Array(QT)
 uiuj_hat = Function(QT)
 !ec

@@ -43,8 +43,8 @@ T = TensorProductSpace(comm, (K0, K1, K2), axes=(0, 1, 2),
                           'threads': threads,
                           'collapse_fourier': True})
 
-TT = MixedTensorProductSpace([T, T])
-TV = VectorTensorProductSpace(T)
+TT = CompositeSpace([T, T])
+TV = VectorSpace(T)
 
 Tp = T.get_dealiased((1.5, 1.5, 1.5))
 

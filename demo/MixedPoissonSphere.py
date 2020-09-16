@@ -40,8 +40,8 @@ L0 = FunctionSpace(N, 'L', domain=(0, np.pi))
 F1 = FunctionSpace(M, 'F', dtype='D')
 T = TensorProductSpace(comm, (L0, F1), coordinates=(psi, rv, sp.Q.positive(sp.sin(theta))))
 
-VT = VectorTensorProductSpace(T)
-Q = MixedTensorProductSpace([VT, T])
+VT = VectorSpace(T)
+Q = CompositeSpace([VT, T])
 
 gu = TrialFunction(Q)
 pq = TestFunction(Q)

@@ -11,7 +11,7 @@ to implement PDE's with spectral methods in simple tensor product domains. The
 most important everyday tools are
 
 	* :class:`.TensorProductSpace`
-	* :class:`.MixedTensorProductSpace`
+	* :class:`.CompositeSpace`
 	* :class:`.TrialFunction`
 	* :class:`.TestFunction`
 	* :class:`.Function`
@@ -462,7 +462,7 @@ as::
     F1 = FunctionSpace(N, 'F', dtype='D')
     L = FunctionSpace(N, 'L', domain=(0, 1))
     T = TensorProductSpace(comm, (L, F1, F0), coordinates=(psi, rv))
-    V = VectorTensorProductSpace(T)
+    V = VectorSpace(T)
     u = TrialFunction(V)
     du = div(grad(u))
 
@@ -487,7 +487,7 @@ Coupled problems
 ----------------
 
 With Shenfun it is possible to solve equations coupled and implicit using the
-:class:`.MixedTensorProductSpace` class for multidimensional problems and
+:class:`.CompositeSpace` class for multidimensional problems and
 :class:`.MixedFunctionSpace` for one-dimensional problems. As an example, lets consider
 a mixed formulation of the Poisson equation. The Poisson equation is given as
 always as
@@ -521,11 +521,11 @@ Legendre or Chebyshev :math:`ST` basis for :math:`\sigma`. With :math:`K0` repre
 the function space in the periodic direction, we get the relevant 2D tensor product
 spaces as :math:`TD = SD \otimes K0` and :math:`TT = ST \otimes K0`.
 Since :math:`\sigma` is
-a vector we use a :class:`.VectorTensorProductSpace` :math:`VT = TT \times TT` and
-finally a :class:`.MixedTensorProductSpace` :math:`Q = VT \times TD` for the coupled and
+a vector we use a :class:`.VectorSpace` :math:`VT = TT \times TT` and
+finally a :class:`.CompositeSpace` :math:`Q = VT \times TD` for the coupled and
 implicit treatment of :math:`(\sigma, u)`::
 
-    from shenfun import VectorTensorProductSpace, MixedTensorProductSpace
+    from shenfun import VectorSpace, CompositeSpace
     N, M = (16, 24)
     family = 'Legendre'
     SD = FunctionSpace(N[0], family, bc=(0, 0))
@@ -533,8 +533,8 @@ implicit treatment of :math:`(\sigma, u)`::
     K0 = FunctionSpace(N[1], 'Fourier', dtype='d')
     TD = TensorProductSpace(comm, (SD, K0), axes=(0, 1))
     TT = TensorProductSpace(comm, (ST, K0), axes=(0, 1))
-    VT = VectorTensorProductSpace(TT)
-    Q = MixedTensorProductSpace([VT, TD])
+    VT = VectorSpace(TT)
+    Q = CompositeSpace([VT, TD])
 
 In variational form the problem reads: find :math:`(\sigma, u) \in Q`
 such that
@@ -909,19 +909,19 @@ the arrays. To illustrate, this is how to store three snapshots of the
     u[:] = 2
     fl.write(1, d)
 
-The :class:`.ShenfunFile` may also be used for the :class:`.MixedTensorProductSpace`,
-or :class:`.VectorTensorProductSpace`, that are collections of the scalar
-:class:`.TensorProductSpace`. We can create a :class:`.MixedTensorProductSpace`
+The :class:`.ShenfunFile` may also be used for the :class:`.CompositeSpace`,
+or :class:`.VectorSpace`, that are collections of the scalar
+:class:`.TensorProductSpace`. We can create a :class:`.CompositeSpace`
 consisting of two TensorProductSpaces, and an accompanying writer class as::
 
-    TT = MixedTensorProductSpace([T, T])
+    TT = CompositeSpace([T, T])
     fl_m = ShenfunFile('mixed', TT, backend='hdf5', mode='w')
 
 Let's now consider a transient problem where we step a solution forward in time.
 We create a solution array from the :class:`.Array` class, and update the array
 inside a while loop::
 
-    TT = VectorTensorProductSpace(T)
+    TT = VectorSpace(T)
     fl_m = ShenfunFile('mixed', TT, backend='hdf5', mode='w')
     u = Array(TT)
     tstep = 0
@@ -1053,7 +1053,7 @@ shenfun (like most others) considers the first axis to be the :math:`x`-axis.
 So when opening a
 three-dimensional array in Paraview one needs to be aware. Especially when
 plotting vectors. Assume that we are working with a Navier-Stokes solver
-and have a three-dimensional :class:`.VectorTensorProductSpace` to represent
+and have a three-dimensional :class:`.VectorSpace` to represent
 the fluid velocity::
 
     from mpi4py import MPI
@@ -1065,7 +1065,7 @@ the fluid velocity::
     V1 = FunctionSpace(N[1], 'F', dtype='D')
     V2 = FunctionSpace(N[2], 'F', dtype='d')
     T = TensorProductSpace(comm, (V0, V1, V2))
-    TV = VectorTensorProductSpace(T)
+    TV = VectorSpace(T)
     U = Array(TV)
     U[0] = 0
     U[1] = 1

@@ -27,7 +27,7 @@ def project(uh, T, output_array=None, fill=True, use_to_ortho=True, use_assign=T
         - :class:`.BasisFunction`
         - :class:`.Array`
         - A sympy function
-    T : :class:`.TensorProductSpace` or :class:`.MixedTensorProductSpace`
+    T : :class:`.TensorProductSpace` or :class:`.CompositeSpace`
     output_array : :class:`.Function`, optional
         Return array
     fill : bool, optional
@@ -155,7 +155,7 @@ def project(uh, T, output_array=None, fill=True, use_to_ortho=True, use_assign=T
         output_array = B.solve(output_array, output_array)
 
     elif T.coors.is_orthogonal and (len(output_array) == len(B)):
-        for oa, b in zip(output_array, B):
+        for oa, b in zip(output_array.v, B):
             oa = b.solve(oa, oa)
 
     else:

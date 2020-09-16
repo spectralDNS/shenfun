@@ -7,7 +7,7 @@ Demo - Stokes equations
 =======================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 27, 2020
+:Date: Sep 16, 2020
 
 *Summary.* The Stokes equations describe the flow of highly viscous fluids.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Stokes
@@ -316,8 +316,8 @@ space  VQ = V :math:`\times` Q.
 
     TD = TensorProductSpace(comm, (K0, K1, SD), axes=(2, 0, 1))
     Q = TensorProductSpace(comm, (K0, K1, ST), axes=(2, 0, 1))
-    V = VectorTensorProductSpace(TD)
-    VQ = MixedTensorProductSpace([V, Q])
+    V = VectorSpace(TD)
+    VQ = CompositeSpace([V, Q])
 
 Note that we choose to transform axes in the order :math:`1, 0, 2`. This is to ensure
 that the fully transformed arrays are aligned in the non-periodic direction 2.

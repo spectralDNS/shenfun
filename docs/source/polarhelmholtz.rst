@@ -7,7 +7,7 @@ Demo - Helmholtz equation in polar coordinates
 ==============================================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Aug 27, 2020
+:Date: Sep 16, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the
 Helmholtz equation on a circular disc, using polar coordinates. This demo is implemented in
@@ -473,7 +473,7 @@ a space without boundary conditions, and a vector space
 .. code-block:: python
 
     TT = T.get_orthogonal()
-    V = VectorTensorProductSpace(TT)
+    V = VectorSpace(TT)
 
 Notice that we do not have the solution in one single space
 in spectral space, since it is a combination of ``u_hat`` and
@@ -567,12 +567,12 @@ and plot on the unit disc.
     ur = u_hat2.backward() + u0_hat2.backward()[:, sl[1]]
     
     # Wrap periodic plot around since it looks nicer
-    xx, yy = u_hat2.function_space().local_curvilinear_mesh()
+    xx, yy = u_hat2.function_space().local_cartesian_mesh()
     xp = np.vstack([xx, xx[0]])
     yp = np.vstack([yy, yy[0]])
     up = np.vstack([ur, ur[0]])
     # For vector no need to wrap around and no need to refine:
-    xi, yi = TT.local_curvilinear_mesh()
+    xi, yi = TT.local_cartesian_mesh()
     
     # plot
     import matplotlib.pyplot as plt
