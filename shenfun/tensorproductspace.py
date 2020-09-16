@@ -18,8 +18,8 @@ from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
 
-__all__ = ('TensorProductSpace', 'VectorTensorProductSpace',
-           'MixedTensorProductSpace', 'Convolve')
+__all__ = ('TensorProductSpace', 'VectorSpace', 'TensorSpace',
+           'CompositeSpace', 'Convolve')
 
 # Default sympy symbols. Note that order is important
 x, y, z, r, s = psi = sp.symbols('x,y,z,r,s', real=True)
@@ -855,6 +855,10 @@ class TensorProductSpace(PFFT):
         """Return tensor rank of TensorProductSpace"""
         return 0
 
+    @property
+    def tensor_rank(self):
+        return 0
+
     def __len__(self):
         """Return dimension of TensorProductSpace"""
         return len(self.bases)
@@ -996,11 +1000,11 @@ class TensorProductSpace(PFFT):
         return compatible
 
 
-class MixedTensorProductSpace:
+class CompositeSpace:
     """Class for composite tensorproductspaces.
 
-    The mixed spaces are Cartesian products of TensorproductSpaces or
-    other MixedTensorProductSpaces.
+    The mixed spaces are Cartesian products of TensorProductSpaces or
+    other CompositeSpaces.
 
     Parameters
     ----------
@@ -1078,7 +1082,25 @@ class MixedTensorProductSpace:
 
     @property
     def rank(self):
-        """Return rank of space"""
+        """Return rank of space
+
+        Note
+        ----
+        This is 1 for all composite spaces, since we use a flat
+        storage of all composite arrays.
+        """
+        return 1
+
+    @property
+    def tensor_rank(self):
+        """Return rank of tensor
+
+        Note
+        ----
+        This is the number of free indices in the tensor, 0 for scalar,
+        1 for vector etc. It is None for a composite space that is not a
+        tensor.
+        """
         return None
 
     def dim(self):
@@ -1096,7 +1118,7 @@ class MixedTensorProductSpace:
         return s
 
     def size(self, forward_output=False):
-        """Return number of elements in :class:`.MixedTensorProductSpace`"""
+        """Return number of elements in :class:`.CompositeSpace`"""
         N = self.shape(forward_output)
         if forward_output:
             return np.sum([np.prod(s) for s in N])
@@ -1104,7 +1126,7 @@ class MixedTensorProductSpace:
             return np.prod(N)
 
     def shape(self, forward_output=False):
-        """Return shape of arrays for MixedTensorProductSpace
+        """Return shape of arrays for CompositeSpace
 
         Parameters
         ----------
@@ -1115,7 +1137,7 @@ class MixedTensorProductSpace:
 
         Note
         ----
-        A :class:`.MixedTensorProductSpace` may contain tensor product spaces
+        A :class:`.CompositeSpace` may contain tensor product spaces
         of different shape in spectral space. Hence this function returns a
         list of shapes and not one single tuple.
         """
@@ -1129,7 +1151,7 @@ class MixedTensorProductSpace:
         return s
 
     def global_shape(self, forward_output=False):
-        """Return global shape for MixedTensorProductSpace
+        """Return global shape for CompositeSpace
 
         Parameters
         ----------
@@ -1205,13 +1227,16 @@ class MixedTensorProductSpace:
         return len(self.spaces)
 
 
-class VectorTensorProductSpace(MixedTensorProductSpace):
-    """A special :class:`.MixedTensorProductSpace` where the number of spaces
-    must equal the geometrical dimension of the problem.
+class VectorSpace(CompositeSpace):
+    """Vector of :class:`.TensorProductSpace`s
+
+    This is simply a special :class:`.CompositeSpace` where the number of
+    :class:`.TensorProductSpace`s equals the geometrical dimension of the
+    problem.
 
     For example, a TensorProductSpace created by a tensorproduct of 2 1D
-    bases, will have vectors of length 2. A TensorProductSpace created from 3
-    1D bases will have vectors of length 3.
+    spaces, will have vectors of length 2. A TensorProductSpace created from 3
+    1D spaces will have vectors of length 3.
 
     Parameters
     ----------
@@ -1226,7 +1251,7 @@ class VectorTensorProductSpace(MixedTensorProductSpace):
             spaces = space
         else:
             spaces = [space]*space.dimensions
-        MixedTensorProductSpace.__init__(self, spaces)
+        CompositeSpace.__init__(self, spaces)
 
     def num_components(self):
         """Return number of spaces in mixed space"""
@@ -1234,12 +1259,11 @@ class VectorTensorProductSpace(MixedTensorProductSpace):
         return self.dimensions
 
     @property
-    def rank(self):
-        """Return tensor rank of space"""
+    def tensor_rank(self):
         return 1
 
     def shape(self, forward_output=False):
-        """Return shape of arrays for VectorTensorProductSpace
+        """Return shape of arrays for VectorSpace
 
         Parameters
         ----------
@@ -1255,18 +1279,48 @@ class VectorTensorProductSpace(MixedTensorProductSpace):
 
     def get_refined(self, N):
         if np.all([s == self.spaces[0] for s in self.spaces[1:]]):
-            return VectorTensorProductSpace(self.spaces[0].get_refined(N))
-        return VectorTensorProductSpace([s.get_refined(N) for s in self.spaces])
+            return VectorSpace(self.spaces[0].get_refined(N))
+        return VectorSpace([s.get_refined(N) for s in self.spaces])
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         if np.all([s == self.spaces[0] for s in self.spaces[1:]]):
-            return VectorTensorProductSpace(self.spaces[0].get_dealiased(padding_factor, dealias_direct))
-        return VectorTensorProductSpace([s.get_dealiased(padding_factor, dealias_direct) for s in self.spaces])
+            return VectorSpace(self.spaces[0].get_dealiased(padding_factor, dealias_direct))
+        return VectorSpace([s.get_dealiased(padding_factor, dealias_direct) for s in self.spaces])
 
     def get_orthogonal(self):
         if np.all([s == self.spaces[0] for s in self.spaces[1:]]):
-            return VectorTensorProductSpace(self.spaces[0].get_orthogonal())
-        return VectorTensorProductSpace([s.get_orthogonal() for s in self.spaces])
+            return VectorSpace(self.spaces[0].get_orthogonal())
+        return VectorSpace([s.get_orthogonal() for s in self.spaces])
+
+class TensorSpace(VectorSpace):
+    """A special :class:`.CompositeSpace` for second rank tensors.
+
+    For example, a TensorProductSpace created by a tensorproduct of 2 1D
+    bases, will have tensors of length 4. A TensorProductSpace created from 3
+    1D bases will have tensors of length 9.
+
+    Parameters
+    ----------
+    space : :class:`.TensorProductSpace` or list of ndim :class:`.TensorProductSpace`s
+        Spaces to create vector from
+
+    """
+
+    def __init__(self, space):
+        if isinstance(space, list):
+            spaces = space
+        else:
+            spaces = [VectorSpace(space)]*space.dimensions
+        CompositeSpace.__init__(self, spaces)
+
+    def num_components(self):
+        """Return number of spaces in mixed space"""
+        return self.dimensions**2
+
+    @property
+    def tensor_rank(self):
+        return 2
+
 
 class VectorTransform:
 

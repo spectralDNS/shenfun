@@ -473,7 +473,7 @@ a space without boundary conditions, and a vector space
 .. code-block:: python
 
     TT = T.get_orthogonal()
-    V = VectorTensorProductSpace(TT)
+    V = VectorSpace(TT)
 
 Notice that we do not have the solution in one single space
 in spectral space, since it is a combination of ``u_hat`` and

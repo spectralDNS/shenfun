@@ -362,7 +362,7 @@ We can also get the gradient of the solution. For this we need
 a space without boundary conditions, and a vector space
 !bc pycod
 TT = T.get_orthogonal()
-V = VectorTensorProductSpace(TT)
+V = VectorSpace(TT)
 !ec
 
 Notice that we do not have the solution in one single space

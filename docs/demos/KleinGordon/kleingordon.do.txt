@@ -389,11 +389,11 @@ and then simply import the result of that planning later, as wisdom.
 The ${cls('TensorProductSpace')} instance `T` contains pretty much all we need for
 computing inner products or fast transforms between real and wavenumber space.
 However, since we are going to solve for a mixed system, it is convenient to also use the
-${cls('MixedTensorProductSpace')} class
+${cls('CompositeSpace')} class
 
 !bc pycod
-TT = MixedTensorProductSpace([T, T])
-TV = VectorTensorProductSpace(T)
+TT = CompositeSpace([T, T])
+TV = VectorSpace(T)
 !ec
 
 Here the space `TV` will be used to compute gradients, which

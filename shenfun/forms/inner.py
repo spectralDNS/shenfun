@@ -7,7 +7,7 @@ import numpy as np
 import sympy as sp
 from shenfun.spectralbase import inner_product, SpectralBase, MixedFunctionSpace
 from shenfun.matrixbase import TPMatrix, Identity
-from shenfun.tensorproductspace import TensorProductSpace, MixedTensorProductSpace
+from shenfun.tensorproductspace import TensorProductSpace, CompositeSpace
 from shenfun.utilities import dx, split
 from .arguments import Expr, Function, BasisFunction, Array
 
@@ -137,7 +137,7 @@ def inner(expr0, expr1, output_array=None, level=0):
     if isinstance(expr0, Number):
         assert isinstance(expr1, (Array, Function))
         space = expr1.function_space()
-        if isinstance(space, (TensorProductSpace, MixedTensorProductSpace)):
+        if isinstance(space, (TensorProductSpace, CompositeSpace)):
             df = np.prod(np.array([base.domain_factor() for base in space.bases]))
         elif isinstance(space, SpectralBase):
             df = space.domain_factor()
@@ -153,7 +153,7 @@ def inner(expr0, expr1, output_array=None, level=0):
     if isinstance(expr1, Number):
         assert isinstance(expr0, (Array, Function))
         space = expr0.function_space()
-        if isinstance(space, (TensorProductSpace, MixedTensorProductSpace)):
+        if isinstance(space, (TensorProductSpace, CompositeSpace)):
             df = np.prod(np.array([base.domain_factor() for base in space.bases]))
         elif isinstance(space, SpectralBase):
             df = space.domain_factor()
@@ -169,7 +169,7 @@ def inner(expr0, expr1, output_array=None, level=0):
     if isinstance(expr0, tuple):
         assert isinstance(expr1, (Array, Function))
         space = expr1.function_space()
-        assert isinstance(space, MixedTensorProductSpace)
+        assert isinstance(space, CompositeSpace)
         assert len(expr0) == len(space)
         result = 0.0
         for e0i, e1i in zip(expr0, expr1):
@@ -179,7 +179,7 @@ def inner(expr0, expr1, output_array=None, level=0):
     if isinstance(expr1, tuple):
         assert isinstance(expr0, (Array, Function))
         space = expr0.function_space()
-        assert isinstance(space, MixedTensorProductSpace)
+        assert isinstance(space, CompositeSpace)
         assert len(expr1) == len(space)
         result = 0.0
         for e0i, e1i in zip(expr0, expr1):
@@ -200,12 +200,12 @@ def inner(expr0, expr1, output_array=None, level=0):
     else:
         raise RuntimeError
 
-    if isinstance(test, BasisFunction):
-        recursive = test.rank > 0
-    elif isinstance(test, Expr):
-        recursive = test.function_space().is_composite_space
+    #if isinstance(test, BasisFunction):
+    #    recursive = test.tensor_rank > 0
+    #elif isinstance(test, Expr):
+    recursive = test.function_space().is_composite_space
     if isinstance(trial, Array):
-        assert trial.rank == test.rank
+        assert trial.tensor_rank == test.tensor_rank
     elif isinstance(trial, BasisFunction):
         recursive *= (trial.expr_rank() > 0)
     if test.expr_rank() == 0:
@@ -218,23 +218,54 @@ def inner(expr0, expr1, output_array=None, level=0):
         gij = test.function_space().coors.get_covariant_metric_tensor()
         if trial.argument == 2:
             # linear form
-            w0 = np.zeros_like(output_array[0])
-            for i, (te, x) in enumerate(zip(test, output_array)):
-                for j, tr in enumerate(trial):
-                    if gij[i, j] == 0:
-                        continue
-                    w0.fill(0)
-                    x += inner(te*gij[i, j], tr, output_array=w0)
+
+            if test.tensor_rank == 2:
+                w0 = np.zeros_like(output_array[0][0])
+                for i, (tei, xi) in enumerate(zip(test, output_array)):
+                    for j, (teij, xij) in enumerate(zip(tei, xi)):
+                        for k, trk in enumerate(trial):
+                            if gij[i, k] == 0:
+                                continue
+                            for l, trkl in enumerate(trk):
+                                if gij[j, l] == 0:
+                                    continue
+
+                                w0.fill(0)
+                                xij += inner(teij*gij[i, k]*gij[j, l], trkl, output_array=w0)
+
+            elif test.tensor_rank == 1:
+                w0 = np.zeros_like(output_array[0])
+                for i, (te, x) in enumerate(zip(test, output_array)):
+                    for j, tr in enumerate(trial):
+                        if gij[i, j] == 0:
+                            continue
+                        w0.fill(0)
+                        x += inner(te*gij[i, j], tr, output_array=w0)
+
             return output_array
 
         result = []
 
-        for i, te in enumerate(test):
-            for j, tr in enumerate(trial):
-                if gij[i, j] == 0:
-                    continue
-                l = inner(te, tr*gij[i, j], level=level)
-                result += l if isinstance(l, list) else [l]
+        if test.tensor_rank == 2:
+            for i, tei in enumerate(test):
+                for j, teij in enumerate(tei):
+                    for k, trk in enumerate(trial):
+                        if gij[i, k] == 0:
+                            continue
+                        for l, trkl in enumerate(trk):
+                            if gij[j, l] == 0:
+                                continue
+                            p = inner(teij*gij[i, k]*gij[j, l], trkl, level=level)
+                            result += p if isinstance(p, list) else [p]
+
+        elif test.tensor_rank == 1:
+            for i, te in enumerate(test):
+                for j, tr in enumerate(trial):
+                    if gij[i, j] == 0:
+                        continue
+                    l = inner(te, tr*gij[i, j], level=level)
+                    result += l if isinstance(l, list) else [l]
+
         return result[0] if len(result) == 1 else result
 
     if output_array is None and trial.argument == 2:
@@ -246,7 +277,7 @@ def inner(expr0, expr1, output_array=None, level=0):
         assert test.argument == 0
         space = test.function_space()
         if isinstance(trial, Array):
-            if trial.rank == 0:
+            if trial.tensor_rank == 0:
                 output_array = space.scalar_product(trial, output_array)
                 return output_array
             trial = trial.forward()
@@ -283,10 +314,10 @@ def inner(expr0, expr1, output_array=None, level=0):
                     dV = sp.refine(dV, testspace.coors._assumptions)
                     assert len(b0) == len(b1)
                     trial_sp = trialspace
-                    if isinstance(trialspace, (MixedTensorProductSpace, MixedFunctionSpace)): # could operate on a vector, e.g., div(u), where u is vector
+                    if isinstance(trialspace, (CompositeSpace, MixedFunctionSpace)): # could operate on a vector, e.g., div(u), where u is vector
                         trial_sp = trialspace.flatten()[trial_ind[trial_j]]
                     test_sp = testspace
-                    if isinstance(testspace, (MixedTensorProductSpace, MixedFunctionSpace)):
+                    if isinstance(testspace, (CompositeSpace, MixedFunctionSpace)):
                         test_sp = testspace.flatten()[test_ind[test_j]]
                     has_bcs = False
                     # Check if scale is zero
@@ -405,7 +436,7 @@ def inner(expr0, expr1, output_array=None, level=0):
     # Linear form, return output_array
     wh = np.zeros_like(output_array)
     for b in A:
-        if uh.rank > 0:
+        if uh.function_space().is_composite_space:
             wh = b.matvec(uh.v[b.global_index[1]], wh)
         else:
             wh = b.matvec(uh, wh)

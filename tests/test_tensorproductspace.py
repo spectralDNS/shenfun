@@ -13,7 +13,7 @@ from shenfun.laguerre import bases as lagbases
 from shenfun.hermite import bases as hbases
 from shenfun.jacobi import bases as jbases
 from shenfun import Function, project, Dx, Array, FunctionSpace, TensorProductSpace, \
-   VectorTensorProductSpace, MixedTensorProductSpace, inner
+   VectorSpace, CompositeSpace, inner
 
 comm = MPI.COMM_WORLD
 
@@ -63,7 +63,7 @@ def test_transform(typecode, dim):
             V = fft.backward.output_array
             assert allclose(V, U)
 
-            TT = VectorTensorProductSpace(fft)
+            TT = VectorSpace(fft)
             U = Array(TT)
             V = Array(TT)
             F = Function(TT)
@@ -72,7 +72,7 @@ def test_transform(typecode, dim):
             V = TT.backward(F, V)
             assert allclose(V, U)
 
-            TM = MixedTensorProductSpace([fft, fft])
+            TM = CompositeSpace([fft, fft])
             U = Array(TM)
             V = Array(TM)
             F = Function(TM)
@@ -603,11 +603,11 @@ def test_assign(fam):
         ub_hat = Function(Tp)
         u_hat.assign(ub_hat)
         assert abs(inner(1, u_hat)-inner(1, ub_hat)) < tol
-        VT = VectorTensorProductSpace(T)
+        VT = VectorSpace(T)
         u_hat = Function(VT)
         u_hat[:, 1:4, 1:4] = 1
         Tp = T.get_refined((2*N[0], 2*N[1]))
-        VTp = VectorTensorProductSpace(Tp)
+        VTp = VectorSpace(Tp)
         ub_hat = Function(VTp)
         u_hat.assign(ub_hat)
         assert abs(inner((1, 1), u_hat)-inner((1, 1), ub_hat)) < tol
@@ -628,7 +628,7 @@ def test_refine():
     up_hat = Function(Tp)
     assert up_hat.commsizes == u_hat.commsizes
     u2 = u_hat.refine(2*np.array(N))
-    V = VectorTensorProductSpace(T)
+    V = VectorSpace(T)
     u_hat = Function(V)
     u = Array(V)
     u[:] = np.random.random(u.shape)

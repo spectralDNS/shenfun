@@ -288,7 +288,7 @@ addition to `shenfun <https://github.com/spectralDNS/shenfun>`__:
 The size of the problem (in real space) is then specified, before creating
 the :class:`.TensorProductSpace`, which is using a tensor product of two
 one-dimensional Fourier function spaces. We also
-create a :class:`.VectorTensorProductSpace`, since this is required for computing the
+create a :class:`.VectorSpace`, since this is required for computing the
 gradient of the scalar field ``u``. The gradient is required for the nonlinear
 term.
 
@@ -300,9 +300,9 @@ term.
     K0 = FunctionSpace(N[0], 'F', domain=(-30*np.pi, 30*np.pi), dtype='D')
     K1 = FunctionSpace(N[1], 'F', domain=(-30*np.pi, 30*np.pi), dtype='d')
     T = TensorProductSpace(comm, (K0, K1), **{'planner_effort': 'FFTW_MEASURE'})
-    TV = VectorTensorProductSpace([T, T])
+    TV = VectorSpace([T, T])
     Tp = T.get_dealiased((1.5, 1.5))
-    TVp = VectorTensorProductSpace(Tp)
+    TVp = VectorSpace(Tp)
 
 Test and trialfunctions are required for assembling the variational forms:
 

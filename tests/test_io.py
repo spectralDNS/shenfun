@@ -4,7 +4,7 @@ from mpi4py import MPI
 import pytest
 from mpi4py_fft import generate_xdmf
 from shenfun import FunctionSpace, TensorProductSpace, ShenfunFile, Function,\
-    Array, MixedTensorProductSpace, VectorTensorProductSpace
+    Array, CompositeSpace, VectorSpace
 
 N = (12, 13, 14, 15)
 comm = MPI.COMM_WORLD
@@ -55,7 +55,7 @@ def test_mixed_2D(backend, forward_output, as_scalar):
     K0 = FunctionSpace(N[0], 'F')
     K1 = FunctionSpace(N[1], 'C')
     T = TensorProductSpace(comm, (K0, K1))
-    TT = MixedTensorProductSpace([T, T])
+    TT = CompositeSpace([T, T])
     filename = 'test2Dm_{}'.format(ex[forward_output])
     hfile = writer(filename, TT, backend=backend)
     if forward_output:
@@ -115,7 +115,7 @@ def test_mixed_3D(backend, forward_output, as_scalar):
     K1 = FunctionSpace(N[1], 'F', dtype='d', domain=(0, 2*np.pi))
     K2 = FunctionSpace(N[2], 'C')
     T = TensorProductSpace(comm, (K0, K1, K2))
-    TT = VectorTensorProductSpace(T)
+    TT = VectorSpace(T)
     filename = 'test3Dm_{}'.format(ex[forward_output])
     hfile = writer(filename, TT, backend=backend)
     uf = Function(TT, val=2) if forward_output else Array(TT, val=2)
