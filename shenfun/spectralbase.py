@@ -942,9 +942,7 @@ class SpectralBase:
             array *= measure
             return array
 
-        if N is None:
-            N = self.shape(False)
-
+        N = self.shape(False)
         xm = self.mpmath_points_and_weights(N, map_true_domain=True)[0]
         s = measure.free_symbols
         if len(s) == 0:

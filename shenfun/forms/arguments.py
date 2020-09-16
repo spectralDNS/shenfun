@@ -530,7 +530,6 @@ class Expr:
 
         """
         s = sp.S(0)
-        is_vector = self.tensor_rank
         ndim = self.dimensions
         if basis is None:
             basis = 'u'
