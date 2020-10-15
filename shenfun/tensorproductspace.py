@@ -888,7 +888,9 @@ class TensorProductSpace(PFFT):
             sym = self.hi.prod().free_symbols
             msaxes = set()
             for s in sym:
-                msaxes.add(x.index(str(s)))
+                if str(s) in x:
+                    msaxes.add(x.index(str(s)))
+
         for axis, base in enumerate(self):
             if not base.family() == 'fourier':
                 axes.append(axis)
@@ -1228,11 +1230,11 @@ class CompositeSpace:
 
 
 class VectorSpace(CompositeSpace):
-    """Vector of :class:`.TensorProductSpace`s
+    """Vector of :class:`.TensorProductSpace` instances.
 
     This is simply a special :class:`.CompositeSpace` where the number of
-    :class:`.TensorProductSpace`s equals the geometrical dimension of the
-    problem.
+    instances of the :class:`.TensorProductSpace` class equals the geometrical
+    dimension of the problem.
 
     For example, a TensorProductSpace created by a tensorproduct of 2 1D
     spaces, will have vectors of length 2. A TensorProductSpace created from 3
@@ -1240,8 +1242,8 @@ class VectorSpace(CompositeSpace):
 
     Parameters
     ----------
-    space : :class:`.TensorProductSpace` or list of ndim :class:`.TensorProductSpace`s
-        Spaces to create vector from
+    space : :class:`.TensorProductSpace` or list of ndim instances of the
+    :class:`.TensorProductSpace` class to create vector from.
 
     """
 
@@ -1295,7 +1297,7 @@ class VectorSpace(CompositeSpace):
 class TensorSpace(VectorSpace):
     """A special :class:`.CompositeSpace` for second rank tensors.
 
-    For example, a TensorProductSpace created by a tensorproduct of 2 1D
+    A TensorProductSpace created by a tensorproduct of 2 1D
     bases, will have tensors of length 4. A TensorProductSpace created from 3
     1D bases will have tensors of length 9.
 
@@ -1438,6 +1440,8 @@ class BoundaryValues:
             for i, bci in enumerate(bc):
                 if isinstance(bci, (Number, sp.Expr, np.ndarray)):
                     self.bcs[i] = bci
+                elif bci is None:
+                    self.bcs[i] = None
                 else:
                     raise NotImplementedError
 
@@ -1500,6 +1504,7 @@ class BoundaryValues:
             # Shape is like real space, since Dirichlet does not alter shape
             b = Array(T)
             s = T.local_slice(False)[self.axis]
+            num_bcs = len(self.bc) - np.count_nonzero(np.array(self.bc) == None)
 
             for j, bci in enumerate(self.bc):
                 if isinstance(bci, sp.Expr):
@@ -1518,11 +1523,20 @@ class BoundaryValues:
 
                     # Put the Dirichlet value in the position of the bc dofs
                     if s.stop == int(this_base.N*this_base.padding_factor):
-                        b[this_base.si[-(len(self.bc))+j]] = f_bci
+                        if num_bcs == 1: # e.g., UpperDirichlet
+                            b[this_base.si[-1]] = f_bci
+                        else:
+                            b[this_base.si[-(len(self.bc))+j]] = f_bci
 
                 elif isinstance(bci, (Number, np.ndarray)):
                     if s.stop == int(this_base.N*this_base.padding_factor):
-                        b[this_base.si[-(len(self.bc))+j]] = bci
+                        if num_bcs == 1:
+                            b[this_base.si[-1]] = bci
+                        else:
+                            b[this_base.si[-(len(self.bc))+j]] = bci
+
+                elif bci is None:
+                    pass
 
                 else:
                     raise NotImplementedError
@@ -1558,7 +1572,12 @@ class BoundaryValues:
                 # Now b_hat contains the correct slices in slm1 and slm2
                 # These are the values to use on intermediate steps. If for example the Dirichlet space is squeezed between two Fourier spaces
                 for i in range(len(self.bc)):
-                    self.bcs[i] = b_hat[this_base.si[-(len(self.bc))+i]].copy()
+                    if self.bcs[i] is None:
+                        continue
+                    if num_bcs == 1:
+                        self.bcs[i] = b_hat[this_base.si[-1]].copy()
+                    else:
+                        self.bcs[i] = b_hat[this_base.si[-(len(self.bc))+i]].copy()
 
                 # Final (the values to set on fully transformed functions)
                 T.forward._xfftn[0].input_array[...] = b
@@ -1572,7 +1591,12 @@ class BoundaryValues:
                 T.forward._xfftn[-1]()
                 b_hat = T.forward._xfftn[-1].output_array
                 for i in range(len(self.bc)):
-                    self.bcs_final[i] = b_hat[this_base.si[-(len(self.bc))+i]].copy()
+                    if self.bcs[i] is None:
+                        continue
+                    elif num_bcs == 1:
+                        self.bcs_final[i] = b_hat[this_base.si[-1]].copy()
+                    else:
+                        self.bcs_final[i] = b_hat[this_base.si[-(len(self.bc))+i]].copy()
 
             else: # 2 non-homogeneous directions
                 assert len(T.bases) == 2, 'Only implemented for 2D'
@@ -1655,12 +1679,23 @@ class BoundaryValues:
 
         """
         M = len(self.bc)
+        num_bcs = len(self.bc) - np.count_nonzero(np.array(self.bc) == None)
+
         if final is True:
             for i in range(M):
-                u[self.base.si[-(M)+i]] = self.bcs_final[i]
+                if num_bcs == 1:
+                    if self.bcs_final[i] is None:
+                        continue
+                    u[self.base.si[-1]] = self.bcs_final[i]
+                else:
+                    u[self.base.si[-(M)+i]] = self.bcs_final[i]
 
         else:
             for i in range(M):
+                if num_bcs == 1:
+                    if self.bcs[i] is None:
+                        continue
+                    u[self.base.si[-1]] = self.bcs[i]
                 u[self.base.si[-(M)+i]] = self.bcs[i]
 
     def has_nonhomogeneous_bcs(self):

@@ -16,7 +16,8 @@ DEMO          = Poisson/poisson.rst \
 				Stokes/stokes.rst DrivenCavity/drivencavity.rst \
 				RayleighBenard/rayleighbenard.rst \
 				Functions/functions.ipynb \
-				Integration/surfaceintegration.ipynb
+				Integration/surfaceintegration.ipynb \
+				Moebius/moebius.ipynb
 NDEMO         = Poisson/poisson.ipynb2 \
                 KleinGordon/kleingordon.ipynb2 \
                 Poisson3D/poisson3d.ipynb2 \
@@ -26,7 +27,8 @@ NDEMO         = Poisson/poisson.ipynb2 \
 				Stokes/stokes.ipynb2 DrivenCavity/drivencavity.ipynb2 \
 				RayleighBenard/rayleighbenard.ipynb2 \
 				Functions/functions.ipynb2 \
-				Integration/surfaceintegration.ipynb2
+				Integration/surfaceintegration.ipynb2 \
+				Moebius/moebius.ipynb2
 
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

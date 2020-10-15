@@ -147,7 +147,7 @@ class FourierBase(SpectralBase):
     def evaluate_basis_derivative_all(self, x=None, k=0):
         V = self.evaluate_basis_all(x=x)
         if k > 0:
-            l = self.wavenumbers(bcast=False, scaled=True)
+            l = self.wavenumbers(bcast=False, scaled=False, eliminate_highest_freq=False)
             V = V*((1j*l)**k)[np.newaxis, :]
         return V
 
@@ -173,7 +173,8 @@ class FourierBase(SpectralBase):
         return self.forward.output_array
 
     def apply_inverse_mass(self, array):
-        if not self.coors.is_cartesian: # mass matrix may not be diagonal
+        coors = self.tensorproductspace.coors if self.tensorproductspace else self.coors
+        if not coors.is_cartesian: # mass matrix may not be diagonal, or there is scaling
             return SpectralBase.apply_inverse_mass(self, array)
         return array
 

@@ -209,9 +209,8 @@ def Dx(test, x, k=1):
         num_terms = test.num_terms()
         for i in range(test.num_components()):
             for j in range(num_terms[i]):
-                sc0 = sp.simplify(sp.diff(sc[i][j], psi[x], k))
-                sc0 = sp.refine(sc0, coors._assumptions)
-
+                sc0 = sp.simplify(sp.diff(sc[i][j], psi[x], k), measure=coors._measure)
+                sc0 = coors.refine(sc0)
                 if not sc0 == 0:
                     v[i].append(copy.deepcopy(v[i][j]))
                     sc[i].append(sc0)
@@ -275,13 +274,6 @@ def curl(test):
                 w0 = np.sum([(Dx(test[i]*g[2, i], 1, 1) - Dx(test[i]*g[1, i], 2, 1))*(1/sg) for i in range(3)])
                 w1 = np.sum([(Dx(test[i]*g[0, i], 2, 1) - Dx(test[i]*g[2, i], 0, 1))*(1/sg) for i in range(3)])
                 w2 = np.sum([(Dx(test[i]*g[1, i], 0, 1) - Dx(test[i]*g[0, i], 1, 1))*(1/sg) for i in range(3)])
-                # Don't think this double loop is needed due to symmetry of Christoffel?
-                #ct = coors.get_christoffel_second()
-                #for i in range(3):
-                #    for k in range(3):
-                #        w0 += (ct[i, 1, 2]*g[i, k]*test[k] - ct[i, 2, 1]*g[i, k]*test[k])*(1/sg)
-                #        w1 += (ct[i, 2, 0]*g[i, k]*test[k] - ct[i, 0, 2]*g[i, k]*test[k])*(1/sg)
-                #        w2 += (ct[i, 0, 1]*g[i, k]*test[k] - ct[i, 1, 0]*g[i, k]*test[k])*(1/sg)
 
                 # This is an alternative (more complicated way):
                 #gt = coors.get_contravariant_metric_tensor()

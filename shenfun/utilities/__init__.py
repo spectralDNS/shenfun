@@ -13,7 +13,7 @@ import sympy as sp
 from scipy.fftpack import dct
 from shenfun.optimization import optimizer
 
-__all__ = ['dx', 'clenshaw_curtis1D', 'CachedArrayDict',
+__all__ = ['dx', 'clenshaw_curtis1D', 'CachedArrayDict', 'surf3D', 'wrap_periodic',
            'outer', 'apply_mask', 'integrate_sympy', 'mayavi_show']
 
 
@@ -200,18 +200,36 @@ def integrate_sympy(f, d):
         return sp.integrate(f, d)
 
 def split(measures):
-    #ms = sp.sympify(measures).expand()
-    #ms = ms if isinstance(ms, tuple) else [ms]
-    #result = []
-    #for m in ms:
-    #    if sp.simplify(m) == 0:
-    #        continue
-    #    d = {'coeff': m} if isinstance(m, Number) else sp.separatevars(m, dict=True)
-    #    d = defaultdict(lambda: 1, {str(k): sp.simplify(v) for k, v in d.items()})
-    #    dc = d['coeff']
-    #    d['coeff'] = int(dc) if isinstance(dc, (sp.Integer, int)) else float(dc)
-    #    result.append(d)
-    #return result
+
+    def _split(ms):
+        ms = sp.sympify(ms)
+        if isinstance(ms, Number):
+            d = {'coeff': ms}
+        elif len(ms.free_symbols) == 0:
+            d = {'coeff': ms.evalf()}
+        else:
+            d = sp.separatevars(ms.factor(), dict=True)
+        if d is None:
+            raise RuntimeError('Could not split', ms)
+        d = defaultdict(lambda: 1, {str(k): sp.simplify(v) for k, v in d.items()})
+        dc = d['coeff']
+        d['coeff'] = int(dc) if isinstance(dc, (sp.Integer, int)) else float(dc)
+        return d
+
+    ms = sp.sympify(measures)
+    if len(ms.free_symbols) <= 1:
+        return [_split(ms)]
+
+    ms = ms.expand()
+    result = []
+    if isinstance(ms, sp.Add):
+        for arg in ms.args:
+            result.append(_split(arg))
+    else:
+        result.append(_split(ms))
+    return result
+
+def oldsplit(measures):
 
     def _split(mss, result):
         for ms in mss:
@@ -248,3 +266,67 @@ def mayavi_show():
     from pyface.api import GUI
     from mayavi import mlab
     return mlab.show(GUI().stop_event_loop)
+
+def wrap_periodic(xs, wrap=[]):
+    """Return arrays wrapped around periodically
+
+    xs : array or sequence of arrays
+    wrap : sequence of integers, optional
+        Extend arrays in xs by one in direction given by wrap
+    """
+    xs = xs if isinstance(xs, (list, tuple)) else list(xs)
+    for x in xs:
+        if 0 in wrap:
+            x = np.vstack([x, x[0]])
+        if 1 in wrap:
+            x = np.hstack([x, x[:, 0][:, None]])
+        if 2 in wrap:
+            x = np.stack([x, x[:, :, 0][:, :, None]], axis=2)
+    if len(xs) == 1:
+        return xs[0]
+    return xs
+
+def surf3D(u, backend='plotly', wrap=[], slices=None, fig=None, **kw):
+    """Plot surface embedded in 3D
+
+    Parameters
+    ----------
+    u : Function or Array
+    backend : str, optional
+        plotly or mayavi
+    wrap : sequence of integers, optional
+        For domains that wrap around, extend mesh/u by one in given direction
+    slices : None or sequence of slices, optional
+        If only part of u should be plotted
+    fig : Figure instance, optional
+    kw : Keyword arguments, optional
+        Used by plotly Surface. Possibly colorscale.
+    """
+    from shenfun.forms.arguments import Function
+    T = u.function_space()
+    x, y, z = T.local_cartesian_mesh()
+    if isinstance(u, Function):
+        u = u.backward()
+
+    x, y, z = wrap_periodic([x, y, z], wrap)
+
+    if slices:
+        x = x[slices]
+        y = y[slices]
+        z = z[slices]
+        u = u[slices]
+
+    if u.dtype.char in 'FDG':
+        u = abs(u)
+
+    if backend == 'plotly':
+        import plotly.graph_objects as go
+        s = go.Surface(x=x, y=y, z=z, surfacecolor=u, **kw)
+        fig = go.Figure(s)
+        d = {'visible': False, 'showgrid': False, 'zeroline': False}
+        fig.update_layout(scene={'xaxis': d, 'yaxis': d, 'zaxis': d})
+    elif backend == 'mayavi':
+        from mayavi import mlab
+        fig = mlab.figure(bgcolor=(1, 1, 1))
+        mlab.mesh(x, y, z, scalars=u, colormap='jet')
+    return fig

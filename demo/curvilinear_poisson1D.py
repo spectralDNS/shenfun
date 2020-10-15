@@ -22,25 +22,25 @@ import sympy as sp
 
 t = sp.Symbol('x', real=True, positive=True)
 #rv = (t, t+sp.sin(t))
-rv = (sp.sin(2*t), sp.cos(2*t), 0.5*t)
+rv = (sp.sin(2*sp.pi*t), sp.cos(2*sp.pi*t), 2*t)
 
-N = 200
-L = FunctionSpace(N, 'C', bc=(0, 0), domain=(0, 2*np.pi), coordinates=((t,), rv))
+N = 50
+L = FunctionSpace(N, 'L', bc=(0, 0), domain=(-1, 1), coordinates=((t,), rv))
 
 u = TrialFunction(L)
 v = TestFunction(L)
 
 # Compute rhs for manufactured solution
-ue = sp.sin(8*t)
-g = L.coors.get_sqrt_det_g()
-f = -1/g*sp.diff(1/g*ue.diff(t, 1), t, 1)
+ue = sp.sin(4*np.pi*t)
+sg = L.coors.sg
+f = -1/sg*sp.diff(1/sg*ue.diff(t, 1), t, 1)
 #or
 #f = (-div(grad(u))).tosympy(basis=ue, psi=(t,))
 
-fj = Array(L, buffer=f)
+fj = Array(L, buffer=f*sg)
 f_hat = inner(v, fj)
 
-A = inner(v, -div(grad(u)))
+A = inner(v*sg, -div(grad(u)))
 
 u_hat = Function(L)
 if isinstance(A, list):

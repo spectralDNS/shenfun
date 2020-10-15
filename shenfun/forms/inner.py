@@ -310,8 +310,9 @@ def inner(expr0, expr1, output_array=None, level=0):
                 continue
             for test_j, b0 in enumerate(base_test):              # second index test
                 for trial_j, b1 in enumerate(base_trial):        # second index trial
-                    dV = sp.simplify(test_scale[vec_i][test_j]*trial_scale[vec_j][trial_j]*testspace.coors.get_sqrt_det_g()*g)
-                    dV = sp.refine(dV, testspace.coors._assumptions)
+                    dV = sp.simplify(test_scale[vec_i][test_j]*trial_scale[vec_j][trial_j]*testspace.coors.sg*g, measure=testspace.coors._measure)
+                    dV = testspace.coors.refine(dV)
+
                     assert len(b0) == len(b1)
                     trial_sp = trialspace
                     if isinstance(trialspace, (CompositeSpace, MixedFunctionSpace)): # could operate on a vector, e.g., div(u), where u is vector
@@ -332,7 +333,7 @@ def inner(expr0, expr1, output_array=None, level=0):
                             ts = trial_sp[i]
                             tt = test_sp[i]
                             msx = 'xyzrs'[i]
-                            msi = sp.simplify(dv[msx])
+                            msi = dv[msx]
 
                             # assemble inner product
                             AA = inner_product((tt, a), (ts, b), msi)
