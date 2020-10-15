@@ -14,7 +14,7 @@ from .utilities import integrate_sympy
 
 __all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix',
            'check_sanity', 'get_dense_matrix', 'TPMatrix', 'BlockMatrix',
-           'Identity', 'get_dense_matrix_sympy']
+           'Identity', 'get_dense_matrix_sympy', 'get_dense_matrix_quadpy']
 
 comm = MPI.COMM_WORLD
 
@@ -567,11 +567,15 @@ class SpectralMatrix(SparseMatrix):
             return False
         if self.get_key() != a.get_key():
             return False
-        if not np.array(list(self.keys())).shape == np.array(list(a.keys())).shape:
+        sl = np.array(list(self.keys()))
+        sa = np.array(list(a.keys()))
+        if not sl.shape == sa.shape:
             return False
-        #if not np.all(np.array(list(self.keys())) == np.array(list(a.keys()))):
-        #    return False
-        if np.linalg.norm(self[list(self.keys())[0]] - a[list(self.keys())[0]]) > 1e-8:
+        sl.sort()
+        sa.sort()
+        if not np.linalg.norm((sl-sa)**2) == 0:
+            return False
+        if np.linalg.norm(sl[0] - sa[0]) > 1e-8:
             return False
         return True
 
@@ -968,8 +972,8 @@ class BlockMatrix:
                 s = [0, 0, 0]
                 if Alu is None:
                     Ai = self.diags(format='csr')
-                gi = np.zeros(space.dim())
-                go = np.zeros(space.dim())
+                gi = np.zeros(space.dim(), dtype=b.dtype)
+                go = np.zeros(space.dim(), dtype=b.dtype)
                 start = 0
                 for k in range(b.shape[0]):
                     s[0] = k
@@ -1364,7 +1368,10 @@ def check_sanity(A, test, trial, measure=1):
     measure : sympy function of coordinate, optional
     """
     N, M = A.shape
-    D = get_dense_matrix(test, trial, measure)[:N, :M]
+    if measure == 1:
+        D = get_dense_matrix(test, trial, measure)[:N, :M]
+    else:
+        D = get_dense_matrix_quadpy(test, trial, measure)
     Dsp = extract_diagonal_matrix(D)
     for key, val in A.items():
         assert np.allclose(val*A.scale, Dsp[key])
@@ -1392,11 +1399,13 @@ def get_dense_matrix(test, trial, measure=1):
         Additional weight to integral. For example, in cylindrical
         coordinates an additional measure is the radius `r`.
     """
+    K0 = test[0].slice().stop - test[0].slice().start
+    K1 = trial[0].slice().stop - trial[0].slice().start
     N = test[0].N
     x = test[0].mpmath_points_and_weights(N, map_true_domain=False)[0]
     ws = test[0].get_measured_weights(N, measure)
-    v = test[0].evaluate_basis_derivative_all(x=x, k=test[1])
-    u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])
+    v = test[0].evaluate_basis_derivative_all(x=x, k=test[1])[:, :K0]
+    u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])[:, :K1]
     return np.dot(np.conj(v.T)*ws[np.newaxis, :], u)
 
 def extract_diagonal_matrix(M, abstol=1e-14, reltol=1e-12):
@@ -1478,5 +1487,63 @@ def get_dense_matrix_sympy(test, trial, measure=1):
             integrand = sp.simplify(measure*pi.diff(x, test[1])*pj.diff(x, trial[1]))
             V[i, j] = integrate_sympy(integrand,
                                       (x, test[0].sympy_reference_domain()[0], test[0].sympy_reference_domain()[1]))
+
+    return V
+
+def get_dense_matrix_quadpy(test, trial, measure=1):
+    """Return dense matrix automatically computed from basis
+
+    Using quadpy to compute the integral adaptively with high accuracy.
+    This should be equivalent to integrating analytically with sympy,
+    as long as the integrand is smooth enough and the integral can be
+    found with quadrature.
+
+    Parameters
+    ----------
+    test : 2-tuple of (basis, int)
+        The basis is an instance of a class for one of the bases in
+
+        - :mod:`.legendre.bases`
+        - :mod:`.chebyshev.bases`
+        - :mod:`.fourier.bases`
+        - :mod:`.laguerre.bases`
+        - :mod:`.hermite.bases`
+        - :mod:`.jacobi.bases`
+
+        The int represents the number of times the test function
+        should be differentiated. Representing matrix row.
+    trial : 2-tuple of (basis, int)
+        As test, but representing matrix column.
+    measure : Sympy expression of coordinate, or number, optional
+        Additional weight to integral. For example, in cylindrical
+        coordinates an additional measure is the radius `r`.
+    """
+    import quadpy
+    N = test[0].slice().stop - test[0].slice().start
+    M = trial[0].slice().stop - trial[0].slice().start
+    V = np.zeros((N, M), dtype=test[0].forward.output_array.dtype)
+    x = sp.Symbol('x', real=True)
+
+    if not measure == 1:
+        if isinstance(measure, sp.Expr):
+            s = measure.free_symbols
+            assert len(s) == 1
+            x = s.pop()
+            xm = test[0].map_true_domain(x)
+            measure = measure.subs(x, xm)
+        else:
+            assert isinstance(measure, Number)
+
+    # Weight of weighted space
+    measure *= test[0].weight()
+
+    for i in range(test[0].slice().start, test[0].slice().stop):
+        pi = np.conj(test[0].sympy_basis(i, x=x))
+        for j in range(trial[0].slice().start, trial[0].slice().stop):
+            pj = trial[0].sympy_basis(j, x=x)
+            integrand = sp.simplify(measure*pi.diff(x, test[1])*pj.diff(x, trial[1]))
+            if not integrand == 0:
+                V[i, j] = quadpy.c1.integrate_adaptive(sp.lambdify(x, integrand),
+                                                       test[0].reference_domain())[0]
 
     return V

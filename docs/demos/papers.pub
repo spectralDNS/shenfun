@@ -1,17 +1,17 @@
 * articles
 ** New Travelling Wave Solutions to the Boussinesq and the Klein-Gordon Equations
-   key:        abdul08
-   author:     Abdul-Majid Wazwaz
-   year:       2008
-   journal:    Communications in Nonlinear Science and Numerical Simulation
-   volume:     13
-   number:     5
-   pages:      889-901
-   doi:        10.1016/j.cnsns.2006.08.005
-   status:     published
-   entrytype:  article
-   issn:       1007-5704
-   keywords:   Extended tanh method
+   key:       abdul08
+   author:    Abdul-Majid Wazwaz
+   year:      2008
+   journal:   Communications in Nonlinear Science and Numerical Simulation
+   volume:    13
+   number:    5
+   pages:     889-901
+   doi:       10.1016/j.cnsns.2006.08.005
+   status:    published
+   entrytype: article
+   issn:      1007-5704
+   keywords:  Extended tanh method
 ** Efficient Spectral-Galerkin Method I. Direct Solvers of Second- and Fourth-Order Equations Using Legendre Polynomials
    key:                shen1
    author:             Jie Shen
@@ -62,5 +62,17 @@
    number:    6
    pages:     1583-1604
    doi:       10.1137/S1064827595295301
+   status:    published
+   entrytype: article
+** Effective Quantum Dynamics on the Möbius Strip
+   key:       Kalvoda2020
+   author:    T. Kalvoda, D. Krejcirik, K. Zahradová
+   year:      2020
+   journal:   Journal of Physics A: Mathematical and Theoretical
+   publisher: IOP Publishing
+   volume:    53
+   number:    37
+   pages:     375201
+   doi:       10.1088/1751-8121/ab8b3a
    status:    published
    entrytype: article

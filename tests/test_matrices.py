@@ -110,6 +110,13 @@ def test_mat(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
+        if not measure == 1:
+            # Way too time-consuming
+            return
+
+    if test[0] in lBasisLG and quad == 'GL':
+        return
+
     t0 = test[0]
     t1 = trial[0]
     if len(key) == 4:
@@ -258,6 +265,9 @@ def test_imul(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
+    if test[0] in lBasisLG and quad == 'GL':
+        return
+
     t0 = test[0]
     t1 = trial[0]
     if len(key) == 4:
@@ -285,6 +295,9 @@ def test_mul(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
+    if test[0] in lBasisLG and quad == 'GL':
+        return
+
     t0 = test[0]
     t1 = trial[0]
     if len(key) == 4:
@@ -326,6 +339,8 @@ def test_rmul(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
+    if test[0] in lBasisLG and quad == 'GL':
+        return
     t0 = test[0]
     t1 = trial[0]
     if len(key) == 4:
@@ -351,6 +366,8 @@ def test_div(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
+    if test[0] in lBasisLG and quad == 'GL':
+        return
     t0 = test[0]
     t1 = trial[0]
     if len(key) == 4:
@@ -390,6 +407,8 @@ def test_add(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
+    if test[0] in lBasisLG and quad == 'GL':
+        return
     t0 = test[0]
     t1 = trial[0]
     if len(key) == 4:
@@ -417,6 +436,8 @@ def test_iadd(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
+    if test[0] in lBasisLG and quad == 'GL':
+        return
     t0 = test[0]
     t1 = trial[0]
     if len(key) == 4:
@@ -443,6 +464,8 @@ def test_isub(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
+    if test[0] in lBasisLG and quad == 'GL':
+        return
     t0 = test[0]
     t1 = trial[0]
     if len(key) == 4:
@@ -470,6 +493,8 @@ def test_sub(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
+    if test[0] in lBasisLG and quad == 'GL':
+        return
     t0 = test[0]
     t1 = trial[0]
     if len(key) == 4:
@@ -648,9 +673,12 @@ def test_biharmonic2D(family, axis):
 
 if __name__ == '__main__':
     import sympy as sp
-    x = sp.symbols('x', real=True, positive=True)
-    #test_mat(((cbases.ShenDirichlet, 0), (cbases.BCDirichlet, 0)), cmatrices.BCDmat, 'GC')
-    test_cmatvec(cBasis[1], cBasis[2], 'GC', 'cython', 2, 1)
+    x = sp.symbols('x', real=True)
+    xp = sp.Symbol('x', real=True, positive=True)
+
+    #test_mat(((lbases.UpperDirichlet, 0), (lbases.UpperDirichlet, 0)), lmatrices.mat['BUUrp1smat'], 'LG')
+    test_mat(*lmats_and_quads[-8])
+    #test_cmatvec(cBasis[1], cBasis[2], 'GC', 'cython', 2, 1)
     #test_lmatvec(lBasis[0], lBasis[0], 'LG', 'cython', 3, 2, 0)
     #test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
     #test_hmatvec(hBasis[0], hBasis[0], 'HG', 'self', 3, 1, 1)

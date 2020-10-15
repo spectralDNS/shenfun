@@ -379,11 +379,10 @@ with the code below, we link here instead to a previously
 generated image.
 
 !bc
-from mayavi import mlab
-xx, yy, zz = T.local_cartesian_mesh()
-mlab.figure(bgcolor=(1, 1, 1), size=(400, 400))
-mlab.mesh(xx, yy, zz, scalars=fb, colormap='jet')
-mlab.show()
+from plotly.colors.sequential import Jet
+fig = surf3D(fb, colorscale=Jet)
+fig.update_layout(scene_camera_eye=dict(x=1.6, y=-1.4, z=0))
+fig.show()
 !ec
 
 FIGURE: [https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/seashell3.png]

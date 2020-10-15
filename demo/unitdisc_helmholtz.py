@@ -15,13 +15,13 @@ from shenfun import *
 from shenfun.la import SolverGeneric1ND
 import sympy as sp
 
-by_parts = False
+by_parts = True
 
 # Define polar coordinates using angle along first axis and radius second
 theta, r = psi = sp.symbols('x,y', real=True, positive=True)
 rv = (r*sp.cos(theta), r*sp.sin(theta))
 
-alpha = 1
+alpha = 0
 
 # Manufactured solution
 ue = (r*(1-r))**2*sp.cos(8*theta)-0.1*(r-1)
@@ -30,7 +30,7 @@ N = 32
 F = FunctionSpace(N, 'F', dtype='d')
 F0 = FunctionSpace(1, 'F', dtype='d')
 L = FunctionSpace(N, 'L', bc='Dirichlet', domain=(0, 1))
-L0 = FunctionSpace(N, 'L', bc='UpperDirichlet', domain=(0, 1))
+L0 = FunctionSpace(N, 'L', bc=(None, 0), domain=(0, 1))
 T = TensorProductSpace(comm, (F, L), axes=(1, 0), coordinates=(psi, rv))
 T0 = TensorProductSpace(MPI.COMM_SELF, (F0, L0), axes=(1, 0), coordinates=(psi, rv))
 
@@ -60,11 +60,13 @@ if comm.Get_rank() == 0:
 # Assemble matrices.
 if by_parts:
     mats = inner(grad(v), grad(u))
-    mats += [inner(v, alpha*u)]
+    if alpha > 0:
+        mats += [inner(v, alpha*u)]
     # case m=0
     if comm.Get_rank() == 0:
         mats0 = inner(grad(v0), grad(u0))
-        mats0 += [inner(v0, alpha*u0)]
+        if alpha > 0:
+            mats0 += [inner(v0, alpha*u0)]
 else:
     mats = inner(v, -div(grad(u))+alpha*u)
     # case m=0
@@ -106,16 +108,17 @@ du = dv.backward()
 # b. Note that basis b is not normalized (it is not a unity vector)
 # To get unity vector (regular polar unit vectors), do
 #    e = b / T.hi[:, None]
-b = T.coors.get_covariant_basis()
-ui, vi = TT.local_mesh(True)
-bij = np.array(sp.lambdify(psi, b)(ui, vi))
-# Compute Cartesian gradient
-gradu = du[0]*bij[0] + du[1]*bij[1]
-# Exact Cartesian gradient
-#gradue = Array(V, buffer=list(b[0]*ue.diff(theta, 1)/r**2 + b[1]*ue.diff(r, 1)))
-gradue = Array(V, buffer=list(grad(u).tosympy(basis=ue, psi=psi)))
-print('Error gradient', np.linalg.norm(gradu-gradue))
-assert np.linalg.norm(gradu-gradue) < 1e-7
+
+# Exact gradient in computational basis
+gradue = Array(V, buffer=grad(u).tosympy(basis=ue, psi=psi))
+# Compute error sqrt(inner(|grad(u)-grad(ue)|**2))
+gij = T.coors.get_covariant_metric_tensor()
+ui, vi = TT.local_mesh(True, uniform=True)
+# Evaluate metric on computational mesh
+g = np.array(sp.lambdify(psi, gij)(ui, vi), dtype=object)
+errorg = inner(1, (du[0]-gradue[0])**2*g[0, 0]+ (du[1]-gradue[1])**2*g[1, 1])
+print('Error gradient = %2.6e'%(np.sqrt(errorg)))
+assert np.sqrt(errorg) < 1e-7
 
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
@@ -140,6 +143,10 @@ if 'pytest' not in os.environ:
     # plot
     plt.figure()
     plt.contourf(xp, yp, up)
+    b = T.coors.get_covariant_basis()
+    bij = np.array(sp.lambdify(psi, b)(ui, vi))
+    # Compute Cartesian gradient
+    gradu = du[0]*bij[0] + du[1]*bij[1]
     plt.quiver(xi, yi, gradu[0], gradu[1], scale=40, pivot='mid', color='white')
     plt.colorbar()
     plt.title('Helmholtz - unitdisc')

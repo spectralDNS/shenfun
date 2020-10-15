@@ -417,10 +417,10 @@ class SolverGeneric2ND:
             if self.M is not None:
                 return self.M
             m = self.tpmats[0]
-            M0 = scp.kron(m.mats[0].diags(format), m.mats[1].diags(format))
+            M0 = scp.kron(m.mats[0].diags(format), m.mats[1].diags(format), format)
             M0 *= np.atleast_1d(m.scale).item()
             for m in self.tpmats[1:]:
-                M1 = scp.kron(m.mats[0].diags(format), m.mats[1].diags(format))
+                M1 = scp.kron(m.mats[0].diags(format), m.mats[1].diags(format), format)
                 M1 *= np.atleast_1d(m.scale).item()
                 M0 = M0 + M1
             self.M = M0
@@ -433,10 +433,10 @@ class SolverGeneric2ND:
             diagonal_axis = self.get_diagonal_axis()
             sc = [0, 0, 0]
             sc[diagonal_axis] = i if m.scale.shape[diagonal_axis] > 1 else 0
-            M0 = scp.kron(m.mats[naxes[0]].diags(format), m.mats[naxes[1]].diags(format))
+            M0 = scp.kron(m.mats[naxes[0]].diags(format), m.mats[naxes[1]].diags(format), format)
             M0 *= m.scale[tuple(sc)]
             for m in self.tpmats[1:]:
-                M1 = scp.kron(m.mats[naxes[0]].diags(format), m.mats[naxes[1]].diags(format))
+                M1 = scp.kron(m.mats[naxes[0]].diags(format), m.mats[naxes[1]].diags(format), format)
                 sc[diagonal_axis] = i if m.scale.shape[diagonal_axis] > 1 else 0
                 M1 *= m.scale[tuple(sc)]
                 M0 = M0 + M1

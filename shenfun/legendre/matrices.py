@@ -784,6 +784,154 @@ class AUUrp1mat(SpectralMatrix):
         d = {0: 2*k+2}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
+class AUUrp1smat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        A_{kj} = \int_{-1}^{1} \psi_j'(x) \psi_k'(x) (1+x)**2 dx
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the Upper Dirichlet basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], SU)
+        assert isinstance(trial[0], SU)
+        assert test[0].quad == 'LG'
+        k = np.arange(test[0].N-1)
+        d = {0: 4*k**2*(k+1)/(2*k+1)+4*(k+1)**2*(k+2)/(2*k+3)-4*k*(k+1),
+             1: 2*(k[:-1]+1)*(k[:-1]+2)-4*(k[:-1]+1)**2*(k[:-1]+2)/(2*k[:-1]+3)}
+        d[-1] = d[1].copy()
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+
+class GUUrp1smat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        A_{kj} = \int_{-1}^{1} \psi_j(x) \psi_k''(x) (1+x)**2 dx
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the Upper Dirichlet basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], SU)
+        assert isinstance(trial[0], SU)
+        assert test[0].quad == 'LG'
+        k = np.arange(test[0].N-1)
+        d = {0: -4*k**2*(k+1)/(2*k+1)-4*(k+1)**2*(k+2)/(2*k+3)+4*k*(k+1)+4*(k+1)/(2*k+1)-4*(k+1)/(2*k+3),
+             1: -(2*(k[:-1]+1)*(k[:-1]+2)-4*(k[:-1]+1)**2*(k[:-1]+2)/(2*k[:-1]+3)) - 4*(k[1:]+1)/(2*k[1:]+1),
+             -1: -(2*(k[:-1]+1)*(k[:-1]+2)-4*(k[:-1]+1)**2*(k[:-1]+2)/(2*k[:-1]+3)) + 4*(k[:-1]+1)/(2*k[:-1]+3)}
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+
+class BUUrp1smat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj} = \int_{-1}^{1} \psi_j(x) \psi_k(x) (1+x)**2 dx
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the Upper Dirichlet basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], SU)
+        assert isinstance(trial[0], SU)
+        assert test[0].quad == 'LG'
+        k = np.arange(test[0].N-1)
+        a00 = 2/(2*k+1)
+        a11 = 2/(2*k+3)
+        a22 = 2/(2*k+5)
+        c00 = ((k+1)**2/(2*k+1)/(2*k+3) + k**2/(2*k+1)/(2*k-1))*a00
+        c11 = ((k+2)**2/(2*k+3)/(2*k+5) + (k+1)**2/(2*k+3)/(2*k+1))*a11
+        c02 = (k+2)*(k+1)/(2*k+5)/(2*k+3)*a00
+        c13 = ((k+3)*(k+2)/(2*k+7)/(2*k+5))*a11
+        b01 = (k+1)/(2*k+3)*a00
+        b12 = (k+2)/(2*k+5)*a11
+
+        d = {0: a00+c00-4*b01+a11+c11,
+             1: (2*b01-c02-a11-c11+2*b12)[:-1],
+             -1: (2*b01-c02-a11-c11+2*b12)[:-1],
+             2: (c02-2*b12+c13)[:-2],
+             -2: (c02-2*b12+c13)[:-2],
+             3: -c13[:-3].copy(),
+             -3: -c13[:-3].copy()}
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+
+class CUUrp1mat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        A_{kj} = \int_{-1}^{1} \psi_j(x) \psi_k'(x) (1+x) dx
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the Upper Dirichlet basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], SU)
+        assert isinstance(trial[0], SU)
+        assert test[0].quad == 'LG'
+        k = np.arange(test[0].N-1)
+        d = {0: -2*(k+1)/(2*k+1)+2*(k+1)/(2*k+3),
+             1:  2*(k[1:]+1)/(2*k[1:]+1),
+             -1: -2*(k[:-1]+1)/(2*k[:-1]+3)}
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+
+
+class BUUmat(SpectralMatrix):
+    r"""Mass matrix for inner product
+
+    .. math::
+
+        B_{kj} = (\psi_j, \psi_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-1 \text{ and } k = 0, 1, ..., N-1
+
+    and :math:`\psi_k` is the Legendre UpperDirichlet basis function.
+
+    """
+    def __init__(self, test, trial, measure=1):
+        assert isinstance(test[0], SU)
+        assert isinstance(trial[0], SU)
+        N = test[0].N
+        k = np.arange(N-1, dtype=np.float)
+        d = {-1: -2./(2*k[1:] + 1),
+              0: 2./(2.*k+1) + 2./(2*k+3)}
+
+        if test[0].quad == 'GL':
+            d[0][-1] = 2./(2*(N-2)+1) + 2./(N-1)
+
+        d[1] = d[-1]
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 class BUUrp1mat(SpectralMatrix):
     r"""Matrix for inner product
@@ -990,20 +1138,29 @@ mat = _LegMatDict({
     ((SB, 2), (SB, 0)): functools.partial(ABBmat, scale=-1.),
     ((SB, 0), (SB, 4)): SBBmat,
     ((SB, 4), (SB, 0)): SBBmat,
-    ((SD, 1), (SD, 1), (-1, 1), 1+x): ADDrp1mat,
-    ((SD, 0), (SD, 2), (-1, 1), 1+x): ADD2rp1mat,
-    ((SD, 2), (SD, 0), (-1, 1), 1+x): ADD2Trp1mat,
-    ((SD, 0), (SD, 2), (0, 1), xp): functools.partial(ADD2rp1mat, scale=0.5),
-    ((SD, 2), (SD, 0), (0, 1), xp): functools.partial(ADD2Trp1mat, scale=0.5),
-    ((SD, 1), (SD, 1), (0, 1), xp): functools.partial(ADDrp1mat, scale=0.5),
-    ((SD, 0), (SD, 0), (-1, 1), 1+x): BDDrp1mat,
-    ((SD, 0), (SD, 0), (0, 1), xp): functools.partial(BDDrp1mat, scale=0.5),
-    ((SD, 0), (SD, 0), (-1, 1), 1/(1+x)): BDD1orp1mat,
-    ((SD, 0), (SD, 0), (0, 1), 1/xp): functools.partial(BDD1orp1mat, scale=2),
-    ((SU, 1), (SU, 1), (-1, 1), 1+x): AUUrp1mat,
-    ((SU, 1), (SU, 1), (0, 1), xp): functools.partial(AUUrp1mat, scale=0.5),
-    ((SU, 0), (SU, 0), (-1, 1), 1+x): BUUrp1mat,
-    ((SU, 0), (SU, 0), (0, 1), xp): functools.partial(BUUrp1mat, scale=0.5),
+    ((SD, 1), (SD, 1), (-1, 1), 1+x): functools.partial(ADDrp1mat, measure=1+x),
+    ((SD, 0), (SD, 2), (-1, 1), 1+x): functools.partial(ADD2rp1mat, measure=1+x),
+    ((SD, 2), (SD, 0), (-1, 1), 1+x): functools.partial(ADD2Trp1mat, measure=1+x),
+    ((SD, 0), (SD, 2), (0, 1), xp): functools.partial(ADD2rp1mat, scale=0.5, measure=xp),
+    ((SD, 2), (SD, 0), (0, 1), xp): functools.partial(ADD2Trp1mat, scale=0.5, measure=xp),
+    ((SD, 1), (SD, 1), (0, 1), xp): functools.partial(ADDrp1mat, scale=0.5, measure=xp),
+    ((SD, 0), (SD, 0), (-1, 1), 1+x): functools.partial(BDDrp1mat, measure=1+x),
+    ((SD, 0), (SD, 0), (0, 1), xp): functools.partial(BDDrp1mat, scale=0.5, measure=xp),
+    ((SD, 0), (SD, 0), (-1, 1), 1/(1+x)): functools.partial(BDD1orp1mat, measure=1/(1+x)),
+    ((SD, 0), (SD, 0), (0, 1), 1/xp): functools.partial(BDD1orp1mat, scale=2, measure=1/xp),
+    ((SU, 1), (SU, 1), (-1, 1), 1+x): functools.partial(AUUrp1mat, measure=(1+x)),
+    ((SU, 1), (SU, 1), (0, 1), xp): functools.partial(AUUrp1mat, scale=0.5, measure=xp),
+    ((SU, 0), (SU, 0), (-1, 1), 1+x): functools.partial(BUUrp1mat, measure=(1+x)),
+    ((SU, 0), (SU, 0), (0, 1), xp): functools.partial(BUUrp1mat, scale=0.5, measure=xp),
+    ((SU, 1), (SU, 1), (-1, 1), (1+x)**2): functools.partial(AUUrp1smat, measure=(1+x)**2),
+    ((SU, 1), (SU, 1), (0, 1), xp**2): functools.partial(AUUrp1smat, scale=0.25, measure=xp**2),
+    ((SU, 0), (SU, 2), (-1, 1), (1+x)**2): functools.partial(GUUrp1smat, measure=(1+x)**2),
+    ((SU, 0), (SU, 2), (0, 1), xp**2): functools.partial(GUUrp1smat, scale=0.25, measure=xp**2),
+    ((SU, 0), (SU, 1), (-1, 1), (1+x)): functools.partial(CUUrp1mat, measure=(1+x)),
+    ((SU, 0), (SU, 1), (0, 1), xp): functools.partial(CUUrp1mat, scale=0.5, measure=xp),
+    ((SU, 0), (SU, 0), (-1, 1), (1+x)**2): functools.partial(BUUrp1smat, measure=(1+x)**2),
+    ((SU, 0), (SU, 0), (0, 1), xp**2): functools.partial(BUUrp1smat, scale=0.25, measure=xp**2),
+    ((SU, 0), (SU, 0)): BUUmat,
     ((SD, 0), (CD, 0)): BCDmat,
     ((SB, 0), (CB, 0)): BCBmat,
     })

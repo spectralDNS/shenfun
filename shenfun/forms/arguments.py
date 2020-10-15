@@ -134,7 +134,9 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
         elif isinstance(bc, tuple):
             assert len(bc) in (2, 4)
             par['bc'] = bc
-            if len(bc) == 2:
+            if bc[0] is None:
+                B = chebyshev.bases.UpperDirichlet
+            elif len(bc) == 2:
                 B = chebyshev.bases.ShenDirichlet
             else:
                 B = chebyshev.bases.ShenBiharmonic
@@ -178,7 +180,9 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
         elif isinstance(bc, tuple):
             assert len(bc) in (2, 4)
             par['bc'] = bc
-            if len(bc) == 2:
+            if bc[0] is None:
+                B = legendre.bases.UpperDirichlet
+            elif len(bc) == 2:
                 B = legendre.bases.ShenDirichlet
             else:
                 B = legendre.bases.ShenBiharmonic
@@ -469,7 +473,7 @@ class Expr:
                         for repl in replace:
                             assert len(repl) == 2
                             sc = sc.replace(*repl)
-                        sc = sp.simplify(sc)
+                        #sc = sp.simplify(sc)
                     scp = sp.latex(sc, symbol_names=symbol_names)
 
                     if isinstance(sc, sp.Add):
@@ -529,7 +533,7 @@ class Expr:
         0
 
         """
-        s = sp.S(0)
+
         ndim = self.dimensions
         if basis is None:
             basis = 'u'
@@ -553,31 +557,32 @@ class Expr:
                 basis = [basis]
             assert len(basis) == ndim**self.tensor_rank
 
-        assumptions = self.function_space().coors._assumptions
+        coors = self.function_space().coors
+        u = []
         for i, vec in enumerate(self.terms()):
+            s = sp.S(0)
             for j, term in enumerate(vec):
                 sc = self.scales()[i][j]
                 k = self.indices()[i][j]
                 b0 = basis[k]
                 tt = tuple([psi[n] for n, l in enumerate(term) for m in range(l)])
                 bi = 1
-                if self.expr_rank() > 0:
-                    bi = b[i%ndim]
+                #if self.expr_rank() > 0:
+                #    bi = b[i%ndim]
                 if np.sum(term) > 0:
-                    sf = sc*bi*sp.diff(b0, *tt)
-                    #ss = sp.simplify(sp.refine(sf, assumptions))
-                    ss = sp.refine(sf, assumptions)
+                    ss = sc*bi*sp.diff(b0, *tt)
                     s += ss
 
                 else:
-                    sf = sc*b0*bi
-                    #ss = sp.simplify(sp.refine(, assumptions))
-                    ss = sp.refine(sf, assumptions)
+                    ss = sc*b0*bi
                     s += ss
+            u.append(s)
 
-        if isinstance(s, sp.ImmutableDenseNDimArray):
-            s = s.tolist()
-        return s
+        #if isinstance(s, sp.ImmutableDenseNDimArray):
+        #    s = s.tolist()
+        if len(u) == 1:
+            return u[0]
+        return u
 
     def eval(self, x, output_array=None):
         """Return expression evaluated on x
@@ -683,7 +688,6 @@ class Expr:
 
     def __mul__(self, a):
         sc = np.array(self.scales())
-        assumptions = self.function_space().coors._assumptions
         if self.expr_rank() == 0:
             sc = sc*sp.sympify(a)
 
@@ -698,7 +702,8 @@ class Expr:
 
         for i in range(sc.shape[0]):
             for j in range(sc.shape[1]):
-                sc[i, j] = sp.simplify(sp.refine(sc[i, j], assumptions))
+                sc[i, j] = self.function_space().coors.refine(sc[i, j])
+                sc[i, j] = sp.simplify(sc[i, j], measure=self.function_space().coors._measure)
 
         return Expr(self._basis, copy.deepcopy(self._terms), sc.tolist(), copy.deepcopy(self._indices))
 
@@ -707,7 +712,6 @@ class Expr:
 
     def __imul__(self, a):
         sc = np.array(self.scales())
-        assumptions = self.function_space().coors._assumptions
         if self.expr_rank() == 0:
             sc = sc*sp.sympify(a)
 
@@ -720,9 +724,11 @@ class Expr:
             else:
                 sc = sc*sp.sympify(a)
 
+        coors = self.function_space().coors
         for i in range(sc.shape[0]):
             for j in range(sc.shape[1]):
-                sc[i, j] = sp.simplify(sp.refine(sc[i, j], assumptions))
+                sc[i, j] = coors.refine(sc[i, j])
+                sc[i, j] = sp.simplify(sc[i, j], measure=coors._measure)
 
         self._scales = sc.tolist()
 
@@ -814,6 +820,7 @@ class Expr:
         if np.all(np.array(self.num_terms()) == 1):
             return
 
+        p, q = sp.Wild('x'), sp.Wild('y')
         tms = []
         inds = []
         scs = []
@@ -831,15 +838,15 @@ class Expr:
                     k = match[0]
                     assert inds[-1][k] == ind
                     scs[-1][k] += sc
-                    scs[-1][k] = sp.simplify(scs[-1][k])
-                    scs[-1][k] = sp.refine(scs[-1][k], self.function_space().coors._assumptions)
+                    scs[-1][k] = sp.simplify(scs[-1][k], measure=self.function_space().coors._measure)
+                    scs[-1][k] = self.function_space().coors.refine(scs[-1][k])
                     if scs[-1][k] == 0: # Remove if scale is zero
                         scs[-1].pop(k)
                         tms[-1].pop(k)
                         inds[-1].pop(k)
                     continue
-                sc = sp.simplify(sc)
-                sc = sp.refine(sc, self.function_space().coors._assumptions)
+                sc = sp.simplify(sc, measure=self.function_space().coors._measure)
+                sc = self.function_space().coors.refine(sc)
                 if not sc == 0:
                     tms[-1].append(term)
                     inds[-1].append(ind)
@@ -869,6 +876,19 @@ class Expr:
                 if not np.all(ti == pi):
                     return False
         return True
+
+    def subs(self, a, b):
+        """Replace `a` with `b` in scales
+
+        Parameters
+        ----------
+        a : Sympy Symbol
+        b : Number
+        """
+        scs = self.scales()
+        for i, sci in enumerate(scs):
+            for j, scj in enumerate(sci):
+                scs[i][j] = scj.subs(a, b)
 
 
 class BasisFunction:

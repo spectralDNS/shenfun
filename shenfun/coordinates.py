@@ -11,11 +11,16 @@ class Coordinates:
         The new coordinates
     rv : tuple
         The position vector in terms of the new coordinates
+    assumptions : Sympy assumptions
+        One or more Sympy assumptions (https://docs.sympy.org/latest/modules/assumptions/index.html)
+
     """
-    def __init__(self, psi, rv, assumptions=True):
+    def __init__(self, psi, rv, assumptions=True, replace=(), measure=sp.count_ops):
         self._psi = psi
         self._rv = rv
         self._assumptions = assumptions
+        self._replace = replace
+        self._measure = measure
         self._hi = None
         self._b = None
         self._bt = None
@@ -39,7 +44,7 @@ class Coordinates:
 
     @property
     def coordinates(self):
-        return (self.psi, self.rv, self._assumptions)
+        return (self.psi, self.rv, self._assumptions, self._replace)
 
     @property
     def psi(self):
@@ -65,8 +70,10 @@ class Coordinates:
             g = sp.Matrix(self.get_covariant_metric_tensor()).det()
         else:
             g = sp.Matrix(self.get_contravariant_metric_tensor()).det()
-        g = sp.refine(g, self._assumptions)
-        g = sp.simplify(g)
+        g = g.factor()
+        #g = sp.refine(g, self._assumptions)
+        g = self.refine(g)
+        g = sp.simplify(g, measure=self._measure)
         self._det_g[covariant] = g
         return g
 
@@ -75,7 +82,10 @@ class Coordinates:
         if self._sqrt_det_g[covariant] is not None:
             return self._sqrt_det_g[covariant]
         g = self.get_det_g(covariant)
-        sg = sp.refine(sp.simplify(sp.sqrt(g)), self._assumptions)
+        sg = sp.simplify(sp.sqrt(g), measure=self._measure)
+        sg = self.refine(sg)
+        #if len(sg.free_symbols) == 0:
+        #    sg = sg.evalf()
         if isinstance(sg, numbers.Number):
             if isinstance(sg, numbers.Real):
                 sg = np.float(sg)
@@ -83,6 +93,7 @@ class Coordinates:
                 sg = np.complex(sg)
             else:
                 raise NotImplementedError
+
         self._sqrt_det_g[covariant] = sg
         return sg
 
@@ -95,12 +106,10 @@ class Coordinates:
         if self._hi is not None:
             return self._hi
         hi = np.zeros_like(self.psi)
-        u = sp.Wild('x')
 
         for i, s in enumerate(np.sum(self.b**2, axis=1)):
-            hi[i] = sp.refine(sp.sqrt(sp.simplify(s)), self._assumptions)
-            hi[i] = sp.simplify(hi[i].replace(sp.cosh(u)**2, 1+sp.sinh(u)**2))
-            hi[i] = sp.simplify(hi[i].replace(sp.sinh(u)**2, (sp.cosh(2*u)-1)/2))
+            hi[i] = sp.sqrt(self.refine(sp.simplify(s, measure=self._measure)))
+            #hi[i] = self.refine(hi[i])
 
         self._hi = hi
         return hi
@@ -112,7 +121,9 @@ class Coordinates:
         b = np.zeros((len(self.psi), len(self.rv)), dtype=object)
         for i, ti in enumerate(self.psi):
             for j, rj in enumerate(self.rv):
-                b[i, j] = sp.simplify(rj.diff(ti, 1))
+                b[i, j] = rj.diff(ti, 1)
+                b[i, j] = sp.simplify(b[i, j], measure=self._measure)
+                b[i, j] = self.refine(b[i, j])
         self._b = b
         return b
 
@@ -129,7 +140,7 @@ class Coordinates:
 
         for i in range(len(self.psi)):
             for j in range(len(self.psi)):
-                bt[i, j] = sp.simplify(bt[i, j])
+                bt[i, j] = sp.simplify(bt[i, j], measure=self._measure)
         self._bt = bt
         return bt
 
@@ -139,12 +150,11 @@ class Coordinates:
             return self._g
         g = np.zeros((len(self.psi), len(self.psi)), dtype=object)
         b = self.b
-        u = sp.Wild('x')
         for i in range(len(self.psi)):
             for j in range(len(self.psi)):
-                g[i, j] = sp.simplify(np.dot(b[i], b[j]))
-                g[i, j] = sp.simplify(g[i, j].replace(sp.cosh(u)**2, 1+sp.sinh(u)**2))
-                g[i, j] = sp.simplify(g[i, j].replace(sp.sinh(u)**2, (sp.cosh(2*u)-1)/2))
+                g[i, j] = sp.simplify(np.dot(b[i], b[j]).expand(), measure=self._measure)
+                g[i, j] = self.refine(g[i, j])
+
         self._g = g
         return g
 
@@ -156,7 +166,7 @@ class Coordinates:
         gt = sp.Matrix(g).inv()
         for i in range(gt.shape[0]):
             for j in range(gt.shape[1]):
-                gt[i, j] = sp.simplify(gt[i, j])
+                gt[i, j] = sp.simplify(gt[i, j], measure=self._measure)
         gt = np.array(gt)
         self._gt = gt
         return gt
@@ -171,9 +181,38 @@ class Coordinates:
         for i in range(len(self.psi)):
             for j in range(len(self.psi)):
                 for k in range(len(self.psi)):
-                    ct[k, i, j] = sp.simplify(np.dot(np.array([bij.diff(self.psi[j], 1) for bij in b[i]]), bt[k]))
+                    ct[k, i, j] = sp.simplify(np.dot(np.array([bij.diff(self.psi[j], 1) for bij in b[i]]), bt[k]), measure=self._measure)
         self._ct = ct
         return ct
+
+    def refine(self, sc):
+        sc = sp.refine(sc, self._assumptions)
+        for a, b in self._replace:
+            sc = sc.replace(a, b)
+        return sc
+
+    def subs(self, s0, s1):
+        b = self.get_covariant_basis()
+        for i in range(b.shape[0]):
+            for j in range(b.shape[1]):
+                b[i, j] = b[i, j].subs(s0, s1)
+
+        g = self.get_covariant_metric_tensor()
+        gt = self.get_contravariant_metric_tensor()
+        for i in range(g.shape[0]):
+            for j in range(g.shape[1]):
+                g[i, j] = g[i, j].subs(s0, s1)
+                gt[i, j] = gt[i, j].subs(s0, s1)
+
+        sg = self.get_sqrt_det_g().subs(s0, s1)
+        self._sqrt_det_g[True] = sg
+
+        hi = self.get_scaling_factors()
+        for i in range(len(hi)):
+            hi[i] = hi[i].subs(s0, s1)
+
+        self._psi = tuple([p.subs(s0, s1) for p in self._psi])
+        self._rv = tuple([r.subs(s0, s1) for r in self._rv])
 
     def latex_basis_vectors(self, symbol_names=None, covariant=True):
         if covariant:

@@ -208,11 +208,11 @@ class _FourierMatDict(dict):
 
 
 mat = _FourierMatDict({
-    ((C2C, 0), (C2C, 2), (0, 2*np.pi), sp.cos(xp)**2): Acos2mat,
-    ((C2C, 0), (C2C, 2), (0, 2*np.pi), sp.cos(xp)): Acosmat,
-    ((C2C, 0), (C2C, 1), (0, 2*np.pi), sp.sin(xp)): Csinmat,
-    ((C2C, 0), (C2C, 1), (0, 2*np.pi), sp.sin(2*xp)/2): Csincosmat,
-    ((C2C, 0), (C2C, 1), (0, 2*np.pi), sp.sin(xp)*sp.cos(xp)): Csincosmat,
-    ((C2C, 0), (C2C, 0), (0, 2*np.pi), sp.cos(xp)**2): Bcos2mat,
-    ((C2C, 0), (C2C, 0), (0, 2*np.pi), sp.cos(xp)): Bcosmat,
+    ((C2C, 0), (C2C, 2), (0, 2*np.pi), sp.cos(xp)**2): functools.partial(Acos2mat, measure=sp.cos(xp)**2),
+    ((C2C, 0), (C2C, 2), (0, 2*np.pi), sp.cos(xp)): functools.partial(Acosmat, measure=sp.cos(xp)),
+    ((C2C, 0), (C2C, 1), (0, 2*np.pi), sp.sin(xp)): functools.partial(Csinmat, measure=sp.sin(xp)),
+    ((C2C, 0), (C2C, 1), (0, 2*np.pi), sp.sin(2*xp)/2): functools.partial(Csincosmat, measure=sp.sin(2*xp)/2),
+    ((C2C, 0), (C2C, 1), (0, 2*np.pi), sp.sin(xp)*sp.cos(xp)): functools.partial(Csincosmat, measure=sp.sin(xp)*sp.cos(xp)),
+    ((C2C, 0), (C2C, 0), (0, 2*np.pi), sp.cos(xp)**2): functools.partial(Bcos2mat, measure=sp.cos(xp)**2),
+    ((C2C, 0), (C2C, 0), (0, 2*np.pi), sp.cos(xp)): functools.partial(Bcosmat, measure=sp.cos(xp)),
 })

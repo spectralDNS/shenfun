@@ -32,10 +32,10 @@ class RayleighBenard:
         self.D00 = FunctionSpace(N[0], family, quad=quad, bc=(0, 0))  # Streamwise velocity, not to be in tensorproductspace
 
         # Regular tensor product spaces
-        self.TB = TensorProductSpace(comm, (self.B0, self.F1)) # Wall-normal velocity
-        self.TD = TensorProductSpace(comm, (self.D0, self.F1)) # Streamwise velocity
-        self.TC = TensorProductSpace(comm, (self.C0, self.F1)) # No bc
-        self.TT = TensorProductSpace(comm, (self.T0, self.F1)) # Temperature
+        self.TB = TensorProductSpace(comm, (self.B0, self.F1), modify_spaces_inplace=True) # Wall-normal velocity
+        self.TD = TensorProductSpace(comm, (self.D0, self.F1), modify_spaces_inplace=True) # Streamwise velocity
+        self.TC = TensorProductSpace(comm, (self.C0, self.F1), modify_spaces_inplace=True) # No bc
+        self.TT = TensorProductSpace(comm, (self.T0, self.F1), modify_spaces_inplace=True) # Temperature
         self.BD = VectorSpace([self.TB, self.TD])  # Velocity vector
         self.CD = VectorSpace([self.TD, self.TD])  # Convection vector
 

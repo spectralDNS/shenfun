@@ -66,9 +66,13 @@ and we look for solutions
 
 !bt
 \begin{equation}
-u(\theta, r) = \sum_{k} \sum_{j} \hat{u}_{kj} v_{kj}(\theta, r).
+u(\mathbf{x}) = \tilde{u}(\theta, r) = \sum_{k} \sum_{j} \hat{u}_{kj} v_{kj}(\theta, r).
 \end{equation}
 !et
+
+Note that $\tilde{u}$ is the function $u$ mapped to computational space.
+From now on we will simply use $u(\theta, r)$ without the tilde, and assume that
+the proper version of the function is understood from its arguments.
 
 A discrete Fourier approximation space with $N$ basis functions is then
 
@@ -433,18 +437,30 @@ gradu = du[0]*bij[0] + du[1]*bij[1]
 Because of the way the vectors are stored, `gradu[0]` will now
 contain $\nabla u \cdot \mathbf{i}$ and
 `gradu[1]` will contain $\nabla u \cdot \mathbf{j}$.
-To validate we compute the exact gradient and compute
-the error norm
+
+To validate the gradient we compute the $L^2$ error norm
+
+!bt
+\sqrt{\int_{\Omega} |\nabla u - \nabla u_e|^2 d\sigma}
+  = \sqrt{\int_{\theta=0}^{2\pi}\int_{r=0}^{1} \left(\left(\frac{1}{r^2}\frac{\partial u-u_e}{\partial \theta}\right)^2\mathbf{b}_{\theta}\cdot \mathbf{b}_{\theta} + \left(\frac{\partial u-u_e}{\partial r}\right)^2\mathbf{b}_{r}\cdot \mathbf{b}_{r} \right)rd\theta dr}
+!et
+
+implemented as
 
 !bc pycod
-gradue = Array(V, buffer=list(b[0]*ue.diff(theta, 1)/r**2 + b[1]*ue.diff(r, 1)))
-#or alternatively
-#gradue = Array(V, buffer=list(grad(u).tosympy(basis=ue, psi=psi)))
-print('Error gradient', np.linalg.norm(gradu-gradue))
+gradue = Array(V, buffer=grad(u).tosympy(basis=ue, psi=psi))
+gij = T.coors.get_covariant_metric_tensor()
+ui, vi = TT.local_mesh(True, uniform=True)
+# Evaluate metric on computational mesh
+g = np.array(sp.lambdify(psi, gij)(ui, vi), dtype=object)
+# Compute L2 error
+errorg = inner(1, (du[0]-gradue[0])**2*g[0, 0]+ (du[1]-gradue[1])**2*g[1, 1])
+print('Error gradient', np.sqrt(errorg))
 !ec
+
 % if FORMAT not in ("ipynb"):
 !bc pycod-t
-Error gradient 1.0727128137958557e-08
+Error gradient 5.577949e-12
 !ec
 % endif
 
