@@ -557,7 +557,6 @@ class Expr:
                 basis = [basis]
             assert len(basis) == ndim**self.tensor_rank
 
-        coors = self.function_space().coors
         u = []
         for i, vec in enumerate(self.terms()):
             s = sp.S(0)
@@ -567,8 +566,6 @@ class Expr:
                 b0 = basis[k]
                 tt = tuple([psi[n] for n, l in enumerate(term) for m in range(l)])
                 bi = 1
-                #if self.expr_rank() > 0:
-                #    bi = b[i%ndim]
                 if np.sum(term) > 0:
                     ss = sc*bi*sp.diff(b0, *tt)
                     s += ss
@@ -578,8 +575,6 @@ class Expr:
                     s += ss
             u.append(s)
 
-        #if isinstance(s, sp.ImmutableDenseNDimArray):
-        #    s = s.tolist()
         if len(u) == 1:
             return u[0]
         return u
@@ -820,7 +815,6 @@ class Expr:
         if np.all(np.array(self.num_terms()) == 1):
             return
 
-        p, q = sp.Wild('x'), sp.Wild('y')
         tms = []
         inds = []
         scs = []
