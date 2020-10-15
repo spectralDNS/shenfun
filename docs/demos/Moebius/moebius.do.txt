@@ -1,0 +1,312 @@
+TITLE: Demo - Eigenvalues on the Möbius strip
+AUTHOR: Mikael Mortensen {copyright|CC BY} Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
+DATE: today
+
+
+__Summary.__
+This is a demonstration of how the Python module "shenfun":
+"https://github.com/spectralDNS/shenfun" can be used to
+compute the eigenvalues and vectors of the Laplace Beltrami
+operator on the Möbius strip. The absolute value of the eigenvector
+corresponding to the eigth smallest eigenvalue $\lambda=8.054788196$
+is shown in the figure below
+
+FIGURE: [https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/moebius8_trans.png]
+
+TOC: on
+
+# #include "../preprocesser.py"
+
+===== The Möbius strip =====
+
+A Möbius strip is the simplest non-orientable surface embedded in
+$\mathbb{R}^3$. There are seveal realizations possible, and we
+will here consider the one parametrized by cite{Kalvoda2020}
+!bt
+\begin{align}
+    x(\theta, t) &= \left(R-t\cos\frac{\theta}{2R}\right) \cos \frac{\theta}{R}, \\
+    y(\theta, t) &= \left(R-t\cos\frac{\theta}{2R}\right) \sin \frac{\theta}{R}, \\
+    z(\theta, t) &= -t \sin \frac{\theta}{2 R},
+\end{align}
+!et
+where $R$ is the main radius of the strip. $\theta$ is the parameter that determines
+the angle for moving around the strip, like the angle of a circle.
+For one trip around the strip move $\theta$ from $\theta_0$ to $\theta_0+2\pi R$.
+A function in Cartesian coordinates $u(\mathbf{x})$ for $\mathbf{x} \in \mathbb{R}^3$
+is mapped to computational coordinates as $u(\mathbf{x}) = \tilde{u}(\theta, t)$.
+By moving once around the strip a function can be seen to be twisted periodic,
+such that
+
+!bt
+\begin{align}
+    \tilde{u}(\theta_0, t) = \tilde{u}(\theta_0 + 2\pi R, -t), \\
+    \frac{\partial \tilde{u}}{\partial \theta}(\theta_0, t) = \frac{\partial \tilde{u}}{\partial \theta}(\theta_0 + 2\pi R, -t).
+\end{align}
+!et
+The twisted condition does not lend itself easily to a regular tensor
+product basis. On the other hand, by moving twice around the strip,
+regular periodic boundary conditions
+
+!bt
+\begin{equation}
+    \tilde{u}(\theta_0, t) = \tilde{u}(\theta_0 + 4\pi R, t),
+\end{equation}
+!et
+will apply cite{Kalvoda2020}, and we can discretize using Fourier
+exponentials in the $\theta$-direction. Since the reference domain of Fourier
+exponentials is $[-\pi, \pi]$ we define $\varphi = \theta /(2 R)$, such that
+the computational domain is $(\varphi, t) \in \mathbb{I}^2 = [-\pi, \pi] \times [-1, 1]$,
+with the parametrization
+
+!bt
+\begin{align}
+    x(\varphi, t) &= \left(R-t\cos {\varphi}\right) \cos {2 \varphi}, \\
+    y(\varphi, t) &= \left(R-t\cos {\varphi}\right) \sin {2 \varphi}, \\
+    z(\varphi, t) &= -t \sin {\varphi}.
+\end{align}
+!et
+Note that the reference domain corresponds to $(\theta, t) \in = [-2\pi R, 2\pi R] \times [-1, 1]$.
+It is also trivial to adjust the $t$-domain with an affine map for a more narrow or
+wider strip, but this added complexity is not discussed here. One can simply
+choose the width of the strip below when choosing function space for the
+$t$-direction.
+
+For the $t$-direction, a mixed Legendre,
+$\psi_{i_1} = L_{i_1} - L_{i_1+2}$, or Chebyshev, $\psi_{i_1} = T_{i_1} - T_{i_1+2}$,
+basis can be used and we obtain a regular tensor product basis.
+Here we will make use of the Legendre basis, since it
+leads to more sparse matrices. Note that the same problem is
+solved by Kalvoda et al. cite{Kalvoda2020} using a tensor product
+basis with Fourier exponentials for the $\theta$-direction and a mix
+of cosines and sines for the $t$-direction. Kalvoda et al. cannot
+make use of tensor product matrices and integrates using a
+two-dimensional quadrature scheme over the entire domain, leading
+to a dense matrix. We will here only use 1D quadrature and
+tensor products to get the coefficient matrix.
+
+===== The Laplace Beltrami operator =====
+
+We consider the eigenvalue problem of the
+Laplace Beltrami operator by solving
+
+!bt
+\begin{equation}
+    -\nabla^2 u(\mathbf{x}) = \lambda u(\mathbf{x}), \quad \text{ for } \mathbf{x} \in \Omega,
+\end{equation}
+!et
+where $u$ is the solution, $\lambda$ the eigenvalues and $\Omega$ the Möbius
+strip. We consider only homogeneous Dirichlet boundary conditions on the boundary.
+
+
+It is now easily verified that
+the variational Laplace eigenvalue problem becomes
+
+!bt
+\begin{align*}
+    -\int_{\mathbb{I}^2}  \Big\{ \frac{1}{\sqrt{g}}\frac{\partial^2 \tilde{u}}{\partial \varphi^2 } &+\frac{4 t \sin \varphi \left(t \cos {\varphi} -R \right) }{g^{\frac{3}{2}}}\frac{\partial \tilde{u}}{\partial \varphi  } \notag \\
+    & +\sqrt{g}\frac{\partial^2 \tilde{u}}{\partial t^2 }
+    +\frac{4 \cos {\varphi} (t \cos \varphi -R) + t}{ \sqrt{g}}\frac{\partial  \tilde{u}}{\partial t  }  \Big\} \tilde{v}^* \tilde{\omega} d\varphi dt \notag \\
+    &= \int_{\mathbb{I}^2} \lambda \tilde{u} \tilde{v}^* \tilde{\omega} \sqrt{g} d\varphi dt,
+\end{align*}
+!et
+with
+
+!bt
+\begin{equation}
+    {g} = (2R-2t\cos \varphi)^2+t^2.
+\end{equation}
+!et
+
+Note that the variational problem contains unseparable variable coefficients,
+like $1/\sqrt{g}$ and $\sqrt{g}$ and as such cannot
+easily be solved using efficient tensor product algebra.
+However, note that both $g$ and $g^2$ are separable, and using
+$\tilde{\omega} = g^{3/2}$ we get
+
+!bt
+\begin{align*}
+    -\int_{\mathbb{I}^2}  \Big\{ g \frac{\partial^2 \tilde{u}}{\partial \varphi^2 } &+ {4 t \sin \varphi \left(t \cos {\varphi} -R \right) } \frac{\partial \tilde{u}}{\partial \varphi  } \notag \\
+    & + g^2 \frac{\partial^2 \tilde{u}}{\partial t^2 }
+    +g \left({4 \cos {\varphi} (t \cos \varphi -R) + t} \right) \frac{\partial  \tilde{u}}{\partial t  }  \Big\} \tilde{v}^* d\varphi dt \notag \\
+    &= \int_{\mathbb{I}^2} \lambda g^{2} \tilde{u} \tilde{v}^* d\varphi dt,
+\end{align*}
+!et
+where the left hand side can be assembled using tensor product matrices,
+where no single 1D matrix has more than 9 diagonals.
+
+Now let's see how this problem can be handled with shenfun.
+
+===== Implementation =====
+
+First we need to create function spaces for each direction $\varphi$
+and $t$, and then a tensor product space of the two. We use the
+parametrization given above and shenfun will then automatically
+differentiate to create basis functions and metrics, like $g$.
+One important factor, though. Sympy's "simplify":"https://docs.sympy.org/latest/modules/simplify/simplify.html"
+will sometimes have problems finding the best possible simplification
+of a term, like $g$. And in this particular case we need
+to discourage the use of powers, or else sympy will end at a
+much more complicated $g$ than we get below.
+
+!bc pycod
+from shenfun import *
+import sympy as sp
+from IPython.display import Math, Latex, display
+from scipy.sparse.linalg import eigs
+
+u, v = psi = sp.symbols('x,y', real=True)
+
+RR = sp.Rational(132, 20)/sp.pi
+#RR = 2
+# Use a symbolic R first, then later substitute for the value in RR
+R = sp.Symbol('R', real=True, positive=True)
+rv = ((R-v*sp.cos(u))*sp.cos(2*u),
+      (R-v*sp.cos(u))*sp.sin(2*u),
+       -v*sp.sin(u))
+
+def discourage_powers(expr):
+    POW = sp.Symbol('POW')
+    count = sp.count_ops(expr, visual=True)
+    count = count.replace(POW, 100)
+    count = count.replace(sp.Symbol, type(sp.S.One))
+    return count
+
+N = (80, 40)
+B0 = FunctionSpace(N[0], 'F', domain=(-np.pi, np.pi), dtype='D')
+B1 = FunctionSpace(N[1], 'L', bc=(0, 0), domain=(-0.75, 0.75))
+T = TensorProductSpace(comm, (B0, B1), coordinates=(psi, rv, True, (), discourage_powers), axes=(1, 0))
+
+p = TrialFunction(T)
+q = TestFunction(T)
+!ec
+
+Note the `discourage_powers` function. Try to turn it off (if
+you are watching this in an interactive setting) and see what happens
+to, e.g., `T.coors.sg`, which is $\sqrt{g}$.
+
+We can now check to see what the Laplace-Beltrami operator
+looks like when computed with shenfun:
+
+!bc pycod
+g = sp.Function('g')(u, v)
+replace = [(T.coors.sg**2, g)]
+Math((div(grad(p))).tolatex(funcname='f', symbol_names={u:'u', v:'v'}, replace=replace))
+!ec
+
+Not surprisingly, this is the same (except not multiplied by $\sqrt{g}$) as what
+is seen in the variational form above.
+
+At this point we replace the symbol R with a number in order to
+assemble floating point matrices. We multiply forms with
+$g^{3/2}$ before assembling to get separable variational forms,
+leading to sparse tensor product matrices.
+
+!bc pycod
+T.coors.subs(R, RR)
+M = inner(q*T.coors.sg**3, -div(grad(p)), level=2)
+B = inner(p, q*T.coors.sg**3, level=2)
+!ec
+
+Here `M` and `B` are lists of instances of the tensor product
+matrix class ${cls('TPMatrix')}.
+
+!bc pycod
+print(f'Number of matrices for M = {len(M)} and B = {len(B)}')
+!ec
+
+So quite a few matrices, but they are all sparse. We solve by
+using a Kronecker product solver ${cls('la.Solver2D')} that flattens the
+tensor product matrices and solution vector C-style.
+!bc pycod
+mm = la.Solver2D(M)
+bb = la.Solver2D(B)
+Mc = mm.M.copy()
+Bc = bb.M.copy()
+!ec
+
+Finally, solve the eigenvalue problem using a sparse eigenvalue solver
+from scipy, which is wrapping ARPACK. Note that ARPACK is better at
+finding large than small eigenvalues and for this reason we use a shift-inverted
+version, see "https://docs.scipy.org/doc/scipy/reference/tutorial/arpack.html":"https://docs.scipy.org/doc/scipy/reference/tutorial/arpack.html".
+!bc pycod
+f = eigs(Mc, k=40, M=Bc, which='LM', sigma=0)
+!ec
+
+We have now found all eigenvalues on the Möbius strip with two rotations. So
+some of the eigenvalues/eigenvectors will not have the correct twisted
+periodic boundary conditions. To get only the correct eigenvalues, we filter a little
+bit, checking the boundary:
+!bc pycod
+u_hat = Function(T)
+eigvals = []
+for i in range(f[1].shape[1]):
+    u_hat[:, :-2] = np.reshape(f[1][:, i], T.dims())
+    tt = u_hat.eval(np.array([[-np.pi, 0, -np.pi, 0], [0.5, -0.5, 0.65, -0.65]]))
+    dt = Dx(u_hat, 0, 1).eval(np.array([[-np.pi, 0, -np.pi, 0], [0.5, -0.5, 0.65, -0.65]]))
+    # Check for twisted periodic
+    if abs(tt[0]-tt[1]+tt[2]-tt[3]) < 1e-7 and abs(dt[0]-dt[1]+dt[2]-dt[3]) < 1e-8:
+        eigvals.append((i, f[0][i].real))
+        print(f'Twisted eigenvalue {len(eigvals):2d} {i:2d} {f[0][i].real:2.12e} Error {np.linalg.norm(Mc*f[1][:, i] - f[0][i]*Bc*f[1][:, i]):2.4e}')
+!ec
+
+These are the lowest true eigenvalues of the Möbius strip. We can now
+plot the eigenvectors using, e.g., mayavi or plotly.
+
+Choose the eigenvalue number first and then the rest follows
+!bc pycod
+l = 7
+u_hat[:, :-2] = np.reshape(f[1][:, eigvals[l][0]], T.dims())
+u_hat2 = u_hat.refine([2*N[0], 2*N[1]])
+N0 = u_hat2.function_space().shape(False)[0]//2+1
+fig = surf3D(u_hat2, slices=(slice(0, N0), slice(None)))
+fig.show()
+!ec
+
+Or make subplot of several of the eigenvectors:
+
+!bc pycod
+import plotly
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+rows = 3
+cols = 2
+fig = make_subplots(rows=rows, cols=cols, start_cell="top-left", specs=[[dict(type='surface')]*cols]*rows,
+                    subplot_titles=(f'$\lambda_1={eigvals[0][1]:2.5f}$', f'$\lambda_3={eigvals[2][1]:2.5f}$',
+                                    f'$\lambda_5={eigvals[4][1]:2.5f}$', f'$\lambda_7={eigvals[6][1]:2.5f}$',
+                                    f'$\lambda_9={eigvals[8][1]:2.5f}$', f'$\lambda_{{11}}={eigvals[10][1]:2.5f}$'))
+N0 = T.shape(False)[0]//2+1 # Remember, data is for two rounds around the strip, we need only 1
+x, y, z = T.local_cartesian_mesh()
+x, y, z = x[:N0], y[:N0], z[:N0]
+d = {'visible': False, 'showgrid': False, 'zeroline': False}
+for l in range(rows*cols):
+    u_hat[:, :-2] = np.reshape(f[1][:, eigvals[2*l][0]], T.dims())
+    s = go.Surface(x=x, y=y, z=z, surfacecolor=abs(u_hat.backward()[:N0]),
+                   colorscale=plotly.colors.sequential.Jet,
+                   showscale=False)
+    fig.add_trace(s, row=l//cols+1, col=l%cols+1)
+    scene = 'scene' if l == 0 else f'scene{l+1}'
+    fig.update_layout({scene: {'xaxis': d, 'yaxis': d, 'zaxis': d, 'camera': {'eye': dict(x=0.85, y=0.85, z=0.85)}}})
+fig.show()
+!ec
+
+Finally, plot the sparsity pattern of the coefficient matrix.
+
+!bc pycod
+%%matplotlib notebook
+import matplotlib.pyplot as plt
+plt.spy(mm.M, markersize=0.2)
+!ec
+
+#======= Bibliography =======
+
+## Publish (https://bitbucket.org/logg/publish is used to
+## handle references. The line below specifies the name of
+## the Publish database file (see the doconce manual for details).
+
+% if FORMAT not in ("sphinx"):
+
+BIBFILE: ../papers.pub
+
+% else:
+
+% endif
