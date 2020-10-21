@@ -1164,3 +1164,5 @@ mat = _LegMatDict({
     ((SD, 0), (CD, 0)): BCDmat,
     ((SB, 0), (CB, 0)): BCBmat,
     })
+
+mat = _LegMatDict({})

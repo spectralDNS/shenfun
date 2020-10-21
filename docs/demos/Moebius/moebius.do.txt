@@ -6,10 +6,10 @@ DATE: today
 __Summary.__
 This is a demonstration of how the Python module "shenfun":
 "https://github.com/spectralDNS/shenfun" can be used to
-compute the eigenvalues and vectors of the Laplace Beltrami
-operator on the Möbius strip. The absolute value of the eigenvector
+compute eigenvalues and vectors of the Laplace-Beltrami
+operator on a Möbius strip. The absolute value of the eigenvector
 corresponding to the eigth smallest eigenvalue $\lambda=8.054788196$
-is shown in the figure below
+is shown in the figure below, read on to see how it was computed.
 
 FIGURE: [https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/moebius8_trans.png]
 
@@ -20,7 +20,7 @@ TOC: on
 ===== The Möbius strip =====
 
 A Möbius strip is the simplest non-orientable surface embedded in
-$\mathbb{R}^3$. There are seveal realizations possible, and we
+$\mathbb{R}^3$. There are several realizations possible, and we
 will here consider the one parametrized by cite{Kalvoda2020}
 !bt
 \begin{align}
@@ -72,10 +72,11 @@ choose the width of the strip below when choosing function space for the
 $t$-direction.
 
 For the $t$-direction, a mixed Legendre,
-$\psi_{i_1} = L_{i_1} - L_{i_1+2}$, or Chebyshev, $\psi_{i_1} = T_{i_1} - T_{i_1+2}$,
+$\psi_{i} = L_{i} - L_{i+2}$, or Chebyshev, $\psi_{i} = T_{i} - T_{i+2}$,
 basis can be used and we obtain a regular tensor product basis.
-Here we will make use of the Legendre basis, since it
-leads to more sparse matrices. Note that the same problem is
+The Legendre basis leads to more sparse matrices, and will be chosen
+as default, but Chebyshev also works just fine.
+Note that the same problem is
 solved by Kalvoda et al. cite{Kalvoda2020} using a tensor product
 basis with Fourier exponentials for the $\theta$-direction and a mix
 of cosines and sines for the $t$-direction. Kalvoda et al. cannot
@@ -97,9 +98,74 @@ Laplace Beltrami operator by solving
 where $u$ is the solution, $\lambda$ the eigenvalues and $\Omega$ the Möbius
 strip. We consider only homogeneous Dirichlet boundary conditions on the boundary.
 
+To solve this problem with the spectral Galerkin method we
+choose an appropriate space $V$ and find $u\in V$ such that
 
-It is now easily verified that
-the variational Laplace eigenvalue problem becomes
+!bt
+\int_{\Omega} -\nabla^2 u \, v^* \omega d\sigma = \int_{\Omega} \lambda u v^* \omega d\sigma, \quad \forall v \in V
+!et
+where $v^*$ is the complex conjugate of the test function $v$.
+
+With shenfun it is enough to operate in general coordinates as above
+and let the curvilinear mathematics all happen under the hood.
+However, for this example it is interesting to see what the
+Laplace-Beltrami operator looks like in computational coordinates.
+This is quite a bit of work by hand, and the starting point
+is the position vector
+!bt
+\begin{equation}
+\mathbf{r} = x(\varphi, t) \mathbf{i} + y(\varphi, t) \mathbf{j} + z(\varphi, t) \mathbf{k}.
+\end{equation}
+!et
+
+From the position vector we compute the he covariant
+basis vectors $\mathbf{b}_i = \partial \mathbf{r} / \partial X^{i}$,
+where $\mathbf{X} = \{X^{i}\}_{i\in(1,2)} = (\varphi, t)$,
+and get the covariant metric tensor $g_{ij}=\mathbf{b}_i \cdot \mathbf{b}_j$
+and its determinant $g = \text{det}\{g_{ij}\}$. We get
+!bt
+\begin{equation}
+    {g} = (2R-2t\cos \varphi)^2+t^2.
+\end{equation}
+!et
+and
+!bt
+g_{ij} =
+\begin{pmatrix}
+  g & 0 \\
+  0 & 1
+\end{pmatrix}
+!et
+Likewise, the contravariant metric tensor $g^{ij}$ is the
+inverse of the covariant
+!bt
+g^{ij} =
+\begin{pmatrix}
+  \frac{1}{g} & 0 \\
+  0 & 1
+\end{pmatrix}
+!et
+Please note that all these metrics and other terms are computed
+under the hood by shenfun, and a user does not normally have to worry
+about these.
+
+It can be shown that the Laplace-Beltrami operator in curvilinear coordinates
+is given as
+
+!bt
+\begin{equation}
+\nabla^2 \tilde{u} = \frac{1}{\sqrt{g}}\frac{\partial}{\partial X^{i}}\left( g^{ij}\sqrt{g} \frac{\partial \tilde{u}}{\partial X^{j}}\right),
+\end{equation}
+!et
+with summation on repeated indices.
+Using this and the surface element $d\sigma=\sqrt{g} d\varphi dt$, the
+variational form in computational coordinates becomes
+!bt
+\begin{equation}
+    -\int_{\mathbb{I}^2}\frac{\partial}{\partial X^{i}}\left( g^{ij}\sqrt{g} \frac{\partial \tilde{u}}{\partial X^{j}}\right) \, \tilde{v}^*\, \tilde{\omega} d\varphi dt = \int_{\mathbb{I}^2} \lambda \tilde{u} \tilde{v}^*\, \tilde{\omega}\sqrt{g} d\varphi dt,
+\end{equation}
+!et
+Summing and expanding some derivatives, we get
 
 !bt
 \begin{align*}
@@ -109,19 +175,15 @@ the variational Laplace eigenvalue problem becomes
     &= \int_{\mathbb{I}^2} \lambda \tilde{u} \tilde{v}^* \tilde{\omega} \sqrt{g} d\varphi dt,
 \end{align*}
 !et
-with
 
-!bt
-\begin{equation}
-    {g} = (2R-2t\cos \varphi)^2+t^2.
-\end{equation}
-!et
 
 Note that the variational problem contains unseparable variable coefficients,
 like $1/\sqrt{g}$ and $\sqrt{g}$ and as such cannot
 easily be solved using efficient tensor product algebra.
-However, note that both $g$ and $g^2$ are separable, and using
-$\tilde{\omega} = g^{3/2}$ we get
+However, note that both $g$ and $g^2$ are separable (i.e., they can
+be written as products of simpler functions separated by the arguments
+$g(\varphi, t) = \sum_k g_1^k(\varphi)g_2^k(t)$),
+and using the unconventional weight $\tilde{\omega} = g^{3/2}$ we get
 
 !bt
 \begin{align*}
@@ -134,18 +196,20 @@ $\tilde{\omega} = g^{3/2}$ we get
 where the left hand side can be assembled using tensor product matrices,
 where no single 1D matrix has more than 9 diagonals.
 
+Fortunately we do not have to do all this by hand since we have a
+software that automatically assembles such matrices for us.
 Now let's see how this problem can be handled with shenfun.
 
 ===== Implementation =====
 
 First we need to create function spaces for each direction $\varphi$
-and $t$, and then a tensor product space of the two. We use the
+and $t$, and then a tensor product space from the two. We use the
 parametrization given above and shenfun will then automatically
 differentiate to create basis functions and metrics, like $g$.
 One important factor, though. Sympy's "simplify":"https://docs.sympy.org/latest/modules/simplify/simplify.html"
 will sometimes have problems finding the best possible simplification
 of a term, like $g$. And in this particular case we need
-to discourage the use of powers, or else sympy will end at a
+to discourage the use of powers, or else sympy will end up with a
 much more complicated $g$ than we get below.
 
 !bc pycod
@@ -154,15 +218,15 @@ import sympy as sp
 from IPython.display import Math, Latex, display
 from scipy.sparse.linalg import eigs
 
-u, v = psi = sp.symbols('x,y', real=True)
+phi, t = psi = sp.symbols('x,y', real=True)
 
-RR = sp.Rational(132, 20)/sp.pi
+RR = sp.Rational(132, 20)/sp.pi # Same as Kalvoda et al
 #RR = 2
 # Use a symbolic R first, then later substitute for the value in RR
 R = sp.Symbol('R', real=True, positive=True)
-rv = ((R-v*sp.cos(u))*sp.cos(2*u),
-      (R-v*sp.cos(u))*sp.sin(2*u),
-       -v*sp.sin(u))
+rv = ((R-t*sp.cos(phi))*sp.cos(2*phi),
+      (R-t*sp.cos(phi))*sp.sin(2*phi),
+       -t*sp.sin(phi))
 
 def discourage_powers(expr):
     POW = sp.Symbol('POW')
@@ -173,11 +237,11 @@ def discourage_powers(expr):
 
 N = (80, 40)
 B0 = FunctionSpace(N[0], 'F', domain=(-np.pi, np.pi), dtype='D')
-B1 = FunctionSpace(N[1], 'L', bc=(0, 0), domain=(-0.75, 0.75))
+B1 = FunctionSpace(N[1], 'L', bc=(0, 0), domain=(-0.75, 0.75)) # Use same domain as Kalvoda et al
 T = TensorProductSpace(comm, (B0, B1), coordinates=(psi, rv, True, (), discourage_powers), axes=(1, 0))
 
-p = TrialFunction(T)
-q = TestFunction(T)
+u = TrialFunction(T)
+v = TestFunction(T)
 !ec
 
 Note the `discourage_powers` function. Try to turn it off (if
@@ -188,23 +252,26 @@ We can now check to see what the Laplace-Beltrami operator
 looks like when computed with shenfun:
 
 !bc pycod
-g = sp.Function('g')(u, v)
+g = sp.Function('g')(phi, t)
 replace = [(T.coors.sg**2, g)]
-Math((div(grad(p))).tolatex(funcname='f', symbol_names={u:'u', v:'v'}, replace=replace))
+Math((div(grad(u))).tolatex(funcname='f', symbol_names={phi:'\\varphi', t:'t'}, replace=replace))
 !ec
 
 Not surprisingly, this is the same (except not multiplied by $\sqrt{g}$) as what
 is seen in the variational form above.
 
-At this point we replace the symbol R with a number in order to
-assemble floating point matrices. We multiply forms with
+At this point we replace the symbol R with a number  in order to
+assemble floating point matrices. The number R can be changed
+above as the variable `RR`. For now it is set to use a value used also
+by Kalvoda et al., such that we can doublecheck our eigenvalues.
+We multiply forms with
 $g^{3/2}$ before assembling to get separable variational forms,
 leading to sparse tensor product matrices.
 
 !bc pycod
 T.coors.subs(R, RR)
-M = inner(q*T.coors.sg**3, -div(grad(p)), level=2)
-B = inner(p, q*T.coors.sg**3, level=2)
+M = inner(v*T.coors.sg**3, -div(grad(u)), level=2)
+B = inner(v*T.coors.sg**3, u, level=2)
 !ec
 
 Here `M` and `B` are lists of instances of the tensor product
@@ -249,9 +316,9 @@ for i in range(f[1].shape[1]):
         print(f'Twisted eigenvalue {len(eigvals):2d} {i:2d} {f[0][i].real:2.12e} Error {np.linalg.norm(Mc*f[1][:, i] - f[0][i]*Bc*f[1][:, i]):2.4e}')
 !ec
 
-These are the lowest true eigenvalues of the Möbius strip. We can now
+These are the lowest true eigenvalues of the Möbius strip.
+We note that they are very similar to Table 2 in cite{Kalvoda2020}. We can now
 plot the eigenvectors using, e.g., mayavi or plotly.
-
 Choose the eigenvalue number first and then the rest follows
 !bc pycod
 l = 7
@@ -289,12 +356,21 @@ for l in range(rows*cols):
 fig.show()
 !ec
 
-Finally, plot the sparsity pattern of the coefficient matrix.
+Finally, plot the sparsity pattern of the coefficient matrix. You
+need to zoom in order to see the pattern properly and for
+this reason we use plotly instead of the more convenient
+matplotlib "spy": "https://matplotlib.org/3.3.1/api/_as_gen/matplotlib.pyplot.spy.html"
+function (`%matplotlib notebook` does not work in an
+interactive jupyterlab and as such a jupyter book session).
+If you are curious, then please change basis to Chebyshev and
+note the difference from Legendre. Otherwise, results should be very
+much alike.
 
 !bc pycod
-%%matplotlib notebook
-import matplotlib.pyplot as plt
-plt.spy(mm.M, markersize=0.2)
+import plotly.express as px
+z = np.where(abs(mm.M.toarray()) > 1e-6, 0, 1).astype(np.bool)
+fig = px.imshow(z, binary_string=True)
+fig.show()
 !ec
 
 #======= Bibliography =======

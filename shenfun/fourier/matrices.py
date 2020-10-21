@@ -164,28 +164,31 @@ class _Fouriermatrix(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
     def solve(self, b, u=None, axis=0):
-        N = self.shape[0]
+        if self.measure == 1:
+            N = self.shape[0]
 
-        if u is None:
-            u = b
-        else:
-            assert u.shape == b.shape
+            if u is None:
+                u = b
+            else:
+                assert u.shape == b.shape
 
-        with np.errstate(divide='ignore'):
-            d = 1./self[0]
-        if isinstance(d, np.ndarray):
-            if np.isinf(d[0]):
-                d[0] = 0
-            if np.isinf(d[N//2]):
-                d[N//2] = 0
-            sl = [np.newaxis]*u.ndim
-            sl[axis] = slice(None)
-            u[:] = b*d[tuple(sl)]
-        else:
-            u[:] = b*d
+            with np.errstate(divide='ignore'):
+                d = 1./self[0]
+            if isinstance(d, np.ndarray):
+                if np.isinf(d[0]):
+                    d[0] = 0
+                if np.isinf(d[N//2]):
+                    d[N//2] = 0
+                sl = [np.newaxis]*u.ndim
+                sl[axis] = slice(None)
+                u[:] = b*d[tuple(sl)]
+            else:
+                u[:] = b*d
 
-        u /= self.scale
-        return u
+            u /= self.scale
+            return u
+
+        return SpectralMatrix.solve(self, b, u=u, axis=axis)
 
 
 class _FourierMatDict(dict):

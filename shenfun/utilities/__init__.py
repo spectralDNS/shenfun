@@ -267,26 +267,28 @@ def mayavi_show():
     from mayavi import mlab
     return mlab.show(GUI().stop_event_loop)
 
-def wrap_periodic(xs, wrap=[]):
+def wrap_periodic(xs, axes=()):
     """Return arrays wrapped around periodically
 
     xs : array or sequence of arrays
-    wrap : sequence of integers, optional
+    axes : sequence of integers, optional
         Extend arrays in xs by one in direction given by wrap
     """
-    xs = xs if isinstance(xs, (list, tuple)) else list(xs)
+    xs = xs if isinstance(xs, (list, tuple)) else [xs]
+    ys = []
     for x in xs:
-        if 0 in wrap:
+        if 0 in axes:
             x = np.vstack([x, x[0]])
-        if 1 in wrap:
+        if 1 in axes:
             x = np.hstack([x, x[:, 0][:, None]])
-        if 2 in wrap:
-            x = np.stack([x, x[:, :, 0][:, :, None]], axis=2)
-    if len(xs) == 1:
-        return xs[0]
-    return xs
+        if 2 in axes:
+            x = np.concatenate([x, x[:, :, 0][:, :, None]], axis=2)
+        ys.append(x)
+    if len(ys) == 1:
+        return ys[0]
+    return ys
 
-def surf3D(u, backend='plotly', wrap=[], slices=None, fig=None, **kw):
+def surf3D(u, backend='plotly', wrapaxes=(), slices=None, fig=None, kind='normal', **kw):
     """Plot surface embedded in 3D
 
     Parameters
@@ -294,21 +296,24 @@ def surf3D(u, backend='plotly', wrap=[], slices=None, fig=None, **kw):
     u : Function or Array
     backend : str, optional
         plotly or mayavi
-    wrap : sequence of integers, optional
+    wrapaxes : sequence of integers, optional
         For domains that wrap around, extend mesh/u by one in given direction
     slices : None or sequence of slices, optional
         If only part of u should be plotted
     fig : Figure instance, optional
+    kind : str, optional
+        normal or uniform
     kw : Keyword arguments, optional
         Used by plotly Surface. Possibly colorscale.
     """
     from shenfun.forms.arguments import Function
     T = u.function_space()
-    x, y, z = T.local_cartesian_mesh()
+    uniform = True if kind == 'uniform' else False
+    x, y, z = T.local_cartesian_mesh(uniform=uniform)
     if isinstance(u, Function):
-        u = u.backward()
+        u = u.backward(kind=kind)
 
-    x, y, z = wrap_periodic([x, y, z], wrap)
+    x, y, z, u = wrap_periodic([x, y, z, u], wrapaxes)
 
     if slices:
         x = x[slices]
@@ -325,8 +330,10 @@ def surf3D(u, backend='plotly', wrap=[], slices=None, fig=None, **kw):
         fig = go.Figure(s)
         d = {'visible': False, 'showgrid': False, 'zeroline': False}
         fig.update_layout(scene={'xaxis': d, 'yaxis': d, 'zaxis': d})
+
     elif backend == 'mayavi':
         from mayavi import mlab
         fig = mlab.figure(bgcolor=(1, 1, 1))
         mlab.mesh(x, y, z, scalars=u, colormap='jet')
+
     return fig
