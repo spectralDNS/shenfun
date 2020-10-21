@@ -13,7 +13,16 @@ class Coordinates:
         The position vector in terms of the new coordinates
     assumptions : Sympy assumptions
         One or more Sympy assumptions (https://docs.sympy.org/latest/modules/assumptions/index.html)
-
+    replace : sequence of two-tuples
+        Use Sympy's replace with these two-tuples
+    measure : Python function to replace Sympy's count_ops.
+        For example, to discourage the use of powers in an expression use
+        def discourage_powers(expr):
+            POW = sp.Symbol('POW')
+            count = sp.count_ops(expr, visual=True)
+            count = count.replace(POW, 100)
+            count = count.replace(sp.Symbol, type(sp.S.One))
+            return count
     """
     def __init__(self, psi, rv, assumptions=True, replace=(), measure=sp.count_ops):
         self._psi = psi
@@ -71,7 +80,6 @@ class Coordinates:
         else:
             g = sp.Matrix(self.get_contravariant_metric_tensor()).det()
         g = g.factor()
-        #g = sp.refine(g, self._assumptions)
         g = self.refine(g)
         g = sp.simplify(g, measure=self._measure)
         self._det_g[covariant] = g
@@ -84,8 +92,6 @@ class Coordinates:
         g = self.get_det_g(covariant)
         sg = sp.simplify(sp.sqrt(g), measure=self._measure)
         sg = self.refine(sg)
-        #if len(sg.free_symbols) == 0:
-        #    sg = sg.evalf()
         if isinstance(sg, numbers.Number):
             if isinstance(sg, numbers.Real):
                 sg = np.float(sg)

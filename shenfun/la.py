@@ -480,10 +480,10 @@ class Solver2D:
         ndim = T.dimensions
         assert ndim == 2
         assert np.atleast_1d(m.scale).size == 1, "Use level = 2 with :func:`.inner`"
-        M0 = scp.kron(m.mats[0].diags(), m.mats[1].diags())
+        M0 = scp.kron(m.mats[0].diags(), m.mats[1].diags(), format='csr')
         M0 *= np.atleast_1d(m.scale).item()
         for m in tpmats[1:]:
-            M1 = scp.kron(m.mats[0].diags(), m.mats[1].diags())
+            M1 = scp.kron(m.mats[0].diags(), m.mats[1].diags(), format='csr')
             assert np.atleast_1d(m.scale).size == 1, "Use level = 2 with :func:`.inner`"
             M1 *= np.atleast_1d(m.scale).item()
             M0 = M0 + M1

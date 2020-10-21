@@ -494,6 +494,7 @@ class SpectralMatrix(SparseMatrix):
         shape = (test[0].dim(), trial[0].dim())
         if d == {}:
             D = get_dense_matrix(test, trial, measure)[:shape[0], :shape[1]]
+            #D = get_denser_matrix(test, trial, measure)[:shape[0], :shape[1]]
             #D = get_dense_matrix_sympy(test, trial, measure)[:shape[0], :shape[1]]
             d = extract_diagonal_matrix(D)
         SparseMatrix.__init__(self, d, shape, scale)
@@ -1404,6 +1405,43 @@ def get_dense_matrix(test, trial, measure=1):
     N = test[0].N
     x = test[0].mpmath_points_and_weights(N, map_true_domain=False)[0]
     ws = test[0].get_measured_weights(N, measure)
+    v = test[0].evaluate_basis_derivative_all(x=x, k=test[1])[:, :K0]
+    u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])[:, :K1]
+    return np.dot(np.conj(v.T)*ws[np.newaxis, :], u)
+
+def get_denser_matrix(test, trial, measure=1):
+    """Return dense matrix automatically computed from basis
+
+    Use slightly more quadrature points than usual N
+
+    Parameters
+    ----------
+    test : 2-tuple of (basis, int)
+        The basis is an instance of a class for one of the bases in
+
+        - :mod:`.legendre.bases`
+        - :mod:`.chebyshev.bases`
+        - :mod:`.fourier.bases`
+        - :mod:`.laguerre.bases`
+        - :mod:`.hermite.bases`
+        - :mod:`.jacobi.bases`
+
+        The int represents the number of times the test function
+        should be differentiated. Representing matrix row.
+    trial : 2-tuple of (basis, int)
+        As test, but representing matrix column.
+    measure : Sympy expression of coordinate, or number, optional
+        Additional weight to integral. For example, in cylindrical
+        coordinates an additional measure is the radius `r`.
+    """
+    test2 = test[0].get_refined((test[0].N*3)//2)
+    trial2 = trial[0].get_refined((trial[0].N*3)//2)
+
+    K0 = test[0].slice().stop - test[0].slice().start
+    K1 = trial[0].slice().stop - trial[0].slice().start
+    N = test2.N
+    x = test2.mpmath_points_and_weights(N, map_true_domain=False)[0]
+    ws = test2.get_measured_weights(N, measure)
     v = test[0].evaluate_basis_derivative_all(x=x, k=test[1])[:, :K0]
     u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])[:, :K1]
     return np.dot(np.conj(v.T)*ws[np.newaxis, :], u)

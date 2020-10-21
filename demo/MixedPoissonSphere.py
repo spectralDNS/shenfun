@@ -97,14 +97,12 @@ df = g_[0]*b1 + g_[1]*b2
 
 # Wrap periodic direction around
 if T.bases[1].domain == (0, 2*np.pi):
-    xx = np.hstack([xx, xx[:, 0][:, None]])
-    yy = np.hstack([yy, yy[:, 0][:, None]])
-    zz = np.hstack([zz, zz[:, 0][:, None]])
-    ur = np.hstack([u_, u_[:, 0][:, None]])
-    df = np.concatenate([df, df[:, :, 0][:, :, None]], axis=2) # wrap periodic
+    xx, yy, zz, u_ = wrap_periodic([xx, yy, zz, u_], axes=[1])
+    df = wrap_periodic([df], axes=[2])
 
 mlab.figure(bgcolor=(1, 1, 1), size=(400, 400))
-mlab.mesh(xx, yy, zz, scalars=ur.real, colormap='jet')
+mlab.mesh(xx, yy, zz, scalars=u_.real, colormap='jet')
+#fig = surf3D(u_, backend='mayavi', wrapaxes=[1], kind='uniform')
 mlab.quiver3d(xx, yy, zz, df[0].real, df[1].real, df[2].real,
               color=(0, 0, 0), scale_factor=0.2, mode='2darrow')
 

@@ -78,12 +78,10 @@ class GinzburgLandau(IRK3):
         if self.refineplot not in (False, 1):
             u2_hat = self.u_hat.refine(self.refineplot*self.N)
 
-        ur = u2_hat.backward(uniform=True)
+        ur = u2_hat.backward(kind='uniform')
         X = u2_hat.function_space().local_cartesian_mesh(uniform=True)
-        X[0] = np.hstack([X[0], X[0][:, 0][:, None]])
-        X[1] = np.hstack([X[1], X[1][:, 0][:, None]])
-        X[2] = np.hstack([X[2], X[2][:, 0][:, None]])
-        ur = np.hstack([ur, ur[:, 0][:, None]])
+        X = wrap_periodic(X, axes=[1])
+        ur = wrap_periodic(ur, axes=[1])
         self.X = x, y, z = X
         mlab.figure(bgcolor=(1, 1, 1), size=(600, 600))
         self.s = mlab.mesh(x, y, z, scalars=ur.real, colormap='jet')
@@ -94,8 +92,8 @@ class GinzburgLandau(IRK3):
         u2_hat = u_hat
         if self.refineplot not in (False, 1):
             u2_hat = u_hat.refine(self.refineplot*self.N, output_array=self.ur_hat)
-        ur = u2_hat.backward(uniform=True)
-        ur = np.hstack([ur, ur[:, 0][:, None]])
+        ur = u2_hat.backward(kind='uniform')
+        ur = wrap_periodic(ur, axes=[1])
         self.s.mlab_source.set(scalars=ur.real)
         show()
 
@@ -115,11 +113,9 @@ class GinzburgLandau(IRK3):
         b2[2] = np.zeros(ui.shape) # b2[2] is 0, so need to broadcast
         b2 = np.array(b2)
         df = du[0]*b1 + du[1]*b2   # Cartesian components
-        df = np.concatenate([df, df[:, :, 0][:, :, None]], axis=2) # wrap periodic
+        df = wrap_periodic(df, axes=[2])
         X = self.T.local_cartesian_mesh(uniform=True)
-        X[0] = np.hstack([X[0], X[0][:, 0][:, None]])
-        X[1] = np.hstack([X[1], X[1][:, 0][:, None]])
-        X[2] = np.hstack([X[2], X[2][:, 0][:, None]])
+        X = wrap_periodic(X, axes=[1])
         x, y, z = X
         mlab.quiver3d(x[::2, ::2], y[::2, ::2], z[::2, ::2], df[0, ::2, ::2], df[1, ::2, ::2], df[2, ::2, ::2],
                       color=(0, 0, 0), scale_factor=5, mode='2darrow')
@@ -127,8 +123,8 @@ class GinzburgLandau(IRK3):
 
     def tofile(self, tstep):
         self.u2_hat = self.u_hat.refine(2*self.N, output_array=self.u2_hat)
-        ub2 = self.u2_hat.backward(self.ub2, uniform=True)
-        self.ub3[:] = np.hstack([ub2, ub2[:, 0][:, None]])
+        ub2 = self.u2_hat.backward(self.ub2, kind='uniform')
+        self.ub3[:] = wrap_periodic(ub2, axes=[1])
         self.file_u.write(tstep, {'u': [self.ub3.real]})
         self.file_c.write(0, {'u': [self.u_hat]})
 
