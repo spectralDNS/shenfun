@@ -1165,4 +1165,4 @@ mat = _LegMatDict({
     ((SB, 0), (CB, 0)): BCBmat,
     })
 
-mat = _LegMatDict({})
+#mat = _LegMatDict({})
