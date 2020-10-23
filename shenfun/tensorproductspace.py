@@ -1467,9 +1467,13 @@ class BoundaryValues:
         To modify boundary conditions on the fly, modify first self.bc and then
         call this function. The boundary condition can then be applied as before.
         """
+        from shenfun.utilities import split
         self.axis = this_base.axis
         self.base = this_base
         self.tensorproductspace = T
+        msdict = split(T.coors.sg)
+        assert len(msdict) == 1
+        _c = msdict[0]['coeff']
 
         if isinstance(T, SpectralBase):
             pass
@@ -1547,7 +1551,7 @@ class BoundaryValues:
                     b_hat = b
 
                 elif number_of_bases_after_this == 1:
-                    T.forward._xfftn[0].input_array[...] = b
+                    T.forward._xfftn[0].input_array[...] = b*_c
 
                     T.forward._xfftn[0]()
                     arrayA = T.forward._xfftn[0].output_array
@@ -1556,8 +1560,8 @@ class BoundaryValues:
                     b_hat = arrayB.copy()
 
                 elif number_of_bases_after_this == 2:
-                    T.forward._xfftn[0].input_array[...] = b
 
+                    T.forward._xfftn[0].input_array[...] = b*_c
                     T.forward._xfftn[0]()
                     arrayA = T.forward._xfftn[0].output_array
                     arrayB = T.forward._xfftn[1].input_array
@@ -1580,9 +1584,10 @@ class BoundaryValues:
                         self.bcs[i] = b_hat[this_base.si[-(len(self.bc))+i]].copy()
 
                 # Final (the values to set on fully transformed functions)
-                T.forward._xfftn[0].input_array[...] = b
-                for i in range(len(T.forward._transfer)):
 
+                T.forward._xfftn[0].input_array[...] = b*_c
+
+                for i in range(len(T.forward._transfer)):
                     T.forward._xfftn[i]()
                     arrayA = T.forward._xfftn[i].output_array
                     arrayB = T.forward._xfftn[i+1].input_array

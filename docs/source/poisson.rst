@@ -7,7 +7,7 @@ Demo - 1D Poisson's equation
 ============================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Oct 15, 2020
+:Date: Oct 23, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Poisson's
 equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as
