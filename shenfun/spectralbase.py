@@ -40,7 +40,7 @@ class SpectralBase:
         self.axis = 0
         self.bc = None
         self.padding_factor = padding_factor
-        if padding_factor is not 1:
+        if padding_factor != 1:
             self.padding_factor = np.floor(N*padding_factor)/N if N > 0 else 1
         self.dealias_direct = dealias_direct
         self._mass = None         # Mass matrix (if needed)
@@ -651,7 +651,7 @@ class SpectralBase:
 
         self.axis = axis
 
-        if self.padding_factor is not 1:
+        if self.padding_factor != 1:
             trunc_array = self._get_truncarray(shape, V.dtype)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
@@ -740,7 +740,7 @@ class SpectralBase:
         """
         if forward_output:
             return self.N
-        if self.padding_factor is not 1:
+        if self.padding_factor != 1:
             return int(np.floor(self.padding_factor*self.N))
         return self.N
 
@@ -852,6 +852,7 @@ class SpectralBase:
             msdict = split(dx)
             assert len(msdict) == 1
             dx = msdict[0]['xyzrs'[self.axis]]
+
             if self.axis == 0:
                 dx *= msdict[0]['coeff']
         if not dx == 1:
