@@ -384,7 +384,7 @@ fig.update_layout(scene_camera_eye=dict(x=1.6, y=-1.4, z=0))
 fig.show()
 !ec
 
-FIGURE: [https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/seashell3.png]
+## FIGURE: [https://cdn.jsdelivr.net/gh/spectralDNS/spectralutilities@master/figures/seashell3.png]
 
 #======= Bibliography =======
 
