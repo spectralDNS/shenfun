@@ -360,7 +360,8 @@ class SparseMatrix(dict):
 
         if b.ndim == 1:
             if use_lu:
-                if b.dtype.char in 'FDG':
+
+                if b.dtype.char in 'FDG' and self._lu.U.dtype.char in 'fdg':
                     u.real[:] = self._lu.solve(b.real)
                     u.imag[:] = self._lu.solve(b.imag)
                 else:
@@ -371,7 +372,7 @@ class SparseMatrix(dict):
             N = b.shape[0]
             P = np.prod(b.shape[1:])
             if use_lu:
-                if b.dtype.char in 'FDG':
+                if b.dtype.char in 'FDG' and self._lu.U.dtype.char in 'fdg':
                     u.real[:] = self._lu.solve(b.real.reshape((N, P))).reshape(u.shape)
                     u.imag[:] = self._lu.solve(b.imag.reshape((N, P))).reshape(u.shape)
                 else:
