@@ -220,7 +220,7 @@ class Coordinates:
         self._psi = tuple([p.subs(s0, s1) for p in self._psi])
         self._rv = tuple([r.subs(s0, s1) for r in self._rv])
 
-    def latex_basis_vectors(self, symbol_names=None, covariant=True):
+    def latex_basis_vectors(self, symbol_names=None, covariant=True, replace=None):
         if covariant:
             b = self.get_covariant_basis()
         else:
@@ -241,6 +241,10 @@ class Coordinates:
                 if b[i, j] == 1:
                     m += (k[j]+'+')
                 elif b[i, j] != 0:
+                    if replace is not None:
+                        for repl in replace:
+                            assert len(repl) == 2
+                            b[i, j] = b[i, j].replace(*repl)
                     sl = sp.latex(b[i, j], symbol_names=symbols)
                     if sl.startswith('-') and not isinstance(b[i, j], sp.Add):
                         m = m.rstrip('+')

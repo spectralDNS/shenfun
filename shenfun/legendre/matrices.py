@@ -80,6 +80,7 @@ SD = bases.ShenDirichlet
 SB = bases.ShenBiharmonic
 SN = bases.ShenNeumann
 SU = bases.UpperDirichlet
+DN = bases.DirichletNeumann
 CD = bases.BCDirichlet
 CB = bases.BCBiharmonic
 
@@ -296,6 +297,42 @@ class BLDmat(SpectralMatrix):
             d[-2][-1] = -2./(N-1)*sc[-3]
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
+class BDNDNmat(SpectralMatrix):
+    r"""Mass matrix for inner product
+
+    .. math::
+
+        B_{kj} = (\psi_j, \psi_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is a mixed Legendre Dirichlet/Neumann basis function.
+
+    """
+    def __init__(self, test, trial, measure=1):
+        assert isinstance(test[0], DN)
+        assert isinstance(trial[0], DN)
+        N = test[0].N
+        k = np.arange(N-2, dtype=np.float)
+        km = k[:-1]
+        kp = k[:-2]
+        d = {0: 2/(2*k+1) + 2*((2*k+3)/(k+2))/(k+2)**3 + 2*((k+1)/(k+2))**4/(2*k+5),
+            1: (2/(km+2)**2 - 2*((km+1)/(km+2))**2/(km+3)**2),
+            2: -2*((kp+1)/(kp+2))**2/(2*kp+5)
+        }
+        d[-1] = d[1].copy()
+        d[-2] = d[2].copy()
+
+        if test[0].quad == 'GL':
+            k = N-3
+            d[0][-1] = 2/(2*k+1) + 2*((2*k+3)/(k+2))/(k+2)**3 + 2*((k+1)/(k+2))**4/(N-1)
+
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+
 
 class ADDmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
@@ -402,7 +439,6 @@ class ANNmat(SpectralMatrix):
         else:
             assert u.shape == b.shape
 
-
         # Move axis to first
         if axis > 0:
             u = np.moveaxis(u, axis, 0)
@@ -415,12 +451,14 @@ class ANNmat(SpectralMatrix):
         sl = [np.newaxis]*bs.ndim
         sl[0] = slice(None)
         us[:] = bs*d[tuple(sl)]
+        u /= self.scale
+        self.testfunction[0].bc.set_boundary_dofs(u, True)
+        u[0] = self.testfunction[0].mean/(2/self.testfunction[0].domain_factor())
         if axis > 0:
             u = np.moveaxis(u, 0, axis)
             if u is not b:
                 b = np.moveaxis(b, axis, 0)
 
-        u /= self.scale
         return u
 
 
@@ -450,6 +488,64 @@ class ABBmat(SpectralMatrix):
              2: -2*(2*k[:-2]+3)}
         d[-2] = d[2]
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+
+class ADNDNmat(SpectralMatrix):
+    r"""Stiffness matrix for inner product
+
+    .. math::
+
+        A_{kj} = (\psi'_j, \psi'_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the mixed Legendre Dirichlet/Neumann basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], DN)
+        assert isinstance(trial[0], DN)
+        N = test[0].N
+        k = np.arange(N-2, dtype=np.float)
+        d = {0: ((k+1)/(k+2))**2*((k+2)*(k+3)- k*(k+1))}
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+
+    def solve(self, b, u=None, axis=0):
+        N = self.shape[0] + 2
+        assert N == b.shape[axis]
+        s = self.trialfunction[0].slice()
+
+        if u is None:
+            u = b
+        else:
+            assert u.shape == b.shape
+
+
+        # Move axis to first
+        if axis > 0:
+            u = np.moveaxis(u, axis, 0)
+            if u is not b:
+                b = np.moveaxis(b, axis, 0)
+
+        bs = b[s]
+        us = u[s]
+        d = 1./self[0]
+        sl = [np.newaxis]*bs.ndim
+        sl[0] = slice(None)
+        us[:] = bs*d[tuple(sl)]
+        u /= self.scale
+        self.testfunction[0].bc.set_boundary_dofs(u, True)
+
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
+            if u is not b:
+                b = np.moveaxis(b, axis, 0)
+
+        return u
+
 
 class GLLmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
@@ -805,8 +901,10 @@ class AUUrp1smat(SpectralMatrix):
         assert isinstance(trial[0], SU)
         assert test[0].quad == 'LG'
         k = np.arange(test[0].N-1)
-        d = {0: 4*k**2*(k+1)/(2*k+1)+4*(k+1)**2*(k+2)/(2*k+3)-4*k*(k+1),
-             1: 2*(k[:-1]+1)*(k[:-1]+2)-4*(k[:-1]+1)**2*(k[:-1]+2)/(2*k[:-1]+3)}
+        #d = {0: 4*k**2*(k+1)/(2*k+1)+4*(k+1)**2*(k+2)/(2*k+3)-4*k*(k+1),
+        #     1: 2*(k[:-1]+1)*(k[:-1]+2)-4*(k[:-1]+1)**2*(k[:-1]+2)/(2*k[:-1]+3)}
+        d = {0: 2*(k+1)**2*(1/(2*k+1)+1/(2*k+3)),
+             1: 2*k[1:]*(k[1:]+1)/(2*k[1:]+1)}
         d[-1] = d[1].copy()
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
@@ -831,9 +929,9 @@ class GUUrp1smat(SpectralMatrix):
         assert isinstance(trial[0], SU)
         assert test[0].quad == 'LG'
         k = np.arange(test[0].N-1)
-        d = {0: -4*k**2*(k+1)/(2*k+1)-4*(k+1)**2*(k+2)/(2*k+3)+4*k*(k+1)+4*(k+1)/(2*k+1)-4*(k+1)/(2*k+3),
-             1: -(2*(k[:-1]+1)*(k[:-1]+2)-4*(k[:-1]+1)**2*(k[:-1]+2)/(2*k[:-1]+3)) - 4*(k[1:]+1)/(2*k[1:]+1),
-             -1: -(2*(k[:-1]+1)*(k[:-1]+2)-4*(k[:-1]+1)**2*(k[:-1]+2)/(2*k[:-1]+3)) + 4*(k[:-1]+1)/(2*k[:-1]+3)}
+        d = {0: -2*(k+1)*((k-1)/(2*k+1) + (k+3)/(2*k+3)),
+             1: -2*(k[1:]+1)*(k[1:]+2)/(2*k[1:]+1),
+             -1: -2*k[:-1]*(k[:-1]+1)/(2*k[:-1]+3)}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 class BUUrp1smat(SpectralMatrix):
@@ -857,23 +955,31 @@ class BUUrp1smat(SpectralMatrix):
         assert isinstance(trial[0], SU)
         assert test[0].quad == 'LG'
         k = np.arange(test[0].N-1)
-        a00 = 2/(2*k+1)
-        a11 = 2/(2*k+3)
-        a22 = 2/(2*k+5)
-        c00 = ((k+1)**2/(2*k+1)/(2*k+3) + k**2/(2*k+1)/(2*k-1))*a00
-        c11 = ((k+2)**2/(2*k+3)/(2*k+5) + (k+1)**2/(2*k+3)/(2*k+1))*a11
-        c02 = (k+2)*(k+1)/(2*k+5)/(2*k+3)*a00
-        c13 = ((k+3)*(k+2)/(2*k+7)/(2*k+5))*a11
-        b01 = (k+1)/(2*k+3)*a00
-        b12 = (k+2)/(2*k+5)*a11
+        #a00 = 2/(2*k+1)
+        #a11 = 2/(2*k+3)
+        #a22 = 2/(2*k+5)
+        #c00 = ((k+1)**2/(2*k+1)/(2*k+3) + k**2/(2*k+1)/(2*k-1))*a00
+        #c11 = ((k+2)**2/(2*k+3)/(2*k+5) + (k+1)**2/(2*k+3)/(2*k+1))*a11
+        #c02 = (k+2)*(k+1)/(2*k+5)/(2*k+3)*a00
+        #c13 = ((k+3)*(k+2)/(2*k+7)/(2*k+5))*a11
+        #b01 = (k+1)/(2*k+3)*a00
+        #b12 = (k+2)/(2*k+5)*a11
 
-        d = {0: a00+c00-4*b01+a11+c11,
-             1: (2*b01-c02-a11-c11+2*b12)[:-1],
-             -1: (2*b01-c02-a11-c11+2*b12)[:-1],
-             2: (c02-2*b12+c13)[:-2],
-             -2: (c02-2*b12+c13)[:-2],
-             3: -c13[:-3].copy(),
-             -3: -c13[:-3].copy()}
+        #d = {0: a00+c00-4*b01+a11+c11,
+        #     1: (2*b01-c02-a11-c11+2*b12)[:-1],
+        #     -1: (2*b01-c02-a11-c11+2*b12)[:-1],
+        #     2: (c02-2*b12+c13)[:-2],
+        #     -2: (c02-2*b12+c13)[:-2],
+        #     3: -c13[:-3].copy(),
+        #     -3: -c13[:-3].copy()}
+
+        d = {0: (k/(2*k+1))**2*(2/(2*k-1) + 2/(2*k+3)) + ((k+2)/(2*k+3))**2 * (2/(2*k+1)+2/(2*k+5)),
+             1: 2*k[1:]*(k[1:]+1)/(2*k[1:]+1)**2*(1/(2*k[1:]-1)+1/(2*k[1:]+3)) - 2*(k[1:]+2)*(k[1:]-1)/(2*k[1:]+3)/(2*k[1:]+1)/(2*k[1:]-1),
+             2: -2*k[2:]*(k[2:]-2)/(2*k[2:]+1)/(2*k[2:]-1)/(2*k[2:]-3)-2*k[2:]*(k[2:]+2)/(2*k[2:]+3)/(2*k[2:]+1)/(2*k[2:]-1),
+             3: -2*k[3:]*(k[3:]-1)/(2*k[3:]+1)/(2*k[3:]-1)/(2*k[3:]-3)}
+        d[-1] = d[1].copy()
+        d[-2] = d[2].copy()
+        d[-3] = d[3].copy()
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 class CUUrp1mat(SpectralMatrix):
@@ -1163,6 +1269,10 @@ mat = _LegMatDict({
     ((SU, 0), (SU, 0)): BUUmat,
     ((SD, 0), (CD, 0)): BCDmat,
     ((SB, 0), (CB, 0)): BCBmat,
+    ((DN, 0), (DN, 0)): BDNDNmat,
+    ((DN, 1), (DN, 1)): ADNDNmat,
+    ((DN, 2), (DN, 0)): functools.partial(ADNDNmat, scale=-1.),
+    ((DN, 0), (DN, 2)): functools.partial(ADNDNmat, scale=-1.),
     })
 
 #mat = _LegMatDict({})

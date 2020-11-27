@@ -11,12 +11,12 @@ jobs:
         os: [ubuntu-latest, macOS-latest]
         python-version: [3.6, 3.7, 3.8]
     name: Python ${{ matrix.python-version }} example
-    
+
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --depth=1 origin +refs/tags/*:refs/tags/*
     - name: setup-conda
-      uses: s-weigand/setup-conda@v1.0.2
+      uses: s-weigand/setup-conda@v1
       with:
           update-conda: true
           python-version: ${{ matrix.python-version }}

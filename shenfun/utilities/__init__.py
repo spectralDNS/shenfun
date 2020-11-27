@@ -211,7 +211,7 @@ def split(measures):
             d = sp.separatevars(ms.factor(), dict=True)
         if d is None:
             raise RuntimeError('Could not split', ms)
-        d = defaultdict(lambda: 1, {str(k): sp.simplify(v) for k, v in d.items()})
+        d = defaultdict(lambda: 1, {str(k): v for k, v in d.items()})
         dc = d['coeff']
         d['coeff'] = int(dc) if isinstance(dc, (sp.Integer, int)) else float(dc)
         return d

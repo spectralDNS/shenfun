@@ -35,13 +35,13 @@ Re = 10.
 nu = 2./Re
 alfa = 0.2 # underrelaxation factor
 N = (46, 46)
-family = 'Chebyshev'
-#family = 'Legendre'
-quad = 'GC'
+#family = 'Chebyshev'
+family = 'Legendre'
+quad = 'GL'
 x = sympy.symbols('x', real='True')
 D0X = FunctionSpace(N[0], family, quad=quad, bc=(0, 0))
-#D1Y = FunctionSpace(N[1], family, quad=quad, bc=(0, 1))
-D1Y = FunctionSpace(N[1], family, quad=quad, bc=(0, (1-x)**2*(1+x)**2))
+D1Y = FunctionSpace(N[1], family, quad=quad, bc=(0, 1))
+#D1Y = FunctionSpace(N[1], family, quad=quad, bc=(0, (1-x)**2*(1+x)**2))
 D0Y = FunctionSpace(N[1], family, quad=quad, bc=(0, 0))
 PX = FunctionSpace(N[0], family, quad=quad)
 PY = FunctionSpace(N[1], family, quad=quad)

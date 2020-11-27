@@ -6,6 +6,7 @@ import scipy.sparse as scp
 from scipy.sparse.linalg import spsolve, splu
 from shenfun.optimization import optimizer
 from shenfun.matrixbase import SparseMatrix
+from codetiming import Timer
 
 class TDMA:
     """Tridiagonal matrix solver
@@ -480,10 +481,10 @@ class Solver2D:
         ndim = T.dimensions
         assert ndim == 2
         assert np.atleast_1d(m.scale).size == 1, "Use level = 2 with :func:`.inner`"
-        M0 = scp.kron(m.mats[0].diags(), m.mats[1].diags(), format='csr')
+        M0 = scp.kron(m.mats[0].diags(), m.mats[1].diags(), format='csc')
         M0 *= np.atleast_1d(m.scale).item()
         for m in tpmats[1:]:
-            M1 = scp.kron(m.mats[0].diags(), m.mats[1].diags(), format='csr')
+            M1 = scp.kron(m.mats[0].diags(), m.mats[1].diags(), format='csc')
             assert np.atleast_1d(m.scale).size == 1, "Use level = 2 with :func:`.inner`"
             M1 *= np.atleast_1d(m.scale).item()
             M0 = M0 + M1
@@ -501,7 +502,32 @@ class Solver2D:
         else:
             assert u.shape == b.shape
         s0 = tuple(base.slice() for base in self.T)
-        u[s0] = scp.linalg.spsolve(self.M, b[s0].flatten()).reshape(self.T.dims())
+        if b.dtype.char in 'fdg':
+            u[s0] = scp.linalg.spsolve(self.M, b[s0].flatten()).reshape(self.T.dims())
+        else:
+            factor = abs(self.M.real).max()/abs(self.M.imag).max()
+            if  factor > 1e12: # If M is basically a real matrix with roundoff numbers in imag
+                Mc = self.M.real.copy()
+                with Timer('LU'):
+                    lu = splu(Mc)
+                with Timer('LU solve'):
+                    u.real[s0] = lu.solve(b.real[s0].flatten()).reshape(self.T.dims())
+                #u.real[s0] = scp.linalg.spsolve(self.M.real.copy(), b.real[s0].flatten()).reshape(self.T.dims())
+                u.imag[s0] = 0
+            elif factor < 1e-12: # if M is basically imaginary with roundoff numbers in real
+                u.real[s0] = 0
+                Mc = self.M.imag.copy()
+                with Timer('LU'):
+                    lu = splu(Mc)
+                with Timer('LU solve'):
+                    u.imag[s0] = lu.solve(b.imag[s0].flatten()).reshape(self.T.dims())
+                #u.imag[s0] = scp.linalg.spsolve(self.M.imag.copy(), b.imag[s0].flatten()).reshape(self.T.dims())
+            else:
+                with Timer('LU'):
+                    lu = splu(self.M)
+                with Timer('LU solve'):
+                    u[s0] = lu.solve(b[s0].flatten()).reshape(self.T.dims())
+                #u[s0] = scp.linalg.spsolve(self.M, b[s0].flatten()).reshape(self.T.dims())
         return u
 
 
@@ -602,6 +628,8 @@ class SolverGeneric1ND:
     up to two diagonal (Fourier) directions. Also, this Python version of the
     solver is not very efficient. Consider implementing in Cython.
 
+    FIXME: Should add constraints
+
     """
 
     def __init__(self, mats):
@@ -638,14 +666,20 @@ class SolverGeneric1ND:
                             else:
                                 MM = sc*mat.mats[0]
                         sl = m.space.bases[0].slice()
-                        MM._lu = splu(MM.diags('csc'))
-                        u[sl, i] = MM.solve(b[sl, i], u[sl, i], use_lu=True)
+                        try:
+                            MM._lu = splu(MM.diags('csc'))
+                            u[sl, i] = MM.solve(b[sl, i], u[sl, i], use_lu=True)
+                        except RuntimeError:
+                            u[sl, i] = 0
                         self.MM.append(MM)
 
                 else:
                     for i in range(b.shape[1]):
                         sl = m.space.bases[0].slice()
-                        u[sl, i] = self.MM[i].solve(b[sl, i], u[sl, i], use_lu=True)
+                        try:
+                            u[sl, i] = self.MM[i].solve(b[sl, i], u[sl, i], use_lu=True)
+                        except:
+                            u[sl, i] = 0
 
             else:
                 if self.MM is None:
@@ -660,15 +694,21 @@ class SolverGeneric1ND:
                             else:
                                 MM = sc*mat.mats[1]
                         sl = m.space.bases[1].slice()
-                        u[i, sl] = MM.solve(b[i, sl], u[i, sl])
-                        MM._lu = splu(MM.diags('csc'))
-                        MM.solve(b[i, sl], u[i, sl], use_lu=True)
+                        #u[i, sl] = MM.solve(b[i, sl], u[i, sl])
+                        try:
+                            MM._lu = splu(MM.diags('csc'))
+                            MM.solve(b[i, sl], u[i, sl], use_lu=True)
+                        except RuntimeError:
+                            u[i, sl] = 0
                         self.MM.append(MM)
 
                 else:
                     for i in range(b.shape[0]):
                         sl = m.space.bases[1].slice()
-                        u[i, sl] = self.MM[i].solve(b[i, sl], u[i, sl], use_lu=True)
+                        try:
+                            u[i, sl] = self.MM[i].solve(b[i, sl], u[i, sl], use_lu=True)
+                        except RuntimeError:
+                            u[i, sl] = 0
 
 
         elif u.ndim == 3:

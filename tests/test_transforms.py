@@ -558,9 +558,9 @@ def test_ABBmat(SB, quad):
     assert np.allclose(z0, u0, rtol=1e-5, atol=1e-6)
 
 if __name__ == '__main__':
-    test_to_ortho(cBasis[1], 'GC')
+    #test_to_ortho(cBasis[1], 'GC')
     # test_convolve(fbases.R2C, 8)
-    #test_ADDmat(cbases.ShenNeumannBasis, "GL")
+    test_ADDmat(lbases.ShenNeumann, "LG")
     #test_CDDmat("GL")
     #test_massmatrices(cBasisGC[1], cBasisGC[0], 'GC')
     #test_CXXmat(cBasis[2], cBasis[3])
