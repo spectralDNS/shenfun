@@ -319,6 +319,26 @@ on the left and right boundaries. For example::
 for a mixed Dirichlet boundary condition on the left and Neumann on the
 right.
 
+For multidimensional problems it is possible to use a boundary condition
+that is a function of the computational coordinates. For
+example::
+
+    import sympy as sp
+    x, y = sp.symbols('x,y', real=True)
+    B0 = FunctionSpace(N, 'C', bc=(0, 0), domain=(-1, 1))
+    B1 = FunctionSpace(N, 'C', bc=(0, (1-x)*(1+x)), domain=(-1, 1))
+    T = TensorProductSpace(comm, (B0, B1))
+
+uses homogeneous Dirichlet on three out of the four sides of the
+square domain :math:`(-1, 1)\times (-1, 1)`. For the side where
+:math:`y=1`, the
+boundary condition is :math:`(1-x)(1+x)`. Note that only
+:math:`x` will vary along the side where :math:`y=1`, which is
+the right hand side of the domain for `B1`. Also note that the
+boundary condition on the square domain should match in the
+corners, or else there will be severe Gibbs oscillations in
+the solution.
+
 Note that currently it is not possible to choose any combination
 of boundary conditions for the biharmonic problem, and the only
 possible choice is therefore the one given above. This does not
