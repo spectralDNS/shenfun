@@ -64,10 +64,8 @@ python dirichlet_dirichlet_poisson2D.py 24 25 jacobi
 
 python unitdisc_helmholtz.py
 python unitdisc_biharmonic.py
-python dirichletneumann_poisson1D.py 24 chebyshev
-python dirichletneumann_poisson1D.py 24 legendre
-python neumanndirichlet_poisson1D.py 24 chebyshev
-python neumanndirichlet_poisson1D.py 24 legendre
+python mixedneumanndirichlet_poisson1D.py 24 chebyshev
+python mixedneumanndirichlet_poisson1D.py 24 legendre
 python sphere_helmholtz.py
 python curvilinear_poisson1D.py
 
