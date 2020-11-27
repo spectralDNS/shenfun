@@ -6,7 +6,6 @@ import scipy.sparse as scp
 from scipy.sparse.linalg import spsolve, splu
 from shenfun.optimization import optimizer
 from shenfun.matrixbase import SparseMatrix
-from codetiming import Timer
 
 class TDMA:
     """Tridiagonal matrix solver
@@ -497,6 +496,8 @@ class Solver2D:
         return c
 
     def __call__(self, b, u=None):
+        from codetiming import Timer
+
         if u is None:
             u = b
         else:
