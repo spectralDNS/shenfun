@@ -349,7 +349,7 @@ class NeumannSolve:
 
         if b.ndim == 1:
             if use_lu:
-                if b.dtype.char in 'FDG':
+                if b.dtype.char in 'FDG' and self._lu.U.dtype.char in 'fdg':
                     u.real[s] = self._lu.solve(b[s].real)
                     u.imag[s] = self._lu.solve(b[s].imag)
                 else:
@@ -363,7 +363,7 @@ class NeumannSolve:
             br = b[s].reshape((N, P))
 
             if use_lu:
-                if b.dtype.char in 'FDG':
+                if b.dtype.char in 'FDG' and self._lu.U.dtype.char in 'fdg':
                     u.real[s] = self._lu.solve(br.real).reshape(u[s].shape)
                     u.imag[s] = self._lu.solve(br.imag).reshape(u[s].shape)
                 else:
@@ -506,22 +506,26 @@ class Solver2D:
         if b.dtype.char in 'fdg':
             u[s0] = scp.linalg.spsolve(self.M, b[s0].flatten()).reshape(self.T.dims())
         else:
-            factor = abs(self.M.real).max()/abs(self.M.imag).max()
+            factor = 1
+            if self.M.dtype.char in 'FDG':
+                factor = abs(self.M.real).max()/abs(self.M.imag).max()
             if  factor > 1e12: # If M is basically a real matrix with roundoff numbers in imag
                 Mc = self.M.real.copy()
                 with Timer('LU'):
                     lu = splu(Mc)
                 with Timer('LU solve'):
                     u.real[s0] = lu.solve(b.real[s0].flatten()).reshape(self.T.dims())
+                    u.imag[s0] = lu.solve(b.imag[s0].flatten()).reshape(self.T.dims())
                 #u.real[s0] = scp.linalg.spsolve(self.M.real.copy(), b.real[s0].flatten()).reshape(self.T.dims())
-                u.imag[s0] = 0
+
             elif factor < 1e-12: # if M is basically imaginary with roundoff numbers in real
                 u.real[s0] = 0
                 Mc = self.M.imag.copy()
                 with Timer('LU'):
                     lu = splu(Mc)
                 with Timer('LU solve'):
-                    u.imag[s0] = lu.solve(b.imag[s0].flatten()).reshape(self.T.dims())
+                    u.real[s0] = lu.solve(b.imag[s0].flatten()).reshape(self.T.dims())
+                    u.imag[s0] = lu.solve(b.real[s0].flatten()).reshape(self.T.dims())
                 #u.imag[s0] = scp.linalg.spsolve(self.M.imag.copy(), b.imag[s0].flatten()).reshape(self.T.dims())
             else:
                 with Timer('LU'):
@@ -668,7 +672,17 @@ class SolverGeneric1ND:
                                 MM = sc*mat.mats[0]
                         sl = m.space.bases[0].slice()
                         try:
-                            MM._lu = splu(MM.diags('csc'))
+                            Mc = MM.diags('csc')
+                            factor = 1
+                            if Mc.dtype.char in 'FDG':
+                                factor = abs(Mc.copy().real).max()/abs(Mc.copy().imag).max()
+                            if factor > 1e12:
+                                MM._lu = splu(Mc.copy().real.copy()) # For some reason I need to copy the first as well
+                            elif factor < 1e-12:
+                                MM._lu = splu(Mc.copy().imag.copy())
+                            else:
+                                MM._lu = splu(Mc)
+
                             u[sl, i] = MM.solve(b[sl, i], u[sl, i], use_lu=True)
                         except RuntimeError:
                             u[sl, i] = 0
@@ -697,7 +711,17 @@ class SolverGeneric1ND:
                         sl = m.space.bases[1].slice()
                         #u[i, sl] = MM.solve(b[i, sl], u[i, sl])
                         try:
-                            MM._lu = splu(MM.diags('csc'))
+                            Mc = MM.diags('csc')
+                            factor = 1
+                            if Mc.dtype.char in 'FDG':
+                                factor = abs(Mc.copy().real).max()/abs(Mc.copy().imag).max()
+                            if factor > 1e12:
+                                MM._lu = splu(Mc.copy().real.copy())
+                            elif factor < 1e-12:
+                                MM._lu = splu(Mc.copy().imag.copy())
+                            else:
+                                MM._lu = splu(Mc)
+
                             MM.solve(b[i, sl], u[i, sl], use_lu=True)
                         except RuntimeError:
                             u[i, sl] = 0
