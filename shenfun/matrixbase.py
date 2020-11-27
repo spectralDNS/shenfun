@@ -1078,12 +1078,21 @@ class BlockMatrix:
         return A, b
 
 class TPMatrix:
-    """Tensorproduct matrix
+    """Tensor product matrix
 
-    A :class:`.TensorProductSpace` is the outer product of ``D`` bases.
-    A matrix assembled from test and trialfunctions on TensorProductSpaces
-    will, as such, be represented as the outer product of ``D`` smaller matrices,
-    one for each basis. This class represents the complete matrix.
+    A :class:`.TensorProductSpace` is the tensor product of ``D`` univariate
+    function spaces. A normal matrix (a second order tensor) is assembled from
+    bilinear forms (i.e., forms containing both test and trial functions) on
+    one univariate function space. A bilinear form on a tensor product space
+    will assemble to ``D`` outer products of such univariate matrices. That is,
+    for a two-dimensional tensor product you get fourth order tensors (outer
+    product of two matrices), and three-dimensional tensor product spaces leads
+    to a sixth order tensor (outer product of three matrices). This class
+    contains ``D`` second order matrices. The complete matrix is as such the
+    outer product of these ``D`` matrices.
+
+    Note that the outer product of two matrices often is called the Kronecker
+    product.
 
     Parameters
     ----------

@@ -1230,16 +1230,17 @@ class ANNmat(SpectralMatrix):
                 so += us[k+2]
                 us[k] = bs[k] - d1[k]*so
             us[k] /= d[k]
-        us[0] = self.testfunction[0].mean
         sl = [np.newaxis]*b.ndim
         sl[0] = slice(None)
         us *= j2[tuple(sl)]
 
+        u /= self.scale
+        u[0] = self.testfunction[0].mean/(np.pi/self.testfunction[0].domain_factor())
+        self.testfunction[0].bc.set_boundary_dofs(u, True)
         if axis > 0:
             u = np.moveaxis(u, 0, axis)
             if u is not b:
                 b = np.moveaxis(b, 0, axis)
-        u /= self.scale
         return u
 
 

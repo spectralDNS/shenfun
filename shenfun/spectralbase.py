@@ -408,9 +408,9 @@ class SpectralBase:
         #warnings.warn('Using slow sympy evaluate_basis_derivative')
         if x is None:
             x = self.mesh(False, False)
+        x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape, dtype=self.dtype)
-        x = np.atleast_1d(x)
         X = sp.symbols('x', real=True)
         basis = self.sympy_basis(i=i, x=X).diff(X, k)
         output_array[:] = sp.lambdify(X, basis, 'numpy')(x)

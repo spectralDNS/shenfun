@@ -15,6 +15,7 @@ from shenfun.optimization import optimizer
 __all__ = ['ChebyshevBase', 'Orthogonal', 'ShenDirichlet',
            'ShenNeumann', 'ShenBiharmonic',
            'SecondNeumann', 'UpperDirichlet',
+           'UpperDirichletNeumann',
            'ShenBiPolar', 'BCDirichlet', 'BCBiharmonic',
            'DirichletNeumann']
 
@@ -75,7 +76,7 @@ class ChebyshevBase(SpectralBase):
         else:
             if self.quad == "GL":
                 import quadpy
-                p = quadpy.line_segment.clenshaw_curtis(N)
+                p = quadpy.c1.clenshaw_curtis(N)
                 points = -p.points
                 weights = p.weights
 
@@ -120,7 +121,7 @@ class ChebyshevBase(SpectralBase):
         trunc_array = self._tmp
 
         self.axis = axis
-        if self.padding_factor is not 1:
+        if self.padding_factor != 1:
             self.forward = Transform(self.forward, self.xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, self.xfftn_bck, trunc_array, V, U)
         else:
@@ -225,10 +226,11 @@ class Orthogonal(ChebyshevBase):
         if x is None:
             x = self.mesh(False, False)
         V = self.vandermonde(x)
-        N, M = self.shape(False), self.shape(True)
+        #N, M = self.shape(False), self.shape(True)
+        M = V.shape[1]
         if k > 0:
-            D = np.zeros((M, N))
-            D[:-k] = n_cheb.chebder(np.eye(M, N), k)
+            D = np.zeros((M, M))
+            D[:-k] = n_cheb.chebder(np.eye(M, M), k)
             V = np.dot(V, D)
         return V
         #return self._composite_basis(V, argument=argument)
@@ -353,7 +355,7 @@ class Orthogonal(ChebyshevBase):
 
         self.axis = axis
         if self.__class__.__name__ == 'Orthogonal':
-            if self.padding_factor is not 1:
+            if self.padding_factor != 1:
                 trunc_array = self._get_truncarray(shape, V.dtype)
                 self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
                 self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
@@ -366,7 +368,7 @@ class Orthogonal(ChebyshevBase):
             self.xfftn_bck = xfftn_bck
             self._U = U
             self._V = V
-            if self.padding_factor is not 1:
+            if self.padding_factor != 1:
                 trunc_array = self._get_truncarray(shape, V.dtype)
                 self._tmp = trunc_array
             else:
@@ -619,13 +621,6 @@ class ShenDirichlet(CompositeSpace):
                              scaled=self._scaled)
 
     def get_unplanned(self):
-        """Return unplanned space (otherwise as self)
-
-        Returns
-        -------
-        SpectralBase
-            The space to be used for dealiasing
-        """
         return ShenDirichlet(self.N,
                              quad=self.quad,
                              domain=self.domain,
@@ -652,6 +647,8 @@ class ShenNeumann(CompositeSpace):
 
         mean : float, optional
             Mean value
+        bc : 2-tuple of floats, optional
+            Boundary conditions at, respectively, x=(-1, 1).
         domain : 2-tuple of floats, optional
             The computational domain
         dtype : data-type, optional
@@ -670,22 +667,32 @@ class ShenNeumann(CompositeSpace):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="GC", mean=0, domain=(-1., 1.), dtype=np.float, padding_factor=1,
+    def __init__(self, N, quad="GC", mean=0, bc=(0, 0), domain=(-1., 1.), dtype=np.float, padding_factor=1,
                  dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
+        from shenfun.tensorproductspace import BoundaryValues
         self.mean = mean
         self._factor = np.zeros(0)
+        self._bc_basis = None
+        self.bc = BoundaryValues(self, bc=bc)
 
     @staticmethod
     def boundary_condition():
         return 'Neumann'
 
+    @property
+    def has_nonhomogeneous_bcs(self):
+        return self.bc.has_nonhomogeneous_bcs()
+
     def _composite(self, V, argument=0):
         P = np.zeros_like(V)
         k = np.arange(V.shape[1]).astype(np.float)
         P[:, :-2] = V[:, :-2] - (k[:-2]/(k[:-2]+2))**2*V[:, 2:]
+        if argument == 1: # if trial function
+            P[:, -1] = 0.5*V[:, 1] + 1/8*V[:, 2]    # x = +1
+            P[:, -2] = 0.5*V[:, 1] - 1/8*V[:, 2]    # x = -1
         return P
 
     def sympy_basis(self, i=0, x=xp):
@@ -747,6 +754,7 @@ class ShenNeumann(CompositeSpace):
         self.set_factor_array(input_array)
         output_array[s0] = input_array[s0]
         output_array[s1] -= self._factor*input_array[s0]
+        self.bc.add_to_orthogonal(output_array, input_array)
         return output_array
 
     def slice(self):
@@ -762,11 +770,20 @@ class ShenNeumann(CompositeSpace):
         output_array[:] = chebval(x, u[:-2])
         w_hat[2:] = self._factor*u[:-2]
         output_array -= chebval(x, w_hat)
+        output_array += u[-2]*(0.5*x-1/8*(2*x**2-1)) + u[-2]*(0.5*x+1/8*(2*x**2-1))
         return output_array
+
+    def get_bc_basis(self):
+        if self._bc_basis:
+            return self._bc_basis
+        self._bc_basis = BCNeumann(self.N, quad=self.quad, domain=self.domain,
+                                   coordinates=self.coors.coordinates)
+        return self._bc_basis
 
     def get_refined(self, N):
         return ShenNeumann(N,
                            quad=self.quad,
+                           bc=self.bc.bc,
                            domain=self.domain,
                            dtype=self.dtype,
                            padding_factor=self.padding_factor,
@@ -777,6 +794,7 @@ class ShenNeumann(CompositeSpace):
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         return ShenNeumann(self.N,
                            quad=self.quad,
+                           bc=self.bc.bc,
                            domain=self.domain,
                            dtype=self.dtype,
                            padding_factor=padding_factor,
@@ -785,15 +803,9 @@ class ShenNeumann(CompositeSpace):
                            mean=self.mean)
 
     def get_unplanned(self):
-        """Return unplanned space (otherwise as self)
-
-        Returns
-        -------
-        SpectralBase
-            The space to be used for dealiasing
-        """
         return ShenNeumann(self.N,
                            quad=self.quad,
+                           bc=self.bc.bc,
                            domain=self.domain,
                            dtype=self.dtype,
                            padding_factor=self.padding_factor,
@@ -1325,13 +1337,6 @@ class UpperDirichlet(CompositeSpace):
                               scaled=self._scaled)
 
     def get_unplanned(self):
-        """Return unplanned space (otherwise as self)
-
-        Returns
-        -------
-        SpectralBase
-            The space to be used for dealiasing
-        """
         return UpperDirichlet(self.N,
                               quad=self.quad,
                               domain=self.domain,
@@ -1401,7 +1406,7 @@ class ShenBiPolar(Orthogonal):
         U.fill(0)
         V.fill(0)
         self.axis = axis
-        if self.padding_factor is not 1:
+        if self.padding_factor != 1:
             trunc_array = self._get_truncarray(shape, V.dtype)
             self.forward = Transform(self.forward, None, U, V, trunc_array)
             self.backward = Transform(self.backward, None, trunc_array, V, U)
@@ -1497,6 +1502,8 @@ class DirichletNeumann(CompositeSpace):
             - GL - Chebyshev-Gauss-Lobatto
             - GC - Chebyshev-Gauss
 
+        bc : tuple of numbers
+            Boundary conditions at edges of domain
         domain : 2-tuple of floats, optional
             The computational domain
         dtype : data-type, optional
@@ -1519,13 +1526,16 @@ class DirichletNeumann(CompositeSpace):
 
     """
 
-    def __init__(self, N, quad="GC", domain=(-1., 1.), dtype=np.float, scaled=False,
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=np.float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
+        from shenfun.tensorproductspace import BoundaryValues
         self._scaled = scaled
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
+        self._bc_basis = None
+        self.bc = BoundaryValues(self, bc=bc)
 
     @staticmethod
     def boundary_condition():
@@ -1533,7 +1543,7 @@ class DirichletNeumann(CompositeSpace):
 
     @property
     def has_nonhomogeneous_bcs(self):
-        return False
+        return self.bc.has_nonhomogeneous_bcs()
 
     def set_factor_arrays(self, v):
         """Set intermediate factor arrays"""
@@ -1549,6 +1559,9 @@ class DirichletNeumann(CompositeSpace):
         P[:, :-2] = (V[:, :-2]
                      + ((-k**2 + (k+2)**2)/((k+1)**2 + (k+2)**2))*V[:, 1:-1]
                      + ((-k**2 - (k+1)**2)/((k+1)**2 + (k+2)**2))*V[:, 2:])
+        if argument == 1:
+            P[:, -2] = V[:, 0]
+            P[:, -1] = V[:, 0]+V[:, 1]
         return P
 
     def sympy_basis(self, i=0, x=xp):
@@ -1619,6 +1632,7 @@ class DirichletNeumann(CompositeSpace):
             output_array.fill(0)
         self.set_factor_arrays(input_array)
         output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2)
+        self.bc.add_to_orthogonal(output_array, input_array)
         return output_array
 
     def slice(self):
@@ -1637,7 +1651,45 @@ class DirichletNeumann(CompositeSpace):
         w_hat[2:] = self._factor2*u[:-2]
         w_hat[:2] = 0
         output_array += chebval(x, w_hat)
+        output_array += u[-2] + u[-1]*(1+x)
         return output_array
+
+    def get_bc_basis(self):
+        if self._bc_basis:
+            return self._bc_basis
+        self._bc_basis = BCDirichletNeumann(self.N, quad=self.quad, domain=self.domain,
+                                            coordinates=self.coors.coordinates)
+        return self._bc_basis
+
+    def get_refined(self, N):
+        return self.__class__(N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates,
+                              bc=self.bc.bc)
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return self.__class__(self.N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=padding_factor,
+                              dealias_direct=dealias_direct,
+                              coordinates=self.coors.coordinates,
+                              bc=self.bc.bc)
+
+    def get_unplanned(self):
+        return self.__class__(self.N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates,
+                              bc=self.bc.bc)
 
 
 class NeumannDirichlet(CompositeSpace):
@@ -1653,6 +1705,8 @@ class NeumannDirichlet(CompositeSpace):
             - GL - Chebyshev-Gauss-Lobatto
             - GC - Chebyshev-Gauss
 
+        bc : tuple of numbers
+            Boundary conditions at edges of domain
         domain : 2-tuple of floats, optional
             The computational domain
         dtype : data-type, optional
@@ -1675,13 +1729,16 @@ class NeumannDirichlet(CompositeSpace):
 
     """
 
-    def __init__(self, N, quad="GC", domain=(-1., 1.), dtype=np.float, scaled=False,
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=np.float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
+        from shenfun.tensorproductspace import BoundaryValues
         self._scaled = scaled
         self._factor1 = np.zeros(0)
         self._factor2 = np.zeros(0)
+        self._bc_basis = None
+        self.bc = BoundaryValues(self, bc=bc)
 
     @staticmethod
     def boundary_condition():
@@ -1689,7 +1746,7 @@ class NeumannDirichlet(CompositeSpace):
 
     @property
     def has_nonhomogeneous_bcs(self):
-        return False
+        return self.bc.has_nonhomogeneous_bcs()
 
     def set_factor_arrays(self, v):
         """Set intermediate factor arrays"""
@@ -1705,6 +1762,9 @@ class NeumannDirichlet(CompositeSpace):
         P[:, :-2] = (V[:, :-2]
                      - ((-k**2 + (k+2)**2)/((k+1)**2 + (k+2)**2))*V[:, 1:-1]
                      + ((-k**2 - (k+1)**2)/((k+1)**2 + (k+2)**2))*V[:, 2:])
+        if argument == 1:
+            P[:, -2] = V[:, 0]-0.6*V[:, 1]-0.4*V[:, 2]
+            P[:, -1] = V[:, 0]
         return P
 
     def sympy_basis(self, i=0, x=xp):
@@ -1775,6 +1835,7 @@ class NeumannDirichlet(CompositeSpace):
             output_array.fill(0)
         self.set_factor_arrays(input_array)
         output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2)
+        self.bc.add_to_orthogonal(output_array, input_array)
         return output_array
 
     def slice(self):
@@ -1793,7 +1854,248 @@ class NeumannDirichlet(CompositeSpace):
         w_hat[2:] = self._factor2*u[:-2]
         w_hat[:2] = 0
         output_array += chebval(x, w_hat)
+        output_array += u[-1] + u[-2]*(1-0.6*x-0.4*(2*x**2-1))
         return output_array
+
+    def get_bc_basis(self):
+        if self._bc_basis:
+            return self._bc_basis
+        self._bc_basis = BCNeumannDirichlet(self.N, quad=self.quad, domain=self.domain,
+                                            coordinates=self.coors.coordinates)
+        return self._bc_basis
+
+    def get_refined(self, N):
+        return self.__class__(N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates,
+                              bc=self.bc.bc)
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return self.__class__(self.N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=padding_factor,
+                              dealias_direct=dealias_direct,
+                              coordinates=self.coors.coordinates,
+                              bc=self.bc.bc)
+
+    def get_unplanned(self):
+        return self.__class__(self.N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates,
+                              bc=self.bc.bc)
+
+class UpperDirichletNeumann(CompositeSpace):
+    """Function space for both Dirichlet and Neumann boundary conditions
+    on the right hand side
+
+    Parameters
+    ----------
+        N : int, optional
+            Number of quadrature points
+        quad : str, optional
+            Type of quadrature
+
+            - GL - Chebyshev-Gauss-Lobatto
+            - GC - Chebyshev-Gauss
+
+        bc : tuple of numbers
+            Boundary conditions at the right edge of domain
+        domain : 2-tuple of floats, optional
+            The computational domain
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        scaled : bool, optional
+            Whether or not to use scaled basis
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
+
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
+
+    """
+
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=np.float, scaled=False,
+                 padding_factor=1, dealias_direct=False, coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
+        from shenfun.tensorproductspace import BoundaryValues
+        self._scaled = scaled
+        self._factor1 = np.zeros(0)
+        self._factor2 = np.zeros(0)
+        self._bc_basis = None
+        self.bc = BoundaryValues(self, bc=bc)
+
+    @staticmethod
+    def boundary_condition():
+        return 'UpperDirichletNeumann'
+
+    @property
+    def has_nonhomogeneous_bcs(self):
+        return self.bc.has_nonhomogeneous_bcs()
+
+    def set_factor_arrays(self, v):
+        """Set intermediate factor arrays"""
+        s = self.sl[self.slice()]
+        if not self._factor1.shape == v[s].shape:
+            k = self.wavenumbers().astype(float)
+            self._factor1 = (-4*(k+1)/(2*k+3)).astype(float)
+            self._factor2 = ((2*k+1)/(2*k+3)).astype(float)
+
+    def _composite(self, V, argument=0):
+        P = np.zeros_like(V)
+        k = np.arange(V.shape[1]).astype(np.float)[:-2]
+        P[:, :-2] = (V[:, :-2]
+                     + (-4*(k+1)/(2*k+3))*V[:, 1:-1]
+                     + ((2*k+1)/(2*k+3))*V[:, 2:])
+        if argument == 1:
+            P[:, -2] = V[:, 0]
+            P[:, -1] = V[:, 0]-5/3*V[:, 1]+2/3*V[:, 2]
+        return P
+
+    def sympy_basis(self, i=0, x=xp):
+        assert i < self.N-2
+        return (sp.chebyshevt(i, x)
+                + (-4*(i+1)/(2*i+3))*sp.chebyshevt(i+1, x)
+                + ((2*k+1)/(2*k+3))*sp.chebyshevt(i+2, x))
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        w = np.arccos(x)
+        output_array[:] = (np.cos(i*w)
+                           + (-4*(i+1)/(2*i+3))*np.cos((i+1)*w)
+                           + ((2*i+1)/(2*i+3))*np.cos((i+2)*w))
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        if x is None:
+            x = self.mesh(False, False)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = np.atleast_1d(x)
+        basis = np.zeros(self.shape(True))
+        basis[np.array([i, i+1, i+2])] = (1, -4*(i+1)/(2*i+3), (2*i+1)/(2*i+3))
+        basis = n_cheb.Chebyshev(basis)
+        if k > 0:
+            basis = basis.deriv(k)
+        output_array[:] = basis(x)
+        return output_array
+
+    def is_scaled(self):
+        """Return True if scaled basis is used, otherwise False"""
+        return False
+
+    def set_w_hat(self, w_hat, fk, f1, f2):
+        """Return intermediate w_hat array"""
+        s0 = self.sl[slice(0, -2)]
+        s1 = self.sl[slice(1, -1)]
+        s2 = self.sl[slice(2, None)]
+        w_hat[s0] = fk[s0]
+        w_hat[s1] += f1*fk[s0]
+        w_hat[s2] += f2*fk[s0]
+        return w_hat
+
+    def _evaluate_scalar_product(self, fast_transform=True):
+        if fast_transform is False:
+            SpectralBase._evaluate_scalar_product(self)
+            self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
+            return
+        Orthogonal._evaluate_scalar_product(self, True)
+        output = self.scalar_product.output_array
+        Tk = work[(output, 0, True)]
+        Tk[...] = output
+        self.set_factor_arrays(Tk)
+        s0 = self.sl[slice(0, -2)]
+        s1 = self.sl[slice(1, -1)]
+        s2 = self.sl[slice(2, None)]
+        output[s0] += self._factor1*Tk[s1]
+        output[s0] += self._factor2*Tk[s2]
+        output[self.sl[slice(-2, None)]] = 0
+
+    def to_ortho(self, input_array, output_array=None):
+        if output_array is None:
+            output_array = np.zeros_like(input_array)
+        else:
+            output_array.fill(0)
+        self.set_factor_arrays(input_array)
+        output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2)
+        self.bc.add_to_orthogonal(output_array, input_array)
+        return output_array
+
+    def slice(self):
+        return slice(0, self.N-2)
+
+    def eval(self, x, u, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape, dtype=self.dtype)
+        x = self.map_reference_domain(x)
+        w_hat = work[(u, 0, True)]
+        self.set_factor_arrays(w_hat)
+        output_array[:] = chebval(x, u[:-2])
+        w_hat[1:-1] = self._factor1*u[:-2]
+        output_array += chebval(x, w_hat)
+        w_hat[2:] = self._factor2*u[:-2]
+        w_hat[:2] = 0
+        output_array += chebval(x, w_hat)
+        output_array += u[-2] + u[-1]*(1-5/3*x+2/3*(2*x**2-1))
+        return output_array
+
+    def get_bc_basis(self):
+        if self._bc_basis:
+            return self._bc_basis
+        self._bc_basis = BCUpperDirichletNeumann(self.N, quad=self.quad, domain=self.domain,
+                                                 coordinates=self.coors.coordinates)
+        return self._bc_basis
+
+    def get_refined(self, N):
+        return self.__class__(N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates,
+                              bc=self.bc.bc)
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return self.__class__(self.N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=padding_factor,
+                              dealias_direct=dealias_direct,
+                              coordinates=self.coors.coordinates,
+                              bc=self.bc.bc)
+
+    def get_unplanned(self):
+        return self.__class__(self.N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates,
+                              bc=self.bc.bc)
 
 
 class BCDirichlet(CompositeSpace):
@@ -1880,6 +2182,79 @@ class BCDirichlet(CompositeSpace):
         if i == 0 and k == 1:
             output_array[:] = -0.5
         elif i == 1 and k == 1:
+            output_array[:] = 0.5
+        else:
+            output_array[:] = 0
+        return output_array
+
+class BCNeumann(CompositeSpace):
+
+    def __init__(self, N, quad="GC", scaled=False,
+                 domain=(-1., 1.), coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, coordinates=coordinates)
+        self._scaled = scaled
+
+    def slice(self):
+        return slice(self.N-2, self.N)
+
+    def shape(self, forward_output=True):
+        if forward_output:
+            return 2
+        else:
+            return self.N
+
+    @staticmethod
+    def boundary_condition():
+        return 'Apply'
+
+    def vandermonde(self, x):
+        return n_cheb.chebvander(x, 2)
+
+    @staticmethod
+    def coefficient_matrix():
+        return np.array([[0, 1/2, -1/8],
+                         [0, 1/2, 1/8]])
+
+    def _composite(self, V, argument=0):
+        P = np.zeros(V[:, :2].shape)
+        P[:, 0] = 0.5*V[:, 1] - 1/8*V[:, 2]
+        P[:, 1] = 0.5*V[:, 1] + 1/8*V[:, 2]
+        return P
+
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+        if i == 0:
+            return x/2-(2*x**2-1)/8
+        elif i == 1:
+            return x/2+(2*x**2-1)/8
+        else:
+            raise AttributeError('Only two bases, i < 2')
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        assert i < 2
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        if i == 0:
+            output_array[:] = x/2-(2*x**2-1)/8
+        elif i == 1:
+            output_array[:] = x/2+(2*x**2-1)/8
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        if i == 0 and k == 0:
+            output_array[:] = x/2-(2*x**2-1)/8
+        elif i == 0 and k == 1:
+            output_array[:] = 0.5-0.5*x
+        elif i == 0 and k == 2:
+            output_array[:] = -0.5
+        elif i == 1 and k == 0:
+            output_array[:] = x/2+(2*x**2-1)/8
+        elif i == 1 and k == 1:
+            output_array[:] = 0.5+0.5*x
+        elif i == 1 and k == 2:
             output_array[:] = 0.5
         else:
             output_array[:] = 0
@@ -2051,4 +2426,228 @@ class BCUpperDirichlet(CompositeSpace):
         self.evaluate_basis_derivative(x=x, k=k, output_array=output_array[:, 0])
         return output_array
 
+class BCNeumannDirichlet(CompositeSpace):
 
+    def __init__(self, N, quad="GC",
+                 domain=(-1., 1.), coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, coordinates=coordinates)
+
+    def slice(self):
+        return slice(self.N-2, self.N)
+
+    def shape(self, forward_output=True):
+        if forward_output:
+            return 2
+        else:
+            return self.N
+
+    @staticmethod
+    def boundary_condition():
+        return 'Apply'
+
+    def vandermonde(self, x):
+        return n_cheb.chebvander(x, 2)
+
+    @staticmethod
+    def coefficient_matrix():
+        return np.array([[1, -0.6, -0.4],
+                         [1, 0, 0]])
+
+    def _composite(self, V, argument=0):
+        P = np.zeros(V[:, :2].shape)
+        P[:, 0] = V[:, 0] - 0.6*V[:, 1] - 0.4*V[:, 2]
+        P[:, 1] = V[:, 0]
+        return P
+
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+        if i == 0:
+            return 1-0.6*x-0.4*(2*x**2-1)
+        elif i == 1:
+            return 1
+        else:
+            raise AttributeError('Only two bases, i < 2')
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        assert i < 2
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        if i == 0:
+            output_array[:] = 1-0.6*x-0.4*(2*x**2-1)
+        elif i == 1:
+            output_array[:] = 1
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        if i == 0 and k == 0:
+            output_array[:] = 1-0.6*x-0.4*(2*x**2-1)
+        elif i == 0 and k == 1:
+            output_array[:] = -0.6-1.6*x
+        elif i == 0 and k == 2:
+            output_array[:] = -1.6
+        elif i == 1 and k == 0:
+            output_array[:] = 1
+        else:
+            output_array[:] = 0
+        return output_array
+
+    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
+        if x is None:
+            x = self.mesh(False, False)
+        output_array = np.zeros((self.N, 2))
+        self.evaluate_basis_derivative(x=x, i=0, k=k, output_array=output_array[:, 0])
+        self.evaluate_basis_derivative(x=x, i=1, k=k, output_array=output_array[:, 1])
+        return output_array
+
+class BCDirichletNeumann(CompositeSpace):
+
+    def __init__(self, N, quad="GC",
+                 domain=(-1., 1.), coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, coordinates=coordinates)
+
+    def slice(self):
+        return slice(self.N-2, self.N)
+
+    def shape(self, forward_output=True):
+        if forward_output:
+            return 2
+        else:
+            return self.N
+
+    @staticmethod
+    def boundary_condition():
+        return 'Apply'
+
+    def vandermonde(self, x):
+        return n_cheb.chebvander(x, 1)
+
+    @staticmethod
+    def coefficient_matrix():
+        return np.array([[1, 0],
+                         [1, 1]])
+
+    def _composite(self, V, argument=0):
+        P = np.zeros(V[:, :2].shape)
+        P[:, 0] = V[:, 0]
+        P[:, 1] = V[:, 0] + V[:, 1]
+        return P
+
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+        if i == 0:
+            return 1
+        elif i == 1:
+            return 1+x
+        else:
+            raise AttributeError('Only two bases, i < 2')
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        assert i < 2
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        if i == 0:
+            output_array[:] = 1
+        elif i == 1:
+            output_array[:] = 1+x
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        if i == 0 and k == 0:
+            output_array[:] = 1
+        elif i == 1 and k == 0:
+            output_array[:] = 1+x
+        elif i == 1 and k == 1:
+            output_array[:] = 1
+        else:
+            output_array[:] = 0
+        return output_array
+
+    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
+        if x is None:
+            x = self.mesh(False, False)
+        output_array = np.zeros((self.N, 2))
+        self.evaluate_basis_derivative(x=x, i=0, k=k, output_array=output_array[:, 0])
+        self.evaluate_basis_derivative(x=x, i=1, k=k, output_array=output_array[:, 1])
+        return output_array
+
+class BCUpperDirichletNeumann(CompositeSpace):
+
+    def __init__(self, N, quad="GC",
+                 domain=(-1., 1.), coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, coordinates=coordinates)
+
+    def slice(self):
+        return slice(self.N-2, self.N)
+
+    def shape(self, forward_output=True):
+        if forward_output:
+            return 2
+        else:
+            return self.N
+
+    @staticmethod
+    def boundary_condition():
+        return 'Apply'
+
+    def vandermonde(self, x):
+        return n_cheb.chebvander(x, 2)
+
+    @staticmethod
+    def coefficient_matrix():
+        return np.array([[1, 0, 0],
+                         [1, -5/3, 2/3]])
+
+    def _composite(self, V, argument=0):
+        P = np.zeros(V[:, :2].shape)
+        P[:, 0] = V[:, 0]
+        P[:, 1] = V[:, 0]-5/3*V[:, 1]+2/3*V[:, 2]
+        return P
+
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+        if i == 0:
+            return 1
+        elif i == 1:
+            return 1-5/3*x+2/3*(2*x**2-1)
+        else:
+            raise AttributeError('Only two bases, i < 2')
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        assert i < 2
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        if i == 0:
+            output_array[:] = 1
+        elif i == 1:
+            output_array[:] = 1-5/3*x+2/3*(2*x**2-1)
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        if i == 0 and k == 0:
+            output_array[:] = 1
+        elif i == 1 and k == 0:
+            output_array[:] = 1-5/3*x+2/3*(2*x**2-1)
+        elif i == 1 and k == 1:
+            output_array[:] = -5/3+8/3*x
+        elif i == 1 and k == 2:
+            output_array[:] = 8/3
+        else:
+            output_array[:] = 0
+        return output_array
+
+    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
+        if x is None:
+            x = self.mesh(False, False)
+        output_array = np.zeros((self.N, 2))
+        self.evaluate_basis_derivative(x=x, i=0, k=k, output_array=output_array[:, 0])
+        self.evaluate_basis_derivative(x=x, i=1, k=k, output_array=output_array[:, 1])
+        return output_array

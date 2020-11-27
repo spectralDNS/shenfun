@@ -21,9 +21,6 @@ comm = MPI.COMM_WORLD
 __all__ = ('TensorProductSpace', 'VectorSpace', 'TensorSpace',
            'CompositeSpace', 'Convolve')
 
-# Default sympy symbols. Note that order is important
-x, y, z, r, s = psi = sp.symbols('x,y,z,r,s', real=True)
-
 class CurvilinearTransform(Transform):
     """Class for performing forward parallel transform using curvilinear
     coordinates
@@ -170,7 +167,11 @@ class TensorProductSpace(PFFT):
         if not modify_spaces_inplace:
             self.bases = tuple([base.get_unplanned() for base in bases])
 
-        coors = coordinates if coordinates is not None else (psi[:len(bases)],)*2
+        coors = coordinates
+        if coors is None:
+            psi = sp.symbols('x,y,z,r,s', real=True)
+            coors = (psi[:len(bases)],)*2
+
         self.coors = Coordinates(*coors)
         self.hi = self.coors.hi
         self.sg = self.coors.sg
@@ -292,7 +293,8 @@ class TensorProductSpace(PFFT):
 
             self.pencil[1] = pencilA
 
-            FT = functools.partial(CurvilinearTransform, T=self) if not self.hi.prod() == 1 else Transform
+            FT = functools.partial(CurvilinearTransform, T=self) if not coordinates is None else Transform
+            #FT = functools.partial(CurvilinearTransform, T=self) if not self.coors.is_cartesian else Transform
 
             self.forward = FT(
                 [o.forward for o in self.xfftn],
@@ -374,7 +376,7 @@ class TensorProductSpace(PFFT):
 
         self.pencil[1] = pencilA
 
-        FT = functools.partial(CurvilinearTransform, T=self) if not self.hi.prod() == 1 else Transform
+        FT = functools.partial(CurvilinearTransform, T=self) if not self.coors.hi.prod() == 1 else Transform
 
         self.backward = Transform(
             [o.backward for o in self.xfftn],
@@ -883,9 +885,9 @@ class TensorProductSpace(PFFT):
     def get_nondiagonal_axes(self):
         """Return list of axes that may contain non-diagonal matrices"""
         axes = []
-        if isinstance(self.hi.prod(), sp.Expr):
+        if isinstance(self.coors.hi.prod(), sp.Expr):
             x = 'xyzrs'
-            sym = self.hi.prod().free_symbols
+            sym = self.coors.hi.prod().free_symbols
             msaxes = set()
             for s in sym:
                 if str(s) in x:

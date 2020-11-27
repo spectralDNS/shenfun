@@ -197,7 +197,7 @@ With shenfun the tensor product spaces are created as
 !bc pycod
 V1 = TensorProductSpace(comm, (D0X, D1Y))
 V0 = TensorProductSpace(comm, (D0X, D0Y))
-P = TensorProductSpace(comm, (PX, PY))
+P = TensorProductSpace(comm, (PX, PY), modify_spaces_inplace=True)
 !ec
 These tensor product spaces are all scalar valued.
 The velocity is a vector, and a vector requires a mixed vector basis like
@@ -319,8 +319,12 @@ viscosity, which is given here in terms of the Reynolds number:
 !bc pycod
 Re = 100.
 nu = 2./Re
-A = inner(grad(v), -nu*grad(u))
-G = inner(div(v), p)
+if family.lower() == 'legendre':
+    A = inner(grad(v), -nu*grad(u))
+    G = inner(div(v), p)
+else:
+    A = inner(v, nu*div(grad(u)))
+    G = inner(v, -grad(p))
 D = inner(q, div(u))
 !ec
 
@@ -478,8 +482,8 @@ def compute_rhs(ui_hat, bh_hat):
     uiuj = outer(ui, ui, uiuj)
     uiuj_hat = uiuj.forward(uiuj_hat)
     bi_hat = bh_hat[0]
-    #bi_hat = inner(v, div(uiuj_hat), output_array=bi_hat)
-    bi_hat = inner(grad(v), -uiuj_hat, output_array=bi_hat)
+    bi_hat = inner(v, div(uiuj_hat), output_array=bi_hat)
+    #bi_hat = inner(grad(v), -uiuj_hat, output_array=bi_hat)
     bh_hat += bh_hat0
     return bh_hat
 !ec

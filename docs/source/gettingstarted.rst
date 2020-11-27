@@ -256,6 +256,76 @@ which assembles a stiffness matrix A. Note that the two expressions fed to
 inner must have consistent rank. Here, for example, both ``grad(u)`` and
 ``grad(v)`` have rank 1 of a vector.
 
+Boundary conditions
+-------------------
+
+The :func:`.FunctionSpace` has a keyword `bc` that can be used to specify
+boundary conditions. This keyword can take several different inputs, at
+least for the Chebyshev and Legendre spaces. The
+default is `None`, which will return an orthogonal space with no boundary
+condition associated. This means a pure Chebyshev or Legendre series, if
+these are the families. Otherwise, a Dirichlet space can be chosen using
+either one of::
+
+    bc = (a, b)
+    bc = {'left': ('D', a), 'right': ('D', b)}
+
+This sets a Dirichlet boundary condition on both left and right hand side
+of the domain, with `a` and `b` being the values. A pure Neumann space
+may be chosen using::
+
+    bc = {'left': ('N', a), 'right': ('N', b)}
+
+Note that for a Neumann space there is also an additional keyword `mean`,
+that can be used to specify the mean value, or the weighted integral
+over the domain
+
+.. math::
+
+    \int_{\Omega} p \omega dx.
+
+Using either one of::
+
+    bc = (None, b)
+    bc = {'right': ('D', b)}
+
+returns a space with only one Dirichlet boundary condition, on the right
+hand side of the domain. Currently, it is not possible to switch this
+around to (a, None).
+
+Using either one of::
+
+    bc = (a, b, c, d)
+    bc = {'left': [('D', a), ('N', c)], 'right': [('D', b), ('N', d)]}
+
+returns a space with 4 boundary conditions (biharmonic), where `a` and `b`
+are the Dirichlet values on left and right, whereas `c` and `d` are the
+Neumann values on left and right.
+
+For a Jacobi basis it is possible to choose a space with six boundary
+conditions fixed::
+
+    bc = (a, b, c, d, e, f)
+
+Here the last two are for second derivatives, whereas the first 4 are as
+for the biharmonic space.
+
+The dictionary form shown above is the most generic approach, and
+it may be used to create mixed Dirichlet and Neumann boundary conditions
+on the left and right boundaries. For example::
+
+    bc = {'left': ('D', a), 'right': ('N', b)}
+
+for a mixed Dirichlet boundary condition on the left and Neumann on the
+right.
+
+Note that currently it is not possible to choose any combination
+of boundary conditions for the biharmonic problem, and the only
+possible choice is therefore the one given above. This does not
+mean that other boundary conditions are not possible, it has simply
+not been implemented
+yet. If you need boundary conditions that are not yet implemented,
+then please open up an issue on github.
 
 Multidimensional problems
 -------------------------

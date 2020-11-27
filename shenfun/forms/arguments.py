@@ -46,17 +46,23 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
     bc : str or tuple, optional
         Choose one of
 
-        - 2-tuple (a, b) - Dirichlet boundary condition with
+        - 2-tuple of numbers (a, b) - Dirichlet boundary condition with
           :math:`v(-1)=a` and :math:`v(1)=b`.
-        - 4-tuple (a, b, 0, 0) - Biharmonic with the two non-zero Dirichlet
-          conditions :math:`v(-1)=a` and :math:`v(1)=b`.
-        - Dirichlet - Homogeneous Dirichlet.
-        - Neumann - Homogeneous Neumann.
-        - Biharmonic - Homogeneous Dirichlet and Neumann at both ends.
-        - UpperDirichlet - Homogeneous Dirichlet at x=1, nothing at x=-1.
-        - Polar - Homogeneous biharmonic, specifically used with polar coordinates.
-        - DirichletNeumann - Homogeneous Dirichlet at x=-1 and Neumann at x=1.
-        - NeumannDirichlet - Homogeneous Neumann at x=-1 and Dirichlet at x=1.
+        - 2-tuple of non-numbers, but None or 2-tuples
+          The inner sequence gives the type of boundary condition first and then
+          the value. For Dirichlet use 'D' and Neumann 'N'. If there are no
+          boundary conditions on one side, then use None.
+          For example:
+            (('D', 0), ('D', 0)) - homogeneous Dirichlet
+            (('N', 0), ('N', 0)) - homogeneous Neumann
+            (('D', 0), ('N', 0)) - mixed Dirichlet on the left and Neumann on the right
+            (None, ('D', 0)) - No bc on the left and homogeneous Dirichlet on the right
+        - 4-tuple (a, b, c, d) - Biharmonic with the two non-zero Dirichlet
+          conditions first :math:`v(-1)=a` and :math:`v(1)=b` and then
+          the two Neumann.
+        - 4-tuple of non-numbers, None or 2-tuples
+          None means no condition, the 2-tuples give the type of condition first,
+          and then the value.
     dtype : str or np.dtype, optional
         The datatype of physical space (input to forward transforms)
     quad : str, optional
@@ -113,6 +119,51 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
     par.update(kw)
     if domain is not None:
         par['domain'] = domain
+
+    def _process_bcs(bc, domain):
+
+        bcs = {'left': [], 'right': []}
+        df = 1
+        if domain is not None:
+            df = 2./(domain[1]-domain[0])
+        if isinstance(bc, tuple):
+            # Short form for Dirichlet or biharmonic with 2 or 4 numbers
+            assert len(bc) in (2, 4)
+            assert np.all([isinstance(i, (sp.Expr, Number)) or i is None for i in bc])
+            if len(bc) == 2:
+                if bc[0] is not None:
+                    bcs['left'] = [('D', bc[0])]
+                if bc[1] is not None:
+                    bcs['right'] = [('D', bc[1])]
+
+            if len(bc) == 4:
+                bcs['left'] = [('D', bc[0]), ('N', bc[2])]
+                bcs['right'] = [('D', bc[1]), ('N', bc[3])]
+            key = ['L'+bci[0] for bci in bcs['left']] + ['R'+bci[0] for bci in bcs['right']]
+
+        elif isinstance(bc, dict):
+            bcs = {k.lower(): list(v) if isinstance(v[0], (tuple, list)) else [v] for k, v in bc.items()}
+            bc = []
+            key = []
+            if 'left' in bcs:
+                bcs['left'].sort()
+                for bci in bcs['left']:
+                    if bci[0] == 'N':
+                        bc.append(bci[1]/df)
+                    else:
+                        bc.append(bci[1])
+                key += ['L'+bci[0] for bci in bcs['left']]
+            if 'right' in bcs:
+                bcs['right'].sort()
+                for bci in bcs['right']:
+                    if bci[0] == 'N':
+                        bc.append(bci[1]/df)
+                    else:
+                        bc.append(bci[1])
+                key += ['R'+bci[0] for bci in bcs['right']]
+
+        return key, tuple(bc)
+
     if family.lower() in ('fourier', 'f'):
         from shenfun import fourier
         if np.dtype(dtype).char in 'FDG':
@@ -128,44 +179,67 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             assert quad in ('GC', 'GL')
             par['quad'] = quad
 
-        if bc is None:
-            B = chebyshev.bases.Orthogonal
+        # Boundary conditions abbreviated in dictionary keys as
+        #   left->L, right->R, Dirichlet->D, Neumann->N
+        # So LDRD means left Dirichlet, right Dirichlet
+        bases = {
+            '': chebyshev.bases.Orthogonal,
+            'LDRD': chebyshev.bases.ShenDirichlet,
+            'LNRN': chebyshev.bases.ShenNeumann,
+            'LDRN': chebyshev.bases.DirichletNeumann,
+            'LNRD': chebyshev.bases.NeumannDirichlet,
+            'RD': chebyshev.bases.UpperDirichlet,
+            'RDRN': chebyshev.bases.UpperDirichletNeumann,
+            'LDLNRDRN': chebyshev.bases.ShenBiharmonic,
+        }
 
-        elif isinstance(bc, tuple):
-            assert len(bc) in (2, 4)
-            par['bc'] = bc
-            if bc[0] is None:
-                B = chebyshev.bases.UpperDirichlet
-            elif len(bc) == 2:
-                B = chebyshev.bases.ShenDirichlet
-            else:
-                B = chebyshev.bases.ShenBiharmonic
-
-        elif isinstance(bc, str):
+        if isinstance(bc, str):
+            # Strings use default values, so no inhomogeneous bcs
             if bc.lower() == 'dirichlet':
-                B = chebyshev.bases.ShenDirichlet
+                key = 'LDRD'
             elif bc.lower() == 'neumann':
-                B = chebyshev.bases.ShenNeumann
-            elif bc.lower() == 'neumann2':
-                B = chebyshev.bases.SecondNeumann
+                key = 'LNRN'
+            elif bc.lower() == 'secondneumann':
+                key = 'LLRL'
             elif bc.lower() == 'biharmonic':
-                B = chebyshev.bases.ShenBiharmonic
+                key = 'LDLNRDRN'
             elif bc.lower() == 'upperdirichlet':
-                B = chebyshev.bases.UpperDirichlet
+                key = 'RD'
             elif bc.lower() == 'bipolar':
-                B = chebyshev.bases.ShenBiPolar
+                key = 'LDLNRDRN2'
             elif bc.lower() == 'dirichletneumann':
-                B = chebyshev.bases.DirichletNeumann
+                key = 'LDRN'
             elif bc.lower() == 'neumanndirichlet':
-                B = chebyshev.bases.NeumannDirichlet
+                key = 'LNRD'
+
+        elif isinstance(bc, (tuple, dict)):
+            key, par['bc'] = _process_bcs(bc, domain)
+
+        elif bc is None:
+            key = ''
 
         else:
             raise NotImplementedError
 
+        B = bases[''.join(key)]
         return B(N, **par)
 
     elif family.lower() in ('legendre', 'l'):
         from shenfun import legendre
+
+        bases = {
+            '': legendre.bases.Orthogonal,
+            'LDRD': legendre.bases.ShenDirichlet,
+            'LNRN': legendre.bases.ShenNeumann,
+            'LDRN': legendre.bases.DirichletNeumann,
+            'LNRD': legendre.bases.NeumannDirichlet,
+            'RD': legendre.bases.UpperDirichlet,
+            'RDRN': legendre.bases.UpperDirichletNeumann,
+            'LNRDRN': legendre.bases.ShenBiPolar0,
+            'LDLNRDRN': legendre.bases.ShenBiharmonic,
+            'LDLNRDRN2': legendre.bases.ShenBiPolar
+        }
+
         if quad is not None:
             assert quad in ('LG', 'GL')
             par['quad'] = quad
@@ -174,39 +248,36 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             assert isinstance(scaled, bool)
             par['scaled'] = scaled
 
-        if bc is None:
-            B = legendre.bases.Orthogonal
-
-        elif isinstance(bc, tuple):
-            assert len(bc) in (2, 4)
-            par['bc'] = bc
-            if bc[0] is None:
-                B = legendre.bases.UpperDirichlet
-            elif len(bc) == 2:
-                B = legendre.bases.ShenDirichlet
-            else:
-                B = legendre.bases.ShenBiharmonic
-
-        elif isinstance(bc, str):
+        if isinstance(bc, str):
             if bc.lower() == 'dirichlet':
-                B = legendre.bases.ShenDirichlet
+                key = 'LDRD'
             elif bc.lower() == 'neumann':
-                B = legendre.bases.ShenNeumann
+                key = 'LNRN'
             elif bc.lower() == 'biharmonic':
-                B = legendre.bases.ShenBiharmonic
+                key = 'LDLNRDRN'
             elif bc.lower() == 'upperdirichlet':
-                B = legendre.bases.UpperDirichlet
+                key = 'RD'
             elif bc.lower() == 'upperdirichletneumann':
-                B = legendre.bases.UpperDirichletNeumann
+                key = 'RDRN'
             elif bc.lower() == 'bipolar':
-                B = legendre.bases.ShenBiPolar
+                key = 'LDLNRDRN2'
             elif bc.lower() == 'bipolar0':
-                B = legendre.bases.ShenBiPolar0
+                key = 'LNRDRN'
             elif bc.lower() == 'dirichletneumann':
-                B = legendre.bases.DirichletNeumann
+                key = 'LDRN'
             elif bc.lower() == 'neumanndirichlet':
-                B = legendre.bases.NeumannDirichlet
+                key = 'LNRD'
 
+        elif isinstance(bc, (tuple, dict)):
+            key, par['bc'] = _process_bcs(bc, domain)
+
+        elif bc is None:
+            key = ''
+
+        else:
+            raise NotImplementedError
+
+        B = bases[''.join(key)]
         return B(N, **par)
 
     elif family.lower() in ('laguerre', 'la'):
