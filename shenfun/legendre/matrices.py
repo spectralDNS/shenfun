@@ -83,6 +83,7 @@ SU = bases.UpperDirichlet
 DN = bases.DirichletNeumann
 CD = bases.BCDirichlet
 CB = bases.BCBiharmonic
+BF = bases.BeamFixedFree
 
 x = sp.symbols('x', real=True)
 xp = sp.symbols('x', real=True, positive=True)
@@ -210,7 +211,7 @@ class BBBmat(SpectralMatrix):
 
     .. math::
 
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+        j = 0, 1, ..., N-4 \text{ and } k = 0, 1, ..., N-4
 
     and :math:`\psi_k` is the Shen Legendre Biharmonic basis function.
 
@@ -233,6 +234,46 @@ class BBBmat(SpectralMatrix):
         d[-4] = d[4]
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
         self.solve = PDMA(self)
+
+class BBFBFmat(SpectralMatrix):
+    r"""Mass matrix for inner product
+
+    .. math::
+
+        B_{kj} = (\psi_j, \psi_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-4 \text{ and } k = 0, 1, ..., N-4
+
+    and :math:`\psi_k` is the BeamFixedFree Biharmonic basis function.
+
+    """
+    def __init__(self, test, trial, measure=1):
+        assert isinstance(test[0], BF)
+        assert isinstance(trial[0], BF)
+        N = test[0].N
+        k = np.arange(N-4, dtype=np.float)
+        f1 = lambda k: 4*(2*k+3)/((k+3)**2)
+        f2 = lambda k: -(2*(k-1)*(k+1)*(k+6)*(2*k+5)/((k+3)**2*(k+4)*(2*k+7)))
+        f3 = lambda k: -4*(k+1)**2*(2*k+3)/((k+3)**2*(k+4)**2)
+        f4 = lambda k: (((k+1)/(k+3))*((k+2)/(k+4)))**2*(2*k+3)/(2*k+7)
+        d = {0: 2/(2*k+1)+f1(k)**2*2/(2*k+3)+f2(k)**2*2/(2*k+5)+f3(k)**2*2/(2*k+7)+f4(k)**2*2/(2*k+9),
+             1: (f1(k)*2/(2*k+3)+f1(k+1)*f2(k)*2/(2*k+5)+f2(k+1)*f3(k)*2/(2*k+7)+f3(k+1)*f4(k)*2/(2*k+9))[:-1],
+             2: (f2(k)*2/(2*k+5)+f1(k+2)*f3(k)*2/(2*k+7)+f2(k+2)*f4(k)*2/(2*k+9))[:-2],
+             3: (f3(k)*2/(2*k+7)+f1(k+3)*f4(k)*2/(2*k+9))[:-3],
+             4: (f4(k)*2/(2*k+9))[:-4]
+            }
+        d[-1] = d[1].copy()
+        d[-2] = d[2].copy()
+        d[-3] = d[3].copy()
+        d[-4] = d[4].copy()
+        if test[0].quad == 'GL':
+            k = N-5
+            d[0][-1] = 2/(2*k+1)+f1(k)**2*2/(2*k+3)+f2(k)**2*2/(2*k+5)+f3(k)**2*2/(2*k+7)+f4(k)**2*2/(N-1)
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
 class BDLmat(SpectralMatrix):
@@ -523,6 +564,63 @@ class ADNDNmat(SpectralMatrix):
         else:
             assert u.shape == b.shape
 
+
+        # Move axis to first
+        if axis > 0:
+            u = np.moveaxis(u, axis, 0)
+            if u is not b:
+                b = np.moveaxis(b, axis, 0)
+
+        bs = b[s]
+        us = u[s]
+        d = 1./self[0]
+        sl = [np.newaxis]*bs.ndim
+        sl[0] = slice(None)
+        us[:] = bs*d[tuple(sl)]
+        u /= self.scale
+        self.testfunction[0].bc.set_boundary_dofs(u, True)
+
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
+            if u is not b:
+                b = np.moveaxis(b, axis, 0)
+
+        return u
+
+class SBFBFmat(SpectralMatrix):
+    r"""Biharmonic matrix for inner product
+
+    .. math::
+
+        S_{kj} = (\psi''_j, \psi''_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-4 \text{ and } k = 0, 1, ..., N-4
+
+    and :math:`\psi_k` is the BeamFixedFree basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], BF)
+        assert isinstance(trial[0], BF)
+        N = test[0].N
+        k = np.arange(N-4, dtype=np.float)
+        f4 = (((k+1)/(k+3))*((k+2)/(k+4)))**2*(2*k+3)/(2*k+7)
+        d = {0: f4*(k+2.5)*((k+4)*(k+5)-(k+2)*(k+3))*((k+2)*(k+3)-k*(k+1))}
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+
+    def solve(self, b, u=None, axis=0):
+        N = self.shape[0] + 4
+        assert N == b.shape[axis]
+        s = self.trialfunction[0].slice()
+
+        if u is None:
+            u = b
+        else:
+            assert u.shape == b.shape
 
         # Move axis to first
         if axis > 0:
@@ -1273,6 +1371,10 @@ mat = _LegMatDict({
     ((DN, 1), (DN, 1)): ADNDNmat,
     ((DN, 2), (DN, 0)): functools.partial(ADNDNmat, scale=-1.),
     ((DN, 0), (DN, 2)): functools.partial(ADNDNmat, scale=-1.),
+    ((BF, 4), (BF, 0)): SBFBFmat,
+    ((BF, 0), (BF, 4)): SBFBFmat,
+    ((BF, 2), (BF, 2)): SBFBFmat,
+    ((BF, 0), (BF, 0)): BBFBFmat
     })
 
 #mat = _LegMatDict({})
