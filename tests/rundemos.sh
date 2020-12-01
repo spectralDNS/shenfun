@@ -58,6 +58,8 @@ python hermite_poisson2D.py 36
 
 python order6.py 20
 
+python beam_biharmonic1D.py 36
+
 python dirichlet_dirichlet_poisson2D.py 24 25 legendre
 python dirichlet_dirichlet_poisson2D.py 24 25 chebyshev
 python dirichlet_dirichlet_poisson2D.py 24 25 jacobi

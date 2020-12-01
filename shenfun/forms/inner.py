@@ -354,6 +354,8 @@ def inner(expr0, expr1, output_array=None, level=0):
                                 if BB:
                                     DM.append(BB)
                                     has_bcs = True
+                                else:
+                                    DM.append(0)
                             else:
                                 DM.append(AA)
 
@@ -375,9 +377,12 @@ def inner(expr0, expr1, output_array=None, level=0):
                                 if len(trial_sp.get_nonhomogeneous_axes()) == 1:
                                     A.append(TPMatrix(DM, test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
                                 elif len(trial_sp.get_nonhomogeneous_axes()) == 2:
-                                    A.append(TPMatrix([M[0], DM[1]], test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
-                                    A.append(TPMatrix([DM[0], M[1]], test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
-                                    A.append(TPMatrix(DM, test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                                    if DM[1] is not 0:
+                                        A.append(TPMatrix([M[0], DM[1]], test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                                    if DM[0] is not 0:
+                                        A.append(TPMatrix([DM[0], M[1]], test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                                    if DM[0] is not 0 and DM[1] is not 0:
+                                        A.append(TPMatrix(DM, test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
 
     # At this point A contains all matrices of the form. The length of A is
     # the number of inner products. For each index into A there are ndim 1D

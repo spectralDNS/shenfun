@@ -325,12 +325,13 @@ example::
 
     import sympy as sp
     x, y = sp.symbols('x,y', real=True)
-    B0 = FunctionSpace(N, 'C', bc=(0, 0), domain=(-1, 1))
+    B0 = FunctionSpace(N, 'C', bc=((1-y)*(1+y), 0), domain=(-1, 1))
     B1 = FunctionSpace(N, 'C', bc=(0, (1-x)*(1+x)), domain=(-1, 1))
     T = TensorProductSpace(comm, (B0, B1))
 
-uses homogeneous Dirichlet on three out of the four sides of the
-square domain :math:`(-1, 1)\times (-1, 1)`. For the side where
+uses homogeneous Dirichlet on two out of the four sides of the
+square domain :math:`(-1, 1)\times (-1, 1)`, at :math:`x=-1`
+and :math:`y=1`. For the side where
 :math:`y=1`, the
 boundary condition is :math:`(1-x)(1+x)`. Note that only
 :math:`x` will vary along the side where :math:`y=1`, which is
@@ -340,8 +341,14 @@ corners, or else there will be severe Gibbs oscillations in
 the solution.
 
 Note that currently it is not possible to choose any combination
-of boundary conditions for the biharmonic problem, and the only
-possible choice is therefore the one given above. This does not
+of boundary conditions. For second order equations like Poisson
+it is quite flexible and one may mix Neumann and Dirichlet, both in
+1D and 2D. For the biharmonic problem, there are only two possible
+choices. The regular with Dirichlet and Neumann on both edges of
+the domain. Or fixed beam boundary conditions with Dirichlet and
+Neumann on the left domain and conditions on the second and third
+derivatives on the right hand side (:math:`u''(1)` and
+:math:`u'''(1)`). This does not
 mean that other boundary conditions are not possible, it has simply
 not been implemented
 yet. If you need boundary conditions that are not yet implemented,

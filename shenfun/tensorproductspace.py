@@ -1615,22 +1615,39 @@ class BoundaryValues:
 
                 other_base = bases[0]
                 ua = Array(other_base)
-                for j, bcj in enumerate(other_base.bc.bc.copy()):
-                    xj = this_base.domain[j]
-                    sym = sp.sympify(bcj).free_symbols
-                    if len(sym) == 1:
-                        s = bcj.subs(sym.pop(), xj)
-                        other_base.bc.bc[j] = s
-                        other_base.bc.bcs[j] = s
-                        other_base.bc.bcs_final[j] = s
-                    else:
-                        other_base.bc.bc[j] = bcj
-                        other_base.bc.bcs[j] = bcj
-                        other_base.bc.bcs_final[j] = bcj
+                bc_this = this_base.bc.bc.copy()
+                bc_other = other_base.bc.bc.copy()
+                df = 2./(other_base.domain[1]-other_base.domain[0])
+                for i in range(2): # x = -1 and then x = 1
+                    bcj = bc_this[i]
+                    for j in range(2): # y = -1 and then y = 1
+                        #bcj = bc_other[j]
+                        xj = other_base.domain[j]
+                        sym = sp.sympify(bcj).free_symbols
 
-                for j in range(len(self.bc)):
-                    ua[:] = b[this_base.si[-(len(self.bc))+j]]
-                    self.bcs_final[j] = project(ua, other_base)
+                        if len(sym) == 1:
+                            xx = sym.pop()
+                            if j == 0 and other_base.boundary_condition() == 'NeumannDirichlet':
+                                s = bcj.diff(xx, 1).subs(xx, xj)/df
+                            elif j == 1 and other_base.boundary_condition() == 'DirichletNeumann':
+                                s = bcj.diff(xx, 1).subs(xx, xj)/df
+                            elif j == 0 and other_base.boundary_condition() == 'UpperDirichletNeumann':
+                                xj = other_base.domain[1]
+                                s = bcj.subs(xx, xj)
+                            elif j == 1 and other_base.boundary_condition() == 'UpperDirichletNeumann':
+                                s = bcj.diff(xx, 1).subs(xx, xj)/df
+                            else:
+                                s = bcj.subs(xx, xj)
+
+                            other_base.bc.bc[j] = s
+                            other_base.bc.bcs[j] = s
+                            other_base.bc.bcs_final[j] = s
+                        else:
+                            other_base.bc.bc[j] = bcj
+                            other_base.bc.bcs[j] = bcj
+                            other_base.bc.bcs_final[j] = bcj
+                    ua[:] = b[this_base.si[-(len(self.bc))+i]]
+                    self.bcs_final[i] = project(ua, other_base)
 
 
     def add_to_orthogonal(self, u, uh):

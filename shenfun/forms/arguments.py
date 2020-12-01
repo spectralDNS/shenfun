@@ -150,6 +150,10 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
                 for bci in bcs['left']:
                     if bci[0] == 'N':
                         bc.append(bci[1]/df)
+                    elif bci[0] == 'N2':
+                        bc.append(bci[1]/df**2)
+                    elif bci[0] == 'N3':
+                        bc.append(bci[1]/df**3)
                     else:
                         bc.append(bci[1])
                 key += ['L'+bci[0] for bci in bcs['left']]
@@ -158,6 +162,10 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
                 for bci in bcs['right']:
                     if bci[0] == 'N':
                         bc.append(bci[1]/df)
+                    elif bci[0] == 'N2':
+                        bc.append(bci[1]/df**2)
+                    elif bci[0] == 'N3':
+                        bc.append(bci[1]/df**3)
                     else:
                         bc.append(bci[1])
                 key += ['R'+bci[0] for bci in bcs['right']]
@@ -237,7 +245,8 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             'RDRN': legendre.bases.UpperDirichletNeumann,
             'LNRDRN': legendre.bases.ShenBiPolar0,
             'LDLNRDRN': legendre.bases.ShenBiharmonic,
-            'LDLNRDRN2': legendre.bases.ShenBiPolar
+            'LDLNRDRN2': legendre.bases.ShenBiPolar,
+            'LDLNRN2RN3': legendre.bases.BeamFixedFree
         }
 
         if quad is not None:
@@ -267,6 +276,8 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
                 key = 'LDRN'
             elif bc.lower() == 'neumanndirichlet':
                 key = 'LNRD'
+            elif bc.lower() == 'beamfixedfree':
+                key = 'LDLNRN2RN3'
 
         elif isinstance(bc, (tuple, dict)):
             key, par['bc'] = _process_bcs(bc, domain)

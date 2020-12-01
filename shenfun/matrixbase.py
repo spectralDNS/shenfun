@@ -1198,6 +1198,7 @@ class TPMatrix:
         elif len(self.naxes) == 1:
             axis = self.naxes[0]
             rank = v.rank if hasattr(v, 'rank') else 0
+            basespace = self.trialspace.bases[axis]
             if rank == 0:
                 c = self.pmat.matvec(v, c, axis=axis)
             else:
@@ -1217,6 +1218,7 @@ class TPMatrix:
             cB = np.zeros(transAB.subshapeB, dtype=c.dtype)
             cC = np.zeros(transAB.subshapeB, dtype=c.dtype)
             bb = self.mats[axis]
+            bases = self.trialspace.bases
             c = bb.matvec(v, c, axis=axis)
             # align in second non-periodic axis
             transAB.forward(c, cB)
