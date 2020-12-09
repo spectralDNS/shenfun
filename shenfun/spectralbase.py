@@ -1338,7 +1338,6 @@ def inner_product(test, trial, measure=1):
             sc = -1
             measure *= sc
         key = key + (test[0].domain, measure)
-
     mat = test[0]._get_mat()
     A = mat[key](test, trial)
     A.scale *= sc
