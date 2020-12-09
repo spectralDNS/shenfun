@@ -1616,7 +1616,7 @@ class BoundaryValues:
                 other_base = bases[0]
                 ua = Array(other_base)
                 bc_this = this_base.bc.bc.copy()
-                bc_other = other_base.bc.bc.copy()
+                #bc_other = other_base.bc.bc.copy()
                 df = 2./(other_base.domain[1]-other_base.domain[0])
                 for i in range(2): # x = -1 and then x = 1
                     bcj = bc_this[i]
