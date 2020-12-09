@@ -942,7 +942,10 @@ class BlockMatrix:
 
         tpmat = self.get_mats(True)
         axis = tpmat.naxes[0] if isinstance(tpmat, TPMatrix) else 0
-        tp = space.flatten()
+        tp = space.flatten() if hasattr(space, 'flatten') else [space]
+        nvars = b.shape[0] if len(b.shape)>space.dimensions else 1
+        u = u.reshape(1,*u.shape) if nvars == 1 else u
+        b = b.reshape(1,*b.shape) if nvars == 1 else b
         for con in constraints:
             assert len(con) == 3
             assert isinstance(con[0], Integral)
@@ -954,7 +957,7 @@ class BlockMatrix:
         if space.dimensions == 1:
             s = [0, 0]
             Ai = self.diags((0,))
-            for k in range(b.shape[0]):
+            for k in range(nvars):
                 s[0] = k
                 s[1] = tp[k].slice()
                 gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
@@ -962,7 +965,7 @@ class BlockMatrix:
                 go[:] = Alu.solve(gi)
             else:
                 go[:] = sp.linalg.spsolve(Ai, gi)
-            for k in range(b.shape[0]):
+            for k in range(nvars):
                 s[0] = k
                 s[1] = tp[k].slice()
                 u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
@@ -977,7 +980,7 @@ class BlockMatrix:
                 gi = np.zeros(space.dim(), dtype=b.dtype)
                 go = np.zeros(space.dim(), dtype=b.dtype)
                 start = 0
-                for k in range(b.shape[0]):
+                for k in range(nvars):
                     s[0] = k
                     s[1] = tp[k].bases[0].slice()
                     s[2] = tp[k].bases[1].slice()
@@ -996,7 +999,7 @@ class BlockMatrix:
                 else:
                     go[:] = sp.linalg.spsolve(Ai, gi)
                 start = 0
-                for k in range(b.shape[0]):
+                for k in range(nvars):
                     s[0] = k
                     s[1] = tp[k].bases[0].slice()
                     s[2] = tp[k].bases[1].slice()
@@ -1012,14 +1015,14 @@ class BlockMatrix:
                     d0[(axis+1)%2] = i
                     Ai = self.diags(d0)
                     s[ii] = i
-                    for k in range(b.shape[0]):
+                    for k in range(nvars):
                         s[0] = k
                         s[jj] = tp[k].bases[axis].slice()
                         gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
                     for con in constraints:
                         Ai, gi = self.apply_constraint(Ai, gi, self.offset[con[0]][axis], i, con)
                     go[:] = sp.linalg.spsolve(Ai, gi)
-                    for k in range(b.shape[0]):
+                    for k in range(nvars):
                         s[0] = k
                         s[jj] = tp[k].bases[axis].slice()
                         u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
@@ -1033,18 +1036,20 @@ class BlockMatrix:
                     d0[ii-1], d0[jj-1] = i, j
                     Ai = self.diags(d0)
                     s[ii], s[jj] = i, j
-                    for k in range(b.shape[0]):
+                    for k in range(nvars):
                         s[0] = k
                         s[axis+1] = tp[k].bases[axis].slice()
                         gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
                     for con in constraints:
                         Ai, gi = self.apply_constraint(Ai, gi, self.offset[con[0]][axis], (i, j), con)
                     go[:] = sp.linalg.spsolve(Ai, gi)
-                    for k in range(b.shape[0]):
+                    for k in range(nvars):
                         s[0] = k
                         s[axis+1] = tp[k].bases[axis].slice()
                         u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
 
+        u = u.reshape(u.shape[1:]) if nvars == 1 else u
+        b = b.reshape(b.shape[1:]) if nvars == 1 else b
         return u
 
     @staticmethod
