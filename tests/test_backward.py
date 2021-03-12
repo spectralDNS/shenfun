@@ -133,7 +133,7 @@ def test_padding(family):
 @pytest.mark.parametrize('family', 'CL')
 def test_padding_neumann(family):
     N = 8
-    B = FunctionSpace(N, family, bc='Neumann')
+    B = FunctionSpace(N, family, bc={'left':('N', 0), 'right': ('N', 0)})
     Bp = B.get_dealiased(1.5)
     u = Function(B)
     u[1:-2] = np.random.random(N-3)
@@ -210,7 +210,7 @@ def test_padding_orthogonal(family):
 @pytest.mark.parametrize('family', 'CLJ')
 def test_padding_biharmonic(family):
     N = 8
-    B = FunctionSpace(N, family, bc='Biharmonic')
+    B = FunctionSpace(N, family, bc=(0, 0, 0, 0))
     Bp = B.get_dealiased(1.5)
     u = Function(B)
     u[:(N-4)] = np.random.random(N-4)

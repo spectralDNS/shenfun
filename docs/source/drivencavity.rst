@@ -7,7 +7,7 @@ Demo - Lid driven cavity
 ========================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Oct 23, 2020
+:Date: Dec 22, 2020
 
 *Summary.* The lid driven cavity is a classical benchmark for Navier Stokes solvers.
 This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the lid
@@ -253,7 +253,7 @@ With shenfun the tensor product spaces are created as
 
     V1 = TensorProductSpace(comm, (D0X, D1Y))
     V0 = TensorProductSpace(comm, (D0X, D0Y))
-    P = TensorProductSpace(comm, (PX, PY))
+    P = TensorProductSpace(comm, (PX, PY), modify_spaces_inplace=True)
 
 These tensor product spaces are all scalar valued.
 The velocity is a vector, and a vector requires a mixed vector basis like
@@ -420,8 +420,12 @@ viscosity, which is given here in terms of the Reynolds number:
 
     Re = 100.
     nu = 2./Re
-    A = inner(grad(v), -nu*grad(u))
-    G = inner(div(v), p)
+    if family.lower() == 'legendre':
+        A = inner(grad(v), -nu*grad(u))
+        G = inner(div(v), p)
+    else:
+        A = inner(v, nu*div(grad(u)))
+        G = inner(v, -grad(p))
     D = inner(q, div(u))
 
 The assembled subsystems ``A, G`` and ``D`` are lists containg the different blocks of
@@ -478,7 +482,7 @@ manipulations
    :label: _auto14
 
         
-         -\sum_{m=0}^{N_0-3} \sum_{n=0}^{N_1-1} \nu \Big( \underbrace{\int_{-1}^{1} \frac{\partial \mathcal{X}_k(x)}{\partial x} \frac{\partial \mathcal{X}_m}{\partial x} dx \int_{-1}^{1} \mathcal{Y}_l \mathcal{Y}_n dy}_{A[0]} +  \underbrace{\int_{-1}^{1} \mathcal{X}_k(x) X_m(x) dx \int_{-1}^{1} \frac{\partial \mathcal{Y}_l}{\partial y} \frac{\partial \mathcal{Y}_n}{\partial y} dy}_{A[1]}  \Big) \hat{\boldsymbol{u}}[0]_{mn}.
+         -\sum_{m=0}^{N_0-3} \sum_{n=0}^{N_1-1} \nu \Big( \underbrace{\int_{-1}^{1} \frac{\partial \mathcal{X}_k}{\partial x} \frac{\partial \mathcal{X}_m}{\partial x} dx \int_{-1}^{1} \mathcal{Y}_l \mathcal{Y}_n dy}_{A[0]} +  \underbrace{\int_{-1}^{1} \mathcal{X}_k X_m dx \int_{-1}^{1} \frac{\partial \mathcal{Y}_l}{\partial y} \frac{\partial \mathcal{Y}_n}{\partial y} dy}_{A[1]}  \Big) \hat{\boldsymbol{u}}[0]_{mn}.
         
         
 
@@ -490,7 +494,7 @@ The first tensor product matrix, A[0], is
    :label: _auto15
 
         
-            \underbrace{\int_{-1}^{1} \frac{\partial \mathcal{X}_k(x)}{\partial x} \frac{\partial \mathcal{X}_m}{\partial x} dx}_{c_{km}} \underbrace{\int_{-1}^{1} \mathcal{Y}_l \mathcal{Y}_n dy}_{f_{ln}}
+            \underbrace{\int_{-1}^{1} \frac{\partial \mathcal{X}_k}{\partial x} \frac{\partial \mathcal{X}_m}{\partial x} dx}_{c_{km}} \underbrace{\int_{-1}^{1} \mathcal{Y}_l \mathcal{Y}_n dy}_{f_{ln}}
         
         
 
@@ -508,17 +512,15 @@ tensor product matrix into two contributions and obtain
 where the first term on the right hand side is square and the second term is known and
 can be moved to the right hand side of the linear algebra equation system.
 
-All the parts of the matrices that are to be moved to the right hand side
-can be extracted from A, G and D as follows
+At this point all matrices, both regular and boundary matrices, are
+contained within the three lists A, G and D. We assemble two block matrices
+in one call, where M is regular and BM is a boundary block matrix.
 
 .. code-block:: python
 
-    # Extract the boundary matrices
-    bc_mats = extract_bc_matrices([A, G, D])
+    M, BM = BlockMatrices(A+G+D)
 
-These matrices are applied to the solution below (see ``BlockMatrix BM``).
-Furthermore, this leaves us with square submatrices (A, G, D), which make up a
-symmetric block matrix
+The regular block matrix M is now given as the symmetric
 
 .. math::
         M =
@@ -528,13 +530,7 @@ symmetric block matrix
               D[0] & D[1] & 0
           \end{bmatrix}
 
-This matrix, and the matrix responsible for the boundary degrees of freedom,
-can be assembled from the pieces we already have as
-
-.. code-block:: python
-
-    M = BlockMatrix(A+G+D)
-    BM = BlockMatrix(bc_mats)
+The BM matrix must be used to modify the known right hand side.
 
 We now have all the matrices we need in order to solve the Navier Stokes equations.
 However, we also need some work arrays for iterations and we need to
@@ -554,7 +550,6 @@ assemble the constant boundary contribution to the right hand side
     # Compute the constant contribution to rhs due to nonhomogeneous boundary conditions
     bh_hat0 = Function(VQ)
     bh_hat0 = BM.matvec(-uh_hat, bh_hat0) # Negative because moved to right hand side
-    bi_hat0 = bh_hat0[0]
     
 
 Note that ``bh_hat0`` now contains the part of the right hand side that is
@@ -593,8 +588,8 @@ own function ``compute_rhs`` as
         uiuj = outer(ui, ui, uiuj)
         uiuj_hat = uiuj.forward(uiuj_hat)
         bi_hat = bh_hat[0]
-        #bi_hat = inner(v, div(uiuj_hat), output_array=bi_hat)
-        bi_hat = inner(grad(v), -uiuj_hat, output_array=bi_hat)
+        bi_hat = inner(v, div(uiuj_hat), output_array=bi_hat)
+        #bi_hat = inner(grad(v), -uiuj_hat, output_array=bi_hat)
         bh_hat += bh_hat0
         return bh_hat
 

@@ -12,7 +12,7 @@ quads = ('GC', 'GL')
 
 @pytest.mark.parametrize('quad', quads)
 def test_PDMA(quad):
-    SB = FunctionSpace(N, 'C', bc='Biharmonic', quad=quad)
+    SB = FunctionSpace(N, 'C', bc=(0, 0, 0, 0), quad=quad)
     u = TrialFunction(SB)
     v = TestFunction(SB)
     points, weights = SB.points_and_weights(N)
@@ -61,5 +61,5 @@ def test_solve(quad):
     assert np.all(abs(ww-u_hat[:-2].repeat(N-2).reshape((N-2, N-2)).transpose()) < 1e-8)
 
 if __name__ == "__main__":
-    #test_solve('GC')
-    test_PDMA('GC')
+    test_solve('GC')
+    #test_PDMA('GC')

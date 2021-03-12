@@ -5,7 +5,8 @@ import numpy as np
 import scipy.sparse as scp
 from scipy.sparse.linalg import spsolve, splu
 from shenfun.optimization import optimizer
-from shenfun.matrixbase import SparseMatrix
+from shenfun.matrixbase import SparseMatrix, extract_bc_matrices, SpectralMatrix
+
 
 class TDMA:
     """Tridiagonal matrix solver
@@ -13,27 +14,41 @@ class TDMA:
     Parameters
     ----------
     mat : SparseMatrix
-        Symmetric tridiagonal matrix with diagonals in offsets -2, 0, 2
+        Tridiagonal matrix with diagonals in offsets -2, 0, 2
 
     """
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, mat):
+    def __init__(self, mat, neumann=False):
         assert isinstance(mat, SparseMatrix)
         self.mat = mat
-        self.N = 0
         self.dd = np.zeros(0)
-        self.ud = None
-        self.L = None
+        self.neumann = neumann
+        if isinstance(mat, SpectralMatrix):
+            self.neumann = mat.testfunction[0].boundary_condition().lower() == 'neumann'
 
     def init(self):
         """Initialize and allocate solver"""
-        M = self.mat.shape[0]
-        B = self.mat
-        self.dd = B[0]*np.ones(M)
-        self.ud = B[2]*np.ones(M-2)
-        self.L = np.zeros(M-2)
-        self.TDMA_SymLU(self.dd, self.ud, self.L)
+        N = self.mat.shape[0]
+        self.symmetric = self.mat.issymmetric
+        self.dd = self.mat[0]*np.ones(N)*self.mat.scale
+        self.ud = self.mat[2]*np.ones(N-2)*self.mat.scale
+        if self.neumann:
+            self.dd[0] = 1
+            self.ud[0] = 0
+        self.ld = np.zeros(N-2) if self.symmetric else self.mat[-2]*np.ones(N-2)*self.mat.scale
+        if self.symmetric:
+            self.TDMA_SymLU(self.dd, self.ud, self.ld)
+        else:
+            self.TDMA_LU(self.ld, self.dd, self.ud)
+
+    @staticmethod
+    @optimizer
+    def TDMA_LU(ld, d, ud):
+        n = d.shape[0]
+        for i in range(2, n):
+            ld[i-2] = ld[i-2]/d[i-2]
+            d[i] = d[i] - ld[i-2]*ud[i-2]
 
     @staticmethod
     @optimizer
@@ -79,14 +94,28 @@ class TDMA:
             u = b
         else:
             assert u.shape == b.shape
+            N = self.dd.shape[0]
             u[:] = b[:]
 
         if not self.dd.shape[0] == self.mat.shape[0]:
             self.init()
 
-        self.TDMA_SymSolve(self.dd, self.ud, self.L, u, axis=axis)
+        if self.neumann:
+            T = self.mat.testfunction[0]
+            u[T.si[0]] = 0
+            if isinstance(self, SpectralMatrix):
+                u[T.si[0]] = self.mat.testfunction[0].mean
 
-        u /= self.mat.scale
+        self.TDMA_SymSolve(self.dd, self.ud, self.ld, u, axis=axis)
+
+        if hasattr(u, 'set_boundary_dofs'):
+            u.set_boundary_dofs()
+
+        if self.neumann:
+            u[T.si[0]] = 0
+            if isinstance(self, SpectralMatrix):
+                u[T.si[0]] = self.mat.testfunction[0].mean
+
         return u
 
 class PDMA:
@@ -95,38 +124,49 @@ class PDMA:
     Parameters
     ----------
         mat : SparseMatrix
-              Symmetric pentadiagonal matrix with diagonals in offsets
-              -4, -2, 0, 2, 4
-        solver : str, optional
-                 Choose implementation
-
-                 - cython - Use efficient cython implementation
-                 - python - Use python/scipy
+            Pentadiagonal matrix with diagonals in offsets
+            -4, -2, 0, 2, 4
+        neumann : bool, optional
+            Whether matrix represents a Neumann problem, where
+            the first index is known as the mean value and we
+            solve for slice(1, N-3).
+            If `mat` is a :class:`.SpectralMatrix`, then the
+            `neumann` keyword is ignored and the information
+            extracted from the matrix.
 
     """
 
-    def __init__(self, mat, solver="cython"):
+    def __init__(self, mat, neumann=False):
         assert isinstance(mat, SparseMatrix)
         self.mat = mat
-        self.solver = solver
         self.N = 0
         self.d0 = np.zeros(0)
         self.d1 = None
         self.d2 = None
         self.A = None
         self.L = None
+        self.neumann = neumann
+        if isinstance(mat, SpectralMatrix):
+            self.neumann = mat.testfunction[0].boundary_condition().lower() == 'neumann'
 
     def init(self):
         """Initialize and allocate solver"""
         B = self.mat
-        self.d0, self.d1, self.d2 = B[0].copy(), B[2].copy(), B[4].copy()
-        self.PDMA_SymLU(self.d0, self.d1, self.d2)
-
-        #self.A = np.zeros((5, B[0].shape[0]))
-        #self.A[0, 4:] = self.d2
-        #self.A[2, 2:] = self.d1
-        #self.A[4, :] = self.d0
-        #self.L = decomp_cholesky.cholesky_banded(self.A)
+        shape = self.mat.shape[1]
+        # Broadcast in case diagonal is simply a constant.
+        self.d0 = np.broadcast_to(np.atleast_1d(B[0]), shape).copy()*B.scale
+        self.d1 = np.broadcast_to(np.atleast_1d(B[2]), shape-2).copy()*B.scale
+        self.d2 = np.broadcast_to(np.atleast_1d(B[4]), shape-4).copy()*B.scale
+        if self.neumann:
+            self.d0[0] = 1
+            self.d1[0] = 0
+            self.d2[0] = 0
+        if B.issymmetric:
+            self.PDMA_SymLU(self.d0, self.d1, self.d2)
+        else:
+            self.l1 = np.broadcast_to(np.atleast_1d(B[-2]), shape-2).copy()*B.scale
+            self.l2 = np.broadcast_to(np.atleast_1d(B[-4]), shape-4).copy()*B.scale
+            self.PDMA_LU(self.l2, self.l1, self.d0, self.d1, self.d2)
 
     @staticmethod
     @optimizer
@@ -154,10 +194,36 @@ class PDMA:
 
     @staticmethod
     @optimizer
+    def PDMA_LU(a, b, d, e, f): # pragma: no cover
+        """LU decomposition"""
+        n = d.shape[0]
+        m = e.shape[0]
+        k = n - m
+
+        for i in range(n-2*k):
+            lam = b[i]/d[i]
+            d[i+k] -= lam*e[i]
+            e[i+k] -= lam*f[i]
+            b[i] = lam
+            lam = a[i]/d[i]
+            b[i+k] -= lam*e[i]
+            d[i+2*k] -= lam*f[i]
+            a[i] = lam
+
+        i = n-4
+        lam = b[i]/d[i]
+        d[i+k] -= lam*e[i]
+        b[i] = lam
+        i = n-3
+        lam = b[i]/d[i]
+        d[i+k] -= lam*e[i]
+        b[i] = lam
+
+    @staticmethod
+    @optimizer
     def PDMA_SymSolve(d, e, f, b, axis=0): # pragma: no cover
         """Symmetric solve (for testing only)"""
         n = d.shape[0]
-        #bc = array(map(decimal.Decimal, b))
         bc = b
 
         bc[2] -= e[0]*bc[0]
@@ -175,6 +241,25 @@ class PDMA:
             bc[k] /= d[k]
             bc[k] -= (e[k]*bc[k+2] + f[k]*bc[k+4])
         b[:] = bc.astype(float)
+
+    @staticmethod
+    @optimizer
+    def PDMA_Solve(a, b, d, e, f, h, axis=0): # pragma: no cover
+        """Symmetric solve (for testing only)"""
+        n = d.shape[0]
+        bc = h
+
+        bc[2] -= b[0]*bc[0]
+        bc[3] -= b[1]*bc[1]
+        for k in range(4, n):
+            bc[k] -= (b[k-2]*bc[k-2] + a[k-4]*bc[k-4])
+
+        bc[n-1] /= d[n-1]
+        bc[n-2] /= d[n-2]
+        bc[n-3] = (bc[n-3]-e[n-3]*bc[n-1])/d[n-3]
+        bc[n-4] = (bc[n-4]-e[n-4]*bc[n-2])/d[n-4]
+        for k in range(n-5, -1, -1):
+            bc[k] = (bc[k]-e[k]*bc[k+2]-f[k]*bc[k+4])/d[k]
 
     def __call__(self, b, u=None, axis=0, **kw):
         """Solve matrix problem self u = b
@@ -198,18 +283,29 @@ class PDMA:
             u = b
         else:
             assert u.shape == b.shape
-            u[:] = b
+            u[:] = b[:]
 
         if not self.d0.shape[0] == self.mat[0].shape[0]:
             self.init()
 
-        self.PDMA_SymSolve(self.d0, self.d1, self.d2, u, axis)
+        if self.neumann:
+            T = self.mat.testfunction[0]
+            u[T.si[0]] = 0
+            if isinstance(self, SpectralMatrix):
+                u[T.si[0]] = T.mean
 
-        u /= self.mat.scale
+        if self.mat.issymmetric:
+            self.PDMA_SymSolve(self.d0, self.d1, self.d2, u, axis)
+        else:
+            self.PDMA_Solve(self.l2, self.l1, self.d0, self.d1, self.d2, u, axis)
+
+        if hasattr(u, 'set_boundary_dofs'):
+            u.set_boundary_dofs()
+
         return u
 
 class Solve:
-    """Solver class for matrix created by Dirichlet bases
+    """Generic solver class for SparseMatrix
 
     Possibly with inhomogeneous boundary values
 
@@ -257,36 +353,41 @@ class Solve:
 
         s = self.s
         assert self.A.shape[0] == b[s].shape[0]
-        A = self.A.diags('csc')
+
+        if self.test.use_fixed_gauge:
+            A = self.A.diags('lil')
+            _, zerorow = A[0].nonzero()
+            A[(0, zerorow)] = 0
+            A[0, 0] = 1
+            b[0] = self.test.mean
+            A = A.tocsc()
+        else:
+            A = self.A.diags('csc')
+
         if b.ndim == 1:
             if use_lu:
-                if b.dtype.char in 'FDG':
+                if b.dtype.char in 'fdg' or self._lu.U.dtype.char in 'FDG':
+                    u[s] = self._lu.solve(b[s])
+                else: # complex b and real matrix
                     u.real[s] = self._lu.solve(b[s].real)
                     u.imag[s] = self._lu.solve(b[s].imag)
-                else:
-                    u[s] = self._lu.solve(b[s])
+
             else:
                 u[s] = spsolve(A, b[s])
-            #u[s] = spsolve(A, b[s])
 
         else:
             N = b[s].shape[0]
             P = np.prod(b[s].shape[1:])
             br = b[s].reshape((N, P))
             if use_lu:
-                if b.dtype.char in 'FDG':
+                if b.dtype.char in 'fdg' or self._lu.U.dtype.char in 'FDG':
+                    u[s] = self._lu.solve(br).reshape(u[s].shape)
+                else: # complex b and real matrix
                     u.real[s] = self._lu.solve(br.real).reshape(u[s].shape)
                     u.imag[s] = self._lu.solve(br.imag).reshape(u[s].shape)
-                else:
-                    u[s] = self._lu.solve(br).reshape(u[s].shape)
+
             else:
                 u[s] = spsolve(A, br).reshape(u[s].shape)
-
-            #if b.dtype is np.dtype('complex'):
-            #    u.real[s] = spsolve(A, br.real).reshape(u[s].shape)
-            #    u.imag[s] = spsolve(A, br.imag).reshape(u[s].shape)
-            #else:
-            #    u[s] = spsolve(A, br).reshape(u[s].shape)
 
         if axis > 0:
             u = np.moveaxis(u, 0, axis)
@@ -349,11 +450,12 @@ class NeumannSolve:
 
         if b.ndim == 1:
             if use_lu:
-                if b.dtype.char in 'FDG' and self._lu.U.dtype.char in 'fdg':
+                if b.dtype.char in 'fdg' or self._lu.U.dtype.char in 'FDG':
+                    u[s] = self._lu.solve(b[s])
+                else:
                     u.real[s] = self._lu.solve(b[s].real)
                     u.imag[s] = self._lu.solve(b[s].imag)
-                else:
-                    u[s] = self._lu.solve(b[s])
+
             else:
                 u[s] = spsolve(A, b[s])
 
@@ -363,11 +465,11 @@ class NeumannSolve:
             br = b[s].reshape((N, P))
 
             if use_lu:
-                if b.dtype.char in 'FDG' and self._lu.U.dtype.char in 'fdg':
+                if b.dtype.char in 'fdg' or self._lu.U.dtype.char in 'FDG':
+                    u[s] = self._lu.solve(br).reshape(u[s].shape)
+                else:
                     u.real[s] = self._lu.solve(br.real).reshape(u[s].shape)
                     u.imag[s] = self._lu.solve(br.imag).reshape(u[s].shape)
-                else:
-                    u[s] = self._lu.solve(br).reshape(u[s].shape)
             else:
                 u[s] = spsolve(A, br).reshape(u[s].shape)
 
@@ -410,17 +512,39 @@ class SolverGeneric2ND:
         assert len(diagonal_axis) == 1
         return diagonal_axis[0]
 
-    def diags(self, i, format='csr'):
+    def get_gauged_matrices(self, m0, m1):
+        if self.T.use_fixed_gauge:
+            A0 = m0.diags('lil')
+            if m0.testfunction[1]+m0.trialfunction[1] == 2:
+                zerorow = A0[0].nonzero()[1]
+                A0[(0, zerorow)] = 0
+                A0[0, 0] = 1
+            A0 = A0.tocsc()
+
+            A1 = m1.diags('lil')
+            if m1.testfunction[1]+m1.trialfunction[1] == 2:
+                zerorow = A1[0].nonzero()[1]
+                A1[(0, zerorow)] = 0
+                A1[0, 0] = 1
+            A1 = A1.tocsc()
+        else:
+            A0 = m0.diags('csc')
+            A1 = m1.diags('csc')
+        return A0, A1
+
+    def diags(self, i):
         """Return matrix for given index `i` in diagonal direction"""
         if self.T.dimensions == 2:
             # In 2D there's just 1 matrix, store and reuse
             if self.M is not None:
                 return self.M
             m = self.tpmats[0]
-            M0 = scp.kron(m.mats[0].diags(format), m.mats[1].diags(format), format)
+            A0, A1 = self.get_gauged_matrices(m.mats[0], m.mats[1])
+            M0 = scp.kron(A0, A1, 'csc')
             M0 *= np.atleast_1d(m.scale).item()
             for m in self.tpmats[1:]:
-                M1 = scp.kron(m.mats[0].diags(format), m.mats[1].diags(format), format)
+                A0, A1 = self.get_gauged_matrices(m.mats[0], m.mats[1])
+                M1 = scp.kron(A0, A1, 'csc')
                 M1 *= np.atleast_1d(m.scale).item()
                 M0 = M0 + M1
             self.M = M0
@@ -433,23 +557,25 @@ class SolverGeneric2ND:
             diagonal_axis = self.get_diagonal_axis()
             sc = [0, 0, 0]
             sc[diagonal_axis] = i if m.scale.shape[diagonal_axis] > 1 else 0
-            M0 = scp.kron(m.mats[naxes[0]].diags(format), m.mats[naxes[1]].diags(format), format)
+            A0, A1 = self.get_gauged_matrices(m.mats[naxes[0]], m.mats[naxes[1]])
+            M0 = scp.kron(A0, A1, 'csc')
             M0 *= m.scale[tuple(sc)]
             for m in self.tpmats[1:]:
-                M1 = scp.kron(m.mats[naxes[0]].diags(format), m.mats[naxes[1]].diags(format), format)
+                A0, A1 = self.get_gauged_matrices(m.mats[naxes[0]], m.mats[naxes[1]])
+                M1 = scp.kron(A0, A1, 'csc')
                 sc[diagonal_axis] = i if m.scale.shape[diagonal_axis] > 1 else 0
                 M1 *= m.scale[tuple(sc)]
                 M0 = M0 + M1
             return M0
 
-    def __call__(self, b, u=None, format='csr'):
+    def __call__(self, b, u=None):
         if u is None:
             u = b
         else:
             assert u.shape == b.shape
         if u.ndim == 2:
             s0 = self.T.slice()
-            M = self.diags(0, format=format)
+            M = self.diags(0)
             u[s0] = scp.linalg.spsolve(M, b[s0].flatten()).reshape(self.T.dims())
 
         elif u.ndim == 3:
@@ -457,7 +583,7 @@ class SolverGeneric2ND:
             diagonal_axis = self.get_diagonal_axis()
             s0 = list(self.T.slice())
             for i in range(self.T.shape(True)[diagonal_axis]):
-                M0 = self.diags(i, format=format)
+                M0 = self.diags(i)
                 s0[diagonal_axis] = i
                 shape = np.take(self.T.dims(), naxes)
                 u[tuple(s0)] = scp.linalg.spsolve(M0, b[tuple(s0)].flatten()).reshape(shape)
@@ -471,19 +597,31 @@ class Solver2D:
     mats : sequence
         sequence of instances of :class:`.TPMatrix`
 
+    Note
+    ----
+    If there are boundary matrices in the list of mats, then
+    these matrices are used to modify the right hand side before
+    solving. If this is not the desired behaviour, then use
+    :func:`.extract_bc_matrices` on mats before using this class.
+
     """
 
     def __init__(self, tpmats):
+        bc_mats = extract_bc_matrices([tpmats])
         self.tpmats = tpmats
+        self.bc_mats = bc_mats
         m = tpmats[0]
         self.T = T = m.space
         ndim = T.dimensions
         assert ndim == 2
         assert np.atleast_1d(m.scale).size == 1, "Use level = 2 with :func:`.inner`"
-        M0 = scp.kron(m.mats[0].diags(), m.mats[1].diags(), format='csc')
+
+        A0, A1 = self.get_gauged_matrices(m.mats[0], m.mats[1])
+        M0 = scp.kron(A0, A1, 'csc')
         M0 *= np.atleast_1d(m.scale).item()
         for m in tpmats[1:]:
-            M1 = scp.kron(m.mats[0].diags(), m.mats[1].diags(), format='csc')
+            A0, A1 = self.get_gauged_matrices(m.mats[0], m.mats[1])
+            M1 = scp.kron(A0, A1, 'csc')
             assert np.atleast_1d(m.scale).size == 1, "Use level = 2 with :func:`.inner`"
             M1 *= np.atleast_1d(m.scale).item()
             M0 = M0 + M1
@@ -495,44 +633,58 @@ class Solver2D:
         c[s0] = self.M.dot(u[s0].flatten()).reshape(self.T.dims())
         return c
 
+    def get_gauged_matrices(self, m0, m1):
+        if self.T.use_fixed_gauge:
+            A0 = m0.diags('lil')
+            if m0.testfunction[1]+m0.trialfunction[1] == 2:
+                zerorow = A0[0].nonzero()[1]
+                A0[(0, zerorow)] = 0
+                A0[0, 0] = 1
+            A0 = A0.tocsc()
+
+            A1 = m1.diags('lil')
+            if m1.testfunction[1]+m1.trialfunction[1] == 2:
+                zerorow = A1[0].nonzero()[1]
+                A1[(0, zerorow)] = 0
+                A1[0, 0] = 1
+            A1 = A1.tocsc()
+        else:
+            A0 = m0.diags('csc')
+            A1 = m1.diags('csc')
+        return A0, A1
+
     def __call__(self, b, u=None):
-        from codetiming import Timer
+        try:
+            from codetiming import Timer
+            has_timer = True
+        except:
+            has_timer = False
 
         if u is None:
             u = b
         else:
             assert u.shape == b.shape
+
+        if len(self.bc_mats) > 0:
+            u.set_boundary_dofs()
+            w0 = np.zeros_like(u)
+            for bc_mat in self.bc_mats:
+                b -= bc_mat.matvec(u, w0)
+
         s0 = tuple(base.slice() for base in self.T)
+        assert b.dtype.char == u.dtype.char
         if b.dtype.char in 'fdg':
             u[s0] = scp.linalg.spsolve(self.M, b[s0].flatten()).reshape(self.T.dims())
         else:
-            factor = 1
             if self.M.dtype.char in 'FDG':
-                factor = abs(self.M.real).max()/abs(self.M.imag).max()
-            if  factor > 1e12: # If M is basically a real matrix with roundoff numbers in imag
-                Mc = self.M.real.copy()
-                with Timer('LU'):
-                    lu = splu(Mc)
-                with Timer('LU solve'):
-                    u.real[s0] = lu.solve(b.real[s0].flatten()).reshape(self.T.dims())
-                    u.imag[s0] = lu.solve(b.imag[s0].flatten()).reshape(self.T.dims())
-                #u.real[s0] = scp.linalg.spsolve(self.M.real.copy(), b.real[s0].flatten()).reshape(self.T.dims())
+                lu = splu(self.M)
+                u[s0] = lu.solve(b[s0].flatten()).reshape(self.T.dims())
 
-            elif factor < 1e-12: # if M is basically imaginary with roundoff numbers in real
-                u.real[s0] = 0
-                Mc = self.M.imag.copy()
-                with Timer('LU'):
-                    lu = splu(Mc)
-                with Timer('LU solve'):
-                    u.real[s0] = lu.solve(b.imag[s0].flatten()).reshape(self.T.dims())
-                    u.imag[s0] = lu.solve(b.real[s0].flatten()).reshape(self.T.dims())
-                #u.imag[s0] = scp.linalg.spsolve(self.M.imag.copy(), b.imag[s0].flatten()).reshape(self.T.dims())
             else:
-                with Timer('LU'):
-                    lu = splu(self.M)
-                with Timer('LU solve'):
-                    u[s0] = lu.solve(b[s0].flatten()).reshape(self.T.dims())
-                #u[s0] = scp.linalg.spsolve(self.M, b[s0].flatten()).reshape(self.T.dims())
+                lu = splu(self.M)
+                u.imag[s0] = lu.solve(b.imag[s0].flatten()).reshape(self.T.dims())
+                u.real[s0] = lu.solve(b.real[s0].flatten()).reshape(self.T.dims())
+
         return u
 
 
@@ -630,36 +782,83 @@ class SolverGeneric1ND:
     Note
     ----
     In addition to the one non-diagonal direction, the solver can also handle
-    up to two diagonal (Fourier) directions. Also, this Python version of the
-    solver is not very efficient. Consider implementing in Cython.
-
-    FIXME: Should add constraints
+    up to two diagonal (Fourier) directions.
+    Also note that if there are boundary matrices in the list of mats, then
+    these matrices are used to modify the right hand side before
+    solving. If this is not the desired behaviour, then use
+    :func:`.extract_bc_matrices` on mats before using this class.
 
     """
 
     def __init__(self, mats):
         assert isinstance(mats, list)
-        m = mats[0]
-        if m.naxes == []:
-            for tpmat in mats:
+        naxes = set()
+        for tpmat in mats:
+            if not tpmat._issimplified:
                 tpmat.simplify_diagonal_matrices()
-
+            naxes.update(tpmat.naxes)
+        assert len(naxes) == 1
+        self.naxes = naxes.pop()
+        bc_mats = extract_bc_matrices([mats])
         self.mats = mats
-
+        self.bc_mats = bc_mats
         # For time-dependent solver, store all generated matrices and reuse
         # This takes a lot of memory, so for now it's only implemented for 2D
         self.MM = None
 
-    def __call__(self, b, u=None):
+    @staticmethod
+    def apply_constraint(A, b, i, constraint):
+        assert isinstance(constraint, tuple)
+        assert len(constraint) == 4
+
+        if constraint is None:
+            return A, b
+
+        if not i == constraint[0]:
+            return A, b
+
+        row = constraint[1]
+        col = constraint[2]
+        val = constraint[3]
+        b[row] = val
+        r = A.getrow(row).nonzero()
+        A[(row, r[1])] = 0
+        A[row, col] = 1
+        return A, b
+
+    def __call__(self, b, u=None, constraints=()):
+        """Solve problem with one non-diagonal direction
+
+        Parameters
+        ----------
+        b : array, right hand side
+        u : array, solution
+        constraints : tuple of 4-tuples
+            Each 4-tuple is a constraint, with each item representing
+              - 0 : The diagonal index, or indices for 3D
+              - 1 : row
+              - 2 : column
+              - 3 : value
+            Matrix row is zeroed and then indented by setting A[row, col] = 0
+
+        """
         if u is None:
             u = b
         else:
             assert u.shape == b.shape
         m = self.mats[0]
 
+        if len(self.bc_mats) > 0:
+            u.set_boundary_dofs()
+            w0 = np.zeros_like(u)
+            for bc_mat in self.bc_mats:
+                b -= bc_mat.matvec(u, w0)
+
         if u.ndim == 2:
-            if m.naxes[0] == 0:
+
+            if self.naxes == 0:
                 # non-diagonal in axis=0
+
                 if self.MM is None:
                     self.MM = []
                     for i in range(b.shape[1]):
@@ -667,34 +866,26 @@ class SolverGeneric1ND:
                         for mat in self.mats:
                             sc = mat.scale[0, i] if mat.scale.shape[1] > 1 else mat.scale[0, 0]
                             if MM:
-                                MM += sc*mat.mats[0]
+                                MM += mat.mats[0]*sc
                             else:
-                                MM = sc*mat.mats[0]
+                                MM = mat.mats[0]*sc
                         sl = m.space.bases[0].slice()
+                        #u[sl, i] = MM.solve(b[sl, i], u[sl, i])
+                        Mc = MM.diags('csc')
+                        for constraint in constraints:
+                            Mc, b = self.apply_constraint(Mc, b, i, constraint)
                         try:
-                            Mc = MM.diags('csc')
-                            factor = 1
-                            if Mc.dtype.char in 'FDG':
-                                factor = abs(Mc.copy().real).max()/abs(Mc.copy().imag).max()
-                            if factor > 1e12:
-                                MM._lu = splu(Mc.copy().real.copy()) # For some reason I need to copy the first as well
-                            elif factor < 1e-12:
-                                MM._lu = splu(Mc.copy().imag.copy())
-                            else:
-                                MM._lu = splu(Mc)
-
+                            MM._lu = splu(Mc)
                             u[sl, i] = MM.solve(b[sl, i], u[sl, i], use_lu=True)
-                        except RuntimeError:
+                        except:
+                            print('Singular matrix for j=', i)
                             u[sl, i] = 0
                         self.MM.append(MM)
 
                 else:
                     for i in range(b.shape[1]):
                         sl = m.space.bases[0].slice()
-                        try:
-                            u[sl, i] = self.MM[i].solve(b[sl, i], u[sl, i], use_lu=True)
-                        except:
-                            u[sl, i] = 0
+                        u[sl, i] = self.MM[i].solve(b[sl, i], u[sl, i], use_lu=True)
 
             else:
                 if self.MM is None:
@@ -705,39 +896,24 @@ class SolverGeneric1ND:
                         for mat in self.mats:
                             sc = mat.scale[i, 0] if mat.scale.shape[0] > 1 else mat.scale[0, 0]
                             if MM:
-                                MM += sc*mat.mats[1]
+                                MM += mat.mats[1]*sc
                             else:
-                                MM = sc*mat.mats[1]
+                                MM = mat.mats[1]*sc
                         sl = m.space.bases[1].slice()
-                        #u[i, sl] = MM.solve(b[i, sl], u[i, sl])
-                        try:
-                            Mc = MM.diags('csc')
-                            factor = 1
-                            if Mc.dtype.char in 'FDG':
-                                factor = abs(Mc.copy().real).max()/abs(Mc.copy().imag).max()
-                            if factor > 1e12:
-                                MM._lu = splu(Mc.copy().real.copy())
-                            elif factor < 1e-12:
-                                MM._lu = splu(Mc.copy().imag.copy())
-                            else:
-                                MM._lu = splu(Mc)
-
-                            MM.solve(b[i, sl], u[i, sl], use_lu=True)
-                        except RuntimeError:
-                            u[i, sl] = 0
+                        Mc = MM.diags('csc')
+                        for constraint in constraints:
+                            Mc, b = self.apply_constraint(Mc, b, i, constraint)
+                        MM._lu = splu(Mc)
+                        MM.solve(b[i, sl], u[i, sl], use_lu=True)
                         self.MM.append(MM)
 
                 else:
                     for i in range(b.shape[0]):
                         sl = m.space.bases[1].slice()
-                        try:
-                            u[i, sl] = self.MM[i].solve(b[i, sl], u[i, sl], use_lu=True)
-                        except RuntimeError:
-                            u[i, sl] = 0
-
+                        u[i, sl] = self.MM[i].solve(b[i, sl], u[i, sl], use_lu=True)
 
         elif u.ndim == 3:
-            if m.naxes[0] == 0:
+            if self.naxes == 0:
                 # non-diagonal in axis=0
                 for i in range(b.shape[1]):
                     for j in range(b.shape[2]):
@@ -745,13 +921,17 @@ class SolverGeneric1ND:
                         for mat in self.mats:
                             sc = np.broadcast_to(mat.scale, u.shape)[0, i, j]
                             if MM:
-                                MM += sc*mat.mats[0]
+                                MM += mat.mats[0]*sc
                             else:
-                                MM = sc*mat.mats[0]
+                                MM = mat.mats[0]*sc
+                        Mc = MM.diags('csc')
+                        for constraint in constraints:
+                            Mc, b = self.apply_constraint(Mc, b, (i, j), constraint)
+                        MM._lu = splu(Mc)
                         sl = mat.space.bases[0].slice()
-                        u[sl, i, j] = MM.solve(b[sl, i, j], u[sl, i, j])
+                        u[sl, i, j] = MM.solve(b[sl, i, j], u[sl, i, j], use_lu=True)
 
-            elif m.naxes[0] == 1:
+            elif self.naxes == 1:
                 # non-diagonal in axis=1
                 for i in range(b.shape[0]):
                     for j in range(b.shape[2]):
@@ -759,13 +939,17 @@ class SolverGeneric1ND:
                         for mat in self.mats:
                             sc = np.broadcast_to(mat.scale, u.shape)[i, 0, j]
                             if MM:
-                                MM += sc*mat.mats[1]
+                                MM += mat.mats[1]*sc
                             else:
-                                MM = sc*mat.mats[1]
+                                MM = mat.mats[1]*sc
+                        Mc = MM.diags('csc')
+                        for constraint in constraints:
+                            Mc, b = self.apply_constraint(Mc, b, (i, j), constraint)
+                        MM._lu = splu(Mc)
                         sl = mat.space.bases[1].slice()
-                        u[i, sl, j] = MM.solve(b[i, sl, j], u[i, sl, j])
+                        u[i, sl, j] = MM.solve(b[i, sl, j], u[i, sl, j], use_lu=True)
 
-            elif m.naxes[0] == 2:
+            elif self.naxes == 2:
                 # non-diagonal in axis=2
                 for i in range(b.shape[0]):
                     for j in range(b.shape[1]):
@@ -773,10 +957,14 @@ class SolverGeneric1ND:
                         for mat in self.mats:
                             sc = np.broadcast_to(mat.scale, u.shape)[i, j, 0]
                             if MM:
-                                MM += sc*mat.mats[2]
+                                MM += mat.mats[2]*sc
                             else:
-                                MM = sc*mat.mats[2]
+                                MM = mat.mats[2]*sc
+                        Mc = MM.diags('csc')
+                        for constraint in constraints:
+                            Mc, b = self.apply_constraint(Mc, b, (i, j), constraint)
+                        MM._lu = splu(Mc)
                         sl = mat.space.bases[2].slice()
-                        u[i, j, sl] = MM.solve(b[i, j, sl], u[i, j, sl])
+                        u[i, j, sl] = MM.solve(b[i, j, sl], u[i, j, sl], use_lu=True)
 
         return u

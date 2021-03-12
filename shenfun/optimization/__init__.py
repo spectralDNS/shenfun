@@ -9,6 +9,11 @@ from within the regular Python modules.
 import os
 import importlib
 from functools import wraps
+from . import cython
+try:
+    from . import numba
+except ModuleNotFoundError:
+    numba = None
 
 def optimizer(func):
     """Decorator used to wrap calls to optimized versions of functions."""

@@ -6,7 +6,7 @@ from shenfun.matrixbase import SpectralMatrix
 from . import bases
 from ..legendre.la import TDMA
 
-JB = bases.Orthogonal
+J  = bases.Orthogonal
 SD = bases.ShenDirichlet
 SB = bases.ShenBiharmonic
 
@@ -28,8 +28,8 @@ class BJJmat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, scale=1., measure=1):
-        assert isinstance(test[0], JB)
-        assert isinstance(trial[0], JB)
+        assert isinstance(test[0], J)
+        assert isinstance(trial[0], J)
         N = test[0].N
         k = np.arange(N, dtype=int)
         a = test[0].alpha
@@ -79,7 +79,7 @@ class BJJmat(SpectralMatrix):
         return u
 
 
-class BDDmat(SpectralMatrix):
+class BSDSDmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
     .. math::
@@ -108,7 +108,7 @@ class BDDmat(SpectralMatrix):
         self.solve = TDMA(self)
 
 
-class ADDmat(SpectralMatrix):
+class ASDSDmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
     .. math::
@@ -165,7 +165,7 @@ class ADDmat(SpectralMatrix):
         return u
 
 
-class BBBmat(SpectralMatrix):
+class BSBSBmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
     .. math::
@@ -204,7 +204,7 @@ class BBBmat(SpectralMatrix):
         self.solve = PDMA(self)
 
 
-class ABBmat(SpectralMatrix):
+class ASBSBmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
     .. math::
@@ -235,7 +235,7 @@ class ABBmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale)
 
 
-class SBBmat(SpectralMatrix):
+class SSBSBmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
     .. math::
@@ -260,7 +260,7 @@ class SBBmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale)
 
 
-class OBBmat(SpectralMatrix):
+class OSBSBmat(SpectralMatrix):
     r"""Matrix for inner product
 
     .. math::
@@ -310,16 +310,16 @@ class _JacMatDict(dict):
         return matrix
 
 mat = _JacMatDict({
-    ((JB, 0), (JB, 0)): BJJmat,
-    ((SD, 0), (SD, 0)): BDDmat,
-    ((SD, 1), (SD, 1)): ADDmat,
-    ((SD, 0), (SD, 2)): functools.partial(ADDmat, scale=-1.),
-    ((SD, 2), (SD, 0)): functools.partial(ADDmat, scale=-1.),
-    ((SB, 0), (SB, 0)): BBBmat,
-    ((SB, 2), (SB, 2)): SBBmat,
-    ((SB, 0), (SB, 4)): SBBmat,
-    ((SB, 4), (SB, 0)): SBBmat,
-    ((SB, 1), (SB, 1)): ABBmat,
-    ((SB, 0), (SB, 2)): functools.partial(ABBmat, scale=-1.),
-    ((SB, 2), (SB, 0)): functools.partial(ABBmat, scale=-1.),
+    ((J,  0), (J,  0)): BJJmat,
+    ((SD, 0), (SD, 0)): BSDSDmat,
+    ((SD, 1), (SD, 1)): ASDSDmat,
+    ((SD, 0), (SD, 2)): functools.partial(ASDSDmat, scale=-1.),
+    ((SD, 2), (SD, 0)): functools.partial(ASDSDmat, scale=-1.),
+    ((SB, 0), (SB, 0)): BSBSBmat,
+    ((SB, 2), (SB, 2)): SSBSBmat,
+    ((SB, 0), (SB, 4)): SSBSBmat,
+    ((SB, 4), (SB, 0)): SSBSBmat,
+    ((SB, 1), (SB, 1)): ASBSBmat,
+    ((SB, 0), (SB, 2)): functools.partial(ASBSBmat, scale=-1.),
+    ((SB, 2), (SB, 0)): functools.partial(ASBSBmat, scale=-1.),
 })

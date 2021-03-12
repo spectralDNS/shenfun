@@ -13,26 +13,29 @@ The equation to solve is
 import sys
 import os
 import importlib
-from sympy import symbols, sin, cos, pi
+from sympy import symbols, sin, cos, pi, chebyshevt
+import sympy as sp
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, FunctionSpace, \
-    Array, Function, legendre, chebyshev, extract_bc_matrices
+    Array, Function, legendre, chebyshev, extract_bc_matrices, la, SpectralMatrix
 
 # Collect basis from either Chebyshev or Legendre submodules
 family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
-shen = importlib.import_module('.'.join(('shenfun', family)))
 
 # Use sympy to compute a rhs, given an analytical solution
 x = symbols("x", real=True)
-#ue = sin(np.pi*x)*(1-x**2)
-ue = sin(4*pi*x)/4/pi
-fe = ue.diff(x, 2)
+alpha = 0
+ue = sin(pi*x)*(1-x**2)
+fe = -ue.diff(x, 2)+alpha*ue
 
 # Size of discretization
-N = 32
+N = 24
 
-SD = FunctionSpace(N, family=family, bc={'left': ('N', 1), 'right': ('N', 1)})
-
+# alpha=0 requires a fixed gauge, but not alpha!=0 -> mean
+SD = FunctionSpace(N, family=family, bc={'left': ('N', 0),
+                                         'right': ('N', 0)},
+                                         mean=0 if alpha==0 else None,
+                                         basis='ShenNeumann')
 u = TrialFunction(SD)
 v = TestFunction(SD)
 
@@ -40,35 +43,36 @@ v = TestFunction(SD)
 fj = Array(SD, buffer=fe)
 
 # Compute right hand side of Poisson equation
-f_hat = Function(SD, buffer=inner(v, fj))
+f_hat = inner(v, fj)
 
 # Get left hand side of Poisson equation
-A = inner(v, div(grad(u)))
-B = extract_bc_matrices([A])[0]
-A = A[0]
-u_hat = Function(SD).set_boundary_dofs()
-f_hat -= B.matvec(u_hat, Function(SD))
-u_hat = A.solve(f_hat, u_hat)
+A0 = inner(v, div(grad(u)))
+B0 = inner(v, u)
 
-# Solve and transform to real space
-u = np.zeros(N)               # Solution real space
-u = SD.backward(u_hat, u)
+# Solve
+u_hat = Function(SD)
+M = alpha*B0-A0
+sol = la.Solve(M, SD)
+u_hat = sol(f_hat, u_hat)
+
+# Transform to real space
+uj = u_hat.backward()
 
 # Compare with analytical solution
-uj = Array(SD, buffer=ue)
-print(abs(uj-u).max())
-assert np.allclose(uj, u)
+ua = Array(SD, buffer=ue)
+print(abs(uj-ua).max())
+assert np.allclose(uj, ua)
 
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
     plt.figure()
     X = SD.mesh()
-    plt.plot(X, u)
-
-    plt.figure()
     plt.plot(X, uj)
 
     plt.figure()
-    plt.plot(X, u-uj)
+    plt.plot(X, ua)
+
+    plt.figure()
+    plt.plot(X, ua-uj)
     plt.title('Error')
     #plt.show()

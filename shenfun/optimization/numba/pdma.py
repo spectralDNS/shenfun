@@ -1,7 +1,51 @@
 import numba as nb
 
 __all__ = ['PDMA_SymLU', 'PDMA_SymLU_VC', 'PDMA_SymSolve', 'PDMA_SymLU2D',
-           'PDMA_SymLU3D', 'PDMA_SymSolve_VC']
+           'PDMA_SymLU3D', 'PDMA_SymSolve_VC', 'PDMA_LU', 'PDMA_Solve']
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def PDMA_LU(a, b, d, e, f):
+    """LU decomposition"""
+    n = d.shape[0]
+    m = e.shape[0]
+    k = n - m
+
+    for i in range(n-2*k):
+        lam = b[i]/d[i]
+        d[i+k] -= lam*e[i]
+        e[i+k] -= lam*f[i]
+        b[i] = lam
+        lam = a[i]/d[i]
+        b[i+k] -= lam*e[i]
+        d[i+2*k] -= lam*f[i]
+        a[i] = lam
+
+    i = n-4
+    lam = b[i]/d[i]
+    d[i+k] -= lam*e[i]
+    b[i] = lam
+    i = n-3
+    lam = b[i]/d[i]
+    d[i+k] -= lam*e[i]
+    b[i] = lam
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def PDMA_Solve(a, b, d, e, f, h, axis=0): # pragma: no cover
+    """Symmetric solve (for testing only)"""
+    n = d.shape[0]
+    bc = h
+
+    bc[2] -= b[0]*bc[0]
+    bc[3] -= b[1]*bc[1]
+    for k in range(4, n):
+        bc[k] -= (b[k-2]*bc[k-2] + a[k-4]*bc[k-4])
+
+    bc[n-1] /= d[n-1]
+    bc[n-2] /= d[n-2]
+    bc[n-3] = (bc[n-3]-e[n-3]*bc[n-1])/d[n-3]
+    bc[n-4] = (bc[n-4]-e[n-4]*bc[n-2])/d[n-4]
+    for k in range(n-5, -1, -1):
+        bc[k] = (bc[k]-e[k]*bc[k+2]-f[k]*bc[k+4])/d[k]
 
 def PDMA_SymLU_VC(d, a, l, axis=0):
     n = d.ndim

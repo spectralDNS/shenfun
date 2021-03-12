@@ -371,7 +371,7 @@ manipulations
 
 !bt
 \begin{equation}
- -\sum_{m=0}^{N_0-3} \sum_{n=0}^{N_1-1} \nu \Big( \underbrace{\int_{-1}^{1} \frac{\partial \mathcal{X}_k(x)}{\partial x} \frac{\partial \mathcal{X}_m}{\partial x} dx \int_{-1}^{1} \mathcal{Y}_l \mathcal{Y}_n dy}_{A[0]} +  \underbrace{\int_{-1}^{1} \mathcal{X}_k(x) X_m(x) dx \int_{-1}^{1} \frac{\partial \mathcal{Y}_l}{\partial y} \frac{\partial \mathcal{Y}_n}{\partial y} dy}_{A[1]}  \Big) \hat{\bs{u}}[0]_{mn}.
+ -\sum_{m=0}^{N_0-3} \sum_{n=0}^{N_1-1} \nu \Big( \underbrace{\int_{-1}^{1} \frac{\partial \mathcal{X}_k}{\partial x} \frac{\partial \mathcal{X}_m}{\partial x} dx \int_{-1}^{1} \mathcal{Y}_l \mathcal{Y}_n dy}_{A[0]} +  \underbrace{\int_{-1}^{1} \mathcal{X}_k X_m dx \int_{-1}^{1} \frac{\partial \mathcal{Y}_l}{\partial y} \frac{\partial \mathcal{Y}_n}{\partial y} dy}_{A[1]}  \Big) \hat{\bs{u}}[0]_{mn}.
 \end{equation}
 !et
 
@@ -381,7 +381,7 @@ The first tensor product matrix, A[0], is
 
 !bt
 \begin{equation}
-    \underbrace{\int_{-1}^{1} \frac{\partial \mathcal{X}_k(x)}{\partial x} \frac{\partial \mathcal{X}_m}{\partial x} dx}_{c_{km}} \underbrace{\int_{-1}^{1} \mathcal{Y}_l \mathcal{Y}_n dy}_{f_{ln}}
+    \underbrace{\int_{-1}^{1} \frac{\partial \mathcal{X}_k}{\partial x} \frac{\partial \mathcal{X}_m}{\partial x} dx}_{c_{km}} \underbrace{\int_{-1}^{1} \mathcal{Y}_l \mathcal{Y}_n dy}_{f_{ln}}
 \end{equation}
 !et
 where $C\in \mathbb{R}^{N_0-2 \times N_1-2}$ and $F \in \mathbb{R}^{N_0-2 \times N_1}$.
@@ -398,17 +398,15 @@ tensor product matrix into two contributions and obtain
 where the first term on the right hand side is square and the second term is known and
 can be moved to the right hand side of the linear algebra equation system.
 
-All the parts of the matrices that are to be moved to the right hand side
-can be extracted from A, G and D as follows
+At this point all matrices, both regular and boundary matrices, are
+contained within the three lists A, G and D. We assemble two block matrices
+in one call, where M is regular and BM is a boundary block matrix.
 
 !bc pycod
-# Extract the boundary matrices
-bc_mats = extract_bc_matrices([A, G, D])
+M, BM = BlockMatrices(A+G+D)
 !ec
 
-These matrices are applied to the solution below (see `BlockMatrix BM`).
-Furthermore, this leaves us with square submatrices (A, G, D), which make up a
-symmetric block matrix
+The regular block matrix M is now given as the symmetric
 
 !bt
 M =
@@ -419,13 +417,7 @@ M =
   \end{bmatrix}
 !et
 
-This matrix, and the matrix responsible for the boundary degrees of freedom,
-can be assembled from the pieces we already have as
-
-!bc pycod
-M = BlockMatrix(A+G+D)
-BM = BlockMatrix(bc_mats)
-!ec
+The BM matrix must be used to modify the known right hand side.
 
 We now have all the matrices we need in order to solve the Navier Stokes equations.
 However, we also need some work arrays for iterations and we need to
@@ -444,7 +436,6 @@ ui_new = uh_new[0]
 # Compute the constant contribution to rhs due to nonhomogeneous boundary conditions
 bh_hat0 = Function(VQ)
 bh_hat0 = BM.matvec(-uh_hat, bh_hat0) # Negative because moved to right hand side
-bi_hat0 = bh_hat0[0]
 
 !ec
 

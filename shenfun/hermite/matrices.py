@@ -8,7 +8,7 @@ from . import bases
 HB = bases.Orthogonal
 
 
-class BHHmat(SpectralMatrix):
+class BHBHBmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
     .. math::
@@ -48,7 +48,7 @@ class BHHmat(SpectralMatrix):
         return c
 
 
-class AHHmat(SpectralMatrix):
+class AHBHBmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
     .. math::
@@ -105,7 +105,7 @@ class AHHmat(SpectralMatrix):
             self.scale_array(c)
 
         else:
-            c = super(AHHmat, self).matvec(v, c, format=format, axis=axis)
+            c = super(AHBHBmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
@@ -135,6 +135,6 @@ class _HerMatDict(dict):
 
 
 mat = _HerMatDict({
-    ((HB, 0), (HB, 0)): BHHmat,
-    ((HB, 1), (HB, 1)): AHHmat
+    ((HB, 0), (HB, 0)): BHBHBmat,
+    ((HB, 1), (HB, 1)): AHBHBmat
     })

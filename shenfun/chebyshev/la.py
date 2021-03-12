@@ -5,7 +5,7 @@ import numpy as np
 from shenfun.optimization import optimizer
 from shenfun.optimization.cython import la
 from shenfun.la import TDMA as la_TDMA
-from shenfun.matrixbase import TPMatrix
+from shenfun.matrixbase import TPMatrix, SpectralMatrix, extract_bc_matrices, SparseMatrix
 
 
 class TDMA(la_TDMA):
@@ -21,10 +21,174 @@ class TDMA(la_TDMA):
         if not self.dd.shape[0] == self.mat.shape[0]:
             self.init()
 
-        self.TDMA_SymSolve(self.dd, self.ud, self.L, u, axis=axis)
+        self.TDMA_SymSolve(self.dd, self.ud, self.ld, u, axis=axis)
 
-        if self.mat.scale not in (1, 1.0):
-            u /= self.mat.scale
+        #if self.mat.scale not in (1, 1.0):
+        #    u /= self.mat.scale
+        return u
+
+class FDMA:
+    """4-diagonal matrix solver
+
+    Parameters
+    ----------
+    mat : SparseMatrix
+        4-diagonal matrix with diagonals in offsets -2, 0, 2, 4
+
+    """
+    # pylint: disable=too-few-public-methods
+
+    def __init__(self, mat):
+        assert isinstance(mat, SparseMatrix)
+        self.mat = mat
+        self.dd = np.zeros(0)
+
+    def init(self):
+        """Initialize and allocate solver"""
+        N = self.mat.shape[0]
+        self.symmetric = self.mat.issymmetric
+        self.dd = self.mat[0]*np.ones(N)*self.mat.scale
+        self.u1 = self.mat[2]*np.ones(N-2)*self.mat.scale
+        self.u2 = self.mat[4]*np.ones(N-4)*self.mat.scale
+        self.ld = self.mat[-2]*np.ones(N-2)*self.mat.scale
+        self.FDMA_LU(self.ld, self.dd, self.u1, self.u2)
+
+    @staticmethod
+    @optimizer
+    def FDMA_LU(ld, d, u1, u2):
+        n = d.shape[0]
+        for i in range(2, n):
+            ld[i-2] = ld[i-2]/d[i-2]
+            d[i] = d[i] - ld[i-2]*u1[i-2]
+            if i < n-2:
+                u1[i] = u1[i] - ld[i-2]*u2[i-2]
+
+    @staticmethod
+    @optimizer
+    def FDMA_Solve(d, u1, u2, l, x, axis=0):
+        assert x.ndim == 1, "Use optimized version for multidimensional solve"
+        n = d.shape[0]
+        for i in range(2, n):
+            x[i] -= l[i-2]*x[i-2]
+
+        x[n-1] = x[n-1]/d[n-1]
+        x[n-2] = x[n-2]/d[n-2]
+        x[n-3] = (x[n-3] - u1[n-3]*x[n-1])/d[n-3]
+        x[n-4] = (x[n-4] - u1[n-4]*x[n-2])/d[n-4]
+        for i in range(n - 5, -1, -1):
+            x[i] = (x[i] - u1[i]*x[i+2] - u2[i]*x[i+4])/d[i]
+
+    def __call__(self, b, u=None, axis=0, **kw):
+        """Solve matrix problem self u = b
+
+        Parameters
+        ----------
+            b : array
+                Array of right hand side on entry and solution on exit unless
+                u is provided.
+            u : array, optional
+                Output array
+            axis : int, optional
+                   The axis over which to solve for if b and u are multidimensional
+
+        Note
+        ----
+        If u is not provided, then b is overwritten with the solution and returned
+
+        """
+
+        if u is None:
+            u = b
+        else:
+            assert u.shape == b.shape
+            N = self.dd.shape[0]
+            u[:] = b[:]
+
+        if not self.dd.shape[0] == self.mat.shape[0]:
+            self.init()
+
+        self.FDMA_Solve(self.dd, self.u1, self.u2, self.ld, u, axis=axis)
+
+        if hasattr(u, 'set_boundary_dofs'):
+            u.set_boundary_dofs()
+
+        return u
+
+class TwoDMA:
+    """2-diagonal matrix solver
+
+    Parameters
+    ----------
+    mat : SparseMatrix
+        2-diagonal matrix with diagonals in offsets 0, 2
+    fixed_gauge : number or None, optional
+        For Neumann problems that are only known up to a constant
+
+    """
+    # pylint: disable=too-few-public-methods
+
+    def __init__(self, mat, fixed_gauge=None):
+        assert isinstance(mat, SparseMatrix)
+        self.mat = mat
+        self.dd = np.zeros(0)
+        self.fixed_gauge = fixed_gauge
+
+    def init(self):
+        """Initialize and allocate solver"""
+        N = self.mat.shape[0]
+        self.dd = self.mat[0]*np.ones(N)*self.mat.scale
+        self.u1 = self.mat[2]*np.ones(N-2)*self.mat.scale
+        if self.fixed_gauge is not None:
+            self.dd[0] = 1
+            self.u1[0] = 0
+
+    @staticmethod
+    @optimizer
+    def TwoDMA_Solve(d, u1, x, axis=0):
+        assert x.ndim == 1, "Use optimized version for multidimensional solve"
+        n = d.shape[0]
+        x[n-1] = x[n-1]/d[n-1]
+        x[n-2] = x[n-2]/d[n-2]
+        for i in range(n - 3, -1, -1):
+            x[i] = (x[i] - u1[i]*x[i+2])/d[i]
+
+    def __call__(self, b, u=None, axis=0, **kw):
+        """Solve matrix problem self u = b
+
+        Parameters
+        ----------
+            b : array
+                Array of right hand side on entry and solution on exit unless
+                u is provided.
+            u : array, optional
+                Output array
+            axis : int, optional
+                   The axis over which to solve for if b and u are multidimensional
+
+        Note
+        ----
+        If u is not provided, then b is overwritten with the solution and returned
+
+        """
+
+        if u is None:
+            u = b
+        else:
+            assert u.shape == b.shape
+            u[:] = b[:]
+
+        if not self.dd.shape[0] == self.mat.shape[0]:
+            self.init()
+
+        if self.fixed_gauge is not None:
+            T = u.function_space()
+            u[T.si[0]] = self.fixed_gauge
+
+        self.TwoDMA_Solve(self.dd, self.u1, u, axis=axis)
+
+        if hasattr(u, 'set_boundary_dofs'):
+            u.set_boundary_dofs()
+
         return u
 
 
@@ -134,20 +298,17 @@ class Helmholtz:
     def __init__(self, *args):
 
         args = list(args)
-        for i, arg in enumerate(args):
-            if hasattr(arg, 'is_bc_matrix'):
-                if arg.is_bc_matrix():
-                    # For this particular case the boundary dofs contribution
-                    # to the right hand side is only nonzero for Fourier wavenumber
-                    # 0, so the contribution is in effect zero
-                    args.pop(i)
-                    break
+        self.bc_mats = []
+        if isinstance(args[-1], (TPMatrix, SpectralMatrix)):
+            bc_mats = extract_bc_matrices([args])
+            self.tpmats = args
+            self.bc_mats = bc_mats
 
         assert len(args) in (2, 4)
-        A, B = args[0], args[1]
+        A, B = args[:2]
         M = {d.get_key(): d for d in (A, B)}
-        self.A = A = M.get('ADDmat', M.get('ANNmat'))
-        self.B = B = M.get('BDDmat', M.get('BNNmat'))
+        self.A = A = M.get('ASDSDmat', M.get('ASNSNmat'))
+        self.B = B = M.get('BSDSDmat', M.get('BSNSNmat'))
 
         if len(args) == 2:
             self.alfa = self.A.scale
@@ -212,11 +373,12 @@ class Helmholtz:
         determined on creation of the class.
 
         """
+        if len(self.bc_mats) > 0:
+            u.set_boundary_dofs()
+            w0 = np.zeros_like(u)
+            for bc_mat in self.bc_mats:
+                b -= bc_mat.matvec(u, w0)
         self.Solve_Helmholtz(b, u, self.neumann, self.u0, self.u1, self.u2, self.L, self.axis)
-
-        if self.A.testfunction[0].has_nonhomogeneous_bcs:
-            self.A.testfunction[0].bc.set_boundary_dofs(u, True)
-
         return u
 
     def matvec(self, v, c):
@@ -231,14 +393,21 @@ class Helmholtz:
         -------
             c : array
         """
-        assert self.neumann is False
         c[:] = 0
-        self.Helmholtz_matvec(v, c, self.alfa, self.beta, self.A[0], self.A[2], self.B[0], self.axis)
+        if self.neumann is False:
+            self.Helmholtz_matvec(v, c, self.alfa, self.beta, self.A, self.B, self.axis)
+        else:
+            self.Helmholtz_Neumann_matvec(v, c, self.alfa, self.beta, self.A, self.B, self.axis)
         return c
 
     @staticmethod
     @optimizer
-    def Helmholtz_matvec(v, b, alfa, beta, dd, ud, bd, axis=0):
+    def Helmholtz_matvec(v, b, alfa, beta, A, B, axis=0):
+        raise NotImplementedError("Use Cython or Numba")
+
+    @staticmethod
+    @optimizer
+    def Helmholtz_Neumann_matvec(v, b, alfa, beta, A, B, axis=0):
         raise NotImplementedError("Use Cython or Numba")
 
 
@@ -333,17 +502,19 @@ class Biharmonic:
     def __init__(self, *args):
 
         args = list(args)
-
-        if isinstance(args[0], TPMatrix):
-            args = [arg for arg in args if not arg.is_bc_matrix()]
+        self.bc_mats = []
+        if isinstance(args[-1], (TPMatrix, SpectralMatrix)):
+            bc_mats = extract_bc_matrices([args])
+            self.tpmats = args
+            self.bc_mats = bc_mats
 
         assert len(args) in (3, 6)
 
-        S, A, B = args[0], args[1], args[2]
+        S, A, B = args[:3]
         M = {d.get_key(): d for d in (S, A, B)}
-        self.S = M['SBBmat']
-        self.A = M['ABBmat']
-        self.B = M['BBBmat']
+        self.S = M['SSBSBmat']
+        self.A = M['ASBSBmat']
+        self.B = M['BSBSBmat']
 
         if len(args) == 3:
             self.a0 = a0 = np.atleast_1d(self.S.scale).item()
@@ -425,10 +596,13 @@ class Biharmonic:
         determined on creation of the class.
 
         """
+        if len(self.bc_mats) > 0:
+            u.set_boundary_dofs()
+            w0 = np.zeros_like(u)
+            for bc_mat in self.bc_mats:
+                b -= bc_mat.matvec(u, w0)
         self.Biharmonic_Solve(b, u, self.u0, self.u1, self.u2, self.l0,
                               self.l1, self.ak, self.bk, self.a0, self.axis)
-        if self.S.testfunction[0].has_nonhomogeneous_bcs:
-            self.S.testfunction[0].bc.set_boundary_dofs(u, True)
 
         return u
 
@@ -469,9 +643,9 @@ class PDMA:
     ----------
         solver : str
             Choose between implementations ('cython', 'python')
-        ABBmat : A
+        ASBSBmat : A
             Stiffness matrix
-        BBBmat : B
+        BSBSBmat : B
             Mass matrix
 
     where alfa and beta must be avalable as A.scale, B.scale.
@@ -486,10 +660,10 @@ class PDMA:
     """
 
     def __init__(self, *args, **kwargs):
-        if 'ABBmat' in kwargs:
-            assert 'BBBmat' in kwargs
-            A = self.A = kwargs['ABBmat']
-            B = self.B = kwargs['BBBmat']
+        if 'ASBSBmat' in kwargs:
+            assert 'BSBSBmat' in kwargs
+            A = self.A = kwargs['ASBSBmat']
+            B = self.B = kwargs['BSBSBmat']
             self.alfa = A.scale
             self.beta = B.scale
 

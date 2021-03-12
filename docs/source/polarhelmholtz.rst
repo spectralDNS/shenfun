@@ -7,7 +7,7 @@ Demo - Helmholtz equation in polar coordinates
 ==============================================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Oct 23, 2020
+:Date: Dec 22, 2020
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve the
 Helmholtz equation on a circular disc, using polar coordinates. This demo is implemented in

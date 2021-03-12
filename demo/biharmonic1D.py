@@ -12,25 +12,27 @@ import importlib
 from sympy import symbols, sin, chebyshevt
 import numpy as np
 from shenfun import inner, Dx, TestFunction, TrialFunction, FunctionSpace, Array, \
-    Function, extract_bc_matrices
+    Function
 
 assert len(sys.argv) == 3
-assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi')
+assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi', 'chebyshev2')
 assert isinstance(int(sys.argv[-2]), int)
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 family = sys.argv[-1]
+basis = 'HeinrichtBiharmonic' if family[-1] == '2' else None
+family = family[:-1] if family[-1] == '2' else family
 base = importlib.import_module('.'.join(('shenfun', family)))
 Solver = base.la.Biharmonic
 
 # Use sympy to compute a rhs, given an analytical solution
 # Allow for a non-standard domain. Reference domain is (-1, 1)
-domain = (-1., 2.)
+domain = (-1., 1.)
 d = 2./(domain[1]-domain[0])
-x = symbols("x")
+x = symbols("x", real=True)
 x_map = -1+(x-domain[0])*d
-a = 1
-b = -1
+a = 0
+b = -0
 if family == 'jacobi':
     a = 0
     b = 0
@@ -49,7 +51,7 @@ fe = aa*ue.diff(x, 4) + bb*ue.diff(x, 2) + cc*ue
 # Size of discretization
 N = int(sys.argv[-2])
 
-SD = FunctionSpace(N, family=family, bc=(a, b, 0, 0), domain=domain)
+SD = FunctionSpace(N, family=family, bc=(a, b, 0, 0), domain=domain, basis=basis)
 X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)
@@ -64,22 +66,18 @@ f_hat = inner(v, fj)
 matrices = inner(v, aa*Dx(u, 0, 4) + bb*Dx(u, 0, 2) + cc*u)
 
 # Function to hold the solution
-u_hat = Function(SD).set_boundary_dofs()
-
-# Some work required for inhomogeneous boundary conditions only
-if SD.has_nonhomogeneous_bcs:
-    bc_mats = extract_bc_matrices([matrices])
-
-    w0 = np.zeros_like(u_hat)
-    for m in bc_mats:
-        f_hat -= m.matvec(u_hat, w0)
+u_hat = Function(SD)
 
 # Create linear algebra solver
-H = Solver(*matrices)
-u_hat = H(u_hat, f_hat)
+#H = Solver(*matrices)
+m = matrices[0]
+for mi in matrices[1:]:
+    m += mi
+u_hat[:-4] = m.solve(f_hat[:-4], u_hat[:-4])
 
-uj = Array(SD)
-uj = SD.backward(u_hat, uj)
+#u_hat = H(u_hat, f_hat)
+
+uj = u_hat.backward()
 uh = uj.forward()
 
 # Compare with analytical solution

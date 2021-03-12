@@ -29,8 +29,8 @@ fe = ue.diff(x, 4) + ue.diff(y, 4) + ue.diff(z, 4) + 2*ue.diff(x, 2, y, 2) + 2*u
 N = (36, 36, 36)
 
 K0 = FunctionSpace(N[0], 'Fourier', dtype='d')
-S0 = FunctionSpace(N[1], family=family, bc='Biharmonic')
-S1 = FunctionSpace(N[2], family=family, bc='Biharmonic')
+S0 = FunctionSpace(N[1], family=family, bc=(0, 0, 0, 0))
+S1 = FunctionSpace(N[2], family=family, bc=(0, 0, 0, 0))
 
 T = TensorProductSpace(comm, (K0, S0, S1), axes=(1, 0, 2), slab=True)
 u = TrialFunction(T)

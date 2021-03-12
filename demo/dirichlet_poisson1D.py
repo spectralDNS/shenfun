@@ -9,30 +9,35 @@ The equation to solve is
 
 """
 import sys
-from sympy import symbols, sin
+from sympy import symbols, sin, pi
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
     Array, Function, FunctionSpace, dx
 
 assert len(sys.argv) == 3, 'Call with two command-line arguments'
-assert sys.argv[-1] in ('legendre', 'chebyshev', 'jacobi')
+assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi', 'heinricht')
 assert isinstance(int(sys.argv[-2]), int)
 
 # Get family from args
-family = sys.argv[-1].lower()
+if sys.argv[-1].lower() == 'heinricht':
+    basis = 'Heinricht'
+    family = 'chebyshev'
+else:
+    family = sys.argv[-1].lower()
+    basis = None
 
 # Use sympy to compute a rhs, given an analytical solution
-domain = (0., 4.)
+domain = (0, 4)
 a = 1.
 b = -1.
 if family == 'jacobi':
     a = 0
     b = 0
 
-x = symbols("x")
-d = 2./(domain[1]-domain[0])
+x = symbols("x", real=True)
+d = 2/(domain[1]-domain[0])
 x_map = -1+(x-domain[0])*d
-ue = sin(4*np.pi*x_map)*(x_map-1)*(x_map+1) + a*(1-x_map)/2. + b*(1+x_map)/2.
+ue = sin(4*pi*x_map)*(x_map-1)*(x_map+1) + a*(1-x_map)/2 + b*(1+x_map)/2
 fe = ue.diff(x, 2)
 
 # Size of discretization

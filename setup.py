@@ -44,6 +44,10 @@ def get_extensions():
                              libraries=['m'],
                              sources=[os.path.join(cdir, '{0}.pyx'.format(s))],
                              language="c++"))  # , define_macros=define_macros
+    ext.append(Extension("shenfun.legendre.fastgl.fastgl_wrap",
+                         libraries=['m'],
+                         language='c++',
+                         sources=[os.path.join(cwd, "shenfun", "legendre", "fastgl", "fastgl_wrap.pyx")]))
     [e.extra_link_args.extend(["-std=c++11"]) for e in ext]
     #[e.extra_link_args.extend(["-std=c++11", "-fopenmp"]) for e in ext]
     for s in ("Cheb", "convolve", "outer", "applymask"):
@@ -89,6 +93,7 @@ if __name__ == '__main__':
                     "shenfun.optimization.cython",
                     "shenfun.optimization.numba",
                     "shenfun.legendre",
+                    "shenfun.legendre.fastgl",
                     "shenfun.laguerre",
                     "shenfun.hermite",
                     "shenfun.chebyshev",

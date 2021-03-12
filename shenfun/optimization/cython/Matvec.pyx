@@ -1448,13 +1448,221 @@ def Helmholtz_matvec2D_ptr(T[:, ::1] v,
             Helmholtz_matvec_ptr(v_ptr, b_ptr, alfa[i, 0],
                                  beta[i, 0], &dd[0], &ud[0], &bd[0], N, strides)
 
-def Helmholtz_matvec(v, b, alfa, beta, dd, ud, bd, axis):
+def Helmholtz_matvec(v, b, alfa, beta, A, B, axis):
+    dd = A[0].copy()
+    ud = A[2].copy()
+    bd = B[0].copy()
     if v.ndim == 1:
         Helmholtz_matvec_1D(v, b, alfa, beta, dd, ud, bd)
     elif v.ndim == 2:
         Helmholtz_matvec2D_ptr(v, b, alfa, beta, dd, ud, bd, axis)
     elif v.ndim == 3:
         Helmholtz_matvec3D_ptr(v, b, alfa, beta, dd, ud, bd, axis)
+
+def Helmholtz_Neumann_matvec_1D(np.ndarray[T, ndim=1] v,
+                        np.ndarray[T, ndim=1] b,
+                        real_t alfa,
+                        real_t beta,
+                        np.ndarray[real_t, ndim=1] dd,
+                        np.ndarray[real_t, ndim=1] ud,
+                        np.ndarray[real_t, ndim=1] bl,
+                        np.ndarray[real_t, ndim=1] bd,
+                        np.ndarray[real_t, ndim=1] bu):
+    # b = (alfa*A + beta*B)*v
+    # A matrix has diagonal dd and upper second diagonal at ud
+    # B matrix has diagonal bd and second upper and lower diagonals bu and bl
+    cdef:
+        int i, j, k, j2
+        int N = dd.shape[0]
+        T s1 = 0.0
+        T s2 = 0.0
+        double p
+
+    for k in (N-1, N-2):
+        b[k] = (dd[k]*alfa + bd[k]*beta)*v[k]*k**2 + bl[k-2]*beta*v[k-2]*(k-2)**2
+
+    for k in range(N-3, 1, -1):
+        p = ud[k]*alfa
+        if k % 2 == 0:
+            s2 += v[k+2]*(k+2)**2
+            b[k] = (dd[k]*alfa + bd[k]*beta)*v[k]*k**2 + beta*(bl[k-2]*v[k-2]*(k-2)**2 + bu[k]*v[k+2]*(k+2)**2) + p*s2
+        else:
+            s1 += v[k+2]*(k+2)**2
+            b[k] = (dd[k]*alfa + bd[k]*beta)*v[k]*k**2 + beta*(bl[k-2]*v[k-2]*(k-2)**2 + bu[k]*v[k+2]*(k+2)**2) + p*s1
+
+    k = 1
+    s1 += v[k+2]*(k+2)**2
+    b[k] = (dd[k]*alfa + bd[k]*beta)*v[k]*k**2 + beta*(bu[k]*v[k+2]*(k+2)**2) + ud[k]*alfa*s1
+    k = 0
+    s2 += v[k+2]*(k+2)**2
+    b[k] = (dd[k]*alfa + bd[k]*beta)*v[k]*k**2 + beta*(bu[k]*v[k+2]*(k+2)**2) + ud[k]*alfa*s2
+    b[0] += bd[0]*v[0]*beta
+    b[2] += bl[0]*v[0]*beta
+
+
+cdef void Helmholtz_Neumann_matvec_ptr(T* v,
+                        T* b,
+                        real_t alfa,
+                        real_t beta,
+                        real_t* dd,
+                        real_t* ud,
+                        real_t* bl,
+                        real_t* bd,
+                        real_t* bu,
+                        int N,
+                        int st):
+    # b = (alfa*A + beta*B)*v
+    # A matrix has diagonal dd and upper second diagonal at ud
+    # B matrix has diagonal bd and second upper and lower diagonals bu and bl
+    cdef:
+        int i, j, k, j2
+        T s1 = 0.0
+        T s2 = 0.0
+        double p
+
+    for k in (N-1, N-2):
+        j2 = k*k
+        b[k*st] = (dd[k]*alfa + bd[k]*beta)*v[k*st]*j2 + bl[k-2]*beta*v[(k-2)*st]*j2
+
+    for k in range(N-3, 1, -1):
+        p = ud[k]*alfa
+        if k % 2 == 0:
+            s2 += v[(k+2)*st]*(k+2)**2
+            b[k*st] = (dd[k]*alfa + bd[k]*beta)*v[k*st]*k**2 + beta*(bl[k-2]*v[(k-2)*st]*(k-2)**2 + bu[k]*v[(k+2)*st]*(k+2)**2) + p*s2
+        else:
+            s1 += v[(k+2)*st]*(k+2)**2
+            b[k*st] = (dd[k]*alfa + bd[k]*beta)*v[k*st]*k**2 + beta*(bl[k-2]*v[(k-2)*st]*(k-2)**2 + bu[k]*v[(k+2)*st]*(k+2)**2) + p*s1
+
+    k = 1
+    s1 += v[(k+2)*st]*(k+2)**2
+    b[k*st] = (dd[k]*alfa + bd[k]*beta)*v[k*st]*k**2 + beta*(bu[k]*v[(k+2)*st]*(k+2)**2) + ud[k]*alfa*s1
+    k = 0
+    s2 += v[(k+2)*st]*(k+2)**2
+    b[k*st] = (dd[k]*alfa + bd[k]*beta)*v[k*st]*k**2 + beta*(bu[k]*v[(k+2)*st]*(k+2)**2) + ud[k]*alfa*s2
+    b[0] += bd[0]*v[0]*beta
+    b[2*st] += bl[0]*v[0]*beta
+
+def Helmholtz_Neumann_matvec3D_ptr(T[:, :, ::1] v,
+                           T[:, :, ::1] b,
+                           real_t[:, :, ::1] alfa,
+                           real_t[:, :, ::1] beta,
+                           # 3 upper diagonals of SBB
+                           real_t[::1] dd,
+                           real_t[::1] ud,
+                           real_t[::1] bl,
+                           real_t[::1] bd,
+                           real_t[::1] bu,
+                           int axis):
+    cdef:
+        int i, j, k, strides
+        int N = dd.shape[0]
+        T* v_ptr
+        T* b_ptr
+
+    strides = v.strides[axis]/v.itemsize
+    if axis == 0:
+        for j in range(v.shape[1]):
+            for k in range(v.shape[2]):
+                v_ptr = &v[0, j, k]
+                b_ptr = &b[0, j, k]
+                Helmholtz_Neumann_matvec_ptr(v_ptr, b_ptr, alfa[0, j, k],
+                                     beta[0, j, k], &dd[0], &ud[0], &bl[0],
+                                     &bd[0], &bu[0], N, strides)
+
+    elif axis == 1:
+       for i in range(v.shape[0]):
+            for k in range(v.shape[2]):
+                v_ptr = &v[i, 0, k]
+                b_ptr = &b[i, 0, k]
+                Helmholtz_Neumann_matvec_ptr(v_ptr, b_ptr, alfa[i, 0, k],
+                                     beta[i, 0, k], &dd[0], &ud[0], &bl[0],
+                                     &bd[0], &bu[0], N, strides)
+
+    elif axis == 2:
+        for i in range(v.shape[0]):
+            for j in range(v.shape[1]):
+                v_ptr = &v[i, j, 0]
+                b_ptr = &b[i, j, 0]
+                Helmholtz_Neumann_matvec_ptr(v_ptr, b_ptr, alfa[i, j, 0],
+                                     beta[i, j, 0], &dd[0], &ud[0], &bl[0],
+                                     &bd[0], &bu[0], N, strides)
+
+
+def Helmholtz_Neumann_matvec2D_ptr(T[:, ::1] v,
+                           T[:, ::1] b,
+                           real_t[:, ::1] alfa,
+                           real_t[:, ::1] beta,
+                           real_t[::1] dd,
+                           real_t[::1] ud,
+                           real_t[::1] bl,
+                           real_t[::1] bd,
+                           real_t[::1] bu,
+                           int axis):
+    cdef:
+        int i, j, strides
+        int N = dd.shape[0]
+        T* v_ptr
+        T* b_ptr
+
+    strides = v.strides[axis]/v.itemsize
+    if axis == 0:
+        for j in range(v.shape[1]):
+            v_ptr = &v[0, j]
+            b_ptr = &b[0, j]
+            Helmholtz_Neumann_matvec_ptr(v_ptr, b_ptr, alfa[0, j],
+                                 beta[0, j], &dd[0], &ud[0], &bl[0], &bd[0], &bu[0], N, strides)
+
+    elif axis == 1:
+       for i in range(v.shape[0]):
+            v_ptr = &v[i, 0]
+            b_ptr = &b[i, 0]
+            Helmholtz_Neumann_matvec_ptr(v_ptr, b_ptr, alfa[i, 0],
+                                 beta[i, 0], &dd[0], &ud[0], &bl[0], &bd[0], &bu[0], N, strides)
+
+def Helmholtz_Neumann_matvec1D_ptr(T[::1] v,
+                           T[::1] b,
+                           real_t alfa,
+                           real_t beta,
+                           real_t[::1] dd,
+                           real_t[::1] ud,
+                           real_t[::1] bl,
+                           real_t[::1] bd,
+                           real_t[::1] bu):
+    cdef:
+        int i, j, strides
+        int N = dd.shape[0]
+        T* v_ptr
+        T* b_ptr
+    v_ptr = &v[0]
+    b_ptr = &b[0]
+    strides = v.strides[0]/v.itemsize
+    Helmholtz_Neumann_matvec_ptr(v_ptr, b_ptr, alfa,
+                                 beta, &dd[0], &ud[0],
+                                 &bl[0], &bd[0], &bu[0], N, strides)
+
+
+def Helmholtz_Neumann_matvec(v, b, alfa, beta, A, B, axis):
+    N = A[0].shape[0]
+    k = np.arange(N)
+    j2 = k**2
+    j2[0] = 1
+    j2 = 1/j2
+    j2[0] = 0
+    A_0 = A[0]*j2
+    A_2 = A[2]*j2[2:]
+    B_0 = B[0]*j2
+    B_2 = B[2]*j2[2:]
+    j2[0] = 1
+    B_m2 = B[-2]*j2[:-2]
+
+    if v.ndim == 1:
+        Helmholtz_Neumann_matvec_1D(v, b, alfa, beta, A_0, A_2, B_m2, B_0, B_2)
+        #Helmholtz_Neumann_matvec1D_ptr(v, b, alfa, beta, A_0, A_2, B_m2, B_0, B_2)
+    elif v.ndim == 2:
+        Helmholtz_Neumann_matvec2D_ptr(v, b, alfa, beta, A_0, A_2, B_m2, B_0, B_2, axis)
+    elif v.ndim == 3:
+        Helmholtz_Neumann_matvec3D_ptr(v, b, alfa, beta, A_0, A_2, B_m2, B_0, B_2, axis)
+
 
 cdef void Biharmonic_matvec_ptr(T* v,
                                 T* b,

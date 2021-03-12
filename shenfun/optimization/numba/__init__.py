@@ -2,6 +2,7 @@ import numpy as np
 import numba as nb
 from .tdma import *
 from .pdma import *
+from .fdma import *
 from .helmholtz import *
 from .biharmonic import *
 from .chebyshev import *

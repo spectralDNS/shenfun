@@ -28,8 +28,8 @@ fe = ue.diff(x, 4) + ue.diff(y, 4) + 2*ue.diff(x, 2, y, 2)
 # Size of discretization
 N = (30, 30)
 
-S0 = FunctionSpace(N[0], family=family, bc='Biharmonic')
-S1 = FunctionSpace(N[1], family=family, bc='Biharmonic')
+S0 = FunctionSpace(N[0], family=family, bc=(0, 0, 0, 0))
+S1 = FunctionSpace(N[1], family=family, bc=(0, 0, 0, 0))
 T = TensorProductSpace(comm, (S0, S1), axes=(0, 1))
 
 u = TrialFunction(T)

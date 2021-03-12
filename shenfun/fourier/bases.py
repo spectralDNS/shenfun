@@ -395,7 +395,7 @@ class R2C(FourierBase):
             return self.N//2+1
         return int(np.floor(self.padding_factor*self.N))
 
-    def evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
+    def _evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
         if fast_transform is False:
             assert abs(self.padding_factor-1) < 1e-8
             P = self.evaluate_basis_all(x=x)
@@ -418,8 +418,10 @@ class R2C(FourierBase):
                     array += np.conj(np.dot(P[:, 1:], fc[tuple(s)])).real
 
                 output_array[:] = np.moveaxis(array, 0, self.axis)
-        else:
-            self.backward.xfftn(normalise_idft=False)
+            return
+        assert input_array is self.backward.tmp_array
+        assert output_array is self.backward.output_array
+        self.backward.xfftn(normalise_idft=False)
 
     def _truncation_forward(self, padded_array, trunc_array):
         if not id(trunc_array) == id(padded_array):
@@ -527,11 +529,13 @@ class C2C(FourierBase):
         self.plan((int(padding_factor*N),), (0,), np.complex, {})
         self._slp = []
 
-    def evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
+    def _evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
         if fast_transform is False:
-            SpectralBase.evaluate_expansion_all(self, input_array, output_array, x, False)
-        else:
-            self.backward.xfftn(normalise_idft=False)
+            SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, False)
+            return
+        assert input_array is self.backward.tmp_array
+        assert output_array is self.backward.output_array
+        self.backward.xfftn(normalise_idft=False)
 
     def wavenumbers(self, bcast=True, scaled=False, eliminate_highest_freq=False):
         k = np.fft.fftfreq(self.N, 1./self.N).astype(int)

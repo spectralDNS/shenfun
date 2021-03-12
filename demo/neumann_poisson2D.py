@@ -33,7 +33,7 @@ fe = ue.diff(x, 2) + ue.diff(y, 2)
 # Size of discretization
 N = (31, 32)
 
-SD = FunctionSpace(N[0], family=family, bc='Neumann')
+SD = FunctionSpace(N[0], family=family, bc={'left': ('N', 0), 'right': ('N', 0)}, mean=None)
 K1 = FunctionSpace(N[1], family='F', dtype='d')
 T = TensorProductSpace(comm, (SD, K1))
 u = TrialFunction(T)
@@ -60,6 +60,8 @@ uq = T.backward(u_hat)
 uj = Array(T, buffer=ue)
 print(abs(uj-uq).max())
 assert np.allclose(uj, uq)
+c = H.matvec(u_hat, Function(T))
+assert np.allclose(c, f_hat)
 
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt
