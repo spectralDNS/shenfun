@@ -13,6 +13,7 @@ from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, islicedict, \
     slicedict
 from .lobatto import legendre_lobatto_nodes_and_weights
+from .fastgl import fastgl_wrap
 
 __all__ = ['LegendreBase', 'Orthogonal', 'ShenDirichlet',
            'ShenBiharmonic', 'ShenNeumann',
@@ -89,7 +90,9 @@ class LegendreBase(SpectralBase):
         if N is None:
             N = self.shape(False)
         if self.quad == "LG":
-            points, weights = leg.leggauss(N)
+            points, weights = fastgl_wrap.leggauss(N)
+            #points, weights = leg.leggauss(N)
+
         elif self.quad == "GL":
             points, weights = legendre_lobatto_nodes_and_weights(N)
         else:
@@ -106,13 +109,13 @@ class LegendreBase(SpectralBase):
         if N is None:
             N = self.shape(False)
         if self.quad == 'LG':
-            pw = quadpy.line_segment.gauss_legendre(N, 'mpmath')
+            pw = quadpy.c1.gauss_legendre(N, 'mpmath')
         elif self.quad == 'GL':
-            pw = quadpy.line_segment.gauss_lobatto(N) # No mpmath in quadpy for lobatto:-(
-        points = pw.points
+            pw = quadpy.c1.gauss_lobatto(N) # No mpmath in quadpy for lobatto:-(
+        points = pw.points_symbolic
         if map_true_domain is True:
             points = self.map_true_domain(points)
-        return points, pw.weights
+        return points, pw.weights_symbolic
 
     def vandermonde(self, x):
         return leg.legvander(x, self.shape(False)-1)
@@ -245,6 +248,10 @@ class Orthogonal(LegendreBase):
     def is_orthogonal(self):
         return True
 
+    @staticmethod
+    def short_name():
+        return 'L'
+
 
 class ShenDirichlet(LegendreBase):
     """Legendre Function space for Dirichlet boundary conditions
@@ -297,6 +304,10 @@ class ShenDirichlet(LegendreBase):
     @staticmethod
     def boundary_condition():
         return 'Dirichlet'
+
+    @staticmethod
+    def short_name():
+        return 'SD'
 
     @property
     def has_nonhomogeneous_bcs(self):
@@ -378,10 +389,43 @@ class ShenDirichlet(LegendreBase):
             output_array /= np.sqrt(4*i+6)
         return output_array
 
+    def _evaluate_expansion_all(self, input_array, output_array,
+                               x=None, fast_transform=False):
+        if fast_transform is False:
+            SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, fast_transform)
+            return
+        assert input_array.ndim == 1, 'Use fast_transform=False'
+        xj, _ = self.points_and_weights(self.N)
+        from shenfun.optimization.numba import legendre as legn
+        legn.legendre_shendirichlet_evaluate_expansion_all(xj, input_array, output_array, self.is_scaled())
+
+
     def _evaluate_scalar_product(self, fast_transform=False):
-        SpectralBase._evaluate_scalar_product(self)
-        self.scalar_product.output_array[self.si[-2]] = 0
-        self.scalar_product.output_array[self.si[-1]] = 0
+        input_array = self.scalar_product.input_array
+        output_array = self.scalar_product.output_array
+        if fast_transform is False:
+            SpectralBase._evaluate_scalar_product(self)
+            output_array[self.si[-2]] = 0
+            output_array[self.si[-1]] = 0
+            return
+        M = self.shape(False)
+        xj, wj = self.points_and_weights(M)
+        assert input_array.ndim == 1, 'Use fast_transform=False'
+        from shenfun.optimization.numba import legendre as legn
+        legn.legendre_shendirichlet_scalar_product(xj, wj, input_array, output_array, self.is_scaled())
+        #phi_i = np.zeros_like(xj)
+        #Lnm = eval_legendre(0, xj)
+        #Ln = eval_legendre(1, xj)
+        #Lnp = ((2+1)*xj*Ln - 1*Lnm)/2
+        #for i in range(self.N-2):
+        #    phi_i[:] = Lnm-Lnp
+        #    output_array[i] = np.sum(phi_i*wj*input_array)
+        #    Lnm[:] = Ln
+        #    Ln[:] = Lnp
+        #    Lnp[:] = ((2*(i+2)+1)*xj*Ln - (i+2)*Lnm)/(i+3)
+
+        output_array[self.si[-2]] = 0
+        output_array[self.si[-1]] = 0
 
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)
@@ -488,6 +532,19 @@ class ShenNeumann(LegendreBase):
     def boundary_condition():
         return 'Neumann'
 
+    @staticmethod
+    def short_name():
+        return 'SN'
+
+    @property
+    def use_fixed_gauge(self):
+        if self.mean is None:
+            return False
+        T = self.tensorproductspace
+        if T:
+            return T.use_fixed_gauge
+        return True
+
     @property
     def has_nonhomogeneous_bcs(self):
         return self.bc.has_nonhomogeneous_bcs()
@@ -507,9 +564,41 @@ class ShenNeumann(LegendreBase):
             self._factor = k*(k+1)/(k+2)/(k+3)
 
     def _evaluate_scalar_product(self, fast_transform=False):
-        SpectralBase._evaluate_scalar_product(self)
-        self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
-        self.scalar_product.output_array[self.si[0]] = self.mean*np.pi
+        input_array = self.scalar_product.input_array
+        output_array = self.scalar_product.output_array
+        if fast_transform is False:
+            SpectralBase._evaluate_scalar_product(self)
+            output_array[self.sl[slice(-2, None)]] = 0
+            if self.use_fixed_gauge:
+                output_array[self.si[0]] = self.mean*np.pi
+            return
+
+        assert input_array.ndim == 1, 'Use fast_transform=False'
+
+        #try:
+        xj, wj = self.points_and_weights(self.N)
+        from shenfun.optimization.numba import legendre as legn
+        legn.legendre_shenneumann_scalar_product(xj, wj, input_array, output_array)
+        #except:
+        #    raise RuntimeError('Requires Numba')
+
+        output_array[self.sl[slice(-2, None)]] = 0
+        if self.use_fixed_gauge:
+            output_array[self.si[0]] = self.mean*np.pi
+
+    def _evaluate_expansion_all(self, input_array, output_array,
+                                x=None, fast_transform=False):
+        if fast_transform is False:
+            SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, fast_transform)
+            return
+
+        assert input_array.ndim == 1, 'Use fast_transform=False'
+        xj, _ = self.points_and_weights(self.N)
+        try:
+            from shenfun.optimization.numba import legendre as legn
+            legn.legendre_shenneumann_evaluate_expansion_all(xj, input_array, output_array)
+        except:
+            raise RuntimeError('Requires Numba')
 
     def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         f = sympy.legendre(i, x) - (i*(i+1))/((i+2)*(i+3))*sympy.legendre(i+2, x)
@@ -655,6 +744,10 @@ class ShenBiharmonic(LegendreBase):
     @staticmethod
     def boundary_condition():
         return 'Biharmonic'
+
+    @staticmethod
+    def short_name():
+        return 'SB'
 
     @property
     def has_nonhomogeneous_bcs(self):
@@ -852,6 +945,10 @@ class BeamFixedFree(LegendreBase):
     @staticmethod
     def boundary_condition():
         return 'BeamFixedFree'
+
+    @staticmethod
+    def short_name():
+        return 'BF'
 
     @property
     def has_nonhomogeneous_bcs(self):
@@ -1055,6 +1152,10 @@ class UpperDirichlet(LegendreBase):
     def boundary_condition():
         return 'UpperDirichlet'
 
+    @staticmethod
+    def short_name():
+        return 'UD'
+
     @property
     def has_nonhomogeneous_bcs(self):
         return self.bc.has_nonhomogeneous_bcs()
@@ -1215,7 +1316,11 @@ class ShenBiPolar(LegendreBase):
 
     @staticmethod
     def boundary_condition():
-        return 'BiPolar'
+        return 'Biharmonic'
+
+    @staticmethod
+    def short_name():
+        return 'SP'
 
     @property
     def has_nonhomogeneous_bcs(self):
@@ -1318,6 +1423,10 @@ class ShenBiPolar0(LegendreBase):
     @staticmethod
     def boundary_condition():
         return 'BiPolar0'
+
+    @staticmethod
+    def short_name():
+        return 'SP0'
 
     @property
     def has_nonhomogeneous_bcs(self):
@@ -1481,6 +1590,10 @@ class DirichletNeumann(LegendreBase):
     @staticmethod
     def boundary_condition():
         return 'DirichletNeumann'
+
+    @staticmethod
+    def short_name():
+        return 'DN'
 
     @property
     def has_nonhomogeneous_bcs(self):
@@ -1666,6 +1779,10 @@ class NeumannDirichlet(LegendreBase):
     @staticmethod
     def boundary_condition():
         return 'NeumannDirichlet'
+
+    @staticmethod
+    def short_name():
+        return 'ND'
 
     @property
     def has_nonhomogeneous_bcs(self):
@@ -1857,6 +1974,10 @@ class UpperDirichletNeumann(LegendreBase):
     def boundary_condition():
         return 'UpperDirichletNeumann'
 
+    @staticmethod
+    def short_name():
+        return 'UDN'
+
     @property
     def has_nonhomogeneous_bcs(self):
         return self.bc.has_nonhomogeneous_bcs()
@@ -1992,9 +2113,9 @@ class UpperDirichletNeumann(LegendreBase):
 
 class BCDirichlet(LegendreBase):
 
-    def __init__(self, N, quad="LG", scaled=False,
-                 domain=(-1., 1.), coordinates=None):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain, coordinates=coordinates)
+    def __init__(self, N, quad="LG", scaled=False, dtype=np.float,
+                 domain=(-1., 1.), coordinates=None, **kw):
+        LegendreBase.__init__(self, N, quad=quad, dtype=dtype, domain=domain, coordinates=coordinates)
         self._scaled = scaled
 
     def slice(self):
@@ -2009,6 +2130,10 @@ class BCDirichlet(LegendreBase):
     @staticmethod
     def boundary_condition():
         return 'Apply'
+
+    @staticmethod
+    def short_name():
+        return 'BCD'
 
     def vandermonde(self, x):
         return leg.legvander(x, 1)
@@ -2057,9 +2182,9 @@ class BCDirichlet(LegendreBase):
 
 class BCNeumann(LegendreBase):
 
-    def __init__(self, N, quad="LG", scaled=False,
-                 domain=(-1., 1.), coordinates=None):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain, coordinates=coordinates)
+    def __init__(self, N, quad="LG", scaled=False, dtype=np.float,
+                 domain=(-1., 1.), coordinates=None, **kw):
+        LegendreBase.__init__(self, N, quad=quad, dtype=dtype, domain=domain, coordinates=coordinates)
         self._scaled = scaled
 
     def slice(self):
@@ -2074,6 +2199,10 @@ class BCNeumann(LegendreBase):
     @staticmethod
     def boundary_condition():
         return 'Apply'
+
+    @staticmethod
+    def short_name():
+        return 'BCN'
 
     def vandermonde(self, x):
         return leg.legvander(x, 2)
@@ -2160,9 +2289,9 @@ class BCBiharmonic(LegendreBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, quad="LG", domain=(-1., 1.),
-                 padding_factor=1, dealias_direct=False, coordinates=None):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain,
+    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=np.float,
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
 
@@ -2178,6 +2307,10 @@ class BCBiharmonic(LegendreBase):
     @staticmethod
     def boundary_condition():
         return 'Apply'
+
+    @staticmethod
+    def short_name():
+        return 'BCB'
 
     def vandermonde(self, x):
         return leg.legvander(x, 3)
@@ -2247,9 +2380,9 @@ class BCBeamFixedFree(LegendreBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, quad="LG", domain=(-1., 1.),
+    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=np.float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain,
+        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
 
@@ -2265,6 +2398,10 @@ class BCBeamFixedFree(LegendreBase):
     @staticmethod
     def boundary_condition():
         return 'Apply'
+
+    @staticmethod
+    def short_name():
+        return 'BCBF'
 
     def vandermonde(self, x):
         return leg.legvander(x, 3)
@@ -2297,6 +2434,17 @@ class BCBeamFixedFree(LegendreBase):
         output_array[:] = np.dot(V, self.coefficient_matrix()[i])
         return output_array
 
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        output_array = SpectralBase.evaluate_basis_derivative(self, x=x, i=i, k=k, output_array=output_array)
+        return output_array
+
+    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
+        if x is None:
+            x = self.mesh(False, False)
+        output_array = np.zeros((x.shape[0], 1))
+        self.evaluate_basis_derivative(x=x, k=k, output_array=output_array[:, 0])
+        return output_array
+
 
 class BCUpperDirichlet(LegendreBase):
     """Function space for Dirichlet boundary conditions at x=1
@@ -2326,9 +2474,9 @@ class BCUpperDirichlet(LegendreBase):
     """
 
     def __init__(self, N, quad="GC", domain=(-1., 1.), scaled=False,
-                 coordinates=None):
+                 dtype=np.float, coordinates=None, **kw):
         LegendreBase.__init__(self, N, quad=quad, domain=domain,
-                                coordinates=coordinates)
+                              dtype=dtype, coordinates=coordinates)
 
     def slice(self):
         return slice(self.N-1, self.N)
@@ -2342,6 +2490,10 @@ class BCUpperDirichlet(LegendreBase):
     @staticmethod
     def boundary_condition():
         return 'Apply'
+
+    @staticmethod
+    def short_name():
+        return 'BCUD'
 
     def vandermonde(self, x):
         return leg.legvander(x, 1)
@@ -2385,15 +2537,15 @@ class BCUpperDirichlet(LegendreBase):
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         if x is None:
             x = self.mesh(False, False)
-        output_array = np.zeros((self.N, 1))
+        output_array = np.zeros((x.shape[0], 1))
         self.evaluate_basis_derivative(x=x, k=k, output_array=output_array[:, 0])
         return output_array
 
 class BCNeumannDirichlet(LegendreBase):
 
-    def __init__(self, N, quad="LG", scaled=False,
-                 domain=(-1., 1.), coordinates=None):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain, coordinates=coordinates)
+    def __init__(self, N, quad="LG", scaled=False, dtype=np.float,
+                 domain=(-1., 1.), coordinates=None, **kw):
+        LegendreBase.__init__(self, N, quad=quad, dtype=dtype, domain=domain, coordinates=coordinates)
         self._scaled = scaled
 
     def slice(self):
@@ -2408,6 +2560,10 @@ class BCNeumannDirichlet(LegendreBase):
     @staticmethod
     def boundary_condition():
         return 'Apply'
+
+    @staticmethod
+    def short_name():
+        return 'BCND'
 
     def vandermonde(self, x):
         return leg.legvander(x, 2)
@@ -2468,9 +2624,9 @@ class BCNeumannDirichlet(LegendreBase):
 
 class BCDirichletNeumann(LegendreBase):
 
-    def __init__(self, N, quad="LG",
-                 domain=(-1., 1.), coordinates=None):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain, coordinates=coordinates)
+    def __init__(self, N, quad="LG", dtype=np.float,
+                 domain=(-1., 1.), coordinates=None, **kw):
+        LegendreBase.__init__(self, N, quad=quad, dtype=dtype, domain=domain, coordinates=coordinates)
 
     def slice(self):
         return slice(self.N-2, self.N)
@@ -2484,6 +2640,10 @@ class BCDirichletNeumann(LegendreBase):
     @staticmethod
     def boundary_condition():
         return 'Apply'
+
+    @staticmethod
+    def short_name():
+        return 'BCDN'
 
     def vandermonde(self, x):
         return leg.legvander(x, 1)
@@ -2535,16 +2695,16 @@ class BCDirichletNeumann(LegendreBase):
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         if x is None:
             x = self.mesh(False, False)
-        output_array = np.zeros((self.N, 2))
+        output_array = np.zeros((x.shape[0], 2))
         self.evaluate_basis_derivative(x=x, i=0, k=k, output_array=output_array[:, 0])
         self.evaluate_basis_derivative(x=x, i=1, k=k, output_array=output_array[:, 1])
         return output_array
 
 class BCUpperDirichletNeumann(LegendreBase):
 
-    def __init__(self, N, quad="LG",
-                 domain=(-1., 1.), coordinates=None):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain, coordinates=coordinates)
+    def __init__(self, N, quad="LG", dtype=np.float,
+                 domain=(-1., 1.), coordinates=None, **kw):
+        LegendreBase.__init__(self, N, quad=quad, dtype=dtype, domain=domain, coordinates=coordinates)
 
     def slice(self):
         return slice(self.N-2, self.N)
@@ -2558,6 +2718,10 @@ class BCUpperDirichletNeumann(LegendreBase):
     @staticmethod
     def boundary_condition():
         return 'Apply'
+
+    @staticmethod
+    def short_name():
+        return 'BCUDN'
 
     def vandermonde(self, x):
         return leg.legvander(x, 2)
@@ -2611,7 +2775,7 @@ class BCUpperDirichletNeumann(LegendreBase):
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         if x is None:
             x = self.mesh(False, False)
-        output_array = np.zeros((self.N, 2))
+        output_array = np.zeros((x.shape[0], 2))
         self.evaluate_basis_derivative(x=x, i=0, k=k, output_array=output_array[:, 0])
         self.evaluate_basis_derivative(x=x, i=1, k=k, output_array=output_array[:, 1])
         return output_array

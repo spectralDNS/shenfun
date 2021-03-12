@@ -24,7 +24,7 @@ def Basis(*args, **kwargs): #pragma: no cover
     return FunctionSpace(*args, **kwargs)
 
 def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
-                  domain=None, scaled=None, padding_factor=1,
+                  domain=None, scaled=None, padding_factor=1, basis=None,
                   dealias_direct=False, coordinates=None, **kw):
     """Return function space
 
@@ -43,26 +43,41 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
         - ``Hermite`` or ``H``
         - ``Jacobi`` or ``J``
 
-    bc : str or tuple, optional
+    bc : tuple or dict, optional
         Choose one of
 
-        - 2-tuple of numbers (a, b) - Dirichlet boundary condition with
+        * 2-tuple of numbers (a, b) - Dirichlet boundary condition with
           :math:`v(-1)=a` and :math:`v(1)=b`.
-        - 2-tuple of non-numbers, but None or 2-tuples
-          The inner sequence gives the type of boundary condition first and then
-          the value. For Dirichlet use 'D' and Neumann 'N'. If there are no
-          boundary conditions on one side, then use None.
-          For example:
-            (('D', 0), ('D', 0)) - homogeneous Dirichlet
-            (('N', 0), ('N', 0)) - homogeneous Neumann
-            (('D', 0), ('N', 0)) - mixed Dirichlet on the left and Neumann on the right
-            (None, ('D', 0)) - No bc on the left and homogeneous Dirichlet on the right
-        - 4-tuple (a, b, c, d) - Biharmonic with the two non-zero Dirichlet
+
+        * (None, a) - Dirichlet on right boundary, nothing on left.
+
+        * 4-tuple (a, b, c, d) - Biharmonic with the two non-zero Dirichlet
           conditions first :math:`v(-1)=a` and :math:`v(1)=b` and then
           the two Neumann.
-        - 4-tuple of non-numbers, None or 2-tuples
-          None means no condition, the 2-tuples give the type of condition first,
-          and then the value.
+
+        * dict with keys 'left' and 'right', for left and right boundaries,
+          and a list of 2-tuples to specify the condition. This is the most
+          general form, and all boundary conditions may be specified like this.
+          Specify Dirichlet on both ends with
+
+              {'left': [('D', a)], 'right': [('D', b)]}
+
+          Specify mixed Neumann and Dirichlet as
+
+              {'left': [('N', a)], 'right': [('D', b)]}
+
+          For both conditions on the right do
+
+              {'right': [('N', a), ('D', b)]}
+
+          Note that not all combinations are possible for biharmonic
+          problems. One combination that is possible is a fixed free beam
+          with
+
+              {'left': [('D', a), ('N', b)], 'right': [('N2', c), ('N3', d)]}
+
+          where 'N2' and 'N3' represent second and third derivatives.
+
     dtype : str or np.dtype, optional
         The datatype of physical space (input to forward transforms)
     quad : str, optional
@@ -90,6 +105,10 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
         The computational domain
     scaled : bool
         Whether to use scaled basis (only Legendre)
+    basis : str
+        Name of basis to use, if there are more than one possible basis for a given
+        boundary condition. For example, there are two Dirichlet bases for the
+        Chebyshev family: 'Heinricht' and 'ShenDirichlet'
     padding_factor : float, optional
         For padding backward transform (for dealiasing)
     dealias_direct : bool, optional
@@ -184,8 +203,12 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
     elif family.lower() in ('chebyshev', 'c'):
         from shenfun import chebyshev
         if quad is not None:
-            assert quad in ('GC', 'GL')
+            assert quad in ('GC', 'GL', 'GU')
             par['quad'] = quad
+
+        if scaled is not None:
+            assert isinstance(scaled, bool)
+            par['scaled'] = scaled
 
         # Boundary conditions abbreviated in dictionary keys as
         #   left->L, right->R, Dirichlet->D, Neumann->N
@@ -198,29 +221,10 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             'LNRD': chebyshev.bases.NeumannDirichlet,
             'RD': chebyshev.bases.UpperDirichlet,
             'RDRN': chebyshev.bases.UpperDirichletNeumann,
-            'LDLNRDRN': chebyshev.bases.ShenBiharmonic,
+            'LDLNRDRN': chebyshev.bases.ShenBiharmonic
         }
 
-        if isinstance(bc, str):
-            # Strings use default values, so no inhomogeneous bcs
-            if bc.lower() == 'dirichlet':
-                key = 'LDRD'
-            elif bc.lower() == 'neumann':
-                key = 'LNRN'
-            elif bc.lower() == 'secondneumann':
-                key = 'LLRL'
-            elif bc.lower() == 'biharmonic':
-                key = 'LDLNRDRN'
-            elif bc.lower() == 'upperdirichlet':
-                key = 'RD'
-            elif bc.lower() == 'bipolar':
-                key = 'LDLNRDRN2'
-            elif bc.lower() == 'dirichletneumann':
-                key = 'LDRN'
-            elif bc.lower() == 'neumanndirichlet':
-                key = 'LNRD'
-
-        elif isinstance(bc, (tuple, dict)):
+        if isinstance(bc, (tuple, dict)):
             key, par['bc'] = _process_bcs(bc, domain)
 
         elif bc is None:
@@ -229,7 +233,12 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
         else:
             raise NotImplementedError
 
-        B = bases[''.join(key)]
+        if basis is not None:
+            assert isinstance(basis, str)
+            B = getattr(chebyshev.bases, basis)
+        else:
+            B = bases[''.join(key)]
+
         return B(N, **par)
 
     elif family.lower() in ('legendre', 'l'):
@@ -245,7 +254,6 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             'RDRN': legendre.bases.UpperDirichletNeumann,
             'LNRDRN': legendre.bases.ShenBiPolar0,
             'LDLNRDRN': legendre.bases.ShenBiharmonic,
-            'LDLNRDRN2': legendre.bases.ShenBiPolar,
             'LDLNRN2RN3': legendre.bases.BeamFixedFree
         }
 
@@ -257,29 +265,7 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             assert isinstance(scaled, bool)
             par['scaled'] = scaled
 
-        if isinstance(bc, str):
-            if bc.lower() == 'dirichlet':
-                key = 'LDRD'
-            elif bc.lower() == 'neumann':
-                key = 'LNRN'
-            elif bc.lower() == 'biharmonic':
-                key = 'LDLNRDRN'
-            elif bc.lower() == 'upperdirichlet':
-                key = 'RD'
-            elif bc.lower() == 'upperdirichletneumann':
-                key = 'RDRN'
-            elif bc.lower() == 'bipolar':
-                key = 'LDLNRDRN2'
-            elif bc.lower() == 'bipolar0':
-                key = 'LNRDRN'
-            elif bc.lower() == 'dirichletneumann':
-                key = 'LDRN'
-            elif bc.lower() == 'neumanndirichlet':
-                key = 'LNRD'
-            elif bc.lower() == 'beamfixedfree':
-                key = 'LDLNRN2RN3'
-
-        elif isinstance(bc, (tuple, dict)):
+        if isinstance(bc, (tuple, dict)):
             key, par['bc'] = _process_bcs(bc, domain)
 
         elif bc is None:
@@ -288,7 +274,12 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
         else:
             raise NotImplementedError
 
-        B = bases[''.join(key)]
+        if basis is not None:
+            assert isinstance(basis, str)
+            B = getattr(legendre.bases, basis)
+        else:
+            B = bases[''.join(key)]
+
         return B(N, **par)
 
     elif family.lower() in ('laguerre', 'la'):
@@ -1207,7 +1198,7 @@ class ShenfunBaseArray(DistArray):
                 if isinstance(buf0, Number):
                     buffer.v[i] = buf0
                 elif hasattr(buf0, 'free_symbols'):
-                    sym0 = buf0.free_symbols
+                    sym0 = tuple(buf0.free_symbols)
                     m = []
                     for sym in sym0:
                         j = 'xyzrs'.index(str(sym))
@@ -1223,7 +1214,7 @@ class ShenfunBaseArray(DistArray):
 
         # if just one sympy expression
         if hasattr(buffer, 'free_symbols'):
-            sym0 = buffer.free_symbols
+            sym0 = tuple(buffer.free_symbols)
             mesh = space.local_mesh(True)
             m = []
             for sym in sym0:

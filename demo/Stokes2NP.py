@@ -78,15 +78,9 @@ else:
 
 A10 = inner(q, div(u))
 
-bc_mats = extract_bc_matrices([A00, A01, A10])
+M, BM = BlockMatrices(A00+A01+A10) # Note BM is boundary matrix
 
-uh_hat = Function(VQ).set_boundary_dofs()
-bh_hat0 = Function(VQ)
-BM = BlockMatrix(bc_mats)
-bh_hat0 = BM.matvec(-uh_hat, bh_hat0)
-
-# Create Block matrix
-M = BlockMatrix(A00+A01+A10)
+uh_hat = Function(VQ)
 
 # Assemble right hand side
 fh = Array(VQ, buffer=(fx, fy, h))
@@ -97,9 +91,7 @@ f_hat = inner(v, f_, output_array=f_hat)
 h_hat = inner(q, h_, output_array=h_hat)
 
 # Solve problem
-#uh_hat = Function(VQ)
-fh_hat += bh_hat0
-uh_hat = M.solve(fh_hat, u=uh_hat, constraints=((2, 0, 0),))
+uh_hat = M.solve(fh_hat, u=uh_hat, constraints=((2, 0, 0),), BM=BM)
 #                                                (2, N[0]-1, 0),
 #                                                (2, N[0]*N[1]-1, 0),
 #                                                (2, N[0]*N[1]-N[1], 0))) # Constraint for component 2 of mixed space

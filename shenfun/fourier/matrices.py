@@ -219,3 +219,5 @@ mat = _FourierMatDict({
     ((C2C, 0), (C2C, 0), (0, 2*np.pi), sp.cos(xp)**2): functools.partial(Bcos2mat, measure=sp.cos(xp)**2),
     ((C2C, 0), (C2C, 0), (0, 2*np.pi), sp.cos(xp)): functools.partial(Bcosmat, measure=sp.cos(xp)),
 })
+
+#mat = _FourierMatDict({})

@@ -17,7 +17,7 @@ The next two letters refer to the test and trialfunctions, respectively
     - Legendre:    `L`
     - Biharmonic:  `B`
 
-As such, there are 4 mass matrices, BDDmat, BNNmat, BLLmat and BBBmat,
+As such, there are 4 mass matrices, BSDSDmat, BSNSNmat, BLLmat and BSBSBmat,
 corresponding to the four bases above.
 
 A matrix may consist of different types of test and trialfunctions as long as
@@ -26,7 +26,7 @@ Neumann trial is named BDNmat.
 
 All matrices in this module may be looked up using the 'mat' dictionary,
 which takes test and trialfunctions along with the number of derivatives
-to be applied to each. As such the mass matrix BDDmat may be looked up
+to be applied to each. As such the mass matrix BSDSDmat may be looked up
 as
 
 >>> import numpy as np
@@ -55,10 +55,10 @@ generate the matrix as an inner product:
 >>> [np.all(abs(BM[k]-v) < 1e-7) for k, v in d.items()]
 [True, True, True]
 
-To see that this is in fact the BDDmat:
+To see that this is in fact the BSDSDmat:
 
 >>> print(BM.__class__)
-<class 'shenfun.legendre.matrices.BDDmat'>
+<class 'shenfun.legendre.matrices.BSDSDmat'>
 
 """
 from __future__ import division
@@ -75,15 +75,16 @@ from .la import TDMA
 from . import bases
 
 # Short names for instances of bases
-LB = bases.Orthogonal
+L  = bases.Orthogonal
 SD = bases.ShenDirichlet
 SB = bases.ShenBiharmonic
 SN = bases.ShenNeumann
-SU = bases.UpperDirichlet
+UD = bases.UpperDirichlet
 DN = bases.DirichletNeumann
-CD = bases.BCDirichlet
-CB = bases.BCBiharmonic
 BF = bases.BeamFixedFree
+
+BCD = bases.BCDirichlet
+BCB = bases.BCBiharmonic
 
 x = sp.symbols('x', real=True)
 xp = sp.symbols('x', real=True, positive=True)
@@ -108,8 +109,8 @@ class BLLmat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, measure=1):
-        assert isinstance(test[0], LB)
-        assert isinstance(trial[0], LB)
+        assert isinstance(test[0], L)
+        assert isinstance(trial[0], L)
         N = test[0].N
         k = np.arange(N, dtype=np.float)
         d = {0: 2./(2.*k+1)}
@@ -132,7 +133,7 @@ class BLLmat(SpectralMatrix):
         return u
 
 
-class BDDmat(SpectralMatrix):
+class BSDSDmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
     .. math::
@@ -168,7 +169,7 @@ class BDDmat(SpectralMatrix):
         self.solve = TDMA(self)
 
 
-class BNNmat(SpectralMatrix):
+class BSNSNmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
     .. math::
@@ -200,7 +201,7 @@ class BNNmat(SpectralMatrix):
         #self.solve = neumann_TDMA(self)
 
 
-class BBBmat(SpectralMatrix):
+class BSBSBmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
     .. math::
@@ -276,7 +277,7 @@ class BBFBFmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
-class BDLmat(SpectralMatrix):
+class BSDLmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
     .. math::
@@ -294,7 +295,7 @@ class BDLmat(SpectralMatrix):
     """
     def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SD)
-        assert isinstance(trial[0], LB)
+        assert isinstance(trial[0], L)
         N = test[0].N
         k = np.arange(N, dtype=np.float)
         sc = np.ones(N)
@@ -307,7 +308,7 @@ class BDLmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
-class BLDmat(SpectralMatrix):
+class BLSDmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
     .. math::
@@ -324,7 +325,7 @@ class BLDmat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, measure=1):
-        assert isinstance(test[0], LB)
+        assert isinstance(test[0], L)
         assert isinstance(trial[0], SD)
         N = test[0].N
         k = np.arange(N, dtype=np.float)
@@ -375,7 +376,7 @@ class BDNDNmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
-class ADDmat(SpectralMatrix):
+class ASDSDmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
     .. math::
@@ -444,7 +445,7 @@ class ADDmat(SpectralMatrix):
         return u
 
 
-class ANNmat(SpectralMatrix):
+class ASNSNmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
     .. math::
@@ -503,7 +504,7 @@ class ANNmat(SpectralMatrix):
         return u
 
 
-class ABBmat(SpectralMatrix):
+class ASBSBmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
     .. math::
@@ -662,8 +663,8 @@ class GLLmat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, measure=1):
-        assert isinstance(test[0], LB)
-        assert isinstance(trial[0], LB)
+        assert isinstance(test[0], L)
+        assert isinstance(trial[0], L)
         N = test[0].N
         k = np.arange(N, dtype=np.float)
         d = {}
@@ -689,7 +690,7 @@ class GLLmat(SpectralMatrix):
             c = super(GLLmat, self).matvec(v, c, format=format, axis=axis)
         return c
 
-class SBBmat(SpectralMatrix):
+class SSBSBmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
     .. math::
@@ -731,8 +732,8 @@ class CLLmat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, measure=1):
-        assert isinstance(test[0], LB)
-        assert isinstance(trial[0], LB)
+        assert isinstance(test[0], L)
+        assert isinstance(trial[0], L)
         N = test[0].N
         d = {}
         for i in range(1, N, 2):
@@ -785,8 +786,8 @@ class CLLmatT(SpectralMatrix):
 
     """
     def __init__(self, test, trial, measure=1):
-        assert isinstance(test[0], LB)
-        assert isinstance(trial[0], LB)
+        assert isinstance(test[0], L)
+        assert isinstance(trial[0], L)
         N = test[0].N
         d = {}
         for i in range(-1, -N, -2):
@@ -794,7 +795,7 @@ class CLLmatT(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
-class CLDmat(SpectralMatrix):
+class CLSDmat(SpectralMatrix):
     r"""Matrix for inner product
 
     .. math::
@@ -811,7 +812,7 @@ class CLDmat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, measure=1):
-        assert isinstance(test[0], LB)
+        assert isinstance(test[0], L)
         assert isinstance(trial[0], SD)
         N = test[0].N
         d = {-1: -2}
@@ -821,7 +822,7 @@ class CLDmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
-class CDLmat(SpectralMatrix):
+class CSDLmat(SpectralMatrix):
     r"""Matrix for inner product
 
     .. math::
@@ -839,7 +840,7 @@ class CDLmat(SpectralMatrix):
     """
     def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SD)
-        assert isinstance(trial[0], LB)
+        assert isinstance(trial[0], L)
         N = test[0].N
         d = {1: -2}
         if test[0].is_scaled():
@@ -848,7 +849,7 @@ class CDLmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
-class CDDmat(SpectralMatrix):
+class CSDSDmat(SpectralMatrix):
     r"""Matrix for inner product
 
     .. math::
@@ -876,7 +877,7 @@ class CDDmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
-class ADDrp1mat(SpectralMatrix):
+class ASDSDrp1mat(SpectralMatrix):
     r"""Matrix for inner product
 
     .. math::
@@ -902,7 +903,7 @@ class ADDrp1mat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
-class ADD2rp1mat(SpectralMatrix):
+class ASDSD2rp1mat(SpectralMatrix):
     r"""Matrix for inner product
 
     .. math::
@@ -928,7 +929,7 @@ class ADD2rp1mat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
-class ADD2Trp1mat(SpectralMatrix):
+class ASDSD2Trp1mat(SpectralMatrix):
     r"""Matrix for inner product
 
     .. math::
@@ -954,7 +955,7 @@ class ADD2Trp1mat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
-class AUUrp1mat(SpectralMatrix):
+class AUDUDrp1mat(SpectralMatrix):
     r"""Matrix for inner product
 
     .. math::
@@ -971,14 +972,14 @@ class AUUrp1mat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], SU)
-        assert isinstance(trial[0], SU)
+        assert isinstance(test[0], UD)
+        assert isinstance(trial[0], UD)
         assert test[0].quad == 'LG'
         k = np.arange(test[0].N-1)
         d = {0: 2*k+2}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
-class AUUrp1smat(SpectralMatrix):
+class AUDUDrp1smat(SpectralMatrix):
     r"""Matrix for inner product
 
     .. math::
@@ -995,8 +996,8 @@ class AUUrp1smat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], SU)
-        assert isinstance(trial[0], SU)
+        assert isinstance(test[0], UD)
+        assert isinstance(trial[0], UD)
         assert test[0].quad == 'LG'
         k = np.arange(test[0].N-1)
         #d = {0: 4*k**2*(k+1)/(2*k+1)+4*(k+1)**2*(k+2)/(2*k+3)-4*k*(k+1),
@@ -1006,7 +1007,7 @@ class AUUrp1smat(SpectralMatrix):
         d[-1] = d[1].copy()
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
-class GUUrp1smat(SpectralMatrix):
+class GUDUDrp1smat(SpectralMatrix):
     r"""Matrix for inner product
 
     .. math::
@@ -1023,8 +1024,8 @@ class GUUrp1smat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], SU)
-        assert isinstance(trial[0], SU)
+        assert isinstance(test[0], UD)
+        assert isinstance(trial[0], UD)
         assert test[0].quad == 'LG'
         k = np.arange(test[0].N-1)
         d = {0: -2*(k+1)*((k-1)/(2*k+1) + (k+3)/(2*k+3)),
@@ -1032,7 +1033,7 @@ class GUUrp1smat(SpectralMatrix):
              -1: -2*k[:-1]*(k[:-1]+1)/(2*k[:-1]+3)}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
-class BUUrp1smat(SpectralMatrix):
+class BUDUDrp1smat(SpectralMatrix):
     r"""Matrix for inner product
 
     .. math::
@@ -1049,8 +1050,8 @@ class BUUrp1smat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], SU)
-        assert isinstance(trial[0], SU)
+        assert isinstance(test[0], UD)
+        assert isinstance(trial[0], UD)
         assert test[0].quad == 'LG'
         k = np.arange(test[0].N-1)
         #a00 = 2/(2*k+1)
@@ -1080,7 +1081,7 @@ class BUUrp1smat(SpectralMatrix):
         d[-3] = d[3].copy()
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
-class CUUrp1mat(SpectralMatrix):
+class CUDUDrp1mat(SpectralMatrix):
     r"""Matrix for inner product
 
     .. math::
@@ -1097,8 +1098,8 @@ class CUUrp1mat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], SU)
-        assert isinstance(trial[0], SU)
+        assert isinstance(test[0], UD)
+        assert isinstance(trial[0], UD)
         assert test[0].quad == 'LG'
         k = np.arange(test[0].N-1)
         d = {0: -2*(k+1)/(2*k+1)+2*(k+1)/(2*k+3),
@@ -1107,7 +1108,7 @@ class CUUrp1mat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
-class BUUmat(SpectralMatrix):
+class BUDUDmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
     .. math::
@@ -1124,8 +1125,8 @@ class BUUmat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, measure=1):
-        assert isinstance(test[0], SU)
-        assert isinstance(trial[0], SU)
+        assert isinstance(test[0], UD)
+        assert isinstance(trial[0], UD)
         N = test[0].N
         k = np.arange(N-1, dtype=np.float)
         d = {-1: -2./(2*k[1:] + 1),
@@ -1137,7 +1138,7 @@ class BUUmat(SpectralMatrix):
         d[1] = d[-1]
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
-class BUUrp1mat(SpectralMatrix):
+class BUDUDrp1mat(SpectralMatrix):
     r"""Matrix for inner product
 
     .. math::
@@ -1154,8 +1155,8 @@ class BUUrp1mat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], SU)
-        assert isinstance(trial[0], SU)
+        assert isinstance(test[0], UD)
+        assert isinstance(trial[0], UD)
         assert test[0].quad == 'LG'
         k = np.arange(test[0].N-1)
         d = {0: 2*k+2}
@@ -1167,7 +1168,7 @@ class BUUrp1mat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
-class BDD1orp1mat(SpectralMatrix):
+class BSDSD1orp1mat(SpectralMatrix):
     r"""Matrix for inner product
 
     .. math::
@@ -1193,7 +1194,7 @@ class BDD1orp1mat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
-class BDDrp1mat(SpectralMatrix):
+class BSDSDrp1mat(SpectralMatrix):
     r"""Matrix for inner product
 
     .. math::
@@ -1225,7 +1226,7 @@ class BDDrp1mat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
-class BCDmat(SpectralMatrix):
+class BSDBCDmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
     .. math::
@@ -1244,7 +1245,7 @@ class BCDmat(SpectralMatrix):
     """
     def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SD)
-        assert isinstance(trial[0], CD)
+        assert isinstance(trial[0], BCD)
         N = test[0].N
         k = np.arange(N-2, dtype=np.float)
         if not test[0].is_scaled():
@@ -1259,7 +1260,7 @@ class BCDmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
-class BCBmat(SpectralMatrix):
+class BSBBCBmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
     .. math::
@@ -1278,7 +1279,7 @@ class BCBmat(SpectralMatrix):
     """
     def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SB)
-        assert isinstance(trial[0], CB)
+        assert isinstance(trial[0], BCB)
         N = test[0].N
         k = np.arange(N-4, dtype=np.float)
         d = {0: np.array([1, 4/9, -1/15, 1/35]),
@@ -1316,57 +1317,57 @@ class _LegMatDict(dict):
         return matrix
 
 mat = _LegMatDict({
-    ((LB, 0), (LB, 0)): BLLmat,
-    ((LB, 0), (LB, 1)): CLLmat,
-    ((LB, 1), (LB, 0)): CLLmatT,
-    ((LB, 0), (SD, 1)): CLDmat,
-    ((SD, 1), (LB, 0)): CDLmat,
-    ((SD, 0), (SD, 1)): CDDmat,
-    ((SD, 1), (SD, 0)): functools.partial(CDDmat, scale=-1.),
-    ((SD, 0), (SD, 0)): BDDmat,
-    ((SB, 0), (SB, 0)): BBBmat,
-    ((SN, 0), (SN, 0)): BNNmat,
-    ((SD, 0), (LB, 0)): BDLmat,
-    ((LB, 0), (SD, 0)): BLDmat,
-    ((SD, 1), (SD, 1)): ADDmat,
-    ((SD, 2), (SD, 0)): functools.partial(ADDmat, scale=-1.),
-    ((SD, 0), (SD, 2)): functools.partial(ADDmat, scale=-1.),
-    ((SN, 1), (SN, 1)): ANNmat,
-    ((SN, 2), (SN, 0)): functools.partial(ANNmat, scale=-1.),
-    ((SN, 0), (SN, 2)): functools.partial(ANNmat, scale=-1.),
-    ((LB, 2), (LB, 0)): GLLmat,
-    ((LB, 0), (LB, 2)): GLLmat,
-    ((SB, 2), (SB, 2)): SBBmat,
-    ((SB, 1), (SB, 1)): ABBmat,
-    ((SB, 0), (SB, 2)): functools.partial(ABBmat, scale=-1.),
-    ((SB, 2), (SB, 0)): functools.partial(ABBmat, scale=-1.),
-    ((SB, 0), (SB, 4)): SBBmat,
-    ((SB, 4), (SB, 0)): SBBmat,
-    ((SD, 1), (SD, 1), (-1, 1), 1+x): functools.partial(ADDrp1mat, measure=1+x),
-    ((SD, 0), (SD, 2), (-1, 1), 1+x): functools.partial(ADD2rp1mat, measure=1+x),
-    ((SD, 2), (SD, 0), (-1, 1), 1+x): functools.partial(ADD2Trp1mat, measure=1+x),
-    ((SD, 0), (SD, 2), (0, 1), xp): functools.partial(ADD2rp1mat, scale=0.5, measure=xp),
-    ((SD, 2), (SD, 0), (0, 1), xp): functools.partial(ADD2Trp1mat, scale=0.5, measure=xp),
-    ((SD, 1), (SD, 1), (0, 1), xp): functools.partial(ADDrp1mat, scale=0.5, measure=xp),
-    ((SD, 0), (SD, 0), (-1, 1), 1+x): functools.partial(BDDrp1mat, measure=1+x),
-    ((SD, 0), (SD, 0), (0, 1), xp): functools.partial(BDDrp1mat, scale=0.5, measure=xp),
-    ((SD, 0), (SD, 0), (-1, 1), 1/(1+x)): functools.partial(BDD1orp1mat, measure=1/(1+x)),
-    ((SD, 0), (SD, 0), (0, 1), 1/xp): functools.partial(BDD1orp1mat, scale=2, measure=1/xp),
-    ((SU, 1), (SU, 1), (-1, 1), 1+x): functools.partial(AUUrp1mat, measure=(1+x)),
-    ((SU, 1), (SU, 1), (0, 1), xp): functools.partial(AUUrp1mat, scale=0.5, measure=xp),
-    ((SU, 0), (SU, 0), (-1, 1), 1+x): functools.partial(BUUrp1mat, measure=(1+x)),
-    ((SU, 0), (SU, 0), (0, 1), xp): functools.partial(BUUrp1mat, scale=0.5, measure=xp),
-    ((SU, 1), (SU, 1), (-1, 1), (1+x)**2): functools.partial(AUUrp1smat, measure=(1+x)**2),
-    ((SU, 1), (SU, 1), (0, 1), xp**2): functools.partial(AUUrp1smat, scale=0.25, measure=xp**2),
-    ((SU, 0), (SU, 2), (-1, 1), (1+x)**2): functools.partial(GUUrp1smat, measure=(1+x)**2),
-    ((SU, 0), (SU, 2), (0, 1), xp**2): functools.partial(GUUrp1smat, scale=0.25, measure=xp**2),
-    ((SU, 0), (SU, 1), (-1, 1), (1+x)): functools.partial(CUUrp1mat, measure=(1+x)),
-    ((SU, 0), (SU, 1), (0, 1), xp): functools.partial(CUUrp1mat, scale=0.5, measure=xp),
-    ((SU, 0), (SU, 0), (-1, 1), (1+x)**2): functools.partial(BUUrp1smat, measure=(1+x)**2),
-    ((SU, 0), (SU, 0), (0, 1), xp**2): functools.partial(BUUrp1smat, scale=0.25, measure=xp**2),
-    ((SU, 0), (SU, 0)): BUUmat,
-    ((SD, 0), (CD, 0)): BCDmat,
-    ((SB, 0), (CB, 0)): BCBmat,
+    ((L,  0), (L,  0)): BLLmat,
+    ((L,  0), (L,  1)): CLLmat,
+    ((L,  1), (L,  0)): CLLmatT,
+    ((L,  0), (SD, 1)): CLSDmat,
+    ((SD, 1), (L,  0)): CSDLmat,
+    ((SD, 0), (SD, 1)): CSDSDmat,
+    ((SD, 1), (SD, 0)): functools.partial(CSDSDmat, scale=-1.),
+    ((SD, 0), (SD, 0)): BSDSDmat,
+    ((SB, 0), (SB, 0)): BSBSBmat,
+    ((SN, 0), (SN, 0)): BSNSNmat,
+    ((SD, 0), (L,  0)): BSDLmat,
+    ((L,  0), (SD, 0)): BLSDmat,
+    ((SD, 1), (SD, 1)): ASDSDmat,
+    ((SD, 2), (SD, 0)): functools.partial(ASDSDmat, scale=-1.),
+    ((SD, 0), (SD, 2)): functools.partial(ASDSDmat, scale=-1.),
+    ((SN, 1), (SN, 1)): ASNSNmat,
+    ((SN, 2), (SN, 0)): functools.partial(ASNSNmat, scale=-1.),
+    ((SN, 0), (SN, 2)): functools.partial(ASNSNmat, scale=-1.),
+    ((L,  2), (L,  0)): GLLmat,
+    ((L,  0), (L,  2)): GLLmat,
+    ((SB, 2), (SB, 2)): SSBSBmat,
+    ((SB, 1), (SB, 1)): ASBSBmat,
+    ((SB, 0), (SB, 2)): functools.partial(ASBSBmat, scale=-1.),
+    ((SB, 2), (SB, 0)): functools.partial(ASBSBmat, scale=-1.),
+    ((SB, 0), (SB, 4)): SSBSBmat,
+    ((SB, 4), (SB, 0)): SSBSBmat,
+    ((SD, 1), (SD, 1), (-1, 1), 1+x): functools.partial(ASDSDrp1mat, measure=1+x),
+    ((SD, 0), (SD, 2), (-1, 1), 1+x): functools.partial(ASDSD2rp1mat, measure=1+x),
+    ((SD, 2), (SD, 0), (-1, 1), 1+x): functools.partial(ASDSD2Trp1mat, measure=1+x),
+    ((SD, 0), (SD, 2), (0, 1), xp): functools.partial(ASDSD2rp1mat, scale=0.5, measure=xp),
+    ((SD, 2), (SD, 0), (0, 1), xp): functools.partial(ASDSD2Trp1mat, scale=0.5, measure=xp),
+    ((SD, 1), (SD, 1), (0, 1), xp): functools.partial(ASDSDrp1mat, scale=0.5, measure=xp),
+    ((SD, 0), (SD, 0), (-1, 1), 1+x): functools.partial(BSDSDrp1mat, measure=1+x),
+    ((SD, 0), (SD, 0), (0, 1), xp): functools.partial(BSDSDrp1mat, scale=0.5, measure=xp),
+    ((SD, 0), (SD, 0), (-1, 1), 1/(1+x)): functools.partial(BSDSD1orp1mat, measure=1/(1+x)),
+    ((SD, 0), (SD, 0), (0, 1), 1/xp): functools.partial(BSDSD1orp1mat, scale=2, measure=1/xp),
+    ((UD, 1), (UD, 1), (-1, 1), 1+x): functools.partial(AUDUDrp1mat, measure=(1+x)),
+    ((UD, 1), (UD, 1), (0, 1), xp): functools.partial(AUDUDrp1mat, scale=0.5, measure=xp),
+    ((UD, 0), (UD, 0), (-1, 1), 1+x): functools.partial(BUDUDrp1mat, measure=(1+x)),
+    ((UD, 0), (UD, 0), (0, 1), xp): functools.partial(BUDUDrp1mat, scale=0.5, measure=xp),
+    ((UD, 1), (UD, 1), (-1, 1), (1+x)**2): functools.partial(AUDUDrp1smat, measure=(1+x)**2),
+    ((UD, 1), (UD, 1), (0, 1), xp**2): functools.partial(AUDUDrp1smat, scale=0.25, measure=xp**2),
+    ((UD, 0), (UD, 2), (-1, 1), (1+x)**2): functools.partial(GUDUDrp1smat, measure=(1+x)**2),
+    ((UD, 0), (UD, 2), (0, 1), xp**2): functools.partial(GUDUDrp1smat, scale=0.25, measure=xp**2),
+    ((UD, 0), (UD, 1), (-1, 1), (1+x)): functools.partial(CUDUDrp1mat, measure=(1+x)),
+    ((UD, 0), (UD, 1), (0, 1), xp): functools.partial(CUDUDrp1mat, scale=0.5, measure=xp),
+    ((UD, 0), (UD, 0), (-1, 1), (1+x)**2): functools.partial(BUDUDrp1smat, measure=(1+x)**2),
+    ((UD, 0), (UD, 0), (0, 1), xp**2): functools.partial(BUDUDrp1smat, scale=0.25, measure=xp**2),
+    ((UD, 0), (UD, 0)): BUDUDmat,
+    ((SD, 0), (BCD, 0)): BSDBCDmat,
+    ((SB, 0), (BCB, 0)): BSBBCBmat,
     ((DN, 0), (DN, 0)): BDNDNmat,
     ((DN, 1), (DN, 1)): ADNDNmat,
     ((DN, 2), (DN, 0)): functools.partial(ADNDNmat, scale=-1.),

@@ -115,7 +115,7 @@ class Coordinates:
 
         for i, s in enumerate(np.sum(self.b**2, axis=1)):
             hi[i] = sp.sqrt(self.refine(sp.simplify(s, measure=self._measure)))
-            #hi[i] = self.refine(hi[i])
+            hi[i] = self.refine(hi[i])
 
         self._hi = hi
         return hi

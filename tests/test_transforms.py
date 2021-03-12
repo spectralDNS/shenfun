@@ -78,6 +78,9 @@ class ABC(object):
     @property
     def dimensions(self):
         return self.dim
+    @property
+    def use_fixed_gauge(self):
+        return False
 
 @pytest.mark.parametrize('basis', fBasis)
 @pytest.mark.parametrize('N', (8, 9))
@@ -211,11 +214,12 @@ def test_massmatrices(test, trial, quad):
 
     f_hat = np.zeros(N)
     fj = np.random.random(N)
+
     f_hat = trial.forward(fj, f_hat)
+
     fj = trial.backward(f_hat, fj)
 
     BBD = inner_product((test, 0), (trial, 0))
-
     f_hat = trial.forward(fj, f_hat)
     u2 = np.zeros_like(f_hat)
     u2 = BBD.matvec(f_hat, u2)
@@ -224,18 +228,6 @@ def test_massmatrices(test, trial, quad):
     s = test.slice()
     assert np.allclose(u0[s], u2[s], rtol=1e-5, atol=1e-6)
 
-    # Multidimensional version
-    fj = fj.repeat(N*N).reshape((N, N, N)) + 1j*fj.repeat(N*N).reshape((N, N, N))
-    f_hat = f_hat.repeat(N*N).reshape((N, N, N)) + 1j*f_hat.repeat(N*N).reshape((N, N, N))
-
-    test.plan((N,)*3, 0, np.complex, {})
-    test.tensorproductspace = ABC(3, test.coors)
-    u0 = np.zeros((N,)*3, dtype=np.complex)
-
-    u0 = test.scalar_product(fj, u0)
-    u2 = np.zeros_like(f_hat)
-    u2 = BBD.matvec(f_hat, u2)
-    assert np.linalg.norm(u2[s]-u0[s])/(N*N*N) < 1e-8
     del BBD
 
 @pytest.mark.parametrize('basis', cBasis[:2])
@@ -300,9 +292,11 @@ def test_transforms(ST, quad, dim):
         u00 = ST1.forward(fij, u00)
 
         u11 = ST1.backward(u00, u11)
-        cc = [0,]*dim
+
+        cc = [1,]*dim
         cc[axis] = slice(None)
         cc = tuple(cc)
+
         assert np.allclose(fij[cc], u11[cc], rtol=1e-5, atol=1e-6)
         del ST1
 
@@ -332,7 +326,7 @@ def test_axis(ST, quad, axis):
     ck = shenfun.Function(ST)
     fk = np.broadcast_to(f_hat[tuple(bc)], ck.shape).copy()
     ck = B.solve(fk, ck, axis=axis)
-    cc = [0,]*3
+    cc = [1,]*3
     cc[axis] = slice(None)
     assert np.allclose(ck[tuple(cc)], c, rtol=1e-5, atol=1e-6)
 
@@ -384,23 +378,12 @@ def test_CXXmat(test, trial):
     s = S1.slice()
     assert np.allclose(cs[s], cs2[s], rtol=1e-5, atol=1e-6)
 
-    # Multidimensional version
-    f_hat = f_hat.repeat(4*4).reshape((N, 4, 4)) + 1j*f_hat.repeat(4*4).reshape((N, 4, 4))
-    df = df.repeat(4*4).reshape((N, 4, 4)) + 1j*df.repeat(4*4).reshape((N, 4, 4))
-    cs = np.zeros_like(f_hat)
-    cs = Cm.matvec(f_hat, cs)
-    cs2 = np.zeros((N, 4, 4), dtype=np.complex)
-    S1.tensorproductspace = ABC(3, S1.coors)
-    S1.plan((N, 4, 4), 0, np.complex, {})
-    cs2 = S1.scalar_product(df, cs2)
-
-    assert np.allclose(cs[s], cs2[s], rtol=1e-5, atol=1e-6)
 
 dirichlet_with_quads = (list(product([cbases.ShenNeumann, cbases.ShenDirichlet], cquads)) +
                         list(product([lbases.ShenNeumann, lbases.ShenDirichlet], lquads)))
 
 @pytest.mark.parametrize('ST,quad', dirichlet_with_quads)
-def test_ADDmat(ST, quad):
+def test_ASDSDmat(ST, quad):
     M = 2*N
     ST = ST(M, quad=quad)
     u = (1-x**2)*sin(np.pi*x)
@@ -452,7 +435,7 @@ biharmonic_with_quads = (list(product([cbases.ShenBiharmonic], cquads)) +
                          list(product([lbases.ShenBiharmonic], lquads)))
 
 @pytest.mark.parametrize('SB,quad', biharmonic_with_quads)
-def test_SBBmat(SB, quad):
+def test_SSBSBmat(SB, quad):
     M = 72
     SB = SB(M, quad=quad)
     u = sin(4*pi*x)**2
@@ -495,7 +478,7 @@ def test_SBBmat(SB, quad):
     assert np.allclose(c, c2)
 
 @pytest.mark.parametrize('SB,quad', biharmonic_with_quads)
-def test_ABBmat(SB, quad):
+def test_ASBSBmat(SB, quad):
     M = 4*N
     SB = SB(M, quad=quad)
     u = sin(6*pi*x)**2
@@ -558,14 +541,14 @@ def test_ABBmat(SB, quad):
     assert np.allclose(z0, u0, rtol=1e-5, atol=1e-6)
 
 if __name__ == '__main__':
-    #test_to_ortho(cBasis[1], 'GC')
+    test_to_ortho(cBasis[1], 'GC')
     # test_convolve(fbases.R2C, 8)
-    test_ADDmat(lbases.ShenNeumann, "LG")
+    #test_ASDSDmat(lbases.ShenNeumann, "LG")
     #test_CDDmat("GL")
-    #test_massmatrices(cBasisGC[1], cBasisGC[0], 'GC')
-    #test_CXXmat(cBasis[2], cBasis[3])
-    #test_transforms(fBasis[0], '', 2)
+    #test_massmatrices(lBasis[3], lBasis[0], 'LG')
+    #test_CXXmat(cBasis[2], cBasis[1])
+    #test_transforms(cBasis[2], 'GC', 2)
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[2], 'GC')
     #test_eval(cBasis[0], 'GC')
-    #test_axis(cBasis[1], 'GC', 0)
+    #test_axis(cBasis[2], 'GC', 1)

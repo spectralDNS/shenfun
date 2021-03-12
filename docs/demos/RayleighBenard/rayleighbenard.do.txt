@@ -610,7 +610,7 @@ We find $\hat{T}_{N-2, l}$ and $\hat{T}_{N-1, l}$ using orthogonality. Multiply 
 
 Using this approach it is easy to see that any inhomogeneous function $T_N(\pm 1, y, t)$
 of $y$ and $t$ can be used for the boundary condition, and not just a constant.
-To implement a non-constant Dirichlet boundary condition, the `Basis` function
+To implement a non-constant Dirichlet boundary condition, the `FunctionSpace` function
 can take any `sympy` function of `(y, t)`, for exampel by replacing the
 creation of `VT` by
 

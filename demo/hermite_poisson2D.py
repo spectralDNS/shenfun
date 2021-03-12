@@ -17,7 +17,7 @@ import os
 import sys
 from sympy import symbols, exp, hermite, cos
 import numpy as np
-from shenfun import inner, grad, TestFunction, TrialFunction, \
+from shenfun import inner, grad, TestFunction, TrialFunction, la, \
     Array, Function, FunctionSpace, TensorProductSpace, comm
 
 assert len(sys.argv) == 2, 'Call with one command-line argument'
@@ -46,14 +46,12 @@ f_hat = Function(T)
 f_hat = inner(v, -fj, output_array=f_hat)
 
 # Get left hand side of Poisson equation
-matrices = inner(grad(v), grad(u))
+matrices = inner(grad(v), grad(u), level=2)
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space
-scale = np.squeeze(matrices[1].scale)
-for i, k in enumerate(scale):
-    M = matrices[0].mats[0] + k*matrices[1].mats[0]
-    u_hat[:, i] = M.solve(f_hat[:, i], u_hat[:, i])
+sol = la.Solver2D(matrices)
+u_hat = sol(f_hat, u_hat)
 uq = u_hat.backward()
 
 # Compare with analytical solution

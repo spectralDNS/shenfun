@@ -5,7 +5,7 @@ import scipy.linalg as scipy_la
 from shenfun.optimization import optimizer
 from shenfun.optimization.cython import la
 from shenfun.la import TDMA as la_TDMA
-from shenfun.matrixbase import TPMatrix
+from shenfun.matrixbase import TPMatrix, SpectralMatrix, extract_bc_matrices
 
 
 class TDMA(la_TDMA):
@@ -28,10 +28,10 @@ class TDMA(la_TDMA):
         if not self.dd.shape[0] == self.mat.shape[0]:
             self.init()
 
-        self.TDMA_SymSolve(self.dd, self.ud, self.L, u, axis=axis)
+        self.TDMA_SymSolve(self.dd, self.ud, self.ld, u, axis=axis)
 
-        if self.mat.scale not in (1, 1.0):
-            u /= self.mat.scale
+        #if self.mat.scale not in (1, 1.0):
+        #    u /= self.mat.scale
         return u
 
 
@@ -129,24 +129,25 @@ class Helmholtz:
 
     def __init__(self, *args, **kwargs):
         args = list(args)
-        for i, arg in enumerate(args):
-            if hasattr(arg, 'is_bc_matrix'):
-                if arg.is_bc_matrix():
-                    args.pop(i)
-                    break
+        self.bc_mats = []
+        if isinstance(args[-1], (TPMatrix, SpectralMatrix)):
+            bc_mats = extract_bc_matrices([args])
+            self.tpmats = args
+            self.bc_mats = bc_mats
 
-        A, B = args[0], args[1]
+        A, B = args[:2]
         M = {d.get_key(): d for d in (A, B)}
-        self.A = A = M.get('ADDmat', M.get('ANNmat'))
-        self.B = B = M.get('BDDmat', M.get('BNNmat'))
+        self.A = A = M.get('ASDSDmat', M.get('ASNSNmat'))
+        self.B = B = M.get('BSDSDmat', M.get('BSNSNmat'))
+        naxes = B.naxes[0] if isinstance(B, TPMatrix) else B.axis
         if len(args) == 2:
             A_scale = self.A.scale
             B_scale = self.B.scale
             if isinstance(self.A, TPMatrix):
-                A = self.A.pmat
-                B = self.B.pmat
-                A_scale *= self.A.pmat.scale
-                B_scale *= self.B.pmat.scale
+                A = self.A.mats[naxes]
+                B = self.B.mats[naxes]
+                A_scale *= A.scale
+                B_scale *= B.scale
         else:
             A_scale = args[2]
             B_scale = args[3]
@@ -231,22 +232,25 @@ class Helmholtz:
             x[i] = (x[i] - a[i]*x[i+2])/d[i]
 
     def __call__(self, u, b):
+        if len(self.bc_mats) > 0:
+            u.set_boundary_dofs()
+            w0 = np.zeros_like(u)
+            for bc_mat in self.bc_mats:
+                b -= bc_mat.matvec(u, w0)
         u[self.s] = b[self.s]
-
         self.TDMA_SymSolve_VC(self.d0, self.d1, self.L, u, self.axis)
-
-        if not self.neumann:
-            self.bc.set_boundary_dofs(u, True)
-
         return u
 
     def matvec(self, v, c):
-        assert isinstance(self.A, TPMatrix)
-        c[:] = 0
-        c1 = np.zeros_like(c)
-        c1 = self.A.matvec(v, c1)
-        c = self.B.matvec(v, c)
-        c += c1
+        if isinstance(self.A, TPMatrix):
+            c[:] = 0
+            c1 = np.zeros_like(c)
+            c1 = self.A.matvec(v, c1)
+            c = self.B.matvec(v, c)
+            c += c1
+        else:
+            M = self.A + self.B
+            c = M.matvec(v, c)
         return c
 
 
@@ -339,30 +343,38 @@ class Biharmonic:
 
     def __init__(self, *args):
 
-        assert len(args) in (3, 6)
-        S, A, B = args[0], args[1], args[2]
+        args = list(args)
+        self.bc_mats = []
+        if isinstance(args[-1], (TPMatrix, SpectralMatrix)):
+            bc_mats = extract_bc_matrices([args])
+            self.tpmats = args
+            self.bc_mats = bc_mats
+
+        #assert len(args) in (3, 6)
+        S, A, B = args[:3]
         M = {d.get_key(): d for d in (S, A, B)}
-        self.S = M['SBBmat']
-        self.A = M['ABBmat']
-        self.B = M['BBBmat']
+        self.S = M['SSBSBmat']
+        self.A = M['ASBSBmat']
+        self.B = M['BSBSBmat']
 
         if len(args) == 3:
             S_scale = self.S.scale
             A_scale = self.A.scale
             B_scale = self.B.scale
             if isinstance(self.S, TPMatrix):
-                S = self.S.pmat
+                S = self.S.mats[self.A.naxes[0]]
                 A = self.A.pmat
                 B = self.B.pmat
-                A_scale *= self.A.pmat.scale
-                B_scale *= self.B.pmat.scale
-                S_scale *= self.S.pmat.scale
+                A_scale *= A.scale
+                B_scale *= B.scale
+                S_scale *= S.scale
         elif len(args) == 6:
             S_scale = np.asscalar(args[3])
             A_scale = args[4]
             B_scale = args[5]
 
         v = S.testfunction[0]
+        self.s = v.sl[v.slice()]
         self.bc = v.bc
         if np.ndim(B_scale) > 1:
             shape = list(B_scale.shape)
@@ -371,7 +383,7 @@ class Biharmonic:
             self.d0 = np.zeros(shape)
             self.d1 = np.zeros(shape)
             self.d2 = np.zeros(shape)
-            S0 = v.broadcast_to_ndims(S[0])
+            S0 = v.broadcast_to_ndims(np.atleast_1d(S[0]))
             A0 = v.broadcast_to_ndims(A[0])
             B0 = v.broadcast_to_ndims(B[0])
             A2 = v.broadcast_to_ndims(A[2])
@@ -404,10 +416,13 @@ class Biharmonic:
         raise NotImplementedError("Use Cython or Numba")
 
     def __call__(self, u, b):
-        u[:] = b
+        if len(self.bc_mats) > 0:
+            u.set_boundary_dofs()
+            w0 = np.zeros_like(u)
+            for bc_mat in self.bc_mats:
+                b -= bc_mat.matvec(u, w0)
+        u[self.s] = b[self.s]
         self.PDMA_SymSolve_VC(self.d0, self.d1, self.d2, u, self.axis)
-        if self.bc is not None:
-            self.bc.set_boundary_dofs(u, True)
         return u
 
     def matvec(self, v, c):
@@ -445,13 +460,13 @@ class Helmholtz_2dirichlet:
         scale = {}
         for tmp in matrices:
             pmat = tmp.pmat
-            if pmat[0].get_key() == 'BDDmat' and pmat[1].get_key() == 'BDDmat':
+            if pmat[0].get_key() == 'BSDSDmat' and pmat[1].get_key() == 'BSDSDmat':
                 B = pmat[0]
                 B1 = pmat[1]
                 scale['BUB'] = tmp.scale
                 self.BB = tmp
 
-            elif pmat[0].get_key() == 'ADDmat' and pmat[1].get_key() == 'BDDmat':
+            elif pmat[0].get_key() == 'ASDSDmat' and pmat[1].get_key() == 'BSDSDmat':
                 A = pmat[0]
                 scale['AUB'] = tmp.scale
                 self.AB = tmp

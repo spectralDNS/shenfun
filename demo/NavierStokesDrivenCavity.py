@@ -91,11 +91,8 @@ else:
 
 A10 = inner(q, div(u))
 
-# Extract the boundary matrices
-bc_mats = extract_bc_matrices([A00, A01, A10])
-
-# Create Block matrix
-M = BlockMatrix(A00+A01+A10)
+# Create Block matrices
+M, BM = BlockMatrices(A00+A01+A10)
 
 # Create Function to hold solution
 uh_hat = Function(VQ).set_boundary_dofs()
@@ -107,9 +104,7 @@ ui_new = uh_new[0]
 
 # Compute the constant contribution to rhs due to nonhomogeneous boundary conditions
 bh_hat0 = Function(VQ)
-BM = BlockMatrix(bc_mats)
 bh_hat0 = BM.matvec(-uh_hat, bh_hat0)
-bi_hat0 = bh_hat0[0]
 
 # Create regular work arrays for right hand side. (Note that bc part will not be used so we can use Q)
 bh_hat = Function(VQ)

@@ -154,7 +154,7 @@ def test_curl_cc():
     N = 12
     F0 = FunctionSpace(N, 'F', dtype='D')
     F1 = FunctionSpace(N, 'F', dtype='d')
-    L = FunctionSpace(N, 'L', bc='Dirichlet', domain=(0, 1))
+    L = FunctionSpace(N, 'L', bc=(0, 0), domain=(0, 1))
     T = TensorProductSpace(comm, (L, F0, F1), coordinates=(psi, rv))
     T1 = T.get_orthogonal()
     V = VectorSpace(T1)

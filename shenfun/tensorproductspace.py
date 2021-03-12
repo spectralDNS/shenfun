@@ -60,6 +60,10 @@ class CurvilinearTransform(Transform):
         if dx == 1:
             return
 
+        if isinstance(dx, Number):
+            self.input_array[:] = self.input_array*dx
+            return
+
         sym0 = dx.free_symbols
         m = []
         for sym in sym0:
@@ -376,7 +380,7 @@ class TensorProductSpace(PFFT):
 
         self.pencil[1] = pencilA
 
-        FT = functools.partial(CurvilinearTransform, T=self) if not self.coors.hi.prod() == 1 else Transform
+        FT = functools.partial(CurvilinearTransform, T=self) if not self.coors.is_cartesian else Transform
 
         self.backward = Transform(
             [o.backward for o in self.xfftn],
@@ -725,7 +729,7 @@ class TensorProductSpace(PFFT):
         return lm
 
     def local_cartesian_mesh(self, uniform=False):
-        """Return curvilinear mesh
+        """Return Cartesian mesh
 
         Parameters
         ----------
@@ -740,7 +744,7 @@ class TensorProductSpace(PFFT):
         return xx
 
     def cartesian_mesh(self, uniform=False):
-        """Return curvilinear mesh
+        """Return Cartesian mesh
 
         Parameters
         ----------
@@ -769,6 +773,18 @@ class TensorProductSpace(PFFT):
     def slice(self):
         """The slices of dofs for each dimension"""
         return tuple(base.slice() for base in self.bases)
+
+    @property
+    def use_fixed_gauge(self):
+        """Return True if TensorProductSpace contains only spaces with Neumann
+        boundary conditions.
+        """
+        for base in self.bases:
+            if base.boundary_condition() != 'Neumann':
+                # Any other boundary condition triggers False
+                # It is only Neumann bases that requires a gauge
+                return False
+        return True
 
     def global_shape(self, forward_output=False):
         """Return global shape of arrays for TensorProductSpace
@@ -840,6 +856,10 @@ class TensorProductSpace(PFFT):
         if dx == 1:
             return
 
+        if isinstance(dx, Number):
+            u *= dx
+            return u
+
         sym0 = dx.free_symbols
         m = []
         for sym in sym0:
@@ -883,7 +903,7 @@ class TensorProductSpace(PFFT):
         return axes
 
     def get_nondiagonal_axes(self):
-        """Return list of axes that may contain non-diagonal matrices"""
+        """Return list of axes that **may** contain non-diagonal matrices"""
         axes = []
         if isinstance(self.coors.hi.prod(), sp.Expr):
             x = 'xyzrs'
@@ -959,10 +979,21 @@ class TensorProductSpace(PFFT):
             otheraxes = list(range(len(self.bases)))
             otheraxes.remove(axis)
             fj = fun.copy()
+            bcc = None
+            if base.has_nonhomogeneous_bcs:
+                bcc = base.bc.bcs.copy()
             for ax in otheraxes:
                 fj = fj.subs(sd['xyzrs'[ax]], 0.5*(domains[ax][1]-domains[ax][0]))
             if base.N == 0:
-                Tj.append(base.get_adaptive(fun=fj, reltol=reltol, abstol=abstol))
+                par = dict(fun=fj, reltol=reltol, abstol=abstol)
+                if base.has_nonhomogeneous_bcs:
+                    for l, bc in enumerate(bcc):
+                        bc = bc.subs(sd['xyzrs'[ax]], 0.5*(domains[ax][1]-domains[ax][0]))
+                        bcc[l] = bc
+                    par['bc'] = bcc
+                Tj.append(base.get_adaptive(**par))
+                if base.has_nonhomogeneous_bcs:
+                    Tj[-1].bc = BoundaryValues(Tj[-1], bc=base.bc)
             else:
                 Tj.append(base)
         return TensorProductSpace(self.subcomm, Tj, axes=self.axes,
@@ -1470,23 +1501,21 @@ class BoundaryValues:
         call this function. The boundary condition can then be applied as before.
         """
         from shenfun.utilities import split
+        from shenfun import project
+
         self.axis = this_base.axis
         self.base = this_base
         self.tensorproductspace = T
-        msdict = split(T.coors.sg)
-        assert len(msdict) == 1
-        _c = msdict[0]['coeff']
 
         if isinstance(T, SpectralBase):
             pass
         elif this_base.has_nonhomogeneous_bcs:
-            # Setting the Dirichlet boundary condition in a TensorProductSpace
+            # Setting an inhomogeneous boundary condition in a TensorProductSpace
             # is more involved than for a single dimension, and the routine will
-            # depend on the order of the bases. If the Dirichlet space is the last
-            # one, then the boundary condition is applied directly. If there is
-            # one other space to the right, then one transform needs to
-            # be performed on the bc data first. For two other spaces to the right,
-            # two transforms need to be executed.
+            # depend on the order of the bases. Basically, the inhomogeneous value
+            # needs to be projected to a space consisting of all the other function
+            # spaces, except the inhomogeneous one. This would be very easy if it was
+            # not for MPI.
             axis = None
             number_of_bases_after_this = 0
             for axes in reversed(T.axes):
@@ -1505,9 +1534,9 @@ class BoundaryValues:
                 return
 
             # Set boundary values
-            # These are values set at the end of a transform in Dirichlet space,
-            # but before any other transforms
-            # Shape is like real space, since Dirichlet does not alter shape
+            # These are values set at the end of a transform in an
+            # inhomogeneous space, but before any other transforms
+
             b = Array(T)
             s = T.local_slice(False)[self.axis]
             num_bcs = len(self.bc) - np.count_nonzero(np.array(self.bc) == None)
@@ -1527,7 +1556,7 @@ class BoundaryValues:
                         Yi.append(X[k][this_base.si[j]])
                     f_bci = lbci(*Yi)
 
-                    # Put the Dirichlet value in the position of the bc dofs
+                    # Put the value in the position of the bc dofs
                     if s.stop == int(this_base.N*this_base.padding_factor):
                         if num_bcs == 1: # e.g., UpperDirichlet
                             b[this_base.si[-1]] = f_bci
@@ -1542,72 +1571,42 @@ class BoundaryValues:
                             b[this_base.si[-(len(self.bc))+j]] = bci
 
                 elif bci is None:
-                    pass
+                    continue
 
                 else:
                     raise NotImplementedError
 
-            if len(T.get_nonhomogeneous_axes()) == 1:
-                if number_of_bases_after_this == 0:
-                    # Dirichlet base is the first to be transformed
-                    b_hat = b
+                if len(T.get_nonhomogeneous_axes()) == 1:
+                    from .spectralbase import FuncWrap
 
-                elif number_of_bases_after_this == 1:
-                    T.forward._xfftn[0].input_array[...] = b*_c
+                    if number_of_bases_after_this == 0:
+                        # Inhomogeneous base is the first to be transformed
+                        b_hat = b
 
-                    T.forward._xfftn[0]()
-                    arrayA = T.forward._xfftn[0].output_array
-                    arrayB = T.forward._xfftn[1].input_array
-                    T.forward._transfer[0](arrayA, arrayB)
-                    b_hat = arrayB.copy()
+                    else:
+                        i = number_of_bases_after_this
+                        u_hat = T.forward._xfftn[i].input_array
+                        fun = FuncWrap(lambda x, y: x, u_hat, u_hat) # Do-nothing
+                        fwd = Transform(list(T.forward._xfftn[:i])+[fun],
+                                 T.forward._transfer[:i],
+                                 [[], []])
+                        b_hat = fwd(b).copy()
 
-                elif number_of_bases_after_this == 2:
-
-                    T.forward._xfftn[0].input_array[...] = b*_c
-                    T.forward._xfftn[0]()
-                    arrayA = T.forward._xfftn[0].output_array
-                    arrayB = T.forward._xfftn[1].input_array
-                    T.forward._transfer[0](arrayA, arrayB)
-
-                    T.forward._xfftn[1]()
-                    arrayA = T.forward._xfftn[1].output_array
-                    arrayB = T.forward._xfftn[2].input_array
-                    T.forward._transfer[1](arrayA, arrayB)
-                    b_hat = arrayB.copy()
-
-                # Now b_hat contains the correct slices in slm1 and slm2
-                # These are the values to use on intermediate steps. If for example the Dirichlet space is squeezed between two Fourier spaces
-                for i in range(len(self.bc)):
-                    if self.bcs[i] is None:
-                        continue
+                    # Now b_hat contains the correct slices in slm1 and slm2
+                    # These are the values to use on intermediate steps.
+                    # If for example a Dirichlet space is squeezed between two Fourier spaces
                     if num_bcs == 1:
-                        self.bcs[i] = b_hat[this_base.si[-1]].copy()
+                        self.bcs[j] = b_hat[this_base.si[-1]].copy()
                     else:
-                        self.bcs[i] = b_hat[this_base.si[-(len(self.bc))+i]].copy()
-
-                # Final (the values to set on fully transformed functions)
-
-                T.forward._xfftn[0].input_array[...] = b*_c
-
-                for i in range(len(T.forward._transfer)):
-                    T.forward._xfftn[i]()
-                    arrayA = T.forward._xfftn[i].output_array
-                    arrayB = T.forward._xfftn[i+1].input_array
-                    T.forward._transfer[i](arrayA, arrayB)
-
-                T.forward._xfftn[-1]()
-                b_hat = T.forward._xfftn[-1].output_array
-                for i in range(len(self.bc)):
-                    if self.bcs[i] is None:
-                        continue
-                    elif num_bcs == 1:
-                        self.bcs_final[i] = b_hat[this_base.si[-1]].copy()
+                        self.bcs[j] = b_hat[this_base.si[-(len(self.bc))+j]].copy()
+                    b_hat = T.forward(b).copy()
+                    if num_bcs == 1:
+                        self.bcs_final[j] = b_hat[this_base.si[-1]].copy()
                     else:
-                        self.bcs_final[i] = b_hat[this_base.si[-(len(self.bc))+i]].copy()
+                        self.bcs_final[j] = b_hat[this_base.si[-(len(self.bc))+j]].copy()
 
-            else: # 2 non-homogeneous directions
+            if len(T.get_nonhomogeneous_axes()) == 2:
                 assert len(T.bases) == 2, 'Only implemented for 2D'
-                from shenfun import project
                 bases = []
                 for axis, base in enumerate(T.bases):
                     if not base is this_base:
@@ -1616,15 +1615,12 @@ class BoundaryValues:
                 other_base = bases[0]
                 ua = Array(other_base)
                 bc_this = this_base.bc.bc.copy()
-                #bc_other = other_base.bc.bc.copy()
                 df = 2./(other_base.domain[1]-other_base.domain[0])
                 for i in range(2): # x = -1 and then x = 1
                     bcj = bc_this[i]
                     for j in range(2): # y = -1 and then y = 1
-                        #bcj = bc_other[j]
                         xj = other_base.domain[j]
                         sym = sp.sympify(bcj).free_symbols
-
                         if len(sym) == 1:
                             xx = sym.pop()
                             if j == 0 and other_base.boundary_condition() == 'NeumannDirichlet':
@@ -1648,7 +1644,6 @@ class BoundaryValues:
                             other_base.bc.bcs_final[j] = bcj
                     ua[:] = b[this_base.si[-(len(self.bc))+i]]
                     self.bcs_final[i] = project(ua, other_base)
-
 
     def add_to_orthogonal(self, u, uh):
         """Add contribution from boundary functions to `u`

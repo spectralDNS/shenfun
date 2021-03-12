@@ -3,7 +3,9 @@ import numpy as np
 
 M_PI_2 = np.pi/2
 
-__all__ = ['LU_Helmholtz', 'Solve_Helmholtz', 'Helmholtz_matvec']
+__all__ = ['LU_Helmholtz', 'Solve_Helmholtz', 'Helmholtz_matvec',
+           'Helmholtz_Neumann_matvec', 'Poisson_Solve_ADD',
+           'Poisson_Solve_ADD_1D', 'ANN_matvec']
 
 def LU_Helmholtz(A, B, A_s, B_s, neumann, d0, d1, d2, L, axis):
     n = d0.ndim
@@ -27,7 +29,7 @@ def Solve_Helmholtz(b, u, neumann, d0, d1, d2, L, axis):
     elif n == 3:
         Solve_Helmholtz_3D(b, u, neumann, d0, d1, d2, L, y, axis)
 
-def preLU(A, B, neumann):
+def preLU(A, B, neumann=False):
     A_0 = A[0].copy()
     A_2 = A[2].copy()
     A_4 = A[4].copy()
@@ -36,17 +38,31 @@ def preLU(A, B, neumann):
     B_2 = B[2].copy()
     N = A_0.shape[0]
     if neumann:
-        B_0[0] = 0.0
-        for i in range(1, N):
-            A_0[i] /= pow(i, 2)
-            B_0[i] /= pow(i, 2)
-        for i in range(2, N):
-            A_2[i-2] /= pow(i, 2)
-            B_2[i-2] /= pow(i, 2)
-        for i in range(4, N):
-            A_4[i-4] /= pow(i, 2)
-        for i in range(1, N-2):
-            B_m2[i] /= pow(i, 2)
+        k = np.arange(N)
+        j2 = k**2
+        j2[0] = 1
+        j2 = 1/j2
+        j2[0] = 0
+        B_0 *= j2
+        A_0 *= j2
+        A_2 *= j2[2:]
+        B_2 *= j2[2:]
+        A_4 *= j2[4:]
+        j2[0] = 1
+        B_m2 *= j2[:-2]
+
+        #B_0[0] = 0.0
+        #for i in range(1, N):
+        #    A_0[i] /= pow(i, 2)
+        #    B_0[i] /= pow(i, 2)
+        #for i in range(2, N):
+        #    A_2[i-2] /= pow(i, 2)
+        #    B_2[i-2] /= pow(i, 2)
+        #for i in range(4, N):
+        #    A_4[i-4] /= pow(i, 2)
+        #for i in range(1, N-2):
+        #    B_m2[i] /= pow(i, 2)
+
     return A_0, A_2, A_4, B_m2, B_0, B_2
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
@@ -253,11 +269,192 @@ def Helmholtz_matvec2D(v, b, alfa, beta, dd, ud, bd, axis):
             Helmholtz_matvec1D(v[i], b[i], alfa[i, 0],
                                beta[i, 0], dd, ud, bd)
 
-def Helmholtz_matvec(v, b, alfa, beta, dd, ud, bd, axis):
+def Helmholtz_matvec(v, b, alfa, beta, A, B, axis):
     n = v.ndim
+    A_0, A_2, A_4, B_m2, B_0, B_2 = preLU(A, B)
     if n == 1:
-        Helmholtz_matvec1D(v, b, alfa, beta, dd, ud, bd)
+        Helmholtz_matvec1D(v, b, np.asscalar(alfa), np.asscalar(beta), A_0, A_2, B_0)
     elif n == 2:
-        Helmholtz_matvec2D(v, b, alfa, beta, dd, ud, bd, axis)
+        Helmholtz_matvec2D(v, b, alfa, beta, A_0, A_2, B_0, axis)
     elif n == 3:
-        Helmholtz_matvec3D(v, b, alfa, beta, dd, ud, bd, axis)
+        Helmholtz_matvec3D(v, b, alfa, beta, A_0, A_2, B_0, axis)
+
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def Helmholtz_Neumann_matvec1D(v, b, alfa, beta, dd, ud, bl, bd, bu):
+    # b = (alfa*A + beta*B)*v
+    # A matrix has diagonal dd and upper second diagonal at ud
+    # B matrix has diagonal bd and second upper and lower diagonals bu and bl
+    N = dd.shape[0]
+    s1 = 0.0
+    s2 = 0.0
+    for k in (N-1, N-2):
+        b[k] = (dd[k]*alfa + bd[k]*beta)*v[k]*k**2 + bl[k-2]*beta*v[k-2]*(k-2)**2
+
+    for k in range(N-3, 1, -1):
+        p = ud[k]*alfa
+        if k % 2 == 0:
+            s2 += v[k+2]*(k+2)**2
+            b[k] = (dd[k]*alfa + bd[k]*beta)*v[k]*k**2 + beta*(bl[k-2]*v[k-2]*(k-2)**2 + bu[k]*v[k+2]*(k+2)**2) + p*s2
+        else:
+            s1 += v[k+2]*(k+2)**2
+            b[k] = (dd[k]*alfa + bd[k]*beta)*v[k]*k**2 + beta*(bl[k-2]*v[k-2]*(k-2)**2 + bu[k]*v[k+2]*(k+2)**2) + p*s1
+
+    k = 1
+    s1 += v[k+2]*(k+2)**2
+    b[k] = (dd[k]*alfa + bd[k]*beta)*v[k]*k**2 + beta*(bu[k]*v[k+2]*(k+2)**2) + ud[k]*alfa*s1
+    k = 0
+    s2 += v[k+2]*(k+2)**2
+    b[k] = (dd[k]*alfa + bd[k]*beta)*v[k]*k**2 + beta*(bu[k]*v[k+2]*(k+2)**2) + ud[k]*alfa*s2
+    b[0] += bd[0]*v[0]*beta
+    b[2] += bl[0]*v[0]*beta
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def Helmholtz_Neumann_matvec1D2(v, b, alfa, beta, dd, ud, bl, bd, bu):
+    # b = (alfa*A + beta*B)*v
+    # A matrix has diagonal dd and upper second diagonal at ud
+    # B matrix has diagonal bd and second upper and lower diagonals bu and bl
+    # Alternative implementation
+    N = dd.shape[0]
+    s1 = 0.0
+    s2 = 0.0
+    for k in (N-1, N-2):
+        b[k] = (-dd[k] + bd[k]*beta)*v[k] + bl[k-2]*beta*v[k-2]
+
+    j = 0
+    for k in range(N-3, 1, -1):
+        j += 1
+        p = ud[k]/(k+2)**2
+        if k % 2 == 0:
+            s2 += v[k+2]*(k+2)**2
+            b[k] = (-dd[k] + bd[k]*beta)*v[k] + beta*(bl[k-2]*v[k-2]) + bu[k]*v[k+2] - p*s2
+        else:
+            s1 += v[k+2]*(k+2)**2
+            b[k] = (-dd[k] + bd[k]*beta)*v[k] + beta*(bl[k-2]*v[k-2]) + bu[k]*v[k+2] - p*s1
+
+    k = 1
+    s1 += v[k+2]*(k+2)**2
+    b[k] = (-dd[k] + bd[k]*beta)*v[k] + beta*(bu[k]*v[k+2]) - ud[k]/(k+2)**2*s1
+    k = 0
+    s2 += v[k+2]*(k+2)**2
+    b[k] = (-dd[k] + bd[k]*beta)*v[k] + beta*(bu[k]*v[k+2]) - ud[k]/(k+2)**2*s2
+    b[0] += bd[0]*v[0]*beta
+    b[2] += bl[0]*v[0]*beta
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def Helmholtz_Neumann_matvec3D(v, b, alfa, beta, dd, ud, bl, bd, bu, axis):
+    if axis == 0:
+        for j in range(v.shape[1]):
+            for k in range(v.shape[2]):
+                Helmholtz_Neumann_matvec1D(v[:, j, k], b[:, j, k], alfa[0, j, k],
+                                   beta[0, j, k], dd, ud, bl, bd, bu)
+    elif axis == 1:
+        for i in range(v.shape[0]):
+            for k in range(v.shape[2]):
+               Helmholtz_Neumann_matvec1D(v[i, :, k], b[i, :, k], alfa[i, 0, k],
+                                  beta[i, 0, k], dd, ud, bl, bd, bu)
+    elif axis == 2:
+        for i in range(v.shape[0]):
+            for j in range(v.shape[1]):
+                Helmholtz_Neumann_matvec1D(v[i, j], b[i, j], alfa[i, j, 0],
+                                   beta[i, j, 0], dd, ud, bl, bd, bu)
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def Helmholtz_Neumann_matvec2D(v, b, alfa, beta, dd, ud, bl, bd, bu, axis):
+    if axis == 0:
+        for j in range(v.shape[1]):
+            Helmholtz_Neumann_matvec1D(v[:, j], b[:, j], alfa[0, j],
+                                       beta[0, j], dd, ud, bl, bd, bu)
+    elif axis == 1:
+        for i in range(v.shape[0]):
+            Helmholtz_Neumann_matvec1D(v[i], b[i], alfa[i, 0],
+                                       beta[i, 0], dd, ud, bl, bd, bu)
+
+def Helmholtz_Neumann_matvec(v, b, alfa, beta, A, B, axis):
+    n = v.ndim
+    A_0, A_2, A_4, B_m2, B_0, B_2 = preLU(A, B, True)
+    if n == 1:
+        Helmholtz_Neumann_matvec1D(v.v, b.v, alfa.item(), beta.item(),
+                                   A_0, A_2, B_m2, B_0, B_2)
+    elif n == 2:
+        Helmholtz_Neumann_matvec2D(v.v, b.v, alfa, beta,
+                                   A_0, A_2, B_m2, B_0, B_2, axis)
+    elif n == 3:
+        Helmholtz_Neumann_matvec3D(v.v, b.v, alfa, beta,
+                                   A_0, A_2, B_m2, B_0, B_2, axis)
+
+def Poisson_Solve_ADD(A, b, u):
+    u = Poisson_Solve_ADD_1D(A[0], A[2], A.scale, b, u)
+    return u
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def Poisson_Solve_ADD_1D(d, d1, scale, b, u):
+    N = b.shape[0]
+    se = 0.0
+    so = 0.0
+    u[-1] = b[-1] / d[-1]
+    u[-2] = b[-2] / d[-2]
+    for k in range(N-3, -1, -1):
+        if k%2 == 0:
+            se += u[k+2]
+            u[k] = b[k] - d1[k]*se
+        else:
+            so += u[k+2]
+            u[k] = b[k] - d1[k]*so
+        u[k] /= d[k]
+    u /= scale
+    return u
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def ANN_matvec1D(v, c, d0, d2, scale=1):
+        N = v.shape[0]-2
+        c[N-1] = d0[N-1]*v[N-1]
+        c[N-2] = d0[N-2]*v[N-2]
+        s0 = 0
+        s1 = 0
+        for k in range(N-3, 0, -1):
+            c[k] = d0[k]*v[k]
+            if k % 2 == 0:
+                s0 += v[k+2]*(k+2)**2
+                c[k] += s0*d2[k]/(k+2)**2
+            else:
+                s1 += v[k+2]*(k+2)**2
+                c[k] += s1*d2[k]/(k+2)**2
+        if scale != 1:
+            c /= scale
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def ANN_matvec2D(v, b, d0, d2, scale, axis):
+    if axis == 0:
+        for j in range(v.shape[1]):
+            ANN_matvec1D(v[:, j], b[:, j], d0, d2, scale)
+    elif axis == 1:
+        for i in range(v.shape[0]):
+            ANN_matvec1D(v[i], b[i], d0, d2, scale)
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def ANN_matvec3D(v, b, d0, d2, scale, axis):
+    if axis == 0:
+        for j in range(v.shape[1]):
+            for k in range(v.shape[2]):
+                ANN_matvec1D(v[:, j, k], b[:, j, k], d0, d2, scale)
+    elif axis == 1:
+        for i in range(v.shape[0]):
+            for k in range(v.shape[2]):
+               ANN_matvec1D(v[i, :, k], b[i, :, k], d0, d2, scale)
+    elif axis == 2:
+        for i in range(v.shape[0]):
+            for j in range(v.shape[1]):
+                ANN_matvec1D(v[i, j], b[i, j], d0, d2, scale)
+
+def ANN_matvec(v, b, A, axis=0):
+    n = v.ndim
+    vc = v.__array__()
+    bc = b.__array__()
+    if n == 1:
+        ANN_matvec1D(vc, bc, A[0], A[2], A.scale)
+    elif n == 2:
+        ANN_matvec2D(vc, bc, A[0], A[2], A.scale, axis)
+    elif n == 3:
+        ANN_matvec3D(vc, bc, A[0], A[2], A.scale, axis)
+    return b

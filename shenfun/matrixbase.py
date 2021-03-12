@@ -4,6 +4,7 @@ This module contains classes for working with sparse matrices.
 """
 from __future__ import division
 from copy import deepcopy
+from collections.abc import Mapping, MutableMapping
 from numbers import Number, Integral
 import numpy as np
 import sympy as sp
@@ -13,12 +14,13 @@ from mpi4py import MPI
 from .utilities import integrate_sympy
 
 __all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix',
-           'check_sanity', 'get_dense_matrix', 'TPMatrix', 'BlockMatrix',
-           'Identity', 'get_dense_matrix_sympy', 'get_dense_matrix_quadpy']
+           'extract_bc_matrices', 'check_sanity', 'get_dense_matrix',
+           'TPMatrix', 'BlockMatrix', 'BlockMatrices', 'Identity',
+           'get_dense_matrix_sympy', 'get_dense_matrix_quadpy']
 
 comm = MPI.COMM_WORLD
 
-class SparseMatrix(dict):
+class SparseMatrix(MutableMapping):
     r"""Base class for sparse matrices.
 
     The data is stored as a dictionary, where keys and values are, respectively,
@@ -33,6 +35,12 @@ class SparseMatrix(dict):
     shape : two-tuple of ints
     scale : number, optional
         Scale matrix with this number
+
+    Note
+    ----
+    The dictionary can use a function to generate its values. See, e.g.,
+    the ASDSDmat matrix, where diagonals for keys > 2 are functions that return
+    the proper diagonal when looked up.
 
     Examples
     --------
@@ -53,11 +61,13 @@ class SparseMatrix(dict):
     ...       1: np.ones(N-1)}
     >>> SparseMatrix(d, (N, N))
     {-1: array([1., 1., 1.]), 0: array([-2., -2., -2., -2.]), 1: array([1., 1., 1.])}
+
     """
     # pylint: disable=redefined-builtin, missing-docstring
 
     def __init__(self, d, shape, scale=1.0):
-        dict.__init__(self, d)
+        self._storage = dict(d)
+        #dict.__init__(self, d)
         self.shape = shape
         self._diags = dia_matrix((1, 1))
         self.scale = scale
@@ -82,6 +92,7 @@ class SparseMatrix(dict):
              - python - Use numpy and vectorization
              - self - To be implemented in subclass
              - cython - Cython implementation that may be implemented in subclass
+             - numba - Numba implementation that may be implemented in subclass
         axis : int, optional
             The axis over which to take the matrix vector product
 
@@ -145,6 +156,24 @@ class SparseMatrix(dict):
         self._diags = self._diags*scale
 
         return self._diags
+
+    def __getitem__(self, key):
+        v = self._storage[key]
+        if hasattr(v, '__call__'):
+            return v(key)
+        return v
+
+    def __delitem__(self, key):
+        del self._storage[key]
+
+    def __setitem__(self, key, val):
+        self._storage[key] = val
+
+    def __iter__(self):
+        return iter(self._storage)
+
+    def __len__(self):
+        return len(self._storage)
 
     def __eq__(self, a):
         if self.shape != a.shape:
@@ -221,7 +250,7 @@ class SparseMatrix(dict):
 
             else:
                 f = SparseMatrix(deepcopy(dict(self)), self.shape, self.scale)
-                assert isinstance(d, dict)
+                assert isinstance(d, Mapping)
                 for key, val in d.items():
                     if key in f:
                         # Check if symmetric and make copy if necessary
@@ -236,7 +265,7 @@ class SparseMatrix(dict):
 
     def __iadd__(self, d):
         """self.__iadd__(d) <==> self += d"""
-        assert isinstance(d, dict)
+        assert isinstance(d, Mapping)
         assert d.shape == self.shape
         #if self == d:
         #    self.scale += d.scale
@@ -264,10 +293,14 @@ class SparseMatrix(dict):
 
     def __sub__(self, d):
         """Return copy of self.__sub__(d) <==> self-d"""
-        assert isinstance(d, dict)
+        assert isinstance(d, Mapping)
         if self == d:
             f = SparseMatrix(deepcopy(dict(self)), self.shape,
                              self.scale-d.scale)
+
+        elif abs(self.scale) < 1e-16:
+            f = SparseMatrix(deepcopy(dict(d)), d.shape, -d.scale)
+
         else:
             f = SparseMatrix(deepcopy(dict(self)), self.shape, self.scale)
             for key, val in d.items():
@@ -284,10 +317,17 @@ class SparseMatrix(dict):
 
     def __isub__(self, d):
         """self.__isub__(d) <==> self -= d"""
-        assert isinstance(d, dict)
+        assert isinstance(d, Mapping)
         assert d.shape == self.shape
         if self == d:
             self.scale -= d.scale
+
+        elif abs(self.scale) < 1e-16:
+            self.clear()
+            for key, val in d.items():
+                self[key] = val
+            self.scale = -d.scale
+
         else:
             for key, val in d.items():
                 if key in self:
@@ -402,6 +442,11 @@ class SparseMatrix(dict):
             return True
         return False
 
+    @property
+    def issymmetric(self):
+        M = self.diags()
+        return (abs(M-M.T) > 1e-8).nnz == 0
+
     def clean_diagonals(self, reltol=1e-8):
         """Eliminate essentially zerovalued diagonals
 
@@ -500,7 +545,10 @@ class SpectralMatrix(SparseMatrix):
             d = extract_diagonal_matrix(D)
         SparseMatrix.__init__(self, d, shape, scale)
         if shape[0] == shape[1]:
-            from shenfun.la import Solve
+            from shenfun.la import Solve, NeumannSolve
+            #if test[0].use_fixed_gauge:
+            #    self.solver = NeumannSolve(self, test[0])
+            #else:
             self.solver = Solve(self, test[0])
 
     def matvec(self, v, c, format='csr', axis=0):
@@ -508,7 +556,7 @@ class SpectralMatrix(SparseMatrix):
         ss = [slice(None)]*len(v.shape)
         ss[axis] = u.slice()
         c = super(SpectralMatrix, self).matvec(v[tuple(ss)], c, format=format, axis=axis)
-        if self.testfunction[0].__class__.__name__ == 'ShenNeumann':
+        if self.testfunction[0].use_fixed_gauge:
             ss[axis] = 0
             c[tuple(ss)] = 0
         return c
@@ -603,7 +651,7 @@ class SpectralMatrix(SparseMatrix):
 
     def __add__(self, y):
         """Return copy of self.__add__(y) <==> self+y"""
-        assert isinstance(y, dict)
+        assert isinstance(y, Mapping)
         if self == y:
             f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
                                self.trialfunction, self.scale+y.scale)
@@ -621,7 +669,7 @@ class SpectralMatrix(SparseMatrix):
 
     def __sub__(self, y):
         """Return copy of self.__sub__(y) <==> self-y"""
-        assert isinstance(y, dict)
+        assert isinstance(y, Mapping)
         if self == y:
             f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
                                self.trialfunction, self.scale-y.scale)
@@ -651,6 +699,7 @@ class Identity(SparseMatrix):
     """
     def __init__(self, shape, scale=1):
         SparseMatrix.__init__(self, {0:1}, shape, scale)
+        self.measure = 1
 
     def solve(self, b, u=None, axis=0):
         if u is None:
@@ -661,6 +710,23 @@ class Identity(SparseMatrix):
         u *= (1/self.scale)
         return u
 
+def BlockMatrices(tpmats):
+    """Return two instances of the :class:`.BlockMatrix` class.
+
+    Parameters
+    ----------
+    tpmats : sequence of :class:`.TPMatrix`'es
+        There should be both boundary matrices from inhomogeneous Dirichlet
+        or Neumann conditions, as well as regular matrices.
+
+    Note
+    ----
+    Use :class:`.BlockMatrix` directly if you do not have any inhomogeneous
+    boundary conditions.
+    """
+    bc_mats = extract_bc_matrices([tpmats])
+    assert len(bc_mats) > 0, 'No boundary matrices - use BlockMatrix'
+    return BlockMatrix(tpmats), BlockMatrix(bc_mats)
 
 class BlockMatrix:
     r"""A class for block matrices
@@ -669,6 +735,14 @@ class BlockMatrix:
     ----------
         tpmats : sequence of :class:`.TPMatrix` or :class:`.SparseMatrix`
             The individual blocks for the matrix
+
+    Note
+    ----
+    The tensor product matrices must be either boundary
+    matrices or regular matrices, not both. If your problem contains
+    inhomogeneous boundary conditions, then create two BlockMatrices,
+    one for the implicit terms and one for the boundary terms. To this
+    end you can use :class:`.BlockMatrices`.
 
     Example
     -------
@@ -733,8 +807,9 @@ class BlockMatrix:
     >>> M = BlockMatrix(A00+A01+A10)
 
     """
-    def __init__(self, tpmats):
+    def __init__(self, tpmats, extract_bc_mats=True):
         assert isinstance(tpmats, (list, tuple))
+
         tpmats = [tpmats] if not isinstance(tpmats[0], (list, tuple)) else tpmats
         self.mixedbase = mixedbase = tpmats[0][0].mixedbase
         self.dims = dims = mixedbase.num_components()
@@ -880,7 +955,7 @@ class BlockMatrix:
                     bm[-1].append(d)
         return bmat(bm, format=format)
 
-    def solve(self, b, u=None, constraints=(), return_system=False, Alu=None):
+    def solve(self, b, u=None, constraints=(), return_system=False, Alu=None, BM=None):
         r"""
         Solve matrix system Au = b
 
@@ -940,12 +1015,17 @@ class BlockMatrix:
         else:
             assert u.shape == b.shape
 
+        if BM: # Add contribution to right hand side due to inhomogeneous boundary conditions
+            u.set_boundary_dofs()
+            w0 = np.zeros_like(u)
+            b -= BM.matvec(u, w0)
+
         tpmat = self.get_mats(True)
         axis = tpmat.naxes[0] if isinstance(tpmat, TPMatrix) else 0
         tp = space.flatten() if hasattr(space, 'flatten') else [space]
         nvars = b.shape[0] if len(b.shape)>space.dimensions else 1
-        u = u.reshape(1,*u.shape) if nvars == 1 else u
-        b = b.reshape(1,*b.shape) if nvars == 1 else b
+        u = u.reshape(1, *u.shape) if nvars == 1 else u
+        b = b.reshape(1, *b.shape) if nvars == 1 else b
         for con in constraints:
             assert len(con) == 3
             assert isinstance(con[0], Integral)
@@ -1130,12 +1210,15 @@ class TPMatrix:
         self.naxes = []
         self.global_index = global_index
         self.mixedbase = mixedbase
+        self._issimplified = False
 
     def simplify_diagonal_matrices(self):
         self.naxes = []
         for axis, mat in enumerate(self.mats):
             if not mat:
                 continue
+
+            #if mat.isdiagonal():
             if axis not in self.space.get_nondiagonal_axes():
                 if self.dimensions == 1: # Don't bother with the 1D case
                     continue
@@ -1143,12 +1226,13 @@ class TPMatrix:
                     d = mat[0]    # get diagoal
                     if np.ndim(d):
                         d = self.space[axis].broadcast_to_ndims(d)
-                        d *= mat.scale
+                        d = d*mat.scale
                     self.scale = self.scale*d
                     self.mats[axis] = Identity(mat.shape)
 
             else:
                 self.naxes.append(axis)
+
         # Decomposition
         if len(self.space) > 1:
             s = self.scale.shape
@@ -1163,9 +1247,9 @@ class TPMatrix:
         # this matrix.
         if len(self.naxes) == 1:
             self.pmat = self.mats[self.naxes[0]]
-
         elif len(self.naxes) == 2: # 2 nondiagonal
             self.pmat = self.mats
+        self._issimplified = True
 
     def solve(self, b, u=None):
 
@@ -1387,7 +1471,7 @@ def check_sanity(A, test, trial, measure=1):
     if measure == 1:
         D = get_dense_matrix(test, trial, measure)[:N, :M]
     else:
-        D = get_dense_matrix_quadpy(test, trial, measure)
+        D = get_denser_matrix(test, trial, measure)
     Dsp = extract_diagonal_matrix(D)
     for key, val in A.items():
         assert np.allclose(val*A.scale, Dsp[key])
@@ -1422,7 +1506,11 @@ def get_dense_matrix(test, trial, measure=1):
     ws = test[0].get_measured_weights(N, measure)
     v = test[0].evaluate_basis_derivative_all(x=x, k=test[1])[:, :K0]
     u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])[:, :K1]
-    return np.dot(np.conj(v.T)*ws[np.newaxis, :], u)
+    A = np.dot(np.conj(v.T)*ws[np.newaxis, :], u)
+    if A.dtype.char in 'FDG':
+        if np.linalg.norm(A.real) / np.linalg.norm(A.imag) > 1e14:
+            A = A.real.copy()
+    return A
 
 def get_denser_matrix(test, trial, measure=1):
     """Return dense matrix automatically computed from basis
@@ -1461,7 +1549,7 @@ def get_denser_matrix(test, trial, measure=1):
     u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])[:, :K1]
     return np.dot(np.conj(v.T)*ws[np.newaxis, :], u)
 
-def extract_diagonal_matrix(M, abstol=1e-14, reltol=1e-12):
+def extract_diagonal_matrix(M, abstol=1e-10, reltol=1e-10):
     """Return SparseMatrix version of dense matrix ``M``
 
     Parameters
@@ -1491,6 +1579,36 @@ def extract_diagonal_matrix(M, abstol=1e-14, reltol=1e-12):
             d[-i] = np.array(l, dtype=dtype)
 
     return SparseMatrix(d, M.shape)
+
+def extract_bc_matrices(mats):
+    """Extract boundary matrices from list of ``mats``
+
+    Parameters
+    ----------
+    mats : list of list of :class:`.TPMatrix`es
+
+    Returns
+    -------
+    list
+        list of boundary matrices.
+
+    Note
+    ----
+    The ``mats`` list is modified in place since boundary matrices are
+    extracted.
+    """
+    bc_mats = []
+    for a in mats:
+        for b in a.copy():
+            if isinstance(b, SparseMatrix):
+                if b.trialfunction[0].boundary_condition() == 'Apply':
+                    bc_mats.append(b)
+                    a.remove(b)
+            elif isinstance(b, TPMatrix):
+                if b.is_bc_matrix():
+                    bc_mats.append(b)
+                    a.remove(b)
+    return bc_mats
 
 def get_dense_matrix_sympy(test, trial, measure=1):
     """Return dense matrix automatically computed from basis

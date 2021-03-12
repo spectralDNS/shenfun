@@ -32,7 +32,7 @@ N = (36, 36, 36)
 if family == 'chebyshev':
     assert N[0] % 2 == 0, "Biharmonic solver only implemented for even numbers"
 
-SD = FunctionSpace(N[0], family=family, bc='Biharmonic')
+SD = FunctionSpace(N[0], family=family, bc=(0, 0, 0, 0))
 K1 = FunctionSpace(N[1], family='F', dtype='D')
 K2 = FunctionSpace(N[2], family='F', dtype='d')
 T = TensorProductSpace(comm, (SD, K1, K2), axes=(0, 1, 2))

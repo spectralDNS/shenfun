@@ -29,7 +29,7 @@ ue = (r*(1-r))**2*sp.cos(8*theta)-0.1*(r-1)
 N = 32
 F = FunctionSpace(N, 'F', dtype='d')
 F0 = FunctionSpace(1, 'F', dtype='d')
-L = FunctionSpace(N, 'L', bc='Dirichlet', domain=(0, 1))
+L = FunctionSpace(N, 'L', bc=(0, 0), domain=(0, 1))
 L0 = FunctionSpace(N, 'L', bc=(None, 0), domain=(0, 1))
 T = TensorProductSpace(comm, (F, L), axes=(1, 0), coordinates=(psi, rv))
 T0 = TensorProductSpace(MPI.COMM_SELF, (F0, L0), axes=(1, 0), coordinates=(psi, rv))

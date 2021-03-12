@@ -128,6 +128,7 @@ class SpectralBase:
             uniform = False
         if uniform is False:
             X = self.points_and_weights(N=N, map_true_domain=map_true_domain)[0]
+
         else:
             d = self.domain
             X = np.linspace(d[0], d[1], N)
@@ -291,9 +292,9 @@ class SpectralBase:
                                self.backward.tmp_array)
 
         if kind == 'normal':
-            self.evaluate_expansion_all(self.backward.tmp_array,
-                                        self.backward.output_array,
-                                        fast_transform=fast_transform)
+            self._evaluate_expansion_all(self.backward.tmp_array,
+                                         self.backward.output_array,
+                                         fast_transform=fast_transform)
         else:
             if kind == 'uniform':
                 mesh = self.mesh(bcast=False, map_true_domain=False, uniform=True)
@@ -301,9 +302,9 @@ class SpectralBase:
                 mesh = kind.mesh()
                 if len(kind) > 1:
                     mesh = np.squeeze(mesh[self.axis])
-            self.evaluate_expansion_all(self.backward.tmp_array,
-                                        self.backward.output_array,
-                                        x=mesh, fast_transform=False) # cannot use fast transforms on random mesh
+            self._evaluate_expansion_all(self.backward.tmp_array,
+                                         self.backward.output_array,
+                                         x=mesh, fast_transform=False) # cannot use fast transforms on random mesh
 
         if output_array is not None:
             output_array[...] = self.backward.output_array
@@ -441,7 +442,7 @@ class SpectralBase:
             V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
         return V
 
-    def evaluate_expansion_all(self, input_array, output_array,
+    def _evaluate_expansion_all(self, input_array, output_array,
                                x=None, fast_transform=False):
         r"""Evaluate expansion on 'x' or entire mesh
 
@@ -492,7 +493,7 @@ class SpectralBase:
         if output_array is None:
             output_array = np.zeros(x.shape, dtype=self.dtype)
         x = self.map_reference_domain(x)
-        self.evaluate_expansion_all(u, output_array, x, False)
+        self._evaluate_expansion_all(u, output_array, x, False)
         return output_array
 
     def _evaluate_scalar_product(self, fast_transform=False):
@@ -805,6 +806,15 @@ class SpectralBase:
         return False
 
     @property
+    def use_fixed_gauge(self):
+        """Return True if space (or TensorProductSpace this space belongs to)
+        contains only Neumann boundary conditions"""
+        T = self.tensorproductspace
+        if T:
+            return T.use_fixed_gauge
+        return self.boundary_condition() == 'Neumann'
+
+    @property
     def rank(self):
         """Return rank of function space
 
@@ -843,6 +853,10 @@ class SpectralBase:
     def family():
         return ''
 
+    @staticmethod
+    def short_name():
+        return ''
+
     def get_mass_matrix(self):
         mat = self._get_mat()
         dx = self.coors.get_sqrt_det_g()
@@ -852,8 +866,7 @@ class SpectralBase:
             msdict = split(dx)
             assert len(msdict) == 1
             dx = msdict[0]['xyzrs'[self.axis]]
-
-            if self.axis == 0:
+            if self.axis == self.tensorproductspace.dimensions-1:
                 dx *= msdict[0]['coeff']
         if not dx == 1:
             if not isinstance(dx, Number):
@@ -1334,10 +1347,13 @@ def inner_product(test, trial, measure=1):
         x0 = x0.pop()
         x = sp.symbols('x', real=x0.is_real, positive=x0.is_positive)
         measure = measure.subs(x0, x)
-        if measure.subs(x, 1).evalf() < 0:
+        if measure.subs(x, (test[0].domain[0]+test[0].domain[1])/2).evalf() < 0:
             sc = -1
             measure *= sc
+        if measure.is_polynomial():
+            measure = sp.simplify(measure)
         key = key + (test[0].domain, measure)
+
     mat = test[0]._get_mat()
     A = mat[key](test, trial)
     A.scale *= sc

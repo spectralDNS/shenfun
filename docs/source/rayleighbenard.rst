@@ -7,7 +7,7 @@ Demo - Rayleigh Benard
 ======================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Oct 23, 2020
+:Date: Dec 22, 2020
 
 *Summary.* Rayleigh-Benard convection arise
 due to temperature gradients in a fluid. The governing equations are
@@ -745,7 +745,7 @@ We find :math:`\hat{T}_{N-2, l}` and :math:`\hat{T}_{N-1, l}` using orthogonalit
 
 Using this approach it is easy to see that any inhomogeneous function :math:`T_N(\pm 1, y, t)`
 of :math:`y` and :math:`t` can be used for the boundary condition, and not just a constant.
-To implement a non-constant Dirichlet boundary condition, the ``Basis`` function
+To implement a non-constant Dirichlet boundary condition, the ``FunctionSpace`` function
 can take any ``sympy`` function of ``(y, t)``, for exampel by replacing the
 creation of ``VT`` by
 

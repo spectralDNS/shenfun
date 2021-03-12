@@ -4,12 +4,13 @@ from matplotlib import pyplot as plt
 import os
 
 os.environ['pytest'] = 'True'
-N = range(10, 60, 2)
+os.chdir('../demo')
+N = range(10, 1000, 50)
 error = {}
-for basis in ('legendre', 'chebyshev'):
+for basis in ('legendre', 'chebyshev', 'chebyshev2'):
     error[basis] = []
     for i in range(len(N)):
-        output = subprocess.check_output("python dirichlet_poisson3D.py {} {}".format(N[i], basis), shell=True)
+        output = subprocess.check_output("python dirichlet_poisson1D.py {} {}".format(N[i], basis), shell=True)
         #output = subprocess.check_output("python dirichlet_Helmholtz1D.py {} {}".format(N[i], basis), shell=True)
         #output = subprocess.check_output("python biharmonic1D.py {} {}".format(N[i], basis), shell=True)
         exec(output) # Error is printed as "Error=%2.16e"%(np.linalg.norm(uj-ua))
@@ -22,14 +23,14 @@ for basis in ('legendre', 'chebyshev'):
 
 del os.environ['pytest']
 plt.figure(figsize=(6, 4))
-for basis, col in zip(('legendre', 'chebyshev'), ('r', 'b')):
+for basis, col in zip(('legendre', 'chebyshev', 'chebyshev2'), ('r', 'b', 'g')):
     plt.semilogy(N, error[basis], col, linewidth=2)
 plt.title('Convergence of Poisson solvers 1D')
 #plt.title('Convergence of Helmholtz solvers 1D')
 #plt.title('Convergence of Biharmonic solvers 1D')
 plt.xlabel('Number of dofs')
 plt.ylabel('Error norm')
-plt.legend(('Legendre', 'Chebyshev'))
+plt.legend(('Legendre', 'Chebyshev', 'Chebyshev $\sqrt{1-x^2}$'))
 #plt.text(35, 1e-3, r'With manufactured solution')
 #plt.text(40, 5e-5, r'$u=\sin(4\pi x)(1-x^2)$')
 plt.savefig('poisson1D_errornorm.png')

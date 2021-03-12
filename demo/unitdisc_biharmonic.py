@@ -20,8 +20,8 @@ N = 36
 by_parts = False
 F = FunctionSpace(N, 'F', dtype='d')
 F0 = FunctionSpace(1, 'F', dtype='d')
-L = FunctionSpace(N, 'L', bc='Bipolar', domain=(0, 1))
-L0 = FunctionSpace(N, 'L', bc='BiPolar0', domain=(0, 1))
+L = FunctionSpace(N, 'L', basis='ShenBiPolar', domain=(0, 1))
+L0 = FunctionSpace(N, 'L', basis='ShenBiPolar0', domain=(0, 1))
 T = TensorProductSpace(comm, (F, L), axes=(1, 0), coordinates=(psi, rv))
 T0 = TensorProductSpace(MPI.COMM_SELF, (F0, L0), axes=(1, 0), coordinates=(psi, rv))
 

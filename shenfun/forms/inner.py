@@ -277,7 +277,7 @@ def inner(expr0, expr1, output_array=None, level=0):
         assert test.argument == 0
         space = test.function_space()
         if isinstance(trial, Array):
-            if trial.tensor_rank == 0:
+            if trial.tensor_rank == 0 and isinstance(test, BasisFunction):
                 output_array = space.scalar_product(trial, output_array)
                 return output_array
             trial = trial.forward()
@@ -420,6 +420,7 @@ def inner(expr0, expr1, output_array=None, level=0):
         if isinstance(tpmat, TPMatrix):
             try:
                 tpmat.simplify_diagonal_matrices()
+
             except KeyError:
                 continue
 

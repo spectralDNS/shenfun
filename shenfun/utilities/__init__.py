@@ -7,14 +7,20 @@ try:
     from collections.abc import MutableMapping
 except ImportError:
     from collections import MutableMapping
-from collections import defaultdict
+from collections import defaultdict, UserDict
+import math
+import statistics
+from typing import Any, Callable, Dict, List, ClassVar, Optional
+from contextlib import ContextDecorator
+from dataclasses import dataclass
+
 import numpy as np
 import sympy as sp
 from scipy.fftpack import dct
 from shenfun.optimization import optimizer
 
 __all__ = ['dx', 'clenshaw_curtis1D', 'CachedArrayDict', 'surf3D', 'wrap_periodic',
-           'outer', 'apply_mask', 'integrate_sympy', 'mayavi_show']
+           'outer', 'apply_mask', 'integrate_sympy', 'mayavi_show', 'Timer']
 
 
 def dx(u):
@@ -222,7 +228,7 @@ def split(measures):
 
     ms = ms.expand()
     result = []
-    if isinstance(ms, sp.Add):
+    if isinstance(ms, sp.Add) or (isinstance(ms, sp.Mul) and np.all([isinstance(s, sp.Add) for s in ms.args])):
         for arg in ms.args:
             result.append(_split(arg))
     else:
@@ -322,7 +328,7 @@ def surf3D(u, backend='plotly', wrapaxes=(), slices=None, fig=None, kind='normal
         u = u[slices]
 
     if u.dtype.char in 'FDG':
-        u = abs(u)
+        u = abs(u)**2
 
     if backend == 'plotly':
         import plotly.graph_objects as go
@@ -337,3 +343,14 @@ def surf3D(u, backend='plotly', wrapaxes=(), slices=None, fig=None, kind='normal
         mlab.mesh(x, y, z, scalars=u, colormap='jet')
 
     return fig
+
+@dataclass
+class Timer(ContextDecorator):
+    name: Optional[str] = None
+    text: str = "Empty decorator"
+
+    def __enter__(self) -> "Timer":
+        return self
+
+    def __exit__(self, *exc_info: Any) -> None:
+        pass

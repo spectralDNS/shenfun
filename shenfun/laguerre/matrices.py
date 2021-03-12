@@ -3,8 +3,8 @@ from shenfun.matrixbase import SpectralMatrix
 from shenfun.la import TDMA_O
 from . import bases
 
-LD = bases.ShenDirichlet
-LB = bases.Orthogonal
+SD = bases.ShenDirichlet
+L = bases.Orthogonal
 
 
 class BLLmat(SpectralMatrix):
@@ -24,8 +24,8 @@ class BLLmat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, measure=1):
-        assert isinstance(test[0], LB)
-        assert isinstance(trial[0], LB)
+        assert isinstance(test[0], L)
+        assert isinstance(trial[0], L)
         SpectralMatrix.__init__(self, {0:1}, test, trial)
 
     def solve(self, b, u=None, axis=0):
@@ -44,7 +44,7 @@ class BLLmat(SpectralMatrix):
         return c
 
 
-class BDDmat(SpectralMatrix):
+class BSDSDmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
     .. math::
@@ -61,14 +61,14 @@ class BDDmat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, measure=1):
-        assert isinstance(test[0], LD)
-        assert isinstance(trial[0], LD)
+        assert isinstance(test[0], SD)
+        assert isinstance(trial[0], SD)
         d = {0:2., 1: -1., -1:-1.}
         SpectralMatrix.__init__(self, d, test, trial)
         self.solve = TDMA_O(self)
 
 
-class ADDmat(SpectralMatrix):
+class ASDSDmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
     .. math::
@@ -85,8 +85,8 @@ class ADDmat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, measure=1):
-        assert isinstance(test[0], LD)
-        assert isinstance(trial[0], LD)
+        assert isinstance(test[0], SD)
+        assert isinstance(trial[0], SD)
         d = {0: 0.5,
              1: 0.25,
              -1: 0.25}
@@ -119,7 +119,7 @@ class _LagMatDict(dict):
 
 
 mat = _LagMatDict({
-    ((LD, 0), (LD, 0)): BDDmat,
-    ((LD, 1), (LD, 1)): ADDmat,
-    ((LB, 0), (LB, 0)): BLLmat
+    ((SD, 0), (SD, 0)): BSDSDmat,
+    ((SD, 1), (SD, 1)): ASDSDmat,
+    ((L, 0), (L, 0)): BLLmat
     })

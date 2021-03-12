@@ -48,7 +48,7 @@ fe = alfa*ue - ue.diff(x, 2)
 # Size of discretization
 N = int(sys.argv[-2])
 
-SD = FunctionSpace(N, family=family, bc='Dirichlet')
+SD = FunctionSpace(N, family=family, bc=(0, 0))
 u = TrialFunction(SD)
 v = TestFunction(SD)
 
