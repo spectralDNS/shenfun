@@ -50,7 +50,7 @@ matrices = inner(grad(v), grad(u), level=2)
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space
-sol = la.Solver2D(matrices)
+sol = la.SolverGeneric2ND(matrices)
 u_hat = sol(f_hat, u_hat)
 uq = u_hat.backward()
 
