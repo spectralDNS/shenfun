@@ -9,12 +9,6 @@ except ImportError:
     from collections import MutableMapping
 from collections import defaultdict, UserDict
 import math
-import statistics
-from typing import Any, Callable, Dict, List, ClassVar, Optional
-from contextlib import ContextDecorator
-from dataclasses import dataclass
-
-import numpy as np
 import sympy as sp
 from scipy.fftpack import dct
 from shenfun.optimization import optimizer
@@ -343,14 +337,3 @@ def surf3D(u, backend='plotly', wrapaxes=(), slices=None, fig=None, kind='normal
         mlab.mesh(x, y, z, scalars=u, colormap='jet')
 
     return fig
-
-@dataclass
-class Timer(ContextDecorator):
-    name: Optional[str] = None
-    text: str = "Empty decorator"
-
-    def __enter__(self) -> "Timer":
-        return self
-
-    def __exit__(self, *exc_info: Any) -> None:
-        pass
