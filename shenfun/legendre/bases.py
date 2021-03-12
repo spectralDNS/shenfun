@@ -69,7 +69,7 @@ class LegendreBase(SpectralBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=np.float, padding_factor=1,
+    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None):
         SpectralBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -231,7 +231,7 @@ class Orthogonal(LegendreBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=np.float, padding_factor=1,
+    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None):
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -290,7 +290,7 @@ class ShenDirichlet(LegendreBase):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=np.float, scaled=False,
+    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -316,7 +316,7 @@ class ShenDirichlet(LegendreBase):
     def set_factor_array(self, v):
         if self.is_scaled():
             if not self._factor.shape == v.shape:
-                k = self.wavenumbers().astype(np.float)
+                k = self.wavenumbers().astype(float)
                 self._factor = 1./np.sqrt(4*k+6)
 
     def is_scaled(self):
@@ -327,7 +327,7 @@ class ShenDirichlet(LegendreBase):
         if not self.is_scaled():
             P[:, :-2] = V[:, :-2] - V[:, 2:]
         else:
-            k = np.arange(self.N-2).astype(np.float)
+            k = np.arange(self.N-2).astype(float)
             P[:, :-2] = (V[:, :-2] - V[:, 2:])/np.sqrt(4*k+6)
         if argument == 1:
             P[:, -2] = (V[:, 0] - V[:, 1])/2
@@ -518,7 +518,7 @@ class ShenNeumann(LegendreBase):
     """
 
     def __init__(self, N, quad="LG", mean=0, bc=(0., 0.), domain=(-1., 1.), padding_factor=1,
-                 dealias_direct=False, dtype=np.float, coordinates=None):
+                 dealias_direct=False, dtype=float, coordinates=None):
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
@@ -551,7 +551,7 @@ class ShenNeumann(LegendreBase):
 
     def _composite(self, V, argument=0):
         P = np.zeros(V.shape)
-        k = np.arange(V.shape[1]).astype(np.float)
+        k = np.arange(V.shape[1]).astype(float)
         P[:, :-2] = V[:, :-2] - (k[:-2]*(k[:-2]+1)/(k[:-2]+2))/(k[:-2]+3)*V[:, 2:]
         if argument == 1:
             P[:, -2] = 0.5*V[:, 1] - 1/6*V[:, 2]
@@ -560,7 +560,7 @@ class ShenNeumann(LegendreBase):
 
     def set_factor_array(self, v):
         if not self._factor.shape == v.shape:
-            k = self.wavenumbers().astype(np.float)
+            k = self.wavenumbers().astype(float)
             self._factor = k*(k+1)/(k+2)/(k+3)
 
     def _evaluate_scalar_product(self, fast_transform=False):
@@ -731,7 +731,7 @@ class ShenBiharmonic(LegendreBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="LG", bc=(0, 0, 0, 0), domain=(-1., 1.), padding_factor=1,
-                 dealias_direct=False, dtype=np.float, coordinates=None):
+                 dealias_direct=False, dtype=float, coordinates=None):
         from shenfun.tensorproductspace import BoundaryValues
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -755,7 +755,7 @@ class ShenBiharmonic(LegendreBase):
 
     def _composite(self, V, argument=0):
         P = np.zeros_like(V)
-        k = np.arange(V.shape[1]).astype(np.float)[:-4]
+        k = np.arange(V.shape[1]).astype(float)[:-4]
         P[:, :-4] = V[:, :-4] - (2*(2*k+5)/(2*k+7))*V[:, 2:-2] + ((2*k+3)/(2*k+7))*V[:, 4:]
         if argument == 1:
             P[:, -4:] = np.tensordot(V[:, :4], BCBiharmonic.coefficient_matrix(), (1, 1))
@@ -764,7 +764,7 @@ class ShenBiharmonic(LegendreBase):
     def set_factor_arrays(self, v):
         s = self.sl[self.slice()]
         if not self._factor1.shape == v[s].shape:
-            k = self.wavenumbers().astype(np.float)
+            k = self.wavenumbers().astype(float)
             self._factor1 = (-2*(2*k+5)/(2*k+7)).astype(float)
             self._factor2 = ((2*k+3)/(2*k+7)).astype(float)
 
@@ -930,7 +930,7 @@ class BeamFixedFree(LegendreBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="LG", bc=(0, 0, 0, 0), domain=(-1., 1.), padding_factor=1,
-                 dealias_direct=False, dtype=np.float, coordinates=None):
+                 dealias_direct=False, dtype=float, coordinates=None):
         from shenfun.tensorproductspace import BoundaryValues
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -956,7 +956,7 @@ class BeamFixedFree(LegendreBase):
 
     def _composite(self, V, argument=0):
         P = np.zeros_like(V)
-        k = np.arange(V.shape[1]).astype(np.float)[:-4]
+        k = np.arange(V.shape[1]).astype(float)[:-4]
         P[:, :-4] = (V[:, :-4] + 4*(2*k+3)/((k+3)**2)*V[:, 1:-3] - 2*(k-1)*(k+1)*(k+6)*(2*k+5)/((k+3)**2*(k+4)*(2*k+7))*V[:, 2:-2]
          - 4*(k+1)**2*(2*k+3)/((k+3)**2*(k+4)**2)*V[:, 3:-1] + ((k+1)**2*(k+2)**2*(2*k+3)/((k+3)**2*(k+4)**2*(2*k+7)))*V[:, 4:])
         if argument == 1:
@@ -966,7 +966,7 @@ class BeamFixedFree(LegendreBase):
     def set_factor_arrays(self, v):
         s = self.sl[self.slice()]
         if not self._factor1.shape == v[s].shape:
-            k = self.wavenumbers().astype(np.float)
+            k = self.wavenumbers().astype(float)
             self._factor1 = (4*(2*k+3)/((k+3)**2)).astype(float)
             self._factor2 = (-(2*(k-1)*(k+1)*(k+6)*(2*k+5)/((k+3)**2*(k+4)*(2*k+7)))).astype(float)
             self._factor3 = (- 4*(k+1)**2*(2*k+3)/((k+3)**2*(k+4)**2)).astype(float)
@@ -1137,7 +1137,7 @@ class UpperDirichlet(LegendreBase):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="LG", bc=(None, 0), domain=(-1., 1.), dtype=np.float,
+    def __init__(self, N, quad="LG", bc=(None, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         assert quad == "LG"
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
@@ -1307,7 +1307,7 @@ class ShenBiPolar(LegendreBase):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=np.float,
+    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         assert quad == "LG"
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
@@ -1411,7 +1411,7 @@ class ShenBiPolar0(LegendreBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="LG", domain=(-1., 1.), padding_factor=1,
-                 dealias_direct=False, dtype=np.float, coordinates=None):
+                 dealias_direct=False, dtype=float, coordinates=None):
         assert quad == "LG"
         LegendreBase.__init__(self, N, quad="LG", domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -1434,14 +1434,14 @@ class ShenBiPolar0(LegendreBase):
 
     def _composite(self, V, argument=0):
         P = np.zeros_like(V)
-        k = np.arange(V.shape[1]).astype(np.float)[:-3]
+        k = np.arange(V.shape[1]).astype(float)[:-3]
         P[:, :-3] = V[:, :-3] - ((2*k+3)*(k+4)/(2*k+5)/(k+2))*V[:, 1:-2] - (k*(k+1)/(k+2)/(k+3))*V[:, 2:-1] + (k+1)*(2*k+3)/(k+3)/(2*k+5)*V[:, 3:]
         return P
 
     def set_factor_arrays(self, v):
         s = self.sl[self.slice()]
         if not self._factor1.shape == v[s].shape:
-            k = self.wavenumbers().astype(np.float)
+            k = self.wavenumbers().astype(float)
             self._factor1 = (-(2*k+3)*(k+4)/(2*k+5)/(k+2)).astype(float)
             self._factor2 = (-k*(k+1)/(k+2)/(k+3)).astype(float)
             self._factor3 = ((k+1)*(2*k+3)/(k+3)/(2*k+5)).astype(float)
@@ -1576,7 +1576,7 @@ class DirichletNeumann(LegendreBase):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=np.float,
+    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -1609,7 +1609,7 @@ class DirichletNeumann(LegendreBase):
 
     def _composite(self, V, argument=0):
         P = np.zeros_like(V)
-        k = np.arange(V.shape[1]).astype(np.float)[:-2]
+        k = np.arange(V.shape[1]).astype(float)[:-2]
         P[:, :-2] = (V[:, :-2]
                      +((2*k+3)/(k+2)**2)*V[:, 1:-1]
                      -(((k+1)/(k+2))**2)*V[:, 2:])
@@ -1765,7 +1765,7 @@ class NeumannDirichlet(LegendreBase):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=np.float,
+    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -1798,7 +1798,7 @@ class NeumannDirichlet(LegendreBase):
 
     def _composite(self, V, argument=0):
         P = np.zeros_like(V)
-        k = np.arange(V.shape[1]).astype(np.float)[:-2]
+        k = np.arange(V.shape[1]).astype(float)[:-2]
         P[:, :-2] = (V[:, :-2]
                      -((2*k+3)/(k+2)**2)*V[:, 1:-1]
                      -((k+1)**2/(k+2)**2)*V[:, 2:])
@@ -1959,7 +1959,7 @@ class UpperDirichletNeumann(LegendreBase):
     This basis is not recommended as it leads to a poorly conditioned
     stiffness matrix.
     """
-    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=np.float,
+    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -1992,7 +1992,7 @@ class UpperDirichletNeumann(LegendreBase):
 
     def _composite(self, V, argument=0):
         P = np.zeros_like(V)
-        k = np.arange(V.shape[1]).astype(np.float)[:-2]
+        k = np.arange(V.shape[1]).astype(float)[:-2]
         P[:, :-2] = (V[:, :-2]
                      -((2*k+3)/(k+2))*V[:, 1:-1]
                      +((k+1)/(k+2))*V[:, 2:])
@@ -2113,7 +2113,7 @@ class UpperDirichletNeumann(LegendreBase):
 
 class BCDirichlet(LegendreBase):
 
-    def __init__(self, N, quad="LG", scaled=False, dtype=np.float,
+    def __init__(self, N, quad="LG", scaled=False, dtype=float,
                  domain=(-1., 1.), coordinates=None, **kw):
         LegendreBase.__init__(self, N, quad=quad, dtype=dtype, domain=domain, coordinates=coordinates)
         self._scaled = scaled
@@ -2182,7 +2182,7 @@ class BCDirichlet(LegendreBase):
 
 class BCNeumann(LegendreBase):
 
-    def __init__(self, N, quad="LG", scaled=False, dtype=np.float,
+    def __init__(self, N, quad="LG", scaled=False, dtype=float,
                  domain=(-1., 1.), coordinates=None, **kw):
         LegendreBase.__init__(self, N, quad=quad, dtype=dtype, domain=domain, coordinates=coordinates)
         self._scaled = scaled
@@ -2289,7 +2289,7 @@ class BCBiharmonic(LegendreBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=np.float,
+    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -2380,7 +2380,7 @@ class BCBeamFixedFree(LegendreBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=np.float,
+    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -2474,7 +2474,7 @@ class BCUpperDirichlet(LegendreBase):
     """
 
     def __init__(self, N, quad="GC", domain=(-1., 1.), scaled=False,
-                 dtype=np.float, coordinates=None, **kw):
+                 dtype=float, coordinates=None, **kw):
         LegendreBase.__init__(self, N, quad=quad, domain=domain,
                               dtype=dtype, coordinates=coordinates)
 
@@ -2543,7 +2543,7 @@ class BCUpperDirichlet(LegendreBase):
 
 class BCNeumannDirichlet(LegendreBase):
 
-    def __init__(self, N, quad="LG", scaled=False, dtype=np.float,
+    def __init__(self, N, quad="LG", scaled=False, dtype=float,
                  domain=(-1., 1.), coordinates=None, **kw):
         LegendreBase.__init__(self, N, quad=quad, dtype=dtype, domain=domain, coordinates=coordinates)
         self._scaled = scaled
@@ -2624,7 +2624,7 @@ class BCNeumannDirichlet(LegendreBase):
 
 class BCDirichletNeumann(LegendreBase):
 
-    def __init__(self, N, quad="LG", dtype=np.float,
+    def __init__(self, N, quad="LG", dtype=float,
                  domain=(-1., 1.), coordinates=None, **kw):
         LegendreBase.__init__(self, N, quad=quad, dtype=dtype, domain=domain, coordinates=coordinates)
 
@@ -2702,7 +2702,7 @@ class BCDirichletNeumann(LegendreBase):
 
 class BCUpperDirichletNeumann(LegendreBase):
 
-    def __init__(self, N, quad="LG", dtype=np.float,
+    def __init__(self, N, quad="LG", dtype=float,
                  domain=(-1., 1.), coordinates=None, **kw):
         LegendreBase.__init__(self, N, quad=quad, dtype=dtype, domain=domain, coordinates=coordinates)
 

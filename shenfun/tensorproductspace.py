@@ -213,7 +213,7 @@ class TensorProductSpace(PFFT):
             assert sorted(axes[i]) == sorted(set(axes[i]))
 
         if dtype is None:
-            dtype = np.complex if isinstance(self.bases[axes[-1][-1]], C2C) else np.float
+            dtype = complex if isinstance(self.bases[axes[-1][-1]], C2C) else float
 
         dtype = np.dtype(dtype)
         assert dtype.char in 'fdgFDG'
@@ -598,7 +598,7 @@ class TensorProductSpace(PFFT):
                     last_conj_index = M
                 sl = self.local_slice()[axis].start
             x.append(base.map_reference_domain(points[axis]))
-            w.append(base.wavenumbers(bcast=False)[self.local_slice()[axis]].astype(np.float))
+            w.append(base.wavenumbers(bcast=False)[self.local_slice()[axis]].astype(float))
 
         if len(self) == 2:
             output_array = evaluate.evaluate_lm_2D(list(self.bases), output_array, coefficients, x[0], x[1], w[0], w[1], r2c, last_conj_index, sl)
@@ -1745,7 +1745,7 @@ def some_basic_tests():
         f_g_hat = pyfftw.interfaces.numpy_fft.rfftn(f_g, axes=(0, 1, 2, 3))
     else:
         f_g = np.zeros(T.shape())
-        f_g_hat = np.zeros(T.shape(), dtype=np.complex)
+        f_g_hat = np.zeros(T.shape(), dtype=complex)
 
     # Distribute test data to all ranks
     comm.Bcast(f_g, root=0)

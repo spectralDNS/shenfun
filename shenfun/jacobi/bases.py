@@ -93,7 +93,7 @@ class JacobiBase(SpectralBase):
 
     """
 
-    def __init__(self, N, quad="JG", alpha=0, beta=0, domain=(-1., 1.), dtype=np.float,
+    def __init__(self, N, quad="JG", alpha=0, beta=0, domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         SpectralBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -250,7 +250,7 @@ class Orthogonal(JacobiBase):
     """
 
     def __init__(self, N, quad="JG", alpha=-0.5, beta=-0.5, domain=(-1., 1.),
-                 dtype=np.float, padding_factor=1, dealias_direct=False, coordinates=None):
+                 dtype=float, padding_factor=1, dealias_direct=False, coordinates=None):
         JacobiBase.__init__(self, N, quad=quad, alpha=alpha, beta=beta, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
                             coordinates=coordinates)
@@ -261,6 +261,10 @@ class Orthogonal(JacobiBase):
 
     #def get_orthogonal(self):
     #    return self
+
+    @staticmethod
+    def short_name():
+        return 'J'
 
     def sympy_basis(self, i=0, x=xp):
         return sp.jacobi(i, self.alpha, self.beta, x)
@@ -344,7 +348,7 @@ class ShenDirichlet(JacobiBase):
                 rv = (sp.cos(theta), sp.sin(theta))
 
     """
-    def __init__(self, N, quad='JG', bc=(0, 0), domain=(-1., 1.), dtype=np.float,
+    def __init__(self, N, quad='JG', bc=(0, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         JacobiBase.__init__(self, N, quad=quad, alpha=-1, beta=-1, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -357,6 +361,10 @@ class ShenDirichlet(JacobiBase):
     @staticmethod
     def boundary_condition():
         return 'Dirichlet'
+
+    @staticmethod
+    def short_name():
+        return 'SD'
 
     def get_refined(self, N):
         return self.__class__(N,
@@ -460,7 +468,7 @@ class ShenDirichlet(JacobiBase):
             output_array = np.zeros_like(input_array)
         else:
             output_array.fill(0)
-        k = self.wavenumbers().astype(np.float)
+        k = self.wavenumbers().astype(float)
         s0 = self.sl[slice(0, -2)]
         s1 = self.sl[slice(2, None)]
         z = input_array[s0]*2*(k+1)/(2*k+3)
@@ -516,7 +524,7 @@ class ShenBiharmonic(JacobiBase):
     inner products are computed without weights, for alpha=beta=0.
 
     """
-    def __init__(self, N, quad='JG', bc=(0, 0, 0, 0), domain=(-1., 1.), dtype=np.float,
+    def __init__(self, N, quad='JG', bc=(0, 0, 0, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         JacobiBase.__init__(self, N, quad=quad, alpha=-2, beta=-2, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -529,6 +537,10 @@ class ShenBiharmonic(JacobiBase):
     @staticmethod
     def boundary_condition():
         return 'Biharmonic'
+
+    @staticmethod
+    def short_name():
+        return 'SB'
 
     def slice(self):
         return slice(0, self.N-4)
@@ -612,7 +624,7 @@ class ShenBiharmonic(JacobiBase):
             output_array = np.zeros_like(input_array)
         else:
             output_array.fill(0)
-        k = self.wavenumbers().astype(np.float)
+        k = self.wavenumbers().astype(float)
         _factor0 = 4*(k+2)*(k+1)/(2*k+5)/(2*k+3)
         _factor1 = (-2*(2*k+5)/(2*k+7))
         _factor2 = ((2*k+3)/(2*k+7))
@@ -667,7 +679,7 @@ class ShenOrder6(JacobiBase):
     inner products are computed without weights, for alpha=beta=0.
 
     """
-    def __init__(self, N, quad='JG', domain=(-1., 1.), dtype=np.float, padding_factor=1, dealias_direct=False,
+    def __init__(self, N, quad='JG', domain=(-1., 1.), dtype=float, padding_factor=1, dealias_direct=False,
                  coordinates=None):
         JacobiBase.__init__(self, N, quad=quad, alpha=-3, beta=-3, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -678,6 +690,10 @@ class ShenOrder6(JacobiBase):
     @staticmethod
     def boundary_condition():
         return '6th order'
+
+    @staticmethod
+    def short_name():
+        return 'SS'
 
     def slice(self):
         return slice(0, self.N-6)
@@ -762,7 +778,7 @@ class ShenOrder6(JacobiBase):
     #def to_ortho(self, input_array, output_array=None):
     #    if output_array is None:
     #        output_array = np.zeros_like(input_array.v)
-    #    k = self.wavenumbers().astype(np.float)
+    #    k = self.wavenumbers().astype(float)
     #    _factor0 = 4*(k+2)*(k+1)/(2*k+5)/(2*k+3)
     #    _factor1 = (-2*(2*k+5)/(2*k+7))
     #    _factor2 = ((2*k+3)/(2*k+7))

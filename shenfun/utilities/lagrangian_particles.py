@@ -89,7 +89,7 @@ if __name__ == '__main__':
     for i in range(nsteps):
         if np.any(np.round(t, 4) in (0, 0.5, 1.0)):
             if comm.Get_rank() == 0:
-                f['points'].create_dataset(str(count), shape=points.shape, dtype=np.float)
+                f['points'].create_dataset(str(count), shape=points.shape, dtype=float)
                 f['points/'+str(count)][:] = lp.x
             print('Storing points at time %2.1f'%t)
             lg.append('%s at %2.1f' %(b, t))

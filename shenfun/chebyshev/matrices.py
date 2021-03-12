@@ -246,7 +246,7 @@ class BSNSDmat(SpectralMatrix):
         M = trial[0].N
         Q = min(N, M)
         ck = get_ck(Q, test[0].quad)
-        k = np.arange(Q-2, dtype=np.float)
+        k = np.arange(Q-2, dtype=float)
         d = {-2: -np.pi/2,
               0: np.pi/2.*(ck[:-2]+ck[2:]*(k/(k+2))**2)}
         d2 = -np.pi/2*(k/(k+2))**2
@@ -286,7 +286,7 @@ class BSDSNmat(SpectralMatrix):
         M = trial[0].N
         Q = min(N, M)
         ck = get_ck(Q, test[0].quad)
-        k = np.arange(Q-2, dtype=np.float)
+        k = np.arange(Q-2, dtype=float)
         d = {0:  np.pi/2.*(ck[:-2]+ck[2:]*(k/(k+2))**2),
              2: -np.pi/2}
         d[-2] = (-np.pi/2*(k/(k+2))**2)[:dmax(N-2, M-2, -2)]
@@ -451,7 +451,7 @@ class BSNSNmat(SpectralMatrix):
         M = trial[0].N
         Q = min(N, M)
         ck = get_ck(Q, test[0].quad)
-        k = np.arange(Q-2, dtype=np.float)
+        k = np.arange(Q-2, dtype=float)
         d = {0: np.pi/2*(ck[:-2]+ck[2:]*(k[:]/(k[:]+2))**4)}
 
         dp = dmax(N-2, M-2, 2)
@@ -562,7 +562,7 @@ class BTSNmat(SpectralMatrix):
         assert isinstance(trial[0], SN)
         N = test[0].N
         ck = get_ck(N, test[0].quad)
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         d = {-2: -np.pi/2*ck[2:]*((k[2:]-2)/k[2:])**2,
               0: np.pi/2*ck[:-2]}
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
@@ -591,7 +591,7 @@ class BSBSBmat(SpectralMatrix):
         M = trial[0].N
         Q = min(N, M)
         ck = get_ck(Q, test[0].quad)
-        k = np.arange(Q-4, dtype=np.float)
+        k = np.arange(Q-4, dtype=float)
         d = {0: (ck[:Q-4] + 4*((k+2)/(k+3))**2 + ck[4:]*((k+1)/(k+3))**2)*np.pi/2.}
         d4 = (k+1)/(k+3)*np.pi/2
         d2 = -((k+2)/(k+3)+(k+4)*(k+1)/((k+5)*(k+3)))*np.pi
@@ -667,7 +667,7 @@ class BSBSDmat(SpectralMatrix):
         assert isinstance(trial[0], SD)
         N = test[0].N
         ck = get_ck(N, test[0].quad)
-        k = np.arange(N-4, dtype=np.float)
+        k = np.arange(N-4, dtype=float)
         a = 2*(k+2)/(k+3)
         b = (k[:N-4]+1)/(k[:N-4]+3)
         d = {-2: -np.pi/2,
@@ -731,7 +731,7 @@ class BCNCNmat(SpectralMatrix):
         assert trial[0].quad == 'GC', 'Not implemented for GL'
         N = test[0].N
         M = trial[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         dk = np.ones(N)
         dk[:3] = 0
         k2 = np.arange(N)
@@ -813,7 +813,7 @@ class CSDSNmat(SpectralMatrix):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SN)
         N = test[0].N
-        k = np.arange(N-2, dtype=np.float)
+        k = np.arange(N-2, dtype=float)
         d = {-1: -((k[1:]-1)/(k[1:]+1))**2*(k[1:]+1)*np.pi,
               1: (k[:-1]+1)*np.pi}
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
@@ -855,7 +855,7 @@ class CSDSDmat(SpectralMatrix):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         d = {-1: -(k[1:N-2]+1)*np.pi,
               1: (k[:(N-3)]+1)*np.pi}
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
@@ -913,7 +913,7 @@ class CSNSDmat(SpectralMatrix):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SD)
         N = test[0].N
-        k = np.arange(N-2, dtype=np.float)
+        k = np.arange(N-2, dtype=float)
         def _getkey(i):
             return -(1-k[:-i]**2/(k[:-i]+2)**2)*2*np.pi
         d = dict.fromkeys(np.arange(-1, N-1, 2), _getkey)
@@ -950,7 +950,7 @@ class CTSDmat(SpectralMatrix):
         assert isinstance(test[0], T)
         assert isinstance(trial[0], SD)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         d = dict.fromkeys(np.arange(-1, N-2, 2), -2*np.pi)
         d[-1] = -(k[1:N-1]+1)*np.pi
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
@@ -976,7 +976,7 @@ class CSDTmat(SpectralMatrix):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], T)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         d = {1: np.pi*(k[:N-2]+1)}
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
@@ -999,7 +999,7 @@ class CTTmat(SpectralMatrix):
         assert isinstance(test[0], T)
         assert isinstance(trial[0], T)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         def _getkey(i):
             return np.pi*k[i:]
         d = dict.fromkeys(np.arange(1, N, 2), _getkey)
@@ -1042,7 +1042,7 @@ class CSBSDmat(SpectralMatrix):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SD)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         d = {-1: -(k[1:N-4]+1)*np.pi,
               1: 2*(k[:N-4]+1)*np.pi,
               3: -(k[:N-5]+1)*np.pi}
@@ -1096,7 +1096,7 @@ class CSDSBmat(SpectralMatrix):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SB)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         d = {-3: (k[3:-2]-2)*(k[3:-2]+1)/k[3:-2]*np.pi,
              -1: -2*(k[1:-3]+1)**2/(k[1:-3]+2)*np.pi,
               1: (k[:-5]+1)*np.pi}
@@ -1155,7 +1155,7 @@ class ASBSBmat(SpectralMatrix):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
-        k = np.arange(N-4, dtype=np.float)
+        k = np.arange(N-4, dtype=float)
         d = {-2: 2*(k[2:]-1)*(k[2:]+2)*np.pi,
               0: -4*((k+1)*(k+2)**2)/(k+3)*np.pi,
               2: 2*(k[:-2]+1)*(k[:-2]+2)*np.pi}
@@ -1215,7 +1215,7 @@ class ASDSDmat(SpectralMatrix):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         # use generator to save memory. Note that items are constant on a row for
         # keys > 2, which is taken advantage of in optimized matvecs and solvers.
         # These optimized versions never look up the diagonals for key > 2.
@@ -1313,7 +1313,7 @@ class ASDSDmatW(SpectralMatrix):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         d = {0: -np.pi/2*(2*k[:-2]*k[2:]+6),
              2: np.pi/2*(k[:-4]+2)*(k[:-4]+3),
              -2: np.pi/2*k[2:-2]*(k[2:-2]-1)}
@@ -1340,7 +1340,7 @@ class ASNSNmat(SpectralMatrix):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SN)
         N = test[0].N
-        k = np.arange(N-2, dtype=np.float)
+        k = np.arange(N-2, dtype=float)
         def _getkey(i):
             return -4*np.pi*(k[:-i]+i)**2*(k[:-i]+1)/(k[:-i]+2)**2
         d = dict.fromkeys(np.arange(0, N-2, 2), _getkey)
@@ -1352,42 +1352,42 @@ class ASNSNmat(SpectralMatrix):
 
     def matvec(self, v, c, format='csr', axis=0):
         if format == 'numba':
-            c = numba.helmholtz.ANN_matvec(v, c, self, axis)
+            try:
+                c = numba.helmholtz.ANN_matvec(v, c, self, axis)
+                return c
+            except:
+                pass
 
-        else:
-            # Move axis to first
-            if axis > 0:
-                v = np.moveaxis(v, axis, 0)
-                c = np.moveaxis(c, axis, 0)
-
-            N = self.testfunction[0].N-2
-            k = np.arange(N)
-            j2 = k**2
-            if v.ndim > 1:
-                s = [np.newaxis]*v.ndim
-                s[0] = slice(None)
-                j2 = j2[tuple(s)]
-
-            vc = v[:-2]*j2
-            d0 = -2*np.pi*(k+1)/(k+2)
-            d2 = -4*np.pi*(k[:-2]+1)/(k[:-2]+2)**2
-            c[N-1] = d0[N-1]*vc[N-1]
-            c[N-2] = d0[N-2]*vc[N-2]
-            s0 = 0
-            s1 = 0
-            for k in range(N-3, 0, -1):
-                c[k] = d0[k]*vc[k]
-                if k % 2 == 0:
-                    s0 += vc[k+2]
-                    c[k] += s0*d2[k]
-                else:
-                    s1 += vc[k+2]
-                    c[k] += s1*d2[k]
-
-            c *= self.scale
-            if axis > 0:
-                v = np.moveaxis(v, 0, axis)
-                c = np.moveaxis(c, 0, axis)
+        # Move axis to first
+        if axis > 0:
+            v = np.moveaxis(v, axis, 0)
+            c = np.moveaxis(c, axis, 0)
+        N = self.testfunction[0].N-2
+        k = np.arange(N)
+        j2 = k**2
+        if v.ndim > 1:
+            s = [np.newaxis]*v.ndim
+            s[0] = slice(None)
+            j2 = j2[tuple(s)]
+        vc = v[:-2]*j2
+        d0 = -2*np.pi*(k+1)/(k+2)
+        d2 = -4*np.pi*(k[:-2]+1)/(k[:-2]+2)**2
+        c[N-1] = d0[N-1]*vc[N-1]
+        c[N-2] = d0[N-2]*vc[N-2]
+        s0 = 0
+        s1 = 0
+        for k in range(N-3, 0, -1):
+            c[k] = d0[k]*vc[k]
+            if k % 2 == 0:
+                s0 += vc[k+2]
+                c[k] += s0*d2[k]
+            else:
+                s1 += vc[k+2]
+                c[k] += s1*d2[k]
+        c *= self.scale
+        if axis > 0:
+            v = np.moveaxis(v, 0, axis)
+            c = np.moveaxis(c, 0, axis)
         return c
 
     def solve(self, b, u=None, axis=0):
@@ -1466,7 +1466,7 @@ class ATTmat(SpectralMatrix):
         assert isinstance(test[0], T)
         assert isinstance(trial[0], T)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         def _getkey(j):
             return k[j:]*(k[j:]**2-k[:-j]**2)*np.pi/2.
         d = dict.fromkeys(np.arange(2, N, 2), _getkey)
@@ -1508,7 +1508,7 @@ class ACNCNmat(SpectralMatrix):
         assert isinstance(test[0], CN)
         assert isinstance(trial[0], CN)
         N = test[0].N
-        k = np.arange(N-2, dtype=np.float)
+        k = np.arange(N-2, dtype=float)
         with np.errstate(invalid='ignore', divide='ignore'):
             d = {-2: 2*np.pi*(k[2:]-1)/k[2:]/(k[2:]-2)**2}
             d[0] = -2*np.pi*((k-1)/k**2/(k-2)+(k+1)/k**2/(k+2))
@@ -1542,7 +1542,7 @@ class ATUSDmat(SpectralMatrix):
         assert isinstance(test[0], TU)
         assert isinstance(trial[0], SD)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         if test[0].is_scaled():
             d = {0: -0.5*np.pi*k[1:-1]*k[2:]}
         else:
@@ -1573,7 +1573,7 @@ class ADUSDmat(SpectralMatrix):
         assert isinstance(test[0], DU)
         assert isinstance(trial[0], SD)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         d = {0: -np.pi*k[1:-1]*k[2:]}
         d[2] = -d[0][:-2].copy()
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
@@ -1600,7 +1600,7 @@ class ADUSDmat(SpectralMatrix):
 #        assert isinstance(test[0], SD)
 #        assert isinstance(trial[0], HH)
 #        N = test[0].N
-#        k = np.arange(N, dtype=np.float)
+#        k = np.arange(N, dtype=float)
 #        ck = get_ck(N, test[0].quad)
 #        d = {0: -np.pi/2*ck[:-2]*k[1:-1]*k[2:],
 #             2: np.pi/2*k[:-4]*k[1:-3]}
@@ -1628,7 +1628,7 @@ class ASDHHmat(SpectralMatrix):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], HH)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         ck = get_ck(N, test[0].quad)
 
         if trial[0].is_scaled():
@@ -1662,7 +1662,7 @@ class ATUSNmat(SpectralMatrix):
         assert isinstance(test[0], TU)
         assert isinstance(trial[0], SN)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         if test[0].is_scaled():
             d = {0: -(np.pi/2)*k[:-2]**2*(k[1:-1]/k[2:]),
                  2: (np.pi/2)*k[1:-3]*k[2:-2]}
@@ -1694,7 +1694,7 @@ class ADUSNmat(SpectralMatrix):
         assert isinstance(test[0], DU)
         assert isinstance(trial[0], SN)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         d = {0: -np.pi*k[:-2]**2*(k[1:-1]/k[2:]),
              2: np.pi*k[1:-3]*k[2:-2]}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
@@ -1720,7 +1720,7 @@ class AHHHHmat(SpectralMatrix):
         assert isinstance(test[0], HH)
         assert isinstance(trial[0], HH)
         N = test[0].N
-        k = np.arange(N-2, dtype=np.float)
+        k = np.arange(N-2, dtype=float)
         ck = get_ck(N-2, test[0].quad)
         dk = ck.copy()
         dk[:2] = 0
@@ -1758,7 +1758,7 @@ class BTUSDmat(SpectralMatrix):
         assert isinstance(trial[0], SD)
         N = test[0].N
         ck = get_ck(N, test[0].quad)
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         d = {-2: -(np.pi/8),
               0: (np.pi/8)*ck[:-2]+(np.pi/4)*(k[:-2]+2)/(k[:-2]+3),
               2: -(np.pi/8)*(k[:-4]+1)/(k[:-4]+3)-(np.pi/4)*(k[:-4]+2)/(k[:-4]+3),
@@ -1795,7 +1795,7 @@ class BDUSDmat(SpectralMatrix):
         assert isinstance(trial[0], SD)
         N = test[0].N
         ck = get_ck(N, test[0].quad)
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         d = {-2: -(np.pi/4),
               0: (np.pi/4)*(ck[:-2]+2*(k[:-2]+2)/(k[:-2]+3)),
               2: -(np.pi/4)*((k[:-4]+1)/(k[:-4]+3)+2*(k[:-4]+2)/(k[:-4]+3)),
@@ -1863,7 +1863,7 @@ class BSDMNmat(SpectralMatrix):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], MN)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         kp = k.copy(); kp[0] = 1
         qk = np.ones(N)
         qk[0] = 0
@@ -1900,7 +1900,7 @@ class BSNCNmat(SpectralMatrix):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], CN)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         kp = k.copy(); kp[0] = 1
         qk = np.ones(N)
         qk[0] = 0
@@ -1938,7 +1938,7 @@ class ASDMNmat(SpectralMatrix):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], MN)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         qk = np.ones(N)
         qk[0] = 0
         qk[1] = 1.5
@@ -1971,7 +1971,7 @@ class ASNCNmat(SpectralMatrix):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], CN)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         qk = np.ones(N)
         qk[0] = 0
         qk[1] = 1.5
@@ -2008,7 +2008,7 @@ class BTUSNmat(SpectralMatrix):
         assert isinstance(trial[0], SN)
         N = test[0].N
         ck = get_ck(N, test[0].quad)
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         d = {-2: -(np.pi/8)*(k[2:-2]-2)**2/k[2:-2]**2,
               0: (np.pi/8)*(ck[:-2]+2*(k[:-2]/(k[:-2]+3))*(k[:-2]/(k[:-2]+2))),
               2: -(np.pi/8)*(2*k[2:-2]/k[3:-1]+k[1:-3]/k[3:-1]*(k[2:-2]/k[4:])**2),
@@ -2049,7 +2049,7 @@ class BDUSNmat(SpectralMatrix):
         assert isinstance(trial[0], SN)
         N = test[0].N
         ck = get_ck(N, test[0].quad)
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         d = {-2: -(np.pi/4)*(k[2:-2]-2)**2/k[2:-2]**2,
               0: (np.pi/4)*(ck[:-2]+2*(k[:-2]/(k[:-2]+3))*(k[:-2]/(k[:-2]+2))),
               2: -(np.pi/4)*(2*k[2:-2]/k[3:-1]+k[1:-3]/k[3:-1]*(k[2:-2]/k[4:])**2),
@@ -2078,7 +2078,7 @@ class SSBSBmat(SpectralMatrix):
         assert isinstance(trial[0], SB)
         N = test[0].N
         ki = np.arange(N-4)
-        k = np.arange(N-4, dtype=np.float)
+        k = np.arange(N-4, dtype=float)
         def _getkey(j):
             i = 8*(ki[:-j]+1)*(ki[:-j]+2)*(ki[:-j]*(ki[:-j]+4)+3*(ki[j:]+2)**2)
             return np.array(i*np.pi/(k[j:]+3))
