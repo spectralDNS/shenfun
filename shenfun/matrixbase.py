@@ -1567,7 +1567,7 @@ def extract_diagonal_matrix(M, abstol=1e-10, reltol=1e-10):
     """
     d = {}
     relmax = abs(M).max()
-    dtype = np.float if M.dtype == 'O' else M.dtype # For mpf object
+    dtype = float if M.dtype == 'O' else M.dtype # For mpf object
     for i in range(M.shape[1]):
         u = M.diagonal(i).copy()
         if abs(u).max() > abstol and abs(u).max()/relmax > reltol:

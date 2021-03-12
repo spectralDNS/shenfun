@@ -642,7 +642,7 @@ class SpectralBase:
             xfftn_fwd = plan_fwd(U, n, (axis,), threads=threads, flags=flags)
             V = xfftn_fwd.output_array
 
-            if np.issubdtype(dtype, np.floating):
+            if np.issubdtype(dtype, floating):
                 flags = (fftw.flag_dict[opts['planner_effort']],)
 
             xfftn_bck = plan_bck(V, n, (axis,), threads=threads, flags=flags, output_array=U)

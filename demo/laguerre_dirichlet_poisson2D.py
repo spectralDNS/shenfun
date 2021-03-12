@@ -48,11 +48,11 @@ f_hat = Function(T)
 f_hat = inner(v, -fj, output_array=f_hat)
 
 # Get left hand side of Poisson equation
-matrices = inner(grad(v), grad(u), level=2)
+matrices = inner(grad(v), grad(u))
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space
-sol = la.Solver2D(matrices)
+sol = la.SolverGeneric1ND(matrices)
 u_hat = sol(f_hat, u_hat)
 uq = u_hat.backward()
 

@@ -30,7 +30,7 @@ fe = ue.diff(x, 2)
 # Size of discretization
 N = 40
 
-dtype = {True: np.complex, False: np.float}[ue.has(1j)]
+dtype = {True: complex, False: float}[ue.has(1j)]
 ST = FunctionSpace(N, dtype=dtype, domain=(-2*np.pi, 2*np.pi))
 u = TrialFunction(ST)
 v = TestFunction(ST)

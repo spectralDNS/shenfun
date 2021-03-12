@@ -112,7 +112,7 @@ class BLLmat(SpectralMatrix):
         assert isinstance(test[0], L)
         assert isinstance(trial[0], L)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         d = {0: 2./(2.*k+1)}
         if test[0].quad == 'GL':
             d[0][-1] = 2./(N-1)
@@ -153,7 +153,7 @@ class BSDSDmat(SpectralMatrix):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         N = test[0].N
-        k = np.arange(N-2, dtype=np.float)
+        k = np.arange(N-2, dtype=float)
         d = {-2: -2./(2*k[2:] + 1),
               0: 2./(2.*k+1) + 2./(2*k+5)}
 
@@ -189,7 +189,7 @@ class BSNSNmat(SpectralMatrix):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SN)
         N = test[0].N
-        k = np.arange(N-2, dtype=np.float)
+        k = np.arange(N-2, dtype=float)
         alpha = k*(k+1)/(k+2)/(k+3)
         d0 = 2./(2*k+1)
         d = {0: d0 + alpha**2*2./(2*(k+2)+1),
@@ -222,7 +222,7 @@ class BSBSBmat(SpectralMatrix):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         gk = (2*k+3)/(2*k+7)
         hk = -(1+gk)
         ek = 2./(2*k+1)
@@ -256,7 +256,7 @@ class BBFBFmat(SpectralMatrix):
         assert isinstance(test[0], BF)
         assert isinstance(trial[0], BF)
         N = test[0].N
-        k = np.arange(N-4, dtype=np.float)
+        k = np.arange(N-4, dtype=float)
         f1 = lambda k: 4*(2*k+3)/((k+3)**2)
         f2 = lambda k: -(2*(k-1)*(k+1)*(k+6)*(2*k+5)/((k+3)**2*(k+4)*(2*k+7)))
         f3 = lambda k: -4*(k+1)**2*(2*k+3)/((k+3)**2*(k+4)**2)
@@ -297,7 +297,7 @@ class BSDLmat(SpectralMatrix):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], L)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         sc = np.ones(N)
         if test[0].is_scaled():
             sc = 1. / np.sqrt(4*k+6)
@@ -328,7 +328,7 @@ class BLSDmat(SpectralMatrix):
         assert isinstance(test[0], L)
         assert isinstance(trial[0], SD)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         sc = np.ones(N)
         if trial[0].is_scaled():
             sc = 1. / np.sqrt(4*k+6)
@@ -359,7 +359,7 @@ class BDNDNmat(SpectralMatrix):
         assert isinstance(test[0], DN)
         assert isinstance(trial[0], DN)
         N = test[0].N
-        k = np.arange(N-2, dtype=np.float)
+        k = np.arange(N-2, dtype=float)
         km = k[:-1]
         kp = k[:-2]
         d = {0: 2/(2*k+1) + 2*((2*k+3)/(k+2))/(k+2)**3 + 2*((k+1)/(k+2))**4/(2*k+5),
@@ -396,7 +396,7 @@ class ASDSDmat(SpectralMatrix):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         N = test[0].N
-        k = np.arange(N-2, dtype=np.float)
+        k = np.arange(N-2, dtype=float)
         if not test[0].is_scaled():
             d = {0: 4*k+6}
         else:
@@ -465,7 +465,7 @@ class ASNSNmat(SpectralMatrix):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SN)
         N = test[0].N
-        k = np.arange(N-2, dtype=np.float)
+        k = np.arange(N-2, dtype=float)
         alpha = k*(k+1)/(k+2)/(k+3)
         d0 = 2./(2*k+1)
         d = {0: d0*alpha*(k+0.5)*((k+2)*(k+3)-k*(k+1))}
@@ -524,7 +524,7 @@ class ASBSBmat(SpectralMatrix):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
-        k = np.arange(N-4, dtype=np.float)
+        k = np.arange(N-4, dtype=float)
         gk = (2*k+3)/(2*k+7)
         d = {0: 2*(2*k+3)*(1+gk),
              2: -2*(2*k[:-2]+3)}
@@ -551,7 +551,7 @@ class ADNDNmat(SpectralMatrix):
         assert isinstance(test[0], DN)
         assert isinstance(trial[0], DN)
         N = test[0].N
-        k = np.arange(N-2, dtype=np.float)
+        k = np.arange(N-2, dtype=float)
         d = {0: ((k+1)/(k+2))**2*((k+2)*(k+3)- k*(k+1))}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
@@ -608,7 +608,7 @@ class SBFBFmat(SpectralMatrix):
         assert isinstance(test[0], BF)
         assert isinstance(trial[0], BF)
         N = test[0].N
-        k = np.arange(N-4, dtype=np.float)
+        k = np.arange(N-4, dtype=float)
         f4 = (((k+1)/(k+3))*((k+2)/(k+4)))**2*(2*k+3)/(2*k+7)
         d = {0: f4*(k+2.5)*((k+4)*(k+5)-(k+2)*(k+3))*((k+2)*(k+3)-k*(k+1))}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
@@ -666,7 +666,7 @@ class GLLmat(SpectralMatrix):
         assert isinstance(test[0], L)
         assert isinstance(trial[0], L)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         d = {}
         for j in range(2, N, 2):
             jj = j if trial[1] else -j
@@ -710,7 +710,7 @@ class SSBSBmat(SpectralMatrix):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
-        k = np.arange(N-4, dtype=np.float)
+        k = np.arange(N-4, dtype=float)
         d = {0: 2*(2*k+3)**2*(2*k+5)}
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
@@ -817,7 +817,7 @@ class CLSDmat(SpectralMatrix):
         N = test[0].N
         d = {-1: -2}
         if trial[0].is_scaled():
-            k = np.arange(N-2, dtype=np.float)
+            k = np.arange(N-2, dtype=float)
             d[-1] = -2. / np.sqrt(4*k+6)
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
@@ -844,7 +844,7 @@ class CSDLmat(SpectralMatrix):
         N = test[0].N
         d = {1: -2}
         if test[0].is_scaled():
-            k = np.arange(N-2, dtype=np.float)
+            k = np.arange(N-2, dtype=float)
             d[1] = -2. / np.sqrt(4*k+6)
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
@@ -871,7 +871,7 @@ class CSDSDmat(SpectralMatrix):
         N = test[0].N
         d = {-1: -2, 1: 2}
         if trial[0].is_scaled():
-            k = np.arange(N-2, dtype=np.float)
+            k = np.arange(N-2, dtype=float)
             d[-1] = -2. / np.sqrt(4*k[:-1]+6)
             d[1] = 2. / np.sqrt(4*k[:-1]+6)
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
@@ -1128,7 +1128,7 @@ class BUDUDmat(SpectralMatrix):
         assert isinstance(test[0], UD)
         assert isinstance(trial[0], UD)
         N = test[0].N
-        k = np.arange(N-1, dtype=np.float)
+        k = np.arange(N-1, dtype=float)
         d = {-1: -2./(2*k[1:] + 1),
               0: 2./(2.*k+1) + 2./(2*k+3)}
 
@@ -1247,7 +1247,7 @@ class BSDBCDmat(SpectralMatrix):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], BCD)
         N = test[0].N
-        k = np.arange(N-2, dtype=np.float)
+        k = np.arange(N-2, dtype=float)
         if not test[0].is_scaled():
             d = {0: np.array([1, 1./3.]),
                  1: np.array([1.0]),
@@ -1281,7 +1281,7 @@ class BSBBCBmat(SpectralMatrix):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], BCB)
         N = test[0].N
-        k = np.arange(N-4, dtype=np.float)
+        k = np.arange(N-4, dtype=float)
         d = {0: np.array([1, 4/9, -1/15, 1/35]),
              1: np.array([1, -1/9, 1/15]),
              2: np.array([3/7, -1/9]),

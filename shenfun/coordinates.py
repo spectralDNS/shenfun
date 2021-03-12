@@ -94,9 +94,9 @@ class Coordinates:
         sg = self.refine(sg)
         if isinstance(sg, numbers.Number):
             if isinstance(sg, numbers.Real):
-                sg = np.float(sg)
+                sg = float(sg)
             elif isinstance(sg, numbers.Complex):
-                sg = np.complex(sg)
+                sg = complex(sg)
             else:
                 raise NotImplementedError
 

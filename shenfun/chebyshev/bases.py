@@ -176,7 +176,7 @@ class Orthogonal(ChebyshevBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, quad='GC', domain=(-1., 1.), dtype=np.float, padding_factor=1,
+    def __init__(self, N, quad='GC', domain=(-1., 1.), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -326,7 +326,7 @@ class Orthogonal(ChebyshevBase):
             )
             opts.update(options)
 
-            U = fftw.aligned(shape, dtype=np.float)
+            U = fftw.aligned(shape, dtype=float)
             xfftn_fwd = plan_fwd(U, axis=axis, **opts)
             V = xfftn_fwd.output_array
             xfftn_bck = plan_bck(V, axis=axis, **opts)
@@ -346,7 +346,7 @@ class Orthogonal(ChebyshevBase):
                      fftw.flag_dict[opts['overwrite_input']])
             threads = opts['threads']
 
-            U = fftw.aligned(shape, dtype=np.float)
+            U = fftw.aligned(shape, dtype=float)
 
             xfftn_fwd = plan_fwd(U, axes=(axis,), threads=threads, flags=flags)
             V = xfftn_fwd.output_array
@@ -356,8 +356,8 @@ class Orthogonal(ChebyshevBase):
 
         if np.dtype(dtype) is np.dtype('complex'):
             # dct only works on real data, so need to wrap it
-            U = fftw.aligned(shape, dtype=np.complex)
-            V = fftw.aligned(shape, dtype=np.complex)
+            U = fftw.aligned(shape, dtype=complex)
+            V = fftw.aligned(shape, dtype=complex)
             U.fill(0)
             V.fill(0)
             xfftn_fwd = DCTWrap(xfftn_fwd, U, V)
@@ -424,7 +424,7 @@ class OrthogonalU(ChebyshevBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, quad='GC', domain=(-1., 1.), dtype=np.float, padding_factor=1,
+    def __init__(self, N, quad='GC', domain=(-1., 1.), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -573,7 +573,7 @@ class OrthogonalU(ChebyshevBase):
             )
             opts.update(options)
 
-            U = fftw.aligned(shape, dtype=np.float)
+            U = fftw.aligned(shape, dtype=float)
             xfftn_fwd = plan_fwd(U, axis=axis, **opts)
             V = xfftn_fwd.output_array
             xfftn_bck = plan_bck(V, axis=axis, **opts)
@@ -593,7 +593,7 @@ class OrthogonalU(ChebyshevBase):
                      fftw.flag_dict[opts['overwrite_input']])
             threads = opts['threads']
 
-            U = fftw.aligned(shape, dtype=np.float)
+            U = fftw.aligned(shape, dtype=float)
 
             xfftn_fwd = plan_fwd(U, axes=(axis,), threads=threads, flags=flags)
             V = xfftn_fwd.output_array
@@ -603,8 +603,8 @@ class OrthogonalU(ChebyshevBase):
 
         if np.dtype(dtype) is np.dtype('complex'):
             # dct only works on real data, so need to wrap it
-            U = fftw.aligned(shape, dtype=np.complex)
-            V = fftw.aligned(shape, dtype=np.complex)
+            U = fftw.aligned(shape, dtype=complex)
+            V = fftw.aligned(shape, dtype=complex)
             U.fill(0)
             V.fill(0)
             xfftn_fwd = DCTWrap(xfftn_fwd, U, V)
@@ -638,7 +638,7 @@ class OrthogonalU(ChebyshevBase):
 class CompositeSpace(Orthogonal):
     """Common class for all spaces based on composite bases"""
 
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=np.float, scaled=False,
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         Orthogonal.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -686,7 +686,7 @@ class CompositeSpaceU(OrthogonalU):
     """Common class for all spaces based on composite bases of Chebyshev
     polynomials of second kind"""
 
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=np.float, scaled=False,
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         OrthogonalU.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                              padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -778,7 +778,7 @@ class ShenDirichlet(CompositeSpace):
 
     """
 
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=np.float, scaled=False,
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -990,7 +990,7 @@ class DirichletU(CompositeSpaceU):
 
     """
 
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=np.float, scaled=False,
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         CompositeSpaceU.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                  padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -1222,7 +1222,7 @@ class Heinrichs(CompositeSpace):
 
     """
 
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=np.float, scaled=False,
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -1290,7 +1290,7 @@ class Heinrichs(CompositeSpace):
     def _composite(self, V, argument=0):
         P = np.zeros_like(V)
         if self.is_scaled():
-            k = np.arange(V.shape[1]).astype(np.float)
+            k = np.arange(V.shape[1]).astype(float)
             P[:, 2:-2] = -V[:, :-4]/(k[3:-1]*4) + V[:, 2:-2]/(k[3:-1]*2) - V[:, 4:]/(k[3:-1]*4)
             P[:, 1] = (V[:, 1] - V[:, 3])/8
         else:
@@ -1446,7 +1446,7 @@ class ShenNeumann(CompositeSpace):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="GC", mean=0, bc=(0, 0), domain=(-1., 1.), dtype=np.float, padding_factor=1,
+    def __init__(self, N, quad="GC", mean=0, bc=(0, 0), domain=(-1., 1.), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -1480,7 +1480,7 @@ class ShenNeumann(CompositeSpace):
 
     def _composite(self, V, argument=0):
         P = np.zeros_like(V)
-        k = np.arange(V.shape[1]).astype(np.float)
+        k = np.arange(V.shape[1]).astype(float)
         P[:, :-2] = V[:, :-2] - (k[:-2]/(k[:-2]+2))**2*V[:, 2:]
         if argument == 1: # if trial function
             P[:, -1] = 0.5*V[:, 1] + 1/8*V[:, 2]    # x = +1
@@ -1647,7 +1647,7 @@ class CombinedShenNeumann(CompositeSpace):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="GC", mean=0, bc=(0, 0), domain=(-1., 1.), dtype=np.float, padding_factor=1,
+    def __init__(self, N, quad="GC", mean=0, bc=(0, 0), domain=(-1., 1.), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -1681,7 +1681,7 @@ class CombinedShenNeumann(CompositeSpace):
 
     def _composite(self, V, argument=0):
         P = np.zeros_like(V)
-        k = np.arange(V.shape[1]).astype(np.float)
+        k = np.arange(V.shape[1]).astype(float)
         P[:, 3:-2] = -V[:, 1:-4]/k[1:-4]**2 + 2*V[:, 3:-2]/k[3:-2]**2 - V[:, 5:]/k[5:]**2
         P[:, 2] = V[:, 2]/4 - V[:, 4]/16
         P[:, 1] = V[:, 1] - V[:, 3]/9
@@ -1862,7 +1862,7 @@ class MikNeumann(CompositeSpace):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="GC", mean=0, bc=(0, 0), domain=(-1., 1.), dtype=np.float, padding_factor=1,
+    def __init__(self, N, quad="GC", mean=0, bc=(0, 0), domain=(-1., 1.), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -1896,7 +1896,7 @@ class MikNeumann(CompositeSpace):
 
     def _composite(self, V, argument=0):
         P = np.zeros_like(V)
-        k = np.arange(V.shape[1]).astype(np.float)
+        k = np.arange(V.shape[1]).astype(float)
         P[:, 3:-2] = -V[:, 1:-4]/k[1:-4] + 2*V[:, 3:-2]/k[3:-2] - V[:, 5:]/k[5:]
         P[:, 2] = V[:, 2] - V[:, 4]/4
         P[:, 1] = 3*V[:, 1] - V[:, 3]/3
@@ -2100,7 +2100,7 @@ class ShenBiharmonic(CompositeSpace):
                 rv = (sp.cos(theta), sp.sin(theta))
 
     """
-    def __init__(self, N, quad="GC", bc=(0, 0, 0, 0), domain=(-1., 1.), dtype=np.float,
+    def __init__(self, N, quad="GC", bc=(0, 0, 0, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -2125,7 +2125,7 @@ class ShenBiharmonic(CompositeSpace):
 
     def _composite(self, V, argument=0):
         P = np.zeros_like(V)
-        k = np.arange(V.shape[1]).astype(np.float)[:-4]
+        k = np.arange(V.shape[1]).astype(float)[:-4]
         P[:, :-4] = V[:, :-4] - (2*(k+2)/(k+3))*V[:, 2:-2] + ((k+1)/(k+3))*V[:, 4:]
         if argument == 1: # if trial function
             P[:, -4:] = np.tensordot(V[:, :4], BCBiharmonic.coefficient_matrix(), (1, 1))
@@ -2297,7 +2297,7 @@ class SecondNeumann(CompositeSpace): #pragma: no cover
                 rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, quad="GC", mean=0, domain=(-1., 1.), dtype=np.float,
+    def __init__(self, N, quad="GC", mean=0, domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -2316,7 +2316,7 @@ class SecondNeumann(CompositeSpace): #pragma: no cover
     def _composite(self, V, argument=0):
         assert self.N == V.shape[1]
         P = np.zeros_like(V)
-        k = np.arange(self.N).astype(np.float)
+        k = np.arange(self.N).astype(float)
         P[:, :-2] = V[:, :-2] - (k[:-2]/(k[:-2]+2))**2*(k[:-2]**2-1)/((k[:-2]+2)**2-1)*V[:, 2:]
         return P
 
@@ -2457,7 +2457,7 @@ class UpperDirichlet(CompositeSpace):
 
     """
 
-    def __init__(self, N, quad="GC", bc=(None, 0), domain=(-1., 1.), dtype=np.float, scaled=False,
+    def __init__(self, N, quad="GC", bc=(None, 0), domain=(-1., 1.), dtype=float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -2639,7 +2639,7 @@ class ShenBiPolar(Orthogonal):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="GC", domain=(-1., 1.), dtype=np.float,
+    def __init__(self, N, quad="GC", domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         self.forward = functools.partial(self.forward, fast_transform=False)
         self.backward = functools.partial(self.backward, fast_transform=False)
@@ -2790,7 +2790,7 @@ class HeinrichsBiharmonic(CompositeSpace):
                 rv = (sp.cos(theta), sp.sin(theta))
 
     """
-    def __init__(self, N, quad="GC", bc=(0, 0, 0, 0), domain=(-1., 1.), dtype=np.float,
+    def __init__(self, N, quad="GC", bc=(0, 0, 0, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -2982,7 +2982,7 @@ class DirichletNeumann(CompositeSpace):
 
     """
 
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=np.float, scaled=False,
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
@@ -3015,7 +3015,7 @@ class DirichletNeumann(CompositeSpace):
 
     def _composite(self, V, argument=0):
         P = np.zeros_like(V)
-        k = np.arange(V.shape[1]).astype(np.float)[:-2]
+        k = np.arange(V.shape[1]).astype(float)[:-2]
         P[:, :-2] = (V[:, :-2]
                      + ((-k**2 + (k+2)**2)/((k+1)**2 + (k+2)**2))*V[:, 1:-1]
                      + ((-k**2 - (k+1)**2)/((k+1)**2 + (k+2)**2))*V[:, 2:])
@@ -3189,7 +3189,7 @@ class NeumannDirichlet(CompositeSpace):
 
     """
 
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=np.float, scaled=False,
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
@@ -3222,7 +3222,7 @@ class NeumannDirichlet(CompositeSpace):
 
     def _composite(self, V, argument=0):
         P = np.zeros_like(V)
-        k = np.arange(V.shape[1]).astype(np.float)[:-2]
+        k = np.arange(V.shape[1]).astype(float)[:-2]
         P[:, :-2] = (V[:, :-2]
                      - ((-k**2 + (k+2)**2)/((k+1)**2 + (k+2)**2))*V[:, 1:-1]
                      + ((-k**2 - (k+1)**2)/((k+1)**2 + (k+2)**2))*V[:, 2:])
@@ -3396,7 +3396,7 @@ class UpperDirichletNeumann(CompositeSpace):
 
     """
 
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=np.float, scaled=False,
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
@@ -3429,7 +3429,7 @@ class UpperDirichletNeumann(CompositeSpace):
 
     def _composite(self, V, argument=0):
         P = np.zeros_like(V)
-        k = np.arange(V.shape[1]).astype(np.float)[:-2]
+        k = np.arange(V.shape[1]).astype(float)[:-2]
         P[:, :-2] = (V[:, :-2]
                      + (-4*(k+1)/(2*k+3))*V[:, 1:-1]
                      + ((2*k+1)/(2*k+3))*V[:, 2:])
@@ -3589,7 +3589,7 @@ class MixedTU(CompositeSpace):
     this one will be removed.
 
     """
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=np.float, scaled=False,
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         assert quad == "GC"
         self._dst_fwd = functools.partial(fftw.dstn, type=2)
@@ -3645,7 +3645,7 @@ class MixedTU(CompositeSpace):
                  fftw.flag_dict[opts['overwrite_input']])
         threads = opts['threads']
 
-        U = fftw.aligned(shape, dtype=np.float)
+        U = fftw.aligned(shape, dtype=float)
         xfftn_fwd = plan_fwd(U, axes=(axis,), threads=threads, flags=flags)
         V = xfftn_fwd.output_array
         xfftn_bck = plan_bck(V, axes=(axis,), threads=threads, flags=flags, output_array=U)
@@ -3654,8 +3654,8 @@ class MixedTU(CompositeSpace):
 
         if np.dtype(dtype) is np.dtype('complex'):
             # dct only works on real data, so need to wrap it
-            U = fftw.aligned(shape, dtype=np.complex)
-            V = fftw.aligned(shape, dtype=np.complex)
+            U = fftw.aligned(shape, dtype=complex)
+            V = fftw.aligned(shape, dtype=complex)
             U.fill(0)
             V.fill(0)
             xfftn_fwd = DCTWrap(xfftn_fwd, U, V)
@@ -3880,7 +3880,7 @@ class BCDirichlet(CompositeSpace):
     """
 
     def __init__(self, N, quad="GC", domain=(-1., 1.), scaled=False,
-                 dtype=np.float, coordinates=None, **kw):
+                 dtype=float, coordinates=None, **kw):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain,
                                 dtype=dtype, coordinates=coordinates)
 
@@ -3947,7 +3947,7 @@ class BCDirichlet(CompositeSpace):
 
 class BCNeumann(CompositeSpace):
 
-    def __init__(self, N, quad="GC", scaled=False, dtype=np.float,
+    def __init__(self, N, quad="GC", scaled=False, dtype=float,
                  domain=(-1., 1.), coordinates=None, **kw):
         CompositeSpace.__init__(self, N, quad=quad, dtype=dtype, domain=domain, coordinates=coordinates)
         self._scaled = scaled
@@ -4051,7 +4051,7 @@ class BCBiharmonic(CompositeSpace):
     """
 
     def __init__(self, N, quad="GC", domain=(-1., 1.), scaled=False,
-                 dtype=np.float, coordinates=None, **kw):
+                 dtype=float, coordinates=None, **kw):
         CompositeSpace.__init__(self, N, quad=quad, dtype=dtype, domain=domain, coordinates=coordinates)
 
     def slice(self):
@@ -4129,7 +4129,7 @@ class BCUpperDirichlet(CompositeSpace):
     """
 
     def __init__(self, N, quad="GC", domain=(-1., 1.), scaled=False,
-                 dtype=np.float, coordinates=None, **kw):
+                 dtype=float, coordinates=None, **kw):
         CompositeSpace.__init__(self, N, quad=quad, dtype=dtype, domain=domain,
                                 coordinates=coordinates)
 
@@ -4198,7 +4198,7 @@ class BCUpperDirichlet(CompositeSpace):
 
 class BCNeumannDirichlet(CompositeSpace):
 
-    def __init__(self, N, quad="GC", dtype=np.float,
+    def __init__(self, N, quad="GC", dtype=float,
                  domain=(-1., 1.), coordinates=None, **kw):
         CompositeSpace.__init__(self, N, quad=quad, dtype=dtype, domain=domain, coordinates=coordinates)
 
@@ -4278,7 +4278,7 @@ class BCNeumannDirichlet(CompositeSpace):
 
 class BCDirichletNeumann(CompositeSpace):
 
-    def __init__(self, N, quad="GC", dtype=np.float,
+    def __init__(self, N, quad="GC", dtype=float,
                  domain=(-1., 1.), coordinates=None, **kw):
         CompositeSpace.__init__(self, N, quad=quad, dtype=dtype, domain=domain, coordinates=coordinates)
 
@@ -4356,7 +4356,7 @@ class BCDirichletNeumann(CompositeSpace):
 
 class BCUpperDirichletNeumann(CompositeSpace):
 
-    def __init__(self, N, quad="GC", dtype=np.float,
+    def __init__(self, N, quad="GC", dtype=float,
                  domain=(-1., 1.), coordinates=None, **kw):
         CompositeSpace.__init__(self, N, quad=quad, dtype=dtype, domain=domain, coordinates=coordinates)
 

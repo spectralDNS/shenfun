@@ -224,7 +224,7 @@ class ETD(IntegratorBase):
         hL = L*dt
         self.ehL = np.exp(hL)
         M = 50
-        psi = self.psi = np.zeros(hL.shape, dtype=np.float)
+        psi = self.psi = np.zeros(hL.shape, dtype=float)
         for k in range(1, M+1):
             ll = hL+np.exp(np.pi*1j*(k-0.5)/M)
             psi += ((np.exp(ll)-1.)/ll).real
@@ -287,7 +287,7 @@ class ETDRK4(IntegratorBase):
         self.dU = Function(T)
         self.dU0 = Function(T)
         self.V2 = Function(T)
-        self.psi = np.zeros((4,)+self.U_hat0.shape, dtype=np.float)
+        self.psi = np.zeros((4,)+self.U_hat0.shape, dtype=float)
         self.a = None
         self.b = [0.5, 0.5, 0.5]
         self.ehL = None
@@ -305,7 +305,7 @@ class ETDRK4(IntegratorBase):
         self.ehL = np.exp(hL)
         self.ehL_h = np.exp(hL/2.)
         M = 50
-        psi = self.psi = np.zeros((4,) + hL.shape, dtype=np.float)
+        psi = self.psi = np.zeros((4,) + hL.shape, dtype=float)
         for k in range(1, M+1):
             ll = hL+np.exp(np.pi*1j*(k-0.5)/M)
             psi[0] += ((np.exp(ll)-1.)/ll).real

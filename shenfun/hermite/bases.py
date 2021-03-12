@@ -55,7 +55,7 @@ class Orthogonal(SpectralBase):
     polynomials of order k, respectively.
 
     """
-    def __init__(self, N, quad="HG", bc=(0., 0.), dtype=np.float,
+    def __init__(self, N, quad="HG", bc=(0., 0.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         SpectralBase.__init__(self, N, quad=quad, domain=(-np.inf, np.inf), dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -78,6 +78,10 @@ class Orthogonal(SpectralBase):
     @staticmethod
     def boundary_condition():
         return 'Dirichlet'
+
+    @staticmethod
+    def short_name():
+        return 'H'
 
     def get_refined(self, N):
         return self.__class__(N,

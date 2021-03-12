@@ -89,7 +89,7 @@ class FourierBase(SpectralBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, padding_factor=1, domain=(0, 2*np.pi), dtype=np.float,
+    def __init__(self, N, padding_factor=1, domain=(0, 2*np.pi), dtype=float,
                  dealias_direct=False, coordinates=None):
         self._k = None
         self._planned_axes = None  # Collapsing of axes means that this base can be used to plan transforms over several collapsed axes. Store the axes planned for here.
@@ -106,7 +106,7 @@ class FourierBase(SpectralBase):
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
             N = self.shape(False)
-        points = np.arange(N, dtype=np.float)*2*np.pi/N
+        points = np.arange(N, dtype=float)*2*np.pi/N
         if map_true_domain is True:
             points = self.map_true_domain(points)
         if weighted:
@@ -125,7 +125,7 @@ class FourierBase(SpectralBase):
             x = self.mesh(False, False)
         x = np.atleast_1d(x)
         if output_array is None:
-            output_array = np.zeros(x.shape, dtype=np.complex)
+            output_array = np.zeros(x.shape, dtype=complex)
 
         if self._k is None:
             self._k = self.wavenumbers(bcast=False)
@@ -343,7 +343,7 @@ class R2C(FourierBase):
 
     def __init__(self, N, padding_factor=1., domain=(0., 2.*np.pi),
                  dealias_direct=False, coordinates=None):
-        FourierBase.__init__(self, N, padding_factor=padding_factor, dtype=np.float,
+        FourierBase.__init__(self, N, padding_factor=padding_factor, dtype=float,
                              domain=domain, dealias_direct=dealias_direct,
                              coordinates=coordinates)
         self.N = N
@@ -351,7 +351,7 @@ class R2C(FourierBase):
         self._xfftn_bck = fftw.irfftn
         self._sn = []
         self._sm = []
-        self.plan((int(padding_factor*N),), (0,), np.float, {})
+        self.plan((int(padding_factor*N),), (0,), float, {})
 
     def wavenumbers(self, bcast=True, scaled=False, eliminate_highest_freq=False):
         k = np.fft.rfftfreq(self.N, 1./self.N).astype(int)
@@ -386,6 +386,10 @@ class R2C(FourierBase):
         shape[self.axis] = int(shape[self.axis] / self.padding_factor)
         shape[self.axis] = shape[self.axis]//2 + 1
         return fftw.aligned(shape, dtype=dtype)
+
+    @staticmethod
+    def short_name():
+        return 'R2C'
 
     def slice(self):
         return slice(0, self.N//2+1)
@@ -520,14 +524,18 @@ class C2C(FourierBase):
 
     def __init__(self, N, padding_factor=1, domain=(0., 2.*np.pi),
                  dealias_direct=False, coordinates=None):
-        FourierBase.__init__(self, N, padding_factor=padding_factor, dtype=np.complex,
+        FourierBase.__init__(self, N, padding_factor=padding_factor, dtype=complex,
                              domain=domain, dealias_direct=dealias_direct,
                              coordinates=coordinates)
         self.N = N
         self._xfftn_fwd = fftw.fftn
         self._xfftn_bck = fftw.ifftn
-        self.plan((int(padding_factor*N),), (0,), np.complex, {})
+        self.plan((int(padding_factor*N),), (0,), complex, {})
         self._slp = []
+
+    @staticmethod
+    def short_name():
+        return 'C2C'
 
     def _evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
         if fast_transform is False:

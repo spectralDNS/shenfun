@@ -5,10 +5,10 @@ from shenfun.optimization.cython import Matvec
 from shenfun.la import TDMA
 from . import bases
 
-HB = bases.Orthogonal
+H = bases.Orthogonal
 
 
-class BHBHBmat(SpectralMatrix):
+class BHHmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
     .. math::
@@ -25,8 +25,8 @@ class BHBHBmat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, measure=1):
-        assert isinstance(test[0], HB)
-        assert isinstance(trial[0], HB)
+        assert isinstance(test[0], H)
+        assert isinstance(trial[0], H)
         SpectralMatrix.__init__(self, {0:1}, test, trial)
 
     def solve(self, b, u=None, axis=0):
@@ -48,7 +48,7 @@ class BHBHBmat(SpectralMatrix):
         return c
 
 
-class AHBHBmat(SpectralMatrix):
+class AHHmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
     .. math::
@@ -65,10 +65,10 @@ class AHBHBmat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, measure=1):
-        assert isinstance(test[0], HB)
-        assert isinstance(trial[0], HB)
+        assert isinstance(test[0], H)
+        assert isinstance(trial[0], H)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         d = {0: k+0.5,
              2: -np.sqrt((k[:-2]+1)*(k[:-2]+2))/2}
         d[0][-1] = (N-1)/2.
@@ -105,7 +105,7 @@ class AHBHBmat(SpectralMatrix):
             self.scale_array(c)
 
         else:
-            c = super(AHBHBmat, self).matvec(v, c, format=format, axis=axis)
+            c = super(AHHmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
 
@@ -135,6 +135,6 @@ class _HerMatDict(dict):
 
 
 mat = _HerMatDict({
-    ((HB, 0), (HB, 0)): BHBHBmat,
-    ((HB, 1), (HB, 1)): AHBHBmat
+    ((H, 0), (H, 0)): BHHmat,
+    ((H, 1), (H, 1)): AHHmat
     })

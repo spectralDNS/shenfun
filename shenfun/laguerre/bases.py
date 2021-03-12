@@ -49,7 +49,7 @@ class LaguerreBase(SpectralBase):
     where :math:`L_k` and :math:`P_k` are the Laguerre function and Laguerre
     polynomials of order k, respectively.
     """
-    def __init__(self, N, quad="LG", dtype=np.float, padding_factor=1, dealias_direct=False, coordinates=None):
+    def __init__(self, N, quad="LG", dtype=float, padding_factor=1, dealias_direct=False, coordinates=None):
         SpectralBase.__init__(self, N, quad=quad, domain=(0., np.inf), dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
@@ -225,7 +225,7 @@ class Orthogonal(LaguerreBase):
     polynomials of order k, respectively.
     """
 
-    def __init__(self, N, quad="LG", dtype=np.float, padding_factor=1, dealias_direct=False, coordinates=None):
+    def __init__(self, N, quad="LG", dtype=float, padding_factor=1, dealias_direct=False, coordinates=None):
         LaguerreBase.__init__(self, N, quad=quad, dtype=dtype, padding_factor=padding_factor,
                               dealias_direct=dealias_direct, coordinates=coordinates)
 
@@ -245,6 +245,10 @@ class Orthogonal(LaguerreBase):
 
     def get_orthogonal(self):
         return self
+
+    @staticmethod
+    def short_name():
+        return 'L'
 
 
 class ShenDirichlet(LaguerreBase):
@@ -275,7 +279,7 @@ class ShenDirichlet(LaguerreBase):
                 rv = (sp.cos(theta), sp.sin(theta))
 
     """
-    def __init__(self, N, quad="LG", bc=(0., 0.), dtype=np.float, padding_factor=1,
+    def __init__(self, N, quad="LG", bc=(0., 0.), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None):
         LaguerreBase.__init__(self, N, dtype=dtype, quad=quad, padding_factor=padding_factor,
                               dealias_direct=dealias_direct, coordinates=coordinates)
@@ -283,6 +287,10 @@ class ShenDirichlet(LaguerreBase):
     @staticmethod
     def boundary_condition():
         return 'Dirichlet'
+
+    @staticmethod
+    def short_name():
+        return 'SD'
 
     def _composite(self, V, argument=0):
         assert self.N == V.shape[1]

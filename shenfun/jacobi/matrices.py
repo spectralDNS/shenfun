@@ -99,7 +99,7 @@ class BSDSDmat(SpectralMatrix):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         N = test[0].N
-        k = np.arange(N-2, dtype=np.float)
+        k = np.arange(N-2, dtype=float)
         d = {-2: 4*(k[2:]-1)*(k[2:]+1)/(2*k[2:]-1)/(2*k[2:]+3)*(-2./(2*k[2:] + 1)),
               0: 4*(k+1)**2/(2*k+3)**2*(2./(2.*k+1) + 2./(2*k+5))}
 
@@ -128,7 +128,7 @@ class ASDSDmat(SpectralMatrix):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         N = test[0].N
-        k = np.arange(N-2, dtype=np.float)
+        k = np.arange(N-2, dtype=float)
         d = {0: 4*(4*k+6)*(k+1)**2/(2*k+3)**2}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale)
 
@@ -186,7 +186,7 @@ class BSBSBmat(SpectralMatrix):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
-        k = np.arange(N, dtype=np.float)
+        k = np.arange(N, dtype=float)
         gk = (2*k+3)/(2*k+7)
         hk = -(1+gk)
         ek = 2./(2*k+1)
@@ -224,7 +224,7 @@ class ASBSBmat(SpectralMatrix):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
-        k = np.arange(N-4, dtype=np.float)
+        k = np.arange(N-4, dtype=float)
         p0 = 16*(k+2)**2*(k+1)**2/(2*k+5)**2/(2*k+3)**2
         p2 = 16*(k[:-2]+2)*(k[2:]+2)*(k[:-2]+1)*(k[2:]+1)/(2*k[:-2]+5)/(2*k[2:]+5)/(2*k[:-2]+3)/(2*k[2:]+3)
 
@@ -255,7 +255,7 @@ class SSBSBmat(SpectralMatrix):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
-        k = np.arange(N-4, dtype=np.float)
+        k = np.arange(N-4, dtype=float)
         d = {0: 32*(k+2)**2*(k+1)**2/(2*k+5)}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale)
 
@@ -280,7 +280,7 @@ class OSBSBmat(SpectralMatrix):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
-        k = np.arange(N-6, dtype=np.float)
+        k = np.arange(N-6, dtype=float)
         #FIXME Find the correct diagonal
         d = {0: 32*(k+2)**2*(k+1)**2/(2*k+5)}
         SpectralMatrix.__init__(self, d, test, trial)
