@@ -2105,7 +2105,7 @@ class SSBSBmat(SpectralMatrix):
         return c
 
 
-class SDBCDmat(SpectralMatrix):
+class BSDBCDmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
     .. math::
@@ -2124,7 +2124,7 @@ class SDBCDmat(SpectralMatrix):
     """
     def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SD)
-        assert isinstance(trial[0], BD)
+        assert isinstance(trial[0], BCD)
         d = {0: np.array([np.pi/2, np.pi/4]),
              1: np.array([np.pi/2]),
             -1: np.array([-np.pi/4, 0])}
@@ -2132,7 +2132,7 @@ class SDBCDmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
-class SBBCBmat(SpectralMatrix):
+class BSBBCBmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
     .. math::
@@ -2151,7 +2151,7 @@ class SBBCBmat(SpectralMatrix):
     """
     def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SB)
-        assert isinstance(trial[0], BB)
+        assert isinstance(trial[0], BCB)
         d = {0: np.array([np.pi/2, np.pi*21/64, -np.pi/16, np.pi/32]),
              1: np.array([np.pi/2, -np.pi*5/64, np.pi/16]),
              2: np.array([np.pi*5/24, -np.pi*5/64]),
@@ -2237,6 +2237,6 @@ mat = _ChebMatDict({
     ((SN, 0), (SD, 1)): CSNSDmat,
     ((SD, 0), (SB, 1)): CSDSBmat,
     ((SD, 0), (T,  1)): CSDTmat,
-    ((SD, 0), (BCD, 0)): SDBCDmat,
-    ((SB, 0), (BCB, 0)): SBBCBmat,
+    ((SD, 0), (BCD, 0)): BSDBCDmat,
+    ((SB, 0), (BCB, 0)): BSBBCBmat,
     })

@@ -1,20 +1,20 @@
 """
 Module for implementing helper functions.
 """
-import types
 from numbers import Number
 try:
     from collections.abc import MutableMapping
 except ImportError:
     from collections import MutableMapping
-from collections import defaultdict, UserDict
+from collections import defaultdict
 import math
+import numpy as np
 import sympy as sp
 from scipy.fftpack import dct
 from shenfun.optimization import optimizer
 
 __all__ = ['dx', 'clenshaw_curtis1D', 'CachedArrayDict', 'surf3D', 'wrap_periodic',
-           'outer', 'apply_mask', 'integrate_sympy', 'mayavi_show', 'Timer']
+           'outer', 'apply_mask', 'integrate_sympy', 'mayavi_show']
 
 
 def dx(u):
