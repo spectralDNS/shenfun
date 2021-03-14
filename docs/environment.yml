@@ -17,4 +17,4 @@ dependencies:
   - Sphinx==2.2.*
   - nbsphinx
   - pip:
-    - sphinxcontrib-bibtex
+    - sphinxcontrib-bibtex<2.0.0
