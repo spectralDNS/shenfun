@@ -1290,11 +1290,11 @@ class Heinrichs(CompositeSpace):
     def _composite(self, V, argument=0):
         P = np.zeros_like(V)
         if self.is_scaled():
-            k = np.arange(V.shape[1]).astype(float)
-            P[:, 2:-2] = -V[:, :-4]/(k[3:-1]*4) + V[:, 2:-2]/(k[3:-1]*2) - V[:, 4:]/(k[3:-1]*4)
+            k = np.arange(V.shape[1])
+            P[:, 2:-2] = (-V[:, :-4]/4 + V[:, 2:-2]/2 - V[:, 4:]/4)/k[3:-1]
             P[:, 1] = (V[:, 1] - V[:, 3])/8
         else:
-            P[:, 2:-2] = -0.25*V[:, :-4] + 0.5*V[:, 2:-2] - 0.25*V[:, 4:]
+            P[:, 2:-2] = -V[:, :-4]/4 + V[:, 2:-2]/2 - V[:, 4:]/4
             P[:, 1] = (V[:, 1] - V[:, 3])/4
         P[:, 0] = (V[:, 0] - V[:, 2])/2
         if argument == 1: # if trial function
@@ -1312,17 +1312,16 @@ class Heinrichs(CompositeSpace):
         output = self.scalar_product.output_array
         wk = output.copy()
         output[self.si[0]] = 0.5*(wk[self.si[0]]-wk[self.si[2]])
+        output[self.si[1]] = (wk[self.si[1]]-wk[self.si[3]])/4
+        output[self.sl[slice(2, self.N-2)]] *= 0.5
+        output[self.sl[slice(2, self.N-2)]] -= wk[self.sl[slice(0, self.N-4)]]/4
+        output[self.sl[slice(2, self.N-2)]] -= wk[self.sl[slice(4, self.N)]]/4
+
         if self.is_scaled():
-            k = self.broadcast_to_ndims(np.arange(self.N).astype(float))
-            output[self.si[1]] = (wk[self.si[1]]-wk[self.si[3]])/8
-            output[self.sl[slice(2, self.N-2)]] *= 1/(2*k[self.sl[slice(3, self.N-1)]])
-            output[self.sl[slice(2, self.N-2)]] -= wk[self.sl[slice(0, self.N-4)]]/(4*k[self.sl[slice(3, self.N-1)]])
-            output[self.sl[slice(2, self.N-2)]] -= wk[self.sl[slice(4, self.N)]]/(4*k[self.sl[slice(3, self.N-1)]])
-        else:
-            output[self.si[1]] = 0.25*(wk[self.si[1]]-wk[self.si[3]])
-            output[self.sl[slice(2, self.N-2)]] *= 0.5
-            output[self.sl[slice(2, self.N-2)]] -= 0.25*wk[self.sl[slice(0, self.N-4)]]
-            output[self.sl[slice(2, self.N-2)]] -= 0.25*wk[self.sl[slice(4, self.N)]]
+            k = self.broadcast_to_ndims(np.arange(self.N))
+            output[self.si[1]] /= 2
+            output[self.sl[slice(2, self.N-2)]] /= k[self.sl[slice(3, self.N-1)]]
+
         output[self.si[-2]] = 0
         output[self.si[-1]] = 0
 
@@ -1343,15 +1342,15 @@ class Heinrichs(CompositeSpace):
         s0 = self.sl[slice(0, self.N-4)]
         s1 = self.sl[slice(2, self.N-2)]
         s2 = self.sl[slice(4, self.N)]
+        w0 = input_array[s1]
         if self.is_scaled():
             s3 = self.sl[slice(3, self.N-1)]
             k = self.broadcast_to_ndims(np.arange(self.N))
-            w0 = input_array[s1]/k[s3]
-        else:
-            w0 = input_array[s1]
-        output_array[s0] -= 0.25*w0
-        output_array[s1] += 0.5*w0
-        output_array[s2] -= 0.25*w0
+            w0 /= k[s3]
+
+        output_array[s0] -= w0/4
+        output_array[s1] += w0/2
+        output_array[s2] -= w0/4
         self.bc.add_to_orthogonal(output_array, input_array)
         return output_array
 

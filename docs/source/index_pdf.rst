@@ -26,6 +26,8 @@ Demos
    stokes
    drivencavity
    rayleighbenard
+   fasttransforms
+   mixingbases
    zrefs
 
 .. _shenfun: https:/github.com/spectralDNS/shenfun

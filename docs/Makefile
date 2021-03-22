@@ -17,7 +17,9 @@ DEMO          = Poisson/poisson.rst \
 				RayleighBenard/rayleighbenard.rst \
 				Functions/functions.ipynb \
 				Integration/surfaceintegration.ipynb \
-				Moebius/moebius.ipynb
+				Moebius/moebius.ipynb \
+				FastTransforms/fasttransforms.ipynb \
+				MixingBases/mixingbases.ipynb
 NDEMO         = Poisson/poisson.ipynb2 \
                 KleinGordon/kleingordon.ipynb2 \
                 Poisson3D/poisson3d.ipynb2 \
@@ -28,7 +30,9 @@ NDEMO         = Poisson/poisson.ipynb2 \
 				RayleighBenard/rayleighbenard.ipynb2 \
 				Functions/functions.ipynb2 \
 				Integration/surfaceintegration.ipynb2 \
-				Moebius/moebius.ipynb2
+				Moebius/moebius.ipynb2 \
+				FastTransforms/fasttransforms.ipynb2 \
+				MixingBases/mixingbases.ipynb2
 
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
