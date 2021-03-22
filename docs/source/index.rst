@@ -58,6 +58,8 @@ Document build status
    stokes
    drivencavity
    rayleighbenard
+   fasttransforms
+   mixingbases
    zrefs
 
 .. toctree::

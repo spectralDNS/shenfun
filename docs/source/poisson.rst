@@ -7,7 +7,7 @@ Demo - 1D Poisson's equation
 ============================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Dec 22, 2020
+:Date: Mar 22, 2021
 
 *Summary.* This is a demonstration of how the Python module `shenfun <https://github.com/spectralDNS/shenfun>`__ can be used to solve Poisson's
 equation with Dirichlet boundary conditions in one dimension. Spectral convergence, as
@@ -161,7 +161,7 @@ are specific to the chosen basis, and even within basis there are two different
 choices based on which quadrature rule is selected, either Gauss or Gauss-Lobatto.
 
 Inserting for test and trialfunctions, we get the following bilinear form and
-matrix :math:`A\in\mathbb{R}^{N-3\times N-3}` for the Laplacian (using the
+matrix :math:`A\in\mathbb{R}^{N-2\times N-2}` for the Laplacian (using the
 summation convention in step 2)
 
 .. math::

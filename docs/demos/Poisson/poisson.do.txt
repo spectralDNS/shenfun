@@ -118,7 +118,7 @@ are specific to the chosen basis, and even within basis there are two different
 choices based on which quadrature rule is selected, either Gauss or Gauss-Lobatto.
 
 Inserting for test and trialfunctions, we get the following bilinear form and
-matrix $A\in\mathbb{R}^{N-3\times N-3}$ for the Laplacian (using the
+matrix $A\in\mathbb{R}^{N-2\times N-2}$ for the Laplacian (using the
 summation convention in step 2)
 
 !bt

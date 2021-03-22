@@ -67,7 +67,6 @@ class SparseMatrix(MutableMapping):
 
     def __init__(self, d, shape, scale=1.0):
         self._storage = dict(d)
-        #dict.__init__(self, d)
         self.shape = shape
         self._diags = dia_matrix((1, 1))
         self.scale = scale
@@ -97,7 +96,6 @@ class SparseMatrix(MutableMapping):
             The axis over which to take the matrix vector product
 
         """
-        #assert v.shape == c.shape
         N, M = self.shape
         c.fill(0)
 
@@ -141,6 +139,7 @@ class SparseMatrix(MutableMapping):
 
             - dia - Sparse matrix with DIAgonal storage
             - csr - Compressed sparse row
+            - csc - Compressed sparse column
 
         Note
         ----
@@ -175,6 +174,9 @@ class SparseMatrix(MutableMapping):
     def __len__(self):
         return len(self._storage)
 
+    def __quasi__(self, Q):
+        return Q.diags('csc')*self.diags('csc')
+
     def __eq__(self, a):
         if self.shape != a.shape:
             return False
@@ -204,6 +206,8 @@ class SparseMatrix(MutableMapping):
             c = np.empty_like(y)
             c = self.matvec(y, c)
             return c
+        elif isinstance(y, SparseMatrix):
+            return self.diags('csc')*y.diags('csc')
 
     def __rmul__(self, y):
         """Returns copy of self.__rmul__(y) <==> y*self"""
@@ -545,10 +549,7 @@ class SpectralMatrix(SparseMatrix):
             d = extract_diagonal_matrix(D)
         SparseMatrix.__init__(self, d, shape, scale)
         if shape[0] == shape[1]:
-            from shenfun.la import Solve, NeumannSolve
-            #if test[0].use_fixed_gauge:
-            #    self.solver = NeumannSolve(self, test[0])
-            #else:
+            from shenfun.la import Solve
             self.solver = Solve(self, test[0])
 
     def matvec(self, v, c, format='csr', axis=0):
@@ -636,7 +637,8 @@ class SpectralMatrix(SparseMatrix):
                                self.trialfunction, self.scale*y)
         elif isinstance(y, np.ndarray):
             f = SparseMatrix.__mul__(self, y)
-
+        elif isinstance(y, SparseMatrix):
+            f = self.diags('csc')*y.diags('csc')
         return f
 
     def __div__(self, y):
