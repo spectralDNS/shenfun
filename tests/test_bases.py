@@ -5,8 +5,12 @@ from shenfun import chebyshev, legendre, fourier, hermite, laguerre,\
     jacobi
 
 bases = (chebyshev.Orthogonal,
+         chebyshev.OrthogonalU,
          chebyshev.ShenDirichlet,
+         chebyshev.DirichletU,
          chebyshev.ShenNeumann,
+         chebyshev.MikNeumann,
+         chebyshev.CombinedShenNeumann,
          chebyshev.ShenBiharmonic,
          chebyshev.SecondNeumann,
          chebyshev.ShenBiPolar,

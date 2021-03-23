@@ -21,7 +21,6 @@ SB = ShenBiharmonic
 SN = ShenNeumann
 CN = CombinedShenNeumann
 MN = MikNeumann
-TU = MixedTU
 DU = DirichletU
 UD = UpperDirichlet
 DN = DirichletNeumann
@@ -93,7 +92,6 @@ SB = bases.ShenBiharmonic
 SN = bases.ShenNeumann
 CN = bases.CombinedShenNeumann
 MN = bases.MikNeumann
-TU = bases.MixedTU
 DU = bases.DirichletU
 UD = bases.UpperDirichlet
 DN = bases.DirichletNeumann
@@ -1634,36 +1632,6 @@ class ACNCNmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
         self.solve = generic_TDMA(self)
 
-class ATUSDmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product
-
-    .. math::
-
-        A_{kj} = (\phi''_j, \psi_k)_w
-
-    where
-
-    .. math::
-
-        j = 0, 1, 2, ..., N-2 \text{ and } k = 0, 1, 2, ..., N-2
-
-    and :math:`\phi_k` is Shen's Dirichlet basis and :math:`\psi_j`
-    is the MixedTU basis. This is a Petrov-Galerkin matrix.
-    w = (1-x**2)
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], TU)
-        assert isinstance(trial[0], SD)
-        N = test[0].N
-        k = np.arange(N, dtype=float)
-        if test[0].is_scaled():
-            d = {0: -0.5*np.pi*k[1:-1]*k[2:]}
-        else:
-            d = {0: -0.5*np.pi*k[1:-1]*k[2:]**2*(k[2:]+1)}
-        d[2] = -d[0][:-2].copy()
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self.solver = TwoDMA(self)
 
 class ADUSDmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
@@ -1754,37 +1722,6 @@ class ASDHHmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
         self.solver = TwoDMA(self)
 
-class ATUSNmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product
-
-    .. math::
-
-        A_{kj} = (\phi''_j, \psi_k)_w
-
-    where
-
-    .. math::
-
-        j = 0, 1, 2, ..., N-2 \text{ and } k = 0, 1, 2, ..., N-2
-
-    and :math:`\phi_k` is Shen's Neumann basis and :math:`\psi_j`
-    is the MixedTU basis. This is a Petrov-Galerkin matrix.
-    w = (1-x**2).
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], TU)
-        assert isinstance(trial[0], SN)
-        N = test[0].N
-        k = np.arange(N, dtype=float)
-        if test[0].is_scaled():
-            d = {0: -(np.pi/2)*k[:-2]**2*(k[1:-1]/k[2:]),
-                 2: (np.pi/2)*k[1:-3]*k[2:-2]}
-        else:
-            d = {0: -(np.pi/2)*k[:-2]**2*k[1:-1]*(k[:-2]+3),
-                 2: (np.pi/2)*k[1:-3]*k[2:-2]**2*(k[2:-2]+1)}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self.solver = TwoDMA(self)
 
 class ADUSNmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
@@ -1849,42 +1786,6 @@ class AHHHHmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
-class BTUSDmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product
-
-    .. math::
-
-        B_{kj} = (\phi_j, \psi_k)_w
-
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\phi_k` is Shen's Dirichlet basis and :math:`\psi_j`
-    is the MixedTU basis. This is a Petrov-Galerkin matrix.
-    w = (1-x**2).
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], TU)
-        assert isinstance(trial[0], SD)
-        N = test[0].N
-        ck = get_ck(N, test[0].quad)
-        k = np.arange(N, dtype=float)
-        d = {-2: -(np.pi/8),
-              0: (np.pi/8)*ck[:-2]+(np.pi/4)*(k[:-2]+2)/(k[:-2]+3),
-              2: -(np.pi/8)*(k[:-4]+1)/(k[:-4]+3)-(np.pi/4)*(k[:-4]+2)/(k[:-4]+3),
-              4: (np.pi/8)*(k[:-6]+1)/(k[:-6]+3)}
-        if not test[0].is_scaled():
-            d[-2] *= (k[2:-2]+2)*(k[2:-2]+3)
-            d[0] *= (k[:-2]+2)*(k[:-2]+3)
-            d[2] *= (k[:-4]+2)*(k[:-4]+3)
-            d[4] *= (k[:-6]+2)*(k[:-6]+3)
-
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self.solver = FDMA(self)
 
 class BDUSDmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
@@ -2099,46 +2000,6 @@ class ASNCNmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
         self.solver = TwoDMA(self)
 
-class BTUSNmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product
-
-    .. math::
-
-        B_{kj} = (\phi_j, \psi_k)_w
-
-    where
-
-    .. math::
-
-        j = 0, 1, 2, ..., N-2 \text{ and } k = 0, 1, 2, ..., N-2
-
-    and :math:`\phi_k` is Shen's Dirichlet basis and :math:`\psi_j`
-    is the MixedTU basis. This is a Petrov-Galerkin matrix.
-    w = (1-x**2).
-
-    """
-    def __init__(self, test, trial, scale=1, measure=1):
-        assert isinstance(test[0], TU)
-        assert isinstance(trial[0], SN)
-        N = test[0].N
-        ck = get_ck(N, test[0].quad)
-        k = np.arange(N, dtype=float)
-        d = {-2: -(np.pi/8)*(k[2:-2]-2)**2/k[2:-2]**2,
-              0: (np.pi/8)*(ck[:-2]+2*(k[:-2]/(k[:-2]+3))*(k[:-2]/(k[:-2]+2))),
-              2: -(np.pi/8)*(2*k[2:-2]/k[3:-1]+k[1:-3]/k[3:-1]*(k[2:-2]/k[4:])**2),
-              4: (np.pi/8)*k[1:-5]/k[3:-3]}
-        if not test[0].is_scaled():
-            d[-2] *= k[4:]*(k[4:]+1)
-            d[0] *= k[2:]*(k[2:]+1)
-            d[2] *= k[2:-2]*k[3:-1]
-            d[4] *= k[2:-4]*k[3:-3]
-        d[-2][0] = 0
-        d[0][0] = np.pi
-        d[2][0] = 0
-        d[4][0] = 0
-
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self.solver = FDMA(self)
 
 class BDUSNmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
@@ -2338,10 +2199,6 @@ mat = _ChebMatDict({
     ((SD, 0), (HH, 2)): ASDHHmat,
     ((DU, 0), (SD, 2), (-1, 1), (1-x**2)): functools.partial(ADUSDmat, measure=(1-x**2)),
     ((DU, 0), (SD, 0), (-1, 1), (1-x**2)): functools.partial(BDUSDmat, measure=(1-x**2)),
-    ((TU, 0), (SD, 2), (-1, 1), (1-x**2)): functools.partial(ATUSDmat, measure=(1-x**2)),
-    ((TU, 0), (SD, 0), (-1, 1), (1-x**2)): functools.partial(BTUSDmat, measure=(1-x**2)),
-    ((TU, 0), (SN, 2), (-1, 1), (1-x**2)): functools.partial(ATUSNmat, measure=(1-x**2)),
-    ((TU, 0), (SN, 0), (-1, 1), (1-x**2)): functools.partial(BTUSNmat, measure=(1-x**2)),
     ((DU, 0), (SN, 2), (-1, 1), (1-x**2)): functools.partial(ADUSNmat, measure=(1-x**2)),
     ((DU, 0), (SN, 0), (-1, 1), (1-x**2)): functools.partial(BDUSNmat, measure=(1-x**2)),
     ((SB, 0), (SB, 4)): SSBSBmat,
