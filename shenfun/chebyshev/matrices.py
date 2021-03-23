@@ -546,6 +546,9 @@ class BTSDmat(SpectralMatrix):
         ck = get_ck(N, test[0].quad)
         d = {0: np.pi/2*ck[:Q]}
         d[-2] = -np.pi/2
+        if test[0].quad == 'GL':
+            d[-2] = -np.pi/2*np.ones(Q)
+            d[-2][-1] *= 2
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
     def __quasi__(self, Q):
