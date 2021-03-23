@@ -429,6 +429,7 @@ class OrthogonalU(ChebyshevBase):
         ChebyshevBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                padding_factor=padding_factor, dealias_direct=dealias_direct,
                                coordinates=coordinates)
+        assert quad in ('GC', 'GL')
         if quad == 'GC':
             self._xfftn_fwd = functools.partial(fftw.dstn, type=2)
             self._xfftn_bck = functools.partial(fftw.dstn, type=3)
@@ -523,7 +524,7 @@ class OrthogonalU(ChebyshevBase):
             output_array *= 1/(2*self.broadcast_to_ndims(np.sin((np.arange(self.N)+1)*np.pi/(self.N+1))))
 
         elif self.quad == "GC":
-            s0 = self.si[self.N-1]
+            s0 = self.sl[slice(self.N-1, self.N)]
             se = self.sl[slice(0, self.N, 2)]
             so = self.sl[slice(1, self.N, 2)]
             output_array *= 0.5
@@ -1077,8 +1078,8 @@ class DirichletU(CompositeSpaceU):
     def set_factor_array(self, v):
         """Set intermediate factor arrays"""
         if not self._factor.shape == v.shape:
-            k = np.arange(self.N).astype(float)
-            self._factor = (k+1)/(k+3)
+            k = np.arange(self.N)
+            self._factor = self.broadcast_to_ndims((k+1)/(k+3))
 
     def is_scaled(self):
         """Return True if scaled basis is used, otherwise False"""
@@ -1105,7 +1106,6 @@ class DirichletU(CompositeSpaceU):
         s1 = self.sl[slice(2, self.N)]
         w0 = output.copy()
         self.set_factor_array(w0)
-        k = np.arange(self.N).astype(float)
         output[s0] -= self._factor[s0]*w0[s1]
         output[self.si[-2]] = 0
         output[self.si[-1]] = 0
@@ -1117,7 +1117,6 @@ class DirichletU(CompositeSpaceU):
             output_array.fill(0)
         s0 = self.sl[slice(0, self.N-2)]
         s1 = self.sl[slice(2, self.N)]
-        k = np.arange(self.N)
         self.set_factor_array(output_array)
         output_array[s0] = input_array[s0]
         output_array[s1] -= input_array[s0]*self._factor[s0]
