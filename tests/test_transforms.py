@@ -23,7 +23,11 @@ cBasis = (cbases.Orthogonal,
           cbases.ShenBiharmonic)
 
 # Bases with only GC quadrature
-cBasisGC = (cbases.UpperDirichlet,
+cBasisGC = (cbases.OrthogonalU,
+            cbases.DirichletU,
+            cbases.MikNeumann,
+            cbases.UpperDirichlet,
+            cbases.CombinedShenNeumann,
             cbases.ShenBiPolar)
 
 lBasis = (lbases.Orthogonal,
@@ -68,7 +72,7 @@ cl_nonortho = (list(product(laBasis[1:], laquads))
              +list(product(lBasis[1:], lquads))
              +list(product(lBasisLG, ('LG',)))
              +list(product(cBasis[1:], cquads))
-             +list(product(cBasisGC, ('GC',))))
+             +list(product(cBasisGC[1:], ('GC',))))
 
 class ABC(object):
     def __init__(self, dim, coors):
@@ -161,13 +165,16 @@ def test_to_ortho(basis, quad):
     N = 10
     if basis.family() == 'legendre':
         B1 = lBasis[0](N, quad)
-        B3 = lBasis[0](N, quad)
+        #B3 = lBasis[0](N, quad)
     elif basis.family() == 'chebyshev':
-        B1 = cBasis[0](N, quad)
-        B3 = cBasis[0](N, quad)
+        if basis.short_name() == 'DU':
+            B1 = cBasisGC[0](N, quad)
+        else:
+            B1 = cBasis[0](N, quad)
+        #B3 = cBasis[0](N, quad)
     elif basis.family() == 'laguerre':
         B1 = laBasis[0](N, quad)
-        B3 = laBasis[0](N, quad)
+        #B3 = laBasis[0](N, quad)
 
     B0 = basis(N, quad=quad)
     a = shenfun.Array(B0)
@@ -180,9 +187,9 @@ def test_to_ortho(basis, quad):
     b1_hat = shenfun.project(a_hat, B1, output_array=b1_hat, fill=False,  use_to_ortho=False)
     assert np.linalg.norm(b0_hat-b1_hat) < 1e-10
 
-    B2 = basis(N, quad=quad)
-    TD = shenfun.TensorProductSpace(shenfun.comm, (B0, B2))
-    TC = shenfun.TensorProductSpace(shenfun.comm, (B1, B3))
+    #B2 = basis(N, quad=quad)
+    TD = shenfun.TensorProductSpace(shenfun.comm, (B0, B0))
+    TC = shenfun.TensorProductSpace(shenfun.comm, (B1, B1))
     a = shenfun.Array(TD)
     a_hat = shenfun.Function(TD)
     b0_hat = shenfun.Function(TC)
@@ -250,55 +257,51 @@ def test_project_1D(basis):
     assert np.allclose(u_1, u_p)
 
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
-@pytest.mark.parametrize('dim', (2, 3))
-def test_transforms(ST, quad, dim):
+def test_transforms(ST, quad):
+    N = 10
     kwargs = {}
     if not ST.family() == 'fourier':
         kwargs['quad'] = quad
     ST0 = ST(N, **kwargs)
     fj = shenfun.Array(ST0)
-    fj[:] = np.random.random(fj.shape[0])
-
-    # Project function to space first
-    f_hat = shenfun.Function(ST0)
-    f_hat = ST0.forward(fj, f_hat)
-    fj = ST0.backward(f_hat, fj)
-
-    # Then check if transformations work as they should
+    fj[:] = np.random.random(N)
+    fj = fj.forward().backward().copy()
+    assert np.allclose(fj, fj.forward().backward())
     u0 = shenfun.Function(ST0)
     u1 = shenfun.Array(ST0)
-    u0 = ST0.forward(fj, u0)
-    u1 = ST0.backward(u0, u1)
-    assert np.allclose(fj, u1, rtol=1e-5, atol=1e-6)
-    u0 = ST0.forward(fj, u0)
-    u1 = ST0.backward(u0, u1)
-    assert np.allclose(fj, u1, rtol=1e-5, atol=1e-6)
     u0 = ST0.forward(fj, u0, fast_transform=False)
     u1 = ST0.backward(u0, u1, fast_transform=False)
     assert np.allclose(fj, u1, rtol=1e-5, atol=1e-6)
 
     # Multidimensional version
-    for axis in range(dim):
-        bc = [np.newaxis,]*dim
-        bc[axis] = slice(None)
-        fij = np.broadcast_to(fj[tuple(bc)], (N,)*dim).copy()
+    ST0 = ST(N, **kwargs)
+    if ST0.short_name() in ('R2C', 'C2C'):
+        F0 = shenfun.FunctionSpace(N, 'F', dtype='D')
+        T0 = shenfun.TensorProductSpace(shenfun.comm, (F0, ST0))
 
-        ST1 = ST(N, **kwargs)
-        ST1.tensorproductspace = ABC(dim, ST0.coors)
-        ST1.plan((N,)*dim, axis, fij.dtype, {})
+    else:
+        F0 = shenfun.FunctionSpace(N, 'F', dtype='d')
+        T0 = shenfun.TensorProductSpace(shenfun.comm, (F0, ST0))
+    fij = shenfun.Array(T0)
+    fij[:] = np.random.random(T0.shape(False))
+    fij = fij.forward().backward().copy()
+    assert np.allclose(fij, fij.forward().backward())
 
-        u00 = shenfun.Function(ST1)
-        u11 = shenfun.Array(ST1)
-        u00 = ST1.forward(fij, u00)
+    if ST0.short_name() in ('R2C', 'C2C'):
+        F0 = shenfun.FunctionSpace(N, 'F', dtype='D')
+        F1 = shenfun.FunctionSpace(N, 'F', dtype='D')
+        T = shenfun.TensorProductSpace(shenfun.comm, (F0, F1, ST0), dtype=ST0.dtype.char)
 
-        u11 = ST1.backward(u00, u11)
+    else:
+        F0 = shenfun.FunctionSpace(N, 'F', dtype='d')
+        F1 = shenfun.FunctionSpace(N, ST.family())
+        T = shenfun.TensorProductSpace(shenfun.comm, (F0, ST0, F1))
 
-        cc = [1,]*dim
-        cc[axis] = slice(None)
-        cc = tuple(cc)
+    fij = shenfun.Array(T)
+    fij[:] = np.random.random(T.shape(False))
+    fij = fij.forward().backward().copy()
+    assert np.allclose(fij, fij.forward().backward())
 
-        assert np.allclose(fij[cc], u11[cc], rtol=1e-5, atol=1e-6)
-        del ST1
 
 @pytest.mark.parametrize('ST,quad', all_bases_and_quads)
 @pytest.mark.parametrize('axis', (0, 1, 2))
@@ -541,13 +544,13 @@ def test_ASBSBmat(SB, quad):
     assert np.allclose(z0, u0, rtol=1e-5, atol=1e-6)
 
 if __name__ == '__main__':
-    test_to_ortho(cBasis[1], 'GC')
+    #test_to_ortho(cBasisGC[1], 'GC')
     # test_convolve(fbases.R2C, 8)
     #test_ASDSDmat(lbases.ShenNeumann, "LG")
     #test_CDDmat("GL")
-    #test_massmatrices(lBasis[3], lBasis[0], 'LG')
+    #test_massmatrices(cBasis[1], cBasis[3], 'GL')
     #test_CXXmat(cBasis[2], cBasis[1])
-    #test_transforms(cBasis[2], 'GC', 2)
+    test_transforms(fBasis[1], '')
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[2], 'GC')
     #test_eval(cBasis[0], 'GC')

@@ -13,8 +13,6 @@ doi = {https://doi.org/10.1016/j.jcp.2008.10.043}
 }
 """
 import numpy as np
-from numbers import Number
-from copy import deepcopy
 from shenfun.matrixbase import SparseMatrix
 
 __all__ = ('QIGmat', 'QITmat')
@@ -23,17 +21,9 @@ class QImat(SparseMatrix):
 
     def __mul__(self, y):
         """Returns copy of self.__mul__(y) <==> self*y"""
-        if isinstance(y, Number):
-            return SparseMatrix(deepcopy(dict(self)), self.shape,
-                                scale=self.scale*y)
-
-        elif isinstance(y, np.ndarray):
-            c = np.empty_like(y)
-            c = self.matvec(y, c)
-            return c
-
-        elif isinstance(y, SparseMatrix):
+        if isinstance(y, SparseMatrix):
             return y.__quasi__(self)
+        return SparseMatrix.__mul__(self, y)
 
 class QIGmat(QImat):
     """Quasi-inverse matrix for the Galerkin method
