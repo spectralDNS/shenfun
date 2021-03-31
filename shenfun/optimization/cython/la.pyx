@@ -893,6 +893,136 @@ def TDMA_SymSolve3D_VC2(real_t[:, :, ::1] d,
                 for k in range(n - 3, -1, -1):
                     x[i, j, k] = (x[i, j, k] - a[i, j, k]*x[i, j, k+2])/d[i, j, k]
 
+def Poisson_Solve_ADD(A, b, u, axis=0):
+    cdef:
+        np.ndarray[real_t, ndim=1] a0=A[0]
+        np.ndarray[real_t, ndim=1] a2=A[2]
+        real_t sc = A.scale
+        int n
+    n = u.ndim
+    if n == 1:
+        Poisson_Solve_ADD_1D(a0, a2, sc, b, u)
+    elif n == 2:
+        Poisson_Solve_ADD_2D_ptr(a0, a2, sc, b, u, axis)
+    elif n == 3:
+        Poisson_Solve_ADD_3D_ptr(a0, a2, sc, b, u, axis)
+
+    return u
+
+def Poisson_Solve_ADD_2D_ptr(real_t[::1] d,
+                             real_t[::1] d1,
+                             real_t scale,
+                             T[:, ::1] b,
+                             T[:, ::1] u,
+                             int axis):
+    cdef:
+        int i, j, strides, N
+        T* u_ptr
+        T* b_ptr
+        real_t* d_ptr
+        real_t* d1_ptr
+
+    strides = u.strides[axis]/u.itemsize
+    N = d.shape[0]
+    if axis == 0:
+        for j in range(u.shape[1]):
+            b_ptr = &b[0, j]
+            u_ptr = &u[0, j]
+            Poisson_Solve_ADD_1D_ptr(&d[0], &d1[0], scale, b_ptr, u_ptr, N, strides)
+    elif axis == 1:
+        for i in range(u.shape[0]):
+            b_ptr = &b[i, 0]
+            u_ptr = &u[i, 0]
+            Poisson_Solve_ADD_1D_ptr(&d[0], &d1[0], scale, b_ptr, u_ptr, N, strides)
+
+def Poisson_Solve_ADD_3D_ptr(real_t[::1] d,
+                             real_t[::1] d1,
+                             real_t scale,
+                             T[:, :, ::1] b,
+                             T[:, :, ::1] u,
+                             int axis):
+    cdef:
+        int i, j, k, strides, N
+        T* u_ptr
+        T* b_ptr
+        real_t* d_ptr
+        real_t* d1_ptr
+
+    strides = u.strides[axis]/u.itemsize
+    N = d.shape[0]
+    if axis == 0:
+        for j in range(u.shape[1]):
+            for k in range(u.shape[2]):
+                b_ptr = &b[0, j, k]
+                u_ptr = &u[0, j, k]
+                Poisson_Solve_ADD_1D_ptr(&d[0], &d1[0], scale, b_ptr, u_ptr, N, strides)
+    elif axis == 1:
+        for i in range(u.shape[0]):
+            for k in range(u.shape[2]):
+             b_ptr = &b[i, 0, k]
+             u_ptr = &u[i, 0, k]
+             Poisson_Solve_ADD_1D_ptr(&d[0], &d1[0], scale, b_ptr, u_ptr, N, strides)
+    elif axis == 2:
+        for i in range(u.shape[0]):
+            for j in range(u.shape[1]):
+             b_ptr = &b[i, j, 0]
+             u_ptr = &u[i, j, 0]
+             Poisson_Solve_ADD_1D_ptr(&d[0], &d1[0], scale, b_ptr, u_ptr, N, strides)
+
+
+cdef void Poisson_Solve_ADD_1D(real_t[::1] d,
+                               real_t[::1] d1,
+                               real_t scale,
+                               real_t[::1] b,
+                               real_t[::1] u):
+    cdef:
+        int N, k
+        real_t se, so
+    N = d.shape[0]
+    se = 0.0
+    so = 0.0
+    u[N-1] = b[N-1] / d[N-1]
+    u[N-2] = b[N-2] / d[N-2]
+    for k in range(N-3, -1, -1):
+        if k%2 == 0:
+            se += u[k+2]
+            u[k] = b[k] - d1[k]*se
+        else:
+            so += u[k+2]
+            u[k] = b[k] - d1[k]*so
+        u[k] /= d[k]
+    if not abs(scale-1) < 1e-8:
+        for k in range(N):
+            u[k] /= scale
+
+cdef void Poisson_Solve_ADD_1D_ptr(real_t* d,
+                                   real_t* d1,
+                                   real_t scale,
+                                   T* b,
+                                   T* u,
+                                   int N,
+                                   int st):
+    cdef:
+        int k, ip, ii
+        T se, so
+    se = 0.0
+    so = 0.0
+    u[(N-1)*st] = b[(N-1)*st] / d[N-1]
+    u[(N-2)*st] = b[(N-2)*st] / d[N-2]
+    for k in range(N-3, -1, -1):
+        ii = k*st
+        ip = (k+2)*st
+        if k%2 == 0:
+            se += u[ip]
+            u[ii] = b[ii] - d1[k]*se
+        else:
+            so += u[ip]
+            u[ii] = b[ii] - d1[k]*so
+        u[ii] /= d[k]
+    if not abs(scale-1) < 1e-8:
+        for k in range(N):
+            u[k*st] /= scale
+
 def LU_Helmholtz(A, B, A_s, B_s, neumann, d0, d1, d2, L, axis):
     n = d0.ndim
     if n == 1:

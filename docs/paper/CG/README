@@ -1,0 +1,25 @@
+This folder contains scripts used to generate data for the paper
+
+  * Efficient spectral-Galerkin methods for second-order equations using different Chebyshev bases
+
+Most of the results are computed with shenfun using scripts
+
+  * CGpaper_dirichlet.py
+  * CGpaper_neumann.py
+
+The generalised Chebyshev-Tau results are computed with dedalus using scripts
+
+  * GT_dirichlet.py
+  * GT_neumann.py
+
+Please note that shenfun and dedalus have conflicting dependencies. For
+this reason the two require separate environments to run. The shenfun
+environment can be generated using
+
+  >>> conda env create -f shenfunenv.yml
+
+The dedalus environment is slightly more complicated, because the results
+have been computed with a nonstandard branch. The dedalus environment can be
+created by executing the bash script 'install_dedalus.sh'
+
+  >>> bash install_dedalus.sh
