@@ -1,0 +1,17 @@
+name: dedalusCG
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - numpy
+  - numexpr
+  - scipy
+  - cython
+  - mpi4py
+  - mpich
+  - h5py=*=mpi*
+  - fftw=*=mpi*
+  - matplotlib
+  - pip
+  - pip:
+    - array_to_latex

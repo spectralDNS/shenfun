@@ -448,7 +448,7 @@ class Expr:
         ndim = self.function_space().dimensions
         if terms is None:
             self._terms = np.zeros((self.function_space().num_components(), 1, ndim),
-                                   dtype=np.int).tolist()
+                                   dtype=int).tolist()
         if scales is None:
             self._scales = np.ones((self.function_space().num_components(), 1), dtype=object).tolist()
 
@@ -720,7 +720,7 @@ class Expr:
                 if not hasattr(sc, 'free_symbols'):
                     sc = float(sc)
                 else:
-                    sym0 = sc.free_symbols
+                    sym0 = tuple(sc.free_symbols)
                     m = []
                     for sym in sym0:
                         j = 'xyzrs'.index(str(sym))

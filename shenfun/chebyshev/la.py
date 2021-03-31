@@ -191,6 +191,69 @@ class TwoDMA:
 
         return u
 
+class ADD_Solve:
+    def __init__(self, mat):
+        assert mat.__class__.__name__ == 'ASDSDmat'
+        self.mat = mat
+
+    def __call__(self, b, u=None, axis=0, **kw):
+        if u is None:
+            u = b.copy()
+        else:
+            assert u.shape == b.shape
+            v = self.mat.testfunction[0]
+            s = v.sl[slice(0, self.mat.shape[0])]
+            u[s] = b[s]
+        self.Poisson_Solve_ADD(self.mat, b, u, axis=axis)
+        return u
+
+    @staticmethod
+    @optimizer
+    def Poisson_Solve_ADD(A, b, u, axis=0):
+        N = A.shape[0]+2
+        s = A.trialfunction[0].slice()
+
+        if u is None:
+            u = b
+        else:
+            assert u.shape == b.shape
+
+        # Move axis to first
+        if axis > 0:
+            u = np.moveaxis(u, axis, 0)
+            if u is not b:
+                b = np.moveaxis(b, axis, 0)
+
+        bs = b[s]
+        us = u[s]
+        if len(b.shape) == 1:
+            se = 0.0
+            so = 0.0
+        else:
+            se = np.zeros(us.shape[1:])
+            so = np.zeros(us.shape[1:])
+
+        d = A[0]
+        d1 = A[2]
+        M = us.shape
+        us[-1] = bs[-1] / d[-1]
+        us[-2] = bs[-2] / d[-2]
+        for k in range(M[0]-3, -1, -1):
+            if k%2 == 0:
+                se += us[k+2]
+                us[k] = bs[k] - d1[k]*se
+            else:
+                so += us[k+2]
+                us[k] = bs[k] - d1[k]*so
+            us[k] /= d[k]
+
+        u /= A.scale
+        u.set_boundary_dofs()
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
+            if u is not b:
+                b = np.moveaxis(b, 0, axis)
+        return u
 
 class Helmholtz:
     r"""Helmholtz solver

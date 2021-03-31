@@ -74,11 +74,11 @@ from __future__ import division
 import functools
 import numpy as np
 import sympy as sp
-from shenfun.optimization import cython, numba
+from shenfun.optimization import cython, numba, optimizer
 from shenfun.matrixbase import SpectralMatrix, SparseMatrix
 from shenfun.la import TDMA as generic_TDMA
 from shenfun.la import PDMA as generic_PDMA
-from .la import TDMA, PDMA, TwoDMA, FDMA
+from .la import TDMA, PDMA, TwoDMA, FDMA, ADD_Solve
 from . import bases
 
 x = sp.symbols('x', real=True)
@@ -1259,6 +1259,7 @@ class ASDSDmat(SpectralMatrix):
         d[2] = -4*np.pi*(k[:-4]+1)
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
         self._matvec_methods += ['cython']
+        self.solver = ADD_Solve(self)
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -1275,53 +1276,6 @@ class ASDSDmat(SpectralMatrix):
             c = super(ASDSDmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
-
-    def solve(self, b, u=None, axis=0):
-        N = self.shape[0] + 2
-        assert N == b.shape[0]
-        s = self.trialfunction[0].slice()
-
-        if u is None:
-            u = b
-        else:
-            assert u.shape == b.shape
-
-        # Move axis to first
-        if axis > 0:
-            u = np.moveaxis(u, axis, 0)
-            if u is not b:
-                b = np.moveaxis(b, axis, 0)
-
-        bs = b[s]
-        us = u[s]
-        if len(b.shape) == 1:
-            se = 0.0
-            so = 0.0
-        else:
-            se = np.zeros(us.shape[1:])
-            so = np.zeros(us.shape[1:])
-
-        d = self[0]
-        d1 = self[2]
-        M = us.shape
-        us[-1] = bs[-1] / d[-1]
-        us[-2] = bs[-2] / d[-2]
-        for k in range(M[0]-3, -1, -1):
-            if k%2 == 0:
-                se += us[k+2]
-                us[k] = bs[k] - d1[k]*se
-            else:
-                so += us[k+2]
-                us[k] = bs[k] - d1[k]*so
-            us[k] /= d[k]
-
-        u /= self.scale
-        self.testfunction[0].bc.set_boundary_dofs(u, True)
-        if axis > 0:
-            u = np.moveaxis(u, 0, axis)
-            if u is not b:
-                b = np.moveaxis(b, 0, axis)
-        return u
 
 
 class ASDSDmatW(SpectralMatrix):

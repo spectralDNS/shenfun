@@ -15,19 +15,14 @@ from shenfun import inner, div, grad, TestFunction, TrialFunction, \
     Array, Function, FunctionSpace, dx
 
 assert len(sys.argv) == 3, 'Call with two command-line arguments'
-assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi', 'heinricht')
+assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi')
 assert isinstance(int(sys.argv[-2]), int)
 
 # Get family from args
-if sys.argv[-1].lower() == 'heinricht':
-    basis = 'Heinricht'
-    family = 'chebyshev'
-else:
-    family = sys.argv[-1].lower()
-    basis = None
+family = sys.argv[-1].lower()
 
 # Use sympy to compute a rhs, given an analytical solution
-domain = (0, 4)
+domain = (-2, 2)
 a = 1.
 b = -1.
 if family == 'jacobi':
@@ -57,7 +52,7 @@ f_hat = inner(v, fj, output_array=f_hat)
 # Get left hand side of Poisson equation
 A = inner(v, div(grad(u)))
 
-u_hat = Function(SD)
+u_hat = Function(SD).set_boundary_dofs()
 u_hat = A.solve(f_hat, u_hat)
 uj = u_hat.backward()
 uh = uj.forward()

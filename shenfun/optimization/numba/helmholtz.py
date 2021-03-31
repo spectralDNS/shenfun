@@ -383,17 +383,23 @@ def Helmholtz_Neumann_matvec(v, b, alfa, beta, A, B, axis):
         Helmholtz_Neumann_matvec3D(v.v, b.v, alfa, beta,
                                    A_0, A_2, B_m2, B_0, B_2, axis)
 
-def Poisson_Solve_ADD(A, b, u):
-    u = Poisson_Solve_ADD_1D(A[0], A[2], A.scale, b, u)
+def Poisson_Solve_ADD(A, b, u, axis=0):
+    n = u.ndim
+    if n == 1:
+        u = Poisson_Solve_ADD_1D(A[0], A[2], A.scale, b, u)
+    elif n == 2:
+        u = Poisson_Solve_ADD_2D(A[0], A[2], A.scale, b, u, axis)
+    elif n == 3:
+        u = Poisson_Solve_ADD_3D(A[0], A[2], A.scale, b, u, axis)
     return u
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
 def Poisson_Solve_ADD_1D(d, d1, scale, b, u):
-    N = b.shape[0]
-    se = 0.0
-    so = 0.0
-    u[-1] = b[-1] / d[-1]
-    u[-2] = b[-2] / d[-2]
+    N = d.shape[0]
+    se = u[0]*0
+    so = u[0]*0
+    u[N-1] = b[N-1] / d[N-1]
+    u[N-2] = b[N-2] / d[N-2]
     for k in range(N-3, -1, -1):
         if k%2 == 0:
             se += u[k+2]
@@ -402,8 +408,32 @@ def Poisson_Solve_ADD_1D(d, d1, scale, b, u):
             so += u[k+2]
             u[k] = b[k] - d1[k]*so
         u[k] /= d[k]
-    u /= scale
+
+    if not abs(scale-1) < 1e-8:
+        for k in range(N):
+            u[k] /= scale
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def Poisson_Solve_ADD_2D(d, d1, scale, b, u, axis):
+    if axis == 0:
+        for j in range(u.shape[1]):
+            Poisson_Solve_ADD_1D(d, d1, scale, b[:, j], u[:, j])
+    elif axis == 1:
+        for i in range(u.shape[0]):
+            Poisson_Solve_ADD_1D(d, d1, scale, b[:, j], u[:, j])
     return u
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def Poisson_Solve_ADD_3D(d, d1, scale, b, u, axis):
+    if axis == 0:
+        for j in range(u.shape[1]):
+            for k in range(u.shape[2]):
+                Poisson_Solve_ADD_1D(d, d1, scale, b[:, j, k], u[:, j, k])
+
+    elif axis == 1:
+        for i in range(u.shape[0]):
+            for k in range(u.shape[2]):
+                Poisson_Solve_ADD_1D(d, d1, scale, b[i, :, k], u[i, :, k])
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
 def ANN_matvec1D(v, c, d0, d2, scale=1):

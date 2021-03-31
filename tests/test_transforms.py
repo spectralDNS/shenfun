@@ -430,7 +430,7 @@ def test_ASDSDmat(ST, quad):
 
     # Multidimensional
     c_hat = f_hat.copy()
-    c_hat = c_hat.repeat(M).reshape((M, M)).transpose()
+    c_hat = c_hat.repeat(M).reshape((M, M)).transpose().copy()
     c_hat = A.solve(c_hat, axis=1)
     assert np.allclose(c_hat[0, s], u_hat[s], rtol=1e-5, atol=1e-6)
 
@@ -546,11 +546,11 @@ def test_ASBSBmat(SB, quad):
 if __name__ == '__main__':
     #test_to_ortho(cBasisGC[1], 'GC')
     # test_convolve(fbases.R2C, 8)
-    #test_ASDSDmat(lbases.ShenNeumann, "LG")
+    test_ASDSDmat(cbases.ShenDirichlet, "GC")
     #test_CDDmat("GL")
     #test_massmatrices(cBasis[1], cBasis[3], 'GL')
     #test_CXXmat(cBasis[2], cBasis[1])
-    test_transforms(fBasis[1], '')
+    #test_transforms(fBasis[1], '')
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[2], 'GC')
     #test_eval(cBasis[0], 'GC')

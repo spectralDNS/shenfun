@@ -648,10 +648,10 @@ def test_eval_expression():
     B2 = FunctionSpace(20, 'F', dtype='d')
 
     TB = TensorProductSpace(comm, (B0, B1, B2))
-
     f = sp.sin(x)+sp.sin(y)+sp.sin(z)
     dfx = f.diff(x, 2) + f.diff(y, 2) + f.diff(z, 2)
     fa = Array(TB, buffer=f).forward()
+
     dfe = div(grad(fa))
     dfa = project(dfe, TB)
 
@@ -669,7 +669,7 @@ if __name__ == '__main__':
     #test_transform('f', 3)
     #test_transform('d', 2)
     #test_shentransform('d', 2, jbases.ShenBiharmonicBasis, 'JG')
-    #test_eval_expression()
+    test_eval_expression()
     #test_project('d', 2, lBasis[3], 'LG')
     #test_project_lag('d', 2)
     #test_project_hermite('d', 2)
@@ -677,6 +677,6 @@ if __name__ == '__main__':
     #test_project_2dirichlet('GL')
     #test_eval_tensor('d', 1, lbases.ShenBiPolar0Basis, 'LG')
     #test_eval_fourier('d', 3)
-    test_inner('C', 'F')
+    #test_inner('C', 'F')
     #test_refine()
     #test_assign('C')

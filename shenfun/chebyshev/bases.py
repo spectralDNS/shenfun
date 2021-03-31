@@ -433,6 +433,7 @@ class OrthogonalU(ChebyshevBase):
         if quad == 'GC':
             self._xfftn_fwd = functools.partial(fftw.dstn, type=2)
             self._xfftn_bck = functools.partial(fftw.dstn, type=3)
+            self._sinGC = np.sin((np.arange(N)+0.5)*np.pi/N)
 
         elif quad == 'GU':
             self._xfftn_fwd = functools.partial(fftw.dstn, type=1)
@@ -506,7 +507,7 @@ class OrthogonalU(ChebyshevBase):
             out *= (np.pi/(2*(self.N+1)*self.padding_factor))
 
         elif self.quad == 'GC':
-            self.scalar_product._input_array /= self.broadcast_to_ndims(np.sin((np.arange(self.N)+0.5)*np.pi/self.N))
+            self.scalar_product._input_array /= self.broadcast_to_ndims(self._sinGC)
             out = self.scalar_product.xfftn()
             out *= (np.pi/(2*self.N*self.padding_factor))
 
@@ -1104,9 +1105,9 @@ class DirichletU(CompositeSpaceU):
         output = self.scalar_product.output_array
         s0 = self.sl[slice(0, self.N-2)]
         s1 = self.sl[slice(2, self.N)]
-        w0 = output.copy()
-        self.set_factor_array(w0)
-        output[s0] -= self._factor[s0]*w0[s1]
+        #w0 = output.copy()
+        self.set_factor_array(output)
+        output[s0] -= self._factor[s0]*output[s1]
         output[self.si[-2]] = 0
         output[self.si[-1]] = 0
 
@@ -1298,10 +1299,10 @@ class Heinrichs(CompositeSpace):
         P = np.zeros_like(V)
         if self.is_scaled():
             k = np.arange(V.shape[1])
-            P[:, 2:-2] = (-V[:, :-4]/4 + V[:, 2:-2]/2 - V[:, 4:]/4)/k[3:-1]
+            P[:, 2:-2] = (-V[:, :-4] + 2*V[:, 2:-2] - V[:, 4:])/(k[3:-1]*4)
             P[:, 1] = (V[:, 1] - V[:, 3])/8
         else:
-            P[:, 2:-2] = -V[:, :-4]/4 + V[:, 2:-2]/2 - V[:, 4:]/4
+            P[:, 2:-2] = (-V[:, :-4] + 2*V[:, 2:-2] - V[:, 4:])/4
             P[:, 1] = (V[:, 1] - V[:, 3])/4
         P[:, 0] = (V[:, 0] - V[:, 2])/2
         if argument == 1: # if trial function
@@ -1318,11 +1319,12 @@ class Heinrichs(CompositeSpace):
         Orthogonal._evaluate_scalar_product(self, True)
         output = self.scalar_product.output_array
         wk = output.copy()
-        output[self.si[0]] = 0.5*(wk[self.si[0]]-wk[self.si[2]])
-        output[self.si[1]] = (wk[self.si[1]]-wk[self.si[3]])/4
-        output[self.sl[slice(2, self.N-2)]] *= 0.5
-        output[self.sl[slice(2, self.N-2)]] -= wk[self.sl[slice(0, self.N-4)]]/4
-        output[self.sl[slice(2, self.N-2)]] -= wk[self.sl[slice(4, self.N)]]/4
+        output[self.si[0]] = 2*(wk[self.si[0]]-wk[self.si[2]])
+        output[self.si[1]] = (wk[self.si[1]]-wk[self.si[3]])
+        output[self.sl[slice(2, self.N-2)]] *= 2
+        output[self.sl[slice(2, self.N-2)]] -= wk[self.sl[slice(0, self.N-4)]]
+        output[self.sl[slice(2, self.N-2)]] -= wk[self.sl[slice(4, self.N)]]
+        output /= 4
 
         if self.is_scaled():
             k = self.broadcast_to_ndims(np.arange(self.N))
@@ -1337,14 +1339,14 @@ class Heinrichs(CompositeSpace):
             output_array = np.zeros_like(input_array)
         else:
             output_array.fill(0)
-        output_array[self.si[0]] = 0.5*input_array[self.si[0]]
-        output_array[self.si[2]] = -0.5*input_array[self.si[0]]
+        output_array[self.si[0]] = 2*input_array[self.si[0]]
+        output_array[self.si[2]] = -2*input_array[self.si[0]]
         if self.is_scaled():
-            output_array[self.si[1]] = input_array[self.si[1]]/8
-            output_array[self.si[3]] = -input_array[self.si[1]]/8
+            output_array[self.si[1]] = input_array[self.si[1]]/2
+            output_array[self.si[3]] = -input_array[self.si[1]]/2
         else:
-            output_array[self.si[1]] = input_array[self.si[1]]/4
-            output_array[self.si[3]] = -input_array[self.si[1]]/4
+            output_array[self.si[1]] = input_array[self.si[1]]
+            output_array[self.si[3]] = -input_array[self.si[1]]
 
         s0 = self.sl[slice(0, self.N-4)]
         s1 = self.sl[slice(2, self.N-2)]
@@ -1355,9 +1357,10 @@ class Heinrichs(CompositeSpace):
             k = self.broadcast_to_ndims(np.arange(self.N))
             w0 /= k[s3]
 
-        output_array[s0] -= w0/4
-        output_array[s1] += w0/2
-        output_array[s2] -= w0/4
+        output_array[s0] -= w0
+        output_array[s1] += w0*2
+        output_array[s2] -= w0
+        output_array /= 4
         self.bc.add_to_orthogonal(output_array, input_array)
         return output_array
 
@@ -2062,8 +2065,6 @@ class MikNeumann(CompositeSpace):
         return output_array
 
     def slice(self):
-        #if self.use_fixed_gauge:
-        #    return slice(1, self.N-2)
         return slice(0, self.N-2)
 
     def eval(self, x, u, output_array=None):
