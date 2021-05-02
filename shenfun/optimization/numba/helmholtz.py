@@ -420,7 +420,7 @@ def Poisson_Solve_ADD_2D(d, d1, scale, b, u, axis):
             Poisson_Solve_ADD_1D(d, d1, scale, b[:, j], u[:, j])
     elif axis == 1:
         for i in range(u.shape[0]):
-            Poisson_Solve_ADD_1D(d, d1, scale, b[:, j], u[:, j])
+            Poisson_Solve_ADD_1D(d, d1, scale, b[i, :], u[i, :])
     return u
 
 @nb.jit(nopython=True, fastmath=True, cache=True)

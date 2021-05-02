@@ -614,6 +614,10 @@ class SpectralMatrix(SparseMatrix):
             self[0] = 1
 
     def __eq__(self, a):
+        if isinstance(a, Number):
+            return False
+        if not isinstance(a, SparseMatrix):
+            return False
         if self.shape != a.shape:
             return False
         if self.get_key() != a.get_key():

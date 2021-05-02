@@ -24,7 +24,7 @@ def test_quasiGalerkin(basis):
     M = B-A
     sol = la.Solve(M, S)
     f_hat = inner(v, Array(T, buffer=fe))
-    f_hat[:-2] = Q.diags('csc')*f_hat[:-2]
+    f_hat[:-2] = Q.diags('csc')*f_hat
     u_hat = Function(S)
     u_hat = sol(f_hat, u_hat)
     uj = u_hat.backward()

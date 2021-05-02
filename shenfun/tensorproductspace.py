@@ -1576,7 +1576,8 @@ class BoundaryValues:
                 else:
                     raise NotImplementedError
 
-                if len(T.get_nonhomogeneous_axes()) == 1:
+            if len(T.get_nonhomogeneous_axes()) == 1:
+                for j, bci in enumerate(self.bc):
                     from .spectralbase import FuncWrap
 
                     if number_of_bases_after_this == 0:
@@ -1599,13 +1600,77 @@ class BoundaryValues:
                         self.bcs[j] = b_hat[this_base.si[-1]].copy()
                     else:
                         self.bcs[j] = b_hat[this_base.si[-(len(self.bc))+j]].copy()
-                    b_hat = T.forward(b).copy()
+
+                b_hat = T.forward(b).copy()
+                for j, bci in enumerate(self.bc):
                     if num_bcs == 1:
                         self.bcs_final[j] = b_hat[this_base.si[-1]].copy()
                     else:
                         self.bcs_final[j] = b_hat[this_base.si[-(len(self.bc))+j]].copy()
 
-            if len(T.get_nonhomogeneous_axes()) == 2:
+            #msdict = split(T.coors.sg)
+            #assert len(msdict) == 1
+            #_c = msdict[0]['coeff']
+            #if len(T.get_nonhomogeneous_axes()) == 1:
+            #    if number_of_bases_after_this == 0:
+            #        # Dirichlet base is the first to be transformed
+            #        b_hat = b
+
+            #    elif number_of_bases_after_this == 1:
+            #        T.forward._xfftn[0].input_array[...] = b*_c
+
+            #        T.forward._xfftn[0]()
+            #        arrayA = T.forward._xfftn[0].output_array
+            #        arrayB = T.forward._xfftn[1].input_array
+            #        T.forward._transfer[0](arrayA, arrayB)
+            #        b_hat = arrayB.copy()
+
+            #    elif number_of_bases_after_this == 2:
+
+            #        T.forward._xfftn[0].input_array[...] = b*_c
+            #        T.forward._xfftn[0]()
+            #        arrayA = T.forward._xfftn[0].output_array
+            #        arrayB = T.forward._xfftn[1].input_array
+            #        T.forward._transfer[0](arrayA, arrayB)
+
+            #        T.forward._xfftn[1]()
+            #        arrayA = T.forward._xfftn[1].output_array
+            #        arrayB = T.forward._xfftn[2].input_array
+            #        T.forward._transfer[1](arrayA, arrayB)
+            #        b_hat = arrayB.copy()
+
+            #    # Now b_hat contains the correct slices in slm1 and slm2
+            #    # These are the values to use on intermediate steps. If for example the Dirichlet space is squeezed between two Fourier spaces
+            #    for i in range(len(self.bc)):
+            #        if self.bcs[i] is None:
+            #            continue
+            #        if num_bcs == 1:
+            #            self.bcs[i] = b_hat[this_base.si[-1]].copy()
+            #        else:
+            #            self.bcs[i] = b_hat[this_base.si[-(len(self.bc))+i]].copy()
+
+            #    # Final (the values to set on fully transformed functions)
+
+            #    T.forward._xfftn[0].input_array[...] = b*_c
+
+            #    for i in range(len(T.forward._transfer)):
+            #        T.forward._xfftn[i]()
+            #        arrayA = T.forward._xfftn[i].output_array
+            #        arrayB = T.forward._xfftn[i+1].input_array
+            #        T.forward._transfer[i](arrayA, arrayB)
+
+            #    T.forward._xfftn[-1]()
+            #    b_hat = T.forward._xfftn[-1].output_array
+            #    for i in range(len(self.bc)):
+            #        if self.bcs[i] is None:
+            #            continue
+            #        elif num_bcs == 1:
+            #            self.bcs_final[i] = b_hat[this_base.si[-1]].copy()
+            #        else:
+            #            self.bcs_final[i] = b_hat[this_base.si[-(len(self.bc))+i]].copy()
+
+
+            elif len(T.get_nonhomogeneous_axes()) == 2:
                 assert len(T.bases) == 2, 'Only implemented for 2D'
                 bases = []
                 for axis, base in enumerate(T.bases):

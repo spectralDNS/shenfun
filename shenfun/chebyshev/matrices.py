@@ -193,7 +193,7 @@ class BSDSDmatW(SpectralMatrix):
 
     .. math::
 
-        B_{kj}=(\phi_j, \phi_k (x^2-1))_w
+        B_{kj}=(\phi_j, \phi_k (1-x^2))_w
 
     where
 
@@ -202,7 +202,6 @@ class BSDSDmatW(SpectralMatrix):
         j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
 
     and :math:`\phi_j` is a Shen Dirichlet basis function.
-    weight = 1-x**2
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -552,11 +551,18 @@ class BTSDmat(SpectralMatrix):
     def __quasi__(self, Q):
         N = self.testfunction[0].N
         d = {0: Q[0]*self[0]}
-        d[0][:-2] += Q[2]*self[-2]
+        #d[0][:-2] += Q[2]*self[-2]
+        #d[-2] = Q[0][2:]*self[-2]
+        #d[2] = Q[2][:]*(self[0][2:])
+        #d[2][:-2] += Q[4]*self[-2]
+        #d[4] = Q[4][:]*self[0][4:]
+
+        d[0] += Q[2]*self[-2]
         d[-2] = Q[0][2:]*self[-2]
-        d[2] = Q[2][:]*(self[0][2:])
-        d[2][:-2] += Q[4]*self[-2]
-        d[4] = Q[4][:]*self[0][4:]
+        d[2] = Q[2][:-2]*(self[0][2:])
+        d[2] += Q[4]*self[-2]
+        d[4] = Q[4][:-2]*self[0][4:]
+
         sc = self.scale*Q.scale
         return SparseMatrix(d, (N-2, N-2), scale=sc)
 
@@ -593,11 +599,19 @@ class BTSNmat(SpectralMatrix):
         k[:2] = 0
         sc = self.scale*Q.scale
         d = {0: Q[0]*self[0]}
-        d[0][:-2] += Q[2]*self[-2][:N-4]
+        #d[0][:-2] += Q[2]*self[-2][:N-4]
+        #d[-2] = Q[0][2:]*self[-2][:N-4]
+        #d[2] = Q[2]*self[0][2:]
+        #d[2][:-2] += Q[4]*self[-2][2:N-4]
+        #d[4] = Q[4][:]*self[0][4:]
+
+        d[0][:] += Q[2]*self[-2]
         d[-2] = Q[0][2:]*self[-2][:N-4]
-        d[2] = Q[2]*self[0][2:]
-        d[2][:-2] += Q[4]*self[-2][2:N-4]
-        d[4] = Q[4][:]*self[0][4:]
+        d[2] = Q[2][:-2]*self[0][2:]
+        d[2] += Q[4]*self[-2][2:N-2]
+        d[4] = Q[4][:-2]*self[0][4:]
+        d[2][-2:] = 0
+        d[4][-2:] = 0
         return SparseMatrix(d, (N-2, N-2), scale=sc)
 
 class BSBSBmat(SpectralMatrix):
@@ -697,15 +711,24 @@ class BSBSDmat(SpectralMatrix):
     def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SD)
-        N = test[0].N
-        ck = get_ck(N, test[0].quad)
-        k = np.arange(N-4, dtype=float)
+        N = test[0].N-4
+        M = trial[0].N-2
+        Q = min(M, N)
+        ck = get_ck(test[0].N, test[0].quad)
+        k = np.arange(Q, dtype=float)
         a = 2*(k+2)/(k+3)
-        b = (k[:N-4]+1)/(k[:N-4]+3)
+        b = (k+1)/(k+3)
+        if M > N:
+            Q = min(N, M-2)
+            Qp = min(N, M-4)
+        else:
+            Q = M-2
+            Qp = M-4
         d = {-2: -np.pi/2,
-              0: (ck[:N-4] + a)*np.pi/2,
-              2: -(a+b*ck[4:])*np.pi/2,
-              4: b[:-2]*np.pi/2}
+              0: (ck[:Q] + a)*np.pi/2,
+              2: -(a[:Q]+b[:Q]*ck[(test[0].N-Q):])*np.pi/2,
+              4: b[:Qp]*np.pi/2}
+
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
         self._matvec_methods += ['cython', 'self']
 
@@ -1283,7 +1306,7 @@ class ASDSDmatW(SpectralMatrix):
 
     .. math::
 
-        A_{kj} = (\psi''_j, \psi_k (x^2-1))_w
+        A_{kj} = (\psi''_j, \psi_k (1-x^2))_w
 
     where
 
@@ -1292,7 +1315,6 @@ class ASDSDmatW(SpectralMatrix):
         j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
 
     and :math:`\psi_k` is the Shen Dirichlet basis function.
-    w = 1-x**2
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -1430,6 +1452,38 @@ class ASNSNmat(SpectralMatrix):
             if u is not b:
                 b = np.moveaxis(b, 0, axis)
         return u
+
+
+class ASBSDmat(SpectralMatrix):
+    r"""Mass matrix for inner product
+
+    .. math::
+
+        A_{kj} = (\phi''_j, \psi_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., M-2 \text{ and } k = 0, 1, ..., N-4
+
+    and :math:`\phi_j` is the Shen Dirichlet basis function and :math:`\psi_k`
+    the Shen Biharmonic basis function.
+    """
+    def __init__(self, test, trial, measure=1):
+        assert isinstance(test[0], SB)
+        assert isinstance(trial[0], SD)
+        N = test[0].N-4
+        M = trial[0].N-2
+        k = np.arange(min(N, M), dtype=float)
+        if M > N:
+            Q = min(N, M-2)
+        else:
+            Q = M-2
+
+        d = {0: -2*(k+1)*(k+2)*np.pi,
+             2: 2*(k[:Q]+1)*(k[:Q]+2)*np.pi}
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 
 class ATTmat(SpectralMatrix):
@@ -1592,7 +1646,7 @@ class ADUSDmat(SpectralMatrix):
 
     .. math::
 
-        A_{kj} = (\phi''_j, \psi_k)_w
+        A_{kj} = (\phi''_j, \psi_k (1-x**2))_w
 
     where
 
@@ -1602,7 +1656,6 @@ class ADUSDmat(SpectralMatrix):
 
     and :math:`\phi_k` is Shen's Dirichlet basis and :math:`\psi_j`
     is the DirichletU basis. This is a Petrov-Galerkin matrix.
-    w = -(1-x**2)
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -1682,7 +1735,7 @@ class ADUSNmat(SpectralMatrix):
 
     .. math::
 
-        A_{kj} = (\phi''_j, \psi_k)_w
+        A_{kj} = (\phi''_j, \psi_k (1-x**2))_w
 
     where
 
@@ -1692,7 +1745,6 @@ class ADUSNmat(SpectralMatrix):
 
     and :math:`\phi_k` is Shen's Neumann basis and :math:`\psi_j`
     is the DirichletU basis. This is a Petrov-Galerkin matrix.
-    w = (1-x**2).
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -1746,7 +1798,7 @@ class BDUSDmat(SpectralMatrix):
 
     .. math::
 
-        B_{kj} = (\phi_j, \psi_k)_w
+        B_{kj} = (\phi_j, \psi_k (1-x**2))_w
 
     where
 
@@ -1756,7 +1808,6 @@ class BDUSDmat(SpectralMatrix):
 
     and :math:`\phi_k` is Shen's Dirichlet basis and :math:`\psi_j`
     is the DirichletU basis. This is a Petrov-Galerkin matrix.
-    w = -(1-x**2).
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -1960,7 +2011,7 @@ class BDUSNmat(SpectralMatrix):
 
     .. math::
 
-        B_{kj} = (\phi_j, \psi_k)_w
+        B_{kj} = (\phi_j, \psi_k (1-x**2))_w
 
     where
 
@@ -1970,7 +2021,6 @@ class BDUSNmat(SpectralMatrix):
 
     and :math:`\phi_k` is Shen's Dirichlet basis and :math:`\psi_j`
     is the DirichletU basis. This is a Petrov-Galerkin matrix.
-    w = (1-x**2).
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -2143,6 +2193,7 @@ mat = _ChebMatDict({
     ((SN, 0), (SN, 2)): ASNSNmat,
     ((CN, 0), (CN, 2)): ACNCNmat,
     ((SB, 0), (SB, 2)): ASBSBmat,
+    ((SB, 0), (SD, 2)): ASBSDmat,
     ((HH, 0), (HH, 2)): AHHHHmat,
     ((HH, 0), (HH, 0)): BHHHHmat,
     ((SD, 0), (MN, 0)): BSDMNmat,
@@ -2167,3 +2218,5 @@ mat = _ChebMatDict({
     ((SD, 0), (BCD, 0)): BSDBCDmat,
     ((SB, 0), (BCB, 0)): BSBBCBmat,
     })
+
+#mat = _ChebMatDict({})

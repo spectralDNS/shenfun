@@ -370,7 +370,7 @@ from shenfun import *
 
 N, M = 100, 256
 family = 'Chebyshev'
-VB = FunctionSpace(N, family, bc='Biharmonic')
+VB = FunctionSpace(N, family, bc=(0, 0, 0, 0))
 VD = FunctionSpace(N, family, bc=(0, 0))
 VW = FunctionSpace(N, family)
 VT = FunctionSpace(N, family, bc=(0, 1))
