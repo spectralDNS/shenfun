@@ -548,7 +548,7 @@ if __name__ == '__main__':
     # test_convolve(fbases.R2C, 8)
     test_ASDSDmat(cbases.ShenDirichlet, "GC")
     #test_CDDmat("GL")
-    #test_massmatrices(cBasis[1], cBasis[3], 'GL')
+    #test_massmatrices(cBasis[3], cBasis[1], 'GL')
     #test_CXXmat(cBasis[2], cBasis[1])
     #test_transforms(fBasis[1], '')
     #test_project_1D(cBasis[0])

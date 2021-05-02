@@ -326,7 +326,6 @@ def inner(expr0, expr1, output_array=None, level=0):
                         continue
                     for dv in split(dV):
                         sc = dv['coeff']
-                        scb = dv['coeff']
                         M = []
                         DM = []
                         for i, (a, b) in enumerate(zip(b0, b1)): # Third index, one inner for each dimension
@@ -349,7 +348,6 @@ def inner(expr0, expr1, output_array=None, level=0):
                                 tsc = ts.get_bc_basis()
                                 BB = inner_product((tt, a), (tsc, b), msi)
                                 if not abs(BB.scale-1.) < 1e-8:
-                                    scb *= BB.scale
                                     BB.scale = 1.0
                                 if BB:
                                     DM.append(BB)
@@ -360,7 +358,6 @@ def inner(expr0, expr1, output_array=None, level=0):
                                 DM.append(AA)
 
                         sc = tt.broadcast_to_ndims(np.array([sc]))
-                        scb = tt.broadcast_to_ndims(np.array([scb]))
                         if len(M) == 1: # 1D case
                             M[0].global_index = (test_ind[test_j], trial_ind[trial_j])
                             M[0].scale = sc[0]
@@ -371,19 +368,19 @@ def inner(expr0, expr1, output_array=None, level=0):
                         if has_bcs:
                             if len(DM) == 1: # 1D case
                                 DM[0].global_index = (test_ind[test_j], trial_ind[trial_j])
-                                DM[0].scale = scb
+                                DM[0].scale = sc
                                 DM[0].mixedbase = testspace
                                 A.append(DM[0])
                             else:
                                 if len(trial_sp.get_nonhomogeneous_axes()) == 1:
-                                    A.append(TPMatrix(DM, test_sp, trial_sp, scb, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                                    A.append(TPMatrix(DM, test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
                                 elif len(trial_sp.get_nonhomogeneous_axes()) == 2:
                                     if DM[1] != 0:
-                                        A.append(TPMatrix([M[0], DM[1]], test_sp, trial_sp, scb, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                                        A.append(TPMatrix([M[0], DM[1]], test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
                                     if DM[0] != 0:
-                                        A.append(TPMatrix([DM[0], M[1]], test_sp, trial_sp, scb, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                                        A.append(TPMatrix([DM[0], M[1]], test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
                                     if DM[0] != 0 and DM[1] != 0:
-                                        A.append(TPMatrix(DM, test_sp, trial_sp, scb, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                                        A.append(TPMatrix(DM, test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
 
     # At this point A contains all matrices of the form. The length of A is
     # the number of inner products. For each index into A there are ndim 1D

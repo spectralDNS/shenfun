@@ -712,7 +712,7 @@ if __name__ == '__main__':
     x = sp.symbols('x', real=True)
     xp = sp.Symbol('x', real=True, positive=True)
 
-    #test_mat(((cbases.MikaelNeumann, 0), (cbases.MikaelNeumann, 2)), cmatrices.mat['AMMmat'], 'GC')
+    test_mat(((cbases.ShenBiharmonic, 0), (cbases.ShenDirichlet, 0)), cmatrices.BSBSDmat, 'GL')
     #test_mat(*cmats_and_quads[12])
     #test_cmatvec(cBasis[2], cBasis[2], 'GC', 2)
     #test_lmatvec(lBasis[0], lBasis[0], 'LG', 'cython', 3, 2, 0)
@@ -725,5 +725,5 @@ if __name__ == '__main__':
     #test_div2(cBasis[2], 'GC')
     #test_helmholtz2D('chebyshev', 1)
     #test_helmholtz3D('chebyshev', 0)
-    test_biharmonic3D('chebyshev', 0)
+    #test_biharmonic3D('chebyshev', 0)
     #test_biharmonic2D('jacobi', 0)

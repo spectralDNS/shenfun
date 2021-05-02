@@ -13,7 +13,7 @@ from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, islicedict, \
     slicedict
 from .lobatto import legendre_lobatto_nodes_and_weights
-from .fastgl import fastgl_wrap
+from . import fastgl
 
 __all__ = ['LegendreBase', 'Orthogonal', 'ShenDirichlet',
            'ShenBiharmonic', 'ShenNeumann',
@@ -90,7 +90,7 @@ class LegendreBase(SpectralBase):
         if N is None:
             N = self.shape(False)
         if self.quad == "LG":
-            points, weights = fastgl_wrap.leggauss(N)
+            points, weights = fastgl.leggauss(N)
             #points, weights = leg.leggauss(N)
 
         elif self.quad == "GL":
