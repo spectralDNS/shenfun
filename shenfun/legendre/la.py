@@ -560,8 +560,7 @@ class Helmholtz_2dirichlet:
 
             B1_scale = np.zeros((ls[0].stop-ls[0].start, 1))
             B1_scale[:, 0] = self.BB.scale + 1./self.lmbda[ls[0]]
-            assert np.allclose(self.scale['AUB'], 1., 1e-8), 'Use inner(grad(v), grad(u)) or inner(v, -div(grad(u))) to get correct scaling for solver'
-            A1_scale = np.ones((1, 1))
+            A1_scale = self.scale['AUB']
             # Create Helmholtz solver along axis=1
             Helmy = Helmholtz(self.A1, self.B1, A1_scale, B1_scale, local_shape=self.rhs_B.shape)
             # Map the right hand side to eigen space

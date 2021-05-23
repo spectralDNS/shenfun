@@ -439,7 +439,7 @@ class ASDSDmat(SpectralMatrix):
             ss[axis] = s
             ss = tuple(ss)
             u[ss] = b[ss]
-            u /= self.scale
+            u /= (self.scale*self[0])
             self.testfunction[0].bc.set_boundary_dofs(u, True)
 
         return u
@@ -872,8 +872,35 @@ class CSDSDmat(SpectralMatrix):
         d = {-1: -2, 1: 2}
         if trial[0].is_scaled():
             k = np.arange(N-2, dtype=float)
-            d[-1] = -2. / np.sqrt(4*k[:-1]+6)
-            d[1] = 2. / np.sqrt(4*k[:-1]+6)
+            d[-1] = -2/np.sqrt(4*k[:-1]+6)
+            d[1] = 2/np.sqrt(4*k[:-1]+6)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+
+class CSDSDTmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        C_{kj} = (\psi_j, \psi'_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], SD)
+        assert isinstance(trial[0], SD)
+        N = test[0].N
+        d = {-1: 2, 1: -2}
+        if trial[0].is_scaled():
+            k = np.arange(N-2, dtype=float)
+            d[-1] = 2/np.sqrt(4*k[:-1]+6)
+            d[1] = -2/np.sqrt(4*k[:-1]+6)
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 

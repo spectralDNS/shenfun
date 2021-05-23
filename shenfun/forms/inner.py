@@ -3,6 +3,7 @@ This module contains the inner function that computes the
 weighted inner product.
 """
 from numbers import Number
+from copy import copy
 import numpy as np
 import sympy as sp
 from shenfun.spectralbase import inner_product, SpectralBase, MixedFunctionSpace
@@ -339,16 +340,15 @@ def inner(expr0, expr1, output_array=None, level=0):
                             if len(AA) == 0:
                                 AA = Identity(AA.shape, scale=0)
 
-                            M.append(AA)
                             if not abs(AA.scale-1.) < 1e-8:
-                                sc *= AA.scale
-                                AA.scale = 1.0
+                                AA.incorporate_scale()
+                            M.append(AA)
 
                             if ts.has_nonhomogeneous_bcs:
                                 tsc = ts.get_bc_basis()
                                 BB = inner_product((tt, a), (tsc, b), msi)
                                 if not abs(BB.scale-1.) < 1e-8:
-                                    BB.scale = 1.0
+                                    BB.incorporate_scale()
                                 if BB:
                                     DM.append(BB)
                                     has_bcs = True

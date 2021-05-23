@@ -575,12 +575,9 @@ class ShenNeumann(LegendreBase):
 
         assert input_array.ndim == 1, 'Use fast_transform=False'
 
-        #try:
         xj, wj = self.points_and_weights(self.N)
         from shenfun.optimization.numba import legendre as legn
         legn.legendre_shenneumann_scalar_product(xj, wj, input_array, output_array)
-        #except:
-        #    raise RuntimeError('Requires Numba')
 
         output_array[self.sl[slice(-2, None)]] = 0
         if self.use_fixed_gauge:

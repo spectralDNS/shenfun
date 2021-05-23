@@ -829,18 +829,17 @@ class BSDHHmat(SpectralMatrix):
         ck = get_ck(test[0].N, test[0].quad)
         cp = np.ones(test[0].N); cp[2] = 2
         dk = np.ones(test[0].N); dk[:2] = 0
-        if not trial[0].is_scaled():
-            d = {-2: -(np.pi/8)*ck[:-4],
-                  0: (np.pi/8)*(ck[:-2]*(ck[:-2]+1)+dk[:-2]),
-                  2: -(np.pi/8)*(ck[:-4]+2),
-                  4: (np.pi/8)}
+        d = {-2: -(np.pi/8)*ck[:-4],
+              0: (np.pi/8)*(ck[:-2]*(ck[:-2]+1)+dk[:-2]),
+              2: -(np.pi/8)*(ck[:-4]+2),
+              4: (np.pi/8)}
 
-        else:
+        if trial[0].is_scaled():
             k = np.arange(test[0].N)
-            d = {-2: -(np.pi/8)*ck[:-4]/k[1:-3],
-                  0: (np.pi/8)*(ck[:-2]*(ck[:-2]+1)+dk[:-2])/k[1:-1],
-                  2: -(np.pi/8)*(ck[:-4]+2)/(k[:-4]+3),
-                  4: (np.pi/8)/(k[:-6]+5)}
+            d[-2] *= 1/(k[1:-3]*k[2:-2])
+            d[0]  *= 1/(k[1:-1]*k[2:])
+            d[2]  *= 1/((k[:-4]+3)*(k[:-4]+4))
+            d[4]  *= 1/((k[:-6]+5)*(k[:-6]+6))
 
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
         self.solve = PDMA(self)
@@ -1721,11 +1720,12 @@ class ASDHHmat(SpectralMatrix):
         ck = get_ck(N, test[0].quad)
 
         if trial[0].is_scaled():
-            d = {0: -np.pi/2*ck[:-2]*k[2:],
-                 2: np.pi/2*k[:-4]*(k[1:-3]/(k[:-4]+3))}
+            d = {0: -np.pi/2*ck[:-2],
+                 2: np.pi/2*(k[:-4]*k[1:-3])/((k[:-4]+3)*(k[:-4]+4))}
         else:
             d = {0: -np.pi/2*ck[:-2]*k[2:]*k[1:-1],
                  2: np.pi/2*k[:-4]*k[1:-3]}
+
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
         self.solver = TwoDMA(self)
 
@@ -1776,22 +1776,21 @@ class AHHHHmat(SpectralMatrix):
     def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], HH)
         assert isinstance(trial[0], HH)
+        assert test[0].is_scaled() == trial[0].is_scaled()
         N = test[0].N
         k = np.arange(N-2, dtype=float)
         ck = get_ck(N-2, test[0].quad)
         dk = ck.copy()
         dk[:2] = 0
-        if not test[0].is_scaled():
-            d = {0: -np.pi/16*ck**2*2*((k+1)*(k+2)+dk*(k-2)*(k-1)),
-                 2: np.pi/16*ck[:-2]*2*k[:-2]*k[1:-1],
-                 -2: np.pi/16*ck[:-2]*2*k[2:]*k[1:-1]}
-        else:
-            d = {0: -np.pi/8*ck**2*((k+2)/(k+1)+dk*(k-2)*(k-1)/(k+1)**2),
-                 2: np.pi/8*ck[:-2]*k[:-2]/(k[:-2]+3),
-                 -2: np.pi/8*ck[:-2]*k[2:]/(k[1:-1]+2)}
+        d = {0: -np.pi/8*ck**2*((k+1)*(k+2)+dk*(k-2)*(k-1)),
+             2: np.pi/8*ck[:-2]*k[:-2]*k[1:-1],
+            -2: np.pi/8*ck[:-2]*k[2:]*k[1:-1]}
+        if test[0].is_scaled() and trial[0].is_scaled():
+            d[0] *= 1/((k+2)**2*(k+1)**2)
+            d[2] *= 1/((k[:-2]+1)*(k[:-2]+2)*(k[:-2]+3)*(k[:-2]+4))
+            d[-2]*= 1/(k[1:-1]*k[2:]*(k[2:]+1)*(k[2:]+2))
+
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
-
-
 
 class BDUSDmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
@@ -1847,16 +1846,15 @@ class BHHHHmat(SpectralMatrix):
         ck = get_ck(test[0].N-2, test[0].quad)
         cp = np.ones(test[0].N-2); cp[2] = 2
         dk = np.ones(test[0].N-2); dk[:2] = 0
-        if not test[0].is_scaled():
-            d = {0: np.pi/16*(ck**2*(ck+1)/2 + dk*(cp+3)/2),
-                 2: -np.pi/16*(ck[:-2]+ck[:-2]**2/2+dk[:-2]/2),
-                 4: np.pi*ck[:-4]/32}
+        d = {0: np.pi/16*(ck**2*(ck+1)/2 + dk*(cp+3)/2),
+             2: -np.pi/16*(ck[:-2]+ck[:-2]**2/2+dk[:-2]/2),
+             4: np.pi*ck[:-4]/32}
 
-        else:
-            k = np.arange(test[0].N)
-            d = {0: np.pi/16*(ck**2*(ck+1)/2 + dk*(cp+3)/2)/k[1:-1]**2,
-                 2: -np.pi/16*(ck[:-2]+ck[:-2]**2/2+dk[:-2]/2)/k[1:-3]/k[3:-1],
-                 4: np.pi*ck[:-4]/32/k[1:-5]/k[5:-1]}
+        if test[0].is_scaled() and trial[0].is_scaled():
+            k = np.arange(test[0].N-2)
+            d[0] *= 1/((k+2)**2*(k+1)**2)
+            d[2] *= 1/((k[:-2]+1)*(k[:-2]+2)*(k[:-2]+3)*(k[:-2]+4))
+            d[4] *= 1/((k[:-4]+1)*(k[:-4]+2)*(k[:-4]+5)*(k[:-4]+6))
         d[-2] = d[2].copy()
         d[-4] = d[4].copy()
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
@@ -1890,13 +1888,13 @@ class BSDMNmat(SpectralMatrix):
         qk[1] = 1.5
         dk = np.ones(N)
         dk[0] = 0
-        d = {-2: -np.pi/2/k[2:-2],
-              0: (np.pi/2)*(2*qk[:-2]/kp[:-2] + 1/k[2:]),
-              2: -(np.pi/2)*(1/kp[:-4] + 2/k[2:-2]),
-              4: (np.pi/2)/k[2:-4]}
+        d = {-2: -np.pi/2/k[2:-2]/k[1:-3],
+              0: (np.pi/2)*((2*qk[:-2]/kp[:-2] + 1/k[2:]))/k[1:-1],
+              2: -(np.pi/2)*((1/kp[:-4] + 2/k[2:-2]))/k[3:-1],
+              4: (np.pi/2)/k[2:-4]/k[5:-1]}
         d[-2][0] = 0
         d[0][0] = np.pi
-        d[2][0] = -np.pi/2
+        d[2][0] = -np.pi/6
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 class BSNCNmat(SpectralMatrix):
@@ -1959,13 +1957,8 @@ class ASDMNmat(SpectralMatrix):
         assert isinstance(trial[0], MN)
         N = test[0].N
         k = np.arange(N, dtype=float)
-        qk = np.ones(N)
-        qk[0] = 0
-        qk[1] = 1.5
-        dk = np.ones(N)
-        dk[0] = 0
-        d = {0: -2*np.pi*k[1:-1],
-             2: 2*np.pi*k[1:-3]}
+        d = {0: -2*np.pi*np.ones(N-2),
+             2: 2*np.pi*k[1:-3]/k[3:-1]}
         d[0][0] = 0
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
         self.solver = TwoDMA(self)

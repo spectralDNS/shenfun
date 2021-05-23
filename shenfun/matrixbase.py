@@ -50,7 +50,8 @@ class SparseMatrix(MutableMapping):
     >>> import numpy as np
     >>> N = 4
     >>> d = {-1: 1, 0: -2, 1: 1}
-    >>> SparseMatrix(d, (N, N))
+    >>> S = SparseMatrix(d, (N, N))
+    >>> dict(S)
     {-1: 1, 0: -2, 1: 1}
 
     In case of variable values, store the entire diagonal. For an N x N
@@ -59,7 +60,8 @@ class SparseMatrix(MutableMapping):
     >>> d = {-1: np.ones(N-1),
     ...       0: -2*np.ones(N),
     ...       1: np.ones(N-1)}
-    >>> SparseMatrix(d, (N, N))
+    >>> S = SparseMatrix(d, (N, N))
+    >>> dict(S)
     {-1: array([1., 1., 1.]), 0: array([-2., -2., -2., -2.]), 1: array([1., 1., 1.])}
 
     """
@@ -365,6 +367,13 @@ class SparseMatrix(MutableMapping):
         if abs(self.scale-1) > 1e-8:
             c *= self.scale
 
+    def incorporate_scale(self):
+        if abs(self.scale-1) < 1e-8:
+            return
+        for key, val in self.items():
+            self[key] = val*self.scale
+        self.scale = 1
+
     def solve(self, b, u=None, axis=0, use_lu=False):
         """Solve matrix system Au = b
 
@@ -404,7 +413,6 @@ class SparseMatrix(MutableMapping):
 
         if b.ndim == 1:
             if use_lu:
-
                 if b.dtype.char in 'FDG' and self._lu.U.dtype.char in 'fdg':
                     u.real[:] = self._lu.solve(b.real)
                     u.imag[:] = self._lu.solve(b.imag)
@@ -468,7 +476,6 @@ class SparseMatrix(MutableMapping):
         for key in list_keys:
             del self[key]
         return self
-
 
 
 class SpectralMatrix(SparseMatrix):
