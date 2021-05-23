@@ -90,8 +90,8 @@ class QICGmat(QImat):
         k = np.arange(N)
         d = {
             0: 1/(2*(k[:-1]+1)),
-            2: -1/(2*(k[:-3]+1))}
-        SparseMatrix.__init__(self, d, (N-1, N-1))
+            2: -1/(2*(k[:-2]+1))}
+        SparseMatrix.__init__(self, d, (N-1, N))
 
 class QICTmat(QImat):
     """Quasi-inverse matrix for the Tau method.

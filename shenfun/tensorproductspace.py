@@ -21,7 +21,8 @@ comm = MPI.COMM_WORLD
 __all__ = ('TensorProductSpace', 'VectorSpace', 'TensorSpace',
            'CompositeSpace', 'Convolve')
 
-class CurvilinearTransform(Transform):
+
+class ShenfunTransform(Transform):
     """Class for performing forward parallel transform using curvilinear
     coordinates
 
@@ -95,7 +96,8 @@ class CurvilinearTransform(Transform):
         if input_array is not None:
             self.input_array[...] = input_array
 
-        self.get_measured_input_array()
+        if not self._T.coors.is_cartesian:
+            self.get_measured_input_array()
 
         for i in range(len(self._transfer)):
             self._xfftn[i](**kw)
@@ -109,6 +111,41 @@ class CurvilinearTransform(Transform):
             return output_array
         else:
             return self.output_array
+
+
+class ForwardTransform(ShenfunTransform):
+    def __call__(self, input_array=None, output_array=None, **kw):
+        if input_array is not None:
+            self.input_array[...] = input_array
+
+        if not self._T.coors.is_cartesian:
+            self.get_measured_input_array()
+
+        if len(self._T.get_nonhomogeneous_axes()) > 1:
+            from shenfun import la, TestFunction, TrialFunction, inner
+            assert self._T.dimensions == 2, 'Two inhomogeneous boundary directions only implemented for 2D'
+            u = TrialFunction(self._T)
+            v = TestFunction(self._T)
+            B = inner(u, v)
+            b = inner(v, input_array)
+            sol = la.Solver2D(B)
+            self.output_array[:] = sol(b)
+
+        else:
+
+            for i in range(len(self._transfer)):
+                self._xfftn[i](**kw)
+                arrayA = self._xfftn[i].output_array
+                arrayB = self._xfftn[i+1].input_array
+                self._transfer[i](arrayA, arrayB)
+            self._xfftn[-1](**kw)
+
+        if output_array is not None:
+            output_array[...] = self.output_array
+            return output_array
+        else:
+            return self.output_array
+
 
 class TensorProductSpace(PFFT):
     """Class for multidimensional tensorproductspaces.
@@ -297,21 +334,18 @@ class TensorProductSpace(PFFT):
 
             self.pencil[1] = pencilA
 
-            FT = functools.partial(CurvilinearTransform, T=self) if not coordinates is None else Transform
-            #FT = functools.partial(CurvilinearTransform, T=self) if not self.coors.is_cartesian else Transform
-
-            self.forward = FT(
+            self.forward = ForwardTransform(
                 [o.forward for o in self.xfftn],
                 [o.forward for o in self.transfer],
-                self.pencil)
-            self.backward = Transform(
+                self.pencil, self)
+            self.backward = ShenfunTransform(
                 [o.backward for o in self.xfftn[::-1]],
                 [o.backward for o in self.transfer[::-1]],
-                self.pencil[::-1])
-            self.scalar_product = FT(
+                self.pencil[::-1], self)
+            self.scalar_product = ShenfunTransform(
                 [o.scalar_product for o in self.xfftn],
                 [o.forward for o in self.transfer],
-                self.pencil)
+                self.pencil, self)
 
         else:
             self.configure_backwards(backward_from_pencil, dtype, kw)
@@ -380,20 +414,18 @@ class TensorProductSpace(PFFT):
 
         self.pencil[1] = pencilA
 
-        FT = functools.partial(CurvilinearTransform, T=self) if not self.coors.is_cartesian else Transform
-
-        self.backward = Transform(
+        self.backward = ShenfunTransform(
             [o.backward for o in self.xfftn],
             [o.forward for o in self.transfer],
-            self.pencil)
-        self.forward = FT(
+            self.pencil, self)
+        self.forward = ForwardTransform(
             [o.forward for o in self.xfftn[::-1]],
             [o.backward for o in self.transfer[::-1]],
-            self.pencil[::-1])
-        self.scalar_product = FT(
+            self.pencil[::-1], self)
+        self.scalar_product = ShenfunTransform(
             [o.scalar_product for o in self.xfftn[::-1]],
             [o.forward for o in self.transfer[::-1]],
-            self.pencil[::-1])
+            self.pencil[::-1], self)
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
         if isinstance(padding_factor, Number):
