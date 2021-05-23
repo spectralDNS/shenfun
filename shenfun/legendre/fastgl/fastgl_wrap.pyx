@@ -1,9 +1,9 @@
+cimport fastgl_wrap
 # distutils: language = c++
 #cython: boundscheck=False
 #cython: wraparound=False
 #cython: language_level=3
 
-cimport fastgl_wrap
 import numpy as np
 
 def getGLPair(int N, int k):
