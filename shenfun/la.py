@@ -25,7 +25,7 @@ class TDMA:
         self.dd = np.zeros(0)
         self.neumann = neumann
         if isinstance(mat, SpectralMatrix):
-            self.neumann = mat.testfunction[0].boundary_condition().lower() == 'neumann'
+            self.neumann = mat.testfunction[0].use_fixed_gauge
 
     def init(self):
         """Initialize and allocate solver"""
@@ -113,7 +113,7 @@ class TDMA:
 
         if self.neumann:
             u[T.si[0]] = 0
-            if isinstance(self, SpectralMatrix):
+            if isinstance(self.mat, SpectralMatrix):
                 u[T.si[0]] = self.mat.testfunction[0].mean
 
         return u
@@ -147,7 +147,7 @@ class PDMA:
         self.L = None
         self.neumann = neumann
         if isinstance(mat, SpectralMatrix):
-            self.neumann = mat.testfunction[0].boundary_condition().lower() == 'neumann'
+            self.neumann = mat.testfunction[0].use_fixed_gauge
 
     def init(self):
         """Initialize and allocate solver"""
@@ -445,26 +445,6 @@ class SolverGeneric2ND:
         assert len(diagonal_axis) == 1
         return diagonal_axis[0]
 
-    def get_gauged_matrices(self, m0, m1):
-        if self.T.use_fixed_gauge:
-            A0 = m0.diags('lil')
-            if m0.testfunction[1]+m0.trialfunction[1] == 2:
-                zerorow = A0[0].nonzero()[1]
-                A0[(0, zerorow)] = 0
-                A0[0, 0] = 1
-            A0 = A0.tocsc()
-
-            A1 = m1.diags('lil')
-            if m1.testfunction[1]+m1.trialfunction[1] == 2:
-                zerorow = A1[0].nonzero()[1]
-                A1[(0, zerorow)] = 0
-                A1[0, 0] = 1
-            A1 = A1.tocsc()
-        else:
-            A0 = m0.diags('csc')
-            A1 = m1.diags('csc')
-        return A0, A1
-
     def diags(self, i):
         """Return matrix for given index `i` in diagonal direction"""
         if self.T.dimensions == 2:
@@ -472,14 +452,25 @@ class SolverGeneric2ND:
             if self.M is not None:
                 return self.M
             m = self.tpmats[0]
-            A0, A1 = self.get_gauged_matrices(m.mats[0], m.mats[1])
+            A0 = m.mats[0].diags('csc')
+            A1 = m.mats[1].diags('csc')
             M0 = scp.kron(A0, A1, 'csc')
             M0 *= np.atleast_1d(m.scale).item()
             for m in self.tpmats[1:]:
-                A0, A1 = self.get_gauged_matrices(m.mats[0], m.mats[1])
+                A0 = m.mats[0].diags('csc')
+                A1 = m.mats[1].diags('csc')
                 M1 = scp.kron(A0, A1, 'csc')
                 M1 *= np.atleast_1d(m.scale).item()
                 M0 = M0 + M1
+            # Check if we need to fix gauge. This is required if we are solving
+            # a pure Neumann Poisson problem.
+            z0 = M0[0].nonzero()
+            if z0[1][0] > 0 :
+                M0 = M0.tolil()
+                zerorow = M0[0].nonzero()[1]
+                M0[(0, zerorow)] = 0
+                M0[0, 0] = 1
+                M0 = M0.tocsc()
             self.M = M0
             return self.M
 
@@ -490,15 +481,24 @@ class SolverGeneric2ND:
             diagonal_axis = self.get_diagonal_axis()
             sc = [0, 0, 0]
             sc[diagonal_axis] = i if m.scale.shape[diagonal_axis] > 1 else 0
-            A0, A1 = self.get_gauged_matrices(m.mats[naxes[0]], m.mats[naxes[1]])
+            A0 = m.mats[naxes[0]].diags('csc')
+            A1 = m.mats[naxes[1]].diags('csc')
             M0 = scp.kron(A0, A1, 'csc')
             M0 *= m.scale[tuple(sc)]
             for m in self.tpmats[1:]:
-                A0, A1 = self.get_gauged_matrices(m.mats[naxes[0]], m.mats[naxes[1]])
+                A0 = m.mats[naxes[0]].diags('csc')
+                A1 = m.mats[naxes[1]].diags('csc')
                 M1 = scp.kron(A0, A1, 'csc')
                 sc[diagonal_axis] = i if m.scale.shape[diagonal_axis] > 1 else 0
                 M1 *= m.scale[tuple(sc)]
                 M0 = M0 + M1
+            z0 = M0[0].nonzero()
+            if z0[1][0] > 0 :
+                M0 = M0.tolil()
+                zerorow = M0[0].nonzero()[1]
+                M0[(0, zerorow)] = 0
+                M0[0, 0] = 1
+                M0 = M0.tocsc()
             return M0
 
     def __call__(self, b, u=None):
@@ -539,10 +539,11 @@ class Solver2D:
 
     """
 
-    def __init__(self, tpmats):
+    def __init__(self, tpmats, fixed_gauge=None):
         bc_mats = extract_bc_matrices([tpmats])
         self.tpmats = tpmats
         self.bc_mats = bc_mats
+        self.fixed_gauge = fixed_gauge
         self._lu = None
         m = tpmats[0]
         self.T = T = m.space
@@ -550,15 +551,30 @@ class Solver2D:
         assert ndim == 2
         assert np.atleast_1d(m.scale).size == 1, "Use level = 2 with :func:`.inner`"
 
-        A0, A1 = self.get_gauged_matrices(m.mats[0], m.mats[1])
+        A0 = m.mats[0].diags('csc')
+        A1 = m.mats[1].diags('csc')
         M0 = scp.kron(A0, A1, 'csc')
         M0 *= np.atleast_1d(m.scale).item()
         for m in tpmats[1:]:
-            A0, A1 = self.get_gauged_matrices(m.mats[0], m.mats[1])
+            A0 = m.mats[0].diags('csc')
+            A1 = m.mats[1].diags('csc')
             M1 = scp.kron(A0, A1, 'csc')
             assert np.atleast_1d(m.scale).size == 1, "Use level = 2 with :func:`.inner`"
             M1 *= np.atleast_1d(m.scale).item()
             M0 = M0 + M1
+
+        # Check if we need to fix gauge. This is required if we are solving
+        # a pure Neumann Poisson problem.
+        if fixed_gauge is not None:
+            # Ident first row
+            z0 = M0[0].nonzero()
+            if len(z0[0]) == 0 or z0[1][0] > 0:
+                M0 = M0.tolil()
+                zerorow = M0[0].nonzero()[1]
+                M0[(0, zerorow)] = 0
+                M0[0, 0] = 1
+                M0 = M0.tocsc()
+
         self.M = M0
 
     def matvec(self, u, c):
@@ -566,26 +582,6 @@ class Solver2D:
         s0 = tuple(base.slice() for base in self.T)
         c[s0] = self.M.dot(u[s0].flatten()).reshape(self.T.dims())
         return c
-
-    def get_gauged_matrices(self, m0, m1):
-        if self.T.use_fixed_gauge:
-            A0 = m0.diags('lil')
-            if m0.testfunction[1]+m0.trialfunction[1] == 2:
-                zerorow = A0[0].nonzero()[1]
-                A0[(0, zerorow)] = 0
-                A0[0, 0] = 1
-            A0 = A0.tocsc()
-
-            A1 = m1.diags('lil')
-            if m1.testfunction[1]+m1.trialfunction[1] == 2:
-                zerorow = A1[0].nonzero()[1]
-                A1[(0, zerorow)] = 0
-                A1[0, 0] = 1
-            A1 = A1.tocsc()
-        else:
-            A0 = m0.diags('csc')
-            A1 = m1.diags('csc')
-        return A0, A1
 
     def __call__(self, b, u=None):
 
@@ -613,6 +609,9 @@ class Solver2D:
             else:
                 u.imag[s0] = self._lu.solve(b.imag[s0].flatten()).reshape(self.T.dims())
                 u.real[s0] = self._lu.solve(b.real[s0].flatten()).reshape(self.T.dims())
+
+        if self.fixed_gauge:
+            u[0, 0] = self.fixed_gauge
 
         return u
 
@@ -633,7 +632,7 @@ class Solver3D:
 
     """
 
-    def __init__(self, tpmats):
+    def __init__(self, tpmats, fixed_gauge=None):
         bc_mats = extract_bc_matrices([tpmats])
         self.tpmats = tpmats
         self.bc_mats = bc_mats
@@ -644,15 +643,31 @@ class Solver3D:
         assert ndim == 3
         assert np.atleast_1d(m.scale).size == 1, "Use level = 2 with :func:`.inner`"
 
-        A0, A1, A2 = self.get_gauged_matrices(m.mats[0], m.mats[1], m.mats[2])
+        A0 = m.mats[0].diags('csc')
+        A1 = m.mats[1].diags('csc')
+        A2 = m.mats[2].diags('csc')
         M0 = scp.kron(scp.kron(A0, A1, 'csc'), A2, 'csc')
         M0 *= np.atleast_1d(m.scale).item()
         for m in tpmats[1:]:
-            A0, A1, A2 = self.get_gauged_matrices(m.mats[0], m.mats[1], m.mats[2])
+            A0 = m.mats[0].diags('csc')
+            A1 = m.mats[1].diags('csc')
+            A2 = m.mats[2].diags('csc')
             M1 = scp.kron(scp.kron(A0, A1, 'csc'), A2, 'csc')
             assert np.atleast_1d(m.scale).size == 1, "Use level = 2 with :func:`.inner`"
             M1 *= np.atleast_1d(m.scale).item()
             M0 = M0 + M1
+
+        # Check if we need to fix gauge. This is required if we are solving
+        # a pure Neumann Poisson problem.
+        if fixed_gauge:
+            # Ident first row
+            z0 = M0[0].nonzero()
+            if len(z0[0]) == 0 or z0[1][0] > 0:
+                M0 = M0.tolil()
+                zerorow = M0[0].nonzero()[1]
+                M0[(0, zerorow)] = 0
+                M0[0, 0] = 1
+                M0 = M0.tocsc()
         self.M = M0
 
     def matvec(self, u, c):
@@ -660,35 +675,6 @@ class Solver3D:
         s0 = tuple(base.slice() for base in self.T)
         c[s0] = self.M.dot(u[s0].flatten()).reshape(self.T.dims())
         return c
-
-    def get_gauged_matrices(self, m0, m1, m2):
-        if self.T.use_fixed_gauge:
-            A0 = m0.diags('lil')
-            if m0.testfunction[1]+m0.trialfunction[1] == 2:
-                zerorow = A0[0].nonzero()[1]
-                A0[(0, zerorow)] = 0
-                A0[0, 0] = 1
-            A0 = A0.tocsc()
-
-            A1 = m1.diags('lil')
-            if m1.testfunction[1]+m1.trialfunction[1] == 2:
-                zerorow = A1[0].nonzero()[1]
-                A1[(0, zerorow)] = 0
-                A1[0, 0] = 1
-            A1 = A1.tocsc()
-
-            A2 = m2.diags('lil')
-            if m2.testfunction[1]+m2.trialfunction[1] == 2:
-                zerorow = A2[0].nonzero()[1]
-                A2[(0, zerorow)] = 0
-                A2[0, 0] = 1
-            A2 = A2.tocsc()
-
-        else:
-            A0 = m0.diags('csc')
-            A1 = m1.diags('csc')
-            A2 = m2.diags('csc')
-        return A0, A1, A2
 
     def __call__(self, b, u=None):
 
@@ -716,6 +702,9 @@ class Solver3D:
             else:
                 u.imag[s0] = self._lu.solve(b.imag[s0].flatten()).reshape(self.T.dims())
                 u.real[s0] = self._lu.solve(b.real[s0].flatten()).reshape(self.T.dims())
+
+        if self.fixed_gauge:
+            u[0, 0, 0] = self.fixed_gauge
 
         return u
 
@@ -856,6 +845,18 @@ class SolverGeneric1ND:
         A[(row, r[1])] = 0
         A[row, col] = 1
         return A, b
+
+    def matvec(self, u, c):
+        c.fill(0)
+        w0 = np.zeros_like(u)
+        for mat in self.mats:
+            c += mat.matvec(u, w0)
+
+        if len(self.bc_mats) > 0:
+            u.set_boundary_dofs()
+            for bc_mat in self.bc_mats:
+                c += bc_mat.matvec(u, w0)
+        return c
 
     def __call__(self, b, u=None, constraints=()):
         """Solve problem with one non-diagonal direction

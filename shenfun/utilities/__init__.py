@@ -17,7 +17,7 @@ __all__ = ['dx', 'clenshaw_curtis1D', 'CachedArrayDict', 'surf3D', 'wrap_periodi
            'outer', 'apply_mask', 'integrate_sympy', 'mayavi_show']
 
 
-def dx(u):
+def dx(u, weighted=False):
     r"""Compute integral of u over domain
 
     .. math::
@@ -35,12 +35,12 @@ def dx(u):
     uc = u.copy()
     dim = len(u.shape)
     if dim == 1:
-        w = T.points_and_weights(weighted=False)[1]
+        w = T.points_and_weights(weighted=weighted)[1]
         return np.sum(uc*w).item()
 
     for ax in range(dim):
         uc = uc.redistribute(axis=ax)
-        w = T.bases[ax].points_and_weights(weighted=False)[1]
+        w = T.bases[ax].points_and_weights(weighted=weighted)[1]
         sl = [np.newaxis]*len(uc.shape)
         sl[ax] = slice(None)
         uu = np.sum(uc*w[tuple(sl)], axis=ax)

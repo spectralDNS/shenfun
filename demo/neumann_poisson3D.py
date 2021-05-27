@@ -21,7 +21,11 @@ from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
     Function, TensorProductSpace, FunctionSpace, comm
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
-family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
+assert len(sys.argv) == 3, "Call with two command-line arguments"
+assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
+assert isinstance(int(sys.argv[-2]), int)
+
+family = sys.argv[-1].lower()
 base = importlib.import_module('.'.join(('shenfun', family)))
 Solver = base.la.Helmholtz
 
@@ -31,9 +35,10 @@ ue = sin(6*z)*cos(4*y)*sin(2*np.pi*x)*(1-x**2)
 fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
 
 # Size of discretization
-N = (32, 32, 32)
+N = int(sys.argv[-2])
+N = (N, N, N)
 
-SD = FunctionSpace(N[0], family=family, bc={'left': ('N', 0), 'right': ('N', 0)}, mean=None)
+SD = FunctionSpace(N[0], family=family, bc={'left': ('N', 0), 'right': ('N', 0)}, mean=0)
 K1 = FunctionSpace(N[1], family='F', dtype='D')
 K2 = FunctionSpace(N[2], family='F', dtype='d')
 T = TensorProductSpace(comm, (SD, K1, K2))
@@ -62,7 +67,7 @@ uj = Array(T, buffer=ue)
 print(abs(uj-u).max())
 assert np.allclose(uj, u)
 c = H.matvec(u_hat, Function(T))
-assert np.allclose(c, f_hat)
+assert np.allclose(c, f_hat, 1e-6, 1e-6)
 
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt

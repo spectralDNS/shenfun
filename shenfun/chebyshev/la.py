@@ -389,7 +389,7 @@ class Helmholtz:
         B[2] = np.broadcast_to(B[2], A[2].shape)
         B[-2] = np.broadcast_to(B[-2], A[2].shape)
         v = A.testfunction[0]
-        neumann = self.neumann = v.boundary_condition() == 'Neumann'
+        neumann = self.neumann = self.A.testfunction[0].boundary_condition() == 'Neumann'
         self.axis = A.axis
         shape = [1]
         T = A.tensorproductspace
@@ -457,10 +457,15 @@ class Helmholtz:
             c : array
         """
         c[:] = 0
-        if self.neumann is False:
+        if not self.neumann:
             self.Helmholtz_matvec(v, c, self.alfa, self.beta, self.A, self.B, self.axis)
         else:
             self.Helmholtz_Neumann_matvec(v, c, self.alfa, self.beta, self.A, self.B, self.axis)
+        if len(self.bc_mats) > 0:
+            v.set_boundary_dofs()
+            w0 = np.zeros_like(v)
+            for bc_mat in self.bc_mats:
+                c += bc_mat.matvec(v, w0)
         return c
 
     @staticmethod

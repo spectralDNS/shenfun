@@ -495,7 +495,8 @@ class ASNSNmat(SpectralMatrix):
         us[:] = bs*d[tuple(sl)]
         u /= self.scale
         self.testfunction[0].bc.set_boundary_dofs(u, True)
-        u[0] = self.testfunction[0].mean/(2/self.testfunction[0].domain_factor())
+        if self.testfunction[0].use_fixed_gauge:
+            u[0] = self.testfunction[0].mean/(2/self.testfunction[0].domain_factor())
         if axis > 0:
             u = np.moveaxis(u, 0, axis)
             if u is not b:

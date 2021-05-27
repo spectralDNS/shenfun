@@ -7,6 +7,8 @@ def chebval(x, c):
     c = np.array(c, ndmin=1, copy=True)
     if c.dtype.char in '?bBhHiIlLqQpP':
         c = c.astype(np.double)
+    if isinstance(x, int):
+        x = float(x)
     if isinstance(x, (tuple, list)):
         x = np.asarray(x)
     y = np.zeros_like(x)

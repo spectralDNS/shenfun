@@ -1693,7 +1693,7 @@ class ShenNeumann(CompositeSpace):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="GC", mean=0, bc=(0, 0), domain=(-1., 1.), dtype=float, padding_factor=1,
+    def __init__(self, N, quad="GC", mean=None, bc=(0, 0), domain=(-1., 1.), dtype=float, padding_factor=1,
                  scaled=False, dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -1951,7 +1951,7 @@ class CombinedShenNeumann(CompositeSpace):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="GC", mean=0, bc=(0, 0), domain=(-1., 1.), dtype=float, padding_factor=1,
+    def __init__(self, N, quad="GC", mean=None, bc=(0, 0), domain=(-1., 1.), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -2057,7 +2057,8 @@ class CombinedShenNeumann(CompositeSpace):
     def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
             SpectralBase._evaluate_scalar_product(self)
-            self.scalar_product.output_array[self.si[0]] = self.mean*np.pi
+            if self.use_fixed_gauge:
+                self.scalar_product.output_array[self.si[0]] = self.mean*np.pi
             self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
             return
         Orthogonal._evaluate_scalar_product(self, True)
@@ -2195,7 +2196,7 @@ class MikNeumann(CompositeSpace):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="GC", mean=0, bc=(0, 0), domain=(-1., 1.), dtype=float, padding_factor=1,
+    def __init__(self, N, quad="GC", mean=None, bc=(0, 0), domain=(-1., 1.), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
@@ -2308,7 +2309,8 @@ class MikNeumann(CompositeSpace):
     def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
             SpectralBase._evaluate_scalar_product(self)
-            self.scalar_product.output_array[self.si[0]] = self.mean*np.pi
+            if self.use_fixed_gauge:
+                self.scalar_product.output_array[self.si[0]] = self.mean*np.pi
             self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
             return
         Orthogonal._evaluate_scalar_product(self, True)

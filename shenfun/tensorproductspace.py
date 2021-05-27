@@ -1533,7 +1533,7 @@ class BoundaryValues:
         call this function. The boundary condition can then be applied as before.
         """
         from shenfun.utilities import split
-        from shenfun import project
+        from shenfun import project, inner
 
         self.axis = this_base.axis
         self.base = this_base
@@ -1712,6 +1712,7 @@ class BoundaryValues:
                 other_base = bases[0]
                 ua = Array(other_base)
                 bc_this = this_base.bc.bc.copy()
+                bc_other = other_base.bc.bc.copy()
                 df = 2./(other_base.domain[1]-other_base.domain[0])
                 for i in range(2): # x = -1 and then x = 1
                     bcj = bc_this[i]
@@ -1729,9 +1730,10 @@ class BoundaryValues:
                                 s = bcj.subs(xx, xj)
                             elif j == 1 and other_base.boundary_condition() == 'UpperDirichletNeumann':
                                 s = bcj.diff(xx, 1).subs(xx, xj)/df
+                            elif other_base.boundary_condition() == 'Neumann':
+                                s = bcj.diff(xx, 1).subs(xx, xj)/df
                             else:
                                 s = bcj.subs(xx, xj)
-
                             other_base.bc.bc[j] = s
                             other_base.bc.bcs[j] = s
                             other_base.bc.bcs_final[j] = s

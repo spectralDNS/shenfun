@@ -18,24 +18,29 @@ import importlib
 from sympy import symbols, cos, sin
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    TensorProductSpace, FunctionSpace, Array, Function, comm
+    TensorProductSpace, FunctionSpace, Array, Function, comm, la
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
-family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
+assert len(sys.argv) == 3, "Call with two command-line arguments"
+assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
+assert isinstance(int(sys.argv[-2]), int)
+
+family = sys.argv[-1].lower()
 base = importlib.import_module('.'.join(('shenfun', family)))
 Solver = base.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y = symbols("x,y", real=True)
-ue = cos(5*y)*(sin(2*np.pi*x))*(1-x**2)
-fe = ue.diff(x, 2) + ue.diff(y, 2)
+ue = (1-x**3)*cos(2*y)
+fe = ue-ue.diff(x, 2)-ue.diff(y, 2)
 
 # Size of discretization
-N = (31, 32)
-
-SD = FunctionSpace(N[0], family=family, bc={'left': ('N', 0), 'right': ('N', 0)}, mean=None)
+N = int(sys.argv[-2])
+N = (N, N)
+bc = {'left': ('N', ue.diff(x, 1).subs(x, -1)), 'right': ('N', ue.diff(x, 1).subs(x, 1))}
+SN = FunctionSpace(N[0], family=family, bc=bc, mean=None)
 K1 = FunctionSpace(N[1], family='F', dtype='d')
-T = TensorProductSpace(comm, (SD, K1))
+T = TensorProductSpace(comm, (SN, K1), axes=(0, 1))
 u = TrialFunction(T)
 v = TestFunction(T)
 
@@ -46,21 +51,22 @@ fj = Array(T, buffer=fe)
 f_hat = inner(v, fj)
 
 # Get left hand side of Poisson equation
-matrices = inner(v, div(grad(u)))
+matrices = inner(v, u-div(grad(u)))
 
 # Create Helmholtz linear algebra solver
 H = Solver(*matrices)
 
 # Solve and transform to real space
-u_hat = Function(T)           # Solution spectral space
+u_hat = Function(T).set_boundary_dofs()           # Solution spectral space
 u_hat = H(u_hat, f_hat)       # Solve
-uq = T.backward(u_hat)
+uq = T.backward(u_hat).copy()
 
 # Compare with analytical solution
 uj = Array(T, buffer=ue)
 print(abs(uj-uq).max())
 assert np.allclose(uj, uq)
 c = H.matvec(u_hat, Function(T))
+f_hat = inner(v, fj)
 assert np.allclose(c, f_hat)
 
 if 'pytest' not in os.environ:
