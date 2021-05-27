@@ -49,7 +49,7 @@ class QIGmat(QImat):
             2: -1/2/(k[2:]**2-1),
             4: 1/4/(k[2:-2]*(k[2:-2]+1))}
         # Note: truncating the upper diagonals is in agreement with
-        # \cite{julien09}. It does not affect matrices.
+        # \cite{julien09}.
         d[2][-2:] = 0
         d[4][-2:] = 0
         SparseMatrix.__init__(self, d, (N-2, N))

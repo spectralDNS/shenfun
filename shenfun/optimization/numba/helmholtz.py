@@ -42,8 +42,8 @@ def preLU(A, B, neumann=False):
         j2 = k**2
         j2[0] = 1
         j2 = 1/j2
-        j2[0] = 0
         B_0 *= j2
+        j2[0] = 0
         A_0 *= j2
         A_2 *= j2[2:]
         B_2 *= j2[2:]
@@ -69,7 +69,8 @@ def preLU(A, B, neumann=False):
 def LU_Helmholtz_1D(A_0, A_2, A_4, B_m2, B_0, B_2, A_scale, B_scale, neumann, d0, d1, d2, L):
     N = A_0.shape[0]
     if neumann:
-        A_0[0] = np.pi/A_scale
+        if abs(B_scale) < 1e-8:
+            A_0[0] = 1/A_scale
 
     d0[0] = A_scale*A_0[0] + B_scale*B_0[0]
     d0[1] = A_scale*A_0[1] + B_scale*B_0[1]
@@ -177,7 +178,8 @@ def Solve_Helmholtz_1D(fk, u_hat, neumann, d0, d1, d2, L, y):
         u_hat[i] /= d0[i]
 
     if neumann:
-        u_hat[0] = 0.0
+        if (d0[0]-1.0)*(d0[0]-1.0) < 1e-16:
+            u_hat[0] = 0.0
         for i in range(1, N):
             u_hat[i] /= (i*i)
 
@@ -442,7 +444,7 @@ def ANN_matvec1D(v, c, d0, d2, scale=1):
         c[N-2] = d0[N-2]*v[N-2]
         s0 = 0
         s1 = 0
-        for k in range(N-3, 0, -1):
+        for k in range(N-3, -1, -1):
             c[k] = d0[k]*v[k]
             if k % 2 == 0:
                 s0 += v[k+2]*(k+2)**2

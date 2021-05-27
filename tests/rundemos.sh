@@ -23,12 +23,12 @@ python fourier_poisson1D.py
 python fourier_poisson2D.py
 python fourier_poisson3D.py
 
-python neumann_poisson1D.py
-python neumann_poisson2D.py
-python neumann_poisson3D.py
-python neumann_poisson1D.py legendre
-python neumann_poisson2D.py legendre
-python neumann_poisson3D.py legendre
+python neumann_poisson1D.py 24 chebyshev
+python neumann_poisson2D.py 24 chebyshev
+python neumann_poisson3D.py 24 chebyshev
+python neumann_poisson1D.py 24 legendre
+python neumann_poisson2D.py 24 legendre
+python neumann_poisson3D.py 24 legendre
 
 python biharmonic1D.py 32 chebyshev
 python biharmonic2D.py
@@ -68,6 +68,7 @@ python dirichlet_dirichlet_poisson2D.py 24 25 jacobi
 #python unitdisc_biharmonic.py
 python mixedneumanndirichlet_poisson1D.py 24 chebyshev
 python mixedneumanndirichlet_poisson1D.py 24 legendre
+python mixedneumanndirichlet_poisson2D.py
 python sphere_helmholtz.py
 python curvilinear_poisson1D.py
 

@@ -546,11 +546,11 @@ def test_ASBSBmat(SB, quad):
 if __name__ == '__main__':
     #test_to_ortho(cBasisGC[1], 'GC')
     # test_convolve(fbases.R2C, 8)
-    test_ASDSDmat(cbases.ShenDirichlet, "GC")
+    #test_ASDSDmat(lbases.ShenNeumann, "GL")
     #test_CDDmat("GL")
     #test_massmatrices(cBasis[3], cBasis[1], 'GL')
     #test_CXXmat(cBasis[2], cBasis[1])
-    #test_transforms(fBasis[1], '')
+    test_transforms(cBasisGC[2], 'GC')
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[2], 'GC')
     #test_eval(cBasis[0], 'GC')

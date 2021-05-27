@@ -251,6 +251,12 @@ class Helmholtz:
         else:
             M = self.A + self.B
             c = M.matvec(v, c)
+
+        if len(self.bc_mats) > 0:
+            v.set_boundary_dofs()
+            w0 = np.zeros_like(v)
+            for bc_mat in self.bc_mats:
+                c += bc_mat.matvec(v, w0)
         return c
 
 

@@ -20,7 +20,10 @@ from shenfun import inner, div, grad, TestFunction, TrialFunction, FunctionSpace
     Array, Function, legendre, chebyshev, extract_bc_matrices, la, SpectralMatrix
 
 # Collect basis from either Chebyshev or Legendre submodules
-family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
+assert len(sys.argv) == 3, "Call with two command-line arguments"
+assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
+assert isinstance(int(sys.argv[-2]), int)
+family = sys.argv[-1].lower()
 
 # Use sympy to compute a rhs, given an analytical solution
 x = symbols("x", real=True)
@@ -29,7 +32,7 @@ ue = sin(pi*x)*(1-x**2)
 fe = -ue.diff(x, 2)+alpha*ue
 
 # Size of discretization
-N = 24
+N = int(sys.argv[-2])
 
 # alpha=0 requires a fixed gauge, but not alpha!=0 -> mean
 SD = FunctionSpace(N, family=family, bc={'left': ('N', 0),

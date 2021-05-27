@@ -1650,9 +1650,9 @@ def Helmholtz_Neumann_matvec(v, b, alfa, beta, A, B, axis):
     j2[0] = 0
     A_0 = A[0]*j2
     A_2 = A[2]*j2[2:]
+    j2[0] = 1
     B_0 = B[0]*j2
     B_2 = B[2]*j2[2:]
-    j2[0] = 1
     B_m2 = B[-2]*j2[:-2]
 
     if v.ndim == 1:

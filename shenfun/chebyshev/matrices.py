@@ -252,10 +252,10 @@ class BSNSDmat(SpectralMatrix):
 
     def matvec(self, v, c, format='csr', axis=0):
         c = super(BSNSDmat, self).matvec(v, c, format=format, axis=axis)
-        s = [slice(None),]*v.ndim
-        if self.testfunction[0].use_fixed_gauge:
-            s[axis] = 0
-            c[tuple(s)] = 0
+        #s = [slice(None),]*v.ndim
+        #if self.testfunction[0].use_fixed_gauge:
+        #    s[axis] = 0
+        #    c[tuple(s)] = 0
         return c
 
 
@@ -334,10 +334,10 @@ class BSNTmat(SpectralMatrix):
 
     def matvec(self, v, c, format='csr', axis=0):
         c = super(BSNTmat, self).matvec(v, c, format=format, axis=axis)
-        s = [slice(None),]*v.ndim
-        if self.testfunction[0].use_fixed_gauge:
-            s[axis] = 0
-            c[tuple(s)] = 0
+        #s = [slice(None),]*v.ndim
+        #if self.testfunction[0].use_fixed_gauge:
+        #    s[axis] = 0
+        #    c[tuple(s)] = 0
         return c
 
 class BSNSBmat(SpectralMatrix):
@@ -364,10 +364,10 @@ class BSNSBmat(SpectralMatrix):
 
     def matvec(self, v, c, format='csr', axis=0):
         c = super(BSNSBmat, self).matvec(v, c, format=format, axis=axis)
-        s = [slice(None),]*v.ndim
-        if self.testfunction[0].use_fixed_gauge:
-            s[axis] = 0
-            c[tuple(s)] = 0
+        #s = [slice(None),]*v.ndim
+        #if self.testfunction[0].use_fixed_gauge:
+        #    s[axis] = 0
+        #    c[tuple(s)] = 0
         return c
 
 
@@ -444,7 +444,7 @@ class BSNSNmat(SpectralMatrix):
 
     .. math::
 
-        j = 1, 2, ..., N-2 \text{ and } k = 1, 2, ..., N-2
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
 
     and :math:`\phi_j` is the Shen Neumann basis function.
 
@@ -977,10 +977,10 @@ class CSNSDmat(SpectralMatrix):
 
     def matvec(self, v, c, format='csr', axis=0):
         c = super(CSNSDmat, self).matvec(v, c, format=format, axis=axis)
-        s = [slice(None),]*v.ndim
-        if self.testfunction[0].use_fixed_gauge:
-            s[axis] = 0
-            c[tuple(s)] = 0
+        #s = [slice(None),]*v.ndim
+        #if self.testfunction[0].use_fixed_gauge:
+        #    s[axis] = 0
+        #    c[tuple(s)] = 0
         return c
 
 
@@ -1383,7 +1383,7 @@ class ASNSNmat(SpectralMatrix):
         c[N-2] = d0[N-2]*vc[N-2]
         s0 = 0
         s1 = 0
-        for k in range(N-3, 0, -1):
+        for k in range(N-3, -1, -1):
             c[k] = d0[k]*vc[k]
             if k % 2 == 0:
                 s0 += vc[k+2]

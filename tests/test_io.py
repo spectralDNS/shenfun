@@ -1,3 +1,4 @@
+import os
 import functools
 import numpy as np
 from mpi4py import MPI
@@ -24,6 +25,15 @@ ex = {True: 'c', False: 'r'}
 writer = functools.partial(ShenfunFile, mode='w')
 reader = functools.partial(ShenfunFile, mode='r')
 
+def cleanup():
+    import glob
+    files = glob.glob('*.h5')+glob.glob('*.xdmf')+glob.glob('*.nc')
+    for f in files:
+        try:
+            os.remove(f)
+        except:
+            pass
+
 @pytest.mark.parametrize('forward_output', (True, False))
 @pytest.mark.parametrize('backend', ('hdf5', 'netcdf4'))
 def test_regular_2D(backend, forward_output):
@@ -45,6 +55,8 @@ def test_regular_2D(backend, forward_output):
     read = reader(filename, T, backend=backend)
     read.read(u0, 'u', forward_output=forward_output, step=1)
     assert np.allclose(u0, u)
+    cleanup()
+
 
 @pytest.mark.parametrize('forward_output', (True, False))
 @pytest.mark.parametrize('backend', ('hdf5', 'netcdf4'))
@@ -76,6 +88,7 @@ def test_mixed_2D(backend, forward_output, as_scalar):
         read = reader(filename, T, backend=backend)
         read.read(u0, 'uf0', step=1)
         assert np.allclose(u0, uf[0])
+    cleanup()
 
 @pytest.mark.parametrize('forward_output', (True, False))
 @pytest.mark.parametrize('backend', ('hdf5', 'netcdf4'))
@@ -104,6 +117,7 @@ def test_regular_3D(backend, forward_output):
     read = reader(filename, T, backend=backend)
     read.read(u0, 'u', forward_output=forward_output, step=1)
     assert np.allclose(u0, u)
+    cleanup()
 
 @pytest.mark.parametrize('forward_output', (True, False))
 @pytest.mark.parametrize('backend', ('hdf5', 'netcdf4'))
@@ -142,6 +156,8 @@ def test_mixed_3D(backend, forward_output, as_scalar):
         read = reader(filename, T, backend=backend)
         read.read(u0, 'u0', step=1)
         assert np.allclose(u0, uf[0])
+    cleanup()
+
 
 if __name__ == '__main__':
     for bnd in ('hdf5', 'netcdf4'):
