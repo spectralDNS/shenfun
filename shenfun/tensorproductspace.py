@@ -22,9 +22,8 @@ __all__ = ('TensorProductSpace', 'VectorSpace', 'TensorSpace',
            'CompositeSpace', 'Convolve')
 
 
-class ShenfunTransform(Transform):
-    """Class for performing forward parallel transform using curvilinear
-    coordinates
+class ScalarTransform(Transform):
+    """Class for performing the scalar product in parallel
 
     Parameters
     ----------
@@ -114,6 +113,17 @@ class ShenfunTransform(Transform):
 
 
 class ForwardTransform(ShenfunTransform):
+    """Class for performing the forward transform in parallel
+
+    Parameters
+    ----------
+    xfftn : list of serial transform objects
+    transfer : list of global redistribution objects
+    pencil : list of two pencil objects
+        The two pencils represent the input and final output configuration of
+        the distributed global arrays
+    T : TensorProductSpace
+    """
     def __call__(self, input_array=None, output_array=None, **kw):
         if input_array is not None:
             self.input_array[...] = input_array
@@ -342,7 +352,7 @@ class TensorProductSpace(PFFT):
                 [o.backward for o in self.xfftn[::-1]],
                 [o.backward for o in self.transfer[::-1]],
                 self.pencil[::-1])
-            self.scalar_product = ShenfunTransform(
+            self.scalar_product = ScalarTransform(
                 [o.scalar_product for o in self.xfftn],
                 [o.forward for o in self.transfer],
                 self.pencil, self)
@@ -414,7 +424,7 @@ class TensorProductSpace(PFFT):
 
         self.pencil[1] = pencilA
 
-        self.backward = ShenfunTransform(
+        self.backward = Transform(
             [o.backward for o in self.xfftn],
             [o.forward for o in self.transfer],
             self.pencil, self)
@@ -422,7 +432,7 @@ class TensorProductSpace(PFFT):
             [o.forward for o in self.xfftn[::-1]],
             [o.backward for o in self.transfer[::-1]],
             self.pencil[::-1], self)
-        self.scalar_product = ShenfunTransform(
+        self.scalar_product = ScalarTransform(
             [o.scalar_product for o in self.xfftn[::-1]],
             [o.forward for o in self.transfer[::-1]],
             self.pencil[::-1], self)
