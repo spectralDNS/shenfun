@@ -338,10 +338,10 @@ class TensorProductSpace(PFFT):
                 [o.forward for o in self.xfftn],
                 [o.forward for o in self.transfer],
                 self.pencil, self)
-            self.backward = ShenfunTransform(
+            self.backward = Transform(
                 [o.backward for o in self.xfftn[::-1]],
                 [o.backward for o in self.transfer[::-1]],
-                self.pencil[::-1], self)
+                self.pencil[::-1])
             self.scalar_product = ShenfunTransform(
                 [o.scalar_product for o in self.xfftn],
                 [o.forward for o in self.transfer],

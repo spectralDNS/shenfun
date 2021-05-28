@@ -183,45 +183,43 @@ def main(n):
         # increment time
         time += dt
 
+    # Transform the solution to physical space
+    UP = [*U_hat.backward(U), P_hat.backward(P)]
 
-  # Transform the solution to physical space
-  UP = [*U_hat.backward(U), P_hat.backward(P)]
-
-  # compute error
-  Ue = Array(Ws, buffer=(uex.subs(t, tf), uey.subs(t, tf)))
-  Pe = Array(Ps, buffer=(pe.subs(t, tf)))
-  UPe = [*Ue, Pe]
-  l2_error = list(map(np.linalg.norm, [u-ue for u, ue in zip(UP, UPe)]))
-  return l2_error
+    # compute error
+    Ue = Array(Ws, buffer=(uex.subs(t, tf), uey.subs(t, tf)))
+    Pe = Array(Ps, buffer=(pe.subs(t, tf)))
+    UPe = [*Ue, Pe]
+    l2_error = list(map(np.linalg.norm, [u-ue for u, ue in zip(UP, UPe)]))
+    return l2_error
 
 
 if __name__ == "__main__":
+    N = 2**np.arange(0, 4)
+    E = np.zeros((3, len(N)))
 
-  N = 2**np.arange(0,4)
-  E = np.zeros((3,len(N)))
+    for (j, n) in enumerate(N):
+      E[:, j] = main(n)
 
-  for (j,n) in enumerate(N):
-    E[:,j] = main(n)
+    fig = plt.figure(figsize=(5.69,4.27))
+    ax = plt.gca()
+    marks = ('or', '-g', '-ob')
+    vars = (r'$u_x$', r'$u_y$', r'$p$')
+    for i in range(3):
+        plt.loglog(N, E[i, :], marks[i], label=vars[i])
+        slope, intercept = np.polyfit(np.log(N[-2:]), np.log(E[i, -2:]), 1)
+        if i !=1 :
+            annotation.slope_marker((N[-2], E[i,-2]), ("{0:.2f}".format(slope), 1),
+            ax=ax, poly_kwargs=pa, text_kwargs=ta)
 
-  fig = plt.figure(figsize=(5.69,4.27))
-  ax = plt.gca()
-  marks = ('or', '-g', '-ob')
-  vars = (r'$u_x$', r'$u_y$', r'$p$')
-  for i in range(3):
-    plt.loglog(N, E[i,:], marks[i], label=vars[i])
-    slope, intercept = np.polyfit(np.log(N[-2:]), np.log(E[i,-2:]), 1)
-    if(i!=1):
-      annotation.slope_marker((N[-2], E[i,-2]), ("{0:.2f}".format(slope), 1),
-        ax=ax, poly_kwargs=pa, text_kwargs=ta)
-
-  plt.text(N[0], 2e-5, r"$\Delta t=5 \times 10^{-3},\; N=32^2$")
-  plt.text(N[0], 1e-5, r"Final Time = $5 \times 10^{-2}$")
-  plt.title(r"Navier-Stokes: $2^{nd}$-order Rotational Pressure-Correction")
-  plt.legend(); plt.autoscale();
-  plt.ylabel(r'$|Error|_{L^2}$')
-  plt.xticks(N);
-  ax.get_xaxis().set_minor_formatter(NullFormatter())
-  fmt = lambda v: r"$\Delta t/{0}$".format(v) if v!=1 else r"$\Delta t$"
-  plt.gca().set_xticklabels(list(map(fmt, N)))
-  #plt.savefig("navier-stokes.pdf", orientation='portrait')
-  plt.show()
+    plt.text(N[0], 2e-5, r"$\Delta t=5 \times 10^{-3},\; N=32^2$")
+    plt.text(N[0], 1e-5, r"Final Time = $5 \times 10^{-2}$")
+    plt.title(r"Navier-Stokes: $2^{nd}$-order Rotational Pressure-Correction")
+    plt.legend(); plt.autoscale()
+    plt.ylabel(r'$|Error|_{L^2}$')
+    plt.xticks(N)
+    ax.get_xaxis().set_minor_formatter(NullFormatter())
+    fmt = lambda v: r"$\Delta t/{0}$".format(v) if v!=1 else r"$\Delta t$"
+    plt.gca().set_xticklabels(list(map(fmt, N)))
+    #plt.savefig("navier-stokes.pdf", orientation='portrait')
+    plt.show()
