@@ -252,10 +252,6 @@ class BSNSDmat(SpectralMatrix):
 
     def matvec(self, v, c, format='csr', axis=0):
         c = super(BSNSDmat, self).matvec(v, c, format=format, axis=axis)
-        #s = [slice(None),]*v.ndim
-        #if self.testfunction[0].use_fixed_gauge:
-        #    s[axis] = 0
-        #    c[tuple(s)] = 0
         return c
 
 
@@ -334,10 +330,6 @@ class BSNTmat(SpectralMatrix):
 
     def matvec(self, v, c, format='csr', axis=0):
         c = super(BSNTmat, self).matvec(v, c, format=format, axis=axis)
-        #s = [slice(None),]*v.ndim
-        #if self.testfunction[0].use_fixed_gauge:
-        #    s[axis] = 0
-        #    c[tuple(s)] = 0
         return c
 
 class BSNSBmat(SpectralMatrix):
@@ -364,10 +356,6 @@ class BSNSBmat(SpectralMatrix):
 
     def matvec(self, v, c, format='csr', axis=0):
         c = super(BSNSBmat, self).matvec(v, c, format=format, axis=axis)
-        #s = [slice(None),]*v.ndim
-        #if self.testfunction[0].use_fixed_gauge:
-        #    s[axis] = 0
-        #    c[tuple(s)] = 0
         return c
 
 
@@ -1667,33 +1655,6 @@ class ADUSDmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
         self.solver = TwoDMA(self)
 
-#class ASDHHmat(SpectralMatrix):
-#    r"""Stiffness matrix for inner product
-#
-#    .. math::
-#
-#        A_{kj} = (\phi''_j, \psi_k)_w
-#
-#    where
-#
-#    .. math::
-#
-#        j = 0, 1, 2, ..., N-2 \text{ and } k = 0, 1, 2, ..., N-2
-#
-#    and :math:`\phi_k` is Shen's Dirichlet basis and :math:`\psi_j`
-#    is the Heinrichs basis.
-#
-#    """
-#    def __init__(self, test, trial, scale=1, measure=1):
-#        assert isinstance(test[0], SD)
-#        assert isinstance(trial[0], HH)
-#        N = test[0].N
-#        k = np.arange(N, dtype=float)
-#        ck = get_ck(N, test[0].quad)
-#        d = {0: -np.pi/2*ck[:-2]*k[1:-1]*k[2:],
-#             2: np.pi/2*k[:-4]*k[1:-3]}
-#        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-#        self.solver = TwoDMA(self)
 
 class ASDHHmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
