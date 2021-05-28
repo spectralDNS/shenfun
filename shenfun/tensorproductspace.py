@@ -112,7 +112,7 @@ class ScalarTransform(Transform):
             return self.output_array
 
 
-class ForwardTransform(ShenfunTransform):
+class ForwardTransform(ScalarTransform):
     """Class for performing the forward transform in parallel
 
     Parameters
@@ -427,7 +427,7 @@ class TensorProductSpace(PFFT):
         self.backward = Transform(
             [o.backward for o in self.xfftn],
             [o.forward for o in self.transfer],
-            self.pencil, self)
+            self.pencil)
         self.forward = ForwardTransform(
             [o.forward for o in self.xfftn[::-1]],
             [o.backward for o in self.transfer[::-1]],
