@@ -33,7 +33,10 @@ theta, phi = psi =sp.symbols('x,y', real=True, positive=True)
 rv = (r*sp.sin(theta)*sp.cos(phi), r*sp.sin(theta)*sp.sin(phi), r*sp.cos(theta))
 
 # Define a manufactured solution
-ue = rv[0]*rv[1]*rv[2]
+#ue = rv[0]*rv[1]*rv[2]
+sph = sp.functions.special.spherical_harmonics.Ynm
+ue = sph(6, 3, theta, phi)
+#ue = sp.cos(4*(sp.sin(theta)*sp.cos(phi) + sp.sin(theta)*sp.sin(phi) + sp.cos(theta)))
 
 N, M = 40, 40
 L0 = FunctionSpace(N, 'L', domain=(0, np.pi))
