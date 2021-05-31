@@ -439,6 +439,7 @@ cdef void ADD_matvec_ptr(T* v,
 def ADD_matvec3D_ptr(T[:, :, ::1] v,
                      T[:, :, ::1] b,
                      real_t[::1] dd,
+
                      int axis):
     cdef:
         int i, j, k, strides

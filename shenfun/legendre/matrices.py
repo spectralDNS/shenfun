@@ -680,13 +680,13 @@ class GLLmat(SpectralMatrix):
         trial = self.trialfunction[1]
         if format == 'cython' and v.ndim == 3 and trial:
             cython.Matvec.GLL_matvec3D_ptr(v, c, axis)
-            self.scale_array(c)
+            self.scale_array(c, self.scale)
         elif format == 'cython' and v.ndim == 2 and trial:
             cython.Matvec.GLL_matvec2D_ptr(v, c, axis)
-            self.scale_array(c)
+            self.scale_array(c, self.scale)
         elif format == 'cython' and v.ndim == 1 and trial:
             cython.Matvec.GLL_matvec(v, c)
-            self.scale_array(c)
+            self.scale_array(c, self.scale)
         else:
             c = super(GLLmat, self).matvec(v, c, format=format, axis=axis)
         return c
@@ -744,6 +744,7 @@ class CLLmat(SpectralMatrix):
 
     def matvec(self, v, c, format='self', axis=0):
         c.fill(0)
+        sc = self[1] / 2
         if format == 'self':
             if axis > 0:
                 c = np.moveaxis(c, axis, 0)
@@ -755,17 +756,17 @@ class CLLmat(SpectralMatrix):
             if axis > 0:
                 c = np.moveaxis(c, 0, axis)
                 v = np.moveaxis(v, 0, axis)
-            self.scale_array(c)
+            self.scale_array(c, self.scale*sc)
 
         elif format == 'cython' and v.ndim == 3:
             cython.Matvec.CLL_matvec3D_ptr(v, c, axis)
-            self.scale_array(c)
+            self.scale_array(c, self.scale*sc)
         elif format == 'cython' and v.ndim == 2:
             cython.Matvec.CLL_matvec2D_ptr(v, c, axis)
-            self.scale_array(c)
+            self.scale_array(c, self.scale*sc)
         elif format == 'cython' and v.ndim == 1:
             cython.Matvec.CLL_matvec(v, c)
-            self.scale_array(c)
+            self.scale_array(c, self.scale*sc)
         else:
             c = super(CLLmat, self).matvec(v, c, format=format, axis=axis)
         return c
