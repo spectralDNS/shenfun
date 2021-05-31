@@ -517,7 +517,7 @@ class ShenNeumann(LegendreBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, quad="LG", mean=0, bc=(0., 0.), domain=(-1., 1.), padding_factor=1,
+    def __init__(self, N, quad="LG", mean=None, bc=(0., 0.), domain=(-1., 1.), padding_factor=1,
                  dealias_direct=False, dtype=float, coordinates=None):
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
