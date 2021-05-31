@@ -31,16 +31,16 @@ class BLLmat(SpectralMatrix):
     def solve(self, b, u=None, axis=0):
         if u is not None:
             u[:] = b
-            u /= self.scale
+            u /= (self.scale*self[0])
             return u
 
         else:
-            b /= self.scale
+            b /= (self.scale*self[0])
             return b
 
     def matvec(self, v, c, format='python', axis=0):
         c[:] = v
-        self.scale_array(c)
+        self.scale_array(c, self.scale*self[0])
         return c
 
 

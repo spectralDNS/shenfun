@@ -32,11 +32,11 @@ class BHHmat(SpectralMatrix):
     def solve(self, b, u=None, axis=0):
         if u is not None:
             u[:] = b
-            u /= self.scale
+            u /= (self.scale*self[0])
             return u
 
         else:
-            b /= self.scale
+            b /= (self.scale*self[0])
             return b
 
     def matvec(self, v, c, format='python', axis=0):
@@ -44,7 +44,7 @@ class BHHmat(SpectralMatrix):
         ss = [slice(None)]*len(v.shape)
         ss[self.axis] = slice(0, M)
         c[tuple(ss)] = v
-        self.scale_array(c)
+        self.scale_array(c, self.scale*self[0])
         return c
 
 
@@ -82,15 +82,15 @@ class AHHmat(SpectralMatrix):
         if format == 'cython' and v.ndim == 3:
             ld = self[-2]*np.ones(M-2)
             Matvec.Tridiagonal_matvec3D_ptr(v, c, ld, self[0], ld, axis)
-            self.scale_array(c)
+            self.scale_array(c, self.scale)
         elif format == 'cython' and v.ndim == 2:
             ld = self[-2]*np.ones(M-2)
             Matvec.Tridiagonal_matvec2D_ptr(v, c, ld, self[0], ld, axis)
-            self.scale_array(c)
+            self.scale_array(c, self.scale)
         elif format == 'cython' and v.ndim == 1:
             ld = self[-2]*np.ones(M-2)
             Matvec.Tridiagonal_matvec(v, c, ld, self[0], ld)
-            self.scale_array(c)
+            self.scale_array(c, self.scale)
         elif format == 'self':
             if axis > 0:
                 v = np.moveaxis(v, axis, 0)
@@ -102,7 +102,7 @@ class AHHmat(SpectralMatrix):
             if axis > 0:
                 v = np.moveaxis(v, 0, axis)
                 c = np.moveaxis(c, 0, axis)
-            self.scale_array(c)
+            self.scale_array(c, self.scale)
 
         else:
             c = super(AHHmat, self).matvec(v, c, format=format, axis=axis)

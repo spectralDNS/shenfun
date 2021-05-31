@@ -362,16 +362,19 @@ class SparseMatrix(MutableMapping):
     def same_keys(self, a):
         return self.__hash__() == a.__hash__()
 
-    def scale_array(self, c):
-        assert isinstance(self.scale, Number)
-        if abs(self.scale-1) > 1e-8:
-            c *= self.scale
+    def scale_array(self, c, sc):
+        assert isinstance(sc, Number)
+        if abs(sc-1) > 1e-8:
+            c *= sc
 
     def incorporate_scale(self):
         if abs(self.scale-1) < 1e-8:
             return
-        for key, val in self.items():
-            self[key] = val*self.scale
+        if hasattr(self, '_keyscale'):
+            self._keyscale *= self.scale
+        else:
+            for key, val in self.items():
+                self[key] = val*self.scale
         self.scale = 1
 
     def solve(self, b, u=None, axis=0, use_lu=False):

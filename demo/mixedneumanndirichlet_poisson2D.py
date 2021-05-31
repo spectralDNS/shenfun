@@ -77,6 +77,7 @@ def main(N, family, bci, bcj, plotting=False):
     sol = la.Solver2D(A, fixed_gauge=mean if T.use_fixed_gauge else None)
     u_hat = sol(f_hat, u_hat)
     uj = u_hat.backward()
+    from IPython import embed; embed()
 
     assert np.allclose(uj, ua), np.linalg.norm(uj-ua)
     print("Error=%2.16e" %(np.sqrt(dx((uj-ua)**2))))
