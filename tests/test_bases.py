@@ -57,7 +57,8 @@ bcbases = (
     legendre.BCBeamFixedFree,
     legendre.BCLowerDirichlet,
     legendre.BCUpperDirichlet,
-    legendre.BCUpperDirichletNeumann
+    legendre.BCUpperDirichletNeumann,
+    legendre.BCDirichletNeumannDirichlet
 )
 
 nonBC = (
