@@ -1511,7 +1511,7 @@ class BoundaryValues:
     def update_bcs(self, bc=None):
         if bc is not None:
             assert isinstance(bc, (list, tuple))
-            assert len(bc) in (2, 4, 6)
+            assert len(bc) in (2, 3, 4, 6)
             self.bc = list(bc)
             for i, bci in enumerate(bc):
                 if isinstance(bci, (Number, sp.Expr, np.ndarray)):
