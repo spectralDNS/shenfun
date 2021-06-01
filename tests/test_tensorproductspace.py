@@ -511,13 +511,13 @@ def test_eval_tensor(typecode, dim, ST, quad):
 def test_eval_fourier(typecode, dim):
     # Using sympy to compute an analytical solution
     x, y, z = symbols("x,y,z")
-    sizes = (20, 19)
+    sizes = (120, 119)
 
     funcs = {
         2: cos(4*x) + sin(6*y),
         3: sin(6*x) + cos(4*y) + sin(8*z)
         }
-    syms = {2: (x, y), 3:(x, y, z)}
+    syms = {2: (x, y), 3: (x, y, z)}
     points = None
     if comm.Get_rank() == 0:
         points = np.random.random((dim, 3))
@@ -650,7 +650,7 @@ def test_eval_expression():
     TB = TensorProductSpace(comm, (B0, B1, B2))
     f = sp.sin(x)+sp.sin(y)+sp.sin(z)
     dfx = f.diff(x, 2) + f.diff(y, 2) + f.diff(z, 2)
-    fa = Array(TB, buffer=f).forward()
+    fa = Function(TB, buffer=f)
 
     dfe = div(grad(fa))
     dfa = project(dfe, TB)
@@ -665,18 +665,45 @@ def test_eval_expression():
     assert np.allclose(f0, f1, 1e-7)
     assert np.allclose(f1, f2, 1e-7)
 
+@pytest.mark.parametrize('fam', ('C', 'L'))
+def test_eval_expression2(fam):
+    import sympy as sp
+    from shenfun import div, grad
+    x, y = sp.symbols('x,y')
+    B0 = FunctionSpace(16, fam, domain=(-2, 2))
+    B1 = FunctionSpace(17, fam, domain=(-1, 3))
+
+    T = TensorProductSpace(comm, (B0, B1))
+    f = sp.sin(x)+sp.sin(y)
+    dfx = f.diff(x, 2) + f.diff(y, 2)
+    fa = Function(T, buffer=f)
+
+    dfe = div(grad(fa))
+    dfa = project(dfe, T)
+
+    xy = np.array([[0.25, 0.5, 0.75],
+                   [0.25, 0.5, 0.75]])
+
+    f0 = lambdify((x, y), dfx)(*xy)
+    f1 = dfe.eval(xy)
+    f2 = dfa.eval(xy)
+    assert np.allclose(f0, f1, 1e-7)
+    assert np.allclose(f1, f2, 1e-7)
+
+
 if __name__ == '__main__':
     #test_transform('f', 3)
     #test_transform('d', 2)
     #test_shentransform('d', 2, jbases.ShenBiharmonicBasis, 'JG')
-    test_eval_expression()
+    #test_eval_expression()
+    test_eval_expression2('L')
     #test_project('d', 2, lBasis[3], 'LG')
     #test_project_lag('d', 2)
     #test_project_hermite('d', 2)
     #test_project2('d', 2, lbases.ShenNeumannBasis, 'LG')
     #test_project_2dirichlet('GL')
-    #test_eval_tensor('d', 1, lbases.ShenBiPolar0Basis, 'LG')
-    #test_eval_fourier('d', 3)
+    #test_eval_tensor('D', 2, lbases.ShenDirichlet, 'LG')
+    #test_eval_fourier('D', 3)
     #test_inner('C', 'F')
     #test_refine()
     #test_assign('C')

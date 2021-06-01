@@ -16,10 +16,15 @@ __all__ = ['ChebyshevBase', 'Orthogonal', 'ShenDirichlet',
            'ShenNeumann', 'ShenBiharmonic',
            'SecondNeumann', 'UpperDirichlet',
            'UpperDirichletNeumann', 'Heinrichs',
-           'ShenBiPolar', 'BCDirichlet', 'BCBiharmonic',
+           'ShenBiPolar',
            'DirichletNeumann', 'OrthogonalU',
            'CombinedShenNeumann', 'MikNeumann',
-           'DirichletU']
+           'DirichletU',
+           'BCDirichlet', 'BCBiharmonic',
+           'BCNeumann', 'BCUpperDirichlet',
+           'BCNeumannDirichlet',
+           'BCDirichletNeumann',
+           'BCUpperDirichletNeumann']
 
 
 #pylint: disable=abstract-method, not-callable, method-hidden, no-self-use, cyclic-import
@@ -315,44 +320,23 @@ class Orthogonal(ChebyshevBase):
         plan_fwd = self._xfftn_fwd
         plan_bck = self._xfftn_bck
 
-        if 'builders' in self._xfftn_fwd.func.__module__: #pragma: no cover
-            opts = dict(
-                avoid_copy=True,
-                overwrite_input=True,
-                auto_align_input=True,
-                auto_contiguous=True,
-                planner_effort='FFTW_MEASURE',
-                threads=1,
-            )
-            opts.update(options)
+        opts = dict(
+            overwrite_input='FFTW_DESTROY_INPUT',
+            planner_effort='FFTW_MEASURE',
+            threads=1,
+        )
+        opts.update(options)
+        flags = (fftw.flag_dict[opts['planner_effort']],
+                 fftw.flag_dict[opts['overwrite_input']])
+        threads = opts['threads']
 
-            U = fftw.aligned(shape, dtype=float)
-            xfftn_fwd = plan_fwd(U, axis=axis, **opts)
-            V = xfftn_fwd.output_array
-            xfftn_bck = plan_bck(V, axis=axis, **opts)
-            V.fill(0)
-            U.fill(0)
+        U = fftw.aligned(shape, dtype=float)
 
-            xfftn_fwd.update_arrays(U, V)
-            xfftn_bck.update_arrays(V, U)
-        else: # fftw wrapped with mpi4py-fft
-            opts = dict(
-                overwrite_input='FFTW_DESTROY_INPUT',
-                planner_effort='FFTW_MEASURE',
-                threads=1,
-            )
-            opts.update(options)
-            flags = (fftw.flag_dict[opts['planner_effort']],
-                     fftw.flag_dict[opts['overwrite_input']])
-            threads = opts['threads']
-
-            U = fftw.aligned(shape, dtype=float)
-
-            xfftn_fwd = plan_fwd(U, axes=(axis,), threads=threads, flags=flags)
-            V = xfftn_fwd.output_array
-            xfftn_bck = plan_bck(V, axes=(axis,), threads=threads, flags=flags, output_array=U)
-            V.fill(0)
-            U.fill(0)
+        xfftn_fwd = plan_fwd(U, axes=(axis,), threads=threads, flags=flags)
+        V = xfftn_fwd.output_array
+        xfftn_bck = plan_bck(V, axes=(axis,), threads=threads, flags=flags, output_array=U)
+        V.fill(0)
+        U.fill(0)
 
         if np.dtype(dtype) is np.dtype('complex'):
             # dct only works on real data, so need to wrap it
@@ -473,7 +457,7 @@ class OrthogonalU(ChebyshevBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
-        basis = np.zeros(self.shape(True))
+        basis = np.zeros(self.shape(True)+1)
         basis[i+1] = 1
         basis = n_cheb.Chebyshev(basis)
         k += 1
@@ -572,44 +556,24 @@ class OrthogonalU(ChebyshevBase):
         plan_fwd = self._xfftn_fwd
         plan_bck = self._xfftn_bck
 
-        if 'builders' in self._xfftn_fwd.func.__module__: #pragma: no cover
-            opts = dict(
-                avoid_copy=True,
-                overwrite_input=True,
-                auto_align_input=True,
-                auto_contiguous=True,
-                planner_effort='FFTW_MEASURE',
-                threads=1,
-            )
-            opts.update(options)
 
-            U = fftw.aligned(shape, dtype=float)
-            xfftn_fwd = plan_fwd(U, axis=axis, **opts)
-            V = xfftn_fwd.output_array
-            xfftn_bck = plan_bck(V, axis=axis, **opts)
-            V.fill(0)
-            U.fill(0)
+        opts = dict(
+            overwrite_input='FFTW_DESTROY_INPUT',
+            planner_effort='FFTW_MEASURE',
+            threads=1,
+        )
+        opts.update(options)
+        flags = (fftw.flag_dict[opts['planner_effort']],
+                 fftw.flag_dict[opts['overwrite_input']])
+        threads = opts['threads']
 
-            xfftn_fwd.update_arrays(U, V)
-            xfftn_bck.update_arrays(V, U)
-        else: # fftw wrapped with mpi4py-fft
-            opts = dict(
-                overwrite_input='FFTW_DESTROY_INPUT',
-                planner_effort='FFTW_MEASURE',
-                threads=1,
-            )
-            opts.update(options)
-            flags = (fftw.flag_dict[opts['planner_effort']],
-                     fftw.flag_dict[opts['overwrite_input']])
-            threads = opts['threads']
+        U = fftw.aligned(shape, dtype=float)
 
-            U = fftw.aligned(shape, dtype=float)
-
-            xfftn_fwd = plan_fwd(U, axes=(axis,), threads=threads, flags=flags)
-            V = xfftn_fwd.output_array
-            xfftn_bck = plan_bck(V, axes=(axis,), threads=threads, flags=flags, output_array=U)
-            V.fill(0)
-            U.fill(0)
+        xfftn_fwd = plan_fwd(U, axes=(axis,), threads=threads, flags=flags)
+        V = xfftn_fwd.output_array
+        xfftn_bck = plan_bck(V, axes=(axis,), threads=threads, flags=flags, output_array=U)
+        V.fill(0)
+        U.fill(0)
 
         if np.dtype(dtype) is np.dtype('complex'):
             # dct only works on real data, so need to wrap it
@@ -868,8 +832,8 @@ class ShenDirichlet(CompositeSpace):
         P = np.zeros_like(V)
         P[:, :-2] = V[:, :-2] - V[:, 2:]
         if argument == 1: # if trial function
-            P[:, -1] = (V[:, 0] + V[:, 1])/2    # x = +1
             P[:, -2] = (V[:, 0] - V[:, 1])/2    # x = -1
+            P[:, -1] = (V[:, 0] + V[:, 1])/2    # x = +1
         return P
 
     def _evaluate_scalar_product(self, fast_transform=True):
@@ -1053,7 +1017,7 @@ class DirichletU(CompositeSpaceU):
         x = np.atleast_1d(x)
 
         if i < self.N-2:
-            basis = np.zeros(self.shape(True))
+            basis = np.zeros(self.shape(True)+1)
             basis[i+1] = 1/(i+1)
             basis[i+3] = -(i+1)/(i+3)**2
             basis = n_cheb.Chebyshev(basis)
@@ -1286,9 +1250,22 @@ class Heinrichs(CompositeSpace):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
-        basis = self.sympy_basis(i)
-        xp = basis.free_symbols.pop()
-        output_array[:] = sp.lambdify(xp, basis.diff(xp, k))(x)
+        if i < self.N-2:
+            basis = self.sympy_basis(i)
+            xp = basis.free_symbols.pop()
+            output_array[:] = sp.lambdify(xp, basis.diff(xp, k))(x)
+        elif i == self.N-2:
+            output_array[:] = 0
+            if k == 1:
+                output_array[:] = -0.5
+            elif k == 0:
+                output_array[:] = 0.5*(1-x)
+        elif i == self.N-1:
+            output_array[:] = 0
+            if k == 1:
+                output_array[:] = 0.5
+            elif k == 0:
+                output_array[:] = 0.5*(1+x)
         return output_array
 
     def is_scaled(self):
@@ -1745,7 +1722,7 @@ class ShenNeumann(CompositeSpace):
         return P
 
     def sympy_basis(self, i=0, x=xp):
-        if 0 < i < self.N-2:
+        if i < self.N-2:
             if self.is_scaled():
                 if i == 0:
                     return sp.chebyshevt(i, x)
@@ -1757,7 +1734,7 @@ class ShenNeumann(CompositeSpace):
             return sp.chebyshevt(1, x)/2 - sp.chebyshevt(2, x)/8
         elif i == self.N-1:
             return sp.chebyshevt(1, x)/2 + sp.chebyshevt(2, x)/8
-        return 0
+        raise RuntimeError
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -1784,7 +1761,7 @@ class ShenNeumann(CompositeSpace):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
-        basis = np.zeros(self.shape(True))
+        basis = np.zeros(self.shape(True)+1)
         if i < self.N-2:
             if self.is_scaled():
                 if i == 0:
@@ -2001,7 +1978,7 @@ class CombinedShenNeumann(CompositeSpace):
         elif i in (1, 2):
             return sp.chebyshevt(i, x)/i**2 - sp.chebyshevt(i+2, x)/(i+2)**2
         elif i < self.N-2:
-            return sp.chebyshevt(i-2, x)/(i-2)**2 - sp.chebyshevt(i, x)*2/i**2 + sp.chebyshevt(i+2, x)/(i+2)**2
+            return -sp.chebyshevt(i-2, x)/(i-2)**2 + sp.chebyshevt(i, x)*2/i**2 - sp.chebyshevt(i+2, x)/(i+2)**2
         elif i == self.N-2:
             return sp.chebyshevt(1, x)/2 - sp.chebyshevt(2, x)/8
         elif i == self.N-1:
@@ -2018,7 +1995,7 @@ class CombinedShenNeumann(CompositeSpace):
         elif i in (1, 2):
             output_array[:] = np.cos(i*w)/i**2 - np.cos((i+2)*w)/(i+2)**2
         elif i < self.N-2:
-            output_array[:] = np.cos((i-2)*w)/(i-2)**2 - np.cos(i*w)*2/i**2 + np.cos((i+2)*w)/(i+2)**2
+            output_array[:] = -np.cos((i-2)*w)/(i-2)**2 + np.cos(i*w)*2/i**2 - np.cos((i+2)*w)/(i+2)**2
         elif i == self.N-2:
             output_array[:] =  np.cos(w)/2 - np.cos(2*w)/8
         elif i == self.N-1:
@@ -2280,7 +2257,7 @@ class MikNeumann(CompositeSpace):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
-        basis = np.zeros(self.shape(True))
+        basis = np.zeros(self.shape(True)+1)
         if i == 0:
             basis[np.array([i])] = 1
         elif i == 1:
@@ -2288,7 +2265,7 @@ class MikNeumann(CompositeSpace):
         elif i == 2:
             basis[np.array([i, i+2])] = (1/3, -1/12)
         elif i < self.N-2:
-            basis[np.array([i-2, i, i+2])] = (1/(i-2)/(i+1), 2/i/(i+1), -1/(i+2)/(i+1))
+            basis[np.array([i-2, i, i+2])] = (-1/(i-2)/(i+1), 2/i/(i+1), -1/(i+2)/(i+1))
         elif i == self.N-2:
             basis[np.array([1, 2])] = (0.5, -1/8)
         elif i == self.N-1:
@@ -2471,14 +2448,14 @@ class ShenBiharmonic(CompositeSpace):
         k = np.arange(V.shape[1]).astype(float)[:-4]
         P[:, :-4] = V[:, :-4] - (2*(k+2)/(k+3))*V[:, 2:-2] + ((k+1)/(k+3))*V[:, 4:]
         if argument == 1: # if trial function
-            P[:, -4:] = np.tensordot(V[:, :4], BCBiharmonic.coefficient_matrix(), (1, 1))
+            P[:, -4:] = np.tensordot(V[:, :4], BCBiharmonic.coefficient_matrix().T, (1, 1))
         return P
 
     def sympy_basis(self, i=0, x=xp):
         if i < self.N-4:
             f = sp.chebyshevt(i, x) - 2*(i+2)*sp.chebyshevt(i+2, x)/(i+3) + (i+1)*sp.chebyshevt(i+4, x)/(i+3)
         else:
-            f = BCBiharmonic.coefficient_matrix()[i]*np.array([sp.chebyshevt(j, x) for j in range(4)])
+            f = np.sum(BCBiharmonic.coefficient_matrix()[i-self.N+4]*np.array([sp.chebyshevt(j, x) for j in range(4)]))
         return f
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -2486,7 +2463,10 @@ class ShenBiharmonic(CompositeSpace):
         if output_array is None:
             output_array = np.zeros(x.shape)
         w = np.arccos(x)
-        output_array[:] = np.cos(i*w) - (2*(i+2.)/(i+3.))*np.cos((i+2)*w) + ((i+1.)/(i+3.))*np.cos((i+4)*w)
+        if i < self.N-4:
+            output_array[:] = np.cos(i*w) - (2*(i+2.)/(i+3.))*np.cos((i+2)*w) + ((i+1.)/(i+3.))*np.cos((i+4)*w)
+        else:
+            output_array[:] = self.get_bc_basis().evaluate_basis(x, i-self.N+4)
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -2495,12 +2475,15 @@ class ShenBiharmonic(CompositeSpace):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
-        basis = np.zeros(self.shape(True))
-        basis[np.array([i, i+2, i+4])] = (1, -(2*(i+2.)/(i+3.)), ((i+1.)/(i+3.)))
-        basis = n_cheb.Chebyshev(basis)
-        if k > 0:
-            basis = basis.deriv(k)
-        output_array[:] = basis(x)
+        if i < self.N-4:
+            basis = np.zeros(self.shape(True))
+            basis[np.array([i, i+2, i+4])] = (1, -(2*(i+2.)/(i+3.)), ((i+1.)/(i+3.)))
+            basis = n_cheb.Chebyshev(basis)
+            if k > 0:
+                basis = basis.deriv(k)
+            output_array[:] = basis(x)
+        else:
+            output_array[:] = self.get_bc_basis().evaluate_basis_derivative(x, i-self.N+4, k)
         return output_array
 
     def set_factor_arrays(self, v):
@@ -2664,9 +2647,11 @@ class SecondNeumann(CompositeSpace): #pragma: no cover
         return P
 
     def sympy_basis(self, i=0, x=xp):
+        assert i < self.N-2
         return sp.chebyshevt(i, x) - (i/(i+2))**2*(i**2-1)/((i+2)**2-1)*sp.chebyshevt(i+2, x)
 
     def evaluate_basis(self, x, i=0, output_array=None):
+        assert i < self.N-2
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
@@ -2675,6 +2660,7 @@ class SecondNeumann(CompositeSpace): #pragma: no cover
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        assert i < self.N-2
         if x is None:
             x = self.mesh(False, False)
         if output_array is None:
@@ -3368,19 +3354,24 @@ class DirichletNeumann(CompositeSpace):
         return P
 
     def sympy_basis(self, i=0, x=xp):
-        assert i < self.N-2
-        return (sp.chebyshevt(i, x)
-                + ((-i**2 + (i+2)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+1, x)
-                + ((-i**2 - (i+1)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+2, x))
+        if i < self.N-2:
+            return (sp.chebyshevt(i, x)
+                    + ((-i**2 + (i+2)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+1, x)
+                    + ((-i**2 - (i+1)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+2, x))
+        else:
+            return np.sum(BCDirichletNeumann.coefficient_matrix()[i-self.N+2]*np.array([sp.chebyshevt(j, x) for j in range(2)]))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
         w = np.arccos(x)
-        output_array[:] = (np.cos(i*w)
-                           + ((-i**2 + (i+2)**2)/((i+1)**2 + (i+2)**2))*np.cos((i+1)*w)
-                           + ((-i**2 - (i+1)**2)/((i+1)**2 + (i+2)**2))*np.cos((i+2)*w))
+        if i < self.N-2:
+            output_array[:] = (np.cos(i*w)
+                               + ((-i**2 + (i+2)**2)/((i+1)**2 + (i+2)**2))*np.cos((i+1)*w)
+                               + ((-i**2 - (i+1)**2)/((i+1)**2 + (i+2)**2))*np.cos((i+2)*w))
+        else:
+            output_array[:] = self.get_bc_basis().evaluate_basis(x, i-self.N+2)
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -3389,12 +3380,15 @@ class DirichletNeumann(CompositeSpace):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
-        basis = np.zeros(self.shape(True))
-        basis[np.array([i, i+1, i+2])] = (1,((-i**2 + (i+2)**2) / ((i+1)**2 + (i+2)**2)), ((-i**2 - (i+1)**2) / ((i+1)**2 + (i+2)**2)))
-        basis = n_cheb.Chebyshev(basis)
-        if k > 0:
-            basis = basis.deriv(k)
-        output_array[:] = basis(x)
+        if i < self.N-2:
+            basis = np.zeros(self.shape(True))
+            basis[np.array([i, i+1, i+2])] = (1,((-i**2 + (i+2)**2) / ((i+1)**2 + (i+2)**2)), ((-i**2 - (i+1)**2) / ((i+1)**2 + (i+2)**2)))
+            basis = n_cheb.Chebyshev(basis)
+            if k > 0:
+                basis = basis.deriv(k)
+            output_array[:] = basis(x)
+        else:
+            output_array[:] = self.get_bc_basis().evaluate_basis_derivative(x, i-self.N+2, k)
         return output_array
 
     def is_scaled(self):
@@ -3829,19 +3823,24 @@ class NeumannDirichlet(CompositeSpace):
         return P
 
     def sympy_basis(self, i=0, x=xp):
-        assert i < self.N-2
-        return (sp.chebyshevt(i, x)
-                - ((-i**2 + (i+2)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+1, x)
-                + ((-i**2 - (i+1)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+2, x))
+        if i > self.N-2:
+            return (sp.chebyshevt(i, x)
+                    - ((-i**2 + (i+2)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+1, x)
+                    + ((-i**2 - (i+1)**2) / ((i+1)**2 + (i+2)**2))*sp.chebyshevt(i+2, x))
+        else:
+            return np.sum(BCNeumannDirichlet.coefficient_matrix()[i-self.N+2]*np.array([sp.chebyshevt(j, x) for j in range(2)]))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
         w = np.arccos(x)
-        output_array[:] = (np.cos(i*w)
-                           - ((-i**2 + (i+2)**2)/((i+1)**2 + (i+2)**2))*np.cos((i+1)*w)
-                           + ((-i**2 - (i+1)**2)/((i+1)**2 + (i+2)**2))*np.cos((i+2)*w))
+        if i < self.N-2:
+            output_array[:] = (np.cos(i*w)
+                               - ((-i**2 + (i+2)**2)/((i+1)**2 + (i+2)**2))*np.cos((i+1)*w)
+                               + ((-i**2 - (i+1)**2)/((i+1)**2 + (i+2)**2))*np.cos((i+2)*w))
+        else:
+            output_array[:] = self.get_bc_basis().evaluate_basis(x, i-self.N+2)
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -3850,12 +3849,15 @@ class NeumannDirichlet(CompositeSpace):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
-        basis = np.zeros(self.shape(True))
-        basis[np.array([i, i+1, i+2])] = (1,-((-i**2 + (i+2)**2) / ((i+1)**2 + (i+2)**2)), ((-i**2 - (i+1)**2) / ((i+1)**2 + (i+2)**2)))
-        basis = n_cheb.Chebyshev(basis)
-        if k > 0:
-            basis = basis.deriv(k)
-        output_array[:] = basis(x)
+        if i < self.N-2:
+            basis = np.zeros(self.shape(True))
+            basis[np.array([i, i+1, i+2])] = (1,-((-i**2 + (i+2)**2) / ((i+1)**2 + (i+2)**2)), ((-i**2 - (i+1)**2) / ((i+1)**2 + (i+2)**2)))
+            basis = n_cheb.Chebyshev(basis)
+            if k > 0:
+                basis = basis.deriv(k)
+            output_array[:] = basis(x)
+        else:
+            output_array[:] = self.get_bc_basis().evaluate_basis_derivative(x, i-self.N+2, k)
         return output_array
 
     def is_scaled(self):
@@ -4036,19 +4038,24 @@ class UpperDirichletNeumann(CompositeSpace):
         return P
 
     def sympy_basis(self, i=0, x=xp):
-        assert i < self.N-2
-        return (sp.chebyshevt(i, x)
-                + (-4*(i+1)/(2*i+3))*sp.chebyshevt(i+1, x)
-                + ((2*k+1)/(2*k+3))*sp.chebyshevt(i+2, x))
+        if i < self.N-2:
+            return (sp.chebyshevt(i, x)
+                    + (-4*(i+1)/(2*i+3))*sp.chebyshevt(i+1, x)
+                    + ((2*i+1)/(2*i+3))*sp.chebyshevt(i+2, x))
+        else:
+            return np.sum(BCUpperDirichletNeumann.coefficient_matrix()[i-self.N+2]*np.array([sp.chebyshevt(j, x) for j in range(3)]))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
         w = np.arccos(x)
-        output_array[:] = (np.cos(i*w)
-                           + (-4*(i+1)/(2*i+3))*np.cos((i+1)*w)
-                           + ((2*i+1)/(2*i+3))*np.cos((i+2)*w))
+        if i < self.N-2:
+            output_array[:] = (np.cos(i*w)
+                               + (-4*(i+1)/(2*i+3))*np.cos((i+1)*w)
+                               + ((2*i+1)/(2*i+3))*np.cos((i+2)*w))
+        else:
+            output_array[:] = self.get_bc_basis().evaluate_basis(x, i-self.N+2)
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -4057,12 +4064,15 @@ class UpperDirichletNeumann(CompositeSpace):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
-        basis = np.zeros(self.shape(True))
-        basis[np.array([i, i+1, i+2])] = (1, -4*(i+1)/(2*i+3), (2*i+1)/(2*i+3))
-        basis = n_cheb.Chebyshev(basis)
-        if k > 0:
-            basis = basis.deriv(k)
-        output_array[:] = basis(x)
+        if i < self.N-2:
+            basis = np.zeros(self.shape(True))
+            basis[np.array([i, i+1, i+2])] = (1, -4*(i+1)/(2*i+3), (2*i+1)/(2*i+3))
+            basis = n_cheb.Chebyshev(basis)
+            if k > 0:
+                basis = basis.deriv(k)
+            output_array[:] = basis(x)
+        else:
+            output_array[:] = self.get_bc_basis().evaluate_basis_derivative(x, i-self.N+2, k)
         return output_array
 
     def is_scaled(self):
@@ -4548,7 +4558,7 @@ class BCNeumannDirichlet(CompositeSpace):
         if i == 0:
             return 1-0.6*x-0.4*(2*x**2-1)
         elif i == 1:
-            return 1
+            return sp.chebyshevt(0, x)
         else:
             raise AttributeError('Only two bases, i < 2')
 
@@ -4626,7 +4636,7 @@ class BCDirichletNeumann(CompositeSpace):
 
     def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         if i == 0:
-            return 1
+            return sp.chebyshevt(0, x)
         elif i == 1:
             return 1+x
         else:
@@ -4704,7 +4714,7 @@ class BCUpperDirichletNeumann(CompositeSpace):
 
     def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         if i == 0:
-            return 1
+            return sp.chebyshevt(0, x)
         elif i == 1:
             return 1-5/3*x+2/3*(2*x**2-1)
         else:

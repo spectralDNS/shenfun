@@ -503,7 +503,7 @@ class TensorProductSpace(PFFT):
         ab_hat = self.forward(a*b, ab_hat)
         return ab_hat
 
-    def eval(self, points, coefficients, output_array=None, method=2):
+    def eval(self, points, coefficients, output_array=None, method=1):
         """Evaluate Function at points, given expansion coefficients
 
         Parameters
@@ -515,8 +515,8 @@ class TensorProductSpace(PFFT):
         output_array : array, optional
             Return array, function values at points
         method : int, optional
-            Chooses implementation. The default 0 is a low-memory cython
-            version. Using method = 1 leads to a faster cython
+            Chooses implementation. The method 0 is a low-memory cython
+            version. Using method = 1 (default) leads to a faster cython
             implementation that, on the downside, uses more memory.
             The final, method = 2, is a python implementation.
         """
@@ -525,7 +525,8 @@ class TensorProductSpace(PFFT):
         else:
             output_array[:] = 0
         if len(self.get_nonperiodic_axes()) > 1:
-            method = 2
+            assert method > 0
+        assert self.dimensions < 4, 'eval not implemented (yet) for higher dimensions'
         if method == 0:
             return self._eval_lm_cython(points, coefficients, output_array)
         elif method == 1:
@@ -1837,59 +1838,3 @@ class BoundaryValues:
             elif isinstance(bc, sp.Expr):
                 return True
         return False
-
-def some_basic_tests():
-    import pyfftw             #pylint: disable=import-error
-
-    N = 8
-    K0 = C2C(N)
-    K1 = C2C(N)
-    K2 = C2C(N)
-    K3 = R2C(N)
-    T = TensorProductSpace(comm, (K0, K1, K2, K3))
-
-    # Create data on rank 0 for testing
-    if comm.Get_rank() == 0:
-        f_g = np.random.random(T.shape())
-        f_g_hat = pyfftw.interfaces.numpy_fft.rfftn(f_g, axes=(0, 1, 2, 3))
-    else:
-        f_g = np.zeros(T.shape())
-        f_g_hat = np.zeros(T.shape(), dtype=complex)
-
-    # Distribute test data to all ranks
-    comm.Bcast(f_g, root=0)
-    comm.Bcast(f_g_hat, root=0)
-
-    # Create a function in real space to hold the test data
-    fj = Array(T)
-    fj[:] = f_g[T.local_slice(False)]
-
-    # Perform forward transformation
-    f_hat = T.forward(fj)
-
-    assert np.allclose(f_g_hat[T.local_slice(True)], f_hat*N**4)
-
-    # Perform backward transformation
-    fj2 = Array(T)
-    fj2 = T.backward(f_hat)
-
-    assert np.allclose(fj, fj2)
-
-    f_hat = T.scalar_product(fj)
-
-    # Padding
-    # Needs new instances of bases because arrays have new sizes
-    Kp0 = C2C(N, padding_factor=1.5)
-    Kp1 = C2C(N, padding_factor=1.5)
-    Kp2 = C2C(N, padding_factor=1.5)
-    Kp3 = R2C(N, padding_factor=1.5)
-    Tp = TensorProductSpace(comm, (Kp0, Kp1, Kp2, Kp3))
-
-    f_g_pad = Tp.backward(f_hat)
-    f_hat2 = Tp.forward(f_g_pad)
-
-    assert np.allclose(f_hat2, f_hat)
-
-
-if __name__ == '__main__':
-    some_basic_tests()

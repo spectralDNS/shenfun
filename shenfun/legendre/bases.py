@@ -18,10 +18,16 @@ from . import fastgl
 __all__ = ['LegendreBase', 'Orthogonal', 'ShenDirichlet',
            'ShenBiharmonic', 'ShenNeumann',
            'ShenBiPolar', 'ShenBiPolar0',
-           'LowerDirichlet', 'NeumannDirichlet', 
+           'LowerDirichlet', 'NeumannDirichlet',
            'DirichletNeumann', 'UpperDirichletNeumann',
            'UpperDirichlet',
-           'BCDirichlet', 'BCBiharmonic', 'BCNeumann']
+           'BCDirichlet', 'BCBiharmonic', 'BCNeumann',
+           'BCNeumannDirichlet',
+           'BCDirichletNeumann',
+           'BCBeamFixedFree',
+           'BCLowerDirichlet',
+           'BCUpperDirichlet',
+           'BCUpperDirichletNeumann']
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
@@ -359,18 +365,28 @@ class ShenDirichlet(LegendreBase):
         return slice(0, self.N-2)
 
     def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
-        f = sympy.legendre(i, x)-sympy.legendre(i+2, x)
-        if self.is_scaled():
-            f /= np.sqrt(4*i+6)
+        if i < self.N-2:
+            f = sympy.legendre(i, x)-sympy.legendre(i+2, x)
+            if self.is_scaled():
+                f /= np.sqrt(4*i+6)
+        elif i == self.N-2:
+            f = 0.5*(1-x)
+        elif i == self.N-1:
+            f = 0.5*(1+x)
         return f
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        output_array[:] = eval_legendre(i, x) - eval_legendre(i+2, x)
-        if self.is_scaled():
-            output_array /= np.sqrt(4*i+6)
+        if i < self.N-2:
+            output_array[:] = eval_legendre(i, x) - eval_legendre(i+2, x)
+            if self.is_scaled():
+                output_array /= np.sqrt(4*i+6)
+        elif i == self.N-2:
+            output_array[:] = 0.5*(1-x)
+        elif i == self.N-1:
+            output_array[:] = 0.5*(1+x)
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -379,14 +395,28 @@ class ShenDirichlet(LegendreBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
-        basis = np.zeros(self.shape(True))
-        basis[np.array([i, i+2])] = (1, -1)
-        basis = leg.Legendre(basis)
-        if k > 0:
-            basis = basis.deriv(k)
-        output_array[:] = basis(x)
-        if self.is_scaled():
-            output_array /= np.sqrt(4*i+6)
+        if i < self.N-2:
+            basis = np.zeros(self.shape(True))
+            basis[np.array([i, i+2])] = (1, -1)
+            basis = leg.Legendre(basis)
+            if k > 0:
+                basis = basis.deriv(k)
+            output_array[:] = basis(x)
+            if self.is_scaled():
+                output_array /= np.sqrt(4*i+6)
+        elif i == self.N-2:
+            output_array[:] = 0
+            if k == 1:
+                output_array[:] = -0.5
+            elif k == 0:
+                output_array[:] = 0.5*(1-x)
+        elif i == self.N-1:
+            output_array[:] = 0
+            if k == 1:
+                output_array[:] = 0.5
+            elif k == 0:
+                output_array[:] = 0.5*(1+x)
+
         return output_array
 
     def _evaluate_expansion_all(self, input_array, output_array,
@@ -598,14 +628,21 @@ class ShenNeumann(LegendreBase):
             raise RuntimeError('Requires Numba')
 
     def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
-        f = sympy.legendre(i, x) - (i*(i+1))/((i+2)*(i+3))*sympy.legendre(i+2, x)
+        if i < self.N-2:
+            f = sympy.legendre(i, x) - (i*(i+1))/((i+2)*(i+3))*sympy.legendre(i+2, x)
+        else:
+            f = np.sum(BCNeumann.coefficient_matrix()[i-self.N+2]*np.array([sympy.legendre(j, x) for j in range(3)]))
         return f
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        output_array[:] = eval_legendre(i, x) - i*(i+1.)/(i+2.)/(i+3.)*eval_legendre(i+2, x)
+        if i < self.N-2:
+            output_array[:] = eval_legendre(i, x) - i*(i+1.)/(i+2.)/(i+3.)*eval_legendre(i+2, x)
+        else:
+            output_array[:] = self.get_bc_basis().evaluate_basis(x, i-self.N+2)
+
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -614,12 +651,15 @@ class ShenNeumann(LegendreBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
-        basis = np.zeros(self.shape(True))
-        basis[np.array([i, i+2])] = (1, -i*(i+1.)/(i+2.)/(i+3.))
-        basis = leg.Legendre(basis)
-        if k > 0:
-            basis = basis.deriv(k)
-        output_array[:] = basis(x)
+        if i < self.N-2:
+            basis = np.zeros(self.shape(True))
+            basis[np.array([i, i+2])] = (1, -i*(i+1.)/(i+2.)/(i+3.))
+            basis = leg.Legendre(basis)
+            if k > 0:
+                basis = basis.deriv(k)
+            output_array[:] = basis(x)
+        else:
+            output_array[:] = self.get_bc_basis().evaluate_basis_derivative(x, i-self.N+2, k)
         return output_array
 
     def to_ortho(self, input_array, output_array=None):
@@ -797,8 +837,7 @@ class ShenBiharmonic(LegendreBase):
         if i < self.N-4:
             output_array[:] = eval_legendre(i, x) - 2*(2*i+5.)/(2*i+7.)*eval_legendre(i+2, x) + ((2*i+3.)/(2*i+7.))*eval_legendre(i+4, x)
         else:
-            X = sympy.symbols('x', real=True)
-            output_array[:] = sympy.lambdify(X, self.sympy_basis(i, x=X))(x)
+            output_array[:] = self.get_bc_basis().evaluate_basis(x, i-self.N+4)
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -815,8 +854,8 @@ class ShenBiharmonic(LegendreBase):
                 basis = basis.deriv(k)
             output_array[:] = basis(x)
         else:
-            X = sympy.symbols('x', real=True)
-            output_array[:] = sympy.lambdify(X, self.sympy_basis(i, X).diff(X, k))(x)
+            output_array[:] = self.get_bc_basis().evaluate_basis_derivative(x, i-self.N+4, k)
+
         return output_array
 
     def to_ortho(self, input_array, output_array=None):
@@ -1643,18 +1682,23 @@ class DirichletNeumann(LegendreBase):
         self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
 
     def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
-        assert i < self.N-2
-        return (sympy.legendre(i, x)
-                +(2*i+3)/(i+2)**2*sympy.legendre(i+1, x)
-                -(i+1)**2/(i+2)**2*sympy.legendre(i+2, x))
+        if i < self.N-2:
+            return (sympy.legendre(i, x)
+                    +(2*i+3)/(i+2)**2*sympy.legendre(i+1, x)
+                    -(i+1)**2/(i+2)**2*sympy.legendre(i+2, x))
+        else:
+            return np.sum(BCDirichletNeumann.coefficient_matrix()[i-self.N+2]*np.array([sympy.legendre(j, x) for j in range(2)]))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        output_array[:] = (eval_legendre(i, x)
-                           +(2*i+3)/(i+2)**2*eval_legendre(i+1, x)
-                           -(i+1)**2/(i+2)**2*eval_legendre(i+2, x))
+        if i < self.N-2:
+            output_array[:] = (eval_legendre(i, x)
+                               +(2*i+3)/(i+2)**2*eval_legendre(i+1, x)
+                               -(i+1)**2/(i+2)**2*eval_legendre(i+2, x))
+        else:
+            output_array[:] = self.get_bc_basis().evaluate_basis(x, i-self.N+2)
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -1663,12 +1707,15 @@ class DirichletNeumann(LegendreBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
-        basis = np.zeros(self.shape(True))
-        basis[np.array([i, i+1, i+2])] = (1, (2*i+3)/(i+2)**2, -(i+1)**2/(i+2)**2)
-        basis = leg.Legendre(basis)
-        if k > 0:
-            basis = basis.deriv(k)
-        output_array[:] = basis(x)
+        if i < self.N-2:
+            basis = np.zeros(self.shape(True))
+            basis[np.array([i, i+1, i+2])] = (1, (2*i+3)/(i+2)**2, -(i+1)**2/(i+2)**2)
+            basis = leg.Legendre(basis)
+            if k > 0:
+                basis = basis.deriv(k)
+            output_array[:] = basis(x)
+        else:
+            output_array[:] = self.get_bc_basis().evaluate_basis_derivative(x, i-self.N+2, k)
         return output_array
 
     def eval(self, x, u, output_array=None):
@@ -1856,7 +1903,7 @@ class LowerDirichlet(LegendreBase):
         output_array += leg.legval(x, w_hat)
         output_array += 0.5*u[-1]*(1-x)
         return output_array
-    
+
     def get_bc_basis(self):
         if self._bc_basis:
             return self._bc_basis
@@ -2001,18 +2048,23 @@ class NeumannDirichlet(LegendreBase):
         self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
 
     def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
-        assert i < self.N-2
-        return (sympy.legendre(i, x)
-                -(2*i+3)/(i+2)**2*sympy.legendre(i+1, x)
-                -(i+1)**2/(i+2)**2*sympy.legendre(i+2, x))
+        if i < self.N-2:
+            return (sympy.legendre(i, x)
+                    -(2*i+3)/(i+2)**2*sympy.legendre(i+1, x)
+                    -(i+1)**2/(i+2)**2*sympy.legendre(i+2, x))
+        else:
+            return np.sum(BCNeumannDirichlet.coefficient_matrix()[i-self.N+2]*np.array([sympy.legendre(j, x) for j in range(3)]))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        output_array[:] = (eval_legendre(i, x)
-                           -(2*i+3)/(i+2)**2*eval_legendre(i+1, x)
-                           -(i+1)**2/(i+2)**2*eval_legendre(i+2, x))
+        if i < self.N-2:
+            output_array[:] = (eval_legendre(i, x)
+                               -(2*i+3)/(i+2)**2*eval_legendre(i+1, x)
+                               -(i+1)**2/(i+2)**2*eval_legendre(i+2, x))
+        else:
+            output_array[:] = self.get_bc_basis().evaluate_basis(x, i-self.N+2)
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -2021,12 +2073,15 @@ class NeumannDirichlet(LegendreBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
-        basis = np.zeros(self.shape(True))
-        basis[np.array([i, i+1, i+2])] = (1, -(2*i+3)/(i+2)**2, -(i+1)**2/(i+2)**2)
-        basis = leg.Legendre(basis)
-        if k > 0:
-            basis = basis.deriv(k)
-        output_array[:] = basis(x)
+        if i < self.N-2:
+            basis = np.zeros(self.shape(True))
+            basis[np.array([i, i+1, i+2])] = (1, -(2*i+3)/(i+2)**2, -(i+1)**2/(i+2)**2)
+            basis = leg.Legendre(basis)
+            if k > 0:
+                basis = basis.deriv(k)
+            output_array[:] = basis(x)
+        else:
+            output_array[:] = self.get_bc_basis().evaluate_basis_derivative(x, i-self.N+2, k)
         return output_array
 
     def eval(self, x, u, output_array=None):
@@ -2195,18 +2250,23 @@ class UpperDirichletNeumann(LegendreBase):
         self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
 
     def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
-        assert i < self.N-2
-        return (sympy.legendre(i, x)
-                -(2*i+3)/(i+2)*sympy.legendre(i+1, x)
-                +(i+1)/(i+2)*sympy.legendre(i+2, x))
+        if i < self.N-2:
+            return (sympy.legendre(i, x)
+                    -(2*i+3)/(i+2)*sympy.legendre(i+1, x)
+                    +(i+1)/(i+2)*sympy.legendre(i+2, x))
+        else:
+            return np.sum(BCUpperDirichletNeumann.coefficient_matrix()[i-self.N+2]*np.array([sympy.legendre(j, x) for j in range(3)]))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:
             output_array = np.zeros(x.shape)
-        output_array[:] = (eval_legendre(i, x)
-                           -(2*i+3)/(i+2)*eval_legendre(i+1, x)
-                           +(i+1)/(i+2)*eval_legendre(i+2, x))
+        if i < self.N-2:
+            output_array[:] = (eval_legendre(i, x)
+                               -(2*i+3)/(i+2)*eval_legendre(i+1, x)
+                               +(i+1)/(i+2)*eval_legendre(i+2, x))
+        else:
+            output_array[:] = self.get_bc_basis().evaluate_basis(x, i-self.N+2)
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -2215,12 +2275,15 @@ class UpperDirichletNeumann(LegendreBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         x = np.atleast_1d(x)
-        basis = np.zeros(self.shape(True))
-        basis[np.array([i, i+1, i+2])] = (1, -(2*i+3)/(i+2), (i+1)/(i+2))
-        basis = leg.Legendre(basis)
-        if k > 0:
-            basis = basis.deriv(k)
-        output_array[:] = basis(x)
+        if i < self.N-2:
+            basis = np.zeros(self.shape(True))
+            basis[np.array([i, i+1, i+2])] = (1, -(2*i+3)/(i+2), (i+1)/(i+2))
+            basis = leg.Legendre(basis)
+            if k > 0:
+                basis = basis.deriv(k)
+            output_array[:] = basis(x)
+        else:
+            output_array[:] = self.get_bc_basis().evaluate_basis_derivative(x, i-self.N+2, k)
         return output_array
 
     def eval(self, x, u, output_array=None):
@@ -2386,9 +2449,9 @@ class BCNeumann(LegendreBase):
 
     def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         if i == 0:
-            return x/2-(3*x**2-1)/3
+            return x/2-(3*x**2-1)/12
         elif i == 1:
-            return x/2+(3*x**2-1)/3
+            return x/2+(3*x**2-1)/12
         else:
             raise AttributeError('Only two bases, i < 2')
 
@@ -2398,9 +2461,9 @@ class BCNeumann(LegendreBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         if i == 0:
-            output_array[:] = x/2-(3*x**2-1)/3
+            output_array[:] = x/2-(3*x**2-1)/12
         elif i == 1:
-            output_array[:] = x/2+(3*x**2-1)/3
+            output_array[:] = x/2+(3*x**2-1)/12
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -2408,17 +2471,17 @@ class BCNeumann(LegendreBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         if i == 0 and k == 0:
-            output_array[:] = x/2-(3*x**2-1)/3
+            output_array[:] = x/2-(3*x**2-1)/12
         elif i == 0 and k == 1:
-            output_array[:] = 0.5-2*x
+            output_array[:] = 0.5-x/2
         elif i == 0 and k == 2:
-            output_array[:] = -2
+            output_array[:] = -1/2
         elif i == 1 and k == 0:
-            output_array[:] = x/2+(3*x**2-1)/3
+            output_array[:] = x/2+(3*x**2-1)/12
         elif i == 1 and k == 1:
-            output_array[:] = 0.5+2*x
+            output_array[:] = 0.5+x/2
         elif i == 1 and k == 2:
-            output_array[:] = 2
+            output_array[:] = 1/2
         else:
             output_array[:] = 0
         return output_array
@@ -2844,7 +2907,7 @@ class BCNeumannDirichlet(LegendreBase):
         if i == 0:
             return 1-0.5*x-0.25*(3*x**2-1)
         elif i == 1:
-            return 1
+            return sympy.legendre(0, x)
         else:
             raise AttributeError('Only two bases, i < 2')
 
@@ -2922,7 +2985,7 @@ class BCDirichletNeumann(LegendreBase):
 
     def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         if i == 0:
-            return 1
+            return sympy.legendre(0, x)
         elif i == 1:
             return 1+x
         else:
@@ -3000,7 +3063,7 @@ class BCUpperDirichletNeumann(LegendreBase):
 
     def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
         if i == 0:
-            return 1
+            return sympy.legendre(0, x)
         elif i == 1:
             return 1-2*x+0.5*(3*x**2-1)
         else:
@@ -3040,4 +3103,3 @@ class BCUpperDirichletNeumann(LegendreBase):
         self.evaluate_basis_derivative(x=x, i=0, k=k, output_array=output_array[:, 0])
         self.evaluate_basis_derivative(x=x, i=1, k=k, output_array=output_array[:, 1])
         return output_array
-    

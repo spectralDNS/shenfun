@@ -312,7 +312,8 @@ class SpectralBase:
         return self.backward.output_array
 
     def vandermonde(self, x):
-        r"""Return Vandermonde matrix based on the primary basis of the family.
+        r"""Return Vandermonde matrix based on the primary (orthogonal) basis
+        of the family.
 
         Evaluates basis :math:`\psi_k(x)` for all wavenumbers, and all ``x``.
         Returned Vandermonde matrix is an N x M matrix with N the length of
@@ -334,7 +335,7 @@ class SpectralBase:
 
         Note
         ----
-        This function returns a matrix of evaluated primary basis functions for
+        This function returns a matrix of evaluated orthogonal basis functions for
         either family. That is, it is using either pure Chebyshev, Legendre or
         Fourier exponentials. The true Vandermonde matrix of a basis is obtained
         through :meth:`.SpectralBase.evaluate_basis_all`.
@@ -541,7 +542,6 @@ class SpectralBase:
             array
 
         """
-        #assert self.N == array.shape[self.axis]
         if self._mass is None:
             B = self.get_mass_matrix()
             self._mass = B((self, 0), (self, 0))
@@ -601,55 +601,28 @@ class SpectralBase:
         plan_fwd = self._xfftn_fwd
         plan_bck = self._xfftn_bck
 
-        if 'builders' in self._xfftn_fwd.__module__: #pragma: no cover
+        opts = dict(
+            overwrite_input='FFTW_DESTROY_INPUT',
+            planner_effort='FFTW_MEASURE',
+            threads=1,
+        )
+        opts.update(options)
+        flags = (fftw.flag_dict[opts['planner_effort']],
+                 fftw.flag_dict[opts['overwrite_input']])
+        threads = opts['threads']
 
-            opts = dict(
-                avoid_copy=True,
-                overwrite_input=True,
-                auto_align_input=True,
-                auto_contiguous=True,
-                planner_effort='FFTW_MEASURE',
-                threads=1,
-                backward=False,
-            )
-            opts.update(options)
+        n = (shape[axis],)
+        U = fftw.aligned(shape, dtype=dtype)
+        xfftn_fwd = plan_fwd(U, n, (axis,), threads=threads, flags=flags)
+        V = xfftn_fwd.output_array
 
-            n = shape[axis]
-            U = fftw.aligned(shape, dtype=dtype)
-            xfftn_fwd = plan_fwd(U, n=n, axis=axis, **opts)
-            V = xfftn_fwd.output_array
-            xfftn_bck = plan_bck(V, n=n, axis=axis, **opts)
-            V.fill(0)
-            U.fill(0)
+        if np.issubdtype(dtype, floating):
+            flags = (fftw.flag_dict[opts['planner_effort']],)
 
-            xfftn_fwd.update_arrays(U, V)
-            xfftn_bck.update_arrays(V, U)
-            self._M = 1./np.prod(np.take(shape, axis))
-
-        else:
-            opts = dict(
-                overwrite_input='FFTW_DESTROY_INPUT',
-                planner_effort='FFTW_MEASURE',
-                threads=1,
-            )
-            opts.update(options)
-            flags = (fftw.flag_dict[opts['planner_effort']],
-                     fftw.flag_dict[opts['overwrite_input']])
-            threads = opts['threads']
-
-            n = (shape[axis],)
-            U = fftw.aligned(shape, dtype=dtype)
-            xfftn_fwd = plan_fwd(U, n, (axis,), threads=threads, flags=flags)
-            V = xfftn_fwd.output_array
-
-            if np.issubdtype(dtype, floating):
-                flags = (fftw.flag_dict[opts['planner_effort']],)
-
-            xfftn_bck = plan_bck(V, n, (axis,), threads=threads, flags=flags, output_array=U)
-            V.fill(0)
-            U.fill(0)
-            self._M = xfftn_fwd.get_normalization()
-
+        xfftn_bck = plan_bck(V, n, (axis,), threads=threads, flags=flags, output_array=U)
+        V.fill(0)
+        U.fill(0)
+        self._M = xfftn_fwd.get_normalization()
         self.axis = axis
 
         if self.padding_factor != 1:
