@@ -255,7 +255,8 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             'RDRN': legendre.bases.UpperDirichletNeumann,
             'LNRDRN': legendre.bases.ShenBiPolar0,
             'LDLNRDRN': legendre.bases.ShenBiharmonic,
-            'LDLNRN2RN3': legendre.bases.BeamFixedFree
+            'LDLNRN2RN3': legendre.bases.BeamFixedFree,
+            'LDLNRD': legendre.bases.DirichletNeumannDirichlet
         }
 
         if quad is not None:
