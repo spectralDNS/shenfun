@@ -27,7 +27,8 @@ __all__ = ['LegendreBase', 'Orthogonal', 'ShenDirichlet',
            'BCBeamFixedFree',
            'BCLowerDirichlet',
            'BCUpperDirichlet',
-           'BCUpperDirichletNeumann']
+           'BCUpperDirichletNeumann',
+           'BCDirichletNeumannDirichlet']
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 

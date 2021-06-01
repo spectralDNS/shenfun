@@ -30,6 +30,7 @@ bases = (
     legendre.DirichletNeumann,
     legendre.LowerDirichlet,
     legendre.UpperDirichletNeumann,
+    legendre.DirichletNeumannDirichlet,
     fourier.R2C,
     fourier.C2C,
     hermite.Orthogonal,
