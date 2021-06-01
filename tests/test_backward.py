@@ -35,8 +35,8 @@ def test_backward():
     assert np.linalg.norm(uT2-uT) < 1e-8
 
 def test_backward2D():
-    T = FunctionSpace(N, 'C')
-    L = FunctionSpace(N, 'L')
+    T = FunctionSpace(N, 'C', domain=(-2, 2))
+    L = FunctionSpace(N, 'L', domain=(-2, 2))
     F = FunctionSpace(N, 'F', dtype='d')
     TT = TensorProductSpace(comm, (T, F))
     TL = TensorProductSpace(comm, (L, F))
@@ -57,10 +57,10 @@ def test_backward2D():
     assert np.linalg.norm(uT2-uT)
 
 def test_backward2ND():
-    T0 = FunctionSpace(N, 'C')
-    L0 = FunctionSpace(N, 'L')
-    T1 = FunctionSpace(N, 'C')
-    L1 = FunctionSpace(N, 'L')
+    T0 = FunctionSpace(N, 'C', domain=(-2, 2))
+    L0 = FunctionSpace(N, 'L', domain=(-2, 2))
+    T1 = FunctionSpace(N, 'C', domain=(-2, 2))
+    L1 = FunctionSpace(N, 'L', domain=(-2, 2))
     TT = TensorProductSpace(comm, (T0, T1))
     LL = TensorProductSpace(comm, (L0, L1))
     uT = Function(TT, buffer=h)
@@ -70,8 +70,8 @@ def test_backward2ND():
     assert np.linalg.norm(uT2-uT)
 
 def test_backward3D():
-    T = FunctionSpace(N, 'C')
-    L = FunctionSpace(N, 'L')
+    T = FunctionSpace(N, 'C', domain=(-2, 2))
+    L = FunctionSpace(N, 'L', domain=(-2, 2))
     F0 = FunctionSpace(N, 'F', dtype='D')
     F1 = FunctionSpace(N, 'F', dtype='d')
     TT = TensorProductSpace(comm, (F0, T, F1))
@@ -85,7 +85,7 @@ def test_backward3D():
 
 @pytest.mark.parametrize('family', 'CLJ')
 def test_backward_uniform(family):
-    T = FunctionSpace(N, family)
+    T = FunctionSpace(2*N, family, domain=(-2, 2))
     uT = Function(T, buffer=f)
     ub = uT.backward(kind='uniform')
     xj = T.mesh(uniform=True)
@@ -95,7 +95,7 @@ def test_backward_uniform(family):
 @pytest.mark.parametrize('family', 'CL')
 def test_padding(family):
     N = 8
-    B = FunctionSpace(N, family, bc=(-1, 1))
+    B = FunctionSpace(N, family, bc=(-1, 1), domain=(-2, 2))
     Bp = B.get_dealiased(1.5)
     u = Function(B).set_boundary_dofs()
     #u[:(N-2)] = np.random.random(N-2)

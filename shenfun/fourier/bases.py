@@ -255,50 +255,27 @@ class FourierBase(SpectralBase):
         self.axis = axis[-1]
         self._planned_axes = axis
 
-        if 'builders' in self._xfftn_fwd.__module__:
+        opts = dict(
+            overwrite_input='FFTW_DESTROY_INPUT',
+            planner_effort='FFTW_MEASURE',
+            threads=1,
+        )
+        opts.update(options)
+        threads = opts['threads']
+        flags = (fftw.flag_dict[opts['planner_effort']],
+                 fftw.flag_dict[opts['overwrite_input']])
 
-            opts = dict(
-                avoid_copy=True,
-                overwrite_input=True,
-                auto_align_input=True,
-                auto_contiguous=True,
-                planner_effort='FFTW_MEASURE',
-                threads=1,
-            )
-            opts.update(options)
-            U = fftw.aligned(shape, dtype=dtype)
-            xfftn_fwd = plan_fwd(U, s=s, axes=axis, **opts)
-            V = xfftn_fwd.output_array
-            xfftn_bck = plan_bck(V, s=s, axes=axis, **opts)
-            V.fill(0)
-            U.fill(0)
+        U = fftw.aligned(shape, dtype=dtype)
+        xfftn_fwd = plan_fwd(U, s=s, axes=axis, threads=threads, flags=flags)
+        V = xfftn_fwd.output_array
 
-            xfftn_fwd.update_arrays(U, V)
-            xfftn_bck.update_arrays(V, U)
-            self._M = 1./np.prod(np.take(shape, axis))
+        if np.issubdtype(dtype, np.floating):
+            flags = (fftw.flag_dict[opts['planner_effort']],)
 
-        else:
-            opts = dict(
-                overwrite_input='FFTW_DESTROY_INPUT',
-                planner_effort='FFTW_MEASURE',
-                threads=1,
-            )
-            opts.update(options)
-            threads = opts['threads']
-            flags = (fftw.flag_dict[opts['planner_effort']],
-                     fftw.flag_dict[opts['overwrite_input']])
-
-            U = fftw.aligned(shape, dtype=dtype)
-            xfftn_fwd = plan_fwd(U, s=s, axes=axis, threads=threads, flags=flags)
-            V = xfftn_fwd.output_array
-
-            if np.issubdtype(dtype, np.floating):
-                flags = (fftw.flag_dict[opts['planner_effort']],)
-
-            xfftn_bck = plan_bck(V, s=s, axes=axis, threads=threads, flags=flags, output_array=U)
-            V.fill(0)
-            U.fill(0)
-            self._M = xfftn_fwd.get_normalization()
+        xfftn_bck = plan_bck(V, s=s, axes=axis, threads=threads, flags=flags, output_array=U)
+        V.fill(0)
+        U.fill(0)
+        self._M = xfftn_fwd.get_normalization()
 
         if self.padding_factor > 1.+1e-8:
             trunc_array = self._get_truncarray(shape, V.dtype)

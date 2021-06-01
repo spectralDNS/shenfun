@@ -21,8 +21,7 @@ cdef extern from "math.h" nogil:
     double sin(double)
     double cos(double)
 
-def evaluate_2D(np.ndarray[T, ndim=1] b, np.ndarray[complex_t, ndim=2] u,
-                list P, int r2c, int M, int start):
+def evaluate_2D(b, u, list P, int r2c, int M, int start):
     if P[0].dtype == complex and P[1].dtype == complex:
         # 2 Fourier spaces
         if r2c < 0: # No R2C
@@ -50,7 +49,8 @@ def evaluate_2D(np.ndarray[T, ndim=1] b, np.ndarray[complex_t, ndim=2] u,
 
     return b
 
-def _evaluate_2D_cc0(np.ndarray[complex_t, ndim=1] b, np.ndarray[complex_t, ndim=2] u,
+def _evaluate_2D_cc0(np.ndarray[complex_t, ndim=1] b,
+                     np.ndarray[complex_t, ndim=2] u,
                      np.ndarray[complex_t, ndim=2] P0,
                      np.ndarray[complex_t, ndim=2] P1,
                      int r2c, int M, int start):
@@ -65,7 +65,8 @@ def _evaluate_2D_cc0(np.ndarray[complex_t, ndim=1] b, np.ndarray[complex_t, ndim
                 b[i] = b[i] + u[k, l] * P0[i, k] * P1[i, l]
     return b
 
-def _evaluate_2D_cc1(np.ndarray[real_t, ndim=1] b, np.ndarray[complex_t, ndim=2] u,
+def _evaluate_2D_cc1(np.ndarray[real_t, ndim=1] b,
+                     np.ndarray[complex_t, ndim=2] u,
                      np.ndarray[complex_t, ndim=2] P0,
                      np.ndarray[complex_t, ndim=2] P1,
                      int r2c, int M, int start):
@@ -101,7 +102,8 @@ def _evaluate_2D_rc0(np.ndarray[complex_t, ndim=1] b,
     return b
 
 
-def _evaluate_2D_rc1(np.ndarray[real_t, ndim=1] b, np.ndarray[complex_t, ndim=2] u,
+def _evaluate_2D_rc1(np.ndarray[real_t, ndim=1] b,
+                     np.ndarray[complex_t, ndim=2] u,
                      np.ndarray[real_t, ndim=2] P0,
                      np.ndarray[complex_t, ndim=2] P1,
                      int r2c, int M, int start):
@@ -122,7 +124,8 @@ def _evaluate_2D_rc1(np.ndarray[real_t, ndim=1] b, np.ndarray[complex_t, ndim=2]
                     b[i] += p
     return b
 
-def _evaluate_2D_cr0(np.ndarray[complex_t, ndim=1] b, np.ndarray[complex_t, ndim=2] u,
+def _evaluate_2D_cr0(np.ndarray[complex_t, ndim=1] b,
+                     np.ndarray[complex_t, ndim=2] u,
                      np.ndarray[complex_t, ndim=2] P0,
                      np.ndarray[real_t, ndim=2] P1,
                      int r2c, int M, int start):
@@ -135,7 +138,8 @@ def _evaluate_2D_cr0(np.ndarray[complex_t, ndim=1] b, np.ndarray[complex_t, ndim
 
     return b
 
-def _evaluate_2D_cr1(np.ndarray[real_t, ndim=1] b, np.ndarray[complex_t, ndim=2] u,
+def _evaluate_2D_cr1(np.ndarray[real_t, ndim=1] b,
+                     np.ndarray[complex_t, ndim=2] u,
                      np.ndarray[complex_t, ndim=2] P0,
                      np.ndarray[real_t, ndim=2] P1,
                      int r2c, int M, int start):
@@ -169,8 +173,7 @@ def _evaluate_2D_rr0(np.ndarray[real_t, ndim=1] b,
                 b[i] = b[i] + u[k, l] * P0[i, k] * P1[i, l]
     return b
 
-def evaluate_3D(np.ndarray[T, ndim=1] b, np.ndarray[complex_t, ndim=3] u,
-                list P, int r2c, int M, int start):
+def evaluate_3D(b, u, list P, int r2c, int M, int start):
 
     if P[0].dtype == complex and P[1].dtype == complex and P[2].dtype == complex:
         # Only Fourier bases
@@ -523,7 +526,7 @@ def _evaluate_3D_rrr(np.ndarray[real_t, ndim=1] b,
 
     return b
 
-def evaluate_lm_2D(list bases, np.ndarray[T, ndim=1] b, np.ndarray[complex_t, ndim=2] u, np.ndarray[real_t, ndim=1] x0, np.ndarray[real_t, ndim=1] x1, np.ndarray[real_t, ndim=1] w0, np.ndarray[real_t, ndim=1] w1, int r2c, int M, int start):
+def evaluate_lm_2D(list bases, b, u, x0, x1, w0, w1, int r2c, int M, int start):
 
     if np.all([base.family() == 'fourier' for base in bases]):
         # 2 Fourier spaces
