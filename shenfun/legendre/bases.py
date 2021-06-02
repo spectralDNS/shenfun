@@ -12,6 +12,7 @@ from scipy.special import eval_legendre
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, islicedict, \
     slicedict
+from shenfun.matrixbase import SparseMatrix
 from .lobatto import legendre_lobatto_nodes_and_weights
 from . import fastgl
 
@@ -152,7 +153,6 @@ class LegendreBase(SpectralBase):
         if x is None:
             x = self.mesh(False, False)
         V = self.vandermonde(x)
-        #N, M = self.shape(False), self.shape(True)
         M = V.shape[-1]
         if k > 0:
             D = np.zeros((M, M))
@@ -326,6 +326,14 @@ class ShenDirichlet(LegendreBase):
     def short_name():
         return 'SD'
 
+    def coefficient_matrix(self):
+        d = np.ones(self.N)
+        d[-2:] = 0
+        if self.is_scaled():
+            k = np.arange(self.N)
+            d /= np.sqrt(4*k+6)
+        return SparseMatrix({0: d, 2: -d}, (self.N, self.N))
+
     @property
     def has_nonhomogeneous_bcs(self):
         return self.bc.has_nonhomogeneous_bcs()
@@ -341,14 +349,17 @@ class ShenDirichlet(LegendreBase):
 
     def _composite(self, V, argument=0):
         P = np.zeros(V.shape)
-        if not self.is_scaled():
-            P[:, :-2] = V[:, :-2] - V[:, 2:]
-        else:
-            k = np.arange(self.N-2).astype(float)
-            P[:, :-2] = (V[:, :-2] - V[:, 2:])/np.sqrt(4*k+6)
+        #if not self.is_scaled():
+        #    P[:, :-2] = V[:, :-2] - V[:, 2:]
+        #else:
+        #    k = np.arange(self.N-2).astype(float)
+        #    P[:, :-2] = (V[:, :-2] - V[:, 2:])/np.sqrt(4*k+6)
+        #
+        P[:] = V * self.coefficient_matrix().diags().T
         if argument == 1:
-            P[:, -2] = (V[:, 0] - V[:, 1])/2
-            P[:, -1] = (V[:, 0] + V[:, 1])/2
+            P[:, -2:] = self.get_bc_basis()._composite(V)
+            #P[:, -2] = (V[:, 0] - V[:, 1])/2
+            #P[:, -1] = (V[:, 0] + V[:, 1])/2
         return P
 
     def to_ortho(self, input_array, output_array=None):
@@ -2263,7 +2274,7 @@ class NeumannDirichlet(LegendreBase):
                     -(2*i+3)/(i+2)**2*sp.legendre(i+1, x)
                     -(i+1)**2/(i+2)**2*sp.legendre(i+2, x))
         else:
-            return np.sum(BCNeumannDirichlet.coefficient_matrix()[i-self.N+2]*np.array([sp.legendre(j, x) for j in range(3)]))
+            return np.sum(BCNeumannDirichlet.coefficient_matrix()[i-self.dim()]*np.array([sp.legendre(j, x) for j in range(3)]))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -2274,7 +2285,7 @@ class NeumannDirichlet(LegendreBase):
                                -(2*i+3)/(i+2)**2*eval_legendre(i+1, x)
                                -(i+1)**2/(i+2)**2*eval_legendre(i+2, x))
         else:
-            output_array[:] = self.get_bc_basis().evaluate_basis(x, i-self.N+2)
+            output_array[:] = self.get_bc_basis().evaluate_basis(x, i-self.dim())
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -2613,7 +2624,7 @@ class BCBase(LegendreBase):
     def _composite(self, V, argument=1):
         N = self.shape()
         P = np.zeros(V[:, :N].shape)
-        P[:] = np.tensordot(V, self.coefficient_matrix(), (1, 1))
+        P[:] = np.tensordot(V[:, :self.shape()], self.coefficient_matrix(), (1, 1))
         return P
 
     def sympy_basis(self, i=0, x=xp):
