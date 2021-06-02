@@ -5,11 +5,13 @@ from __future__ import division
 import functools
 import numpy as np
 import sympy as sp
+from time import time
 from numpy.polynomial import chebyshev as n_cheb
 from scipy.special import eval_chebyt, eval_chebyu
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, FuncWrap, \
     islicedict, slicedict
+from shenfun.matrixbase import SparseMatrix
 from shenfun.optimization import optimizer
 
 __all__ = ['ChebyshevBase',
@@ -42,6 +44,17 @@ __all__ = ['ChebyshevBase',
 chebval = optimizer(n_cheb.chebval)
 
 xp = sp.Symbol('x', real=True)
+
+def matmat_dense_sparseT(A, B, C):
+    assert isinstance(A, np.ndarray)
+    assert isinstance(C, np.ndarray)
+    assert isinstance(B, SparseMatrix)
+    assert np.all(A.shape == C.shape)
+    assert A.shape[1] == B.shape[1]
+    N = A.shape[1]
+    for key, val in B.items():
+        C[:, :(N-key)] += A[:, key:]*val[None, :]
+    return C
 
 class DCTWrap(FuncWrap):
     """DCT for complex input"""
@@ -648,6 +661,16 @@ class CompositeSpace(Orthogonal):
         input_array[:] = self.to_ortho(input_array, output_array)
         Orthogonal._evaluate_expansion_all(self, input_array, output_array, x, True)
 
+    def _evaluate_scalar_product(self, fast_transform=True):
+        output = self.scalar_product.output_array
+        if fast_transform is False:
+            SpectralBase._evaluate_scalar_product(self)
+            output[self.sl[slice(self.dim(), self.N)]] = 0
+            return
+        Orthogonal._evaluate_scalar_product(self, True)
+        output[:] = output * self.coefficient_matrix().diags().T
+        output[self.sl[slice(self.dim(), self.N)]] = 0
+
     @property
     def is_orthogonal(self):
         return False
@@ -662,7 +685,83 @@ class CompositeSpace(Orthogonal):
                 Zero for test and 1 for trialfunction
 
         """
-        raise NotImplementedError
+        P = np.zeros_like(V)
+        P[:] = V * self.coefficient_matrix().diags().T
+        #matmat_dense_sparseT(V, self.coefficient_matrix(), P)
+        if argument == 1: # if trial function
+            P[:, slice(self.dim(), self.N)] = self.get_bc_basis()._composite(V)
+        return P
+
+    def sympy_basis(self, i=0, x=xp):
+        assert i < self.N
+        if i < self.dim():
+            row = self.coefficient_matrix().diags().getrow(i)
+            f = 0
+            for j, val in zip(row.nonzero()[1], row.data):
+                f += val*Orthogonal.sympy_basis(self, i=j, x=x)
+        else:
+            f = self.get_bc_basis().sympy_basis(i=i-self.dim(), x=x)
+        return f
+
+    def to_ortho(self, input_array, output_array=None):
+        if output_array is None:
+            output_array = np.zeros_like(input_array)
+        else:
+            output_array.fill(0)
+        for key, val in self.coefficient_matrix().items():
+            output_array[self.sl[slice(key, self.N)]] += val*input_array[self.sl[slice(0, self.N-key)]]
+        if self.has_nonhomogeneous_bcs:
+            self.bc.add_to_orthogonal(output_array, input_array)
+        return output_array
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        if i < self.dim():
+            row = self.coefficient_matrix().diags().getrow(i)
+            w0 = np.zeros_like(output_array)
+            for j, val in zip(row.nonzero()[1], row.data):
+                output_array[:] += val*Orthogonal.evaluate_basis(self, x, i=j, output_array=w0)
+        else:
+            assert i < self.N
+            output_array = self.get_bc_basis().evaluate_basis(x, i=i-self.dim(), output_array=output_array)
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        if x is None:
+            x = self.mesh(False, False)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = np.atleast_1d(x)
+
+        if i < self.dim():
+            basis = np.zeros(self.shape(True))
+            M = self.coefficient_matrix()
+            row = M.diags().getrow(i)
+            indices = []
+            vals = []
+            for key, val in M.items():
+                indices.append(key+i)
+                vals.append(val[i])
+            basis[np.array(indices)] = vals
+            basis = n_cheb.Chebyshev(basis)
+            if k > 0:
+                basis = basis.deriv(k)
+            output_array[:] = basis(x)
+        else:
+            output_array[:] = self.get_bc_basis().evaluate_basis_derivative(x, i-self.dim(), k)
+        return output_array
+
+    def eval(self, x, u, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape, dtype=self.dtype)
+        x = self.map_reference_domain(x)
+        w = self.to_ortho(u)
+        output_array[:] = chebval(x, w)
+        return output_array
+
 
 class CompositeSpaceU(OrthogonalU):
     """Common class for all spaces based on composite bases of Chebyshev
@@ -782,107 +881,17 @@ class ShenDirichlet(CompositeSpace):
     def has_nonhomogeneous_bcs(self):
         return self.bc.has_nonhomogeneous_bcs()
 
-    def sympy_basis(self, i=0, x=xp):
-        assert i < self.N
-        if i < self.N-2:
-            return sp.chebyshevt(i, x) - sp.chebyshevt(i+2, x)
-        if i == self.N-2:
-            return 0.5*(1-x)
-        return 0.5*(1+x)
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i < self.N-2:
-            w = np.arccos(x)
-            output_array[:] = np.cos(i*w) - np.cos((i+2)*w)
-        elif i == self.N-2:
-            output_array[:] = 0.5*(1-x)
-        elif i == self.N-1:
-            output_array[:] = 0.5*(1+x)
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        if x is None:
-            x = self.mesh(False, False)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        x = np.atleast_1d(x)
-        if i < self.N-2:
-            basis = np.zeros(self.shape(True))
-            basis[np.array([i, i+2])] = (1, -1)
-            basis = n_cheb.Chebyshev(basis)
-            if k > 0:
-                basis = basis.deriv(k)
-            output_array[:] = basis(x)
-        elif i == self.N-2:
-            output_array[:] = 0
-            if k == 1:
-                output_array[:] = -0.5
-            elif k == 0:
-                output_array[:] = 0.5*(1-x)
-        elif i == self.N-1:
-            output_array[:] = 0
-            if k == 1:
-                output_array[:] = 0.5
-            elif k == 0:
-                output_array[:] = 0.5*(1+x)
-
-        return output_array
+    def coefficient_matrix(self):
+        d = np.ones(self.N, dtype=int)
+        d[-2:] = 0
+        return SparseMatrix({0: d, 2: -d[:-2]}, (self.N, self.N))
 
     def is_scaled(self):
         """Return True if scaled basis is used, otherwise False"""
         return False
 
-    def _composite(self, V, argument=0):
-        P = np.zeros_like(V)
-        P[:, :-2] = V[:, :-2] - V[:, 2:]
-        if argument == 1: # if trial function
-            P[:, -2] = (V[:, 0] - V[:, 1])/2    # x = -1
-            P[:, -1] = (V[:, 0] + V[:, 1])/2    # x = +1
-        return P
-
-    def _evaluate_scalar_product(self, fast_transform=True):
-        if fast_transform is False:
-            SpectralBase._evaluate_scalar_product(self)
-            self.scalar_product.output_array[self.si[-2]] = 0
-            self.scalar_product.output_array[self.si[-1]] = 0
-            return
-        Orthogonal._evaluate_scalar_product(self, True)
-        output = self.scalar_product.output_array
-        s0 = self.sl[slice(0, self.N-2)]
-        s1 = self.sl[slice(2, self.N)]
-        output[s0] -= output[s1]
-        output[self.si[-2]] = 0
-        output[self.si[-1]] = 0
-
-    def to_ortho(self, input_array, output_array=None):
-        if output_array is None:
-            output_array = np.zeros_like(input_array)
-        else:
-            output_array.fill(0)
-        s0 = self.sl[slice(0, self.N-2)]
-        s1 = self.sl[slice(2, self.N)]
-        output_array[s0] = input_array[s0]
-        output_array[s1] -= input_array[s0]
-        self.bc.add_to_orthogonal(output_array, input_array)
-        return output_array
-
     def slice(self):
         return slice(0, self.N-2)
-
-    def eval(self, x, u, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape, dtype=self.dtype)
-        x = self.map_reference_domain(x)
-        w_hat = work[(u, 0, True)]
-        output_array[:] = n_cheb.chebval(x, u[:-2])
-        w_hat[2:] = u[:-2]
-        output_array -= n_cheb.chebval(x, w_hat)
-        output_array += 0.5*(u[-1]*(1+x)+u[-2]*(1-x))
-        return output_array
 
     def get_bc_basis(self):
         if self._bc_basis:
@@ -3788,7 +3797,7 @@ class BCBase(CompositeSpace):
     def _composite(self, V, argument=1):
         N = self.shape()
         P = np.zeros(V[:, :N].shape)
-        P[:] = np.tensordot(V, self.coefficient_matrix(), (1, 1))
+        P[:] = np.tensordot(V[:, :self.shape()], self.coefficient_matrix(), (1, 1))
         return P
 
     def sympy_basis(self, i=0, x=xp):
@@ -3816,8 +3825,8 @@ class BCDirichlet(BCBase):
 
     @staticmethod
     def coefficient_matrix():
-        return np.array([[0.5, -0.5],
-                         [0.5, 0.5]])
+        return sp.Rational(1/2)*np.array([[1, -1],
+                                          [1, 1]])
 
 class BCNeumann(BCBase):
 
