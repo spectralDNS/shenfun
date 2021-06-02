@@ -18,6 +18,7 @@ bases = (
     chebyshev.ShenBiPolar,
     chebyshev.UpperDirichlet,
     chebyshev.DirichletNeumann,
+    chebyshev.NeumannDirichlet,
     chebyshev.UpperDirichletNeumann,
     legendre.Orthogonal,
     legendre.ShenDirichlet,
@@ -97,5 +98,5 @@ def test_eval_basis_derivative(base):
             assert np.allclose(f0, f1)
 
 if __name__ == '__main__':
-    #test_eval_basis_derivative(legendre.BCBiharmonic)
-    test_eval_basis_derivative(legendre.NeumannDirichlet)
+    test_eval_basis_derivative(legendre.ShenDirichlet)
+    test_eval_basis(legendre.ShenDirichlet)
