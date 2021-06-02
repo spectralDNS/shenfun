@@ -5,7 +5,7 @@ Module for defining function spaces in the Legendre family
 from __future__ import division
 import os
 import functools
-import sympy
+import sympy as sp
 import numpy as np
 from numpy.polynomial import legendre as leg
 from scipy.special import eval_legendre
@@ -15,13 +15,22 @@ from shenfun.spectralbase import SpectralBase, work, Transform, islicedict, \
 from .lobatto import legendre_lobatto_nodes_and_weights
 from . import fastgl
 
-__all__ = ['LegendreBase', 'Orthogonal', 'ShenDirichlet',
-           'ShenBiharmonic', 'ShenNeumann',
-           'ShenBiPolar', 'ShenBiPolar0',
-           'LowerDirichlet', 'NeumannDirichlet',
-           'DirichletNeumann', 'UpperDirichletNeumann',
-           'UpperDirichlet', 'DirichletNeumannDirichlet',
-           'BCDirichlet', 'BCBiharmonic', 'BCNeumann',
+__all__ = ['LegendreBase',
+           'Orthogonal',
+           'ShenDirichlet',
+           'ShenBiharmonic',
+           'ShenNeumann',
+           'ShenBiPolar',
+           'ShenBiPolar0',
+           'LowerDirichlet',
+           'NeumannDirichlet',
+           'DirichletNeumann',
+           'UpperDirichlet',
+           'UpperDirichletNeumann',
+           'DirichletNeumannDirichlet',
+           'BCDirichlet',
+           'BCBiharmonic',
+           'BCNeumann',
            'BCNeumannDirichlet',
            'BCDirichletNeumann',
            'BCBeamFixedFree',
@@ -43,6 +52,8 @@ except:
 
 mode = os.environ.get('SHENFUN_LEGENDRE_MODE', 'numpy')
 mode = mode if has_quadpy else 'numpy'
+
+xp = sp.Symbol('x', real=True)
 
 class LegendreBase(SpectralBase):
     """Base class for all Legendre spaces
@@ -127,8 +138,8 @@ class LegendreBase(SpectralBase):
     def vandermonde(self, x):
         return leg.legvander(x, self.shape(False)-1)
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
-        return sympy.legendre(i, x)
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+        return sp.legendre(i, x)
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -205,7 +216,6 @@ class LegendreBase(SpectralBase):
                           padding_factor=self.padding_factor,
                           dealias_direct=self.dealias_direct,
                           coordinates=self.coors.coordinates)
-
 
 class Orthogonal(LegendreBase):
     """Function space for regular (orthogonal) Legendre series
@@ -365,9 +375,9 @@ class ShenDirichlet(LegendreBase):
     def slice(self):
         return slice(0, self.N-2)
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         if i < self.N-2:
-            f = sympy.legendre(i, x)-sympy.legendre(i+2, x)
+            f = sp.legendre(i, x)-sp.legendre(i+2, x)
             if self.is_scaled():
                 f /= np.sqrt(4*i+6)
         elif i == self.N-2:
@@ -628,11 +638,11 @@ class ShenNeumann(LegendreBase):
         except:
             raise RuntimeError('Requires Numba')
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         if i < self.N-2:
-            f = sympy.legendre(i, x) - (i*(i+1))/((i+2)*(i+3))*sympy.legendre(i+2, x)
+            f = sp.legendre(i, x) - (i*(i+1))/((i+2)*(i+3))*sp.legendre(i+2, x)
         else:
-            f = np.sum(BCNeumann.coefficient_matrix()[i-self.N+2]*np.array([sympy.legendre(j, x) for j in range(3)]))
+            f = np.sum(BCNeumann.coefficient_matrix()[i-self.N+2]*np.array([sp.legendre(j, x) for j in range(3)]))
         return f
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -820,15 +830,15 @@ class ShenBiharmonic(LegendreBase):
         w_hat[s4] += f2*fk[s]
         return w_hat
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         if i < self.N-4:
-            f = (sympy.legendre(i, x)
-                 -2*(2*i+5.)/(2*i+7.)*sympy.legendre(i+2, x)
-                 +((2*i+3.)/(2*i+7.))*sympy.legendre(i+4, x))
+            f = (sp.legendre(i, x)
+                 -2*(2*i+5.)/(2*i+7.)*sp.legendre(i+2, x)
+                 +((2*i+3.)/(2*i+7.))*sp.legendre(i+4, x))
         else:
             f = 0
             for j, c in enumerate(BCBiharmonic.coefficient_matrix()[i-(self.N-4)]):
-                f += c*sympy.legendre(j, x)
+                f += c*sp.legendre(j, x)
         return f
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -1022,17 +1032,17 @@ class BeamFixedFree(LegendreBase):
         w_hat[s4] += f2*fk[s]
         return w_hat
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         if i < self.N-4:
-            f = (sympy.legendre(i, x)
-                 +(4*(2*i+3)/((i+3)**2))*sympy.legendre(i+1, x)
-                 -(2*(i-1)*(i+1)*(i+6)*(2*i+5)/((i+3)**2*(i+4)*(2*i+7)))*sympy.legendre(i+2, x)
-                 -4*(i+1)**2*(2*i+3)/((i+3)**2*(i+4)**2)*sympy.legendre(i+3, x)
-                 +(i+1)**2*(i+2)**2*(2*i+3)/((i+3)**2*(i+4)**2*(2*i+7))*sympy.legendre(i+4, x))
+            f = (sp.legendre(i, x)
+                 +(4*(2*i+3)/((i+3)**2))*sp.legendre(i+1, x)
+                 -(2*(i-1)*(i+1)*(i+6)*(2*i+5)/((i+3)**2*(i+4)*(2*i+7)))*sp.legendre(i+2, x)
+                 -4*(i+1)**2*(2*i+3)/((i+3)**2*(i+4)**2)*sp.legendre(i+3, x)
+                 +(i+1)**2*(i+2)**2*(2*i+3)/((i+3)**2*(i+4)**2*(2*i+7))*sp.legendre(i+4, x))
         else:
             f = 0
             for j, c in enumerate(BCBeamFixedFree.coefficient_matrix()[i-(self.N-4)]):
-                f += c*sympy.legendre(j, x)
+                f += c*sp.legendre(j, x)
         return f
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -1045,8 +1055,8 @@ class BeamFixedFree(LegendreBase):
                     -4*(i+1)**2*(2*i+3)/((i+3)**2*(i+4)**2)*eval_legendre(i+3, x) \
                     +(i+1)**2*(i+2)**2*(2*i+3)/((i+3)^2*(i+4)**2*(2*i+7))*eval_legendre(i+4, x)
         else:
-            X = sympy.symbols('x', real=True)
-            output_array[:] = sympy.lambdify(X, self.sympy_basis(i, x=X))(x)
+            X = sp.symbols('x', real=True)
+            output_array[:] = sp.lambdify(X, self.sympy_basis(i, x=X))(x)
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -1065,8 +1075,8 @@ class BeamFixedFree(LegendreBase):
                 basis = basis.deriv(k)
             output_array[:] = basis(x)
         else:
-            X = sympy.symbols('x', real=True)
-            output_array[:] = sympy.lambdify(X, self.sympy_basis(i, X).diff(X, k))(x)
+            X = sp.symbols('x', real=True)
+            output_array[:] = sp.lambdify(X, self.sympy_basis(i, X).diff(X, k))(x)
         return output_array
 
     def to_ortho(self, input_array, output_array=None):
@@ -1223,9 +1233,9 @@ class UpperDirichlet(LegendreBase):
     def slice(self):
         return slice(0, self.N-1)
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         if i < self.N-1:
-            return sympy.legendre(i, x)-sympy.legendre(i+1, x)
+            return sp.legendre(i, x)-sp.legendre(i+1, x)
         assert i == self.N-1
         return 0.5*(1+x)
 
@@ -1369,8 +1379,8 @@ class ShenBiPolar(LegendreBase):
     def slice(self):
         return slice(0, self.N-4)
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
-        return (1-x)**2*(1+x)**2*(sympy.legendre(i+1, x).diff(x, 1))
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
+        return (1-x)**2*(1+x)**2*(sp.legendre(i+1, x).diff(x, 1))
 
     def evaluate_basis(self, x=None, i=0, output_array=None):
         output_array = SpectralBase.evaluate_basis(self, x=x, i=i, output_array=output_array)
@@ -1495,14 +1505,14 @@ class ShenBiPolar0(LegendreBase):
         w_hat[s3] += f3*fk[s]
         return w_hat
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         #x = self.map_reference_domain(x)
-        return (sympy.legendre(i, x)
-                -(2*i+3)*(i+4)/(2*i+5)/(i+2)*sympy.legendre(i+1, x)
-                -i*(i+1)/(i+2)/(i+3)*sympy.legendre(i+2, x)
-                +(i+1)*(2*i+3)/(i+3)/(2*i+5)*sympy.legendre(i+3, x))
+        return (sp.legendre(i, x)
+                -(2*i+3)*(i+4)/(2*i+5)/(i+2)*sp.legendre(i+1, x)
+                -i*(i+1)/(i+2)/(i+3)*sp.legendre(i+2, x)
+                +(i+1)*(2*i+3)/(i+3)/(2*i+5)*sp.legendre(i+3, x))
         #return
-        # (sympy.legendre(i, x) -(2*i+3)*(i+4)/(2*i+5)*sympy.legendre(i+1, x) -i*(i+1)/(i+2)/(i+3)*sympy.legendre(i+2, x) +(i+1)*(i+2)*(2*i+3)/(i+3)/(2*i+5)*sympy.legendre(i+3, x))
+        # (sp.legendre(i, x) -(2*i+3)*(i+4)/(2*i+5)*sp.legendre(i+1, x) -i*(i+1)/(i+2)/(i+3)*sp.legendre(i+2, x) +(i+1)*(i+2)*(2*i+3)/(i+3)/(2*i+5)*sp.legendre(i+3, x))
 
     def evaluate_basis(self, x=None, i=0, output_array=None):
         output_array = SpectralBase.evaluate_basis(self, x=x, i=i, output_array=output_array)
@@ -1574,7 +1584,6 @@ class ShenBiPolar0(LegendreBase):
         w_hat[:3] = 0
         output_array += leg.legval(x, w_hat)
         return output_array
-
 
 class DirichletNeumann(LegendreBase):
     """Function space for mixed Dirichlet/Neumann boundary conditions
@@ -1682,13 +1691,13 @@ class DirichletNeumann(LegendreBase):
         SpectralBase._evaluate_scalar_product(self)
         self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         if i < self.N-2:
-            return (sympy.legendre(i, x)
-                    +(2*i+3)/(i+2)**2*sympy.legendre(i+1, x)
-                    -(i+1)**2/(i+2)**2*sympy.legendre(i+2, x))
+            return (sp.legendre(i, x)
+                    +(2*i+3)/(i+2)**2*sp.legendre(i+1, x)
+                    -(i+1)**2/(i+2)**2*sp.legendre(i+2, x))
         else:
-            return np.sum(BCDirichletNeumann.coefficient_matrix()[i-self.N+2]*np.array([sympy.legendre(j, x) for j in range(2)]))
+            return np.sum(BCDirichletNeumann.coefficient_matrix()[i-self.N+2]*np.array([sp.legendre(j, x) for j in range(2)]))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -1853,9 +1862,9 @@ class LowerDirichlet(LegendreBase):
     def slice(self):
         return slice(0, self.N-1)
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         if i < self.N-1:
-            return sympy.legendre(i, x)+sympy.legendre(i+1, x)
+            return sp.legendre(i, x)+sp.legendre(i+1, x)
         assert i == self.N-1
         return 0.5*(1-x)
 
@@ -2033,16 +2042,16 @@ class DirichletNeumannDirichlet(LegendreBase):
         w_hat[s3] += f3*fk[s]
         return w_hat
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         if i < self.N-3:
-            f = (sympy.legendre(i, x)
-                 + (2*i+3)/(2*i+5)*sympy.legendre(i+1, x)
-                 - sympy.legendre(i+2, x)
-                 -((2*i+3)/(2*i+5))*sympy.legendre(i+3, x))
+            f = (sp.legendre(i, x)
+                 + (2*i+3)/(2*i+5)*sp.legendre(i+1, x)
+                 - sp.legendre(i+2, x)
+                 -((2*i+3)/(2*i+5))*sp.legendre(i+3, x))
         else:
             f = 0
             for j, c in enumerate(BCDirichletNeumannDirichlet.coefficient_matrix()[i-(self.N-3)]):
-                f += c*sympy.legendre(j, x)
+                f += c*sp.legendre(j, x)
         return f
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -2052,8 +2061,8 @@ class DirichletNeumannDirichlet(LegendreBase):
         if i < self.N-3:
             output_array[:] = eval_legendre(i, x) + (2*i+3)/(2*i+5)*eval_legendre(i+1, x) - eval_legendre(i+2, x) - ((2*i+3)/(2*i+5))*eval_legendre(i+3, x)
         else:
-            X = sympy.symbols('x', real=True)
-            output_array[:] = sympy.lambdify(X, self.sympy_basis(i, x=X))(x)
+            X = sp.symbols('x', real=True)
+            output_array[:] = sp.lambdify(X, self.sympy_basis(i, x=X))(x)
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -2070,8 +2079,8 @@ class DirichletNeumannDirichlet(LegendreBase):
                 basis = basis.deriv(k)
             output_array[:] = basis(x)
         else:
-            X = sympy.symbols('x', real=True)
-            output_array[:] = sympy.lambdify(X, self.sympy_basis(i, X).diff(X, k))(x)
+            X = sp.symbols('x', real=True)
+            output_array[:] = sp.lambdify(X, self.sympy_basis(i, X).diff(X, k))(x)
         return output_array
 
     def to_ortho(self, input_array, output_array=None):
@@ -2248,13 +2257,13 @@ class NeumannDirichlet(LegendreBase):
         SpectralBase._evaluate_scalar_product(self)
         self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         if i < self.N-2:
-            return (sympy.legendre(i, x)
-                    -(2*i+3)/(i+2)**2*sympy.legendre(i+1, x)
-                    -(i+1)**2/(i+2)**2*sympy.legendre(i+2, x))
+            return (sp.legendre(i, x)
+                    -(2*i+3)/(i+2)**2*sp.legendre(i+1, x)
+                    -(i+1)**2/(i+2)**2*sp.legendre(i+2, x))
         else:
-            return np.sum(BCNeumannDirichlet.coefficient_matrix()[i-self.N+2]*np.array([sympy.legendre(j, x) for j in range(3)]))
+            return np.sum(BCNeumannDirichlet.coefficient_matrix()[i-self.N+2]*np.array([sp.legendre(j, x) for j in range(3)]))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -2450,13 +2459,13 @@ class UpperDirichletNeumann(LegendreBase):
         SpectralBase._evaluate_scalar_product(self)
         self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
+    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
         if i < self.N-2:
-            return (sympy.legendre(i, x)
-                    -(2*i+3)/(i+2)*sympy.legendre(i+1, x)
-                    +(i+1)/(i+2)*sympy.legendre(i+2, x))
+            return (sp.legendre(i, x)
+                    -(2*i+3)/(i+2)*sp.legendre(i+1, x)
+                    +(i+1)/(i+2)*sp.legendre(i+2, x))
         else:
-            return np.sum(BCUpperDirichletNeumann.coefficient_matrix()[i-self.N+2]*np.array([sympy.legendre(j, x) for j in range(3)]))
+            return np.sum(BCUpperDirichletNeumann.coefficient_matrix()[i-self.N+2]*np.array([sp.legendre(j, x) for j in range(3)]))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -2541,155 +2550,8 @@ class UpperDirichletNeumann(LegendreBase):
                               bc=self.bc.bc)
 
 
-class BCDirichlet(LegendreBase):
-
-    def __init__(self, N, quad="LG", scaled=False, dtype=float,
-                 domain=(-1., 1.), coordinates=None, **kw):
-        LegendreBase.__init__(self, N, quad=quad, dtype=dtype, domain=domain, coordinates=coordinates)
-        self._scaled = scaled
-
-    def slice(self):
-        return slice(self.N-2, self.N)
-
-    def shape(self, forward_output=True):
-        if forward_output:
-            return 2
-        else:
-            return self.N
-
-    @staticmethod
-    def boundary_condition():
-        return 'Apply'
-
-    @staticmethod
-    def short_name():
-        return 'BCD'
-
-    def vandermonde(self, x):
-        return leg.legvander(x, 1)
-
-    @staticmethod
-    def coefficient_matrix():
-        return np.array([[0.5, -0.5],
-                         [0.5, 0.5]])
-
-    def _composite(self, V, argument=0):
-        P = np.zeros(V.shape)
-        P[:, 0] = (V[:, 0] - V[:, 1])/2
-        P[:, 1] = (V[:, 0] + V[:, 1])/2
-        return P
-
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
-        if i == 0:
-            return 0.5*(1-x)
-        elif i == 1:
-            return 0.5*(1+x)
-        else:
-            raise AttributeError('Only two bases, i < 2')
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        assert i < 2
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i == 0:
-            output_array[:] = 0.5*(1-x)
-        elif i == 1:
-            output_array[:] = 0.5*(1+x)
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i == 0 and k == 1:
-            output_array[:] = -0.5
-        elif i == 1 and k == 1:
-            output_array[:] = 0.5
-        else:
-            output_array[:] = 0
-        return output_array
-
-class BCNeumann(LegendreBase):
-
-    def __init__(self, N, quad="LG", scaled=False, dtype=float,
-                 domain=(-1., 1.), coordinates=None, **kw):
-        LegendreBase.__init__(self, N, quad=quad, dtype=dtype, domain=domain, coordinates=coordinates)
-        self._scaled = scaled
-
-    def slice(self):
-        return slice(self.N-2, self.N)
-
-    def shape(self, forward_output=True):
-        if forward_output:
-            return 2
-        else:
-            return self.N
-
-    @staticmethod
-    def boundary_condition():
-        return 'Apply'
-
-    @staticmethod
-    def short_name():
-        return 'BCN'
-
-    def vandermonde(self, x):
-        return leg.legvander(x, 2)
-
-    @staticmethod
-    def coefficient_matrix():
-        return np.array([[0, 1/2, -1/6],
-                         [0, 1/2, 1/6]])
-
-    def _composite(self, V, argument=0):
-        P = np.zeros(V[:, :2].shape)
-        P[:, 0] = 0.5*V[:, 1] - 1/6*V[:, 2]
-        P[:, 1] = 0.5*V[:, 1] + 1/6*V[:, 2]
-        return P
-
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
-        if i == 0:
-            return x/2-(3*x**2-1)/12
-        elif i == 1:
-            return x/2+(3*x**2-1)/12
-        else:
-            raise AttributeError('Only two bases, i < 2')
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        assert i < 2
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i == 0:
-            output_array[:] = x/2-(3*x**2-1)/12
-        elif i == 1:
-            output_array[:] = x/2+(3*x**2-1)/12
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i == 0 and k == 0:
-            output_array[:] = x/2-(3*x**2-1)/12
-        elif i == 0 and k == 1:
-            output_array[:] = 0.5-x/2
-        elif i == 0 and k == 2:
-            output_array[:] = -1/2
-        elif i == 1 and k == 0:
-            output_array[:] = x/2+(3*x**2-1)/12
-        elif i == 1 and k == 1:
-            output_array[:] = 0.5+x/2
-        elif i == 1 and k == 2:
-            output_array[:] = 1/2
-        else:
-            output_array[:] = 0
-        return output_array
-
-
-class BCBiharmonic(LegendreBase):
-    """Function space for inhomogeneous Biharmonic boundary conditions
+class BCBase(LegendreBase):
+    """Function space for inhomogeneous boundary conditions
 
     Parameters
     ----------
@@ -2705,10 +2567,6 @@ class BCBiharmonic(LegendreBase):
             The computational domain
         scaled : bool, optional
             Whether or not to use scaled basis
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
         coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.
@@ -2719,31 +2577,89 @@ class BCBiharmonic(LegendreBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                              padding_factor=padding_factor, dealias_direct=dealias_direct,
-                              coordinates=coordinates)
+    def __init__(self, N, quad="GC", domain=(-1., 1.),
+                 dtype=float, coordinates=None, **kw):
+        LegendreBase.__init__(self, N, quad=quad, domain=domain,
+                              dtype=dtype, coordinates=coordinates)
 
-    def slice(self):
-        return slice(self.N-4, self.N)
+    @staticmethod
+    def coefficient_matrix():
+        raise NotImplementedError
 
-    def shape(self, forward_output=True):
-        if forward_output:
-            return 4
-        else:
-            return self.N
+    @staticmethod
+    def short_name():
+        raise NotImplementedError
 
     @staticmethod
     def boundary_condition():
         return 'Apply'
 
+    def shape(self, forward_output=True):
+        if forward_output:
+            return self.coefficient_matrix().shape[0]
+        else:
+            return self.N
+
+    @property
+    def num_T(self):
+        return self.coefficient_matrix().shape[1]
+
+    def slice(self):
+        return slice(self.N-self.shape(), self.N)
+
+    def vandermonde(self, x):
+        return leg.legvander(x, self.num_T-1)
+
+    def _composite(self, V, argument=1):
+        N = self.shape()
+        P = np.zeros(V[:, :N].shape)
+        P[:] = np.tensordot(V, self.coefficient_matrix(), (1, 1))
+        return P
+
+    def sympy_basis(self, i=0, x=xp):
+        M = self.coefficient_matrix()
+        return np.sum(M[i]*np.array([sp.legendre(j, x) for j in range(self.num_T)]))
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        V = self.vandermonde(x)
+        output_array[:] = np.dot(V, self.coefficient_matrix()[i])
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        output_array = SpectralBase.evaluate_basis_derivative(self, x=x, i=i, k=k, output_array=output_array)
+        return output_array
+
+
+class BCDirichlet(BCBase):
+
+    @staticmethod
+    def short_name():
+        return 'BCD'
+
+    @staticmethod
+    def coefficient_matrix():
+        return np.array([[0.5, -0.5],
+                         [0.5, 0.5]])
+
+class BCNeumann(BCBase):
+
+    @staticmethod
+    def short_name():
+        return 'BCN'
+
+    @staticmethod
+    def coefficient_matrix():
+        return np.array([[0, 1/2, -1/6],
+                         [0, 1/2, 1/6]])
+
+class BCBiharmonic(BCBase):
+
     @staticmethod
     def short_name():
         return 'BCB'
-
-    def vandermonde(self, x):
-        return leg.legvander(x, 3)
 
     @staticmethod
     def coefficient_matrix():
@@ -2752,644 +2668,82 @@ class BCBiharmonic(LegendreBase):
                          [1./6., -1./10., -1./6., 1./10.],
                          [-1./6., -1./10., 1./6., 1./10.]])
 
-    def _composite(self, V, argument=0):
-        P = np.tensordot(V[:, :4], self.coefficient_matrix(), (1, 1))
-        return P
+class BCBeamFixedFree(BCBase):
 
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
-        if i < 4:
-            f = 0
-            for j, c in enumerate(self.coefficient_matrix()[i]):
-                f += c*sympy.legendre(j, x)
-            return f
-        else:
-            raise AttributeError('Only four bases, i < 4')
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        V = self.vandermonde(x)
-        output_array[:] = np.dot(V, self.coefficient_matrix()[i])
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        output_array = SpectralBase.evaluate_basis_derivative(self, x=x, i=i, k=k, output_array=output_array)
-        return output_array
-
-class BCBeamFixedFree(LegendreBase):
-    """Function space for inhomogeneous Biharmonic boundary conditions
-
-    u(-1), u'(-1), u''(1), u'''(1)
-
-    Parameters
-    ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
-
-            - LG - Legendre-Gauss
-            - GL - Legendre-Gauss-Lobatto
-
-        domain : 2-tuple of floats, optional
-            The computational domain
-        scaled : bool, optional
-            Whether or not to use scaled basis
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
-    """
-
-    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                              padding_factor=padding_factor, dealias_direct=dealias_direct,
-                              coordinates=coordinates)
-
-    def slice(self):
-        return slice(self.N-4, self.N)
-
-    def shape(self, forward_output=True):
-        if forward_output:
-            return 4
-        else:
-            return self.N
-
-    @staticmethod
-    def boundary_condition():
-        return 'Apply'
+    # u(-1), u'(-1), u''(1), u'''(1)
 
     @staticmethod
     def short_name():
         return 'BCBF'
 
-    def vandermonde(self, x):
-        return leg.legvander(x, 3)
-
     @staticmethod
     def coefficient_matrix():
         return np.array([[1, 0, 0, 0],
-                          [1, 1, 0, 0],
-                          [2/3, 1, 1/3, 0],
-                          [-1, -1.4, -1/3, 1/15]])
+                         [1, 1, 0, 0],
+                         [2/3, 1, 1/3, 0],
+                         [-1, -1.4, -1/3, 1/15]])
 
-    def _composite(self, V, argument=0):
-        P = np.tensordot(V[:, :4], self.coefficient_matrix(), (1, 1))
-        return P
-
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
-        if i < 4:
-            f = 0
-            for j, c in enumerate(self.coefficient_matrix()[i]):
-                f += c*sympy.legendre(j, x)
-            return f
-        else:
-            raise AttributeError('Only four bases, i < 4')
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        V = self.vandermonde(x)
-        output_array[:] = np.dot(V, self.coefficient_matrix()[i])
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        output_array = SpectralBase.evaluate_basis_derivative(self, x=x, i=i, k=k, output_array=output_array)
-        return output_array
-
-    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
-        if x is None:
-            x = self.mesh(False, False)
-        output_array = np.zeros((x.shape[0], 1))
-        self.evaluate_basis_derivative(x=x, k=k, output_array=output_array[:, 0])
-        return output_array
-
-class BCLowerDirichlet(LegendreBase):
-    """Function space for Dirichlet boundary conditions at x=-1
-
-    Parameters
-    ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
-
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
-
-        domain : 2-tuple of floats, optional
-            The computational domain
-        scaled : bool, optional
-            Whether or not to use scaled basis
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
-    """
-
-    def __init__(self, N, quad="GC", domain=(-1., 1.), scaled=False,
-                 dtype=float, coordinates=None, **kw):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain,
-                              dtype=dtype, coordinates=coordinates)
-
-    def slice(self):
-        return slice(self.N-1, self.N)
-
-    def shape(self, forward_output=True):
-        if forward_output:
-            return 1
-        else:
-            return self.N
-
-    @staticmethod
-    def boundary_condition():
-        return 'Apply'
+class BCLowerDirichlet(BCBase):
 
     @staticmethod
     def short_name():
         return 'BCLD'
 
-    def vandermonde(self, x):
-        return leg.legvander(x, 1)
-
-    def coefficient_matrix(self):
+    @staticmethod
+    def coefficient_matrix():
         return np.array([[0.5, -0.5]])
 
-    def _composite(self, V, argument=0):
-        P = np.zeros(V[:, :1].shape)
-        P[:, 0] = (V[:, 0] - V[:, 1])/2
-        return P
-
-    def sympy_basis(self, i=0, x=sympy.Symbol('x', real=True)):
-        if i == 0:
-            return 0.5*(1-x)
-        else:
-            raise AttributeError('Only one basis, i == 0')
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i == 0:
-            output_array[:] = 0.5*(1-x)
-        else:
-            raise AttributeError('Only one basis, i == 0')
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        assert i == 0
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        output_array[:] = 0
-        if k == 1:
-            output_array[:] = -0.5
-        elif k == 0:
-            output_array[:] = 0.5*(1-x)
-        return output_array
-
-    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
-        if x is None:
-            x = self.mesh(False, False)
-        output_array = np.zeros((x.shape[0], 1))
-        self.evaluate_basis_derivative(x=x, k=k, output_array=output_array[:, 0])
-        return output_array
-
-
-class BCUpperDirichlet(LegendreBase):
-    """Function space for Dirichlet boundary conditions at x=1
-
-    Parameters
-    ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
-
-            - GL - Chebyshev-Gauss-Lobatto
-            - GC - Chebyshev-Gauss
-
-        domain : 2-tuple of floats, optional
-            The computational domain
-        scaled : bool, optional
-            Whether or not to use scaled basis
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
-    """
-
-    def __init__(self, N, quad="GC", domain=(-1., 1.), scaled=False,
-                 dtype=float, coordinates=None, **kw):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain,
-                              dtype=dtype, coordinates=coordinates)
-
-    def slice(self):
-        return slice(self.N-1, self.N)
-
-    def shape(self, forward_output=True):
-        if forward_output:
-            return 1
-        else:
-            return self.N
-
-    @staticmethod
-    def boundary_condition():
-        return 'Apply'
+class BCUpperDirichlet(BCBase):
 
     @staticmethod
     def short_name():
         return 'BCUD'
 
-    def vandermonde(self, x):
-        return leg.legvander(x, 1)
-
-    def coefficient_matrix(self):
+    @staticmethod
+    def coefficient_matrix():
         return np.array([[0.5, 0.5]])
 
-    def _composite(self, V, argument=0):
-        P = np.zeros(V[:, :1].shape)
-        P[:, 0] = (V[:, 0] + V[:, 1])/2
-        return P
-
-    def sympy_basis(self, i=0, x=sympy.Symbol('x', real=True)):
-        if i == 0:
-            return 0.5*(1+x)
-        else:
-            raise AttributeError('Only one basis, i == 0')
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i == 0:
-            output_array[:] = 0.5*(1+x)
-        else:
-            raise AttributeError('Only one basis, i == 0')
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        assert i == 0
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        output_array[:] = 0
-        if k == 1:
-            output_array[:] = 0.5
-        elif k == 0:
-            output_array[:] = 0.5*(1+x)
-        return output_array
-
-    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
-        if x is None:
-            x = self.mesh(False, False)
-        output_array = np.zeros((x.shape[0], 1))
-        self.evaluate_basis_derivative(x=x, k=k, output_array=output_array[:, 0])
-        return output_array
-
-class BCNeumannDirichlet(LegendreBase):
-
-    def __init__(self, N, quad="LG", scaled=False, dtype=float,
-                 domain=(-1., 1.), coordinates=None, **kw):
-        LegendreBase.__init__(self, N, quad=quad, dtype=dtype, domain=domain, coordinates=coordinates)
-        self._scaled = scaled
-
-    def slice(self):
-        return slice(self.N-2, self.N)
-
-    def shape(self, forward_output=True):
-        if forward_output:
-            return 2
-        else:
-            return self.N
-
-    @staticmethod
-    def boundary_condition():
-        return 'Apply'
+class BCNeumannDirichlet(BCBase):
 
     @staticmethod
     def short_name():
         return 'BCND'
-
-    def vandermonde(self, x):
-        return leg.legvander(x, 2)
 
     @staticmethod
     def coefficient_matrix():
         return np.array([[1, -0.5, -0.5],
                          [1, 0, 0]])
 
-    def _composite(self, V, argument=0):
-        P = np.zeros(V[:, :2].shape)
-        P[:, 0] = V[:, 0] - 0.5*V[:, 1] -0.5*V[:, 2]
-        P[:, 1] = V[:, 0]
-        return P
-
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
-        if i == 0:
-            return 1-0.5*x-0.25*(3*x**2-1)
-        elif i == 1:
-            return sympy.legendre(0, x)
-        else:
-            raise AttributeError('Only two bases, i < 2')
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        assert i < 2
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i == 0:
-            output_array[:] = 1-0.5*x-0.25*(3*x**2-1)
-        elif i == 1:
-            output_array[:] = 1
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i == 0 and k == 0:
-            output_array[:] = 1-0.5*x-0.25*(3*x**2-1)
-        elif i == 0 and k == 1:
-            output_array[:] = -0.5-1.5*x
-        elif i == 0 and k == 2:
-            output_array[:] = -1.5
-        elif i == 1 and k == 0:
-            output_array[:] = 1
-        else:
-            output_array[:] = 0
-        return output_array
-
-    #def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
-    #    if x is None:
-    #        x = self.mesh(False, False)
-    #    output_array = np.zeros((self.N, 2))
-    #    self.evaluate_basis_derivative(x=x, i=0, k=k, output_array=output_array[:, 0])
-    #    self.evaluate_basis_derivative(x=x, i=1, k=k, output_array=output_array[:, 1])
-    #    return output_array
-
-class BCDirichletNeumann(LegendreBase):
-
-    def __init__(self, N, quad="LG", dtype=float,
-                 domain=(-1., 1.), coordinates=None, **kw):
-        LegendreBase.__init__(self, N, quad=quad, dtype=dtype, domain=domain, coordinates=coordinates)
-
-    def slice(self):
-        return slice(self.N-2, self.N)
-
-    def shape(self, forward_output=True):
-        if forward_output:
-            return 2
-        else:
-            return self.N
-
-    @staticmethod
-    def boundary_condition():
-        return 'Apply'
+class BCDirichletNeumann(BCBase):
 
     @staticmethod
     def short_name():
         return 'BCDN'
-
-    def vandermonde(self, x):
-        return leg.legvander(x, 1)
 
     @staticmethod
     def coefficient_matrix():
         return np.array([[1, 0],
                          [1, 1]])
 
-    def _composite(self, V, argument=0):
-        P = np.zeros(V[:, :2].shape)
-        P[:, 0] = V[:, 0]
-        P[:, 1] = V[:, 0] + V[:, 1]
-        return P
-
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
-        if i == 0:
-            return sympy.legendre(0, x)
-        elif i == 1:
-            return 1+x
-        else:
-            raise AttributeError('Only two bases, i < 2')
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        assert i < 2
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i == 0:
-            output_array[:] = 1
-        elif i == 1:
-            output_array[:] = 1+x
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i == 0 and k == 0:
-            output_array[:] = 1
-        elif i == 1 and k == 0:
-            output_array[:] = 1+x
-        elif i == 1 and k == 1:
-            output_array[:] = 1
-        else:
-            output_array[:] = 0
-        return output_array
-
-    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
-        if x is None:
-            x = self.mesh(False, False)
-        output_array = np.zeros((x.shape[0], 2))
-        self.evaluate_basis_derivative(x=x, i=0, k=k, output_array=output_array[:, 0])
-        self.evaluate_basis_derivative(x=x, i=1, k=k, output_array=output_array[:, 1])
-        return output_array
-
-class BCUpperDirichletNeumann(LegendreBase):
-
-    def __init__(self, N, quad="LG", dtype=float,
-                 domain=(-1., 1.), coordinates=None, **kw):
-        LegendreBase.__init__(self, N, quad=quad, dtype=dtype, domain=domain, coordinates=coordinates)
-
-    def slice(self):
-        return slice(self.N-2, self.N)
-
-    def shape(self, forward_output=True):
-        if forward_output:
-            return 2
-        else:
-            return self.N
-
-    @staticmethod
-    def boundary_condition():
-        return 'Apply'
+class BCUpperDirichletNeumann(BCBase):
 
     @staticmethod
     def short_name():
         return 'BCUDN'
-
-    def vandermonde(self, x):
-        return leg.legvander(x, 2)
 
     @staticmethod
     def coefficient_matrix():
         return np.array([[1, 0, 0],
                          [1, -2, 1]])
 
-    def _composite(self, V, argument=0):
-        P = np.zeros(V[:, :2].shape)
-        P[:, 0] = V[:, 0]
-        P[:, 1] = V[:, 0] - 2*V[:, 1] + V[:, 2]
-        return P
-
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
-        if i == 0:
-            return sympy.legendre(0, x)
-        elif i == 1:
-            return 1-2*x+0.5*(3*x**2-1)
-        else:
-            raise AttributeError('Only two bases, i < 2')
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        assert i < 2
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i == 0:
-            output_array[:] = 1
-        elif i == 1:
-            output_array[:] = 1-2*x+0.5*(3*x**2-1)
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i == 0 and k == 0:
-            output_array[:] = 1
-        elif i == 1 and k == 0:
-            output_array[:] = 1-2*x+0.5*(3*x**2-1)
-        elif i == 1 and k == 1:
-            output_array[:] = -2+3*x
-        elif i == 1 and k == 2:
-            output_array[:] = 3
-        else:
-            output_array[:] = 0
-        return output_array
-
-    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
-        if x is None:
-            x = self.mesh(False, False)
-        output_array = np.zeros((x.shape[0], 2))
-        self.evaluate_basis_derivative(x=x, i=0, k=k, output_array=output_array[:, 0])
-        self.evaluate_basis_derivative(x=x, i=1, k=k, output_array=output_array[:, 1])
-        return output_array
-
-class BCDirichletNeumannDirichlet(LegendreBase):
-    """Function space for inhomogeneous Biharmonic boundary conditions
-
-    Parameters
-    ----------
-        N : int, optional
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
-
-            - LG - Legendre-Gauss
-            - GL - Legendre-Gauss-Lobatto
-
-        domain : 2-tuple of floats, optional
-            The computational domain
-        scaled : bool, optional
-            Whether or not to use scaled basis
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
-    """
-
-    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                              padding_factor=padding_factor, dealias_direct=dealias_direct,
-                              coordinates=coordinates)
-
-    def slice(self):
-        return slice(self.N-3, self.N)
-
-    def shape(self, forward_output=True):
-        if forward_output:
-            return 3
-        else:
-            return self.N
-
-    @staticmethod
-    def boundary_condition():
-        return 'Apply'
+class BCDirichletNeumannDirichlet(BCBase):
 
     @staticmethod
     def short_name():
         return 'BCST'
 
-    def vandermonde(self, x):
-        return leg.legvander(x, 2)
-
     @staticmethod
     def coefficient_matrix():
         return np.array([[2/3, -1/2, -1/6],
-                          [1/3, 0, -1/3],
-                          [1/3, 1/2, 1/6]])
-
-    def _composite(self, V, argument=0):
-        P = np.tensordot(V[:, :3], self.coefficient_matrix(), (1, 1))
-        return P
-
-    def sympy_basis(self, i=0, x=sympy.symbols('x', real=True)):
-        if i < 3:
-            f = 0
-            for j, c in enumerate(self.coefficient_matrix()[i]):
-                f += c*sympy.legendre(j, x)
-            return f
-        else:
-            raise AttributeError('Only three bases, i < 3')
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        V = self.vandermonde(x)
-        output_array[:] = np.dot(V, self.coefficient_matrix()[i])
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        output_array = SpectralBase.evaluate_basis_derivative(self, x=x, i=i, k=k, output_array=output_array)
-        return output_array
-
+                         [1/3, 0, -1/3],
+                         [1/3, 1/2, 1/6]])
