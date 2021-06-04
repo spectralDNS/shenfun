@@ -664,7 +664,7 @@ class CompositeSpace(Orthogonal):
         s = [np.newaxis]*self.dimensions
         w0 = output.copy()
         output.fill(0)
-        for key, val in self.coefficient_matrix(self.shape(False)).items():
+        for key, val in self.stencil_matrix(self.shape(False)).items():
             M = self.N if key >= 0 else self.dim()
             s1 = slice(max(0, -key), M-max(0, key))
             Q = s1.stop-s1.start
@@ -697,7 +697,7 @@ class CompositeSpace(Orthogonal):
 
         """
         P = np.zeros_like(V)
-        P[:] = V * self.coefficient_matrix(V.shape[1]).diags().T
+        P[:] = V * self.stencil_matrix(V.shape[1]).diags().T
         if argument == 1: # if trial function
             P[:, slice(-(self.N-self.dim()), None)] = self.get_bc_basis()._composite(V)
         return P
@@ -705,7 +705,7 @@ class CompositeSpace(Orthogonal):
     def sympy_basis(self, i=0, x=xp):
         assert i < self.N
         if i < self.dim():
-            row = self.coefficient_matrix().diags().getrow(i)
+            row = self.stencil_matrix().diags().getrow(i)
             f = 0
             for j, val in zip(row.indices, row.data):
                 f += val*Orthogonal.sympy_basis(self, i=j, x=x)
@@ -719,7 +719,7 @@ class CompositeSpace(Orthogonal):
         else:
             output_array.fill(0)
         s = [np.newaxis]*self.dimensions
-        for key, val in self.coefficient_matrix().items():
+        for key, val in self.stencil_matrix().items():
             M = self.N if key >= 0 else self.dim()
             s0 = slice(max(0, -key), min(self.dim(), M-max(0, key)))
             Q = s0.stop-s0.start
@@ -735,7 +735,7 @@ class CompositeSpace(Orthogonal):
         if output_array is None:
             output_array = np.zeros(x.shape)
         if i < self.dim():
-            row = self.coefficient_matrix().diags().getrow(i)
+            row = self.stencil_matrix().diags().getrow(i)
             w0 = np.zeros_like(output_array)
             output_array.fill(0)
             for j, val in zip(row.indices, row.data):
@@ -754,7 +754,7 @@ class CompositeSpace(Orthogonal):
 
         if i < self.dim():
             basis = np.zeros(self.shape(True))
-            M = self.coefficient_matrix()
+            M = self.stencil_matrix()
             row = M.diags().getrow(i)
             indices = row.indices
             vals = row.data
@@ -959,7 +959,7 @@ class ShenDirichlet(CompositeSpace):
     def short_name():
         return 'SD'
 
-    def coefficient_matrix(self, N=None):
+    def stencil_matrix(self, N=None):
         N = self.N if N is None else N
         d = np.ones(N, dtype=int)
         d[-2:] = 0
@@ -1254,7 +1254,7 @@ class Heinrichs(CompositeSpace):
     def short_name():
         return 'HH'
 
-    def coefficient_matrix(self, N=None):
+    def stencil_matrix(self, N=None):
         N = self.N if N is None else N
         d = 0.5*np.ones(N, dtype=int)
         d[-2:] = 0
@@ -1541,7 +1541,7 @@ class ShenNeumann(CompositeSpace):
             return T.use_fixed_gauge
         return True
 
-    def coefficient_matrix(self, N=None):
+    def stencil_matrix(self, N=None):
         N = self.N if N is None else N
         d = np.ones(N, dtype=int)
         d[-2:] = 0
@@ -1656,7 +1656,7 @@ class CombinedShenNeumann(CompositeSpace):
             return T.use_fixed_gauge
         return True
 
-    def coefficient_matrix(self, N=None):
+    def stencil_matrix(self, N=None):
         N = self.N if N is None else N
         k = np.arange(N)
         k[0] = 1
@@ -1786,7 +1786,7 @@ class MikNeumann(CompositeSpace):
             return T.use_fixed_gauge
         return True
 
-    def coefficient_matrix(self, N=None):
+    def stencil_matrix(self, N=None):
         N = self.N if N is None else N
         k = np.arange(N)
         k[0] = 1
@@ -1901,7 +1901,7 @@ class ShenBiharmonic(CompositeSpace):
     def short_name():
         return 'SB'
 
-    def coefficient_matrix(self, N=None):
+    def stencil_matrix(self, N=None):
         N = self.N if N is None else N
         d = np.ones(N, dtype=int)
         d[-4:] = 0
@@ -2131,7 +2131,7 @@ class UpperDirichlet(CompositeSpace):
     def short_name():
         return 'UD'
 
-    def coefficient_matrix(self, N=None):
+    def stencil_matrix(self, N=None):
         N = self.N if N is None else N
         d = np.ones(N, dtype=int)
         d[-1:] = 0
@@ -2341,7 +2341,7 @@ class DirichletNeumann(CompositeSpace):
     def short_name():
         return 'DN'
 
-    def coefficient_matrix(self, N=None):
+    def stencil_matrix(self, N=None):
         N = self.N if N is None else N
         k = np.arange(N)
         d = np.ones(N)
@@ -2410,7 +2410,7 @@ class NeumannDirichlet(CompositeSpace):
     def short_name():
         return 'ND'
 
-    def coefficient_matrix(self, N=None):
+    def stencil_matrix(self, N=None):
         N = self.N if N is None else N
         k = np.arange(N)
         d = np.ones(N)
@@ -2480,7 +2480,7 @@ class UpperDirichletNeumann(CompositeSpace):
     def short_name():
         return 'US'
 
-    def coefficient_matrix(self, N=None):
+    def stencil_matrix(self, N=None):
         N = self.N if N is None else N
         k = np.arange(N)
         d = np.ones(N)
@@ -2531,7 +2531,7 @@ class BCBase(CompositeSpace):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain,
                                 dtype=dtype, coordinates=coordinates)
 
-    def coefficient_matrix(self, N=None):
+    def stencil_matrix(self, N=None):
         raise NotImplementedError
 
     @staticmethod
@@ -2544,13 +2544,13 @@ class BCBase(CompositeSpace):
 
     def shape(self, forward_output=True):
         if forward_output:
-            return self.coefficient_matrix().shape[0]
+            return self.stencil_matrix().shape[0]
         else:
             return self.N
 
     @property
     def num_T(self):
-        return self.coefficient_matrix().shape[1]
+        return self.stencil_matrix().shape[1]
 
     def slice(self):
         return slice(self.N-self.shape(), self.N)
@@ -2561,11 +2561,11 @@ class BCBase(CompositeSpace):
     def _composite(self, V, argument=1):
         N = self.shape()
         P = np.zeros(V[:, :N].shape)
-        P[:] = np.tensordot(V[:, :self.num_T], self.coefficient_matrix(), (1, 1))
+        P[:] = np.tensordot(V[:, :self.num_T], self.stencil_matrix(), (1, 1))
         return P
 
     def sympy_basis(self, i=0, x=xp):
-        M = self.coefficient_matrix()
+        M = self.stencil_matrix()
         return np.sum(M[i]*np.array([sp.chebyshevt(j, x) for j in range(self.num_T)]))
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -2573,7 +2573,7 @@ class BCBase(CompositeSpace):
         if output_array is None:
             output_array = np.zeros(x.shape)
         V = self.vandermonde(x)
-        output_array[:] = np.dot(V, self.coefficient_matrix()[i])
+        output_array[:] = np.dot(V, self.stencil_matrix()[i])
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
@@ -2586,7 +2586,7 @@ class BCDirichlet(BCBase):
     def short_name():
         return 'BCD'
 
-    def coefficient_matrix(self, N=None):
+    def stencil_matrix(self, N=None):
         return sp.Rational(1/2)*np.array([[1, -1],
                                           [1, 1]])
 
@@ -2596,7 +2596,7 @@ class BCNeumann(BCBase):
     def short_name():
         return 'BCN'
 
-    def coefficient_matrix(self, N=None):
+    def stencil_matrix(self, N=None):
         return np.array([[0, 1/2, -1/8],
                          [0, 1/2, 1/8]])
 
@@ -2606,7 +2606,7 @@ class BCBiharmonic(BCBase):
     def short_name():
         return 'BCB'
 
-    def coefficient_matrix(self, N=None):
+    def stencil_matrix(self, N=None):
         return np.array([[0.5, -9./16., 0, 1./16],
                          [0.5, 9./16., 0, -1./16.],
                          [1./8., -1./16., -1./8., 1./16.],
@@ -2618,7 +2618,7 @@ class BCUpperDirichlet(BCBase):
     def short_name():
         return 'BCUD'
 
-    def coefficient_matrix(self, N=None):
+    def stencil_matrix(self, N=None):
         return np.array([[0.5, 0.5]])
 
 class BCNeumannDirichlet(BCBase):
@@ -2627,7 +2627,7 @@ class BCNeumannDirichlet(BCBase):
     def short_name():
         return 'BCND'
 
-    def coefficient_matrix(self, N=None):
+    def stencil_matrix(self, N=None):
         return np.array([[1, -0.6, -0.4],
                          [1, 0, 0]])
 
@@ -2637,7 +2637,7 @@ class BCDirichletNeumann(BCBase):
     def short_name():
         return 'BCDN'
 
-    def coefficient_matrix(self, N=None):
+    def stencil_matrix(self, N=None):
         return np.array([[1, 0],
                          [1, 1]])
 
@@ -2647,7 +2647,7 @@ class BCUpperDirichletNeumann(BCBase):
     def short_name():
         return 'BCUDN'
 
-    def coefficient_matrix(self, N=None):
+    def stencil_matrix(self, N=None):
         return np.array([[1, 0, 0],
                          [1, -5/3, 2/3]])
 
