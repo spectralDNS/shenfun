@@ -60,13 +60,13 @@ bcbases = (
     legendre.BCLowerDirichlet,
     legendre.BCUpperDirichlet,
     legendre.BCUpperDirichletNeumann,
-    legendre.BCDirichletNeumannDirichlet
+    legendre.BCDirichletNeumannDirichlet,
+    legendre.BCShenBiPolar0
 )
 
 nonBC = (
     'Apply',
     'Neumann2',
-    'BiPolar0',
     'Periodic',
 )
 
@@ -98,5 +98,5 @@ def test_eval_basis_derivative(base):
             assert np.allclose(f0, f1)
 
 if __name__ == '__main__':
-    test_eval_basis_derivative(legendre.ShenDirichlet)
-    test_eval_basis(legendre.ShenDirichlet)
+    test_eval_basis_derivative(chebyshev.Heinrichs)
+    test_eval_basis(chebyshev.Heinrichs)

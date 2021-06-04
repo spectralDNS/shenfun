@@ -12,6 +12,7 @@ from scipy.special import eval_legendre
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, islicedict, \
     slicedict
+from shenfun.matrixbase import SparseMatrix
 from .lobatto import legendre_lobatto_nodes_and_weights
 from . import fastgl
 
@@ -37,7 +38,8 @@ __all__ = ['LegendreBase',
            'BCLowerDirichlet',
            'BCUpperDirichlet',
            'BCUpperDirichletNeumann',
-           'BCDirichletNeumannDirichlet']
+           'BCDirichletNeumannDirichlet',
+           'BCShenBiPolar0']
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
@@ -101,9 +103,6 @@ class LegendreBase(SpectralBase):
     def family():
         return 'legendre'
 
-    def reference_domain(self):
-        return (-1, 1)
-
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
             N = self.shape(False)
@@ -138,48 +137,8 @@ class LegendreBase(SpectralBase):
     def vandermonde(self, x):
         return leg.legvander(x, self.shape(False)-1)
 
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
-        return sp.legendre(i, x)
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        output_array = eval_legendre(i, x, out=output_array)
-        return output_array
-
-    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
-        if x is None:
-            x = self.mesh(False, False)
-        V = self.vandermonde(x)
-        #N, M = self.shape(False), self.shape(True)
-        M = V.shape[-1]
-        if k > 0:
-            D = np.zeros((M, M))
-            D[:-k] = leg.legder(np.eye(M, M), k)
-            V = np.dot(V, D)
-        return self._composite(V, argument=argument)
-
-    def evaluate_basis_all(self, x=None, argument=0):
-        if x is None:
-            x = self.mesh(False, False)
-        V = self.vandermonde(x)
-        return self._composite(V, argument=argument)
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        if x is None:
-            x = self.mesh(False, False)
-        x = np.atleast_1d(x)
-        basis = np.zeros(self.shape(True))
-        basis[i] = 1
-        basis = leg.Legendre(basis)
-        if k > 0:
-            basis = basis.deriv(k)
-        return basis(x)
-
-    def _composite(self, V, argument=0):
-        """Return composite basis, where ``V`` is primary Vandermonde matrix."""
-        return V
+    def reference_domain(self):
+        return (-1, 1)
 
     def plan(self, shape, axis, dtype, options):
         if shape in (0, (0,)):
@@ -254,6 +213,46 @@ class Orthogonal(LegendreBase):
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
 
+    def sympy_basis(self, i=0, x=xp):
+        return sp.legendre(i, x)
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        output_array = eval_legendre(i, x, out=output_array)
+        return output_array
+
+    def evaluate_basis_all(self, x=None, argument=0):
+        if x is None:
+            x = self.mesh(False, False)
+        return self.vandermonde(x)
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        if x is None:
+            x = self.mesh(False, False)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = np.atleast_1d(x)
+        basis = np.zeros(self.shape(True))
+        basis[i] = 1
+        basis = leg.Legendre(basis)
+        if k > 0:
+            basis = basis.deriv(k)
+        output_array[:] = basis(x)
+        return output_array
+
+    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
+        if x is None:
+            x = self.mesh(False, False)
+        V = self.vandermonde(x)
+        M = V.shape[-1]
+        if k > 0:
+            D = np.zeros((M, M))
+            D[:-k] = leg.legder(np.eye(M, M), k)
+            V = np.dot(V, D)
+        return V
+
     def eval(self, x, u, output_array=None):
         if output_array is None:
             output_array = np.zeros(x.shape, dtype=self.dtype)
@@ -269,8 +268,217 @@ class Orthogonal(LegendreBase):
     def short_name():
         return 'L'
 
+    def to_ortho(self, input_array, output_array=None):
+        assert input_array.__class__.__name__ == 'Orthogonal'
+        if output_array:
+            output_array[:] = input_array
+            return output_array
+        return input_array
 
-class ShenDirichlet(LegendreBase):
+class CompositeSpace(Orthogonal):
+    """Common class for all spaces based on composite bases"""
+
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, scaled=False,
+                 padding_factor=1, dealias_direct=False, coordinates=None):
+        Orthogonal.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
+                            padding_factor=padding_factor, dealias_direct=dealias_direct,
+                            coordinates=coordinates)
+        from shenfun.tensorproductspace import BoundaryValues
+        self._scaled = scaled
+        self._bc_basis = None
+        self.bc = BoundaryValues(self, bc=bc)
+
+    def plan(self, shape, axis, dtype, options):
+        Orthogonal.plan(self, shape, axis, dtype, options)
+        LegendreBase.plan(self, shape, axis, dtype, options)
+
+    def evaluate_basis_all(self, x=None, argument=0):
+        V = Orthogonal.evaluate_basis_all(self, x=x, argument=argument)
+        return self._composite(V, argument=argument)
+
+    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
+        V = Orthogonal.evaluate_basis_derivative_all(self, x=x, k=k, argument=argument)
+        return self._composite(V, argument=argument)
+
+    def _evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
+        if fast_transform is False:
+            SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, False)
+            return
+        assert input_array is self.backward.tmp_array
+        assert output_array is self.backward.output_array
+        input_array[:] = self.to_ortho(input_array, output_array)
+        Orthogonal._evaluate_expansion_all(self, input_array, output_array, x, True)
+
+    def _evaluate_scalar_product(self, fast_transform=True):
+        output = self.scalar_product.output_array
+        if fast_transform is False:
+            SpectralBase._evaluate_scalar_product(self)
+            output[self.sl[slice(-(self.N-self.dim()), None)]] = 0
+            return
+        Orthogonal._evaluate_scalar_product(self, True)
+        nbcs = self.N-self.dim()
+        s = [np.newaxis]*self.dimensions
+        w0 = output.copy()
+        output.fill(0)
+        for key, val in self.stencil_matrix(self.shape(False)).items():
+            M = self.N if key >= 0 else self.dim()
+            s1 = slice(max(0, -key), M-max(0, key))
+            Q = s1.stop-s1.start
+            s2 = self.sl[slice(max(0, key), Q+max(0, key))]
+            sk = self.sl[s1]
+            s[self.axis] = slice(0, Q)
+            output[sk] += val[tuple(s)]*w0[s2]
+        output[self.sl[slice(-nbcs, None)]] = 0
+
+    @property
+    def is_orthogonal(self):
+        return False
+
+    @property
+    def has_nonhomogeneous_bcs(self):
+        return self.bc.has_nonhomogeneous_bcs()
+
+    def is_scaled(self):
+        """Return True if scaled basis is used, otherwise False"""
+        return self._scaled
+
+    def stencil_matrix(self, N=None):
+        """Matrix describing the linear combination of orthogonal basis
+        functions for the current basis.
+
+        Parameters
+        ----------
+        N : int, optional
+            The number of quadrature points
+        """
+        raise NotImplementedError
+
+    def _composite(self, V, argument=0):
+        """Return Vandermonde matrix V adjusted for basis composition
+
+        Parameters
+        ----------
+        V : Vandermonde type matrix
+        argument : int
+                Zero for test and 1 for trialfunction
+
+        """
+        P = np.zeros_like(V)
+        P[:] = V * self.stencil_matrix(V.shape[1]).diags().T
+        if argument == 1: # if trial function
+            P[:, slice(-(self.N-self.dim()), None)] = self.get_bc_basis()._composite(V)
+        return P
+
+    def sympy_basis(self, i=0, x=xp):
+        assert i < self.N
+        if i < self.dim():
+            row = self.stencil_matrix().diags().getrow(i)
+            f = 0
+            for j, val in zip(row.indices, row.data):
+                f += val*Orthogonal.sympy_basis(self, i=j, x=x)
+        else:
+            f = self.get_bc_basis().sympy_basis(i=i-self.dim(), x=x)
+        return f
+
+    def to_ortho(self, input_array, output_array=None):
+        if output_array is None:
+            output_array = np.zeros_like(input_array)
+        else:
+            output_array.fill(0)
+        nbcs = self.N-self.dim()
+        s = [np.newaxis]*self.dimensions
+        for key, val in self.stencil_matrix().items():
+            M = self.N if key >= 0 else self.dim()
+            s0 = slice(max(0, -key), min(self.dim(), M-max(0, key)))
+            Q = s0.stop-s0.start
+            s1 = slice(max(0, key), max(0, key)+Q)
+            s[self.axis] = slice(0, Q)
+            output_array[self.sl[s1]] += val[tuple(s)]*input_array[self.sl[s0]]
+
+        if self.has_nonhomogeneous_bcs:
+            self.bc.add_to_orthogonal(output_array, input_array)
+        return output_array
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        if i < self.dim():
+            row = self.stencil_matrix().diags().getrow(i)
+            w0 = np.zeros_like(output_array)
+            output_array.fill(0)
+            for j, val in zip(row.indices, row.data):
+                output_array[:] += val*Orthogonal.evaluate_basis(self, x, i=j, output_array=w0)
+        else:
+            assert i < self.N
+            output_array = self.get_bc_basis().evaluate_basis(x, i=i-self.dim(), output_array=output_array)
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        if x is None:
+            x = self.mesh(False, False)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        x = np.atleast_1d(x)
+
+        if i < self.dim():
+            basis = np.zeros(self.shape(True))
+            M = self.stencil_matrix()
+            row = M.diags().getrow(i)
+            indices = row.indices
+            vals = row.data
+            basis[np.array(indices)] = vals
+            basis = leg.Legendre(basis)
+            if k > 0:
+                basis = basis.deriv(k)
+            output_array[:] = basis(x)
+        else:
+            output_array[:] = self.get_bc_basis().evaluate_basis_derivative(x, i-self.dim(), k)
+        return output_array
+
+    def eval(self, x, u, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape, dtype=self.dtype)
+        x = self.map_reference_domain(x)
+        w = self.to_ortho(u)
+        output_array[:] = leg.legval(x, w)
+        return output_array
+
+    def get_refined(self, N):
+        return self.__class__(N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates,
+                              scaled=self._scaled,
+                              bc=self.bc.bc)
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return self.__class__(self.N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=padding_factor,
+                              dealias_direct=dealias_direct,
+                              coordinates=self.coors.coordinates,
+                              scaled=self._scaled,
+                              bc=self.bc.bc)
+
+    def get_unplanned(self):
+        return self.__class__(self.N,
+                              quad=self.quad,
+                              domain=self.domain,
+                              dtype=self.dtype,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates,
+                              scaled=self._scaled,
+                              bc=self.bc.bc)
+
+class ShenDirichlet(CompositeSpace):
     """Legendre Function space for Dirichlet boundary conditions
 
     Parameters
@@ -309,14 +517,9 @@ class ShenDirichlet(LegendreBase):
     """
     def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                              padding_factor=padding_factor, dealias_direct=dealias_direct,
-                              coordinates=coordinates)
-        from shenfun.tensorproductspace import BoundaryValues
-        self._scaled = scaled
-        self._factor = np.ones(1)
-        self._bc_basis = None
-        self.bc = BoundaryValues(self, bc=bc)
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -326,109 +529,17 @@ class ShenDirichlet(LegendreBase):
     def short_name():
         return 'SD'
 
-    @property
-    def has_nonhomogeneous_bcs(self):
-        return self.bc.has_nonhomogeneous_bcs()
-
-    def set_factor_array(self, v):
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        d = np.ones(N)
+        d[-2:] = 0
         if self.is_scaled():
-            if not self._factor.shape == v.shape:
-                k = self.wavenumbers().astype(float)
-                self._factor = 1./np.sqrt(4*k+6)
-
-    def is_scaled(self):
-        return self._scaled
-
-    def _composite(self, V, argument=0):
-        P = np.zeros(V.shape)
-        if not self.is_scaled():
-            P[:, :-2] = V[:, :-2] - V[:, 2:]
-        else:
-            k = np.arange(self.N-2).astype(float)
-            P[:, :-2] = (V[:, :-2] - V[:, 2:])/np.sqrt(4*k+6)
-        if argument == 1:
-            P[:, -2] = (V[:, 0] - V[:, 1])/2
-            P[:, -1] = (V[:, 0] + V[:, 1])/2
-        return P
-
-    def to_ortho(self, input_array, output_array=None):
-        if output_array is None:
-            output_array = np.zeros_like(input_array)
-        else:
-            output_array.fill(0)
-
-        s0 = self.sl[slice(0, -2)]
-        s1 = self.sl[slice(2, None)]
-
-        if self.is_scaled():
-            k = self.wavenumbers()
-            output_array[s0] = input_array[s0]/np.sqrt(4*k+6)
-            output_array[s1] -= input_array[s0]/np.sqrt(4*k+6)
-
-        else:
-            output_array[s0] = input_array[s0]
-            output_array[s1] -= input_array[s0]
-
-        self.bc.add_to_orthogonal(output_array, input_array)
-        return output_array
+            k = np.arange(N)
+            d /= np.sqrt(4*k+6)
+        return SparseMatrix({0: d, 2: -d[:-2]}, (N, N))
 
     def slice(self):
         return slice(0, self.N-2)
-
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
-        if i < self.N-2:
-            f = sp.legendre(i, x)-sp.legendre(i+2, x)
-            if self.is_scaled():
-                f /= np.sqrt(4*i+6)
-        elif i == self.N-2:
-            f = 0.5*(1-x)
-        elif i == self.N-1:
-            f = 0.5*(1+x)
-        return f
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i < self.N-2:
-            output_array[:] = eval_legendre(i, x) - eval_legendre(i+2, x)
-            if self.is_scaled():
-                output_array /= np.sqrt(4*i+6)
-        elif i == self.N-2:
-            output_array[:] = 0.5*(1-x)
-        elif i == self.N-1:
-            output_array[:] = 0.5*(1+x)
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        if x is None:
-            x = self.mesh(False, False)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        x = np.atleast_1d(x)
-        if i < self.N-2:
-            basis = np.zeros(self.shape(True))
-            basis[np.array([i, i+2])] = (1, -1)
-            basis = leg.Legendre(basis)
-            if k > 0:
-                basis = basis.deriv(k)
-            output_array[:] = basis(x)
-            if self.is_scaled():
-                output_array /= np.sqrt(4*i+6)
-        elif i == self.N-2:
-            output_array[:] = 0
-            if k == 1:
-                output_array[:] = -0.5
-            elif k == 0:
-                output_array[:] = 0.5*(1-x)
-        elif i == self.N-1:
-            output_array[:] = 0
-            if k == 1:
-                output_array[:] = 0.5
-            elif k == 0:
-                output_array[:] = 0.5*(1+x)
-
-        return output_array
 
     def _evaluate_expansion_all(self, input_array, output_array,
                                x=None, fast_transform=False):
@@ -439,7 +550,6 @@ class ShenDirichlet(LegendreBase):
         xj, _ = self.points_and_weights(self.N)
         from shenfun.optimization.numba import legendre as legn
         legn.legendre_shendirichlet_evaluate_expansion_all(xj, input_array, output_array, self.is_scaled())
-
 
     def _evaluate_scalar_product(self, fast_transform=False):
         input_array = self.scalar_product.input_array
@@ -454,32 +564,8 @@ class ShenDirichlet(LegendreBase):
         assert input_array.ndim == 1, 'Use fast_transform=False'
         from shenfun.optimization.numba import legendre as legn
         legn.legendre_shendirichlet_scalar_product(xj, wj, input_array, output_array, self.is_scaled())
-        #phi_i = np.zeros_like(xj)
-        #Lnm = eval_legendre(0, xj)
-        #Ln = eval_legendre(1, xj)
-        #Lnp = ((2+1)*xj*Ln - 1*Lnm)/2
-        #for i in range(self.N-2):
-        #    phi_i[:] = Lnm-Lnp
-        #    output_array[i] = np.sum(phi_i*wj*input_array)
-        #    Lnm[:] = Ln
-        #    Ln[:] = Lnp
-        #    Lnp[:] = ((2*(i+2)+1)*xj*Ln - (i+2)*Lnm)/(i+3)
-
         output_array[self.si[-2]] = 0
         output_array[self.si[-1]] = 0
-
-    def eval(self, x, u, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape, dtype=self.dtype)
-        x = self.map_reference_domain(x)
-        w_hat = work[(u, 0, True)]
-        self.set_factor_array(u)
-        output_array[:] = leg.legval(x, u[:-2]*self._factor)
-        w_hat[2:] = u[:-2]*self._factor
-        output_array -= leg.legval(x, w_hat)
-        output_array += 0.5*(u[-1]*(1+x) + u[-2]*(1-x))
-        return output_array
 
     def get_bc_basis(self):
         if self._bc_basis:
@@ -488,41 +574,7 @@ class ShenDirichlet(LegendreBase):
                                      scaled=self._scaled, coordinates=self.coors.coordinates)
         return self._bc_basis
 
-    def get_refined(self, N):
-        return ShenDirichlet(N,
-                             quad=self.quad,
-                             domain=self.domain,
-                             dtype=self.dtype,
-                             padding_factor=self.padding_factor,
-                             dealias_direct=self.dealias_direct,
-                             coordinates=self.coors.coordinates,
-                             bc=self.bc.bc,
-                             scaled=self._scaled)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return ShenDirichlet(self.N,
-                             quad=self.quad,
-                             dtype=self.dtype,
-                             padding_factor=padding_factor,
-                             dealias_direct=dealias_direct,
-                             domain=self.domain,
-                             coordinates=self.coors.coordinates,
-                             bc=self.bc.bc,
-                             scaled=self._scaled)
-
-    def get_unplanned(self):
-        return ShenDirichlet(self.N,
-                             quad=self.quad,
-                             domain=self.domain,
-                             dtype=self.dtype,
-                             padding_factor=self.padding_factor,
-                             dealias_direct=self.dealias_direct,
-                             coordinates=self.coors.coordinates,
-                             bc=self.bc.bc,
-                             scaled=self._scaled)
-
-
-class ShenNeumann(LegendreBase):
+class ShenNeumann(CompositeSpace):
     """Function space for homogeneous Neumann boundary conditions
 
     Parameters
@@ -559,15 +611,11 @@ class ShenNeumann(LegendreBase):
     """
 
     def __init__(self, N, quad="LG", mean=None, bc=(0., 0.), domain=(-1., 1.), padding_factor=1,
-                 dealias_direct=False, dtype=float, coordinates=None):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                              padding_factor=padding_factor, dealias_direct=dealias_direct,
-                              coordinates=coordinates)
-        from shenfun.tensorproductspace import BoundaryValues
+                 scaled=False, dealias_direct=False, dtype=float, coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
         self.mean = mean
-        self._factor = np.zeros(0)
-        self._bc_basis = None
-        self.bc = BoundaryValues(self, bc=bc)
 
     @staticmethod
     def boundary_condition():
@@ -586,23 +634,12 @@ class ShenNeumann(LegendreBase):
             return T.use_fixed_gauge
         return True
 
-    @property
-    def has_nonhomogeneous_bcs(self):
-        return self.bc.has_nonhomogeneous_bcs()
-
-    def _composite(self, V, argument=0):
-        P = np.zeros(V.shape)
-        k = np.arange(V.shape[1]).astype(float)
-        P[:, :-2] = V[:, :-2] - (k[:-2]*(k[:-2]+1)/(k[:-2]+2))/(k[:-2]+3)*V[:, 2:]
-        if argument == 1:
-            P[:, -2] = 0.5*V[:, 1] - 1/6*V[:, 2]
-            P[:, -1] = 0.5*V[:, 1] + 1/6*V[:, 2]
-        return P
-
-    def set_factor_array(self, v):
-        if not self._factor.shape == v.shape:
-            k = self.wavenumbers().astype(float)
-            self._factor = k*(k+1)/(k+2)/(k+3)
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        d = np.ones(N, dtype=int)
+        d[-2:] = 0
+        k = np.arange(N-2)
+        return SparseMatrix({0: d, 2: -k*(k+1)/(k+2)/(k+3)}, (N, N))
 
     def _evaluate_scalar_product(self, fast_transform=False):
         input_array = self.scalar_product.input_array
@@ -638,69 +675,8 @@ class ShenNeumann(LegendreBase):
         except:
             raise RuntimeError('Requires Numba')
 
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
-        if i < self.N-2:
-            f = sp.legendre(i, x) - (i*(i+1))/((i+2)*(i+3))*sp.legendre(i+2, x)
-        else:
-            f = np.sum(BCNeumann.coefficient_matrix()[i-self.N+2]*np.array([sp.legendre(j, x) for j in range(3)]))
-        return f
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i < self.N-2:
-            output_array[:] = eval_legendre(i, x) - i*(i+1.)/(i+2.)/(i+3.)*eval_legendre(i+2, x)
-        else:
-            output_array[:] = self.get_bc_basis().evaluate_basis(x, i-self.N+2)
-
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        if x is None:
-            x = self.mesh(False, False)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        x = np.atleast_1d(x)
-        if i < self.N-2:
-            basis = np.zeros(self.shape(True))
-            basis[np.array([i, i+2])] = (1, -i*(i+1.)/(i+2.)/(i+3.))
-            basis = leg.Legendre(basis)
-            if k > 0:
-                basis = basis.deriv(k)
-            output_array[:] = basis(x)
-        else:
-            output_array[:] = self.get_bc_basis().evaluate_basis_derivative(x, i-self.N+2, k)
-        return output_array
-
-    def to_ortho(self, input_array, output_array=None):
-        if output_array is None:
-            output_array = np.zeros_like(input_array)
-        else:
-            output_array.fill(0)
-
-        s0 = self.sl[slice(0, -2)]
-        s1 = self.sl[slice(2, None)]
-        self.set_factor_array(input_array)
-        output_array[s0] = input_array[s0]
-        output_array[s1] -= self._factor*input_array[s0]
-        self.bc.add_to_orthogonal(output_array, input_array)
-        return output_array
-
     def slice(self):
         return slice(0, self.N-2)
-
-    def eval(self, x, u, output_array=None):
-        if output_array is None:
-            output_array = np.zeros(x.shape, dtype=self.dtype)
-        x = self.map_reference_domain(x)
-        w_hat = work[(u, 0, True)]
-        self.set_factor_array(u)
-        output_array[:] = leg.legval(x, u[:-2])
-        w_hat[2:] = self._factor*u[:-2]
-        output_array -= leg.legval(x, w_hat)
-        output_array += u[-2]*(0.5*x-1/3*(3*x**2-1)) + u[-1]*(0.5*x+1/3*(3*x**2-1))
-        return output_array
 
     def get_bc_basis(self):
         if self._bc_basis:
@@ -742,8 +718,7 @@ class ShenNeumann(LegendreBase):
                            coordinates=self.coors.coordinates,
                            mean=self.mean)
 
-
-class ShenBiharmonic(LegendreBase):
+class ShenBiharmonic(CompositeSpace):
     """Function space for biharmonic basis
 
     Both Dirichlet and Neumann boundary conditions.
@@ -779,15 +754,10 @@ class ShenBiharmonic(LegendreBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="LG", bc=(0, 0, 0, 0), domain=(-1., 1.), padding_factor=1,
-                 dealias_direct=False, dtype=float, coordinates=None):
-        from shenfun.tensorproductspace import BoundaryValues
-        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                              padding_factor=padding_factor, dealias_direct=dealias_direct,
-                              coordinates=coordinates)
-        self._factor1 = np.zeros(0)
-        self._factor2 = np.zeros(0)
-        self._bc_basis = None
-        self.bc = BoundaryValues(self, bc=bc)
+                 scaled=False, dealias_direct=False, dtype=float, coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -797,105 +767,15 @@ class ShenBiharmonic(LegendreBase):
     def short_name():
         return 'SB'
 
-    @property
-    def has_nonhomogeneous_bcs(self):
-        return self.bc.has_nonhomogeneous_bcs()
-
-    def _composite(self, V, argument=0):
-        P = np.zeros_like(V)
-        k = np.arange(V.shape[1]).astype(float)[:-4]
-        P[:, :-4] = V[:, :-4] - (2*(2*k+5)/(2*k+7))*V[:, 2:-2] + ((2*k+3)/(2*k+7))*V[:, 4:]
-        if argument == 1:
-            P[:, -4:] = np.tensordot(V[:, :4], BCBiharmonic.coefficient_matrix(), (1, 1))
-        return P
-
-    def set_factor_arrays(self, v):
-        s = self.sl[self.slice()]
-        if not self._factor1.shape == v[s].shape:
-            k = self.wavenumbers().astype(float)
-            self._factor1 = (-2*(2*k+5)/(2*k+7)).astype(float)
-            self._factor2 = ((2*k+3)/(2*k+7)).astype(float)
-
-    def _evaluate_scalar_product(self, fast_transform=False):
-        SpectralBase._evaluate_scalar_product(self)
-        self.scalar_product.output_array[self.sl[slice(-4, None)]] = 0
-
-    #@optimizer
-    def set_w_hat(self, w_hat, fk, f1, f2): # pragma: no cover
-        s = self.sl[self.slice()]
-        s2 = self.sl[slice(2, -2)]
-        s4 = self.sl[slice(4, None)]
-        w_hat[s] = fk[s]
-        w_hat[s2] += f1*fk[s]
-        w_hat[s4] += f2*fk[s]
-        return w_hat
-
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
-        if i < self.N-4:
-            f = (sp.legendre(i, x)
-                 -2*(2*i+5.)/(2*i+7.)*sp.legendre(i+2, x)
-                 +((2*i+3.)/(2*i+7.))*sp.legendre(i+4, x))
-        else:
-            f = 0
-            for j, c in enumerate(BCBiharmonic.coefficient_matrix()[i-(self.N-4)]):
-                f += c*sp.legendre(j, x)
-        return f
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i < self.N-4:
-            output_array[:] = eval_legendre(i, x) - 2*(2*i+5.)/(2*i+7.)*eval_legendre(i+2, x) + ((2*i+3.)/(2*i+7.))*eval_legendre(i+4, x)
-        else:
-            output_array[:] = self.get_bc_basis().evaluate_basis(x, i-self.N+4)
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        if x is None:
-            x = self.mesh(False, False)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        x = np.atleast_1d(x)
-        if i < self.N-4:
-            basis = np.zeros(self.shape(True))
-            basis[np.array([i, i+2, i+4])] = (1, -2*(2*i+5.)/(2*i+7.), ((2*i+3.)/(2*i+7.)))
-            basis = leg.Legendre(basis)
-            if k > 0:
-                basis = basis.deriv(k)
-            output_array[:] = basis(x)
-        else:
-            output_array[:] = self.get_bc_basis().evaluate_basis_derivative(x, i-self.N+4, k)
-
-        return output_array
-
-    def to_ortho(self, input_array, output_array=None):
-        if output_array is None:
-            output_array = np.zeros_like(input_array)
-        else:
-            output_array.fill(0)
-
-        self.set_factor_arrays(input_array)
-        output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2)
-        self.bc.add_to_orthogonal(output_array, input_array)
-        return output_array
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        d = np.ones(N, dtype=int)
+        d[-4:] = 0
+        k = np.arange(N)
+        return SparseMatrix({0: d, 2: -2*(2*k[:-2]+5)/(2*k[:-2]+7), 4: (2*k[:-4]+3)/(2*k[:-4]+7)}, (N, N))
 
     def slice(self):
         return slice(0, self.N-4)
-
-    def eval(self, x, u, output_array=None):
-        if output_array is None:
-            output_array = np.zeros(x.shape, dtype=self.dtype)
-        x = self.map_reference_domain(x)
-        w_hat = work[(u, 0, True)]
-        self.set_factor_arrays(u)
-        output_array[:] = leg.legval(x, u[:-4])
-        w_hat[2:-2] = self._factor1*u[:-4]
-        output_array += leg.legval(x, w_hat[:-2])
-        w_hat[4:] = self._factor2*u[:-4]
-        w_hat[:4] = 0
-        output_array += leg.legval(x, w_hat)
-        return output_array
 
     def get_bc_basis(self):
         if self._bc_basis:
@@ -904,37 +784,7 @@ class ShenBiharmonic(LegendreBase):
                                       coordinates=self.coors.coordinates)
         return self._bc_basis
 
-    def get_refined(self, N):
-        return ShenBiharmonic(N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return ShenBiharmonic(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=padding_factor,
-                              dealias_direct=dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
-    def get_unplanned(self):
-        return ShenBiharmonic(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
-class BeamFixedFree(LegendreBase):
+class BeamFixedFree(CompositeSpace):
     """Function space for biharmonic basis
 
     Function space for biharmonic basis
@@ -977,17 +827,10 @@ class BeamFixedFree(LegendreBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="LG", bc=(0, 0, 0, 0), domain=(-1., 1.), padding_factor=1,
-                 dealias_direct=False, dtype=float, coordinates=None):
-        from shenfun.tensorproductspace import BoundaryValues
-        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                              padding_factor=padding_factor, dealias_direct=dealias_direct,
-                              coordinates=coordinates)
-        self._factor1 = np.zeros(0)
-        self._factor2 = np.zeros(0)
-        self._factor3 = np.zeros(0)
-        self._factor4 = np.zeros(0)
-        self._bc_basis = None
-        self.bc = BoundaryValues(self, bc=bc)
+                 scaled=False, dealias_direct=False, dtype=float, coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -997,123 +840,19 @@ class BeamFixedFree(LegendreBase):
     def short_name():
         return 'BF'
 
-    @property
-    def has_nonhomogeneous_bcs(self):
-        return self.bc.has_nonhomogeneous_bcs()
-
-    def _composite(self, V, argument=0):
-        P = np.zeros_like(V)
-        k = np.arange(V.shape[1]).astype(float)[:-4]
-        P[:, :-4] = (V[:, :-4] + 4*(2*k+3)/((k+3)**2)*V[:, 1:-3] - 2*(k-1)*(k+1)*(k+6)*(2*k+5)/((k+3)**2*(k+4)*(2*k+7))*V[:, 2:-2]
-         - 4*(k+1)**2*(2*k+3)/((k+3)**2*(k+4)**2)*V[:, 3:-1] + ((k+1)**2*(k+2)**2*(2*k+3)/((k+3)**2*(k+4)**2*(2*k+7)))*V[:, 4:])
-        if argument == 1:
-            P[:, -4:] = np.tensordot(V[:, :4], BCBeamFixedFree.coefficient_matrix(), (1, 1))
-        return P
-
-    def set_factor_arrays(self, v):
-        s = self.sl[self.slice()]
-        if not self._factor1.shape == v[s].shape:
-            k = self.wavenumbers().astype(float)
-            self._factor1 = (4*(2*k+3)/((k+3)**2)).astype(float)
-            self._factor2 = (-(2*(k-1)*(k+1)*(k+6)*(2*k+5)/((k+3)**2*(k+4)*(2*k+7)))).astype(float)
-            self._factor3 = (- 4*(k+1)**2*(2*k+3)/((k+3)**2*(k+4)**2)).astype(float)
-            self._factor4 = ((((k+1)/(k+3))*((k+2)/(k+4)))**2*(2*k+3)/(2*k+7)).astype(float)
-
-    def _evaluate_scalar_product(self, fast_transform=False):
-        SpectralBase._evaluate_scalar_product(self)
-        self.scalar_product.output_array[self.sl[slice(-4, None)]] = 0
-
-    def set_w_hat(self, w_hat, fk, f1, f2): # pragma: no cover
-        s = self.sl[self.slice()]
-        s2 = self.sl[slice(2, -2)]
-        s4 = self.sl[slice(4, None)]
-        w_hat[s] = fk[s]
-        w_hat[s2] += f1*fk[s]
-        w_hat[s4] += f2*fk[s]
-        return w_hat
-
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
-        if i < self.N-4:
-            f = (sp.legendre(i, x)
-                 +(4*(2*i+3)/((i+3)**2))*sp.legendre(i+1, x)
-                 -(2*(i-1)*(i+1)*(i+6)*(2*i+5)/((i+3)**2*(i+4)*(2*i+7)))*sp.legendre(i+2, x)
-                 -4*(i+1)**2*(2*i+3)/((i+3)**2*(i+4)**2)*sp.legendre(i+3, x)
-                 +(i+1)**2*(i+2)**2*(2*i+3)/((i+3)**2*(i+4)**2*(2*i+7))*sp.legendre(i+4, x))
-        else:
-            f = 0
-            for j, c in enumerate(BCBeamFixedFree.coefficient_matrix()[i-(self.N-4)]):
-                f += c*sp.legendre(j, x)
-        return f
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i < self.N-4:
-            output_array[:] = eval_legendre(i, x) + (4*(2*i+3)/((i+3)**2))*eval_legendre(i+1, x) \
-                -(2*(i-1)*(i+1)*(i+6)*(2*i+5)/((i+3)**2*(i+4)*(2*i+7)))*eval_legendre(i+2, x) \
-                    -4*(i+1)**2*(2*i+3)/((i+3)**2*(i+4)**2)*eval_legendre(i+3, x) \
-                    +(i+1)**2*(i+2)**2*(2*i+3)/((i+3)^2*(i+4)**2*(2*i+7))*eval_legendre(i+4, x)
-        else:
-            X = sp.symbols('x', real=True)
-            output_array[:] = sp.lambdify(X, self.sympy_basis(i, x=X))(x)
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        if x is None:
-            x = self.mesh(False, False)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        x = np.atleast_1d(x)
-        if i < self.N-4:
-            basis = np.zeros(self.shape(True))
-            basis[np.array([i, i+1, i+2, i+3, i+4])] = (1, 4*(2*i+3)/((i+3)**2), -(2*(i-1)*(i+1)*(i+6)*(2*i+5)/((i+3)**2*(i+4)*(2*i+7))), \
-                                                        -4*(i+1)**2*(2*i+3)/((i+3)**2*(i+4)**2), \
-                                                            (i+1)**2*(i+2)**2*(2*i+3)/((i+3)**2*(i+4)**2*(2*i+7)))
-            basis = leg.Legendre(basis)
-            if k > 0:
-                basis = basis.deriv(k)
-            output_array[:] = basis(x)
-        else:
-            X = sp.symbols('x', real=True)
-            output_array[:] = sp.lambdify(X, self.sympy_basis(i, X).diff(X, k))(x)
-        return output_array
-
-    def to_ortho(self, input_array, output_array=None):
-        if output_array is None:
-            output_array = Function(self.get_orthogonal())
-        else:
-            output_array.fill(0)
-
-        self.set_factor_arrays(input_array)
-        output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2)
-        self.bc.add_to_orthogonal(output_array, input_array)
-        return output_array
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        d = np.ones(N, dtype=int)
+        d[-4:] = 0
+        k = np.arange(N)
+        f1 =4*(2*k[:-1]+3)/(k[:-1]+3)**2
+        f2 =-(2*(k[:-2]-1)*(k[:-2]+1)*(k[:-2]+6)*(2*k[:-2]+5)/((k[:-2]+3)**2*(k[:-2]+4)*(2*k[:-2]+7)))
+        f3 =- 4*(k[:-3]+1)**2*(2*k[:-3]+3)/((k[:-3]+3)**2*(k[:-3]+4)**2)
+        f4 =(((k[:-4]+1)/(k[:-4]+3))*((k[:-4]+2)/(k[:-4]+4)))**2*(2*k[:-4]+3)/(2*k[:-4]+7)
+        return SparseMatrix({0: d, 1: f1, 2: f2,3: f3, 4: f4}, (N, N))
 
     def slice(self):
         return slice(0, self.N-4)
-
-    def eval(self, x, u, output_array=None):
-        if output_array is None:
-            output_array = np.zeros(x.shape, dtype=self.dtype)
-        x = self.map_reference_domain(x)
-        w_hat = work[(u, 0, True)]
-        self.set_factor_arrays(u)
-        output_array[:] = leg.legval(x, u[:-4])
-        w_hat[1:-3] = self._factor1*u[:-4]
-        w_hat[0] = 0
-        output_array += leg.legval(x, w_hat[:-3])
-        w_hat[2:-2] = self._factor2*u[:-4]
-        w_hat[:2] = 0
-        output_array += leg.legval(x, w_hat[:-2])
-        w_hat[3:-1] = self._factor3*u[:-4]
-        w_hat[:3] = 0
-        output_array += leg.legval(x, w_hat[:-1])
-        w_hat[4:] = self._factor3*u[:-4]
-        w_hat[:4] = 0
-        output_array += leg.legval(x, w_hat)
-
-        return output_array
 
     def get_bc_basis(self):
         if self._bc_basis:
@@ -1122,38 +861,7 @@ class BeamFixedFree(LegendreBase):
                                          coordinates=self.coors.coordinates)
         return self._bc_basis
 
-    def get_refined(self, N):
-        return BeamFixedFree(N,
-                             quad=self.quad,
-                             domain=self.domain,
-                             dtype=self.dtype,
-                             padding_factor=self.padding_factor,
-                             dealias_direct=self.dealias_direct,
-                             coordinates=self.coors.coordinates,
-                             bc=self.bc.bc)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return BeamFixedFree(self.N,
-                             quad=self.quad,
-                             domain=self.domain,
-                             dtype=self.dtype,
-                             padding_factor=padding_factor,
-                             dealias_direct=dealias_direct,
-                             coordinates=self.coors.coordinates,
-                             bc=self.bc.bc)
-
-    def get_unplanned(self):
-        return BeamFixedFree(self.N,
-                             quad=self.quad,
-                             domain=self.domain,
-                             dtype=self.dtype,
-                             padding_factor=self.padding_factor,
-                             dealias_direct=self.dealias_direct,
-                             coordinates=self.coors.coordinates,
-                             bc=self.bc.bc)
-
-
-class UpperDirichlet(LegendreBase):
+class UpperDirichlet(CompositeSpace):
     """Legendre function space with homogeneous Dirichlet boundary conditions on x=1
 
     Parameters
@@ -1185,15 +893,11 @@ class UpperDirichlet(LegendreBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="LG", bc=(None, 0), domain=(-1., 1.), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None):
+                 scaled=False, padding_factor=1, dealias_direct=False, coordinates=None):
         assert quad == "LG"
-        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                              padding_factor=padding_factor, dealias_direct=dealias_direct,
-                              coordinates=coordinates)
-        from shenfun.tensorproductspace import BoundaryValues
-        self._factor = np.ones(1)
-        self._bc_basis = None
-        self.bc = BoundaryValues(self, bc=bc)
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -1203,87 +907,14 @@ class UpperDirichlet(LegendreBase):
     def short_name():
         return 'UD'
 
-    @property
-    def has_nonhomogeneous_bcs(self):
-        return self.bc.has_nonhomogeneous_bcs()
-
-    def is_scaled(self):
-        return False
-
-    def _composite(self, V, argument=0):
-        P = np.zeros(V.shape)
-        P[:, :-1] = V[:, :-1] - V[:, 1:]
-        if argument == 1: # if trial function
-            P[:, -1] = (V[:, 0] + V[:, 1])/2    # x = +1
-        return P
-
-    def to_ortho(self, input_array, output_array=None):
-        if output_array is None:
-            output_array = np.zeros_like(input_array)
-        else:
-            output_array.fill(0)
-
-        s0 = self.sl[slice(0, -1)]
-        s1 = self.sl[slice(1, None)]
-        output_array[s0] = input_array[s0]
-        output_array[s1] -= input_array[s0]
-        self.bc.add_to_orthogonal(output_array, input_array)
-        return output_array
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        d = np.ones(self.N)
+        d[-1] = 0
+        return SparseMatrix({0: d, 1: -d[:-1]}, (self.N, self.N))
 
     def slice(self):
         return slice(0, self.N-1)
-
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
-        if i < self.N-1:
-            return sp.legendre(i, x)-sp.legendre(i+1, x)
-        assert i == self.N-1
-        return 0.5*(1+x)
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i < self.N-1:
-            output_array[:] = eval_legendre(i, x) - eval_legendre(i+1, x)
-        elif i == self.N-1:
-            output_array[:] = 0.5*(1+x)
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        if x is None:
-            x = self.mesh(False, False)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        x = np.atleast_1d(x)
-        if i < self.N-1:
-            basis = np.zeros(self.shape(True))
-            basis[np.array([i, i+1])] = (1, -1)
-            basis = leg.Legendre(basis)
-            if k > 0:
-                basis = basis.deriv(k)
-            output_array[:] = basis(x)
-        else:
-            if k == 1:
-                output_array[:] = 0.5
-            else:
-                output_array[:] = 0
-        return output_array
-
-    def _evaluate_scalar_product(self, fast_transform=False):
-        SpectralBase._evaluate_scalar_product(self)
-        self.scalar_product.output_array[self.si[-1]] = 0
-
-    def eval(self, x, u, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape, dtype=self.dtype)
-        x = self.map_reference_domain(x)
-        w_hat = work[(u, 0, True)]
-        output_array[:] = leg.legval(x, u[:-1])
-        w_hat[1:] = u[:-1]
-        output_array -= leg.legval(x, w_hat)
-        output_array += 0.5*u[-1]*(1+x)
-        return output_array
 
     def get_bc_basis(self):
         if self._bc_basis:
@@ -1291,37 +922,6 @@ class UpperDirichlet(LegendreBase):
         self._bc_basis = BCUpperDirichlet(self.N, quad=self.quad, domain=self.domain,
                                           coordinates=self.coors.coordinates)
         return self._bc_basis
-
-    def get_refined(self, N):
-        return UpperDirichlet(N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return UpperDirichlet(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=padding_factor,
-                              dealias_direct=dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
-    def get_unplanned(self):
-        return UpperDirichlet(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
 
 class ShenBiPolar(LegendreBase):
     """Legendre function space for the Biharmonic equation in polar coordinates
@@ -1354,7 +954,7 @@ class ShenBiPolar(LegendreBase):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="LG", domain=(-1., 1.), bc=(0, 0), dtype=float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         assert quad == "LG"
         LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
@@ -1368,10 +968,6 @@ class ShenBiPolar(LegendreBase):
     @staticmethod
     def short_name():
         return 'SP'
-
-    @property
-    def has_nonhomogeneous_bcs(self):
-        return False
 
     def to_ortho(self, input_array, output_array=None):
         raise(NotImplementedError)
@@ -1422,11 +1018,10 @@ class ShenBiPolar(LegendreBase):
         output_array[:] = np.dot(fj, u)
         return output_array
 
-
-class ShenBiPolar0(LegendreBase):
+class ShenBiPolar0(CompositeSpace):
     """Legendre function space for biharmonic basis for polar coordinates
 
-    Homogeneous Dirichlet and Neumann boundary conditions.
+    Three boundary conditions at v(1), v'(1) and v'(-1)
 
     Parameters
     ----------
@@ -1436,8 +1031,8 @@ class ShenBiPolar0(LegendreBase):
             Type of quadrature
 
             - LG - Legendre-Gauss
-        4-tuple of numbers, optional
-            The values of the 4 boundary conditions at x=(-1, 1).
+        bc : 3-tuple of numbers, optional
+            The values of the 3 boundary conditions at x=(-1, 1).
             The two Dirichlet first and then the Neumann.
         domain : 2-tuple of floats, optional
             The computational domain
@@ -1457,15 +1052,12 @@ class ShenBiPolar0(LegendreBase):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="LG", domain=(-1., 1.), padding_factor=1,
-                 dealias_direct=False, dtype=float, coordinates=None):
+    def __init__(self, N, quad="LG", domain=(-1., 1.), bc=(0, 0, 0), padding_factor=1,
+                 scaled=False, dealias_direct=False, dtype=float, coordinates=None):
         assert quad == "LG"
-        LegendreBase.__init__(self, N, quad="LG", domain=domain, dtype=dtype,
-                              padding_factor=padding_factor, dealias_direct=dealias_direct,
-                              coordinates=coordinates)
-        self._factor1 = np.zeros(0)
-        self._factor2 = np.zeros(0)
-        self._factor3 = np.zeros(0)
+        CompositeSpace.__init__(self, N, quad="LG", domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -1475,117 +1067,27 @@ class ShenBiPolar0(LegendreBase):
     def short_name():
         return 'SP0'
 
-    @property
-    def has_nonhomogeneous_bcs(self):
-        return False
-
-    def _composite(self, V, argument=0):
-        P = np.zeros_like(V)
-        k = np.arange(V.shape[1]).astype(float)[:-3]
-        P[:, :-3] = V[:, :-3] - ((2*k+3)*(k+4)/(2*k+5)/(k+2))*V[:, 1:-2] - (k*(k+1)/(k+2)/(k+3))*V[:, 2:-1] + (k+1)*(2*k+3)/(k+3)/(2*k+5)*V[:, 3:]
-        return P
-
-    def set_factor_arrays(self, v):
-        s = self.sl[self.slice()]
-        if not self._factor1.shape == v[s].shape:
-            k = self.wavenumbers().astype(float)
-            self._factor1 = (-(2*k+3)*(k+4)/(2*k+5)/(k+2)).astype(float)
-            self._factor2 = (-k*(k+1)/(k+2)/(k+3)).astype(float)
-            self._factor3 = ((k+1)*(2*k+3)/(k+3)/(2*k+5)).astype(float)
-
-    #@optimizer
-    def set_w_hat(self, w_hat, fk, f1, f2, f3): # pragma: no cover
-        s = self.sl[self.slice()]
-        s1 = self.sl[slice(1, -2)]
-        s2 = self.sl[slice(2, -1)]
-        s3 = self.sl[slice(3, None)]
-        w_hat[s] = fk[s]
-        w_hat[s1] += f1*fk[s]
-        w_hat[s2] += f2*fk[s]
-        w_hat[s3] += f3*fk[s]
-        return w_hat
-
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
-        #x = self.map_reference_domain(x)
-        return (sp.legendre(i, x)
-                -(2*i+3)*(i+4)/(2*i+5)/(i+2)*sp.legendre(i+1, x)
-                -i*(i+1)/(i+2)/(i+3)*sp.legendre(i+2, x)
-                +(i+1)*(2*i+3)/(i+3)/(2*i+5)*sp.legendre(i+3, x))
-        #return
-        # (sp.legendre(i, x) -(2*i+3)*(i+4)/(2*i+5)*sp.legendre(i+1, x) -i*(i+1)/(i+2)/(i+3)*sp.legendre(i+2, x) +(i+1)*(i+2)*(2*i+3)/(i+3)/(2*i+5)*sp.legendre(i+3, x))
-
-    def evaluate_basis(self, x=None, i=0, output_array=None):
-        output_array = SpectralBase.evaluate_basis(self, x=x, i=i, output_array=output_array)
-        return output_array
-
-    #def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-    #    output_array = SpectralBase.evaluate_basis_derivative(self, x=x, i=i, k=k, output_array=output_array)
-    #    return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        if x is None:
-            x = self.mesh(False, False)
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-
-        if i < self.N-3:
-            basis = np.zeros(self.shape(True))
-            basis[np.array([i, i+1, i+2, i+3])] = (1,
-                                                   -(2*i+3)*(i+4)/(2*i+5)/(i+2),
-                                                   -i*(i+1)/(i+2)/(i+3),
-                                                   (i+1)*(2*i+3)/(i+3)/(2*i+5))
-            basis = leg.Legendre(basis)
-            if k > 0:
-                basis = basis.deriv(k)
-            output_array[:] = basis(x)
-        else:
-            raise RuntimeError
-        return output_array
-
-    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
-        if x is None:
-            x = self.mpmath_points_and_weights()[0]
-        V = np.zeros((x.shape[0], self.N))
-        for i in range(self.N-3):
-            V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
-        return V
-
-    def to_ortho(self, input_array, output_array=None):
-        if output_array is None:
-            output_array = np.zeros_like(input_array)
-        else:
-            output_array.fill(0)
-
-        self.set_factor_arrays(input_array)
-        output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2, self._factor3)
-        return output_array
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        d = np.ones(self.N)
+        d[-3:] = 0
+        k = np.arange(self.N)
+        f1 = -((2*k[:-1]+3)*(k[:-1]+4)/(2*k[:-1]+5)/(k[:-1]+2))
+        f2 = -(k[:-2]*(k[:-2]+1)/(k[:-2]+2)/(k[:-2]+3))
+        f3 = (k[:-3]+1)*(2*k[:-3]+3)/(k[:-3]+3)/(2*k[:-3]+5)
+        return SparseMatrix({0: d, 1: f1, 2: f2, 3: f3}, (self.N, self.N))
 
     def slice(self):
         return slice(0, self.N-3)
 
-    def _evaluate_scalar_product(self, fast_transform=False):
-        SpectralBase._evaluate_scalar_product(self)
-        self.scalar_product.output_array[self.sl[slice(-3, None)]] = 0
+    def get_bc_basis(self):
+        if self._bc_basis:
+            return self._bc_basis
+        self._bc_basis = BCShenBiPolar0(self.N, quad=self.quad, domain=self.domain,
+                                        coordinates=self.coors.coordinates)
+        return self._bc_basis
 
-    def eval(self, x, u, output_array=None):
-        if output_array is None:
-            output_array = np.zeros(x.shape, dtype=self.dtype)
-        x = self.map_reference_domain(x)
-        w_hat = work[(u, 0, True)]
-        self.set_factor_arrays(u)
-        output_array[:] = leg.legval(x, u[:-3])
-        w_hat[1:-2] = self._factor1*u[:-3]
-        output_array += leg.legval(x, w_hat[:-2])
-        w_hat[2:-1] = self._factor2*u[:-3]
-        w_hat[:2] = 0
-        output_array += leg.legval(x, w_hat)
-        w_hat[3:] = self._factor3*u[:-3]
-        w_hat[:3] = 0
-        output_array += leg.legval(x, w_hat)
-        return output_array
-
-class DirichletNeumann(LegendreBase):
+class DirichletNeumann(CompositeSpace):
     """Function space for mixed Dirichlet/Neumann boundary conditions
 	u(-1)=0, u'(1)=0
     Parameters
@@ -1623,15 +1125,10 @@ class DirichletNeumann(LegendreBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                              padding_factor=padding_factor, dealias_direct=dealias_direct,
-                              coordinates=coordinates)
-        from shenfun.tensorproductspace import BoundaryValues
-        self._factor1 = np.ones(1)
-        self._factor2 = np.ones(1)
-        self._bc_basis = None
-        self.bc = BoundaryValues(self, bc=bc)
+                 scaled=False, padding_factor=1, dealias_direct=False, coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -1641,108 +1138,17 @@ class DirichletNeumann(LegendreBase):
     def short_name():
         return 'DN'
 
-    @property
-    def has_nonhomogeneous_bcs(self):
-        return self.bc.has_nonhomogeneous_bcs()
-
-    def set_factor_array(self, v):
-        """Set intermediate factor arrays"""
-        s = self.sl[self.slice()]
-        if not self._factor1.shape == v[s].shape:
-            k = self.wavenumbers().astype(float)
-            self._factor1 = ((2*k+3)/(k+2)**2).astype(float)
-            self._factor2 = -(((k+1)/(k+2))**2).astype(float)
-
-    def _composite(self, V, argument=0):
-        P = np.zeros_like(V)
-        k = np.arange(V.shape[1]).astype(float)[:-2]
-        P[:, :-2] = (V[:, :-2]
-                     +((2*k+3)/(k+2)**2)*V[:, 1:-1]
-                     -(((k+1)/(k+2))**2)*V[:, 2:])
-        if argument == 1:
-            P[:, -2] = V[:, 0]
-            P[:, -1] = V[:, 0]+V[:, 1]
-        return P
-
-    def set_w_hat(self, w_hat, fk, f1, f2):
-        s = self.sl[self.slice()]
-        s1 = self.sl[slice(1, -1)]
-        s2 = self.sl[slice(2, None)]
-        w_hat[s] = fk[s]
-        w_hat[s1] += f1*fk[s]
-        w_hat[s2] += f2*fk[s]
-        return w_hat
-
-    def to_ortho(self, input_array, output_array=None):
-        if output_array is None:
-            output_array = np.zeros_like(input_array)
-        else:
-            output_array.fill(0)
-
-        self.set_factor_arrays(input_array)
-        output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2)
-        self.bc.add_to_orthogonal(output_array, input_array)
-        return output_array
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        d = np.ones(self.N)
+        d[-2:] = 0
+        k = np.arange(self.N)
+        f1 = (2*k[:-1]+3)/(k[:-1]+2)**2
+        f2 = -((k[:-2]+1)/(k[:-2]+2))**2
+        return SparseMatrix({0: d, 1: f1, 2: f2}, (self.N, self.N))
 
     def slice(self):
         return slice(0, self.N-2)
-
-    def _evaluate_scalar_product(self, fast_transform=False):
-        SpectralBase._evaluate_scalar_product(self)
-        self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
-
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
-        if i < self.N-2:
-            return (sp.legendre(i, x)
-                    +(2*i+3)/(i+2)**2*sp.legendre(i+1, x)
-                    -(i+1)**2/(i+2)**2*sp.legendre(i+2, x))
-        else:
-            return np.sum(BCDirichletNeumann.coefficient_matrix()[i-self.N+2]*np.array([sp.legendre(j, x) for j in range(2)]))
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i < self.N-2:
-            output_array[:] = (eval_legendre(i, x)
-                               +(2*i+3)/(i+2)**2*eval_legendre(i+1, x)
-                               -(i+1)**2/(i+2)**2*eval_legendre(i+2, x))
-        else:
-            output_array[:] = self.get_bc_basis().evaluate_basis(x, i-self.N+2)
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        if x is None:
-            x = self.mesh(False, False)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        x = np.atleast_1d(x)
-        if i < self.N-2:
-            basis = np.zeros(self.shape(True))
-            basis[np.array([i, i+1, i+2])] = (1, (2*i+3)/(i+2)**2, -(i+1)**2/(i+2)**2)
-            basis = leg.Legendre(basis)
-            if k > 0:
-                basis = basis.deriv(k)
-            output_array[:] = basis(x)
-        else:
-            output_array[:] = self.get_bc_basis().evaluate_basis_derivative(x, i-self.N+2, k)
-        return output_array
-
-    def eval(self, x, u, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        x = self.map_reference_domain(x)
-        w_hat = work[(u, 0, True)]
-        self.set_factor_array(w_hat)
-        output_array[:] = leg.legval(x, u[:-2])
-        w_hat[1:-1] = self._factor1*u[:-2]
-        output_array += leg.legval(x, w_hat)
-        w_hat[2:] = self._factor2*u[:-2]
-        w_hat[:2] = 0
-        output_array += leg.legval(x, w_hat)
-        output_array += u[-2] + u[-1]*(1+x)
-        return output_array
 
     def get_bc_basis(self):
         if self._bc_basis:
@@ -1751,37 +1157,7 @@ class DirichletNeumann(LegendreBase):
                                             coordinates=self.coors.coordinates)
         return self._bc_basis
 
-    def get_refined(self, N):
-        return self.__class__(N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              dtype=self.dtype,
-                              padding_factor=padding_factor,
-                              dealias_direct=dealias_direct,
-                              domain=self.domain,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
-    def get_unplanned(self):
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
-class LowerDirichlet(LegendreBase):
+class LowerDirichlet(CompositeSpace):
     """Legendre function space with homogeneous Dirichlet boundary conditions on x = -1
 
     Parameters
@@ -1813,15 +1189,11 @@ class LowerDirichlet(LegendreBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="LG", bc=(0, None), domain=(-1., 1.), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None):
+                 scaled=False, padding_factor=1, dealias_direct=False, coordinates=None):
         assert quad == "LG"
-        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                              padding_factor=padding_factor, dealias_direct=dealias_direct,
-                              coordinates=coordinates)
-        from shenfun.tensorproductspace import BoundaryValues
-        self._factor = np.ones(1)
-        self._bc_basis = None
-        self.bc = BoundaryValues(self, bc=bc)
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -1831,88 +1203,14 @@ class LowerDirichlet(LegendreBase):
     def short_name():
         return 'LD'
 
-    @property
-    def has_nonhomogeneous_bcs(self):
-        return self.bc.has_nonhomogeneous_bcs()
-
-
-    def is_scaled(self):
-        return False
-
-    def _composite(self, V, argument=0):
-        P = np.zeros(V.shape)
-        P[:, :-1] = V[:, :-1] + V[:, 1:]
-        if argument == 1: # if trial function
-            P[:, -1] = (V[:, 0] - V[:, 1])/2    # x = -1
-        return P
-
-    def to_ortho(self, input_array, output_array=None):
-        if output_array is None:
-            output_array = np.zeros_like(input_array)
-        else:
-            output_array.fill(0)
-
-        s0 = self.sl[slice(0, -1)]
-        s1 = self.sl[slice(1, None)]
-        output_array[s0] = input_array[s0]
-        output_array[s1] -= input_array[s0]
-        self.bc.add_to_orthogonal(output_array, input_array)
-        return output_array
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        d = np.ones(self.N)
+        d[-1] = 0
+        return SparseMatrix({0: d, 1: d[:-1]}, (self.N, self.N))
 
     def slice(self):
         return slice(0, self.N-1)
-
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
-        if i < self.N-1:
-            return sp.legendre(i, x)+sp.legendre(i+1, x)
-        assert i == self.N-1
-        return 0.5*(1-x)
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i < self.N-1:
-            output_array[:] = eval_legendre(i, x) + eval_legendre(i+1, x)
-        elif i == self.N-1:
-            output_array[:] = 0.5*(1-x)
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        if x is None:
-            x = self.mesh(False, False)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        x = np.atleast_1d(x)
-        if i < self.N-1:
-            basis = np.zeros(self.shape(True))
-            basis[np.array([i, i+1])] = (1, 1)
-            basis = leg.Legendre(basis)
-            if k > 0:
-                basis = basis.deriv(k)
-            output_array[:] = basis(x)
-        else:
-            if k == 1:
-                output_array[:] = -0.5
-            else:
-                output_array[:] = 0
-        return output_array
-
-    def _evaluate_scalar_product(self, fast_transform=False):
-        SpectralBase._evaluate_scalar_product(self)
-        self.scalar_product.output_array[self.si[-1]] = 0
-
-    def eval(self, x, u, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape, dtype=self.dtype)
-        x = self.map_reference_domain(x)
-        w_hat = work[(u, 0, True)]
-        output_array[:] = leg.legval(x, u[:-1])
-        w_hat[1:] = u[:-1]
-        output_array += leg.legval(x, w_hat)
-        output_array += 0.5*u[-1]*(1-x)
-        return output_array
 
     def get_bc_basis(self):
         if self._bc_basis:
@@ -1921,37 +1219,7 @@ class LowerDirichlet(LegendreBase):
                                           coordinates=self.coors.coordinates)
         return self._bc_basis
 
-    def get_refined(self, N):
-        return LowerDirichlet(N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return LowerDirichlet(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=padding_factor,
-                              dealias_direct=dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
-    def get_unplanned(self):
-        return LowerDirichlet(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
-class DirichletNeumannDirichlet(LegendreBase):
+class DirichletNeumannDirichlet(CompositeSpace):
     """Function space for biharmonic basis
 
     Boundary conditions: u(-1) = 0, u'(-1) = 0, u(1) = 0..
@@ -1987,16 +1255,10 @@ class DirichletNeumannDirichlet(LegendreBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="LG", bc=(0, 0, 0), domain=(-1., 1.), padding_factor=1,
-                 dealias_direct=False, dtype=float, coordinates=None):
-        from shenfun.tensorproductspace import BoundaryValues
-        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                              padding_factor=padding_factor, dealias_direct=dealias_direct,
-                              coordinates=coordinates)
-        self._factor1 = np.zeros(0)
-        self._factor2 = np.zeros(0)
-        self._factor3 = np.zeros(0)
-        self._bc_basis = None
-        self.bc = BoundaryValues(self, bc=bc)
+                 scaled=False, dealias_direct=False, dtype=float, coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -2006,113 +1268,18 @@ class DirichletNeumannDirichlet(LegendreBase):
     def short_name():
         return 'DND'
 
-    @property
-    def has_nonhomogeneous_bcs(self):
-        return self.bc.has_nonhomogeneous_bcs()
-
-    def _composite(self, V, argument=0):
-        P = np.zeros_like(V)
-        k = np.arange(V.shape[1]).astype(float)[:-3]
-        P[:, :-3] = V[:, :-3] + (2*k+3)/(2*k+5)*V[:, 1:-2] - V[:, 2:-1] - (2*k+3)/(2*k+5)*V[:, 3:]
-        if argument == 1:
-            P[:, -3:] = np.tensordot(V[:, :3], BCDirichletNeumannDirichlet.coefficient_matrix(), (1, 1))
-        return P
-
-    def set_factor_arrays(self, v):
-        s = self.sl[self.slice()]
-        if not self._factor1.shape == v[s].shape:
-            k = self.wavenumbers().astype(float)
-            self._factor1 = ((2*k+3)/(2*k+5)).astype(float)
-            self._factor2 = (-1).astype(float)
-            self._factor3 = (- (2*k+3)/(2*k+5)).astype(float)
-
-    def _evaluate_scalar_product(self, fast_transform=False):
-        SpectralBase._evaluate_scalar_product(self)
-        self.scalar_product.output_array[self.sl[slice(-3, None)]] = 0
-
-    #@optimizer
-    def set_w_hat(self, w_hat, fk, f1, f2, f3): # pragma: no cover
-        s = self.sl[self.slice()]
-        s1 = self.sl[slice(1,-2)]
-        s2 = self.sl[slice(2, -3)]
-        s3 = self.sl[slice(3, None)]
-        w_hat[s] = fk[s]
-        w_hat[s1] += f1*fk[s]
-        w_hat[s2] += f2*fk[s]
-        w_hat[s3] += f3*fk[s]
-        return w_hat
-
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
-        if i < self.N-3:
-            f = (sp.legendre(i, x)
-                 + (2*i+3)/(2*i+5)*sp.legendre(i+1, x)
-                 - sp.legendre(i+2, x)
-                 -((2*i+3)/(2*i+5))*sp.legendre(i+3, x))
-        else:
-            f = 0
-            for j, c in enumerate(BCDirichletNeumannDirichlet.coefficient_matrix()[i-(self.N-3)]):
-                f += c*sp.legendre(j, x)
-        return f
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i < self.N-3:
-            output_array[:] = eval_legendre(i, x) + (2*i+3)/(2*i+5)*eval_legendre(i+1, x) - eval_legendre(i+2, x) - ((2*i+3)/(2*i+5))*eval_legendre(i+3, x)
-        else:
-            X = sp.symbols('x', real=True)
-            output_array[:] = sp.lambdify(X, self.sympy_basis(i, x=X))(x)
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        if x is None:
-            x = self.mesh(False, False)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        x = np.atleast_1d(x)
-        if i < self.N-3:
-            basis = np.zeros(self.shape(True))
-            basis[np.array([i, i+1, i+2, i+3])] = (1, (2*i+3)/(2*i+5), -1, -(2*i+3)/(2*i+5))
-            basis = leg.Legendre(basis)
-            if k > 0:
-                basis = basis.deriv(k)
-            output_array[:] = basis(x)
-        else:
-            X = sp.symbols('x', real=True)
-            output_array[:] = sp.lambdify(X, self.sympy_basis(i, X).diff(X, k))(x)
-        return output_array
-
-    def to_ortho(self, input_array, output_array=None):
-        if output_array is None:
-            output_array = np.zeros_like(input_array)
-        else:
-            output_array.fill(0)
-
-        self.set_factor_arrays(input_array)
-        output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2, self._factor3)
-        self.bc.add_to_orthogonal(output_array, input_array)
-        return output_array
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        d = np.ones(self.N)
+        d[-2:] = 0
+        k = np.arange(self.N)
+        f1 = (2*k[:-1]+3)/(2*k[:-1]+5)
+        f2 = -np.ones(N-2)
+        f3 = -(2*k[:-3]+3)/(2*k[:-3]+5)
+        return SparseMatrix({0: d, 1: f1, 2: f2, 3: f3}, (self.N, self.N))
 
     def slice(self):
         return slice(0, self.N-3)
-
-    def eval(self, x, u, output_array=None):
-        if output_array is None:
-            output_array = np.zeros(x.shape, dtype=self.dtype)
-        x = self.map_reference_domain(x)
-        w_hat = work[(u, 0, True)]
-        self.set_factor_arrays(u)
-        output_array[:] = leg.legval(x, u[:-3])
-        w_hat[1:-2] = self._factor1*u[:-3]
-        output_array += leg.legval(x, w_hat[:-2])
-        w_hat[2:-1] = self._factor2*u[:-3]
-        w_hat[:2] = 0
-        output_array += leg.legval(x, w_hat[:-1])
-        w_hat[3:] = self._factor3*u[:-3]
-        w_hat[:3] = 0
-        output_array += leg.legval(x, w_hat)
-        return output_array
 
     def get_bc_basis(self):
         if self._bc_basis:
@@ -2121,37 +1288,7 @@ class DirichletNeumannDirichlet(LegendreBase):
                                       coordinates=self.coors.coordinates)
         return self._bc_basis
 
-    def get_refined(self, N):
-        return DirichletNeumannDirichlet(N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return DirichletNeumannDirichlet(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=padding_factor,
-                              dealias_direct=dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
-    def get_unplanned(self):
-        return DirichletNeumannDirichlet(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
-class NeumannDirichlet(LegendreBase):
+class NeumannDirichlet(CompositeSpace):
     """Function space for mixed Dirichlet/Neumann boundary conditions
 	u'(-1)=0, u(1)=0
     Parameters
@@ -2189,15 +1326,10 @@ class NeumannDirichlet(LegendreBase):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                              padding_factor=padding_factor, dealias_direct=dealias_direct,
-                              coordinates=coordinates)
-        from shenfun.tensorproductspace import BoundaryValues
-        self._factor1 = np.ones(1)
-        self._factor2 = np.ones(1)
-        self._bc_basis = None
-        self.bc = BoundaryValues(self, bc=bc)
+                 scaled=False, padding_factor=1, dealias_direct=False, coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -2207,108 +1339,17 @@ class NeumannDirichlet(LegendreBase):
     def short_name():
         return 'ND'
 
-    @property
-    def has_nonhomogeneous_bcs(self):
-        return self.bc.has_nonhomogeneous_bcs()
-
-    def set_factor_array(self, v):
-        """Set intermediate factor arrays"""
-        s = self.sl[self.slice()]
-        if not self._factor1.shape == v[s].shape:
-            k = self.wavenumbers().astype(float)
-            self._factor1 = (-(2*k+3)/(k+2)**2).astype(float)
-            self._factor2 = -((k+1)**2/(k+2)**2).astype(float)
-
-    def _composite(self, V, argument=0):
-        P = np.zeros_like(V)
-        k = np.arange(V.shape[1]).astype(float)[:-2]
-        P[:, :-2] = (V[:, :-2]
-                     -((2*k+3)/(k+2)**2)*V[:, 1:-1]
-                     -((k+1)**2/(k+2)**2)*V[:, 2:])
-        if argument == 1:
-            P[:, -2] = V[:, 0]-0.5*V[:, 1]-0.5*V[:, 2]
-            P[:, -1] = V[:, 0]
-        return P
-
-    def set_w_hat(self, w_hat, fk, f1, f2): # pragma: no cover
-        s = self.sl[self.slice()]
-        s1 = self.sl[slice(1, -1)]
-        s2 = self.sl[slice(2, None)]
-        w_hat[s] = fk[s]
-        w_hat[s1] += f1*fk[s]
-        w_hat[s2] += f2*fk[s]
-        return w_hat
-
-    def to_ortho(self, input_array, output_array=None):
-        if output_array is None:
-            output_array = np.zeros_like(input_array)
-        else:
-            output_array.fill(0)
-
-        self.set_factor_arrays(input_array)
-        output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2)
-        self.bc.add_to_orthogonal(output_array, input_array)
-        return output_array
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        d = np.ones(self.N)
+        d[-2:] = 0
+        k = np.arange(self.N)
+        f1 = -((2*k[:-1]+3)/(k[:-1]+2)**2)
+        f2 = -((k[:-2]+1)**2/(k[:-2]+2)**2)
+        return SparseMatrix({0: d, 1: f1, 2: f2}, (self.N, self.N))
 
     def slice(self):
         return slice(0, self.N-2)
-
-    def _evaluate_scalar_product(self, fast_transform=False):
-        SpectralBase._evaluate_scalar_product(self)
-        self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
-
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
-        if i < self.N-2:
-            return (sp.legendre(i, x)
-                    -(2*i+3)/(i+2)**2*sp.legendre(i+1, x)
-                    -(i+1)**2/(i+2)**2*sp.legendre(i+2, x))
-        else:
-            return np.sum(BCNeumannDirichlet.coefficient_matrix()[i-self.N+2]*np.array([sp.legendre(j, x) for j in range(3)]))
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i < self.N-2:
-            output_array[:] = (eval_legendre(i, x)
-                               -(2*i+3)/(i+2)**2*eval_legendre(i+1, x)
-                               -(i+1)**2/(i+2)**2*eval_legendre(i+2, x))
-        else:
-            output_array[:] = self.get_bc_basis().evaluate_basis(x, i-self.N+2)
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        if x is None:
-            x = self.mesh(False, False)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        x = np.atleast_1d(x)
-        if i < self.N-2:
-            basis = np.zeros(self.shape(True))
-            basis[np.array([i, i+1, i+2])] = (1, -(2*i+3)/(i+2)**2, -(i+1)**2/(i+2)**2)
-            basis = leg.Legendre(basis)
-            if k > 0:
-                basis = basis.deriv(k)
-            output_array[:] = basis(x)
-        else:
-            output_array[:] = self.get_bc_basis().evaluate_basis_derivative(x, i-self.N+2, k)
-        return output_array
-
-    def eval(self, x, u, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        x = self.map_reference_domain(x)
-        w_hat = work[(u, 0, True)]
-        self.set_factor_array(w_hat)
-        output_array[:] = leg.legval(x, u[:-2])
-        w_hat[1:-1] = self._factor1*u[:-2]
-        output_array += leg.legval(x, w_hat)
-        w_hat[2:] = self._factor2*u[:-2]
-        w_hat[:2] = 0
-        output_array += leg.legval(x, w_hat)
-        output_array += u[-1] + u[-2]*(1-0.5*x-0.25*(3*x**2-1))
-        return output_array
 
     def get_bc_basis(self):
         if self._bc_basis:
@@ -2317,37 +1358,7 @@ class NeumannDirichlet(LegendreBase):
                                             coordinates=self.coors.coordinates)
         return self._bc_basis
 
-    def get_refined(self, N):
-        return self.__class__(N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              dtype=self.dtype,
-                              padding_factor=padding_factor,
-                              dealias_direct=dealias_direct,
-                              domain=self.domain,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
-    def get_unplanned(self):
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
-class UpperDirichletNeumann(LegendreBase):
+class UpperDirichletNeumann(CompositeSpace):
     """Function space for mixed Dirichlet/Neumann boundary conditions
 	u(1)=0, u'(1)=0
 
@@ -2391,15 +1402,10 @@ class UpperDirichletNeumann(LegendreBase):
     stiffness matrix.
     """
     def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                              padding_factor=padding_factor, dealias_direct=dealias_direct,
-                              coordinates=coordinates)
-        from shenfun.tensorproductspace import BoundaryValues
-        self._factor1 = np.ones(1)
-        self._factor2 = np.ones(1)
-        self._bc_basis = None
-        self.bc = BoundaryValues(self, bc=bc)
+                 scaled=False, padding_factor=1, dealias_direct=False, coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -2409,108 +1415,17 @@ class UpperDirichletNeumann(LegendreBase):
     def short_name():
         return 'UDN'
 
-    @property
-    def has_nonhomogeneous_bcs(self):
-        return self.bc.has_nonhomogeneous_bcs()
-
-    def set_factor_array(self, v):
-        """Set intermediate factor arrays"""
-        s = self.sl[self.slice()]
-        if not self._factor1.shape == v[s].shape:
-            k = self.wavenumbers().astype(float)
-            self._factor1 = (-(2*k+3)/(k+2)).astype(float)
-            self._factor2 = ((k+1)/(k+2)).astype(float)
-
-    def _composite(self, V, argument=0):
-        P = np.zeros_like(V)
-        k = np.arange(V.shape[1]).astype(float)[:-2]
-        P[:, :-2] = (V[:, :-2]
-                     -((2*k+3)/(k+2))*V[:, 1:-1]
-                     +((k+1)/(k+2))*V[:, 2:])
-        if argument == 1:
-            P[:, -2] = V[:, 0]
-            P[:, -1] = V[:, 0]-2*V[:, 1]+V[:, 2]
-        return P
-
-    def set_w_hat(self, w_hat, fk, f1, f2):
-        s = self.sl[self.slice()]
-        s1 = self.sl[slice(1, -1)]
-        s2 = self.sl[slice(2, None)]
-        w_hat[s] = fk[s]
-        w_hat[s1] += f1*fk[s]
-        w_hat[s2] += f2*fk[s]
-        return w_hat
-
-    def to_ortho(self, input_array, output_array=None):
-        if output_array is None:
-            output_array = np.zeros_like(input_array)
-        else:
-            output_array.fill(0)
-
-        self.set_factor_arrays(input_array)
-        output_array = self.set_w_hat(output_array, input_array, self._factor1, self._factor2)
-        self.bc.add_to_orthogonal(output_array, input_array)
-        return output_array
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        d = np.ones(self.N)
+        d[-2:] = 0
+        k = np.arange(self.N)
+        f1 = -((2*k[:-1]+3)/(k[:-1]+2))
+        f2 = ((k[:-2]+1)/(k[:-2]+2))
+        return SparseMatrix({0: d, 1: f1, 2: f2}, (self.N, self.N))
 
     def slice(self):
         return slice(0, self.N-2)
-
-    def _evaluate_scalar_product(self, fast_transform=False):
-        SpectralBase._evaluate_scalar_product(self)
-        self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
-
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
-        if i < self.N-2:
-            return (sp.legendre(i, x)
-                    -(2*i+3)/(i+2)*sp.legendre(i+1, x)
-                    +(i+1)/(i+2)*sp.legendre(i+2, x))
-        else:
-            return np.sum(BCUpperDirichletNeumann.coefficient_matrix()[i-self.N+2]*np.array([sp.legendre(j, x) for j in range(3)]))
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i < self.N-2:
-            output_array[:] = (eval_legendre(i, x)
-                               -(2*i+3)/(i+2)*eval_legendre(i+1, x)
-                               +(i+1)/(i+2)*eval_legendre(i+2, x))
-        else:
-            output_array[:] = self.get_bc_basis().evaluate_basis(x, i-self.N+2)
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        if x is None:
-            x = self.mesh(False, False)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        x = np.atleast_1d(x)
-        if i < self.N-2:
-            basis = np.zeros(self.shape(True))
-            basis[np.array([i, i+1, i+2])] = (1, -(2*i+3)/(i+2), (i+1)/(i+2))
-            basis = leg.Legendre(basis)
-            if k > 0:
-                basis = basis.deriv(k)
-            output_array[:] = basis(x)
-        else:
-            output_array[:] = self.get_bc_basis().evaluate_basis_derivative(x, i-self.N+2, k)
-        return output_array
-
-    def eval(self, x, u, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        x = self.map_reference_domain(x)
-        w_hat = work[(u, 0, True)]
-        self.set_factor_array(w_hat)
-        output_array[:] = leg.legval(x, u[:-2])
-        w_hat[1:-1] = self._factor1*u[:-2]
-        output_array += leg.legval(x, w_hat)
-        w_hat[2:] = self._factor2*u[:-2]
-        w_hat[:2] = 0
-        output_array += leg.legval(x, w_hat)
-        output_array += u[-2] + u[-1]*(1-2*x+0.5*(3*x**2-1))
-        return output_array
 
     def get_bc_basis(self):
         if self._bc_basis:
@@ -2519,38 +1434,7 @@ class UpperDirichletNeumann(LegendreBase):
                                                  coordinates=self.coors.coordinates)
         return self._bc_basis
 
-    def get_refined(self, N):
-        return self.__class__(N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              dtype=self.dtype,
-                              padding_factor=padding_factor,
-                              dealias_direct=dealias_direct,
-                              domain=self.domain,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
-    def get_unplanned(self):
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
-
-class BCBase(LegendreBase):
+class BCBase(CompositeSpace):
     """Function space for inhomogeneous boundary conditions
 
     Parameters
@@ -2579,11 +1463,10 @@ class BCBase(LegendreBase):
 
     def __init__(self, N, quad="GC", domain=(-1., 1.),
                  dtype=float, coordinates=None, **kw):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain,
-                              dtype=dtype, coordinates=coordinates)
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain,
+                                dtype=dtype, coordinates=coordinates)
 
-    @staticmethod
-    def coefficient_matrix():
+    def stencil_matrix(self, N=None):
         raise NotImplementedError
 
     @staticmethod
@@ -2596,13 +1479,13 @@ class BCBase(LegendreBase):
 
     def shape(self, forward_output=True):
         if forward_output:
-            return self.coefficient_matrix().shape[0]
+            return self.stencil_matrix().shape[0]
         else:
             return self.N
 
     @property
     def num_T(self):
-        return self.coefficient_matrix().shape[1]
+        return self.stencil_matrix().shape[1]
 
     def slice(self):
         return slice(self.N-self.shape(), self.N)
@@ -2613,11 +1496,11 @@ class BCBase(LegendreBase):
     def _composite(self, V, argument=1):
         N = self.shape()
         P = np.zeros(V[:, :N].shape)
-        P[:] = np.tensordot(V, self.coefficient_matrix(), (1, 1))
+        P[:] = np.tensordot(V[:, :self.num_T], self.stencil_matrix(), (1, 1))
         return P
 
     def sympy_basis(self, i=0, x=xp):
-        M = self.coefficient_matrix()
+        M = self.stencil_matrix()
         return np.sum(M[i]*np.array([sp.legendre(j, x) for j in range(self.num_T)]))
 
     def evaluate_basis(self, x, i=0, output_array=None):
@@ -2625,13 +1508,12 @@ class BCBase(LegendreBase):
         if output_array is None:
             output_array = np.zeros(x.shape)
         V = self.vandermonde(x)
-        output_array[:] = np.dot(V, self.coefficient_matrix()[i])
+        output_array[:] = np.dot(V, self.stencil_matrix()[i])
         return output_array
 
     def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
         output_array = SpectralBase.evaluate_basis_derivative(self, x=x, i=i, k=k, output_array=output_array)
         return output_array
-
 
 class BCDirichlet(BCBase):
 
@@ -2639,8 +1521,7 @@ class BCDirichlet(BCBase):
     def short_name():
         return 'BCD'
 
-    @staticmethod
-    def coefficient_matrix():
+    def stencil_matrix(self, N=None):
         return np.array([[0.5, -0.5],
                          [0.5, 0.5]])
 
@@ -2650,8 +1531,7 @@ class BCNeumann(BCBase):
     def short_name():
         return 'BCN'
 
-    @staticmethod
-    def coefficient_matrix():
+    def stencil_matrix(self, N=None):
         return np.array([[0, 1/2, -1/6],
                          [0, 1/2, 1/6]])
 
@@ -2661,8 +1541,7 @@ class BCBiharmonic(BCBase):
     def short_name():
         return 'BCB'
 
-    @staticmethod
-    def coefficient_matrix():
+    def stencil_matrix(self, N=None):
         return np.array([[0.5, -0.6, 0, 0.1],
                          [0.5, 0.6, 0, -0.1],
                          [1./6., -1./10., -1./6., 1./10.],
@@ -2676,8 +1555,7 @@ class BCBeamFixedFree(BCBase):
     def short_name():
         return 'BCBF'
 
-    @staticmethod
-    def coefficient_matrix():
+    def stencil_matrix(self, N=None):
         return np.array([[1, 0, 0, 0],
                          [1, 1, 0, 0],
                          [2/3, 1, 1/3, 0],
@@ -2689,8 +1567,7 @@ class BCLowerDirichlet(BCBase):
     def short_name():
         return 'BCLD'
 
-    @staticmethod
-    def coefficient_matrix():
+    def stencil_matrix(self, N=None):
         return np.array([[0.5, -0.5]])
 
 class BCUpperDirichlet(BCBase):
@@ -2699,8 +1576,7 @@ class BCUpperDirichlet(BCBase):
     def short_name():
         return 'BCUD'
 
-    @staticmethod
-    def coefficient_matrix():
+    def stencil_matrix(self, N=None):
         return np.array([[0.5, 0.5]])
 
 class BCNeumannDirichlet(BCBase):
@@ -2709,8 +1585,7 @@ class BCNeumannDirichlet(BCBase):
     def short_name():
         return 'BCND'
 
-    @staticmethod
-    def coefficient_matrix():
+    def stencil_matrix(self, N=None):
         return np.array([[1, -0.5, -0.5],
                          [1, 0, 0]])
 
@@ -2720,8 +1595,7 @@ class BCDirichletNeumann(BCBase):
     def short_name():
         return 'BCDN'
 
-    @staticmethod
-    def coefficient_matrix():
+    def stencil_matrix(self, N=None):
         return np.array([[1, 0],
                          [1, 1]])
 
@@ -2731,8 +1605,7 @@ class BCUpperDirichletNeumann(BCBase):
     def short_name():
         return 'BCUDN'
 
-    @staticmethod
-    def coefficient_matrix():
+    def stencil_matrix(self, N=None):
         return np.array([[1, 0, 0],
                          [1, -2, 1]])
 
@@ -2742,8 +1615,18 @@ class BCDirichletNeumannDirichlet(BCBase):
     def short_name():
         return 'BCST'
 
-    @staticmethod
-    def coefficient_matrix():
+    def stencil_matrix(self, N=None):
         return np.array([[2/3, -1/2, -1/6],
                          [1/3, 0, -1/3],
                          [1/3, 1/2, 1/6]])
+
+class BCShenBiPolar0(BCBase):
+
+    @staticmethod
+    def short_name():
+        return 'BCSP'
+
+    def stencil_matrix(self, N=None):
+        return np.array([[1, 0, 0],
+                         [-2/3, 1/2, 1/6],
+                         [-1/3, 1/2, -1/6]])

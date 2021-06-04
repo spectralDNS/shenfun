@@ -1766,7 +1766,7 @@ class BoundaryValues:
             Containing correct boundary values of Function
         """
         B = self.base.get_bc_basis()
-        M = B.coefficient_matrix().T
+        M = (B.stencil_matrix().T).astype(float)
         sl = B.slice()
         ds = uh.shape[self.base.axis] - B.N
         if ds > 0: # uh is padded, but B is not. Boundary dofs are in padded locations.
