@@ -22,9 +22,9 @@ assert isinstance(int(sys.argv[-2]), int)
 family = sys.argv[-1].lower()
 
 # Use sympy to compute a rhs, given an analytical solution
-domain = (-2, 2)
-a = 1.
-b = -1.
+domain = (-1, 1)
+a = 0.
+b = -0.
 if family == 'jacobi':
     a = 0
     b = 0
@@ -38,7 +38,7 @@ fe = ue.diff(x, 2)
 # Size of discretization
 N = int(sys.argv[-2])
 
-SD = FunctionSpace(N, family=family, bc=(a, b), domain=domain, scaled=True)
+SD = FunctionSpace(N, family=family, bc=(a, b), domain=domain, scaled=False)
 u = TrialFunction(SD)
 v = TestFunction(SD)
 
