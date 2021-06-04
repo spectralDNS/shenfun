@@ -686,6 +686,17 @@ class CompositeSpace(Orthogonal):
         """Return True if scaled basis is used, otherwise False"""
         return self._scaled
 
+    def stencil_matrix(self, N=None):
+        """Matrix describing the linear combination of orthogonal basis
+        functions for the current basis.
+
+        Parameters
+        ----------
+        N : int, optional
+            The number of quadrature points
+        """
+        raise NotImplementedError
+
     def _composite(self, V, argument=0):
         """Return Vandermonde matrix V adjusted for basis composition
 
