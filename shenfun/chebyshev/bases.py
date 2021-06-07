@@ -704,7 +704,7 @@ class CompositeSpace(Orthogonal):
         ----------
         V : Vandermonde type matrix
         argument : int
-                Zero for test and 1 for trialfunction
+            Zero for test and 1 for trialfunction
 
         """
         P = np.zeros_like(V)
