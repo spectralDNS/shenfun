@@ -14,7 +14,7 @@ from scipy.fftpack import dct
 from shenfun.optimization import optimizer
 
 __all__ = ['dx', 'clenshaw_curtis1D', 'CachedArrayDict', 'surf3D', 'wrap_periodic',
-           'outer', 'apply_mask', 'integrate_sympy', 'mayavi_show']
+           'outer', 'dot', 'apply_mask', 'integrate_sympy', 'mayavi_show']
 
 
 def dx(u, weighted=False):
@@ -171,6 +171,207 @@ def outer3D(a, b, c, symmetric):
     c[4] = a[1]*b[1]
     c[5] = a[1]*b[2]
     c[8] = a[2]*b[2]
+
+def dot(u, v, output_array=None, forward_output=True):
+    """Return dot product of u and v
+
+    Parameters
+    ----------
+    u : Function or Array
+    v : Function or Array
+    output_array : Function or Array
+        Must be of correct shape
+    forward_output : bool, optional
+        Return the result as a Function if True, and an Array if
+        False.
+
+    Note
+    ----
+    This function uses the 3/2-rule for dealiasing all spaces if
+    the input arrays are spectral Functions. The returned Function
+    is projected to an orthogonal space, without boundary conditions.
+
+    """
+    from shenfun import Function, Array
+    assert isinstance(u, (Function, Array))
+    assert isinstance(v, (Function, Array))
+    Vu = u.function_space()
+    Vv = v.function_space()
+    assert Vu.dimensions == Vv.dimensions
+    D = Vu.dimensions
+    Vup = Vu
+    Vvp = Vv
+    uv = output_array
+    if isinstance(output_array, Function):
+        uv = Array(output_array.function_space())
+        uv = output_array.backward(uv)
+
+    if isinstance(u, Array):
+        ua = u.v
+    else:
+        Vup = Vu.get_dealiased()
+        ua = Array(Vup).v
+        ua = Vup.backward(u, ua)
+    if isinstance(v, Array):
+        va = v.v
+    else:
+        Vvp = Vv.get_dealiased()
+        va = Array(Vvp).v
+        va = Vvp.backward(v, va)
+
+    if Vu.coors.is_cartesian:
+
+        if Vu.tensor_rank == 1 and Vv.tensor_rank == 1:
+            if uv is None:
+                To = Vu[0].get_orthogonal()
+                Top = To.get_dealiased()
+                uv = Array(Top)
+
+            assert uv.shape == ua[0].shape
+            uv = np.sum(ua*va, axis=0, out=uv)
+
+        elif Vu.tensor_rank == 2 and Vv.tensor_rank == 1:
+            if uv is None:
+                To = Vu[0].get_orthogonal()
+                Top = To.get_dealiased()
+                uv = Array(Top)
+
+            assert uv.shape == va.shape
+            w0 = uv.v
+            for i in range(D):
+                w0[i] = np.sum(ua[i]*va, axis=0, out=w0[i])
+
+        elif Vu.tensor_rank == 1 and Vv.tensor_rank == 2:
+            if uv is None:
+                To = Vu.get_orthogonal()
+                Top = To.get_dealiased()
+                uv = Array(Top)
+
+            assert uv.shape == ua.shape
+            w0 = uv.v
+            for i in range(D):
+                ui = ua[i]
+                vi = va[i]
+                for j in range(D):
+                    w0[j] += ui*vi[j]
+
+        elif Vu.tensor_rank == 2 and Vv.tensor_rank == 2:
+            if uv is None:
+                To = Vu.get_orthogonal()
+                Top = To.get_dealiased()
+                uv = Array(Top)
+
+            assert uv.shape == ua.shape
+            w0 = uv.v
+            for i in range(D):
+                ui = ua[i]
+                for j in range(D):
+                    vj = va[j]
+                    for k in range(D):
+                        w0[i, k] += ui[j]*vj[k]
+
+        else:
+            raise NotImplementedError
+
+    else:
+
+        gij = Vu.coors.get_covariant_metric_tensor()
+        mesh = Vup.local_mesh(True)
+        def measure(g):
+            sym0 = g.free_symbols
+            m = []
+            for sym in sym0:
+                j = 'xyzrs'.index(str(sym))
+                m.append(mesh[j])
+            return sp.lambdify(sym0, g)(*m)
+
+        if Vu.tensor_rank == 1 and Vv.tensor_rank == 1:
+            if uv is None:
+                To = Vu[0].get_orthogonal()
+                Top = To.get_dealiased()
+                uv = Array(Top)
+
+            assert uv.shape == ua[0].shape
+            w0 = uv.v
+            if Vu.coors.is_orthogonal:
+                for i in range(D):
+                    w0 += ua[i]*va[i]*measure(gij[i, i])
+            else:
+                for i in range(D):
+                    ui = ua[i]
+                    for j in range(D):
+                        g = g[i, j]
+                        if not g == 0:
+                            w0 += ui*va[j]*measure(g)
+
+        elif Vu.tensor_rank == 2 and Vv.tensor_rank == 1:
+            if uv is None:
+                To = Vu[0].get_orthogonal()
+                Top = To.get_dealiased()
+                uv = Array(Top)
+
+            assert uv.shape == va.shape
+            w0 = uv.v
+            for i in range(D):
+                ui = ua[i]
+                for j in range(D):
+                    for k in range(D):
+                        g = gij[j, k]
+                        if not g == 0:
+                            w0[i] += ui[j]*va[k]*measure(g)
+
+        elif Vu.tensor_rank == 1 and Vv.tensor_rank == 2:
+            if uv is None:
+                To = Vu.get_orthogonal()
+                Top = To.get_dealiased()
+                uv = Array(Top)
+
+            assert uv.shape == ua.shape
+            w0 = uv.v
+            for i in range(D):
+                ui = ua[i]
+                for j in range(D):
+                    vj = va[j]
+                    g = gij[i, j]
+                    if not g == 0:
+                        ms = measure(g)
+                        for k in range(D):
+                            w0[k] = ui*vj[k]*ms
+
+        elif Vu.tensor_rank == 2 and Vv.tensor_rank == 2:
+            if uv is None:
+                To = Vu.get_orthogonal()
+                Top = To.get_dealiased()
+                uv = Array(Top)
+
+            assert uv.shape == ua.shape
+            w0 = uv.v
+            for i in range(D):
+                ui = ua[i]
+                for j in range(D):
+                    for k in range(D):
+                        g = gij[j, k]
+                        if not g == 0:
+                            vk = va[k]
+                            ms = measure(g)
+                            for l in range(D):
+                                w0[i, l] = ui[j]*vk[l]*ms
+
+        else:
+            raise NotImplementedError
+
+    if forward_output is True:
+
+        if isinstance(output_array, Function):
+            output_array = uv.forward(output_array)
+            return output_array
+
+        uv_hat = Function(To)
+        uv_hat = uv.forward(uv_hat)
+        return uv_hat
+
+    return uv
+
 
 @optimizer
 def apply_mask(u_hat, mask):

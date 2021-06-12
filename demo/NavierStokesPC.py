@@ -199,7 +199,7 @@ if __name__ == "__main__":
     E = np.zeros((3, len(N)))
 
     for (j, n) in enumerate(N):
-      E[:, j] = main(n)
+        E[:, j] = main(n)
 
     fig = plt.figure(figsize=(5.69,4.27))
     ax = plt.gca()
@@ -208,7 +208,7 @@ if __name__ == "__main__":
     for i in range(3):
         plt.loglog(N, E[i, :], marks[i], label=vars[i])
         slope, intercept = np.polyfit(np.log(N[-2:]), np.log(E[i, -2:]), 1)
-        if i !=1 :
+        if i != 1:
             annotation.slope_marker((N[-2], E[i,-2]), ("{0:.2f}".format(slope), 1),
             ax=ax, poly_kwargs=pa, text_kwargs=ta)
 

@@ -4,7 +4,7 @@ This module contains the implementation of operators acting on arguments.
 import numpy as np
 import sympy as sp
 import copy
-from .arguments import Expr, BasisFunction
+from .arguments import Expr, BasisFunction, Function, Array
 
 __all__ = ('div', 'grad', 'Dx', 'curl')
 
@@ -150,8 +150,8 @@ def grad(test):
                                 dj.append(test[k]*(sc*ct[i, k, l]))
 
                     di = dj[0]
-                    for j in range(1, len(dj)):
-                        di += dj[j]
+                    for m in range(1, len(dj)):
+                        di += dj[m]
                     d.append(di)
 
         else:

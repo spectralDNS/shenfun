@@ -300,22 +300,22 @@ class CompositeSpace(Orthogonal):
         V = Orthogonal.evaluate_basis_derivative_all(self, x=x, k=k, argument=argument)
         return self._composite(V, argument=argument)
 
-    def _evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
+    def _evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=False):
         if fast_transform is False:
             SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, False)
             return
         assert input_array is self.backward.tmp_array
         assert output_array is self.backward.output_array
         input_array[:] = self.to_ortho(input_array, output_array)
-        Orthogonal._evaluate_expansion_all(self, input_array, output_array, x, True)
+        Orthogonal._evaluate_expansion_all(self, input_array, output_array, x, fast_transform)
 
-    def _evaluate_scalar_product(self, fast_transform=True):
+    def _evaluate_scalar_product(self, fast_transform=False):
         output = self.scalar_product.output_array
         if fast_transform is False:
             SpectralBase._evaluate_scalar_product(self)
             output[self.sl[slice(-(self.N-self.dim()), None)]] = 0
             return
-        Orthogonal._evaluate_scalar_product(self, True)
+        Orthogonal._evaluate_scalar_product(self, fast_transform)
         nbcs = self.N-self.dim()
         s = [np.newaxis]*self.dimensions
         w0 = output.copy()
@@ -375,7 +375,7 @@ class CompositeSpace(Orthogonal):
             row = self.stencil_matrix().diags().getrow(i)
             f = 0
             for j, val in zip(row.indices, row.data):
-                f += val*Orthogonal.sympy_basis(self, i=j, x=x)
+                f += sp.nsimplify(val)*Orthogonal.sympy_basis(self, i=j, x=x)
         else:
             f = self.get_bc_basis().sympy_basis(i=i-self.dim(), x=x)
         return f
@@ -732,7 +732,7 @@ class ShenBiharmonic(CompositeSpace):
 
             - LG - Legendre-Gauss
             - GL - Legendre-Gauss-Lobatto
-        4-tuple of numbers, optional
+        bc : 4-tuple of numbers, optional
             The values of the 4 boundary conditions at x=(-1, 1).
             The two Dirichlet first and then the Neumann.
         domain : 2-tuple of floats, optional
@@ -923,8 +923,14 @@ class UpperDirichlet(CompositeSpace):
                                           coordinates=self.coors.coordinates)
         return self._bc_basis
 
-class ShenBiPolar(LegendreBase):
+class ShenBiPolar(CompositeSpace):
     """Legendre function space for the Biharmonic equation in polar coordinates
+
+    The basis function is
+
+    .. math::
+
+        \phi_k = (x^2-1)^2 L'_{k+1}
 
     Parameters
     ----------
@@ -935,7 +941,9 @@ class ShenBiPolar(LegendreBase):
 
             - LG - Legendre-Gauss
             - GL - Legendre-Gauss-Lobatto
-
+        bc : 4-tuple of numbers, optional
+            The values of the 4 boundary conditions at x=(-1, 1).
+            The two Dirichlet first and then the Neumann.
         domain : 2-tuple of floats, optional
             The computational domain
         padding_factor : float, optional
@@ -954,12 +962,12 @@ class ShenBiPolar(LegendreBase):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="LG", domain=(-1., 1.), bc=(0, 0), dtype=float, scaled=False,
+    def __init__(self, N, quad="LG", domain=(-1., 1.), bc=(0, 0, 0, 0), dtype=float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         assert quad == "LG"
-        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                              padding_factor=padding_factor, dealias_direct=dealias_direct,
-                              coordinates=coordinates)
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
 
     @staticmethod
     def boundary_condition():
@@ -969,54 +977,38 @@ class ShenBiPolar(LegendreBase):
     def short_name():
         return 'SP'
 
-    def to_ortho(self, input_array, output_array=None):
-        raise(NotImplementedError)
-
     def slice(self):
         return slice(0, self.N-4)
 
-    def sympy_basis(self, i=0, x=sp.symbols('x', real=True)):
-        return (1-x)**2*(1+x)**2*(sp.legendre(i+1, x).diff(x, 1))
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        k = np.arange(N)
+        ak = k*(k-1)/(2*k-1)/(2*k+1)
+        bk = -2*(k**2+k-1)/(2*k-1)/(2*k+3)
+        ck = (k+1)*(k+2)/(2*k+1)/(2*k+3)
+        d = np.zeros(N)
+        d[:-4] = (k[:-4]+1)*(k[:-4]+2)/(2*k[:-4]+3)*(ak[2:-2]-bk[:-4])
+        d[0] = 8/15
+        d[1] = 24/35
+        dm2 = np.zeros(N-2)
+        dm2[:-4] = -(k[2:-4]+1)*(k[2:-4]+2)/(2*k[2:-4]+3)*ak[2:-4]
+        dp2 = np.zeros(N-2)
+        dp2[:-2] = (k[:-4]+1)*(k[:-4]+2)/(2*k[:-4]+3)*(bk[2:-2]-ck[:-4])
+        dp2[0] = -16/21
+        dp2[1] = -16/15
+        dp4 = np.zeros(N-4)
+        dp4[:] = (k[:-4]+1)*(k[:-4]+2)/(2*k[:-4]+3)*ck[2:-2]
+        dp4[0] = 8/35
+        dp4[1] = 8/21
+        return SparseMatrix({-2: dm2, 0: d, 2: dp2, 4: dp4}, (N, N))
 
-    def evaluate_basis(self, x=None, i=0, output_array=None):
-        output_array = SpectralBase.evaluate_basis(self, x=x, i=i, output_array=output_array)
-        return output_array
+    def get_bc_basis(self):
+        if self._bc_basis:
+            return self._bc_basis
+        self._bc_basis = BCBiharmonic(self.N, quad=self.quad, domain=self.domain,
+                                      coordinates=self.coors.coordinates)
+        return self._bc_basis
 
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        output_array = SpectralBase.evaluate_basis_derivative(self, x=x, i=i, k=k, output_array=output_array)
-        return output_array
-
-    def evaluate_basis_all(self, x=None, argument=0):
-        if x is None:
-            #x = self.mesh(False, False)
-            x = self.mpmath_points_and_weights()[0]
-        output_array = np.zeros((x.shape[0], self.N))
-        for j in range(self.N-4):
-            output_array[:, j] = self.evaluate_basis(x, j, output_array=output_array[:, j])
-        return output_array
-
-    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
-        if x is None:
-            x = self.mpmath_points_and_weights()[0]
-        V = np.zeros((x.shape[0], self.N))
-        for i in range(self.N-2):
-            V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
-        return V
-
-    def _evaluate_scalar_product(self, fast_transform=False):
-        SpectralBase._evaluate_scalar_product(self)
-        self.scalar_product.output_array[self.sl[slice(-4, None)]] = 0
-
-    def eval(self, x, u, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape, dtype=self.dtype)
-        else:
-            output_array.fill(0)
-        x = self.map_reference_domain(x)
-        fj = self.evaluate_basis_all(x)
-        output_array[:] = np.dot(fj, u)
-        return output_array
 
 class ShenBiPolar0(CompositeSpace):
     """Legendre function space for biharmonic basis for polar coordinates

@@ -512,7 +512,7 @@ class SpectralBase:
         self.scalar_product.output_array
 
         """
-        # This is the slow Vandermone type implementation
+        # This is the slow Vandermonde type implementation
         input_array = self.scalar_product.input_array
         output_array = self.scalar_product.output_array
         M = self.shape(False)

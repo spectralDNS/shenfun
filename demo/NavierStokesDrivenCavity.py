@@ -31,7 +31,7 @@ from shenfun import *
 
 assert comm.Get_size() == 1, "Two non-periodic directions only have solver implemented for serial"
 
-Re = 10.
+Re = 100.
 nu = 2./Re
 alfa = 0.2 # underrelaxation factor
 N = (46, 46)
@@ -60,6 +60,8 @@ PY.slice = lambda: slice(0, PY.N-2)
 
 # Create vector space for velocity
 W1 = VectorSpace([V1, V0])
+TT = V0.get_orthogonal()
+S1 = TensorSpace(TT)
 
 # Create mixed space for total solution
 VQ = CompositeSpace([W1, P])   # for velocity and pressure
@@ -120,12 +122,15 @@ uiuj_hat = Function(QTp)
 def compute_rhs(ui_hat, bh_hat):
     global uip, uiuj, uiuj_hat, W1p
     bh_hat.fill(0)
+    bi_hat = bh_hat[0]
+    # Get convection
     uip = W1p.backward(ui_hat, uip)
     uiuj = outer(uip, uip, uiuj)
     uiuj_hat = uiuj.forward(uiuj_hat)
-    bi_hat = bh_hat[0]
-    bi_hat = inner(v, div(uiuj_hat), output_array=bi_hat)
-    #bi_hat = inner(grad(v), -uiuj_hat, output_array=bi_hat)
+    #bi_hat = inner(v, div(uiuj_hat), output_array=bi_hat)
+    bi_hat = inner(grad(v), -uiuj_hat, output_array=bi_hat)
+    #gradu = project(grad(ui_hat), S1)
+    #bi_hat = inner(v, dot(gradu, ui_hat), output_array=bi_hat)
     bh_hat += bh_hat0
     return bh_hat
 
@@ -220,7 +225,7 @@ plt.figure()
 plt.contourf(X[0], X[1], u_[0], 100)
 plt.figure()
 plt.contourf(X[0], X[1], u_[1], 100)
-#plt.figure()
-#plt.contour(x, y, pp, 100)
+plt.figure()
+plt.contourf(X[0], X[1], phi, 100)
 #plt.title('Streamfunction')
 plt.show()

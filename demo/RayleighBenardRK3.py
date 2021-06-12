@@ -24,7 +24,7 @@ class RayleighBenard:
 
         # Regular spaces
         self.sol = chebyshev if family == 'C' else legendre
-        self.B0 = FunctionSpace(N[0], family, quad=quad, bc='Biharmonic')
+        self.B0 = FunctionSpace(N[0], family, quad=quad, bc=(0, 0, 0, 0))
         self.D0 = FunctionSpace(N[0], family, quad=quad, bc=(0, 0))
         self.C0 = FunctionSpace(N[0], family, quad=quad)
         self.T0 = FunctionSpace(N[0], family, quad=quad, bc=bcT)
@@ -414,20 +414,20 @@ if __name__ == '__main__':
     from mpi4py_fft import generate_xdmf
     t0 = time()
     d = {
-        'N': (100, 256),
-        'Ra': 10000.,
-        'dt': 0.02,
+        'N': (256, 512),
+        'Ra': 1000000.,
+        'dt': 0.005,
         'filename': 'RB100',
         'conv': 1,
         'modplot': 100,
         'modsave': 50,
-        'bcT': (0.9+0.1*sympy.sin(2*(y-tt)), 0),
-        #'bcT': (1, 0),
+        #'bcT': (0.9+0.1*sympy.sin(2*(y-tt)), 0),
+        'bcT': (1, 0),
         'family': 'C',
         'quad': 'GC'
         }
-    c = RayleighBenard(**d)
-    c.initialize(rand=0.0001)
+    c = RayleighBenard2(**d)
+    c.initialize(rand=0.001)
     c.assemble()
     c.solve(end_time=200)
     print('Computing time %2.4f'%(time()-t0))

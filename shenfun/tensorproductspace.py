@@ -1077,6 +1077,19 @@ class TensorProductSpace(PFFT):
                 break
         return compatible
 
+    def shape(self, forward_output=True):
+        """The local (to each processor) shape of data
+
+        Parameters
+        ----------
+        forward_output : bool, optional
+            Return shape of output array (spectral space) if True, else return
+            shape of input array (physical space)
+        """
+        if forward_output is not True:
+            return self.forward.input_pencil.subshape
+        return self.forward.output_array.shape
+
 
 class CompositeSpace:
     """Class for composite tensorproductspaces.
@@ -1399,6 +1412,14 @@ class TensorSpace(VectorSpace):
     def tensor_rank(self):
         return 2
 
+    def get_refined(self, N):
+        return TensorSpace(self.flatten()[0].get_refined(N))
+
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        return TensorSpace(self.flatten()[0].get_dealiased(padding_factor, dealias_direct))
+
+    def get_orthogonal(self):
+        return TensorSpace(self.flatten()[0].get_orthogonal())
 
 class VectorTransform:
 
