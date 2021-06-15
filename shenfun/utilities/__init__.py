@@ -207,16 +207,16 @@ def dot(u, v, output_array=None, forward_output=True):
         uv = output_array.backward(uv)
 
     if isinstance(u, Array):
-        ua = u.v
+        ua = u
     else:
         Vup = Vu.get_dealiased()
-        ua = Array(Vup).v
+        ua = Array(Vup)
         ua = Vup.backward(u, ua)
     if isinstance(v, Array):
-        va = v.v
+        va = v
     else:
         Vvp = Vv.get_dealiased()
-        va = Array(Vvp).v
+        va = Array(Vvp)
         va = Vvp.backward(v, va)
 
     if Vu.coors.is_cartesian:
@@ -228,7 +228,7 @@ def dot(u, v, output_array=None, forward_output=True):
                 uv = Array(Top)
 
             assert uv.shape == ua[0].shape
-            uv = np.sum(ua*va, axis=0, out=uv)
+            uv = np.sum(ua.v*va.v, axis=0, out=uv)
 
         elif Vu.tensor_rank == 2 and Vv.tensor_rank == 1:
             if uv is None:
@@ -237,9 +237,11 @@ def dot(u, v, output_array=None, forward_output=True):
                 uv = Array(Top)
 
             assert uv.shape == va.shape
-            w0 = uv.v
+            w0 = uv
             for i in range(D):
-                w0[i] = np.sum(ua[i]*va, axis=0, out=w0[i])
+                ui = ua[i]
+                for j in range(D):
+                    w0[i] += ui[j]*va[j]
 
         elif Vu.tensor_rank == 1 and Vv.tensor_rank == 2:
             if uv is None:
@@ -248,7 +250,7 @@ def dot(u, v, output_array=None, forward_output=True):
                 uv = Array(Top)
 
             assert uv.shape == ua.shape
-            w0 = uv.v
+            w0 = uv
             for i in range(D):
                 ui = ua[i]
                 vi = va[i]
@@ -262,13 +264,14 @@ def dot(u, v, output_array=None, forward_output=True):
                 uv = Array(Top)
 
             assert uv.shape == ua.shape
-            w0 = uv.v
+            w0 = uv
             for i in range(D):
                 ui = ua[i]
+                wi = w0[i]
                 for j in range(D):
                     vj = va[j]
                     for k in range(D):
-                        w0[i, k] += ui[j]*vj[k]
+                        wi[k] += ui[j]*vj[k]
 
         else:
             raise NotImplementedError
@@ -292,7 +295,7 @@ def dot(u, v, output_array=None, forward_output=True):
                 uv = Array(Top)
 
             assert uv.shape == ua[0].shape
-            w0 = uv.v
+            w0 = uv
             if Vu.coors.is_orthogonal:
                 for i in range(D):
                     w0 += ua[i]*va[i]*measure(gij[i, i])
@@ -311,7 +314,7 @@ def dot(u, v, output_array=None, forward_output=True):
                 uv = Array(Top)
 
             assert uv.shape == va.shape
-            w0 = uv.v
+            w0 = uv
             for i in range(D):
                 ui = ua[i]
                 for j in range(D):
@@ -327,7 +330,7 @@ def dot(u, v, output_array=None, forward_output=True):
                 uv = Array(Top)
 
             assert uv.shape == ua.shape
-            w0 = uv.v
+            w0 = uv
             for i in range(D):
                 ui = ua[i]
                 for j in range(D):
@@ -345,9 +348,10 @@ def dot(u, v, output_array=None, forward_output=True):
                 uv = Array(Top)
 
             assert uv.shape == ua.shape
-            w0 = uv.v
+            w0 = uv
             for i in range(D):
                 ui = ua[i]
+                wi = w0[i]
                 for j in range(D):
                     for k in range(D):
                         g = gij[j, k]
@@ -355,7 +359,7 @@ def dot(u, v, output_array=None, forward_output=True):
                             vk = va[k]
                             ms = measure(g)
                             for l in range(D):
-                                w0[i, l] = ui[j]*vk[l]*ms
+                                wi[l] = ui[j]*vk[l]*ms
 
         else:
             raise NotImplementedError

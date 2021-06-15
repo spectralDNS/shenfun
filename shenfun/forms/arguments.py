@@ -1154,9 +1154,13 @@ class ShenfunBaseArray(DistArray):
 
             elif hasattr(buffer, 'free_symbols'):
                 # Evaluate sympy function on entire mesh
-                x = buffer.free_symbols.pop()
-                buffer = sp.lambdify(x, buffer)
-                buf = buffer(space.mesh()).astype(space.forward.input_array.dtype)
+                syms = buffer.free_symbols
+                if len(syms) > 0:
+                    x = syms.pop()
+                    buffer = sp.lambdify(x, buffer)
+                    buf = buffer(space.mesh()).astype(space.forward.input_array.dtype)
+                else:
+                    buf = buffer
                 buffer = Array(space)
                 buffer.v[:] = buf
                 if cls.__name__ == 'Function':

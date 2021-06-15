@@ -7,7 +7,7 @@ Demo - Rayleigh Benard
 ======================
 
 :Authors: Mikael Mortensen (mikaem at math.uio.no)
-:Date: Mar 23, 2021
+:Date: Jun 15, 2021
 
 *Summary.* Rayleigh-Benard convection arise
 due to temperature gradients in a fluid. The governing equations are
@@ -457,7 +457,7 @@ but the former is known to be faster due to the existence of fast transforms.
     
     N, M = 100, 256
     family = 'Chebyshev'
-    VB = FunctionSpace(N, family, bc='Biharmonic')
+    VB = FunctionSpace(N, family, bc=(0, 0, 0, 0))
     VD = FunctionSpace(N, family, bc=(0, 0))
     VW = FunctionSpace(N, family)
     VT = FunctionSpace(N, family, bc=(0, 1))

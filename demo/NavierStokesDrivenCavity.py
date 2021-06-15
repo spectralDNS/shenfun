@@ -34,48 +34,39 @@ assert comm.Get_size() == 1, "Two non-periodic directions only have solver imple
 Re = 100.
 nu = 2./Re
 alfa = 0.2 # underrelaxation factor
-N = (46, 46)
+N = 32
 #family = 'Chebyshev'
 family = 'Legendre'
 quad = 'GL'
 x = sympy.symbols('x', real='True')
-D0X = FunctionSpace(N[0], family, quad=quad, bc=(0, 0))
-D1Y = FunctionSpace(N[1], family, quad=quad, bc=(0, 1))
-#D1Y = FunctionSpace(N[1], family, quad=quad, bc=(0, (1-x)**2*(1+x)**2))
-D0Y = FunctionSpace(N[1], family, quad=quad, bc=(0, 0))
-PX = FunctionSpace(N[0], family, quad=quad)
-PY = FunctionSpace(N[1], family, quad=quad)
+D0 = FunctionSpace(N, family, quad=quad, bc=(0, 0))
+D1 = FunctionSpace(N, family, quad=quad, bc=(0, 1))
+#D1 = FunctionSpace(N, family, quad=quad, bc=(0, (1-x)**2*(1+x)**2))
+T = FunctionSpace(N, family, quad=quad)
 
 # Create tensor product spaces with different combination of bases
-V1 = TensorProductSpace(comm, (D0X, D1Y))
-V0 = TensorProductSpace(comm, (D0X, D0Y))
-P = TensorProductSpace(comm, (PX, PY), modify_spaces_inplace=True)
+V1 = TensorProductSpace(comm, (D0, D1))
+V0 = TensorProductSpace(comm, (D0, D0))
+P = TensorProductSpace(comm, (T, T))
 
 # To get a P_N x P_{N-2} space, just pick the first N-2 items of the pressure basis
 # Note that this effectively sets P_N and P_{N-1} to zero, but still the basis uses
 # the same quadrature points as the Dirichlet basis, which is required for the inner
 # products.
-PX.slice = lambda: slice(0, PX.N-2)
-PY.slice = lambda: slice(0, PY.N-2)
+P.bases[0].slice = lambda: slice(0, N-2)
+P.bases[1].slice = lambda: slice(0, N-2)
 
 # Create vector space for velocity
 W1 = VectorSpace([V1, V0])
-TT = V0.get_orthogonal()
-S1 = TensorSpace(TT)
 
 # Create mixed space for total solution
 VQ = CompositeSpace([W1, P])   # for velocity and pressure
 
 # Create padded spaces for nonlinearity
-V1p = V1.get_dealiased((1.5, 1.5))
-V0p = V0.get_dealiased((1.5, 1.5))
-#V1p = V1.get_dealiased(dealias_direct=True)
-#V0p = V0.get_dealiased(dealias_direct=True)
-#V1p = V1 # Or do not use dealiasing at all. Makes very little difference here
-#V0p = V0
-W1p = VectorSpace([V1p, V0p])
-W0p = VectorSpace([V0p, V0p])
-QTp = TensorSpace([W1p, W0p])  # for uiuj
+W1p = W1.get_dealiased()
+T1 = P.get_dealiased()
+Q1 = VectorSpace(T1)
+S1 = TensorSpace(T1)
 
 up = TrialFunction(VQ)
 vq = TestFunction(VQ)
@@ -116,8 +107,8 @@ ui = Array(W1)
 uip = Array(W1p)
 
 # Create work arrays for nonlinear part
-uiuj = Array(QTp)
-uiuj_hat = Function(QTp)
+uiuj = Array(S1)
+uiuj_hat = Function(S1)
 
 def compute_rhs(ui_hat, bh_hat):
     global uip, uiuj, uiuj_hat, W1p
@@ -127,8 +118,8 @@ def compute_rhs(ui_hat, bh_hat):
     uip = W1p.backward(ui_hat, uip)
     uiuj = outer(uip, uip, uiuj)
     uiuj_hat = uiuj.forward(uiuj_hat)
-    #bi_hat = inner(v, div(uiuj_hat), output_array=bi_hat)
-    bi_hat = inner(grad(v), -uiuj_hat, output_array=bi_hat)
+    bi_hat = inner(v, div(uiuj_hat), output_array=bi_hat)
+    ##bi_hat = inner(grad(v), -uiuj_hat, output_array=bi_hat)
     #gradu = project(grad(ui_hat), S1)
     #bi_hat = inner(v, dot(gradu, ui_hat), output_array=bi_hat)
     bh_hat += bh_hat0
@@ -172,8 +163,7 @@ H = la.SolverGeneric2ND(S)
 phi_h = H(h)
 phi = phi_h.backward()
 # Compute vorticity
-PX.slice = lambda: slice(0, PX.N)
-PY.slice = lambda: slice(0, PY.N)
+P = TensorProductSpace(comm, (T, T))
 w_h = Function(P)
 w_h = project(curl(ui_hat), P, output_array=w_h)
 #p0 = np.array([[0.], [0.]])
