@@ -125,20 +125,16 @@ from sympy import symbols, cos, sin, exp, lambdify
 !ec
 
 We use `Sympy` for a manufactured solution and `Numpy` for testing.
-
-=== Manufactured solution ===
-
-The exact solution $u_e(x)$ and the right hand side $f_e(x)$ are created using
-`Sympy` as follows
+The exact manufactured solution $u_e(x)$ and the right hand side
+$f_e(x)$ are created using `Sympy` as follows
 !bc pycod
 x = symbols("x")
 ue = sin(4*np.pi*x)
 fe = ue.diff(x, 2)
 !ec
 
-These solutions are now valid for a continuous domain. The next step is thus to
-discretize, using a discrete mesh $\{x_j\}_{j=0}^{N-1}$ and a finite number of
-basis functions.
+Note that we compute the right hand side function `fe` that corresponds to
+the manufactured solution `ue`.
 
 === Discretization ===
 
@@ -171,12 +167,16 @@ f_hat = inner(v, fj, output_array=f_hat)
 Note that the `sympy` function `fe` can be used to initialize the ${cls('Array')}
 `fj`. We wrap this Numpy array in an ${cls('Array')} class
 (`fj = Array(SD, buffer=fe)`), because an Array
-is required as input to the ${func('inner')} function.
+is required as input to the ${func('inner')} function. An
+${cls('Array')} contains the solution evaluated on the
+quadrature mesh. A ${cls('Function')} represents a global
+expansion, like Eq. (ref{eq:u}), and its values are the
+expansion coefficients $\{\hat{u}_{k}\}_{k=0}^{N-1}$.
 
 === Fix boundary conditions ===
 
-Fiw two rows of the differentiation matrix in order to satisfy
-Eqs. (ref{eq:dirichleta}) and (ref(eq:dirichletb)).
+We fix two rows of the differentiation matrix in order to satisfy
+Eqs. (ref{eq:dirichleta}) and (ref{eq:dirichletb}).
 
 !bc pycod
 A = A.diags('lil')
@@ -256,8 +256,7 @@ main(12, 'Chebyshev')
 To get the convergence we call `main` for a list
 of $N=[12, 16, \ldots, 48]$, and collect the errornorms in
 arrays to be plotted. The error can be plotted using
-"matplotlib": "https://matplotlib.org", and the generated
-figure is also shown in this demos summary.
+"matplotlib": "https://matplotlib.org".
 
 
 !bc pycod
@@ -283,7 +282,6 @@ plt.show()
 
 The spectral convergence is evident and we can see that
 after $N=40$ roundoff errors dominate as the errornorm trails off around $10^{-14}$.
-
 
 ===== Complete solver =====
 label{sec:complete}
