@@ -28,6 +28,7 @@ Demos
    rayleighbenard
    fasttransforms
    mixingbases
+   tau
    zrefs
 
 .. _shenfun: https:/github.com/spectralDNS/shenfun

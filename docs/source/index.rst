@@ -60,6 +60,7 @@ Document build status
    rayleighbenard
    fasttransforms
    mixingbases
+   tau
    zrefs
 
 .. toctree::
