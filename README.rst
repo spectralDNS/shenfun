@@ -77,7 +77,7 @@ For comments, issues, bug-reports and requests, please use the issue tracker of 
 
     Mikael Mortensen
     mikaem at math.uio.no
-    http://folk.uio.no/mikaem/
+    https://mikaem.github.io/
     Department of Mathematics
     University of Oslo
     Norway
