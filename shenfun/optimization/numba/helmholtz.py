@@ -349,17 +349,17 @@ def Helmholtz_Neumann_matvec3D(v, b, alfa, beta, dd, ud, bl, bd, bu, axis):
         for j in range(v.shape[1]):
             for k in range(v.shape[2]):
                 Helmholtz_Neumann_matvec1D(v[:, j, k], b[:, j, k], alfa[0, j, k],
-                                   beta[0, j, k], dd, ud, bl, bd, bu)
+                                           beta[0, j, k], dd, ud, bl, bd, bu)
     elif axis == 1:
         for i in range(v.shape[0]):
             for k in range(v.shape[2]):
                Helmholtz_Neumann_matvec1D(v[i, :, k], b[i, :, k], alfa[i, 0, k],
-                                  beta[i, 0, k], dd, ud, bl, bd, bu)
+                                          beta[i, 0, k], dd, ud, bl, bd, bu)
     elif axis == 2:
         for i in range(v.shape[0]):
             for j in range(v.shape[1]):
                 Helmholtz_Neumann_matvec1D(v[i, j], b[i, j], alfa[i, j, 0],
-                                   beta[i, j, 0], dd, ud, bl, bd, bu)
+                                           beta[i, j, 0], dd, ud, bl, bd, bu)
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
 def Helmholtz_Neumann_matvec2D(v, b, alfa, beta, dd, ud, bl, bd, bu, axis):
@@ -446,7 +446,7 @@ def ANN_matvec1D(v, c, d0, d2, scale=1):
         s1 = 0
         for k in range(N-3, -1, -1):
             c[k] = d0[k]*v[k]
-            if k % 2 == 0:
+            if (k % 2) == 0:
                 s0 += v[k+2]*(k+2)**2
                 c[k] += s0*d2[k]/(k+2)**2
             else:

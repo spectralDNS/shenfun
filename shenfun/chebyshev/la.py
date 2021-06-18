@@ -389,7 +389,7 @@ class Helmholtz:
         B[2] = np.broadcast_to(B[2], A[2].shape)
         B[-2] = np.broadcast_to(B[-2], A[2].shape)
         v = A.testfunction[0]
-        neumann = self.neumann = self.A.testfunction[0].boundary_condition() == 'Neumann'
+        neumann = self.neumann = v.boundary_condition() == 'Neumann'
         self.axis = A.axis
         shape = [1]
         T = A.tensorproductspace

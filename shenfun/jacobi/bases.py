@@ -330,7 +330,7 @@ class ShenDirichlet(JacobiBase):
     """
     def __init__(self, N, quad='JG', bc=(0, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None, alpha=-1, beta=-1):
-        assert alpha==-1 and beta==-1
+        assert alpha == -1 and beta == -1
         JacobiBase.__init__(self, N, quad=quad, alpha=-1, beta=-1, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
                             coordinates=coordinates)
@@ -487,7 +487,7 @@ class ShenBiharmonic(JacobiBase):
     def __init__(self, N, quad='JG', bc=(0, 0, 0, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None,
                  alpha=-2, beta=-2):
-        assert alpha==-2 and beta==-2
+        assert alpha == -2 and beta == -2
         JacobiBase.__init__(self, N, quad=quad, alpha=-2, beta=-2, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
                             coordinates=coordinates)
@@ -643,7 +643,7 @@ class ShenOrder6(JacobiBase):
     """
     def __init__(self, N, quad='JG', domain=(-1., 1.), dtype=float, padding_factor=1, dealias_direct=False,
                  coordinates=None, bc=(0, 0, 0, 0, 0, 0), alpha=-3, beta=-3):
-        assert alpha==-3 and beta==-3
+        assert alpha == -3 and beta == -3
         JacobiBase.__init__(self, N, quad=quad, alpha=-3, beta=-3, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
                             coordinates=coordinates)

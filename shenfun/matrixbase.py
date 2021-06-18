@@ -1309,12 +1309,11 @@ class TPMatrix:
                 c = self.pmat.matvec(v[self.global_index[1]], c, axis=axis)
             c = c*self.scale
         elif len(self.naxes) == 2:
-            from shenfun import TensorProductSpace
             # 2 non-periodic directions (may be non-aligned in second axis, hence transfers)
             npaxes = deepcopy(self.naxes)
             space = self.space
             if space.forward.input_array.shape != space.forward.output_array.shape:
-                space = space.get_unplanned(True)
+                space = space.get_unplanned(True) # in case self.space is padded
 
             pencilA = space.forward.output_pencil
             subcomms = [s.Get_size() for s in pencilA.subcomm]

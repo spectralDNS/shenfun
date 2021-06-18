@@ -30,14 +30,14 @@ class TDMA:
     def init(self):
         """Initialize and allocate solver"""
         N = self.mat.shape[0]
-        self.symmetric = self.mat.issymmetric
+        symmetric = self.mat.issymmetric
         self.dd = self.mat[0]*np.ones(N)*self.mat.scale
         self.ud = self.mat[2]*np.ones(N-2)*self.mat.scale
         if self.neumann:
             self.dd[0] = 1
             self.ud[0] = 0
-        self.ld = np.zeros(N-2) if self.symmetric else self.mat[-2]*np.ones(N-2)*self.mat.scale
-        if self.symmetric:
+        self.ld = np.zeros(N-2) if symmetric else self.mat[-2]*np.ones(N-2)*self.mat.scale
+        if symmetric:
             self.TDMA_SymLU(self.dd, self.ud, self.ld)
         else:
             self.TDMA_LU(self.ld, self.dd, self.ud)

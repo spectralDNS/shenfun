@@ -14,7 +14,6 @@ import sys
 import os
 import importlib
 from sympy import symbols, sin, cos, pi, chebyshevt
-import sympy as sp
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, FunctionSpace, \
     Array, Function, legendre, chebyshev, extract_bc_matrices, la, SpectralMatrix
@@ -35,10 +34,8 @@ fe = -ue.diff(x, 2)+alpha*ue
 N = int(sys.argv[-2])
 
 # alpha=0 requires a fixed gauge, but not alpha!=0 -> mean
-SD = FunctionSpace(N, family=family, bc={'left': ('N', 0),
-                                         'right': ('N', 0)},
-                                         mean=0 if alpha==0 else None,
-                                         basis='ShenNeumann')
+SD = FunctionSpace(N, family=family, bc={'left': ('N', 0), 'right': ('N', 0)},
+                   mean=0 if alpha==0 else None, basis='ShenNeumann')
 u = TrialFunction(SD)
 v = TestFunction(SD)
 

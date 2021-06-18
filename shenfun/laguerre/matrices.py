@@ -28,7 +28,7 @@ class BLLmat(SpectralMatrix):
         assert isinstance(trial[0], L)
         SpectralMatrix.__init__(self, {0:1}, test, trial)
 
-    def solve(self, b, u=None, axis=0):
+    def solve(self, b, u=None, axis=0, use_lu=False):
         if u is not None:
             u[:] = b
             u /= (self.scale*self[0])

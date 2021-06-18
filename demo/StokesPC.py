@@ -190,9 +190,9 @@ if __name__ == "__main__":
     for i in range(3):
         plt.loglog(N, E[i, :], marks[i], label=vars[i])
         slope, intercept = np.polyfit(np.log(N[-2:]), np.log(E[i,-2:]), 1)
-        if(i != 1):
+        if i != 1:
             annotation.slope_marker((N[-2], E[i, -2]), ("{0:.2f}".format(slope), 1),
-              ax=ax, poly_kwargs=pa, text_kwargs=ta)
+                                    ax=ax, poly_kwargs=pa, text_kwargs=ta)
 
     plt.text(N[0], 2e-5, r"$\Delta t=5 \times 10^{-3},\; N=32^2$")
     plt.text(N[0], 1e-5, r"Final Time = $5 \times 10^{-2}$")
