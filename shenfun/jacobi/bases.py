@@ -112,28 +112,6 @@ class JacobiBase(SpectralBase):
     def reference_domain(self):
         return (-1, 1)
 
-    def get_refined(self, N):
-        return self.__class__(N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              alpha=self.alpha,
-                              beta=self.beta)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=padding_factor,
-                              dealias_direct=dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              alpha=self.alpha,
-                              beta=self.beta)
-
     def get_orthogonal(self):
         return Orthogonal(self.N,
                           quad=self.quad,
@@ -210,12 +188,14 @@ class JacobiBase(SpectralBase):
         self.axis = axis
         if self.padding_factor > 1.+1e-8:
             trunc_array = self._get_truncarray(shape, V.dtype)
+            self.scalar_product = Transform(self.scalar_product, None, U, V, trunc_array)
             self.forward = Transform(self.forward, None, U, V, trunc_array)
             self.backward = Transform(self.backward, None, trunc_array, V, U)
         else:
+            self.scalar_product = Transform(self.scalar_product, None, U, V, V)
             self.forward = Transform(self.forward, None, U, V, V)
             self.backward = Transform(self.backward, None, V, V, U)
-        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
+
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
@@ -349,7 +329,8 @@ class ShenDirichlet(JacobiBase):
 
     """
     def __init__(self, N, quad='JG', bc=(0, 0), domain=(-1., 1.), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None):
+                 padding_factor=1, dealias_direct=False, coordinates=None, alpha=-1, beta=-1):
+        assert alpha==-1 and beta==-1
         JacobiBase.__init__(self, N, quad=quad, alpha=-1, beta=-1, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
                             coordinates=coordinates)
@@ -365,26 +346,6 @@ class ShenDirichlet(JacobiBase):
     @staticmethod
     def short_name():
         return 'SD'
-
-    def get_refined(self, N):
-        return self.__class__(N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=padding_factor,
-                              dealias_direct=dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc)
 
     def is_scaled(self):
         return False
@@ -478,7 +439,7 @@ class ShenDirichlet(JacobiBase):
 
     def _evaluate_scalar_product(self, fast_transform=True):
         SpectralBase._evaluate_scalar_product(self)
-        self.scalar_product.output_array[self.sl[slice(-2, None)]] = 0
+        self.scalar_product.tmp_array[self.sl[slice(-2, None)]] = 0
 
     def get_bc_basis(self):
         if self._bc_basis:
@@ -486,7 +447,6 @@ class ShenDirichlet(JacobiBase):
         self._bc_basis = BCDirichlet(self.N, quad=self.quad, domain=self.domain,
                                      coordinates=self.coors.coordinates)
         return self._bc_basis
-
 
 class ShenBiharmonic(JacobiBase):
     """Function space for Biharmonic boundary conditions
@@ -525,7 +485,9 @@ class ShenBiharmonic(JacobiBase):
 
     """
     def __init__(self, N, quad='JG', bc=(0, 0, 0, 0), domain=(-1., 1.), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+                 padding_factor=1, dealias_direct=False, coordinates=None,
+                 alpha=-2, beta=-2):
+        assert alpha==-2 and beta==-2
         JacobiBase.__init__(self, N, quad=quad, alpha=-2, beta=-2, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
                             coordinates=coordinates)
@@ -595,7 +557,7 @@ class ShenBiharmonic(JacobiBase):
 
     def _evaluate_scalar_product(self, fast_transform=True):
         SpectralBase._evaluate_scalar_product(self)
-        self.scalar_product.output_array[self.sl[slice(-4, None)]] = 0
+        self.scalar_product.tmp_array[self.sl[slice(-4, None)]] = 0
 
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
@@ -680,12 +642,13 @@ class ShenOrder6(JacobiBase):
 
     """
     def __init__(self, N, quad='JG', domain=(-1., 1.), dtype=float, padding_factor=1, dealias_direct=False,
-                 coordinates=None):
+                 coordinates=None, bc=(0, 0, 0, 0, 0, 0), alpha=-3, beta=-3):
+        assert alpha==-3 and beta==-3
         JacobiBase.__init__(self, N, quad=quad, alpha=-3, beta=-3, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
                             coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
-        self.bc = BoundaryValues(self, bc=(0,)*6)
+        self.bc = BoundaryValues(self, bc=bc)
 
     @staticmethod
     def boundary_condition():
@@ -773,7 +736,7 @@ class ShenOrder6(JacobiBase):
 
     def _evaluate_scalar_product(self, fast_transform=True):
         SpectralBase._evaluate_scalar_product(self)
-        self.scalar_product.output_array[self.sl[slice(-6, None)]] = 0
+        self.scalar_product.tmp_array[self.sl[slice(-6, None)]] = 0
 
     #def to_ortho(self, input_array, output_array=None):
     #    if output_array is None:

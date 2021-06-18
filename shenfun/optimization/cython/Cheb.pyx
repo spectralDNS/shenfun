@@ -19,16 +19,16 @@ def chebval(x, c):
         c = c.astype(np.double)
     if isinstance(x, (tuple, list)):
         x = np.asarray(x)
-    y = np.zeros_like(x)
-    c0 = np.zeros_like(x)
-    c1 = np.zeros_like(x)
-    tmp = np.zeros_like(x)
+    y = np.zeros_like(x, dtype=c.dtype)
+    c0 = np.zeros_like(x, dtype=c.dtype)
+    c1 = np.zeros_like(x, dtype=c.dtype)
+    tmp = np.zeros_like(x, dtype=c.dtype)
     x2 = np.zeros_like(x)
     _chebval(x, c, y, c0, c1, tmp, x2)
     return y
 
-def _chebval(T[:] x, T[:] c, T[:] y, T[:] c0, T[:] c1,
-             T[:] tmp, T[:] x2):
+def _chebval(real_t[:] x, T[:] c, T[:] y, T[:] c0, T[:] c1,
+             T[:] tmp, real_t[:] x2):
     cdef:
         int i, j
         int N = c.shape[0]

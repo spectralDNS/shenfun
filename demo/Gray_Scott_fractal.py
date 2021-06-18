@@ -81,8 +81,8 @@ b0 = 0.03
 #initialize
 UV_hat = UV.forward(UV_hat)
 
-def LinearRHS(self, alpha1, alpha2, **params):
-    L = inner(vv, (e1, e2)*div(grad(uu)))
+def LinearRHS(self, u, alpha1, alpha2, **params):
+    L = inner(vv, (e1, e2)*div(grad(u)))
     L = np.array([-(-L[0].scale)**(alpha1/2),
                   -(-L[1].scale)**(alpha2/2)])
     return L

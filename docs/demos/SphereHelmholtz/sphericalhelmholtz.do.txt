@@ -78,9 +78,9 @@ possible for Hermitian symmetry.
 The following approximation space is used for the $\theta$-direction
 
 !bt
-\begin{align}
-V^N &= \text{span} \{\psi_j\}_{j=0}^{N-1} \\
-\end{align}
+\begin{equation}
+V^N = \text{span} \{\psi_j\}_{j=0}^{N-1},
+\end{equation}
 !et
 
 and the variational formulation of the problem reads:
@@ -129,7 +129,6 @@ N, M = 40, 30
 L0 = FunctionSpace(N, 'C', domain=(0, np.pi))
 F1 = FunctionSpace(M, 'F', dtype='D')
 T = TensorProductSpace(comm, (L0, F1), coordinates=(psi, rv, sp.Q.positive(sp.sin(theta))))
-
 !ec
 
 Spherical coordinates are ensured by feeding `coordinates=(psi, rv, sp.Q.positive(sp.sin(theta)))`
@@ -147,7 +146,6 @@ is very similar to the mathematics.
 alpha = 2
 v = TestFunction(T)
 u = TrialFunction(T)
-
 mats = inner(v, -div(grad(u))+alpha*u)
 !ec
 
@@ -203,22 +201,14 @@ print('Error =', np.linalg.norm(uj-uq))
 
 ===== Postprocessing =====
 We can refine the solution to make it look better,
-and plot on the unit sphere using "mayavi":"https://docs.enthought.com/mayavi/mayavi/",
-leading to the figure in the top of this demo.
+and plot on the unit sphere using either "mayavi":"https://docs.enthought.com/mayavi/mayavi/"
+or "plotly":"https://plotly.com/" using the shenfun function
+${func('surf3D')}.
 
-!bc pycod-t
+!bc pycod
 u_hat2 = u_hat.refine([N*2, M*2])
-ur = u_hat2.backward()
-from mayavi import mlab
-xx, yy, zz = u_hat2.function_space().local_cartesian_mesh()
-# Wrap periodic direction around
-if T.bases[1].domain == (0, 2*np.pi):
-    xx = np.hstack([xx, xx[:, 0][:, None]])
-    yy = np.hstack([yy, yy[:, 0][:, None]])
-    zz = np.hstack([zz, zz[:, 0][:, None]])
-    ur = np.hstack([ur, ur[:, 0][:, None]])
-mlab.mesh(xx, yy, zz, scalars=ur.imag, colormap='jet')
-mlab.show()
+fig = surf3D(u_hat2.backward().real, wrapaxes=[1])
+fig.show()
 !ec
 
 

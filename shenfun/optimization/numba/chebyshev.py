@@ -11,10 +11,10 @@ def chebval(x, c):
         x = float(x)
     if isinstance(x, (tuple, list)):
         x = np.asarray(x)
-    y = np.zeros_like(x)
-    c0 = np.zeros_like(x)
-    c1 = np.zeros_like(x)
-    tmp = np.zeros_like(x)
+    y = np.zeros_like(x, dtype=c.dtype)
+    c0 = np.zeros_like(x, dtype=c.dtype)
+    c1 = np.zeros_like(x, dtype=c.dtype)
+    tmp = np.zeros_like(x, dtype=c.dtype)
     x2 = np.zeros_like(x)
     y = _chebval(x, c, y, c0, c1, tmp, x2)
     return y

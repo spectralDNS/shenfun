@@ -56,7 +56,7 @@ class Orthogonal(SpectralBase):
 
     """
     def __init__(self, N, quad="HG", bc=(0., 0.), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None):
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         SpectralBase.__init__(self, N, quad=quad, domain=(-np.inf, np.inf), dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
@@ -82,30 +82,6 @@ class Orthogonal(SpectralBase):
     @staticmethod
     def short_name():
         return 'H'
-
-    def get_refined(self, N):
-        return self.__class__(N,
-                              quad=self.quad,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              dtype=self.dtype,
-                              padding_factor=padding_factor,
-                              dealias_direct=dealias_direct,
-                              coordinates=self.coors.coordinates)
-
-    def get_unplanned(self):
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates)
 
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
@@ -201,12 +177,14 @@ class Orthogonal(SpectralBase):
         self.axis = axis
         if self.padding_factor > 1.+1e-8:
             trunc_array = self._get_truncarray(shape, V.dtype)
+            self.scalar_product = Transform(self.scalar_product, None, U, V, trunc_array)
             self.forward = Transform(self.forward, None, U, V, trunc_array)
             self.backward = Transform(self.backward, None, trunc_array, V, U)
         else:
+            self.scalar_product = Transform(self.scalar_product, None, U, V, V)
             self.forward = Transform(self.forward, None, U, V, V)
             self.backward = Transform(self.backward, None, V, V, U)
-        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
+
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 

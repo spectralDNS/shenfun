@@ -231,6 +231,9 @@ class SpectralBase:
 
         self._evaluate_scalar_product(fast_transform=fast_transform)
 
+        self._truncation_forward(self.scalar_product.tmp_array,
+                                 self.scalar_product.output_array)
+
         if output_array is not None:
             output_array[...] = self.scalar_product.output_array
             return output_array
@@ -256,8 +259,6 @@ class SpectralBase:
 
         """
         self.scalar_product(input_array, fast_transform=fast_transform)
-        self._truncation_forward(self.forward.tmp_array,
-                                 self.forward.output_array)
         if self.bc:
             self.bc.add_mass_rhs(self.forward.output_array)
         self.apply_inverse_mass(self.forward.output_array)
@@ -514,7 +515,7 @@ class SpectralBase:
         """
         # This is the slow Vandermonde type implementation
         input_array = self.scalar_product.input_array
-        output_array = self.scalar_product.output_array
+        output_array = self.scalar_product.tmp_array
         M = self.shape(False)
         weights = self.points_and_weights(M)[1]
         P = self.evaluate_basis_all(argument=0)
@@ -627,14 +628,14 @@ class SpectralBase:
 
         if self.padding_factor != 1:
             trunc_array = self._get_truncarray(shape, V.dtype)
+            self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, trunc_array)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
         else:
+            self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
             self.backward = Transform(self.backward, xfftn_bck, V, V, U)
 
-        # scalar_product is not padded, just the forward/backward
-        self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
@@ -943,66 +944,118 @@ class SpectralBase:
             raise NotImplementedError
         return array
 
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False, **kwargs):
         """Return space (otherwise as self) to be used for dealiasing
 
         Parameters
         ----------
         padding_factor : float, optional
-            Create output array of shape padding_factor time non-padded shape
+            Create output array of shape padding_factor times non-padded shape
         dealias_direct : bool, optional
             If True, set upper 2/3 of wavenumbers to zero before backward transform.
             Cannot be used together with padding_factor different than 1.
+        kwargs : keyword arguments
+            Any other keyword arguments used in the creation of the bases.
 
         Returns
         -------
         SpectralBase
             The space to be used for dealiasing
         """
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=padding_factor,
-                              dealias_direct=dealias_direct,
-                              coordinates=self.coors.coordinates)
+        d = dict(quad=self.quad,
+                 domain=self.domain,
+                 dtype=self.dtype,
+                 padding_factor=padding_factor,
+                 dealias_direct=dealias_direct,
+                 coordinates=self.coors.coordinates)
+        if hasattr(self.bc, 'bc'):
+            d['bc'] = tuple(self.bc.bc)
+        if hasattr(self, '_scaled'):
+            d['scaled'] = self._scaled
+        for key in ('alpha', 'beta', 'mean'):
+            if hasattr(self, key):
+                d[key] = object.__getattribute__(self, key)
+        d.update(kwargs)
+        return self.__class__(self.N, **d)
 
-    def get_refined(self, N):
+    def get_refined(self, N, **kwargs):
         """Return space (otherwise as self) with N quadrature points
 
         Parameters
         ----------
         N : int
             The number of quadrature points for returned space
+        kwargs : keyword arguments
+            Any other keyword arguments used in the creation of the bases.
 
         Returns
         -------
         SpectralBase
             A new space with new number of quadrature points, otherwise as self.
         """
-        return self.__class__(N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates)
+        d = dict(quad=self.quad,
+                 domain=self.domain,
+                 dtype=self.dtype,
+                 padding_factor=self.padding_factor,
+                 dealias_direct=self.dealias_direct,
+                 coordinates=self.coors.coordinates)
+        if hasattr(self.bc, 'bc'):
+            d['bc'] = tuple(self.bc.bc)
+        if hasattr(self, '_scaled'):
+            d['scaled'] = self._scaled
+        for key in ('alpha', 'beta', 'mean'):
+            if hasattr(self, key):
+                d[key] = object.__getattribute__(self, key)
+        d.update(kwargs)
+        return self.__class__(N, **d)
 
-    def get_unplanned(self):
+    def get_unplanned(self, **kwargs):
         """Return unplanned space (otherwise as self)
+
+        Parameters
+        ----------
+        kwargs : keyword arguments, optional
+            Any keyword argument used in the creation of the unplanned
+            space. Could be any one of
+
+            - quad
+            - domain
+            - dtype
+            - padding_factor
+            - dealias_direct
+            - coorrdinates
+            - mean
+            - bc
+            - scaled
+
+            Not all will be applicable for all spaces.
 
         Returns
         -------
         SpectralBase
             Space not planned for a :class:`.TensorProductSpace`
+
+        Note
+        ----
+        Default is to return a basic space not intended for dealiasing.
+        So the `planning_factor` is set to 1 and `dealias_direct` is
+        False. This can be overruled by keyword arguments.
         """
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates)
+        d = dict(quad=self.quad,
+                 domain=self.domain,
+                 dtype=self.dtype,
+                 padding_factor=1,
+                 dealias_direct=False,
+                 coordinates=self.coors.coordinates)
+        if hasattr(self.bc, 'bc'):
+            d['bc'] = tuple(self.bc.bc)
+        if hasattr(self, '_scaled'):
+            d['scaled'] = self._scaled
+        for key in ('alpha', 'beta', 'mean'):
+            if hasattr(self, key):
+                d[key] = object.__getattribute__(self, key)
+        d.update(kwargs)
+        return self.__class__(self.N, **d)
 
     def get_adaptive(self, fun=None, reltol=1e-12, abstol=1e-15):
         """Return space (otherwise as self) with number of quadrature points

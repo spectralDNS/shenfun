@@ -19,6 +19,9 @@ ${name}.html: ${name}.do.txt
 ${name}.rst: ${name}.do.txt
 	doconce format sphinx ${name} --sphinx_preserve_bib_keys
 
+${name}.ipynb: ${name}.do.txt
+	doconce format ipynb ${name}
+
 view:
 	open ${name}.pdf &
 

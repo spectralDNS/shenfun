@@ -279,15 +279,15 @@ class FourierBase(SpectralBase):
 
         if self.padding_factor > 1.+1e-8:
             trunc_array = self._get_truncarray(shape, V.dtype)
+            self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, trunc_array)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
 
         else:
+            self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
             self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
             self.backward = Transform(self.backward, xfftn_bck, V, V, U)
 
-        # scalar_product is not padded, just the forward/backward
-        self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 

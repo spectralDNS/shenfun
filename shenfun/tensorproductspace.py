@@ -438,6 +438,8 @@ class TensorProductSpace(PFFT):
             self.pencil[::-1], self)
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
+        """Return space (otherwise as self) to be used for dealiasing
+        """
         if isinstance(padding_factor, Number):
             padding_factor = (padding_factor,)*len(self)
         elif isinstance(padding_factor, (tuple, list, np.ndarray)):
@@ -456,6 +458,16 @@ class TensorProductSpace(PFFT):
                                   coordinates=self.coors.coordinates)
 
     def get_refined(self, N):
+        """Return space (otherwise as self) refined to new shape
+
+        Parameters
+        ----------
+        N : Number or sequence of integers
+            The global shape of the new space. If N is a number, then
+            refine the global shape by multiplying self's global shape by N.
+            If N is an array, then N is treated as the new global shape of
+            the returned space.
+        """
         if isinstance(N, Number):
             N = N*np.array(self.global_shape())
         elif isinstance(N, (tuple, list, np.ndarray)):
@@ -465,6 +477,28 @@ class TensorProductSpace(PFFT):
         return TensorProductSpace(self.subcomm, refined_bases, axes=self.axes,
                                   dtype=self.dtype(),
                                   coordinates=self.coors.coordinates)
+
+    def get_unplanned(self, tensorproductspace=False, **kwargs):
+        """Return unplanned bases otherwise as self. Or return a new
+        TensorProductSpace from the unplanned bases.
+
+        Parameters
+        ----------
+        tensorproductspace : boolean
+            if True, then return a new TensorProductSpace
+            if False, return only the bases
+        kwargs : keyword arguments
+            Any arguments used in the creation of the different bases.
+
+        Note
+        ----
+        The default behaviour is to return regular spaces with padding_factor=1
+        and dealias_direct=False. This can be overruled in the keyword arguments.
+        """
+        bases = tuple([base.get_unplanned(**kwargs) for base in self.bases])
+        if tensorproductspace:
+            return TensorProductSpace(comm, bases)
+        return bases
 
     def dtype(self, forward_output=False):
         """Return datatype function space is planned for"""
@@ -525,7 +559,7 @@ class TensorProductSpace(PFFT):
         else:
             output_array[:] = 0
         if len(self.get_nonperiodic_axes()) > 1:
-            assert method > 0
+            method = 1
         assert self.dimensions < 4, 'eval not implemented (yet) for higher dimensions'
         if method == 0:
             return self._eval_lm_cython(points, coefficients, output_array)
@@ -1113,7 +1147,7 @@ class CompositeSpace:
     def is_composite_space(self):
         return 1
 
-    def eval(self, points, coefficients, output_array=None, method=0):
+    def eval(self, points, coefficients, output_array=None, method=1):
         """Evaluate Function at points, given expansion coefficients
 
         Parameters
@@ -1124,10 +1158,10 @@ class CompositeSpace:
         output_array : array, optional
             Return array, function values at points
         method : int, optional
-            Chooses implementation. The default 0 is a low-memory cython
-            version. Using method = 1 leads to a faster cython
+            Chooses implementation. Method 0 is a low-memory cython
+            version. Using method = 1 (default) leads to a faster cython
             implementation that, on the downside, uses more memory.
-            The final, method = 2, is a python implementation used only
+            The final, method = 2, is a python implementation used mainly
             for verification.
         """
         if output_array is None:

@@ -160,12 +160,14 @@ class LegendreBase(SpectralBase):
         self.axis = axis
         if self.padding_factor > 1.+1e-8:
             trunc_array = self._get_truncarray(shape, V.dtype)
+            self.scalar_product = Transform(self.scalar_product, None, U, V, trunc_array)
             self.forward = Transform(self.forward, None, U, V, trunc_array)
             self.backward = Transform(self.backward, None, trunc_array, V, U)
         else:
+            self.scalar_product = Transform(self.scalar_product, None, U, V, V)
             self.forward = Transform(self.forward, None, U, V, V)
             self.backward = Transform(self.backward, None, V, V, U)
-        self.scalar_product = Transform(self.scalar_product, None, U, V, V)
+
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
@@ -310,7 +312,7 @@ class CompositeSpace(Orthogonal):
         Orthogonal._evaluate_expansion_all(self, input_array, output_array, x, fast_transform)
 
     def _evaluate_scalar_product(self, fast_transform=False):
-        output = self.scalar_product.output_array
+        output = self.scalar_product.tmp_array
         if fast_transform is False:
             SpectralBase._evaluate_scalar_product(self)
             output[self.sl[slice(-(self.N-self.dim()), None)]] = 0
@@ -445,39 +447,6 @@ class CompositeSpace(Orthogonal):
         output_array[:] = leg.legval(x, w)
         return output_array
 
-    def get_refined(self, N):
-        return self.__class__(N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              scaled=self._scaled,
-                              bc=self.bc.bc)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=padding_factor,
-                              dealias_direct=dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              scaled=self._scaled,
-                              bc=self.bc.bc)
-
-    def get_unplanned(self):
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              scaled=self._scaled,
-                              bc=self.bc.bc)
-
 class ShenDirichlet(CompositeSpace):
     """Legendre Function space for Dirichlet boundary conditions
 
@@ -553,7 +522,7 @@ class ShenDirichlet(CompositeSpace):
 
     def _evaluate_scalar_product(self, fast_transform=False):
         input_array = self.scalar_product.input_array
-        output_array = self.scalar_product.output_array
+        output_array = self.scalar_product.tmp_array
         if fast_transform is False:
             SpectralBase._evaluate_scalar_product(self)
             output_array[self.si[-2]] = 0
@@ -643,7 +612,7 @@ class ShenNeumann(CompositeSpace):
 
     def _evaluate_scalar_product(self, fast_transform=False):
         input_array = self.scalar_product.input_array
-        output_array = self.scalar_product.output_array
+        output_array = self.scalar_product.tmp_array
         if fast_transform is False:
             SpectralBase._evaluate_scalar_product(self)
             output_array[self.sl[slice(-2, None)]] = 0
@@ -656,7 +625,6 @@ class ShenNeumann(CompositeSpace):
         xj, wj = self.points_and_weights(self.N)
         from shenfun.optimization.numba import legendre as legn
         legn.legendre_shenneumann_scalar_product(xj, wj, input_array, output_array)
-
         output_array[self.sl[slice(-2, None)]] = 0
         if self.use_fixed_gauge:
             output_array[self.si[0]] = self.mean*np.pi
@@ -684,39 +652,6 @@ class ShenNeumann(CompositeSpace):
         self._bc_basis = BCNeumann(self.N, quad=self.quad, domain=self.domain,
                                    coordinates=self.coors.coordinates)
         return self._bc_basis
-
-    def get_refined(self, N):
-        return ShenNeumann(N,
-                           quad=self.quad,
-                           domain=self.domain,
-                           bc=self.bc.bc,
-                           dtype=self.dtype,
-                           padding_factor=self.padding_factor,
-                           dealias_direct=self.dealias_direct,
-                           coordinates=self.coors.coordinates,
-                           mean=self.mean)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return ShenNeumann(self.N,
-                           quad=self.quad,
-                           domain=self.domain,
-                           bc=self.bc.bc,
-                           dtype=self.dtype,
-                           padding_factor=padding_factor,
-                           dealias_direct=dealias_direct,
-                           coordinates=self.coors.coordinates,
-                           mean=self.mean)
-
-    def get_unplanned(self):
-        return ShenNeumann(self.N,
-                           quad=self.quad,
-                           domain=self.domain,
-                           bc=self.bc.bc,
-                           dtype=self.dtype,
-                           padding_factor=self.padding_factor,
-                           dealias_direct=self.dealias_direct,
-                           coordinates=self.coors.coordinates,
-                           mean=self.mean)
 
 class ShenBiharmonic(CompositeSpace):
     """Function space for biharmonic basis
@@ -924,7 +859,7 @@ class UpperDirichlet(CompositeSpace):
         return self._bc_basis
 
 class ShenBiPolar(CompositeSpace):
-    """Legendre function space for the Biharmonic equation in polar coordinates
+    r"""Legendre function space for the Biharmonic equation in polar coordinates
 
     The basis function is
 

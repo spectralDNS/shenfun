@@ -49,9 +49,8 @@ U_hat = Function(T)
 #initialize
 U_hat = T.forward(U, U_hat)
 
-def LinearRHS(self, **par):
-    L = inner(v, div(grad(u))) + inner(v, u)
-    return L
+def LinearRHS(self, u, **par):
+    return div(grad(u)) + u
 
 def NonlinearRHS(self, u, u_hat, rhs, **par):
     global Up, Tp

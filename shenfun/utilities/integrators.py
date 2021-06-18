@@ -27,7 +27,8 @@ as they assume all matrices are diagonal.
 """
 import types
 import numpy as np
-from shenfun import Function, TPMatrix, TrialFunction, TestFunction, inner, la
+from shenfun import Function, TPMatrix, TrialFunction, TestFunction,\
+    inner, la, Expr, CompositeSpace, BlockMatrix, extract_bc_matrices
 
 __all__ = ('IRK3', 'RK4', 'ETDRK4', 'ETD')
 
@@ -55,8 +56,7 @@ class IntegratorBase:
                  N=None,
                  update=None,
                  **params):
-        _p = {'call_update': -1,
-              'dt': 0}
+        _p = {'dt': 0}
         _p.update(params)
         self.params = _p
         self.T = T
@@ -71,10 +71,10 @@ class IntegratorBase:
         pass
 
     def LinearRHS(self, *args, **kwargs):
-        pass
+        return 0
 
     def NonlinearRHS(self, *args, **kwargs):
-        pass
+        return 0
 
     def setup(self, dt):
         """Set up solver"""
@@ -88,11 +88,11 @@ class IntegratorBase:
             u : array
                 The solution array in physical space
             u_hat : array
-                    The solution array in spectral space
+                The solution array in spectral space
             dt : float
-                 Timestep
+                Timestep
             trange : two-tuple
-                     Time and end time
+                Time and end time
         """
         pass
 
@@ -108,9 +108,9 @@ class IRK3(IntegratorBase):
         N : function
             To compute nonlinear part of right hand side
         update : function
-                 To be called at the end of a timestep
+            To be called at the end of a timestep
         params : dictionary
-                 Any relevant keyword arguments
+            Any relevant keyword arguments
 
     """
     def __init__(self, T,
@@ -119,14 +119,17 @@ class IRK3(IntegratorBase):
                  update=None,
                  **params):
         IntegratorBase.__init__(self, T, L=L, N=N, update=update, **params)
+        if isinstance(T, CompositeSpace):
+            assert T.tensor_rank > 0, 'IRK3 only works for tensors, not generic CompositeSpaces'
         self.dU = Function(T)
         self.dU1 = Function(T)
         self.a = (8./15., 5./12., 3./4.)
         self.b = (0.0, -17./60., -5./12.)
         self.c = (0., 8./15., 2./3., 1)
         self.solver = None
+        self.bm = None
         self.rhs_mats = None
-        self.w0 = Function(self.T).v
+        self.w0 = Function(self.T)
         self.mask = self.T.get_mask_nyquist()
 
     def setup(self, dt):
@@ -140,18 +143,25 @@ class IRK3(IntegratorBase):
 
         a, b = self.a, self.b
         self.solver = []
-        for rk in range(3):
-            mats = inner(v, u - ((a[rk]+b[rk])*dt/2)*self.LinearRHS(u))
-            if len(mats[0].naxes) == 1:
-                self.solver.append(la.SolverGeneric1ND(mats))
-            elif len(mats[0].naxes) == 2:
-                self.solver.append(la.SolverGeneric2ND(mats))
-            else:
-                raise NotImplementedError
-
         self.rhs_mats = []
         for rk in range(3):
-            self.rhs_mats.append(inner(v, u + ((a[rk]+b[rk])*dt/2)*self.LinearRHS(u)))
+            mats = inner(v, u - ((a[rk]+b[rk])*dt/2)*self.LinearRHS(u))
+            bc_mats = extract_bc_matrices([mats])
+            if self.T.tensor_rank == 0:
+                if len(mats[0].naxes) == 1:
+                    self.solver.append(la.SolverGeneric1ND(mats))
+                elif len(mats[0].naxes) == 2:
+                    self.solver.append(la.SolverGeneric2ND(mats))
+                else:
+                    raise NotImplementedError
+            else:
+                self.solver.append(BlockMatrix(mats))
+
+            rhs_mats = inner(v, u + ((a[rk]+b[rk])*dt/2)*self.LinearRHS(u))
+            if self.T.tensor_rank == 0:
+                self.rhs_mats.append(rhs_mats+bc_mats)
+            else:
+                self.rhs_mats.append(BlockMatrix(rhs_mats+bc_mats))
 
         self.mass = inner(u, v)
 
@@ -173,13 +183,19 @@ class IRK3(IntegratorBase):
         while t < end_time-1e-8:
             for rk in range(3):
                 dU = self.compute_rhs(u, u_hat, self.dU, self.dU1, rk)
-                for mat in self.rhs_mats[rk]:
-                    w0 = mat.matvec(u_hat, self.w0)
+
+                if self.T.tensor_rank == 0:
+                    for mat in self.rhs_mats[rk]:
+                        w0 = mat.matvec(u_hat, self.w0)
+                        dU += w0
+                    u_hat = self.solver[rk](dU, u_hat)
+                else:
+                    w0 = self.rhs_mats[rk].matvec(u_hat, self.w0)
                     dU += w0
-                u_hat = self.solver[rk](dU, u_hat)
+                    u_hat = self.solver[rk].solve(dU, u=u_hat)
                 u_hat.mask_nyquist(self.mask)
 
-            t += self.dt
+            t += dt
             tstep += 1
             self.update(u, u_hat, t, tstep, **self.params)
 
@@ -209,6 +225,7 @@ class ETD(IntegratorBase):
                  update=None,
                  **params):
         IntegratorBase.__init__(self, T, L=L, N=N, update=update, **params)
+        assert len(T.get_nonperiodic_axes()) == 0
         self.dU = Function(T)
         self.psi = None
         self.ehL = None
@@ -216,10 +233,21 @@ class ETD(IntegratorBase):
     def setup(self, dt):
         """Set up ETD ODE solver"""
         self.params['dt'] = dt
-        L = self.LinearRHS(**self.params)
-        if isinstance(L, TPMatrix):
+        u = TrialFunction(self.T)
+        v = TestFunction(self.T)
+        L = self.LinearRHS(u, **self.params)
+        if isinstance(L, Expr):
+            L = inner(v, L)
+        if isinstance(L, list):
+            assert self.T.tensor_rank == 1
+            assert L[0].isidentity()
+            L = L[0].scale
+            # Use only L[0] and let numpy broadcasting take care of the rest
+        elif isinstance(L, TPMatrix):
             assert L.isidentity()
             L = L.scale
+        assert isinstance(L, np.ndarray)
+
         L = np.atleast_1d(L)
         hL = L*dt
         self.ehL = np.exp(hL)
@@ -228,7 +256,6 @@ class ETD(IntegratorBase):
         for k in range(1, M+1):
             ll = hL+np.exp(np.pi*1j*(k-0.5)/M)
             psi += ((np.exp(ll)-1.)/ll).real
-
         psi /= M
 
     def solve(self, u, u_hat, dt, trange):
@@ -296,8 +323,17 @@ class ETDRK4(IntegratorBase):
     def setup(self, dt):
         """Set up ETDRK4 ODE solver"""
         self.params['dt'] = dt
-        L = self.LinearRHS(**self.params)
-        if isinstance(L, TPMatrix):
+        u = TrialFunction(self.T)
+        v = TestFunction(self.T)
+        L = self.LinearRHS(u, **self.params)
+        if isinstance(L, Expr):
+            L = inner(v, L)
+        if isinstance(L, list):
+            assert self.T.tensor_rank == 1
+            assert L[0].isidentity()
+            L = L[0].scale
+            # Use only L[0] and let numpy broadcasting take care of the rest
+        elif isinstance(L, TPMatrix):
             assert L.isidentity()
             L = L.scale
         L = np.atleast_1d(L)
@@ -411,14 +447,26 @@ class RK4(IntegratorBase):
             self.setup(dt)
         t, end_time = trange
         tstep = 0
-        L = self.LinearRHS(**self.params)
+        ut = TrialFunction(self.T)
+        vt = TestFunction(self.T)
+        L = self.LinearRHS(ut, **self.params)
+        if isinstance(L, Expr):
+            L = inner(vt, L)
+        if isinstance(L, list):
+            assert self.T.tensor_rank == 1
+            assert L[0].isidentity()
+            L = L[0].scale
+            # Use only L[0] and let numpy broadcasting take care of the rest
+        elif isinstance(L, TPMatrix):
+            assert L.isidentity()
+            L = L.scale
         while t < end_time-1e-8:
             t += dt
             tstep += 1
             self.U_hat0[:] = self.U_hat1[:] = u_hat
             for rk in range(4):
                 dU = self.NonlinearRHS(u, u_hat, self.dU, **self.params)
-                if L:
+                if isinstance(L, np.ndarray):
                     dU += L*u_hat
                 if rk < 3:
                     u_hat[:] = self.U_hat0 + self.b[rk]*dt*dU

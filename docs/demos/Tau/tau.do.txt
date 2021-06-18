@@ -15,7 +15,7 @@ of the problem are already built in. The tau-method, on the other hand,
 does not come with such restrictions. The tau-method usually considers
 only the orthogonal basis, like pure Chebyshev or Legendre polynomials,
 and derives differentiation matrices for these bases. The boundary conditions
-are usually fixed by enforcing a couple of rows of the differentiation
+are usually fixed by fixing a couple of rows of the differentiation
 matrix. In this demo we will show how the original tau-method can
 be easily implemented using "shenfun":
 "https://github.com/spectralDNS/shenfun".
@@ -66,11 +66,10 @@ label{eq:dirichletb}
 \end{align}
 !et
 where we have use that $\phi_k(1) = 1$ and $\phi_k(-1)=(-1)^k$ for $k=0,1, \ldots, N-1$,
-for either Chebyshev or Legendre polynomials $\phi_k$.
-
-This gives two equations for the $N-1$ unknowns in  $\{\hat{u}_k\}_{k=0}^{N-1}$.
+for either Chebyshev or Legendre polynomials $\phi_k$. This gives two equations
+for the $N$ unknowns in  $\{\hat{u}_k\}_{k=0}^{N-1}$.
 We will now use variational principles, like in the Galerkin method, in order to
-derive equations that can be used to close the remaining $N-3$ unknowns.
+derive equations that can be used to close the remaining $N-2$ unknowns.
 To this end we multiply Poisson's equation by a
 test function $v$, a weight $w$, and integrate  over the domain
 !bt
@@ -86,7 +85,7 @@ the test function $v=\phi_k$, to get
 
 !bt
 \begin{equation}
-\int_{-1}^1 \sum_{j=0}^{N-1} \nabla^2 \phi_j  \, \phi_k \, w\, dx \hat{u}_j = \int_{-1}^1 f \, \phi_k\, w\, dx. label{eq:varform2}
+\int_{-1}^1 \nabla^2 \sum_{j=0}^{N-1} \phi_j \,  \, \phi_k \, w\, dx \hat{u}_j = \int_{-1}^1 f \, \phi_k\, w\, dx. label{eq:varform2}
 \end{equation}
 !et
 
@@ -100,9 +99,9 @@ A \hat{\mathbf{{u}}} &= \tilde{\mathbf{{f}}}.
 !et
 
 However, the matrix $A\in \mathbb{R}^{N \times N}$ is singular because it
-contains two zero rows. These two rows is where we implement the two boundary
-conditions. By setting the rows as $a_{N-2, j}=1$ and
-$a_{N-1, j}= (-1)^j$ for $j=0, 1, \ldots, N-1$, and fixing
+contains two zero rows. These two rows can be used to implement the two boundary
+conditions. By fixing the rows as $a_{N-2, j}=1$ and
+$a_{N-1, j}= (-1)^j$ for $j=0, 1, \ldots, N-1$, and
 the right hand side $\tilde{f}_{N-2}=a$ and $\tilde{f}_{N-1}=b$, the
 two boundary conditions will be satisfied.
 
@@ -190,10 +189,19 @@ f_hat[-1] = ue.subs(x, T.domain[1])
 Note that the last two lines uses evaluation of the sympy function
 `ue` at the borders of the domain. Implemented like this it is
 easy to change to a nonstandard domain size.
+The sparsity pattern of the matrix A is now modified
+with the typical tau-lines
+
+!bc pycod
+import plotly.express as px
+z = np.where(abs(A.toarray()) > 1e-6, 0, 1).astype(bool)
+fig = px.imshow(z, binary_string=True)
+fig.show()
+!ec
 
 === Solve linear equations ===
 
-Finally, solve linear equation system and transform solution from spectral
+Finally, solve the linear equation system and transform the solution from the spectral
 $\{\hat{u}_k\}_{k=0}^{N-1}$ vector to the real space $\{u(x_j)\}_{j=0}^{N-1}$
 and then check how the solution corresponds with the exact solution $u_e$.
 To this end we compute the $L_2$-errornorm using the `shenfun` function

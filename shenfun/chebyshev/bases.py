@@ -146,12 +146,13 @@ class ChebyshevBase(SpectralBase):
 
         self.axis = axis
         if self.padding_factor != 1:
+            self.scalar_product = Transform(self.scalar_product, self.xfftn_fwd, U, V, trunc_array)
             self.forward = Transform(self.forward, self.xfftn_fwd, U, V, trunc_array)
             self.backward = Transform(self.backward, self.xfftn_bck, trunc_array, V, U)
         else:
+            self.scalar_product = Transform(self.scalar_product, self.xfftn_fwd, U, V, V)
             self.forward = Transform(self.forward, self.xfftn_fwd, U, V, V)
             self.backward = Transform(self.backward, self.xfftn_bck, V, V, U)
-        self.scalar_product = Transform(self.scalar_product, self.xfftn_fwd, U, V, V)
         self.si = islicedict(axis=self.axis, dimensions=U.ndim)
         self.sl = slicedict(axis=self.axis, dimensions=U.ndim)
 
@@ -362,12 +363,14 @@ class Orthogonal(ChebyshevBase):
         if self.__class__.__name__ == 'Orthogonal':
             if self.padding_factor != 1:
                 trunc_array = self._get_truncarray(shape, V.dtype)
+                self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, trunc_array)
                 self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
                 self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
             else:
+                self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
                 self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
                 self.backward = Transform(self.backward, xfftn_bck, V, V, U)
-            self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
+
         else:
             self.xfftn_fwd = xfftn_fwd
             self.xfftn_bck = xfftn_bck
@@ -423,7 +426,7 @@ class CompositeSpace(Orthogonal):
         Orthogonal._evaluate_expansion_all(self, input_array, output_array, x, fast_transform)
 
     def _evaluate_scalar_product(self, fast_transform=True):
-        output = self.scalar_product.output_array
+        output = self.scalar_product.tmp_array
         if fast_transform is False:
             SpectralBase._evaluate_scalar_product(self)
             output[self.sl[slice(-(self.N-self.dim()), None)]] = 0
@@ -555,39 +558,6 @@ class CompositeSpace(Orthogonal):
         w = self.to_ortho(u)
         output_array[:] = chebval(x, w)
         return output_array
-
-    def get_refined(self, N):
-        return self.__class__(N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc,
-                              scaled=self._scaled)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=padding_factor,
-                              dealias_direct=dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc,
-                              scaled=self._scaled)
-
-    def get_unplanned(self):
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc,
-                              scaled=self._scaled)
 
 class OrthogonalU(ChebyshevBase):
     """Function space for Chebyshev series of second kind
@@ -800,12 +770,14 @@ class OrthogonalU(ChebyshevBase):
         if self.__class__.__name__ == 'OrthogonalU':
             if self.padding_factor != 1:
                 trunc_array = self._get_truncarray(shape, V.dtype)
+                self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, trunc_array)
                 self.forward = Transform(self.forward, xfftn_fwd, U, V, trunc_array)
                 self.backward = Transform(self.backward, xfftn_bck, trunc_array, V, U)
             else:
+                self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
                 self.forward = Transform(self.forward, xfftn_fwd, U, V, V)
                 self.backward = Transform(self.backward, xfftn_bck, V, V, U)
-            self.scalar_product = Transform(self.scalar_product, xfftn_fwd, U, V, V)
+
         else:
             self.xfftn_fwd = xfftn_fwd
             self.xfftn_bck = xfftn_bck
@@ -875,39 +847,6 @@ class CompositeSpaceU(OrthogonalU):
 
         """
         raise NotImplementedError
-
-    def get_refined(self, N):
-        return self.__class__(N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc,
-                              scaled=self._scaled)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=padding_factor,
-                              dealias_direct=dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc,
-                              scaled=self._scaled)
-
-    def get_unplanned(self):
-        return self.__class__(self.N,
-                              quad=self.quad,
-                              domain=self.domain,
-                              dtype=self.dtype,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates,
-                              bc=self.bc.bc,
-                              scaled=self._scaled)
 
 class ShenDirichlet(CompositeSpace):
     r"""Function space for Dirichlet boundary conditions
@@ -982,11 +921,11 @@ class ShenDirichlet(CompositeSpace):
     def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
             SpectralBase._evaluate_scalar_product(self)
-            self.scalar_product.output_array[self.si[-2]] = 0
-            self.scalar_product.output_array[self.si[-1]] = 0
+            self.scalar_product.tmp_array[self.si[-2]] = 0
+            self.scalar_product.tmp_array[self.si[-1]] = 0
             return
         Orthogonal._evaluate_scalar_product(self, True)
-        output = self.scalar_product.output_array
+        output = self.scalar_product.tmp_array
         s0 = self.sl[slice(0, self.N-2)]
         s1 = self.sl[slice(2, self.N)]
         output[s0] -= output[s1]
@@ -1153,11 +1092,11 @@ class DirichletU(CompositeSpaceU):
     def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
             SpectralBase._evaluate_scalar_product(self)
-            self.scalar_product.output_array[self.si[-2]] = 0
-            self.scalar_product.output_array[self.si[-1]] = 0
+            self.scalar_product.tmp_array[self.si[-2]] = 0
+            self.scalar_product.tmp_array[self.si[-1]] = 0
             return
         OrthogonalU._evaluate_scalar_product(self, True)
-        output = self.scalar_product.output_array
+        output = self.scalar_product.tmp_array
         s0 = self.sl[slice(0, self.N-2)]
         s1 = self.sl[slice(2, self.N)]
         #w0 = output.copy()
@@ -1423,11 +1362,11 @@ class QuasiDirichlet(CompositeSpace):
     def _evaluate_scalar_product(self, fast_transform=True):
         if fast_transform is False:
             SpectralBase._evaluate_scalar_product(self)
-            self.scalar_product.output_array[self.si[-2]] = 0
-            self.scalar_product.output_array[self.si[-1]] = 0
+            self.scalar_product.tmp_array[self.si[-2]] = 0
+            self.scalar_product.tmp_array[self.si[-1]] = 0
             return
         Orthogonal._evaluate_scalar_product(self, True)
-        output = self.scalar_product.output_array
+        output = self.scalar_product.tmp_array
         wk = output.copy()
         k = self.broadcast_to_ndims(np.arange(self.N))
         s0 = self.sl[slice(0, self.N-2)]
@@ -1569,42 +1508,6 @@ class ShenNeumann(CompositeSpace):
                                    coordinates=self.coors.coordinates)
         return self._bc_basis
 
-    def get_refined(self, N):
-        return ShenNeumann(N,
-                           quad=self.quad,
-                           bc=self.bc.bc,
-                           domain=self.domain,
-                           dtype=self.dtype,
-                           scaled=self._scaled,
-                           padding_factor=self.padding_factor,
-                           dealias_direct=self.dealias_direct,
-                           coordinates=self.coors.coordinates,
-                           mean=self.mean)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return ShenNeumann(self.N,
-                           quad=self.quad,
-                           bc=self.bc.bc,
-                           domain=self.domain,
-                           dtype=self.dtype,
-                           scaled=self._scaled,
-                           padding_factor=padding_factor,
-                           dealias_direct=dealias_direct,
-                           coordinates=self.coors.coordinates,
-                           mean=self.mean)
-
-    def get_unplanned(self):
-        return ShenNeumann(self.N,
-                           quad=self.quad,
-                           bc=self.bc.bc,
-                           domain=self.domain,
-                           dtype=self.dtype,
-                           scaled=self._scaled,
-                           padding_factor=self.padding_factor,
-                           dealias_direct=self.dealias_direct,
-                           coordinates=self.coors.coordinates,
-                           mean=self.mean)
-
 class CombinedShenNeumann(CompositeSpace):
     """Function space for homogeneous Neumann boundary conditions
 
@@ -1692,42 +1595,6 @@ class CombinedShenNeumann(CompositeSpace):
         self._bc_basis = BCNeumann(self.N, quad=self.quad, domain=self.domain,
                                    coordinates=self.coors.coordinates)
         return self._bc_basis
-
-    def get_refined(self, N):
-        return CombinedShenNeumann(N,
-                           quad=self.quad,
-                           bc=self.bc.bc,
-                           scaled=self._scaled,
-                           domain=self.domain,
-                           dtype=self.dtype,
-                           padding_factor=self.padding_factor,
-                           dealias_direct=self.dealias_direct,
-                           coordinates=self.coors.coordinates,
-                           mean=self.mean)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return CombinedShenNeumann(self.N,
-                           quad=self.quad,
-                           bc=self.bc.bc,
-                           scaled=self._scaled,
-                           domain=self.domain,
-                           dtype=self.dtype,
-                           padding_factor=padding_factor,
-                           dealias_direct=dealias_direct,
-                           coordinates=self.coors.coordinates,
-                           mean=self.mean)
-
-    def get_unplanned(self):
-        return CombinedShenNeumann(self.N,
-                           quad=self.quad,
-                           bc=self.bc.bc,
-                           scaled=self._scaled,
-                           domain=self.domain,
-                           dtype=self.dtype,
-                           padding_factor=self.padding_factor,
-                           dealias_direct=self.dealias_direct,
-                           coordinates=self.coors.coordinates,
-                           mean=self.mean)
 
 class MikNeumann(CompositeSpace):
     r"""Function space for homogeneous Neumann boundary conditions
@@ -1824,42 +1691,6 @@ class MikNeumann(CompositeSpace):
         self._bc_basis = BCNeumann(self.N, quad=self.quad, domain=self.domain,
                                    coordinates=self.coors.coordinates)
         return self._bc_basis
-
-    def get_refined(self, N):
-        return MikNeumann(N,
-                           quad=self.quad,
-                           bc=self.bc.bc,
-                           domain=self.domain,
-                           dtype=self.dtype,
-                           padding_factor=self.padding_factor,
-                           dealias_direct=self.dealias_direct,
-                           coordinates=self.coors.coordinates,
-                           scaled=self._scaled,
-                           mean=self.mean)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return MikNeumann(self.N,
-                           quad=self.quad,
-                           bc=self.bc.bc,
-                           domain=self.domain,
-                           dtype=self.dtype,
-                           padding_factor=padding_factor,
-                           dealias_direct=dealias_direct,
-                           coordinates=self.coors.coordinates,
-                           scaled=self._scaled,
-                           mean=self.mean)
-
-    def get_unplanned(self):
-        return MikNeumann(self.N,
-                           quad=self.quad,
-                           bc=self.bc.bc,
-                           domain=self.domain,
-                           dtype=self.dtype,
-                           padding_factor=self.padding_factor,
-                           dealias_direct=self.dealias_direct,
-                           coordinates=self.coors.coordinates,
-                           scaled=self._scaled,
-                           mean=self.mean)
 
 class ShenBiharmonic(CompositeSpace):
     """Function space for biharmonic equation
@@ -2062,36 +1893,6 @@ class SecondNeumann(CompositeSpace): #pragma: no cover
         w_hat[2:] = self._factor*u[:-2]
         output_array -= chebval(x, w_hat)
         return output_array
-
-    def get_refined(self, N):
-        return SecondNeumann(N,
-                             quad=self.quad,
-                             domain=self.domain,
-                             dtype=self.dtype,
-                             padding_factor=self.padding_factor,
-                             dealias_direct=self.dealias_direct,
-                             coordinates=self.coors.coordinates,
-                             mean=self.mean)
-
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return SecondNeumann(self.N,
-                             quad=self.quad,
-                             domain=self.domain,
-                             dtype=self.dtype,
-                             padding_factor=padding_factor,
-                             dealias_direct=dealias_direct,
-                             coordinates=self.coors.coordinates,
-                             mean=self.mean)
-
-    def get_unplanned(self):
-        return SecondNeumann(self.N,
-                             quad=self.quad,
-                             domain=self.domain,
-                             dtype=self.dtype,
-                             padding_factor=self.padding_factor,
-                             dealias_direct=self.dealias_direct,
-                             coordinates=self.coors.coordinates,
-                             mean=self.mean)
 
 class UpperDirichlet(CompositeSpace):
     """Function space with homogeneous Dirichlet on upper edge (x=1) of boundary

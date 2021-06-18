@@ -28,11 +28,8 @@ W = Array(TV)
 curl_ = Array(TV)
 A = inner(grad(u), grad(v))
 
-def LinearRHS(self, **params):
-    # Note that L is a diagonal TPmatrix with scale of shape (N[0], N[1], N[2]//2+1),
-    # but it is used as (3, N[0], N[1], N[2]//2+1) due to broadcasting
-    L = inner(nu*div(grad(u)), v)
-    return L
+def LinearRHS(self, u, **params):
+    return nu*div(grad(u))
 
 def NonlinearRHS(self, U, U_hat, dU, **params):
     global TV, curl_hat, curl_, P_hat, W

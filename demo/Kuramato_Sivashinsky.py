@@ -44,10 +44,9 @@ gradu = Array(TVp)
 K = np.array(T.local_wavenumbers(True, True, True))
 mask = T.get_mask_nyquist()
 
-def LinearRHS(self, **params):
+def LinearRHS(self, u, **params):
     # Assemble diagonal bilinear forms
-    L = inner(-div(grad(u))-div(grad(div(grad(u)))), v)
-    return L
+    return -div(grad(u))-div(grad(div(grad(u))))
 
 def NonlinearRHS(self, U, U_hat, dU, gradu, **params):
     # Assemble nonlinear term
