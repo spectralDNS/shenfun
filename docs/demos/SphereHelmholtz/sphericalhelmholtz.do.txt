@@ -23,9 +23,9 @@ label{demo:spherical_helmholtz}
 The Helmholtz equation is given as
 
 !bt
-\begin{align}
--\nabla^2 u(\bs{x}) + \alpha u(\bs{x}) &= f(\bs{x}) \quad \text{for }\, \bs{x} \in \Omega = \{(x, y, z): x^2+y^2+z^2 = 1\}, label{eq:helmholtz}\\
-\end{align}
+\begin{equation}
+-\nabla^2 u(\bs{x}) + \alpha u(\bs{x}) = f(\bs{x}) \quad \text{for }\, \bs{x} \in \Omega = \{(x, y, z): x^2+y^2+z^2 = 1\}, label{eq:helmholtz}
+\end{equation}
 !et
 
 where $u(\bs{x})$ is the solution, $f(\bs{x})$ is a function and $\alpha$ a constant.

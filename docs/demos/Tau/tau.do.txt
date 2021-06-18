@@ -42,9 +42,7 @@ u(-1)&=a, u(1)=b, \notag
 \end{align}
 !et
 where $u(x)$ is the solution, $f(x)$ is a function and $a, b$ are two possibly
-non-zero constants.
-
-To solve Eq. (ref{eq:poisson}) with the tau method we choose either
+non-zero constants. To solve Eq. (ref{eq:poisson}) with the tau method we choose either
 Legendre of Chebyshev basis functions $\phi_k$, and then look for
 solutions
 !bt
@@ -113,7 +111,8 @@ We will solve Poisson's equation using the "shenfun":
 "https://github.com/spectralDNS/shenfun" Python module. The first thing needed
 is then to import some of this module's functionality
 plus some other helper modules, like "Numpy": "https://numpy.org" and "Sympy":
-"https://sympy.org":
+"https://sympy.org", and the "sparse":"https://docs.scipy.org/doc/scipy/reference/sparse.html"
+for handeling sparse matrices:
 
 !bc pycod
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
@@ -137,8 +136,7 @@ the manufactured solution `ue`.
 
 === Discretization ===
 
-We create a basis with a given number of basis functions, and extract the computational
-mesh from the basis itself
+We create a basis with a given number of basis functions,
 
 !bc pycod
 N = 32
@@ -146,7 +144,8 @@ T = FunctionSpace(N, 'Chebyshev')
 #T = FunctionSpace(N, 'Legendre')
 !ec
 
-Note that we can either choose a Legendre or a Chebyshev basis.
+Note that we can either choose a Legendre or a Chebyshev basis. The
+remaining code will work either way.
 
 === Variational formulation ===
 
@@ -163,9 +162,8 @@ f_hat = Function(T)
 f_hat = inner(v, fj, output_array=f_hat)
 !ec
 
-Note that the `sympy` function `fe` can be used to initialize the ${cls('Array')}
-`fj`. We wrap this Numpy array in an ${cls('Array')} class
-(`fj = Array(SD, buffer=fe)`), because an Array
+Note that the `sympy` function `fe` is be used to initialize the ${cls('Array')}
+`fj`, because an Array
 is required as input to the ${func('inner')} function. An
 ${cls('Array')} contains the solution evaluated on the
 quadrature mesh. A ${cls('Function')} represents a global
@@ -190,7 +188,7 @@ Note that the last two lines uses evaluation of the sympy function
 `ue` at the borders of the domain. Implemented like this it is
 easy to change to a nonstandard domain size.
 The sparsity pattern of the matrix A is now modified
-with the typical tau-lines
+with the typical tau-lines that we can visualize using "plotly":"https://plotly.com/"
 
 !bc pycod
 import plotly.express as px
