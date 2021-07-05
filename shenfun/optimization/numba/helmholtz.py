@@ -436,7 +436,7 @@ def Poisson_Solve_ADD_3D(d, d1, scale, b, u, axis):
     elif axis == 1:
         for i in range(u.shape[0]):
             for k in range(u.shape[2]):
-               u[i, :, k] = Poisson_Solve_ADD_1D(d, d1, scale, b[i, :, k], u[i, :, k])
+                u[i, :, k] = Poisson_Solve_ADD_1D(d, d1, scale, b[i, :, k], u[i, :, k])
 
     elif axis == 2:
         for i in range(u.shape[0]):
