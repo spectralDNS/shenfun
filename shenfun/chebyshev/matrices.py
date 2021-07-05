@@ -78,7 +78,7 @@ from shenfun.optimization import cython, numba, optimizer
 from shenfun.matrixbase import SpectralMatrix, SparseMatrix
 from shenfun.la import TDMA as generic_TDMA
 from shenfun.la import PDMA as generic_PDMA
-from .la import TDMA, PDMA, TwoDMA, FDMA, ADD_Solve
+from .la import TDMA, TwoDMA, FDMA, ADD_Solve
 from . import bases
 
 x = sp.symbols('x', real=True)
@@ -620,7 +620,6 @@ class BSBSBmat(SpectralMatrix):
     def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
-        from shenfun.la import PDMA
         N = test[0].N
         M = trial[0].N
         Q = min(N, M)
@@ -634,7 +633,7 @@ class BSBSBmat(SpectralMatrix):
         d[-2] = d2[:dmax(N-4, M-4, -2)]
         d[-4] = d4[:dmax(N-4, M-4, -4)]
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
-        self.solve = PDMA(self)
+        self.solve = generic_PDMA(self)
         self._matvec_methods += ['cython', 'self']
 
     def matvec(self, v, c, format='cython', axis=0):
@@ -773,7 +772,6 @@ class BCNCNmat(SpectralMatrix):
         assert isinstance(trial[0], CN)
         assert trial[0].quad == 'GC', 'Not implemented for GL'
         N = test[0].N
-        M = trial[0].N
         k = np.arange(N, dtype=float)
         dk = np.ones(N)
         dk[:3] = 0
@@ -813,7 +811,6 @@ class BSDHHmat(SpectralMatrix):
     def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], HH)
-        from shenfun.la import PDMA
         ck = get_ck(test[0].N, test[0].quad)
         cp = np.ones(test[0].N); cp[2] = 2
         dk = np.ones(test[0].N); dk[:2] = 0
@@ -830,7 +827,7 @@ class BSDHHmat(SpectralMatrix):
             d[4]  *= 1/((k[:-6]+5)*(k[:-6]+6))
 
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
-        self.solve = PDMA(self)
+        self.solve = generic_PDMA(self)
 
 class CSDSNmat(SpectralMatrix):
     r"""Matrix for inner product
@@ -1808,7 +1805,6 @@ class BHHHHmat(SpectralMatrix):
     def __init__(self, test, trial, measure=1):
         assert isinstance(test[0], HH)
         assert isinstance(trial[0], HH)
-        from shenfun.la import PDMA
         ck = get_ck(test[0].N-2, test[0].quad)
         cp = np.ones(test[0].N-2); cp[2] = 2
         dk = np.ones(test[0].N-2); dk[:2] = 0
@@ -1824,7 +1820,7 @@ class BHHHHmat(SpectralMatrix):
         d[-2] = d[2].copy()
         d[-4] = d[4].copy()
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
-        self.solve = PDMA(self)
+        self.solve = generic_PDMA(self)
 
 class BSDMNmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
@@ -2142,16 +2138,16 @@ mat = _ChebMatDict({
     ((SN, 0), (SB, 0)): BSNSBmat,
     ((SD, 0), (SN, 0)): BSDSNmat,
     ((SN, 0), (SD, 0)): BSNSDmat,
-    ((T , 0), (SN, 0)): BTSNmat,
+    ((T,  0), (SN, 0)): BTSNmat,
     ((SB, 0), (SD, 0)): BSBSDmat,
     ((T,  0), (SD, 0)): BTSDmat,
     ((SD, 0), (T,  0)): BSDTmat,
     ((SD, 0), (SD, 2)): ASDSDmat,
     ((SD, 0), (SD, 2), (-1, 1), (x**2-1)): functools.partial(ASDSDmatW, scale=-1, measure=(x**2-1)),
     ((SD, 0), (SD, 2), (-1, 1), (1-x**2)): functools.partial(ASDSDmatW, measure=(1-x**2)),
-    ((T , 0), (T , 2)): ATTmat,
-    ((T , 0), (SD, 2)): ATSDmat,
-    ((T , 0), (SN, 2)): ATSNmat,
+    ((T,  0), (T , 2)): ATTmat,
+    ((T,  0), (SD, 2)): ATSDmat,
+    ((T,  0), (SN, 2)): ATSNmat,
     ((SN, 0), (SN, 2)): ASNSNmat,
     ((CN, 0), (CN, 2)): ACNCNmat,
     ((SB, 0), (SB, 2)): ASBSBmat,

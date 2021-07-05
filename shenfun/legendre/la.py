@@ -17,7 +17,7 @@ class TDMA(la_TDMA):
               Symmetric tridiagonal matrix with diagonals in offsets -2, 0, 2
 
     """
-    def __call__(self, b, u=None, axis=0):
+    def __call__(self, b, u=None, axis=0, **kw):
 
         if u is None:
             u = b

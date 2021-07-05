@@ -127,8 +127,8 @@ def grad(test):
                 for j in range(ndim):
                     d.append(Dx(test[i], j, 1))
         else:
-           for i in range(ndim):
-               d.append(Dx(test, i, 1))
+            for i in range(ndim):
+                d.append(Dx(test, i, 1))
 
     else:
 

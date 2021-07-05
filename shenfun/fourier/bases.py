@@ -567,6 +567,7 @@ class C2C(FourierBase):
             trunc_array[su] += padded_array[su]
 
     def _padding_backward(self, trunc_array, padded_array):
+        # pylint: disable=attribute-defined-outside-init
         if not id(trunc_array) == id(padded_array):
             padded_array.fill(0)
             N = trunc_array.shape[self.axis]

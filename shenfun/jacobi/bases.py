@@ -35,7 +35,6 @@ import sympy as sp
 from scipy.special import eval_jacobi, roots_jacobi #, gamma
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
-from shenfun.forms.arguments import Function
 from shenfun.chebyshev.bases import BCBiharmonic, BCDirichlet
 
 try:

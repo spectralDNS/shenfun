@@ -617,7 +617,7 @@ class SpectralBase:
         xfftn_fwd = plan_fwd(U, n, (axis,), threads=threads, flags=flags)
         V = xfftn_fwd.output_array
 
-        if np.issubdtype(dtype, floating):
+        if np.issubdtype(dtype, np.floating):
             flags = (fftw.flag_dict[opts['planner_effort']],)
 
         xfftn_bck = plan_bck(V, n, (axis,), threads=threads, flags=flags, output_array=U)
@@ -1084,7 +1084,6 @@ class SpectralBase:
             res = T.eval(points, u)
             exact = fx(points)
             energy = np.linalg.norm(res-exact)
-            #print(T.N, energy)
             converged = energy**2 < abstol
             count += 1
 

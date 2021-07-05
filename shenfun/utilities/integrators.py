@@ -171,8 +171,8 @@ class IRK3(IntegratorBase):
         dt = self.params['dt']
         dU = self.NonlinearRHS(u, u_hat, dU, **self.params)
         dU.mask_nyquist(self.mask)
-        w1 = dU*a*dt + self.dU1*b*dt
-        self.dU1[:] = dU
+        w1 = dU*a*dt + dU1*b*dt
+        dU1[:] = dU
         return w1
 
     def solve(self, u, u_hat, dt, trange):

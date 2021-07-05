@@ -143,6 +143,8 @@ class PDMA:
         self.d0 = np.zeros(0)
         self.d1 = None
         self.d2 = None
+        self.l1 = None
+        self.l2 = None
         self.A = None
         self.L = None
         self.neumann = neumann
@@ -429,7 +431,7 @@ class SolverGeneric2ND:
 
     def __init__(self, tpmats):
         self.tpmats = tpmats
-        self.T = T = tpmats[0].space
+        self.T = tpmats[0].space
         self.M = None
 
     def matvec(self, u, c):

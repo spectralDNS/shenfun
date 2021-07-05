@@ -4,9 +4,9 @@ Module for defining function spaces in the Chebyshev family
 from __future__ import division
 import functools
 import numpy as np
+from numpy.polynomial import chebyshev as n_cheb
 import sympy as sp
 from time import time
-from numpy.polynomial import chebyshev as n_cheb
 from scipy.special import eval_chebyt, eval_chebyu
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, FuncWrap, \
@@ -1401,7 +1401,7 @@ class QuasiDirichlet(CompositeSpace):
 
         k = self.broadcast_to_ndims(np.arange(self.N))
         s0 = self.sl[slice(0, self.N-2)]
-        output_array[s] = input_array[s0]/(2*np.pi*(k[s0]+1)*(k[s0]+2))
+        output_array[s0] = input_array[s0]/(2*np.pi*(k[s0]+1)*(k[s0]+2))
         #s0 = self.sl[slice(0, self.N-4)]
         #s2 = self.sl[slice(2, self.N-2)]
         s0 = self.sl[slice(0, self.N-2)]

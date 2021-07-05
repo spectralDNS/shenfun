@@ -5,7 +5,9 @@ import numpy as np
 from sympy import symbols, sin, cos, lambdify
 from shenfun import *
 import matplotlib.pyplot as plt
-from matplotlib.ticker import NullFormatter, ScalarFormatter
+from matplotlib.ticker import NullFormatter
+
+# pylint: disable=multiple-statements
 
 from mpltools import annotation
 pa = {'fill': False, 'edgecolor': 'black'}
@@ -201,7 +203,7 @@ if __name__ == "__main__":
     for (j, n) in enumerate(N):
         E[:, j] = main(n)
 
-    fig = plt.figure(figsize=(5.69,4.27))
+    fig = plt.figure(figsize=(5.69, 4.27))
     ax = plt.gca()
     marks = ('or', '-g', '-ob')
     vars = (r'$u_x$', r'$u_y$', r'$p$')
@@ -209,7 +211,7 @@ if __name__ == "__main__":
         plt.loglog(N, E[i, :], marks[i], label=vars[i])
         slope, intercept = np.polyfit(np.log(N[-2:]), np.log(E[i, -2:]), 1)
         if i != 1:
-            annotation.slope_marker((N[-2], E[i,-2]), ("{0:.2f}".format(slope), 1),
+            annotation.slope_marker((N[-2], E[i, -2]), ("{0:.2f}".format(slope), 1),
             ax=ax, poly_kwargs=pa, text_kwargs=ta)
 
     plt.text(N[0], 2e-5, r"$\Delta t=5 \times 10^{-3},\; N=32^2$")

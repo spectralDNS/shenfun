@@ -387,7 +387,6 @@ class CompositeSpace(Orthogonal):
             output_array = np.zeros_like(input_array)
         else:
             output_array.fill(0)
-        nbcs = self.N-self.dim()
         s = [np.newaxis]*self.dimensions
         for key, val in self.stencil_matrix().items():
             M = self.N if key >= 0 else self.dim()
@@ -513,7 +512,7 @@ class ShenDirichlet(CompositeSpace):
         return slice(0, self.N-2)
 
     def _evaluate_expansion_all(self, input_array, output_array,
-                               x=None, fast_transform=False):
+                                x=None, fast_transform=False):
         if fast_transform is False:
             SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, fast_transform)
             return
@@ -779,10 +778,10 @@ class BeamFixedFree(CompositeSpace):
         d = np.ones(N, dtype=int)
         d[-4:] = 0
         k = np.arange(N)
-        f1 =4*(2*k[:-1]+3)/(k[:-1]+3)**2
-        f2 =-(2*(k[:-2]-1)*(k[:-2]+1)*(k[:-2]+6)*(2*k[:-2]+5)/((k[:-2]+3)**2*(k[:-2]+4)*(2*k[:-2]+7)))
-        f3 =- 4*(k[:-3]+1)**2*(2*k[:-3]+3)/((k[:-3]+3)**2*(k[:-3]+4)**2)
-        f4 =(((k[:-4]+1)/(k[:-4]+3))*((k[:-4]+2)/(k[:-4]+4)))**2*(2*k[:-4]+3)/(2*k[:-4]+7)
+        f1 = 4*(2*k[:-1]+3)/(k[:-1]+3)**2
+        f2 = -(2*(k[:-2]-1)*(k[:-2]+1)*(k[:-2]+6)*(2*k[:-2]+5)/((k[:-2]+3)**2*(k[:-2]+4)*(2*k[:-2]+7)))
+        f3 = -4*(k[:-3]+1)**2*(2*k[:-3]+3)/((k[:-3]+3)**2*(k[:-3]+4)**2)
+        f4 = (((k[:-4]+1)/(k[:-4]+3))*((k[:-4]+2)/(k[:-4]+4)))**2*(2*k[:-4]+3)/(2*k[:-4]+7)
         return SparseMatrix({0: d, 1: f1, 2: f2,3: f3, 4: f4}, (N, N))
 
     def slice(self):
@@ -1223,7 +1222,7 @@ class DirichletNeumannDirichlet(CompositeSpace):
         if self._bc_basis:
             return self._bc_basis
         self._bc_basis = BCDirichletNeumannDirichlet(self.N, quad=self.quad, domain=self.domain,
-                                      coordinates=self.coors.coordinates)
+                                                     coordinates=self.coors.coordinates)
         return self._bc_basis
 
 class NeumannDirichlet(CompositeSpace):

@@ -252,8 +252,8 @@ def Helmholtz_matvec3D(v, b, alfa, beta, dd, ud, bd, axis):
     elif axis == 1:
         for i in range(v.shape[0]):
             for k in range(v.shape[2]):
-               Helmholtz_matvec1D(v[i, :, k], b[i, :, k], alfa[i, 0, k],
-                                  beta[i, 0, k], dd, ud, bd)
+                Helmholtz_matvec1D(v[i, :, k], b[i, :, k], alfa[i, 0, k],
+                                   beta[i, 0, k], dd, ud, bd)
     elif axis == 2:
         for i in range(v.shape[0]):
             for j in range(v.shape[1]):
@@ -414,15 +414,16 @@ def Poisson_Solve_ADD_1D(d, d1, scale, b, u):
     if not abs(scale-1) < 1e-8:
         for k in range(N):
             u[k] /= scale
+    return u
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
 def Poisson_Solve_ADD_2D(d, d1, scale, b, u, axis):
     if axis == 0:
         for j in range(u.shape[1]):
-            Poisson_Solve_ADD_1D(d, d1, scale, b[:, j], u[:, j])
+            u[:, j] = Poisson_Solve_ADD_1D(d, d1, scale, b[:, j], u[:, j])
     elif axis == 1:
         for i in range(u.shape[0]):
-            Poisson_Solve_ADD_1D(d, d1, scale, b[i, :], u[i, :])
+            u[i] = Poisson_Solve_ADD_1D(d, d1, scale, b[i], u[i])
     return u
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
@@ -430,30 +431,36 @@ def Poisson_Solve_ADD_3D(d, d1, scale, b, u, axis):
     if axis == 0:
         for j in range(u.shape[1]):
             for k in range(u.shape[2]):
-                Poisson_Solve_ADD_1D(d, d1, scale, b[:, j, k], u[:, j, k])
+                u[:, j, k] = Poisson_Solve_ADD_1D(d, d1, scale, b[:, j, k], u[:, j, k])
 
     elif axis == 1:
         for i in range(u.shape[0]):
             for k in range(u.shape[2]):
-                Poisson_Solve_ADD_1D(d, d1, scale, b[i, :, k], u[i, :, k])
+               u[i, :, k] = Poisson_Solve_ADD_1D(d, d1, scale, b[i, :, k], u[i, :, k])
+
+    elif axis == 2:
+        for i in range(u.shape[0]):
+            for j in range(u.shape[1]):
+                u[i, j] = Poisson_Solve_ADD_1D(d, d1, scale, b[i, j], u[i, j])
+    return u
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
 def ANN_matvec1D(v, c, d0, d2, scale=1):
-        N = v.shape[0]-2
-        c[N-1] = d0[N-1]*v[N-1]
-        c[N-2] = d0[N-2]*v[N-2]
-        s0 = 0
-        s1 = 0
-        for k in range(N-3, -1, -1):
-            c[k] = d0[k]*v[k]
-            if (k % 2) == 0:
-                s0 += v[k+2]*(k+2)**2
-                c[k] += s0*d2[k]/(k+2)**2
-            else:
-                s1 += v[k+2]*(k+2)**2
-                c[k] += s1*d2[k]/(k+2)**2
-        if scale != 1:
-            c /= scale
+    N = v.shape[0]-2
+    c[N-1] = d0[N-1]*v[N-1]
+    c[N-2] = d0[N-2]*v[N-2]
+    s0 = 0
+    s1 = 0
+    for k in range(N-3, -1, -1):
+        c[k] = d0[k]*v[k]
+        if (k % 2) == 0:
+            s0 += v[k+2]*(k+2)**2
+            c[k] += s0*d2[k]/(k+2)**2
+        else:
+            s1 += v[k+2]*(k+2)**2
+            c[k] += s1*d2[k]/(k+2)**2
+    if scale != 1:
+        c /= scale
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
 def ANN_matvec2D(v, b, d0, d2, scale, axis):
@@ -473,7 +480,7 @@ def ANN_matvec3D(v, b, d0, d2, scale, axis):
     elif axis == 1:
         for i in range(v.shape[0]):
             for k in range(v.shape[2]):
-               ANN_matvec1D(v[i, :, k], b[i, :, k], d0, d2, scale)
+                ANN_matvec1D(v[i, :, k], b[i, :, k], d0, d2, scale)
     elif axis == 2:
         for i in range(v.shape[0]):
             for j in range(v.shape[1]):

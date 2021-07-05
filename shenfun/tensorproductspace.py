@@ -931,7 +931,7 @@ class TensorProductSpace(PFFT):
         dx = self.coors.get_sqrt_det_g()
         mesh = self.local_mesh(True)
         if dx == 1:
-            return
+            return u
 
         if isinstance(dx, Number):
             u *= dx
@@ -1598,8 +1598,8 @@ class BoundaryValues:
         To modify boundary conditions on the fly, modify first self.bc and then
         call this function. The boundary condition can then be applied as before.
         """
-        from shenfun.utilities import split
-        from shenfun import project, inner
+        #from shenfun.utilities import split
+        from shenfun import project
 
         self.axis = this_base.axis
         self.base = this_base
@@ -1637,7 +1637,7 @@ class BoundaryValues:
 
             b = Array(T)
             s = T.local_slice(False)[self.axis]
-            num_bcs = len(self.bc) - np.count_nonzero(np.array(self.bc) == None)
+            num_bcs = len(self.bc) - np.count_nonzero(np.array(self.bc) is None)
 
             for j, bci in enumerate(self.bc):
                 if isinstance(bci, sp.Expr):
@@ -1687,8 +1687,7 @@ class BoundaryValues:
                         u_hat = T.forward._xfftn[i].input_array
                         fun = FuncWrap(lambda x, y: x, u_hat, u_hat) # Do-nothing
                         fwd = Transform(list(T.forward._xfftn[:i])+[fun],
-                                 T.forward._transfer[:i],
-                                 [[], []])
+                                        T.forward._transfer[:i], [[], []])
                         b_hat = fwd(b).copy()
 
                     # Now b_hat contains the correct slices in slm1 and slm2

@@ -317,13 +317,13 @@ def Solve_Biharmonic_3D(axis, b, u, u0, u1, u2, l0, l1, ak, bk, a0):
                                     u2[:, :, j, k], l0[:, :, j, k], l1[:, :, j, k],
                                     ak[:, :, j, k], bk[:, :, j, k], a0)
     elif axis == 1:
-       for i in range(b.shape[0]):
+        for i in range(b.shape[0]):
             for k in range(b.shape[2]):
                 Solve_Biharmonic_1D(b[i, :, k], u[i, :, k], u0[:, i, :, k], u1[:, i, :, k],
                                     u2[:, i, :, k], l0[:, i, :, k], l1[:, i, :, k],
                                     ak[:, i, :, k], bk[:, i, :, k], a0)
     elif axis == 2:
-       for i in range(b.shape[0]):
+        for i in range(b.shape[0]):
             for j in range(b.shape[1]):
                 Solve_Biharmonic_1D(b[i, j], u[i, j], u0[:, i, j], u1[:, i, j],
                                     u2[:, i, j], l0[:, i, j], l1[:, i, j],

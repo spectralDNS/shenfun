@@ -10,7 +10,7 @@ from shenfun.matrixbase import TPMatrix, SpectralMatrix, extract_bc_matrices, Sp
 
 class TDMA(la_TDMA):
 
-    def __call__(self, b, u=None, axis=0):
+    def __call__(self, b, u=None, axis=0, **kw):
 
         if u is None:
             u = b
@@ -42,11 +42,14 @@ class FDMA:
         assert isinstance(mat, SparseMatrix)
         self.mat = mat
         self.dd = np.zeros(0)
+        self.u1 = None
+        self.u2 = None
+        self.ld = None
+        self.symmetric = self.mat.issymmetric
 
     def init(self):
         """Initialize and allocate solver"""
         N = self.mat.shape[0]
-        self.symmetric = self.mat.issymmetric
         self.dd = self.mat[0]*np.ones(N)*self.mat.scale
         self.u1 = self.mat[2]*np.ones(N-2)*self.mat.scale
         self.u2 = self.mat[4]*np.ones(N-4)*self.mat.scale
@@ -210,7 +213,6 @@ class ADD_Solve:
     @staticmethod
     @optimizer
     def Poisson_Solve_ADD(A, b, u, axis=0):
-        N = A.shape[0]+2
         s = A.trialfunction[0].slice()
 
         if u is None:

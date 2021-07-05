@@ -5,7 +5,6 @@ from numpy.polynomial import laguerre as lag
 from scipy.special import eval_laguerre
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, work, Transform, islicedict, slicedict
-from shenfun.forms.arguments import Function
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 

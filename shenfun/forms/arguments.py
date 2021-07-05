@@ -342,7 +342,7 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             if len(bc) == 2:
                 B = jacobi.bases.ShenDirichlet
             else:
-                assert np.all([abs(bci)<1e-12 for bci in bc])
+                assert np.all([abs(bci) < 1e-12 for bci in bc])
                 B = jacobi.bases.ShenBiharmonic
 
         elif isinstance(bc, str):
@@ -901,7 +901,7 @@ class Expr:
                 match = []
                 if len(tms[-1]) > 0:
                     match = np.where((np.array(term) == np.array(tms[-1])).prod(axis=1) == 1)[0]
-                    matchi = np.where( ind == np.array(inds[-1]))[0]
+                    matchi = np.where(ind == np.array(inds[-1]))[0]
                     match = np.intersect1d(match, matchi)
                 if len(match) > 0:
                     k = match[0]

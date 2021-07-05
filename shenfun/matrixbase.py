@@ -210,6 +210,7 @@ class SparseMatrix(MutableMapping):
             return c
         elif isinstance(y, SparseMatrix):
             return self.diags('csc')*y.diags('csc')
+        raise RuntimeError
 
     def __rmul__(self, y):
         """Returns copy of self.__rmul__(y) <==> y*self"""
@@ -823,7 +824,7 @@ class BlockMatrix:
     >>> M = BlockMatrix(A00+A01+A10)
 
     """
-    def __init__(self, tpmats, extract_bc_mats=True):
+    def __init__(self, tpmats):
         assert isinstance(tpmats, (list, tuple))
 
         tpmats = [tpmats] if not isinstance(tpmats[0], (list, tuple)) else tpmats
@@ -1039,7 +1040,7 @@ class BlockMatrix:
         tpmat = self.get_mats(True)
         axis = tpmat.naxes[0] if isinstance(tpmat, TPMatrix) else 0
         tp = space.flatten() if hasattr(space, 'flatten') else [space]
-        nvars = b.shape[0] if len(b.shape)>space.dimensions else 1
+        nvars = b.shape[0] if len(b.shape) > space.dimensions else 1
         u = u.reshape(1, *u.shape) if nvars == 1 else u
         b = b.reshape(1, *b.shape) if nvars == 1 else b
         for con in constraints:
@@ -1280,7 +1281,6 @@ class TPMatrix:
                 u = Function(self.space)
 
             u[sl] = b[sl] * d[sl]
-            return u
 
         elif len(self.naxes) == 1:
             axis = self.naxes[0]
@@ -1288,13 +1288,12 @@ class TPMatrix:
             with np.errstate(divide='ignore'):
                 u /= self.scale
             u[:] = np.where(np.isfinite(u), u, 0)
-            return u
 
         elif len(self.naxes) == 2:
             from shenfun.la import SolverGeneric2ND
             H = SolverGeneric2ND([self])
             u = H(b, u)
-            return u
+        return u
 
     def matvec(self, v, c):
         c.fill(0)
@@ -1558,7 +1557,6 @@ def get_denser_matrix(test, trial, measure=1):
         coordinates an additional measure is the radius `r`.
     """
     test2 = test[0].get_refined((test[0].N*3)//2)
-    trial2 = trial[0].get_refined((trial[0].N*3)//2)
 
     K0 = test[0].slice().stop - test[0].slice().start
     K1 = trial[0].slice().stop - trial[0].slice().start

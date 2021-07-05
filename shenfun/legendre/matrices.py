@@ -69,7 +69,7 @@ import functools
 import numpy as np
 import sympy as sp
 from shenfun.matrixbase import SpectralMatrix
-from shenfun.la import TDMA as neumann_TDMA
+#from shenfun.la import TDMA as neumann_TDMA
 from shenfun.optimization import cython
 from .la import TDMA
 from . import bases

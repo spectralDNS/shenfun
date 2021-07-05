@@ -5,6 +5,8 @@ import sympy
 x, y, tt = sympy.symbols('x,y,t', real=True)
 
 class RayleighBenard:
+    # pylint: disable=attribute-defined-outside-init
+
     def __init__(self, N=(32, 32), L=(2, 2*np.pi), Ra=10000., Pr=0.7, dt=0.1,
                  bcT=(0, 1), conv=0, modplot=100, modsave=1e8, filename='RB',
                  family='C', quad='GC'):
@@ -84,6 +86,10 @@ class RayleighBenard:
         self.curl = Function(self.TCp)
         self.wa = Array(self.TCp)
 
+        self.solver0 = []
+        self.B_DD = None
+        self.C_DB = None
+
     def initialize(self, rand=0.001):
         X = self.TB.local_mesh(True)
         funT = 1 if self.bcT[0] == 1 else 2
@@ -122,7 +128,6 @@ class RayleighBenard:
 
         u0 = TrialFunction(self.D00)
         v0 = TestFunction(self.D00)
-        self.solver0 = []
         for rk in range(3):
             mats0 = inner(v0, 2./(nu*(a[rk]+b[rk])*dt)*u0 - div(grad(u0)))
             self.solver0.append(self.sol.la.Helmholtz(*mats0))

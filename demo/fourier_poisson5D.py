@@ -55,15 +55,15 @@ if 'pytest' not in os.environ and comm.Get_size() == 1:
     import matplotlib.pyplot as plt
     plt.figure()
     X = T.local_mesh(True) # With broadcasting=True the shape of X is local_shape, even though the number of datapoints are still the same as in 1D
-    plt.contourf(X[0][:, :, 0, 0,0], X[1][:, :, 0, 0,0], uq[:, :, 0, 0,0])
+    plt.contourf(X[0][:, :, 0, 0, 0], X[1][:, :, 0, 0, 0], uq[:, :, 0, 0, 0])
     plt.colorbar()
 
     plt.figure()
-    plt.contourf(X[0][:, :, 0, 0,0], X[1][:, :, 0, 0,0], uj[:, :, 0, 0,0])
+    plt.contourf(X[0][:, :, 0, 0, 0], X[1][:, :, 0, 0, 0], uj[:, :, 0, 0, 0])
     plt.colorbar()
 
     plt.figure()
-    plt.contourf(X[0][:, :, 0, 0,0], X[1][:, :, 0, 0,0], uq[:, :, 0, 0,0]-uj[:, :, 0, 0,0])
+    plt.contourf(X[0][:, :, 0, 0, 0], X[1][:, :, 0, 0, 0], uq[:, :, 0, 0, 0]-uj[:, :, 0, 0, 0])
     plt.colorbar()
     plt.title('Error')
     plt.show()
