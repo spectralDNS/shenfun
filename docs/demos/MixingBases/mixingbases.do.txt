@@ -1,0 +1,246 @@
+TITLE: Demo - Mixed bases for the Helmholtz problem
+AUTHOR: Mikael Mortensen Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
+DATE: March 22, 2021
+
+
+__Summary.__
+This demo shows how to solve the Helmholtz equation using different
+bases for test and trial spaces. The use of different bases leads for
+some optimal combinations to highly sparse and well-conditioned
+coefficient matrices.
+
+TOC: on
+
+# #include "../preprocesser.py"
+
+===== The Helmholtz problem =====
+
+We will consider Helmholtz equation with homogeneous Dirichlet boundary conditions
+!bt
+\begin{equation}
+    \alpha u -  u^{''} = f \quad \text{in} \, {I}=(-1, 1), \quad u(\pm 1) = 0,
+\end{equation}
+!et
+
+where $\alpha \in \mathbb{R^+}$. The relevant function space for the Dirichlet problem is
+
+!bt
+\begin{equation}
+    S_N=\text{span}\{T_k\}_{k=0}^{N-1}, \quad V_{N} = \{v \in {S}_N\,|\, v(\pm 1) = 0\},
+\end{equation}
+!et
+
+and the Chebyshev-Galerkin (CG) method is to find $u_N \in V_N$ such that
+
+!bt
+\begin{equation}
+\label{eq:dirGalerkin}
+    \alpha (u_N, v)_{\omega^{\sigma}} -(u^{''}_N, v)_{\omega^{\sigma}} = (f, v)_{\omega^{\sigma}}, \forall \, v \in V_N,
+\end{equation}
+!et
+
+where $(u,v)_{\omega^{\sigma}}=\int_{{I}}uv\omega^{\sigma} dx$ is the scalar product in the weighted space $L^2_{\omega^{\sigma}}({I})$.
+
+Shenfun has implemented three different Chebyshev Dirichlet
+basis functions
+
+!bt
+label{eq:shen}
+\phi_k = T_k-T_{k+2}, \quad k=0,1, \ldots, N-3,
+!et
+
+!bt
+label{eq:heinrichs}
+\varphi_k = (1-x^2)T_k, \quad k=0,1, \ldots, N-3,
+!et
+
+!bt
+label{eq:dirichletU}
+\psi_k = U_k-\frac{k+1}{k+3}U_{k+2}, \quad k=0,1, \ldots, N-3.
+!et
+
+These three bases are all linearly dependent and they are all bases
+for $V_N$.
+
+===== Implementation =====
+
+We can get all three function spaces as
+
+!bc pycod
+from shenfun import *
+N = 40
+V0 = FunctionSpace(N, 'C', basis='ShenDirichlet')
+V1 = FunctionSpace(N, 'C', basis='Heinrichs')
+V2 = FunctionSpace(N, 'C', basis='DirichletU')
+!ec
+
+where $V0 = \text{span}\{\phi_k\}_{k=0}^{N-3}$,
+$V1 = \text{span}\{\varphi_k\}_{k=0}^{N-3}$ and
+$V2 = \text{span}\{\psi_k\}_{k=0}^{N-3}$. Now, to solve the Helmholtz problem we simply need to choose
+test and trial bases. Shen's original method is using
+`V0` for both. To assemble the stiffness and mass matrices
+for this choice do
+
+!bc pycod
+u = TrialFunction(V0)
+v = TestFunction(V0)
+A = inner(v, div(grad(u)))
+B = inner(v, u)
+!ec
+
+A manufactured solution can be chosen using "Sympy": "https://www.sympy.org"
+We choose
+
+!bt
+\begin{equation}
+u(x) = \sin \left( 2 \pi \cos \left( 2 \pi x \right) \right)
+\end{equation}
+!et
+
+implemented as
+
+!bc pycod
+import sympy as sp
+x = sp.Symbol('x', real=True)
+ue = sp.sin(2*sp.pi*sp.cos(2*sp.pi*x))
+!ec
+
+The right hand side $f$ of Helmholtz equation is
+
+!bc pycod
+alpha = 1
+f = sp.simplify(alpha*ue-ue.diff(x, 2))
+!ec
+
+To solve the problem we can do
+
+!bc pycod
+fj = Array(V0, buffer=f)  # Get f on quadrature mesh
+f_hat = inner(v, fj)      # Compute right hand side
+M = alpha*B - A           # Get coefficient matrix
+u_hat = Function(V0)      # Container for the solution
+sol = la.Solve(M, V0)     # Solver
+u_hat = sol(f_hat, u_hat) # Solve
+!ec
+
+Compare with exact solution.
+
+!bc pycod
+uj = Array(V0, buffer=ue)
+error = inner(1, (u_hat.backward()-uj)**2)
+print('Error =', error)
+!ec
+
+Now that was the solution for test and trial bases from the same
+basis (ref{eq:shen}). Let us create a function that takes any
+test and any trial basis, any manufactured solution and any $\alpha$
+in the Helmholtz equation. We let the function return either
+the L2-error norm, the condition number of the Helmholtz
+coefficient matrix, or the matrix itself.
+
+!bc pycod
+def main(N, test, trial, alpha=1, method=0, ue=sp.sin(2*sp.pi*sp.cos(2*sp.pi*x))):
+    """Solve Helmholtz problem and return L2-error, condition number or matrix
+
+    Parameters
+    ----------
+    N : int
+        Number of quadrature points
+    test, trial : int
+        Test and trial functions.
+        0 = :math:`T_k-T_{k+2}`
+        1 = :math:`(1-x^2)T_k`
+        2 = :math:`U_k-\frac{k+1}{k+3}U_{k+2}`
+    alpha : Helmholtz parameter
+    method : int
+        0 = Return L2-error norm
+        1 = Return condition number of matrix
+        2 = Return Helmholtz matrix
+    ue : Sympy function, optional
+        The manufactured solution with homogeneous boundary conditions.
+
+    Note
+    ----
+    Inhomogeneous boundary conditions require a small rewrite, but is
+    not difficult.
+
+    """
+    bases = {0: 'ShenDirichlet', 1: 'Heinrichs', 2: 'DirichletU'}
+    test = FunctionSpace(N, 'C', basis=bases[test])
+    trial= FunctionSpace(N, 'C', basis=bases[trial], bc=(0, 0))
+    # Check that boundary conditions are homogeneous
+    assert abs(ue.subs(x, -1)) < 1e-8 and abs(ue.subs(x, 1)) < 1e-8
+    u = TrialFunction(trial)
+    v = TestFunction(test)
+    f = sp.simplify(alpha*ue-ue.diff(x, 2))
+    fj = Array(test, buffer=f) # Get f on quadrature mesh
+    f_hat = inner(v, fj)      # Compute right hand side
+    B = inner(v, u)
+    A = inner(v, div(grad(u)))
+    M = alpha*B-A
+    if method == 1:
+        return np.linalg.cond(M.diags('csr').toarray())
+    if method == 2:
+        return M
+
+    u_hat = Function(trial)
+    sol = la.Solve(M, test)
+    u_hat = sol(f_hat, u_hat)
+    uj = Array(trial, buffer=ue)
+    error = np.sqrt(inner(1, (u_hat.backward()-uj)**2))
+    return error
+!ec
+
+Let us first try basis (ref{eq:shen}) as test function and
+(ref{eq:heinrichs}) as trial function. Use otherwise
+default parameters.
+
+!bc pycod
+error = main(100, 0, 1)
+print(error)
+!ec
+
+So the error is small in deed. Perhaps more interesting, let's
+look at the sparsity pattern of the coefficient matrix
+
+!bc pycod
+M = main(100, 0, 1, method=2)
+import plotly.express as px
+z = np.where(abs(M.diags().toarray()) > 1e-6, 0, 1).astype(bool)
+fig = px.imshow(z, binary_string=True)
+fig.show()
+#plt.spy(M.diags(), markersize=0.2) # or use matplotlib
+!ec
+
+The coefficient matrix has 4 non-zero diagonals. You can now experiment
+with different test and trial functions, but you will not get a better
+result than that. Try basis (ref{eq:heinrichs}) for both test and trial
+function, and you'll get 5 nonzero diagonals.
+
+To see the convergence rate call `main` for a range of
+different mesh sizes
+
+!bc pycod
+error = []
+N = (2**4, 2**6, 2**8, 2**10)
+for n in N:
+    error.append(main(n, 0, 1))
+fig = px.line(x=N, y=error, log_y=True)
+fig.update_layout(yaxis=dict(showexponent='all', exponentformat='e'))
+fig.show()
+!ec
+
+
+#======= Bibliography =======
+
+## Publish (https://bitbucket.org/logg/publish is used to
+## handle references. The line below specifies the name of
+## the Publish database file (see the doconce manual for details).
+
+% if FORMAT not in ("sphinx"):
+
+BIBFILE: ../papers.pub
+
+% else:
+
+% endif

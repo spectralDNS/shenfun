@@ -1,7 +1,6 @@
 TITLE: Demo - 1D Poisson's equation
-AUTHOR: Mikael Mortensen {copyright|CC BY} Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
-DATE: today
-
+AUTHOR: Mikael Mortensen Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
+DATE: April 13, 2018
 
 __Summary.__
 This is a demonstration of how the Python module "shenfun":

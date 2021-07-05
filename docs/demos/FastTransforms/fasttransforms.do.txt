@@ -1,273 +1,335 @@
 TITLE: Demo - Some fast transforms
-AUTHOR: Mikael Mortensen {copyright|CC BY} Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
-DATE: today
+AUTHOR: Mikael Mortensen Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
+DATE: May 27, 2021
 
 
 __Summary.__
-This demo shows how to compute fast forward transforms for three
-different Dirichlet bases.
+This demo will show how to compute fast forward transforms for the three
+different Dirichlet bases that are implemented for Chebyshev
+polynomials in Shenfun.
 
 TOC: on
 
 # #include "../preprocesser.py"
 
-===== The fast transforms =====
+===== Forward and backward transforms =====
 
-We will consider the fast forward transforms for the three
-Chebyshev Dirichlet basis functions
-
-!bt
-label{eq:shen}
-\phi_k = T_k-T_{k+2}, \quad k=0,1, \ldots, N-3,
-!et
+A function $u(x)$ can be approximated in a finite global spectral
+expansion $u_N(x)$ as
 
 !bt
-label{eq:heinrichs}
-\varphi_k = (1-x^2)T_k, \quad k=0,1, \ldots, N-3,
+label{eq:expansion}
+u_N(x) = \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x), \quad \forall \, x \, \in [-1, 1],
 !et
+
+where $\phi_k(x)$ are the basis functions and $\boldsymbol{\hat{u}} = \{\hat{u}_k\}_{k=0}^{N-1}$
+are the expansion coefficients. The function $u_N(x)$ is continuous
+on the interval domain $[-1, 1]$. The span of the basis functions
+$V_N = \text{span} \{\phi_k\}_{k=0}^{N-1}$ represents a functionspace.
+Associated with this functionspace is a set of quadrature points
+$\{x_k\}_{k=0}^{N-1}$ that, along with quadrature weights $\{\omega_k\}_{k=0}^{N-1}$, can be used
+for efficient integration. We can also evaluate the function $u_N(x)$ at
+these quadrature points to get the sequence
+$\boldsymbol{u} = \{u_N(x_k)\}_{k=0}^{N-1}$. If $\boldsymbol{\hat{u}}=\{\hat{u}_k\}_{k=0}^{N-1}$ are *known*,
+then $\boldsymbol{u}$ can be evaluated directly from
+Eq. (ref{eq:expansion})
 
 !bt
-label{eq:dirichletU}
-\psi_k = U_k-\frac{k+1}{k+3}U_{k+2}, \quad k=0,1, \ldots, N-3,
+label{eq:expansionQ}
+u_N(x_j) = \sum_{k=0}^{N-1} \hat{u}_k \phi_k(x_j), \quad \forall \, j=0,1, \ldots, N-1.
 !et
 
-That is, we test fast methods for projection of a function
-$u(x)$ into spaces $V_{\phi} = \text{span}\{\phi_k\}_{k=0}^{N-3}$,
-$V_{\varphi} = \text{span}\{\varphi_k\}_{k=0}^{N-3}$ and
-$V_{\psi} = \text{span}\{\psi_k\}_{k=0}^{N-3}$.
-For each space the projection is:
-find $u_N \in V_{\alpha}$ such that
+This would correspond to a *backward* transform according to
+the Shenfun terminology. A direct evaluation of the backward
+(ref{eq:expansionQ}) transform takes $\mathcal{O}(N^2)$
+operations since it requires a double sum (over both $j$
+and $k$). A *fast* transform is
+a transform that can be computed in $\mathcal{O}(N \log N)$ operations.
+This is what the Fast Fourier Transform (FFT) does. It computes a double
+sum, like (ref{eq:expansionQ}), in $\mathcal{O}(N \log N)$ operations.
+
+
+The other way around, computing $\{\hat{u}_k\}_{k=0}^{N-1}$ from the
+*known* $\{u_N(x_k)\}_{k=0}^{N-1}$ corresponds to a *forward* transform.
+The forward transform is computed using a projection of $u$
+into $V_N$, which is formulated as: find $u_N \in V_N$ such that
 
 !bt
 label{eq:projection}
-(u_N-u, v)_{\omega} = 0, \quad \forall \, v \in V_{\alpha},
+(u_N-u, v)_{\omega^{\sigma}} = 0, \quad \forall \, v \in V_{N},
 !et
 
-where $\alpha \in (\phi, \varphi, \psi)$. The solutions we are after are thus
+where $(a, b)_{\omega^{\sigma}} = \int_{I} a b \omega^{\sigma} dx$ is the
+inner product in $L^2_{\omega^{\sigma}}(I)$, and $\omega^{\sigma}(x)=(1-x^2)^{\sigma}$  is a weight function.
+For Chebyshev polynomials the weight function is usually $\omega^{-1/2}=(1-x^2)^{-1/2}$.
+Inserting for $u_N$ and $v=\phi_k$, we get
+
+!bt
+\begin{align}
+\sum_{j=0}^{N-1}(\phi_j, \phi_k)_{\omega^{\sigma}} \hat{u}_{j} &= (u, \phi_k)_{\omega^{\sigma}}, \\
+B \boldsymbol{\hat{u}} &= \boldsymbol{\tilde{u}}, \\
+\boldsymbol{\hat{u}} &= B^{-1} \boldsymbol{\tilde{u}},
+\end{align}
+!et
+
+where
+$\boldsymbol{\tilde{u}} = \{(u, \phi_k)_{\omega^{\sigma}}\}_{k=0}^{N-1}$ and the mass matrix
+$B = (b_{kj})_{k,j=0}^{N-1}$, with $b_{kj}=(\phi_j, \phi_k)_{\omega^{\sigma}}$.
+
+Note that the forward transform requires both an inner product
+$\boldsymbol{\tilde{u}}$ and a matrix inversion. By a *fast* forward transform
+we mean a transform that can be computed in $\mathcal{O}(N \log N)$
+operations. If $B$ is a diagonal or banded matrix, the matrix inversion costs $\mathcal{O}(N)$,
+and the limiting factor is then the inner product. Like for the backward transform,
+the inner product, computed with quadrature, is a double sum
+
+!bt
+(u, \phi_k)_{\omega^{\sigma}} = \sum_{j=0}^{N-1} u(x_j) \phi_k(x_j) \omega_j, \quad \forall \, k = 0, 1, \ldots, N-1,
+!et
+
+where $\{\omega_j\}_{j=0}^{N-1}$ are the quadrature weights.
+
+A naive implementation of the inner product
+takes $\mathcal{O}(N^2)$ operations. However,
+for Chebyshev polynomials we can compute the double loop with
+fast $\mathcal{O}(N \log N)$ discrete sine or cosine transforms,
+that are versions of the FFT. To see this, assume that the basis functions are $\phi_k(x) =T_k(x)$, where
+$T_k(x)$ is the $k$'th Chebyshev polynomial of the first kind,
+and the weight function is $\omega^{-1/2}$.
+We then choose Gauss-Chebyshev points $x_j = \cos(\theta_j)$,
+where $\theta_j=\pi (2j+1)/(2N)$, and the associated quadrature weights
+that are constant $\omega_j = \pi/N$. The Chebyshev polynomials evaluated
+on the quadrature points can now
+alternatively be written as $T_k(x_j) = \cos(k \theta_j)$,
+and the inner product becomes
+
+!bt
+(u, T_k)_{\omega^{-1/2}} = \sum_{j=0}^{N-1} u(x_j) \cos(k \theta_j) \pi/N, \quad \forall \, k = 0, 1, \ldots, N-1.
+!et
+
+From the "FFTW documentation":"http://www.fftw.org/fftw3_doc/1d-Real_002deven-DFTs-_0028DCTs_0029.html#g_t1d-Real_002deven-DFTs-_0028DCTs_0029"
+we recognise this sum as half a DCT-II (the FFTW DCT-II has a factor
+2 in front of the sum) of $\boldsymbol{u}\pi/N$. Hence, we can compute the inner product as
+
+!bt
+(u, T_k)_{\omega^{-1/2}} = \frac{\pi}{2N} \text{dct}^{II}(\boldsymbol{u})_k, \quad k = 0, 1, \ldots, N-1.
+!et
+
+===== Dirichlet bases =====
+
+The basis function $T_k$ satisfies $T_k(\pm 1) = (\pm 1)^k$ at the
+boundaries of the domain, and the space $S_N=\text{span}\{T_k\}_{k=0}^{N-1}$,
+of dimension $N$,
+is thus not associated with any specific set of boundary conditions.
+A functionspace for homogeneous Dirichlet boundary conditions is
+given as $V_N=\{v\in S_N | v(\pm 1)=0 \}$. Because of the two restrictions
+the space has dimension $N-2$.
+
+There are several different choices of basis functions
+for $V_N$.
+The most interesting we name $\phi_k^n$, for integer $n$, and
+define them as
 
 !bt
 \begin{equation}
-u(x) = \sum_{k=0}^{N-3} \hat{u}_k^{\alpha} \alpha_k(x),
+\phi^n_k = \omega T^{(n)}_{k+n} = (1-x^2) T^{(n)}_{k+n},
 \end{equation}
 !et
 
-where $\alpha_k$ can be any of the three basis functions $(\phi_k, \varphi_k, \psi_k)$.
-
-A direct method to solve Eq. (ref{eq:projection}) is to insert for
-$u_N = \sum_{j=0}^{N-3}\hat{u}_j^{\alpha} \alpha_j$ and $v = \alpha_k$ to obtain
+where $T^{(n)}_{k+n}$ is the $n$'th derivative of $T_{k+n}$. We have
+for any integer $n$ that $V_N=\text{span}\{\phi^n_k\}_{k=0}^{N-3}$, and an
+expansion in any of these basis functions is
 
 !bt
 \begin{equation}
-label{eq:genericproj}
-(\alpha_j, \alpha_k)_{\omega} \hat{u}_j^{\alpha} = (u, \alpha_k)_{\omega},
+\label{eq:uNgeneric}
+    u_N = \sum_{k=0}^{N-3} \hat{u}^n_k \phi^n_k.
 \end{equation}
 !et
 
-which on algebraic form is
+We can find the sequence $\{\hat{u}^n_{k}\}_{k=0}^{N-3}$ for any $n$
+using a projection into the space $V_N$. The projection is computed
+by using Eq. (ref{eq:uNgeneric}) and $v=\phi^n_k$ in
+Eq. (ref{eq:projection})
 
 !bt
-\begin{align*}
-B \hat{\boldsymbol{u}} &= \tilde{\boldsymbol{u}}, \\
-\hat{\boldsymbol{u}} &= B^{-1} \tilde{\boldsymbol{u}},
-\end{align*}
+\begin{equation}
+label{eq:projortho}
+   \sum_{j=0}^{N-3} ( T^{(n)}_{j+n},  T^{(n)}_{k+n})_{\omega^{\sigma+2}} \hat{u}^{n}_j = (u, T^{(n)}_{k+n})_{\omega^{\sigma+1}}.
+\end{equation}
 !et
 
-where the mass matrix $B \in \mathbb{R}^{N-2 \times N-2} = \{(\alpha_j, \alpha_k)_{\omega}\}_{k,j=0}^{N-3}$, $\tilde{\boldsymbol{u}} = \{(u, \alpha_k)_{\omega}\}_{k=0}^{N-3}$ and $\boldsymbol{u} = \{\hat{u}_k^{\alpha}\}_{k=0}^{N-3}$.
-A fast method is found if $B$ is diagonal, so that the inversion $B^{-1}$ is trivial. In this case the projection becomes orthogonal.
-It can be shown that the three bases are orthogonal using weights $\omega = (1-x^2)^{\sigma}$,
-where $\sigma = -3/2, -5/2$ and $-1/2$, for (ref{eq:shen}), (ref{eq:heinrichs}) and (ref{eq:dirichletU}), respectively.
+Now how can this projection be computed as efficiently as possible?
+The Chebyshev polynomials and their derivatives are known to satisfy
+the following orthogonality relation
 
-In the following all methods will make use of Gauss-Chebyshev
-quadrature with Gauss-Chebyshev collocation points
-$\boldsymbol{x}=\{x_i\}_{i=0}^{N-1}$, where
-$x_i = \cos(\theta_i)$, $\theta_i=\pi (2i+1)/(2N)$ and
-$\boldsymbol{\theta}=\{\theta_i\}_{i=0}^{N-1}$. The quadrature weights
-are then constant $w_i = \pi/N$ for $i=0,1, \ldots, N-1$.
+!bt
+\begin{equation}
+label{eq:orthon}
+  (T^{(n)}_j, T^{(n)}_k)_{\omega^{n-1/2}} = \alpha^{n}_k \delta_{kj}, \quad \text{for}\, n \ge 0,
+\end{equation}
+!et
 
+where $\delta_{kj}$ is the Kronecker delta function and
 
-===== Fast transform for $T_k-T_{k+2}$ =====
+!bt
+\begin{equation}
+    \alpha^n_k = \frac{c_{k+n}\pi k (k+n-1)!}{2(k-n)!},
+\end{equation}
+!et
 
-The basis function $\phi_k=T_k-T_{k+2}$ can be written as $\phi_k=2(1-x^2)U_k$ because of the
-recurrence formulas $T_{k+2}=xT_{k+1}-(1-x^2)U_{k}$ and $T_{k+2}=2xT_{k+1}-T_k$.
-Using $\phi_k=2(1-x^2)U_k$ for both test and trial functions in (ref{eq:genericproj}),
+where $c_0=2$ and $c_k=1$ for $k>0$. This can be used in
+computing (ref{eq:projortho}), because we just
+need to choose the $\sigma$ that leads to a diagonal mass matrix.
+For $n=(0, 1, 2)$ this will be $\sigma=-5/2, -3/2$ and $-1/2$,
+respectively. So, choosing $\sigma=-5/2, -3/2$ and $-1/2$
+for $n=0, 1$ and 2, respectively, will lead to a diagonal
+mass matrix $( T^{(n)}_{j+n},  T^{(n)}_{k+n})_{\omega^{\sigma+2}}$.
+Using these $\sigma$'s we can invert the diagonal mass matrices
+in Eq. (ref{eq:projortho}) to get
+
+!bt
+\begin{equation}
+    \hat{u}^n_k = \frac{1}{\alpha^n_{k+n}}(u, T^{(n)}_{k+n})_{\omega^{\sigma+1}}, \quad k=0, 1, \ldots, N-3, \text{ for } n \in (0, 1, 2).
+\end{equation}
+!et
+
+Using now quadrature, $1-x^2_i=\sin^2 \theta_i$ and the
+fast transforms $(u, T_k)_{\omega^{-1/2}} = \pi/2/N \text{dct}^{II}(\boldsymbol{u})_k$
+and  $(u, U_k)_{\omega^{-1/2}} = \pi/2/N \text{dst}^{II}(\boldsymbol{u}/\sin \boldsymbol{\theta})_k$,
+where $\boldsymbol{u}/\sin \boldsymbol{\theta}$ implies element-wise division,
 we get
 
 !bt
-\begin{equation}
-    label{eq:projectionSD3}
-    \int_I 2U_jU_k \omega^{1/2}dx \hat{u}_j^{\phi} = \int_I U_k u \omega^{-1/2}dx,
-\end{equation}
+\begin{align}
+    \hat{u}^0_k &= \frac{1}{c_k N} \text{dct}^{II}(\boldsymbol{u}/\sin^2 \boldsymbol{\theta})_k, \quad &k = 0, 1, \ldots, N-3, \label{eq:fast1} \\
+    \hat{u}^1_k &= \frac{1}{(k+1)N}\text{dst}^{II}(\boldsymbol{u}/\sin \boldsymbol{\theta})_k, \quad &k = 0, 1, \ldots, N-3, \label{eq:fast2}\\
+    \hat{u}^2_k &= \frac{1}{2(k+2)}\left(\hat{u}^1_k - \hat{u}^1_{k+2} \right), \quad &k=0, 1, \ldots, N-3. \label{eq:fast3}
+\end{align}
 !et
 
-where $I=[-1, 1]$ and the integral on the left equals $\pi\delta_{kj}$.
-The integral on the right is solved through Gauss-Chebyshev quadrature
-using the identity $U_k(\cos \theta_i) = \sin((k+1)\theta_i)/\sin \theta_i$,
-which reduces the problem to one single discrete sine transform of type 2.
-We get for the integral on the right
+The last one requires some work, using the identity
+$\phi^2_k=(1-x^2)T''_{k+2}=0.5(k+2)(k+3)(U_k - (k+1)/(k+3)U_{k+2})$.
 
-!bt
-\begin{equation}
-\int_I U_k u \omega^{-1/2}dx \approx \sum_{i=0}^{N-1} u(x_i) \sin((k+1)\theta_i)/\sin \theta_i,
-\end{equation}
-!et
+===== Verification =====
 
-which can be computed using the discrete sine transform (DST) of type 2,
-see "FFTW":"http://www.fftw.org/fftw3_doc/1d-Real_002dodd-DFTs-_0028DSTs_0029.html".
-Inserting this DST in (ref{eq:projectionSD3}) we get the final expression
-for the fast forward transform
-
-!bt
-\begin{equation}
-label{eq:proju0}
-    \hat{u}_k^{\phi} = \frac{1}{2N} \text{dst}^{II}(u(\boldsymbol{x})/\sin \boldsymbol{\theta})_k, \quad k=0, 1, \ldots, N-3.
-\end{equation}
-!et
-
-Note that we only use the first $N-2$ components of the sine transform, but the two
-highest frequencies are identically 0, so we would not make an error or do anything differently by
-using the entire array. Also note that the division of the two arrays $u(\boldsymbol{x})/\sin \boldsymbol{\theta}$ is elementwise.
-
-===== Fast transform for $(1-x^2)T_k$ =====
-
-The orthogonal projection of $u(x)$ for basis (ref{eq:heinrichs})
-in $L^2_{\omega^{-5/2}}(I)$ reads
-
-!bt
-\begin{equation}
-    \int_I T_j T_k \omega^{-1/2} dx \hat{u}_j^{\varphi} = \int_I T_k u \omega^{-3/2} dx.
-\end{equation}
-!et
-
-The left hand side is simply the diagonal $(T_j, T_k)_{\omega^{-1/2}} = c_k\pi/2 \delta_{kj}$.
-For the integral on the right we use the Gauss-Chebyshev quadrature rule for
-integration with weight $(1-x^2)^{-1/2}$, and rewrite using
-$1-x_i^2=\sin^2\theta_i$ and $T_k(x_i) = \cos(k\theta_i)$
-
-!bt
-\begin{equation}
-    \frac{c_k \pi}{2} \hat{u}_k^{\varphi} = \frac{\pi}{N} \sum_{i=0}^{N-1} \cos (k \theta_i) u(x_i)/\sin^2\theta_i.
-\end{equation}
-!et
-
-The sum can be seen to be a discrete cosine transform of type 2. We get the
-final expression for the fast transform
-
-!bt
-\begin{equation}
-    \hat{u}_k^{\varphi} = \frac{1}{c_k N} \text{dct}^{II} (u(\boldsymbol{x})/\sin^2 \boldsymbol{\theta})_k, \quad k=0, 1, \ldots, N-3.
-\end{equation}
-!et
-
-===== Fast transform for $U_k-\frac{k+1}{k+3}U_{k+2}$ =====
-
-The orthogonal projection for basis $\{\psi_k\}_{k=0}^{N-3}$ in
-$L^2_{\omega^{-1/2}}(I)$ can be computed using the alternative form
-
-!bt
-\begin{equation}
-   \psi_k = \frac{2(1-x^2)}{(k+2)(k+3)}T^{ ''}_{k+2}, \quad k = 0, 1, \ldots, N-3.
-   label{eq:elbarbary}
-\end{equation}
-!et
-
-Using (ref{eq:elbarbary}) for the two basis functions in $(\psi_j, \psi_k)_{\omega^{-1/2}}$,
-and (ref{eq:dirichletU}) in the linear form we get
-
-!bt
-\begin{equation}
-label{eq:proj3}
-    \frac{4}{(k+2)^2(k+3)^2}\int_I T^{''}_j T^{''}_k \omega^{3/2}dx \hat{u}_j^{\psi} = \int_I (U_k - \frac{k+1}{k+3}U_{k+2})u \omega^{-1/2} dx.
-\end{equation}
-!et
-
-Using the orthogonal $\int_I T^{''}_j T^{''}_k \omega^{3/2}dx = \pi (j+1)(j+2)^2(j+3)/2 \delta_{kj}$ from Lemma 3
-in cite{elbarbary08}, Eq. (ref{eq:proj3}) simplifies to
-
-!bt
-\begin{equation}
-     \frac{2 \pi (k+1)}{(k+3)} \hat{u}_k^{\psi}  = \int_I (U_k - \frac{k+1}{k+3}U_{k+2})u \omega^{-1/2} dx.
-\end{equation}
-!et
-
-The right hand side can now be rewritten using the same sine transform as in (ref{eq:proju0}).
-We get after some rearrangements
-
-!bt
-\begin{equation}
-    \hat{u}_k^{\psi} = \frac{k+3}{2(k+1)}\hat{u}_k^{\phi} - \frac{1}{2}\hat{u}_{k+2}^{\phi}, \quad k=0, 1, \ldots, N-3.
-\end{equation}
-!et
-
-===== Implementation =====
-
-To validate these methods we compute the projection first regularly
+To validate all the fast methods we compute the projection first regularly
 using the Shenfun function "project": "https://github.com/spectralDNS/shenfun/blob/master/shenfun/forms/project.py",
 which is using $\sigma=-1/2$, and then the fast methods above. The two
 projections should be the same, but they will not give identical results.
 In general, the fast transforms above should be both faster and more
-accurate, because they only take a discrete transform and no
+accurate, because they only take a discrete transform and merely a diagonal
 mass matrix inversion.
 
-Start by importing necessary modules from Shenfun and mpi4py-fft
+We start the implementation by importing necessary modules from Shenfun
+and mpi4py-fft
 
 !bc pycod
 from shenfun import *
 from mpi4py_fft import fftw
 !ec
 
-Create function spaces for all three Dirichlet bases. Decide on a number of quadrature points (not important), and just use default quadrature scheme, which is the Gauss-Chebyshev points.
+The three bases $\{\phi^n_k\}_{k=0}^{N-3}$ are implemented
+with slightly different scaling in shenfun.
+The first, with $n=0$, is obtained with no special scaling using
 
 !bc pycod
 N = 20
-D0 = FunctionSpace(N, 'C', basis='ShenDirichlet')
-D1 = FunctionSpace(N, 'C', basis='Heinrichs')
-D2 = FunctionSpace(N, 'C', basis='DirichletU')
+D0 = FunctionSpace(N, 'C', bc=(0, 0), basis='Heinrichs')
 !ec
 
-Create a random vector that we will use for testing.
+The second basis is implemented in Shenfun as $\phi_k = \frac{2}{k+1}\phi^1_k$,
+which can be simplified as
+
+!bt
+label{eq:shen}
+\phi_k(x) = T_k-T_{k+2}, \quad k=0,1, \ldots, N-3,
+!et
+
+and implemented as
+
+!bc pycod
+D1 = FunctionSpace(N, 'C', bc=(0, 0)) # this is the default basis
+!ec
+
+Because of the scaling the expansion coefficients for $\phi_k$  are
+$\hat{u}^{\phi}_k=\frac{k+1}{2}\hat{u}^1_k$. Using (ref{eq:fast2}) we get
+
+!bt
+\hat{u}^{\phi}_k = \frac{1}{2N}\text{dst}^{II}(\boldsymbol{u}/\sin \boldsymbol{\theta})_k, \quad k = 0, 1, \ldots, N-3.
+!et
+
+The third basis is also scaled and implemented in Shenfun as $\psi_k = \frac{2}{(k+3)(k+2)}\phi^2_k$,
+which can be simplified using Chebyshev polynomials of the second
+kind $U_k$
+
+!bt
+label{eq:dirichletU}
+\psi_k(x) = U_k-\frac{k+1}{k+3}U_{k+2}, \quad k=0,1, \ldots, N-3.
+!et
+
+We get the basis using
+
+!bc pycod
+D2 = FunctionSpace(N, 'C', bc=(0, 0), basis='DirichletU')
+!ec
+
+and the expansion coefficients are found as
+$\hat{u}^{\psi}_k = \frac{(k+3)(k+2)}{2} \hat{u}^2_k$.
+
+For verification of all the fast transforms we first create a vector
+consisting of random expansion coefficients, and then transform
+it backwards to physical space
 
 !bc pycod
 f = Function(D0, buffer=np.random.random(N))
 f[-2:] = 0
-f[:] = f.backward().forward()
 fb = f.backward().copy()
 !ec
 
-Do the regular projection. Now `f0`, `f1` and `f2` will be the three solution vectors $\boldsymbol{\hat{u}}^{\phi}$, $\boldsymbol{\hat{u}}^{\varphi}$ and $\boldsymbol{\hat{u}}^{\psi}$.
+Next, we perform the regular projections into the three spaces
+`D0`, `D1` and `D2`, using the inner product
+in $L^2_{\omega^{-1/2}}$. Now `u0`, `u1` and `u2` will be the
+three solution vectors
+$\boldsymbol{\hat{u}}^{\varphi}$, $\boldsymbol{\hat{u}}^{\phi}$
+and $\boldsymbol{\hat{u}}^{\psi}$, respectively.
 
 !bc pycod
-f0 = project(fb, D0)
-f1 = project(fb, D1)
-f2 = project(fb, D2)
+u0 = project(fb, D0)
+u1 = project(fb, D1)
+u2 = project(fb, D2)
 !ec
 
-Now compute the fast transforms and assert that they are equal to `f0`, `f1` and `f2`
+Now compute the fast transforms and assert that they are equal to `u0`, `u1` and `u2`
 
 !bc pycod
 theta = np.pi*(2*np.arange(N)+1)/(2*N)
-dst = fftw.dstn(fb, type=2)
-d0 = dst(fb/np.sin(theta))/(2*N)
-assert np.linalg.norm(d0-f0) < 1e-8
-dct = fftw.dctn(fb, type=2)
+# Test for n=0
+dct = fftw.dctn(fb.copy(), type=2)
 ck = np.ones(N); ck[0] = 2
-d1 = dct(fb/np.sin(theta)**2)/(ck*N)
-assert np.linalg.norm(d1-f1) < 1e-8, np.linalg.norm(d1-f1)
-ut = d0
+d0 = dct(fb/np.sin(theta)**2)/(ck*N)
+assert np.linalg.norm(d0-u0) < 1e-8, np.linalg.norm(d0-f0)
+# Test for n=1
+dst = fftw.dstn(fb.copy(), type=2)
+d1 = dst(fb/np.sin(theta))/(2*N)
+assert np.linalg.norm(d1-u1) < 1e-8
+# Test for n=2
+ut = d1
 k = np.arange(N)
 d2 = Function(D2)
 d2[:-2] = (k[:-2]+3)/2/(k[:-2]+1)*ut[:-2]
 d2[:-2] = d2[:-2] - 0.5*ut[2:]
-assert np.linalg.norm(d2-f2) < 1e-8
+assert np.linalg.norm(d2-u2) < 1e-8
 !ec
+
 
 That's it! If you make it to here with no errors, then the three tests pass, and the fast transforms are equal to the slow ones, at least within given precision.
 
 Let's try some timings
 
 !bc pycod
-%%timeit project(fb, D0)
+%%timeit project(fb, D1)
 !ec
-
 
 !bc pycod
 %%timeit dst(fb/np.sin(theta))/(2*N)
@@ -280,7 +342,7 @@ dd = np.sin(theta)*2*N
 %%timeit dst(fb/dd)
 !ec
 
-The other two transforms are about equally fast
+The other two transforms are approximately the same speed.
 
 !bc pycod
 %%timeit dct(fb/np.sin(theta)**2)/(ck*N)

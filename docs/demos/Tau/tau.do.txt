@@ -1,6 +1,6 @@
 TITLE: Demo - The Tau method
-AUTHOR: Mikael Mortensen {copyright|CC BY} Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
-DATE: today
+AUTHOR: Mikael Mortensen Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
+DATE: June 15, 2021
 
 
 __Summary.__
@@ -12,12 +12,12 @@ principle difference between a Tau method and a spectral Galerkin method
 is in the choice of basis functions. The spectral Galerkin method is
 usually defined through function spaces where the boundary conditions
 of the problem are already built in. The tau-method, on the other hand,
-does not come with such restrictions. The tau-method usually considers
+usually considers
 only the orthogonal basis, like pure Chebyshev or Legendre polynomials,
 and derives differentiation matrices for these bases. The boundary conditions
-are usually fixed by fixing a couple of rows of the differentiation
-matrix. In this demo we will show how the original tau-method can
-be easily implemented using "shenfun":
+are then usually fixed through manipulation of a couple of rows of the
+differentiation matrix. In this demo we will show how the original
+tau-method can be easily implemented using "shenfun":
 "https://github.com/spectralDNS/shenfun".
 
 % if FORMAT not in ("ipynb",):
@@ -97,10 +97,10 @@ A \hat{\mathbf{{u}}} &= \tilde{\mathbf{{f}}}.
 !et
 
 However, the matrix $A\in \mathbb{R}^{N \times N}$ is singular because it
-contains two zero rows. These two rows can be used to implement the two boundary
-conditions. By fixing the rows as $a_{N-2, j}=1$ and
-$a_{N-1, j}= (-1)^j$ for $j=0, 1, \ldots, N-1$, and
-the right hand side $\tilde{f}_{N-2}=a$ and $\tilde{f}_{N-1}=b$, the
+contains two zero rows. These two rows are used to implement the two boundary
+conditions. Setting $a_{N-2, j}=1$ and
+$a_{N-1, j}= (-1)^j$ for $j=0, 1, \ldots, N-1$, and also fixing
+the right hand sides $\tilde{f}_{N-2}=a$ and $\tilde{f}_{N-1}=b$, the
 two boundary conditions will be satisfied.
 
 ===== Implementation =====
@@ -111,7 +111,7 @@ We will solve Poisson's equation using the "shenfun":
 "https://github.com/spectralDNS/shenfun" Python module. The first thing needed
 is then to import some of this module's functionality
 plus some other helper modules, like "Numpy": "https://numpy.org" and "Sympy":
-"https://sympy.org", and the "sparse":"https://docs.scipy.org/doc/scipy/reference/sparse.html"
+"https://sympy.org", and the "scipy.sparse":"https://docs.scipy.org/doc/scipy/reference/sparse.html"
 for handeling sparse matrices:
 
 !bc pycod

@@ -1,13 +1,3 @@
-"""
-This script has been used to compute the generalised Chebyshev-Tau Dirichlet results of the paper
-
-    Efficient spectral-Galerkin methods for second-order equations using different Chebyshev bases
-
-The results have been computed using Python 3.9 and dedalus version 2.1905
-
-The script has been created by Keaton Burns.
-"""
-
 import numpy as np
 from dedalus.core import coords, distributor, basis, field, operators, problems, solvers, arithmetic
 from dedalus.tools.config import config
@@ -28,7 +18,8 @@ def main(N, alpha, method, tau):
     t1 = field.Field(name='t1', dist=d, dtype=np.float64)
     t2 = field.Field(name='t2', dist=d, dtype=np.float64)
     pi, sin, cos = np.pi, np.sin, np.cos
-    f['g'] = 64*pi**3*(4*pi*sin(4*pi*x)**2*sin(4*pi*cos(4*pi*x)) + cos(4*pi*x)*cos(4*pi*cos(4*pi*x))) + alpha*sin(4*pi*cos(4*pi*x))
+    f['g'] = alpha*sin(100*pi*x) + 10000*pi**2*sin(100*pi*x)
+    #f['g'] = 64*pi**3*(4*pi*sin(4*pi*x)**2*sin(4*pi*cos(4*pi*x)) + cos(4*pi*x)*cos(4*pi*cos(4*pi*x))) + alpha*sin(4*pi*cos(4*pi*x))
     # Tau polynomials
     xb1 = xb._new_a_b(xb.a+1, xb.b+1)
     xb2 = xb._new_a_b(xb.a+2, xb.b+2)
@@ -68,7 +59,8 @@ def main(N, alpha, method, tau):
         # Manufactured solution
         from mpi4py_fft import fftw as mpi4py_fftw
         solver.solve()
-        ue = np.sin(4*np.pi*np.cos(4*np.pi*x))
+        #ue = np.sin(4*np.pi*np.cos(4*np.pi*x))
+        ue = np.sin(100*np.pi*x)
         d = mpi4py_fftw.aligned(N, fill=0)
         k = 2*(1 + np.arange((N-1)//2))
         d[::2] = (2./N)/np.hstack((1., 1.-k*k))
@@ -93,14 +85,23 @@ if __name__=='__main__':
     tau = int(sys.argv[-1])
     if method == 0:
         N = (32, 64, 128, 256, 512, 1024, 2048)
+    elif method == 1:
+        N = (2**4, 2**12, 2**20)
     else:
-        N = (2**4, 2**8, 2**12, 2**16, 2**20)
-    alphas = (0, 1, 1000)
+        N = (2**4, 2**6, 2**8, 2**12, 2**16, 2**20)
+    alphas = (0, 1000)
     cond = []
-    for alpha in alphas:
-        cond.append([])
-        for n in N:
-            cond[-1].append(main(n, alpha, method, tau))
-            print(alpha, n, cond[-1][-1])
+    if method in (0, 2):
+        for alpha in alphas:
+            cond.append([])
+            for n in N:
+                cond[-1].append(main(n, alpha, method, tau))
+                print(alpha, n, cond[-1][-1])
+    else:
+        for alpha in alphas:
+            for n in N:
+                cond.append(main(n, alpha, method, tau))
+                print(alpha, n, cond[-1])
+
     a2l.to_ltx(np.array(cond), frmt='{:6.2e}', mathform=False, print_out=True)
 

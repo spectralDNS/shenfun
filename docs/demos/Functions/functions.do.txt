@@ -1,0 +1,444 @@
+TITLE: Demo - Working with Functions
+AUTHOR: Mikael Mortensen Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
+DATE: August 7, 2020
+
+
+__Summary.__
+This is a demonstration of how the Python module "shenfun":
+"https://github.com/spectralDNS/shenfun" can be used to work with
+global spectral functions in one and several dimensions.
+
+
+TOC: on
+
+# #include "../preprocesser.py"
+
+===== Construction =====
+
+A global spectral function $u(x)$ is represented on a one-dimensional
+domain (a line) as
+
+!bt
+u(x) = \sum_{k=0}^{N-1} \hat{u}_k \psi_k(x)
+!et
+
+where $\psi_k(x)$ is the $k$'th basis function and $x$ is a
+position inside the domain. $\{\hat{u}_k\}_{k=0}^{N-1}$ are the
+expansion coefficient for the series, and often referred to as the
+degrees of freedom. There is one degree of freedom per basis function.
+We can use any number of basis functions,
+and the span of the chosen basis is then a function space. Also part of the
+function space is the domain, which is
+specified when a function space is created. To create a function space
+$T=\text{span}\{T_k\}_{k=0}^{N-1}$ for
+the first N Chebyshev polynomials of the first kind on the default domain $[-1, 1]$,
+do
+
+!bc pycod
+from shenfun import *
+N = 8
+T = FunctionSpace(N, 'Chebyshev', domain=(-1, 1))
+!ec
+
+The function $u(x)$ can now be created with all N coefficients
+equal to zero as
+
+!bc pycod
+u = Function(T)
+!ec
+
+When using Chebyshev polynomials the computational domain is always
+$[-1, 1]$. However, we can still use a different physical domain,
+like
+
+!bc pycod
+T = FunctionSpace(N, 'Chebyshev', domain=(0, 1))
+!ec
+
+and under the hood shenfun will then map this domain to the reference
+domain through
+
+!bt
+u(x) = \sum_{k=0}^{N-1} \hat{u}_k \psi_k(2(x-0.5))
+!et
+
+===== Approximating analytical functions =====
+
+The `u` function above was created with only zero
+valued coefficients, which is the default. Alternatively,
+a ${cls('Function')} may be initialized using a constant
+value
+
+!bc pycod
+T = FunctionSpace(N, 'Chebyshev', domain=(-1, 1))
+u = Function(T, val=1)
+!ec
+
+but that is not very useful. A third method to initialize
+a ${cls('Function')} is to interpolate using an analytical
+Sympy function.
+
+!bc pycod
+import sympy as sp
+x = sp.Symbol('x', real=True)
+u = Function(T, buffer=4*x**3-3*x)
+print(u)
+!ec
+
+Here the analytical Sympy function will first be evaluated
+on the entire quadrature mesh of the `T` function space,
+and then forward transformed to get the coefficients. This
+corresponds to a projection to `T`. The projection is
+
+Find $u_h \in T$, such that
+
+!bt
+(u_h - u, v)_w = 0 \quad \forall v \in T,
+!et
+
+where $v \in \{T_j\}_{j=0}^{N-1}$ is a test function,
+$u_h=\sum_{k=0}^{N-1} \hat{u}_k T_k$ is a trial function and the
+notation $(\cdot, \cdot)_w$ represents a weighted inner product.
+In this projection $u_h$ is the ${cls('Function')}, $u$ is the sympy function and we use sympy
+to exactly evaluate $u$ on all quadrature points
+$\{x_j\}_{j=0}^{N-1}$. With quadrature we then have
+
+!bt
+(u, v)_w = \sum_{j\in\mathcal{I}^N} u(x_j) v(x_j) w_j \forall v \in T,
+!et
+
+where $\mathcal{I}^N = (0, 1, \ldots, N-1)$ and $\{w_j\}_{j\in \mathcal{I}^N}$
+are the quadrature weights. The left hand side of the projection is
+
+!bt
+(u_h, v)_w = \sum_{j\in\mathcal{I}^N} u_h(x_j) v(x_j) w_j \forall v \in T.
+!et
+
+A linear system of equations arise when inserting for the
+basis functions
+
+!bt
+\left(u, T_i\right)_w = \tilde{u}_i \forall i \in \mathcal{I}^N,
+!et
+
+and
+
+!bt
+\begin{align*}
+\left(u_h, T_i \right)_w &= (\sum_{k\in \mathcal{I}^N} \hat{u}_k T_k , T_i)_w \\
+  &= \sum_{k\in \mathcal{I}^N} \left( T_k, T_i\right)_w \hat{u}_k
+\end{align*}
+!et
+
+with the mass matrix
+
+!bt
+a_{ik} = \left( T_k, T_i\right)_w   \forall (i, k) \in \mathcal{I}^N \times \mathcal{I}^N,
+!et
+
+we can now solve to get the unknown
+expansion coefficients. In matrix notation
+
+!bt
+\hat{u} = A^{-1} \tilde{u},
+!et
+
+where $\hat{u}=\{\hat{u}_i\}_{i\in \mathcal{I}^N}$,
+$\tilde{u}=\{\tilde{u}_i\}_{i \in \mathcal{I}^N}$ and
+$A=\{a_{ki}\}_{(i,k) \in \mathcal{I}^N \times \mathcal{I}^N}$
+
+===== Adaptive function size =====
+
+The number of basis functions can also be left open during creation
+of the function space, through
+
+!bc pycod
+T = FunctionSpace(0, 'Chebyshev', domain=(-1, 1))
+!ec
+
+This is useful if you want to approximate a function and
+are uncertain how many basis functions that are required.
+For example, you may want to approximate the function $\cos(20 x)$.
+You can then find the required ${cls('Function')} using
+
+!bc pycod
+u = Function(T, buffer=sp.cos(20*x))
+print(len(u))
+!ec
+
+We see that $N=45$ is required to resolve this function. This agrees
+well with what is reported also by "Chebfun":"https://www.chebfun.org/docs/guide/guide01.html".
+Note that in this process a new ${func('FunctionSpace')} has been
+created under the hood. The function space of `u` can be
+extracted using
+
+!bc pycod
+Tu = u.function_space()
+print(Tu.N)
+!ec
+
+To further show that shenfun is compatible with Chebfun we can also
+approximate the Bessel function
+
+!bc pycod
+T1 = FunctionSpace(0, 'Chebyshev', domain=(0, 100))
+u = Function(T1, buffer=sp.besselj(0, x))
+print(len(u))
+!ec
+
+which gives 83 basis functions, in close agreement with Chebfun (89).
+The difference lies only in the cut-off criteria. We cut frequencies
+with a relative tolerance of 1e-12 by default, but if we make this criteria
+a little bit stronger, then we will also arrive at a slightly higher number:
+
+!bc pycod
+u = Function(T1, buffer=sp.besselj(0, x), reltol=1e-14)
+print(len(u))
+!ec
+
+Plotting the function on its quadrature points looks
+a bit ragged, though:
+
+!bc pycod
+import matplotlib.pyplot as plt
+Tu = u.function_space()
+plt.plot(Tu.mesh(), u.backward())
+!ec
+
+To improve the quality of this plot we can instead evaluate the
+function on more points
+
+!bc pycod
+xj = np.linspace(0, 100, 1000)
+plt.plot(xj, u(xj))
+!ec
+
+Alternatively, we can refine the function, which simply
+pads zeros to $\hat{u}$
+
+!bc pycod
+up = u.refine(200)
+Tp = up.function_space()
+plt.plot(Tp.mesh(), up.backward())
+!ec
+
+The padded expansion coefficients are now given as
+
+!bc pycod
+print(up)
+!ec
+
+===== More features =====
+
+Since we have used a regular Chebyshev basis above, there
+are many more features that could be explored simply by going through
+"Numpy's Chebyshev module":"https://numpy.org/doc/stable/reference/routines.polynomials.chebyshev.html".
+For example, we can create a Chebyshev series like
+
+!bc pycod
+import numpy.polynomial.chebyshev as cheb
+c = cheb.Chebyshev(u, domain=(0, 100))
+!ec
+
+The Chebyshev series in Numpy has a wide range of possibilities,
+see "here": "https://numpy.org/doc/stable/reference/generated/numpy.polynomial.chebyshev.Chebyshev.html#numpy.polynomial.chebyshev.Chebyshev".
+However, we may also work directly with the Chebyshev
+coefficients already in `u`. To find the roots of the
+polynomial that approximates the Bessel function on
+domain $[0, 100]$, we can do
+
+!bc pycod
+z = Tu.map_true_domain(cheb.chebroots(u))
+!ec
+
+Note that the roots are found on the reference domain $[-1, 1]$
+and as such we need to move the result to the physical domain using
+`map_true_domain`. The resulting roots `z` are both real and imaginary,
+so to extract the real roots we need to filter a little bit
+
+!bc pycod
+z2 = z[np.where((z.imag == 0)*(z.real > 0)*(z.real < 100))].real
+print(z2[:5])
+!ec
+
+Here `np.where` returns the indices where the condition is true. The condition
+is that the imaginary part is zero, whereas the real part is within the
+true domain $[0, 100]$.
+
+!bnotice
+Using directly `cheb.chebroots(c)` does not seem to work (even though the
+series has been generated with the non-standard domain) because
+Numpy only looks for roots in the reference domain $[-1, 1]$.
+!enotice
+
+We could also use a function space with boundary conditions built
+in, like
+
+!bc pycod
+Td = FunctionSpace(0, 'C', bc=(sp.besselj(0, 0), sp.besselj(0, 100)), domain=(0, 100))
+ud = Function(Td, buffer=sp.besselj(0, x))
+print(len(ud))
+!ec
+
+As we can see this leads to a function space of dimension
+very similar to the orthogonal space.
+
+The major advantages of working with a space with boundary conditions
+built in only comes to life when solving differential equations. As
+long as we are only interested in approximating functions, we may just
+as well stick to the orthogonal spaces. This goes for Legendre as
+well as Chebyshev.
+
+===== Multidimensional functions =====
+
+Multidimensional tensor product spaces are created
+by taking the tensor products of one-dimensional function spaces.
+For example
+
+!bc pycod
+C0 = FunctionSpace(20, 'C')
+C1 = FunctionSpace(20, 'C')
+T = TensorProductSpace(comm, (C0, C1))
+u = Function(T)
+!ec
+
+Here $\text{T} = \text{C0} \otimes \text{C1}$, the basis function is
+$T_i(x) T_j(y)$ and the Function `u` is
+
+!bt
+u(x, y) = \sum_{i=0}^{N-1} \sum_{j=0}^{N-1} \hat{u}_{ij} T_i(x) T_j(y).
+!et
+
+The multidimensional Functions work more or less exactly like for the
+1D case. We can here interpolate 2D Sympy functions
+
+!bc pycod
+y = sp.Symbol('y', real=True)
+u = Function(T, buffer=sp.cos(10*x)*sp.cos(10*y))
+X = T.local_mesh(True)
+plt.contourf(X[0], X[1], u.backward())
+!ec
+
+Like for 1D the coefficients are computed through projection,
+where the exact function is evaluated on all quadrature points
+in the mesh.
+
+The Cartesian mesh represents the quadrature points of the
+two function spaces, and can be visualized as follows
+
+!bc pycod
+X = T.mesh()
+for xj in X[0]:
+    for yj in X[1]:
+        plt.plot((xj, xj), (X[1][0, 0], X[1][0, -1]), 'k')
+        plt.plot((X[0][0], X[0][-1]), (yj, yj), 'k')
+!ec
+
+We may alternatively plot on a uniform mesh
+
+!bc pycod
+X = T.local_mesh(broadcast=True, uniform=True)
+plt.contourf(X[0], X[1], u.backward(kind='uniform'))
+!ec
+
+===== Curvilinear coordinates =====
+
+With shenfun it is possible to use curvilinear coordinates,
+and not necessarily with orthogonal basis vectors. With
+curvilinear coordinates the computational coordinates are
+always straight lines, rectangles and cubes. But the physical
+coordinates can be very complex.
+
+Consider the unit disc with polar coordinates. Here
+the position vector $\mathbf{r}$ is given by
+
+!bt
+\mathbf{r} = r\cos \theta \mathbf{i} + r\sin \theta \mathbf{j}
+!et
+
+The physical domain is $\Omega = \{(x, y): x^2 + y^2 < 1\}$,
+whereas the computational domain is the Cartesian product
+$D = \{(r, \theta) \in [0, 1] \times [0, 2 \pi]\}$.
+
+We create this domain in shenfun through
+
+!bc pycod
+r, theta = psi = sp.symbols('x,y', real=True, positive=True)
+rv = (r*sp.cos(theta), r*sp.sin(theta))
+B0 = FunctionSpace(20, 'C', domain=(0, 1))
+F0 = FunctionSpace(20, 'F')
+T = TensorProductSpace(comm, (B0, F0), coordinates=(psi, rv))
+!ec
+
+Note that we are using a Fourier space for the azimuthal
+direction, since the solution here needs to be periodic.
+We can now create functions on the space using an
+analytical function in computational coordinates
+
+!bc pycod
+u = Function(T, buffer=(1-r)*r*sp.sin(sp.cos(theta)))
+!ec
+
+However, when this is plotted it may not be what you expect
+
+!bc pycod
+X = T.local_mesh(True)
+plt.contourf(X[0], X[1], u.backward(), 100)
+!ec
+
+We see that the function has been plotted in computational coordinates,
+and not on the disc, as you probably expected. To plot on
+the disc we need the physical mesh, and not the computational
+
+!bc pycod
+X = T.local_cartesian_mesh()
+plt.contourf(X[0], X[1], u.backward(), 100)
+!ec
+
+!bnotice
+The periodic plot does not wrap all around the circle. This is
+not wrong, we have simply not used the same point twice, but it
+does not look very good. To overcome this problem we can wrap the
+grid all the way around and re-plot.
+!enotice
+
+!bc pycod
+up = u.backward()
+xp, yp, up = wrap_periodic([X[0], X[1], up], axes=[1])
+plt.contourf(xp, yp, up, 100)
+!ec
+
+===== Adaptive functions in multiple dimensions =====
+
+If you want to find a good resolution for a function in multiple
+dimensions, the procedure is exactly like in 1D. First create function
+spaces with 0 quadrature points, and then call ${cls('Function')}
+
+!bc pycod
+B0 = FunctionSpace(0, 'C', domain=(0, 1))
+F0 = FunctionSpace(0, 'F')
+T = TensorProductSpace(comm, (B0, F0), coordinates=(psi, rv))
+u = Function(T, buffer=((1-r)*r)**2*sp.sin(sp.cos(theta)))
+print(u.shape)
+!ec
+
+The algorithm used to find the approximation in multiple dimensions
+simply treat the problem one direction at the time. So in this case
+we would first find a space in the first direction by using
+a function ` ~ ((1-r)*r)**2`, and then along the second using
+a function ` ~ sp.sin(sp.cos(theta))`.
+
+
+#======= Bibliography =======
+
+## Publish (https://bitbucket.org/logg/publish is used to
+## handle references. The line below specifies the name of
+## the Publish database file (see the doconce manual for details).
+
+% if FORMAT not in ("sphinx"):
+
+BIBFILE: ../papers.pub
+
+% else:
+
+% endif

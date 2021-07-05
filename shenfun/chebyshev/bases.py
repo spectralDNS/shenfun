@@ -851,6 +851,8 @@ class CompositeSpaceU(OrthogonalU):
 class ShenDirichlet(CompositeSpace):
     r"""Function space for Dirichlet boundary conditions
 
+    u(-1)=a and u(1)=b
+
     The basis function is
 
     .. math::
@@ -953,6 +955,8 @@ class ShenDirichlet(CompositeSpace):
 
 class DirichletU(CompositeSpaceU):
     r"""Function space for Dirichlet boundary conditions
+
+    u(-1)=a and u(1)=b
 
     The basis function is
 
@@ -1140,6 +1144,8 @@ class DirichletU(CompositeSpaceU):
 class Heinrichs(CompositeSpace):
     r"""Function space for Dirichlet boundary conditions
 
+    u(-1)=a and u(1)=b
+
     The basis function is
 
     .. math::
@@ -1232,6 +1238,8 @@ class Heinrichs(CompositeSpace):
 
 class QuasiDirichlet(CompositeSpace):
     r"""Function space for Dirichlet boundary conditions
+
+    u(-1)=a and u(1)=b
 
     The basis function is
 
@@ -1428,7 +1436,9 @@ class QuasiDirichlet(CompositeSpace):
         return self._bc_basis
 
 class ShenNeumann(CompositeSpace):
-    """Function space for homogeneous Neumann boundary conditions
+    """Function space for Neumann boundary conditions
+
+    u'(-1)=a and u'(1)=b
 
     Parameters
     ----------
@@ -1446,7 +1456,7 @@ class ShenNeumann(CompositeSpace):
             basis function 0, which is T_0. A Helmholtz problem can use
             mean=None.
         bc : 2-tuple of floats, optional
-            Boundary conditions at, respectively, x=(-1, 1).
+            Boundary condition values at, respectively, x=(-1, 1).
         domain : 2-tuple of floats, optional
             The computational domain
         dtype : data-type, optional
@@ -1509,7 +1519,9 @@ class ShenNeumann(CompositeSpace):
         return self._bc_basis
 
 class CombinedShenNeumann(CompositeSpace):
-    """Function space for homogeneous Neumann boundary conditions
+    """Function space for Neumann boundary conditions
+
+    u'(-1)=a and u'(1)=b
 
     Parameters
     ----------
@@ -1527,7 +1539,7 @@ class CombinedShenNeumann(CompositeSpace):
             basis function 0, which is T_0. A Helmholtz problem can use
             mean=None.
         bc : 2-tuple of floats, optional
-            Boundary conditions at, respectively, x=(-1, 1).
+            Boundary condition values at, respectively, x=(-1, 1).
         domain : 2-tuple of floats, optional
             The computational domain
         dtype : data-type, optional
@@ -1597,7 +1609,9 @@ class CombinedShenNeumann(CompositeSpace):
         return self._bc_basis
 
 class MikNeumann(CompositeSpace):
-    r"""Function space for homogeneous Neumann boundary conditions
+    r"""Function space for Neumann boundary conditions
+
+    u'(-1)=a and u'(1)=b
 
     The basis function is
 
@@ -1621,7 +1635,7 @@ class MikNeumann(CompositeSpace):
             basis function 0, which is T_0. A Helmholtz problem can use
             mean=None.
         bc : 2-tuple of floats, optional
-            Boundary conditions at, respectively, x=(-1, 1).
+            Boundary condition values at, respectively, x=(-1, 1).
         domain : 2-tuple of floats, optional
             The computational domain
         dtype : data-type, optional
@@ -1693,10 +1707,10 @@ class MikNeumann(CompositeSpace):
         return self._bc_basis
 
 class ShenBiharmonic(CompositeSpace):
-    """Function space for biharmonic equation
+    """Function space for biharmonic equation with 2 Dirichlet and
+    2 Neumann boundary conditions
 
-    Using 2 Dirichlet and 2 Neumann boundary conditions. All possibly
-    nonhomogeneous.
+    u(-1)=a, u(1)=b, u'(-1)=c and u'(1)=d
 
     Parameters
     ----------
@@ -1895,7 +1909,9 @@ class SecondNeumann(CompositeSpace): #pragma: no cover
         return output_array
 
 class UpperDirichlet(CompositeSpace):
-    """Function space with homogeneous Dirichlet on upper edge (x=1) of boundary
+    """Function space with single Dirichlet on upper edge
+
+    u(1)=a
 
     Parameters
     ----------
@@ -1907,6 +1923,8 @@ class UpperDirichlet(CompositeSpace):
             - GL - Chebyshev-Gauss-Lobatto
             - GC - Chebyshev-Gauss
 
+        bc : 2-tuple of (number, None), optional
+            The number is the boundary condition value
         domain : 2-tuple of floats, optional
             The computational domain
         dtype : data-type, optional
@@ -1962,6 +1980,8 @@ class UpperDirichlet(CompositeSpace):
 class ShenBiPolar(CompositeSpace):
     """Function space for the Biharmonic equation in polar coordinates
 
+    u(-1)=a, u(1)=b, u'(-1)=c and u'(1)=d
+
     Parameters
     ----------
         N : int
@@ -1972,6 +1992,9 @@ class ShenBiPolar(CompositeSpace):
             - GL - Chebyshev-Gauss-Lobatto
             - GC - Chebyshev-Gauss
 
+        bc : 4-tuple of numbers
+            The values of the 4 boundary conditions at x=(-1, 1).
+            The two Dirichlet at (-1, 1) first and then the Neumann at (-1, 1).
         domain : 2-tuple of floats, optional
             The computational domain
         dtype : data-type, optional
@@ -2033,6 +2056,8 @@ class ShenBiPolar(CompositeSpace):
 class DirichletNeumann(CompositeSpace):
     """Function space for mixed Dirichlet/Neumann boundary conditions
 
+    u(-1)=a and u'(1)=b
+
     Parameters
     ----------
         N : int, optional
@@ -2043,8 +2068,8 @@ class DirichletNeumann(CompositeSpace):
             - GL - Chebyshev-Gauss-Lobatto
             - GC - Chebyshev-Gauss
 
-        bc : tuple of numbers
-            Boundary conditions at edges of domain
+        bc : 2-tuple of numbers
+            Boundary condition values at x=-1 and x=1
         domain : 2-tuple of floats, optional
             The computational domain
         dtype : data-type, optional
@@ -2102,6 +2127,8 @@ class DirichletNeumann(CompositeSpace):
 class NeumannDirichlet(CompositeSpace):
     """Function space for mixed Neumann/Dirichlet boundary conditions
 
+    u'(-1)=a and u(1)=b
+
     Parameters
     ----------
         N : int, optional
@@ -2112,8 +2139,8 @@ class NeumannDirichlet(CompositeSpace):
             - GL - Chebyshev-Gauss-Lobatto
             - GC - Chebyshev-Gauss
 
-        bc : tuple of numbers
-            Boundary conditions at edges of domain
+        bc : 2-tuple of numbers
+            Boundary condition values at x=-1 and x=1
         domain : 2-tuple of floats, optional
             The computational domain
         dtype : data-type, optional
@@ -2172,6 +2199,8 @@ class UpperDirichletNeumann(CompositeSpace):
     """Function space for both Dirichlet and Neumann boundary conditions
     on the right hand side
 
+    u(1)=a and u'(1)=b
+
     Parameters
     ----------
         N : int, optional
@@ -2182,8 +2211,8 @@ class UpperDirichletNeumann(CompositeSpace):
             - GL - Chebyshev-Gauss-Lobatto
             - GC - Chebyshev-Gauss
 
-        bc : tuple of numbers
-            Boundary conditions at the right edge of domain
+        bc : 2-tuple of numbers
+            Boundary condition values at the right edge of domain
         domain : 2-tuple of floats, optional
             The computational domain
         dtype : data-type, optional
@@ -2319,6 +2348,23 @@ class BCBase(CompositeSpace):
         output_array = SpectralBase.evaluate_basis_derivative(self, x=x, i=i, k=k, output_array=output_array)
         return output_array
 
+    def to_ortho(self, input_array, output_array=None):
+        from shenfun import Function
+        T = self.get_orthogonal()
+        if output_array is None:
+            output_array = Function(T)
+        else:
+            output_array.fill(0)
+        M = self.stencil_matrix().T
+        for k, row in enumerate(M):
+            output_array[k] = np.dot(row, input_array)
+        return output_array
+
+    def eval(self, x, u, output_array=None):
+        v = self.to_ortho(u)
+        output_array = v.eval(x, output_array=output_array)
+        return output_array
+
 class BCDirichlet(BCBase):
 
     @staticmethod
@@ -2326,8 +2372,8 @@ class BCDirichlet(BCBase):
         return 'BCD'
 
     def stencil_matrix(self, N=None):
-        return sp.Rational(1/2)*np.array([[1, -1],
-                                          [1, 1]])
+        return sp.Rational(1, 2)*np.array([[1, -1],
+                                           [1, 1]])
 
 class BCNeumann(BCBase):
 
@@ -2336,8 +2382,8 @@ class BCNeumann(BCBase):
         return 'BCN'
 
     def stencil_matrix(self, N=None):
-        return np.array([[0, 1/2, -1/8],
-                         [0, 1/2, 1/8]])
+        return sp.Rational(1, 8)*np.array([[0, 4, -1],
+                                           [0, 4, 1]])
 
 class BCBiharmonic(BCBase):
 
@@ -2346,10 +2392,10 @@ class BCBiharmonic(BCBase):
         return 'BCB'
 
     def stencil_matrix(self, N=None):
-        return np.array([[0.5, -9./16., 0, 1./16],
-                         [0.5, 9./16., 0, -1./16.],
-                         [1./8., -1./16., -1./8., 1./16.],
-                         [-1./8., -1./16., 1./8., 1./16.]])
+        return sp.Rational(1, 16)*np.array([[8, -9, 0, 1],
+                                            [8, 9, 0, -1],
+                                            [2, -1, -2, 1],
+                                            [-2, -1, 2, 1]])
 
 class BCUpperDirichlet(BCBase):
 
@@ -2358,7 +2404,7 @@ class BCUpperDirichlet(BCBase):
         return 'BCUD'
 
     def stencil_matrix(self, N=None):
-        return np.array([[0.5, 0.5]])
+        return sp.Rational(1, 2)*np.array([[1, 1]])
 
 class BCNeumannDirichlet(BCBase):
 
@@ -2367,8 +2413,8 @@ class BCNeumannDirichlet(BCBase):
         return 'BCND'
 
     def stencil_matrix(self, N=None):
-        return np.array([[1, -0.6, -0.4],
-                         [1, 0, 0]])
+        return sp.Rational(1, 5)*np.array([[5, -3, -2],
+                                           [5, 0, 0]])
 
 class BCDirichletNeumann(BCBase):
 
@@ -2387,8 +2433,8 @@ class BCUpperDirichletNeumann(BCBase):
         return 'BCUDN'
 
     def stencil_matrix(self, N=None):
-        return np.array([[1, 0, 0],
-                         [1, -5/3, 2/3]])
+        return sp.Rational(1, 3)*np.array([[3, 0, 0],
+                                           [3, -5, 2]])
 
 def chebvanderU(x, deg):
     """Pseudo-Vandermonde matrix of given degree for Chebyshev polynomials

@@ -3,16 +3,18 @@ This script has been used to compute the Neumann results of the paper
 
     Efficient spectral-Galerkin methods for second-order equations using different Chebyshev bases
 
-The results have been computed using Python 3.9 and Shenfun 3.1.2.
+submitted to the SIAM Journal of Scientific Computing.
+
+The results have been computed using Python 3.9 and Shenfun 3.1.1.
 
 The generalized Chebyshev-Tau results are computed with dedalus,
 and are as such not part of this script.
 
 """
-from shenfun import *
 from matplotlib import colors
 import quadpy
 import sympy as sp
+import numpy as np
 import array_to_latex as a2l
 
 x = sp.Symbol('x', real=True)
@@ -38,7 +40,8 @@ def matvec(u_hat, f_hat, A, B, alpha, method):
         The chosen method
 
     """
-    if method == 0:
+    from shenfun import chebyshev
+    if method == 2:
         if alpha == 0:
             f_hat = A.matvec(-u_hat, f_hat)
 
@@ -73,7 +76,8 @@ def solve(f_hat, u_hat, A, B, alpha, method):
     method : int
         The chosen method
     """
-    if method == 0:
+    from shenfun import chebyshev, la
+    if method == 2:
         if alpha == 0:
             sol = A.solve
             u_hat = sol(-f_hat, u_hat)
@@ -81,9 +85,9 @@ def solve(f_hat, u_hat, A, B, alpha, method):
             sol = chebyshev.la.Helmholtz(A, B, -1, alpha)
             u_hat = sol(u_hat, f_hat)
 
-    elif method in (1, 2, 3, 4):
+    elif method in (0, 1, 3, 4):
         if alpha == 0:
-            sol = chebyshev.la.TwoDMA(-A, fixed_gauge=0)
+            sol = chebyshev.la.TwoDMA(A*(-1), fixed_gauge=0)
         else:
             sol = chebyshev.la.FDMA(alpha*B-A)
         u_hat = sol(f_hat, u_hat)
@@ -104,11 +108,13 @@ def solve(f_hat, u_hat, A, B, alpha, method):
     return u_hat
 
 def main(N, method=0, alpha=0, returntype=0):
+    from shenfun import FunctionSpace, TrialFunction, TestFunction, \
+        inner, div, grad, chebyshev, SparseMatrix, Function, Array
     global fe
 
-    basis = {0: ('ShenNeumann', 'ShenNeumann'),
-             1: ('ShenNeumann', 'CombinedShenNeumann'),
-             2: ('ShenDirichlet', 'MikNeumann'),
+    basis = {0: ('ShenNeumann', 'CombinedShenNeumann'),
+             1: ('ShenDirichlet', 'MikNeumann'),
+             2: ('ShenNeumann', 'ShenNeumann'),
              3: ('DirichletU', 'ShenNeumann'),
              4: ('Orthogonal', 'ShenNeumann'),  # Quasi-Galerkin
              5: ('ShenNeumann', 'ShenNeumann'), # Legendre
@@ -116,18 +122,15 @@ def main(N, method=0, alpha=0, returntype=0):
 
     test, trial = basis[method]
 
-    wt = {0: 1, 1: 1, 2: 1, 3: 1-x**2, 4: 1, 5:1}[method]
+    wt = {0: 1, 1: 1, 2: 1, 3: 1-x**2, 4: 1, 5: 1}[method]
     family = 'C' if method < 5 else 'L'
     mean = 0 if alpha == 0 else None
-    dpar = {} if method in (2, 3, 4) else {'mean': mean}
-    ST = FunctionSpace(N, family, basis=test, **dpar)
-    TS = FunctionSpace(N, family, basis=trial, mean=mean)
+    dpar = {} if method in (1, 3, 4) else {'mean': mean}
+    test = FunctionSpace(N, family, basis=test, **dpar)
+    trial = FunctionSpace(N, family, basis=trial, mean=mean)
 
-    if method == 4:
-        ST.slice = lambda: slice(0, N-2)
-
-    v = TestFunction(ST)
-    u = TrialFunction(TS)
+    v = TestFunction(test)
+    u = TrialFunction(trial)
     A = inner(v*wt, div(grad(u)))
     B = inner(v*wt, u)
 
@@ -137,6 +140,17 @@ def main(N, method=0, alpha=0, returntype=0):
         A = Q2*A
         B = Q2*B
 
+    if method == 3:
+        k = np.arange(N-2)
+        K = SparseMatrix({0: 1/(2*(k+1)*(k+2))}, (N-2, N-2))
+        A[0] *= K[0]
+        A[2] *= K[0][:-2]
+        B[-2] *= K[0][2:]
+        B[0] *= K[0]
+        B[2] *= K[0][:-2]
+        B[4] *= K[0][:-4]
+
+
     if returntype == 0:
         if alpha == 0:
             con = np.linalg.cond(A.diags().toarray()[1:, 1:])
@@ -144,32 +158,38 @@ def main(N, method=0, alpha=0, returntype=0):
             con = np.linalg.cond(alpha*B.diags().toarray()-A.diags().toarray())
 
     elif returntype == 1:
-        v = Function(TS, buffer=np.random.random(N))
+        v = Function(trial, buffer=np.random.random(N))
         v[0] = 0
         v[-2:] = 0
-        u_hat = Function(TS)
-        f_hat = Function(TS)
+        u_hat = Function(trial)
+        f_hat = Function(trial)
         f_hat = matvec(v, f_hat, A, B, alpha, method)
         u_hat = solve(f_hat, u_hat, A, B, alpha, method)
         con = np.abs(u_hat-v).max()
 
     elif returntype == 2:
-        ue = sp.sin(4*sp.pi*sp.cos(4*sp.pi*x))
+        ue = sp.cos(100*sp.pi*x)
         fe = alpha*ue-ue.diff(x, 2)
-        f_hat = Function(TS)
-        SD2 = FunctionSpace(N, family, basis=test)
-        fj = Array(SD2, buffer=fe)
+        f_hat = Function(test)
+        fj = Array(test, buffer=fe)
         if wt != 1:
-            fj *= np.sin((np.arange(N)+0.5)*np.pi/N)**2
-        f_hat = SD2.scalar_product(fj, f_hat, fast_transform=True)
+            if test.quad == 'GC':
+                fj *= np.sin((np.arange(N)+0.5)*np.pi/N)**2
+            else:
+                fj *= np.sin((np.arange(N)+1)*np.pi/(N+1))**2
+        f_hat = test.scalar_product(fj, f_hat, fast_transform=True)
         if method == 4:
-            f_hat[:-2] = Q2.diags('csc')*f_hat[:-2]
-        u_hat = Function(TS)
+            f_hat[:-2] = Q2.diags('csc')*f_hat
+
+        if method == 3:
+            f_hat[:-2] *= K[0]
+
+        u_hat = Function(trial)
         u_hat = solve(f_hat, u_hat, A, B, alpha, method)
-        uj = Array(TS)
-        uj = TS.backward(u_hat, uj, fast_transform=True)
-        ua = Array(TS, buffer=ue)
-        xj, wj = TS.points_and_weights()
+        uj = Array(trial)
+        uj = trial.backward(u_hat, uj, fast_transform=True)
+        ua = Array(trial, buffer=ue)
+        xj, wj = trial.points_and_weights()
 
         if family == 'C':
             ua -= np.sum(ua*wj)/np.pi # normalize
@@ -180,6 +200,7 @@ def main(N, method=0, alpha=0, returntype=0):
             uj -= np.sum(uj*wj)/2 # normalize
 
         con = np.sqrt(inner(1, (uj-ua)**2))
+        #con = np.max(abs(uj-ua))
     return con
 
 if __name__ == '__main__':
@@ -202,37 +223,55 @@ if __name__ == '__main__':
             os.environ['SHENFUN_OPTIMIZATION'] = 'NUMBA'
         except ModuleNotFoundError:
             os.warning('Numba not found - using Cython')
-
     cond = []
-    if args.return_type in (1, 2):
-        N = (2**4, 2**8, 2**12, 2**16, 2**20)
+    M = 6 if args.include_legendre else 5
+    if args.return_type == 2:
+        N = (2**4,2**6, 2**8, 2**12, 2**16, 2**20)
+    elif args.return_type == 1:
+        N = (2**4, 2**12, 2**20)
     else:
         N = (32, 64, 128, 256, 512, 1024, 2048)
-    M = 4 if args.include_legendre else 5
-    for alpha in (0, 1, 1000):
-        cond.append([])
-        if args.verbose > 0:
-            print('alpha =', alpha)
+    alphas = (0, 1000)
+
+    if args.return_type in (0, 2):
+        for alpha in alphas:
+            cond.append([])
+            if args.verbose > 0:
+                print('alpha =', alpha)
+            for basis in range(M): # To include Legendre use --include_legendre (takes hours for N=2**20)
+                if args.verbose > 1:
+                    print('Method =', basis)
+                cond[-1].append([])
+                for n in N:
+                    if args.verbose > 2:
+                        print('N =', n)
+                    cond[-1][-1].append(main(n, basis, alpha, args.return_type))
+        linestyle = {0: 'solid', 1: 'dashed', 2: 'dotted'}
+        for i in range(len(cond)):
+            plt.loglog(N, cond[i][0], 'b',
+                       N, cond[i][1], 'r',
+                       N, cond[i][2], 'k',
+                       N, cond[i][3], 'm',
+                       N, cond[i][4], 'y',
+                       linestyle=linestyle[i])
+            if args.include_legendre:
+                plt.loglog(N, cond[i][5], 'y', linestyle=linestyle[i])
+            a2l.to_ltx(np.array(cond)[i], frmt='{:6.2e}', print_out=True, mathform=False)
+    else:
         for basis in range(M):
+            cond.append([])
             if args.verbose > 1:
                 print('Method =', basis)
-            cond[-1].append([])
-            for n in N:
-                if args.verbose > 2:
-                    print('N =', n)
-                cond[-1][-1].append(main(n, basis, alpha, args.return_type))
 
-    linestyle = {0: 'solid', 1: 'dashed', 2: 'dotted'}
-    for i in range(len(cond)):
-        plt.loglog(N, cond[i][0], 'b',
-                   N, cond[i][1], 'r',
-                   N, cond[i][2], 'k',
-                   N, cond[i][3], 'g',
-                   N, cond[i][4], 'c',
-                   linestyle=linestyle[i])
-        if args.include_legendre:
-            plt.loglog(N, cond[i][5], 'y', linestyle=linestype[i])
-        a2l.to_ltx(np.array(cond)[i], frmt='{:6.2e}', print_out=True, mathform=False)
+            for alpha in alphas:
+                if args.verbose > 0:
+                    print('alpha =', alpha)
+                for n in N:
+                    if args.verbose > 2:
+                        print('N =', n)
+                    cond[-1].append(main(n, basis, alpha, args.return_type))
+
+        a2l.to_ltx(np.array(cond), frmt='{:6.2e}', print_out=True, mathform=False)
 
     if args.plot:
         plt.show()

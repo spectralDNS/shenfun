@@ -1,6 +1,6 @@
 TITLE: Demo - Rayleigh Benard
-AUTHOR: Mikael Mortensen {copyright|CC BY} Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
-DATE: today
+AUTHOR: Mikael Mortensen Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
+DATE: November 21, 2019
 
 __Summary.__
 Rayleigh-Benard convection arise

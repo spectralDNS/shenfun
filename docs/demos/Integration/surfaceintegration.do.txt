@@ -1,6 +1,6 @@
 TITLE: Demo - Integration of functions
-AUTHOR: Mikael Mortensen {copyright|CC BY} Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
-DATE: today
+AUTHOR: Mikael Mortensen Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
+DATE: August 7, 2020
 
 
 __Summary.__

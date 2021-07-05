@@ -1,6 +1,6 @@
 TITLE: Demo - Stokes equations
-AUTHOR: Mikael Mortensen {copyright|CC BY} Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
-DATE: today
+AUTHOR: Mikael Mortensen Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
+DATE: January 23, 2019
 
 __Summary.__
 The Stokes equations describe the flow of highly viscous fluids.

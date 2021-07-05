@@ -705,7 +705,7 @@ class TensorProductSpace(PFFT):
         for base in self:
             axis = base.axis
             x = base.map_reference_domain(points[axis])
-            D = base.evaluate_basis_all(x=x)
+            D = base.evaluate_basis_all(x=x, argument=1)
             P.append(D[..., self.local_slice()[axis]])
             if isinstance(base, R2C):
                 r2c = axis

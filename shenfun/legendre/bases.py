@@ -448,7 +448,9 @@ class CompositeSpace(Orthogonal):
         return output_array
 
 class ShenDirichlet(CompositeSpace):
-    """Legendre Function space for Dirichlet boundary conditions
+    """Function space for Dirichlet boundary conditions
+
+    u(-1)=a and u(1)=b.
 
     Parameters
     ----------
@@ -544,7 +546,9 @@ class ShenDirichlet(CompositeSpace):
         return self._bc_basis
 
 class ShenNeumann(CompositeSpace):
-    """Function space for homogeneous Neumann boundary conditions
+    """Function space for Neumann boundary conditions
+
+    u'(-1)=a and u'(1)=b
 
     Parameters
     ----------
@@ -654,9 +658,10 @@ class ShenNeumann(CompositeSpace):
         return self._bc_basis
 
 class ShenBiharmonic(CompositeSpace):
-    """Function space for biharmonic basis
+    """Function space for biharmonic basis with both Dirichlet and
+    Neumann boundary conditions
 
-    Both Dirichlet and Neumann boundary conditions.
+    u(-1)=a, u(1)=b, u'(-1)=c, u'(1)=d.
 
     Parameters
     ----------
@@ -720,15 +725,9 @@ class ShenBiharmonic(CompositeSpace):
         return self._bc_basis
 
 class BeamFixedFree(CompositeSpace):
-    """Function space for biharmonic basis
+    """Function space for biharmonic equation with boundary conditions
 
-    Function space for biharmonic basis
-
-    Fulfills the following boundary conditions:
-
-        u(-1) = a, u'(-1) = b, u''(1) = c, u'''(1) = d.
-
-    Both Dirichlet and Neumann boundary conditions.
+    u(-1) = a, u'(-1) = b, u''(1) = c, u'''(1) = d.
 
     Parameters
     ----------
@@ -797,7 +796,9 @@ class BeamFixedFree(CompositeSpace):
         return self._bc_basis
 
 class UpperDirichlet(CompositeSpace):
-    """Legendre function space with homogeneous Dirichlet boundary conditions on x=1
+    """Function space with boundary condition
+
+    u(1)=a
 
     Parameters
     ----------
@@ -859,7 +860,9 @@ class UpperDirichlet(CompositeSpace):
         return self._bc_basis
 
 class ShenBiPolar(CompositeSpace):
-    r"""Legendre function space for the Biharmonic equation in polar coordinates
+    r"""Function space for the Biharmonic equation with boundary conditions
+
+    u(-1)=a, u(1)=b, u'(-1)=c, u'(1)=d.
 
     The basis function is
 
@@ -946,9 +949,10 @@ class ShenBiPolar(CompositeSpace):
 
 
 class ShenBiPolar0(CompositeSpace):
-    """Legendre function space for biharmonic basis for polar coordinates
+    """Function space for biharmonic equation in polar coordinates,
+    with merely three boundary conditions
 
-    Three boundary conditions at v(1), v'(1) and v'(-1)
+    u(1)=a, u'(-1)=b and u'(1)=c
 
     Parameters
     ----------
@@ -1016,7 +1020,9 @@ class ShenBiPolar0(CompositeSpace):
 
 class DirichletNeumann(CompositeSpace):
     """Function space for mixed Dirichlet/Neumann boundary conditions
-	u(-1)=0, u'(1)=0
+
+    u(-1)=a, u'(1)=b
+
     Parameters
     ----------
         N : int
@@ -1085,7 +1091,9 @@ class DirichletNeumann(CompositeSpace):
         return self._bc_basis
 
 class LowerDirichlet(CompositeSpace):
-    """Legendre function space with homogeneous Dirichlet boundary conditions on x = -1
+    """Function space with single Dirichlet boundary condition
+
+    u(-1)=a
 
     Parameters
     ----------
@@ -1097,6 +1105,8 @@ class LowerDirichlet(CompositeSpace):
             - LG - Legendre-Gauss
             - GL - Legendre-Gauss-Lobatto
 
+        bc : tuple of (number, None)
+            Boundary conditions at edges of domain.
         domain : 2-tuple of floats, optional
             The computational domain
         padding_factor : float, optional
@@ -1147,9 +1157,10 @@ class LowerDirichlet(CompositeSpace):
         return self._bc_basis
 
 class DirichletNeumannDirichlet(CompositeSpace):
-    """Function space for biharmonic basis
+    """Function space for biharmonic basis with merely three boundary
+    conditions
 
-    Boundary conditions: u(-1) = 0, u'(-1) = 0, u(1) = 0..
+    u(-1)=a, u(1)=b and u'(-1)=c
 
     Parameters
     ----------
@@ -1217,7 +1228,9 @@ class DirichletNeumannDirichlet(CompositeSpace):
 
 class NeumannDirichlet(CompositeSpace):
     """Function space for mixed Dirichlet/Neumann boundary conditions
-	u'(-1)=0, u(1)=0
+
+    u'(-1)=a, u(1)=b
+
     Parameters
     ----------
         N : int
@@ -1287,7 +1300,8 @@ class NeumannDirichlet(CompositeSpace):
 
 class UpperDirichletNeumann(CompositeSpace):
     """Function space for mixed Dirichlet/Neumann boundary conditions
-	u(1)=0, u'(1)=0
+
+    u(1)=a, u'(1)=b
 
     Parameters
     ----------
@@ -1442,6 +1456,23 @@ class BCBase(CompositeSpace):
         output_array = SpectralBase.evaluate_basis_derivative(self, x=x, i=i, k=k, output_array=output_array)
         return output_array
 
+    def to_ortho(self, input_array, output_array=None):
+        from shenfun import Function
+        T = self.get_orthogonal()
+        if output_array is None:
+            output_array = Function(T)
+        else:
+            output_array.fill(0)
+        M = self.stencil_matrix().T
+        for k, row in enumerate(M):
+            output_array[k] = np.dot(row, input_array)
+        return output_array
+
+    def eval(self, x, u, output_array=None):
+        v = self.to_ortho(u)
+        output_array = v.eval(x, output_array=output_array)
+        return output_array
+
 class BCDirichlet(BCBase):
 
     @staticmethod
@@ -1449,8 +1480,8 @@ class BCDirichlet(BCBase):
         return 'BCD'
 
     def stencil_matrix(self, N=None):
-        return np.array([[0.5, -0.5],
-                         [0.5, 0.5]])
+        return sp.Rational(1, 2)*np.array([[1, -1],
+                                           [1, 1]])
 
 class BCNeumann(BCBase):
 
@@ -1459,8 +1490,8 @@ class BCNeumann(BCBase):
         return 'BCN'
 
     def stencil_matrix(self, N=None):
-        return np.array([[0, 1/2, -1/6],
-                         [0, 1/2, 1/6]])
+        return sp.Rational(1, 6)*np.array([[0, 3, -1],
+                                           [0, 3, 1]])
 
 class BCBiharmonic(BCBase):
 
@@ -1469,10 +1500,10 @@ class BCBiharmonic(BCBase):
         return 'BCB'
 
     def stencil_matrix(self, N=None):
-        return np.array([[0.5, -0.6, 0, 0.1],
-                         [0.5, 0.6, 0, -0.1],
-                         [1./6., -1./10., -1./6., 1./10.],
-                         [-1./6., -1./10., 1./6., 1./10.]])
+        return sp.Rational(1, 30)*np.array([[15, -18, 0, 3],
+                                            [15, 18, 0, -3],
+                                            [5, -3, -5, 3],
+                                            [-5, -3, 5, 3]])
 
 class BCBeamFixedFree(BCBase):
 
@@ -1483,10 +1514,10 @@ class BCBeamFixedFree(BCBase):
         return 'BCBF'
 
     def stencil_matrix(self, N=None):
-        return np.array([[1, 0, 0, 0],
-                         [1, 1, 0, 0],
-                         [2/3, 1, 1/3, 0],
-                         [-1, -1.4, -1/3, 1/15]])
+        return sp.Rational(1, 15)*np.array([[15, 0, 0, 0],
+                                            [15, 15, 0, 0],
+                                            [10, 15, 5, 0],
+                                            [-15, -21, -5, 1]])
 
 class BCLowerDirichlet(BCBase):
 
@@ -1495,7 +1526,7 @@ class BCLowerDirichlet(BCBase):
         return 'BCLD'
 
     def stencil_matrix(self, N=None):
-        return np.array([[0.5, -0.5]])
+        return sp.Rational(1, 2)*np.array([[1, -1]])
 
 class BCUpperDirichlet(BCBase):
 
@@ -1504,7 +1535,7 @@ class BCUpperDirichlet(BCBase):
         return 'BCUD'
 
     def stencil_matrix(self, N=None):
-        return np.array([[0.5, 0.5]])
+        return sp.Rational(1, 2)*np.array([[1, 1]])
 
 class BCNeumannDirichlet(BCBase):
 
@@ -1513,8 +1544,8 @@ class BCNeumannDirichlet(BCBase):
         return 'BCND'
 
     def stencil_matrix(self, N=None):
-        return np.array([[1, -0.5, -0.5],
-                         [1, 0, 0]])
+        return sp.Rational(1, 2)*np.array([[2, -1, -1],
+                                           [2, 0, 0]])
 
 class BCDirichletNeumann(BCBase):
 
@@ -1543,9 +1574,9 @@ class BCDirichletNeumannDirichlet(BCBase):
         return 'BCST'
 
     def stencil_matrix(self, N=None):
-        return np.array([[2/3, -1/2, -1/6],
-                         [1/3, 0, -1/3],
-                         [1/3, 1/2, 1/6]])
+        return sp.Rational(1, 6)*np.array([[4, -3, -1],
+                                           [2, 0, -2],
+                                           [2, 3, 1]])
 
 class BCShenBiPolar0(BCBase):
 
@@ -1554,6 +1585,6 @@ class BCShenBiPolar0(BCBase):
         return 'BCSP'
 
     def stencil_matrix(self, N=None):
-        return np.array([[1, 0, 0],
-                         [-2/3, 1/2, 1/6],
-                         [-1/3, 1/2, -1/6]])
+        return sp.Rational(1, 6)*np.array([[6, 0, 0],
+                                           [-4, 3, 1],
+                                           [-2, 3, -1]])
