@@ -13,10 +13,10 @@ The equation to solve is
 import sys
 import os
 import importlib
-from sympy import symbols, sin, cos, pi, chebyshevt
+import sympy as sp
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, FunctionSpace, \
-    Array, Function, legendre, chebyshev, extract_bc_matrices, la, SpectralMatrix
+    Array, Function, legendre, chebyshev, extract_bc_matrices, la, SpectralMatrix, dx
 
 # Collect basis from either Chebyshev or Legendre submodules
 assert len(sys.argv) == 3, "Call with two command-line arguments"
@@ -25,17 +25,17 @@ assert isinstance(int(sys.argv[-2]), int)
 family = sys.argv[-1].lower()
 
 # Use sympy to compute a rhs, given an analytical solution
-x = symbols("x", real=True)
+x = sp.symbols("x", real=True)
 alpha = 0
-ue = sin(pi*x)*(1-x**2)
+ue = sp.cos(2*sp.pi*x)
+#ue = sp.cos(5*sp.pi*(x+0.1)/2)
 fe = -ue.diff(x, 2)+alpha*ue
 
 # Size of discretization
 N = int(sys.argv[-2])
 
-# alpha=0 requires a fixed gauge, but not alpha!=0 -> mean
-SD = FunctionSpace(N, family=family, bc={'left': ('N', 0), 'right': ('N', 0)},
-                   mean=0 if alpha==0 else None, basis='ShenNeumann')
+SD = FunctionSpace(N, family=family, bc={'left': ('N', ue.diff(x, 1).subs(x, -1)), 'right': ('N', ue.diff(x, 1).subs(x, 1))},
+                   basis='ShenNeumann')
 u = TrialFunction(SD)
 v = TestFunction(SD)
 
@@ -50,10 +50,12 @@ A0 = inner(v, div(grad(u)))
 B0 = inner(v, u)
 
 # Solve
-u_hat = Function(SD)
+u_hat = Function(SD).set_boundary_dofs()
 M = alpha*B0-A0
-sol = la.Solve(M, SD)
-u_hat = sol(f_hat, u_hat)
+
+# The coefficient matrix is singular if alpha=0. In that case add constraint
+constraint = ((0, dx(Array(SD, buffer=ue), weighted=True)/dx(Array(SD, val=1), weighted=True)),) if alpha == 0 else ()
+u_hat = M.solve(f_hat, u_hat, constraints=constraint)
 
 # Transform to real space
 uj = u_hat.backward()

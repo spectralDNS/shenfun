@@ -9,6 +9,7 @@ import functools
 import numpy as np
 import sympy as sp
 from shenfun.matrixbase import SpectralMatrix
+from shenfun import la
 from . import bases
 
 R2C = bases.R2C
@@ -163,7 +164,7 @@ class _Fouriermatrix(SpectralMatrix):
                 d = {0: 1.0}
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
-    def solve(self, b, u=None, axis=0):
+    def solve(self, b, u=None, axis=0, constraints=()):
         if self.measure == 1:
             N = self.shape[0]
 
@@ -188,7 +189,7 @@ class _Fouriermatrix(SpectralMatrix):
             u /= self.scale
             return u
 
-        return SpectralMatrix.solve(self, b, u=u, axis=axis)
+        return la.Solver(self)(b, u=u, axis=axis, constraints=constraints)
 
 
 class _FourierMatDict(dict):

@@ -119,7 +119,7 @@ fj = Array(V0, buffer=f)  # Get f on quadrature mesh
 f_hat = inner(v, fj)      # Compute right hand side
 M = alpha*B - A           # Get coefficient matrix
 u_hat = Function(V0)      # Container for the solution
-sol = la.Solve(M, V0)     # Solver
+sol = la.Solver(M)        # Solver
 u_hat = sol(f_hat, u_hat) # Solve
 !ec
 
@@ -184,7 +184,7 @@ def main(N, test, trial, alpha=1, method=0, ue=sp.sin(2*sp.pi*sp.cos(2*sp.pi*x))
         return M
 
     u_hat = Function(trial)
-    sol = la.Solve(M, test)
+    sol = la.Solver(M)
     u_hat = sol(f_hat, u_hat)
     uj = Array(trial, buffer=ue)
     error = np.sqrt(inner(1, (u_hat.backward()-uj)**2))

@@ -418,7 +418,9 @@ def test_div2(basis, quad):
     c = m / z
     #m2 = m.diags('csr')
     #c2 = spsolve(m2, z[B.slice()])
-    c2 = m.solve(z)
+
+    c2 = Function(B)
+    c2 = m.solve(z, c2)
     assert np.allclose(c2[B.slice()], c[B.slice()])
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
@@ -590,7 +592,7 @@ def test_helmholtz3D(family, axis):
     assert np.linalg.norm(f-(g0+g1)) < 1e-12, np.linalg.norm(f-(g0+g1))
 
     uc = Function(T)
-    uc = H(uc, f)
+    uc = H(f, uc)
     assert np.linalg.norm(uc-u) < 1e-12
 
 @pytest.mark.parametrize('axis', (0, 1))
@@ -628,7 +630,7 @@ def test_helmholtz2D(family, axis):
     assert np.linalg.norm(f-(g0+g1)) < 1e-12, np.linalg.norm(f-(g0+g1))
 
     uc = Function(T)
-    uc = H(uc, f)
+    uc = H(f, uc)
     assert np.linalg.norm(uc-u) < 1e-12
 
 @pytest.mark.parametrize('axis', (0, 1, 2))
@@ -712,7 +714,7 @@ if __name__ == '__main__':
     x = sp.symbols('x', real=True)
     xp = sp.Symbol('x', real=True, positive=True)
 
-    test_mat(((cbases.ShenBiharmonic, 0), (cbases.ShenDirichlet, 0)), cmatrices.BSBSDmat, 'GL')
+    #test_mat(((cbases.ShenBiharmonic, 0), (cbases.ShenDirichlet, 0)), cmatrices.BSBSDmat, 'GL')
     #test_mat(*cmats_and_quads[12])
     #test_cmatvec(cBasis[2], cBasis[2], 'GC', 2)
     #test_lmatvec(lBasis[0], lBasis[0], 'LG', 'cython', 3, 2, 0)
@@ -722,7 +724,7 @@ if __name__ == '__main__':
     #test_add(*mats_and_quads[15])
     #test_sub(*mats_and_quads[15])
     #test_mul2()
-    #test_div2(cBasis[2], 'GC')
+    test_div2(cBasis[1], 'GC')
     #test_helmholtz2D('chebyshev', 1)
     #test_helmholtz3D('chebyshev', 0)
     #test_biharmonic3D('chebyshev', 0)

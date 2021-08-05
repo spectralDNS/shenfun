@@ -18,7 +18,7 @@ import importlib
 from sympy import symbols, cos, sin
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
-    Function, TensorProductSpace, FunctionSpace, comm
+    Function, TensorProductSpace, FunctionSpace, comm, la
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 assert len(sys.argv) == 3, "Call with two command-line arguments"
@@ -56,10 +56,12 @@ matrices = inner(v, div(grad(u)))
 
 # Create Helmholtz linear algebra solver
 H = Solver(*matrices)
+sol = la.SolverGeneric1ND(matrices)
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space
-u_hat = H(u_hat, f_hat)       # Solve
+#u_hat = H(f_hat, u_hat)       # Solve
+u_hat = sol(f_hat, u_hat, constraints=((0, 0),))
 u = T.backward(u_hat)
 
 # Compare with analytical solution

@@ -27,7 +27,7 @@ def test_PDMA(quad):
     u_hat = Function(SB)
     u_hat[s] = solve(H.diags().toarray()[s, s], f_hat[s])
     u_hat2 = Function(SB)
-    u_hat2 = P(u_hat2, f_hat)
+    u_hat2 = P(f_hat, u_hat2)
     assert np.allclose(u_hat2, u_hat)
 
 def test_FDMA():
@@ -46,7 +46,7 @@ def test_FDMA():
     sol = FDMA(H)
     u_hat = Function(HH)
     u_hat = sol(f_hat, u_hat)
-    sol2 = la.Solve(H, HH)
+    sol2 = la.Solve(H)
     u_hat2 = Function(HH)
     u_hat2 = sol2(f_hat, u_hat2)
     assert np.allclose(u_hat2, u_hat)
@@ -65,7 +65,7 @@ def test_TwoDMA():
     sol = TwoDMA(A)
     u_hat = Function(HH)
     u_hat = sol(f_hat, u_hat)
-    sol2 = la.Solve(A, HH)
+    sol2 = la.Solve(A)
     u_hat2 = Function(HH)
     u_hat2 = sol2(f_hat, u_hat2)
     assert np.allclose(u_hat2, u_hat)
@@ -82,20 +82,20 @@ def test_solve(quad):
 
     w_hat = Function(SD)
     B = SparseMatrix(dict(A), (N-2, N-2))
-    w_hat[:-2] = B.solve(b[:-2], w_hat[:-2])
-    assert np.all(abs(w_hat[:-2]-u_hat[:-2]) < 1e-8)
+    w_hat = B.solve(b, w_hat)
+    assert np.all(abs(w_hat-u_hat) < 1e-8)
 
-    ww = w_hat[:-2].repeat(N-2).reshape((N-2, N-2))
-    bb = b[:-2].repeat(N-2).reshape((N-2, N-2))
+    ww = w_hat.repeat(N).reshape((N, N))
+    bb = b.repeat(N).reshape((N, N))
     ww = B.solve(bb, ww, axis=0)
-    assert np.all(abs(ww-u_hat[:-2].repeat(N-2).reshape((N-2, N-2))) < 1e-8)
+    assert np.all(abs(ww-u_hat.repeat(N).reshape((N, N))) < 1e-8)
 
     bb = bb.transpose()
     ww = B.solve(bb, ww, axis=1)
-    assert np.all(abs(ww-u_hat[:-2].repeat(N-2).reshape((N-2, N-2)).transpose()) < 1e-8)
+    assert np.all(abs(ww[:-2, :-2]-u_hat[:-2].repeat(N-2).reshape((N-2, N-2)).transpose()) < 1e-8)
 
 if __name__ == "__main__":
     #test_solve('GC')
-    #test_PDMA('GC')
-    test_FDMA()
-    test_TwoDMA()
+    test_PDMA('GC')
+    #test_FDMA()
+    #test_TwoDMA()

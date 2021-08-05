@@ -694,7 +694,7 @@ def test_eval_expression2(fam):
 if __name__ == '__main__':
     #test_transform('f', 3)
     #test_transform('d', 2)
-    #test_shentransform('d', 2, jbases.ShenBiharmonicBasis, 'JG')
+    test_shentransform('d', 1, lbases.ShenDirichlet, 'LG')
     #test_eval_expression()
     #test_eval_expression2('L')
     #test_project('d', 2, lBasis[3], 'LG')
@@ -702,7 +702,7 @@ if __name__ == '__main__':
     #test_project_hermite('d', 2)
     #test_project2('d', 2, lbases.ShenNeumannBasis, 'LG')
     #test_project_2dirichlet('GL')
-    test_eval_tensor('D', 2, cbases.ShenDirichlet, 'GC')
+    #test_eval_tensor('D', 2, cbases.ShenDirichlet, 'GC')
     #test_eval_fourier('D', 3)
     #test_inner('C', 'F')
     #test_refine()

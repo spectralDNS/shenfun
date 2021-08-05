@@ -1044,8 +1044,8 @@ class SpectralBase:
         d = dict(quad=self.quad,
                  domain=self.domain,
                  dtype=self.dtype,
-                 padding_factor=1,
-                 dealias_direct=False,
+                 padding_factor=self.padding_factor,
+                 dealias_direct=self.dealias_direct,
                  coordinates=self.coors.coordinates)
         if hasattr(self.bc, 'bc'):
             d['bc'] = tuple(self.bc.bc)

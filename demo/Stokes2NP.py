@@ -78,7 +78,7 @@ else:
 
 A10 = inner(q, div(u))
 
-M, BM = BlockMatrices(A00+A01+A10) # Note BM is boundary matrix
+sol = la.BlockMatrixSolver(A00+A01+A10)
 
 uh_hat = Function(VQ)
 
@@ -91,7 +91,7 @@ f_hat = inner(v, f_, output_array=f_hat)
 h_hat = inner(q, h_, output_array=h_hat)
 
 # Solve problem
-uh_hat = M.solve(fh_hat, u=uh_hat, constraints=((2, 0, 0),), BM=BM)
+uh_hat = sol(fh_hat, u=uh_hat, constraints=((2, 0, 0),))
 #                                                (2, N[0]-1, 0),
 #                                                (2, N[0]*N[1]-1, 0),
 #                                                (2, N[0]*N[1]-N[1], 0))) # Constraint for component 2 of mixed space
@@ -127,7 +127,7 @@ if 'pytest' not in os.environ:
     plt.figure()
     plt.quiver(X[0], X[1], ux, uy)
     plt.figure()
-    plt.spy(M.diags())
+    plt.spy(sol.mat.diags())
     plt.figure()
     plt.contourf(X[0], X[1], u_[0], 100)
     #plt.show()

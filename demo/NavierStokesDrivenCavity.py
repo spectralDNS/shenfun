@@ -35,13 +35,13 @@ Re = 100.
 nu = 2./Re
 alfa = 0.2 # underrelaxation factor
 N = 32
-#family = 'Chebyshev'
-family = 'Legendre'
-quad = 'GL'
+family = 'Chebyshev'
+#family = 'Legendre'
+quad = 'GC'
 x = sympy.symbols('x', real='True')
 D0 = FunctionSpace(N, family, quad=quad, bc=(0, 0))
-D1 = FunctionSpace(N, family, quad=quad, bc=(0, 1))
-#D1 = FunctionSpace(N, family, quad=quad, bc=(0, (1-x)**2*(1+x)**2))
+#D1 = FunctionSpace(N, family, quad=quad, bc=(0, 1))
+D1 = FunctionSpace(N, family, quad=quad, bc=(0, (1-x)**2*(1+x)**2))
 T = FunctionSpace(N, family, quad=quad)
 
 # Create tensor product spaces with different combination of bases
@@ -84,8 +84,8 @@ else:
 
 A10 = inner(q, div(u))
 
-# Create Block matrices
-M, BM = BlockMatrices(A00+A01+A10)
+# Create Block matrix solver. This also takes care of boundary conditions.
+sol = la.BlockMatrixSolver(A00+A01+A10)
 
 # Create Function to hold solution
 uh_hat = Function(VQ).set_boundary_dofs()
@@ -95,11 +95,7 @@ ui_hat = uh_hat[0]
 uh_new = Function(VQ).set_boundary_dofs()
 ui_new = uh_new[0]
 
-# Compute the constant contribution to rhs due to nonhomogeneous boundary conditions
-bh_hat0 = Function(VQ)
-bh_hat0 = BM.matvec(-uh_hat, bh_hat0)
-
-# Create regular work arrays for right hand side. (Note that bc part will not be used so we can use Q)
+# Create regular work arrays for right hand side.
 bh_hat = Function(VQ)
 
 # Create arrays to hold velocity vector solution
@@ -122,12 +118,8 @@ def compute_rhs(ui_hat, bh_hat):
     ##bi_hat = inner(grad(v), -uiuj_hat, output_array=bi_hat)
     #gradu = project(grad(ui_hat), S1)
     #bi_hat = inner(v, dot(gradu, ui_hat), output_array=bi_hat)
-    bh_hat += bh_hat0
     return bh_hat
 
-uh_hat, Ai = M.solve(bh_hat0, u=uh_hat, constraints=((2, 0, 0),), return_system=True) # Constraint for component 2 of mixed space
-Alu = splu(Ai)
-uh_new[:] = uh_hat
 converged = False
 count = 0
 max_count = 1000
@@ -137,7 +129,7 @@ t0 = time.time()
 while not converged:
     count += 1
     bh_hat = compute_rhs(ui_hat, bh_hat)
-    uh_new = M.solve(bh_hat, u=uh_new, constraints=((2, 0, 0),), Alu=Alu) # Constraint for component 2 of mixed space
+    uh_new = sol(bh_hat, u=uh_new, constraints=((2, 0, 0),)) # Constraint for component 2 of mixed space
     error = np.linalg.norm(ui_hat-ui_new)
     uh_hat[:] = alfa*uh_new + (1-alfa)*uh_hat
     converged = abs(error) < 1e-11 or count >= max_count
@@ -168,6 +160,7 @@ w_h = Function(P)
 w_h = project(curl(ui_hat), P, output_array=w_h)
 #p0 = np.array([[0.], [0.]])
 #print(w_h.eval(p0)*2)
+raise RuntimeError
 
 # Find minimal streamfunction value and position
 # by gradually zooming in on mesh
@@ -210,7 +203,7 @@ plt.contourf(X[0], X[1], p_, 100)
 plt.figure()
 plt.quiver(X[0], X[1], u_[0], u_[1])
 plt.figure()
-plt.spy(M.diags())
+plt.spy(sol.mat.diags())
 plt.figure()
 plt.contourf(X[0], X[1], u_[0], 100)
 plt.figure()
@@ -218,4 +211,4 @@ plt.contourf(X[0], X[1], u_[1], 100)
 plt.figure()
 plt.contourf(X[0], X[1], phi, 100)
 #plt.title('Streamfunction')
-plt.show()
+#plt.show()

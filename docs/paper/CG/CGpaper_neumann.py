@@ -1,9 +1,7 @@
 """
 This script has been used to compute the Neumann results of the paper
 
-    Efficient spectral-Galerkin methods for second-order equations using different Chebyshev bases
-
-submitted to the SIAM Journal of Scientific Computing.
+    On efficient Chebyshev-Galerkin methods for second-order equations
 
 The results have been computed using Python 3.9 and Shenfun 3.1.1.
 
@@ -77,33 +75,34 @@ def solve(f_hat, u_hat, A, B, alpha, method):
         The chosen method
     """
     from shenfun import chebyshev, la
+    constraints = ((0, 0),) if alpha == 0 else ()
+
     if method == 2:
         if alpha == 0:
-            sol = A.solve
-            u_hat = sol(-f_hat, u_hat)
+            sol = la.Solver(A)
+            f_hat *= -1
+
         else:
             sol = chebyshev.la.Helmholtz(A, B, -1, alpha)
-            u_hat = sol(u_hat, f_hat)
 
     elif method in (0, 1, 3, 4):
         if alpha == 0:
-            sol = chebyshev.la.TwoDMA(A*(-1), fixed_gauge=0)
+            sol = chebyshev.la.TwoDMA(A)
+            f_hat *= -1
         else:
             sol = chebyshev.la.FDMA(alpha*B-A)
-        u_hat = sol(f_hat, u_hat)
 
     elif method == 5:
         if alpha == 0:
-            AA = A*(-1)
-            sol = AA.solve
+            sol = la.Solver(A)
+            f_hat *= -1
         else:
             sol = la.TDMA(alpha*B-A)
-        u_hat = sol(f_hat, u_hat)
 
     else:
-        sol = la.Solve(alpha*B-A, u_hat.function_space())
-        u_hat = sol(f_hat, u_hat)
+        sol = la.Solver(alpha*B-A)
 
+    u_hat = sol(f_hat, u_hat, constraints=constraints)
     u_hat[0] = 0
     return u_hat
 

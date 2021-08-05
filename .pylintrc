@@ -22,7 +22,8 @@ disable = locally-disabled,
     too-many-locals,
     too-many-ancestors,
     wildcard-import,
-    unused-wildcard-import
+    unused-wildcard-import,
+    global-statement
 
 extension-pkg-whitelist = mpi4py,pyfftw,numpy,scipy.sparse,shenfun,shenfun.optimization
 generated-members = np.floating

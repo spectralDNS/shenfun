@@ -1,7 +1,7 @@
 """
 This script has been used to compute the Dirichlet results of the paper
 
-    Efficient spectral-Galerkin methods for second-order equations using different Chebyshev bases
+    On efficient Chebyshev-Galerkin methods for second-order equations
 
 The results have been computed using Python 3.9 and Shenfun 3.1.1.
 
@@ -129,10 +129,7 @@ def solve(f_hat, u_hat, A, B, alpha, method):
         f_hat -= alpha*bc_mat[0].matvec(u_hat, w0)
 
     sol = get_solver(A, B, alpha, method)
-    if method == 1 and alpha != 0:
-        u_hat = sol(u_hat, f_hat)
-    else:
-        u_hat = sol(f_hat, u_hat)
+    u_hat = sol(f_hat, u_hat)
     return u_hat
 
 def main(N, method=0, alpha=0, returntype=0):

@@ -410,10 +410,11 @@ def test_ASDSDmat(ST, quad):
 
     # Test both solve interfaces
     c_hat = f_hat.copy()
-    c_hat = A.solve(c_hat)
+    constraints = ((0, 0),) if A.__class__.__name__ == 'ASNSNmat' else ()
+    c_hat = A.solve(c_hat, constraints=constraints)
 
     u_hat = np.zeros_like(f_hat)
-    u_hat = A.solve(f_hat, u_hat)
+    u_hat = A.solve(f_hat, u_hat, constraints=constraints)
 
     assert np.allclose(c_hat[s], u_hat[s], rtol=1e-5, atol=1e-6)
 
@@ -431,7 +432,7 @@ def test_ASDSDmat(ST, quad):
     # Multidimensional
     c_hat = f_hat.copy()
     c_hat = c_hat.repeat(M).reshape((M, M)).transpose().copy()
-    c_hat = A.solve(c_hat, axis=1)
+    c_hat = A.solve(c_hat, axis=1, constraints=constraints)
     assert np.allclose(c_hat[0, s], u_hat[s], rtol=1e-5, atol=1e-6)
 
 biharmonic_with_quads = (list(product([cbases.ShenBiharmonic], cquads)) +
@@ -546,12 +547,12 @@ def test_ASBSBmat(SB, quad):
 if __name__ == '__main__':
     #test_to_ortho(cBasisGC[1], 'GC')
     # test_convolve(fbases.R2C, 8)
-    #test_ASDSDmat(lbases.ShenNeumann, "GL")
+    test_ASDSDmat(cbases.ShenNeumann, "GC")
     #test_CDDmat("GL")
     #test_massmatrices(cBasis[3], cBasis[1], 'GL')
     #test_CXXmat(cBasis[2], cBasis[1])
     #test_transforms(cBasisGC[2], 'GC')
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[2], 'GC')
-    test_eval(cBasis[1], 'GL')
+    #test_eval(cBasis[1], 'GL')
     #test_axis(cBasis[2], 'GC', 1)

@@ -201,8 +201,8 @@ class FourierBase(SpectralBase):
     def get_unplanned(self):
         return self.__class__(self.N,
                               domain=self.domain,
-                              padding_factor=1,
-                              dealias_direct=False,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
                               coordinates=self.coors.coordinates)
 
     def get_dealiased(self, padding_factor=1.5, dealias_direct=False):

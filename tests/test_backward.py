@@ -113,10 +113,12 @@ def test_padding(family):
     F = FunctionSpace(N, 'F', dtype='d')
     T = TensorProductSpace(comm, (B, F))
     Tp = T.get_dealiased(1.5)
+    assert Tp.shape(False) == (12, 12)
     u = Function(T).set_boundary_dofs()
     u[:-2, :-1] = np.random.random(u[:-2, :-1].shape)
     up = Tp.backward(u)
     uc = Tp.forward(up)
+    assert up.shape == (int(N*3/2), int(N*3/2))
     assert np.linalg.norm(u-uc) < 1e-8
 
     # Test padding 3D
@@ -154,6 +156,7 @@ def test_padding_neumann(family):
     u[1:-2, :-1] = np.random.random(u[1:-2, :-1].shape)
     up = Tp.backward(u)
     uc = Tp.forward(up)
+    assert up.shape == (int(N*3/2), int(N*3/2))
     assert np.linalg.norm(u-uc) < 1e-8
 
     # Test padding 3D
@@ -194,6 +197,7 @@ def test_padding_orthogonal(family):
     u = u.backward().forward()
     up = Tp.backward(u)
     uc = Tp.forward(up)
+    assert up.shape == (int(N*3/2), int(N*3/2))
     assert np.linalg.norm(u-uc) < 1e-8
 
     # Test padding 3D
@@ -247,8 +251,8 @@ def test_padding_biharmonic(family):
 if __name__ == '__main__':
     #test_backward()
     #test_backward2D()
-    #test_padding('C')
-    test_padding_biharmonic('J')
+    test_padding('C')
+    #test_padding_biharmonic('J')
     #test_padding_neumann('C')
     #test_padding_orthogonal('F')
     #test_padding_orthogonal('C')

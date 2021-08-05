@@ -276,22 +276,14 @@ may be chosen using::
 
     bc = {'left': ('N', a), 'right': ('N', b)}
 
-Note that for a Neumann space there is also an additional keyword `mean`,
-that can be used to specify the mean value, or the weighted integral
-over the domain
-
-.. math::
-
-    \int_{\Omega} p \omega dx.
-
 Using either one of::
 
     bc = (None, b)
     bc = {'right': ('D', b)}
 
 returns a space with only one Dirichlet boundary condition, on the right
-hand side of the domain. Currently, it is not possible to switch this
-around to (a, None).
+hand side of the domain. For one Dirichlet boundary condition on the
+left instead use `bc = (b, None)` or `bc = {'left': ('D', b)}`.
 
 Using either one of::
 
@@ -319,31 +311,10 @@ on the left and right boundaries. For example::
 for a mixed Dirichlet boundary condition on the left and Neumann on the
 right.
 
-For multidimensional problems it is possible to use a boundary condition
-that is a function of the computational coordinates. For
-example::
-
-    import sympy as sp
-    x, y = sp.symbols('x,y', real=True)
-    B0 = FunctionSpace(N, 'C', bc=((1-y)*(1+y), 0), domain=(-1, 1))
-    B1 = FunctionSpace(N, 'C', bc=(0, (1-x)*(1+x)), domain=(-1, 1))
-    T = TensorProductSpace(comm, (B0, B1))
-
-uses homogeneous Dirichlet on two out of the four sides of the
-square domain :math:`(-1, 1)\times (-1, 1)`, at :math:`x=-1`
-and :math:`y=1`. For the side where
-:math:`y=1`, the
-boundary condition is :math:`(1-x)(1+x)`. Note that only
-:math:`x` will vary along the side where :math:`y=1`, which is
-the right hand side of the domain for `B1`. Also note that the
-boundary condition on the square domain should match in the
-corners, or else there will be severe Gibbs oscillations in
-the solution.
-
 Note that currently it is not possible to choose any combination
 of boundary conditions. For second order equations like Poisson
-it is quite flexible and one may mix Neumann and Dirichlet, both in
-1D and 2D. For the biharmonic problem, there are only two possible
+it is quite flexible and one may mix Neumann and Dirichlet.
+For the biharmonic problem, there are only two possible
 choices. The regular with Dirichlet and Neumann on both edges of
 the domain. Or fixed beam boundary conditions with Dirichlet and
 Neumann on the left domain and conditions on the second and third
@@ -478,6 +449,28 @@ Now if we keep :math:`l` fixed this latter equation is simply a regular
 linear algebra problem to solve for :math:`\hat{u}_{kl}`, for all :math:`k`.
 Of course, this solve needs to be carried out for all :math:`l`.
 
+For multidimensional problems it is possible to use a boundary condition
+that is a function of the computational coordinates. For
+example::
+
+    import sympy as sp
+    x, y = sp.symbols('x,y', real=True)
+    B0 = FunctionSpace(N, 'C', bc=((1-y)*(1+y), 0), domain=(-1, 1))
+    B1 = FunctionSpace(N, 'C', bc=(0, (1-x)*(1+x)), domain=(-1, 1))
+    T = TensorProductSpace(comm, (B0, B1))
+
+uses homogeneous Dirichlet on two out of the four sides of the
+square domain :math:`(-1, 1)\times (-1, 1)`, at :math:`x=-1`
+and :math:`y=1`. For the side where
+:math:`y=1`, the
+boundary condition is :math:`(1-x)(1+x)`. Note that only
+:math:`x` will vary along the side where :math:`y=1`, which is
+the right hand side of the domain for `B1`. Also note that the
+boundary condition on the square domain should match in the
+corners, or else there will be severe Gibbs oscillations in
+the solution.
+
+
 Note that there is a generic solver available for the system
 :eq:`eq:multisystem` in :class:`.SolverGeneric2ND` that makes no
 assumptions on diagonality. However, this solver will, naturally, be
@@ -564,7 +557,7 @@ as::
     du = div(grad(u))
 
 
-There are currently curvilinear demos for solving both `Helmholtz's
+There are curvilinear demos for solving both `Helmholtz's
 equation <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_helmholtz.py>`_
 and the `biharmonic equation <https://github.com/spectralDNS/shenfun/blob/master/demo/unitdisc_biharmonic.py>`_
 on a circular disc, a solver for `3D Poisson equation in a pipe <https://github.com/spectralDNS/shenfun/blob/master/demo/pipe_poisson.py>`_,

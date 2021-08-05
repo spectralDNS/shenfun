@@ -220,6 +220,7 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             'LDRN': chebyshev.bases.DirichletNeumann,
             'LNRD': chebyshev.bases.NeumannDirichlet,
             'RD': chebyshev.bases.UpperDirichlet,
+            'LD': chebyshev.bases.LowerDirichlet,
             'RDRN': chebyshev.bases.UpperDirichletNeumann,
             'LDLNRDRN': chebyshev.bases.ShenBiharmonic
         }
@@ -1307,6 +1308,13 @@ class ShenfunBaseArray(DistArray):
             return v0
 
         return np.ndarray.__getitem__(self.v, i)
+
+    def __getattribute__(self, name):
+        names = ('all', 'any', 'argmax', 'argmin', 'argpartition', 'argsort', 'byteswap', 'choose', 'clip', 'compress', 'cumprod', 'cumsum', 'diagonal', 'flatten', 'getfield', 'item', 'max', 'mean', 'min', 'newbyteorder', 'nonzero', 'partition', 'prod', 'ptp', 'put', 'ravel', 'repeat', 'resize', 'round', 'searchsorted', 'setflags', 'sort', 'squeeze', 'std', 'sum', 'swapaxes', 'take', 'tobytes', 'tofile', 'tolist', 'tostring', 'trace', 'transpose', 'var', 'view', 'ndim', 'flags', 'strides', 'itemsize', 'size', 'nbytes', 'dtype', 'flat', 'ctypes')
+        if name in names:
+            a = object.__getattribute__(self, '__array__')()
+            return np.ndarray.__getattribute__(a, name)
+        return object.__getattribute__(self, name)
 
     def dim(self):
         return self.function_space().dim()

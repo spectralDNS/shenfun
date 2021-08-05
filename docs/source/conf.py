@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.abspath('.'))
 # -- Project information -----------------------------------------------------
 
 project = u'shenfun'
-copyright = u'2020, Mikael Mortensen'
+copyright = u'2021, Mikael Mortensen'
 author = u'Mikael Mortensen'
 
 p = subprocess.Popen(["git describe --tags | cut -d'-' -f 1"], stdout=subprocess.PIPE, shell=True)

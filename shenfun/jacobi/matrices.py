@@ -4,7 +4,7 @@ from scipy.special import gamma
 from shenfun.matrixbase import SpectralMatrix
 
 from . import bases
-from ..legendre.la import TDMA
+from shenfun.la import TDMA, PDMA
 
 J  = bases.Orthogonal
 SD = bases.ShenDirichlet
@@ -47,7 +47,7 @@ class BJJmat(SpectralMatrix):
         d = {0: f}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale)
 
-    def solve(self, b, u=None, axis=0):
+    def solve(self, b, u=None, axis=0, constraints=()):
         N = self.shape[0]
         assert N == b.shape[axis]
         s = self.trialfunction[0].slice()
@@ -105,8 +105,9 @@ class BSDSDmat(SpectralMatrix):
 
         d[2] = d[-2]
         SpectralMatrix.__init__(self, d, test, trial)
-        self.solve = TDMA(self)
 
+    def get_solver(self):
+        return TDMA
 
 class ASDSDmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
@@ -132,7 +133,7 @@ class ASDSDmat(SpectralMatrix):
         d = {0: 4*(4*k+6)*(k+1)**2/(2*k+3)**2}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale)
 
-    def solve(self, b, u=None, axis=0):
+    def solve(self, b, u=None, axis=0, constraints=()):
         N = self.shape[0] + 2
         assert N == b.shape[axis]
         s = self.trialfunction[0].slice()
@@ -182,7 +183,6 @@ class BSBSBmat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, measure=1):
-        from shenfun.la import PDMA
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
@@ -201,7 +201,9 @@ class BSBSBmat(SpectralMatrix):
         d[-2] = d[2]
         d[-4] = d[4]
         SpectralMatrix.__init__(self, d, test, trial)
-        self.solve = PDMA(self)
+
+    def get_solver(self):
+        return PDMA
 
 
 class ASBSBmat(SpectralMatrix):

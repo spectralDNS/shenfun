@@ -399,17 +399,18 @@ where the first term on the right hand side is square and the second term is kno
 can be moved to the right hand side of the linear algebra equation system.
 
 At this point all matrices, both regular and boundary matrices, are
-contained within the three lists A, G and D. We assemble two block matrices
-in one call, where M is regular and BM is a boundary block matrix.
+contained within the three lists A, G and D. We can now create a solver
+for block matrices that incorporates these boundary conditions
+automatically
 
 !bc pycod
-M, BM = BlockMatrices(A+G+D)
+sol = la.BlockMatrixSolver(A+G+D)
 !ec
 
-The regular block matrix M is now given as the symmetric
+In the solver `sol` there is now a regular block matrix found in
+`sol.mat`, which is the symmetric
 
 !bt
-M =
   \begin{bmatrix}
       A[0]+A[1] & 0 & G[0] \\
       0 & A[2]+A[3] & G[1] \\
@@ -417,11 +418,12 @@ M =
   \end{bmatrix}
 !et
 
-The BM matrix must be used to modify the known right hand side.
+The boundary matrices are similarly collected in a boundary block matrix
+in `sol.bc_mat`. This matrix is used under the hood to modify the
+right hand side.
 
 We now have all the matrices we need in order to solve the Navier Stokes equations.
-However, we also need some work arrays for iterations and we need to
-assemble the constant boundary contribution to the right hand side
+However, we also need some work arrays for iterations
 
 !bc pycod
 # Create Function to hold solution. Use set_boundary_dofs to fix the degrees
@@ -432,17 +434,7 @@ ui_hat = uh_hat[0]
 # New solution (iterative)
 uh_new = Function(VQ).set_boundary_dofs()
 ui_new = uh_new[0]
-
-# Compute the constant contribution to rhs due to nonhomogeneous boundary conditions
-bh_hat0 = Function(VQ)
-bh_hat0 = BM.matvec(-uh_hat, bh_hat0) # Negative because moved to right hand side
-
 !ec
-
-Note that `bh_hat0` now contains the part of the right hand side that is
-due to the non-symmetric part of assembled matrices. The appended
-`set_boundary_dofs()` ensures the known boundary values of
-the solution are fixed for `ui_hat` and `ui_new`.
 
 The nonlinear right hand side also requires some additional attention.
 Nonlinear terms are usually computed in physical space before transforming
@@ -475,7 +467,6 @@ def compute_rhs(ui_hat, bh_hat):
     bi_hat = bh_hat[0]
     bi_hat = inner(v, div(uiuj_hat), output_array=bi_hat)
     #bi_hat = inner(grad(v), -uiuj_hat, output_array=bi_hat)
-    bh_hat += bh_hat0
     return bh_hat
 !ec
 
@@ -483,32 +474,12 @@ Here ${func('outer')} is a shenfun function that computes the
 outer product of two vectors and returns the product in a rank two
 array (here `uiuj`). With `uiuj` forward transformed to `uiuj_hat`
 we can assemble the linear form either as `inner(v, div(uiuj_hat)` or
-`inner(grad(v), -uiuj_hat)`. Also notice that the constant contribution
-from the inhomogeneous boundary condition, `bh_hat0`,
-is added to the right hand side vector.
+`inner(grad(v), -uiuj_hat)`.
 
 Now all that remains is to guess an initial solution and solve
 iteratively until convergence. For initial solution we simply set the
-velocity and pressure to zero and solve the Stokes equations:
-
-!bc pycod
-from scipy.sparse.linalg import splu
-uh_hat, Ai = M.solve(bh_hat0, u=uh_hat, constraints=((2, 0, 0),), return_system=True) # Constraint for component 2 of mixed space
-Alu = splu(Ai)
-uh_new[:] = uh_hat
-!ec
-
-Note that the ${cls('BlockMatrix')} given by `M` has a solve method that sets up
-a sparse coefficient matrix `Ai` of size $\mathbb{R}^{3(N_0-2)(N_1-2) \times 3(N_0-2)(N_1-2)}$,
-and then solves using "scipy.sparse.linalg.spsolve": "http://scipy.github.io/devdocs/generated/scipy.sparse.linalg.spsolve.html#scipy.sparse.linalg.spsolve".
-The matrix `Ai` is then pre-factored for reuse with "splu": "http://scipy.github.io/devdocs/generated/scipy.sparse.linalg.splu.html#scipy.sparse.linalg.splu".
-Also note that the `constraints=((2, 0, 0),)` keyword argument
-ensures that the pressure integrates to zero, i.e., $\int_{\Omega} pdxdy=0$.
-Here the number 2 tells us that block component 2 in the mixed space
-(the pressure) should be integrated, dof 0 should be fixed, and it
-should be fixed to 0.
-
-With an initial solution from the Stokes equations we are ready to start iterating.
+velocity and pressure to zero. With an initial solution we are ready
+to start iterating.
 However, for convergence it is necessary to add some underrelaxation $\alpha$,
 and update the solution each time step as
 
@@ -529,7 +500,7 @@ alfa = 0.5
 while not converged:
     count += 1
     bh_hat = compute_rhs(ui_hat, bh_hat)
-    uh_new = M.solve(bh_hat, u=uh_new, constraints=((2, 0, 0),), Alu=Alu) # Constraint for component 2 of mixed space
+    uh_new = sol(bh_hat, u=uh_new, constraints=((2, 0, 0),))
     error = np.linalg.norm(ui_hat-ui_new)
     uh_hat[:] = alfa*uh_new + (1-alfa)*uh_hat
     converged = abs(error) < 1e-8 or count >= 100
@@ -542,6 +513,12 @@ X = V0.local_mesh(True)
 plt.figure()
 plt.quiver(X[0], X[1], u[0], u[1])
 !ec
+
+Note that the `constraints=((2, 0, 0),)` keyword argument
+ensures that the pressure integrates to zero, i.e., $\int_{\Omega} p \omega dxdy=0$.
+Here the number 2 tells us that block component 2 in the mixed space
+(the pressure) should be integrated, dof 0 should be fixed, and it
+should be fixed to 0.
 
 The last three lines plots velocity vectors, like also seen in the figure ref{fig:drivencavity}
 in the top of this demo. The solution is apparently nice

@@ -59,7 +59,7 @@ def main(n):
 
     # Define the initial solution on quadrature points at t=0
     U = Array(Ws, buffer=(uex.subs(t, 0), uey.subs(t, 0)))
-    P = Array(Ps); P.fill(0)
+    P = Array(Ps)
     F = Array(Ws, buffer=(fex.subs(t, 0), fey.subs(t, 0)))
     U0 = U.copy()
 
@@ -212,7 +212,7 @@ if __name__ == "__main__":
         slope, intercept = np.polyfit(np.log(N[-2:]), np.log(E[i, -2:]), 1)
         if i != 1:
             annotation.slope_marker((N[-2], E[i, -2]), ("{0:.2f}".format(slope), 1),
-            ax=ax, poly_kwargs=pa, text_kwargs=ta)
+                                    ax=ax, poly_kwargs=pa, text_kwargs=ta)
 
     plt.text(N[0], 2e-5, r"$\Delta t=5 \times 10^{-3},\; N=32^2$")
     plt.text(N[0], 1e-5, r"Final Time = $5 \times 10^{-2}$")

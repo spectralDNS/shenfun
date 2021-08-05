@@ -62,8 +62,10 @@ def main(N, family, bci, bcj, plotting=False):
     # Compare with analytical solution
     ua = Array(T, buffer=ue)
 
+    constraint = ()
     if T.use_fixed_gauge:
         mean = dx(ua, weighted=True) / inner(1, Array(T, val=1))
+        constraint = ((0, mean),)
 
     # Compute right hand side of Poisson equation
     f_hat = Function(T)
@@ -74,8 +76,8 @@ def main(N, family, bci, bcj, plotting=False):
 
     u_hat = Function(T)
 
-    sol = la.Solver2D(A, fixed_gauge=mean if T.use_fixed_gauge else None)
-    u_hat = sol(f_hat, u_hat)
+    sol = la.Solver2D(A)
+    u_hat = sol(f_hat, u_hat, constraints=constraint)
     uj = u_hat.backward()
 
     assert np.allclose(uj, ua), np.linalg.norm(uj-ua)

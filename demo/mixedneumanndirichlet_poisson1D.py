@@ -14,22 +14,15 @@ import os
 import sympy as sp
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    Array, Function, FunctionSpace, dx, legendre, extract_bc_matrices
+    Array, Function, FunctionSpace, dx, legendre, extract_bc_matrices, la
 
 # Use sympy to compute a rhs, given an analytical solution
 # Choose a solution with non-zero values
 
-domain = (-2, 1)
+domain = (-1, 1)
 x = sp.symbols("x", real=True)
 ue = sp.cos(5*sp.pi*(x+0.1)/2)
 fe = ue.diff(x, 2)
-
-# The pure Neumann requires the value of the mean
-x_map = -1 + (x-domain[0])*2/(domain[1]-domain[0])
-mean = {
-    'c': sp.integrate(ue/sp.sqrt(1-x_map**2), (x, domain[0], domain[1])).evalf(),
-    'l': sp.integrate(ue, (x, domain[0], domain[1])).evalf()
-}
 
 # 5 different types of boundary conditions
 bcs = [
@@ -40,12 +33,9 @@ bcs = [
     {'right': (('D', ue.subs(x, domain[1])), ('N', ue.diff(x, 1).subs(x, domain[1])))}
 ]
 
-def main(N, family, bci):
+def main(N, family, bci, plot=False):
     bc = bcs[bci]
-    if bci == 0:
-        SD = FunctionSpace(N, family=family, bc=bc, domain=domain, mean=mean[family.lower()])
-    else:
-        SD = FunctionSpace(N, family=family, bc=bc, domain=domain)
+    SD = FunctionSpace(N, family=family, bc=bc, domain=domain)
 
     u = TrialFunction(SD)
     v = TestFunction(SD)
@@ -61,23 +51,26 @@ def main(N, family, bci):
     A = inner(v, div(grad(u)))
 
     u_hat = Function(SD).set_boundary_dofs()
-    if isinstance(A, list):
-        bc_mat = extract_bc_matrices([A])
-        A = A[0]
-        f_hat -= bc_mat[0].matvec(u_hat, Function(SD))
 
-    u_hat = A.solve(f_hat, u_hat)
+    constraint = ()
+    if bci == 0:
+        mean = dx(Array(SD, buffer=ue), weighted=True)/dx(Array(SD, val=1), weighted=True)
+        constraint = ((0, mean),)
+
+    sol = la.Solve(A)
+    u_hat = sol(f_hat, u_hat, constraints=constraint)
+
     uj = u_hat.backward()
     uh = uj.forward()
 
     # Compare with analytical solution
     ua = Array(SD, buffer=ue)
     assert np.allclose(uj, ua), np.linalg.norm(uj-ua)
-    if 'pytest' not in os.environ:
+    if plot:
         print("Error=%2.16e" %(np.sqrt(dx((uj-ua)**2))))
         import matplotlib.pyplot as plt
         plt.plot(SD.mesh(), uj, 'b', SD.mesh(), ua, 'r')
-        #plt.show()
+        plt.show()
 
 if __name__ == '__main__':
     import sys

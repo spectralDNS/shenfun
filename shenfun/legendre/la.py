@@ -4,35 +4,7 @@ import numpy as np
 import scipy.linalg as scipy_la
 from shenfun.optimization import optimizer
 from shenfun.optimization.cython import la
-from shenfun.la import TDMA as la_TDMA
 from shenfun.matrixbase import TPMatrix, SpectralMatrix, extract_bc_matrices
-
-
-class TDMA(la_TDMA):
-    """Tridiagonal matrix solver
-
-    Parameters
-    ----------
-        mat : SparseMatrix
-              Symmetric tridiagonal matrix with diagonals in offsets -2, 0, 2
-
-    """
-    def __call__(self, b, u=None, axis=0, **kw):
-
-        if u is None:
-            u = b
-        else:
-            assert u.shape == b.shape
-            u[:] = b[:]
-
-        if not self.dd.shape[0] == self.mat.shape[0]:
-            self.init()
-
-        self.TDMA_SymSolve(self.dd, self.ud, self.ld, u, axis=axis)
-
-        #if self.mat.scale not in (1, 1.0):
-        #    u /= self.mat.scale
-        return u
 
 
 class Helmholtz:
@@ -231,7 +203,7 @@ class Helmholtz:
         for i in range(n - 3, -1, -1):
             x[i] = (x[i] - a[i]*x[i+2])/d[i]
 
-    def __call__(self, u, b):
+    def __call__(self, b, u=None, **kw):
         if len(self.bc_mats) > 0:
             u.set_boundary_dofs()
             w0 = np.zeros_like(u)
@@ -421,7 +393,7 @@ class Biharmonic:
     def PDMA_SymSolve_VC(d0, d1, d2, u, axis=0):
         raise NotImplementedError("Use Cython or Numba")
 
-    def __call__(self, u, b):
+    def __call__(self, b, u=None, **kw):
         if len(self.bc_mats) > 0:
             u.set_boundary_dofs()
             w0 = np.zeros_like(u)
@@ -573,7 +545,7 @@ class Helmholtz_2dirichlet:
             self.rhs_A = (self.V.T).dot(b)
             self.rhs_A /= self.lmbda[:, np.newaxis]
             self.transAB.forward(self.rhs_A, self.rhs_B)
-            self.u_B = Helmy(self.u_B, self.rhs_B)
+            self.u_B = Helmy(self.rhs_B, self.u_B)
             self.transAB.backward(self.u_B, u)
             u[:] = self.V.dot(u)
 
@@ -603,10 +575,10 @@ class Helmholtz_2dirichlet:
             om = 1.
             while not converged and num_iter < 1000:
                 bc[:] = b - G.dot(AA.T)
-                Hc = Helmx(Hc, bc)
+                Hc = Helmx(bc, Hc)
                 H[:] = om*Hc + (1-om)*H[:]
                 bc[:] = b.T - (H.T).dot(AA.T)
-                Gc = Helmx(Gc, bc)
+                Gc = Helmx(bc, Gc)
                 G[:] = om*Gc.T + (1-om)*G[:]
                 err = np.linalg.norm(G_old-G)
                 print('Error ', num_iter, err)

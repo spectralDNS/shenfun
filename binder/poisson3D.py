@@ -20,7 +20,7 @@ A = inner(v, div(grad(u)))
 # Solve
 solver = chebyshev.la.Helmholtz(*A)
 u_hat = Function(T)
-u_hat = solver(u_hat, f_hat)
+u_hat = solver(f_hat, u_hat)
 uj = u_hat.backward()
 assert np.linalg.norm(u_hat.backward()-Array(T, buffer=ue)) < 1e-12
 print(u_hat.shape)

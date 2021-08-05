@@ -4,57 +4,36 @@ from copy import copy
 import numpy as np
 from shenfun.optimization import optimizer
 from shenfun.optimization.cython import la
-from shenfun.la import TDMA as la_TDMA
+from shenfun.la import SparseMatrixSolver
 from shenfun.matrixbase import TPMatrix, SpectralMatrix, extract_bc_matrices, SparseMatrix
 
 
-class TDMA(la_TDMA):
-
-    def __call__(self, b, u=None, axis=0, **kw):
-
-        if u is None:
-            u = b
-        else:
-            assert u.shape == b.shape
-            u[:] = b[:]
-
-        if not self.dd.shape[0] == self.mat.shape[0]:
-            self.init()
-
-        self.TDMA_SymSolve(self.dd, self.ud, self.ld, u, axis=axis)
-
-        #if self.mat.scale not in (1, 1.0):
-        #    u /= self.mat.scale
-        return u
-
-class FDMA:
+class FDMA(SparseMatrixSolver):
     """4-diagonal matrix solver
 
     Parameters
     ----------
-    mat : SparseMatrix
+    mat : SparseMatrix or list of SparseMatrices
         4-diagonal matrix with diagonals in offsets -2, 0, 2, 4
 
     """
     # pylint: disable=too-few-public-methods
 
     def __init__(self, mat):
-        assert isinstance(mat, SparseMatrix)
-        self.mat = mat
-        self.dd = np.zeros(0)
-        self.u1 = None
-        self.u2 = None
-        self.ld = None
-        self.symmetric = self.mat.issymmetric
+        SparseMatrixSolver.__init__(self, mat)
 
-    def init(self):
-        """Initialize and allocate solver"""
+        self.symmetric = self.mat.issymmetric
         N = self.mat.shape[0]
         self.dd = self.mat[0]*np.ones(N)*self.mat.scale
         self.u1 = self.mat[2]*np.ones(N-2)*self.mat.scale
         self.u2 = self.mat[4]*np.ones(N-4)*self.mat.scale
         self.ld = self.mat[-2]*np.ones(N-2)*self.mat.scale
-        self.FDMA_LU(self.ld, self.dd, self.u1, self.u2)
+
+    def perform_lu(self):
+        if self._lu is None:
+            self.FDMA_LU(self.ld, self.dd, self.u1, self.u2)
+            self._lu = 1
+        return 1
 
     @staticmethod
     @optimizer
@@ -81,69 +60,26 @@ class FDMA:
         for i in range(n - 5, -1, -1):
             x[i] = (x[i] - u1[i]*x[i+2] - u2[i]*x[i+4])/d[i]
 
-    def __call__(self, b, u=None, axis=0, **kw):
-        """Solve matrix problem self u = b
-
-        Parameters
-        ----------
-            b : array
-                Array of right hand side on entry and solution on exit unless
-                u is provided.
-            u : array, optional
-                Output array
-            axis : int, optional
-                   The axis over which to solve for if b and u are multidimensional
-
-        Note
-        ----
-        If u is not provided, then b is overwritten with the solution and returned
-
-        """
-
-        if u is None:
-            u = b
-        else:
-            assert u.shape == b.shape
-            N = self.dd.shape[0]
-            u[:] = b[:]
-
-        if not self.dd.shape[0] == self.mat.shape[0]:
-            self.init()
-
+    def solve(self, b, u, axis, lu):
+        if u is not b:
+            u[:] = b
         self.FDMA_Solve(self.dd, self.u1, self.u2, self.ld, u, axis=axis)
-
-        if hasattr(u, 'set_boundary_dofs'):
-            u.set_boundary_dofs()
-
         return u
 
-class TwoDMA:
+class TwoDMA(SparseMatrixSolver):
     """2-diagonal matrix solver
 
     Parameters
     ----------
     mat : SparseMatrix
         2-diagonal matrix with diagonals in offsets 0, 2
-    fixed_gauge : number or None, optional
-        For Neumann problems that are only known up to a constant
 
     """
-    # pylint: disable=too-few-public-methods
-
-    def __init__(self, mat, fixed_gauge=None):
-        assert isinstance(mat, SparseMatrix)
-        self.mat = mat
-        self.dd = np.zeros(0)
-        self.fixed_gauge = fixed_gauge
-
-    def init(self):
-        """Initialize and allocate solver"""
-        N = self.mat.shape[0]
+    def __init__(self, mat):
+        SparseMatrixSolver.__init__(self, mat)
+        N = mat.shape[0]
         self.dd = self.mat[0]*np.ones(N)*self.mat.scale
         self.u1 = self.mat[2]*np.ones(N-2)*self.mat.scale
-        if self.fixed_gauge is not None:
-            self.dd[0] = 1
-            self.u1[0] = 0
 
     @staticmethod
     @optimizer
@@ -155,60 +91,45 @@ class TwoDMA:
         for i in range(n - 3, -1, -1):
             x[i] = (x[i] - u1[i]*x[i+2])/d[i]
 
-    def __call__(self, b, u=None, axis=0, **kw):
-        """Solve matrix problem self u = b
+    def apply_constraints(self, b, constraints, axis=0):
+        if len(constraints) > 0:
+            assert len(constraints) == 1
+            assert constraints[0][0] == 0, 'Can only fix first row of TwoDMA'
+            self.dd[0] = 1
+            self.u1[0] = 0
+            if b.ndim > 1:
+                shape = b.shape
+                b = b.flatten()
+                b[0] = constraints[0][1]
+                b = b.reshape(shape)
+            else:
+                b[0] = constraints[0][1]
+        return b
 
-        Parameters
-        ----------
-            b : array
-                Array of right hand side on entry and solution on exit unless
-                u is provided.
-            u : array, optional
-                Output array
-            axis : int, optional
-                   The axis over which to solve for if b and u are multidimensional
+    def perform_lu(self):
+        return 1
 
-        Note
-        ----
-        If u is not provided, then b is overwritten with the solution and returned
-
-        """
-
-        if u is None:
-            u = b
-        else:
-            assert u.shape == b.shape
-            u[:] = b[:]
-
-        if not self.dd.shape[0] == self.mat.shape[0]:
-            self.init()
-
-        if self.fixed_gauge is not None:
-            T = u.function_space()
-            u[T.si[0]] = self.fixed_gauge
-
+    def solve(self, b, u, axis, lu):
+        if u is not b:
+            u[:] = b
         self.TwoDMA_Solve(self.dd, self.u1, u, axis=axis)
-
-        if hasattr(u, 'set_boundary_dofs'):
-            u.set_boundary_dofs()
-
         return u
 
-class ADD_Solve:
-    def __init__(self, mat):
-        assert mat.__class__.__name__ == 'ASDSDmat'
-        self.mat = mat
 
-    def __call__(self, b, u=None, axis=0, **kw):
-        if u is None:
-            u = b.copy()
-        else:
-            assert u.shape == b.shape
-            v = self.mat.testfunction[0]
-            s = v.sl[slice(0, self.mat.shape[0])]
-            u[s] = b[s]
+class ADDSolver(SparseMatrixSolver):
+    def __init__(self, mats):
+        SparseMatrixSolver.__init__(self, mats)
+        assert self.mat.__class__.__name__ == 'ASDSDmat'
+        assert self.bc_mats == []
+
+    def solve(self, b, u, axis, lu):
+        if u is not b:
+            u[:] = b
         self.Poisson_Solve_ADD(self.mat, b, u, axis=axis)
         return u
+
+    def perform_lu(self):
+        return 1
 
     @staticmethod
     @optimizer
@@ -250,12 +171,71 @@ class ADD_Solve:
             us[k] /= d[k]
 
         u /= A.scale
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
+            if u is not b:
+                b = np.moveaxis(b, 0, axis)
         u.set_boundary_dofs()
+        return u
+
+
+class ANNSolver(SparseMatrixSolver):
+
+    def __call__(self, b, u=None, axis=0, constraints=((0, 0),)):
+        A = self.mat
+        assert A.shape[0] + 2 == b.shape[0]
+        s = A.trialfunction[0].slice()
+
+        if u is None:
+            u = b
+        else:
+            assert u.shape == b.shape
+
+        # Boundary conditions
+        b = self.apply_bcs(b, axis=axis)
+
+        # Move axis to first
+        if axis > 0:
+            u = np.moveaxis(u, axis, 0)
+            if u is not b:
+                b = np.moveaxis(b, axis, 0)
+        bs = b[s]
+        us = u[s]
+        j2 = np.arange(A.shape[0])**2
+        j2[0] = 1
+        j2 = 1./j2
+        if len(b.shape) == 1:
+            se = 0.0
+            so = 0.0
+        else:
+            se = np.zeros(u.shape[1:])
+            so = np.zeros(u.shape[1:])
+            j2.repeat(np.prod(bs.shape[1:])).reshape(bs.shape)
+        d = A[0]*j2
+        d1 = A[2]*j2[2:]
+        M = us.shape
+        us[-1] = bs[-1] / d[-1]
+        us[-2] = bs[-2] / d[-2]
+        for k in range(M[0]-3, 0, -1):
+            if k%2 == 0:
+                se += us[k+2]
+                us[k] = bs[k] - d1[k]*se
+            else:
+                so += us[k+2]
+                us[k] = bs[k] - d1[k]*so
+            us[k] /= d[k]
+        sl = [np.newaxis]*b.ndim
+        sl[0] = slice(None)
+        us *= j2[tuple(sl)]
+        u /= A.scale
+        u[0] = constraints[0][1]/(np.pi/A.testfunction[0].domain_factor())
+        A.testfunction[0].bc.set_boundary_dofs(u, True)
         if axis > 0:
             u = np.moveaxis(u, 0, axis)
             if u is not b:
                 b = np.moveaxis(b, 0, axis)
         return u
+
 
 class Helmholtz:
     r"""Helmholtz solver
@@ -423,7 +403,7 @@ class Helmholtz:
     def Solve_Helmholtz(b, u, neumann, u0, u1, u2, L, axis=0):
         raise NotImplementedError
 
-    def __call__(self, u, b):
+    def __call__(self, b, u=None, **kw):
         """Solve matrix problem
 
         Parameters
@@ -651,7 +631,7 @@ class Biharmonic:
                           bill, bil, bii, biu, biuu, axis=0):
         raise NotImplementedError('Use Cython or Numba')
 
-    def __call__(self, u, b):
+    def __call__(self, b, u=None, **kw):
         """Solve matrix problem
 
         Parameters
@@ -837,7 +817,7 @@ class PDMA:
             bc[k] -= (u1[k]*bc[k+2]/d[k] + u2[k]*bc[k+4]/d[k])
         b[:] = bc
 
-    def __call__(self, u, b):
+    def __call__(self, b, u=None, **kw):
         """Solve matrix problem
 
         Parameters

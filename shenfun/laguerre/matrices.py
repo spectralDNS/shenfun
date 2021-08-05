@@ -28,7 +28,7 @@ class BLLmat(SpectralMatrix):
         assert isinstance(trial[0], L)
         SpectralMatrix.__init__(self, {0:1}, test, trial)
 
-    def solve(self, b, u=None, axis=0, use_lu=False):
+    def solve(self, b, u=None, axis=0, constraints=()):
         if u is not None:
             u[:] = b
             u /= (self.scale*self[0])
@@ -65,7 +65,9 @@ class BSDSDmat(SpectralMatrix):
         assert isinstance(trial[0], SD)
         d = {0:2., 1: -1., -1:-1.}
         SpectralMatrix.__init__(self, d, test, trial)
-        self.solve = TDMA_O(self)
+
+    def get_solver(self):
+        return TDMA_O
 
 
 class ASDSDmat(SpectralMatrix):
@@ -91,8 +93,9 @@ class ASDSDmat(SpectralMatrix):
              1: 0.25,
              -1: 0.25}
         SpectralMatrix.__init__(self, d, test, trial)
-        self.solve = TDMA_O(self)
 
+    def get_solver(self):
+        return TDMA_O
 
 class _Lagmatrix(SpectralMatrix):
     def __init__(self, test, trial, measure=1):

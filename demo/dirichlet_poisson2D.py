@@ -65,7 +65,7 @@ H = Solver(*matrices)
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space
-u_hat = H(u_hat, f_hat)       # Solve
+u_hat = H(f_hat, u_hat)       # Solve
 uq = u_hat.backward()
 uh = uq.forward()
 

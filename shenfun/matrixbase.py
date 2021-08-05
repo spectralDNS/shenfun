@@ -3,7 +3,7 @@ This module contains classes for working with sparse matrices.
 
 """
 from __future__ import division
-from copy import deepcopy
+from copy import copy, deepcopy
 from collections.abc import Mapping, MutableMapping
 from numbers import Number, Integral
 import numpy as np
@@ -38,9 +38,14 @@ class SparseMatrix(MutableMapping):
 
     Note
     ----
-    The dictionary can use a function to generate its values. See, e.g.,
-    the ASDSDmat matrix, where diagonals for keys > 2 are functions that return
-    the proper diagonal when looked up.
+    The matrix format and storage is similar to Scipy's `dia_matrix`. The format is
+    chosen because spectral matrices often are computed by hand and presented
+    in the literature as banded matrices.
+    Note that a SparseMatrix can easily be transformed to any of Scipy's formats
+    using the `diags` method. However, Scipy's matrices are not implemented to
+    act along different axes of multidimensional arrays, which is required
+    for tensor product matrices, see :class:`.TPMatrix`. Hence the need for
+    this SpectralMatrix class.
 
     Examples
     --------
@@ -73,6 +78,7 @@ class SparseMatrix(MutableMapping):
         self._diags = dia_matrix((1, 1))
         self.scale = scale
         self._matvec_methods = []
+        self.solver = None
 
     def matvec(self, v, c, format='dia', axis=0):
         """Matrix vector product
@@ -155,7 +161,6 @@ class SparseMatrix(MutableMapping):
         if isinstance(scale, np.ndarray):
             scale = np.atleast_1d(scale).item()
         self._diags = self._diags*scale
-
         return self._diags
 
     def __getitem__(self, key):
@@ -274,10 +279,9 @@ class SparseMatrix(MutableMapping):
         """self.__iadd__(d) <==> self += d"""
         assert isinstance(d, Mapping)
         assert d.shape == self.shape
-        #if self == d:
-        #    self.scale += d.scale
+
         if abs(d.scale) < 1e-16:
-            pass
+            return self
 
         elif abs(self.scale) < 1e-16:
             self.clear()
@@ -349,6 +353,16 @@ class SparseMatrix(MutableMapping):
             #self.scale = 1
         return self
 
+    def copy(self):
+        """Return SparseMatrix deep copy of self"""
+        return self.__deepcopy__()
+
+    def __copy__(self):
+        return SparseMatrix(copy(dict(self)), self.shape, self.scale)
+
+    def __deepcopy__(self, memo=None, _nil=[]):
+        return SparseMatrix(deepcopy(dict(self)), self.shape, self.scale)
+
     def __neg__(self):
         """self.__neg__() <==> self *= -1"""
         self.scale *= -1
@@ -378,7 +392,7 @@ class SparseMatrix(MutableMapping):
                 self[key] = val*self.scale
         self.scale = 1
 
-    def solve(self, b, u=None, axis=0, use_lu=False):
+    def solve(self, b, u=None, axis=0, constraints=()):
         """Solve matrix system Au = b
 
         where A is the current matrix (self)
@@ -393,54 +407,24 @@ class SparseMatrix(MutableMapping):
         axis : int, optional
             The axis over which to solve for if b and u are multi-
             dimensional
-        use_lu : bool, optional
-            Look for already computed LU-matrix
+        constraints : tuple of 2-tuples
+            The 2-tuples represent (row, val)
+            The constraint indents the matrix row and sets b[row] = val
 
         Note
         ----
         Vectors may be one- or multidimensional.
 
         """
-        assert self.shape[0] == self.shape[1]
-        assert self.shape[0] == b.shape[axis]
-
-        if u is None:
-            u = b
-        else:
-            assert u.shape == b.shape
-
-        # Roll relevant axis to first
-        if axis > 0:
-            u = np.moveaxis(u, axis, 0)
-            if u is not b:
-                b = np.moveaxis(b, axis, 0)
-
-        if b.ndim == 1:
-            if use_lu:
-                if b.dtype.char in 'FDG' and self._lu.U.dtype.char in 'fdg':
-                    u.real[:] = self._lu.solve(b.real)
-                    u.imag[:] = self._lu.solve(b.imag)
-                else:
-                    u[:] = self._lu.solve(b)
-            else:
-                u[:] = spsolve(self.diags('csc'), b)
-        else:
-            N = b.shape[0]
-            P = np.prod(b.shape[1:])
-            if use_lu:
-                if b.dtype.char in 'FDG' and self._lu.U.dtype.char in 'fdg':
-                    u.real[:] = self._lu.solve(b.real.reshape((N, P))).reshape(u.shape)
-                    u.imag[:] = self._lu.solve(b.imag.reshape((N, P))).reshape(u.shape)
-                else:
-                    u[:] = self._lu.solve(b.reshape((N, P))).reshape(u.shape)
-            else:
-                u[:] = spsolve(self.diags('csc'), b.reshape((N, P))).reshape(u.shape)
-
-        if axis > 0:
-            u = np.moveaxis(u, 0, axis)
-            if u is not b:
-                b = np.moveaxis(b, 0, axis)
+        if self.solver is None:
+            self.solver = self.get_solver()(self)
+        u = self.solver(b, u=u, axis=axis, constraints=constraints)
         return u
+
+    def get_solver(self):
+        """Return appropriate solver for self"""
+        from .la import Solve
+        return Solve
 
     def isdiagonal(self):
         if len(self) == 1:
@@ -480,6 +464,9 @@ class SparseMatrix(MutableMapping):
         for key in list_keys:
             del self[key]
         return self
+
+    def is_bc_matrix(self):
+        return False
 
 
 class SpectralMatrix(SparseMatrix):
@@ -525,25 +512,20 @@ class SpectralMatrix(SparseMatrix):
     The matrices can be automatically created using, e.g., for the mass
     matrix of the Dirichlet space::
 
-        SD = ShenDirichlet
-        N = 16
-        M = SpectralMatrix({}, (SD(N), 0), (SD(N), 0))
+    >>> from shenfun import FunctionSpace, SpectralMatrix
+    >>> SD = FunctionSpace(16, 'C', bc=(0, 0))
+    >>> M = SpectralMatrix({}, (SD, 0), (SD, 0))
 
-    where the first (SD(N), 0) represents the test function and
+    where the first (SD, 0) represents the test function and
     the second the trial function. The stiffness matrix can be obtained as::
 
-        A = SpectralMatrix({}, (SD(N), 0), (SD(N), 2))
+    >>> A = SpectralMatrix({}, (SD, 0), (SD, 2))
 
-    where (SD(N), 2) signals that we use the second derivative of this trial
-    function. The number N is the number of quadrature points used for the
-    basis.
+    where (SD, 2) signals that we use the second derivative of this trial
+    function.
 
     The automatically created matrices may be overloaded with more exactly
     computed diagonals.
-
-    Note that matrices with the Neumann basis are stored using index space
-    :math:`k = 0, 1, ..., N-2`, i.e., including the zero index for a nonzero
-    average value.
 
     """
     def __init__(self, d, test, trial, scale=1.0, measure=1):
@@ -559,9 +541,6 @@ class SpectralMatrix(SparseMatrix):
             #D = get_dense_matrix_sympy(test, trial, measure)[:shape[0], :shape[1]]
             d = extract_diagonal_matrix(D)
         SparseMatrix.__init__(self, d, shape, scale)
-        if shape[0] == shape[1]:
-            from shenfun.la import Solve
-            self.solver = Solve(self, test[0])
 
     def matvec(self, v, c, format='csr', axis=0):
         u = self.trialfunction[0]
@@ -572,31 +551,6 @@ class SpectralMatrix(SparseMatrix):
             ss[axis] = 0
             c[tuple(ss)] = 0
         return c
-
-    def solve(self, b, u=None, axis=0, use_lu=False):
-        """Solve matrix system Au = b
-
-        where A is the current matrix (self)
-
-        Parameters
-        ----------
-        b : array
-            Array of right hand side on entry and solution on exit unless
-            u is provided.
-        u : array, optional
-            Output array
-        axis : int, optional
-               The axis over which to solve for if b and u are multidimensional
-        use_lu : bool, optional
-            Look for already computed LU-matrix
-
-        Note
-        ----
-        Vectors may be one- or multidimensional.
-
-        """
-        u = self.solver(b, u=u, axis=axis, use_lu=use_lu)
-        return u
 
     @property
     def tensorproductspace(self):
@@ -702,6 +656,9 @@ class SpectralMatrix(SparseMatrix):
         else: # downcast
             return SparseMatrix(dict(self), self.shape, self.scale)
 
+    def is_bc_matrix(self):
+        return self.trialfunction[0].boundary_condition() == 'Apply'
+
 
 class Identity(SparseMatrix):
     """The identity matrix in :class:`.SparseMatrix` form
@@ -774,12 +731,12 @@ class BlockMatrix:
     We use for the z-direction a Dirichlet basis (SD) and a regular basis with
     no boundary conditions (ST). This is combined with Fourier in the x- and
     y-directions (K0, K1), such that we get two TensorProductSpaces (TD, TT)
-    that are the Cartesian product of these bases
+    that are tensor products of these bases
 
     .. math::
 
-        TD &= K0 \times K1 \times SD \\
-        TT &= K0 \times K1 \times ST
+        TD &= K0 \otimes K1 \otimes SD \\
+        TT &= K0 \otimes K1 \otimes ST
 
     We choose trialfunctions :math:`u \in [TD]^3` and :math:`p \in TT`, and then
     solve the weak problem
@@ -926,6 +883,10 @@ class BlockMatrix:
     def get_offset(self, i, axis=0):
         return self.offset[i][axis]
 
+    def is_bc_matrix(self):
+        m = self.get_mats(True)
+        return m.is_bc_matrix()
+
     def diags(self, it=(0,), format='csr'):
         """Return global block matrix in scipy sparse format
 
@@ -1024,161 +985,11 @@ class BlockMatrix:
             matrix. Only for non-periodic problems.
 
         """
-        from .forms.arguments import Function
-        import scipy.sparse as sp
-        space = b.function_space()
-        if u is None:
-            u = Function(space)
-        else:
-            assert u.shape == b.shape
-
-        if BM: # Add contribution to right hand side due to inhomogeneous boundary conditions
-            u.set_boundary_dofs()
-            w0 = np.zeros_like(u)
-            b -= BM.matvec(u, w0)
-
-        tpmat = self.get_mats(True)
-        axis = tpmat.naxes[0] if isinstance(tpmat, TPMatrix) else 0
-        tp = space.flatten() if hasattr(space, 'flatten') else [space]
-        nvars = b.shape[0] if len(b.shape) > space.dimensions else 1
-        u = u.reshape(1, *u.shape) if nvars == 1 else u
-        b = b.reshape(1, *b.shape) if nvars == 1 else b
-        for con in constraints:
-            assert len(con) == 3
-            assert isinstance(con[0], Integral)
-            assert isinstance(con[1], Integral)
-            assert isinstance(con[2], Number)
-        N = self.global_shape[axis]
-        gi = np.zeros(N, dtype=b.dtype)
-        go = np.zeros(N, dtype=b.dtype)
-        if space.dimensions == 1:
-            s = [0, 0]
-            Ai = self.diags((0,))
-            for k in range(nvars):
-                s[0] = k
-                s[1] = tp[k].slice()
-                gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
-            if Alu is not None:
-                go[:] = Alu.solve(gi)
-            else:
-                go[:] = sp.linalg.spsolve(Ai, gi)
-            for k in range(nvars):
-                s[0] = k
-                s[1] = tp[k].slice()
-                u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
-            if return_system:
-                return u, Ai
-
-        elif space.dimensions == 2:
-            if len(tpmat.naxes) == 2: # 2 non-periodic axes
-                s = [0, 0, 0]
-                if Alu is None:
-                    Ai = self.diags(format='csr')
-                gi = np.zeros(space.dim(), dtype=b.dtype)
-                go = np.zeros(space.dim(), dtype=b.dtype)
-                start = 0
-                for k in range(nvars):
-                    s[0] = k
-                    s[1] = tp[k].bases[0].slice()
-                    s[2] = tp[k].bases[1].slice()
-                    gi[start:(start+tp[k].dim())] = b[tuple(s)].ravel()
-                    start += tp[k].dim()
-                for con in constraints:
-                    dim = 0
-                    for i in range(con[0]):
-                        dim += tp[i].dim()
-                    if Alu is None:
-                        Ai, gi = self.apply_constraint(Ai, gi, dim, 0, con)
-                    else:
-                        gi[dim] = con[2]
-                if Alu is not None:
-                    go[:] = Alu.solve(gi)
-                else:
-                    go[:] = sp.linalg.spsolve(Ai, gi)
-                start = 0
-                for k in range(nvars):
-                    s[0] = k
-                    s[1] = tp[k].bases[0].slice()
-                    s[2] = tp[k].bases[1].slice()
-                    u[tuple(s)] = go[start:(start+tp[k].dim())].reshape((1, tp[k].bases[0].dim(), tp[k].bases[1].dim()))
-                    start += tp[k].dim()
-                if return_system:
-                    return u, Ai
-            else:
-                s = [0]*3
-                ii, jj = {0:(2, 1), 1:(1, 2)}[axis]
-                d0 = [0, 0]
-                for i in range(b.shape[ii]):
-                    d0[(axis+1)%2] = i
-                    Ai = self.diags(d0)
-                    s[ii] = i
-                    for k in range(nvars):
-                        s[0] = k
-                        s[jj] = tp[k].bases[axis].slice()
-                        gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
-                    for con in constraints:
-                        Ai, gi = self.apply_constraint(Ai, gi, self.offset[con[0]][axis], i, con)
-                    go[:] = sp.linalg.spsolve(Ai, gi)
-                    for k in range(nvars):
-                        s[0] = k
-                        s[jj] = tp[k].bases[axis].slice()
-                        u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
-
-        elif space.dimensions == 3:
-            s = [0]*4
-            ii, jj = {0:(2, 3), 1:(1, 3), 2:(1, 2)}[axis]
-            d0 = [0, 0, 0]
-            for i in range(b.shape[ii]):
-                for j in range(b.shape[jj]):
-                    d0[ii-1], d0[jj-1] = i, j
-                    Ai = self.diags(d0)
-                    s[ii], s[jj] = i, j
-                    for k in range(nvars):
-                        s[0] = k
-                        s[axis+1] = tp[k].bases[axis].slice()
-                        gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
-                    for con in constraints:
-                        Ai, gi = self.apply_constraint(Ai, gi, self.offset[con[0]][axis], (i, j), con)
-                    go[:] = sp.linalg.spsolve(Ai, gi)
-                    for k in range(nvars):
-                        s[0] = k
-                        s[axis+1] = tp[k].bases[axis].slice()
-                        u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
-
-        u = u.reshape(u.shape[1:]) if nvars == 1 else u
-        b = b.reshape(b.shape[1:]) if nvars == 1 else b
+        from .la import BlockMatrixSolver
+        sol = BlockMatrixSolver(self)
+        u = sol(b, u, constraints)
         return u
 
-    @staticmethod
-    def apply_constraint(A, b, offset, i, constraint):
-        if constraint is None or comm.Get_rank() > 0:
-            return A, b
-
-        if isinstance(i, int):
-            if i > 0:
-                return A, b
-
-        if isinstance(i, tuple):
-            if np.sum(np.array(i)) > 0:
-                return A, b
-
-        row = offset + constraint[1]
-        #print('Applying constraint row %d con (%d, %d, %2.5f)' %(row, *constraint))
-
-        assert isinstance(constraint, tuple)
-        assert len(constraint) == 3
-        val = constraint[2]
-        b[row] = val
-        r = A.getrow(row).nonzero()
-        #rp = A.getrow(row-1).nonzero()
-        A[(row, r[1])] = 0
-        #A[(row, rp[1])] = 0
-        #A[row, offset] = 1
-        A[row, row] = 1
-        #A[offset, row] = 1
-        #A[row-1, row-1] = 1
-
-        return A, b
 
 class TPMatrix:
     """Tensor product matrix
@@ -1240,7 +1051,7 @@ class TPMatrix:
                 if self.dimensions == 1: # Don't bother with the 1D case
                     continue
                 else:
-                    d = mat[0]    # get diagoal
+                    d = mat[0]    # get diagonal
                     if np.ndim(d):
                         d = self.space[axis].broadcast_to_ndims(d)
                         d = d*mat.scale
@@ -1283,11 +1094,14 @@ class TPMatrix:
             u[sl] = b[sl] * d[sl]
 
         elif len(self.naxes) == 1:
-            axis = self.naxes[0]
-            u = self.pmat.solve(b, u=u, axis=axis)
-            with np.errstate(divide='ignore'):
-                u /= self.scale
-            u[:] = np.where(np.isfinite(u), u, 0)
+            from shenfun.la import SolverGeneric1ND
+            H = SolverGeneric1ND([self])
+            u = H(b, u)
+            #axis = self.naxes[0]
+            #u = self.pmat.solve(b, u=u, axis=axis)
+            #with np.errstate(divide='ignore'):
+            #    u /= self.scale
+            #u[:] = np.where(np.isfinite(u), u, 0)
 
         elif len(self.naxes) == 2:
             from shenfun.la import SolverGeneric2ND
@@ -1354,9 +1168,8 @@ class TPMatrix:
 
     def is_bc_matrix(self):
         for m in self.mats:
-            if hasattr(m, 'trialfunction'):
-                if m.trialfunction[0].boundary_condition() == 'Apply':
-                    return True
+            if m.is_bc_matrix():
+                return True
         return False
 
     @property
@@ -1618,14 +1431,9 @@ def extract_bc_matrices(mats):
     bc_mats = []
     for a in mats:
         for b in a.copy():
-            if isinstance(b, SparseMatrix):
-                if b.trialfunction[0].boundary_condition() == 'Apply':
-                    bc_mats.append(b)
-                    a.remove(b)
-            elif isinstance(b, TPMatrix):
-                if b.is_bc_matrix():
-                    bc_mats.append(b)
-                    a.remove(b)
+            if b.is_bc_matrix():
+                bc_mats.append(b)
+                a.remove(b)
     return bc_mats
 
 def get_dense_matrix_sympy(test, trial, measure=1):

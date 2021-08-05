@@ -2,10 +2,11 @@ from shenfun import *
 import matplotlib.pyplot as plt
 import sympy
 
+# pylint: disable=attribute-defined-outside-init
+
 x, y, tt = sympy.symbols('x,y,t', real=True)
 
 class RayleighBenard:
-    # pylint: disable=attribute-defined-outside-init
 
     def __init__(self, N=(32, 32), L=(2, 2*np.pi), Ra=10000., Pr=0.7, dt=0.1,
                  bcT=(0, 1), conv=0, modplot=100, modsave=1e8, filename='RB',
@@ -274,13 +275,13 @@ class RayleighBenard:
                 self.update_bc(t+self.dt*self.c[rk+1]) # Update bc for next step
                 self.T0.bc.set_boundary_dofs(self.T_1, True) # T_1 holds next step bc
                 rhs_u = self.compute_rhs_u(self.rhs_u, rk)
-                self.u_[0] = self.solver[rk](self.u_[0], rhs_u[1])
+                self.u_[0] = self.solver[rk](rhs_u[1], self.u_[0])
                 if comm.Get_rank() == 0:
                     self.u_[0, :, 0] = 0
                 u_ = self.compute_v(self.u_, rk)
                 u_.mask_nyquist(self.mask)
                 rhs_T = self.compute_rhs_T(self.rhs_T, rk)
-                T_ = self.solverT[rk](self.T_, rhs_T[1])
+                T_ = self.solverT[rk](rhs_T[1], self.T_)
                 T_.mask_nyquist(self.mask)
                 self.T_1 = T_
 

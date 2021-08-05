@@ -69,9 +69,8 @@ import functools
 import numpy as np
 import sympy as sp
 from shenfun.matrixbase import SpectralMatrix
-#from shenfun.la import TDMA as neumann_TDMA
 from shenfun.optimization import cython
-from .la import TDMA
+from shenfun.la import TDMA, PDMA
 from . import bases
 
 # Short names for instances of bases
@@ -118,7 +117,7 @@ class BLLmat(SpectralMatrix):
             d[0][-1] = 2./(N-1)
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
-    def solve(self, b, u=None, axis=0):
+    def solve(self, b, u=None, axis=0, constraints=()):
         s = self.trialfunction[0].slice()
         if u is None:
             u = b
@@ -166,8 +165,9 @@ class BSDSDmat(SpectralMatrix):
 
         d[2] = d[-2]
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
-        self.solve = TDMA(self)
 
+    def get_solver(self):
+        return TDMA
 
 class BSNSNmat(SpectralMatrix):
     r"""Mass matrix for inner product
@@ -218,7 +218,6 @@ class BSBSBmat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, measure=1):
-        from shenfun.la import PDMA
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
@@ -234,7 +233,9 @@ class BSBSBmat(SpectralMatrix):
         d[-2] = d[2]
         d[-4] = d[4]
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
-        self.solve = PDMA(self)
+
+    def get_solver(self):
+        return PDMA
 
 class BBFBFmat(SpectralMatrix):
     r"""Mass matrix for inner product
@@ -403,7 +404,7 @@ class ASDSDmat(SpectralMatrix):
             d = {0: 1}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
-    def solve(self, b, u=None, axis=0):
+    def solve(self, b, u=None, axis=0, constraints=()):
         N = self.shape[0] + 2
         assert N == b.shape[axis]
         s = self.trialfunction[0].slice()
@@ -471,7 +472,7 @@ class ASNSNmat(SpectralMatrix):
         d = {0: d0*alpha*(k+0.5)*((k+2)*(k+3)-k*(k+1))}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
-    def solve(self, b, u=None, axis=0):
+    def solve(self, b, u=None, axis=0, constraints=()):
         N = self.shape[0] + 2
         assert N == b.shape[axis]
         s = self.trialfunction[0].slice()
@@ -556,7 +557,7 @@ class ADNDNmat(SpectralMatrix):
         d = {0: ((k+1)/(k+2))**2*((k+2)*(k+3)- k*(k+1))}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
-    def solve(self, b, u=None, axis=0):
+    def solve(self, b, u=None, axis=0, constraints=()):
         N = self.shape[0] + 2
         assert N == b.shape[axis]
         s = self.trialfunction[0].slice()
@@ -614,7 +615,7 @@ class SBFBFmat(SpectralMatrix):
         d = {0: f4*(k+2.5)*((k+4)*(k+5)-(k+2)*(k+3))*((k+2)*(k+3)-k*(k+1))}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
-    def solve(self, b, u=None, axis=0):
+    def solve(self, b, u=None, axis=0, constraints=()):
         N = self.shape[0] + 4
         assert N == b.shape[axis]
         s = self.trialfunction[0].slice()

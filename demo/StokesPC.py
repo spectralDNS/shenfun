@@ -54,7 +54,7 @@ def main(n):
 
     # Define the initial solution on quadrature points at t=0
     U = Array(Ws, buffer=(uex.subs(t, 0), uey.subs(t, 0)))
-    P = Array(Ps); P.fill(0)
+    P = Array(Ps)
     F = Array(Ws, buffer=(fex.subs(t, 0), fey.subs(t, 0)))
 
     # Define the coefficient vector

@@ -26,6 +26,7 @@ __all__ = ['ChebyshevBase',
            'ShenBiharmonic',
            'SecondNeumann',
            'UpperDirichlet',
+           'LowerDirichlet',
            'UpperDirichletNeumann',
            'ShenBiPolar',
            'DirichletNeumann',
@@ -34,6 +35,7 @@ __all__ = ['ChebyshevBase',
            'BCBiharmonic',
            'BCNeumann',
            'BCUpperDirichlet',
+           'BCLowerDirichlet',
            'BCNeumannDirichlet',
            'BCDirichletNeumann',
            'BCUpperDirichletNeumann']
@@ -1977,6 +1979,71 @@ class UpperDirichlet(CompositeSpace):
                                           coordinates=self.coors.coordinates)
         return self._bc_basis
 
+class LowerDirichlet(CompositeSpace):
+    """Function space with single Dirichlet boundary condition
+
+    u(-1)=a
+
+    Parameters
+    ----------
+        N : int
+            Number of quadrature points
+        quad : str, optional
+            Type of quadrature
+
+            - GL - Chebyshev-Gauss-Lobatto
+            - GC - Chebyshev-Gauss
+
+        bc : tuple of (number, None)
+            Boundary conditions at edges of domain.
+        domain : 2-tuple of floats, optional
+            The computational domain
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
+
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
+    """
+    def __init__(self, N, quad="GC", bc=(0, None), domain=(-1., 1.), dtype=float,
+                 scaled=False, padding_factor=1, dealias_direct=False, coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
+
+    @staticmethod
+    def boundary_condition():
+        return 'LowerDirichlet'
+
+    @staticmethod
+    def short_name():
+        return 'LD'
+
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        d = np.ones(self.N)
+        d[-1] = 0
+        return SparseMatrix({0: d, 1: d[:-1]}, (self.N, self.N))
+
+    def slice(self):
+        return slice(0, self.N-1)
+
+    def get_bc_basis(self):
+        if self._bc_basis:
+            return self._bc_basis
+        self._bc_basis = BCLowerDirichlet(self.N, quad=self.quad, domain=self.domain,
+                                          coordinates=self.coors.coordinates)
+        return self._bc_basis
+
 class ShenBiPolar(CompositeSpace):
     """Function space for the Biharmonic equation in polar coordinates
 
@@ -2405,6 +2472,15 @@ class BCUpperDirichlet(BCBase):
 
     def stencil_matrix(self, N=None):
         return sp.Rational(1, 2)*np.array([[1, 1]])
+
+class BCLowerDirichlet(BCBase):
+
+    @staticmethod
+    def short_name():
+        return 'BCLD'
+
+    def stencil_matrix(self, N=None):
+        return sp.Rational(1, 2)*np.array([[1, -1]])
 
 class BCNeumannDirichlet(BCBase):
 

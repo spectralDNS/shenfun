@@ -19,13 +19,13 @@ __all__ = ('inner',)
 
 def inner(expr0, expr1, output_array=None, level=0):
     r"""
-    Return (weighted or unweighted) discrete inner product of kind
+    Return (weighted or unweighted) discrete inner product
 
     .. math::
 
         (f, g)_w^N = \sum_{i\in\mathcal{I}}f(x_i) \overline{g}(x_i) w_i \approx \int_{\Omega} f\, \overline{g}\, w\, dx
 
-    where :math:`\mathcal{I}=0, 1, \ldots, N, N \in \mathbb{Z}^+`, :math:`f`
+    where :math:`\mathcal{I}=0, 1, \ldots, N-1, N \in \mathbb{Z}^+`, :math:`f`
     is a number or an expression linear in a :class:`.TestFunction`,
     and :math:`g` is an expression that is linear in :class:`.TrialFunction`
     or :class:`.Function`, or it is simply an :class:`.Array` (a solution interpolated on the

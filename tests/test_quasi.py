@@ -22,7 +22,7 @@ def test_quasiGalerkin(basis):
     A = Q*A
     B = Q*B
     M = B-A
-    sol = la.Solve(M, S)
+    sol = la.Solve(M)
     f_hat = inner(v, Array(T, buffer=fe))
     f_hat[:-2] = Q.diags('csc')*f_hat
     u_hat = Function(S)

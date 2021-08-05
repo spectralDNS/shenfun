@@ -29,7 +29,7 @@ class BHHmat(SpectralMatrix):
         assert isinstance(trial[0], H)
         SpectralMatrix.__init__(self, {0:1}, test, trial)
 
-    def solve(self, b, u=None, axis=0):
+    def solve(self, b, u=None, axis=0, constraints=()):
         if u is not None:
             u[:] = b
             u /= (self.scale*self[0])
@@ -74,7 +74,9 @@ class AHHmat(SpectralMatrix):
         d[0][-1] = (N-1)/2.
         d[-2] = d[2]
         SpectralMatrix.__init__(self, d, test, trial)
-        self.solve = TDMA(self)
+
+    def get_solver(self):
+        return TDMA
 
     def matvec(self, v, c, format='cython', axis=0):
         N, M = self.shape

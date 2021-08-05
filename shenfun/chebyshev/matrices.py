@@ -23,6 +23,7 @@ CN = CombinedShenNeumann
 MN = MikNeumann
 DU = DirichletU
 UD = UpperDirichlet
+LD = LowerDirichlet
 DN = DirichletNeumann
 BD = BCDirichlet
 BB = BCBiharmonic
@@ -76,9 +77,10 @@ import numpy as np
 import sympy as sp
 from shenfun.optimization import cython, numba, optimizer
 from shenfun.matrixbase import SpectralMatrix, SparseMatrix
+from shenfun.la import SparseMatrixSolver
 from shenfun.la import TDMA as generic_TDMA
 from shenfun.la import PDMA as generic_PDMA
-from .la import TDMA, TwoDMA, FDMA, ADD_Solve
+from .la import TwoDMA, FDMA, ADDSolver, ANNSolver
 from . import bases
 
 x = sp.symbols('x', real=True)
@@ -94,6 +96,7 @@ CN = bases.CombinedShenNeumann
 MN = bases.MikNeumann
 DU = bases.DirichletU
 UD = bases.UpperDirichlet
+LD = bases.LowerDirichlet
 DN = bases.DirichletNeumann
 
 BCD = bases.BCDirichlet
@@ -147,8 +150,10 @@ class BSDSDmat(SpectralMatrix):
              2: np.array([-np.pi/2])}
         d[-2] = d[2]
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
-        self.solve = TDMA(self)
         self._matvec_methods += ['cython', 'self']
+
+    def get_solver(self):
+        return generic_TDMA
 
     def matvec(self, v, c, format='cython', axis=0):
         N, M = self.shape
@@ -216,8 +221,9 @@ class BSDSDmatW(SpectralMatrix):
         d[-2] = d[2]
         d[-4] = d[4]
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        #self.solve = PDMA(self)
 
+    def get_solver(self):
+        return generic_PDMA
 
 class BSNSDmat(SpectralMatrix):
     r"""Mass matrix for inner product
@@ -305,6 +311,30 @@ class BSDSNmat(SpectralMatrix):
 
         return c
 
+class BLDLDmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj}=(\phi_j, \phi_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\phi_j` is a  LowerDirichlet basis function.
+
+    """
+    def __init__(self, test, trial, measure=1):
+        assert isinstance(test[0], LD)
+        assert isinstance(trial[0], LD)
+        ck = get_ck(test[0].N, test[0].quad)
+        d = {0: np.pi/2*(ck[:-1]+ck[1:]),
+             1: np.array([np.pi/2]),
+            -1: np.array([np.pi/2])}
+        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
 
 class BSNTmat(SpectralMatrix):
     r"""Mass matrix for inner product
@@ -399,7 +429,7 @@ class BTTmat(SpectralMatrix):
 
         return c
 
-    def solve(self, b, u=None, axis=0):
+    def solve(self, b, u=None, axis=0, constraints=()):
         s = self.trialfunction[0].slice()
         if u is None:
             u = b
@@ -452,7 +482,9 @@ class BSNSNmat(SpectralMatrix):
         dm = dmax(N-2, M-2, -2)
         d[-2] = -np.pi/2*(k[:dm]/(k[:dm]+2))**2
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
-        self.solve = generic_TDMA(self)
+
+    def get_solver(self):
+        return generic_TDMA
 
     def matvec(self, v, c, format='csr', axis=0):
         # Move axis to first
@@ -633,8 +665,10 @@ class BSBSBmat(SpectralMatrix):
         d[-2] = d2[:dmax(N-4, M-4, -2)]
         d[-4] = d4[:dmax(N-4, M-4, -4)]
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
-        self.solve = generic_PDMA(self)
         self._matvec_methods += ['cython', 'self']
+
+    def get_solver(self):
+        return generic_PDMA
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -790,7 +824,9 @@ class BCNCNmat(SpectralMatrix):
             d[-2] = d[2].copy()
 
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self.solve = generic_PDMA(self)
+
+    def get_solver(self):
+        return generic_PDMA
 
 class BSDHHmat(SpectralMatrix):
     r"""Matrix for inner product
@@ -827,7 +863,9 @@ class BSDHHmat(SpectralMatrix):
             d[4]  *= 1/((k[:-6]+5)*(k[:-6]+6))
 
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
-        self.solve = generic_PDMA(self)
+
+    def get_solver(self):
+        return FDMA
 
 class CSDSNmat(SpectralMatrix):
     r"""Matrix for inner product
@@ -1270,7 +1308,9 @@ class ASDSDmat(SpectralMatrix):
         d = dict.fromkeys(np.arange(0, N-2, 2), _getkey)
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
         self._matvec_methods += ['cython']
-        self.solver = ADD_Solve(self)
+
+    def get_solver(self):
+        return ADDSolver
 
     def matvec(self, v, c, format='cython', axis=0):
         c.fill(0)
@@ -1346,6 +1386,9 @@ class ASNSNmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
         self._matvec_methods += ['numba']
 
+    def get_solver(self):
+        return ANNSolver
+
     def matvec(self, v, c, format='csr', axis=0):
         if format == 'numba':
             try:
@@ -1385,62 +1428,6 @@ class ASNSNmat(SpectralMatrix):
             v = np.moveaxis(v, 0, axis)
             c = np.moveaxis(c, 0, axis)
         return c
-
-    def solve(self, b, u=None, axis=0):
-        assert self.shape[0] + 2 == b.shape[0]
-        s = self.trialfunction[0].slice()
-
-        if u is None:
-            u = b
-        else:
-            assert u.shape == b.shape
-
-        # Move axis to first
-        if axis > 0:
-            u = np.moveaxis(u, axis, 0)
-            if u is not b:
-                b = np.moveaxis(b, axis, 0)
-
-        bs = b[s]
-        us = u[s]
-        j2 = np.arange(self.shape[0])**2
-        j2[0] = 1
-        j2 = 1./j2
-        if len(b.shape) == 1:
-            se = 0.0
-            so = 0.0
-        else:
-            se = np.zeros(u.shape[1:])
-            so = np.zeros(u.shape[1:])
-            j2.repeat(np.prod(bs.shape[1:])).reshape(bs.shape)
-        d = self[0]*j2
-        d1 = self[2]*j2[2:]
-
-        M = us.shape
-        us[-1] = bs[-1] / d[-1]
-        us[-2] = bs[-2] / d[-2]
-        for k in range(M[0]-3, 0, -1):
-            if k%2 == 0:
-                se += us[k+2]
-                us[k] = bs[k] - d1[k]*se
-            else:
-                so += us[k+2]
-                us[k] = bs[k] - d1[k]*so
-            us[k] /= d[k]
-        sl = [np.newaxis]*b.ndim
-        sl[0] = slice(None)
-        us *= j2[tuple(sl)]
-
-        u /= self.scale
-        if self.testfunction[0].use_fixed_gauge:
-            u[0] = self.testfunction[0].mean/(np.pi/self.testfunction[0].domain_factor())
-        self.testfunction[0].bc.set_boundary_dofs(u, True)
-        if axis > 0:
-            u = np.moveaxis(u, 0, axis)
-            if u is not b:
-                b = np.moveaxis(b, 0, axis)
-        return u
-
 
 class ASBSDmat(SpectralMatrix):
     r"""Mass matrix for inner product
@@ -1627,7 +1614,9 @@ class ACNCNmat(SpectralMatrix):
         d[-2][0] = 0
         d[2][0] = -np.pi
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self.solve = generic_TDMA(self)
+
+    def get_solver(self):
+        return generic_TDMA
 
 
 class ADUSDmat(SpectralMatrix):
@@ -1655,7 +1644,9 @@ class ADUSDmat(SpectralMatrix):
         d = {0: -np.pi*k[1:-1]*k[2:]}
         d[2] = -d[0][:-2].copy()
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self.solver = TwoDMA(self)
+
+    def get_solver(self):
+        return TwoDMA
 
 
 class ASDHHmat(SpectralMatrix):
@@ -1690,7 +1681,9 @@ class ASDHHmat(SpectralMatrix):
                  2: np.pi/2*k[:-4]*k[1:-3]}
 
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self.solver = TwoDMA(self)
+
+    def get_solver(self):
+        return TwoDMA
 
 
 class ADUSNmat(SpectralMatrix):
@@ -1718,7 +1711,9 @@ class ADUSNmat(SpectralMatrix):
         d = {0: -np.pi*k[:-2]**2*(k[1:-1]/k[2:]),
              2: np.pi*k[1:-3]*k[2:-2]}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self.solver = TwoDMA(self)
+
+    def get_solver(self):
+        return TwoDMA
 
 class AHHHHmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
@@ -1784,7 +1779,9 @@ class BDUSDmat(SpectralMatrix):
               4: (np.pi/4)*(k[:-6]+1)/(k[:-6]+3)}
 
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self.solver = FDMA(self)
+
+    def get_solver(self):
+        return FDMA
 
 class BHHHHmat(SpectralMatrix):
     r"""Matrix for inner product
@@ -1820,7 +1817,9 @@ class BHHHHmat(SpectralMatrix):
         d[-2] = d[2].copy()
         d[-4] = d[4].copy()
         SpectralMatrix.__init__(self, d, test, trial, measure=measure)
-        self.solve = generic_PDMA(self)
+
+    def get_solver(self):
+        return generic_PDMA
 
 class BSDMNmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
@@ -1895,7 +1894,9 @@ class BSNCNmat(SpectralMatrix):
         d[0][0] = np.pi
         d[2][0] = 0
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self.solver = FDMA(self)
+
+    def get_solver(self):
+        return FDMA
 
 class ASDMNmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
@@ -1923,7 +1924,9 @@ class ASDMNmat(SpectralMatrix):
              2: 2*np.pi*k[1:-3]/k[3:-1]}
         d[0][0] = 0
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self.solver = TwoDMA(self)
+
+    def get_solver(self):
+        return TwoDMA
 
 class ASNCNmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
@@ -1958,7 +1961,9 @@ class ASNCNmat(SpectralMatrix):
         d[2][0] = -np.pi
 
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self.solver = TwoDMA(self)
+
+    def get_solver(self):
+        return TwoDMA
 
 
 class BDUSNmat(SpectralMatrix):
@@ -1990,7 +1995,9 @@ class BDUSNmat(SpectralMatrix):
               4: (np.pi/4)*k[1:-5]/k[3:-3]}
 
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-        self.solver = FDMA(self)
+
+    def get_solver(self):
+        return FDMA
 
 class SSBSBmat(SpectralMatrix):
     r"""Biharmonic matrix for inner product
@@ -2138,6 +2145,7 @@ mat = _ChebMatDict({
     ((SN, 0), (SB, 0)): BSNSBmat,
     ((SD, 0), (SN, 0)): BSDSNmat,
     ((SN, 0), (SD, 0)): BSNSDmat,
+    ((LD, 0), (LD, 0)): BLDLDmat,
     ((T,  0), (SN, 0)): BTSNmat,
     ((SB, 0), (SD, 0)): BSBSDmat,
     ((T,  0), (SD, 0)): BTSDmat,

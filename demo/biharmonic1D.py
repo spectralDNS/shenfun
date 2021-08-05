@@ -12,7 +12,7 @@ import importlib
 from sympy import symbols, sin, chebyshevt
 import numpy as np
 from shenfun import inner, Dx, TestFunction, TrialFunction, FunctionSpace, Array, \
-    Function
+    Function, la
 
 assert len(sys.argv) == 3
 assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi', 'chebyshev2')
@@ -20,8 +20,8 @@ assert isinstance(int(sys.argv[-2]), int)
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 family = sys.argv[-1]
-basis = 'HeinrichtBiharmonic' if family[-1] == '2' else None
-family = family[:-1] if family[-1] == '2' else family
+#basis = 'HeinrichtBiharmonic' if family[-1] == '2' else None
+#family = family[:-1] if family[-1] == '2' else family
 base = importlib.import_module('.'.join(('shenfun', family)))
 Solver = base.la.Biharmonic
 
@@ -51,7 +51,7 @@ fe = aa*ue.diff(x, 4) + bb*ue.diff(x, 2) + cc*ue
 # Size of discretization
 N = int(sys.argv[-2])
 
-SD = FunctionSpace(N, family=family, bc=(a, b, 0, 0), domain=domain, basis=basis)
+SD = FunctionSpace(N, family=family, bc=(a, b, 0, 0), domain=domain)
 X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)
@@ -69,13 +69,10 @@ matrices = inner(v, aa*Dx(u, 0, 4) + bb*Dx(u, 0, 2) + cc*u)
 u_hat = Function(SD)
 
 # Create linear algebra solver
-#H = Solver(*matrices)
-m = matrices[0]
-for mi in matrices[1:]:
-    m += mi
-u_hat[:-4] = m.solve(f_hat[:-4], u_hat[:-4])
-
-#u_hat = H(u_hat, f_hat)
+H = Solver(*matrices)
+u_hat = H(f_hat, u_hat)
+#sol = la.Solve(matrices)
+#u_hat = sol(f_hat, u_hat)
 
 uj = u_hat.backward()
 uh = uj.forward()

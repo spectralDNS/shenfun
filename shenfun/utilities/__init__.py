@@ -30,6 +30,11 @@ def dx(u, weighted=False):
         u : Array
             The Array to integrate
 
+    Note
+    ----
+    This function assumes a standard reference domain. If the domain
+    is not standard, then modify the result accordingly.
+
     """
     T = u.function_space()
     uc = u.copy()

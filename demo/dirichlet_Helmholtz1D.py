@@ -65,7 +65,7 @@ B = inner(v, alfa*u)
 
 H = Solver(A, B)
 u_hat = Function(SD)           # Solution spectral space
-u_hat = H(u_hat, f_hat)
+u_hat = H(f_hat, u_hat)
 uj = SD.backward(u_hat)
 
 # Compare with analytical solution

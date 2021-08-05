@@ -66,7 +66,7 @@ else:
 A10 = inner(q, div(u))
 
 # Create block matrix
-M = BlockMatrix(A00+A01+A10)
+sol = la.BlockMatrixSolver(A00+A01+A10)
 
 # Get f and h on quad points
 fh = Array(VQ, buffer=(fx, fy, h))
@@ -79,7 +79,7 @@ h_hat = inner(q, h_, output_array=h_hat)
 fh_hat.mask_nyquist()
 
 # Solve problem using integral constraint on pressure
-up_hat = M.solve(fh_hat, constraints=((2, 0, 0), (2, N[1]-1, 0)))
+up_hat = sol(fh_hat, constraints=((2, 0, 0), (2, N[1]-1, 0)))
 up_ = up_hat.backward()
 u_, p_ = up_
 
@@ -104,7 +104,7 @@ if 'pytest' not in os.environ:
     plt.figure()
     plt.quiver(X[0], X[1], u_[0], u_[1])
     plt.figure()
-    plt.spy(M.diags((0, 0)).toarray()) # The matrix for Fourier given wavenumber
+    plt.spy(sol.mat.diags((0, 0))) # The matrix for Fourier given wavenumber
     plt.figure()
     plt.contourf(X[0], X[1], u_[0], 100)
     #plt.show()
