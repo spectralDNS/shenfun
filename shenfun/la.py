@@ -36,7 +36,7 @@ def Solver(mats):
     mat = mats
     if isinstance(mats, list):
         bc_mats = extract_bc_matrices([mats])
-        mat = sum(mats[1:], start=mats[0])
+        mat = sum(mats[1:], mats[0])
     return mat.get_solver()([mat]+bc_mats)
 
 class SparseMatrixSolver:
@@ -58,7 +58,7 @@ class SparseMatrixSolver:
         self.bc_mats = []
         if isinstance(mat, list):
             bc_mats = extract_bc_matrices([mat])
-            mat = sum(mat[1:], start=mat[0])
+            mat = sum(mat[1:], mat[0])
             self.bc_mats = bc_mats
         self.mat = mat
         self._lu = None
@@ -972,7 +972,6 @@ class BlockMatrixSolver:
                 return A, b
 
         row = offset + constraint[1]
-
         assert isinstance(constraint, tuple)
         assert len(constraint) == 3
         val = constraint[2]

@@ -933,7 +933,7 @@ class BlockMatrix:
                     bm[-1].append(d)
         return bmat(bm, format=format)
 
-    def solve(self, b, u=None, constraints=(), return_system=False, Alu=None, BM=None):
+    def solve(self, b, u=None, constraints=()):
         r"""
         Solve matrix system Au = b
 
@@ -970,19 +970,6 @@ class BlockMatrix:
             The constraint can only be applied to bases with no given
             explicit boundary condition, like the pure Chebyshev or Legendre
             bases.
-
-        Other Parameters
-        ----------------
-        return_system : bool, optional
-            If True then return the assembled block matrix as well as the
-            solution in a 2-tuple (solution, matrix). This is helpful for
-            repeated solves, because the returned matrix may then be
-            factorized once and reused.
-            Only for non-periodic problems
-
-        Alu : pre-factorized matrix, optional
-            Computed with Alu = splu(self), where self is the assembled block
-            matrix. Only for non-periodic problems.
 
         """
         from .la import BlockMatrixSolver
