@@ -849,13 +849,13 @@ loop that integrates the solution forward in time.
         while t < end_time-1e-8:
             for rk in range(3):
                 rhs_u = compute_rhs_u(u_, T_, H_, rhs_u, rk)
-                u_[0] = solver[rk](u_[0], rhs_u[1])
+                u_[0] = solver[rk](rhs_u[1], u_[0])
                 if comm.Get_rank() == 0:
                     u_[0, :, 0] = 0
                 u_ = compute_v(u_, rk)
                 u_.mask_nyquist(mask)
                 rhs_T = compute_rhs_T(u_, T_, rhs_T, rk)
-                T_ = solverT[rk](T_, rhs_T[1])
+                T_ = solverT[rk](rhs_T[1], T_)
                 T_.mask_nyquist(mask)
     
             t += dt
