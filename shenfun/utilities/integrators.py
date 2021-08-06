@@ -28,7 +28,8 @@ as they assume all matrices are diagonal.
 import types
 import numpy as np
 from shenfun import Function, TPMatrix, TrialFunction, TestFunction,\
-    inner, la, Expr, CompositeSpace, BlockMatrix, extract_bc_matrices
+    inner, la, Expr, CompositeSpace, BlockMatrix, extract_bc_matrices,\
+    SparseMatrix
 
 __all__ = ('IRK3', 'RK4', 'ETDRK4', 'ETD')
 
@@ -225,7 +226,6 @@ class ETD(IntegratorBase):
                  update=None,
                  **params):
         IntegratorBase.__init__(self, T, L=L, N=N, update=update, **params)
-        assert len(T.get_nonperiodic_axes()) == 0
         self.dU = Function(T)
         self.psi = None
         self.ehL = None
@@ -246,7 +246,9 @@ class ETD(IntegratorBase):
         elif isinstance(L, TPMatrix):
             assert L.isidentity()
             L = L.scale
-        assert isinstance(L, np.ndarray)
+        elif isinstance(L, SparseMatrix):
+            L.simplify_diagonal_matrices()
+            L = L.scale
 
         L = np.atleast_1d(L)
         hL = L*dt
@@ -336,6 +338,10 @@ class ETDRK4(IntegratorBase):
         elif isinstance(L, TPMatrix):
             assert L.isidentity()
             L = L.scale
+        elif isinstance(L, SparseMatrix):
+            L.simplify_diagonal_matrices()
+            L = L.scale
+
         L = np.atleast_1d(L)
         hL = L*dt
         self.ehL = np.exp(hL)
@@ -460,6 +466,10 @@ class RK4(IntegratorBase):
         elif isinstance(L, TPMatrix):
             assert L.isidentity()
             L = L.scale
+        elif isinstance(L, SparseMatrix):
+            L.simplify_diagonal_matrices()
+            L = L.scale
+
         while t < end_time-1e-8:
             t += dt
             tstep += 1

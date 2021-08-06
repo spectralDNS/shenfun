@@ -472,7 +472,7 @@ the exact solution.
 
 Note that solve has a keyword argument
 ``constraints=((3, 0, 0), (3, N[2]-1), 0)`` that takes care of the restriction
-:math:`\int_{\Omega} p dx = 0` by indenting the rows in M corresponding to the
+:math:`\int_{\Omega} p \omega dx = 0` by indenting the rows in M corresponding to the
 first and last degree of freedom for the pressure. The value :math:`(3, 0, 0)`
 indicates that pressure is
 in block 3 of the block vector solution (the velocity vector holds

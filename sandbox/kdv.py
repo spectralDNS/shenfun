@@ -7,7 +7,7 @@ from mpl_toolkits.mplot3d import axes3d
 N = 256
 T = FunctionSpace(N, 'F', dtype='d')
 #Tp = T
-Tp = FunctionSpace(N, 'F', dtype='d', padding_factor=1.5)
+Tp = T.get_dealiased()
 x = T.points_and_weights()[0]
 u = TrialFunction(T)
 v = TestFunction(T)
@@ -17,14 +17,15 @@ u_ = Array(T)
 Up = Array(Tp)
 u_hat = Function(T)
 
-def LinearRHS(self, **params):
-    return -inner(Dx(u, 0, 3), v)[0]
+def LinearRHS(self, u, **params):
+    return -Dx(u, 0, 3)
 
 def NonlinearRHS(self, u, u_hat, rhs, **params):
     rhs.fill(0)
     Up[:] = Tp.backward(u_hat, Up)
     rhs = Tp.forward(-0.5*Up**2, rhs)
-    return rhs*1j*k
+    rhs *= 1j*k
+    return rhs
 
 # initialize
 A = 25.

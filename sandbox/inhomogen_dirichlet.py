@@ -51,10 +51,10 @@ side only affects the equation with :math:`j=0`.
 
 """
 import sys
-from sympy import symbols, sin, lambdify
+from sympy import symbols, sin, cos
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    Array, Function, Basis
+    Array, Function, Basis, FunctionSpace, la
 
 assert len(sys.argv) == 3, 'Call with two command-line arguments'
 assert sys.argv[-1] in ('legendre', 'chebyshev')
@@ -66,56 +66,36 @@ family = sys.argv[-1].lower()
 # Use sympy to compute a rhs, given an analytical solution
 domain = (-1., 1.)
 alpha = 1.
-a = -1.
-b = 1.
 x = symbols("x")
-ue = sin(4*np.pi*x)*(x+domain[0])*(x+domain[1]) + a*(x-domain[0])/2. + b*(domain[1] - x)/2.
+ue = cos(4*np.pi*x) #*(x+domain[0])*(x+domain[1]) + a*(x-domain[0])/2. + b*(domain[1] - x)/2.
 fe = ue.diff(x, 2) + alpha*ue.diff(x, 1)
-
-# Lambdify for faster evaluation
-ul = lambdify(x, ue, 'numpy')
-fl = lambdify(x, fe, 'numpy')
 
 # Size of discretization
 N = int(sys.argv[-2])
 
-SD = FunctionSpace(N, family=family, bc=(a, b), domain=domain)
+SD = FunctionSpace(N, family=family, bc=(ue.subs(x, domain[0]), ue.subs(x, domain[1])), domain=domain)
 X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)
 
 # Get f on quad points
-fj = Array(SD, buffer=fl(X))
+fj = Array(SD, buffer=fe)
 
 # Compute right hand side of Poisson equation
-f_hat = Function(SD)
+f_hat = Function(SD).set_boundary_dofs()
 f_hat = inner(v, fj, output_array=f_hat)
-if family == 'legendre':
-    f_hat *= -1.
+A = inner(v, div(grad(u))+alpha*grad(u))
 
-# Get left hand side of Poisson equation
-if family == 'chebyshev':
-    A = inner(v, div(grad(u))) + alpha*inner(v, grad(u))
-else:
-    A = inner(grad(v), grad(u)) - alpha*inner(v, grad(u))
-
-if family == 'chebyshev':
-    f_hat[0] -= 0.5*np.pi*alpha*a
-    f_hat[0] += 0.5*np.pi*alpha*b
-elif family == 'legendre':
-    f_hat[0] += alpha*a
-    f_hat[0] -= alpha*b
-
-f_hat[:-2] = A.solve(f_hat[:-2])
-f_hat[-2] = a
-f_hat[-1] = b
-uj = SD.backward(f_hat)
+u_hat = Function(SD).set_boundary_dofs()
+sol = la.Solver(A)
+u_hat = sol(f_hat, u_hat)
+uj = SD.backward(u_hat)
 
 # Compare with analytical solution
-ua = ul(X)
+ua = Array(SD, buffer=ue)
 print("Error=%2.16e" %(np.linalg.norm(uj-ua)))
 assert np.allclose(uj, ua)
 
 point = np.array([0.1, 0.2])
-p = SD.eval(point, f_hat)
-assert np.allclose(p, ul(point))
+p = u_hat.eval(point)
+assert np.allclose(p, [float(ue.subs(x, p)) for p in point])

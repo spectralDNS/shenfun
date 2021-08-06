@@ -977,9 +977,11 @@ class BlockMatrixSolver:
         val = constraint[2]
         b[row] = val
         if A is not None:
+            A = A.tolil()
             r = A.getrow(row).nonzero()
             A[(row, r[1])] = 0
             A[row, row] = 1
+            A = A.tocsc()
         return A, b
 
     def __call__(self, b, u=None, constraints=()):
@@ -1119,7 +1121,7 @@ class BlockMatrixSolver:
                         for con in constraints:
                             _, gi = self.apply_constraint(None, gi, B.offset[con[0]][axis], (i, j), con)
                     else:
-                        Ai = B.diags(d0)
+                        Ai = B.diags(d0, format='csr').tocsc() # Note - bug in scipy (https://github.com/scipy/scipy/issues/14551) such that we cannot use format='csc' directly
                         for con in constraints:
                             Ai, gi = self.apply_constraint(Ai, gi, B.offset[con[0]][axis], (i, j), con)
                         lu = sp.linalg.splu(Ai)

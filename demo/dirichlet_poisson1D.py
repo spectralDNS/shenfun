@@ -9,6 +9,7 @@ The equation to solve is
 
 """
 import sys
+import os
 from sympy import symbols, sin, pi
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \

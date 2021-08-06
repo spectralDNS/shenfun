@@ -763,15 +763,16 @@ We then create two functions representing the linear and nonlinear part of
 .. code-block:: python
 
 
-    def LinearRHS(self, **params):
-        return -inner(Dx(u, 0, 3), v)
+    def LinearRHS(self, u, **params):
+        return -Dx(u, 0, 3)
 
     k = T.wavenumbers(scaled=True, eliminate_highest_freq=True)
     def NonlinearRHS(self, u, u_hat, rhs, **params):
         rhs.fill(0)
         u_[:] = T.backward(u_hat, u_)
         rhs = T.forward(-0.5*u_**2, rhs)
-        return rhs*1j*k   # return inner(grad(-0.5*Up**2), v)
+        rhs *= 1j*k
+        return rhs   # return inner(grad(-0.5*Up**2), v)
 
 
 Note that we differentiate in ``NonlinearRHS`` by using the wavenumbers ``k``
