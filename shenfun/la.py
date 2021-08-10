@@ -943,20 +943,13 @@ class BlockMatrixSolver:
         assert isinstance(mats, (BlockMatrix, list))
         self.bc_mat = None
         self._lu = None
-
-        if isinstance(mats, list):
-            if isinstance(mats[0], TPMatrix):
-                bc_mats = extract_bc_matrices([mats])
-                assert len(mats) > 0
-                self.mat = BlockMatrix(mats)
-                if len(bc_mats) > 0:
-                    self.bc_mat = BlockMatrix(bc_mats)
-            else:
-                assert len(mats) == 2 and isinstance(mats[0], BlockMatrix)
-                self.mat = mats[0]
-                self.bc_mat = mats[1]
-        elif isinstance(mats, BlockMatrix):
-            self.mat = mats
+        if isinstance(mats, BlockMatrix):
+            mats = mats.get_mats()
+        bc_mats = extract_bc_matrices([mats])
+        assert len(mats) > 0
+        self.mat = BlockMatrix(mats)
+        if len(bc_mats) > 0:
+            self.bc_mat = BlockMatrix(bc_mats)
 
     @staticmethod
     def apply_constraint(A, b, offset, i, constraint):
@@ -1016,7 +1009,7 @@ class BlockMatrixSolver:
         if space.dimensions == 1:
             s = [0, 0]
             if self._lu is None:
-                Ai = B.diags((0,))
+                Ai = B.diags((0,), format='csc')
                 lu = self._lu = sp.linalg.splu(Ai)
             else:
                 lu = self._lu
@@ -1044,7 +1037,7 @@ class BlockMatrixSolver:
                     start += tp[k].dim()
 
                 if self._lu is None:
-                    Ai = B.diags(format='csr')
+                    Ai = B.diags(format='csc')
                     for con in constraints:
                         dim = 0
                         for i in range(con[0]):
@@ -1088,7 +1081,7 @@ class BlockMatrixSolver:
                         for con in constraints:
                             _, gi = self.apply_constraint(None, gi, B.offset[con[0]][axis], i, con)
                     else:
-                        Ai = B.diags(d0)
+                        Ai = B.diags(d0, format='csc')
                         for con in constraints:
                             Ai, gi = self.apply_constraint(Ai, gi, B.offset[con[0]][axis], i, con)
                         lu = sp.linalg.splu(Ai)

@@ -500,6 +500,19 @@ class TensorProductSpace(PFFT):
             return TensorProductSpace(comm, bases)
         return bases
 
+    def get_homogeneous(self, **kwargs):
+        """Return space with homogeneous boundary conditions, and otherwise
+        as self.
+
+        Parameters
+        ----------
+        kwargs : keyword arguments
+            Any arguments used in the creation of the different bases.
+
+        """
+        bases = tuple([base.get_homogeneous(**kwargs) for base in self.bases])
+        return TensorProductSpace(comm, bases)
+
     def dtype(self, forward_output=False):
         """Return datatype function space is planned for"""
         if hasattr(self, 'forward'):

@@ -42,31 +42,25 @@ x = sympy.symbols('x', real='True')
 D0 = FunctionSpace(N, family, quad=quad, bc=(0, 0))
 #D1 = FunctionSpace(N, family, quad=quad, bc=(0, 1))
 D1 = FunctionSpace(N, family, quad=quad, bc=(0, (1-x)**2*(1+x)**2))
-T = FunctionSpace(N, family, quad=quad)
 
 # Create tensor product spaces with different combination of bases
 V1 = TensorProductSpace(comm, (D0, D1))
-V0 = TensorProductSpace(comm, (D0, D0))
-P = TensorProductSpace(comm, (T, T))
+V0 = V1.get_homogeneous()
+P = V1.get_orthogonal()
 
-# To get a P_N x P_{N-2} space, just pick the first N-2 items of the pressure basis
-# Note that this effectively sets P_N and P_{N-1} to zero, but still the basis uses
-# the same quadrature points as the Dirichlet basis, which is required for the inner
-# products.
+# To satisfy inf-sup for the Stokes problem, just pick the first N-2 items of the pressure basis
+# Note that this effectively sets P_{N-1} and P_{N-2} to zero, but still the basis uses
+# the same quadrature points as the Dirichlet basis, which is required for the inner products.
 P.bases[0].slice = lambda: slice(0, N-2)
 P.bases[1].slice = lambda: slice(0, N-2)
 
-# Create vector space for velocity
+# Create vector space for velocity and a mixed velocity-pressure space
 W1 = VectorSpace([V1, V0])
-
-# Create mixed space for total solution
-VQ = CompositeSpace([W1, P])   # for velocity and pressure
+VQ = CompositeSpace([W1, P])
 
 # Create padded spaces for nonlinearity
 W1p = W1.get_dealiased()
-T1 = P.get_dealiased()
-Q1 = VectorSpace(T1)
-S1 = TensorSpace(T1)
+S1 = TensorSpace(P.get_dealiased())
 
 up = TrialFunction(VQ)
 vq = TestFunction(VQ)
@@ -155,12 +149,11 @@ H = la.SolverGeneric2ND(S)
 phi_h = H(h)
 phi = phi_h.backward()
 # Compute vorticity
-P = TensorProductSpace(comm, (T, T))
+P = V1.get_orthogonal()
 w_h = Function(P)
 w_h = project(curl(ui_hat), P, output_array=w_h)
 #p0 = np.array([[0.], [0.]])
 #print(w_h.eval(p0)*2)
-raise RuntimeError
 
 # Find minimal streamfunction value and position
 # by gradually zooming in on mesh

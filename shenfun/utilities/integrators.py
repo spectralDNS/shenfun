@@ -120,8 +120,6 @@ class IRK3(IntegratorBase):
                  update=None,
                  **params):
         IntegratorBase.__init__(self, T, L=L, N=N, update=update, **params)
-        if isinstance(T, CompositeSpace):
-            assert T.tensor_rank > 0, 'IRK3 only works for tensors, not generic CompositeSpaces'
         self.dU = Function(T)
         self.dU1 = Function(T)
         self.a = (8./15., 5./12., 3./4.)
@@ -134,6 +132,9 @@ class IRK3(IntegratorBase):
         self.mask = self.T.get_mask_nyquist()
 
     def setup(self, dt):
+        if isinstance(self.T, CompositeSpace):
+            assert self.T.tensor_rank > 0, 'IRK3 only works for tensors, not generic CompositeSpaces'
+
         self.params['dt'] = dt
         u = TrialFunction(self.T)
         v = TestFunction(self.T)
@@ -159,10 +160,7 @@ class IRK3(IntegratorBase):
                 self.solver.append(BlockMatrix(mats))
 
             rhs_mats = inner(v, u + ((a[rk]+b[rk])*dt/2)*self.LinearRHS(u))
-            if self.T.tensor_rank == 0:
-                self.rhs_mats.append(rhs_mats+bc_mats)
-            else:
-                self.rhs_mats.append(BlockMatrix(rhs_mats+bc_mats))
+            self.rhs_mats.append(BlockMatrix(rhs_mats+bc_mats))
 
         self.mass = inner(u, v)
 
@@ -184,16 +182,8 @@ class IRK3(IntegratorBase):
         while t < end_time-1e-8:
             for rk in range(3):
                 dU = self.compute_rhs(u, u_hat, self.dU, self.dU1, rk)
-
-                if self.T.tensor_rank == 0:
-                    for mat in self.rhs_mats[rk]:
-                        w0 = mat.matvec(u_hat, self.w0)
-                        dU += w0
-                    u_hat = self.solver[rk](dU, u_hat)
-                else:
-                    w0 = self.rhs_mats[rk].matvec(u_hat, self.w0)
-                    dU += w0
-                    u_hat = self.solver[rk].solve(dU, u=u_hat)
+                dU += self.rhs_mats[rk].matvec(u_hat, self.w0)
+                u_hat = self.solver[rk](dU, u=u_hat)
                 u_hat.mask_nyquist(self.mask)
 
             t += dt

@@ -197,12 +197,14 @@ def main(n):
 
 
 if __name__ == "__main__":
+    from time import time
+    t0 = time()
     N = 2**np.arange(0, 4)
     E = np.zeros((3, len(N)))
 
     for (j, n) in enumerate(N):
         E[:, j] = main(n)
-
+    print('Time = ', time()-t0)
     fig = plt.figure(figsize=(5.69, 4.27))
     ax = plt.gca()
     marks = ('or', '-g', '-ob')

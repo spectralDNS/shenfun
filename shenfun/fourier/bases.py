@@ -195,29 +195,35 @@ class FourierBase(SpectralBase):
     def is_orthogonal(self):
         return True
 
-    def get_orthogonal(self):
-        return self
+    def get_orthogonal(self, **kwargs):
+        return self.get_unplanned(**kwargs)
 
-    def get_unplanned(self):
-        return self.__class__(self.N,
-                              domain=self.domain,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates)
+    def get_homogeneous(self, **kwargs):
+        return self.get_unplanned(**kwargs)
 
-    def get_dealiased(self, padding_factor=1.5, dealias_direct=False):
-        return self.__class__(self.N,
-                              domain=self.domain,
-                              padding_factor=padding_factor,
-                              dealias_direct=dealias_direct,
-                              coordinates=self.coors.coordinates)
+    def get_unplanned(self, **kwargs):
+        d = dict(domain=self.domain,
+                 padding_factor=self.padding_factor,
+                 dealias_direct=self.dealias_direct,
+                 coordinates=self.coors.coordinates)
+        d.update(kwargs)
+        return self.__class__(self.N, **d)
 
-    def get_refined(self, N):
-        return self.__class__(N,
-                              domain=self.domain,
-                              padding_factor=self.padding_factor,
-                              dealias_direct=self.dealias_direct,
-                              coordinates=self.coors.coordinates)
+    def get_dealiased(self, padding_factor=1.5, dealias_direct=False, **kwargs):
+        d = dict(domain=self.domain,
+                 padding_factor=padding_factor,
+                 dealias_direct=dealias_direct,
+                 coordinates=self.coors.coordinates)
+        d.update(kwargs)
+        return self.__class__(self.N, **d)
+
+    def get_refined(self, N, **kwargs):
+        d = dict(domain=self.domain,
+                 padding_factor=self.padding_factor,
+                 dealias_direct=self.dealias_direct,
+                 coordinates=self.coors.coordinates)
+        d.update(kwargs)
+        return self.__class__(N, **d)
 
     def mask_nyquist(self, u_hat, mask=None):
         """Return array `u_hat` with zero Nyquist coefficients

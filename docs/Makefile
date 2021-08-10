@@ -13,7 +13,8 @@ DEMO          = Poisson/poisson.rst \
 				PolarHelmholtz/polarhelmholtz.rst \
 				SphereHelmholtz/sphericalhelmholtz.ipynb \
 				KuramatoSivashinsky/kuramatosivashinsky.rst \
-				Stokes/stokes.rst DrivenCavity/drivencavity.rst \
+				Stokes/stokes.rst \
+				DrivenCavity/drivencavity.rst \
 				RayleighBenard/rayleighbenard.rst \
 				Functions/functions.ipynb \
 				Integration/surfaceintegration.ipynb \
@@ -27,7 +28,8 @@ NDEMO         = Poisson/poisson.ipynb2 \
 				PolarHelmholtz/polarhelmholtz.ipynb2 \
 				SphereHelmholtz/sphericalhelmholtz.ipynb2 \
 				KuramatoSivashinsky/kuramatosivashinsky.ipynb2 \
-				Stokes/stokes.ipynb2 DrivenCavity/drivencavity.ipynb2 \
+				Stokes/stokes.ipynb2 \
+				DrivenCavity/drivencavity.ipynb2 \
 				RayleighBenard/rayleighbenard.ipynb2 \
 				Functions/functions.ipynb2 \
 				Integration/surfaceintegration.ipynb2 \
@@ -62,6 +64,7 @@ help:
 	#doconce subst '<!--.*-->' '' demos/$(basename $@).ipynb
 	#python add_metadata.py demos/$(basename $@).ipynb
 	cp demos/$(basename $@).ipynb ../../shenfun-demos/content/
+	cp demos/$(basename $@).ipynb notebooks/
 
 publish:
 	cd demos && publish export papers.bib && cd ..

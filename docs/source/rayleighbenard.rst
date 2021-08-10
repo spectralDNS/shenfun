@@ -642,7 +642,7 @@ each RK stage.
             w00 = inner(v0, H_[1, :, 0])
             b0[1] -= (2.*a/nu/(a[rk]+b[rk]))*w00
             b0[1] -= (2.*b/nu/(a[rk]+b[rk]))*b0[0]
-            u00 = solver0[rk](u00, b0[1])
+            u00 = solver0[rk](b0[1], u00)
             u[1, :, 0] = u00
             b0[0] = w00
         return u

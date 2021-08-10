@@ -1035,11 +1035,6 @@ class SpectralBase:
         SpectralBase
             Space not planned for a :class:`.TensorProductSpace`
 
-        Note
-        ----
-        Default is to return a basic space not intended for dealiasing.
-        So the `planning_factor` is set to 1 and `dealias_direct` is
-        False. This can be overruled by keyword arguments.
         """
         d = dict(quad=self.quad,
                  domain=self.domain,
@@ -1049,6 +1044,33 @@ class SpectralBase:
                  coordinates=self.coors.coordinates)
         if hasattr(self.bc, 'bc'):
             d['bc'] = tuple(self.bc.bc)
+        if hasattr(self, '_scaled'):
+            d['scaled'] = self._scaled
+        for key in ('alpha', 'beta', 'mean'):
+            if hasattr(self, key):
+                d[key] = object.__getattribute__(self, key)
+        d.update(kwargs)
+        return self.__class__(self.N, **d)
+
+    def get_homogeneous(self, **kwargs):
+        """Return space (otherwise as self) with homogeneous boundary conditions
+
+        Parameters
+        ----------
+        kwargs : keyword arguments
+            Any keyword arguments used in the creation of the bases.
+
+        Returns
+        -------
+        SpectralBase
+            A new space with homogeneous boundary conditions, otherwise as self.
+        """
+        d = dict(quad=self.quad,
+                 domain=self.domain,
+                 dtype=self.dtype,
+                 padding_factor=self.padding_factor,
+                 dealias_direct=self.dealias_direct,
+                 coordinates=self.coors.coordinates)
         if hasattr(self, '_scaled'):
             d['scaled'] = self._scaled
         for key in ('alpha', 'beta', 'mean'):

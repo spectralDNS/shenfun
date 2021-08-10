@@ -689,8 +689,8 @@ def BlockMatrices(tpmats):
 
     Parameters
     ----------
-    tpmats : sequence of :class:`.TPMatrix`'es
-        There should be both boundary matrices from inhomogeneous Dirichlet
+    tpmats : sequence of :class:`.TPMatrix`'es or single :class:`.BlockMatrix`
+        There can be both boundary matrices from inhomogeneous Dirichlet
         or Neumann conditions, as well as regular matrices.
 
     Note
@@ -698,6 +698,8 @@ def BlockMatrices(tpmats):
     Use :class:`.BlockMatrix` directly if you do not have any inhomogeneous
     boundary conditions.
     """
+    if isinstance(tpmats, BlockMatrix):
+        tpmats = tpmats.get_mats()
     bc_mats = extract_bc_matrices([tpmats])
     assert len(bc_mats) > 0, 'No boundary matrices - use BlockMatrix'
     return BlockMatrix(tpmats), BlockMatrix(bc_mats)
@@ -712,11 +714,8 @@ class BlockMatrix:
 
     Note
     ----
-    The tensor product matrices must be either boundary
-    matrices or regular matrices, not both. If your problem contains
-    inhomogeneous boundary conditions, then create two BlockMatrices,
-    one for the implicit terms and one for the boundary terms. To this
-    end you can use :class:`.BlockMatrices`.
+    The tensor product matrices may be either boundary
+    matrices, regular matrices, or a mixture of both.
 
     Example
     -------
@@ -783,11 +782,11 @@ class BlockMatrix:
     """
     def __init__(self, tpmats):
         assert isinstance(tpmats, (list, tuple))
-
         tpmats = [tpmats] if not isinstance(tpmats[0], (list, tuple)) else tpmats
         self.mixedbase = mixedbase = tpmats[0][0].mixedbase
         self.dims = dims = mixedbase.num_components()
         self.mats = np.zeros((dims, dims), dtype=int).tolist()
+        self.solver = None
         tps = mixedbase.flatten() if hasattr(mixedbase, 'flatten') else [mixedbase]
         offset = [np.zeros(tps[0].dimensions, dtype=int)]
         for i, tp in enumerate(tps):
@@ -883,9 +882,24 @@ class BlockMatrix:
     def get_offset(self, i, axis=0):
         return self.offset[i][axis]
 
-    def is_bc_matrix(self):
-        m = self.get_mats(True)
-        return m.is_bc_matrix()
+    def contains_bc_matrix(self):
+        """Return True if self contains a boundary TPMatrix"""
+        for mi in self.mats:
+            for mij in mi:
+                if isinstance(mij, (list, tuple)):
+                    for m in mij:
+                        if m.is_bc_matrix() is True:
+                            return True
+        return False
+
+    def contains_regular_matrix(self):
+        for mi in self.mats:
+            for mij in mi:
+                if isinstance(mij, (list, tuple)):
+                    for m in mij:
+                        if m.is_bc_matrix() is False:
+                            return True
+        return False
 
     def diags(self, it=(0,), format='csr'):
         """Return global block matrix in scipy sparse format
@@ -904,6 +918,8 @@ class BlockMatrix:
 
         """
         from .spectralbase import MixedFunctionSpace
+        if self.contains_bc_matrix() and self.contains_regular_matrix():
+            raise RuntimeError('diags only works for pure boundary or pure regular matrices. Consider splitting this BlockMatrix using :func:`.BlockMatrices`')
         bm = []
         for mi in self.mats:
             bm.append([])
@@ -973,7 +989,10 @@ class BlockMatrix:
 
         """
         from .la import BlockMatrixSolver
-        sol = BlockMatrixSolver(self)
+        sol = self.solver
+        if self.solve is None:
+            sol = BlockMatrixSolver(self)
+            self.solver = sol
         u = sol(b, u, constraints)
         return u
 

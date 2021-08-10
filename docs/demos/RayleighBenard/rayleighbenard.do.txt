@@ -450,7 +450,7 @@ The right hand side depends on the solution on the previous stage, and the
 convection on two previous stages. The linear part (first term on right hand side of (ref{eq:rk3stages}))
 can be assembled as
 
-!bc pycod
+!bc pycod-t
 inner(div(grad(u_[0])) + ((a[rk]+b[rk])*nu*dt/2.)*div(grad(div(grad(u_[0])))), v)
 !ec
 
@@ -550,7 +550,7 @@ def compute_v(u, rk):
         w00 = inner(v0, H_[1, :, 0])
         b0[1] -= (2.*a/nu/(a[rk]+b[rk]))*w00
         b0[1] -= (2.*b/nu/(a[rk]+b[rk]))*b0[0]
-        u00 = solver0[rk](u00, b0[1])
+        u00 = solver0[rk](b0[1], u00)
         u[1, :, 0] = u00
         b0[0] = w00
     return u
