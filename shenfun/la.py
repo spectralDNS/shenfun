@@ -1009,7 +1009,7 @@ class BlockMatrixSolver:
         if space.dimensions == 1:
             s = [0, 0]
             if self._lu is None:
-                Ai = B.diags((0,), format='csc')
+                Ai = B.diags((0,), format='csr').tocsc()
                 lu = self._lu = sp.linalg.splu(Ai)
             else:
                 lu = self._lu
@@ -1037,7 +1037,7 @@ class BlockMatrixSolver:
                     start += tp[k].dim()
 
                 if self._lu is None:
-                    Ai = B.diags(format='csc')
+                    Ai = B.diags(format='csr').tocsc()
                     for con in constraints:
                         dim = 0
                         for i in range(con[0]):
@@ -1081,7 +1081,7 @@ class BlockMatrixSolver:
                         for con in constraints:
                             _, gi = self.apply_constraint(None, gi, B.offset[con[0]][axis], i, con)
                     else:
-                        Ai = B.diags(d0, format='csc')
+                        Ai = B.diags(d0, format='csr').tocsc()
                         for con in constraints:
                             Ai, gi = self.apply_constraint(Ai, gi, B.offset[con[0]][axis], i, con)
                         lu = sp.linalg.splu(Ai)

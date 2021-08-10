@@ -21,9 +21,6 @@ To remove all nullspaces (inf-sup) we use only N-2 basis functions for the press
 N for each velocity component in each spatial direction.
 
 """
-import os
-import sys
-import time
 import functools
 import numpy as np
 import matplotlib.pyplot as plt
@@ -131,7 +128,7 @@ if __name__ == '__main__':
          'modplot': 20,
          'family': 'C',
          'Re': 100
-         }
+        }
     sol = NavierStokesIRK3(**d)
     sol.solve(sol.up_, sol.up_hat, sol.dt, (0, 40))
 

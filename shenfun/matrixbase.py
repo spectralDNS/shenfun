@@ -990,7 +990,7 @@ class BlockMatrix:
         """
         from .la import BlockMatrixSolver
         sol = self.solver
-        if self.solve is None:
+        if self.solver is None:
             sol = BlockMatrixSolver(self)
             self.solver = sol
         u = sol(b, u, constraints)
