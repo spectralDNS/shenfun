@@ -46,7 +46,7 @@ f_hat = Function(T)
 f_hat = inner(v, -fj, output_array=f_hat)
 
 # Get left hand side of Poisson equation
-matrices = inner(grad(v), grad(u), level=2)
+matrices = inner(grad(v), grad(u))
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space

@@ -4,7 +4,8 @@ import numpy as np
 import scipy.linalg as scipy_la
 from shenfun.optimization import optimizer
 from shenfun.optimization.cython import la
-from shenfun.matrixbase import TPMatrix, SpectralMatrix, extract_bc_matrices
+from shenfun.matrixbase import TPMatrix, SpectralMatrix, extract_bc_matrices,\
+    get_simplified_tpmatrices
 
 
 class Helmholtz:
@@ -102,6 +103,8 @@ class Helmholtz:
     def __init__(self, *args, **kwargs):
         args = list(args)
         self.bc_mats = []
+        if isinstance(args[-1], TPMatrix):
+            args = get_simplified_tpmatrices(args)
         if isinstance(args[-1], (TPMatrix, SpectralMatrix)):
             bc_mats = extract_bc_matrices([args])
             self.tpmats = args
@@ -323,6 +326,8 @@ class Biharmonic:
 
         args = list(args)
         self.bc_mats = []
+        if isinstance(args[-1], TPMatrix):
+            args = get_simplified_tpmatrices(args)
         if isinstance(args[-1], (TPMatrix, SpectralMatrix)):
             bc_mats = extract_bc_matrices([args])
             self.tpmats = args
@@ -437,20 +442,20 @@ class Helmholtz_2dirichlet:
         # Extract A and B
         scale = {}
         for tmp in matrices:
-            pmat = tmp.pmat
-            if pmat[0].get_key() == 'BSDSDmat' and pmat[1].get_key() == 'BSDSDmat':
-                B = pmat[0]
-                B1 = pmat[1]
+            mats = tmp.mats
+            if mats[0].get_key() == 'BSDSDmat' and mats[1].get_key() == 'BSDSDmat':
+                B = mats[0]
+                B1 = mats[1]
                 scale['BUB'] = tmp.scale
                 self.BB = tmp
 
-            elif pmat[0].get_key() == 'ASDSDmat' and pmat[1].get_key() == 'BSDSDmat':
-                A = pmat[0]
+            elif mats[0].get_key() == 'ASDSDmat' and mats[1].get_key() == 'BSDSDmat':
+                A = mats[0]
                 scale['AUB'] = tmp.scale
                 self.AB = tmp
 
             else:
-                A1 = pmat[1]
+                A1 = mats[1]
                 scale['BUA'] = tmp.scale
                 self.BA = tmp
 

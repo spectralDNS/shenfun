@@ -174,12 +174,12 @@ def test_tensor2():
 
 if __name__ == '__main__':
     # test_mul(u2)
-    # test_imul(u2)
+    #test_imul(u2)
     # test_add(u2)
     # test_iadd(u2)
     # test_sub(u2)
     # test_isub(u2)
     # test_neg(u2)
     # test_index(vf)
-    #test_inner()
-    test_tensor2()
+    test_inner()
+    #test_tensor2()

@@ -24,10 +24,10 @@ class BHHmat(SpectralMatrix):
     and :math:`H_k` is the Hermite (function) basis function.
 
     """
-    def __init__(self, test, trial, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], H)
         assert isinstance(trial[0], H)
-        SpectralMatrix.__init__(self, {0:1}, test, trial)
+        SpectralMatrix.__init__(self, {0:1}, test, trial, scale=scale, measure=measure)
 
     def solve(self, b, u=None, axis=0, constraints=()):
         if u is not None:
@@ -64,7 +64,7 @@ class AHHmat(SpectralMatrix):
     and :math:`H_k` is the Hermite (function) basis function.
 
     """
-    def __init__(self, test, trial, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], H)
         assert isinstance(trial[0], H)
         N = test[0].N
@@ -73,7 +73,7 @@ class AHHmat(SpectralMatrix):
              2: -np.sqrt((k[:-2]+1)*(k[:-2]+2))/2}
         d[0][-1] = (N-1)/2.
         d[-2] = d[2]
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
     def get_solver(self):
         return TDMA
@@ -113,8 +113,8 @@ class AHHmat(SpectralMatrix):
 
 
 class _Hermatrix(SpectralMatrix):
-    def __init__(self, test, trial, measure=1):
-        SpectralMatrix.__init__(self, {}, test, trial, measure=measure)
+    def __init__(self, test, trial, scale=1, measure=1):
+        SpectralMatrix.__init__(self, {}, test, trial, scale=scale, measure=measure)
 
 
 class _HerMatDict(dict):

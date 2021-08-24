@@ -28,7 +28,7 @@ class Acos2mat(SpectralMatrix):
     where weight w = \cos^2 x
 
     """
-    def __init__(self, test, trial, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         k = test[0].wavenumbers(bcast=False, scaled=False, eliminate_highest_freq=False)
         N = test[0].N
         d = {0: -0.5*k**2,
@@ -36,7 +36,7 @@ class Acos2mat(SpectralMatrix):
              -2: -0.25*k[:-2]**2,
              N-2: -0.25*k[-2:]**2,
              -(N-2): -0.25*k[:2]**2}
-        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
 class Acosmat(SpectralMatrix):
@@ -49,13 +49,13 @@ class Acosmat(SpectralMatrix):
     where weight w = \cos x
 
     """
-    def __init__(self, test, trial, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         k = test[0].wavenumbers(bcast=False, scaled=False, eliminate_highest_freq=False)
         N = test[0].N
         d = {1: -0.5*k[1:]**2,
              -1: -0.5*k[:-1]**2,
              N-1: -0.5*k[-1]**2}
-        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
 class Csinmat(SpectralMatrix):
@@ -68,13 +68,13 @@ class Csinmat(SpectralMatrix):
     where weight w = \sin x
 
     """
-    def __init__(self, test, trial, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         k = test[0].wavenumbers(bcast=False, scaled=False, eliminate_highest_freq=False)
         N = test[0].N
         d = {1: -0.5*k[1:],
              -1: 0.5*k[:-1],
              N-1: -0.5}
-        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
 class Csincosmat(SpectralMatrix):
@@ -87,14 +87,14 @@ class Csincosmat(SpectralMatrix):
     where weight w = \sin x
 
     """
-    def __init__(self, test, trial, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         k = test[0].wavenumbers(bcast=False, scaled=False, eliminate_highest_freq=False)
         N = test[0].N
         d = {2: -0.25*k[2:],
              -2: 0.25*k[:-2],
              N-2: 0.25*k[-2:],
              -(N-2): -0.25*k[:2]}
-        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
 class Bcos2mat(SpectralMatrix):
@@ -107,14 +107,14 @@ class Bcos2mat(SpectralMatrix):
     where weight w = \cos^2 x
 
     """
-    def __init__(self, test, trial, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         N = test[0].N
         d = {0: 0.5,
              2: 0.25,
              -2: 0.25,
              N-2: 0.25,
              -(N-2): 0.25}
-        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
 class Bcosmat(SpectralMatrix):
@@ -127,18 +127,18 @@ class Bcosmat(SpectralMatrix):
     where weight w = \cos x
 
     """
-    def __init__(self, test, trial, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         k = test[0].wavenumbers(bcast=False, scaled=False, eliminate_highest_freq=False)
         N = test[0].N
         d = {1: 0.5,
              -1: 0.5,
              N-1: 0.5,
              -(N-1): 0.5}
-        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
 class _Fouriermatrix(SpectralMatrix):
-    def __init__(self, test, trial, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         N = test[0].N
         d = {}
         if measure == 1:
@@ -162,7 +162,7 @@ class _Fouriermatrix(SpectralMatrix):
                 d = {0: val}
             else:
                 d = {0: 1.0}
-        SpectralMatrix.__init__(self, d, test, trial, measure=measure)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
     def solve(self, b, u=None, axis=0, constraints=()):
         if self.measure == 1:

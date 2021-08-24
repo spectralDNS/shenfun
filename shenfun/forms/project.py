@@ -143,10 +143,10 @@ def project(uh, T, output_array=None, fill=True, use_to_ortho=True, use_assign=T
             transAB = pencilA.transfer(pencilB, output_array.dtype.char)
             output_arrayB = np.zeros(transAB.subshapeB, dtype=output_array.dtype)
             output_arrayB2 = np.zeros(transAB.subshapeB, dtype=output_array.dtype)
-            b = B[0].pmat[axis]
+            b = B[0].mats[axis]
             output_array = b.solve(output_array, output_array, axis=axis)
             transAB.forward(output_array, output_arrayB)
-            b = B[0].pmat[second_axis]
+            b = B[0].mats[second_axis]
             output_arrayB2 = b.solve(output_arrayB, output_arrayB2, axis=second_axis)
             transAB.backward(output_arrayB2, output_array)
             return output_array

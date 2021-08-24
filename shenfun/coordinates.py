@@ -130,6 +130,14 @@ class Coordinates:
                 b[i, j] = rj.diff(ti, 1)
                 b[i, j] = sp.simplify(b[i, j], measure=self._measure)
                 b[i, j] = self.refine(b[i, j])
+
+        #if len(self.psi) == 2 and len(self.rv) == 3:
+        #    b[-1] = np.cross(b[0], b[1])
+        #    bl = self.refine(sp.sqrt(sp.simplify(np.dot(b[-1], b[-1]))))
+        #    b[-1] = b[-1] / bl
+        #    for j in range(len(self.rv)):
+        #        b[-1, j] = sp.simplify(b[-1, j], measure=self._measure)
+        #        b[-1, j] = self.refine(b[-1, j])
         self._b = b
         return b
 

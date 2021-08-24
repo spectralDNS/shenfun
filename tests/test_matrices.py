@@ -585,6 +585,7 @@ def test_helmholtz3D(family, axis):
 
     g0 = Function(T)
     g1 = Function(T)
+    mat = H.tpmats
     M = {d.get_key(): d for d in mat}
     g0 = M['ASDSDmat'].matvec(u, g0)
     g1 = M['BSDSDmat'].matvec(u, g1)
@@ -624,6 +625,7 @@ def test_helmholtz2D(family, axis):
 
     g0 = Function(T)
     g1 = Function(T)
+    mat = H.tpmats
     M = {d.get_key(): d for d in mat}
     g0 = M['ASDSDmat'].matvec(u, g0)
     g1 = M['BSDSDmat'].matvec(u, g1)
@@ -665,6 +667,7 @@ def test_biharmonic3D(family, axis):
     g0 = Function(T)
     g1 = Function(T)
     g2 = Function(T)
+    mat = H.tpmats
     M = {d.get_key(): d for d in mat}
     g0 = M['SSBSBmat'].matvec(u, g0)
     g1 = M['ASBSBmat'].matvec(u, g1)
@@ -701,6 +704,7 @@ def test_biharmonic2D(family, axis):
     g0 = Function(T)
     g1 = Function(T)
     g2 = Function(T)
+    mat = H.tpmats
     M = {d.get_key(): d for d in mat}
     g0 = M['SSBSBmat'].matvec(u, g0)
     g1 = M['ASBSBmat'].matvec(u, g1)
@@ -724,8 +728,8 @@ if __name__ == '__main__':
     #test_add(*mats_and_quads[15])
     #test_sub(*mats_and_quads[15])
     #test_mul2()
-    test_div2(cBasis[1], 'GC')
+    #test_div2(cBasis[1], 'GC')
     #test_helmholtz2D('chebyshev', 1)
-    #test_helmholtz3D('chebyshev', 0)
+    test_helmholtz3D('chebyshev', 0)
     #test_biharmonic3D('chebyshev', 0)
     #test_biharmonic2D('jacobi', 0)

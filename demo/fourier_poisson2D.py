@@ -15,7 +15,7 @@ import os
 from sympy import symbols, cos, sin, lambdify
 import numpy as np
 from shenfun import inner, grad, TestFunction, TrialFunction, Array, FunctionSpace, \
-    TensorProductSpace, Function, dx, comm
+    TensorProductSpace, Function, dx, comm, la
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y = symbols("x,y", real=True)
@@ -42,7 +42,8 @@ f_hat = inner(v, fj, output_array=f_hat)
 u_hat = Function(T)
 #A = inner(v, div(grad(u)))
 A = inner(grad(v), grad(u))
-u_hat = A.solve(-f_hat, u_hat)
+sol = la.Solver2D(A)
+u_hat = sol(-f_hat, u_hat, constraints=((0, 0),))
 
 uq = Array(T)
 uq = T.backward(u_hat, uq, fast_transform=True)

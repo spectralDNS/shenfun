@@ -116,7 +116,7 @@ class NavierStokesIRK3(IRK3):
     def update(self, up, up_hat, t, tstep, **par):
         if tstep % self.modplot == 0:
             up = up_hat.backward(up)
-            u_, p_ = up
+            u_ = up[0]
             plt.figure(1)
             X = self.T.local_mesh(True)
             plt.quiver(X[0], X[1], u_[0], u_[1])

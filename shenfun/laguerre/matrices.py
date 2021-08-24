@@ -23,10 +23,10 @@ class BLLmat(SpectralMatrix):
     and :math:`L_k` is the Laguerre function.
 
     """
-    def __init__(self, test, trial, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], L)
         assert isinstance(trial[0], L)
-        SpectralMatrix.__init__(self, {0:1}, test, trial)
+        SpectralMatrix.__init__(self, {0:1}, test, trial, scale=scale, measure=measure)
 
     def solve(self, b, u=None, axis=0, constraints=()):
         if u is not None:
@@ -60,11 +60,11 @@ class BSDSDmat(SpectralMatrix):
     and :math:`\phi_k` is the Laguerre (function) Dirichlet basis function.
 
     """
-    def __init__(self, test, trial, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         d = {0:2., 1: -1., -1:-1.}
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
     def get_solver(self):
         return TDMA_O
@@ -86,13 +86,13 @@ class ASDSDmat(SpectralMatrix):
     and :math:`\phi_k` is the Laguerre (function) Dirichlet basis function.
 
     """
-    def __init__(self, test, trial, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         d = {0: 0.5,
              1: 0.25,
              -1: 0.25}
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
     def get_solver(self):
         return TDMA_O

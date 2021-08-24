@@ -270,8 +270,8 @@ leading to sparse tensor product matrices.
 
 !bc pycod
 T.coors.subs(R, RR)
-M = inner(v*T.coors.sg**3, -div(grad(u)), level=2)
-B = inner(v*T.coors.sg**3, u, level=2)
+M = inner(v*T.coors.sg**3, -div(grad(u)))
+B = inner(v*T.coors.sg**3, u)
 !ec
 
 Here `M` and `B` are lists of instances of the tensor product

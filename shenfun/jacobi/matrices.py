@@ -27,7 +27,7 @@ class BJJmat(SpectralMatrix):
     and :math:`\psi_k` is the Jacobi basis function.
 
     """
-    def __init__(self, test, trial, scale=1., measure=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], J)
         assert isinstance(trial[0], J)
         N = test[0].N
@@ -45,7 +45,7 @@ class BJJmat(SpectralMatrix):
         else:
             f = 2**(a+b+1)*gamma(k+a+1)*gamma(k+b+1)/(2*k+a+b+1)/gamma(k+1)/gamma(k+a+b+1)
         d = {0: f}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
     def solve(self, b, u=None, axis=0, constraints=()):
         N = self.shape[0]
@@ -95,7 +95,7 @@ class BSDSDmat(SpectralMatrix):
     and :math:`\psi_k` is the Jacobi Dirichlet basis function.
 
     """
-    def __init__(self, test, trial, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         N = test[0].N
@@ -104,7 +104,7 @@ class BSDSDmat(SpectralMatrix):
               0: 4*(k+1)**2/(2*k+3)**2*(2./(2.*k+1) + 2./(2*k+5))}
 
         d[2] = d[-2]
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
     def get_solver(self):
         return TDMA
@@ -125,13 +125,13 @@ class ASDSDmat(SpectralMatrix):
     and :math:`\psi_k` is the Jacobi Dirichlet basis function.
 
     """
-    def __init__(self, test, trial, scale=1., measure=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         N = test[0].N
         k = np.arange(N-2, dtype=float)
         d = {0: 4*(4*k+6)*(k+1)**2/(2*k+3)**2}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
     def solve(self, b, u=None, axis=0, constraints=()):
         N = self.shape[0] + 2
@@ -182,7 +182,7 @@ class BSBSBmat(SpectralMatrix):
     and :math:`\psi_k` is the Biharmonic basis function.
 
     """
-    def __init__(self, test, trial, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
@@ -200,7 +200,7 @@ class BSBSBmat(SpectralMatrix):
              4: p4*(gk[:-8]*ek[4:-4])}
         d[-2] = d[2]
         d[-4] = d[4]
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
     def get_solver(self):
         return PDMA
@@ -234,7 +234,7 @@ class ASBSBmat(SpectralMatrix):
         d = {0: p0*2*(2*k+3)*(1+gk),
              2: p2*(-2*(2*k[:-2]+3))}
         d[-2] = d[2]
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
 class SSBSBmat(SpectralMatrix):
@@ -259,7 +259,7 @@ class SSBSBmat(SpectralMatrix):
         N = test[0].N
         k = np.arange(N-4, dtype=float)
         d = {0: 32*(k+2)**2*(k+1)**2/(2*k+5)}
-        SpectralMatrix.__init__(self, d, test, trial, scale=scale)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
 class OSBSBmat(SpectralMatrix):
@@ -278,19 +278,19 @@ class OSBSBmat(SpectralMatrix):
     and :math:`\psi_k` is the 6th order Jacobi basis function.
 
     """
-    def __init__(self, test, trial, measure=1):
+    def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], SB)
         N = test[0].N
         k = np.arange(N-6, dtype=float)
         #FIXME Find the correct diagonal
         d = {0: 32*(k+2)**2*(k+1)**2/(2*k+5)}
-        SpectralMatrix.__init__(self, d, test, trial)
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
 class _Jacmatrix(SpectralMatrix):
-    def __init__(self, test, trial, measure=1):
-        SpectralMatrix.__init__(self, {}, test, trial, measure=measure)
+    def __init__(self, test, trial, scale=1, measure=1):
+        SpectralMatrix.__init__(self, {}, test, trial, scale=scale, measure=measure)
 
 
 class _JacMatDict(dict):
@@ -315,13 +315,13 @@ mat = _JacMatDict({
     ((J,  0), (J,  0)): BJJmat,
     ((SD, 0), (SD, 0)): BSDSDmat,
     ((SD, 1), (SD, 1)): ASDSDmat,
-    ((SD, 0), (SD, 2)): functools.partial(ASDSDmat, scale=-1.),
-    ((SD, 2), (SD, 0)): functools.partial(ASDSDmat, scale=-1.),
+    ((SD, 0), (SD, 2)): functools.partial(ASDSDmat, scale=-1),
+    ((SD, 2), (SD, 0)): functools.partial(ASDSDmat, scale=-1),
     ((SB, 0), (SB, 0)): BSBSBmat,
     ((SB, 2), (SB, 2)): SSBSBmat,
     ((SB, 0), (SB, 4)): SSBSBmat,
     ((SB, 4), (SB, 0)): SSBSBmat,
     ((SB, 1), (SB, 1)): ASBSBmat,
-    ((SB, 0), (SB, 2)): functools.partial(ASBSBmat, scale=-1.),
-    ((SB, 2), (SB, 0)): functools.partial(ASBSBmat, scale=-1.),
+    ((SB, 0), (SB, 2)): functools.partial(ASBSBmat, scale=-1),
+    ((SB, 2), (SB, 0)): functools.partial(ASBSBmat, scale=-1),
 })

@@ -54,7 +54,7 @@ f_hat = inner(v, fj)
 matrices = inner(v, -div(grad(u)))
 
 # Create Helmholtz linear algebra solver
-H = Solver(*matrices)
+#H = Solver(*matrices)
 sol = la.SolverGeneric1ND(matrices)
 
 # Solve and transform to real space
@@ -67,9 +67,6 @@ uq = T.backward(u_hat).copy()
 uj = Array(T, buffer=ue)
 print(abs(uj-uq).max())
 assert np.allclose(uj, uq)
-c = H.matvec(u_hat, Function(T))
-f_hat = inner(v, fj)
-assert np.allclose(c, f_hat)
 
 if 'pytest' not in os.environ:
     import matplotlib.pyplot as plt

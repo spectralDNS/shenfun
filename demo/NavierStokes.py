@@ -27,6 +27,7 @@ curl_hat = Function(TV)
 W = Array(TV)
 curl_ = Array(TV)
 A = inner(grad(u), grad(v))
+A = get_simplified_tpmatrices(A)[0]
 
 def LinearRHS(self, u, **params):
     return nu*div(grad(u))

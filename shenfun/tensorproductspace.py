@@ -1006,7 +1006,7 @@ class TensorProductSpace(PFFT):
         for axis, base in enumerate(self):
             if not base.family() == 'fourier':
                 axes.append(axis)
-            if base.family() == 'fourier' and (axis in msaxes):
+            if base.family() == 'fourier' and (axis in msaxes) and base.N > 1:
                 axes.append(axis)
         return axes
 

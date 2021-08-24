@@ -458,8 +458,6 @@ class Expr:
         if indices is None:
             self._indices = (basis.offset()+np.arange(self.function_space().num_components())[:, np.newaxis]).tolist()
 
-        #assert np.prod(self._scales.shape) == self.num_terms()*self.num_components()
-
     def basis(self):
         """Return basis of Expr"""
         return self._basis
@@ -758,51 +756,28 @@ class Expr:
             raise NotImplementedError
 
     def __mul__(self, a):
-        sc = np.array(self.scales())
-        if self.expr_rank() == 0:
-            sc = sc*sp.sympify(a)
-
-        else:
-            if isinstance(a, tuple):
-                assert len(a) == self.num_components()
-                for i in range(self.num_components()):
-                    sc[i] = sc[i]*sp.sympify(a[i])
-
-            else:
-                sc = sc*sp.sympify(a)
-
-        for i in range(sc.shape[0]):
-            for j in range(sc.shape[1]):
-                sc[i, j] = self.function_space().coors.refine(sc[i, j])
-                sc[i, j] = sp.simplify(sc[i, j], measure=self.function_space().coors._measure)
-
-        return Expr(self._basis, copy.deepcopy(self._terms), sc.tolist(), copy.deepcopy(self._indices))
+        sc = copy.deepcopy(self.scales())
+        coors = self.function_space().coors
+        for i, vec in enumerate(sc):
+            ai = a[i] if isinstance(a, tuple) else a
+            ai = sp.sympify(ai)
+            for j in range(len(vec)):
+                vec[j] = coors.refine(vec[j]*ai)
+                vec[j] = sp.simplify(vec[j], measure=self.function_space().coors._measure)
+        return Expr(self._basis, copy.deepcopy(self._terms), sc, copy.deepcopy(self._indices))
 
     def __rmul__(self, a):
         return self.__mul__(a)
 
     def __imul__(self, a):
-        sc = np.array(self.scales())
-        if self.expr_rank() == 0:
-            sc = sc*sp.sympify(a)
-
-        else:
-            if isinstance(a, tuple):
-                assert len(a) == self.dimensions
-                for i in range(self.dimensions):
-                    sc[i] = sc[i]*sp.sympify(a[i])
-
-            else:
-                sc = sc*sp.sympify(a)
-
+        sc = self.scales()
         coors = self.function_space().coors
-        for i in range(sc.shape[0]):
-            for j in range(sc.shape[1]):
-                sc[i, j] = coors.refine(sc[i, j])
-                sc[i, j] = sp.simplify(sc[i, j], measure=coors._measure)
-
-        self._scales = sc.tolist()
-
+        for i, vec in enumerate(sc):
+            ai = a[i] if isinstance(a, tuple) else a
+            ai = sp.sympify(ai)
+            for j in range(len(vec)):
+                vec[j] = coors.refine(vec[j])
+                vec[j] = sp.simplify(vec[j]*ai, measure=coors._measure)
         return self
 
     def __add__(self, a):
@@ -970,18 +945,15 @@ class BasisFunction:
         :class:`.SpectralBase`
     index : int
         Local component of basis in :class:`.CompositeSpace`
-    basespace : The base :class:`.CompositeSpace` if space is a
-        subspace.
     offset : int
         The number of scalar spaces (i.e., :class:`.TensorProductSpace`es)
         ahead of this space
     base : The base :class:`BasisFunction`
     """
 
-    def __init__(self, space, index=0, basespace=None, offset=0, base=None):
+    def __init__(self, space, index=0, offset=0, base=None):
         self._space = space
         self._index = index
-        self._basespace = basespace
         self._offset = offset
         self._base = base
 
@@ -997,11 +969,6 @@ class BasisFunction:
     def function_space(self):
         """Return function space of BasisFunction"""
         return self._space
-
-    @property
-    def basespace(self):
-        """Return base space"""
-        return self._basespace if self._basespace is not None else self._space
 
     @property
     def base(self):
@@ -1036,13 +1003,12 @@ class BasisFunction:
 
     def __getitem__(self, i):
         assert self.function_space().is_composite_space
-        basespace = self.basespace
         base = self.base
         space = self._space[i]
         offset = self._offset
         for k in range(i):
             offset += self._space[k].num_components()
-        t0 = self.__class__(space, 0, basespace, offset, base)
+        t0 = self.__class__(space, 0, offset, base)
         return t0
 
     def __mul__(self, a):
@@ -1080,16 +1046,14 @@ class TestFunction(BasisFunction):
     space: :class:`TensorProductSpace` or :class:`CompositeSpace`
     index: int, optional
         Component of basis in :class:`.CompositeSpace`
-    basespace : The base :class:`.CompositeSpace` if space is a
-        subspace.
     offset : int
         The number of scalar spaces (i.e., :class:`.TensorProductSpace`es)
         ahead of this space
     base : The base :class:`TestFunction`
     """
 
-    def __init__(self, space, index=0, basespace=None, offset=0, base=None):
-        BasisFunction.__init__(self, space, index, basespace, offset, base)
+    def __init__(self, space, index=0, offset=0, base=None):
+        BasisFunction.__init__(self, space, index, offset, base)
 
     @property
     def argument(self):
@@ -1103,15 +1067,13 @@ class TrialFunction(BasisFunction):
     space: :class:`TensorProductSpace` or :class:`CompositeSpace`
     index: int, optional
         Component of basis in :class:`.CompositeSpace`
-    basespace : The base :class:`.CompositeSpace` if space is a
-        subspace.
     offset : int
         The number of scalar spaces (i.e., :class:`.TensorProductSpace`es)
         ahead of this space
     base : The base :class:`TrialFunction`
     """
-    def __init__(self, space, index=0, basespace=None, offset=0, base=None):
-        BasisFunction.__init__(self, space, index, basespace, offset, base)
+    def __init__(self, space, index=0, offset=0, base=None):
+        BasisFunction.__init__(self, space, index, offset, base)
 
     @property
     def argument(self):
@@ -1197,7 +1159,7 @@ class ShenfunBaseArray(DistArray):
             assert len(buffer) == len(space.flatten())
             sympy_buffer = buffer
             buffer = Array(space)
-            dtype = space.forward.input_array.dtype
+            adtype = space.forward.input_array.dtype
             if cls.__name__ == 'Function':
                 buff = Function(space)
             mesh = space.local_mesh(True)
@@ -1210,7 +1172,7 @@ class ShenfunBaseArray(DistArray):
                     for sym in sym0:
                         j = 'xyzrs'.index(str(sym))
                         m.append(mesh[j])
-                    buffer.v[i] = sp.lambdify(sym0, buf0, modules=['numpy', {'airyai': airyai, 'cot': cot, 'Ynm': Ynm, 'erf': erf}])(*m).astype(dtype)
+                    buffer.v[i] = sp.lambdify(sym0, buf0, modules=['numpy', {'airyai': airyai, 'cot': cot, 'Ynm': Ynm, 'erf': erf}])(*m).astype(adtype)
                 else:
                     raise NotImplementedError
 

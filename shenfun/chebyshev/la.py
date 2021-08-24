@@ -5,7 +5,8 @@ import numpy as np
 from shenfun.optimization import optimizer
 from shenfun.optimization.cython import la
 from shenfun.la import SparseMatrixSolver
-from shenfun.matrixbase import TPMatrix, SpectralMatrix, extract_bc_matrices, SparseMatrix
+from shenfun.matrixbase import TPMatrix, SpectralMatrix, extract_bc_matrices,\
+    SparseMatrix, get_simplified_tpmatrices
 
 
 class FDMA(SparseMatrixSolver):
@@ -272,17 +273,6 @@ class Helmholtz:
 
         - stiffness matrix, mass matrix, scale stiffness, scale mass
 
-    Attributes
-    ----------
-        axis : int
-            The axis over which to solve for
-        neumann : bool
-            Whether or not bases are Neumann
-        bc : BoundaryValues
-            For Dirichlet problem with inhomogeneous boundary values
-
-    Variables are extracted from the matrices
-
     The solver can be used along any axis of a multidimensional problem. For
     example, if the Chebyshev basis (Dirichlet or Neumann) is the last in a
     3-dimensional TensorProductSpace, where the first two dimensions use Fourier,
@@ -344,6 +334,8 @@ class Helmholtz:
 
         args = list(args)
         self.bc_mats = []
+        if isinstance(args[-1], TPMatrix):
+            args = get_simplified_tpmatrices(args)
         if isinstance(args[-1], (TPMatrix, SpectralMatrix)):
             bc_mats = extract_bc_matrices([args])
             self.tpmats = args
@@ -553,6 +545,8 @@ class Biharmonic:
 
         args = list(args)
         self.bc_mats = []
+        if isinstance(args[-1], TPMatrix):
+            args = get_simplified_tpmatrices(args)
         if isinstance(args[-1], (TPMatrix, SpectralMatrix)):
             bc_mats = extract_bc_matrices([args])
             self.tpmats = args

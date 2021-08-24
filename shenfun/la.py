@@ -8,7 +8,7 @@ from scipy.sparse import spmatrix, kron
 from scipy.sparse.linalg import spsolve, splu
 from shenfun.optimization import optimizer
 from shenfun.matrixbase import SparseMatrix, extract_bc_matrices, \
-    SpectralMatrix, BlockMatrix, TPMatrix
+    SpectralMatrix, BlockMatrix, TPMatrix, get_simplified_tpmatrices
 from shenfun.forms.arguments import Function
 from mpi4py import MPI
 
@@ -529,7 +529,7 @@ class SolverGeneric2ND:
     """
 
     def __init__(self, tpmats):
-        self.tpmats = tpmats
+        self.tpmats = get_simplified_tpmatrices(tpmats)
         self.T = tpmats[0].space
         self.M = None
 
@@ -555,16 +555,9 @@ class SolverGeneric2ND:
             if self.M is not None:
                 return self.M
             m = self.tpmats[0]
-            A0 = m.mats[0].diags('csc')
-            A1 = m.mats[1].diags('csc')
-            M0 = kron(A0, A1, 'csc')
-            M0 *= np.atleast_1d(m.scale).item()
+            M0 = m.diags('csc')
             for m in self.tpmats[1:]:
-                A0 = m.mats[0].diags('csc')
-                A1 = m.mats[1].diags('csc')
-                M1 = kron(A0, A1, 'csc')
-                M1 *= np.atleast_1d(m.scale).item()
-                M0 = M0 + M1
+                M0 = M0 + m.diags('csc')
             # Check if we need to fix gauge. This is required if we are solving
             # a pure Neumann Poisson problem.
             z0 = M0[0].nonzero()
@@ -649,22 +642,10 @@ class Solver2D:
         self._lu = None
         m = tpmats[0]
         self.T = T = m.space
-        ndim = T.dimensions
-        assert ndim == 2
-        assert np.atleast_1d(m.scale).size == 1, "Use level = 2 with :func:`.inner`"
-
-        A0 = m.mats[0].diags('csc')
-        A1 = m.mats[1].diags('csc')
-        M0 = kron(A0, A1, 'csc')
-        M0 *= np.atleast_1d(m.scale).item()
+        assert m._issimplified is False, "Cannot use simplified matrices with this solver"
+        M0 = m.diags(format='csc')
         for m in tpmats[1:]:
-            A0 = m.mats[0].diags('csc')
-            A1 = m.mats[1].diags('csc')
-            M1 = kron(A0, A1, 'csc')
-            assert np.atleast_1d(m.scale).size == 1, "Use level = 2 with :func:`.inner`"
-            M1 *= np.atleast_1d(m.scale).item()
-            M0 = M0 + M1
-
+            M0 = M0 + m.diags('csc')
         self.M = M0
 
     def matvec(self, u, c):
@@ -716,15 +697,12 @@ class Solver2D:
         if self._lu is None:
             self._lu = splu(self.M)
 
-        if b.dtype.char in 'fdg':
+        if b.dtype.char in 'fdg' or self.M.dtype.char in 'FDG':
             u[s0] = self._lu.solve(bs).reshape(self.T.dims())
-        else:
-            if self.M.dtype.char in 'FDG':
-                u[s0] = self._lu.solve(bs).reshape(self.T.dims())
 
-            else:
-                u.imag[s0] = self._lu.solve(bs.imag).reshape(self.T.dims())
-                u.real[s0] = self._lu.solve(bs.real).reshape(self.T.dims())
+        else:
+            u.imag[s0] = self._lu.solve(bs.imag).reshape(self.T.dims())
+            u.real[s0] = self._lu.solve(bs.real).reshape(self.T.dims())
 
         return u
 
@@ -746,31 +724,27 @@ class Solver3D(Solver2D):
     """
 
     def __init__(self, tpmats):
-        bc_mats = extract_bc_matrices([tpmats])
-        self.tpmats = tpmats
-        self.bc_mats = bc_mats
-        self._lu = None
-        m = tpmats[0]
-        self.T = T = m.space # test space
-        ndim = T.dimensions
-        assert ndim == 3
-        assert np.atleast_1d(m.scale).size == 1, "Use level = 2 with :func:`.inner`"
+        Solver2D.__init__(self, tpmats)
 
-        A0 = m.mats[0].diags('csc')
-        A1 = m.mats[1].diags('csc')
-        A2 = m.mats[2].diags('csc')
-        M0 = kron(kron(A0, A1, 'csc'), A2, 'csc')
-        M0 *= np.atleast_1d(m.scale).item()
-        for m in tpmats[1:]:
-            A0 = m.mats[0].diags('csc')
-            A1 = m.mats[1].diags('csc')
-            A2 = m.mats[2].diags('csc')
-            M1 = kron(kron(A0, A1, 'csc'), A2, 'csc')
-            assert np.atleast_1d(m.scale).size == 1, "Use level = 2 with :func:`.inner`"
-            M1 *= np.atleast_1d(m.scale).item()
-            M0 = M0 + M1
+class SolverND(Solver2D):
+    """Generic solver for tensorproductspaces in N dimensions
 
-        self.M = M0
+    Parameters
+    ----------
+    mats : sequence
+        sequence of instances of :class:`.TPMatrix`
+
+    Note
+    ----
+    If there are boundary matrices in the list of mats, then
+    these matrices are used to modify the right hand side before
+    solving. If this is not the desired behaviour, then use
+    :func:`.extract_bc_matrices` on mats before using this class.
+
+    """
+
+    def __init__(self, tpmats):
+        Solver2D.__init__(self, tpmats)
 
 
 class SolverGeneric1ND:
@@ -795,17 +769,13 @@ class SolverGeneric1ND:
 
     def __init__(self, mats):
         assert isinstance(mats, list)
-        naxes = set()
-        for tpmat in mats:
-            if not tpmat._issimplified:
-                tpmat.simplify_diagonal_matrices()
-            naxes.update(tpmat.naxes)
-        assert len(naxes) == 1
-        self.naxes = naxes.pop()
+        mats = get_simplified_tpmatrices(mats)
+        assert len(mats[0].naxes) == 1
+        self.naxes = mats[0].naxes.pop()
         bc_mats = extract_bc_matrices([mats])
         self.mats = mats
         self.bc_mats = bc_mats
-        # For time-dependent solver, store all generated matrices and reuse
+        # For time-dependent solver, store all generated solvers and reuse
         # This takes a lot of memory, so for now it's only implemented for 2D
         self.MM = None
 
@@ -866,7 +836,8 @@ class SolverGeneric1ND:
 
                 else:
                     for i in range(b.shape[1]):
-                        u[:, i] = self.MM[i](b[:, i], u[:, i])
+                        con = constraints if i == 0 else ()
+                        u[:, i] = self.MM[i](b[:, i], u[:, i], constraints=con)
 
             else:
                 if self.MM is None:
@@ -887,7 +858,8 @@ class SolverGeneric1ND:
 
                 else:
                     for i in range(b.shape[0]):
-                        u[i] = self.MM[i](b[i], u[i])
+                        con = constraints if i == 0 else ()
+                        u[i] = self.MM[i](b[i], u[i], constraints=con)
 
         elif u.ndim == 3:
 
@@ -950,6 +922,13 @@ class BlockMatrixSolver:
         self.mat = BlockMatrix(mats)
         if len(bc_mats) > 0:
             self.bc_mat = BlockMatrix(bc_mats)
+        tps = self.mat.testbase.flatten()
+        offset = [np.zeros(tps[0].dimensions, dtype=int)]
+        for i, tp in enumerate(tps):
+            dims = tp.dims()
+            offset.append(np.array(dims + offset[i]))
+        self.offset = offset
+        self.global_shape = self.offset[-1]
 
     @staticmethod
     def apply_constraint(A, b, offset, i, constraint):
@@ -1003,7 +982,7 @@ class BlockMatrixSolver:
             assert isinstance(con[0], Integral)
             assert isinstance(con[1], Integral)
             assert isinstance(con[2], Number)
-        N = B.global_shape[axis]
+        N = self.global_shape[axis]
         gi = np.zeros(N, dtype=b.dtype)
         go = np.zeros(N, dtype=b.dtype)
         if space.dimensions == 1:
@@ -1016,12 +995,12 @@ class BlockMatrixSolver:
             for k in range(nvars):
                 s[0] = k
                 s[1] = tp[k].slice()
-                gi[B.offset[k][axis]:B.offset[k+1][axis]] = b[tuple(s)]
+                gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
             go[:] = lu.solve(gi)
             for k in range(nvars):
                 s[0] = k
                 s[1] = tp[k].slice()
-                u[tuple(s)] = go[B.offset[k][axis]:B.offset[k+1][axis]]
+                u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
 
         elif space.dimensions == 2:
             if len(tpmat.naxes) == 2: # 2 non-periodic axes
@@ -1065,66 +1044,122 @@ class BlockMatrixSolver:
                 if self._lu is None:
                     self._lu = {}
                 s = [0]*3
-                ii, jj = {0:(2, 1), 1:(1, 2)}[axis]
+                # ii is periodic axis
+                ii = {0:2, 1:1}[axis]
                 d0 = [0, 0]
                 for i in range(b.shape[ii]):
-                    s[ii] = i
+                    s[ii] = i # periodic
                     for k in range(nvars):
-                        s[0] = k
-                        s[jj] = tp[k].bases[axis].slice()
-                        gi[B.offset[k][axis]:B.offset[k+1][axis]] = b[tuple(s)]
+                        s[0] = k # vector index
+                        s[axis+1] = tp[k].bases[axis].slice() # non-periodic
+                        gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
                     d0 = list(d0)
                     d0[(axis+1)%2] = i
                     d0 = tuple(d0)
                     if d0 in self._lu:
                         lu = self._lu[d0]
                         for con in constraints:
-                            _, gi = self.apply_constraint(None, gi, B.offset[con[0]][axis], i, con)
+                            _, gi = self.apply_constraint(None, gi, self.offset[con[0]][axis], i, con)
                     else:
                         Ai = B.diags(d0, format='csr').tocsc()
                         for con in constraints:
-                            Ai, gi = self.apply_constraint(Ai, gi, B.offset[con[0]][axis], i, con)
+                            Ai, gi = self.apply_constraint(Ai, gi, self.offset[con[0]][axis], i, con)
                         lu = sp.linalg.splu(Ai)
                         self._lu[d0] = lu
+                    if gi.dtype.char in 'fdg' or lu.U.dtype.char in 'FDG':
+                        go[:] = lu.solve(gi)
+                    else:
+                        go.imag[:] = lu.solve(gi.imag)
+                        go.real[:] = lu.solve(gi.real)
 
-                    go[:] = lu.solve(gi)
                     for k in range(nvars):
                         s[0] = k
-                        s[jj] = tp[k].bases[axis].slice()
-                        u[tuple(s)] = go[B.offset[k][axis]:B.offset[k+1][axis]]
+                        s[axis+1] = tp[k].bases[axis].slice()
+                        u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
 
         elif space.dimensions == 3:
             if self._lu is None:
                 self._lu = {}
             s = [0]*4
-            ii, jj = {0:(2, 3), 1:(1, 3), 2:(1, 2)}[axis]
-            d0 = [0, 0, 0]
-            for i in range(b.shape[ii]):
-                for j in range(b.shape[jj]):
-                    s[ii], s[jj] = i, j
+
+            if len(tpmat.naxes) == 1:
+                ii, jj = {0:(2, 3), 1:(1, 3), 2:(1, 2)}[axis]
+                d0 = [0, 0, 0]
+                for i in range(b.shape[ii]):
+                    for j in range(b.shape[jj]):
+                        s[ii], s[jj] = i, j
+                        for k in range(nvars):
+                            s[0] = k
+                            s[axis+1] = tp[k].bases[axis].slice()
+                            gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
+                        d0 = list(d0)
+                        d0[ii-1], d0[jj-1] = i, j
+                        d0 = tuple(d0)
+                        if d0 in self._lu:
+                            lu = self._lu[d0]
+                            for con in constraints:
+                                _, gi = self.apply_constraint(None, gi, self.offset[con[0]][axis], (i, j), con)
+                        else:
+                            Ai = B.diags(d0, format='csr').tocsc() # Note - bug in scipy (https://github.com/scipy/scipy/issues/14551) such that we cannot use format='csc' directly
+                            for con in constraints:
+                                Ai, gi = self.apply_constraint(Ai, gi, self.offset[con[0]][axis], (i, j), con)
+                            lu = sp.linalg.splu(Ai)
+                            self._lu[d0] = lu
+
+                        go[:] = lu.solve(gi)
+                        for k in range(nvars):
+                            s[0] = k
+                            s[axis+1] = tp[k].bases[axis].slice()
+                            u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
+
+            elif len(tpmat.naxes) == 2:
+                ii = np.setxor1d(tpmat.naxes, range(3))[0]+1 # periodic axis
+                d0 = [0, 0, 0]
+                N = []
+                for tpi in tp:
+                    N.append(np.prod(np.take(tpi.dims(), tpmat.naxes)))
+                gi = np.zeros(np.sum(N), dtype=b.dtype)
+                go = np.zeros(np.sum(N), dtype=b.dtype)
+                for i in range(b.shape[ii]):
+                    s = [0, 0, 0, 0]
+                    start = 0
+                    s[ii] = i
                     for k in range(nvars):
                         s[0] = k
-                        s[axis+1] = tp[k].bases[axis].slice()
-                        gi[B.offset[k][axis]:B.offset[k+1][axis]] = b[tuple(s)]
-                    d0 = list(d0)
-                    d0[ii-1], d0[jj-1] = i, j
-                    d0 = tuple(d0)
-                    if d0 in self._lu:
-                        lu = self._lu[d0]
+                        for n in tpmat.naxes:
+                            s[n+1] = tp[k].bases[n].slice()
+                        gi[start:(start+N[k])] = b[tuple(s)].ravel()
+                        start += N[k]
+
+                    if i not in self._lu:
+                        d0 = list(d0)
+                        d0[ii-1] = i
+                        d0 = tuple(d0)
+                        Ai = B.diags(d0, format='csr').tocsc()
                         for con in constraints:
-                            _, gi = self.apply_constraint(None, gi, B.offset[con[0]][axis], (i, j), con)
+                            dim = 0
+                            for n in range(con[0]):
+                                dim += N[n]
+                            Ai, gi = self.apply_constraint(Ai, gi, dim, i, con)
+                        self._lu[i] = sp.linalg.splu(Ai)
+                        lu = self._lu[i]
                     else:
-                        Ai = B.diags(d0, format='csr').tocsc() # Note - bug in scipy (https://github.com/scipy/scipy/issues/14551) such that we cannot use format='csc' directly
+                        lu = self._lu[i]
                         for con in constraints:
-                            Ai, gi = self.apply_constraint(Ai, gi, B.offset[con[0]][axis], (i, j), con)
-                        lu = sp.linalg.splu(Ai)
-                        self._lu[d0] = lu
+                            dim = 0
+                            for n in range(con[0]):
+                                dim += N[n]
+                            gi[dim] = con[2]
 
                     go[:] = lu.solve(gi)
+                    start = 0
                     for k in range(nvars):
                         s[0] = k
-                        s[axis+1] = tp[k].bases[axis].slice()
-                        u[tuple(s)] = go[B.offset[k][axis]:B.offset[k+1][axis]]
+                        for n in tpmat.naxes:
+                            s[n+1] = tp[k].bases[n].slice()
+                        u[tuple(s)] = go[start:(start+N[k])].reshape(u[tuple(s)].shape)
+                        start += N[k]
+
 
         u = u.reshape(u.shape[1:]) if nvars == 1 else u
         b = b.reshape(b.shape[1:]) if nvars == 1 else b

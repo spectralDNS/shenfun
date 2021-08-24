@@ -15,7 +15,7 @@ import os
 from sympy import symbols, cos, sin
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, FunctionSpace, \
-    TensorProductSpace, Array, Function, dx, comm
+    TensorProductSpace, Array, Function, dx, comm, get_simplified_tpmatrices
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y, z, r, s = symbols("x,y,z,r,s", real=True)
@@ -43,7 +43,8 @@ f_hat = inner(v, fj, output_array=f_hat)
 
 # Solve Poisson equation
 A = inner(v, div(grad(u)))
-f_hat = A.solve(f_hat)
+sol = get_simplified_tpmatrices(A)[0]
+f_hat = sol.solve(f_hat)
 
 uq = T.backward(f_hat)
 

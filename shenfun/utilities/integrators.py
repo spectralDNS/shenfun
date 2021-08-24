@@ -29,7 +29,7 @@ import types
 import numpy as np
 from shenfun import Function, TPMatrix, TrialFunction, TestFunction,\
     inner, la, Expr, CompositeSpace, BlockMatrix, extract_bc_matrices,\
-    SparseMatrix
+    SparseMatrix, get_simplified_tpmatrices
 
 __all__ = ('IRK3', 'RK4', 'ETDRK4', 'ETD')
 
@@ -178,8 +178,9 @@ class IRK3(IntegratorBase):
         if self.solver is None or abs(self.params['dt']-dt) > 1e-12:
             self.setup(dt)
         t, end_time = trange
-        tstep = 0
+        tstep = self.tstep = 0
         while t < end_time-1e-8:
+            self.tstep = tstep
             for rk in range(3):
                 dU = self.compute_rhs(u, u_hat, self.dU, self.dU1, rk)
                 dU += self.rhs_mats[rk].matvec(u_hat, self.w0)
@@ -228,6 +229,7 @@ class ETD(IntegratorBase):
         L = self.LinearRHS(u, **self.params)
         if isinstance(L, Expr):
             L = inner(v, L)
+            L = get_simplified_tpmatrices(L)[0]
         if isinstance(L, list):
             assert self.T.tensor_rank == 1
             assert L[0].isidentity()
@@ -320,6 +322,7 @@ class ETDRK4(IntegratorBase):
         L = self.LinearRHS(u, **self.params)
         if isinstance(L, Expr):
             L = inner(v, L)
+            L = get_simplified_tpmatrices(L)[0]
         if isinstance(L, list):
             assert self.T.tensor_rank == 1
             assert L[0].isidentity()
@@ -448,6 +451,7 @@ class RK4(IntegratorBase):
         L = self.LinearRHS(ut, **self.params)
         if isinstance(L, Expr):
             L = inner(vt, L)
+            L = get_simplified_tpmatrices(L)[0]
         if isinstance(L, list):
             assert self.T.tensor_rank == 1
             assert L[0].isidentity()

@@ -60,6 +60,7 @@ v, q = vq
 if family.lower() == 'chebyshev':
     A00 = inner(v, -div(grad(u)))
     A01 = inner(v, -grad(p))
+
 else:
     A00 = inner(grad(v), grad(u))
     A01 = inner(div(v), p)

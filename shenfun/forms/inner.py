@@ -7,7 +7,7 @@ from copy import copy
 import numpy as np
 import sympy as sp
 from shenfun.spectralbase import inner_product, SpectralBase, MixedFunctionSpace
-from shenfun.matrixbase import TPMatrix, Identity
+from shenfun.matrixbase import TPMatrix, Identity, get_simplified_tpmatrices, BlockMatrix
 from shenfun.tensorproductspace import TensorProductSpace, CompositeSpace
 from shenfun.utilities import dx, split
 from .arguments import Expr, Function, BasisFunction, Array
@@ -17,7 +17,7 @@ __all__ = ('inner',)
 #pylint: disable=line-too-long,inconsistent-return-statements,too-many-return-statements
 
 
-def inner(expr0, expr1, output_array=None, level=0):
+def inner(expr0, expr1, output_array=None):
     r"""
     Return (weighted or unweighted) discrete inner product
 
@@ -68,16 +68,6 @@ def inner(expr0, expr1, output_array=None, level=0):
 
     output_array:  Function
         Optional return array for linear form.
-
-    level: int
-        The level of postprocessing for assembled matrices. Applies only
-        to bilinear forms
-
-        - 0 Full postprocessing - diagonal matrices to scale arrays
-          and add equal matrices
-        - 1 Diagonal matrices to scale arrays, but don't add equal
-          matrices
-        - 2 No postprocessing, return all assembled matrices
 
     Returns
     -------
@@ -256,7 +246,7 @@ def inner(expr0, expr1, output_array=None, level=0):
                         for l, trkl in enumerate(trk):
                             if gij[j, l] == 0:
                                 continue
-                            p = inner(teij*gij[i, k]*gij[j, l], trkl, level=level)
+                            p = inner(teij*gij[i, k]*gij[j, l], trkl)
                             result += p if isinstance(p, list) else [p]
 
         elif test.tensor_rank == 1:
@@ -264,7 +254,7 @@ def inner(expr0, expr1, output_array=None, level=0):
                 for j, tr in enumerate(trial):
                     if gij[i, j] == 0:
                         continue
-                    l = inner(te, tr*gij[i, j], level=level)
+                    l = inner(te, tr*gij[i, j])
                     result += l if isinstance(l, list) else [l]
 
         return result[0] if len(result) == 1 else result
@@ -291,7 +281,7 @@ def inner(expr0, expr1, output_array=None, level=0):
     if isinstance(test, BasisFunction):
         test = Expr(test)
 
-    assert test.expr_rank() == trial.expr_rank()
+    #assert test.expr_rank() == trial.expr_rank()
 
     testspace = test.base.function_space()
     trialspace = trial.base.function_space()
@@ -338,7 +328,8 @@ def inner(expr0, expr1, output_array=None, level=0):
                             # assemble inner product
                             AA = inner_product((tt, a), (ts, b), msi)
                             if len(AA) == 0:
-                                AA = Identity(AA.shape, scale=0)
+                                sc = 0
+                                continue
 
                             if not abs(AA.scale-1.) < 1e-8:
                                 AA.incorporate_scale()
@@ -357,30 +348,34 @@ def inner(expr0, expr1, output_array=None, level=0):
                             else:
                                 DM.append(AA)
 
+                        if sc == 0:
+                            continue
                         sc = tt.broadcast_to_ndims(np.array([sc]))
                         if len(M) == 1: # 1D case
                             M[0].global_index = (test_ind[test_j], trial_ind[trial_j])
                             M[0].scale = sc[0]
-                            M[0].mixedbase = testspace
+                            M[0].testbase = testspace
+                            M[0].trialbase = trialspace
                             A.append(M[0])
                         else:
-                            A.append(TPMatrix(M, test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                            A.append(TPMatrix(M, test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace, trialspace))
                         if has_bcs:
                             if len(DM) == 1: # 1D case
                                 DM[0].global_index = (test_ind[test_j], trial_ind[trial_j])
                                 DM[0].scale = sc
-                                DM[0].mixedbase = testspace
+                                DM[0].testbase = testspace
+                                DM[0].trialbase = testspace
                                 A.append(DM[0])
                             else:
                                 if len(trial_sp.get_nonhomogeneous_axes()) == 1:
-                                    A.append(TPMatrix(DM, test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                                    A.append(TPMatrix(DM, test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace, trialspace))
                                 elif len(trial_sp.get_nonhomogeneous_axes()) == 2:
                                     if DM[1] != 0:
-                                        A.append(TPMatrix([M[0], DM[1]], test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                                        A.append(TPMatrix([M[0], DM[1]], test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace, trialspace))
                                     if DM[0] != 0:
-                                        A.append(TPMatrix([DM[0], M[1]], test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                                        A.append(TPMatrix([DM[0], M[1]], test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace, trialspace))
                                     if DM[0] != 0 and DM[1] != 0:
-                                        A.append(TPMatrix(DM, test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace))
+                                        A.append(TPMatrix(DM, test_sp, trial_sp, sc, (test_ind[test_j], trial_ind[trial_j]), testspace, trialspace))
 
     # At this point A contains all matrices of the form. The length of A is
     # the number of inner products. For each index into A there are ndim 1D
@@ -388,51 +383,12 @@ def inner(expr0, expr1, output_array=None, level=0):
     # The outer product of these matrices is a tensorproduct matrix, and we
     # store the matrices using the TPMatrix class.
     #
-    # Diagonal matrices can be eliminated and put in a scale array for the
-    # non-diagonal matrices. E.g. for (v, div(grad(u))) in 2D
-    #
-    # Here A = [TPMatrix([(v[0], u[0]'')_x, (v[1], u[1])_y]),
-    #           TPMatrix([(v[0], u[0])_x, (v[1], u[1]'')_y])]
-    #
-    # where v[0], v[1] are the test functions in x- and y-directions,
-    # respectively. For example, v[0] could be a ShenDirichlet and v[1]
-    # could be a Fourier space. Same for u.
-    #
     # There are now two possibilities, either a linear or a bilinear form.
     # A linear form has trial.argument == 2, whereas a bilinear form has
     # trial.argument == 1. A linear form should assemble to an array and
     # return this array. A bilinear form, on the other hand, should return
     # matrices. Which matrices, and how many, will of course depend on the
     # form and the number of terms.
-    #
-    # Considering again the tensor product space with ShenDirichlet and Fourier,
-    # the list A will contain matrices as shown above. If Fourier is associated
-    # with index 1, then (v[1], u[1])_y and (v[1], u[1]'')_y will be diagonal
-    # whereas (v[0], u[0]'')_x and (v[0], u[0])_x will in general not.
-
-    if level == 2 and trial.argument == 1: # No processing of matrices
-        return A
-
-    for tpmat in A:
-        if isinstance(tpmat, TPMatrix):
-            try:
-                tpmat.simplify_diagonal_matrices()
-
-            except KeyError:
-                continue
-
-    # Add equal matrices
-    B = [A[0]]
-    for a in A[1:]:
-        found = False
-        for b in B:
-            if a == b:
-                b += a
-                found = True
-        if not found:
-            B.append(a)
-
-    A = B
 
     # Bilinear form, return matrices
     if trial.argument == 1:
@@ -441,8 +397,10 @@ def inner(expr0, expr1, output_array=None, level=0):
     # Linear form, return output_array
     wh = np.zeros_like(output_array)
     for b in A:
-        if uh.function_space().is_composite_space:
+        if uh.function_space().is_composite_space and wh.ndim == b.dimensions:
             wh = b.matvec(uh.v[b.global_index[1]], wh)
+        elif uh.function_space().is_composite_space and wh.ndim > b.dimensions:
+            wh[b.global_index[0]] = b.matvec(uh.v[b.global_index[1]], wh[b.global_index[0]])
         else:
             wh = b.matvec(uh, wh)
         output_array += wh

@@ -3,6 +3,7 @@ This module contains classes for working with sparse matrices.
 
 """
 from __future__ import division
+from typing import List
 from copy import copy, deepcopy
 from collections.abc import Mapping, MutableMapping
 from numbers import Number, Integral
@@ -16,7 +17,8 @@ from .utilities import integrate_sympy
 __all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix',
            'extract_bc_matrices', 'check_sanity', 'get_dense_matrix',
            'TPMatrix', 'BlockMatrix', 'BlockMatrices', 'Identity',
-           'get_dense_matrix_sympy', 'get_dense_matrix_quadpy']
+           'get_dense_matrix_sympy', 'get_dense_matrix_quadpy',
+           'get_simplified_tpmatrices']
 
 comm = MPI.COMM_WORLD
 
@@ -358,9 +360,13 @@ class SparseMatrix(MutableMapping):
         return self.__deepcopy__()
 
     def __copy__(self):
+        if self.__class__.__name__ == 'Identity':
+            return self
         return SparseMatrix(copy(dict(self)), self.shape, self.scale)
 
     def __deepcopy__(self, memo=None, _nil=[]):
+        if self.__class__.__name__ == 'Identity':
+            return Identity(self.shape, self.scale)
         return SparseMatrix(deepcopy(dict(self)), self.shape, self.scale)
 
     def __neg__(self):
@@ -659,6 +665,11 @@ class SpectralMatrix(SparseMatrix):
     def is_bc_matrix(self):
         return self.trialfunction[0].boundary_condition() == 'Apply'
 
+    def __copy__(self):
+        if self.__class__.__name__ == 'Identity':
+            return self
+
+        return SparseMatrix(copy(dict(self)), self.shape, self.scale)
 
 class Identity(SparseMatrix):
     """The identity matrix in :class:`.SparseMatrix` form
@@ -756,7 +767,7 @@ class BlockMatrix:
             \left( q, \nabla \cdot u\right) & 0
         \end{bmatrix}
 
-    This matrix is assemble below
+    This matrix is assembled below
 
     >>> from shenfun import *
     >>> from mpi4py import MPI
@@ -782,18 +793,21 @@ class BlockMatrix:
     """
     def __init__(self, tpmats):
         assert isinstance(tpmats, (list, tuple))
+        if isinstance(tpmats[0], TPMatrix):
+            tpmats = get_simplified_tpmatrices(tpmats)
         tpmats = [tpmats] if not isinstance(tpmats[0], (list, tuple)) else tpmats
-        self.mixedbase = mixedbase = tpmats[0][0].mixedbase
-        self.dims = dims = mixedbase.num_components()
-        self.mats = np.zeros((dims, dims), dtype=int).tolist()
+        self.testbase = testbase = tpmats[0][0].testbase
+        self.trialbase = trialbase = tpmats[0][0].trialbase
+        self.dims = dims = (testbase.num_components(), trialbase.num_components())
+        self.mats = np.zeros(dims, dtype=int).tolist()
         self.solver = None
-        tps = mixedbase.flatten() if hasattr(mixedbase, 'flatten') else [mixedbase]
-        offset = [np.zeros(tps[0].dimensions, dtype=int)]
-        for i, tp in enumerate(tps):
-            dims = tp.dim() if not hasattr(tp, 'dims') else tp.dims() # 1D basis does not have dims()
-            offset.append(np.array(dims + offset[i]))
-        self.offset = offset
-        self.global_shape = self.offset[-1]
+        #tps = testbase.flatten() if hasattr(testbase, 'flatten') else [testbase]
+        #offset = [np.zeros(tps[0].dimensions, dtype=int)]
+        #for i, tp in enumerate(tps):
+        #    dims = tp.dim() if not hasattr(tp, 'dims') else tp.dims() # 1D basis does not have dims()
+        #    offset.append(np.array(dims + offset[i]))
+        #self.offset = offset
+        #self.global_shape = self.offset[-1]
         self += tpmats
 
     def __add__(self, a):
@@ -860,8 +874,8 @@ class BlockMatrix:
         c : :class:`.Function`
 
         """
-        assert v.function_space() == self.mixedbase
-        assert c.function_space() == self.mixedbase
+        assert v.function_space() == self.trialbase
+        assert c.function_space() == self.testbase
         c.v.fill(0)
         z = np.zeros_like(c.v[0])
         for i, mi in enumerate(self.mats):
@@ -928,24 +942,31 @@ class BlockMatrix:
                     bm[-1].append(None)
                 else:
                     m = mij[0]
-                    if isinstance(self.mixedbase, MixedFunctionSpace):
+                    if isinstance(self.testbase, MixedFunctionSpace):
                         d = m.diags(format)
                         for mj in mij[1:]:
                             d = d + mj.diags(format)
-                    elif len(m.naxes) == 2:
-                        # 2 non-periodic directions
-                        assert len(m.mats) == 2, "Only implemented without periodic directions"
-                        d = m.scale.item()*kron(m.mats[0].diags(format), m.mats[1].diags(format))
-                        for mj in mij[1:]:
-                            d = d + mj.scale.item()*kron(mj.mats[0].diags(format), mj.mats[1].diags(format))
+                    elif len(m.naxes) == 2: # 2 non-periodic directions
+                        if len(m.mats) == 2:
+                            d = m.scale.item()*kron(m.mats[0].diags(format), m.mats[1].diags(format))
+                            for mj in mij[1:]:
+                                d = d + mj.scale.item()*kron(mj.mats[0].diags(format), mj.mats[1].diags(format))
+                        else:
+                            iit = np.where(np.array(m.scale.shape) == 1, 0, it) # if shape is 1 use index 0, else use given index (shape=1 means the scale is constant in that direction)
+                            d = m.scale[tuple(iit)]*kron(m.mats[m.naxes[0]].diags(format=format), m.mats[m.naxes[1]].diags(format=format))
+                            for mj in mij[1:]:
+                                iit = np.where(np.array(mj.scale.shape) == 1, 0, it)
+                                sc = mj.scale[tuple(iit)]
+                                d = d + sc*kron(mj.mats[mj.naxes[0]].diags(format=format), mj.mats[mj.naxes[1]].diags(format=format))
+
                     else:
                         iit = np.where(np.array(m.scale.shape) == 1, 0, it) # if shape is 1 use index 0, else use given index (shape=1 means the scale is constant in that direction)
                         sc = m.scale[tuple(iit)]
-                        d = sc*m.pmat.diags(format)
+                        d = sc*m.mats[m.naxes[0]].diags(format)
                         for mj in mij[1:]:
                             iit = np.where(np.array(mj.scale.shape) == 1, 0, it)
                             sc = mj.scale[tuple(iit)]
-                            d = d + sc*mj.pmat.diags(format)
+                            d = d + sc*mj.mats[mj.naxes[0]].diags(format)
                     bm[-1].append(d)
         return bmat(bm, format=format)
 
@@ -1030,10 +1051,13 @@ class TPMatrix:
         along any directions with a nondiagonal matrix.
     global_index : 2-tuple, optional
         Indices (test, trial) into mixed space :class:`.CompositeSpace`.
-    mixedbase : :class:`.CompositeSpace`, optional
-         Instance of the base space
+    testbase : :class:`.CompositeSpace`, optional
+         Instance of the base test space
+    trialbase : :class:`.CompositeSpace`, optional
+         Instance of the base trial space
     """
-    def __init__(self, mats, testspace, trialspace, scale=1.0, global_index=None, mixedbase=None):
+    def __init__(self, mats, testspace, trialspace, scale=1.0, global_index=None,
+                 testbase=None, trialbase=None):
         assert isinstance(mats, (list, tuple))
         assert len(mats) == len(testspace)
         self.mats = mats
@@ -1041,31 +1065,71 @@ class TPMatrix:
         self.trialspace = trialspace
         self.scale = scale
         self.pmat = 1
-        self.naxes = []
+        self.naxes = testspace.get_nondiagonal_axes()
         self.global_index = global_index
-        self.mixedbase = mixedbase
+        self.testbase = testbase
+        self.trialbase = trialbase
         self._issimplified = False
 
+    def get_simplified(self):
+        """Return a version of self simplified by putting diagonal matrices in a
+        scale array"""
+        diagonal_axes = np.setxor1d(self.naxes, range(self.space.dimensions)).astype(int)
+        if len(diagonal_axes) == 0 or self._issimplified:
+            return self
+
+        mats = []
+        scale = copy(self.scale)
+        for axis in range(self.dimensions):
+            mat = self.mats[axis]
+            if axis in diagonal_axes:
+                d = mat[0]
+                if np.ndim(d):
+                    d = self.space[axis].broadcast_to_ndims(d*mat.scale)
+                scale = scale*d
+                mat = Identity(mat.shape)
+            mats.append(mat)
+        tpmat = TPMatrix(mats, self.space, self.trialspace, scale=scale,
+                         global_index=self.global_index,
+                         testbase=self.testbase, trialbase=self.trialbase)
+
+        # Decomposition
+        if len(self.space) > 1:
+            s = tpmat.scale.shape
+            ss = [slice(None)]*self.space.dimensions
+            ls = self.space.local_slice()
+            for axis, shape in enumerate(s):
+                if shape > 1:
+                    ss[axis] = ls[axis]
+            tpmat.scale = (tpmat.scale[tuple(ss)]).copy()
+
+        # If only one non-diagonal matrix, then make a simple link to
+        # this matrix.
+        if len(tpmat.naxes) == 1:
+            tpmat.pmat = tpmat.mats[tpmat.naxes[0]]
+        elif len(tpmat.naxes) == 2: # 2 nondiagonal
+            tpmat.pmat = tpmat.mats
+        tpmat._issimplified = True
+        return tpmat
+
     def simplify_diagonal_matrices(self):
-        self.naxes = []
-        for axis, mat in enumerate(self.mats):
-            if not mat:
+        if self._issimplified:
+            return
+
+        diagonal_axes = np.setxor1d(self.naxes, range(self.space.dimensions)).astype(int)
+        if len(diagonal_axes) == 0:
+            return
+
+        for axis in diagonal_axes:
+            mat = self.mats[axis]
+            if self.dimensions == 1: # Don't bother with the 1D case
                 continue
-
-            #if mat.isdiagonal():
-            if axis not in self.space.get_nondiagonal_axes():
-                if self.dimensions == 1: # Don't bother with the 1D case
-                    continue
-                else:
-                    d = mat[0]    # get diagonal
-                    if np.ndim(d):
-                        d = self.space[axis].broadcast_to_ndims(d)
-                        d = d*mat.scale
-                    self.scale = self.scale*d
-                    self.mats[axis] = Identity(mat.shape)
-
             else:
-                self.naxes.append(axis)
+                d = mat[0]    # get diagonal
+                if np.ndim(d):
+                    d = self.space[axis].broadcast_to_ndims(d*mat.scale)
+                self.scale = self.scale*d
+                self.mats[axis] = Identity(mat.shape)
 
         # Decomposition
         if len(self.space) > 1:
@@ -1086,53 +1150,50 @@ class TPMatrix:
         self._issimplified = True
 
     def solve(self, b, u=None):
-
-        if len(self.naxes) == 0:
-            sl = tuple([s.slice() for s in self.trialspace.bases])
-            d = self.scale
+        tpmat = self.get_simplified()
+        if len(tpmat.naxes) == 0:
+            sl = tuple([s.slice() for s in tpmat.trialspace.bases])
+            d = tpmat.scale
             with np.errstate(divide='ignore'):
-                d = 1./self.scale
+                d = 1./tpmat.scale
             d = np.where(np.isfinite(d), d, 0)
             if u is None:
                 from .forms.arguments import Function
-                u = Function(self.space)
-
+                u = Function(tpmat.space)
             u[sl] = b[sl] * d[sl]
 
-        elif len(self.naxes) == 1:
+        elif len(tpmat.naxes) == 1:
             from shenfun.la import SolverGeneric1ND
-            H = SolverGeneric1ND([self])
+            H = SolverGeneric1ND([tpmat])
             u = H(b, u)
-            #axis = self.naxes[0]
-            #u = self.pmat.solve(b, u=u, axis=axis)
-            #with np.errstate(divide='ignore'):
-            #    u /= self.scale
-            #u[:] = np.where(np.isfinite(u), u, 0)
 
-        elif len(self.naxes) == 2:
+        elif len(tpmat.naxes) == 2:
             from shenfun.la import SolverGeneric2ND
-            H = SolverGeneric2ND([self])
+            H = SolverGeneric2ND([tpmat])
             u = H(b, u)
         return u
 
     def matvec(self, v, c):
+        tpmat = self.get_simplified()
         c.fill(0)
-        if len(self.naxes) == 0:
-            c[:] = self.scale*v
-        elif len(self.naxes) == 1:
-            axis = self.naxes[0]
+        if len(tpmat.naxes) == 0:
+            c[:] = tpmat.scale*v
+        elif len(tpmat.naxes) == 1:
+            axis = tpmat.naxes[0]
             rank = v.rank if hasattr(v, 'rank') else 0
             if rank == 0:
-                c = self.pmat.matvec(v, c, axis=axis)
+                c = tpmat.pmat.matvec(v, c, axis=axis)
             else:
-                c = self.pmat.matvec(v[self.global_index[1]], c, axis=axis)
-            c = c*self.scale
-        elif len(self.naxes) == 2:
+                c = tpmat.pmat.matvec(v[tpmat.global_index[1]], c, axis=axis)
+            c = c*tpmat.scale
+        elif len(tpmat.naxes) == 2:
             # 2 non-periodic directions (may be non-aligned in second axis, hence transfers)
-            npaxes = deepcopy(self.naxes)
-            space = self.space
+            npaxes = deepcopy(tpmat.naxes)
+            space = tpmat.space
+            newspace = False
             if space.forward.input_array.shape != space.forward.output_array.shape:
                 space = space.get_unplanned(True) # in case self.space is padded
+                newspace = True
 
             pencilA = space.forward.output_pencil
             subcomms = [s.Get_size() for s in pencilA.subcomm]
@@ -1144,14 +1205,17 @@ class TPMatrix:
             transAB = pencilA.transfer(pencilB, c.dtype.char)
             cB = np.zeros(transAB.subshapeB, dtype=c.dtype)
             cC = np.zeros(transAB.subshapeB, dtype=c.dtype)
-            bb = self.mats[axis]
+            bb = tpmat.mats[axis]
             c = bb.matvec(v, c, axis=axis)
             # align in second non-periodic axis
             transAB.forward(c, cB)
-            bb = self.mats[second_axis]
+            bb = tpmat.mats[second_axis]
             cC = bb.matvec(cB, cC, axis=second_axis)
             transAB.backward(cC, c)
-            c *= self.scale
+            c *= tpmat.scale
+            if newspace:
+                space.destroy()
+
         return c
 
     def get_key(self):
@@ -1186,8 +1250,8 @@ class TPMatrix:
     def __mul__(self, a):
         """Returns copy of self.__mul__(a) <==> self*a"""
         if isinstance(a, Number):
-            TPMatrix(self.mats, self.space, self.trialspace, self.scale*a,
-                     self.global_index, self.mixedbase)
+            return TPMatrix(self.mats, self.space, self.trialspace, self.scale*a,
+                            self.global_index, self.testbase, self.trialbase)
 
         elif isinstance(a, np.ndarray):
             c = np.empty_like(a)
@@ -1213,7 +1277,7 @@ class TPMatrix:
         """Returns copy self.__div__(a) <==> self/a"""
         if isinstance(a, Number):
             return TPMatrix(self.mats, self.space, self.trialspace, self.scale/a,
-                            self.global_index, self.mixedbase)
+                            self.global_index, self.testbase, self.trialbase)
         elif isinstance(a, np.ndarray):
             b = np.zeros_like(a)
             b = self.solve(a, b)
@@ -1251,7 +1315,7 @@ class TPMatrix:
         assert isinstance(a, TPMatrix)
         assert self == a
         return TPMatrix(self.mats, self.space, self.trialspace, self.scale+a.scale,
-                        self.global_index, self.mixedbase)
+                        self.global_index, self.testbase, self.trialbase)
 
     def __iadd__(self, a):
         """self.__iadd__(a) <==> self += a"""
@@ -1265,7 +1329,7 @@ class TPMatrix:
         assert isinstance(a, TPMatrix)
         assert self == a
         return TPMatrix(self.mats, self.space, self.trialspace, self.scale-a.scale,
-                        self.global_index, self.mixedbase)
+                        self.global_index, self.testbase, self.trialbase)
 
     def __isub__(self, a):
         """self.__isub__(a) <==> self -= a"""
@@ -1274,11 +1338,87 @@ class TPMatrix:
         self.scale = self.scale - a.scale
         return self
 
+    def copy(self):
+        """Return TPMatrix deep copy of self"""
+        return self.__deepcopy__()
+
+    def __copy__(self):
+        mats = []
+        for mat in self.mats:
+            mats.append(mat.__copy__())
+        return TPMatrix(mats, self.space, self.trialspace, self.scale,
+                        self.global_index, self.testbase, self.trialbase)
+
+    def __deepcopy__(self, memo=None, _nil=[]):
+        mats = []
+        for mat in self.mats:
+            mats.append(mat.__deepcopy__())
+        return TPMatrix(mats, self.space, self.trialspace, self.scale,
+                        self.global_index, self.testbase, self.trialbase)
+
     def diags(self, format='csr'):
+        assert self._issimplified is False
         if self.dimensions == 2:
-            return kron(self.mats[0].diags(format=format), self.mats[1].diags(format=format))
+            mat = kron(self.mats[0].diags(format=format),
+                       self.mats[1].diags(format=format),
+                       format=format)
         elif self.dimensions == 3:
-            return kron(self.mats[0].diags(format=format), kron(self.mats[1].diags(format=format), self.mats[2].diags(format=format)))
+            mat = kron(self.mats[0].diags(format=format),
+                       kron(self.mats[1].diags(format=format),
+                            self.mats[2].diags(format=format),
+                            format=format),
+                       format=format)
+        elif self.dimensions == 4:
+            mat = kron(self.mats[0].diags(format=format),
+                       kron(self.mats[1].diags(format=format),
+                            kron(self.mats[2].diags(format=format),
+                                 self.mats[3].diags(format=format),
+                                 format=format),
+                            format=format),
+                       format=format)
+        elif self.dimensions == 5:
+            mat = kron(self.mats[0].diags(format=format),
+                       kron(self.mats[1].diags(format=format),
+                            kron(self.mats[2].diags(format=format),
+                                 kron(self.mats[3].diags(format=format),
+                                      self.mats[4].diags(format=format),
+                                      format=format),
+                                 format=format),
+                            format=format),
+                       format=format)
+
+        return mat*np.atleast_1d(self.scale).item()
+
+def get_simplified_tpmatrices(tpmats : List[TPMatrix]) -> List[TPMatrix]:
+    """Return copy of tpmats list, where diagonal matrices have been
+    simplified and placed in scale arrays.
+
+    Parameters
+    ----------
+    tpmats
+        Instances of :class:`.TPMatrix`
+
+    Returns
+    -------
+    List[TPMatrix]
+        List of :class:`.TPMatrix`'es, that have been simplified
+
+    """
+    A = []
+    for tpmat in tpmats:
+        A.append(tpmat.get_simplified())
+
+    # Add equal matrices
+    B = [A[0]]
+    for a in A[1:]:
+        found = False
+        for b in B:
+            if a == b:
+                b += a
+                found = True
+        if not found:
+            B.append(a)
+    return B
 
 
 def check_sanity(A, test, trial, measure=1):
@@ -1346,7 +1486,10 @@ def get_dense_matrix(test, trial, measure=1):
     u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])[:, :K1]
     A = np.dot(np.conj(v.T)*ws[np.newaxis, :], u)
     if A.dtype.char in 'FDG':
-        if np.linalg.norm(A.real) / np.linalg.norm(A.imag) > 1e14:
+        ni = np.linalg.norm(A.imag)
+        if ni == 0:
+            A = A.real.copy()
+        elif np.linalg.norm(A.real) / ni > 1e14:
             A = A.real.copy()
     return A
 

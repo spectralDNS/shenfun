@@ -159,10 +159,10 @@ def test_curl_cc():
     T1 = T.get_orthogonal()
     V = VectorSpace(T1)
     u_hat = Function(T, buffer=ue)
-    du = project(curl(grad(u_hat)), V)
-    assert np.linalg.norm(du) < 1e-10
+    d = curl(grad(u_hat))
+    assert d.terms() == [[],[],[]]
 
 if __name__ == '__main__':
-    #test_curl('d')
-    test_curl2()
+    test_curl('d')
+    #test_curl2()
     #test_curl_cc()

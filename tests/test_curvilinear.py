@@ -63,5 +63,5 @@ def test_vector_laplace(space):
     assert np.linalg.norm(b0-b1) < 1e-8
 
 if __name__ == '__main__':
-    test_cylinder()
-    #test_vector_laplace('sphere')
+    #test_cylinder()
+    test_vector_laplace('sphere')

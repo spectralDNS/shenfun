@@ -79,10 +79,15 @@ def div(test):
                         di.append(Dx(Sij, j, 1))
                         for k in range(ndim):
                             Skj = test[k][j]
-                            if not ct[i, j, k] == 0:
-                                di.append(Skj*ct[i, j, k])
-                            if not ct[k, k, j] == 0:
-                                di.append(Sij*ct[k, k, j])
+                            #if not ct[i, j, k] == 0:
+                            #    di.append(Skj*ct[i, j, k])
+                            #if not ct[k, k, j] == 0:
+                            #    di.append(Sij*ct[k, k, j])
+                            Sik = test[i][k]
+                            if not ct[i, k, j] == 0:
+                                di.append(Skj*ct[i, k, j])
+                            if not ct[j, k, j] == 0:
+                                di.append(Sik*ct[j, k, j])
 
                     dj = di[0]
                     for j in range(1, len(di)):
