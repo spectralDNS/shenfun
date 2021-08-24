@@ -42,7 +42,7 @@ f_hat = inner(v, fj, output_array=f_hat)
 
 # Solve Poisson equation
 A = inner(v, div(grad(u)))
-sol = la.SolverND(A)
+sol = la.SolverDiagonal(A)
 u_hat = Function(T)
 u_hat = sol(f_hat, u_hat, constraints=((0, 0),))
 

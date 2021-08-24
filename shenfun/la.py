@@ -618,6 +618,15 @@ class SolverGeneric2ND:
                 u[tuple(s0)] = spsolve(M0, b[tuple(s0)].flatten()).reshape(shape)
         return u
 
+class SolverDiagonal:
+    def __init__(self, tpmats):
+        tpmats = get_simplified_tpmatrices(tpmats)
+        assert len(tpmats) == 1
+        self.mat = tpmats[0]
+
+    def __call__(self, b, u=None, constraints=()):
+        return self.mat.solve(b, u=u, constraints=constraints)
+
 class Solver2D:
     """Generic solver for tensorproductspaces in 2D
 

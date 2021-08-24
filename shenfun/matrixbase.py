@@ -1149,13 +1149,16 @@ class TPMatrix:
             self.pmat = self.mats
         self._issimplified = True
 
-    def solve(self, b, u=None):
+    def solve(self, b, u=None, constraints=()):
         tpmat = self.get_simplified()
         if len(tpmat.naxes) == 0:
             sl = tuple([s.slice() for s in tpmat.trialspace.bases])
             d = tpmat.scale
             with np.errstate(divide='ignore'):
                 d = 1./tpmat.scale
+            if constraints:
+                assert constraints[0] == (0, 0)
+            # Constraint is enforced automatically
             d = np.where(np.isfinite(d), d, 0)
             if u is None:
                 from .forms.arguments import Function
@@ -1165,12 +1168,12 @@ class TPMatrix:
         elif len(tpmat.naxes) == 1:
             from shenfun.la import SolverGeneric1ND
             H = SolverGeneric1ND([tpmat])
-            u = H(b, u)
+            u = H(b, u, constraints=constraints)
 
         elif len(tpmat.naxes) == 2:
             from shenfun.la import SolverGeneric2ND
             H = SolverGeneric2ND([tpmat])
-            u = H(b, u)
+            u = H(b, u, constraints=constraints)
         return u
 
     def matvec(self, v, c):

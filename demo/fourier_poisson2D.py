@@ -42,7 +42,7 @@ f_hat = inner(v, fj, output_array=f_hat)
 u_hat = Function(T)
 #A = inner(v, div(grad(u)))
 A = inner(grad(v), grad(u))
-sol = la.Solver2D(A)
+sol = la.SolverDiagonal(A)
 u_hat = sol(-f_hat, u_hat, constraints=((0, 0),))
 
 uq = Array(T)
