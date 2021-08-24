@@ -558,15 +558,6 @@ class SolverGeneric2ND:
             M0 = m.diags('csc')
             for m in self.tpmats[1:]:
                 M0 = M0 + m.diags('csc')
-            # Check if we need to fix gauge. This is required if we are solving
-            # a pure Neumann Poisson problem.
-            z0 = M0[0].nonzero()
-            if z0[1][0] > 0 :
-                M0 = M0.tolil()
-                zerorow = M0[0].nonzero()[1]
-                M0[(0, zerorow)] = 0
-                M0[0, 0] = 1
-                M0 = M0.tocsc()
             self.M = M0
             return self.M
 
@@ -588,16 +579,30 @@ class SolverGeneric2ND:
                 sc[diagonal_axis] = i if m.scale.shape[diagonal_axis] > 1 else 0
                 M1 *= m.scale[tuple(sc)]
                 M0 = M0 + M1
-            z0 = M0[0].nonzero()
-            if z0[1][0] > 0 :
-                M0 = M0.tolil()
-                zerorow = M0[0].nonzero()[1]
-                M0[(0, zerorow)] = 0
-                M0[0, 0] = 1
-                M0 = M0.tocsc()
             return M0
 
-    def __call__(self, b, u=None):
+    def apply_constraints(self, A, b, constraints):
+        """Apply constraints to matrix `A` and rhs vector `b`
+
+        Parameters
+        ----------
+        A : Sparse matrix
+        b : array
+        constraints : tuple of 2-tuples
+            The 2-tuples represent (row, val)
+            The constraint indents the matrix row and sets b[row] = val
+        """
+        if len(constraints) > 0:
+            A = A.tolil()
+            for (row, val) in constraints:
+                _, zerorow = A[row].nonzero()
+                A[(row, zerorow)] = 0
+                A[row, row] = 1
+                b[row] = val
+            A = A.tocsc()
+        return A, b
+
+    def __call__(self, b, u=None, constraints=()):
         if u is None:
             u = b
         else:
@@ -605,7 +610,9 @@ class SolverGeneric2ND:
         if u.ndim == 2:
             s0 = self.T.slice()
             M = self.diags(0)
-            u[s0] = spsolve(M, b[s0].flatten()).reshape(self.T.dims())
+            bs = b[s0].flatten()
+            M, bs = self.apply_constraints(M, bs, constraints)
+            u[s0] = spsolve(M, bs).reshape(self.T.dims())
 
         elif u.ndim == 3:
             naxes = self.T.get_nondiagonal_axes()
@@ -614,11 +621,20 @@ class SolverGeneric2ND:
             for i in range(self.T.shape(True)[diagonal_axis]):
                 M0 = self.diags(i)
                 s0[diagonal_axis] = i
+                bs = b[tuple(s0)].flatten()
+                M0, bs = self.apply_constraints(M0, bs, constraints)
                 shape = np.take(self.T.dims(), naxes)
-                u[tuple(s0)] = spsolve(M0, b[tuple(s0)].flatten()).reshape(shape)
+                u[tuple(s0)] = spsolve(M0, bs).reshape(shape)
         return u
 
 class SolverDiagonal:
+    """Solver for purely diagonal matrices, like Fourier in Cartesian coordinates.
+
+    Parameters
+    ----------
+    tpmats : sequence
+        sequence of instances of :class:`.TPMatrix`
+    """
     def __init__(self, tpmats):
         tpmats = get_simplified_tpmatrices(tpmats)
         assert len(tpmats) == 1

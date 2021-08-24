@@ -7,7 +7,7 @@ from copy import copy
 import numpy as np
 import sympy as sp
 from shenfun.spectralbase import inner_product, SpectralBase, MixedFunctionSpace
-from shenfun.matrixbase import TPMatrix, Identity, get_simplified_tpmatrices, BlockMatrix
+from shenfun.matrixbase import TPMatrix
 from shenfun.tensorproductspace import TensorProductSpace, CompositeSpace
 from shenfun.utilities import dx, split
 from .arguments import Expr, Function, BasisFunction, Array
