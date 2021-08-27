@@ -515,9 +515,19 @@ leading to
 
     \mathbf{b}_{r}&=\cos{\left(\theta \right)}\,\mathbf{i}+\sin{\left(\theta \right)}\,\mathbf{j}, \\ \mathbf{b}_{\theta}&=- r \sin{\left(\theta \right)}\,\mathbf{i}+r \cos{\left(\theta \right)}\,\mathbf{j}, \\ \mathbf{b}_{z}&=\mathbf{k}.
 
-We see that :math:`|\mathbf{b}_{\theta}| = r` and not unity.
+We see that :math:`|\mathbf{b}_{\theta}| = r` and not unity. In shenfun
+you can choose to use covariant basis vectors, or the more common normalized
+basis vectors, that are also called physical basis vectors. These are
 
-A vector :math:`\mathbf{u}` in this basis is given as
+.. math::
+    :label: eq:bbasis
+
+    \mathbf{e}_{r}&=\cos{\left(\theta \right)}\,\mathbf{i}+\sin{\left(\theta \right)}\,\mathbf{j}, \\ \mathbf{e}_{\theta}&=- \sin{\left(\theta \right)}\,\mathbf{i}+\cos{\left(\theta \right)}\,\mathbf{j}, \\ \mathbf{e}_{z}&=\mathbf{k}.
+
+To choose there is a configuration parameter called `basisvectors` in the configuration file
+`shenfun.yaml`, that can be set to either `covariant` or `normal`.
+
+A vector :math:`\mathbf{u}` in the covariant basis is given as
 
 .. math::
     :label: eq:vecu
@@ -532,7 +542,7 @@ and the vector Laplacian :math:`\nabla^2 \mathbf{u}` is
     \left( \frac{\partial^2 u^{r}}{\partial^2r}+\frac{1}{r}\frac{\partial  u^{r}}{\partial r}+\frac{1}{r^{2}}\frac{\partial^2 u^{r}}{\partial^2\theta}- \frac{2}{r}\frac{\partial  u^{\theta}}{\partial \theta}- \frac{1}{r^{2}}u^{r}+\frac{\partial^2 u^{r}}{\partial^2z}\right) \mathbf{b}_{r} \\+\left( \frac{\partial^2 u^{\theta}}{\partial^2r}+\frac{3}{r}\frac{\partial  u^{\theta}}{\partial r}+\frac{2}{r^{3}}\frac{\partial  u^{r}}{\partial \theta}+\frac{1}{r^{2}}\frac{\partial^2 u^{\theta}}{\partial^2\theta}+\frac{\partial^2 u^{\theta}}{\partial^2z}\right) \mathbf{b}_{\theta} \\+\left( \frac{\partial^2 u^{z}}{\partial^2r}+\frac{1}{r}\frac{\partial  u^{z}}{\partial r}+\frac{1}{r^{2}}\frac{\partial^2 u^{z}}{\partial^2\theta}+\frac{\partial^2 u^{z}}{\partial^2z}\right) \mathbf{b}_{z}.
 
 which is slightly different from what you see in most textbooks, which are using
-normalized basis vectors.
+the normalized basis vectors.
 
 Note that once the curvilinear map has been created, shenfun's operators
 :func:`.div`, :func:`.grad` and :func:`.curl` work out of the box with

@@ -16,3 +16,4 @@ for loc in locations:
         yf.close()
     except FileNotFoundError:
         pass
+print(config)

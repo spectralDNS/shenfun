@@ -76,13 +76,20 @@ Shenfun contains a few routines (essentially linear algebra solvers
 and matrix vector products) that are difficult to vectorize with numpy,
 and for this reason they have been implemented in either (or both of)
 `Numba`_ or `Cython`_. The user may choose which implementation
-to use through the environment variable ``SHENFUN_OPTIMIZATION``. The default
-is to use cython, but it is possible to enable either one by making
-the appropriate choice in the active terminal
+to use through the configuration parameter `optimization`
+in the configuration file `shenfun.yaml`, see below.
 
-::
+Configuration
+-------------
 
-    export SHENFUN_OPTIMIZATION={CYTHON,NUMBA}
+Shenfun comes with a few configuration options that can be set in the
+`shenfun.yaml <https://github.com/spectralDNS/shenfun/tree/master/shenfun/shenfun.yaml>`_
+file. If you want to make your own modifications to this configuration there
+are two options. Either create a local file `shenfun.yaml` in the
+local directory wher you run your shenfun solver, or put a `shenfun.yaml`
+file in the home directory `~/.shenfun/shenfun.yaml`. If a configuration
+file in found in either of those to locations, the settings there will
+overload the original settings.
 
 Additional dependencies
 -----------------------
