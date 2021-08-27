@@ -27,6 +27,7 @@ requirements:
   run:
     - python
     - {{ pin_compatible('numpy') }}
+    - yaml
     - scipy
     - fftw
     - mpi4py

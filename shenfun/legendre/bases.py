@@ -47,7 +47,7 @@ __all__ = ['LegendreBase',
 try:
     import quadpy
     from mpmath import mp
-    mp.dps = 30
+    mp.dps = config['bases']['legendre']['precision']
     has_quadpy = True
 except:
     has_quadpy = False

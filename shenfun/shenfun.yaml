@@ -16,7 +16,7 @@ matrix:
 bases:
     legendre:
         mode: numpy
-        quadpy: True
+        precision: 30
     jacobi:
         mode: numpy
         #mode: mpmath
