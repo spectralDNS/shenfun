@@ -39,7 +39,7 @@ class BHHmat(SpectralMatrix):
             b /= (self.scale*self[0])
             return b
 
-    def matvec(self, v, c, format='python', axis=0):
+    def matvec(self, v, c, format=None, axis=0):
         M = self.shape[1]
         ss = [slice(None)]*len(v.shape)
         ss[self.axis] = slice(0, M)
@@ -107,6 +107,7 @@ class AHHmat(SpectralMatrix):
             self.scale_array(c, self.scale)
 
         else:
+            format = None if format in self._matvec_methods else format
             c = super(AHHmat, self).matvec(v, c, format=format, axis=axis)
 
         return c

@@ -33,9 +33,9 @@ v = TestFunction(L)
 # Compute rhs for manufactured solution
 ue = sp.sin(4*np.pi*t)
 sg = L.coors.sg
-f = -1/sg*sp.diff(1/sg*ue.diff(t, 1), t, 1)
+#f = -1/sg*sp.diff(1/sg*ue.diff(t, 1), t, 1)
 #or
-#f = (-div(grad(u))).tosympy(basis=ue, psi=(t,))
+f = (-div(grad(u))).tosympy(basis=ue, psi=(t,))
 
 fj = Array(L, buffer=f*sg)
 f_hat = inner(v, fj)

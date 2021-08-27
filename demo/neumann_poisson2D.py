@@ -54,13 +54,14 @@ f_hat = inner(v, fj)
 matrices = inner(v, -div(grad(u)))
 
 # Create Helmholtz linear algebra solver
-#H = Solver(*matrices)
+#sol = Solver(*matrices)
 sol = la.SolverGeneric1ND(matrices)
 
 # Solve and transform to real space
 u_hat = Function(T).set_boundary_dofs()           # Solution spectral space
 #u_hat = H(f_hat, u_hat)       # Solve
 u_hat = sol(f_hat, u_hat, constraints=((0, 0),))
+
 uq = T.backward(u_hat).copy()
 
 # Compare with analytical solution

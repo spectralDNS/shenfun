@@ -695,6 +695,7 @@ class GLLmat(SpectralMatrix):
             cython.Matvec.GLL_matvec(v, c)
             self.scale_array(c, self.scale*self._keyscale)
         else:
+            format = None if format in self._matvec_methods else format
             c = super(GLLmat, self).matvec(v, c, format=format, axis=axis)
         return c
 
@@ -776,6 +777,7 @@ class CLLmat(SpectralMatrix):
             cython.Matvec.CLL_matvec(v, c)
             self.scale_array(c, self.scale*self._keyscale)
         else:
+            format = None if format in self._matvec_methods else format
             c = super(CLLmat, self).matvec(v, c, format=format, axis=axis)
         return c
 

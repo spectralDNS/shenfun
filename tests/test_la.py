@@ -1,7 +1,8 @@
 import numpy as np
 from scipy.linalg import solve
 import pytest
-from shenfun.chebyshev.la import PDMA, FDMA, TwoDMA
+from shenfun.chebyshev.la import PDMA
+from shenfun.la import FDMA, TwoDMA
 from shenfun import inner, TestFunction, TrialFunction, div, grad, \
     SparseMatrix, FunctionSpace, Function, Array, la
 np.warnings.filterwarnings('ignore')

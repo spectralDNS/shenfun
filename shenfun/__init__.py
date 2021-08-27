@@ -28,7 +28,7 @@ coordinates, like polar or spherical coordinates.
 """
 #pylint: disable=wildcard-import,no-name-in-module
 
-__version__ = '3.2.0'
+__version__ = '3.2.1'
 __author__ = 'Mikael Mortensen'
 
 import numpy as np
@@ -50,4 +50,5 @@ from .tensorproductspace import *
 from .utilities import *
 from .utilities.lagrangian_particles import *
 from .utilities.integrators import *
+from .config import config
 comm = MPI.COMM_WORLD

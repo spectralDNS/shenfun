@@ -80,7 +80,8 @@ from shenfun.matrixbase import SpectralMatrix, SparseMatrix
 from shenfun.la import SparseMatrixSolver
 from shenfun.la import TDMA as generic_TDMA
 from shenfun.la import PDMA as generic_PDMA
-from .la import TwoDMA, FDMA, ADDSolver, ANNSolver
+from shenfun.la import TwoDMA, FDMA
+from .la import ADDSolver, ANNSolver
 from . import bases
 
 x = sp.symbols('x', real=True)
@@ -189,6 +190,7 @@ class BSDSDmat(SpectralMatrix):
             self.scale_array(c, self.scale)
 
         else:
+            format = None if format in ('cython', 'self') else format
             c = super(BSDSDmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
@@ -256,10 +258,6 @@ class BSNSDmat(SpectralMatrix):
         d[2] = d2[:dmax(N-2, M-2, 2)]
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
-    def matvec(self, v, c, format='csr', axis=0):
-        c = super(BSNSDmat, self).matvec(v, c, format=format, axis=axis)
-        return c
-
 
 class BSDSNmat(SpectralMatrix):
     r"""Mass matrix for inner product
@@ -307,6 +305,7 @@ class BSDSNmat(SpectralMatrix):
             cython.Matvec.BDN_matvec1D_ptr(v, c, self[-2], self[0], self[2])
             self.scale_array(c, self.scale)
         else:
+            format = None if format in self._matvec_methods else format
             c = super(BSDSNmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
@@ -358,9 +357,6 @@ class BSNTmat(SpectralMatrix):
         assert isinstance(trial[0], T)
         SpectralMatrix.__init__(self, {}, test, trial, scale=scale, measure=measure)
 
-    def matvec(self, v, c, format='csr', axis=0):
-        c = super(BSNTmat, self).matvec(v, c, format=format, axis=axis)
-        return c
 
 class BSNSBmat(SpectralMatrix):
     r"""Mass matrix for inner product
@@ -383,10 +379,6 @@ class BSNSBmat(SpectralMatrix):
         assert isinstance(test[0], SN)
         assert isinstance(trial[0], SB)
         SpectralMatrix.__init__(self, {}, test, trial, scale=scale, measure=measure)
-
-    def matvec(self, v, c, format='csr', axis=0):
-        c = super(BSNSBmat, self).matvec(v, c, format=format, axis=axis)
-        return c
 
 
 class BTTmat(SpectralMatrix):
@@ -425,6 +417,7 @@ class BTTmat(SpectralMatrix):
             c[d] = self[0][s]*v[d]
             self.scale_array(c, self.scale)
         else:
+            format = None if format in self._matvec_methods else format
             c = super(BTTmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
@@ -486,7 +479,7 @@ class BSNSNmat(SpectralMatrix):
     def get_solver(self):
         return generic_TDMA
 
-    def matvec(self, v, c, format='csr', axis=0):
+    def matvec(self, v, c, format=None, axis=0):
         # Move axis to first
         if axis > 0:
             v = np.moveaxis(v, axis, 0)
@@ -708,6 +701,7 @@ class BSBSBmat(SpectralMatrix):
                                         self[2], self[4])
             self.scale_array(c, self.scale)
         else:
+            format = None if format in self._matvec_methods else format
             c = super(BSBSBmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
@@ -781,6 +775,7 @@ class BSBSDmat(SpectralMatrix):
             cython.Matvec.BBD_matvec1D_ptr(v, c, self[-2], self[0], self[2], self[4])
             self.scale_array(c, self.scale)
         else:
+            format = None if format in self._matvec_methods else format
             c = super(BSBSDmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
@@ -908,6 +903,7 @@ class CSDSNmat(SpectralMatrix):
             cython.Matvec.CDN_matvec1D_ptr(v, c, self[-1], self[1])
             self.scale_array(c, self.scale)
         else:
+            format = None if format in self._matvec_methods else format
             c = super(CSDSNmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
@@ -964,6 +960,7 @@ class CSDSDmat(SpectralMatrix):
             cython.Matvec.CDD_matvec1D_ptr(v, c, self[-1], self[1])
             self.scale_array(c, self.scale)
         else:
+            format = None if format in self._matvec_methods else format
             c = super(CSDSDmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
@@ -997,14 +994,6 @@ class CSNSDmat(SpectralMatrix):
         d[-1] = -(k[1:]+1)*np.pi
         d[1] = -(2-k[:-1]**2/(k[:-1]+2)**2*(k[:-1]+3))*np.pi
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-
-    def matvec(self, v, c, format='csr', axis=0):
-        c = super(CSNSDmat, self).matvec(v, c, format=format, axis=axis)
-        #s = [slice(None),]*v.ndim
-        #if self.testfunction[0].use_fixed_gauge:
-        #    s[axis] = 0
-        #    c[tuple(s)] = 0
-        return c
 
 
 class CTSDmat(SpectralMatrix):
@@ -1096,6 +1085,7 @@ class CTTmat(SpectralMatrix):
             cython.Matvec.CTT_matvec(v, c)
             self.scale_array(c, self.scale*self._keyscale)
         else:
+            format = None if format in self._matvec_methods else format
             c = super(CTTmat, self).matvec(v, c, format=format, axis=axis)
         return c
 
@@ -1152,6 +1142,7 @@ class CSBSDmat(SpectralMatrix):
             cython.Matvec.CBD_matvec(v, c, self[-1], self[1], self[3])
             self.scale_array(c, self.scale)
         else:
+            format = None if format in self._matvec_methods else format
             c = super(CSBSDmat, self).matvec(v, c, format=format, axis=axis)
         return c
 
@@ -1208,6 +1199,7 @@ class CSDSBmat(SpectralMatrix):
             cython.Matvec.CDB_matvec(v, c, self[-3], self[-1], self[1])
             self.scale_array(c, self.scale)
         else:
+            format = None if format in self._matvec_methods else format
             c = super(CSDSBmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
@@ -1266,8 +1258,8 @@ class ASBSBmat(SpectralMatrix):
         elif format == 'cython' and v.ndim == 1:
             cython.Matvec.Tridiagonal_matvec(v, c, self[-2], self[0], self[2])
             self.scale_array(c, self.scale)
-
         else:
+            format = None if format in self._matvec_methods else format
             c = super(ASBSBmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
@@ -1324,6 +1316,7 @@ class ASDSDmat(SpectralMatrix):
             cython.Matvec.ADD_matvec(v, c, self[0]/self._keyscale)
             self.scale_array(c, self.scale*self._keyscale)
         else:
+            format = None if format in self._matvec_methods else format
             c = super(ASDSDmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
@@ -1389,7 +1382,7 @@ class ASNSNmat(SpectralMatrix):
     def get_solver(self):
         return ANNSolver
 
-    def matvec(self, v, c, format='csr', axis=0):
+    def matvec(self, v, c, format=None, axis=0):
         if format == 'numba':
             try:
                 c = numba.helmholtz.ANN_matvec(v, c, self, axis)
@@ -1501,6 +1494,7 @@ class ATTmat(SpectralMatrix):
             cython.Matvec.ATT_matvec(v, c)
             self.scale_array(c, self.scale*self._keyscale)
         else:
+            format = None if format in self._matvec_methods else format
             c = super(ATTmat, self).matvec(v, c, format=format, axis=axis)
         return c
 
@@ -2042,8 +2036,8 @@ class SSBSBmat(SpectralMatrix):
         elif format == 'cython' and v.ndim == 1:
             cython.Matvec.SBBmat_matvec(v, c, self[0]/self._keyscale)
             self.scale_array(c, self.scale*self._keyscale)
-
         else:
+            format = None if format in self._matvec_methods else format
             c = super(SSBSBmat, self).matvec(v, c, format=format, axis=axis)
 
         return c

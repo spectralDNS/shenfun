@@ -14,19 +14,23 @@ try:
     from . import numba
 except ModuleNotFoundError:
     numba = None
+from shenfun.config import config
 
 def optimizer(func):
     """Decorator used to wrap calls to optimized versions of functions."""
 
-    mod = os.environ.get('SHENFUN_OPTIMIZATION', 'cython')
+    mod = config['optimization']['mode']
+    verbose = config['optimization']['verbose']
     if mod.lower() not in ('cython', 'numba'):
         # Use python function
-        #print(func.__name__ + ' not optimized')
+        if verbose:
+            print(func.__name__ + ' not optimized')
         return func
     mod = importlib.import_module('shenfun.optimization.'+mod.lower())
     fun = getattr(mod, func.__name__, func)
-    #if fun is func:
-    #    print(fun.__name__ + ' not optimized')
+    if verbose:
+        if fun is func:
+            print(fun.__name__ + ' not optimized')
 
     @wraps(func)
     def wrapped_function(*args, **kwargs):

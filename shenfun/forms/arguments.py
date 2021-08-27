@@ -1,27 +1,20 @@
 from numbers import Number, Integral
+from itertools import product
 import copy
 from scipy.special import sph_harm, erf, airy
 import numpy as np
 import sympy as sp
+from shenfun.config import config
 from shenfun.optimization.cython import evaluate
 from mpi4py_fft import DistArray
 
 __all__ = ('Expr', 'BasisFunction', 'TestFunction', 'TrialFunction', 'Function',
-           'Array', 'FunctionSpace', 'Basis')
+           'Array', 'FunctionSpace')
 
 # Define some special functions required for spherical harmonics
 cot = lambda x: 1/np.tan(x)
 Ynm = lambda n, m, x, y : sph_harm(m, n, y, x)
 airyai = lambda x: airy(x)[0]
-printwarning = True
-
-def Basis(*args, **kwargs): #pragma: no cover
-    global printwarning
-    import warnings
-    if printwarning:
-        warnings.warn("Basis() is deprecated; use FunctionSpace().", FutureWarning)
-        printwarning = False
-    return FunctionSpace(*args, **kwargs)
 
 def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
                   domain=None, scaled=None, padding_factor=1, basis=None,
@@ -517,7 +510,8 @@ class Expr:
     @property
     def dimensions(self):
         """Return ndim of Expr"""
-        return len(self._terms[0][0])
+        return self.function_space().dimensions
+        #return len(self._terms[0][0])
 
     def index(self):
         if self.num_components() == 1:
@@ -527,13 +521,15 @@ class Expr:
     def tolatex(self, symbol_names=None, funcname='u', replace=None):
         s = ""
         x = 'xyzrst'
-        symbols = {k: k for k in x}
+        xx = list(product(x[:self.dimensions], x[:self.dimensions]))
+        symbols = {k: k for k in x[:self.dimensions]}
         if symbol_names is not None:
             symbols = {str(k): val for k, val in symbol_names.items()}
 
+        bl = 'e' if config['basisvectors'] == 'normal' else 'b'
         for i, vec in enumerate(self.terms()):
             if self.num_terms()[i] == 0 and self.num_components() > 1:
-                s += '0 \\mathbf{b}_{%s} \\\\ +'%(symbols[x[i]])
+                s += '0 \\mathbf{%s}_{%s} \\\\ +'%(bl, symbols[x[i]])
                 continue
 
             if self.num_components() > 1:
@@ -542,6 +538,7 @@ class Expr:
             for j, term in enumerate(vec):
                 sc = self.scales()[i][j]
                 k = self.indices()[i][j]
+                kk = k % self.dimensions
                 if not sc == 1:
                     if replace is not None:
                         for repl in replace:
@@ -554,13 +551,15 @@ class Expr:
                         scp = "\\left( %s \\right)"%(scp)
                     elif scp.startswith('-'):
                         s = s.rstrip('+')
+                    if scp == '-1':
+                        scp = '-'
                     s += scp
                 t = np.array(term)
                 cmp = funcname
-                #if self.num_components() > 1:
-
-                if self.tensor_rank > 0:
-                    cmp = funcname + '^{%s}'%(symbols[x[k]])
+                if self.tensor_rank == 1:
+                    cmp = funcname + '^{%s}'%(symbols[x[kk]])
+                elif self.tensor_rank == 2:
+                    cmp = funcname + '^{%s%s}'%(tuple([symbols[xj] for xj in xx[k]]))
                 if np.sum(t) == 0:
                     s += cmp
                 else:
@@ -574,7 +573,11 @@ class Expr:
                 s += '+'
             if self.num_components() > 1:
                 s = s.rstrip('+')
-                s += "\\right) \\mathbf{b}_{%s} \\\\"%(symbols[x[i]])
+                if self.expr_rank() == 1:
+                    s += "\\right) \\mathbf{%s}_{%s} \\\\"%(bl, symbols[x[i]])
+                elif self.expr_rank() == 2:
+                    ij = tuple([bl]+[symbols[xj] for xj in xx[i]])
+                    s += "\\right) \\mathbf{%s}_{%s} \\mathbf{b}_{%s} \\\\"%(ij)
                 s += '+'
 
         return r"""%s"""%(s.rstrip('+'))
@@ -731,15 +734,18 @@ class Expr:
 
         return output_array
 
+    @property
+    def is_basis_function(self):
+        return np.all(np.array([q for l in self.terms() for s in l for q in s]) == 0)
+
     def __getitem__(self, i):
         if i >= self.dimensions:
             raise IndexError
 
         basis = self._basis
-        if basis.function_space().is_composite_space > 0:
+        if self.expr_rank() == self.tensor_rank and self.is_basis_function:
             basis = self._basis[i]
-        else:
-            basis = self._basis
+
         if self.expr_rank() == 1:
             return Expr(basis,
                         [copy.deepcopy(self._terms[i])],
@@ -754,6 +760,42 @@ class Expr:
                         copy.deepcopy(self._indices[i*ndim:(i+1)*ndim]))
         else:
             raise NotImplementedError
+
+    def get_contravariant_component(self, i, j=None):
+        """Return contravariant vector component
+
+        Parameters
+        ----------
+        i : int
+            First vector component
+        j : int, optional
+            Second component of tensor
+
+        Note
+        ----
+        The contravariant vector components are the components to the
+        covariant basisvectors. If the basis vectors are normalize, i.e.,
+        if the setting is config['basisvectors'] == 'normal', then the
+        normal vector components must be scaled in order to get to the
+        contravariant components.
+        """
+        if j is None:
+            if i >= self.dimensions:
+                raise IndexError
+
+            if config['basisvectors'] == 'normal':
+                return self[i]*(1/self.function_space().coors.hi[i])
+            assert config['basisvectors'] == 'covariant'
+            return self[i]
+        assert isinstance(j, int)
+        if i >= self.dimensions or j >= self.dimensions:
+            raise IndexError
+
+        if config['basisvectors'] == 'normal':
+            hi = self.function_space().coors.hi
+            return self[i][j]*(1/(hi[i]*hi[j]))
+        assert config['basisvectors'] =='covariant'
+        return self[i][j]
 
     def __mul__(self, a):
         sc = copy.deepcopy(self.scales())

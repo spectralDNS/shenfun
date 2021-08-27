@@ -82,7 +82,7 @@ def get_solver(A, B, alpha, method):
     elif method == 1:
         if alpha == 0:
             A.scale = -1
-            sol = chebyshev.la.ADD_Solve(A)
+            sol = chebyshev.la.ADDSolver(A)
         else:
             sol = chebyshev.la.Helmholtz(A, B, -1, alpha)
     elif method in (0, 3, 4):
@@ -222,6 +222,7 @@ if __name__ == '__main__':
     import argparse
     import os
     import sys
+    import yaml
 
     parser = argparse.ArgumentParser(description='Solve the Helmholtz problem with Dirichlet boundary conditions')
     parser.add_argument('--return_type', action='store', type=int, required=True)
@@ -234,7 +235,9 @@ if __name__ == '__main__':
     if args.numba:
         try:
             import numba
-            os.environ['SHENFUN_OPTIMIZATION'] = 'NUMBA'
+            cfg = {'optimization': {'mode': 'numba', 'verbose': False}}
+            with open('shenfun.yaml', 'w') as f:
+                yaml.dump(cfg, f)
         except ModuleNotFoundError:
             os.warning('Numba not found - using Cython')
 
@@ -287,6 +290,7 @@ if __name__ == '__main__':
                     cond[-1].append(main(n, basis, alpha, args.return_type))
 
         a2l.to_ltx(np.array(cond), frmt='{:6.2e}', print_out=True, mathform=False)
-
+    from shenfun.config import config
+    print(config)
     if args.plot:
         plt.show()

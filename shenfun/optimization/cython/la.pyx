@@ -148,7 +148,10 @@ def PDMA_SymLU_VC(d, a, l, axis=0):
 def PDMA_SymSolve(d, a, l, x, axis=0):
     n = x.ndim
     if n == 1:
-        PDMA_SymSolve1D(d, a, l, x)
+        xx = np.ascontiguousarray(x)
+        PDMA_SymSolve1D(d, a, l, xx)
+        if not x.flags['C_CONTIGUOUS']:
+            x[:] = xx
     elif n == 2:
         PDMA_Symsolve2D_ptr(d, a, l, x, axis)
     elif n == 3:
@@ -157,7 +160,10 @@ def PDMA_SymSolve(d, a, l, x, axis=0):
 def PDMA_SymSolve_VC(d, a, l, x, axis=0):
     n = x.ndim
     if n == 1:
-        PDMA_SymSolve1D(d, a, l, x)
+        xx = np.ascontiguousarray(x)
+        PDMA_SymSolve1D(d, a, l, xx)
+        if not x.flags['C_CONTIGUOUS']:
+            x[:] = xx
     elif n == 2:
         PDMA_SymSolve2D_VC(d, a, l, x, axis)
     elif n == 3:
@@ -499,7 +505,10 @@ def TDMA_SymSolve3D_ptr(real_t[::1] d,
 def TDMA_SymSolve(d, a, l, x, axis=0):
     n = x.ndim
     if n == 1:
-        TDMA_SymSolve1D(d, a, l, x)
+        xx = np.ascontiguousarray(x)
+        TDMA_SymSolve1D(d, a, l, xx)
+        if not x.flags['C_CONTIGUOUS']:
+            x[:] = xx
     elif n == 2:
         TDMA_SymSolve2D(d, a, l, x, axis)
     elif n == 3:
@@ -508,7 +517,10 @@ def TDMA_SymSolve(d, a, l, x, axis=0):
 def TDMA_O_SymSolve(d, a, l, x, axis=0):
     n = x.ndim
     if n == 1:
-        TDMA_O_SymSolve1D(d, a, l, x)
+        xx = np.ascontiguousarray(x)
+        TDMA_O_SymSolve1D(d, a, l, xx)
+        if not x.flags['C_CONTIGUOUS']:
+            x[:] = xx
     elif n == 2:
         TDMA_O_SymSolve2D(d, a, l, x, axis)
     elif n == 3:
@@ -517,7 +529,10 @@ def TDMA_O_SymSolve(d, a, l, x, axis=0):
 def TDMA_SymSolve_VC(d, a, l, x, axis=0):
     n = x.ndim
     if n == 1:
-        TDMA_SymSolve1D(d, a, l, x)
+        xx = np.ascontiguousarray(x)
+        TDMA_SymSolve1D(d, a, l, xx)
+        if not x.flags['C_CONTIGUOUS']:
+            x[:] = xx
     elif n == 2:
         TDMA_SymSolve2D_VC(d, a, l, x, axis)
     elif n == 3:
@@ -901,7 +916,10 @@ def Poisson_Solve_ADD(A, b, u, axis=0):
         int n
     n = u.ndim
     if n == 1:
-        Poisson_Solve_ADD_1D(a0, a2, sc, b, u)
+        uu = np.ascontiguousarray(u)
+        Poisson_Solve_ADD_1D(a0, a2, sc, b, uu)
+        if not u.flags['C_CONTIGUOUS']:
+            u[:] = uu
     elif n == 2:
         Poisson_Solve_ADD_2D_ptr(a0, a2, sc, b, u, axis)
     elif n == 3:
@@ -1163,7 +1181,11 @@ def LU_Helmholtz_2D(A, B, np.int64_t axis,
 def Solve_Helmholtz(b, u, neumann, d0, d1, d2, L, axis):
     n = d0.ndim
     if n == 1:
+        uu = np.ascontiguousarray(u)
+        bb = np.ascontiguousarray(b)
         Solve_Helmholtz_1D(b, u, neumann, d0, d1, d2, L)
+        if not u.flags['C_CONTIGUOUS']:
+            u[:] = uu
     elif n == 2:
         Solve_Helmholtz_2D_ptr(axis, b, u, neumann, d0, d1, d2, L)
     elif n == 3:

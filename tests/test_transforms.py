@@ -503,12 +503,11 @@ def test_ASBSBmat(SB, quad):
         f_hat *= -1.0
 
     u_hat = np.zeros(M)
-    u_hat[:-4] = la.spsolve(A.diags('csr'), f_hat[:-4])
     u_hat = A.solve(f_hat, u_hat)
 
     u0 = np.zeros(M)
     u0 = SB.backward(u_hat, u0)
-    assert np.allclose(u0, uj)
+    assert np.allclose(u0, uj), np.linalg.norm(u0-uj)
 
     u1 = np.zeros(M)
     u1 = SB.forward(uj, u1)
@@ -547,7 +546,8 @@ def test_ASBSBmat(SB, quad):
 if __name__ == '__main__':
     #test_to_ortho(cBasisGC[1], 'GC')
     # test_convolve(fbases.R2C, 8)
-    test_ASDSDmat(cbases.ShenNeumann, "GC")
+    #test_ASDSDmat(cbases.ShenNeumann, "GC")
+    test_ASBSBmat(cbases.ShenBiharmonic, "GC")
     #test_CDDmat("GL")
     #test_massmatrices(cBasis[3], cBasis[1], 'GL')
     #test_CXXmat(cBasis[2], cBasis[1])

@@ -1,19 +1,16 @@
 """
 Module for function spaces of generalized Jacobi type
 
-Note the environment variable
+Note the configuration setting
 
-    SHENFUN_JACOBI_MODE
+    from shenfun.config import config
+    config['bases']['jacobi']['mode']
 
-that can be used for extended precision in this module.
-
-SHENFUN_JACOBI_MODE = 'mpmath' will use the extended precision
-mpmath module to compute inner products.
-
-The precision can be set using, e.g.,
+Setting this to 'mpmath' can make use of extended precision.
+The precision can also be set in the configuration.
 
     from mpmath import mp
-    mp.dps = 50
+    mp.dps = config['jacobi'][precision]
 
 where mp.dps is the number of significant digits.
 
@@ -34,19 +31,20 @@ import numpy as np
 import sympy as sp
 from scipy.special import eval_jacobi, roots_jacobi #, gamma
 from mpi4py_fft import fftw
+from shenfun.config import config
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
 from shenfun.chebyshev.bases import BCBiharmonic, BCDirichlet
 
 try:
     import quadpy
     from mpmath import mp
-    mp.dps = 30
+    mp.dps = config['bases']['jacobi']['precision']
     has_quadpy = True
 except:
     has_quadpy = False
     mp = None
 
-mode = os.environ.get('SHENFUN_JACOBI_MODE', 'numpy')
+mode = config['bases']['jacobi']['mode']
 mode = mode if has_quadpy else 'numpy'
 
 xp = sp.Symbol('x', real=True)

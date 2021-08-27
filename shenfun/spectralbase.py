@@ -895,11 +895,11 @@ class SpectralBase:
         if measure == 1:
             return wj
 
-        if isinstance(measure, Number):
-            wj *= measure
+        s = sp.sympify(measure).free_symbols
+        if isinstance(measure, Number) or len(s) == 0:
+            wj *= float(measure)
             return wj
 
-        s = measure.free_symbols
         assert len(s) == 1
         s = s.pop()
         xj = sp.lambdify(s, measure)(xm)
@@ -1394,9 +1394,12 @@ def inner_product(test, trial, measure=1):
         x0 = x0.pop()
         x = sp.symbols('x', real=x0.is_real, positive=x0.is_positive)
         measure = measure.subs(x0, x)
-        if measure.subs(x, (test[0].domain[0]+test[0].domain[1])/2).evalf() < 0:
-            sc = -1
-            measure *= sc
+        try:
+            if measure.subs(x, (test[0].domain[0]+test[0].domain[1])/2).evalf() < 0:
+                sc = -1
+                measure *= sc
+        except TypeError:
+            pass
         if measure.is_polynomial():
             measure = sp.simplify(measure)
         key = key + (test[0].domain, measure)

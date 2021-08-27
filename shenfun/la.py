@@ -6,6 +6,7 @@ import numpy as np
 from numbers import Number, Integral
 from scipy.sparse import spmatrix, kron
 from scipy.sparse.linalg import spsolve, splu
+from shenfun.config import config
 from shenfun.optimization import optimizer
 from shenfun.matrixbase import SparseMatrix, extract_bc_matrices, \
     SpectralMatrix, BlockMatrix, TPMatrix, get_simplified_tpmatrices
@@ -489,6 +490,113 @@ class PDMA(SparseMatrixSolver):
             self.PDMA_Solve(self.l2, self.l1, self.d0, self.d1, self.d2, u, axis)
         return u
 
+class FDMA(SparseMatrixSolver):
+    """4-diagonal matrix solver
+
+    Parameters
+    ----------
+    mat : SparseMatrix or list of SparseMatrices
+        4-diagonal matrix with diagonals in offsets -2, 0, 2, 4
+
+    """
+    # pylint: disable=too-few-public-methods
+
+    def __init__(self, mat):
+        SparseMatrixSolver.__init__(self, mat)
+
+        self.symmetric = self.mat.issymmetric
+        N = self.mat.shape[0]
+        self.dd = self.mat[0]*np.ones(N)*self.mat.scale
+        self.u1 = self.mat[2]*np.ones(N-2)*self.mat.scale
+        self.u2 = self.mat[4]*np.ones(N-4)*self.mat.scale
+        self.ld = self.mat[-2]*np.ones(N-2)*self.mat.scale
+
+    def perform_lu(self):
+        if self._lu is None:
+            self.FDMA_LU(self.ld, self.dd, self.u1, self.u2)
+            self._lu = 1
+        return 1
+
+    @staticmethod
+    @optimizer
+    def FDMA_LU(ld, d, u1, u2):
+        n = d.shape[0]
+        for i in range(2, n):
+            ld[i-2] = ld[i-2]/d[i-2]
+            d[i] = d[i] - ld[i-2]*u1[i-2]
+            if i < n-2:
+                u1[i] = u1[i] - ld[i-2]*u2[i-2]
+
+    @staticmethod
+    @optimizer
+    def FDMA_Solve(d, u1, u2, l, x, axis=0):
+        assert x.ndim == 1, "Use optimized version for multidimensional solve"
+        n = d.shape[0]
+        for i in range(2, n):
+            x[i] -= l[i-2]*x[i-2]
+
+        x[n-1] = x[n-1]/d[n-1]
+        x[n-2] = x[n-2]/d[n-2]
+        x[n-3] = (x[n-3] - u1[n-3]*x[n-1])/d[n-3]
+        x[n-4] = (x[n-4] - u1[n-4]*x[n-2])/d[n-4]
+        for i in range(n - 5, -1, -1):
+            x[i] = (x[i] - u1[i]*x[i+2] - u2[i]*x[i+4])/d[i]
+
+    def solve(self, b, u, axis, lu):
+        if u is not b:
+            u[:] = b
+        self.FDMA_Solve(self.dd, self.u1, self.u2, self.ld, u, axis=axis)
+        return u
+
+class TwoDMA(SparseMatrixSolver):
+    """2-diagonal matrix solver
+
+    Parameters
+    ----------
+    mat : SparseMatrix
+        2-diagonal matrix with diagonals in offsets 0, 2
+
+    """
+    def __init__(self, mat):
+        SparseMatrixSolver.__init__(self, mat)
+        N = mat.shape[0]
+        self.dd = self.mat[0]*np.ones(N)*self.mat.scale
+        self.u1 = self.mat[2]*np.ones(N-2)*self.mat.scale
+
+    @staticmethod
+    @optimizer
+    def TwoDMA_Solve(d, u1, x, axis=0):
+        assert x.ndim == 1, "Use optimized version for multidimensional solve"
+        n = d.shape[0]
+        x[n-1] = x[n-1]/d[n-1]
+        x[n-2] = x[n-2]/d[n-2]
+        for i in range(n - 3, -1, -1):
+            x[i] = (x[i] - u1[i]*x[i+2])/d[i]
+
+    def apply_constraints(self, b, constraints, axis=0):
+        if len(constraints) > 0:
+            assert len(constraints) == 1
+            assert constraints[0][0] == 0, 'Can only fix first row of TwoDMA'
+            self.dd[0] = 1
+            self.u1[0] = 0
+            if b.ndim > 1:
+                shape = b.shape
+                b = b.flatten()
+                b[0] = constraints[0][1]
+                b = b.reshape(shape)
+            else:
+                b[0] = constraints[0][1]
+        return b
+
+    def perform_lu(self):
+        return 1
+
+    def solve(self, b, u, axis, lu):
+        if u is not b:
+            u[:] = b
+        self.TwoDMA_Solve(self.dd, self.u1, u, axis=axis)
+        return u
+
 
 class Solve(SparseMatrixSolver):
     """Generic solver class for SparseMatrix
@@ -508,7 +616,8 @@ class Solve(SparseMatrixSolver):
     uses `scipy.sparse` methods `splu` and `spsolve`.
 
    """
-    def __init__(self, mat, format='csc'):
+    def __init__(self, mat, format=None):
+        format = config['matrix']['sparse']['solve'] if format is None else format
         SparseMatrixSolver.__init__(self, mat)
         self.mat = self.mat.diags(format)
 
@@ -529,7 +638,10 @@ class SolverGeneric2ND:
     """
 
     def __init__(self, tpmats):
-        self.tpmats = get_simplified_tpmatrices(tpmats)
+        tpmats = get_simplified_tpmatrices(tpmats)
+        bc_mats = extract_bc_matrices([tpmats])
+        self.tpmats = tpmats
+        self.bc_mats = bc_mats
         self.T = tpmats[0].space
         self.M = None
 
@@ -607,6 +719,13 @@ class SolverGeneric2ND:
             u = b
         else:
             assert u.shape == b.shape
+
+        if len(self.bc_mats) > 0:
+            u.set_boundary_dofs()
+            w0 = np.zeros_like(u)
+            for bc_mat in self.bc_mats:
+                b -= bc_mat.matvec(u, w0)
+
         if u.ndim == 2:
             s0 = self.T.slice()
             M = self.diags(0)
@@ -625,6 +744,8 @@ class SolverGeneric2ND:
                 M0, bs = self.apply_constraints(M0, bs, constraints)
                 shape = np.take(self.T.dims(), naxes)
                 u[tuple(s0)] = spsolve(M0, bs).reshape(shape)
+        if hasattr(u, 'set_boundary_dofs'):
+            u.set_boundary_dofs()
         return u
 
 class SolverDiagonal:
@@ -729,6 +850,8 @@ class Solver2D:
             u.imag[s0] = self._lu.solve(bs.imag).reshape(self.T.dims())
             u.real[s0] = self._lu.solve(bs.real).reshape(self.T.dims())
 
+        if hasattr(u, 'set_boundary_dofs'):
+            u.set_boundary_dofs()
         return u
 
 class Solver3D(Solver2D):
@@ -801,8 +924,7 @@ class SolverGeneric1ND:
         self.mats = mats
         self.bc_mats = bc_mats
         # For time-dependent solver, store all generated solvers and reuse
-        # This takes a lot of memory, so for now it's only implemented for 2D
-        self.MM = None
+        self.assemble()
 
     def matvec(self, u, c):
         c.fill(0)
@@ -815,6 +937,79 @@ class SolverGeneric1ND:
             for bc_mat in self.bc_mats:
                 c += bc_mat.matvec(u, w0)
         return c
+
+    def assemble(self):
+        ndim = self.mats[0].dimensions
+        shape = self.mats[0].space.dims()
+        if ndim == 2:
+            self.MM = []
+            if self.naxes == 0:
+                # non-diagonal in axis=0
+                for i in range(shape[1]):
+                    MM = None
+                    for mat in self.mats:
+                        sc = mat.scale[0, i] if mat.scale.shape[1] > 1 else mat.scale[0, 0]
+                        if MM:
+                            MM += mat.mats[0]*sc
+                        else:
+                            MM = mat.mats[0]*sc
+                    self.MM.append(Solver(MM))
+
+            else:
+                # non-diagonal in axis=1
+                for i in range(shape[0]):
+                    MM = None
+                    for mat in self.mats:
+                        sc = mat.scale[i, 0] if mat.scale.shape[0] > 1 else mat.scale[0, 0]
+                        if MM:
+                            MM += mat.mats[1]*sc
+                        else:
+                            MM = mat.mats[1]*sc
+                    self.MM.append(Solver(MM))
+
+        elif ndim == 3:
+            self.MM = []
+            if self.naxes == 0:
+                # non-diagonal in axis=0
+                for i in range(shape[1]):
+                    self.MM.append([])
+                    for j in range(shape[2]):
+                        MM = None
+                        for mat in self.mats:
+                            sc = np.broadcast_to(mat.scale, shape)[0, i, j]
+                            if MM:
+                                MM += mat.mats[0]*sc
+                            else:
+                                MM = mat.mats[0]*sc
+                        self.MM[-1].append(Solver(MM))
+
+            elif self.naxes == 1:
+                # non-diagonal in axis=1
+                for i in range(shape[0]):
+                    self.MM.append([])
+                    for j in range(shape[2]):
+                        MM = None
+                        for mat in self.mats:
+                            sc = np.broadcast_to(mat.scale, shape)[i, 0, j]
+                            if MM:
+                                MM += mat.mats[1]*sc
+                            else:
+                                MM = mat.mats[1]*sc
+                        self.MM[-1].append(Solver(MM))
+
+            elif self.naxes == 2:
+                # non-diagonal in axis=2
+                for i in range(shape[0]):
+                    self.MM.append([])
+                    for j in range(shape[1]):
+                        MM = None
+                        for mat in self.mats:
+                            sc = np.broadcast_to(mat.scale, shape)[i, j, 0]
+                            if MM:
+                                MM += mat.mats[2]*sc
+                            else:
+                                MM = mat.mats[2]*sc
+                        self.MM[-1].append(Solver(MM))
 
     def __call__(self, b, u=None, constraints=()):
         """Solve problem with one non-diagonal direction
@@ -843,48 +1038,14 @@ class SolverGeneric1ND:
         if u.ndim == 2:
 
             if self.naxes == 0:
-                # non-diagonal in axis=0
-                if self.MM is None:
-                    self.MM = []
-                    for i in range(b.shape[1]):
-                        MM = None
-                        for mat in self.mats:
-                            sc = mat.scale[0, i] if mat.scale.shape[1] > 1 else mat.scale[0, 0]
-                            if MM:
-                                MM += mat.mats[0]*sc
-                            else:
-                                MM = mat.mats[0]*sc
-                        sol = Solver(MM)
-                        con = constraints if i == 0 else ()
-                        u[:, i] = sol(b[:, i], u[:, i], constraints=con)
-                        self.MM.append(sol)
-
-                else:
-                    for i in range(b.shape[1]):
-                        con = constraints if i == 0 else ()
-                        u[:, i] = self.MM[i](b[:, i], u[:, i], constraints=con)
+                for i in range(b.shape[1]):
+                    con = constraints if i == 0 else ()
+                    u[:, i] = self.MM[i](b[:, i], u[:, i], constraints=con)
 
             else:
-                if self.MM is None:
-                    # non-diagonal in axis=1
-                    self.MM = []
-                    for i in range(b.shape[0]):
-                        MM = None
-                        for mat in self.mats:
-                            sc = mat.scale[i, 0] if mat.scale.shape[0] > 1 else mat.scale[0, 0]
-                            if MM:
-                                MM += mat.mats[1]*sc
-                            else:
-                                MM = mat.mats[1]*sc
-                        sol = Solver(MM)
-                        con = constraints if i == 0 else ()
-                        u[i] = sol(b[i], u[i], constraints=con)
-                        self.MM.append(sol)
-
-                else:
-                    for i in range(b.shape[0]):
-                        con = constraints if i == 0 else ()
-                        u[i] = self.MM[i](b[i], u[i], constraints=con)
+                for i in range(b.shape[0]):
+                    con = constraints if i == 0 else ()
+                    u[i] = self.MM[i](b[i], u[i], constraints=con)
 
         elif u.ndim == 3:
 
@@ -892,14 +1053,7 @@ class SolverGeneric1ND:
                 # non-diagonal in axis=0
                 for i in range(b.shape[1]):
                     for j in range(b.shape[2]):
-                        MM = None
-                        for mat in self.mats:
-                            sc = np.broadcast_to(mat.scale, u.shape)[0, i, j]
-                            if MM:
-                                MM += mat.mats[0]*sc
-                            else:
-                                MM = mat.mats[0]*sc
-                        sol = Solver(MM)
+                        sol = self.MM[i][j]
                         con = constraints if (i, j) == (0, 0) else ()
                         u[:, i, j] = sol(b[:, i, j], u[:, i, j], constraints=con)
 
@@ -907,14 +1061,7 @@ class SolverGeneric1ND:
                 # non-diagonal in axis=1
                 for i in range(b.shape[0]):
                     for j in range(b.shape[2]):
-                        MM = None
-                        for mat in self.mats:
-                            sc = np.broadcast_to(mat.scale, u.shape)[i, 0, j]
-                            if MM:
-                                MM += mat.mats[1]*sc
-                            else:
-                                MM = mat.mats[1]*sc
-                        sol = Solver(MM)
+                        sol = self.MM[i][j]
                         con = constraints if (i, j) == (0, 0) else ()
                         u[i, :, j] = sol(b[i, :, j], u[i, :, j], constraints=con)
 
@@ -922,17 +1069,12 @@ class SolverGeneric1ND:
                 # non-diagonal in axis=2
                 for i in range(b.shape[0]):
                     for j in range(b.shape[1]):
-                        MM = None
-                        for mat in self.mats:
-                            sc = np.broadcast_to(mat.scale, u.shape)[i, j, 0]
-                            if MM:
-                                MM += mat.mats[2]*sc
-                            else:
-                                MM = mat.mats[2]*sc
-                        sol = Solver(MM)
+                        sol = self.MM[i][j]
                         con = constraints if (i, j) == (0, 0) else ()
                         u[i, j] = sol(b[i, j], u[i, j], constraints=con)
 
+        if hasattr(u, 'set_boundary_dofs'):
+            u.set_boundary_dofs()
         return u
 
 class BlockMatrixSolver:
@@ -1000,8 +1142,8 @@ class BlockMatrixSolver:
         axis = tpmat.naxes[0] if isinstance(tpmat, TPMatrix) else 0
         tp = space.flatten() if hasattr(space, 'flatten') else [space]
         nvars = b.shape[0] if len(b.shape) > space.dimensions else 1
-        u = u.reshape(1, *u.shape) if nvars == 1 else u
-        b = b.reshape(1, *b.shape) if nvars == 1 else b
+        u = u.expand_dims(0) if nvars == 1 else u
+        b = b.expand_dims(0) if nvars == 1 else b
         for con in constraints:
             assert len(con) == 3
             assert isinstance(con[0], Integral)
@@ -1184,7 +1326,6 @@ class BlockMatrixSolver:
                             s[n+1] = tp[k].bases[n].slice()
                         u[tuple(s)] = go[start:(start+N[k])].reshape(u[tuple(s)].shape)
                         start += N[k]
-
 
         u = u.reshape(u.shape[1:]) if nvars == 1 else u
         b = b.reshape(b.shape[1:]) if nvars == 1 else b

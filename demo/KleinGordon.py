@@ -66,7 +66,8 @@ gradu = Array(TV)
 uh = TrialFunction(T)
 vh = TestFunction(T)
 
-L = inner(grad(vh), -grad(uh)) - inner(vh, gamma*uh)
+L = inner(grad(vh), -grad(uh)) + [inner(vh, -gamma*uh)]
+L = la.SolverDiagonal(L).mat.scale
 
 # Coupled equations with no linear terms in their own variables,
 # so place everything in NonlinearRHS

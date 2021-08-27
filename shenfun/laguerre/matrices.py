@@ -38,7 +38,7 @@ class BLLmat(SpectralMatrix):
             b /= (self.scale*self[0])
             return b
 
-    def matvec(self, v, c, format='python', axis=0):
+    def matvec(self, v, c, format=None, axis=0):
         c[:] = v
         self.scale_array(c, self.scale*self[0])
         return c

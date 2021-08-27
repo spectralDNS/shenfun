@@ -632,6 +632,7 @@ def test_helmholtz2D(family, axis):
     assert np.linalg.norm(f-(g0+g1)) < 1e-12, np.linalg.norm(f-(g0+g1))
 
     uc = Function(T)
+
     uc = H(f, uc)
     assert np.linalg.norm(uc-u) < 1e-12
 
@@ -721,7 +722,7 @@ if __name__ == '__main__':
     #test_mat(((cbases.ShenBiharmonic, 0), (cbases.ShenDirichlet, 0)), cmatrices.BSBSDmat, 'GL')
     #test_mat(*cmats_and_quads[12])
     #test_cmatvec(cBasis[2], cBasis[2], 'GC', 2)
-    #test_lmatvec(lBasis[0], lBasis[0], 'LG', 'cython', 3, 2, 0)
+    #test_lmatvec(lBasis[0], lBasis[0], 'LG', 2, 0)
     #test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
     #test_hmatvec(hBasis[0], hBasis[0], 'HG', 'self', 3, 1, 1)
     #test_iadd(*mats_and_quads[15])
@@ -729,7 +730,7 @@ if __name__ == '__main__':
     #test_sub(*mats_and_quads[15])
     #test_mul2()
     #test_div2(cBasis[1], 'GC')
-    #test_helmholtz2D('chebyshev', 1)
-    test_helmholtz3D('chebyshev', 0)
+    test_helmholtz2D('legendre', 1)
+    #test_helmholtz3D('chebyshev', 0)
     #test_biharmonic3D('chebyshev', 0)
     #test_biharmonic2D('jacobi', 0)

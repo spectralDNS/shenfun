@@ -1,0 +1,24 @@
+# Configuration file for shenfun
+optimization:
+    mode: cython
+    #mode: numba
+    verbose: False
+basisvectors: normal
+#basisvectors: covariant
+
+matrix:
+    sparse:
+        solve: csc
+        diags: csc
+        matvec: csr
+        construct: dense # denser, sympy - The method used to construct non-implemented matrices
+
+bases:
+    legendre:
+        mode: numpy
+        quadpy: True
+    jacobi:
+        mode: numpy
+        #mode: mpmath
+        precision: 30
+

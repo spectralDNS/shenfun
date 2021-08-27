@@ -157,6 +157,7 @@ class Helmholtz:
             B0 = v.broadcast_to_ndims(B[0])
             B2 = v.broadcast_to_ndims(B[2])
             shape[A.axis] = v.N
+            self.N = v.N
             self.d0 = np.zeros(shape)
             self.d1 = np.zeros(shape)
             ss = [slice(None)]*self.d0.ndim

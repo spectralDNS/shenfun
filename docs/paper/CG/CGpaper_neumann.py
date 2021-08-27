@@ -215,11 +215,13 @@ if __name__ == '__main__':
     parser.add_argument('--plot', action='store_true')
     parser.add_argument('--numba', action='store_true')
     args = parser.parse_args()
-    os.environ['SHENFUN_OPTIMIZATION'] = 'CYTHON'
+
     if args.numba:
         try:
             import numba
-            os.environ['SHENFUN_OPTIMIZATION'] = 'NUMBA'
+            cfg = {'optimization': {'mode': 'numba', 'verbose': False}}
+            with open('shenfun.yaml', 'w') as f:
+                yaml.dump(cfg, f)
         except ModuleNotFoundError:
             os.warning('Numba not found - using Cython')
     cond = []

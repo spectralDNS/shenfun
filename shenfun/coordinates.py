@@ -1,6 +1,7 @@
 import numbers
 import sympy as sp
 import numpy as np
+from shenfun.config import config
 
 class Coordinates:
     """Class for handling curvilinear coordinates
@@ -33,8 +34,10 @@ class Coordinates:
         self._hi = None
         self._b = None
         self._bt = None
+        self._e = None
         self._g = None
         self._gt = None
+        self._gn = None
         self._ct = None
         self._det_g = {True: None, False: None}
         self._sqrt_det_g = {True: None, False: None}
@@ -42,6 +45,10 @@ class Coordinates:
     @property
     def b(self):
         return self.get_covariant_basis()
+
+    @property
+    def e(self):
+        return self.get_normal_basis()
 
     @property
     def hi(self):
@@ -120,6 +127,18 @@ class Coordinates:
         self._hi = hi
         return hi
 
+    def get_normal_basis(self):
+        if self._e is not None:
+            return self._e
+        b = self.b
+        e = np.zeros_like(b)
+        for i, bi in enumerate(b):
+            l = sp.sqrt(sp.simplify(np.dot(bi, bi)))
+            l = self.refine(l)
+            e[i] = bi / l
+        self._e = e
+        return e
+
     def get_covariant_basis(self):
         """Return covariant basisvectors"""
         if self._b is not None:
@@ -157,6 +176,20 @@ class Coordinates:
                 bt[i, j] = sp.simplify(bt[i, j], measure=self._measure)
         self._bt = bt
         return bt
+
+    def get_normal_metric_tensor(self):
+        """Return normal metric tensor"""
+        if self._gn is not None:
+            return self._gn
+        gn = np.zeros((len(self.psi), len(self.psi)), dtype=object)
+        e = self.e
+        for i in range(len(self.psi)):
+            for j in range(len(self.psi)):
+                gn[i, j] = sp.simplify(np.dot(e[i], e[j]).expand(), measure=self._measure)
+                gn[i, j] = self.refine(gn[i, j])
+
+        self._gn = gn
+        return gn
 
     def get_covariant_metric_tensor(self):
         """Return covariant metric tensor"""
@@ -199,6 +232,17 @@ class Coordinates:
         self._ct = ct
         return ct
 
+    def get_metric_tensor(self, kind='normal'):
+        if kind == 'covariant':
+            gij = self.get_covariant_metric_tensor()
+        elif kind == 'contravariant':
+            gij = self.get_contravariant_metric_tensor()
+        elif kind == 'normal':
+            gij = self.get_normal_metric_tensor()
+        else:
+            raise NotImplementedError
+        return gij
+
     def refine(self, sc):
         sc = sp.refine(sc, self._assumptions)
         for a, b in self._replace:
@@ -228,11 +272,15 @@ class Coordinates:
         self._psi = tuple([p.subs(s0, s1) for p in self._psi])
         self._rv = tuple([r.subs(s0, s1) for r in self._rv])
 
-    def latex_basis_vectors(self, symbol_names=None, covariant=True, replace=None):
-        if covariant:
+    def latex_basis_vectors(self, symbol_names=None, replace=None, kind=None):
+        if kind is None:
+            kind = config['basisvectors']
+        if kind == 'covariant':
             b = self.get_covariant_basis()
-        else:
+        elif kind == 'contravariant':
             b = self.get_contravariant_basis()
+        else:
+            b = self.get_normal_basis()
         psi = self.psi
         symbols = {p: str(p) for p in psi}
         if symbol_names is not None:
@@ -240,11 +288,12 @@ class Coordinates:
 
         k = {0: '\\mathbf{i}', 1: '\\mathbf{j}', 2: '\\mathbf{k}'}
         m = ' '
+        bl = 'e' if kind == 'normal' else 'b'
         for i, p in enumerate(psi):
-            if covariant:
-                m += '\\mathbf{b}_{%s} ='%(symbols[p])
+            if kind in ('covariant', 'normal'):
+                m += '\\mathbf{%s}_{%s} ='%(bl, symbols[p])
             else:
-                m += '\\mathbf{b}^{%s} ='%(symbols[p])
+                m += '\\mathbf{%s}^{%s} ='%(bl, symbols[p])
             for j in range(b.shape[1]):
                 if b[i, j] == 1:
                     m += (k[j]+'+')
@@ -264,3 +313,4 @@ class Coordinates:
             m += ' \\\\ '
         m += ' '
         return r'%s'%(m)
+

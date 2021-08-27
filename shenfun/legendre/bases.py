@@ -10,6 +10,7 @@ import numpy as np
 from numpy.polynomial import legendre as leg
 from scipy.special import eval_legendre
 from mpi4py_fft import fftw
+from shenfun.config import config
 from shenfun.spectralbase import SpectralBase, work, Transform, islicedict, \
     slicedict
 from shenfun.matrixbase import SparseMatrix
@@ -52,7 +53,7 @@ except:
     has_quadpy = False
     mp = None
 
-mode = os.environ.get('SHENFUN_LEGENDRE_MODE', 'numpy')
+mode = config['bases']['legendre']['mode']
 mode = mode if has_quadpy else 'numpy'
 
 xp = sp.Symbol('x', real=True)

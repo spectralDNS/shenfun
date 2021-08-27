@@ -12,6 +12,7 @@ import sympy as sp
 from scipy.sparse import bmat, dia_matrix, kron, diags as sp_diags
 from scipy.sparse.linalg import spsolve
 from mpi4py import MPI
+from shenfun.config import config
 from .utilities import integrate_sympy
 
 __all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix',
@@ -82,7 +83,7 @@ class SparseMatrix(MutableMapping):
         self._matvec_methods = []
         self.solver = None
 
-    def matvec(self, v, c, format='dia', axis=0):
+    def matvec(self, v, c, format=None, axis=0):
         """Matrix vector product
 
         Returns c = dot(self, v)
@@ -102,10 +103,14 @@ class SparseMatrix(MutableMapping):
              - self - To be implemented in subclass
              - cython - Cython implementation that may be implemented in subclass
              - numba - Numba implementation that may be implemented in subclass
+
+             Using config['matrix']['sparse']['matvec'] setting if format is None
+
         axis : int, optional
             The axis over which to take the matrix vector product
 
         """
+        format = config['matrix']['sparse']['matvec'] if format is None else format
         N, M = self.shape
         c.fill(0)
 
@@ -125,8 +130,6 @@ class SparseMatrix(MutableMapping):
             c *= self.scale
 
         else:
-            if format not in ('csr', 'dia'): # Fallback on 'csr'. Should probably throw warning
-                format = 'csr'
             diags = self.diags(format=format)
             P = int(np.prod(v.shape[1:]))
             y = diags.dot(v[:M].reshape(M, P)).squeeze()
@@ -139,7 +142,7 @@ class SparseMatrix(MutableMapping):
 
         return c
 
-    def diags(self, format='dia'):
+    def diags(self, format=None):
         """Return a regular sparse matrix of specified format
 
         Parameters
@@ -151,12 +154,14 @@ class SparseMatrix(MutableMapping):
             - csr - Compressed sparse row
             - csc - Compressed sparse column
 
+            Using config['matrix']['sparse']['diags'] setting if format is None
+
         Note
         ----
         This method returns the matrix scaled by self.scale.
 
         """
-        #if self._diags.shape != self.shape or self._diags.format != format:
+        format = config['matrix']['sparse']['diags'] if format is None else format
         self._diags = sp_diags(list(self.values()), list(self.keys()),
                                shape=self.shape, format=format)
         scale = self.scale
@@ -398,6 +403,9 @@ class SparseMatrix(MutableMapping):
                 self[key] = val*self.scale
         self.scale = 1
 
+    def sorted_keys(self):
+        return np.sort(np.array(list(self.keys())))
+
     def solve(self, b, u=None, axis=0, constraints=()):
         """Solve matrix system Au = b
 
@@ -429,7 +437,21 @@ class SparseMatrix(MutableMapping):
 
     def get_solver(self):
         """Return appropriate solver for self"""
-        from .la import Solve
+        from .la import Solve, TDMA, TDMA_O, FDMA, TwoDMA, PDMA
+        if len(self) == 2:
+            if np.all(self.sorted_keys() == (0, 2)):
+                return TwoDMA
+        elif len(self) == 3:
+            if np.all(self.sorted_keys() == (-2, 0, 2)):
+                return TDMA
+            elif np.all(self.sorted_keys() == (-1, 0, 1)) and self.issymmetric:
+                return TDMA_O
+        elif len(self) == 4:
+            if np.all(self.sorted_keys() == (-2, 0, 2, 4)):
+                return FDMA
+        elif len(self) == 5:
+            if np.all(self.sorted_keys() == (-4, -2, 0, 2, 4)):
+                return PDMA
         return Solve
 
     def isdiagonal(self):
@@ -542,20 +564,23 @@ class SpectralMatrix(SparseMatrix):
         self.measure = measure
         shape = (test[0].dim(), trial[0].dim())
         if d == {}:
-            D = get_dense_matrix(test, trial, measure)[:shape[0], :shape[1]]
-            #D = get_denser_matrix(test, trial, measure)[:shape[0], :shape[1]]
-            #D = get_dense_matrix_sympy(test, trial, measure)[:shape[0], :shape[1]]
+            if config['matrix']['sparse']['construct'] == 'dense':
+                D = get_dense_matrix(test, trial, measure)[:shape[0], :shape[1]]
+            elif config['matrix']['sparse']['construct'] == 'denser':
+                D = get_denser_matrix(test, trial, measure)[:shape[0], :shape[1]]
+            else:
+                D = get_dense_matrix_sympy(test, trial, measure)[:shape[0], :shape[1]]
             d = extract_diagonal_matrix(D)
         SparseMatrix.__init__(self, d, shape, scale)
 
-    def matvec(self, v, c, format='csr', axis=0):
+    def matvec(self, v, c, format=None, axis=0):
         u = self.trialfunction[0]
         ss = [slice(None)]*len(v.shape)
         ss[axis] = u.slice()
         c = super(SpectralMatrix, self).matvec(v[tuple(ss)], c, format=format, axis=axis)
-        if self.testfunction[0].use_fixed_gauge:
-            ss[axis] = 0
-            c[tuple(ss)] = 0
+        #if self.testfunction[0].use_fixed_gauge:
+        #    ss[axis] = 0
+        #    c[tuple(ss)] = 0
         return c
 
     @property
@@ -801,13 +826,6 @@ class BlockMatrix:
         self.dims = dims = (testbase.num_components(), trialbase.num_components())
         self.mats = np.zeros(dims, dtype=int).tolist()
         self.solver = None
-        #tps = testbase.flatten() if hasattr(testbase, 'flatten') else [testbase]
-        #offset = [np.zeros(tps[0].dimensions, dtype=int)]
-        #for i, tp in enumerate(tps):
-        #    dims = tp.dim() if not hasattr(tp, 'dims') else tp.dims() # 1D basis does not have dims()
-        #    offset.append(np.array(dims + offset[i]))
-        #self.offset = offset
-        #self.global_shape = self.offset[-1]
         self += tpmats
 
     def __add__(self, a):
@@ -859,7 +877,7 @@ class BlockMatrix:
                                 tpmats.append(m)
         return tpmats
 
-    def matvec(self, v, c):
+    def matvec(self, v, c, format=None):
         """Compute matrix vector product
 
             c = self * v
@@ -876,6 +894,10 @@ class BlockMatrix:
         """
         assert v.function_space() == self.trialbase
         assert c.function_space() == self.testbase
+        format = config['matrix']['block']['matvec'] if format is None else format
+        nvars = c.function_space().num_components()
+        c = c.reshape(1, *c.shape) if nvars == 1 else c
+        v = v.reshape(1, *v.shape) if nvars == 1 else v
         c.v.fill(0)
         z = np.zeros_like(c.v[0])
         for i, mi in enumerate(self.mats):
@@ -886,8 +908,10 @@ class BlockMatrix:
                 else:
                     for m in mij:
                         z.fill(0)
-                        z = m.matvec(v.v[j], z)
+                        z = m.matvec(v.v[j], z, format=format)
                         c.v[i] += z
+        c = c.squeeze() if nvars == 1 else c
+        v = v.squeeze() if nvars == 1 else v
         return c
 
     def __getitem__(self, ij):
@@ -915,7 +939,7 @@ class BlockMatrix:
                             return True
         return False
 
-    def diags(self, it=(0,), format='csr'):
+    def diags(self, it=(0,), format=None):
         """Return global block matrix in scipy sparse format
 
         For multidimensional forms the returned matrix is constructed for
@@ -931,6 +955,7 @@ class BlockMatrix:
             The format of the returned matrix. See `Scipy sparse matrices <https://docs.scipy.org/doc/scipy/reference/sparse.html>`_
 
         """
+        format = config['matrix']['block']['diags'] if format is None else format
         from .spectralbase import MixedFunctionSpace
         if self.contains_bc_matrix() and self.contains_regular_matrix():
             raise RuntimeError('diags only works for pure boundary or pure regular matrices. Consider splitting this BlockMatrix using :func:`.BlockMatrices`')
@@ -1176,7 +1201,7 @@ class TPMatrix:
             u = H(b, u, constraints=constraints)
         return u
 
-    def matvec(self, v, c):
+    def matvec(self, v, c, format=None):
         tpmat = self.get_simplified()
         c.fill(0)
         if len(tpmat.naxes) == 0:
@@ -1185,10 +1210,10 @@ class TPMatrix:
             axis = tpmat.naxes[0]
             rank = v.rank if hasattr(v, 'rank') else 0
             if rank == 0:
-                c = tpmat.pmat.matvec(v, c, axis=axis)
+                c = tpmat.pmat.matvec(v, c, format=format, axis=axis)
             else:
-                c = tpmat.pmat.matvec(v[tpmat.global_index[1]], c, axis=axis)
-            c = c*tpmat.scale
+                c = tpmat.pmat.matvec(v[tpmat.global_index[1]], c, format=format, axis=axis)
+            c[:] = c*tpmat.scale
         elif len(tpmat.naxes) == 2:
             # 2 non-periodic directions (may be non-aligned in second axis, hence transfers)
             npaxes = deepcopy(tpmat.naxes)
@@ -1209,11 +1234,11 @@ class TPMatrix:
             cB = np.zeros(transAB.subshapeB, dtype=c.dtype)
             cC = np.zeros(transAB.subshapeB, dtype=c.dtype)
             bb = tpmat.mats[axis]
-            c = bb.matvec(v, c, axis=axis)
+            c = bb.matvec(v, c, format=format, axis=axis)
             # align in second non-periodic axis
             transAB.forward(c, cB)
             bb = tpmat.mats[second_axis]
-            cC = bb.matvec(cB, cC, axis=second_axis)
+            cC = bb.matvec(cB, cC, format=format, axis=second_axis)
             transAB.backward(cC, c)
             c *= tpmat.scale
             if newspace:
@@ -1359,7 +1384,7 @@ class TPMatrix:
         return TPMatrix(mats, self.space, self.trialspace, self.scale,
                         self.global_index, self.testbase, self.trialbase)
 
-    def diags(self, format='csr'):
+    def diags(self, format=None):
         assert self._issimplified is False
         if self.dimensions == 2:
             mat = kron(self.mats[0].diags(format=format),

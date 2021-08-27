@@ -4,6 +4,7 @@ This module contains the implementation of operators acting on arguments.
 import numpy as np
 import sympy as sp
 import copy
+from shenfun.config import config
 from .arguments import Expr, BasisFunction, Function, Array
 
 __all__ = ('div', 'grad', 'Dx', 'curl')
@@ -13,8 +14,17 @@ __all__ = ('div', 'grad', 'Dx', 'curl')
 def _expr_from_vector_components(comp, basis):
     """Return Expr composed of vector components `comp`
     """
+    hi = basis.function_space().coors.hi
     terms, scales, indices = [], [], []
+    ndim = len(comp[0].terms()[0][0])
+    his = [1]*len(comp)
+    if config['basisvectors'] == 'normal':
+        if len(comp) == ndim:
+            his = hi
+        elif len(comp) == ndim**2:
+            his = [hi[i]*hi[j] for i in range(ndim) for j in range(ndim)]
     for i in range(len(comp)):
+        comp[i] *= his[i]
         terms += comp[i]._terms
         scales += comp[i]._scales
         indices += comp[i]._indices
@@ -50,7 +60,6 @@ def div(test):
                 dv = []
                 for i in range(ndim):
                     dv.append(div(test[i]))
-
                 return _expr_from_vector_components(dv, test.basis())
 
             else: # vector
@@ -68,22 +77,24 @@ def div(test):
             return d
 
         else:
-            if test.num_components() == ndim**2:
+            hi = coors.hi
+            comp = test.get_contravariant_component
 
+            if test.num_components() == ndim**2:
                 ct = coors.get_christoffel_second()
                 d = []
                 for i in range(ndim):
                     di = []
                     for j in range(ndim):
-                        Sij = test[i][j]
+                        Sij = comp(i, j)
                         di.append(Dx(Sij, j, 1))
                         for k in range(ndim):
-                            Skj = test[k][j]
+                            Skj = comp(k, j)
                             #if not ct[i, j, k] == 0:
                             #    di.append(Skj*ct[i, j, k])
                             #if not ct[k, k, j] == 0:
                             #    di.append(Sij*ct[k, k, j])
-                            Sik = test[i][k]
+                            Sik = comp(i, k)
                             if not ct[i, k, j] == 0:
                                 di.append(Skj*ct[i, k, j])
                             if not ct[j, k, j] == 0:
@@ -98,9 +109,9 @@ def div(test):
 
             else:
                 sg = coors.get_sqrt_det_g()
-                d = Dx(test[0]*sg, 0, 1)*(1/sg)
+                d = Dx(comp(0)*sg, 0, 1)*(1/sg)
                 for i in range(1, ndim):
-                    d += Dx(test[i]*sg, i, 1)*(1/sg)
+                    d += Dx(comp(i)*sg, i, 1)*(1/sg)
             d.simplify()
         return d
 
@@ -138,12 +149,14 @@ def grad(test):
     else:
 
         gt = coors.get_contravariant_metric_tensor()
+        comp = test.get_contravariant_component
+        hi = coors.hi
 
         if test.num_components() > 1:
             ct = coors.get_christoffel_second()
             d = []
             for i in range(ndim):
-                vi = test[i]
+                vi = comp(i)
                 for j in range(ndim):
                     dj = []
                     for l in range(ndim):
@@ -152,7 +165,7 @@ def grad(test):
                             dj.append(Dx(vi, l, 1)*sc)
                         for k in range(ndim):
                             if not sc*ct[i, k, l] == 0:
-                                dj.append(test[k]*(sc*ct[i, k, l]))
+                                dj.append(comp(k)*(sc*ct[i, k, l]))
 
                     di = dj[0]
                     for m in range(1, len(dj)):
@@ -202,7 +215,7 @@ def Dx(test, x, k=1):
 
     if coors.is_cartesian:
         v = np.array(test.terms())
-        v[..., x] += k
+        v[..., x] += 1
         test._terms = v.tolist()
 
     else:
@@ -214,13 +227,13 @@ def Dx(test, x, k=1):
         num_terms = test.num_terms()
         for i in range(test.num_components()):
             for j in range(num_terms[i]):
-                sc0 = sp.simplify(sp.diff(sc[i][j], psi[x], k), measure=coors._measure)
+                sc0 = sp.simplify(sp.diff(sc[i][j], psi[x], 1), measure=coors._measure)
                 sc0 = coors.refine(sc0)
                 if not sc0 == 0:
                     v[i].append(copy.deepcopy(v[i][j]))
                     sc[i].append(sc0)
                     ind[i].append(ind[i][j])
-                v[i][j][x] += k
+                v[i][j][x] += 1
         test._terms = v
         test._scales = sc
         test._indices = ind
@@ -263,39 +276,31 @@ def curl(test):
         assert test.expr_rank() < 2, 'Cannot (yet) take curl of higher order tensor in curvilinear coordinates'
         hi = coors.hi
         sg = coors.get_sqrt_det_g()
+        comp = test.get_contravariant_component
+
         if coors.is_orthogonal:
+            #p = 1 if config['basisvectors'] == 'normal' else 2
             if test.dimensions == 3:
-                w0 = (Dx(test[2]*hi[2]**2, 1, 1) - Dx(test[1]*hi[1]**2, 2, 1))*(1/sg)
-                w1 = (Dx(test[0]*hi[0]**2, 2, 1) - Dx(test[2]*hi[2]**2, 0, 1))*(1/sg)
-                w2 = (Dx(test[1]*hi[1]**2, 0, 1) - Dx(test[0]*hi[0]**2, 1, 1))*(1/sg)
+                w0 = (Dx(comp(2)*hi[2]**2, 1, 1) - Dx(comp(1)*hi[1]**2, 2, 1))*(1/sg)
+                w1 = (Dx(comp(0)*hi[0]**2, 2, 1) - Dx(comp(2)*hi[2]**2, 0, 1))*(1/sg)
+                w2 = (Dx(comp(1)*hi[1]**2, 0, 1) - Dx(comp(0)*hi[0]**2, 1, 1))*(1/sg)
                 test = _expr_from_vector_components([w0, w1, w2], test.basis())
             else:
                 assert test.dimensions == 2
-                test = (Dx(test[1]*hi[1]**2, 0, 1) - Dx(test[0]*hi[0]**2, 1, 1))*(1/sg)
+                test = (Dx(comp(1)*hi[1]**2, 0, 1) - Dx(comp(0)*hi[0]**2, 1, 1))*(1/sg)
+
         else:
             g = coors.get_covariant_metric_tensor()
 
             if test.dimensions == 3:
-                w0 = np.sum([(Dx(test[i]*g[2, i], 1, 1) - Dx(test[i]*g[1, i], 2, 1))*(1/sg) for i in range(3)])
-                w1 = np.sum([(Dx(test[i]*g[0, i], 2, 1) - Dx(test[i]*g[2, i], 0, 1))*(1/sg) for i in range(3)])
-                w2 = np.sum([(Dx(test[i]*g[1, i], 0, 1) - Dx(test[i]*g[0, i], 1, 1))*(1/sg) for i in range(3)])
-
-                # This is an alternative (more complicated way):
-                #gt = coors.get_contravariant_metric_tensor()
-                #ww0 = grad(g[0, 0]*test[0] + g[0, 1]*test[1] + g[0, 2]*test[2])
-                #ww1 = grad(g[1, 0]*test[0] + g[1, 1]*test[1] + g[1, 2]*test[2])
-                #ww2 = grad(g[2, 0]*test[0] + g[2, 1]*test[1] + g[2, 2]*test[2])
-                #d0 = sg*(ww0[1]*gt[0, 2] + ww1[1]*gt[1, 2] + ww2[1]*gt[2, 2] - ww0[2]*gt[0, 1] - ww1[2]*gt[1, 1] - ww2[2]*gt[2, 1])
-                #d1 = sg*(ww0[2]*gt[0, 0] + ww1[2]*gt[1, 0] + ww2[2]*gt[2, 0] - ww0[0]*gt[0, 2] - ww1[0]*gt[1, 2] - ww2[0]*gt[2, 2])
-                #d2 = sg*(ww0[0]*gt[0, 1] + ww1[0]*gt[1, 1] + ww2[0]*gt[2, 1] - ww0[1]*gt[0, 0] - ww1[1]*gt[1, 0] - ww2[1]*gt[2, 0])
-                #w0 = d0*gt[0, 0] + d1*gt[1, 0] + d2*gt[2, 0]
-                #w1 = d0*gt[0, 1] + d1*gt[1, 1] + d2*gt[2, 1]
-                #w2 = d0*gt[0, 2] + d1*gt[1, 2] + d2*gt[2, 2]
+                w0 = np.sum([(Dx(comp(i)*g[2, i], 1, 1) - Dx(comp(i)*g[1, i], 2, 1))*(1/sg) for i in range(3)])
+                w1 = np.sum([(Dx(comp(i)*g[0, i], 2, 1) - Dx(comp(i)*g[2, i], 0, 1))*(1/sg) for i in range(3)])
+                w2 = np.sum([(Dx(comp(i)*g[1, i], 0, 1) - Dx(comp(i)*g[0, i], 1, 1))*(1/sg) for i in range(3)])
 
                 test = _expr_from_vector_components([w0, w1, w2], test.basis())
             else:
                 assert test.dimensions == 2
-                test = np.sum([(Dx(test[i]*g[1, i], 0, 1) - Dx(test[i]*g[0, i], 1, 1))*(1/sg) for i in range(2)])
+                test = np.sum([(Dx(comp(i)*g[1, i], 0, 1) - Dx(comp(i)*g[0, i], 1, 1))*(1/sg) for i in range(2)])
 
     test.simplify()
     return test

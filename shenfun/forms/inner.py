@@ -10,6 +10,7 @@ from shenfun.spectralbase import inner_product, SpectralBase, MixedFunctionSpace
 from shenfun.matrixbase import TPMatrix
 from shenfun.tensorproductspace import TensorProductSpace, CompositeSpace
 from shenfun.utilities import dx, split
+from shenfun.config import config
 from .arguments import Expr, Function, BasisFunction, Array
 
 __all__ = ('inner',)
@@ -206,7 +207,7 @@ def inner(expr0, expr1, output_array=None):
         if output_array is None and trial.argument == 2:
             output_array = Function(test.function_space())
 
-        gij = test.function_space().coors.get_covariant_metric_tensor()
+        gij = test.function_space().coors.get_metric_tensor(config['basisvectors'])
         if trial.argument == 2:
             # linear form
 
@@ -281,7 +282,7 @@ def inner(expr0, expr1, output_array=None):
     if isinstance(test, BasisFunction):
         test = Expr(test)
 
-    #assert test.expr_rank() == trial.expr_rank()
+    assert test.expr_rank() == trial.expr_rank()
 
     testspace = test.base.function_space()
     trialspace = trial.base.function_space()
@@ -292,8 +293,9 @@ def inner(expr0, expr1, output_array=None):
     if trial.argument == 2:
         uh = trial.base
 
+    gij = testspace.coors.get_metric_tensor(config['basisvectors'])
+
     A = []
-    gij = testspace.coors.get_covariant_metric_tensor()
     for vec_i, (base_test, test_ind) in enumerate(zip(test.terms(), test.indices())): # vector/scalar
         for vec_j, (base_trial, trial_ind) in enumerate(zip(trial.terms(), trial.indices())):
             g = 1 if len(test.terms()) == 1 else gij[vec_i, vec_j]

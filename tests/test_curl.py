@@ -163,6 +163,6 @@ def test_curl_cc():
     assert d.terms() == [[],[],[]]
 
 if __name__ == '__main__':
-    test_curl('d')
-    #test_curl2()
+    #test_curl('d')
+    test_curl2()
     #test_curl_cc()

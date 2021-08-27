@@ -73,7 +73,7 @@ def TDMA_SymSolve_VC(d, a, l, x, axis=0):
 #@nb.jit((float[::1], float[::1], float[::1], float[::1]), nopython=True, fastmath=True)
 @nb.jit(nopython=True, fastmath=True, cache=True)
 def TDMA_SymSolve1D(d, a, l, x):
-    n = x.shape[0]-2
+    n = d.shape[0]
     for i in range(2, n):
         x[i] -= l[i-2]*x[i-2]
 
@@ -150,24 +150,24 @@ def TDMA_SymSolve_VC_3D(d, a, l, x, axis):
     if axis == 0:
         for j in range(d.shape[1]):
             for k in range(d.shape[2]):
-                TDMA_SymSolve1D(d[:, j, k], a[:, j, k], l[:, j, k], x[:, j, k])
+                TDMA_SymSolve1D(d[:-2, j, k], a[:-2, j, k], l[:-2, j, k], x[:-2, j, k])
     elif axis == 1:
         for i in range(d.shape[0]):
             for k in range(d.shape[2]):
-                TDMA_SymSolve1D(d[i, :, k], a[i, :, k], l[i, :, k], x[i, :, k])
+                TDMA_SymSolve1D(d[i, :-2, k], a[i, :-2, k], l[i, :-2, k], x[i, :-2, k])
     elif axis == 2:
         for i in range(d.shape[0]):
             for j in range(d.shape[1]):
-                TDMA_SymSolve1D(d[i, j], a[i, j], l[i, j], x[i, j])
+                TDMA_SymSolve1D(d[i, j, :-2], a[i, j, :-2], l[i, j, :-2], x[i, j, :-2])
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
 def TDMA_SymSolve_VC_2D(d, a, l, x, axis):
     if axis == 0:
         for j in range(d.shape[1]):
-            TDMA_SymSolve1D(d[:, j], a[:, j], l[:, j], x[:, j])
+            TDMA_SymSolve1D(d[:-2, j], a[:-2, j], l[:-2, j], x[:-2, j])
     elif axis == 1:
         for i in range(d.shape[0]):
-            TDMA_SymSolve1D(d[i], a[i], l[i], x[i])
+            TDMA_SymSolve1D(d[i, :-2], a[i, :-2], l[i, :-2], x[i, :-2])
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
 def TDMA_O_SymSolve1D(d, a, l, x, axis=0):
