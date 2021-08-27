@@ -14,11 +14,10 @@ try:
     from . import numba
 except ModuleNotFoundError:
     numba = None
-from shenfun.config import config
 
 def optimizer(func):
     """Decorator used to wrap calls to optimized versions of functions."""
-
+    from shenfun.config import config
     mod = config['optimization']['mode']
     verbose = config['optimization']['verbose']
     if mod.lower() not in ('cython', 'numba'):

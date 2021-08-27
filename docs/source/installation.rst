@@ -86,10 +86,11 @@ Shenfun comes with a few configuration options that can be set in the
 `shenfun.yaml <https://github.com/spectralDNS/shenfun/tree/master/shenfun/shenfun.yaml>`_
 file. If you want to make your own modifications to this configuration there
 are two options. Either create a local file `shenfun.yaml` in the
-local directory wher you run your shenfun solver, or put a `shenfun.yaml`
+local directory where you run your shenfun solver, or put a `shenfun.yaml`
 file in the home directory `~/.shenfun/shenfun.yaml`. If a configuration
 file in found in either of those to locations, the settings there will
-overload the original settings.
+overload the original settings. The local configuration file will be the last
+to be read.
 
 Additional dependencies
 -----------------------
