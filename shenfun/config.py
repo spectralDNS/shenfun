@@ -1,14 +1,46 @@
 import os
 import yaml
 
-# The configuration file can be overloaded locally or in '~/.shenfun'
+# The configuration can be overloaded by a local 'shenfun.yaml' file, or
+# in '~/.shenfun/shenfun.yaml'. A yaml file to work with can be created
+# using the `dumpconfig` function below
 
-print(os.path.expandvars(os.path.dirname((os.path.abspath(__file__)))))
-locations = [os.path.dirname(os.path.abspath(__file__)),
-             os.path.expanduser('~/.shenfun'),
+config = {
+    'optimization':
+    {
+        'mode': 'cython',
+        'verbose': False,
+    },
+    'basisvectors': 'normal',
+    'matrix':
+    {
+        'sparse':
+        {
+            'solve': 'csc',
+            'diags': 'csc',
+            'matvec': 'csr',
+            'construct': 'dense' # denser, sympy - The method used to construct non-implemented matrices
+        }
+    },
+    'bases':
+    {
+        'legendre':
+        {
+            'mode': 'numpy',
+            'precision': 30,
+        },
+        'jacobi':
+        {
+            'mode': 'numpy',
+            #'mode': 'mpmath',
+            'precision': 30
+        }
+    }
+}
+
+locations = [os.path.expanduser('~/.shenfun'),
              os.getcwd()]
 
-config = {}
 for loc in locations:
     fl = os.path.expandvars(os.path.join(loc, 'shenfun.yaml'))
     try:
@@ -17,4 +49,10 @@ for loc in locations:
         yf.close()
     except FileNotFoundError:
         pass
-print(config)
+
+def dumpconfig(filename='shenfun.yaml', path='~/.shenfun'): # pragma: no cover
+    """Dump a configuration file in yaml format
+    """
+    with open(os.path.join(os.path.expanduser(path), filename), 'w') as yf:
+        yaml.dump(config, yf)
+    yf.close()

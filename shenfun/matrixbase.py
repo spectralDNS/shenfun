@@ -894,7 +894,6 @@ class BlockMatrix:
         """
         assert v.function_space() == self.trialbase
         assert c.function_space() == self.testbase
-        format = config['matrix']['block']['matvec'] if format is None else format
         nvars = c.function_space().num_components()
         c = c.reshape(1, *c.shape) if nvars == 1 else c
         v = v.reshape(1, *v.shape) if nvars == 1 else v
@@ -955,7 +954,6 @@ class BlockMatrix:
             The format of the returned matrix. See `Scipy sparse matrices <https://docs.scipy.org/doc/scipy/reference/sparse.html>`_
 
         """
-        format = config['matrix']['block']['diags'] if format is None else format
         from .spectralbase import MixedFunctionSpace
         if self.contains_bc_matrix() and self.contains_regular_matrix():
             raise RuntimeError('diags only works for pure boundary or pure regular matrices. Consider splitting this BlockMatrix using :func:`.BlockMatrices`')
