@@ -262,8 +262,9 @@ class TDMA(SparseMatrixSolver):
             assert constraints[0][0] == 0, 'Can only fix first row of TDMA'
             self.dd[0] = 1
             self.ud[0] = 0
-            T = b.function_space().bases[axis] if b.ndim > 1 else b.function_space()
-            b[T.si[0]] = constraints[0][1]
+            s = [slice(None)]*len(b.shape)
+            s[axis] = 0
+            b[tuple(s)] = constraints[0][1]
         return b
 
     def perform_lu(self):
@@ -369,8 +370,11 @@ class PDMA(SparseMatrixSolver):
             self.d1[0] = 0
             self.d2[0] = 0
             if b.ndim > 1:
-                T = b.function_space().bases[axis]
-                b[T.si[0]] = constraints[0][1]
+                s = [slice(None)]*len(b.shape)
+                s[axis] = 0
+                b[tuple(s)] = constraints[0][1]
+                #T = b.function_space().bases[axis]
+                #b[T.si[0]] = constraints[0][1]
             else:
                 b[0] = constraints[0][1]
         return b
@@ -940,7 +944,7 @@ class SolverGeneric1ND:
 
     def assemble(self):
         ndim = self.mats[0].dimensions
-        shape = self.mats[0].space.dims()
+        shape = self.mats[0].space.shape(True)
         if ndim == 2:
             self.MM = []
             if self.naxes == 0:
