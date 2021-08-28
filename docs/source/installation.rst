@@ -82,15 +82,55 @@ in the configuration file `shenfun.yaml`, see below.
 Configuration
 -------------
 
-Shenfun comes with a few configuration options that can be set in the
-`shenfun.yaml <https://github.com/spectralDNS/shenfun/tree/master/shenfun/shenfun.yaml>`_
-file. If you want to make your own modifications to this configuration there
-are two options. Either create a local file `shenfun.yaml` in the
+Shenfun comes with a few configuration options that can be found in the
+`config.py <https://github.com/spectralDNS/shenfun/tree/master/shenfun/config.py>`_
+file. If you want to make your own modifications to this configuration, there
+are two options. Either create a file `shenfun.yaml` in the
 local directory where you run your shenfun solver, or put a `shenfun.yaml`
 file in the home directory `~/.shenfun/shenfun.yaml`. If a configuration
-file in found in either of those to locations, the settings there will
-overload the original settings. The local configuration file will be the last
-to be read.
+file in found in either of these to locations, the settings there will
+overload the original. The local configuration file will be the last
+to be read. To generate a baseline configuration file you can run the
+`dumpconfig` function
+
+::
+
+    from shenfun.config import dumpconfig
+    dumpconfig()
+
+This will place a configuration file by default here: `~/.shenfun/shenfun.yaml`,
+that you can then choose to modify. If you want a local file instead, then run
+`dumpconfig(path='.')`. The yaml file looks and works like a dictionary.
+At the time of writing the configuration looks like
+
+::
+
+    bases:
+      jacobi:
+        mode: numpy
+        precision: 30
+      legendre:
+        mode: numpy
+        precision: 30
+    basisvectors: normal
+    matrix:
+      sparse:
+        construct: dense
+        diags: csc
+        matvec: csr
+        solve: csc
+    optimization:
+      mode: cython
+      verbose: false
+
+The `basisvectors` can be used to choose `covariant` instead of
+`normal` basis vectors. The matrix options decide which scipy
+sparse format to use for the sparse computations that make use of them.
+The `optimization` can be either `cython` or `numba`, which is used
+to speed up some routines. The `bases` configurations are mainly
+experimental, for using `quadpy` and `mpmath` in computing
+inner product matrices. Set `mode` to `mpmath` to enable this
+behaviour.
 
 Additional dependencies
 -----------------------
