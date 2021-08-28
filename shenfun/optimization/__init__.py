@@ -18,8 +18,14 @@ except ModuleNotFoundError:
 def optimizer(func):
     """Decorator used to wrap calls to optimized versions of functions."""
     from shenfun.config import config
-    mod = config['optimization']['mode']
-    verbose = config['optimization']['verbose']
+    mod = 'cython'
+    verbose = False
+    try:
+        mod = config['optimization']['mode']
+        verbose = config['optimization']['verbose']
+    except KeyError:
+        pass
+
     if mod.lower() not in ('cython', 'numba'):
         # Use python function
         if verbose:
