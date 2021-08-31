@@ -87,9 +87,9 @@ def get_solver(A, B, alpha, method):
             sol = chebyshev.la.Helmholtz(A, B, -1, alpha)
     elif method in (0, 3, 4):
         if alpha == 0:
-            sol = chebyshev.la.TwoDMA(A*(-1))
+            sol = la.TwoDMA(A*(-1))
         else:
-            sol = chebyshev.la.FDMA(alpha*B-A)
+            sol = la.FDMA(alpha*B-A)
     elif method == 5:
         if alpha == 0:
             AA = A*(-1)
@@ -233,11 +233,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.numba:
+        # The numba configuration must be set before importing shenfun.
         try:
             import numba
             cfg = {'optimization': {'mode': 'numba', 'verbose': False}}
             with open('shenfun.yaml', 'w') as f:
                 yaml.dump(cfg, f)
+            f.close()
         except ModuleNotFoundError:
             os.warning('Numba not found - using Cython')
 
@@ -290,7 +292,7 @@ if __name__ == '__main__':
                     cond[-1].append(main(n, basis, alpha, args.return_type))
 
         a2l.to_ltx(np.array(cond), frmt='{:6.2e}', print_out=True, mathform=False)
-    from shenfun.config import config
-    print(config)
+    if os.path.exists('shenfun.yaml'):
+        os.remove('shenfun.yaml')
     if args.plot:
         plt.show()

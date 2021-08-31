@@ -13,6 +13,7 @@ from shenfun.spectralbase import SpectralBase, work, Transform, FuncWrap, \
     islicedict, slicedict
 from shenfun.matrixbase import SparseMatrix
 from shenfun.optimization import optimizer
+from shenfun.config import config
 
 __all__ = ['ChebyshevBase',
            'Orthogonal',
@@ -207,6 +208,7 @@ class Orthogonal(ChebyshevBase):
         else:
             self._xfftn_fwd = functools.partial(fftw.dctn, type=1)
             self._xfftn_bck = functools.partial(fftw.dctn, type=1)
+        self._xfftn_fwd.opts = self._xfftn_bck.opts = config['fftw']['dct']
         self.plan((int(padding_factor*N),), 0, dtype, {})
 
     # Comment due to curvilinear issues
@@ -334,11 +336,8 @@ class Orthogonal(ChebyshevBase):
         plan_fwd = self._xfftn_fwd
         plan_bck = self._xfftn_bck
 
-        opts = dict(
-            overwrite_input='FFTW_DESTROY_INPUT',
-            planner_effort='FFTW_MEASURE',
-            threads=1,
-        )
+        opts = plan_fwd.opts
+        opts['overwrite_input'] = 'FFTW_DESTROY_INPUT'
         opts.update(options)
         flags = (fftw.flag_dict[opts['planner_effort']],
                  fftw.flag_dict[opts['overwrite_input']])
@@ -606,7 +605,7 @@ class OrthogonalU(ChebyshevBase):
         elif quad == 'GU':
             self._xfftn_fwd = functools.partial(fftw.dstn, type=1)
             self._xfftn_bck = functools.partial(fftw.dstn, type=1)
-
+        self._xfftn_fwd.opts = self._xfftn_bck.opts = config['fftw']['dst']
         self.plan((int(padding_factor*N),), 0, dtype, {})
 
     def sympy_basis(self, i=0, x=xp):
@@ -740,12 +739,8 @@ class OrthogonalU(ChebyshevBase):
         plan_fwd = self._xfftn_fwd
         plan_bck = self._xfftn_bck
 
-
-        opts = dict(
-            overwrite_input='FFTW_DESTROY_INPUT',
-            planner_effort='FFTW_MEASURE',
-            threads=1,
-        )
+        opts = plan_fwd.opts
+        opts['overwrite_input'] = 'FFTW_DESTROY_INPUT'
         opts.update(options)
         flags = (fftw.flag_dict[opts['planner_effort']],
                  fftw.flag_dict[opts['overwrite_input']])
@@ -1452,11 +1447,6 @@ class ShenNeumann(CompositeSpace):
             - GL - Chebyshev-Gauss-Lobatto
             - GC - Chebyshev-Gauss
 
-        mean : float, optional
-            Mean value if solving a Poisson problem that only is known
-            up to a constant. If mean is None, then we solve also for
-            basis function 0, which is T_0. A Helmholtz problem can use
-            mean=None.
         bc : 2-tuple of floats, optional
             Boundary condition values at, respectively, x=(-1, 1).
         domain : 2-tuple of floats, optional
@@ -1479,12 +1469,11 @@ class ShenNeumann(CompositeSpace):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="GC", mean=None, bc=(0, 0), domain=(-1., 1.), dtype=float, padding_factor=1,
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, padding_factor=1,
                  scaled=False, dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
-        self.mean = mean
 
     @staticmethod
     def boundary_condition():
@@ -1493,15 +1482,6 @@ class ShenNeumann(CompositeSpace):
     @staticmethod
     def short_name():
         return 'SN'
-
-    @property
-    def use_fixed_gauge(self):
-        if self.mean is None:
-            return False
-        T = self.tensorproductspace
-        if T:
-            return T.use_fixed_gauge
-        return True
 
     def stencil_matrix(self, N=None):
         N = self.N if N is None else N
@@ -1535,11 +1515,6 @@ class CombinedShenNeumann(CompositeSpace):
             - GL - Chebyshev-Gauss-Lobatto
             - GC - Chebyshev-Gauss
 
-        mean : float, optional
-            Mean value if solving a Poisson problem that only is known
-            up to a constant. If mean is None, then we solve also for
-            basis function 0, which is T_0. A Helmholtz problem can use
-            mean=None.
         bc : 2-tuple of floats, optional
             Boundary condition values at, respectively, x=(-1, 1).
         domain : 2-tuple of floats, optional
@@ -1560,12 +1535,11 @@ class CombinedShenNeumann(CompositeSpace):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="GC", mean=None, bc=(0, 0), domain=(-1., 1.), dtype=float, padding_factor=1,
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, padding_factor=1,
                  scaled=False, dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
-        self.mean = mean
 
     @staticmethod
     def boundary_condition():
@@ -1574,15 +1548,6 @@ class CombinedShenNeumann(CompositeSpace):
     @staticmethod
     def short_name():
         return 'CN'
-
-    @property
-    def use_fixed_gauge(self):
-        if self.mean is None:
-            return False
-        T = self.tensorproductspace
-        if T:
-            return T.use_fixed_gauge
-        return True
 
     def stencil_matrix(self, N=None):
         N = self.N if N is None else N
@@ -1631,11 +1596,6 @@ class MikNeumann(CompositeSpace):
             - GL - Chebyshev-Gauss-Lobatto
             - GC - Chebyshev-Gauss
 
-        mean : float, optional
-            Mean value if solving a Poisson problem that only is known
-            up to a constant. If mean is None, then we solve also for
-            basis function 0, which is T_0. A Helmholtz problem can use
-            mean=None.
         bc : 2-tuple of floats, optional
             Boundary condition values at, respectively, x=(-1, 1).
         domain : 2-tuple of floats, optional
@@ -1656,12 +1616,11 @@ class MikNeumann(CompositeSpace):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="GC", mean=None, bc=(0, 0), domain=(-1., 1.), dtype=float, padding_factor=1,
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, padding_factor=1,
                  scaled=False, dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
-        self.mean = mean
 
     @staticmethod
     def boundary_condition():
@@ -1670,15 +1629,6 @@ class MikNeumann(CompositeSpace):
     @staticmethod
     def short_name():
         return 'MN'
-
-    @property
-    def use_fixed_gauge(self):
-        if self.mean is None:
-            return False
-        T = self.tensorproductspace
-        if T:
-            return T.use_fixed_gauge
-        return True
 
     def stencil_matrix(self, N=None):
         N = self.N if N is None else N
@@ -1792,7 +1742,6 @@ class SecondNeumann(CompositeSpace): #pragma: no cover
             - GL - Chebyshev-Gauss-Lobatto
             - GC - Chebyshev-Gauss
 
-        mean : float, optional
             Mean value
         domain : 2-tuple of floats, optional
             The computational domain
@@ -1813,12 +1762,11 @@ class SecondNeumann(CompositeSpace): #pragma: no cover
                 rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, quad="GC", mean=0, domain=(-1., 1.), dtype=float,
+    def __init__(self, N, quad="GC", domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
-        self.mean = mean
         self._factor = np.zeros(0)
 
     @staticmethod

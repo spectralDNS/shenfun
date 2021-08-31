@@ -38,7 +38,7 @@ fe = -ue.diff(x, 2)-ue.diff(y, 2)
 N = int(sys.argv[-2])
 N = (N, N)
 bc = {'left': ('N', ue.diff(x, 1).subs(x, -1)), 'right': ('N', ue.diff(x, 1).subs(x, 1))}
-SN = FunctionSpace(N[0], family=family, bc=bc, mean=0)
+SN = FunctionSpace(N[0], family=family, bc=bc)
 K1 = FunctionSpace(N[1], family='F', dtype='d')
 T = TensorProductSpace(comm, (SN, K1), axes=(0, 1))
 u = TrialFunction(T)
@@ -56,10 +56,11 @@ matrices = inner(v, -div(grad(u)))
 # Create Helmholtz linear algebra solver
 #sol = Solver(*matrices)
 sol = la.SolverGeneric1ND(matrices)
+#sol = la.Solver2D(matrices)
 
 # Solve and transform to real space
 u_hat = Function(T).set_boundary_dofs()           # Solution spectral space
-#u_hat = H(f_hat, u_hat)       # Solve
+#u_hat = sol(f_hat, u_hat)       # Solve
 u_hat = sol(f_hat, u_hat, constraints=((0, 0),))
 
 uq = T.backward(u_hat).copy()

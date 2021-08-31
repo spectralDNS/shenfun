@@ -17,6 +17,25 @@ ctypedef np.float64_t real_t
 ctypedef np.int64_t int_t
 ctypedef double real
 
+def FDMA_Solve(d, u1, u2, l, x, axis=0):
+    assert x.ndim == 1
+    xx = np.ascontiguousarray(x)
+    FDMA_Solve1D(d, u1, u2, l, xx)
+    if not x.flags['C_CONTIGUOUS']:
+        x[:] = xx
+
+def FDMA_Solve1D(real_t[::1] d, real_t[::1] u1, real_t[::1] u2, real_t[::1] l, T[::1] x):
+    cdef:
+        unsigned int n = d.shape[0]
+        unsigned int i
+    for i in xrange(2, n):
+        x[i] -= l[i-2]*x[i-2]
+    x[n-1] = x[n-1]/d[n-1]
+    x[n-2] = x[n-2]/d[n-2]
+    x[n-3] = (x[n-3] - u1[n-3]*x[n-1])/d[n-3]
+    x[n-4] = (x[n-4] - u1[n-4]*x[n-2])/d[n-4]
+    for i in range(n - 5, -1, -1):
+        x[i] = (x[i] - u1[i]*x[i+2] - u2[i]*x[i+4])/d[i]
 
 #def PDMA_SymLU(np.ndarray[np.float64_t, ndim=1, mode='c'] d,
                #np.ndarray[np.float64_t, ndim=1, mode='c'] e,

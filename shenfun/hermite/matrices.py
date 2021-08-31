@@ -72,7 +72,7 @@ class AHHmat(SpectralMatrix):
         d = {0: k+0.5,
              2: -np.sqrt((k[:-2]+1)*(k[:-2]+2))/2}
         d[0][-1] = (N-1)/2.
-        d[-2] = d[2]
+        d[-2] = d[2].copy()
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
     def get_solver(self):

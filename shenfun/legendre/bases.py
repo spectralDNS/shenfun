@@ -560,8 +560,6 @@ class ShenNeumann(CompositeSpace):
             - LG - Legendre-Gauss
             - GL - Legendre-Gauss-Lobatto
 
-        mean : number
-            mean value
         bc : 2-tuple of numbers
             Boundary conditions at edges of domain
         domain : 2-tuple of floats, optional
@@ -583,12 +581,11 @@ class ShenNeumann(CompositeSpace):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
 
-    def __init__(self, N, quad="LG", mean=None, bc=(0., 0.), domain=(-1., 1.), padding_factor=1,
+    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), padding_factor=1,
                  scaled=False, dealias_direct=False, dtype=float, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
-        self.mean = mean
 
     @staticmethod
     def boundary_condition():
@@ -597,15 +594,6 @@ class ShenNeumann(CompositeSpace):
     @staticmethod
     def short_name():
         return 'SN'
-
-    @property
-    def use_fixed_gauge(self):
-        if self.mean is None:
-            return False
-        T = self.tensorproductspace
-        if T:
-            return T.use_fixed_gauge
-        return True
 
     def stencil_matrix(self, N=None):
         N = self.N if N is None else N
@@ -620,8 +608,6 @@ class ShenNeumann(CompositeSpace):
         if fast_transform is False:
             SpectralBase._evaluate_scalar_product(self)
             output_array[self.sl[slice(-2, None)]] = 0
-            if self.use_fixed_gauge:
-                output_array[self.si[0]] = self.mean*np.pi
             return
 
         assert input_array.ndim == 1, 'Use fast_transform=False'
@@ -630,8 +616,6 @@ class ShenNeumann(CompositeSpace):
         from shenfun.optimization.numba import legendre as legn
         legn.legendre_shenneumann_scalar_product(xj, wj, input_array, output_array)
         output_array[self.sl[slice(-2, None)]] = 0
-        if self.use_fixed_gauge:
-            output_array[self.si[0]] = self.mean*np.pi
 
     def _evaluate_expansion_all(self, input_array, output_array,
                                 x=None, fast_transform=False):

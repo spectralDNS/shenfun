@@ -6,6 +6,7 @@ import numpy as np
 from mpi4py_fft import fftw
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
 from shenfun.optimization.cython import convolve
+from shenfun.config import config
 
 __all__ = ['FourierBase', 'R2C', 'C2C']
 
@@ -261,11 +262,13 @@ class FourierBase(SpectralBase):
         self.axis = axis[-1]
         self._planned_axes = axis
 
-        opts = dict(
-            overwrite_input='FFTW_DESTROY_INPUT',
-            planner_effort='FFTW_MEASURE',
-            threads=1,
-        )
+        #opts = dict(
+        #    overwrite_input='FFTW_DESTROY_INPUT',
+        #    planner_effort=self.opts['planner_effort'],
+        #    threads=self.opts['threads'],
+        #)
+        opts = plan_fwd.opts
+        opts['overwrite_input'] = 'FFTW_DESTROY_INPUT'
         opts.update(options)
         threads = opts['threads']
         flags = (fftw.flag_dict[opts['planner_effort']],
@@ -275,6 +278,12 @@ class FourierBase(SpectralBase):
         xfftn_fwd = plan_fwd(U, s=s, axes=axis, threads=threads, flags=flags)
         V = xfftn_fwd.output_array
 
+        opts = plan_bck.opts
+        opts['overwrite_input'] = 'FFTW_DESTROY_INPUT'
+        opts.update(options)
+        threads = opts['threads']
+        flags = (fftw.flag_dict[opts['planner_effort']],
+                 fftw.flag_dict[opts['overwrite_input']])
         if np.issubdtype(dtype, np.floating):
             flags = (fftw.flag_dict[opts['planner_effort']],)
 
@@ -332,6 +341,8 @@ class R2C(FourierBase):
         self.N = N
         self._xfftn_fwd = fftw.rfftn
         self._xfftn_bck = fftw.irfftn
+        self._xfftn_fwd.opts = config['fftw']['rfft']
+        self._xfftn_bck.opts = config['fftw']['irfft']
         self._sn = []
         self._sm = []
         self.plan((int(padding_factor*N),), (0,), float, {})
@@ -513,6 +524,8 @@ class C2C(FourierBase):
         self.N = N
         self._xfftn_fwd = fftw.fftn
         self._xfftn_bck = fftw.ifftn
+        self._xfftn_fwd.opts = config['fftw']['fft']
+        self._xfftn_bck.opts = config['fftw']['ifft']
         self.plan((int(padding_factor*N),), (0,), complex, {})
         self._slp = []
 

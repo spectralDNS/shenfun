@@ -12,7 +12,10 @@ from shenfun.fourier import bases as fbases
 from shenfun.jacobi import bases as jbases
 from shenfun.la import TDMA
 from shenfun.spectralbase import inner_product
+from shenfun.config import config
 
+for f in ['dct', 'dst', 'fft', 'ifft', 'rfft', 'irfft']:
+    config['fftw'][f]['planner_effort'] = 'FFTW_ESTIMATE'
 
 N = 33
 x, y = symbols("x,y", real=True)
@@ -25,6 +28,7 @@ cBasis = (cbases.Orthogonal,
 # Bases with only GC quadrature
 cBasisGC = (cbases.OrthogonalU,
             cbases.DirichletU,
+            cbases.Heinrichs,
             cbases.MikNeumann,
             cbases.UpperDirichlet,
             cbases.CombinedShenNeumann,
@@ -82,9 +86,7 @@ class ABC(object):
     @property
     def dimensions(self):
         return self.dim
-    @property
-    def use_fixed_gauge(self):
-        return False
+
 
 @pytest.mark.parametrize('basis', fBasis)
 @pytest.mark.parametrize('N', (8, 9))
@@ -547,11 +549,11 @@ if __name__ == '__main__':
     #test_to_ortho(cBasisGC[1], 'GC')
     # test_convolve(fbases.R2C, 8)
     #test_ASDSDmat(cbases.ShenNeumann, "GC")
-    test_ASBSBmat(cbases.ShenBiharmonic, "GC")
+    #test_ASBSBmat(cbases.ShenBiharmonic, "GC")
     #test_CDDmat("GL")
     #test_massmatrices(cBasis[3], cBasis[1], 'GL')
     #test_CXXmat(cBasis[2], cBasis[1])
-    #test_transforms(cBasisGC[2], 'GC')
+    test_transforms(cBasisGC[3], 'GC')
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[2], 'GC')
     #test_eval(cBasis[1], 'GL')

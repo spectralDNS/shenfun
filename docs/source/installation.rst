@@ -69,16 +69,6 @@ or
 
 This is required to build all the Cython dependencies locally.
 
-Optimization
-------------
-
-Shenfun contains a few routines (essentially linear algebra solvers
-and matrix vector products) that are difficult to vectorize with numpy,
-and for this reason they have been implemented in either (or both of)
-`Numba`_ or `Cython`_. The user may choose which implementation
-to use through the configuration parameter `optimization`
-in the configuration file `shenfun.yaml`, see below.
-
 Configuration
 -------------
 
@@ -126,7 +116,7 @@ At the time of writing the configuration looks like
 The `basisvectors` can be used to choose `covariant` instead of
 `normal` basis vectors. The matrix options decide which scipy
 sparse format to use for the sparse computations that make use of them.
-The `optimization` can be either `cython` or `numba`, which is used
+The `optimization` can be either `cython`_ or `numba`_, which is used
 to speed up some routines. The `bases` configurations are mainly
 experimental, for using `quadpy` and `mpmath` in computing
 inner product matrices. Set `mode` to `mpmath` to enable this

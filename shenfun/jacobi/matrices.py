@@ -103,7 +103,7 @@ class BSDSDmat(SpectralMatrix):
         d = {-2: 4*(k[2:]-1)*(k[2:]+1)/(2*k[2:]-1)/(2*k[2:]+3)*(-2./(2*k[2:] + 1)),
               0: 4*(k+1)**2/(2*k+3)**2*(2./(2.*k+1) + 2./(2*k+5))}
 
-        d[2] = d[-2]
+        d[2] = d[-2].copy()
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
     def get_solver(self):
@@ -198,8 +198,8 @@ class BSBSBmat(SpectralMatrix):
         d = {0: p0*(ek[:-4] + hk[:-4]**2*ek[2:-2] + gk[:-4]**2*ek[4:]),
              2: p2*((hk[:-6]*ek[2:-4] + gk[:-6]*hk[2:-4]*ek[4:-2])),
              4: p4*(gk[:-8]*ek[4:-4])}
-        d[-2] = d[2]
-        d[-4] = d[4]
+        d[-2] = d[2].copy()
+        d[-4] = d[4].copy()
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
     def get_solver(self):
@@ -233,7 +233,7 @@ class ASBSBmat(SpectralMatrix):
         gk = (2*k+3)/(2*k+7)
         d = {0: p0*2*(2*k+3)*(1+gk),
              2: p2*(-2*(2*k[:-2]+3))}
-        d[-2] = d[2]
+        d[-2] = d[2].copy()
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 

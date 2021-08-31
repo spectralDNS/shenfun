@@ -38,7 +38,7 @@ fe = ue.diff(x, 2) + ue.diff(y, 2) + ue.diff(z, 2)
 N = int(sys.argv[-2])
 N = (N, N, N)
 
-SD = FunctionSpace(N[0], family=family, bc={'left': ('N', 0), 'right': ('N', 0)}, mean=0)
+SD = FunctionSpace(N[0], family=family, bc={'left': ('N', 0), 'right': ('N', 0)})
 K1 = FunctionSpace(N[1], family='F', dtype='D')
 K2 = FunctionSpace(N[2], family='F', dtype='d')
 T = TensorProductSpace(comm, (SD, K1, K2))
@@ -56,12 +56,12 @@ matrices = inner(v, div(grad(u)))
 
 # Create Helmholtz linear algebra solver
 H = Solver(*matrices)
-sol = la.SolverGeneric1ND(matrices)
+#sol = la.SolverGeneric1ND(matrices)
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space
-#u_hat = H(f_hat, u_hat)       # Solve
-u_hat = sol(f_hat, u_hat, constraints=((0, 0),))
+u_hat = H(f_hat, u_hat)       # Solve
+#u_hat = sol(f_hat, u_hat, constraints=((0, 0),))
 u = T.backward(u_hat)
 
 # Compare with analytical solution

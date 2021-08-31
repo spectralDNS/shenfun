@@ -23,6 +23,7 @@ from shenfun.legendre import la as lla
 from shenfun import div, grad, inner, TensorProductSpace, FunctionSpace, SparseMatrix, \
     Function
 from shenfun.spectralbase import inner_product
+from shenfun.config import config
 
 cBasis = (cbases.Orthogonal,
           cbases.ShenDirichlet,
@@ -67,6 +68,9 @@ lagquads = ('LG',)
 hquads = ('HG',)
 jquads = ('JG',)
 
+for f in ['dct', 'dst', 'fft', 'ifft', 'rfft', 'irfft']:
+    config['fftw'][f]['planner_effort'] = 'FFTW_ESTIMATE'
+
 N = 12
 k = np.arange(N).astype(float)
 a = np.random.random(N)
@@ -103,6 +107,8 @@ mats_and_quads = cmats_and_quads+lmats_and_quads+lagmats_and_quads+hmats_and_qua
 
 x = sp.symbols('x', real=True)
 xp = sp.symbols('x', real=True, positive=True)
+
+some_mats_and_quads = [mats_and_quads[i] for i in np.random.randint(0, len(mats_and_quads), 10)]
 
 @pytest.mark.parametrize('key, mat, quad', mats_and_quads)
 def test_mat(key, mat, quad):
@@ -266,7 +272,7 @@ def test_eq():
     m2 = SparseMatrix({0: 1., 2: 3.}, (6, 6))
     assert m0 != m2
 
-@pytest.mark.parametrize('key, mat, quad', mats_and_quads)
+@pytest.mark.parametrize('key, mat, quad', some_mats_and_quads)
 def test_imul(key, mat, quad):
     test = key[0]
     trial = key[1]
@@ -299,7 +305,7 @@ def test_imul(key, mat, quad):
     mat *= 2
     assert mat.scale == 2.0
 
-@pytest.mark.parametrize('key, mat, quad', mats_and_quads)
+@pytest.mark.parametrize('key, mat, quad', some_mats_and_quads)
 def test_mul(key, mat, quad):
     test = key[0]
     trial = key[1]
@@ -346,7 +352,7 @@ def test_mul2():
     c = mat * z
     assert np.allclose(c[:6], 1)
 
-@pytest.mark.parametrize('key, mat, quad', mats_and_quads)
+@pytest.mark.parametrize('key, mat, quad', some_mats_and_quads)
 def test_rmul(key, mat, quad):
     test = key[0]
     trial = key[1]
@@ -376,7 +382,7 @@ def test_rmul(key, mat, quad):
     mc = mat*2.
     assert mc.scale == 2.0
 
-@pytest.mark.parametrize('key, mat, quad', mats_and_quads)
+@pytest.mark.parametrize('key, mat, quad', some_mats_and_quads)
 def test_div(key, mat, quad):
     test = key[0]
     trial = key[1]
@@ -423,7 +429,7 @@ def test_div2(basis, quad):
     c2 = m.solve(z, c2)
     assert np.allclose(c2[B.slice()], c[B.slice()])
 
-@pytest.mark.parametrize('key, mat, quad', mats_and_quads)
+@pytest.mark.parametrize('key, mat, quad', some_mats_and_quads)
 def test_add(key, mat, quad):
     test = key[0]
     trial = key[1]
@@ -448,14 +454,13 @@ def test_add(key, mat, quad):
         return
 
     mc = m + m
-    assert mc.scale == 2.0*m.scale
+    assert np.linalg.norm(mc.diags('csr').data-m.diags('csr').data*2) < 1e-8
 
     mat = SparseMatrix(copy(dict(m)), m.shape, m.scale)
     mc = m + mat
-    for key, val in mc.items():
-        assert np.allclose(val*mc.scale, m[key]*2*m.scale)
+    assert np.linalg.norm(mc.diags('csr').data-m.diags('csr').data*2) < 1e-8
 
-@pytest.mark.parametrize('key, mat, quad', mats_and_quads)
+@pytest.mark.parametrize('key, mat, quad', some_mats_and_quads)
 def test_iadd(key, mat, quad):
     test = key[0]
     trial = key[1]
@@ -478,15 +483,13 @@ def test_iadd(key, mat, quad):
         m = mat(testfunction, trialfunction, measure=measure)
     except AssertionError:
         return
-    mc = SparseMatrix(deepcopy(dict(m)), m.shape, m.scale)
+    mc = m.copy()
     m += mc
-    assert np.linalg.norm((m-2*mc).diags('csr').data) < 1e-8
-
+    assert np.linalg.norm(m.diags('csr').data-mc.diags('csr').data*2) < 1e-8
     m -= 2*mc
+    assert np.linalg.norm(m.diags('csr').data) < 1e-8
 
-    assert np.linalg.norm(m.diags('csr').data) < 1e-10
-
-@pytest.mark.parametrize('key, mat, quad', mats_and_quads)
+@pytest.mark.parametrize('key, mat, quad', some_mats_and_quads)
 def test_isub(key, mat, quad):
     test = key[0]
     trial = key[1]
@@ -509,16 +512,16 @@ def test_isub(key, mat, quad):
         m = mat(testfunction, trialfunction, measure=measure)
     except AssertionError:
         return
-    mc = SparseMatrix(deepcopy(dict(m)), m.shape, m.scale)
+    mc = m.copy()
     m -= mc
-    assert np.linalg.norm(m.diags('csr').data) < 1e-10
+    assert np.linalg.norm(m.diags('csr').data) < 1e-8
 
-    m1 = SparseMatrix(deepcopy(dict(m)), m.shape)
-    m2 = SparseMatrix(deepcopy(dict(m)), m.shape)
+    m1 = SparseMatrix(deepcopy(dict(mc)), m.shape)
+    m2 = SparseMatrix(deepcopy(dict(mc)), m.shape)
     m1 -= m2
-    assert m1.scale == 0.0
+    assert np.linalg.norm(m1.diags('csr').data) < 1e-8
 
-@pytest.mark.parametrize('key, mat, quad', mats_and_quads)
+@pytest.mark.parametrize('key, mat, quad', some_mats_and_quads)
 def test_sub(key, mat, quad):
     test = key[0]
     trial = key[1]
@@ -542,13 +545,13 @@ def test_sub(key, mat, quad):
     except AssertionError:
         return
     mc = m - m
-    assert mc.scale == 0.0
+    assert np.linalg.norm(mc.diags('csr').data) < 1e-8
 
     m1 = SparseMatrix(copy(dict(m)), m.shape)
     m2 = SparseMatrix(copy(dict(m)), m.shape)
 
     mc = m1 - m2
-    assert mc.scale == 0.0
+    assert np.linalg.norm(mc.diags('csr').data) < 1e-8
 
 allaxes2D = {0: (0, 1), 1: (1, 0)}
 allaxes3D = {0: (0, 1, 2), 1: (1, 0, 2), 2: (2, 0, 1)}
@@ -725,12 +728,12 @@ if __name__ == '__main__':
     #test_lmatvec(lBasis[0], lBasis[0], 'LG', 2, 0)
     #test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
     #test_hmatvec(hBasis[0], hBasis[0], 'HG', 'self', 3, 1, 1)
-    #test_iadd(*mats_and_quads[15])
-    #test_add(*mats_and_quads[15])
+    #test_isub(((cbases.ShenNeumann, 0), (cbases.ShenDirichlet, 1)), cmatrices.CSNSDmat, 'GC')
+    test_add(((cbases.Orthogonal, 0), (cbases.ShenDirichlet, 1)), cmatrices.CTSDmat, 'GC')
     #test_sub(*mats_and_quads[15])
     #test_mul2()
     #test_div2(cBasis[1], 'GC')
-    test_helmholtz2D('legendre', 1)
+    #test_helmholtz2D('legendre', 1)
     #test_helmholtz3D('chebyshev', 0)
     #test_biharmonic3D('chebyshev', 0)
     #test_biharmonic2D('jacobi', 0)

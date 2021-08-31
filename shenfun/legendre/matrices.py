@@ -163,7 +163,7 @@ class BSDSDmat(SpectralMatrix):
             d[0] /= (4*k+6)
             d[-2] /= (np.sqrt(4*k[2:]+6)*np.sqrt(4*k[:-2]+6))
 
-        d[2] = d[-2]
+        d[2] = d[-2].copy()
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
     def get_solver(self):
@@ -196,7 +196,7 @@ class BSNSNmat(SpectralMatrix):
              2: -d0[2:]*alpha[:-2]}
         if test[0].quad == 'GL':
             d[0][-1] = d0[-1] + alpha[-1]**2*2./(N-1)
-        d[-2] = d[2]
+        d[-2] = d[2].copy()
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
         #self.solve = neumann_TDMA(self)
 
@@ -230,8 +230,8 @@ class BSBSBmat(SpectralMatrix):
         d = {0: ek[:-4] + hk[:-4]**2*ek[2:-2] + gk[:-4]**2*ek[4:],
              2: hk[:-6]*ek[2:-4] + gk[:-6]*hk[2:-4]*ek[4:-2],
              4: gk[:-8]*ek[4:-4]}
-        d[-2] = d[2]
-        d[-4] = d[4]
+        d[-2] = d[2].copy()
+        d[-4] = d[4].copy()
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
     def get_solver(self):
@@ -496,8 +496,8 @@ class ASNSNmat(SpectralMatrix):
         us[:] = bs*d[tuple(sl)]
         u /= self.scale
         self.testfunction[0].bc.set_boundary_dofs(u, True)
-        if self.testfunction[0].use_fixed_gauge:
-            u[0] = self.testfunction[0].mean/(2/self.testfunction[0].domain_factor())
+        for con in constraints:
+            u[con[0]] = con[1]
         if axis > 0:
             u = np.moveaxis(u, 0, axis)
             if u is not b:
@@ -530,7 +530,7 @@ class ASBSBmat(SpectralMatrix):
         gk = (2*k+3)/(2*k+7)
         d = {0: 2*(2*k+3)*(1+gk),
              2: -2*(2*k[:-2]+3)}
-        d[-2] = d[2]
+        d[-2] = d[2].copy()
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 class ADNDNmat(SpectralMatrix):
@@ -1176,7 +1176,7 @@ class BUDUDmat(SpectralMatrix):
         if test[0].quad == 'GL':
             d[0][-1] = 2./(2*(N-2)+1) + 2./(N-1)
 
-        d[1] = d[-1]
+        d[1] = d[-1].copy()
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 class BUDUDrp1mat(SpectralMatrix):
@@ -1204,8 +1204,8 @@ class BUDUDrp1mat(SpectralMatrix):
         d = {0: 4*(k+1)/(2*k+1)/(2*k+3),
              1: 4/(2*k[:-1]+1)/(2*k[:-1]+3)/(2*k[:-1]+5),
              2: -2*(k[:-2]+2)/(2*k[:-2]+3)/(2*k[:-2]+5)}
-        d[-1] = d[1]
-        d[-2] = d[2]
+        d[-1] = d[1].copy()
+        d[-2] = d[2].copy()
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
@@ -1261,9 +1261,9 @@ class BSDSDrp1mat(SpectralMatrix):
              1: 2/(2*k[:-1]+1)/(2*k[:-1]+5) + 2*(k[:-1]+3)/(2*k[:-1]+5)/(2*k[:-1]+7),
              2: -2/(2*k[:-2]+5),
              3: -2*(k[:-3]+3)/(2*k[:-3]+5)/(2*k[:-3]+7)}
-        d[-1] = d[1]
-        d[-2] = d[2]
-        d[-3] = d[3]
+        d[-1] = d[1].copy()
+        d[-2] = d[2].copy()
+        d[-3] = d[3].copy()
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 

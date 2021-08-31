@@ -23,6 +23,8 @@ assert len(sys.argv) == 3, "Call with two command-line arguments"
 assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
 assert isinstance(int(sys.argv[-2]), int)
 family = sys.argv[-1].lower()
+base = importlib.import_module('.'.join(('shenfun', family)))
+Solver = base.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
 x = sp.symbols("x", real=True)
@@ -34,8 +36,8 @@ fe = -ue.diff(x, 2)+alpha*ue
 # Size of discretization
 N = int(sys.argv[-2])
 
-SD = FunctionSpace(N, family=family, bc={'left': ('N', ue.diff(x, 1).subs(x, -1)), 'right': ('N', ue.diff(x, 1).subs(x, 1))},
-                   basis='ShenNeumann')
+bc = {'left': ('N', ue.diff(x, 1).subs(x, -1)), 'right': ('N', ue.diff(x, 1).subs(x, 1))}
+SD = FunctionSpace(N, family=family, bc=bc, basis='ShenNeumann')
 u = TrialFunction(SD)
 v = TestFunction(SD)
 
@@ -51,11 +53,19 @@ B0 = inner(v, u)
 
 # Solve
 u_hat = Function(SD).set_boundary_dofs()
-M = alpha*B0-A0
+M = -A0
+if alpha != 0:
+    M += alpha*B0
 
 # The coefficient matrix is singular if alpha=0. In that case add constraint
 constraint = ((0, dx(Array(SD, buffer=ue), weighted=True)/dx(Array(SD, val=1), weighted=True)),) if alpha == 0 else ()
-u_hat = M.solve(f_hat, u_hat, constraints=constraint)
+
+if alpha != 0:
+    # Use Helmholtz solver
+    sol = Solver(A0, B0, -1, alpha)
+    u_hat = sol(f_hat, u_hat, constraints=constraint)
+else:
+    u_hat = M.solve(f_hat, u_hat, constraints=constraint)
 
 # Transform to real space
 uj = u_hat.backward()

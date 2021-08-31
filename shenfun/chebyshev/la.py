@@ -121,7 +121,8 @@ class ANNSolver(SparseMatrixSolver):
         sl[0] = slice(None)
         us *= j2[tuple(sl)]
         u /= A.scale
-        u[0] = constraints[0][1]/(np.pi/A.testfunction[0].domain_factor())
+        for con in constraints:
+            u[con[0]] = con[1]
         A.testfunction[0].bc.set_boundary_dofs(u, True)
         if axis > 0:
             u = np.moveaxis(u, 0, axis)

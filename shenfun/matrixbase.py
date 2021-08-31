@@ -142,7 +142,7 @@ class SparseMatrix(MutableMapping):
 
         return c
 
-    def diags(self, format=None):
+    def diags(self, format=None, scaled=True):
         """Return a regular sparse matrix of specified format
 
         Parameters
@@ -156,9 +156,13 @@ class SparseMatrix(MutableMapping):
 
             Using config['matrix']['sparse']['diags'] setting if format is None
 
+        scaled : bool, optional
+            Return matrix scaled by the constant self.scale if True
+
         Note
         ----
-        This method returns the matrix scaled by self.scale.
+        This method returns the matrix scaled by self.scale if keyword scaled
+        is True.
 
         """
         format = config['matrix']['sparse']['diags'] if format is None else format
@@ -167,8 +171,7 @@ class SparseMatrix(MutableMapping):
         scale = self.scale
         if isinstance(scale, np.ndarray):
             scale = np.atleast_1d(scale).item()
-        self._diags = self._diags*scale
-        return self._diags
+        return self._diags*scale if scaled else self._diags
 
     def __getitem__(self, key):
         v = self._storage[key]
@@ -196,9 +199,11 @@ class SparseMatrix(MutableMapping):
             return False
         if not self.same_keys(a):
             return False
-        if (np.abs(self.diags('csr') - a.diags('csr')) >= 2e-8).nnz > 0:
+        d0 = self.diags('csr', False).data
+        a0 = a.diags('csr', False).data
+        if d0.shape[0] != a0.shape[0]:
             return False
-        if self.scale != a.scale:
+        if not np.linalg.norm(d0-a0) < 1e-8:
             return False
         return True
 
@@ -214,8 +219,9 @@ class SparseMatrix(MutableMapping):
     def __mul__(self, y):
         """Returns copy of self.__mul__(y) <==> self*y"""
         if isinstance(y, Number):
-            return SparseMatrix(deepcopy(dict(self)), self.shape,
-                                scale=self.scale*y)
+            c = self.copy()
+            c.scale *= y
+            return c
         elif isinstance(y, np.ndarray):
             c = np.empty_like(y)
             c = self.matvec(y, c)
@@ -238,8 +244,10 @@ class SparseMatrix(MutableMapping):
 
         """
         if isinstance(y, Number):
-            return SparseMatrix(deepcopy(dict(self)), self.shape,
-                                scale=self.scale/y)
+            assert abs(y) > 1e-8
+            c = self.copy()
+            c.scale /= y
+            return c
         elif isinstance(y, np.ndarray):
             b = np.zeros_like(y)
             b = self.solve(y, b)
@@ -253,33 +261,26 @@ class SparseMatrix(MutableMapping):
 
     def __add__(self, d):
         """Return copy of self.__add__(y) <==> self+d"""
-        if self == d:
-            if abs(self.scale+d.scale) < 1e-15:
-                f = SparseMatrix({0: 0}, self.shape)
-            else:
-                f = SparseMatrix(deepcopy(dict(self)), self.shape,
-                                 self.scale+d.scale)
+
+        if abs(self.scale) < 1e-15 and abs(d.scale) < 1e-15:
+            f = SparseMatrix({0: 0}, self.shape)
+
+        elif abs(self.scale) < 1e-15:
+            f = SparseMatrix(deepcopy(dict(d)), d.shape, d.scale)
+
+        elif abs(d.scale) < 1e-15:
+            f = self.copy()
+
         else:
-
-            if abs(self.scale) < 1e-15 and abs(d.scale) < 1e-15:
-                f = SparseMatrix({0: 0}, self.shape)
-
-            elif abs(self.scale) < 1e-15:
-                f = SparseMatrix(deepcopy(dict(d)), d.shape, d.scale)
-
-            else:
-                f = SparseMatrix(deepcopy(dict(self)), self.shape, self.scale)
-                assert isinstance(d, Mapping)
-                for key, val in d.items():
-                    if key in f:
-                        # Check if symmetric and make copy if necessary
-                        if -key in f:
-                            if id(f[key]) == id(f[-key]):
-                                f[-key] = deepcopy(f[key])
-                        f[key] = f[key] + d.scale/self.scale*val
-                    else:
-                        f[key] = d.scale/f.scale*val
-
+            assert isinstance(d, Mapping)
+            f = SparseMatrix(deepcopy(dict(self)), self.shape, self.scale)
+            f.incorporate_scale()
+            d.incorporate_scale()
+            for key, val in d.items():
+                if key in f:
+                    f[key] = f[key] + val
+                else:
+                    f[key] = val
         return f
 
     def __iadd__(self, d):
@@ -295,41 +296,39 @@ class SparseMatrix(MutableMapping):
             for key, val in d.items():
                 self[key] = val
             self.scale = d.scale
+            return self
 
-        else:
-            for key, val in d.items():
-                if key in self:
-                    # Check if symmetric and make copy if necessary
-                    #self[key] = self[key]*self.scale
-                    if -key in self:
-                        if id(self[key]) == id(self[-key]):
-                            self[-key] = deepcopy(self[key])
-                    self[key] = self[key] + d.scale/self.scale*val
-                else:
-                    self[key] = d.scale/self.scale*val
+        self.incorporate_scale()
+        d.incorporate_scale()
+        for key, val in d.items():
+            if key in self:
+                self[key] = self[key] + val
+            else:
+                self[key] = val
         return self
 
     def __sub__(self, d):
         """Return copy of self.__sub__(d) <==> self-d"""
         assert isinstance(d, Mapping)
-        if self == d:
-            f = SparseMatrix(deepcopy(dict(self)), self.shape,
-                             self.scale-d.scale)
 
-        elif abs(self.scale) < 1e-16:
+        if abs(self.scale) < 1e-15 and abs(d.scale) < 1e-15:
+            f = SparseMatrix({0: 0}, self.shape)
+
+        elif abs(self.scale) < 1e-15:
             f = SparseMatrix(deepcopy(dict(d)), d.shape, -d.scale)
+
+        elif abs(d.scale) < 1e-15:
+            f = self.copy()
 
         else:
             f = SparseMatrix(deepcopy(dict(self)), self.shape, self.scale)
+            f.incorporate_scale()
+            d.incorporate_scale()
             for key, val in d.items():
                 if key in f:
-                    # Check if symmetric and make copy if necessary
-                    if -key in f:
-                        if id(f[key]) == id(f[-key]):
-                            f[-key] = deepcopy(f[key])
-                    f[key] = f[key] - d.scale/self.scale*val
+                    f[key] = f[key] - val
                 else:
-                    f[key] = -d.scale/self.scale*val
+                    f[key] = -val
 
         return f
 
@@ -337,27 +336,24 @@ class SparseMatrix(MutableMapping):
         """self.__isub__(d) <==> self -= d"""
         assert isinstance(d, Mapping)
         assert d.shape == self.shape
-        if self == d:
-            self.scale -= d.scale
+
+        if abs(d.scale) < 1e-16:
+            return self
 
         elif abs(self.scale) < 1e-16:
             self.clear()
             for key, val in d.items():
                 self[key] = val
             self.scale = -d.scale
+            return self
 
-        else:
-            for key, val in d.items():
-                if key in self:
-                    #self[key] = self[key]*self.scale
-                    # Check if symmetric and make copy if necessary
-                    if -key in self:
-                        if id(self[key]) == id(self[-key]):
-                            self[-key] = deepcopy(self[key])
-                    self[key] =self[key] - d.scale/self.scale*val
-                else:
-                    self[key] = -d.scale/self.scale*val
-            #self.scale = 1
+        self.incorporate_scale()
+        d.incorporate_scale()
+        for key, val in d.items():
+            if key in self:
+                self[key] = self[key] - val
+            else:
+                self[key] = -val
         return self
 
     def copy(self):
@@ -375,9 +371,10 @@ class SparseMatrix(MutableMapping):
         return SparseMatrix(deepcopy(dict(self)), self.shape, self.scale)
 
     def __neg__(self):
-        """self.__neg__() <==> self *= -1"""
-        self.scale *= -1
-        return self
+        """self.__neg__() <==> -self"""
+        A = self.copy()
+        A.scale = self.scale*-1
+        return A
 
     def __hash__(self):
         return hash(frozenset(self))
@@ -449,7 +446,7 @@ class SparseMatrix(MutableMapping):
         elif len(self) == 4:
             if np.all(self.sorted_keys() == (-2, 0, 2, 4)):
                 return FDMA
-        elif len(self) == 5:
+        elif len(self) == 5 and self.issymmetric:
             if np.all(self.sorted_keys() == (-4, -2, 0, 2, 4)):
                 return PDMA
         return Solve
@@ -472,8 +469,16 @@ class SparseMatrix(MutableMapping):
 
     @property
     def issymmetric(self):
-        M = self.diags()
-        return (abs(M-M.T) > 1e-8).nnz == 0
+        #M = self.diags()
+        #return (abs(M-M.T) > 1e-8).nnz == 0 # too expensive
+        if np.sum(np.array(list(self.keys()))) != 0:
+            return False
+        for key, val in self.items():
+            if key <= 0:
+                continue
+            if not np.all(abs(self[key]-self[-key]) < 1e-8):
+                return False
+        return True
 
     def clean_diagonals(self, reltol=1e-8):
         """Eliminate essentially zerovalued diagonals
@@ -485,6 +490,8 @@ class SparseMatrix(MutableMapping):
         """
         a = self * np.ones(self.shape[1])
         relmax = abs(a).max() / self.shape[1]
+        if relmax == 0:
+            relmax = 1
         list_keys = []
         for key, val in self.items():
             if abs(np.linalg.norm(val))/relmax < reltol:
@@ -578,9 +585,6 @@ class SpectralMatrix(SparseMatrix):
         ss = [slice(None)]*len(v.shape)
         ss[axis] = u.slice()
         c = super(SpectralMatrix, self).matvec(v[tuple(ss)], c, format=format, axis=axis)
-        #if self.testfunction[0].use_fixed_gauge:
-        #    ss[axis] = 0
-        #    c[tuple(ss)] = 0
         return c
 
     @property
@@ -618,83 +622,17 @@ class SpectralMatrix(SparseMatrix):
             return False
         if self.get_key() != a.get_key():
             return False
-        sl = np.array(list(self.keys()))
-        sa = np.array(list(a.keys()))
-        if not sl.shape == sa.shape:
+        d0 = self.diags('csr', False).data
+        a0 = a.diags('csr', False).data
+        if d0.shape[0] != a0.shape[0]:
             return False
-        sl.sort()
-        sa.sort()
-        if not np.linalg.norm((sl-sa)**2) == 0:
-            return False
-        if np.linalg.norm(sl[0] - sa[0]) > 1e-8:
+        if not np.linalg.norm(d0-a0) < 1e-8:
             return False
         return True
-
-    def __mul__(self, y):
-        """Returns copy of self.__mul__(y) <==> self*y"""
-        if isinstance(y, Number):
-            f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
-                               self.trialfunction, self.scale*y)
-        elif isinstance(y, np.ndarray):
-            f = SparseMatrix.__mul__(self, y)
-        elif isinstance(y, SparseMatrix):
-            f = self.diags('csc')*y.diags('csc')
-        return f
-
-    def __div__(self, y):
-        """Returns copy self.__div__(y) <==> self/y"""
-        if isinstance(y, Number):
-            f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
-                               self.trialfunction, self.scale/y)
-        elif isinstance(y, np.ndarray):
-            f = SparseMatrix.__div__(self, y)
-
-        return f
-
-    def __add__(self, y):
-        """Return copy of self.__add__(y) <==> self+y"""
-        assert isinstance(y, Mapping)
-        if self == y:
-            f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
-                               self.trialfunction, self.scale+y.scale)
-        else:
-            f = SparseMatrix.__add__(self, y)
-        return f
-
-    def __iadd__(self, d):
-        """self.__iadd__(d) <==> self += d"""
-        SparseMatrix.__iadd__(self, d)
-        if self == d:
-            return self
-        else: # downcast
-            return SparseMatrix(dict(self), self.shape, self.scale)
-
-    def __sub__(self, y):
-        """Return copy of self.__sub__(y) <==> self-y"""
-        assert isinstance(y, Mapping)
-        if self == y:
-            f = SpectralMatrix(deepcopy(dict(self)), self.testfunction,
-                               self.trialfunction, self.scale-y.scale)
-        else:
-            f = SparseMatrix.__sub__(self, y)
-        return f
-
-    def __isub__(self, y):
-        """self.__isub__(d) <==> self -= y"""
-        SparseMatrix.__isub__(self, y)
-        if self == y:
-            return self
-        else: # downcast
-            return SparseMatrix(dict(self), self.shape, self.scale)
 
     def is_bc_matrix(self):
         return self.trialfunction[0].boundary_condition() == 'Apply'
 
-    def __copy__(self):
-        if self.__class__.__name__ == 'Identity':
-            return self
-
-        return SparseMatrix(copy(dict(self)), self.shape, self.scale)
 
 class Identity(SparseMatrix):
     """The identity matrix in :class:`.SparseMatrix` form
@@ -1312,9 +1250,10 @@ class TPMatrix:
             raise NotImplementedError
 
     def __neg__(self):
-        """self.__neg__() <==> self *= -1"""
-        self.scale *= -1
-        return self
+        """self.__neg__() <==> -self"""
+        A = self.copy()
+        A.scale = self.scale*-1
+        return A
 
     def __eq__(self, a):
         """Check if matrices and global_index are the same.
@@ -1591,7 +1530,8 @@ def extract_bc_matrices(mats):
 
     Parameters
     ----------
-    mats : list of list of :class:`.TPMatrix`es
+    mats : list of list of instances of :class:`.TPMatrix` or
+        :class:`.SparseMatrix`
 
     Returns
     -------

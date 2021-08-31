@@ -6,6 +6,7 @@ import pytest
 import numpy as np
 from mpi4py import MPI
 from sympy import symbols, cos, sin, lambdify, exp
+from shenfun.config import config
 from shenfun.fourier import bases as fbases
 from shenfun.chebyshev import bases as cbases
 from shenfun.legendre import bases as lbases
@@ -16,6 +17,9 @@ from shenfun import Function, project, Dx, Array, FunctionSpace, TensorProductSp
    VectorSpace, CompositeSpace, inner
 
 comm = MPI.COMM_WORLD
+
+for f in ['dct', 'dst', 'fft', 'ifft', 'rfft', 'irfft']:
+    config['fftw'][f]['planner_effort'] = 'FFTW_ESTIMATE'
 
 abstol = dict(f=5e-3, d=1e-10, g=1e-12)
 
@@ -165,6 +169,7 @@ j_bases_and_quads = list(product(jBasis, jquads))
                                     +h_bases_and_quads
                                     +j_bases_and_quads)
 def test_shentransform(typecode, dim, ST, quad):
+    sizes = (6, 5)
     for shape in product(*([sizes]*dim)):
         bases = []
         for n in shape[:-1]:
@@ -172,7 +177,7 @@ def test_shentransform(typecode, dim, ST, quad):
         bases.append(FunctionSpace(shape[-1], 'F', dtype=typecode))
 
         for axis in range(dim+1):
-            ST0 = ST(shape[-1], quad=quad)
+            ST0 = ST(sizes[-1]+4, quad=quad)
             bases.insert(axis, ST0)
             fft = TensorProductSpace(comm, bases, dtype=typecode)
             U = random_like(fft.forward.input_array)
@@ -183,7 +188,6 @@ def test_shentransform(typecode, dim, ST, quad):
             assert allclose(F, Fc)
             bases.pop(axis)
             fft.destroy()
-#test_shentransform('d', 2, lBasis[0], 'LG')
 
 bases_and_quads = (list(product(lBasis[:2], lquads))
                    +list(product(cBasis[:2], cquads)))
@@ -201,7 +205,7 @@ axes = {2: {0: [0, 1, 2],
 def test_project(typecode, dim, ST, quad):
     # Using sympy to compute an analytical solution
     x, y, z = symbols("x,y,z")
-    sizes = (20, 19)
+    sizes = (10, 9)
 
     funcs = {
         (1, 0): (cos(1*y)*sin(1*np.pi*x))*(1-x**2),
@@ -219,7 +223,7 @@ def test_project(typecode, dim, ST, quad):
         bases.append(FunctionSpace(shape[-1], 'F', dtype=typecode))
 
         for axis in range(dim+1):
-            ST0 = ST(shape[-1], quad=quad)
+            ST0 = ST(2*shape[-1], quad=quad)
             bases.insert(axis, ST0)
             fft = TensorProductSpace(comm, bases, dtype=typecode, axes=axes[dim][axis])
             dfft = fft.get_orthogonal()
@@ -231,12 +235,12 @@ def test_project(typecode, dim, ST, quad):
             due = ue.diff(xs[axis], 1)
             duq = Array(fft, buffer=due)
             uf = project(Dx(uh, axis, 1), dfft).backward()
-            assert np.linalg.norm(uf-duq) < 1e-5
+            assert np.linalg.norm(uf-duq) < 1e-3, np.linalg.norm(uf-duq)
             for ax in (x for x in range(dim+1) if x is not axis):
                 due = ue.diff(xs[axis], 1, xs[ax], 1)
                 duq = Array(fft, buffer=due)
                 uf = project(Dx(Dx(uh, axis, 1), ax, 1), dfft).backward()
-                assert np.linalg.norm(uf-duq) < 1e-5
+                assert np.linalg.norm(uf-duq) < 1e-3
 
             bases.pop(axis)
             fft.destroy()
@@ -290,7 +294,7 @@ def test_project_lag(typecode, dim):
 def test_project_hermite(typecode, dim):
     # Using sympy to compute an analytical solution
     x, y, z = symbols("x,y,z")
-    sizes = (20, 19)
+    sizes = (10, 9)
 
     funcs = {
         (1, 0): (cos(4*y)*sin(2*x))*exp(-x**2/2),
@@ -319,59 +323,6 @@ def test_project_hermite(typecode, dim):
             du2 = project(Dx(u_h, 0, 1), fft)
 
             assert np.linalg.norm(du_h-du2) < 1e-5
-            bases.pop(axis)
-            fft.destroy()
-
-# For Neumann
-nbases_and_quads = list(product(lBasis[2:3], lquads))+list(product(cBasis[2:3], cquads))
-@pytest.mark.parametrize('typecode', 'dD')
-@pytest.mark.parametrize('dim', (1, 2))
-@pytest.mark.parametrize('ST,quad', nbases_and_quads)
-def test_project2(typecode, dim, ST, quad):
-    # Using sympy to compute an analytical solution
-    x, y, z = symbols("x,y,z")
-    sizes = (18, 17)
-
-    funcx = ((2*np.pi**2*(x**2 - 1) - 1)* cos(2*np.pi*x) - 2*np.pi*x*sin(2*np.pi*x))/(4*np.pi**3)
-    funcy = ((2*np.pi**2*(y**2 - 1) - 1)* cos(2*np.pi*y) - 2*np.pi*y*sin(2*np.pi*y))/(4*np.pi**3)
-    funcz = ((2*np.pi**2*(z**2 - 1) - 1)* cos(2*np.pi*z) - 2*np.pi*z*sin(2*np.pi*z))/(4*np.pi**3)
-
-    funcs = {
-        (1, 0): cos(4*y)*funcx,
-        (1, 1): cos(4*x)*funcy,
-        (2, 0): sin(3*z)*cos(4*y)*funcx,
-        (2, 1): sin(2*z)*cos(4*x)*funcy,
-        (2, 2): sin(2*x)*cos(4*y)*funcz
-        }
-    syms = {1: (x, y), 2:(x, y, z)}
-    xs = {0:x, 1:y, 2:z}
-
-    for shape in product(*([sizes]*dim)):
-        bases = []
-        for n in shape[:-1]:
-            bases.append(FunctionSpace(n, 'F', dtype=typecode.upper()))
-        bases.append(FunctionSpace(shape[-1], 'F', dtype=typecode))
-
-        for axis in range(dim+1):
-            ST0 = ST(shape[-1], quad=quad)
-            bases.insert(axis, ST0)
-            # Spectral space must be aligned in nonperiodic direction, hence axes
-            fft = TensorProductSpace(comm, bases, dtype=typecode, axes=axes[dim][axis])
-            dfft = fft.get_orthogonal()
-            X = fft.local_mesh(True)
-            ue = funcs[(dim, axis)]
-            uh = Function(fft, buffer=ue)
-            due = ue.diff(xs[axis], 1)
-            duy = Array(fft, buffer=due)
-            duf = project(Dx(uh, axis, 1), fft).backward()
-            assert np.allclose(duy, duf, 0, 1e-3), np.linalg.norm(duy-duf)
-
-            # Test also several derivatives
-            for ax in (x for x in range(dim+1) if x is not axis):
-                due = ue.diff(xs[ax], 1, xs[axis], 1)
-                duq = Array(fft, buffer=due)
-                uf = project(Dx(Dx(uh, ax, 1), axis, 1), fft).backward()
-                assert np.allclose(uf, duq, 0, 1e-3)
             bases.pop(axis)
             fft.destroy()
 
@@ -416,45 +367,45 @@ def test_eval_tensor(typecode, dim, ST, quad):
     # Using sympy to compute an analytical solution
     # Testing for Dirichlet and regular basis
     x, y, z = symbols("x,y,z")
-    sizes = (16, 15)
+    sizes = (8, 7)
 
     funcx = {'': (1-x**2)*sin(np.pi*x),
              'Dirichlet': (1-x**2)*sin(np.pi*x),
              'Neumann': (1-x**2)*sin(np.pi*x),
-             'Biharmonic': (1-x**2)*sin(2*np.pi*x),
-             '6th order': (1-x**2)**3*sin(np.pi*x),
-             'BiPolar': (1-x**2)*sin(2*np.pi*x),
-             'BiPolar0': (1-x**2)*sin(2*np.pi*x),
+             'Biharmonic': (1-x**2)*sin(np.pi*x),
+             '6th order': (1-x**2)**2*sin(np.pi*x),
+             'BiPolar': (1-x**2)*sin(np.pi*x),
+             'BiPolar0': (1-x**2)*sin(np.pi*x),
              'UpperDirichlet': (1-x)*sin(np.pi*x),
-             'DirichletNeumann': (1-x**2)*sin(2*np.pi*x),
-             'NeumannDirichlet': (1-x**2)*sin(2*np.pi*x)}
+             'DirichletNeumann': (1-x**2)*sin(np.pi*x),
+             'NeumannDirichlet': (1-x**2)*sin(np.pi*x)}
     funcy = {'': (1-y**2)*sin(np.pi*y),
              'Dirichlet': (1-y**2)*sin(np.pi*y),
              'Neumann': (1-y**2)*sin(np.pi*y),
-             'Biharmonic': (1-y**2)*sin(2*np.pi*y),
-             '6th order': (1-y**2)**3*sin(np.pi*y),
-             'BiPolar': (1-y**2)*sin(2*np.pi*y),
-             'BiPolar0': (1-y**2)*sin(2*np.pi*y),
+             'Biharmonic': (1-y**2)*sin(np.pi*y),
+             '6th order': (1-y**2)**2*sin(np.pi*y),
+             'BiPolar': (1-y**2)*sin(np.pi*y),
+             'BiPolar0': (1-y**2)*sin(np.pi*y),
              'UpperDirichlet': (1-y)*sin(np.pi*y),
-             'DirichletNeumann': (1-y**2)*sin(2*np.pi*y),
-             'NeumannDirichlet': (1-y**2)*sin(2*np.pi*y)}
+             'DirichletNeumann': (1-y**2)*sin(np.pi*y),
+             'NeumannDirichlet': (1-y**2)*sin(np.pi*y)}
     funcz = {'': (1-z**2)*sin(np.pi*z),
              'Dirichlet': (1-z**2)*sin(np.pi*z),
              'Neumann': (1-z**2)*sin(np.pi*z),
-             'Biharmonic': (1-z**2)*sin(2*np.pi*z),
-             '6th order': (1-z**2)**3*sin(np.pi*z),
-             'BiPolar': (1-z**2)*sin(2*np.pi*z),
-             'BiPolar0': (1-z**2)*sin(2*np.pi*z),
+             'Biharmonic': (1-z**2)*sin(np.pi*z),
+             '6th order': (1-z**2)**2*sin(np.pi*z),
+             'BiPolar': (1-z**2)*sin(np.pi*z),
+             'BiPolar0': (1-z**2)*sin(np.pi*z),
              'UpperDirichlet': (1-z)*sin(np.pi*z),
-             'DirichletNeumann': (1-z**2)*sin(2*np.pi*z),
-             'NeumannDirichlet': (1-z**2)*sin(2*np.pi*z)}
+             'DirichletNeumann': (1-z**2)*sin(np.pi*z),
+             'NeumannDirichlet': (1-z**2)*sin(np.pi*z)}
 
     funcs = {
-        (1, 0): cos(2*y)*funcx[ST.boundary_condition()],
-        (1, 1): cos(2*x)*funcy[ST.boundary_condition()],
-        (2, 0): sin(3*z)*cos(4*y)*funcx[ST.boundary_condition()],
-        (2, 1): sin(2*z)*cos(4*x)*funcy[ST.boundary_condition()],
-        (2, 2): sin(2*x)*cos(4*y)*funcz[ST.boundary_condition()]
+        (1, 0): cos(y)*funcx[ST.boundary_condition()],
+        (1, 1): cos(x)*funcy[ST.boundary_condition()],
+        (2, 0): sin(z)*cos(y)*funcx[ST.boundary_condition()],
+        (2, 1): sin(z)*cos(x)*funcy[ST.boundary_condition()],
+        (2, 2): sin(x)*cos(y)*funcz[ST.boundary_condition()]
         }
     syms = {1: (x, y), 2:(x, y, z)}
     points = None
@@ -473,7 +424,7 @@ def test_eval_tensor(typecode, dim, ST, quad):
 
         for axis in range(dim+1):
             #for axis in (0,):
-            ST0 = ST(shape[-1], quad=quad)
+            ST0 = ST(shape[-1]+6, quad=quad)
             bases.insert(axis, ST0)
             # Spectral space must be aligned in nonperiodic direction, hence axes
             fft = TensorProductSpace(comm, bases, dtype=typecode, axes=axes[dim][axis])
@@ -488,7 +439,7 @@ def test_eval_tensor(typecode, dim, ST, quad):
             t0 = time()
             result = fft.eval(points, u_hat, method=0)
             t_0 += time()-t0
-            assert np.allclose(uq, result, 0, 1e-3)
+            assert np.allclose(uq, result, 0, 1e-3), np.linalg.norm(uq-result)
             t0 = time()
             result = fft.eval(points, u_hat, method=1)
             t_1 += time()-t0
@@ -511,11 +462,11 @@ def test_eval_tensor(typecode, dim, ST, quad):
 def test_eval_fourier(typecode, dim):
     # Using sympy to compute an analytical solution
     x, y, z = symbols("x,y,z")
-    sizes = (120, 119)
+    sizes = (12, 11)
 
     funcs = {
-        2: cos(4*x) + sin(6*y),
-        3: sin(6*x) + cos(4*y) + sin(8*z)
+        2: cos(4*x) + sin(3*y),
+        3: sin(3*x) + cos(4*y) + sin(2*z)
         }
     syms = {2: (x, y), 3: (x, y, z)}
     points = None
@@ -694,15 +645,15 @@ def test_eval_expression2(fam):
 if __name__ == '__main__':
     #test_transform('f', 3)
     #test_transform('d', 2)
-    test_shentransform('d', 1, lbases.ShenDirichlet, 'LG')
+    #test_shentransform('d', 1, lbases.ShenDirichlet, 'LG')
     #test_eval_expression()
     #test_eval_expression2('L')
     #test_project('d', 2, lBasis[3], 'LG')
     #test_project_lag('d', 2)
     #test_project_hermite('d', 2)
-    #test_project2('d', 2, lbases.ShenNeumannBasis, 'LG')
+    #test_project2('d', 2, lbases.ShenNeumann, 'LG')
     #test_project_2dirichlet('GL')
-    #test_eval_tensor('D', 2, cbases.ShenDirichlet, 'GC')
+    test_eval_tensor('d', 1, jbases.ShenOrder6, 'JG')
     #test_eval_fourier('D', 3)
     #test_inner('C', 'F')
     #test_refine()

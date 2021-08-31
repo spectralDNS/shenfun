@@ -35,6 +35,39 @@ config = {
             #'mode': 'mpmath',
             'precision': 30
         }
+    },
+    'fftw':
+    {
+        'dct':
+        {
+            'threads': 1,
+            'planner_effort': 'FFTW_MEASURE',
+        },
+        'dst':
+        {
+            'threads': 1,
+            'planner_effort': 'FFTW_MEASURE',
+        },
+        'rfft':
+        {
+            'threads': 1,
+            'planner_effort': 'FFTW_MEASURE'
+        },
+        'irfft':
+        {
+            'threads': 1,
+            'planner_effort': 'FFTW_MEASURE'
+        },
+        'fft':
+        {
+            'threads': 1,
+            'planner_effort': 'FFTW_MEASURE'
+        },
+        'ifft':
+        {
+            'threads': 1,
+            'planner_effort': 'FFTW_MEASURE'
+        }
     }
 }
 

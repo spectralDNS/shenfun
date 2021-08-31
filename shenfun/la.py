@@ -222,10 +222,13 @@ class TDMA(SparseMatrixSolver):
     def __init__(self, mat):
         SparseMatrixSolver.__init__(self, mat)
         N = self.mat.shape[0]
+
         A = self.mat
+        #self.issymmetric = np.all(A[2] == A[-2])
+        self.issymmetric = A.issymmetric
         self.dd = A[0]*np.ones(N)*A.scale
         self.ud = A[2]*np.ones(N-2)*A.scale
-        self.ld = np.zeros(N-2) if A.issymmetric else A[-2]*np.ones(N-2)*A.scale
+        self.ld = np.zeros(N-2) if self.issymmetric else A[-2]*np.ones(N-2)*A.scale
 
     @staticmethod
     @optimizer
@@ -269,7 +272,7 @@ class TDMA(SparseMatrixSolver):
 
     def perform_lu(self):
         if self._lu is None:
-            if self.mat.issymmetric:
+            if self.issymmetric:
                 self.TDMA_SymLU(self.dd, self.ud, self.ld)
             else:
                 self.TDMA_LU(self.ld, self.dd, self.ud)
@@ -349,8 +352,11 @@ class PDMA(SparseMatrixSolver):
         SparseMatrixSolver.__init__(self, mat)
         assert len(self.mat) == 5
 
-        self.N = 0
         # Broadcast in case diagonal is simply a constant.
+        self.issymmetric = self.mat.issymmetric
+        assert self.issymmetric, 'Unsymmetric is broken'
+        A = self.mat
+        #self.issymmetric = np.all(A[2] == A[-2]) and np.all(A[4] == A[-4])
         shape = self.mat.shape[1]
         self.d0 = np.broadcast_to(np.atleast_1d(self.mat[0]), shape).copy()*self.mat.scale
         self.d1 = np.broadcast_to(np.atleast_1d(self.mat[2]), shape-2).copy()*self.mat.scale
@@ -365,7 +371,7 @@ class PDMA(SparseMatrixSolver):
     def apply_constraints(self, b, constraints, axis=0):
         if len(constraints) > 0:
             assert len(constraints) == 1
-            assert constraints[0][0] == 0, 'Can only fix first row of TDMA'
+            assert constraints[0][0] == 0, 'Can only fix first row of PDMA'
             self.d0[0] = 1
             self.d1[0] = 0
             self.d2[0] = 0
@@ -474,7 +480,7 @@ class PDMA(SparseMatrixSolver):
 
     def perform_lu(self):
         if self._lu is None:
-            if self.mat.issymmetric:
+            if self.issymmetric:
                 self.PDMA_SymLU(self.d0, self.d1, self.d2)
 
             else:
@@ -488,7 +494,7 @@ class PDMA(SparseMatrixSolver):
     def solve(self, b, u, axis, lu):
         if u is not b:
             u[:] = b
-        if self.mat.issymmetric:
+        if self.issymmetric:
             self.PDMA_SymSolve(self.d0, self.d1, self.d2, u, axis)
         else:
             self.PDMA_Solve(self.l2, self.l1, self.d0, self.d1, self.d2, u, axis)
@@ -507,8 +513,6 @@ class FDMA(SparseMatrixSolver):
 
     def __init__(self, mat):
         SparseMatrixSolver.__init__(self, mat)
-
-        self.symmetric = self.mat.issymmetric
         N = self.mat.shape[0]
         self.dd = self.mat[0]*np.ones(N)*self.mat.scale
         self.u1 = self.mat[2]*np.ones(N-2)*self.mat.scale
@@ -539,6 +543,8 @@ class FDMA(SparseMatrixSolver):
         for i in range(2, n):
             x[i] -= l[i-2]*x[i-2]
 
+        #print('hei')
+
         x[n-1] = x[n-1]/d[n-1]
         x[n-2] = x[n-2]/d[n-2]
         x[n-3] = (x[n-3] - u1[n-3]*x[n-1])/d[n-3]
@@ -563,7 +569,7 @@ class TwoDMA(SparseMatrixSolver):
     """
     def __init__(self, mat):
         SparseMatrixSolver.__init__(self, mat)
-        N = mat.shape[0]
+        N = self.mat.shape[0]
         self.dd = self.mat[0]*np.ones(N)*self.mat.scale
         self.u1 = self.mat[2]*np.ones(N-2)*self.mat.scale
 
@@ -619,7 +625,7 @@ class Solve(SparseMatrixSolver):
     This solver converts the matrix to a Scipy sparse matrix of choice and
     uses `scipy.sparse` methods `splu` and `spsolve`.
 
-   """
+    """
     def __init__(self, mat, format=None):
         format = config['matrix']['sparse']['solve'] if format is None else format
         SparseMatrixSolver.__init__(self, mat)

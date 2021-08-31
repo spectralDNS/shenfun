@@ -780,15 +780,6 @@ class SpectralBase:
         return False
 
     @property
-    def use_fixed_gauge(self):
-        """Return True if space (or TensorProductSpace this space belongs to)
-        contains only Neumann boundary conditions"""
-        T = self.tensorproductspace
-        if T:
-            return T.use_fixed_gauge
-        return self.boundary_condition() == 'Neumann'
-
-    @property
     def rank(self):
         """Return rank of function space
 
@@ -972,7 +963,7 @@ class SpectralBase:
             d['bc'] = tuple(self.bc.bc)
         if hasattr(self, '_scaled'):
             d['scaled'] = self._scaled
-        for key in ('alpha', 'beta', 'mean'):
+        for key in ('alpha', 'beta'):
             if hasattr(self, key):
                 d[key] = object.__getattribute__(self, key)
         d.update(kwargs)
@@ -1003,7 +994,7 @@ class SpectralBase:
             d['bc'] = tuple(self.bc.bc)
         if hasattr(self, '_scaled'):
             d['scaled'] = self._scaled
-        for key in ('alpha', 'beta', 'mean'):
+        for key in ('alpha', 'beta'):
             if hasattr(self, key):
                 d[key] = object.__getattribute__(self, key)
         d.update(kwargs)
@@ -1024,7 +1015,6 @@ class SpectralBase:
             - padding_factor
             - dealias_direct
             - coorrdinates
-            - mean
             - bc
             - scaled
 
@@ -1046,7 +1036,7 @@ class SpectralBase:
             d['bc'] = tuple(self.bc.bc)
         if hasattr(self, '_scaled'):
             d['scaled'] = self._scaled
-        for key in ('alpha', 'beta', 'mean'):
+        for key in ('alpha', 'beta'):
             if hasattr(self, key):
                 d[key] = object.__getattribute__(self, key)
         d.update(kwargs)
@@ -1073,7 +1063,7 @@ class SpectralBase:
                  coordinates=self.coors.coordinates)
         if hasattr(self, '_scaled'):
             d['scaled'] = self._scaled
-        for key in ('alpha', 'beta', 'mean'):
+        for key in ('alpha', 'beta'):
             if hasattr(self, key):
                 d[key] = object.__getattribute__(self, key)
         d.update(kwargs)
@@ -1415,13 +1405,13 @@ class FuncWrap:
 
     # pylint: disable=too-few-public-methods, missing-docstring
 
-    __slots__ = ('_func', '_input_array', '_output_array')
+    __slots__ = ('__doc__', '_func', '_input_array', '_output_array')
 
     def __init__(self, func, input_array, output_array):
         object.__setattr__(self, '_func', func)
         object.__setattr__(self, '_input_array', input_array)
         object.__setattr__(self, '_output_array', output_array)
-        #object.__setattr__(self, '__doc__', func.__doc__)
+        object.__setattr__(self, '__doc__', func.__doc__)
 
     @property
     def input_array(self):
@@ -1443,7 +1433,7 @@ class Transform(FuncWrap):
     # pylint: disable=too-few-public-methods
 
     __slots__ = ('_xfftn', '_input_array', '_output_array',
-                 '_tmp_array')
+                 '_tmp_array', '__doc__')
 
     def __init__(self, func, xfftn, input_array, tmp_array, output_array):
         FuncWrap.__init__(self, func, input_array, output_array)

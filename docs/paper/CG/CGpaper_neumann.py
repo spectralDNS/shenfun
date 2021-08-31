@@ -87,10 +87,10 @@ def solve(f_hat, u_hat, A, B, alpha, method):
 
     elif method in (0, 1, 3, 4):
         if alpha == 0:
-            sol = chebyshev.la.TwoDMA(A)
+            sol = la.TwoDMA(A)
             f_hat *= -1
         else:
-            sol = chebyshev.la.FDMA(alpha*B-A)
+            sol = la.FDMA(alpha*B-A)
 
     elif method == 5:
         if alpha == 0:
@@ -123,10 +123,8 @@ def main(N, method=0, alpha=0, returntype=0):
 
     wt = {0: 1, 1: 1, 2: 1, 3: 1-x**2, 4: 1, 5: 1}[method]
     family = 'C' if method < 5 else 'L'
-    mean = 0 if alpha == 0 else None
-    dpar = {} if method in (1, 3, 4) else {'mean': mean}
-    test = FunctionSpace(N, family, basis=test, **dpar)
-    trial = FunctionSpace(N, family, basis=trial, mean=mean)
+    test = FunctionSpace(N, family, basis=test)
+    trial = FunctionSpace(N, family, basis=trial)
 
     v = TestFunction(test)
     u = TrialFunction(trial)
@@ -207,6 +205,7 @@ if __name__ == '__main__':
     import argparse
     import os
     import sys
+    import yaml
 
     parser = argparse.ArgumentParser(description='Solve the Helmholtz problem with Neumann boundary conditions')
     parser.add_argument('--return_type', action='store', type=int, required=True)
@@ -222,6 +221,7 @@ if __name__ == '__main__':
             cfg = {'optimization': {'mode': 'numba', 'verbose': False}}
             with open('shenfun.yaml', 'w') as f:
                 yaml.dump(cfg, f)
+            f.close()
         except ModuleNotFoundError:
             os.warning('Numba not found - using Cython')
     cond = []
@@ -273,6 +273,7 @@ if __name__ == '__main__':
                     cond[-1].append(main(n, basis, alpha, args.return_type))
 
         a2l.to_ltx(np.array(cond), frmt='{:6.2e}', print_out=True, mathform=False)
-
+    if os.path.exists('shenfun.yaml'):
+        os.remove('shenfun.yaml')
     if args.plot:
         plt.show()
