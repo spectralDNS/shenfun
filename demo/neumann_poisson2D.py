@@ -15,10 +15,10 @@ The equation to solve is
 import sys
 import os
 import importlib
-from sympy import symbols, cos, sin
+from sympy import symbols, cos, sin, pi
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    TensorProductSpace, FunctionSpace, Array, Function, comm, la
+    TensorProductSpace, FunctionSpace, Array, Function, comm, la, dx
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 assert len(sys.argv) == 3, "Call with two command-line arguments"
@@ -31,7 +31,8 @@ Solver = base.la.Helmholtz
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y = symbols("x,y", real=True)
-ue = (1-x**3)*cos(2*y)
+#ue = (1-x**3)*cos(2*y)
+ue = cos(2*pi*x)
 fe = -ue.diff(x, 2)-ue.diff(y, 2)
 
 # Size of discretization
@@ -58,10 +59,11 @@ matrices = inner(v, -div(grad(u)))
 sol = la.SolverGeneric1ND(matrices)
 #sol = la.Solver2D(matrices)
 
+constraint = ((0, dx(Array(T, buffer=ue), weighted=True)/dx(Array(T, val=1), weighted=True)),)
+
 # Solve and transform to real space
 u_hat = Function(T).set_boundary_dofs()           # Solution spectral space
-#u_hat = sol(f_hat, u_hat)       # Solve
-u_hat = sol(f_hat, u_hat, constraints=((0, 0),))
+u_hat = sol(f_hat, u_hat, constraints=constraint)
 
 uq = T.backward(u_hat).copy()
 

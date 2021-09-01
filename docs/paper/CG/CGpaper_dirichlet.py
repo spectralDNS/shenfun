@@ -3,7 +3,11 @@ This script has been used to compute the Dirichlet results of the paper
 
     On efficient Chebyshev-Galerkin methods for second-order equations
 
-The results have been computed using Python 3.9 and Shenfun 3.1.1.
+The results have been computed using Python 3.9 and Shenfun 3.2.2.
+The results have been computed with the Numba optimization you get
+by calling this script with argument --numba, e.g.,
+
+   python CGpaper_naumann.py --return_type 2 --numba
 
 The generalized Chebyshev-Tau results are computed with dedalus,
 and are as such not part of this script.

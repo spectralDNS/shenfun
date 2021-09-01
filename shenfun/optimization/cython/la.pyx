@@ -18,8 +18,8 @@ ctypedef np.int64_t int_t
 ctypedef double real
 
 def FDMA_Solve(d, u1, u2, l, x, axis=0):
-    assert x.ndim == 1
     xx = np.ascontiguousarray(x)
+    assert x.ndim == 1
     FDMA_Solve1D(d, u1, u2, l, xx)
     if not x.flags['C_CONTIGUOUS']:
         x[:] = xx
@@ -1078,7 +1078,7 @@ def LU_Helmholtz_1D(A, B,
                     np.ndarray[real_t, ndim=1] d2,
                     np.ndarray[real_t, ndim=1] L):
     cdef:
-        int i, N
+        int_t i, N
         np.ndarray[real_t, ndim=1] A_0 = A[0].copy()
         np.ndarray[real_t, ndim=1] A_2 = A[2].copy()
         np.ndarray[real_t, ndim=1] A_4 = A[4].copy()
@@ -1126,7 +1126,7 @@ def LU_Helmholtz_3D(A, B, np.int64_t axis,
                     np.ndarray[real_t, ndim=3] d2,
                     np.ndarray[real_t, ndim=3] L):
     cdef:
-        unsigned int i, j, k
+        int_t i, j, k
 
     if axis == 0:
         for j in range(d0.shape[1]):
@@ -1173,7 +1173,7 @@ def LU_Helmholtz_2D(A, B, np.int64_t axis,
                     np.ndarray[real_t, ndim=2] d2,
                     np.ndarray[real_t, ndim=2] L):
     cdef:
-        unsigned int i
+        int_t i
 
     if axis == 0:
         for i in range(d0.shape[1]):
@@ -1236,7 +1236,7 @@ cdef void Solve_Helmholtz_1D_ptr(T* fk,
                                  int N,
                                  int strides) nogil:
     cdef:
-        int i, j, st, ii, jj
+        int_t i, j, st, ii, jj
         T sum_even = 0.0
         T sum_odd = 0.0
 
@@ -1284,7 +1284,7 @@ def Solve_Helmholtz_3D_ptr(np.int64_t axis,
         real_t* d2_ptr
         real_t* L_ptr
         vector[T] y
-        int i, j, k, strides, N
+        int_t i, j, k, strides, N
 
     strides = fk.strides[axis]/fk.itemsize
     N = d0.shape[axis] - 2
@@ -1343,7 +1343,7 @@ def Solve_Helmholtz_2D_ptr(np.int64_t axis,
         real_t* d2_ptr
         real_t* L_ptr
         vector[T] y
-        int i, j, strides, N
+        int_t i, j, strides, N
 
     strides = fk.strides[axis]/fk.itemsize
     N = d0.shape[axis] - 2
@@ -1440,7 +1440,7 @@ def LU_oe_Biharmonic_1D(bint odd,
                         np.ndarray[real_t, ndim=1] l1):
 
     cdef:
-        int i, j, kk
+        int_t i, j, kk
         long long int m, k
         real pi = np.pi
         vector[real] c0, c1, c2
@@ -1613,7 +1613,7 @@ def Biharmonic_factor_oe_pr(bint odd,
                             np.ndarray[real_t, ndim=1] l0,
                             np.ndarray[real_t, ndim=1] l1):
     cdef:
-        int i, j, M
+        int_t i, j, M
         real pi = np.pi
         long long int pp, rr, k, kk
 
@@ -1665,7 +1665,7 @@ cdef BackBsolve_U(int M,
                   np.ndarray[real_t, ndim=1] b,
                   np.float_t ac):
     cdef:
-        int i, j, k, kk
+        int_t i, j, k, kk
         T s1 = 0.0
         T s2 = 0.0
 
@@ -1721,7 +1721,7 @@ def Solve_Biharmonic_3D_n(np.int64_t axis,
                           real_t a0):
 
     cdef:
-        int i, j, k, kk, m, M, ke, ko, jj, je, jo
+        int_t i, j, k, kk, m, M, ke, ko, jj, je, jo
         np.float_t ac
         np.ndarray[T, ndim=2, mode='c'] s1
         np.ndarray[T, ndim=2, mode='c'] s2
@@ -1903,7 +1903,7 @@ def Solve_Biharmonic_2D_n(np.int64_t axis,
                           real_t a0):
 
     cdef:
-        int i, j, k, kk, m, M, ke, ko, jj, je, jo
+        int_t i, j, k, kk, m, M, ke, ko, jj, je, jo
         np.float_t ac
         np.ndarray[T, ndim=1, mode='c'] s1
         np.ndarray[T, ndim=1, mode='c'] s2

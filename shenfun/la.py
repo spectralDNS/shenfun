@@ -133,7 +133,7 @@ class SparseMatrixSolver:
         if self._lu is None:
             if isinstance(self.mat, SparseMatrix):
                 self.mat = self.mat.diags('csc')
-            self._lu = splu(self.mat)
+            self._lu = splu(self.mat, permc_spec=config['matrix']['sparse']['permc_spec'])
         return self._lu
 
     def solve(self, b, u, axis, lu):
@@ -354,7 +354,7 @@ class PDMA(SparseMatrixSolver):
 
         # Broadcast in case diagonal is simply a constant.
         self.issymmetric = self.mat.issymmetric
-        assert self.issymmetric, 'Unsymmetric is broken'
+        #assert self.issymmetric, 'Unsymmetric is broken'
         A = self.mat
         #self.issymmetric = np.all(A[2] == A[-2]) and np.all(A[4] == A[-4])
         shape = self.mat.shape[1]
@@ -438,10 +438,12 @@ class PDMA(SparseMatrixSolver):
 
     @staticmethod
     @optimizer
-    def PDMA_SymSolve(d, e, f, b, axis=0): # pragma: no cover
-        """Symmetric solve (for testing only)"""
+    def PDMA_SymSolve(d, e, f, u, axis=0):
+        if axis > 0:
+            u = np.moveaxis(u, axis, 0)
+
         n = d.shape[0]
-        bc = b
+        bc = u
 
         bc[2] -= e[0]*bc[0]
         bc[3] -= e[1]*bc[1]
@@ -457,14 +459,19 @@ class PDMA(SparseMatrixSolver):
         for k in range(n-5, -1, -1):
             bc[k] /= d[k]
             bc[k] -= (e[k]*bc[k+2] + f[k]*bc[k+4])
-        b[:] = bc.astype(float)
+        u[:] = bc.astype(float)
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
+
 
     @staticmethod
     @optimizer
-    def PDMA_Solve(a, b, d, e, f, h, axis=0): # pragma: no cover
-        """Symmetric solve (for testing only)"""
+    def PDMA_Solve(a, b, d, e, f, u, axis=0): # pragma: no cover
+        if axis > 0:
+            u = np.moveaxis(u, axis, 0)
+
         n = d.shape[0]
-        bc = h
+        bc = u
 
         bc[2] -= b[0]*bc[0]
         bc[3] -= b[1]*bc[1]
@@ -477,6 +484,9 @@ class PDMA(SparseMatrixSolver):
         bc[n-4] = (bc[n-4]-e[n-4]*bc[n-2])/d[n-4]
         for k in range(n-5, -1, -1):
             bc[k] = (bc[k]-e[k]*bc[k+2]-f[k]*bc[k+4])/d[k]
+
+        if axis > 0:
+            u = np.moveaxis(u, 0, axis)
 
     def perform_lu(self):
         if self._lu is None:
@@ -494,6 +504,7 @@ class PDMA(SparseMatrixSolver):
     def solve(self, b, u, axis, lu):
         if u is not b:
             u[:] = b
+
         if self.issymmetric:
             self.PDMA_SymSolve(self.d0, self.d1, self.d2, u, axis)
         else:
@@ -542,8 +553,6 @@ class FDMA(SparseMatrixSolver):
         n = d.shape[0]
         for i in range(2, n):
             x[i] -= l[i-2]*x[i-2]
-
-        #print('hei')
 
         x[n-1] = x[n-1]/d[n-1]
         x[n-2] = x[n-2]/d[n-2]
@@ -851,7 +860,7 @@ class Solver2D:
         bs = b[s0].flatten()
         self.M, bs = self.apply_constraints(self.M, bs, constraints)
         if self._lu is None:
-            self._lu = splu(self.M)
+            self._lu = splu(self.M, permc_spec=config['matrix']['sparse']['permc_spec'])
 
         if b.dtype.char in 'fdg' or self.M.dtype.char in 'FDG':
             u[s0] = self._lu.solve(bs).reshape(self.T.dims())
@@ -1021,6 +1030,33 @@ class SolverGeneric1ND:
                                 MM = mat.mats[2]*sc
                         self.MM[-1].append(Solver(MM))
 
+    def apply_constraints(self, b, constraints=()):
+        """Apply constraints to solver
+
+        Note
+        ----
+        The SolverGeneric1ND solver can only constrain the first dofs of
+        the diagonal axes. For Fourier this is the zero dof with the
+        constant basis function exp(0).
+        """
+        ndim = self.mats[0].dimensions
+        space = self.mats[0].space
+        z0 = space.local_slice()
+        paxes = [i for i in range(ndim) if i != self.naxes]
+        if ndim == 2:
+            paxis = paxes[0]
+            if z0[paxis].start != 0:
+                return b
+            s = space.bases[paxis].si[0]
+            self.MM[0].apply_constraints(b[s], constraints)
+        else:
+            if z0[paxes[0]].start*z0[paxes[1]].start != 0:
+                return b
+            s = [0, 0, 0]
+            s[self.naxes] = slice(None)
+            self.MM[0][0].apply_constraints(b[tuple(s)], constraints)
+        return b
+
     def __call__(self, b, u=None, constraints=()):
         """Solve problem with one non-diagonal direction
 
@@ -1045,17 +1081,17 @@ class SolverGeneric1ND:
             for bc_mat in self.bc_mats:
                 b -= bc_mat.matvec(u, w0)
 
-        if u.ndim == 2:
+        space = self.mats[0].space
+        b = self.apply_constraints(b, constraints)
 
+        if u.ndim == 2:
             if self.naxes == 0:
                 for i in range(b.shape[1]):
-                    con = constraints if i == 0 else ()
-                    u[:, i] = self.MM[i](b[:, i], u[:, i], constraints=con)
+                    u[:, i] = self.MM[i](b[:, i], u[:, i])
 
             else:
                 for i in range(b.shape[0]):
-                    con = constraints if i == 0 else ()
-                    u[i] = self.MM[i](b[i], u[i], constraints=con)
+                    u[i] = self.MM[i](b[i], u[i])
 
         elif u.ndim == 3:
 
@@ -1064,24 +1100,21 @@ class SolverGeneric1ND:
                 for i in range(b.shape[1]):
                     for j in range(b.shape[2]):
                         sol = self.MM[i][j]
-                        con = constraints if (i, j) == (0, 0) else ()
-                        u[:, i, j] = sol(b[:, i, j], u[:, i, j], constraints=con)
+                        u[:, i, j] = sol(b[:, i, j], u[:, i, j])
 
             elif self.naxes == 1:
                 # non-diagonal in axis=1
                 for i in range(b.shape[0]):
                     for j in range(b.shape[2]):
                         sol = self.MM[i][j]
-                        con = constraints if (i, j) == (0, 0) else ()
-                        u[i, :, j] = sol(b[i, :, j], u[i, :, j], constraints=con)
+                        u[i, :, j] = sol(b[i, :, j], u[i, :, j])
 
             elif self.naxes == 2:
                 # non-diagonal in axis=2
                 for i in range(b.shape[0]):
                     for j in range(b.shape[1]):
                         sol = self.MM[i][j]
-                        con = constraints if (i, j) == (0, 0) else ()
-                        u[i, j] = sol(b[i, j], u[i, j], constraints=con)
+                        u[i, j] = sol(b[i, j], u[i, j])
 
         if hasattr(u, 'set_boundary_dofs'):
             u.set_boundary_dofs()
@@ -1166,7 +1199,7 @@ class BlockMatrixSolver:
             s = [0, 0]
             if self._lu is None:
                 Ai = B.diags((0,), format='csr').tocsc()
-                lu = self._lu = sp.linalg.splu(Ai)
+                lu = self._lu = sp.linalg.splu(Ai, permc_spec=config['matrix']['sparse']['permc_spec'])
             else:
                 lu = self._lu
             for k in range(nvars):
@@ -1199,7 +1232,7 @@ class BlockMatrixSolver:
                         for i in range(con[0]):
                             dim += tp[i].dim()
                         Ai, gi = self.apply_constraint(Ai, gi, dim, 0, con)
-                    self._lu = sp.linalg.splu(Ai)
+                    self._lu = sp.linalg.splu(Ai, permc_spec=config['matrix']['sparse']['permc_spec'])
                 else:
                     for con in constraints:
                         dim = 0
@@ -1241,7 +1274,7 @@ class BlockMatrixSolver:
                         Ai = B.diags(d0, format='csr').tocsc()
                         for con in constraints:
                             Ai, gi = self.apply_constraint(Ai, gi, self.offset[con[0]][axis], i, con)
-                        lu = sp.linalg.splu(Ai)
+                        lu = sp.linalg.splu(Ai, permc_spec=config['matrix']['sparse']['permc_spec'])
                         self._lu[d0] = lu
                     if gi.dtype.char in 'fdg' or lu.U.dtype.char in 'FDG':
                         go[:] = lu.solve(gi)
@@ -1280,7 +1313,7 @@ class BlockMatrixSolver:
                             Ai = B.diags(d0, format='csr').tocsc() # Note - bug in scipy (https://github.com/scipy/scipy/issues/14551) such that we cannot use format='csc' directly
                             for con in constraints:
                                 Ai, gi = self.apply_constraint(Ai, gi, self.offset[con[0]][axis], (i, j), con)
-                            lu = sp.linalg.splu(Ai)
+                            lu = sp.linalg.splu(Ai, permc_spec=config['matrix']['sparse']['permc_spec'])
                             self._lu[d0] = lu
 
                         go[:] = lu.solve(gi)
@@ -1318,7 +1351,7 @@ class BlockMatrixSolver:
                             for n in range(con[0]):
                                 dim += N[n]
                             Ai, gi = self.apply_constraint(Ai, gi, dim, i, con)
-                        self._lu[i] = sp.linalg.splu(Ai)
+                        self._lu[i] = sp.linalg.splu(Ai, permc_spec=config['matrix']['sparse']['permc_spec'])
                         lu = self._lu[i]
                     else:
                         lu = self._lu[i]

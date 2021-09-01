@@ -446,7 +446,7 @@ class SparseMatrix(MutableMapping):
         elif len(self) == 4:
             if np.all(self.sorted_keys() == (-2, 0, 2, 4)):
                 return FDMA
-        elif len(self) == 5 and self.issymmetric:
+        elif len(self) == 5:
             if np.all(self.sorted_keys() == (-4, -2, 0, 2, 4)):
                 return PDMA
         return Solve
@@ -476,7 +476,7 @@ class SparseMatrix(MutableMapping):
         for key, val in self.items():
             if key <= 0:
                 continue
-            if not np.all(abs(self[key]-self[-key]) < 1e-8):
+            if not np.all(abs(self[key]-self[-key]) < 1e-16):
                 return False
         return True
 
