@@ -1079,7 +1079,7 @@ class SolverGeneric1ND:
             data = np.zeros((len(self.MM), len(self.MM[0]))+self.MM[-1][-1]._inner_arg.shape)
             for i, m in enumerate(self.MM):
                 for j, sol in enumerate(m):
-                    if i==0 and j==0 and is_rank_zero:
+                    if i == 0 and j == 0 and is_rank_zero:
                         continue
                     else:
                         data[i, j] = sol._inner_arg

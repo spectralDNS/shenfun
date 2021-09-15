@@ -25,7 +25,6 @@ for the intermediate assembly.
 
 """
 
-import os
 import functools
 import numpy as np
 import sympy as sp

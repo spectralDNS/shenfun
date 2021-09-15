@@ -77,7 +77,6 @@ def div(test):
             return d
 
         else:
-            hi = coors.hi
             comp = test.get_contravariant_component
 
             if test.num_components() == ndim**2:

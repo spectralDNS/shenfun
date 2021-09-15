@@ -309,7 +309,7 @@ class Helmholtz:
             for bc_mat in self.bc_mats:
                 b -= bc_mat.matvec(u, w0)
         self.Solve_Helmholtz(b, u, self.neumann, self.u0, self.u1, self.u2, self.L, self.axis)
-        if not constraints == ():
+        if constraints != ():
             z0 = self.T.local_slice()
             paxes = np.setxor1d(range(u.ndim), self.axis)
             is_rank_zero = np.array([z0[i].start for i in paxes]).prod()
