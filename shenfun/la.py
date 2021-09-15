@@ -2,9 +2,7 @@ r"""
 This module contains linear algebra solvers for SparseMatrices,
 TPMatrices and BlockMatrices.
 """
-import numba as nb
 import numpy as np
-from numba.typed import List as nb_list
 from numbers import Number, Integral
 from scipy.sparse import spmatrix, kron
 from scipy.sparse.linalg import spsolve, splu
