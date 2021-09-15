@@ -152,7 +152,7 @@ def project(uh, T, output_array=None, fill=True, use_to_ortho=True, use_assign=T
             return output_array
 
     if isinstance(B, (TPMatrix, SpectralMatrix)):
-        output_array = B.solve(output_array, output_array)
+        output_array = B.solve(output_array)
 
     elif T.coors.is_orthogonal and (len(output_array) == len(B)):
         for oa, b in zip(output_array.v, B):

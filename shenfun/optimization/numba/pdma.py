@@ -1,11 +1,16 @@
 import numba as nb
 
-__all__ = ['PDMA_SymLU', 'PDMA_SymLU_VC', 'PDMA_SymSolve', 'PDMA_SymLU2D',
-           'PDMA_SymLU3D', 'PDMA_SymSolve_VC', 'PDMA_LU', 'PDMA_Solve']
+__all__ = ['PDMA_LU', 'PDMA_Solve',
+           'PDMA_inner_solve']
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
-def PDMA_LU1D(a, b, d, e, f):
+def PDMA_LU(data):
     """LU decomposition"""
+    a = data[0, :-4]
+    b = data[1, :-2]
+    d = data[2, :]
+    e = data[3, 2:]
+    f = data[4, 4:]
     n = d.shape[0]
     m = e.shape[0]
     k = n - m
@@ -30,112 +35,50 @@ def PDMA_LU1D(a, b, d, e, f):
     b[i] = lam
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
-def PDMA_Solve1D(a, b, d, e, f, h):
-    """Symmetric solve (for testing only)"""
+def PDMA_Solve1D(a, b, d, e, f, u):
     n = d.shape[0]
-    bc = h
-
-    bc[2] -= b[0]*bc[0]
-    bc[3] -= b[1]*bc[1]
+    u[2] -= b[0]*u[0]
+    u[3] -= b[1]*u[1]
     for k in range(4, n):
-        bc[k] -= (b[k-2]*bc[k-2] + a[k-4]*bc[k-4])
+        u[k] -= (b[k-2]*u[k-2] + a[k-4]*u[k-4])
 
-    bc[n-1] /= d[n-1]
-    bc[n-2] /= d[n-2]
-    bc[n-3] = (bc[n-3]-e[n-3]*bc[n-1])/d[n-3]
-    bc[n-4] = (bc[n-4]-e[n-4]*bc[n-2])/d[n-4]
+    u[n-1] /= d[n-1]
+    u[n-2] /= d[n-2]
+    u[n-3] = (u[n-3]-e[n-3]*u[n-1])/d[n-3]
+    u[n-4] = (u[n-4]-e[n-4]*u[n-2])/d[n-4]
     for k in range(n-5, -1, -1):
-        bc[k] = (bc[k]-e[k]*bc[k+2]-f[k]*bc[k+4])/d[k]
-
-def PDMA_SymLU_VC(d, a, l, axis=0):
-    n = d.ndim
-    if n == 1:
-        PDMA_SymLU(d, a, l)
-    elif n == 2:
-        PDMA_SymLU2D(d, a, l, axis)
-    elif n == 3:
-        PDMA_SymLU3D(d, a, l, axis)
-
-@nb.jit(nopython=True, fastmath=True, cache=True)
-def PDMA_SymLU(d, e, f):
-    n = d.shape[0]
-    m = e.shape[0]
-    k = n - m
-
-    for i in range(n-2*k):
-        lam = e[i]/d[i]
-        d[i+k] -= lam*e[i]
-        e[i+k] -= lam*f[i]
-        e[i] = lam
-        lam = f[i]/d[i]
-        d[i+2*k] -= lam*f[i]
-        f[i] = lam
-
-    lam = e[n-4]/d[n-4]
-    d[n-2] -= lam*e[n-4]
-    e[n-4] = lam
-    lam = e[n-3]/d[n-3]
-    d[n-1] -= lam*e[n-3]
-    e[n-3] = lam
+        u[k] = (u[k]-e[k]*u[k+2]-f[k]*u[k+4])/d[k]
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
 def PDMA_LU2D(a, b, d, e, f, axis):
     if axis == 0:
         for j in range(d.shape[1]):
-            PDMA_LU1D(a[:-8, j], b[:-6, j], d[:-4, j], e[:-6, j], f[:-8, j])
+            PDMA_LU(a[:-8, j], b[:-6, j], d[:-4, j], e[:-6, j], f[:-8, j])
     elif axis == 1:
         for i in range(d.shape[0]):
-            PDMA_LU1D(a[i, :-8], b[i, :-6], d[i, :-4], e[i, :-6], f[i, :-8])
+            PDMA_LU(a[i, :-8], b[i, :-6], d[i, :-4], e[i, :-6], f[i, :-8])
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
 def PDMA_LU3D(a, b, d, e, f, axis):
     if axis == 0:
         for j in range(d.shape[1]):
             for k in range(d.shape[2]):
-                PDMA_LU1D(a[:-8, j, k], b[:-6, j, k], d[:-4, j, k], e[:-6, j, k], f[:-8, j, k])
+                PDMA_LU(a[:-8, j, k], b[:-6, j, k], d[:-4, j, k], e[:-6, j, k], f[:-8, j, k])
     elif axis == 1:
         for i in range(d.shape[0]):
             for k in range(d.shape[2]):
-                PDMA_LU1D(a[i, :-8, k], b[i, :-6, k], d[i, :-4, k], e[i, :-6, k], f[i, :-8, k])
+                PDMA_LU(a[i, :-8, k], b[i, :-6, k], d[i, :-4, k], e[i, :-6, k], f[i, :-8, k])
     elif axis == 2:
         for i in range(d.shape[0]):
             for j in range(d.shape[1]):
-                PDMA_LU1D(a[i, j, :-8], b[i, j, :-6], d[i, j, :-4], e[i, j, :-6], f[i, j, :-8])
+                PDMA_LU(a[i, j, :-8], b[i, j, :-6], d[i, j, :-4], e[i, j, :-6], f[i, j, :-8])
 
-@nb.jit(nopython=True, fastmath=True, cache=True)
-def PDMA_SymLU2D(d, e, f, axis):
-    if axis == 0:
-        for j in range(d.shape[1]):
-            PDMA_SymLU(d[:-4, j], e[:-6, j], f[:-8, j])
-    elif axis == 1:
-        for i in range(d.shape[0]):
-            PDMA_SymLU(d[i, :-4], e[i, :-6], f[i, :-8])
-
-@nb.jit(nopython=True, fastmath=True, cache=True)
-def PDMA_SymLU3D(d, e, f, axis):
-    if axis == 0:
-        for j in range(d.shape[1]):
-            for k in range(d.shape[2]):
-                PDMA_SymLU(d[:-4, j, k], e[:-6, j, k], f[:-8, j, k])
-    elif axis == 1:
-        for i in range(d.shape[0]):
-            for k in range(d.shape[2]):
-                PDMA_SymLU(d[i, :-4, k], e[i, :-6, k], f[i, :-8, k])
-    elif axis == 2:
-        for i in range(d.shape[0]):
-            for j in range(d.shape[1]):
-                PDMA_SymLU(d[i, j, :-4], e[i, j, :-6], f[i, j, :-8])
-
-def PDMA_LU(a, b, d, e, f, axis=0):
-    n = d.ndim
-    if n == 1:
-        PDMA_LU1D(a, b, d, e, f)
-    elif n == 2:
-        PDMA_LU2D(a, b, d, e, f, axis)
-    elif n == 3:
-        PDMA_LU3D(a, b, d, e, f, axis)
-
-def PDMA_Solve(a, b, d, e, f, x, axis=0):
+def PDMA_Solve(x, data, axis=0):
+    a = data[0, :-4]
+    b = data[1, :-2]
+    d = data[2, :]
+    e = data[3, 2:]
+    f = data[4, 4:]
     n = x.ndim
     if n == 1:
         PDMA_Solve1D(a, b, d, e, f, x)
@@ -143,51 +86,6 @@ def PDMA_Solve(a, b, d, e, f, x, axis=0):
         PDMA_Solve2D(a, b, d, e, f, x, axis)
     elif n == 3:
         PDMA_Solve3D(a, b, d, e, f, x, axis)
-
-def PDMA_SymSolve(d, a, l, x, axis=0):
-    n = x.ndim
-    if n == 1:
-        PDMA_SymSolve1D(d, a, l, x)
-    elif n == 2:
-        PDMA_SymSolve2D(d, a, l, x, axis)
-    elif n == 3:
-        PDMA_SymSolve3D(d, a, l, x, axis)
-
-def PDMA_SymSolve_VC(d, a, l, x, axis=0):
-    n = x.ndim
-    if n == 1:
-        PDMA_SymSolve1D(d, a, l, x)
-    elif n == 2:
-        PDMA_SymSolve2D_VC(d, a, l, x, axis)
-    elif n == 3:
-        PDMA_SymSolve3D_VC(d, a, l, x, axis)
-
-@nb.jit(nopython=True, fastmath=True, cache=True)
-def PDMA_SymSolve1D(d, e, f, b):
-    n = d.shape[0]
-    b[2] -= e[0]*b[0]
-    b[3] -= e[1]*b[1]
-    for k in range(4, n):
-        b[k] -= (e[k-2]*b[k-2] + f[k-4]*b[k-4])
-
-    b[n-1] /= d[n-1]
-    b[n-2] /= d[n-2]
-    b[n-3] /= d[n-3]
-    b[n-3] -= e[n-3]*b[n-1]
-    b[n-4] /= d[n-4]
-    b[n-4] -= e[n-4]*b[n-2]
-    for k in range(n-5, -1, -1):
-        b[k] /= d[k]
-        b[k] -= (e[k]*b[k+2] + f[k]*b[k+4])
-
-@nb.jit(nopython=True, fastmath=True, cache=True)
-def PDMA_SymSolve2D(d, e, f, b, axis):
-    if axis == 0:
-        for j in range(b.shape[1]):
-            PDMA_SymSolve1D(d, e, f, b[:, j])
-    elif axis == 1:
-        for i in range(b.shape[0]):
-            PDMA_SymSolve1D(d, e, f, b[i])
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
 def PDMA_Solve2D(a, b, d, e, f, x, axis):
@@ -214,40 +112,20 @@ def PDMA_Solve3D(a, b, d, e, f, x, axis):
                 PDMA_Solve1D(a, b, d, e, f, x[i, j])
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
-def PDMA_SymSolve3D(d, e, f, b, axis):
-    if axis == 0:
-        for j in range(b.shape[1]):
-            for k in range(b.shape[2]):
-                PDMA_SymSolve1D(d, e, f, b[:, j, k])
-    elif axis == 1:
-        for i in range(b.shape[0]):
-            for k in range(b.shape[2]):
-                PDMA_SymSolve1D(d, e, f, b[i, :, k])
-    elif axis == 2:
-        for i in range(b.shape[0]):
-            for j in range(b.shape[1]):
-                PDMA_SymSolve1D(d, e, f, b[i, j])
-
-@nb.jit(nopython=True, fastmath=True, cache=True)
-def PDMA_SymSolve3D_VC(d, e, f, x, axis):
-    if axis == 0:
-        for j in range(d.shape[1]):
-            for k in range(d.shape[2]):
-                PDMA_SymSolve1D(d[:-4, j, k], e[:-6, j, k], f[:-8, j, k], x[:, j, k])
-    elif axis == 1:
-        for i in range(d.shape[0]):
-            for k in range(d.shape[2]):
-                PDMA_SymSolve1D(d[i, :-4, k], e[i, :-6, k], f[i, :-8, k], x[i, :, k])
-    elif axis == 2:
-        for i in range(d.shape[0]):
-            for j in range(d.shape[1]):
-                PDMA_SymSolve1D(d[i, j, :-4], e[i, j, :-6], f[i, j, :-8], x[i, j, :])
-
-@nb.jit(nopython=True, fastmath=True, cache=True)
-def PDMA_SymSolve2D_VC(d, e, f, x, axis):
-    if axis == 0:
-        for j in range(d.shape[1]):
-            PDMA_SymSolve1D(d[:-4, j], e[:-6, j], f[:-8, j], x[:, j])
-    elif axis == 1:
-        for i in range(d.shape[0]):
-            PDMA_SymSolve1D(d[i, :-4], e[i, :-6], f[i, :-8], x[i, :])
+def PDMA_inner_solve(u, data):
+    a = data[0, :-4]
+    b = data[1, :-2]
+    d = data[2, :]
+    e = data[3, 2:]
+    f = data[4, 4:]
+    n = d.shape[0]
+    u[2] -= b[0]*u[0]
+    u[3] -= b[1]*u[1]
+    for k in range(4, n):
+        u[k] -= (b[k-2]*u[k-2] + a[k-4]*u[k-4])
+    u[n-1] /= d[n-1]
+    u[n-2] /= d[n-2]
+    u[n-3] = (u[n-3]-e[n-3]*u[n-1])/d[n-3]
+    u[n-4] = (u[n-4]-e[n-4]*u[n-2])/d[n-4]
+    for k in range(n-5, -1, -1):
+        u[k] = (u[k]-e[k]*u[k+2]-f[k]*u[k+4])/d[k]

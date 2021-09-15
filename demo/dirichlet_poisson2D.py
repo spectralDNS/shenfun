@@ -18,7 +18,8 @@ import importlib
 from sympy import symbols, cos, sin
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    Array, Function, FunctionSpace, TensorProductSpace, comm
+    Array, Function, FunctionSpace, TensorProductSpace, comm, la, \
+    chebyshev
 
 assert len(sys.argv) == 3, "Call with two command-line arguments"
 assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi')
@@ -26,8 +27,7 @@ assert isinstance(int(sys.argv[-2]), int)
 
 # Collect solver
 family = sys.argv[-1].lower()
-base = importlib.import_module('.'.join(('shenfun', family)))
-Solver = base.la.Helmholtz
+Solver = chebyshev.la.Helmholtz if family == 'chebyshev' else la.SolverGeneric1ND
 
 # Use sympy to compute a rhs, given an analytical solution
 a = 1
@@ -61,7 +61,7 @@ f_hat = inner(v, fj, output_array=f_hat)
 matrices = inner(v, div(grad(u)))
 
 # Create Helmholtz linear algebra solver
-H = Solver(*matrices)
+H = Solver(matrices)
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space

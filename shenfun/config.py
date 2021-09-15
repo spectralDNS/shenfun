@@ -1,5 +1,6 @@
 import os
 import yaml
+from collections import defaultdict
 
 # The configuration can be overloaded by a local 'shenfun.yaml' file, or
 # in '~/.shenfun/shenfun.yaml'. A yaml file to work with can be created

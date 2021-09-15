@@ -24,13 +24,15 @@ def optimizer(func):
     if mod.lower() not in ('cython', 'numba'):
         # Use python function
         if verbose:
-            print(func.__name__ + ' not optimized')
+            print(func.__qualname__ + ' not optimized')
         return func
     mod = importlib.import_module('shenfun.optimization.'+mod.lower())
     fun = getattr(mod, func.__name__, func)
+    if fun is func:
+        fun = getattr(mod, func.__qualname__.replace('.', '_'), func)
     if verbose:
         if fun is func:
-            print(fun.__name__ + ' not optimized')
+            print(fun.__qualname__ + ' not optimized')
 
     @wraps(func)
     def wrapped_function(*args, **kwargs):
@@ -38,3 +40,19 @@ def optimizer(func):
         return u0
 
     return wrapped_function
+
+def get_optimized(func, mode='numba', verbose=False):
+    if mode.lower() not in ('cython', 'numba'):
+        # Use python function
+        if verbose:
+            print(func.__qualname__ + ' not optimized')
+        return func
+    mod = importlib.import_module('shenfun.optimization.'+mode.lower())
+    fun = getattr(mod, func.__name__, func)
+    if fun is func:
+        fun = getattr(mod, func.__qualname__.replace('.', '_'), func)
+    if verbose:
+        if fun is func:
+            print(fun.__qualname__ + ' not optimized')
+
+    return fun

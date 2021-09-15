@@ -56,6 +56,8 @@ class Coordinates:
 
     @property
     def sg(self):
+        if self.is_cartesian:
+            return 1
         return self.get_sqrt_det_g(True)
 
     @property

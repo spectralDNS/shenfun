@@ -12,13 +12,6 @@ python dirichlet_poisson1D.py 32 jacobi
 python dirichlet_poisson2D.py 32 jacobi
 python dirichlet_poisson3D.py 32 jacobi
 
-python dirichlet_Helmholtz1D.py 32 chebyshev
-python dirichlet_Helmholtz2D.py 32 chebyshev
-python dirichlet_Helmholtz1D.py 32 legendre
-python dirichlet_Helmholtz2D.py 32 legendre
-python dirichlet_Helmholtz1D.py 32 jacobi
-python dirichlet_Helmholtz2D.py 32 jacobi
-
 python fourier_poisson1D.py
 python fourier_poisson2D.py
 python fourier_poisson3D.py

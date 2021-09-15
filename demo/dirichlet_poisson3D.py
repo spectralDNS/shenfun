@@ -15,22 +15,19 @@ Note that the equation to solve is
 import sys
 import os
 import time
-import importlib
 from sympy import symbols, cos, sin
 import numpy as np
 from mpi4py import MPI
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
-    Function, FunctionSpace, TensorProductSpace, dx, comm
+    Function, FunctionSpace, TensorProductSpace, dx, comm, la, chebyshev
 from mpi4py_fft.pencil import Subcomm
 
 assert len(sys.argv) == 3
 assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi')
 assert isinstance(int(sys.argv[-2]), int)
 
-# Collect basis and solver from either Chebyshev or Legendre submodules
 family = sys.argv[-1].lower()
-base = importlib.import_module('.'.join(('shenfun', family)))
-Solver = base.la.Helmholtz
+Solver = chebyshev.la.Helmholtz if family == 'chebyshev' else la.SolverGeneric1ND
 regtest = True
 
 # Use sympy for manufactured solution
@@ -70,7 +67,7 @@ f_hat = inner(v, fj)
 matrices = inner(v, div(grad(u)))
 
 # Create Helmholtz linear algebra solver
-H = Solver(*matrices)
+H = Solver(matrices)
 
 # Solve and transform to real space
 u_hat = Function(T)           # Solution spectral space

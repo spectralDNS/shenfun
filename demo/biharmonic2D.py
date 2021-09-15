@@ -10,16 +10,14 @@ basis for the non-periodic direction.
 """
 import sys
 import os
-import importlib
 from sympy import symbols, cos, sin, chebyshevt, pi
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
-    Function, TensorProductSpace, FunctionSpace, comm, la
+    Function, TensorProductSpace, FunctionSpace, comm, la, chebyshev
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 family = sys.argv[-1].lower() if len(sys.argv) == 2 else 'chebyshev'
-base = importlib.import_module('.'.join(('shenfun', family)))
-BiharmonicSolver = base.la.Biharmonic
+BiharmonicSolver = chebyshev.la.Biharmonic if family == 'chebyshev' else la.SolverGeneric1ND
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y = symbols("x,y", real=True)
@@ -59,7 +57,8 @@ matrices = inner(v, div(grad(div(grad(u)))))
 u_hat = Function(T) # Solution spectral space
 
 # Create linear algebra solver
-H = BiharmonicSolver(*matrices)
+H = BiharmonicSolver(matrices)
+
 # Solve and transform to real space
 u_hat = H(f_hat, u_hat)       # Solve
 

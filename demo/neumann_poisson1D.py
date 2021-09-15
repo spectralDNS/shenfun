@@ -12,7 +12,6 @@ The equation to solve is
 """
 import sys
 import os
-import importlib
 import sympy as sp
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, FunctionSpace, \
@@ -23,8 +22,7 @@ assert len(sys.argv) == 3, "Call with two command-line arguments"
 assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
 assert isinstance(int(sys.argv[-2]), int)
 family = sys.argv[-1].lower()
-base = importlib.import_module('.'.join(('shenfun', family)))
-Solver = base.la.Helmholtz
+Solver = chebyshev.la.Helmholtz if family == 'chebyshev' else la.SolverGeneric1ND
 
 # Use sympy to compute a rhs, given an analytical solution
 x = sp.symbols("x", real=True)

@@ -117,19 +117,19 @@ class BLLmat(SpectralMatrix):
             d[0][-1] = 2./(N-1)
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
-    def solve(self, b, u=None, axis=0, constraints=()):
-        s = self.trialfunction[0].slice()
-        if u is None:
-            u = b
-        else:
-            assert u.shape == b.shape
-        sl = [np.newaxis]*u.ndim
-        sl[axis] = s
-        sl = tuple(sl)
-        ss = self.trialfunction[0].sl[s]
-        d = (1./self.scale)/self[0]
-        u[ss] = b[ss]*d[sl]
-        return u
+    #def solve(self, b, u=None, axis=0, constraints=()):
+    #    s = self.trialfunction[0].slice()
+    #    if u is None:
+    #        u = b
+    #    else:
+    #        assert u.shape == b.shape
+    #    sl = [np.newaxis]*u.ndim
+    #    sl[axis] = s
+    #    sl = tuple(sl)
+    #    ss = self.trialfunction[0].sl[s]
+    #    d = (1./self.scale)/self[0]
+    #    u[ss] = b[ss]*d[sl]
+    #    return u
 
 
 class BSDSDmat(SpectralMatrix):

@@ -224,8 +224,8 @@ class Helmholtz:
 
     """
     def __init__(self, *args):
-
-        args = list(args)
+        if len(args) == 1:
+            args = args[0]
         self.bc_mats = []
         if isinstance(args[-1], TPMatrix):
             args = get_simplified_tpmatrices(args)
@@ -259,7 +259,7 @@ class Helmholtz:
         neumann = self.neumann = v.boundary_condition() == 'Neumann'
         self.axis = A.axis
         shape = [1]
-        T = A.tensorproductspace
+        T = self.T = A.tensorproductspace
         if T is not None:
             shape = list(T.shape(True))
             shape[A.axis] = 1
@@ -288,7 +288,7 @@ class Helmholtz:
     def Solve_Helmholtz(b, u, neumann, u0, u1, u2, L, axis=0):
         raise NotImplementedError
 
-    def __call__(self, b, u=None, **kw):
+    def __call__(self, b, u=None, constraints=()):
         """Solve matrix problem
 
         Parameters
@@ -309,6 +309,14 @@ class Helmholtz:
             for bc_mat in self.bc_mats:
                 b -= bc_mat.matvec(u, w0)
         self.Solve_Helmholtz(b, u, self.neumann, self.u0, self.u1, self.u2, self.L, self.axis)
+        if not constraints == ():
+            z0 = self.T.local_slice()
+            paxes = np.setxor1d(range(u.ndim), self.axis)
+            is_rank_zero = np.array([z0[i].start for i in paxes]).prod()
+            if is_rank_zero == 0:
+                assert len(constraints) == 1
+                s = [0]*u.ndim
+                u[tuple(s)] = constraints[0][1]
         return u
 
     def matvec(self, v, c):
@@ -435,6 +443,8 @@ class Biharmonic:
     Note that :math:`k+l` is an array of shape (N, M, 1).
     """
     def __init__(self, *args):
+        if len(args) == 1:
+            args = args[0]
 
         args = list(args)
         self.bc_mats = []
@@ -550,195 +560,3 @@ class Biharmonic:
                                self.A[2], self.B[-4], self.B[-2], self.B[0],
                                self.B[2], self.B[4], self.axis)
         return c
-
-
-class PDMA:
-    r"""Pentadiagonal matrix solver
-
-    Pentadiagonal matrix with diagonals in offsets -4, -2, 0, 2, 4
-
-    Arising with Poisson equation and biharmonic basis u
-
-    .. math::
-
-        \alpha u'' + \beta u = f
-
-    As 4 arguments
-
-    Parameters
-    ----------
-        A : SpectralMatrix
-            Stiffness matrix
-        B : SpectralMatrix
-            Mass matrix
-        alfa : array
-        beta : array
-
-    or as dict with key/vals
-
-    Parameters
-    ----------
-        solver : str
-            Choose between implementations ('cython', 'python')
-        ASBSBmat : A
-            Stiffness matrix
-        BSBSBmat : B
-            Mass matrix
-
-    where alfa and beta must be avalable as A.scale, B.scale.
-
-    Attributes
-    ----------
-        axis : int
-            The axis over which to solve for
-
-    Variables are extracted from the matrices
-
-    """
-
-    def __init__(self, *args, **kwargs):
-        if 'ASBSBmat' in kwargs:
-            assert 'BSBSBmat' in kwargs
-            A = self.A = kwargs['ASBSBmat']
-            B = self.B = kwargs['BSBSBmat']
-            self.alfa = A.scale
-            self.beta = B.scale
-
-        elif len(args) == 4:
-            A = self.A = args[0]
-            B = self.B = args[1]
-            self.alfa = args[2]
-            self.beta = args[3]
-        else:
-            raise RuntimeError('Wrong input to PDMA solver')
-
-        self.solver = kwargs.get('solver', 'cython')
-        self.d, self.u1, self.u2 = (np.zeros_like(B[0]), np.zeros_like(B[2]),
-                                    np.zeros_like(B[4]))
-        self.l1, self.l2 = np.zeros_like(B[2]), np.zeros_like(B[4])
-        self.alfa = np.atleast_1d(self.alfa)
-        self.beta = np.atleast_1d(self.beta)
-        shape = list(self.beta.shape)
-
-        if len(shape) == 1:
-            if self.solver == 'python':
-                H = self.alfa[0]*self.A + self.beta[0]*self.B
-                self.d[:] = H[0]
-                self.u1[:] = H[2]
-                self.u2[:] = H[4]
-                self.l1[:] = H[-2]
-                self.l2[:] = H[-4]
-                self.PDMA_LU(self.l2, self.l1, self.d, self.u1, self.u2)
-
-            elif self.solver == 'cython':
-                la.LU_Helmholtz_Biharmonic_1D(self.A, self.B, self.alfa[0],
-                                              self.beta[0], self.l2, self.l1,
-                                              self.d, self.u1, self.u2)
-        else:
-
-            self.axis = A.axis
-            assert self.alfa.shape[A.axis] == 1
-            assert self.beta.shape[A.axis] == 1
-            N = A.shape[0]+4
-            self.alfa = np.broadcast_to(self.alfa, shape).copy()
-            shape[A.axis] = N
-            self.d = np.zeros(shape, float)      # Diagonal entries of U
-            self.u1 = np.zeros(shape, float)     # Diagonal+2 entries of U
-            self.l1 = np.zeros(shape, float)     # Diagonal-2 entries of U
-            self.u2 = np.zeros(shape, float)     # Diagonal+4 entries of U
-            self.l2 = np.zeros(shape, float)     # Diagonal-4 entries of U
-
-            if len(shape) == 2:
-                raise NotImplementedError
-
-            elif len(shape) == 3:
-                la.LU_Helmholtz_Biharmonic_3D(A, B, A.axis, self.alfa, self.beta, self.l2,
-                                              self.l1, self.d, self.u1, self.u2)
-
-    @staticmethod
-    def PDMA_LU(l2, l1, d, u1, u2): # pragma: no cover
-        """LU decomposition of PDM (for testing only)"""
-        n = d.shape[0]
-        m = u1.shape[0]
-        k = n - m
-
-        for i in range(n-2*k):
-            lam = l1[i]/d[i]
-            d[i+k] -= lam*u1[i]
-            u1[i+k] -= lam*u2[i]
-            l1[i] = lam
-            lam = l2[i]/d[i]
-            l1[i+k] -= lam*u1[i]
-            d[i+2*k] -= lam*u2[i]
-            l2[i] = lam
-
-        i = n-4
-        lam = l1[i]/d[i]
-        d[i+k] -= lam*u1[i]
-        l1[i] = lam
-        i = n-3
-        lam = l1[i]/d[i]
-        d[i+k] -= lam*u1[i]
-        l1[i] = lam
-
-
-    @staticmethod
-    def PDMA_Solve(l2, l1, d, u1, u2, b): # pragma: no cover
-        """Solve method for PDM (for testing only)"""
-        n = d.shape[0]
-        bc = np.full_like(b, b)
-
-        bc[2] -= l1[0]*bc[0]
-        bc[3] -= l1[1]*bc[1]
-        for k in range(4, n):
-            bc[k] -= (l1[k-2]*bc[k-2] + l2[k-4]*bc[k-4])
-
-        bc[n-1] /= d[n-1]
-        bc[n-2] /= d[n-2]
-        bc[n-3] /= d[n-3]
-        bc[n-3] -= u1[n-3]*bc[n-1]/d[n-3]
-        bc[n-4] /= d[n-4]
-        bc[n-4] -= u1[n-4]*bc[n-2]/d[n-4]
-        for k in range(n-5, -1, -1):
-            bc[k] /= d[k]
-            bc[k] -= (u1[k]*bc[k+2]/d[k] + u2[k]*bc[k+4]/d[k])
-        b[:] = bc
-
-    def __call__(self, b, u=None, **kw):
-        """Solve matrix problem
-
-        Parameters
-        ----------
-            b : array
-                Array of right hand side on entry and solution on exit unless
-                u is provided.
-            u : array
-                Output array
-
-        If b and u are multidimensional, then the axis over which to solve for
-        is determined on creation of the class.
-
-        """
-        if np.ndim(u) == 3:
-            la.Solve_Helmholtz_Biharmonic_3D_ptr(self.A.axis, b, u, self.l2,
-                                                 self.l1, self.d, self.u1,
-                                                 self.u2)
-        elif np.ndim(u) == 2:
-            la.Solve_Helmholtz_Biharmonic_2D_ptr(self.A.axis, b, u, self.l2,
-                                                 self.l1, self.d, self.u1,
-                                                 self.u2)
-        else:
-            if self.solver == 'python': # pragma: no cover
-                u[:] = b
-                self.PDMA_Solve(self.l2, self.l1, self.d, self.u1, self.u2, u)
-
-            elif self.solver == 'cython':
-                if u is b:
-                    u = np.zeros_like(b)
-                #la.Solve_Helmholtz_Biharmonic_1D(b, u, self.l2, self.l1,
-                #                                 self.d, self.u1, self.u2)
-                la.Solve_Helmholtz_Biharmonic_1D_p(b, u, self.l2, self.l1,
-                                                   self.d, self.u1, self.u2)
-
-        #u /= self.mat.scale
-        return u

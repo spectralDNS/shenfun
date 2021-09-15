@@ -43,11 +43,8 @@ f_hat = inner(v, fj)
 A = inner(v*sg, -div(grad(u)))
 
 u_hat = Function(L)
-if isinstance(A, list):
-    A = np.sum(A)
-    u_hat[:-2] = A.solve(f_hat[:-2], u_hat[:-2])
-else:
-    u_hat = A.solve(f_hat, u_hat)
+sol = la.Solver(A)
+u_hat = sol(f_hat, u_hat)
 
 uj = u_hat.backward()
 uq = Array(L, buffer=ue)

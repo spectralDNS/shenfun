@@ -1,95 +1,49 @@
 import numba as nb
 
-__all__ = ['TDMA_SymLU', 'TDMA_SymSolve', 'TDMA_SymSolve2D',
-           'TDMA_SymSolve3D', 'TDMA_SymLU_VC', 'TDMA_SymSolve_VC',
-           'TDMA_O_SymLU', 'TDMA_O_SymSolve']
+__all__ = ['TDMA_LU', 'TDMA_Solve',
+           'TDMA_O_LU', 'TDMA_O_Solve',
+           'TDMA_inner_solve', 'TDMA_O_inner_solve']
 
-#@nb.jit((float[:], float[:], float[:]), cache=True, nopython=True, fastmath=True)
 @nb.jit(nopython=True, fastmath=True, cache=True)
-def TDMA_SymLU(d, ud, ld):
+def TDMA_LU(data):
+    ld = data[0, :-2]
+    d = data[1, :]
+    ud = data[2, 2:]
     n = d.shape[0]
     for i in range(2, n):
-        ld[i-2] = ud[i-2]/d[i-2]
+        ld[i-2] = ld[i-2]/d[i-2]
         d[i] -= ld[i-2]*ud[i-2]
 
-@nb.jit(nopython=True, fastmath=True, cache=True)
-def TDMA_O_SymLU(d, ud, ld):
-    n = d.shape[0]
-    for i in range(1, n):
-        ld[i-1] = ud[i-1]/d[i-1]
-        d[i] = d[i] - ld[i-1]*ud[i-1]
-
-@nb.jit(nopython=True, fastmath=True, cache=True)
-def TDMA_SymLU_2D(d, ud, ld, axis):
-    if axis == 0:
-        for j in range(d.shape[1]):
-            TDMA_SymLU(d[:, j], ud[:, j], ld[:, j])
-    elif axis == 1:
-        for i in range(d.shape[0]):
-            TDMA_SymLU(d[i], ud[i], ld[i])
-
-@nb.jit(nopython=True, fastmath=True, cache=True)
-def TDMA_SymLU_3D(d, ud, ld, axis):
-    if axis == 0:
-        for j in range(d.shape[1]):
-            for k in range(d.shape[2]):
-                TDMA_SymLU(d[:, j, k], ud[:, j, k], ld[:, j, k])
-    elif axis == 1:
-        for i in range(d.shape[0]):
-            for k in range(d.shape[2]):
-                TDMA_SymLU(d[i, :, k], ud[i, :, k], ld[i, :, k])
-    elif axis == 2:
-        for i in range(d.shape[0]):
-            for j in range(d.shape[1]):
-                TDMA_SymLU(d[i, j], ud[i, j], ld[i, j])
-
-def TDMA_SymLU_VC(d, a, l, axis=0):
-    n = d.ndim
-    if n == 1:
-        TDMA_SymLU(d, a, l)
-    elif n == 2:
-        TDMA_SymLU_2D(d, a, l, axis)
-    elif n == 3:
-        TDMA_SymLU_3D(d, a, l, axis)
-
-def TDMA_SymSolve(d, a, l, x, axis=0):
+def TDMA_Solve(x, data, axis=0):
+    ld = data[0, :-2]
+    d = data[1, :]
+    ud = data[2, 2:]
     n = x.ndim
     if n == 1:
-        TDMA_SymSolve1D(d, a, l, x)
+        TDMA_Solve1D(ld, d, ud, x)
     elif n == 2:
-        TDMA_SymSolve2D(d, a, l, x, axis)
+        TDMA_Solve2D(ld, d, ud, x, axis)
     elif n == 3:
-        TDMA_SymSolve3D(d, a, l, x, axis)
+        TDMA_Solve3D(ld, d, ud, x, axis)
 
-def TDMA_SymSolve_VC(d, a, l, x, axis=0):
-    n = x.ndim
-    if n == 1:
-        TDMA_SymSolve1D(d, a, l, x)
-    elif n == 2:
-        TDMA_SymSolve_VC_2D(d, a, l, x, axis)
-    elif n == 3:
-        TDMA_SymSolve_VC_3D(d, a, l, x, axis)
-
-#@nb.jit((float[::1], float[::1], float[::1], float[::1]), nopython=True, fastmath=True)
 @nb.jit(nopython=True, fastmath=True, cache=True)
-def TDMA_SymSolve1D(d, a, l, x):
+def TDMA_Solve1D(ld, d, ud, x):
     n = d.shape[0]
     for i in range(2, n):
-        x[i] -= l[i-2]*x[i-2]
+        x[i] -= ld[i-2]*x[i-2]
 
     x[n-1] = x[n-1]/d[n-1]
     x[n-2] = x[n-2]/d[n-2]
     for i in range(n - 3, -1, -1):
-        x[i] = (x[i] - a[i]*x[i+2])/d[i]
+        x[i] = (x[i] - ud[i]*x[i+2])/d[i]
 
-#@nb.jit((float[:], float[:], float[:], complex[:, :], nb.int64), cache=True, nopython=True, fastmath=True)
 @nb.jit(nopython=True, fastmath=True, cache=True)
-def TDMA_SymSolve2D(d, a, l, x, axis):
+def TDMA_Solve2D(ld, d, ud, x, axis):
     n = d.shape[0]
     if axis == 0:
         for i in range(2, n):
             for j in range(x.shape[1]):
-                x[i, j] -= l[i-2]*x[i-2, j]
+                x[i, j] -= ld[i-2]*x[i-2, j]
 
         for j in range(x.shape[1]):
             x[n-1, j] = x[n-1, j]/d[n-1]
@@ -98,22 +52,20 @@ def TDMA_SymSolve2D(d, a, l, x, axis):
         for i in range(n - 3, -1, -1):
             d1 = 1./d[i]
             for j in range(x.shape[1]):
-                x[i, j] = (x[i, j] - a[i]*x[i+2, j])*d1
+                x[i, j] = (x[i, j] - ud[i]*x[i+2, j])*d1
 
     elif axis == 1:
         for i in range(x.shape[0]):
-            TDMA_SymSolve1D(d, a, l, x[i])
+            TDMA_Solve1D(ld, d, ud, x[i])
 
-#@nb.jit([(nb.float32[:], nb.float32[:], nb.float32[:], nb.complex64[:, :, :], nb.int64),
-#         (nb.float64[:], nb.float64[:], nb.float64[:], nb.complex128[:, :, :], nb.int64)], cache=True, nopython=True, fastmath=True)
 @nb.jit(nopython=True, fastmath=True, cache=True)
-def TDMA_SymSolve3D(d, a, l, x, axis):
+def TDMA_Solve3D(ld, d, ud, x, axis):
     n = d.shape[0]
     if axis == 0:
         for i in range(2, n):
             for j in range(x.shape[1]):
                 for k in range(x.shape[2]):
-                    x[i, j, k] -= l[i-2]*x[i-2, j, k]
+                    x[i, j, k] -= ld[i-2]*x[i-2, j, k]
 
         for j in range(x.shape[1]):
             for k in range(x.shape[2]):
@@ -124,13 +76,13 @@ def TDMA_SymSolve3D(d, a, l, x, axis):
             d1 = 1./d[i]
             for j in range(x.shape[1]):
                 for k in range(x.shape[2]):
-                    x[i, j, k] = (x[i, j, k] - a[i]*x[i+2, j, k])*d1
+                    x[i, j, k] = (x[i, j, k] - ud[i]*x[i+2, j, k])*d1
 
     elif axis == 1:
         for i in range(x.shape[0]):
             for j in range(2, n):
                 for k in range(x.shape[2]):
-                    x[i, j, k] -= l[j-2]*x[i, j-2, k]
+                    x[i, j, k] -= ld[j-2]*x[i, j-2, k]
 
             for k in range(x.shape[2]):
                 x[i, n-1, k] = x[i, n-1, k]/d[n-1]
@@ -138,53 +90,39 @@ def TDMA_SymSolve3D(d, a, l, x, axis):
 
             for j in range(n - 3, -1, -1):
                 for k in range(x.shape[2]):
-                    x[i, j, k] = (x[i, j, k] - a[j]*x[i, j+2, k])/d[j]
+                    x[i, j, k] = (x[i, j, k] - ud[j]*x[i, j+2, k])/d[j]
 
     elif axis == 2:
         for i in range(x.shape[0]):
             for j in range(x.shape[1]):
-                TDMA_SymSolve1D(d, a, l, x[i, j])
+                TDMA_Solve1D(ld, d, ud, x[i, j])
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
-def TDMA_SymSolve_VC_3D(d, a, l, x, axis):
-    if axis == 0:
-        for j in range(d.shape[1]):
-            for k in range(d.shape[2]):
-                TDMA_SymSolve1D(d[:-2, j, k], a[:-2, j, k], l[:-2, j, k], x[:-2, j, k])
-    elif axis == 1:
-        for i in range(d.shape[0]):
-            for k in range(d.shape[2]):
-                TDMA_SymSolve1D(d[i, :-2, k], a[i, :-2, k], l[i, :-2, k], x[i, :-2, k])
-    elif axis == 2:
-        for i in range(d.shape[0]):
-            for j in range(d.shape[1]):
-                TDMA_SymSolve1D(d[i, j, :-2], a[i, j, :-2], l[i, j, :-2], x[i, j, :-2])
-
-@nb.jit(nopython=True, fastmath=True, cache=True)
-def TDMA_SymSolve_VC_2D(d, a, l, x, axis):
-    if axis == 0:
-        for j in range(d.shape[1]):
-            TDMA_SymSolve1D(d[:-2, j], a[:-2, j], l[:-2, j], x[:-2, j])
-    elif axis == 1:
-        for i in range(d.shape[0]):
-            TDMA_SymSolve1D(d[i, :-2], a[i, :-2], l[i, :-2], x[i, :-2])
-
-@nb.jit(nopython=True, fastmath=True, cache=True)
-def TDMA_O_SymSolve1D(d, a, l, x, axis=0):
+def TDMA_O_Solve1D(ld, d, ud, x, axis=0):
     n = d.shape[0]
     for i in range(1, n):
-        x[i] -= l[i-1]*x[i-1]
+        x[i] -= ld[i-1]*x[i-1]
     x[n-1] = x[n-1]/d[n-1]
     for i in range(n - 2, -1, -1):
-        x[i] = (x[i] - a[i]*x[i+1])/d[i]
+        x[i] = (x[i] - ud[i]*x[i+1])/d[i]
 
 @nb.jit(nopython=True, fastmath=True, cache=True)
-def TDMA_O_SymSolve2D(d, a, l, x, axis):
+def TDMA_O_LU(data):
+    ld = data[0, :-1]
+    d = data[1, :]
+    ud = data[2, 1:]
+    n = d.shape[0]
+    for i in range(1, n):
+        ld[i-1] = ld[i-1]/d[i-1]
+        d[i] -= ld[i-1]*ud[i-1]
+
+@nb.jit(nopython=True, fastmath=True, cache=True)
+def TDMA_O_Solve2D(ld, d, ud, x, axis):
     n = d.shape[0]
     if axis == 0:
         for i in range(1, n):
             for j in range(x.shape[1]):
-                x[i, j] -= l[i-1]*x[i-1, j]
+                x[i, j] -= ld[i-1]*x[i-1, j]
 
         for j in range(x.shape[1]):
             x[n-1, j] = x[n-1, j]/d[n-1]
@@ -192,22 +130,20 @@ def TDMA_O_SymSolve2D(d, a, l, x, axis):
         for i in range(n - 2, -1, -1):
             d1 = 1./d[i]
             for j in range(x.shape[1]):
-                x[i, j] = (x[i, j] - a[i]*x[i+1, j])*d1
+                x[i, j] = (x[i, j] - ud[i]*x[i+1, j])*d1
 
     elif axis == 1:
         for i in range(x.shape[0]):
-            TDMA_O_SymSolve1D(d, a, l, x[i])
+            TDMA_O_Solve1D(ld, d, ud, x[i])
 
-#@nb.jit([(nb.float32[:], nb.float32[:], nb.float32[:], nb.complex64[:, :, :], nb.int64),
-#         (nb.float64[:], nb.float64[:], nb.float64[:], nb.complex128[:, :, :], nb.int64)], cache=True, nopython=True, fastmath=True)
 @nb.jit(nopython=True, fastmath=True, cache=True)
-def TDMA_O_SymSolve3D(d, a, l, x, axis):
+def TDMA_O_Solve3D(ld, d, ud, x, axis):
     n = d.shape[0]
     if axis == 0:
         for i in range(1, n):
             for j in range(x.shape[1]):
                 for k in range(x.shape[2]):
-                    x[i, j, k] -= l[i-1]*x[i-1, j, k]
+                    x[i, j, k] -= ld[i-1]*x[i-1, j, k]
 
         for j in range(x.shape[1]):
             for k in range(x.shape[2]):
@@ -217,31 +153,61 @@ def TDMA_O_SymSolve3D(d, a, l, x, axis):
             d1 = 1./d[i]
             for j in range(x.shape[1]):
                 for k in range(x.shape[2]):
-                    x[i, j, k] = (x[i, j, k] - a[i]*x[i+1, j, k])*d1
+                    x[i, j, k] = (x[i, j, k] - ud[i]*x[i+1, j, k])*d1
 
     elif axis == 1:
         for i in range(x.shape[0]):
             for j in range(1, n):
                 for k in range(x.shape[2]):
-                    x[i, j, k] -= l[j-1]*x[i, j-1, k]
+                    x[i, j, k] -= ld[j-1]*x[i, j-1, k]
 
             for k in range(x.shape[2]):
                 x[i, n-1, k] = x[i, n-1, k]/d[n-1]
 
             for j in range(n - 2, -1, -1):
                 for k in range(x.shape[2]):
-                    x[i, j, k] = (x[i, j, k] - a[j]*x[i, j+1, k])/d[j]
+                    x[i, j, k] = (x[i, j, k] - ud[j]*x[i, j+1, k])/d[j]
 
     elif axis == 2:
         for i in range(x.shape[0]):
             for j in range(x.shape[1]):
-                TDMA_O_SymSolve1D(d, a, l, x[i, j])
+                TDMA_O_Solve1D(ld, d, ud, x[i, j])
 
-def TDMA_O_SymSolve(d, a, l, x, axis=0):
+def TDMA_O_Solve(x, data, axis=0):
+    ld = data[0, :-1]
+    d = data[1, :]
+    ud = data[2, 1:]
     n = x.ndim
     if n == 1:
-        TDMA_O_SymSolve1D(d, a, l, x)
+        TDMA_O_Solve1D(ld, d, ud, x)
     elif n == 2:
-        TDMA_O_SymSolve2D(d, a, l, x, axis)
+        TDMA_O_Solve2D(ld, d, ud, x, axis)
     elif n == 3:
-        TDMA_O_SymSolve3D(d, a, l, x, axis)
+        TDMA_O_Solve3D(ld, d, ud, x, axis)
+
+@nb.njit
+def TDMA_inner_solve(u, data):
+    ld = data[0, :-2]
+    d = data[1, :]
+    ud = data[2, 2:]
+    n = d.shape[0]
+    for i in range(2, n):
+        u[i] -= ld[i-2]*u[i-2]
+
+    u[n-1] = u[n-1]/d[n-1]
+    u[n-2] = u[n-2]/d[n-2]
+    for i in range(n - 3, -1, -1):
+        u[i] = (u[i] - ud[i]*u[i+2])/d[i]
+
+@nb.njit
+def TDMA_O_inner_solve(u, lu):
+    ld = lu[0, :-1]
+    d = lu[1, :]
+    ud = lu[2, 1:]
+    n = d.shape[0]
+    for i in range(1, n):
+        u[i] -= ld[i-1]*u[i-1]
+
+    u[n-1] = u[n-1]/d[n-1]
+    for i in range(n-2, -1, -1):
+        u[i] = (u[i] - ud[i]*u[i+1])/d[i]

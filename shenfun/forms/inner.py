@@ -272,6 +272,10 @@ def inner(expr0, expr1, output_array=None):
             if trial.tensor_rank == 0 and isinstance(test, BasisFunction):
                 output_array = space.scalar_product(trial, output_array)
                 return output_array
+            # project to orthogonal. Cannot use trial space, because the Array trial
+            # may not fit with the boundary conditions of the trialspace
+            orthogonal = trial.function_space().get_orthogonal()
+            trial = Array(orthogonal, buffer=trial)
             trial = trial.forward()
 
     assert isinstance(trial, (Expr, BasisFunction))

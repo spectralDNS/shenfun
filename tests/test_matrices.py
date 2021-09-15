@@ -557,11 +557,9 @@ allaxes2D = {0: (0, 1), 1: (1, 0)}
 allaxes3D = {0: (0, 1, 2), 1: (1, 0, 2), 2: (2, 0, 1)}
 
 @pytest.mark.parametrize('axis', (0, 1, 2))
-@pytest.mark.parametrize('family', ('chebyshev', 'legendre', 'jacobi'))
+@pytest.mark.parametrize('family', ('chebyshev',))
 def test_helmholtz3D(family, axis):
-    la = lla
-    if family == 'chebyshev':
-        la = cla
+    la = cla
     N = (8, 9, 10)
     SD = FunctionSpace(N[allaxes3D[axis][0]], family=family, bc=(0, 0))
     K1 = FunctionSpace(N[allaxes3D[axis][1]], family='F', dtype='D')
@@ -574,10 +572,7 @@ def test_helmholtz3D(family, axis):
     T = TensorProductSpace(subcomms, bases, axes=allaxes3D[axis], modify_spaces_inplace=True)
     u = shenfun.TrialFunction(T)
     v = shenfun.TestFunction(T)
-    if family == 'chebyshev':
-        mat = inner(v, div(grad(u)))
-    else:
-        mat = inner(grad(v), grad(u))
+    mat = inner(v, div(grad(u)))
 
     H = la.Helmholtz(*mat)
     u = Function(T)
@@ -600,11 +595,9 @@ def test_helmholtz3D(family, axis):
     assert np.linalg.norm(uc-u) < 1e-12
 
 @pytest.mark.parametrize('axis', (0, 1))
-@pytest.mark.parametrize('family', ('chebyshev', 'legendre', 'jacobi'))
+@pytest.mark.parametrize('family', ('chebyshev',))
 def test_helmholtz2D(family, axis):
-    la = lla
-    if family == 'chebyshev':
-        la = cla
+    la = cla
     N = (8, 9)
     SD = FunctionSpace(N[axis], family=family, bc=(0, 0))
     K1 = FunctionSpace(N[(axis+1)%2], family='F', dtype='d')
@@ -614,10 +607,7 @@ def test_helmholtz2D(family, axis):
     T = TensorProductSpace(subcomms, bases, axes=allaxes2D[axis], modify_spaces_inplace=True)
     u = shenfun.TrialFunction(T)
     v = shenfun.TestFunction(T)
-    if family == 'chebyshev':
-        mat = inner(v, div(grad(u)))
-    else:
-        mat = inner(grad(v), grad(u))
+    mat = inner(v, div(grad(u)))
 
     H = la.Helmholtz(*mat)
     u = Function(T)
@@ -640,11 +630,9 @@ def test_helmholtz2D(family, axis):
     assert np.linalg.norm(uc-u) < 1e-12
 
 @pytest.mark.parametrize('axis', (0, 1, 2))
-@pytest.mark.parametrize('family', ('chebyshev', 'legendre', 'jacobi'))
+@pytest.mark.parametrize('family', ('chebyshev',))
 def test_biharmonic3D(family, axis):
-    la = lla
-    if family == 'chebyshev':
-        la = cla
+    la = cla
     N = (16, 16, 16)
     SD = FunctionSpace(N[allaxes3D[axis][0]], family=family, bc=(0, 0, 0, 0))
     K1 = FunctionSpace(N[allaxes3D[axis][1]], family='F', dtype='D')
@@ -657,10 +645,7 @@ def test_biharmonic3D(family, axis):
     T = TensorProductSpace(subcomms, bases, axes=allaxes3D[axis])
     u = shenfun.TrialFunction(T)
     v = shenfun.TestFunction(T)
-    if family == 'chebyshev':
-        mat = inner(v, div(grad(div(grad(u)))))
-    else:
-        mat = inner(div(grad(v)), div(grad(u)))
+    mat = inner(v, div(grad(div(grad(u)))))
 
     H = la.Biharmonic(*mat)
     u = Function(T)
@@ -680,11 +665,9 @@ def test_biharmonic3D(family, axis):
     assert np.linalg.norm(f-(g0+g1+g2)) < 1e-8, np.linalg.norm(f-(g0+g1+g2))
 
 @pytest.mark.parametrize('axis', (0, 1))
-@pytest.mark.parametrize('family', ('chebyshev', 'legendre', 'jacobi'))
+@pytest.mark.parametrize('family', ('chebyshev',))
 def test_biharmonic2D(family, axis):
-    la = lla
-    if family == 'chebyshev':
-        la = cla
+    la = cla
     N = (16, 16)
     SD = FunctionSpace(N[axis], family=family, bc=(0, 0, 0, 0))
     K1 = FunctionSpace(N[(axis+1)%2], family='F', dtype='d')
@@ -694,10 +677,7 @@ def test_biharmonic2D(family, axis):
     T = TensorProductSpace(subcomms, bases, axes=allaxes2D[axis])
     u = shenfun.TrialFunction(T)
     v = shenfun.TestFunction(T)
-    if family == 'chebyshev':
-        mat = inner(v, div(grad(div(grad(u)))))
-    else:
-        mat = inner(div(grad(v)), div(grad(u)))
+    mat = inner(v, div(grad(div(grad(u)))))
 
     H = la.Biharmonic(*mat)
     u = Function(T)

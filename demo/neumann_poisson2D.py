@@ -14,11 +14,11 @@ The equation to solve is
 """
 import sys
 import os
-import importlib
 from sympy import symbols, cos, sin, pi
 import numpy as np
 from shenfun import inner, div, grad, TestFunction, TrialFunction, \
-    TensorProductSpace, FunctionSpace, Array, Function, comm, la, dx
+    TensorProductSpace, FunctionSpace, Array, Function, comm, la, dx, \
+    chebyshev
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 assert len(sys.argv) == 3, "Call with two command-line arguments"
@@ -26,8 +26,7 @@ assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
 assert isinstance(int(sys.argv[-2]), int)
 
 family = sys.argv[-1].lower()
-base = importlib.import_module('.'.join(('shenfun', family)))
-Solver = base.la.Helmholtz
+Solver = chebyshev.la.Helmholtz if family == 'chebyshev' else la.SolverGeneric1ND
 
 # Use sympy to compute a rhs, given an analytical solution
 x, y = symbols("x,y", real=True)
@@ -55,9 +54,7 @@ f_hat = inner(v, fj)
 matrices = inner(v, -div(grad(u)))
 
 # Create Helmholtz linear algebra solver
-#sol = Solver(*matrices)
-sol = la.SolverGeneric1ND(matrices)
-#sol = la.Solver2D(matrices)
+sol = Solver(matrices)
 
 constraint = ((0, dx(Array(T, buffer=ue), weighted=True)/dx(Array(T, val=1), weighted=True)),)
 

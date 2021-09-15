@@ -76,7 +76,9 @@ class SparseMatrix(MutableMapping):
     # pylint: disable=redefined-builtin, missing-docstring
 
     def __init__(self, d, shape, scale=1.0):
-        self._storage = dict(d)
+        # sort d before storing
+        sorted_dict = sorted(d.items())
+        self._storage = {si[0]: si[1] for si in sorted_dict}
         self.shape = shape
         self._diags = dia_matrix((1, 1))
         self.scale = scale
@@ -166,12 +168,17 @@ class SparseMatrix(MutableMapping):
 
         """
         format = config['matrix']['sparse']['diags'] if format is None else format
-        self._diags = sp_diags(list(self.values()), list(self.keys()),
+        self.sort()
+        self._diags = sp_diags(list(self.values()),
+                               list(self.keys()),
                                shape=self.shape, format=format)
         scale = self.scale
         if isinstance(scale, np.ndarray):
             scale = np.atleast_1d(scale).item()
         return self._diags*scale if scaled else self._diags
+
+    def sort(self):
+        self._storage = {si[0]: si[1] for si in sorted(self.items())}
 
     def __getitem__(self, key):
         v = self._storage[key]
@@ -433,9 +440,18 @@ class SparseMatrix(MutableMapping):
         return u
 
     def get_solver(self):
-        """Return appropriate solver for self"""
-        from .la import Solve, TDMA, TDMA_O, FDMA, TwoDMA, PDMA
-        if len(self) == 2:
+        """Return appropriate solver for self
+
+        Note
+        ----
+        Fall back on generic Solve, which is using Scipy sparse
+        matrices with splu/spsolve. This is still pretty fast.
+        """
+        from .la import Solve, TDMA, TDMA_O, FDMA, TwoDMA, PDMA, DiagMA
+        if len(self) == 1:
+            if list(self.keys())[0] == 0:
+                return DiagMA
+        elif len(self) == 2:
             if np.all(self.sorted_keys() == (0, 2)):
                 return TwoDMA
         elif len(self) == 3:

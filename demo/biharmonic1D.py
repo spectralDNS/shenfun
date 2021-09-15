@@ -8,22 +8,18 @@ Use Shen's Biharmonic basis.
 """
 import sys
 import os
-import importlib
 from sympy import symbols, sin, chebyshevt
 import numpy as np
 from shenfun import inner, Dx, TestFunction, TrialFunction, FunctionSpace, Array, \
-    Function, la
+    Function, la, chebyshev
 
 assert len(sys.argv) == 3
 assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi', 'chebyshev2')
 assert isinstance(int(sys.argv[-2]), int)
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
-family = sys.argv[-1]
-#basis = 'HeinrichtBiharmonic' if family[-1] == '2' else None
-#family = family[:-1] if family[-1] == '2' else family
-base = importlib.import_module('.'.join(('shenfun', family)))
-Solver = base.la.Biharmonic
+family = sys.argv[-1].lower()
+Solver = chebyshev.la.Biharmonic if family == 'chebyshev' else la.Solver
 
 # Use sympy to compute a rhs, given an analytical solution
 # Allow for a non-standard domain. Reference domain is (-1, 1)
@@ -69,7 +65,7 @@ matrices = inner(v, aa*Dx(u, 0, 4) + bb*Dx(u, 0, 2) + cc*u)
 u_hat = Function(SD)
 
 # Create linear algebra solver
-H = Solver(*matrices)
+H = Solver(matrices)
 u_hat = H(f_hat, u_hat)
 #sol = la.Solve(matrices)
 #u_hat = sol(f_hat, u_hat)

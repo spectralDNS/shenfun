@@ -1,8 +1,7 @@
 import numpy as np
 from scipy.linalg import solve
 import pytest
-from shenfun.chebyshev.la import PDMA
-from shenfun.la import FDMA, TwoDMA
+from shenfun.la import FDMA, TwoDMA, PDMA
 from shenfun import inner, TestFunction, TrialFunction, div, grad, \
     SparseMatrix, FunctionSpace, Function, Array, la
 np.warnings.filterwarnings('ignore')
@@ -24,7 +23,7 @@ def test_PDMA(quad):
     B = inner(v, u)
     s = SB.slice()
     H = A + B
-    P = PDMA(A, B, A.scale, B.scale, solver='cython')
+    P = PDMA(H)
     u_hat = Function(SB)
     u_hat[s] = solve(H.diags().toarray()[s, s], f_hat[s])
     u_hat2 = Function(SB)
