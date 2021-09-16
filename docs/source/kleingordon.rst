@@ -528,7 +528,8 @@ just one function that computes both, and call it
 
     uh = TrialFunction(T)
     vh = TestFunction(T)
-    L = inner(grad(vh), -grad(uh)) - inner(vh, gamma*uh)
+    L = inner(grad(vh), -grad(uh)) + [inner(vh, -gamma*uh)]
+    L = la.SolverDiagonal(L).mat.scale
     
     def NonlinearRHS(self, fu, fu_hat, dfu_hat, **par):
         global count, up
@@ -540,6 +541,9 @@ just one function that computes both, and call it
         df_hat += L*u_hat
         du_hat[:] = f_hat
         return dfu_hat
+
+Note that ``L`` now is an array that represents the linear
+coefficients in :eq:`eq:kg:du_var3`.
 
 All that is left is to write a function that is called
 on each time step, which will allow us to store intermediate

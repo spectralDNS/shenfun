@@ -474,7 +474,7 @@ class Biharmonic:
                 self.alfa *= self.A.scale
                 self.beta *= self.B.scale
         elif len(args) == 6:
-            self.a0 = a0 = args[3]
+            self.a0 = a0 = np.atleast_1d(args[3]).item()
             self.alfa = alfa = args[4]
             self.beta = beta = args[5]
 

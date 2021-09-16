@@ -217,6 +217,7 @@ from shenfun import *
 import sympy as sp
 from IPython.display import Math, Latex, display
 from scipy.sparse.linalg import eigs
+config['basisvectors'] = 'covariant'
 
 phi, t = psi = sp.symbols('x,y', real=True)
 

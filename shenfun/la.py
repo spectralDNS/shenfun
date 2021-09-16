@@ -1317,7 +1317,12 @@ class BlockMatrixSolver:
                             gi[dim] = con[2]
 
                 lu = self._lu
-                go[:] = lu.solve(gi)
+                if gi.dtype.char in 'fdg' or lu.U.dtype.char in 'FDG':
+                    go[:] = lu.solve(gi)
+                else:
+                    go.real[:] = lu.solve(gi.real)
+                    go.imag[:] = lu.solve(gi.imag)
+
                 start = 0
                 for k in range(nvars):
                     s[0] = k
@@ -1392,7 +1397,12 @@ class BlockMatrixSolver:
                             lu = sp.linalg.splu(Ai, permc_spec=config['matrix']['sparse']['permc_spec'])
                             self._lu[d0] = lu
 
-                        go[:] = lu.solve(gi)
+                        if gi.dtype.char in 'fdg' or lu.U.dtype.char in 'FDG':
+                            go[:] = lu.solve(gi)
+                        else:
+                            go.imag[:] = lu.solve(gi.imag)
+                            go.real[:] = lu.solve(gi.real)
+
                         for k in range(nvars):
                             s[0] = k
                             s[axis+1] = tp[k].bases[axis].slice()
@@ -1437,7 +1447,11 @@ class BlockMatrixSolver:
                                 dim += N[n]
                             gi[dim] = con[2]
 
-                    go[:] = lu.solve(gi)
+                    if gi.dtype.char in 'fdg' or lu.U.dtype.char in 'FDG':
+                        go[:] = lu.solve(gi)
+                    else:
+                        go.imag[:] = lu.solve(gi.imag)
+                        go.real[:] = lu.solve(gi.real)
                     start = 0
                     for k in range(nvars):
                         s[0] = k

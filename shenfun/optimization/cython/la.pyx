@@ -457,16 +457,13 @@ cdef void FDMA_inner_solve_ptr(T* u, int st, real_t* data, int m0, int m1):
 
 def Poisson_Solve_ADD(A, b, u, axis=0):
     cdef:
-        np.ndarray[real_t, ndim=1] a0=A[0]
-        np.ndarray[real_t, ndim=1] a2=A[2]
+        real_t[::1] a0 = A[0]
+        real_t[::1] a2 = A[2]
         real_t sc = A.scale
         int n
     n = u.ndim
     if n == 1:
-        uu = np.ascontiguousarray(u)
-        Poisson_Solve_ADD_1D(a0, a2, sc, b, uu)
-        if not u.flags['C_CONTIGUOUS']:
-            u[:] = uu
+        Poisson_Solve_ADD_1D(a0, a2, sc, b, u)
     elif n == 2:
         Poisson_Solve_ADD_2D_ptr(a0, a2, sc, b, u, axis)
     elif n == 3:
@@ -482,23 +479,15 @@ def Poisson_Solve_ADD_2D_ptr(real_t[::1] d,
                              int axis):
     cdef:
         int i, j, strides, N
-        T* u_ptr
-        T* b_ptr
-        real_t* d_ptr
-        real_t* d1_ptr
 
     strides = u.strides[axis]/u.itemsize
     N = d.shape[0]
     if axis == 0:
         for j in range(u.shape[1]):
-            b_ptr = &b[0, j]
-            u_ptr = &u[0, j]
-            Poisson_Solve_ADD_1D_ptr(&d[0], &d1[0], scale, b_ptr, u_ptr, N, strides)
+            Poisson_Solve_ADD_1D_ptr(&d[0], &d1[0], scale, &b[0, j], &u[0, j], N, strides)
     elif axis == 1:
         for i in range(u.shape[0]):
-            b_ptr = &b[i, 0]
-            u_ptr = &u[i, 0]
-            Poisson_Solve_ADD_1D_ptr(&d[0], &d1[0], scale, b_ptr, u_ptr, N, strides)
+            Poisson_Solve_ADD_1D_ptr(&d[0], &d1[0], scale, &b[i, 0], &u[i, 0], N, strides)
 
 def Poisson_Solve_ADD_3D_ptr(real_t[::1] d,
                              real_t[::1] d1,
@@ -508,31 +497,21 @@ def Poisson_Solve_ADD_3D_ptr(real_t[::1] d,
                              int axis):
     cdef:
         int i, j, k, strides, N
-        T* u_ptr
-        T* b_ptr
-        real_t* d_ptr
-        real_t* d1_ptr
 
     strides = u.strides[axis]/u.itemsize
     N = d.shape[0]
     if axis == 0:
         for j in range(u.shape[1]):
             for k in range(u.shape[2]):
-                b_ptr = &b[0, j, k]
-                u_ptr = &u[0, j, k]
-                Poisson_Solve_ADD_1D_ptr(&d[0], &d1[0], scale, b_ptr, u_ptr, N, strides)
+                Poisson_Solve_ADD_1D_ptr(&d[0], &d1[0], scale, &b[0, j, k], &u[0, j, k], N, strides)
     elif axis == 1:
         for i in range(u.shape[0]):
             for k in range(u.shape[2]):
-             b_ptr = &b[i, 0, k]
-             u_ptr = &u[i, 0, k]
-             Poisson_Solve_ADD_1D_ptr(&d[0], &d1[0], scale, b_ptr, u_ptr, N, strides)
+                Poisson_Solve_ADD_1D_ptr(&d[0], &d1[0], scale, &b[i, 0, k], &u[i, 0, k], N, strides)
     elif axis == 2:
         for i in range(u.shape[0]):
             for j in range(u.shape[1]):
-             b_ptr = &b[i, j, 0]
-             u_ptr = &u[i, j, 0]
-             Poisson_Solve_ADD_1D_ptr(&d[0], &d1[0], scale, b_ptr, u_ptr, N, strides)
+                Poisson_Solve_ADD_1D_ptr(&d[0], &d1[0], scale, &b[i, j, 0], &u[i, j, 0], N, strides)
 
 
 cdef void Poisson_Solve_ADD_1D(real_t[::1] d,
@@ -540,25 +519,7 @@ cdef void Poisson_Solve_ADD_1D(real_t[::1] d,
                                real_t scale,
                                real_t[::1] b,
                                real_t[::1] u):
-    cdef:
-        int N, k
-        real_t se, so
-    N = d.shape[0]
-    se = 0.0
-    so = 0.0
-    u[N-1] = b[N-1] / d[N-1]
-    u[N-2] = b[N-2] / d[N-2]
-    for k in range(N-3, -1, -1):
-        if k%2 == 0:
-            se += u[k+2]
-            u[k] = b[k] - d1[k]*se
-        else:
-            so += u[k+2]
-            u[k] = b[k] - d1[k]*so
-        u[k] /= d[k]
-    if not abs(scale-1) < 1e-8:
-        for k in range(N):
-            u[k] /= scale
+    Poisson_Solve_ADD_1D_ptr(&d[0], &d1[0], scale, &b[0], &u[0], d.shape[0], 1)
 
 cdef void Poisson_Solve_ADD_1D_ptr(real_t* d,
                                    real_t* d1,
@@ -746,12 +707,10 @@ def Solve_Helmholtz_1D(T[::1] fk,
                        real_t[::1] d2,
                        real_t[::1] L):
     cdef:
-        T* fk_ptr = &fk[0]
-        T* u_hat_ptr = &u_hat[0]
         vector[T] y
         int N = d0.shape[0]-2
     y.resize(N)
-    Solve_Helmholtz_1D_ptr(fk_ptr, u_hat_ptr, neumann, &d0[0], &d1[0], &d2[0], &L[0], &y[0], N, 1)
+    Solve_Helmholtz_1D_ptr(&fk[0], &u_hat[0], neumann, &d0[0], &d1[0], &d2[0], &L[0], &y[0], N, 1)
 
 cdef void Solve_Helmholtz_1D_ptr(T* fk,
                                  T* u_hat,
@@ -805,12 +764,6 @@ def Solve_Helmholtz_3D_ptr(np.int64_t axis,
                            real_t[:,:,::1] d2,
                            real_t[:,:,::1] L):
     cdef:
-        T* fk_ptr
-        T* u_hat_ptr
-        real_t* d0_ptr
-        real_t* d1_ptr
-        real_t* d2_ptr
-        real_t* L_ptr
         vector[T] y
         int_t i, j, k, strides, N
 
@@ -820,39 +773,21 @@ def Solve_Helmholtz_3D_ptr(np.int64_t axis,
     if axis == 0:
         for j in range(d0.shape[1]):
             for k in range(d0.shape[2]):
-                fk_ptr = &fk[0,j,k]
-                u_hat_ptr = &u_hat[0,j,k]
-                d0_ptr = &d0[0,j,k]
-                d1_ptr = &d1[0,j,k]
-                d2_ptr = &d2[0,j,k]
-                L_ptr = &L[0,j,k]
-                Solve_Helmholtz_1D_ptr(fk_ptr, u_hat_ptr, neumann, d0_ptr,
-                                       d1_ptr, d2_ptr, L_ptr, &y[0], N,
+                Solve_Helmholtz_1D_ptr(&fk[0,j,k], &u_hat[0,j,k], neumann, &d0[0,j,k],
+                                       &d1[0,j,k], &d2[0,j,k], &L[0,j,k], &y[0], N,
                                        strides)
     elif axis == 1:
         for i in range(d0.shape[0]):
             for k in range(d0.shape[2]):
-                fk_ptr = &fk[i,0,k]
-                u_hat_ptr = &u_hat[i,0,k]
-                d0_ptr = &d0[i,0,k]
-                d1_ptr = &d1[i,0,k]
-                d2_ptr = &d2[i,0,k]
-                L_ptr = &L[i,0,k]
-                Solve_Helmholtz_1D_ptr(fk_ptr, u_hat_ptr, neumann, d0_ptr,
-                                       d1_ptr, d2_ptr, L_ptr, &y[0], N,
+                Solve_Helmholtz_1D_ptr(&fk[i,0,k], &u_hat[i,0,k], neumann, &d0[i,0,k],
+                                       &d1[i,0,k], &d2[i,0,k], &L[i,0,k], &y[0], N,
                                        strides)
 
     elif axis == 2:
         for i in range(d0.shape[0]):
             for j in range(d0.shape[1]):
-                fk_ptr = &fk[i,j,0]
-                u_hat_ptr = &u_hat[i,j,0]
-                d0_ptr = &d0[i,j,0]
-                d1_ptr = &d1[i,j,0]
-                d2_ptr = &d2[i,j,0]
-                L_ptr = &L[i,j,0]
-                Solve_Helmholtz_1D_ptr(fk_ptr, u_hat_ptr, neumann, d0_ptr,
-                                       d1_ptr, d2_ptr, L_ptr, &y[0], N,
+                Solve_Helmholtz_1D_ptr(&fk[i,j,0], &u_hat[i,j,0], neumann, &d0[i,j,0],
+                                       &d1[i,j,0], &d2[i,j,0], &L[i,j,0], &y[0], N,
                                        strides)
 
 def Solve_Helmholtz_2D_ptr(np.int64_t axis,
@@ -864,12 +799,6 @@ def Solve_Helmholtz_2D_ptr(np.int64_t axis,
                            real_t[:,::1] d2,
                            real_t[:,::1] L):
     cdef:
-        T* fk_ptr
-        T* u_hat_ptr
-        real_t* d0_ptr
-        real_t* d1_ptr
-        real_t* d2_ptr
-        real_t* L_ptr
         vector[T] y
         int_t i, j, strides, N
 
@@ -878,26 +807,14 @@ def Solve_Helmholtz_2D_ptr(np.int64_t axis,
     y.resize(N)
     if axis == 0:
         for j in range(d0.shape[1]):
-            fk_ptr = &fk[0,j]
-            u_hat_ptr = &u_hat[0,j]
-            d0_ptr = &d0[0,j]
-            d1_ptr = &d1[0,j]
-            d2_ptr = &d2[0,j]
-            L_ptr = &L[0,j]
-            Solve_Helmholtz_1D_ptr(fk_ptr, u_hat_ptr, neumann, d0_ptr,
-                                    d1_ptr, d2_ptr, L_ptr, &y[0], N,
-                                    strides)
+            Solve_Helmholtz_1D_ptr(&fk[0,j], &u_hat[0,j], neumann, &d0[0,j],
+                                   &d1[0,j], &d2[0,j], &L[0,j], &y[0], N,
+                                   strides)
     elif axis == 1:
         for i in range(d0.shape[0]):
-            fk_ptr = &fk[i,0]
-            u_hat_ptr = &u_hat[i,0]
-            d0_ptr = &d0[i,0]
-            d1_ptr = &d1[i,0]
-            d2_ptr = &d2[i,0]
-            L_ptr = &L[i,0]
-            Solve_Helmholtz_1D_ptr(fk_ptr, u_hat_ptr, neumann, d0_ptr,
-                                    d1_ptr, d2_ptr, L_ptr, &y[0], N,
-                                    strides)
+            Solve_Helmholtz_1D_ptr(&fk[i,0], &u_hat[i,0], neumann, &d0[i,0],
+                                   &d1[i,0], &d2[i,0], &L[i,0], &y[0], N,
+                                   strides)
 
 def LU_Biharmonic(a0, alfa, beta, sii, siu, siuu, ail, aii, aiu,
                   bill, bil, bii, biu, biuu, u0, u1,

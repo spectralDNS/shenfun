@@ -69,7 +69,7 @@ class ScalarTransform(Transform):
         for sym in sym0:
             j = 'xyzrs'.index(str(sym))
             m.append(mesh[j])
-        xj = sp.lambdify(sym0, dx)(*m)
+        xj = sp.lambdify(tuple(sym0), dx)(*m)
         self.input_array[...] = self.input_array*xj
         return
 
@@ -955,7 +955,7 @@ class TensorProductSpace(PFFT):
         for sym in sym0:
             j = 'xyzrs'.index(str(sym))
             m.append(mesh[j])
-        xj = sp.lambdify(sym0, dx)(*m)
+        xj = sp.lambdify(tuple(sym0), dx)(*m)
         u *= xj
         return u
 
@@ -1660,7 +1660,7 @@ class BoundaryValues:
                         if sym == tt:
                             bci = bci.subs(tt, self.bc_time)
                     sym0 = bci.free_symbols
-                    lbci = sp.lambdify(sym0, bci, 'numpy')
+                    lbci = sp.lambdify(tuple(sym0), bci, 'numpy')
                     Yi = []
                     for sym in sym0:
                         k = 'xyzrs'.index(str(sym))

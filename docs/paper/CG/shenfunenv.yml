@@ -3,7 +3,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - shenfun>=3.1.2
+  - shenfun>=3.2.0
   - matplotlib
   - pip
   - pip:

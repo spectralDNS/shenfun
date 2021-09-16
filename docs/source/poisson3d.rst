@@ -344,7 +344,7 @@ plus some other helper modules, like `Numpy <https://numpy.org>`__ and `Sympy <h
     import numpy as np
     from shenfun.tensorproductspace import TensorProductSpace
     from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \ 
-        project, Dx, FunctionSpace, comm, Array, chebyshev, dx
+        project, Dx, FunctionSpace, comm, Array, chebyshev, dx, la
 
 We use ``Sympy`` for the manufactured solution and ``Numpy`` for testing. MPI for
 Python (``mpi4py``) is required for running the solver with MPI.
@@ -525,7 +525,8 @@ Finally, solve linear equation system and transform solution from spectral
 
     # Create Helmholtz linear algebra solver
     Solver = chebyshev.la.Helmholtz
-    H = Solver(*matrices)
+    #Solver = la.SolverGeneric1ND # For Legendre
+    H = Solver(matrices)
     
     # Solve and transform to real space
     u_hat = Function(T)           # Solution spectral space
@@ -547,11 +548,8 @@ the error.
 
 .. code-block:: python
 
-    import importlib
-    
     def main(N, family='Chebyshev'):
-        base = importlib.import_module('.'.join(('shenfun', family.lower())))
-        Solver = base.la.Helmholtz
+        Solver = chebyshev.la.Helmholtz if family.lower() == 'chebyshev' else la.SolverGeneric1ND
         SD = FunctionSpace(N, family=family, bc=(0, 0))
         K1 = FunctionSpace(N, family='F', dtype='D')
         K2 = FunctionSpace(N, family='F', dtype='d')
@@ -576,7 +574,7 @@ the error.
             matrices = inner(grad(v), grad(u))
     
         # Create Helmholtz linear algebra solver
-        H = Solver(*matrices)
+        H = Solver(matrices)
     
         # Solve and transform to real space
         u_hat = Function(T)           # Solution spectral space

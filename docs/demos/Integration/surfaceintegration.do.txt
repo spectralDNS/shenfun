@@ -110,11 +110,15 @@ be written as
 We can find this integral easily using shenfun. Create
 a function space in curvilinear coordinates, providing
 the position vector $\mathbf{r} = x(t)\mathbf{i} + y(t) \mathbf{j} + z(t) \mathbf{k}$
-as input
+as input. Also, choose to work with covariant basis vectors, which
+is really not important unless you work with vector equations. The
+alternative is the default 'normal', where the basis vectors
+are normalized to unit length.
 
 !bc pycod
 import sympy as sp
 from shenfun import *
+config['basisvectors'] = 'covariant'
 t = sp.Symbol('x', real=True, positive=True)
 rv = (sp.sin(2*t), sp.cos(2*t), 0.5*t)
 C = FunctionSpace(100, 'C', domain=(0, 2*np.pi), coordinates=((t,), rv))
@@ -277,7 +281,7 @@ in latex using:
 
 !bc pycod
 from IPython.display import Math
-Math(T.coors.latex_basis_vectors(covariant=True, symbol_names={theta: '\\theta', phi: '\\phi'}))
+Math(T.coors.latex_basis_vectors(symbol_names={theta: '\\theta', phi: '\\phi'}))
 !ec
 
 where we tell latex to print `theta` as $\theta$, and not `x`:-)
@@ -366,7 +370,7 @@ which agrees very well with chebfun's result. The basis vectors
 for the surface of the seashell are
 
 !bc pycod
-Math(T.coors.latex_basis_vectors(covariant=True, symbol_names={u: 'u', v: 'v'}))
+Math(T.coors.latex_basis_vectors(symbol_names={u: 'u', v: 'v'}))
 !ec
 
 which, if nothing else, shows the power of symbolic
