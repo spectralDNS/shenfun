@@ -14,7 +14,7 @@ dependencies:
   - scipy
   - mpi4py
   - mpi4py-fft
-  - Sphinx==3.2.*
+  - Sphinx==2.3.*
   - nbsphinx
   - pip:
     - sphinxcontrib-bibtex<2.0.0
