@@ -39,13 +39,14 @@ def test_quasiGalerkin(basis):
 
 @pytest.mark.parametrize('bc', ('Dirichlet', 'Neumann'))
 def test_quasiTau(bc):
-    N = 40
+    N = 10
     T = FunctionSpace(N, 'C')
     u = TrialFunction(T)
     v = TestFunction(T)
     A = inner(v, div(grad(u)))
     B = inner(v, u)
     Q = chebyshev.quasi.QITmat(N)
+
     A = Q*A
     B = Q*B
     bb = Q*np.ones(N)
@@ -78,7 +79,7 @@ def test_quasiTau(bc):
     assert np.sqrt(inner(1, (uj-ua)**2)) < 1e-5
 
 if __name__ == '__main__':
-    test_quasiGalerkin('ShenDirichlet')
-    test_quasiGalerkin('ShenNeumann')
+    #test_quasiGalerkin('ShenDirichlet')
+    #test_quasiGalerkin('ShenNeumann')
     test_quasiTau('Dirichlet')
-    test_quasiTau('Neumann')
+    #test_quasiTau('Neumann')
