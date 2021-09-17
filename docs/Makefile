@@ -19,7 +19,7 @@ DEMO          = Poisson/poisson.rst \
 				Functions/functions.ipynb \
 				Integration/surfaceintegration.ipynb \
 				Moebius/moebius.ipynb \
-				FastTransforms/fasttransforms.ipynb \
+				FastTransforms/fasttransforms.ipynb	\
 				MixingBases/mixingbases.ipynb \
 				Tau/tau.ipynb
 NDEMO         = Poisson/poisson.ipynb2 \
@@ -81,8 +81,8 @@ pdf:
 
 book: $(NDEMO)
 
-html: publish $(DEMO)
-	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+html: publish
+	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) -Q $(O)
 
 ohtml:
 	@$(SPHINXBUILD) -M html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

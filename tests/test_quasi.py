@@ -39,7 +39,7 @@ def test_quasiGalerkin(basis):
 
 @pytest.mark.parametrize('bc', ('Dirichlet', 'Neumann'))
 def test_quasiTau(bc):
-    N = 10
+    N = 40
     T = FunctionSpace(N, 'C')
     u = TrialFunction(T)
     v = TestFunction(T)

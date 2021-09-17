@@ -1370,7 +1370,7 @@ class TPMatrix:
 
         return mat*np.atleast_1d(self.scale).item()
 
-def get_simplified_tpmatrices(tpmats : List[TPMatrix]) -> List[TPMatrix]:
+def get_simplified_tpmatrices(tpmats):
     """Return copy of tpmats list, where diagonal matrices have been
     simplified and placed in scale arrays.
 

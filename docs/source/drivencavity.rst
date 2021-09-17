@@ -1,5 +1,5 @@
 .. Automatically generated Sphinx-extended reStructuredText file from DocOnce source
-   (https://github.com/hplgit/doconce/)
+   (https://github.com/doconce/doconce/)
 
 .. Document title:
 
