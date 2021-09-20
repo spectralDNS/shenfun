@@ -56,6 +56,7 @@ extensions = [
 napoleon_google_docstring = False
 napoleon_use_param = False
 napoleon_use_ivar = True
+bibtex_bibfiles = ['papers.bib']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -64,7 +65,7 @@ templates_path = ['_templates']
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = ['.rst', '.ipynb']
+#source_suffix = ['.rst', '.ipynb']
 
 # The master toctree document.
 master_doc = 'index'
@@ -128,14 +129,14 @@ html_static_path = ['_static']
 #html_split_index = True
 #html_use_index=False
 
-nbsphinx_prolog = r"""
-.. raw:: html
-
-    <script src='http://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js'></script>
-    <script>require=requirejs;</script>
-
-
-"""
+#nbsphinx_prolog = r"""
+#.. raw:: html
+#
+#    <script src='http://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js'></script>
+#    <script>require=requirejs;</script>
+#
+#
+#"""
 
 # -- Options for HTMLHelp output ---------------------------------------------
 

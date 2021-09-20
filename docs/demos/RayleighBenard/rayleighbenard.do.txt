@@ -64,7 +64,7 @@ $\bs{H} = (H_x, H_y) = (\bs{u} \cdot \nabla) \bs{u}$
 
 !bt
 \begin{equation}
-    \frac{\partial \nabla^2 {u}}{\partial t} = \frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y}  + \sqrt{\frac{Pr}{Ra}} \nabla^4 {u}  + \frac{\partial^2 T}{\partial y^2} . label{eq:u}
+    \frac{\partial \nabla^2 {u}}{\partial t} = \frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y}  + \sqrt{\frac{Pr}{Ra}} \nabla^4 {u}  + \frac{\partial^2 T}{\partial y^2} . label{eq:rb:u}
 \end{equation}
 !et
 
@@ -73,18 +73,18 @@ divergence constraint. In summary, we now seem to have the following equations t
 
 !bt
 \begin{align}
-    \frac{\partial \nabla^2 {u}}{\partial t} &= \frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y}  + \sqrt{\frac{Pr}{Ra}} \nabla^4 {u}  + \frac{\partial^2 T}{\partial y^2}, label{eq:u2}\\
+    \frac{\partial \nabla^2 {u}}{\partial t} &= \frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y}  + \sqrt{\frac{Pr}{Ra}} \nabla^4 {u}  + \frac{\partial^2 T}{\partial y^2}, label{eq:rb:u2}\\
     \frac{\partial v}{\partial t} + H_y &= -  \frac{\partial p}{\partial y} + \sqrt{\frac{Pr}{Ra}} \nabla^2 v, label{eq:v}\\
     \frac{\partial T}{\partial t} +\bs{u} \cdot \nabla T &= \frac{1}{\sqrt{RaPr}} \nabla^2 T, label{eq:T2}\\
     \nabla \cdot \bs{u} &= 0 label{eq:div2}.
 \end{align}
 !et
 
-However, we note that Eqs. (ref{eq:u2}) and (ref{eq:T2}) and (ref{eq:div2}) do not depend on pressure, and,
-apparently, on each time step we can solve (ref{eq:u2}) for $u$, then (ref{eq:div2}) for $v$ and finally (ref{eq:T2}) for $T$.
+However, we note that Eqs. (ref{eq:rb:u2}) and (ref{eq:T2}) and (ref{eq:div2}) do not depend on pressure, and,
+apparently, on each time step we can solve (ref{eq:rb:u2}) for $u$, then (ref{eq:div2}) for $v$ and finally (ref{eq:T2}) for $T$.
 So what do we need (ref{eq:v}) for? It appears to have become redundant from the elimination of the
-pressure from Eq. (ref{eq:u2}). It turns out that this is actually almost completely true, but
-(ref{eq:u2}), (ref{eq:T2}) and (ref{eq:div2}) can only provide closure for all but one of the
+pressure from Eq. (ref{eq:rb:u2}). It turns out that this is actually almost completely true, but
+(ref{eq:rb:u2}), (ref{eq:T2}) and (ref{eq:div2}) can only provide closure for all but one of the
 Fourier coefficients. To see this it is necessary to introduce some discretization and basis functions
 that will be used to solve the problem. To this end we use $P_N$, which is the set of all real polynomials
 of degree less than or equal to N and introduce the following finite-dimensional approximation spaces
@@ -145,7 +145,7 @@ solving for only the positive $l$'s, as long as we remember that the sum in the 
 and negative $l's$. This is actually automatically taken care of by the FFT provider and is
 not much of an additional complexity in the implementation. So from now on $\bm{l} = \{0, 1, \ldots, M/2\}$.
 
-We can now take a look at why Eq. (ref{eq:v}) is needed. If we first solve (ref{eq:u2}) for
+We can now take a look at why Eq. (ref{eq:v}) is needed. If we first solve (ref{eq:rb:u2}) for
 $\hat{u}_{kl}(t), (k, l) \in \bm{k}_B \times \bm{l}$, then we can use (ref{eq:div2}) to
 solve for $\hat{v}_{kl}(t)$. But here there is a problem. We can see this by creating the variational
 form required to solve (ref{eq:div2}) by the spectral Galerkin method. To this end make $v=v_N$ in (ref{eq:div2})
@@ -237,7 +237,7 @@ There is still one more revelation to be made from Eq. (ref{eq:div3}). When $l=0
 !et
 
 which is trivially satisfied if $\hat{u}_{k,0}=0$ for $k\in\bm{k}_B$. Bottom line is
-that we only need to solve Eq. (ref{eq:u2}) for $l \in \bm{l}/\{0\}$, whereas we can use
+that we only need to solve Eq. (ref{eq:rb:u2}) for $l \in \bm{l}/\{0\}$, whereas we can use
 directly $\hat{u}_{k,0}=0 \text{ for } k \in \bm{k}_B$.
 
 To sum up, with the solution known at $t = t - \Delta t$, we solve
@@ -254,7 +254,7 @@ To sum up, with the solution known at $t = t - \Delta t$, we solve
 <tr><th style="text-align:center">       Equation      </th> <th style="text-align:center">     For unknown     </th> <th style="text-align:center">  With indices </th> </tr>
 </thead>
 <tbody>
-<tr><td style="text-align:center"> (<a class="reference external" href="#eq:u2">5</a>)        </td> <td style="text-align:center">       $\hat{u}_{kl}(t)$    </td> <td style="text-align:center">       $(k, l) \in \boldsymbol{k}_B \times \boldsymbol{l}/\{0\}$    </td> </tr>
+<tr><td style="text-align:center"> (<a class="reference external" href="#eq:rb:u2">5</a>)        </td> <td style="text-align:center">       $\hat{u}_{kl}(t)$    </td> <td style="text-align:center">       $(k, l) \in \boldsymbol{k}_B \times \boldsymbol{l}/\{0\}$    </td> </tr>
 <tr><td style="text-align:center">   (<a class="reference external" href="#eq:div2">8</a>)    </td> <td style="text-align:center">       $\hat{v}_{kl}(t)$    </td> <td style="text-align:center">       $(k, l) \in \boldsymbol{k}_D \times \boldsymbol{l}/\{0\}$    </td> </tr>
 <tr><td style="text-align:center">   (<a class="reference external" href="#eq:vx">27</a>)        </td> <td style="text-align:center">       $\hat{v}_{kl}(t)$    </td> <td style="text-align:center">       $(k, l) \in \boldsymbol{k}_D \times \{0\}$                   </td> </tr>
 <tr><td style="text-align:center">   (<a class="reference external" href="#eq:T2">7</a>)        </td> <td style="text-align:center">       $\hat{T}_{kl}(t)$    </td> <td style="text-align:center">       $(k, l) \in \boldsymbol{k}_T \times \boldsymbol{l}$          </td> </tr>
@@ -266,7 +266,7 @@ To sum up, with the solution known at $t = t - \Delta t$, we solve
 |-----------------c---------------------------------------c-------------------------------------c------------------------------------|
 |                 Equation               |         For unknown             |           With indices                                     |
 |-----------------c------------------------------------c-------------------------------------c---------------------------------------|
-|       (ref{eq:u2})                     |     XXX $\hat{u}_{kl}(t)$        | XXX $(k, l) \in \boldsymbol{k}_B \times \boldsymbol{l}/\{0\}$  |
+|       (ref{eq:rb:u2})                     |     XXX $\hat{u}_{kl}(t)$        | XXX $(k, l) \in \boldsymbol{k}_B \times \boldsymbol{l}/\{0\}$  |
 |       (ref{eq:div2})                   |     XXX $\hat{v}_{kl}(t)$        | XXX $(k, l) \in \boldsymbol{k}_D \times \boldsymbol{l}/\{0\}$  |
 |       (ref{eq:vx})                     |     XXX $\hat{v}_{kl}(t)$        | XXX $(k, l) \in \boldsymbol{k}_D \times \{0\}$                 |
 |       (ref{eq:T2})                     |     XXX $\hat{T}_{kl}(t)$        | XXX $(k, l) \in \boldsymbol{k}_T \times \boldsymbol{l}$        |
@@ -414,7 +414,7 @@ but we do not add that level of complexity here.
 
 === Wall-normal velocity equation ===
 
-We implement Eq. (ref{eq:u2}) using the three-stage Runge Kutta equation (ref{eq:rk3stagesvar}).
+We implement Eq. (ref{eq:rb:u2}) using the three-stage Runge Kutta equation (ref{eq:rk3stagesvar}).
 To this end we first need to declare some test- and trial functions, as well as
 some model constants
 
@@ -440,7 +440,7 @@ for rk in range(3):
 !ec
 
 Notice the one-to-one resemblance with the left hand side of (ref{eq:rk3stagesvar}), where $\psi^{k+1}$
-now has been replaced by $\nabla^2 u$ (or `div(grad(u))`) from Eq. (ref{eq:u2}).
+now has been replaced by $\nabla^2 u$ (or `div(grad(u))`) from Eq. (ref{eq:rb:u2}).
 For each stage we assemble a list of tensor product matrices `mats`, and in `chebyshev.la`
 there is available a very fast direct solver for exactly this type of (biharmonic)
 matrices. The solver is created with `chebyshev.la.Biharmonic(*mats)`, and here

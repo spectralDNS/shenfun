@@ -22,6 +22,7 @@ Demos
    kleingordon
    poisson3d
    polarhelmholtz
+   sphericalhelmholtz
    kuramatosivashinsky
    stokes
    drivencavity

@@ -511,7 +511,7 @@ are the new coordinates. The covariant basis vectors are then
 leading to
 
 .. math::
-    :label: eq:bbasis
+    :label: eq:bbasis1
 
     \mathbf{b}_{r}&=\cos{\left(\theta \right)}\,\mathbf{i}+\sin{\left(\theta \right)}\,\mathbf{j}, \\ \mathbf{b}_{\theta}&=- r \sin{\left(\theta \right)}\,\mathbf{i}+r \cos{\left(\theta \right)}\,\mathbf{j}, \\ \mathbf{b}_{z}&=\mathbf{k}.
 
@@ -520,7 +520,7 @@ you can choose to use covariant basis vectors, or the more common normalized
 basis vectors, that are also called physical basis vectors. These are
 
 .. math::
-    :label: eq:bbasis
+    :label: eq:bbasis2
 
     \mathbf{e}_{r}&=\cos{\left(\theta \right)}\,\mathbf{i}+\sin{\left(\theta \right)}\,\mathbf{j}, \\ \mathbf{e}_{\theta}&=- \sin{\left(\theta \right)}\,\mathbf{i}+\cos{\left(\theta \right)}\,\mathbf{j}, \\ \mathbf{e}_{z}&=\mathbf{k}.
 

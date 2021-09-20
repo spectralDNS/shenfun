@@ -1,5 +1,5 @@
 .. Automatically generated Sphinx-extended reStructuredText file from DocOnce source
-   (https://github.com/doconce/doconce/)
+   (https://github.com/hplgit/doconce/)
 
 .. Document title:
 
@@ -90,7 +90,7 @@ direction, using the pressure from the divergence of the momentum equation
 :math:`\boldsymbol{H} = (H_x, H_y) = (\boldsymbol{u} \cdot \nabla) \boldsymbol{u}`
 
 .. math::
-   :label: eq:u
+   :label: eq:rb:u
 
         
             \frac{\partial \nabla^2 {u}}{\partial t} = \frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y}  + \sqrt{\frac{Pr}{Ra}} \nabla^4 {u}  + \frac{\partial^2 T}{\partial y^2} . 
@@ -100,7 +100,7 @@ This equation is solved with :math:`u(\pm 1) = \partial u/\partial x(\pm 1) = 0`
 divergence constraint. In summary, we now seem to have the following equations to solve:
 
 .. math::
-   :label: eq:u2
+   :label: eq:rb:u2
 
         
             \frac{\partial \nabla^2 {u}}{\partial t} = \frac{\partial^2 H_y}{\partial x \partial y} - \frac{\partial^2 H_x}{\partial y\partial y}  + \sqrt{\frac{Pr}{Ra}} \nabla^4 {u}  + \frac{\partial^2 T}{\partial y^2}, 
@@ -127,11 +127,11 @@ divergence constraint. In summary, we now seem to have the following equations t
             \nabla \cdot \boldsymbol{u} = 0 .
         
 
-However, we note that Eqs. :eq:`eq:u2` and :eq:`eq:T2` and :eq:`eq:div2` do not depend on pressure, and,
-apparently, on each time step we can solve :eq:`eq:u2` for :math:`u`, then :eq:`eq:div2` for :math:`v` and finally :eq:`eq:T2` for :math:`T`.
+However, we note that Eqs. :eq:`eq:rb:u2` and :eq:`eq:T2` and :eq:`eq:div2` do not depend on pressure, and,
+apparently, on each time step we can solve :eq:`eq:rb:u2` for :math:`u`, then :eq:`eq:div2` for :math:`v` and finally :eq:`eq:T2` for :math:`T`.
 So what do we need :eq:`eq:v` for? It appears to have become redundant from the elimination of the
-pressure from Eq. :eq:`eq:u2`. It turns out that this is actually almost completely true, but
-:eq:`eq:u2`, :eq:`eq:T2` and :eq:`eq:div2` can only provide closure for all but one of the
+pressure from Eq. :eq:`eq:rb:u2`. It turns out that this is actually almost completely true, but
+:eq:`eq:rb:u2`, :eq:`eq:T2` and :eq:`eq:div2` can only provide closure for all but one of the
 Fourier coefficients. To see this it is necessary to introduce some discretization and basis functions
 that will be used to solve the problem. To this end we use :math:`P_N`, which is the set of all real polynomials
 of degree less than or equal to N and introduce the following finite-dimensional approximation spaces
@@ -259,7 +259,7 @@ solving for only the positive :math:`l`'s, as long as we remember that the sum i
 and negative :math:`l's`. This is actually automatically taken care of by the FFT provider and is
 not much of an additional complexity in the implementation. So from now on :math:`\boldsymbol{l} = \{0, 1, \ldots, M/2\}`.
 
-We can now take a look at why Eq. :eq:`eq:v` is needed. If we first solve :eq:`eq:u2` for
+We can now take a look at why Eq. :eq:`eq:v` is needed. If we first solve :eq:`eq:rb:u2` for
 :math:`\hat{u}_{kl}(t), (k, l) \in \boldsymbol{k}_B \times \boldsymbol{l}`, then we can use :eq:`eq:div2` to
 solve for :math:`\hat{v}_{kl}(t)`. But here there is a problem. We can see this by creating the variational
 form required to solve :eq:`eq:div2` by the spectral Galerkin method. To this end make :math:`v=v_N` in :eq:`eq:div2`
@@ -361,19 +361,19 @@ There is still one more revelation to be made from Eq. :eq:`eq:div3`. When :math
         
 
 which is trivially satisfied if :math:`\hat{u}_{k,0}=0` for :math:`k\in\boldsymbol{k}_B`. Bottom line is
-that we only need to solve Eq. :eq:`eq:u2` for :math:`l \in \boldsymbol{l}/\{0\}`, whereas we can use
+that we only need to solve Eq. :eq:`eq:rb:u2` for :math:`l \in \boldsymbol{l}/\{0\}`, whereas we can use
 directly :math:`\hat{u}_{k,0}=0 \text{ for } k \in \boldsymbol{k}_B`.
 
 To sum up, with the solution known at :math:`t = t - \Delta t`, we solve
 
-================  ===========================  ===================================================================  
-    Equation              For unknown                                      With indices                             
-================  ===========================  ===================================================================  
- :eq:`eq:u2`       :math:`\hat{u}_{kl}(t)`      :math:`(k, l) \in \boldsymbol{k}_B \times \boldsymbol{l}/\{0\}`  
-:eq:`eq:div2`      :math:`\hat{v}_{kl}(t)`      :math:`(k, l) \in \boldsymbol{k}_D \times \boldsymbol{l}/\{0\}`  
- :eq:`eq:vx`       :math:`\hat{v}_{kl}(t)`              :math:`(k, l) \in \boldsymbol{k}_D \times \{0\}`         
- :eq:`eq:T2`       :math:`\hat{T}_{kl}(t)`         :math:`(k, l) \in \boldsymbol{k}_T \times \boldsymbol{l}`     
-================  ===========================  ===================================================================  
+=================  ===========================  ===================================================================  
+     Equation              For unknown                                      With indices                             
+=================  ===========================  ===================================================================  
+:eq:`eq:rb:u2`      :math:`\hat{u}_{kl}(t)`      :math:`(k, l) \in \boldsymbol{k}_B \times \boldsymbol{l}/\{0\}`  
+ :eq:`eq:div2`      :math:`\hat{v}_{kl}(t)`      :math:`(k, l) \in \boldsymbol{k}_D \times \boldsymbol{l}/\{0\}`  
+  :eq:`eq:vx`       :math:`\hat{v}_{kl}(t)`              :math:`(k, l) \in \boldsymbol{k}_D \times \{0\}`         
+  :eq:`eq:T2`       :math:`\hat{T}_{kl}(t)`         :math:`(k, l) \in \boldsymbol{k}_T \times \boldsymbol{l}`     
+=================  ===========================  ===================================================================  
 
 Temporal discretization
 -----------------------
@@ -501,7 +501,7 @@ but we do not add that level of complexity here.
 Wall-normal velocity equation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We implement Eq. :eq:`eq:u2` using the three-stage Runge Kutta equation :eq:`eq:rk3stagesvar`.
+We implement Eq. :eq:`eq:rb:u2` using the three-stage Runge Kutta equation :eq:`eq:rk3stagesvar`.
 To this end we first need to declare some test- and trial functions, as well as
 some model constants
 
@@ -527,7 +527,7 @@ some model constants
         solver.append(chebyshev.la.Biharmonic(*mats))
 
 Notice the one-to-one resemblance with the left hand side of :eq:`eq:rk3stagesvar`, where :math:`\psi^{k+1}`
-now has been replaced by :math:`\nabla^2 u` (or ``div(grad(u))``) from Eq. :eq:`eq:u2`.
+now has been replaced by :math:`\nabla^2 u` (or ``div(grad(u))``) from Eq. :eq:`eq:rb:u2`.
 For each stage we assemble a list of tensor product matrices ``mats``, and in ``chebyshev.la``
 there is available a very fast direct solver for exactly this type of (biharmonic)
 matrices. The solver is created with ``chebyshev.la.Biharmonic(*mats)``, and here

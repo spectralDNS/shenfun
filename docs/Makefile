@@ -2,8 +2,8 @@
 #
 
 # You can set these variables from the command line.
-SPHINXOPTS    =
-SPHINXBUILD   = sphinx-build
+SPHINXOPTS    ?=
+SPHINXBUILD   ?= sphinx-build
 SPHINXPROJ    = shenfun
 SOURCEDIR     = source
 BUILDDIR      = build
@@ -11,8 +11,8 @@ DEMO          = Poisson/poisson.rst \
                 KleinGordon/kleingordon.rst \
                 Poisson3D/poisson3d.rst \
 				PolarHelmholtz/polarhelmholtz.rst \
-				SphereHelmholtz/sphericalhelmholtz.ipynb \
-				KuramatoSivashinsky/kuramatosivashinsky.rst \
+				SphereHelmholtz/sphericalhelmholtz.ipynb
+f=				KuramatoSivashinsky/kuramatosivashinsky.rst \
 				Stokes/stokes.rst \
 				DrivenCavity/drivencavity.rst \
 				RayleighBenard/rayleighbenard.rst \
@@ -51,6 +51,7 @@ help:
 
 %.ipynb:
 	doconce format ipynb demos/$(basename $@).do.txt
+	#python add_metadata.py demos/$(basename $@).ipynb
 	jupyter nbconvert --inplace --execute demos/${basename $@}.ipynb
 	cp demos/$(basename $@).ipynb source/
 
@@ -77,11 +78,11 @@ demos: $(DEMO)
 
 pdf:
 	@$(SPHINXBUILD) -b latex -d "$(BUILDDIR)"/doctrees $(SOURCEDIR) "$(BUILDDIR)"/latex
-	$(MAKE) -C "$(BUILDDIR)"/latex all-pdf LATEXMKOPTS='-interaction=nonstopmode -f'
+	$(MAKE) -C "$(BUILDDIR)"/latex all-pdf LATEXMKOPTS='-interaction=nonstopmode -f -shell-escape'
 
 book: $(NDEMO)
 
-html: publish
+html: publish $(DEMO)
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) -Q $(O)
 
 ohtml:
@@ -92,5 +93,5 @@ doctest:
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-#%: Makefile
-#	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+%: Makefile
+	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

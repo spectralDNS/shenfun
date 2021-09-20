@@ -132,7 +132,7 @@ $p \in W^{\bs{N}}$. We now formulate a variational problem using the Galerkin me
 $\bs{u} \in [W_0^{\bs{N}}]^3$ and $p \in W^{\bs{N}}$ such that
 !bt
 \begin{align}
-\int_{\Omega} (\nabla^2 \bs{u} - \nabla p ) \cdot \overline{\bs{v}} \, dx_w &= \int_{\Omega} \bs{f} \cdot \overline{\bs{v}}\, dx_w \quad\forall \bs{v} \, \in \, [W_0^{\bs{N}}]^3, label{eq:varform} \\
+\int_{\Omega} (\nabla^2 \bs{u} - \nabla p ) \cdot \overline{\bs{v}} \, dx_w &= \int_{\Omega} \bs{f} \cdot \overline{\bs{v}}\, dx_w \quad\forall \bs{v} \, \in \, [W_0^{\bs{N}}]^3, \\
 \int_{\Omega} \nabla \cdot \bs{u} \, \overline{q} \, dx_w &= \int_{\Omega} h \overline{q} \, dx_w \quad\forall q \, \in \, W^{\bs{N}}.
 \end{align}
 !et

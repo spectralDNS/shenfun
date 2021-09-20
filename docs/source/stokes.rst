@@ -1,5 +1,5 @@
 .. Automatically generated Sphinx-extended reStructuredText file from DocOnce source
-   (https://github.com/doconce/doconce/)
+   (https://github.com/hplgit/doconce/)
 
 .. Document title:
 
@@ -189,14 +189,15 @@ whereas we look for the pressure
 :math:`\boldsymbol{u} \in [W_0^{\boldsymbol{N}}]^3` and :math:`p \in W^{\boldsymbol{N}}` such that
 
 .. math::
-   :label: eq:varform
+   :label: _auto11
 
         
-        \int_{\Omega} (\nabla^2 \boldsymbol{u} - \nabla p ) \cdot \overline{\boldsymbol{v}} \, dx_w = \int_{\Omega} \boldsymbol{f} \cdot \overline{\boldsymbol{v}}\, dx_w \quad\forall \boldsymbol{v} \, \in \, [W_0^{\boldsymbol{N}}]^3,  
+        \int_{\Omega} (\nabla^2 \boldsymbol{u} - \nabla p ) \cdot \overline{\boldsymbol{v}} \, dx_w = \int_{\Omega} \boldsymbol{f} \cdot \overline{\boldsymbol{v}}\, dx_w \quad\forall \boldsymbol{v} \, \in \, [W_0^{\boldsymbol{N}}]^3, 
+        
         
 
 .. math::
-   :label: _auto11
+   :label: _auto12
 
           
         \int_{\Omega} \nabla \cdot \boldsymbol{u} \, \overline{q} \, dx_w = \int_{\Omega} h \overline{q} \, dx_w \quad\forall q \, \in \, W^{\boldsymbol{N}}.
@@ -220,7 +221,7 @@ mixed (coupled) problem: find :math:`(\boldsymbol{u}, p) \in [W_0^{\boldsymbol{N
 such that
 
 .. math::
-   :label: _auto12
+   :label: _auto13
 
         
         a((\boldsymbol{u}, p), (\boldsymbol{v}, q)) = L((\boldsymbol{v}, q)) \quad \forall (\boldsymbol{v}, q) \in [W_0^{\boldsymbol{N}}]^3 \times W^{\boldsymbol{N}},
@@ -230,7 +231,7 @@ such that
 where bilinear (:math:`a`) and linear (:math:`L`) forms are given as
 
 .. math::
-   :label: _auto13
+   :label: _auto14
 
         
             a((\boldsymbol{u}, p), (\boldsymbol{v}, q)) = \int_{\Omega} (\nabla^2 \boldsymbol{u} - \nabla p) \cdot \overline{\boldsymbol{v}} \, dx_w + \int_{\Omega} \nabla \cdot \boldsymbol{u} \, \overline{q} \, dx_w, 
@@ -238,7 +239,7 @@ where bilinear (:math:`a`) and linear (:math:`L`) forms are given as
         
 
 .. math::
-   :label: _auto14
+   :label: _auto15
 
           
             L((\boldsymbol{v}, q)) = \int_{\Omega} \boldsymbol{f} \cdot \overline{\boldsymbol{v}}\, dx_w + \int_{\Omega} h \overline{q} \, dx_w.
@@ -375,7 +376,7 @@ Breaking it down this inner product is mathematically
 If we now use test function :math:`\boldsymbol{v}[0]`
 
 .. math::
-   :label: _auto15
+   :label: _auto16
 
         
         \boldsymbol{v}[0]_{lmn} = \mathcal{X}_l \mathcal{Y}_m \mathcal{Z}_n,
@@ -385,7 +386,7 @@ If we now use test function :math:`\boldsymbol{v}[0]`
 and trialfunction
 
 .. math::
-   :label: _auto16
+   :label: _auto17
 
         
         \boldsymbol{u}[0]_{pqr} = \sum_{p} \sum_{q} \sum_{r} \hat{\boldsymbol{u}}[0]_{pqr} \mathcal{X}_p \mathcal{Y}_q \mathcal{Z}_r,
@@ -397,7 +398,7 @@ into :eq:`eq:partialeq1`, then we obtain after
 performing some exact evaluations over the periodic directions
 
 .. math::
-   :label: _auto17
+   :label: _auto18
 
         
          \Big( \underbrace{-\left(l^2 \delta_{lp} + m^2 \delta_{mq} \right) \int_{-1}^{1} \mathcal{Z}_r(z) \mathcal{Z}_n(z) w_z dz}_{A[0]} + \underbrace{\delta_{lp} \delta_{mq} \int_{-1}^{1} \frac{\partial^2 \mathcal{Z}_r(z)}{\partial z^2} \mathcal{Z}_n(z) w_z dz}_{A[1]} \Big) \hat{\boldsymbol{u}}[0]_{pqr},

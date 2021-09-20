@@ -242,7 +242,7 @@ The second basis is implemented in Shenfun as $\phi_k = \frac{2}{k+1}\phi^1_k$,
 which can be simplified as
 
 !bt
-label{eq:shen}
+label{eq:ft:shen}
 \phi_k(x) = T_k-T_{k+2}, \quad k=0,1, \ldots, N-3,
 !et
 
@@ -264,7 +264,7 @@ which can be simplified using Chebyshev polynomials of the second
 kind $U_k$
 
 !bt
-label{eq:dirichletU}
+label{eq:ft:dirichletU}
 \psi_k(x) = U_k-\frac{k+1}{k+3}U_{k+2}, \quad k=0,1, \ldots, N-3.
 !et
 
