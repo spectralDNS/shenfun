@@ -11,6 +11,7 @@ dependencies:
   - fftw
   - numpy
   - sympy
+  - pyyaml
   - scipy
   - mpi4py
   - mpi4py-fft

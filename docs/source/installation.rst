@@ -11,6 +11,7 @@ Shenfun has a few dependencies
     * `sympy`_
     * `scipy`_
     * `h5py`_
+    * `pyyaml`_
 
 that are mostly straight-forward to install, or already installed in
 most Python environments. The first two are usually most troublesome.
@@ -189,3 +190,4 @@ The tests are run automatically on every commit to github, see
 .. _scipy: https://www.scipy.org
 .. _conda-build: https://conda.io/docs/commands/build/conda-build.html
 .. _pypi: https://pypi.org/project/shenfun/
+.. _pyyaml: https://pypi.org/project/PyYAML/

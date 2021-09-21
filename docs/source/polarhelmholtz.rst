@@ -332,12 +332,14 @@ A complete implementation is found in the file `unitdisc_helmholtz.py <https://g
 Here we give a brief explanation for the implementation. Start by
 importing all functionality from `shenfun <https://github.com/spectralDNS/shenfun>`__
 and `sympy <https://sympy.org>`__, where Sympy is required for handeling the
-polar coordinates.
+polar coordinates. Also, we choose to work with covariant
+basis vectors.
 
 .. code-block:: python
 
     from shenfun import *
     import sympy as sp
+    config['basisvectors'] = 'covariant'
     
     # Define polar coordinates using angle along first axis and radius second
     theta, r = psi = sp.symbols('x,y', real=True, positive=True)
@@ -499,18 +501,14 @@ the gradient to ``V``
 
 Note that the gradient ``du`` now contains the contravariant components
 of the covariant basis vector ``b``. The basis vector ``b`` is not normalized
-(it's length is not unity).
+(it's length is not unity), because we have set
+``config['basisvectors']='covariant'``. The basisvectors can
+be seen as
 
 .. code-block:: python
 
-    b = T.coors.get_covariant_basis()
-
-The basis vectors are, in fact
-
-.. math::
-        
-        \mathbf{b}_{\theta}=- r \sin{\left(\theta \right)}\,\mathbf{i}+r \cos{\left(\theta \right)}\,\mathbf{j} \\ \mathbf{b}_{r}=\cos{\left(\theta \right)}\,\mathbf{i}+\sin{\left(\theta \right)}\,\mathbf{j}
-        
+    from IPython.display import Math
+    Math(T.coors.latex_basis_vectors(symbol_names={theta: '\\theta', r: 'r'}))
 
 and we see that they are given in terms of the Cartesian unit vectors.
 The gradient we have computed is (and yes, it should be :math:`r^2` because we
@@ -540,6 +538,7 @@ on the computational grid
 .. code-block:: python
 
     ui, vi = TT.local_mesh(True)
+    b = T.coors.get_covariant_basis()
     bij = np.array(sp.lambdify(psi, b)(ui, vi))
     gradu = du[0]*bij[0] + du[1]*bij[1]
 
