@@ -128,6 +128,7 @@ html_static_path = ['_static']
 
 #html_split_index = True
 #html_use_index=False
+#html_js_files = ['https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js']
 
 #nbsphinx_prolog = r"""
 #.. raw:: html
