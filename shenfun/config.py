@@ -12,10 +12,6 @@ config = {
         'verbose': False,
     },
     'basisvectors': 'normal',
-    'plotly':
-    {
-        'renderer': None
-    },
     'matrix':
     {
         'sparse':
