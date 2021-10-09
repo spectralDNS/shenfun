@@ -281,7 +281,7 @@ class TensorProductSpace(PFFT):
             elif isinstance(self.bases[axes[-1][-1]], R2C):
                 assert np.dtype(dtype).char in 'fdg'
 
-            if isinstance(comm, Subcomm):
+            if isinstance(comm, tuple):
                 assert slab is False
                 assert len(comm) == len(shape)
                 assert comm[axes[-1][-1]].Get_size() == 1
@@ -490,10 +490,6 @@ class TensorProductSpace(PFFT):
         kwargs : keyword arguments
             Any arguments used in the creation of the different bases.
 
-        Note
-        ----
-        The default behaviour is to return regular spaces with padding_factor=1
-        and dealias_direct=False. This can be overruled in the keyword arguments.
         """
         bases = tuple([base.get_unplanned(**kwargs) for base in self.bases])
         if tensorproductspace:
@@ -990,7 +986,7 @@ class TensorProductSpace(PFFT):
         for axis, base in enumerate(self):
             if not base.family() == 'fourier':
                 axes.append(axis)
-        return axes
+        return np.array(axes)
 
     def get_nondiagonal_axes(self):
         """Return list of axes that **may** contain non-diagonal matrices"""
@@ -1008,14 +1004,18 @@ class TensorProductSpace(PFFT):
                 axes.append(axis)
             if base.family() == 'fourier' and (axis in msaxes) and base.N > 1:
                 axes.append(axis)
-        return axes
+        return np.array(axes)
+
+    def get_diagonal_axes(self):
+        """Return list of axes that contain diagonal matrices"""
+        return np.setxor1d(self.get_nondiagonal_axes(), range(self.dimensions)).astype(int)
 
     def get_nonhomogeneous_axes(self):
         axes = []
         for axis, base in enumerate(self):
             if base.has_nonhomogeneous_bcs:
                 axes.append(axis)
-        return axes
+        return np.array(axes)
 
     @property
     def is_orthogonal(self):
@@ -1023,6 +1023,13 @@ class TensorProductSpace(PFFT):
         for base in self.bases:
             ortho *= base.is_orthogonal
         return ortho
+
+    @property
+    def is_padded(self):
+        padded = True
+        for base in self.bases:
+            padded *= base.is_padded
+        return padded
 
     def get_orthogonal(self):
         ortho = []
@@ -1137,6 +1144,34 @@ class TensorProductSpace(PFFT):
             return self.forward.input_pencil.subshape
         return self.forward.output_array.shape
 
+    def get_ndiag_cum_dofs(self):
+        """Return the cumulative sum of degrees of freedom along nondiagonal axes"""
+        dims = np.array(self.dims())
+        daxes = self.get_diagonal_axes()
+        if len(daxes) > 0:
+            dims[daxes] = 1
+        return np.array([0, np.prod(dims)], dtype=int)
+
+    def get_ndiag_slices(self, j=()):
+        """Return a sequence of slices for non-diagonal axes and integers for diagonal"""
+        assert self.num_components() == 1
+        sl = (0,)+self.slice()
+        daxes = self.get_diagonal_axes()
+        if len(daxes) > 0:
+            daxes += 1
+        j = np.atleast_1d((0,)*len(daxes) if j == () else j)
+        assert len(j) == len(daxes)
+        sa = np.array(sl)
+        if len(daxes) > 0:
+            sa.T[daxes] = j if isinstance(j, int) else np.array(j)[:, None]
+        return np.atleast_2d(sa)
+
+    def get_ndiag_slices_and_dims(self, j=()):
+        """Return nondiagonal slices and their accumulated dimensions"""
+        sl = self.get_ndiag_slices(j)
+        dims = self.get_ndiag_cum_dofs()
+        return sl, dims
+
 
 class CompositeSpace:
     """Class for composite tensorproductspaces.
@@ -1243,17 +1278,60 @@ class CompositeSpace:
 
     def dim(self):
         """Return dimension of ``self`` (degrees of freedom)"""
-        s = 0
-        for space in self.flatten():
-            s += space.dim()
-        return s
+        return sum(self.dims())
 
     def dims(self):
-        """Return dimensions (degrees of freedom) of all bases in ``self``"""
+        """Return dimensions (degrees of freedom) of all spaces in ``self``"""
         s = []
         for space in self.flatten():
             s.append(space.dim())
         return s
+
+    def dims_composite(self):
+        """Return dimensions per axis (degrees of freedom) of all spaces in ``self``"""
+        s = []
+        for space in self.flatten():
+            s.append(space.dims())
+        return np.array(s)
+
+    def get_offsets(self):
+        """Return offsets for spaces"""
+        return np.concatenate((np.zeros((1, self.dimensions), dtype=int),
+                               np.cumsum(self.dims_composite(), axis=0)))
+
+    def get_ndiag_cum_dofs(self):
+        """Return the cumulative sum of degrees of freedom along nondiagonal axes"""
+        dc = self.dims_composite()
+        daxes = self.get_diagonal_axes()
+        dc.T[daxes] = 1
+        dci = np.prod(dc, axis=1)
+        dims = np.array([0]+np.cumsum(dci).tolist())
+        return dims
+
+    def get_ndiag_slices(self, j=()):
+        nvars = self.num_components()
+        sl = self.slice()
+        daxes = self.get_diagonal_axes()
+        if len(daxes) > 0:
+            daxes += 1
+        j = np.atleast_1d((0,)*len(daxes) if j == () else j)
+        assert len(j) == len(daxes)
+        sa = np.array(sl)
+        if len(daxes) > 0:
+            sa.T[daxes] = np.array(j)[:, None]
+        return sa
+
+    def get_ndiag_slices_and_dims(self, j=()):
+        sl = self.get_ndiag_slices(j)
+        dims = [0]
+        for s in sl:
+            d = np.prod([1 if isinstance(i, int) else i.stop-i.start for i in s])
+            dims.append(dims[-1]+d)
+        return sl, np.array(dims)
+
+    def slice(self):
+        """The slices of dofs for each dimension"""
+        return tuple(tuple([i]+list(space.slice())) for i, space in enumerate(self.flatten()))
 
     def size(self, forward_output=False):
         """Return number of elements in :class:`.CompositeSpace`"""
@@ -1314,10 +1392,6 @@ class CompositeSpace:
         """
         s = self.flatten()[0].local_slice(forward_output)
         return (slice(None),) + s
-
-    def slice(self):
-        """The slices of dofs for each dimension"""
-        return tuple(space.slice() for space in self.flatten())
 
     def num_components(self):
         """Return number of spaces in mixed space"""

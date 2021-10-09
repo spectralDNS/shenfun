@@ -288,8 +288,8 @@ tensor product matrices and solution vector C-style.
 !bc pycod
 mm = la.Solver2D(M)
 bb = la.Solver2D(B)
-Mc = mm.M.copy()
-Bc = bb.M.copy()
+Mc = mm.mat.copy()
+Bc = bb.mat.copy()
 !ec
 
 Finally, solve the eigenvalue problem using a sparse eigenvalue solver
@@ -369,7 +369,7 @@ much alike.
 
 !bc pycod
 import plotly.express as px
-z = np.where(abs(mm.M.toarray()) > 1e-6, 0, 1).astype(np.bool)
+z = np.where(abs(mm.mat.toarray()) > 1e-6, 0, 1).astype(np.bool)
 fig = px.imshow(z, binary_string=True)
 fig.show()
 !ec

@@ -105,7 +105,7 @@ if 'pytest' not in os.environ:
     plt.figure()
     plt.quiver(X[0], X[1], u_[0], u_[1])
     plt.figure()
-    plt.spy(sol.mat.diags((0, 0))) # The matrix for Fourier given wavenumber
+    plt.spy(sol.mat.diags(0, 'csr')) # The matrix for Fourier given wavenumber
     plt.figure()
     plt.contourf(X[0], X[1], u_[0], 100)
     #plt.show()

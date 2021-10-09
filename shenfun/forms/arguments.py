@@ -576,8 +576,7 @@ class Expr:
                 if self.expr_rank() == 1:
                     s += "\\right) \\mathbf{%s}_{%s} \\\\"%(bl, symbols[x[i]])
                 elif self.expr_rank() == 2:
-                    ij = tuple([bl]+[symbols[xj] for xj in xx[i]])
-                    s += "\\right) \\mathbf{%s}_{%s} \\mathbf{b}_{%s} \\\\"%(ij)
+                    s += "\\right) \\mathbf{%s}_{%s} \\mathbf{%s}_{%s} \\\\"%(bl, symbols[xx[i][0]], bl, symbols[xx[i][1]])
                 s += '+'
 
         return r"""%s"""%(s.rstrip('+'))
@@ -743,7 +742,8 @@ class Expr:
             raise IndexError
 
         basis = self._basis
-        if self.expr_rank() == self.tensor_rank and self.is_basis_function:
+        if ((self.expr_rank() == self.tensor_rank and self.is_basis_function) or
+            (self.expr_rank() > self.tensor_rank and self.tensor_rank > 0)):
             basis = self._basis[i]
 
         if self.expr_rank() == 1:
@@ -1177,6 +1177,8 @@ class ShenfunBaseArray(DistArray):
                                     val=val0, rank=space.is_composite_space)
             obj._space = space
             obj._offset = 0
+            if cls.__name__ == 'Function':
+                obj._padded_space = {}
             if buffer is None and isinstance(val, (list, tuple)):
                 assert len(val) == len(obj)
                 for i, v in enumerate(val):
@@ -1251,6 +1253,9 @@ class ShenfunBaseArray(DistArray):
         if isinstance(val, (list, tuple)):
             for i, v in enumerate(val):
                 obj.v[i] = v
+        if cls.__name__ == 'Function':
+            obj._padded_space = {}
+
         return obj
 
     def __array_finalize__(self, obj):
@@ -1260,6 +1265,8 @@ class ShenfunBaseArray(DistArray):
         self._p0 = getattr(obj, '_p0', None)
         self._rank = getattr(obj, '_rank', None)
         self._offset = getattr(obj, '_offset', None)
+        if hasattr(obj, '_padded_space'):
+            self._padded_space = obj._padded_space
 
     def function_space(self):
         """Return function space of array ``self``"""
@@ -1475,7 +1482,7 @@ class Function(ShenfunBaseArray, BasisFunction):
         """
         return self.function_space().eval(x, self, output_array)
 
-    def backward(self, output_array=None, kind='normal'):
+    def backward(self, output_array=None, kind='normal', padding_factor=None):
         """Return Function evaluated on some quadrature mesh
 
         Parameters
@@ -1490,8 +1497,29 @@ class Function(ShenfunBaseArray, BasisFunction):
             - function space - evaluate Function on the quadrature mesh of the
               given function space. This could be a :func:`.FunctionSpace`
               if 1D, or a :class:`.TensorProductSpace` if multidimensional.
+        padding_factor : None or number, optional
+            If padding_factor is a number different from 1, then perform a
+            padded backward transform, using a padded work array
+            'self._backward_work_array'
 
         """
+        if padding_factor is not None:
+            space = self.get_dealiased_space(padding_factor)
+            if output_array is not None:
+                assert output_array.shape == space.shape(False)
+            else:
+                # Create a work array that can be reused
+                # Note that the output_array is not the same shape as
+                # space.backward.output_array for spaces of rank > 0.
+                # Also, it is probably not safe to return space.backward.output_array
+                if hasattr(space, '_backward_work_array'):
+                    output_array = space._backward_work_array
+                else:
+                    output_array = Array(space)
+                    space._backward_work_array = output_array
+            output_array = space.backward(self, output_array)
+            return output_array
+
         space = self.function_space()
         if hasattr(kind, 'mesh'):
             if output_array is None:
@@ -1506,6 +1534,24 @@ class Function(ShenfunBaseArray, BasisFunction):
         elif kind.lower() == 'normal':
             output_array = space.backward(self, output_array)
         return output_array
+
+    def get_dealiased_space(self, padding_factor):
+        """Return a function space to be used for padded transforms
+
+        Parameters
+        ----------
+        padding_factor : number
+            The padding factor of the backward transform
+        """
+        if padding_factor is None:
+            return self.function_space()
+        if abs(padding_factor-1) < 1e-8:
+            return self.function_space()
+        if padding_factor in self._padded_space:
+            return self._padded_space[padding_factor]
+        space = self.function_space().get_dealiased(padding_factor)
+        self._padded_space[padding_factor] = space
+        return space
 
     def to_ortho(self, output_array=None):
         """Project Function to orthogonal basis"""
@@ -1679,6 +1725,67 @@ class Function(ShenfunBaseArray, BasisFunction):
             output_array[:] = c1
         return output_array
 
+    def copy_to_flattened(self, f=None, j=(), dims=None, sl=None):
+        """Copy dofs of self to a flattened array
+
+        Parameters
+        ----------
+        f : array 1D, optional
+            The array to copy to
+        j : int or tuple, optional
+            Index into diagonal axes (Fourier). Not used if sl is provided
+        dims : array 1D, optional
+            The dim of each variable in the composite basis
+        sl : sequence of slices, optional
+            list of slices into non-diagonal axes
+
+        Note
+        ----
+        All Functions have allocated Numpy arrays assuming all dofs are being
+        used. However, for non-orthogonal bases with boundary conditions we use
+        only the first N-nb dofs, where nb is the number of boundary conditions.
+        This function does not copy the boundary dofs.
+        """
+        if dims is None:
+            dims = self.function_space().get_ndiag_cum_dofs()
+        if sl is None:
+            sl = self.function_space().get_ndiag_slices(j)
+        if f is None:
+            f = np.zeros(dims[-1], dtype=self.dtype)
+        for i, s in enumerate(sl):
+            f[dims[i]:dims[i+1]] = self[tuple(s)].ravel()
+        return f
+
+    def copy_from_flattened(self, f, j=(), dims=None, sl=None):
+        """Copy dofs to self from a flattened array
+
+        Parameters
+        ----------
+        f : array 1D
+            The array to copy from
+        j : int or tuple, optional
+            Index into diagonal axes (Fourier)
+        dims : array 1D, optional
+            The flat dim of each variable in the composite basis
+        sl : sequence of slices, optional
+            list of slices into non-diagonal axes
+
+        Note
+        ----
+        All Functions have allocated Numpy arrays assuming all dofs are being
+        used. However, for non-orthogonal bases with boundary conditions we use
+        only the first N-nb dofs, where nb is the number of boundary conditions.
+        This function does not copy the boundary dofs.
+        """
+        if dims is None:
+            dims = self.function_space().get_ndiag_cum_dofs()
+        if sl is None:
+            sl = self.function_space().get_ndiag_slices(j)
+        for i, s in enumerate(sl):
+            si = tuple(s)
+            self[si] = f[dims[i]:dims[i+1]].reshape(self[si].shape)
+        return self
+
 
 class Array(ShenfunBaseArray):
     r"""
@@ -1771,4 +1878,28 @@ class Array(ShenfunBaseArray):
         of this Arrays space in a :class:`.CompositeSpace`.
         """
         return self._offset
+
+    def get_cartesian_vector(self):
+        """Return self as a Cartesian vector.
+
+        Note
+        ----
+        This method is only relevant for curvilinear coordinates, where
+        the vector uses different basis functions from the Cartesian.
+        """
+        assert self.tensor_rank == 1
+        T = self.function_space()
+        psi = T.coors.psi
+        ndim = len(psi)
+        x = T.local_mesh(True)
+        b = T.coors.get_basis()
+        bij = np.array(sp.lambdify(psi, b)(*x), dtype=object)
+        for bi in np.ndindex(bij.shape):
+            if isinstance(bij[bi], int):
+                bij[bi] = np.full(x[0].shape, bij[bi])
+        bij = np.array(bij.tolist())
+        sl = [slice(None)]*bij.ndim
+        sl[1] = None
+        uc = np.sum(self[tuple(sl)]*bij, axis=0)
+        return uc
 

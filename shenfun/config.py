@@ -16,8 +16,8 @@ config = {
     {
         'sparse':
         {
-            'permc_spec': 'NATURAL',
-            #'permc_spec': 'COLAMD',
+            #'permc_spec': 'NATURAL',
+            'permc_spec': 'COLAMD',
             'solve': 'csc',
             'diags': 'csc',
             'matvec': 'csr',

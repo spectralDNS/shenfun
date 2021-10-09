@@ -27,7 +27,6 @@ K0 = FunctionSpace(N[0], 'F', dtype='D', domain=(-50, 50))
 K1 = FunctionSpace(N[1], 'F', dtype='D', domain=(-50, 50))
 T = TensorProductSpace(comm, (K0, K1), **{'planner_effort': 'FFTW_MEASURE'})
 
-Tp = T.get_dealiased((1.5, 1.5))
 u = TrialFunction(T)
 v = TestFunction(T)
 
@@ -38,13 +37,10 @@ try:
 except:
     print('No wisdom imported')
 
-# Turn on padding by commenting:
-#Tp = T
-
 X = T.local_mesh(True)
 U = Array(T, buffer=ue)
-Up = Array(Tp)
 U_hat = Function(T)
+padding_factor = 1.5
 
 #initialize
 U_hat = T.forward(U, U_hat)
@@ -55,8 +51,9 @@ def LinearRHS(self, u, **par):
 def NonlinearRHS(self, u, u_hat, rhs, **par):
     global Up, Tp
     rhs.fill(0)
-    Up = Tp.backward(u_hat, Up)
-    rhs = Tp.forward(-(1+1.5j)*Up*abs(Up)**2, rhs)
+    Up = u_hat.backward(padding_factor=padding_factor)
+    Up[:] = -(1+1.5j)*Up*abs(Up)**2
+    rhs = Up.forward(rhs)
     return rhs
 
 plt.figure()

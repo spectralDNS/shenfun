@@ -91,5 +91,5 @@ if 'pytest' not in os.environ:
     X = SD.mesh(True)
     plt.plot(X, gu[1])
     plt.figure()
-    plt.spy(M.diags().toarray()) # The matrix for given Fourier wavenumber
+    plt.spy(M.diags(0, 'csr').toarray()) # The matrix for given Fourier wavenumber
     plt.show()

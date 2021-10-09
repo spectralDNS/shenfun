@@ -25,9 +25,9 @@ def _expr_from_vector_components(comp, basis):
             his = [hi[i]*hi[j] for i in range(ndim) for j in range(ndim)]
     for i in range(len(comp)):
         comp[i] *= his[i]
-        terms += comp[i]._terms
-        scales += comp[i]._scales
-        indices += comp[i]._indices
+        terms += copy.deepcopy(comp[i]._terms)
+        scales += copy.deepcopy(comp[i]._scales)
+        indices += copy.deepcopy(comp[i]._indices)
     return Expr(basis, terms, scales, indices)
 
 def div(test):
@@ -67,6 +67,7 @@ def div(test):
                 for i in range(1, ndim):
                     d += Dx(test[i], i, 1)
                 d.simplify()
+                d._basis = test._basis
                 return d
 
     else:
@@ -112,6 +113,7 @@ def div(test):
                 for i in range(1, ndim):
                     d += Dx(comp(i)*sg, i, 1)*(1/sg)
             d.simplify()
+            d._basis = test._basis
         return d
 
 def grad(test):
@@ -209,22 +211,26 @@ def Dx(test, x, k=1):
     if isinstance(test, BasisFunction):
         test = Expr(test)
 
-    test = copy.copy(test)
-    coors = test.function_space().coors
+    dtest = Expr(test._basis,
+                 copy.deepcopy(test._terms),
+                 copy.deepcopy(test._scales),
+                 copy.deepcopy(test._indices))
+
+    coors = dtest.function_space().coors
 
     if coors.is_cartesian:
-        v = np.array(test.terms())
+        v = np.array(dtest.terms())
         v[..., x] += 1
-        test._terms = v.tolist()
+        dtest._terms = v.tolist()
 
     else:
         assert test.expr_rank() < 1, 'Cannot (yet) take derivative of tensor in curvilinear coordinates'
         psi = coors.psi
-        v = copy.deepcopy(test.terms())
-        sc = copy.deepcopy(test.scales())
-        ind = copy.deepcopy(test.indices())
-        num_terms = test.num_terms()
-        for i in range(test.num_components()):
+        v = copy.deepcopy(dtest.terms())
+        sc = copy.deepcopy(dtest.scales())
+        ind = copy.deepcopy(dtest.indices())
+        num_terms = dtest.num_terms()
+        for i in range(dtest.num_components()):
             for j in range(num_terms[i]):
                 sc0 = sp.simplify(sp.diff(sc[i][j], psi[x], 1), measure=coors._measure)
                 sc0 = coors.refine(sc0)
@@ -233,11 +239,11 @@ def Dx(test, x, k=1):
                     sc[i].append(sc0)
                     ind[i].append(ind[i][j])
                 v[i][j][x] += 1
-        test._terms = v
-        test._scales = sc
-        test._indices = ind
+        dtest._terms = v
+        dtest._scales = sc
+        dtest._indices = ind
 
-    return test
+    return dtest
 
 def curl(test):
     """Return curl of test

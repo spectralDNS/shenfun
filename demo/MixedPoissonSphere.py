@@ -26,6 +26,7 @@ coordinates. The mixed equations are solved coupled and implicit.
 import numpy as np
 import sympy as sp
 from shenfun import *
+config['basisvectors'] = 'normal'
 
 # Define spherical coordinates
 r = 1
@@ -88,25 +89,11 @@ xx, yy, zz = T.local_cartesian_mesh(uniform=True)
 gu = gu_hat.backward(kind='uniform')
 g_, u_ = gu
 
-# For plotting - get gradient on Cartesian
-b = T.coors.get_covariant_basis()
-ui, vi = T.local_mesh(True)
-b1 = np.array(sp.lambdify(psi, b[0])(ui, vi))
-b2 = sp.lambdify(psi, b[1])(ui, vi)
-b2[2] = np.zeros(ui.shape) # b2[2] is 0, so need to broadcast for the next line to work
-b2 = np.array(b2)
-# Compute Cartesian gradient
-df = g_[0]*b1 + g_[1]*b2
+# For plotting - get gradient as Cartesian vector
+df = g_.get_cartesian_vector()
 
-# Wrap periodic direction around
-if T.bases[1].domain == (0, 2*np.pi):
-    xx, yy, zz, u_ = wrap_periodic([xx, yy, zz, u_], axes=[1])
-    df = wrap_periodic([df], axes=[2])
-
-mlab.figure(bgcolor=(1, 1, 1), size=(400, 400))
-mlab.mesh(xx, yy, zz, scalars=u_.real, colormap='jet')
-#fig = surf3D(u_, backend='mayavi', wrapaxes=[1], kind='uniform')
-mlab.quiver3d(xx, yy, zz, df[0].real, df[1].real, df[2].real,
-              color=(0, 0, 0), scale_factor=0.2, mode='2darrow')
-
+# plot real part of
+fig = surf3D(u_.imag, [xx, yy, zz], backend='mayavi', wrapaxes=[1], kind='uniform')
+#fig.show()
+quiver3D(df.imag, [xx, yy, zz], wrapaxes=[1], kind='uniform', fig=fig)
 mlab.show()

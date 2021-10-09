@@ -64,7 +64,7 @@ def main(n):
 
     # Initial time, time step, final time
     ti, dt, tf = 0., 5e-3/n, 5e-2
-    nsteps = np.int(np.ceil((tf - ti)/dt))
+    nsteps = int(np.ceil((tf - ti)/dt))
     dt = (tf - ti)/nsteps
     X = Ws.local_mesh(True)
 
@@ -140,13 +140,14 @@ def main(n):
         rhsU.fill(0)
         rhsU += -inner(v, grad(p_hat))
         rhsU += inner(v, F)
-        rhsU += inner(v, u_hat*2/dt) - inner(v, u0_hat*0.5/dt)
+        rhsU += (inner(v, u_hat*2/dt) - inner(v, u0_hat*0.5/dt))
         ut_hat = Lb1.solve(rhsU, u=ut_hat)
 
         # Solve (9.107)
         rhsP.fill(0)
         rhsP += 1.5/dt*inner(q, div(ut_hat))
         phi_hat = Lb2.solve(rhsP, u=phi_hat, constraints=((0, 0, 0),))
+
 
         # update for next time step
         u0_hat[:] = u_hat; p0_hat[:] = p_hat

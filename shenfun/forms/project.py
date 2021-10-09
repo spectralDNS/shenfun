@@ -132,7 +132,7 @@ def project(uh, T, output_array=None, fill=True, use_to_ortho=True, use_assign=T
         if len(T.get_nonperiodic_axes()) == 2:
             # Means we have two non-periodic directions
             B = [B] if isinstance(B, TPMatrix) else B
-            npaxes = copy(B[0].naxes)
+            npaxes = list(B[0].naxes)
             assert len(npaxes) == 2
 
             pencilA = T.forward.output_pencil

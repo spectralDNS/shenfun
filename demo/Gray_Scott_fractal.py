@@ -35,7 +35,7 @@ import matplotlib.pyplot as plt
 from mpi4py_fft import generate_xdmf
 from shenfun import inner, div, grad, TestFunction, TrialFunction, Function, \
     HDF5File, ETDRK4, TensorProductSpace, VectorSpace, FunctionSpace, Array, \
-    comm
+    comm, get_simplified_tpmatrices
 
 # Use sympy to set up initial condition
 x, y = symbols("x,y", real=True)
@@ -53,26 +53,20 @@ K1 = FunctionSpace(N[1], 'F', dtype='d', domain=(-1., 1.))
 T = TensorProductSpace(comm, (K0, K1))
 u = TrialFunction(T)
 v = TestFunction(T)
-
-# For nonlinear term we can use the 3/2-rule with padding
-Tp = T.get_dealiased((1.5, 1.5))
-
-# Turn on padding by commenting
-#Tp = T
+padding_factor = 1.5
 
 # Create vector spaces and a test function for the regular vector space
 TV = VectorSpace(T)
-TVp = VectorSpace(Tp)
+TVp = TV.get_dealiased(padding_factor)
 vv = TestFunction(TV)
 uu = TrialFunction(TV)
 
 # Declare solution arrays and work arrays
 UV = Array(TV, buffer=(u0, v0))
-UVp = Array(TVp)
 U, V = UV  # views into vector components
 UV_hat = Function(TV)
-w0 = Function(TV)         # Work array spectral space
-w1 = Array(TVp)           # Work array physical space
+w0 = Function(TV)       # Work array spectral space
+w1 = Array(TVp)         # Work array physical space
 
 e1 = 0.00002
 e2 = 0.00001
@@ -83,18 +77,18 @@ UV_hat = UV.forward(UV_hat)
 
 def LinearRHS(self, u, alpha1, alpha2, **params):
     L = inner(vv, (e1, e2)*div(grad(u)))
-    L = np.array([-(-L[0].scale)**(alpha1/2),
-                  -(-L[1].scale)**(alpha2/2)])
-    return L
+    LL = get_simplified_tpmatrices(L)
+    LL = np.array([-(-LL[0].scale)**(alpha1/2),
+                   -(-LL[1].scale)**(alpha2/2)])
+    return LL
 
 def NonlinearRHS(self, uv, uv_hat, rhs, kappa, **params):
     global b0, UVp, w0, w1, TVp
     rhs.fill(0)
-    UVp = TVp.backward(uv_hat, UVp) # 3/2-rule dealiasing for nonlinear term
+    UVp = uv_hat.backward(padding_factor=padding_factor) # 3/2-rule dealiasing for nonlinear term
     w1[0] = b0*(1-UVp[0]) - UVp[0]*UVp[1]**2
     w1[1] = -(b0+kappa)*UVp[1] + UVp[0]*UVp[1]**2
-    w0 = TVp.forward(w1, w0)
-    rhs += w0
+    rhs += w1.forward(w0)
     return rhs
 
 plt.figure()

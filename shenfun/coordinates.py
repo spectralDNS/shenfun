@@ -245,6 +245,12 @@ class Coordinates:
             raise NotImplementedError
         return gij
 
+    def get_basis(self, kind='normal'):
+        if kind == 'covariant':
+            return self.get_covariant_basis()
+        assert kind == 'normal'
+        return self.get_normal_basis()
+
     def refine(self, sc):
         sc = sp.refine(sc, self._assumptions)
         for a, b in self._replace:

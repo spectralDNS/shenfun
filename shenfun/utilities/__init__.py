@@ -14,7 +14,8 @@ from scipy.fftpack import dct
 from shenfun.optimization import optimizer
 
 __all__ = ['dx', 'clenshaw_curtis1D', 'CachedArrayDict', 'surf3D', 'wrap_periodic',
-           'outer', 'dot', 'apply_mask', 'integrate_sympy', 'mayavi_show']
+           'outer', 'dot', 'apply_mask', 'integrate_sympy', 'mayavi_show',
+           'quiver3D']
 
 
 def dx(u, weighted=False):
@@ -206,73 +207,76 @@ def dot(u, v, output_array=None, forward_output=True):
     D = Vu.dimensions
     Vup = Vu
     Vvp = Vv
+
+    # Get the correct output_array
+    # Logic is to first follow the output_array if given,
+    # use input_arrays if not
     uv = output_array
     if isinstance(output_array, Function):
-        uv = Array(output_array.function_space())
-        uv = output_array.backward(uv)
+        forward_output = True
+        Top = output_array.function_space()
+        uv = Array(Top)
+
+    elif isinstance(output_array, Array):
+        forward_output = False
+        Top = output_array.function_space()
+        uv = output_array
+
+    else:
+        output_rank = Vu.tensor_rank+Vv.tensor_rank-2
+        if output_rank == 0:
+            To = Vu[0].get_orthogonal()
+        elif output_rank == 1:
+            if Vu.tensor_rank == 1:
+                To = Vu.get_orthogonal()
+            else:
+                To = Vu[0].get_orthogonal()
+        elif output_rank == 2:
+            To = Vu.get_orthogonal()
+
+        Top = To.get_dealiased()
+        uv = Array(Top)
+    uv.fill(0)
+
+    if Top.is_padded:
+        Vup = Vu.get_dealiased()
+        Vvp = Vv.get_dealiased()
 
     if isinstance(u, Array):
         ua = u
+
     else:
-        Vup = Vu.get_dealiased()
         ua = Array(Vup)
         ua = Vup.backward(u, ua)
+
     if isinstance(v, Array):
         va = v
     else:
-        Vvp = Vv.get_dealiased()
         va = Array(Vvp)
         va = Vvp.backward(v, va)
 
     if Vu.coors.is_cartesian:
 
         if Vu.tensor_rank == 1 and Vv.tensor_rank == 1:
-            if uv is None:
-                To = Vu[0].get_orthogonal()
-                Top = To.get_dealiased()
-                uv = Array(Top)
-
-            assert uv.shape == ua[0].shape
             uv = np.sum(ua.v*va.v, axis=0, out=uv)
 
         elif Vu.tensor_rank == 2 and Vv.tensor_rank == 1:
-            if uv is None:
-                To = Vu[0].get_orthogonal()
-                Top = To.get_dealiased()
-                uv = Array(Top)
-
-            assert uv.shape == va.shape
-            w0 = uv
             for i in range(D):
                 ui = ua[i]
                 for j in range(D):
-                    w0[i] += ui[j]*va[j]
+                    uv[i] += ui[j]*va[j]
 
         elif Vu.tensor_rank == 1 and Vv.tensor_rank == 2:
-            if uv is None:
-                To = Vu.get_orthogonal()
-                Top = To.get_dealiased()
-                uv = Array(Top)
-
-            assert uv.shape == ua.shape
-            w0 = uv
             for i in range(D):
                 ui = ua[i]
                 vi = va[i]
                 for j in range(D):
-                    w0[j] += ui*vi[j]
+                    uv[j] += ui*vi[j]
 
         elif Vu.tensor_rank == 2 and Vv.tensor_rank == 2:
-            if uv is None:
-                To = Vu.get_orthogonal()
-                Top = To.get_dealiased()
-                uv = Array(Top)
-
-            assert uv.shape == ua.shape
-            w0 = uv
             for i in range(D):
                 ui = ua[i]
-                wi = w0[i]
+                wi = uv[i]
                 for j in range(D):
                     vj = va[j]
                     for k in range(D):
@@ -282,8 +286,8 @@ def dot(u, v, output_array=None, forward_output=True):
             raise NotImplementedError
 
     else:
-
-        gij = Vu.coors.get_covariant_metric_tensor()
+        from shenfun import config
+        gij = Vu.coors.get_metric_tensor(config['basisvectors'])
         mesh = Vup.local_mesh(True)
         def measure(g):
             sym0 = g.free_symbols
@@ -291,51 +295,30 @@ def dot(u, v, output_array=None, forward_output=True):
             for sym in sym0:
                 j = 'xyzrs'.index(str(sym))
                 m.append(mesh[j])
-            return sp.lambdify(sym0, g)(*m)
+            return sp.lambdify(tuple(sym0), g)(*m)
 
         if Vu.tensor_rank == 1 and Vv.tensor_rank == 1:
-            if uv is None:
-                To = Vu[0].get_orthogonal()
-                Top = To.get_dealiased()
-                uv = Array(Top)
-
-            assert uv.shape == ua[0].shape
-            w0 = uv
             if Vu.coors.is_orthogonal:
                 for i in range(D):
-                    w0 += ua[i]*va[i]*measure(gij[i, i])
+                    uv += ua[i]*va[i]*measure(gij[i, i])
             else:
                 for i in range(D):
                     ui = ua[i]
                     for j in range(D):
                         g = g[i, j]
                         if not g == 0:
-                            w0 += ui*va[j]*measure(g)
+                            uv += ui*va[j]*measure(g)
 
         elif Vu.tensor_rank == 2 and Vv.tensor_rank == 1:
-            if uv is None:
-                To = Vu[0].get_orthogonal()
-                Top = To.get_dealiased()
-                uv = Array(Top)
-
-            assert uv.shape == va.shape
-            w0 = uv
             for i in range(D):
                 ui = ua[i]
                 for j in range(D):
                     for k in range(D):
                         g = gij[j, k]
                         if not g == 0:
-                            w0[i] += ui[j]*va[k]*measure(g)
+                            uv[i] += ui[j]*va[k]*measure(g)
 
         elif Vu.tensor_rank == 1 and Vv.tensor_rank == 2:
-            if uv is None:
-                To = Vu.get_orthogonal()
-                Top = To.get_dealiased()
-                uv = Array(Top)
-
-            assert uv.shape == ua.shape
-            w0 = uv
             for i in range(D):
                 ui = ua[i]
                 for j in range(D):
@@ -344,19 +327,12 @@ def dot(u, v, output_array=None, forward_output=True):
                     if not g == 0:
                         ms = measure(g)
                         for k in range(D):
-                            w0[k] = ui*vj[k]*ms
+                            uv[k] += ui*vj[k]*ms
 
         elif Vu.tensor_rank == 2 and Vv.tensor_rank == 2:
-            if uv is None:
-                To = Vu.get_orthogonal()
-                Top = To.get_dealiased()
-                uv = Array(Top)
-
-            assert uv.shape == ua.shape
-            w0 = uv
             for i in range(D):
                 ui = ua[i]
-                wi = w0[i]
+                wi = uv[i]
                 for j in range(D):
                     for k in range(D):
                         g = gij[j, k]
@@ -364,7 +340,7 @@ def dot(u, v, output_array=None, forward_output=True):
                             vk = va[k]
                             ms = measure(g)
                             for l in range(D):
-                                wi[l] = ui[j]*vk[l]*ms
+                                wi[l] += ui[j]*vk[l]*ms
 
         else:
             raise NotImplementedError
@@ -498,12 +474,13 @@ def wrap_periodic(xs, axes=()):
         return ys[0]
     return ys
 
-def surf3D(u, backend='plotly', wrapaxes=(), slices=None, fig=None, kind='normal', **kw):
+def surf3D(u, mesh=None, backend='plotly', wrapaxes=(), slices=None, fig=None, kind='normal', **kw):
     """Plot surface embedded in 3D
 
     Parameters
     ----------
     u : Function or Array
+    mesh : list of Cartesian meshes [x, y, z], optional
     backend : str, optional
         plotly or mayavi
     wrapaxes : sequence of integers, optional
@@ -516,10 +493,16 @@ def surf3D(u, backend='plotly', wrapaxes=(), slices=None, fig=None, kind='normal
     kw : Keyword arguments, optional
         Used by plotly Surface. Possibly colorscale.
     """
-    from shenfun.forms.arguments import Function
-    T = u.function_space()
-    uniform = True if kind == 'uniform' else False
-    x, y, z = T.local_cartesian_mesh(uniform=uniform)
+    from shenfun.forms.arguments import Function, Array
+
+    if mesh is None:
+        assert isinstance(u, (Function, Array)), "u must be Function/Array if mesh is not given"
+        T = u.function_space()
+        uniform = True if kind == 'uniform' else False
+        x, y, z = T.local_cartesian_mesh(uniform=uniform)
+    else:
+        x, y, z = mesh
+
     if isinstance(u, Function):
         u = u.backward(kind=kind)
 
@@ -532,7 +515,7 @@ def surf3D(u, backend='plotly', wrapaxes=(), slices=None, fig=None, kind='normal
         u = u[slices]
 
     if u.dtype.char in 'FDG':
-        u = abs(u)**2
+        u = abs(u)
 
     if backend == 'plotly':
         import plotly.graph_objects as go
@@ -547,3 +530,54 @@ def surf3D(u, backend='plotly', wrapaxes=(), slices=None, fig=None, kind='normal
         mlab.mesh(x, y, z, scalars=u, colormap='jet')
 
     return fig
+
+def quiver3D(u, mesh=None, wrapaxes=(), new_figure=False, slices=None, fig=None, kind='normal', **kw):
+    """
+
+    Parameters
+    ----------
+    u : Array
+    mesh : list of Cartesian meshes [x, y, z], optional
+    backend : str, optional
+        plotly or mayavi
+    wrapaxes : sequence of integers, optional
+        For domains that wrap around, extend mesh/u by one in given direction
+    fig : None, optional
+        If None create a new figure
+    slices : None or sequence of slices, optional
+        If only part of u should be plotted
+    kind : str, optional
+        normal or uniform
+    kw : Keyword arguments, optional
+        Arguments to mlab.quiver3d, for example 'scale_factor',
+        'color' or ''mode
+
+    """
+    from shenfun.forms.arguments import Function, Array
+    from mayavi import mlab
+
+    par = {
+        'scale_factor': 0.1,
+        'color': (0, 0, 0),
+        'mode': '2darrow',
+    }
+    par.update(kw)
+    if mesh is None:
+        assert isinstance(u, (Function, Array)), "u must be Function/Array if mesh is not given"
+        T = u.function_space()
+        uniform = True if kind == 'uniform' else False
+        x, y, z = T.local_cartesian_mesh(uniform=uniform)
+    else:
+        x, y, z = mesh
+
+    if isinstance(u, Function):
+        u = u.backward(kind=kind)
+
+    if u.dtype.char in 'FDG':
+        u = abs(u)
+
+    x, y, z = wrap_periodic([x, y, z], wrapaxes)
+    u = wrap_periodic([u], np.array(wrapaxes)+1)
+    if fig is None:
+        mlab.figure(bgcolor=(1, 1, 1), size=(400, 400))
+    mlab.quiver3d(x, y, z, u[0], u[1], u[2], **par)

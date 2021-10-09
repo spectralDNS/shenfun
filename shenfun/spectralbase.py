@@ -192,7 +192,7 @@ class SpectralBase:
         Example
         -------
         >>> import numpy as np
-        >>> from shenfun import Basis, TensorProductSpace, comm
+        >>> from shenfun import FunctionSpace, TensorProductSpace, comm
         >>> K0 = FunctionSpace(8, 'F', dtype='D')
         >>> K1 = FunctionSpace(8, 'F', dtype='d')
         >>> T = TensorProductSpace(comm, (K0, K1), modify_spaces_inplace=True)
@@ -279,6 +279,11 @@ class SpectralBase:
             fast_transform : bool, optional
                 If True use fast transforms (if implemented), if
                 False use Vandermonde type
+            kind : str or functionspace, optional
+
+                - normal - use regular quadrature points
+                - uniform - use uniform mesh
+                - instance of SpectralBase - use quadrature mesh of this space
 
         Note
         ----
@@ -292,20 +297,18 @@ class SpectralBase:
         self._padding_backward(self.backward.input_array,
                                self.backward.tmp_array)
 
-        if kind == 'normal':
-            self._evaluate_expansion_all(self.backward.tmp_array,
-                                         self.backward.output_array,
-                                         fast_transform=fast_transform)
-        else:
-            if kind == 'uniform':
-                mesh = self.mesh(bcast=False, map_true_domain=False, uniform=True)
-            else:
-                mesh = kind.mesh()
-                if len(kind) > 1:
-                    mesh = np.squeeze(mesh[self.axis])
-            self._evaluate_expansion_all(self.backward.tmp_array,
-                                         self.backward.output_array,
-                                         x=mesh, fast_transform=False) # cannot use fast transforms on random mesh
+        mesh = None
+        if kind == 'uniform':
+            fast_transform = False
+            mesh = self.mesh(bcast=False, map_true_domain=False, uniform=True)
+        elif isinstance(kind, SpectralBase):
+            fast_transform = False
+            mesh = kind.mesh()
+            if len(kind) > 1:
+                mesh = np.squeeze(mesh[self.axis])
+        self._evaluate_expansion_all(self.backward.tmp_array,
+                                     self.backward.output_array,
+                                     x=mesh, fast_transform=fast_transform)
 
         if output_array is not None:
             output_array[...] = self.backward.output_array
@@ -769,6 +772,12 @@ class SpectralBase:
 
     @property
     def is_orthogonal(self):
+        return False
+
+    @property
+    def is_padded(self):
+        if self.padding_factor != 1:
+            return True
         return False
 
     @property
@@ -1241,6 +1250,23 @@ class MixedFunctionSpace:
     def dimensions(self):
         """Return dimension of scalar space"""
         return self.bases[0].dimensions
+
+    def slice(self):
+        return tuple(tuple([i]+[space.slice()]) for i, space in enumerate(self.flatten()))
+
+    def get_diagonal_axes(self):
+        return np.array([])
+
+    def get_ndiag_cum_dofs(self):
+        return np.array([0]+np.cumsum(self.dims()).tolist())
+
+    def get_ndiag_slices(self, j=()):
+        return np.array(self.slice())
+
+    def get_ndiag_slices_and_dims(self, j=()):
+        sl = self.get_ndiag_slices(j)
+        dims = self.get_ndiag_cum_dofs()
+        return sl, dims
 
 class VectorBasisTransform:
 

@@ -31,7 +31,7 @@ from shenfun import Function, TPMatrix, TrialFunction, TestFunction,\
     inner, la, Expr, CompositeSpace, BlockMatrix, extract_bc_matrices,\
     SparseMatrix, get_simplified_tpmatrices
 
-__all__ = ('IRK3', 'RK4', 'ETDRK4', 'ETD')
+__all__ = ('IRK3', 'BackwardEuler', 'RK4', 'ETDRK4', 'ETD')
 
 #pylint: disable=unused-variable
 
@@ -124,7 +124,7 @@ class IRK3(IntegratorBase):
         self.dU1 = Function(T)
         self.a = (8./15., 5./12., 3./4.)
         self.b = (0.0, -17./60., -5./12.)
-        self.c = (0., 8./15., 2./3., 1)
+        self.c = (0.0, 8./15., 2./3., 1)
         self.solver = None
         self.bm = None
         self.rhs_mats = None
@@ -148,7 +148,7 @@ class IRK3(IntegratorBase):
         self.rhs_mats = []
         for rk in range(3):
             mats = inner(v, u - ((a[rk]+b[rk])*dt/2)*self.LinearRHS(u))
-            bc_mats = extract_bc_matrices([mats])
+            #bc_mats = extract_bc_matrices([mats])
             if self.T.tensor_rank == 0:
                 if len(mats[0].naxes) == 1:
                     self.solver.append(la.SolverGeneric1ND(mats))
@@ -160,7 +160,7 @@ class IRK3(IntegratorBase):
                 self.solver.append(BlockMatrix(mats))
 
             rhs_mats = inner(v, u + ((a[rk]+b[rk])*dt/2)*self.LinearRHS(u))
-            self.rhs_mats.append(BlockMatrix(rhs_mats+bc_mats))
+            self.rhs_mats.append(BlockMatrix(rhs_mats))
 
         self.mass = inner(u, v)
 
@@ -172,7 +172,8 @@ class IRK3(IntegratorBase):
         dU.mask_nyquist(self.mask)
         w1 = dU*a*dt + dU1*b*dt
         dU1[:] = dU
-        return w1
+        dU[:] = w1
+        return dU
 
     def solve(self, u, u_hat, dt, trange):
         if self.solver is None or abs(self.params['dt']-dt) > 1e-12:
@@ -182,11 +183,85 @@ class IRK3(IntegratorBase):
         while t < end_time-1e-8:
             self.tstep = tstep
             for rk in range(3):
+                self.params['ti'] = t+self.c[rk]*dt
                 dU = self.compute_rhs(u, u_hat, self.dU, self.dU1, rk)
                 dU += self.rhs_mats[rk].matvec(u_hat, self.w0)
                 u_hat = self.solver[rk](dU, u=u_hat)
                 u_hat.mask_nyquist(self.mask)
 
+            t += dt
+            tstep += 1
+            self.update(u, u_hat, t, tstep, **self.params)
+
+class BackwardEuler(IntegratorBase):
+    """First order backward Euler
+
+    Parameters
+    ----------
+        T : TensorProductSpace
+        L : function of TrialFunction(T)
+            To compute linear part of right hand side
+        N : function
+            To compute nonlinear part of right hand side
+        update : function
+            To be called at the end of a timestep
+        params : dictionary
+            Any relevant keyword arguments
+
+    """
+    def __init__(self, T,
+                 L=None,
+                 N=None,
+                 update=None,
+                 **params):
+        IntegratorBase.__init__(self, T, L=L, N=N, update=update, **params)
+        self.dU = Function(T)
+        self.dU1 = Function(T)
+        self.solver = None
+        self.rhs_mats = None
+        self.w0 = Function(self.T)
+        self.mask = self.T.get_mask_nyquist()
+
+    def setup(self, dt):
+        if isinstance(self.T, CompositeSpace):
+            assert self.T.tensor_rank > 0, 'BackwardEuler only works for tensors, not generic CompositeSpaces'
+
+        self.params['dt'] = dt
+        u = TrialFunction(self.T)
+        v = TestFunction(self.T)
+        mats = inner(u-dt*self.LinearRHS(u), v)
+        if self.T.tensor_rank == 0:
+            if len(mats[0].naxes) == 1:
+                self.solver = la.SolverGeneric1ND(mats)
+            elif len(mats[0].naxes) == 2:
+                self.solver = la.SolverGeneric2ND(mats)
+            else:
+                raise NotImplementedError
+        else:
+            self.solver = BlockMatrixSolver(mats)
+        M = inner(u, v)
+        self.rhs_mats = BlockMatrix(M if isinstance(M, list) else [M])
+
+    def compute_rhs(self, u, u_hat, dU, dU1):
+        dt = self.params['dt']
+        dU = self.NonlinearRHS(u, u_hat, dU, **self.params)
+        dU.mask_nyquist(self.mask)
+        w1 = dU*2*dt - dU1*dt
+        dU1[:] = dU
+        return w1
+
+    def solve(self, u, u_hat, dt, trange):
+        if self.solver is None or abs(self.params['dt']-dt) > 1e-12:
+            self.setup(dt)
+        t, end_time = trange
+        tstep = self.tstep = 0
+        while t < end_time-1e-8:
+            self.params['ti'] = t
+            self.tstep = tstep
+            dU = self.compute_rhs(u, u_hat, self.dU, self.dU1)
+            dU += self.rhs_mats.matvec(u_hat, self.w0)
+            u_hat = self.solver(dU, u=u_hat)
+            u_hat.mask_nyquist(self.mask)
             t += dt
             tstep += 1
             self.update(u, u_hat, t, tstep, **self.params)

@@ -21,7 +21,7 @@ from shenfun.jacobi import bases as jbases
 from shenfun.chebyshev import la as cla
 from shenfun.legendre import la as lla
 from shenfun import div, grad, inner, TensorProductSpace, FunctionSpace, SparseMatrix, \
-    Function
+    Function, comm, VectorSpace, TrialFunction, TestFunction, BlockMatrix, CompositeSpace
 from shenfun.spectralbase import inner_product
 from shenfun.config import config
 
@@ -697,6 +697,40 @@ def test_biharmonic2D(family, axis):
     assert np.linalg.norm(f-(g0+g1+g2)) < 1e-8
 
 
+D = FunctionSpace(8, 'C', bc=(0, 0))
+D0 = FunctionSpace(8, 'C')
+F = FunctionSpace(8, 'F', dtype='d')
+F2 = FunctionSpace(8, 'F', dtype='D')
+
+@pytest.mark.parametrize('bases', ((D, D0), (D, F), (D, D0), (D, D0, F),
+                                   (D, F2, F), (D0, F2, F)))
+def test_blockmatrix(bases):
+    T = TensorProductSpace(comm, bases)
+    V = VectorSpace(T)
+    u = TrialFunction(V)
+    v = TestFunction(V)
+    A = inner(u, v)
+    B = BlockMatrix(A)
+    uh = Function(V, val=1)
+    c = Function(V)
+    c = B.matvec(uh, c, fast=True)
+    c2 = Function(V)
+    c2 = B.matvec(uh, c2, fast=False)
+    assert np.linalg.norm(c2-c) < 1e-8
+    VQ = CompositeSpace([V, T])
+    u, p = TrialFunction(VQ)
+    v, q = TestFunction(VQ)
+    A2 = inner(u, v) + [inner(p, q)]
+    B2 = BlockMatrix(A2)
+    uh = Function(VQ, val=1)
+    c = Function(VQ)
+    c = B2.matvec(uh, c, fast=True)
+    c2 = Function(VQ)
+    c2 = B2.matvec(uh, c2, fast=False)
+    assert np.linalg.norm(c2-c) < 1e-8
+
+
+
 if __name__ == '__main__':
     import sympy as sp
     x = sp.symbols('x', real=True)
@@ -709,7 +743,8 @@ if __name__ == '__main__':
     #test_lagmatvec(lagBasis[0], lagBasis[1], 'LG', 'python', 3, 2, 0)
     #test_hmatvec(hBasis[0], hBasis[0], 'HG', 'self', 3, 1, 1)
     #test_isub(((cbases.ShenNeumann, 0), (cbases.ShenDirichlet, 1)), cmatrices.CSNSDmat, 'GC')
-    test_add(((cbases.Orthogonal, 0), (cbases.ShenDirichlet, 1)), cmatrices.CTSDmat, 'GC')
+    #test_add(((cbases.Orthogonal, 0), (cbases.ShenDirichlet, 1)), cmatrices.CTSDmat, 'GC')
+    test_blockmatrix((D, F2, F))
     #test_sub(*mats_and_quads[15])
     #test_mul2()
     #test_div2(cBasis[1], 'GC')

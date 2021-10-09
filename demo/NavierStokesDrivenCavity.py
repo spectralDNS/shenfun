@@ -31,17 +31,16 @@ from shenfun import *
 
 assert comm.Get_size() == 1, "Two non-periodic directions only have solver implemented for serial"
 
-Re = 100.
+Re = 250.
 nu = 2./Re
-alfa = 0.2 # underrelaxation factor
-N = 32
+alfa = 0.1 # underrelaxation factor
+N = 64
 family = 'Chebyshev'
 #family = 'Legendre'
-quad = 'GC'
 x = sympy.symbols('x', real='True')
-D0 = FunctionSpace(N, family, quad=quad, bc=(0, 0))
-#D1 = FunctionSpace(N, family, quad=quad, bc=(0, 1))
-D1 = FunctionSpace(N, family, quad=quad, bc=(0, (1-x)**2*(1+x)**2))
+D0 = FunctionSpace(N, family, bc=(0, 0))
+#D1 = FunctionSpace(N, family, bc=(0, 1))
+D1 = FunctionSpace(N, family, bc=(0, (1-x)**2*(1+x)**2))
 
 # Create tensor product spaces with different combination of bases
 V1 = TensorProductSpace(comm, (D0, D1))
@@ -58,9 +57,8 @@ P.bases[1].slice = lambda: slice(0, N-2)
 W1 = VectorSpace([V1, V0])
 VQ = CompositeSpace([W1, P])
 
-# Create padded spaces for nonlinearity
-W1p = W1.get_dealiased()
-S1 = TensorSpace(P.get_dealiased())
+# Create space for nonlinearity
+S1 = TensorSpace(P)
 
 up = TrialFunction(VQ)
 vq = TestFunction(VQ)
@@ -94,22 +92,23 @@ bh_hat = Function(VQ)
 
 # Create arrays to hold velocity vector solution
 ui = Array(W1)
-uip = Array(W1p)
 
 # Create work arrays for nonlinear part
-uiuj = Array(S1)
+uiuj = Array(S1.get_dealiased())
 uiuj_hat = Function(S1)
+BS = BlockMatrix(inner(TestFunction(W1), div(TrialFunction(S1))))
 
 def compute_rhs(ui_hat, bh_hat):
-    global uip, uiuj, uiuj_hat, W1p
+    global uip, uiuj, uiuj_hat
     bh_hat.fill(0)
     bi_hat = bh_hat[0]
     # Get convection
-    uip = W1p.backward(ui_hat, uip)
+    uip = ui_hat.backward(padding_factor=1.5)
     uiuj = outer(uip, uip, uiuj)
     uiuj_hat = uiuj.forward(uiuj_hat)
-    bi_hat = inner(v, div(uiuj_hat), output_array=bi_hat)
-    ##bi_hat = inner(grad(v), -uiuj_hat, output_array=bi_hat)
+    #bi_hat = inner(v, div(uiuj_hat), output_array=bi_hat)
+    bi_hat = BS.matvec(uiuj_hat, bi_hat) # fastest method
+    #bi_hat = inner(grad(v), -uiuj_hat, output_array=bi_hat) # only Legendre
     #gradu = project(grad(ui_hat), S1)
     #bi_hat = inner(v, dot(gradu, ui_hat), output_array=bi_hat)
     return bh_hat
@@ -173,7 +172,7 @@ while not converged:
     xi, yi = pr.argmin()//W, pr.argmin()%W
     psi_min, xmid, ymid = pr.min()/2, xr[xi, yi], yr[xi, yi]
     err = abs(psi_min-psi_old)
-    converged = err < 1e-12 or count > 10
+    converged = err < 1e-15 or count > 10
     psi_old = psi_min
     dx = dx/4.
     print("%d %d " %(xi, yi) +("%+2.7e "*4) %(xmid, ymid, psi_min, err))

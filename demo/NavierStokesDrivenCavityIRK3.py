@@ -125,12 +125,12 @@ class NavierStokesIRK3(IRK3):
 if __name__ == '__main__':
     d = {'N': (32, 32),
          'dt': 0.1,
-         'modplot': 20,
+         'modplot': 100,
          'family': 'C',
-         'Re': 100
+         'Re': 250
         }
     sol = NavierStokesIRK3(**d)
-    sol.solve(sol.up_, sol.up_hat, sol.dt, (0, 40))
+    sol.solve(sol.up_, sol.up_hat, sol.dt, (0, 100))
 
     # Solve streamfunction
     r = TestFunction(sol.T[0][1])

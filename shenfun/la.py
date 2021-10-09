@@ -6,6 +6,7 @@ import numpy as np
 from numbers import Number, Integral
 from scipy.sparse import spmatrix, kron
 from scipy.sparse.linalg import spsolve, splu
+from scipy.linalg import solve_banded
 from shenfun.config import config
 from shenfun.optimization import optimizer, get_optimized
 from shenfun.matrixbase import SparseMatrix, extract_bc_matrices, \
@@ -135,14 +136,25 @@ class SparseMatrixSolver:
             if isinstance(self.mat, SparseMatrix):
                 self.mat = self.mat.diags('csc')
             self._lu = splu(self.mat, permc_spec=config['matrix']['sparse']['permc_spec'])
+            #self._lu = self.mat.todia()
             self.dtype = self.mat.dtype.char
             self._inner_arg = (self._lu, self.dtype)
         return self._lu
 
-    def solve(self, b, u, axis=0, lu=None):
+    def solve(self, b, u, axis, lu):
         """Solve Au=b
 
         Solve along axis if b and u are multidimensional arrays.
+
+        Parameters
+        ----------
+        b, u : arrays of rhs and output
+            Both can be multidimensional
+        axis : int
+            The axis we are solving over
+        lu : LU-decomposition
+            Can be either the output from splu, or a dia-matrix containing
+            the L and U matrices. The latter is used in subclasses.
         """
         if axis > 0:
             u = np.moveaxis(u, axis, 0)
@@ -183,22 +195,34 @@ class SparseMatrixSolver:
 
         Parameters
         ----------
-        u : array
+        u : array 1D
             rhs on entry and solution on exit
         lu : LU-decomposition
+            Can be either a 2-tuple with (output from splu, dtype), or a scipy
+            dia-matrix containing the L and U matrices. The latter is used in
+            subclasses.
 
         """
         lu, dtype = lu
         s = slice(0, lu.shape[0])
         if u.dtype.char in 'fdg' or dtype in 'FDG':
             u[s] = lu.solve(u[s])
+            #ud, l = max(0, max(lu.offsets)), max(0, max(-lu.offsets))
+            #A = np.zeros((ud+l+1, lu.shape[1]))
+            #A[ud-lu.offsets] = lu.data
+            #u[s] = solve_banded((l, ud), A, u[s])
 
         else:
             u.real[s] = lu.solve(u.real[s])
             u.imag[s] = lu.solve(u.imag[s])
+            #ud, l = max(0, max(lu.offsets)), max(0, max(-lu.offsets))
+            #A = np.zeros((ud+l+1, lu.shape[1]))
+            #A[ud-lu.offsets] = lu.data
+            #u.real[s] = solve_banded((l, ud), A, u.real[s])
+            #u.imag[s] = solve_banded((l, ud), A, u.imag[s])
 
     def __call__(self, b, u=None, axis=0, constraints=()):
-        """Solve matrix problem Au = b
+        """Solve matrix problem Au = b along axis
 
         This routine also applies boundary conditions and constraints,
         and performes LU-decomposition on the fully assembled matrix.
@@ -239,7 +263,46 @@ class SparseMatrixSolver:
 
         return u
 
-class DiagMA(SparseMatrixSolver):
+class BandedMatrixSolver(SparseMatrixSolver):
+    def __init__(self, mat):
+        SparseMatrixSolver.__init__(self, mat)
+        self._lu = self.mat.diags('dia')
+
+    def solve(self, b, u, axis, lu):
+        if u is not b:
+            u[:] = b
+        self.Solve(u, lu.data, axis=axis)
+        return u
+
+    @staticmethod
+    def LU(data):
+        """LU-decomposition using either Cython or Numba
+
+        Parameters
+        ----------
+        data : 2D-array
+            Storage for dia-matrix on entry and L and U matrices
+            on exit.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def Solve(u, data, axis=0):
+        """Fast solve using either Cython or Numba
+
+        Parameters
+        ----------
+        u : array
+            rhs on entry, solution on exit
+        data : 2D-array
+            Storage for dia-matrix containing L and U matrices
+        axis : int, optional
+            The axis we are solving over
+        """
+        raise NotImplementedError
+
+
+class DiagMA(BandedMatrixSolver):
     """Diagonal matrix solver
 
     Parameters
@@ -248,18 +311,12 @@ class DiagMA(SparseMatrixSolver):
 
     """
     def __init__(self, mat):
-        SparseMatrixSolver.__init__(self, mat)
+        BandedMatrixSolver.__init__(self, mat)
         self.issymmetric = True
-        self._lu = self.mat.diags('dia')
         self._inner_arg = self._lu.data
 
     def perform_lu(self):
         return self._lu
-
-    @staticmethod
-    @optimizer
-    def Solve(u, data, axis=0):
-        raise NotImplementedError('Only optimized version')
 
     def apply_constraints(self, b, constraints, axis=0):
         if len(constraints) > 0:
@@ -271,20 +328,19 @@ class DiagMA(SparseMatrixSolver):
             b[tuple(s)] = constraints[0][1]
         return b
 
-    def solve(self, b, u, axis, lu):
-        if u is not b:
-            u[:] = b
-        self.Solve(u, lu.data, axis=axis)
-        return u
-
     @staticmethod
     @optimizer
     def inner_solve(u, lu):
         d = lu[0]
         u[:d.shape[0]] /= d
 
+    @staticmethod
+    @optimizer
+    def Solve(u, data, axis=0):
+        raise NotImplementedError('Only optimized version')
 
-class TDMA(SparseMatrixSolver):
+
+class TDMA(BandedMatrixSolver):
     """Tridiagonal matrix solver
 
     Parameters
@@ -294,10 +350,8 @@ class TDMA(SparseMatrixSolver):
 
     """
     def __init__(self, mat):
-        SparseMatrixSolver.__init__(self, mat)
+        BandedMatrixSolver.__init__(self, mat)
         self.issymmetric = self.mat.issymmetric
-        self._lu = self.mat.diags('dia')
-        self._inner_arg = None
 
     @staticmethod
     @optimizer
@@ -309,11 +363,6 @@ class TDMA(SparseMatrixSolver):
         for i in range(2, n):
             ld[i-2] = ld[i-2]/d[i-2]
             d[i] = d[i] - ld[i-2]*ud[i-2]
-
-    @staticmethod
-    @optimizer
-    def Solve(u, data, axis=0):
-        raise NotImplementedError('Only optimized version')
 
     def apply_constraints(self, b, constraints, axis=0):
         if len(constraints) > 0:
@@ -332,13 +381,6 @@ class TDMA(SparseMatrixSolver):
             self._inner_arg = self._lu.data
         return self._lu
 
-    def solve(self, b, u, axis, lu):
-        if u is not b:
-            u[:] = b
-
-        self.Solve(u, lu.data, axis=axis)
-        return u
-
     @staticmethod
     @optimizer
     def inner_solve(u, data):
@@ -354,8 +396,13 @@ class TDMA(SparseMatrixSolver):
         for i in range(n - 3, -1, -1):
             u[i] = (u[i] - ud[i]*u[i+2])/d[i]
 
+    @staticmethod
+    @optimizer
+    def Solve(u, data, axis=0):
+        raise NotImplementedError('Only optimized version')
 
-class TDMA_O(TDMA):
+
+class TDMA_O(BandedMatrixSolver):
     """Tridiagonal matrix solver
 
     Parameters
@@ -367,21 +414,13 @@ class TDMA_O(TDMA):
     # pylint: disable=too-few-public-methods
 
     def __init__(self, mat):
-        SparseMatrixSolver.__init__(self, mat)
-        self._lu = self.mat.diags('dia')
-        self._inner_arg = None
+        BandedMatrixSolver.__init__(self, mat)
 
     def perform_lu(self):
         if self._inner_arg is None:
             self.LU(self._lu.data)
             self._inner_arg = self._lu.data
         return self._lu
-
-    def solve(self, b, u, axis, lu):
-        if u is not b:
-            u[:] = b
-        self.Solve(u, lu.data, axis=axis)
-        return u
 
     @staticmethod
     @optimizer
@@ -393,11 +432,6 @@ class TDMA_O(TDMA):
         for i in range(1, n):
             ld[i-1] = ld[i-1]/d[i-1]
             d[i] -= ld[i-1]*ud[i-1]
-
-    @staticmethod
-    @optimizer
-    def Solve(u, data, axis=0):
-        raise NotImplementedError('Only optimized version')
 
     @staticmethod
     @optimizer
@@ -413,8 +447,13 @@ class TDMA_O(TDMA):
         for i in range(n-2, -1, -1):
             u[i] = (u[i] - ud[i]*u[i+1])/d[i]
 
+    @staticmethod
+    @optimizer
+    def Solve(u, data, axis=0):
+        raise NotImplementedError('Only optimized version')
 
-class PDMA(SparseMatrixSolver):
+
+class PDMA(BandedMatrixSolver):
     """Pentadiagonal matrix solver
 
     Parameters
@@ -426,10 +465,8 @@ class PDMA(SparseMatrixSolver):
     """
 
     def __init__(self, mat):
-        SparseMatrixSolver.__init__(self, mat)
+        BandedMatrixSolver.__init__(self, mat)
         assert len(self.mat) == 5
-        self._lu = self.mat.diags('dia')
-        self._inner_arg = None
 
     def apply_constraints(self, b, constraints, axis=0):
         if len(constraints) > 0:
@@ -479,22 +516,11 @@ class PDMA(SparseMatrixSolver):
         d[i+k] -= lam*e[i]
         b[i] = lam
 
-    @staticmethod
-    @optimizer
-    def Solve(u, data, axis=0):
-        raise NotImplementedError('Only optimized version')
-
     def perform_lu(self):
         if self._inner_arg is None:
             self.LU(self._lu.data)
             self._inner_arg = self._lu.data
         return self._lu
-
-    def solve(self, b, u, axis, lu):
-        if u is not b:
-            u[:] = b
-        self.Solve(u, lu.data, axis=axis)
-        return u
 
     @staticmethod
     @optimizer
@@ -509,7 +535,6 @@ class PDMA(SparseMatrixSolver):
         u[3] -= b[1]*u[1]
         for k in range(4, n):
             u[k] -= (b[k-2]*u[k-2] + a[k-4]*u[k-4])
-
         u[n-1] /= d[n-1]
         u[n-2] /= d[n-2]
         u[n-3] = (u[n-3]-e[n-3]*u[n-1])/d[n-3]
@@ -517,8 +542,13 @@ class PDMA(SparseMatrixSolver):
         for k in range(n-5, -1, -1):
             u[k] = (u[k]-e[k]*u[k+2]-f[k]*u[k+4])/d[k]
 
+    @staticmethod
+    @optimizer
+    def Solve(u, data, axis=0):
+        raise NotImplementedError('Only optimized version')
 
-class FDMA(SparseMatrixSolver):
+
+class FDMA(BandedMatrixSolver):
     """4-diagonal matrix solver
 
     Parameters
@@ -530,9 +560,7 @@ class FDMA(SparseMatrixSolver):
     # pylint: disable=too-few-public-methods
 
     def __init__(self, mat):
-        SparseMatrixSolver.__init__(self, mat)
-        self._lu = self.mat.diags('dia')
-        self._inner_arg = None
+        BandedMatrixSolver.__init__(self, mat)
 
     def perform_lu(self):
         if self._inner_arg is None:
@@ -554,11 +582,6 @@ class FDMA(SparseMatrixSolver):
             if i < n-2:
                 u1[i] = u1[i] - ld[i-2]*u2[i-2]
 
-    @staticmethod
-    @optimizer
-    def Solve(u, data, axis=0):
-        raise NotImplementedError('Only optimized version')
-
     def apply_constraints(self, b, constraints, axis=0):
         if len(constraints) > 0:
             assert len(constraints) == 1
@@ -571,12 +594,6 @@ class FDMA(SparseMatrixSolver):
             b[tuple(s)] = constraints[0][1]
         return b
 
-    def solve(self, b, u, axis, lu):
-        if u is not b:
-            u[:] = b
-        self.Solve(u, lu.data, axis=axis)
-        return u
-
     @staticmethod
     @optimizer
     def inner_solve(u, data):
@@ -584,11 +601,9 @@ class FDMA(SparseMatrixSolver):
         d = data[1, :]
         u1 = data[2, 2:]
         u2 = data[3, 4:]
-
         n = d.shape[0]
         for i in range(2, n):
             u[i] -= ld[i-2]*u[i-2]
-
         u[n-1] = u[n-1]/d[n-1]
         u[n-2] = u[n-2]/d[n-2]
         u[n-3] = (u[n-3] - u1[n-3]*u[n-1])/d[n-3]
@@ -596,7 +611,12 @@ class FDMA(SparseMatrixSolver):
         for i in range(n - 5, -1, -1):
             u[i] = (u[i] - u1[i]*u[i+2] - u2[i]*u[i+4])/d[i]
 
-class TwoDMA(SparseMatrixSolver):
+    @staticmethod
+    @optimizer
+    def Solve(u, data, axis=0):
+        raise NotImplementedError('Only optimized version')
+
+class TwoDMA(BandedMatrixSolver):
     """2-diagonal matrix solver
 
     Parameters
@@ -606,14 +626,8 @@ class TwoDMA(SparseMatrixSolver):
 
     """
     def __init__(self, mat):
-        SparseMatrixSolver.__init__(self, mat)
-        self._lu = self.mat.diags('dia')
-        self._inner_arg = None
-
-    @staticmethod
-    @optimizer
-    def Solve(u, data, axis=0):
-        raise NotImplementedError('Only optimized version')
+        BandedMatrixSolver.__init__(self, mat)
+        self._inner_arg = self._lu.data
 
     def apply_constraints(self, b, constraints, axis=0):
         if len(constraints) > 0:
@@ -629,12 +643,6 @@ class TwoDMA(SparseMatrixSolver):
     def perform_lu(self):
         return self._lu
 
-    def solve(self, b, u, axis, lu):
-        if u is not b:
-            u[:] = b
-        self.Solve(u, lu.data, axis=axis)
-        return u
-
     @staticmethod
     @optimizer
     def inner_solve(u, data):
@@ -646,6 +654,10 @@ class TwoDMA(SparseMatrixSolver):
         for i in range(n - 3, -1, -1):
             u[i] = (u[i] - u1[i]*u[i+2])/d[i]
 
+    @staticmethod
+    @optimizer
+    def Solve(u, data, axis=0):
+        raise NotImplementedError('Only optimized version')
 
 class Solve(SparseMatrixSolver):
     """Generic solver class for SparseMatrix
@@ -692,13 +704,14 @@ class SolverGeneric2ND:
         self.tpmats = tpmats
         self.bc_mats = bc_mats
         self.T = tpmats[0].space
-        self.M = None
+        self.mats2D = {}
+        self._lu = None
 
     def matvec(self, u, c):
         c.fill(0)
         if u.ndim == 2:
             s0 = tuple(base.slice() for base in self.T)
-            c[s0] = self.M.dot(u[s0].flatten()).reshape(self.T.dims())
+            c[s0] = self.mats2D.dot(u[s0].flatten()).reshape(self.T.dims())
         else:
             raise NotImplementedError
         return c
@@ -711,16 +724,15 @@ class SolverGeneric2ND:
 
     def diags(self, i):
         """Return matrix for given index `i` in diagonal direction"""
+        if i in self.mats2D:
+            return self.mats2D[i]
+
         if self.T.dimensions == 2:
             # In 2D there's just 1 matrix, store and reuse
-            if self.M is not None:
-                return self.M
             m = self.tpmats[0]
             M0 = m.diags('csc')
             for m in self.tpmats[1:]:
                 M0 = M0 + m.diags('csc')
-            self.M = M0
-            return self.M
 
         else:
             # 1 matrix per Fourier coefficient
@@ -740,28 +752,60 @@ class SolverGeneric2ND:
                 sc[diagonal_axis] = i if m.scale.shape[diagonal_axis] > 1 else 0
                 M1 *= m.scale[tuple(sc)]
                 M0 = M0 + M1
-            return M0
+        self.mats2D[i] = M0
+        return M0
 
-    def apply_constraints(self, A, b, constraints):
-        """Apply constraints to matrix `A` and rhs vector `b`
+    def apply_constraints(self, b, constraints):
+        """Apply constraints to matrix and rhs vector `b`
 
         Parameters
         ----------
-        A : Sparse matrix
         b : array
         constraints : tuple of 2-tuples
             The 2-tuples represent (row, val)
             The constraint indents the matrix row and sets b[row] = val
         """
         if len(constraints) > 0:
-            A = A.tolil()
-            for (row, val) in constraints:
-                _, zerorow = A[row].nonzero()
-                A[(row, zerorow)] = 0
-                A[row, row] = 1
-                b[row] = val
-            A = A.tocsc()
-        return A, b
+            if self._lu is None:
+                A = self.mats2D[0]
+                A = A.tolil()
+                for (row, val) in constraints:
+                    _, zerorow = A[row].nonzero()
+                    A[(row, zerorow)] = 0
+                    A[row, row] = 1
+                    b[row] = val
+                self.mats2D[0] = A.tocsc()
+            else:
+                for (row, val) in constraints:
+                    b[row] = val
+        return b
+
+    def assemble(self):
+        if len(self.mats2D) == 0:
+            ndim = self.tpmats[0].dimensions
+            if ndim == 2:
+                mat = self.diags(0)
+                self.mats2D[0] = mat
+
+            elif ndim == 3:
+                diagonal_axis = self.get_diagonal_axis()
+                for i in range(self.T.shape(True)[diagonal_axis]):
+                    M0 = self.diags(i)
+                    self.mats2D[i] = M0
+        return self.mats2D
+
+    def perform_lu(self):
+        if self._lu is not None:
+            return self._lu
+        ndim = self.tpmats[0].dimensions
+        self._lu = {}
+        if ndim == 2:
+            self._lu[0] = splu(self.mats2D[0], permc_spec=config['matrix']['sparse']['permc_spec'])
+        else:
+            diagonal_axis = self.get_diagonal_axis()
+            for i in range(self.T.shape(True)[diagonal_axis]):
+                self._lu[i] = splu(self.mats2D[i], permc_spec=config['matrix']['sparse']['permc_spec'])
+        return self._lu
 
     def __call__(self, b, u=None, constraints=()):
         if u is None:
@@ -775,24 +819,35 @@ class SolverGeneric2ND:
             for bc_mat in self.bc_mats:
                 b -= bc_mat.matvec(u, w0)
 
+        mats = self.assemble()
+
+        b = self.apply_constraints(b, constraints)
+
+        lu = self.perform_lu()
+
         if u.ndim == 2:
             s0 = self.T.slice()
-            M = self.diags(0)
             bs = b[s0].flatten()
-            M, bs = self.apply_constraints(M, bs, constraints)
-            u[s0] = spsolve(M, bs).reshape(self.T.dims())
+            if b.dtype.char in 'fdg' or self.mats2D[0].dtype.char in 'FDG':
+                u[s0] = lu[0].solve(bs).reshape(self.T.dims())
+            else:
+                u.real[s0] = lu[0].solve(bs.real).reshape(self.T.dims())
+                u.imag[s0] = lu[0].solve(bs.imag).reshape(self.T.dims())
 
         elif u.ndim == 3:
             naxes = self.T.get_nondiagonal_axes()
             diagonal_axis = self.get_diagonal_axis()
             s0 = list(self.T.slice())
             for i in range(self.T.shape(True)[diagonal_axis]):
-                M0 = self.diags(i)
                 s0[diagonal_axis] = i
                 bs = b[tuple(s0)].flatten()
-                M0, bs = self.apply_constraints(M0, bs, constraints)
                 shape = np.take(self.T.dims(), naxes)
-                u[tuple(s0)] = spsolve(M0, bs).reshape(shape)
+                if b.dtype.char in 'fdg' or self.mats2D[0].dtype.char in 'FDG':
+                    u[tuple(s0)] = lu[i].solve(bs).reshape(shape)
+                else:
+                    u.real[tuple(s0)] = lu[i].solve(bs.real).reshape(shape)
+                    u.imag[tuple(s0)] = lu[i].solve(bs.imag).reshape(shape)
+
         if hasattr(u, 'set_boundary_dofs'):
             u.set_boundary_dofs()
         return u
@@ -838,15 +893,15 @@ class Solver2D:
         m = tpmats[0]
         self.T = T = m.space
         assert m._issimplified is False, "Cannot use simplified matrices with this solver"
-        M0 = m.diags(format='csc')
+        mat = m.diags(format='csc')
         for m in tpmats[1:]:
-            M0 = M0 + m.diags('csc')
-        self.M = M0
+            mat = mat + m.diags('csc')
+        self.mat = mat
 
     def matvec(self, u, c):
         c.fill(0)
         s0 = tuple(base.slice() for base in self.T)
-        c[s0] = self.M.dot(u[s0].flatten()).reshape(self.T.dims())
+        c[s0] = self.mat.dot(u[s0].flatten()).reshape(self.T.dims())
         return c
 
     @staticmethod
@@ -888,11 +943,11 @@ class Solver2D:
         assert b.dtype.char == u.dtype.char
 
         bs = b[s0].flatten()
-        self.M, bs = self.apply_constraints(self.M, bs, constraints)
+        self.mat, bs = self.apply_constraints(self.mat, bs, constraints)
         if self._lu is None:
-            self._lu = splu(self.M, permc_spec=config['matrix']['sparse']['permc_spec'])
+            self._lu = splu(self.mat, permc_spec=config['matrix']['sparse']['permc_spec'])
 
-        if b.dtype.char in 'fdg' or self.M.dtype.char in 'FDG':
+        if b.dtype.char in 'fdg' or self.mat.dtype.char in 'FDG':
             u[s0] = self._lu.solve(bs).reshape(self.T.dims())
 
         else:
@@ -969,11 +1024,11 @@ class SolverGeneric1ND:
         assert isinstance(mats, list)
         mats = get_simplified_tpmatrices(mats)
         assert len(mats[0].naxes) == 1
-        self.naxes = mats[0].naxes.pop()
+        self.naxes = mats[0].naxes[0]
         bc_mats = extract_bc_matrices([mats])
         self.mats = mats
         self.bc_mats = bc_mats
-        # For time-dependent solver, store all generated solvers and reuse
+        self.solvers1D = None
         self.assemble()
         self._lu = False
         self._data = None
@@ -993,37 +1048,36 @@ class SolverGeneric1ND:
     def assemble(self):
         ndim = self.mats[0].dimensions
         shape = self.mats[0].space.shape(True)
+        self.solvers1D = []
         if ndim == 2:
-            self.MM = []
             zi = np.ndindex((1, shape[1])) if self.naxes == 0 else np.ndindex((shape[0], 1))
             other_axis = (self.naxes+1) % 2
             for i in zi:
-                MM = None
+                sol = None
                 for mat in self.mats:
                     sc = mat.scale[i] if mat.scale.shape[other_axis] > 1 else mat.scale[0, 0]
-                    if MM:
-                        MM += mat.mats[self.naxes]*sc
+                    if sol:
+                        sol += mat.mats[self.naxes]*sc
                     else:
-                        MM = mat.mats[self.naxes]*sc
-                self.MM.append(Solver(MM))
+                        sol = mat.mats[self.naxes]*sc
+                self.solvers1D.append(Solver(sol))
 
         elif ndim == 3:
-            self.MM = []
             s = [0, 0, 0]
             n0, n1 = np.setxor1d((0, 1, 2), self.naxes)
             for i in range(shape[n0]):
-                self.MM.append([])
+                self.solvers1D.append([])
                 s[n0] = i
                 for j in range(shape[n1]):
-                    MM = None
+                    sol = None
                     s[n1] = j
                     for mat in self.mats:
                         sc = np.broadcast_to(mat.scale, shape)[tuple(s)]
-                        if MM:
-                            MM += mat.mats[self.naxes]*sc
+                        if sol:
+                            sol += mat.mats[self.naxes]*sc
                         else:
-                            MM = mat.mats[self.naxes]*sc
-                    self.MM[-1].append(Solver(MM))
+                            sol = mat.mats[self.naxes]*sc
+                    self.solvers1D[-1].append(Solver(sol))
 
     def apply_constraints(self, b, constraints=()):
         """Apply constraints to solver
@@ -1044,22 +1098,22 @@ class SolverGeneric1ND:
         s[self.naxes] = slice(None)
         s = tuple(s)
         is_rank_zero = np.array([z0[i].start for i in paxes]).prod()
-        M0 = self.MM[0] if ndim == 2 else self.MM[0][0]
+        sol = self.solvers1D[0] if ndim == 2 else self.solvers1D[0][0]
         if is_rank_zero != 0:
             return b
-        M0.apply_constraints(b[s], constraints)
+        sol.apply_constraints(b[s], constraints)
         return b
 
     def perform_lu(self):
         if self._lu is True:
             return
 
-        if isinstance(self.MM[0], SparseMatrixSolver):
-            for m in self.MM:
+        if isinstance(self.solvers1D[0], SparseMatrixSolver):
+            for m in self.solvers1D:
                 lu = m.perform_lu()
 
         else:
-            for mi in self.MM:
+            for mi in self.solvers1D:
                 for mij in mi:
                     lu = mij.perform_lu()
         self._lu = True
@@ -1069,15 +1123,15 @@ class SolverGeneric1ND:
             return self._data
 
         if self.mats[0].dimensions == 2:
-            data = np.zeros((len(self.MM),)+self.MM[-1]._inner_arg.shape)
-            for i, sol in enumerate(self.MM):
+            data = np.zeros((len(self.solvers1D),)+self.solvers1D[-1]._inner_arg.shape)
+            for i, sol in enumerate(self.solvers1D):
                 if i == 0 and is_rank_zero:
                     continue
                 else:
                     data[i] = sol._inner_arg
         elif self.mats[0].dimensions == 3:
-            data = np.zeros((len(self.MM), len(self.MM[0]))+self.MM[-1][-1]._inner_arg.shape)
-            for i, m in enumerate(self.MM):
+            data = np.zeros((len(self.solvers1D), len(self.solvers1D[0]))+self.solvers1D[-1][-1]._inner_arg.shape)
+            for i, m in enumerate(self.solvers1D):
                 for j, sol in enumerate(m):
                     if i == 0 and j == 0 and is_rank_zero:
                         continue
@@ -1111,13 +1165,13 @@ class SolverGeneric1ND:
                     sol(u[s0], data[i, j])
         return u
 
-    def fast_solve(self, u, b, MM, naxes):
+    def fast_solve(self, u, b, solvers1D, naxes):
         if u is not b:
             u[:] = b
-        # Solve for the possibly different Fourier wavenumber 0, or (0, 0) in 3D
+        # Solve first for the possibly different Fourier wavenumber 0, or (0, 0) in 3D
         # All other wavenumbers we assume have the same solver
-        sol0 = MM[0] if u.ndim == 2 else MM[0][0]
-        sol1 = MM[-1] if u.ndim == 2 else MM[-1][-1]
+        sol0 = solvers1D[0] if u.ndim == 2 else solvers1D[0][0]
+        sol1 = solvers1D[-1] if u.ndim == 2 else solvers1D[-1][-1]
         is_rank_zero = comm.Get_rank() == 0
 
         if is_rank_zero:
@@ -1130,7 +1184,7 @@ class SolverGeneric1ND:
         sol = get_optimized(sol1.inner_solve, mode=config['optimization']['mode'])
         u = self.solve_data(u, data, sol, naxes, is_rank_zero)
 
-    def solve(self, u, b, MM, naxes):
+    def solve(self, u, b, solvers1D, naxes):
         if u is not b:
             u[:] = b
 
@@ -1138,13 +1192,13 @@ class SolverGeneric1ND:
         s[naxes] = slice(None)
         paxes = np.setxor1d(range(u.ndim), naxes)
         if u.ndim == 2:
-            for i, sol in enumerate(MM):
+            for i, sol in enumerate(solvers1D):
                 s[paxes[0]] = i
                 s0 = tuple(s)
                 sol.inner_solve(u[s0], sol._inner_arg)
 
         elif u.ndim == 3:
-            for i, m in enumerate(MM):
+            for i, m in enumerate(solvers1D):
                 s[paxes[0]] = i
                 for j, sol in enumerate(m):
                     s[paxes[1]] = j
@@ -1183,14 +1237,14 @@ class SolverGeneric1ND:
         if not self._lu:
             self.perform_lu()
 
-        sol1 = self.MM[-1] if u.ndim == 2 else self.MM[-1][-1]
+        sol1 = self.solvers1D[-1] if u.ndim == 2 else self.solvers1D[-1][-1]
         if isinstance(sol1._inner_arg, tuple):
             fast = False
 
         if not fast:
-            self.solve(u, b, self.MM, self.naxes)
+            self.solve(u, b, self.solvers1D, self.naxes)
         else:
-            self.fast_solve(u, b, self.MM, self.naxes)
+            self.fast_solve(u, b, self.solvers1D, self.naxes)
 
         if hasattr(u, 'set_boundary_dofs'):
             u.set_boundary_dofs()
@@ -1208,13 +1262,6 @@ class BlockMatrixSolver:
         self.mat = BlockMatrix(mats)
         if len(bc_mats) > 0:
             self.bc_mat = BlockMatrix(bc_mats)
-        tps = self.mat.testbase.flatten()
-        offset = [np.zeros(tps[0].dimensions, dtype=int)]
-        for i, tp in enumerate(tps):
-            dims = tp.dims()
-            offset.append(np.array(dims + offset[i]))
-        self.offset = offset
-        self.global_shape = self.offset[-1]
 
     @staticmethod
     def apply_constraint(A, b, offset, i, constraint):
@@ -1256,211 +1303,41 @@ class BlockMatrixSolver:
             w0 = np.zeros_like(u)
             b -= self.bc_mat.matvec(u, w0)
 
-        B = self.mat
-        tpmat = B.get_mats(True)
-        axis = tpmat.naxes[0] if isinstance(tpmat, TPMatrix) else 0
-        tp = space.flatten() if hasattr(space, 'flatten') else [space]
         nvars = b.shape[0] if len(b.shape) > space.dimensions else 1
-        u = u.expand_dims(0) if nvars == 1 else u
-        b = b.expand_dims(0) if nvars == 1 else b
+        u = np.expand_dims(u, 0) if nvars == 1 else u
+        b = np.expand_dims(b, 0) if nvars == 1 else b
         for con in constraints:
             assert len(con) == 3
             assert isinstance(con[0], Integral)
             assert isinstance(con[1], Integral)
             assert isinstance(con[2], Number)
-        N = self.global_shape[axis]
-        gi = np.zeros(N, dtype=b.dtype)
-        go = np.zeros(N, dtype=b.dtype)
-        if space.dimensions == 1:
-            s = [0, 0]
-            if self._lu is None:
-                Ai = B.diags((0,), format='csr').tocsc()
-                lu = self._lu = sp.linalg.splu(Ai, permc_spec=config['matrix']['sparse']['permc_spec'])
+        self.mat.assemble()
+        if self._lu is None:
+            self._lu = {}
+
+        daxes = space.get_diagonal_axes()
+        sl, dims = space.get_ndiag_slices_and_dims()
+        gi = np.zeros(dims[-1], dtype=b.dtype)
+        for key, Ai in self.mat._Ai.items():
+            if len(daxes) > 0:
+                sl.T[daxes+1] = key if isinstance(key, int) else np.array(key)[:, None]
+            gi = b.copy_to_flattened(gi, key, dims, sl)
+            if key in self._lu:
+                lu = self._lu[key]
+                for con in constraints:
+                    _, gi = self.apply_constraint(None, gi, dims[con[0]], key, con)
             else:
-                lu = self._lu
-            for k in range(nvars):
-                s[0] = k
-                s[1] = tp[k].slice()
-                gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
-            go[:] = lu.solve(gi)
-            for k in range(nvars):
-                s[0] = k
-                s[1] = tp[k].slice()
-                u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
+                for con in constraints:
+                    Ai, gi = self.apply_constraint(Ai, gi, dims[con[0]], key, con)
+                lu = sp.linalg.splu(Ai, permc_spec=config['matrix']['sparse']['permc_spec'])
+                self._lu[key] = lu
 
-        elif space.dimensions == 2:
-            if len(tpmat.naxes) == 2: # 2 non-periodic axes
-                s = [0, 0, 0]
-                gi = np.zeros(space.dim(), dtype=b.dtype)
-                go = np.zeros(space.dim(), dtype=b.dtype)
-                start = 0
-                for k in range(nvars):
-                    s[0] = k
-                    s[1] = tp[k].bases[0].slice()
-                    s[2] = tp[k].bases[1].slice()
-                    gi[start:(start+tp[k].dim())] = b[tuple(s)].ravel()
-                    start += tp[k].dim()
-
-                if self._lu is None:
-                    Ai = B.diags(format='csr').tocsc()
-                    for con in constraints:
-                        dim = 0
-                        for i in range(con[0]):
-                            dim += tp[i].dim()
-                        Ai, gi = self.apply_constraint(Ai, gi, dim, 0, con)
-                    self._lu = sp.linalg.splu(Ai, permc_spec=config['matrix']['sparse']['permc_spec'])
-                else:
-                    for con in constraints:
-                        dim = 0
-                        for i in range(con[0]):
-                            dim += tp[i].dim()
-                            gi[dim] = con[2]
-
-                lu = self._lu
-                if gi.dtype.char in 'fdg' or lu.U.dtype.char in 'FDG':
-                    go[:] = lu.solve(gi)
-                else:
-                    go.real[:] = lu.solve(gi.real)
-                    go.imag[:] = lu.solve(gi.imag)
-
-                start = 0
-                for k in range(nvars):
-                    s[0] = k
-                    s[1] = tp[k].bases[0].slice()
-                    s[2] = tp[k].bases[1].slice()
-                    u[tuple(s)] = go[start:(start+tp[k].dim())].reshape((1, tp[k].bases[0].dim(), tp[k].bases[1].dim()))
-                    start += tp[k].dim()
-
+            if b.dtype.char in 'fdg' or lu.U.dtype.char in 'FDG':
+                u = u.copy_from_flattened(lu.solve(gi), key, dims, sl)
             else:
-                if self._lu is None:
-                    self._lu = {}
-                s = [0]*3
-                # ii is periodic axis
-                ii = {0:2, 1:1}[axis]
-                d0 = [0, 0]
-                for i in range(b.shape[ii]):
-                    s[ii] = i # periodic
-                    for k in range(nvars):
-                        s[0] = k # vector index
-                        s[axis+1] = tp[k].bases[axis].slice() # non-periodic
-                        gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
-                    d0 = list(d0)
-                    d0[(axis+1)%2] = i
-                    d0 = tuple(d0)
-                    if d0 in self._lu:
-                        lu = self._lu[d0]
-                        for con in constraints:
-                            _, gi = self.apply_constraint(None, gi, self.offset[con[0]][axis], i, con)
-                    else:
-                        Ai = B.diags(d0, format='csr').tocsc()
-                        for con in constraints:
-                            Ai, gi = self.apply_constraint(Ai, gi, self.offset[con[0]][axis], i, con)
-                        lu = sp.linalg.splu(Ai, permc_spec=config['matrix']['sparse']['permc_spec'])
-                        self._lu[d0] = lu
-                    if gi.dtype.char in 'fdg' or lu.U.dtype.char in 'FDG':
-                        go[:] = lu.solve(gi)
-                    else:
-                        go.imag[:] = lu.solve(gi.imag)
-                        go.real[:] = lu.solve(gi.real)
-
-                    for k in range(nvars):
-                        s[0] = k
-                        s[axis+1] = tp[k].bases[axis].slice()
-                        u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
-
-        elif space.dimensions == 3:
-            if self._lu is None:
-                self._lu = {}
-            s = [0]*4
-
-            if len(tpmat.naxes) == 1:
-                ii, jj = {0:(2, 3), 1:(1, 3), 2:(1, 2)}[axis]
-                d0 = [0, 0, 0]
-                for i in range(b.shape[ii]):
-                    for j in range(b.shape[jj]):
-                        s[ii], s[jj] = i, j
-                        for k in range(nvars):
-                            s[0] = k
-                            s[axis+1] = tp[k].bases[axis].slice()
-                            gi[self.offset[k][axis]:self.offset[k+1][axis]] = b[tuple(s)]
-                        d0 = list(d0)
-                        d0[ii-1], d0[jj-1] = i, j
-                        d0 = tuple(d0)
-                        if d0 in self._lu:
-                            lu = self._lu[d0]
-                            for con in constraints:
-                                _, gi = self.apply_constraint(None, gi, self.offset[con[0]][axis], (i, j), con)
-                        else:
-                            Ai = B.diags(d0, format='csr').tocsc() # Note - bug in scipy (https://github.com/scipy/scipy/issues/14551) such that we cannot use format='csc' directly
-                            for con in constraints:
-                                Ai, gi = self.apply_constraint(Ai, gi, self.offset[con[0]][axis], (i, j), con)
-                            lu = sp.linalg.splu(Ai, permc_spec=config['matrix']['sparse']['permc_spec'])
-                            self._lu[d0] = lu
-
-                        if gi.dtype.char in 'fdg' or lu.U.dtype.char in 'FDG':
-                            go[:] = lu.solve(gi)
-                        else:
-                            go.imag[:] = lu.solve(gi.imag)
-                            go.real[:] = lu.solve(gi.real)
-
-                        for k in range(nvars):
-                            s[0] = k
-                            s[axis+1] = tp[k].bases[axis].slice()
-                            u[tuple(s)] = go[self.offset[k][axis]:self.offset[k+1][axis]]
-
-            elif len(tpmat.naxes) == 2:
-                ii = np.setxor1d(tpmat.naxes, range(3))[0]+1 # periodic axis
-                d0 = [0, 0, 0]
-                N = []
-                for tpi in tp:
-                    N.append(np.prod(np.take(tpi.dims(), tpmat.naxes)))
-                gi = np.zeros(np.sum(N), dtype=b.dtype)
-                go = np.zeros(np.sum(N), dtype=b.dtype)
-                for i in range(b.shape[ii]):
-                    s = [0, 0, 0, 0]
-                    start = 0
-                    s[ii] = i
-                    for k in range(nvars):
-                        s[0] = k
-                        for n in tpmat.naxes:
-                            s[n+1] = tp[k].bases[n].slice()
-                        gi[start:(start+N[k])] = b[tuple(s)].ravel()
-                        start += N[k]
-
-                    if i not in self._lu:
-                        d0 = list(d0)
-                        d0[ii-1] = i
-                        d0 = tuple(d0)
-                        Ai = B.diags(d0, format='csr').tocsc()
-                        for con in constraints:
-                            dim = 0
-                            for n in range(con[0]):
-                                dim += N[n]
-                            Ai, gi = self.apply_constraint(Ai, gi, dim, i, con)
-                        self._lu[i] = sp.linalg.splu(Ai, permc_spec=config['matrix']['sparse']['permc_spec'])
-                        lu = self._lu[i]
-                    else:
-                        lu = self._lu[i]
-                        for con in constraints:
-                            dim = 0
-                            for n in range(con[0]):
-                                dim += N[n]
-                            gi[dim] = con[2]
-
-                    if gi.dtype.char in 'fdg' or lu.U.dtype.char in 'FDG':
-                        go[:] = lu.solve(gi)
-                    else:
-                        go.imag[:] = lu.solve(gi.imag)
-                        go.real[:] = lu.solve(gi.real)
-                    start = 0
-                    for k in range(nvars):
-                        s[0] = k
-                        for n in tpmat.naxes:
-                            s[n+1] = tp[k].bases[n].slice()
-                        u[tuple(s)] = go[start:(start+N[k])].reshape(u[tuple(s)].shape)
-                        start += N[k]
+                u.real = u.real.copy_from_flattened(lu.solve(gi.real), key, dims, sl)
+                u.imag = u.imag.copy_from_flattened(lu.solve(gi.imag), key, dims, sl)
 
         u = u.reshape(u.shape[1:]) if nvars == 1 else u
         b = b.reshape(b.shape[1:]) if nvars == 1 else b
         return u
-

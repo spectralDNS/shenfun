@@ -27,15 +27,13 @@ K0 = FunctionSpace(N[0], 'F', dtype='D', domain=(-30*np.pi, 30*np.pi))
 K1 = FunctionSpace(N[1], 'F', dtype='d', domain=(-30*np.pi, 30*np.pi))
 T = TensorProductSpace(comm, (K0, K1), **{'planner_effort': 'FFTW_MEASURE'})
 TV = VectorSpace(T)
-
-Tp = T.get_dealiased((1.5, 1.5))
+padding_factor = 1.5
+Tp = T.get_dealiased()
 TVp = VectorSpace(Tp)
+gradu = Array(TVp)
 
 u = TrialFunction(T)
 v = TestFunction(T)
-
-#Tp = T
-#TVp = TV
 
 # Create solution and work arrays
 U = Array(T, buffer=ue)

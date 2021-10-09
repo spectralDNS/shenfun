@@ -70,7 +70,7 @@ def main(n):
 
     # Initial time, time step, final time
     ti, dt, tf = 0., 5e-3/n, 5e-2
-    nsteps = np.int(np.ceil((tf - ti)/dt))
+    nsteps = int(np.ceil((tf - ti)/dt))
     dt = (tf - ti)/nsteps
     X = Ws.local_mesh(True)
 

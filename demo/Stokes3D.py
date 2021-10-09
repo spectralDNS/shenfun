@@ -106,8 +106,8 @@ if 'pytest' not in os.environ:
     plt.figure()
     plt.quiver(X[0][:, :, 0], X[1][:, :, 0], u_[0, :, :, 6], u_[1, :, :, 6])
     plt.figure()
-    l, m = 5, 5
-    plt.spy(M.diags((l, m, 0)), markersize=2, color='k') # The matrix for Fourier given wavenumber
+    l, m = 2, 2
+    plt.spy(M.diags((l, m), 'csr'), markersize=2, color='k') # The matrix for Fourier given wavenumber
     plt.title('Block matrix: l, m = ({}, {})'.format(l, m))
     plt.xticks([])
     plt.yticks([])

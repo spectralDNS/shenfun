@@ -204,15 +204,15 @@ def inner(expr0, expr1, output_array=None):
         recursive = False
 
     if recursive: # Use recursive algorithm for vector expressions of expr_rank > 0, e.g., inner(v, grad(u))
-        if output_array is None and trial.argument == 2:
-            output_array = Function(test.function_space())
-
         gij = test.function_space().coors.get_metric_tensor(config['basisvectors'])
         if trial.argument == 2:
             # linear form
+            if output_array is None:
+                output_array = Function(test.function_space())
 
+            w0 = np.zeros(test.function_space().flatten()[0].shape(), dtype=output_array.dtype)
             if test.tensor_rank == 2:
-                w0 = np.zeros_like(output_array[0][0])
+
                 for i, (tei, xi) in enumerate(zip(test, output_array)):
                     for j, (teij, xij) in enumerate(zip(tei, xi)):
                         for k, trk in enumerate(trial):
@@ -226,7 +226,6 @@ def inner(expr0, expr1, output_array=None):
                                 xij += inner(teij*gij[i, k]*gij[j, l], trkl, output_array=w0)
 
             elif test.tensor_rank == 1:
-                w0 = np.zeros_like(output_array[0])
                 for i, (te, x) in enumerate(zip(test, output_array)):
                     for j, tr in enumerate(trial):
                         if gij[i, j] == 0:
@@ -292,7 +291,6 @@ def inner(expr0, expr1, output_array=None):
     trialspace = trial.base.function_space()
     test_scale = test.scales()
     trial_scale = trial.scales()
-
     uh = None
     if trial.argument == 2:
         uh = trial.base

@@ -118,20 +118,20 @@ class RayleighBenard:
         self.solver = []
         for rk in range(3):
             mats = inner(v, div(grad(u)) - ((a[rk]+b[rk])*nu*dt/2.)*div(grad(div(grad(u)))))
-            self.solver.append(self.sol.la.Biharmonic(*mats))
+            self.solver.append(self.sol.la.Biharmonic(mats))
 
         self.solverT = []
         self.lhs_mat = []
         for rk in range(3):
             matsT = inner(q, 2./(kappa*(a[rk]+b[rk])*dt)*p - div(grad(p)))
             self.lhs_mat.append(extract_bc_matrices([matsT]))
-            self.solverT.append(self.sol.la.Helmholtz(*matsT))
+            self.solverT.append(self.sol.la.Helmholtz(matsT))
 
         u0 = TrialFunction(self.D00)
         v0 = TestFunction(self.D00)
         for rk in range(3):
             mats0 = inner(v0, 2./(nu*(a[rk]+b[rk])*dt)*u0 - div(grad(u0)))
-            self.solver0.append(self.sol.la.Helmholtz(*mats0))
+            self.solver0.append(self.sol.la.Helmholtz(mats0))
 
         self.B_DD = inner(TestFunction(self.TD), TrialFunction(self.TD))
         self.C_DB = inner(Dx(TrialFunction(self.TB), 0, 1), TestFunction(self.TD))
@@ -220,7 +220,7 @@ class RayleighBenard:
             w00 = inner(v0, self.H_[1, :, 0], output_array=w00)
             self.b0[1] -= (2.*a/self.nu/(a+b))*w00
             self.b0[1] -= (2.*b/self.nu/(a+b))*self.b0[0]
-            self.u00 = self.solver0[rk](self.u00, self.b0[1])
+            self.u00 = self.solver0[rk](self.b0[1], self.u00)
             u[1, :, 0] = self.u00
             self.b0[0] = w00
         return u
@@ -420,7 +420,7 @@ if __name__ == '__main__':
     from mpi4py_fft import generate_xdmf
     t0 = time()
     d = {
-        'N': (256, 512),
+        'N': (64, 128),
         'Ra': 1000000.,
         'dt': 0.005,
         'filename': 'RB100',
