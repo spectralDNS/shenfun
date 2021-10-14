@@ -1,6 +1,6 @@
 import os
-import yaml
 from collections.abc import Mapping
+import yaml
 
 # The configuration can be overloaded by a local 'shenfun.yaml' file, or
 # in '~/.shenfun/shenfun.yaml'. A yaml file to work with can be created
@@ -108,5 +108,3 @@ def dumpconfig(filename='shenfun.yaml', path='~/.shenfun'): # pragma: no cover
     with open(os.path.join(os.path.expanduser(path), filename), 'w') as yf:
         yaml.dump(config, yf)
     yf.close()
-
-import collections

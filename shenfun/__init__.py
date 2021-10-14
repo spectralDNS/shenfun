@@ -20,7 +20,8 @@ as opposed to finite element codes like `FEniCS <https://fenicsproject.org>`_
 that are using low-order *local* basis functions. Efficiency is ensured
 through vectorization (`Numpy <https://www.numpy.org/>`_), parallelization
 (`mpi4py <https://bitbucket.org/mpi4py/mpi4py>`_) and by moving critical
-routines to `Cython <https://cython.org/>`_.
+routines to `Cython <https://cython.org/>`_ or
+`Numba <https://numba.pydata.org>`_.
 
 ``Shenfun`` has support for solving scalar and vector equations in curvilinear
 coordinates, like polar or spherical coordinates.

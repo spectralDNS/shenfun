@@ -902,7 +902,7 @@ class Expr:
 
     def __neg__(self):
         sc = copy.deepcopy(self.scales())
-        for i, vec in enumerate(sc):
+        for vec in sc:
             for j in range(len(vec)):
                 vec[j] = vec[j]*(-1)
         return Expr(self.basis(), copy.deepcopy(self.terms()), sc,
