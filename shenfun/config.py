@@ -1,5 +1,6 @@
 import os
 import yaml
+from collections.abc import Mapping
 
 # The configuration can be overloaded by a local 'shenfun.yaml' file, or
 # in '~/.shenfun/shenfun.yaml'. A yaml file to work with can be created
@@ -22,6 +23,12 @@ config = {
             'diags': 'csc',
             'matvec': 'csr',
             'construct': 'dense' # denser, sympy - The method used to construct non-implemented matrices
+        },
+        'block':
+        {
+            'assemble': 'csc',
+            'use_scipy': True,
+            'permc_spec': 'COLAMD',
         }
     },
     'bases':
@@ -73,6 +80,16 @@ config = {
     }
 }
 
+def update(conf, newconf):
+    """Recursive update"""
+    for key, value in newconf.items():
+        if isinstance(value, Mapping) and value:
+            returned = update(conf.get(key, {}), value)
+            conf[key] = returned
+        else:
+            conf[key] = newconf[key]
+    return conf
+
 locations = [os.path.expanduser('~/.shenfun'),
              os.getcwd()]
 
@@ -80,7 +97,7 @@ for loc in locations:
     fl = os.path.expandvars(os.path.join(loc, 'shenfun.yaml'))
     try:
         with open(fl, 'r') as yf:
-            config.update(yaml.load(yf, Loader=yaml.FullLoader))
+            update(config, yaml.load(yf, Loader=yaml.FullLoader))
         yf.close()
     except FileNotFoundError:
         pass
@@ -91,3 +108,5 @@ def dumpconfig(filename='shenfun.yaml', path='~/.shenfun'): # pragma: no cover
     with open(os.path.join(os.path.expanduser(path), filename), 'w') as yf:
         yaml.dump(config, yf)
     yf.close()
+
+import collections

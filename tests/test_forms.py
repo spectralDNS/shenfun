@@ -86,9 +86,15 @@ def test_isub(basis):
 
 @pytest.mark.parametrize('basis', (u0, u1, u2))
 def test_neg(basis):
-    e = shenfun.Expr(basis)
-    e2 = -e
-    assert np.allclose(np.array(e.scales()).astype(int), (-np.array(e2.scales())).astype(int))
+    e0 = div(grad(basis))
+    e1 = -e0
+    sc0 = e0.scales()
+    sc1 = e1.scales()
+    s = sp.S(0)
+    for sa, sb in zip(sc0, sc1):
+        for sai, sbi in zip(sa, sb):
+            s += sai+sbi
+    assert sp.simplify(s) == 0
 
 K0 = shenfun.FunctionSpace(N, 'F', dtype='D')
 K1 = shenfun.FunctionSpace(N, 'F', dtype='D')
@@ -180,7 +186,7 @@ if __name__ == '__main__':
     # test_iadd(u2)
     # test_sub(u2)
     # test_isub(u2)
-    # test_neg(u2)
+    test_neg(u2)
     # test_index(vf)
-    test_inner()
+    #test_inner()
     #test_tensor2()

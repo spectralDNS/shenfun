@@ -1329,7 +1329,7 @@ class BlockMatrixSolver:
             else:
                 for con in constraints:
                     Ai, gi = self.apply_constraint(Ai, gi, dims[con[0]], key, con)
-                lu = sp.linalg.splu(Ai, permc_spec=config['matrix']['sparse']['permc_spec'])
+                lu = sp.linalg.splu(Ai, permc_spec=config['matrix']['block']['permc_spec'])
                 self._lu[key] = lu
 
             if b.dtype.char in 'fdg' or lu.U.dtype.char in 'FDG':

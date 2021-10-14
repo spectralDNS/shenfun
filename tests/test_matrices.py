@@ -713,9 +713,9 @@ def test_blockmatrix(bases):
     B = BlockMatrix(A)
     uh = Function(V, val=1)
     c = Function(V)
-    c = B.matvec(uh, c, fast=True)
+    c = B.matvec(uh, c, use_scipy=True)
     c2 = Function(V)
-    c2 = B.matvec(uh, c2, fast=False)
+    c2 = B.matvec(uh, c2, use_scipy=False)
     assert np.linalg.norm(c2-c) < 1e-8
     VQ = CompositeSpace([V, T])
     u, p = TrialFunction(VQ)
@@ -724,11 +724,10 @@ def test_blockmatrix(bases):
     B2 = BlockMatrix(A2)
     uh = Function(VQ, val=1)
     c = Function(VQ)
-    c = B2.matvec(uh, c, fast=True)
+    c = B2.matvec(uh, c, use_scipy=True)
     c2 = Function(VQ)
-    c2 = B2.matvec(uh, c2, fast=False)
+    c2 = B2.matvec(uh, c2, use_scipy=False)
     assert np.linalg.norm(c2-c) < 1e-8
-
 
 
 if __name__ == '__main__':

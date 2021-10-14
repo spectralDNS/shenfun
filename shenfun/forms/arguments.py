@@ -742,9 +742,10 @@ class Expr:
             raise IndexError
 
         basis = self._basis
-        if ((self.expr_rank() == self.tensor_rank and self.is_basis_function) or
-            (self.expr_rank() > self.tensor_rank and self.tensor_rank > 0)):
-            basis = self._basis[i]
+        if self.tensor_rank:
+            if ((self.expr_rank() == self.tensor_rank and self.is_basis_function) or
+                (self.expr_rank() > self.tensor_rank and self.tensor_rank > 0)):
+                basis = self._basis[i]
 
         if self.expr_rank() == 1:
             return Expr(basis,
@@ -900,7 +901,11 @@ class Expr:
         return self
 
     def __neg__(self):
-        return Expr(self.basis(), copy.deepcopy(self.terms()), (-np.array(self.scales())).tolist(),
+        sc = copy.deepcopy(self.scales())
+        for i, vec in enumerate(sc):
+            for j in range(len(vec)):
+                vec[j] = vec[j]*(-1)
+        return Expr(self.basis(), copy.deepcopy(self.terms()), sc,
                     copy.deepcopy(self.indices()))
 
     def simplify(self):

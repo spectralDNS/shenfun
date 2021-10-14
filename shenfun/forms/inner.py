@@ -192,12 +192,9 @@ def inner(expr0, expr1, output_array=None):
     else:
         raise RuntimeError
 
-    #if isinstance(test, BasisFunction):
-    #    recursive = test.tensor_rank > 0
-    #elif isinstance(test, Expr):
     recursive = test.function_space().is_composite_space
     if isinstance(trial, Array):
-        assert trial.tensor_rank == test.tensor_rank
+        assert Expr(trial).expr_rank() == test.expr_rank()
     elif isinstance(trial, BasisFunction):
         recursive *= (trial.expr_rank() > 0)
     if test.expr_rank() == 0:

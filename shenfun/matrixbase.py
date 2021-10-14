@@ -832,7 +832,7 @@ class BlockMatrix:
                                 tpmats.append(m)
         return tpmats
 
-    def matvec(self, v, c, format=None, fast=True):
+    def matvec(self, v, c, format=None, use_scipy=None):
         """Compute matrix vector product
 
             c = self * v
@@ -844,10 +844,11 @@ class BlockMatrix:
         format : str, optional
             The format of the matrices used for the matvec.
             See `Scipy sparse matrices <https://docs.scipy.org/doc/scipy/reference/sparse.html>`_
-        fast : boolean, optional
+
+        use_scipy : boolean, optional
             Whether to assemble and use scipy's bmat for the matvec, or to use
             the matvec methods of this BlockMatrix's TPMatrices.
-
+            Using config['matrix']['block']['use_scipy'] if use_scipy is None
         Returns
         -------
         c : :class:`.Function`
@@ -859,11 +860,12 @@ class BlockMatrix:
         c = np.expand_dims(c, 0) if nvars == 1 else c
         v = np.expand_dims(v, 0) if nvars == 1 else v
         c.v.fill(0)
+        use_scipy = config['matrix']['block']['use_scipy'] if use_scipy is None else use_scipy
         if self.contains_bc_matrix():
-            fast = False
+            use_scipy = False
 
-        if fast:
-            self.assemble()
+        if use_scipy:
+            self.assemble(format)
             daxes = self.testbase.get_diagonal_axes()
             if len(daxes) > 0:
                 daxes += 1
@@ -918,45 +920,34 @@ class BlockMatrix:
                             return True
         return False
 
-    def assemble(self):
+    def assemble(self, format=None):
         """Assemble matrices in scipy sparse format
+
+        Parameters
+        ----------
+        format : str or None, optional
+            The format of the sparse scipy matrix. Using
+            config['matrix']['block']['assemble'] if None.
         """
         if self._Ai is not None:
-
             return
         self._Ai = {}
         tpmat = self.get_mats(True)
         N = self.testbase.forward.output_array.shape
-
-        if self.testbase.dimensions == 1:
-            Ai = self.diags(0, format='csr').tocsc()
-            self._Ai[0] = Ai
-
-        elif self.testbase.dimensions == 2:
-            daxes = self.get_diagonal_axes()
-            if len(tpmat.naxes) == 2: # 2 non-periodic axes
-                Ai = self.diags(format='csr').tocsc()
-                self._Ai[0] = Ai
+        daxes = self.get_diagonal_axes()
+        ndindices = [(0,)] if len(daxes) == 0 else np.ndindex(tuple(np.array(N)[daxes]))
+        format = config['matrix']['block']['assemble'] if format is None else format
+        for i in ndindices:
+            i = i[0] if len(i) == 1 else i
+            if format == 'csc':
+                Ai = self.diags(i, format='csr').tocsc() # because of bug in scipy
             else:
-                N = self.testbase.forward.output_array.shape[daxes[0]]
-                for i in range(N):
-                    Ai = self.diags(i, format='csr').tocsc()
-                    self._Ai[i] = Ai
-
-        elif self.testbase.dimensions == 3:
-            daxes = self.get_diagonal_axes()
-            if len(tpmat.naxes) == 1:
-                for i in range(N[daxes[0]]):
-                    for j in range(N[daxes[1]]):
-                        Ai = self.diags((i, j), format='csr').tocsc() # Note - bug in scipy (https://github.com/scipy/scipy/issues/14551) such that we cannot use format='csc' directly
-                        self._Ai[(i, j)] = Ai
-
-            elif len(tpmat.naxes) == 2:
-                for i in range(N[daxes[0]]):
-                    Ai = self.diags(i, format='csr').tocsc()
-                    self._Ai[i] = Ai
+                Ai = self.diags(i, format=format)
+            self._Ai[i] = Ai
 
     def get_diagonal_axes(self):
+        if self.testbase.dimensions == 1:
+            return np.array([])
         tpmat = self.get_mats(True)
         return np.setxor1d(tpmat.naxes, range(tpmat.dimensions)).astype(int)
 
@@ -971,8 +962,9 @@ class BlockMatrix:
         it : n-tuple of ints or None, optional
             where n is dimensions-1. These are the indices into the diagonal
             axes, or the axes with Fourier bases.
-        format : str
+        format : str or None, optional
             The format of the returned matrix. See `Scipy sparse matrices <https://docs.scipy.org/doc/scipy/reference/sparse.html>`_
+            If None, then use default for TPMatrix.
 
         """
         from .spectralbase import MixedFunctionSpace
@@ -986,24 +978,21 @@ class BlockMatrix:
                     bm[-1].append(None)
                 else:
                     m = mij[0]
-                    if isinstance(self.testbase, MixedFunctionSpace):
+                    if isinstance(self.testbase, MixedFunctionSpace) or len(m.naxes) == len(m.mats):
                         d = m.diags(format)
                         for mj in mij[1:]:
                             d = d + mj.diags(format)
+
                     elif len(m.naxes) == 2: # 2 non-periodic directions
-                        if len(m.mats) == 2:
-                            d = m.scale.item()*kron(m.mats[0].diags(format), m.mats[1].diags(format))
-                            for mj in mij[1:]:
-                                d = d + mj.scale.item()*kron(mj.mats[0].diags(format), mj.mats[1].diags(format))
-                        else:
-                            iit = np.where(np.array(m.scale.shape) == 1, 0, it) # if shape is 1 use index 0, else use given index (shape=1 means the scale is constant in that direction)
-                            d = m.scale[tuple(iit)]*kron(m.mats[m.naxes[0]].diags(format=format), m.mats[m.naxes[1]].diags(format=format))
-                            for mj in mij[1:]:
-                                iit = np.where(np.array(mj.scale.shape) == 1, 0, it)
-                                sc = mj.scale[tuple(iit)]
-                                d = d + sc*kron(mj.mats[mj.naxes[0]].diags(format=format), mj.mats[mj.naxes[1]].diags(format=format))
+                        iit = np.where(np.array(m.scale.shape) == 1, 0, it) # if shape is 1 use index 0, else use given index (shape=1 means the scale is constant in that direction)
+                        d = m.scale[tuple(iit)]*kron(m.mats[m.naxes[0]].diags(format=format), m.mats[m.naxes[1]].diags(format=format))
+                        for mj in mij[1:]:
+                            iit = np.where(np.array(mj.scale.shape) == 1, 0, it)
+                            sc = mj.scale[tuple(iit)]
+                            d = d + sc*kron(mj.mats[mj.naxes[0]].diags(format=format), mj.mats[mj.naxes[1]].diags(format=format))
 
                     else:
+                        assert len(m.naxes) == 1
                         iit = np.zeros(m.dimensions, dtype=int)
                         diagonal_axes = self.get_diagonal_axes()
                         assert len(diagonal_axes) + len(m.naxes) == m.dimensions
@@ -1571,7 +1560,6 @@ def get_denser_matrix(test, trial, measure=1):
         coordinates an additional measure is the radius `r`.
     """
     test2 = test[0].get_refined((test[0].N*3)//2)
-
     K0 = test[0].slice().stop - test[0].slice().start
     K1 = trial[0].slice().stop - trial[0].slice().start
     N = test2.N
