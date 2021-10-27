@@ -829,9 +829,9 @@ class UpperDirichlet(CompositeSpace):
 
     def stencil_matrix(self, N=None):
         N = self.N if N is None else N
-        d = np.ones(self.N)
+        d = np.ones(N)
         d[-1] = 0
-        return SparseMatrix({0: d, 1: -d[:-1]}, (self.N, self.N))
+        return SparseMatrix({0: d, 1: -d[:-1]}, (N, N))
 
     def slice(self):
         return slice(0, self.N-1)
@@ -984,13 +984,13 @@ class ShenBiPolar0(CompositeSpace):
 
     def stencil_matrix(self, N=None):
         N = self.N if N is None else N
-        d = np.ones(self.N)
+        d = np.ones(N)
         d[-3:] = 0
-        k = np.arange(self.N)
+        k = np.arange(N)
         f1 = -((2*k[:-1]+3)*(k[:-1]+4)/(2*k[:-1]+5)/(k[:-1]+2))
         f2 = -(k[:-2]*(k[:-2]+1)/(k[:-2]+2)/(k[:-2]+3))
         f3 = (k[:-3]+1)*(2*k[:-3]+3)/(k[:-3]+3)/(2*k[:-3]+5)
-        return SparseMatrix({0: d, 1: f1, 2: f2, 3: f3}, (self.N, self.N))
+        return SparseMatrix({0: d, 1: f1, 2: f2, 3: f3}, (N, N))
 
     def slice(self):
         return slice(0, self.N-3)
@@ -1057,12 +1057,12 @@ class DirichletNeumann(CompositeSpace):
 
     def stencil_matrix(self, N=None):
         N = self.N if N is None else N
-        d = np.ones(self.N)
+        d = np.ones(N)
         d[-2:] = 0
-        k = np.arange(self.N)
+        k = np.arange(N)
         f1 = (2*k[:-1]+3)/(k[:-1]+2)**2
         f2 = -((k[:-2]+1)/(k[:-2]+2))**2
-        return SparseMatrix({0: d, 1: f1, 2: f2}, (self.N, self.N))
+        return SparseMatrix({0: d, 1: f1, 2: f2}, (N, N))
 
     def slice(self):
         return slice(0, self.N-2)
@@ -1126,9 +1126,9 @@ class LowerDirichlet(CompositeSpace):
 
     def stencil_matrix(self, N=None):
         N = self.N if N is None else N
-        d = np.ones(self.N)
+        d = np.ones(N)
         d[-1] = 0
-        return SparseMatrix({0: d, 1: d[:-1]}, (self.N, self.N))
+        return SparseMatrix({0: d, 1: d[:-1]}, (N, N))
 
     def slice(self):
         return slice(0, self.N-1)
@@ -1192,13 +1192,13 @@ class DirichletNeumannDirichlet(CompositeSpace):
 
     def stencil_matrix(self, N=None):
         N = self.N if N is None else N
-        d = np.ones(self.N)
+        d = np.ones(N)
         d[-2:] = 0
-        k = np.arange(self.N)
+        k = np.arange(N)
         f1 = (2*k[:-1]+3)/(2*k[:-1]+5)
         f2 = -np.ones(N-2)
         f3 = -(2*k[:-3]+3)/(2*k[:-3]+5)
-        return SparseMatrix({0: d, 1: f1, 2: f2, 3: f3}, (self.N, self.N))
+        return SparseMatrix({0: d, 1: f1, 2: f2, 3: f3}, (N, N))
 
     def slice(self):
         return slice(0, self.N-3)
@@ -1265,12 +1265,12 @@ class NeumannDirichlet(CompositeSpace):
 
     def stencil_matrix(self, N=None):
         N = self.N if N is None else N
-        d = np.ones(self.N)
+        d = np.ones(N)
         d[-2:] = 0
-        k = np.arange(self.N)
+        k = np.arange(N)
         f1 = -((2*k[:-1]+3)/(k[:-1]+2)**2)
         f2 = -((k[:-2]+1)**2/(k[:-2]+2)**2)
-        return SparseMatrix({0: d, 1: f1, 2: f2}, (self.N, self.N))
+        return SparseMatrix({0: d, 1: f1, 2: f2}, (N, N))
 
     def slice(self):
         return slice(0, self.N-2)
@@ -1342,12 +1342,12 @@ class UpperDirichletNeumann(CompositeSpace):
 
     def stencil_matrix(self, N=None):
         N = self.N if N is None else N
-        d = np.ones(self.N)
+        d = np.ones(N)
         d[-2:] = 0
-        k = np.arange(self.N)
+        k = np.arange(N)
         f1 = -((2*k[:-1]+3)/(k[:-1]+2))
         f2 = ((k[:-2]+1)/(k[:-2]+2))
-        return SparseMatrix({0: d, 1: f1, 2: f2}, (self.N, self.N))
+        return SparseMatrix({0: d, 1: f1, 2: f2}, (N, N))
 
     def slice(self):
         return slice(0, self.N-2)

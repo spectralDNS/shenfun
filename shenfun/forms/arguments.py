@@ -215,6 +215,7 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
             'RD': chebyshev.bases.UpperDirichlet,
             'LD': chebyshev.bases.LowerDirichlet,
             'RDRN': chebyshev.bases.UpperDirichletNeumann,
+            'LDLN': chebyshev.bases.LowerDirichletNeumann,
             'LDLNRDRN': chebyshev.bases.ShenBiharmonic
         }
 

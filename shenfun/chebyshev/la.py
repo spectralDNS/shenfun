@@ -81,11 +81,9 @@ class ANNSolver(SparseMatrixSolver):
 
         if u is None:
             u = b
-        else:
-            assert u.shape == b.shape
 
         # Boundary conditions
-        b = self.apply_bcs(b, axis=axis)
+        b = self.apply_bcs(b, u, axis=axis)
 
         # Move axis to first
         if axis > 0:

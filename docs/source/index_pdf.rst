@@ -30,6 +30,7 @@ Demos
    fasttransforms
    mixingbases
    tau
+   sparsity
    zrefs
 
 .. _shenfun: https:/github.com/spectralDNS/shenfun

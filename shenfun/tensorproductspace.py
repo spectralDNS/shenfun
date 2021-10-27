@@ -1672,7 +1672,7 @@ class BoundaryValues:
             if isinstance(bci, sp.Expr):
                 if tt in bci.free_symbols:
                     self.bc_time = time
-                    self.bcs[i] = bci.subs({'t': time})
+                    self.bcs[i] = bci.subs(tt, time)
                     update_time = True
         if update_time:
             self.bcs_final[:] = self.bcs
@@ -1948,6 +1948,7 @@ class BoundaryValues:
             must be a fully transformed Function.
 
         """
+
         M = len(self.bc)
         num_bcs = len(self.bc) - np.count_nonzero(np.array(self.bc) == None)
 

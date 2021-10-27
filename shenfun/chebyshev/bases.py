@@ -29,6 +29,7 @@ __all__ = ['ChebyshevBase',
            'UpperDirichlet',
            'LowerDirichlet',
            'UpperDirichletNeumann',
+           'LowerDirichletNeumann',
            'ShenBiPolar',
            'DirichletNeumann',
            'NeumannDirichlet',
@@ -39,7 +40,8 @@ __all__ = ['ChebyshevBase',
            'BCLowerDirichlet',
            'BCNeumannDirichlet',
            'BCDirichletNeumann',
-           'BCUpperDirichletNeumann']
+           'BCUpperDirichletNeumann',
+           'BCLowerDirichletNeumann']
 
 
 #pylint: disable=abstract-method, not-callable, method-hidden, no-self-use, cyclic-import
@@ -2282,6 +2284,78 @@ class UpperDirichletNeumann(CompositeSpace):
                                                  coordinates=self.coors.coordinates)
         return self._bc_basis
 
+class LowerDirichletNeumann(CompositeSpace):
+    """Function space for both Dirichlet and Neumann boundary conditions
+    on the left hand side
+
+    u(-1)=a and u'(-1)=b
+
+    Parameters
+    ----------
+        N : int, optional
+            Number of quadrature points
+        quad : str, optional
+            Type of quadrature
+
+            - GL - Chebyshev-Gauss-Lobatto
+            - GC - Chebyshev-Gauss
+
+        bc : 2-tuple of numbers
+            Boundary condition values at the left edge of domain
+        domain : 2-tuple of floats, optional
+            The computational domain
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        scaled : bool, optional
+            Whether or not to use scaled basis
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
+
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
+
+    """
+
+    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, scaled=False,
+                 padding_factor=1, dealias_direct=False, coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct, coordinates=coordinates)
+
+    @staticmethod
+    def boundary_condition():
+        return 'LowerDirichletNeumann'
+
+    @staticmethod
+    def short_name():
+        return 'LS'
+
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        k = np.arange(N)
+        d = np.ones(N)
+        d[-2:] = 0
+        d1 = (4*(k[:-1]+1)/(2*k[:-1]+3))
+        d2 = ((2*k[:-2]+1)/(2*k[:-2]+3))
+        return SparseMatrix({0: d, 1: d1, 2: d2}, (N, N))
+
+    def slice(self):
+        return slice(0, self.N-2)
+
+    def get_bc_basis(self):
+        if self._bc_basis:
+            return self._bc_basis
+        self._bc_basis = BCLowerDirichletNeumann(self.N, quad=self.quad, domain=self.domain,
+                                                 coordinates=self.coors.coordinates)
+        return self._bc_basis
+
 class BCBase(CompositeSpace):
     """Function space for inhomogeneous boundary conditions
 
@@ -2459,6 +2533,16 @@ class BCUpperDirichletNeumann(BCBase):
     def stencil_matrix(self, N=None):
         return sp.Rational(1, 3)*np.array([[3, 0, 0],
                                            [3, -5, 2]])
+
+class BCLowerDirichletNeumann(BCBase):
+
+    @staticmethod
+    def short_name():
+        return 'BCLDN'
+
+    def stencil_matrix(self, N=None):
+        return np.array([[1, 0],
+                         [1, 1]])
 
 def chebvanderU(x, deg):
     """Pseudo-Vandermonde matrix of given degree for Chebyshev polynomials

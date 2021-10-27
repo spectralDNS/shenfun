@@ -24,8 +24,8 @@ family = sys.argv[-1].lower()
 
 # Use sympy to compute a rhs, given an analytical solution
 domain = (-1, 1)
-a = 0.
-b = -0.
+a = 1.
+b = -1.
 if family == 'jacobi':
     a = 0
     b = 0
@@ -53,7 +53,7 @@ f_hat = inner(v, fj, output_array=f_hat)
 # Get left hand side of Poisson equation
 A = inner(v, div(grad(u)))
 
-u_hat = Function(SD).set_boundary_dofs()
+u_hat = Function(SD)
 u_hat = A.solve(f_hat, u_hat)
 uj = u_hat.backward()
 uh = uj.forward()

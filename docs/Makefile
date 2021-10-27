@@ -21,7 +21,8 @@ DEMO          = Poisson/poisson.rst \
 				Moebius/moebius.ipynb \
 				FastTransforms/fasttransforms.ipynb	\
 				MixingBases/mixingbases.ipynb \
-				Tau/tau.ipynb
+				Tau/tau.ipynb \
+				SparsityChebyshev/sparsity.ipynb
 NDEMO         = Poisson/poisson.ipynb2 \
                 KleinGordon/kleingordon.ipynb2 \
                 Poisson3D/poisson3d.ipynb2 \
@@ -36,7 +37,8 @@ NDEMO         = Poisson/poisson.ipynb2 \
 				Moebius/moebius.ipynb2 \
 				FastTransforms/fasttransforms.ipynb2 \
 				MixingBases/mixingbases.ipynb2 \
-				Tau/tau.ipynb2
+				Tau/tau.ipynb2 \
+				SparsityChebyshev/sparsity.ipynb2
 
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

@@ -469,7 +469,6 @@ class BSNSNmat(SpectralMatrix):
         ck = get_ck(Q, test[0].quad)
         k = np.arange(Q-2, dtype=float)
         d = {0: np.pi/2*(ck[:-2]+ck[2:]*(k[:]/(k[:]+2))**4)}
-
         dp = dmax(N-2, M-2, 2)
         d[2] = -np.pi/2*(k[:dp]/(k[:dp]+2))**2
         dm = dmax(N-2, M-2, -2)
@@ -733,16 +732,10 @@ class BSBSDmat(SpectralMatrix):
         k = np.arange(Q, dtype=float)
         a = 2*(k+2)/(k+3)
         b = (k+1)/(k+3)
-        if M > N:
-            Q = min(N, M-2)
-            Qp = min(N, M-4)
-        else:
-            Q = M-2
-            Qp = M-4
         d = {-2: -np.pi/2,
               0: (ck[:Q] + a)*np.pi/2,
-              2: -(a[:Q]+b[:Q]*ck[(test[0].N-Q):])*np.pi/2,
-              4: b[:Qp]*np.pi/2}
+              2: -(a[:min(Q, M-2)]+b[:min(Q, M-2)])*np.pi/2,
+              4: b[:min(Q, M-4)]*np.pi/2}
 
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
         self._matvec_methods += ['cython', 'self']
@@ -779,6 +772,33 @@ class BSBSDmat(SpectralMatrix):
             c = super(BSBSDmat, self).matvec(v, c, format=format, axis=axis)
 
         return c
+
+class BSBTmat(SpectralMatrix):
+    r"""Mass matrix for inner product
+
+    .. math::
+
+        B_{kj} = (T_j, \psi_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-1 \text{ and } k = 0, 1, ..., N-5
+
+    and :math:`\psi_k` is the Shen Biharmonic basis function.
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], SB)
+        assert isinstance(trial[0], T)
+        N, M = test[0].N, trial[0].N
+        Q = min(M, N)
+        ck = get_ck(test[0].N, test[0].quad)
+        k = np.arange(Q, dtype=float)
+        d = {0: ck*np.pi/2,
+             2: -np.pi*(k[:min(Q, M-2)]+2)/(k[:min(Q, M-2)]+3),
+             4: 0.5*np.pi*(k[:min(Q, M-4)]+1)/(k[:min(Q, M-4)]+3)}
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 class BCNCNmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
@@ -1027,6 +1047,32 @@ class CTSDmat(SpectralMatrix):
         k = np.arange(N, dtype=float)
         d = dict.fromkeys(np.arange(-1, N-2, 2), -2*np.pi)
         d[-1] = -(k[1:N-1]+1)*np.pi
+        SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
+
+
+class ASBTmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        A_{kj} = (T''_j, \phi_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N \text{ and } k = 0, 1, ..., M-4
+
+    :math:`\phi_k` is the Shen biharmonic basis function and :math:`T_j` is the
+    Chebyshev basis function.
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], SB)
+        assert isinstance(trial[0], T)
+        N, M = test[0].N, trial[0].N
+        Q = min(N, M)
+        k = np.arange(Q, dtype=float)
+        d = {2: 2*np.pi*(k[:min(Q, M-2)]+2)*(k[:min(Q, M-2)]+1)}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
@@ -1451,14 +1497,10 @@ class ASBSDmat(SpectralMatrix):
         assert isinstance(trial[0], SD)
         N = test[0].N-4
         M = trial[0].N-2
-        k = np.arange(min(N, M), dtype=float)
-        if M > N:
-            Q = min(N, M-2)
-        else:
-            Q = M-2
-
+        Q = min(M, N)
+        k = np.arange(Q, dtype=float)
         d = {0: -2*(k+1)*(k+2)*np.pi,
-             2: 2*(k[:Q]+1)*(k[:Q]+2)*np.pi}
+             2: 2*(k[:min(Q, M-2)]+1)*(k[:min(Q, M-2)]+2)*np.pi}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
@@ -2154,6 +2196,7 @@ mat = _ChebMatDict({
     ((LD, 0), (LD, 0)): BLDLDmat,
     ((T,  0), (SN, 0)): BTSNmat,
     ((SB, 0), (SD, 0)): BSBSDmat,
+    ((SB, 0), (T,  0)): BSBTmat,
     ((T,  0), (SD, 0)): BTSDmat,
     ((SD, 0), (T,  0)): BSDTmat,
     ((SD, 0), (SD, 2)): ASDSDmat,
@@ -2181,6 +2224,7 @@ mat = _ChebMatDict({
     ((SB, 0), (SB, 4)): SSBSBmat,
     ((SD, 0), (SN, 1)): CSDSNmat,
     ((SB, 0), (SD, 1)): CSBSDmat,
+    ((SB, 0), (T,  2)): ASBTmat,
     ((T,  0), (SD, 1)): CTSDmat,
     ((T,  0), (T,  1)): CTTmat,
     ((SD, 0), (SD, 1)): CSDSDmat,

@@ -9,7 +9,7 @@ from collections.abc import Mapping, MutableMapping
 from numbers import Number, Integral
 import numpy as np
 import sympy as sp
-from scipy.sparse import bmat, dia_matrix, kron, diags as sp_diags
+from scipy.sparse import bmat, dia_matrix, csr_matrix, kron, diags as sp_diags
 from scipy.sparse.linalg import spsolve
 from mpi4py import MPI
 from shenfun.config import config
@@ -19,7 +19,7 @@ __all__ = ['SparseMatrix', 'SpectralMatrix', 'extract_diagonal_matrix',
            'extract_bc_matrices', 'check_sanity', 'get_dense_matrix',
            'TPMatrix', 'BlockMatrix', 'BlockMatrices', 'Identity',
            'get_dense_matrix_sympy', 'get_dense_matrix_quadpy',
-           'get_simplified_tpmatrices']
+           'get_simplified_tpmatrices', 'ScipyMatrix']
 
 comm = MPI.COMM_WORLD
 
@@ -594,6 +594,10 @@ class SpectralMatrix(SparseMatrix):
             else:
                 D = get_dense_matrix_sympy(test, trial, measure)[:shape[0], :shape[1]]
             d = extract_diagonal_matrix(D)
+        else:
+            if isinstance(measure, Number):
+                scale *= measure
+                self.measure = 1
         SparseMatrix.__init__(self, d, shape, scale)
 
     def matvec(self, v, c, format=None, axis=0):
@@ -673,6 +677,57 @@ class Identity(SparseMatrix):
             u[:] = b
         u *= (1/self.scale)
         return u
+
+class ScipyMatrix(csr_matrix):
+
+    def __init__(self, mats):
+        assert isinstance(mats, (SparseMatrix, list))
+        self.bc_mats = []
+        if isinstance(mats, list):
+            bc_mats = extract_bc_matrices([mats])
+            mats = sum(mats[1:], mats[0])
+            self.bc_mats = bc_mats
+        csr_matrix.__init__(self, mats.diags('csr'))
+
+    def matvec(self, v, c, axis=0):
+        """Matrix vector product
+
+        Returns c = dot(self, v)
+
+        Parameters
+        ----------
+        v : array
+            Numpy input array of ndim>=1
+        c : array
+            Numpy output array of same shape as v
+        axis : int, optional
+            The axis over which to take the matrix vector product
+
+        """
+        N, M = self.shape
+        c.fill(0)
+
+        # Roll relevant axis to first
+        if axis > 0:
+            v = np.moveaxis(v, axis, 0)
+            c = np.moveaxis(c, axis, 0)
+
+        P = int(np.prod(v.shape[1:]))
+        y = self.dot(v[:M].reshape(M, P)).squeeze()
+        d = tuple([slice(0, m) for m in y.shape])
+        c[d] = y.reshape(c[d].shape)
+
+        if self.bc_mats:
+            w0 = np.zeros_like(c)
+            for bc_mat in self.bc_mats:
+                c += bc_mat.matvec(v, w0, axis=0)
+
+        if axis > 0:
+            c = np.moveaxis(c, 0, axis)
+            v = np.moveaxis(v, 0, axis)
+
+        return c
+
 
 def BlockMatrices(tpmats):
     """Return two instances of the :class:`.BlockMatrix` class.

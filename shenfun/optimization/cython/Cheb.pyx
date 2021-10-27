@@ -19,6 +19,7 @@ def chebval(x, c):
         c = c.astype(np.double)
     if isinstance(x, (tuple, list)):
         x = np.asarray(x)
+    x = x.astype(float)
     y = np.zeros_like(x, dtype=c.dtype)
     c0 = np.zeros_like(x, dtype=c.dtype)
     c1 = np.zeros_like(x, dtype=c.dtype)

@@ -89,3 +89,13 @@
    entrytype: article
    id:        Elbarbary2008
    isbn:      1573-7691
+* books
+** Spectral {Methods} in {Fluid} {Dynamics}
+   key:       canuto
+   author:    C. Canuto, M.Y. Hussaini, A. Quarteroni, J.Z. Thomas A.
+   year:      2012
+   publisher: Springer
+   status:    published
+   entrytype: book
+   isbn:      978-3-642-84108-8
+   series:    Scientific {Computation}

@@ -6,6 +6,7 @@ from __future__ import division
 #__all__ = ['mat']
 
 import functools
+from numbers import Number
 import numpy as np
 import sympy as sp
 from shenfun.matrixbase import SpectralMatrix
@@ -141,7 +142,7 @@ class _Fouriermatrix(SpectralMatrix):
     def __init__(self, test, trial, scale=1, measure=1):
         N = test[0].N
         d = {}
-        if measure == 1:
+        if isinstance(measure, Number):
             k = test[0].wavenumbers(N, scaled=False)
             if isinstance(test[1], (int, np.integer)):
                 k_test, k_trial = test[1], trial[1]

@@ -260,8 +260,8 @@ def curl(test):
 
     test = copy.copy(test)
 
-    assert test.expr_rank() > 0
-    assert test.num_components() == test.dimensions
+    #assert test.expr_rank() > 0
+    #assert test.num_components() == test.dimensions
 
     coors = test.function_space().coors
 
@@ -275,7 +275,11 @@ def curl(test):
             test._indices = w0.indices()+w1.indices()+w2.indices()
         else:
             assert test.dimensions == 2
-            test = Dx(test[1], 0, 1) - Dx(test[0], 1, 1)
+            if test.expr_rank() > 0:
+                test = Dx(test[1], 0, 1) - Dx(test[0], 1, 1)
+            else:
+                # Assume scalar test is vector test*k, where k is the unit basis vector in the z-direction
+                test = _expr_from_vector_components([Dx(test, 1, 1), -Dx(test, 0, 1)], test.basis())
 
     else:
         assert test.expr_rank() < 2, 'Cannot (yet) take curl of higher order tensor in curvilinear coordinates'

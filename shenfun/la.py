@@ -67,13 +67,12 @@ class SparseMatrixSolver:
         self._inner_arg = None # argument to inner_solve
         assert self.mat.shape[0] == self.mat.shape[1]
 
-    def apply_bcs(self, b, axis=0):
+    def apply_bcs(self, b, u, axis=0):
         if len(self.bc_mats) > 0:
-            assert isinstance(b, Function)
-            b.set_boundary_dofs()
+            u.set_boundary_dofs()
             w0 = np.zeros_like(b)
             for bc_mat in self.bc_mats:
-                b -= bc_mat.matvec(b, w0, axis=axis)
+                b -= bc_mat.matvec(u, w0, axis=axis)
         return b
 
     def apply_constraints(self, b, constraints, axis=0):
@@ -136,7 +135,6 @@ class SparseMatrixSolver:
             if isinstance(self.mat, SparseMatrix):
                 self.mat = self.mat.diags('csc')
             self._lu = splu(self.mat, permc_spec=config['matrix']['sparse']['permc_spec'])
-            #self._lu = self.mat.todia()
             self.dtype = self.mat.dtype.char
             self._inner_arg = (self._lu, self.dtype)
         return self._lu
@@ -207,19 +205,10 @@ class SparseMatrixSolver:
         s = slice(0, lu.shape[0])
         if u.dtype.char in 'fdg' or dtype in 'FDG':
             u[s] = lu.solve(u[s])
-            #ud, l = max(0, max(lu.offsets)), max(0, max(-lu.offsets))
-            #A = np.zeros((ud+l+1, lu.shape[1]))
-            #A[ud-lu.offsets] = lu.data
-            #u[s] = solve_banded((l, ud), A, u[s])
 
         else:
             u.real[s] = lu.solve(u.real[s])
             u.imag[s] = lu.solve(u.imag[s])
-            #ud, l = max(0, max(lu.offsets)), max(0, max(-lu.offsets))
-            #A = np.zeros((ud+l+1, lu.shape[1]))
-            #A[ud-lu.offsets] = lu.data
-            #u.real[s] = solve_banded((l, ud), A, u.real[s])
-            #u.imag[s] = solve_banded((l, ud), A, u.imag[s])
 
     def __call__(self, b, u=None, axis=0, constraints=()):
         """Solve matrix problem Au = b along axis
@@ -247,20 +236,12 @@ class SparseMatrixSolver:
         """
         if u is None:
             u = b
-        else:
-            assert u.shape == b.shape
-
-        b = self.apply_bcs(b, axis=axis)
-
+        b = self.apply_bcs(b, u, axis=axis)
         b = self.apply_constraints(b, constraints, axis=axis)
-
         lu = self.perform_lu() # LU must be performed after constraints, because constraints modify the matrix
-
         u = self.solve(b, u, axis=axis, lu=lu)
-
         if hasattr(u, 'set_boundary_dofs'):
             u.set_boundary_dofs()
-
         return u
 
 class BandedMatrixSolver(SparseMatrixSolver):
@@ -270,7 +251,8 @@ class BandedMatrixSolver(SparseMatrixSolver):
 
     def solve(self, b, u, axis, lu):
         if u is not b:
-            u[:] = b
+            sl = u.function_space().slice() if hasattr(u, 'function_space') else slice(None)
+            u[sl] = b[sl]
         self.Solve(u, lu.data, axis=axis)
         return u
 

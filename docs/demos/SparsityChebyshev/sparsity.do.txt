@@ -1,0 +1,335 @@
+TITLE: Demo - Sparse Chebyshev-Petrov-Galerkin methods for differentiation
+AUTHOR: Mikael Mortensen Email:mikaem@math.uio.no at Department of Mathematics, University of Oslo.
+DATE: October 26, 2021
+
+
+__Summary.__
+This demo explores how to use sparse Chebyshev-Petrov-Galerkin methods for finding Chebyshev coefficients of
+the derivatives of smooth functions. We will compare the methods to the more commonly adopted
+recursion methods that are found in most spectral textbooks.
+
+TOC: on
+
+# #include "../preprocesser.py"
+
+===== Introduction =====
+
+The Chebyshev polynomials of the first kind can be defined as
+
+!bt
+\begin{equation}
+\label{eq:chebTU}
+    T_k(x) = \cos(k\theta),
+\end{equation}
+!et
+where $\theta = \cos^{-1} x$, $k$ is a positive integer and $x \in [-1, 1]$.
+The Chebyshev polynomials span the discrete space $S_N = \text{span}\{T_k\}_{k=0}^{N-1}$,
+and a function $u(x)$ can be approximated in this space as
+
+!bt
+\begin{equation}
+u_N(x) = \sum_{k=0}^{N-1} \hat{u}_k T_k(x).
+label{eq:uT}
+\end{equation}
+!et
+Consider the expansion of the function $u(x)=\sin(\pi x)$, created in `shenfun` as
+
+!bc pycod
+from shenfun import *
+import sympy as sp
+x = sp.Symbol('x')
+ue = sp.sin(sp.pi*x)
+N = 16
+SN = FunctionSpace(N, 'C')
+uN = Function(SN, buffer=ue)
+uN
+!ec
+
+The Python Function `uN` represents the expansion (ref{eq:uT}), and the printed
+values represent $\boldsymbol{\hat{u}} = \{\hat{u}_k\}_{k=0}^{N-1}$. The expansion is fairly well resolved since
+the highest values of $\{\hat{u}_k\}_{k=0}^{N-1}$ approach 0.
+Note that the coefficients obtained are the discrete coefficients based on interpolation at
+quadrature points and they do not agree completely with the coefficients truncated from a
+series $u(x) = \sum_{k=0}^{\infty} \hat{u}_k T_k$.
+Under the hood the coefficients are found by projection using quadrature for the integrals:
+find $u_N \in S_N$ such that
+!bt
+    (u_N-u, v)_{\omega^{-1/2}} = 0, \quad \forall v \in S_N,
+!et
+where $\omega = (1-x^2)$ and the scalar product notation
+$(a, b)_{\omega^{-1/2}} = \sum_{j=0}^{N-1} a(x_j)b(x_j)\omega_j \approx \int_{-1}^{1} a(x)b(x) \omega(x)^{-1/2} dx$,
+where $\{\omega_j\}_{j=0}^{N-1}$ are the quadrature weights. The quadrature approach ensures
+that $u(x_j) = u_N(x_j)$ for all quadrature points $\{x_j\}_{j=0}^{N-1}$.
+In `shenfun` we compute the following under the hood: insert for $u_N = \sum_{j=0}^{N-1} \hat{u}_j T_j$,
+$u=\sin(\pi x)$ and $v = T_k$ to get
+!bt
+    \sum_{j=0}^{N-1}(T_j, T_k)_{\omega^{-1/2}} \hat{u}_j = (\sin(\pi x), T_k)_{\omega^{-1/2}},
+!et
+This has now become a linear algebra problem, and we recognise the matrix $d^{(0)}_{kj} = (T_j, T_k)_{\omega^{-1/2}}=c_k \pi /2 \delta_{kj}$,
+where $\delta_{kj}$ is the Kronecker delta function, and $c_0=2$ and $c_k=1$ for $k>0$.
+The problem is solved trivially since $d^{(0)}_{kj}$ is diagonal,
+and thus
+!bt
+\hat{u}_k = \frac{2}{c_k \pi} (\sin(\pi x), T_k)_{\omega^{-1/2}}, \quad \forall \, k\in I^N,
+!et
+where $I^N = \{0, 1, \ldots, N-1\}$.
+We can compare this to the exact coefficients, where the integral $(\sin(\pi x), T_k)_{\omega^{-1/2}}$
+is computed with high precision. To this end we could use adaptive quadrature, or symbolic integration
+with sympy, but it is sufficient to use a large enough number of polynomials to fully resolve the
+function. Below we find this number to be 22 and we see that the absolute error in $\hat{u}_{N-1} \approx 10^{-11}$.
+
+!bc pycod
+SM = FunctionSpace(0, 'C')
+uM = Function(SM, buffer=ue, abstol=1e-16, reltol=1e-16)
+print(uM[:N] - uN[:N])
+print(len(uM))
+!ec
+
+===== Differentiation =====
+
+Let us now consider the $n$'th derivative of $u(x)$ instead, denoted here as $u^{(n)}$,
+and attempt to find $u^{(n)}$ in the space $S_N$, i.e.,
+!bt
+u_N^{(n)} = \sum_{k=0}^{N-1} \hat{u}^{(n)}_k T_k.
+!et
+We note that this is not the same as $(u_N)^{(n)}$, which is
+!bt
+(u_N)^{(n)} = \sum_{k=0}^{N-1} \hat{u}_k T^{(n)}_k,
+!et
+where $T^{(n)}_k$ is the $n$'th derivative of $T_k$, a polynomial of order $k-n$.
+Again use projection to find $u_N^{(n)} \in S_N$ such that
+!bt
+    (u_N^{(n)}-u^{(n)}, v)_{\omega^{-1/2}} = 0, \quad \forall v \in S_N.
+!et
+Inserting for $u_N^{(n)}$ and $u^{(n)} = (u_N)^{(n)}$ we get
+!bt
+\begin{align}
+    \sum_{j=0}^{N-1}(T_j, T_k)_{\omega^{-1/2}} \hat{u}_j^{(n)} &= (T_j^{(n)}, T_k)_{\omega^{-1/2}} \hat{u}_j, \\
+    \sum_{j=0}^{N-1} d^{(0)}_{kj} \hat{u}_j^{(n)}  &= \sum_{j=0}^{N-1} d^{(n)}_{kj} \hat{u}_j,
+\end{align}
+!et
+where $d^{(n)}_{kj} = (T_j^{(n)}, T_k)_{\omega^{-1/2}}$.
+We compute $\hat{u}_k^{(n)}$ by inverting the diagonal $d^{(0)_{kj}}$
+!bt
+\begin{equation}
+\hat{u}_k^{(n)} = \frac{2}{c_k \pi} \sum_{j=0}^{N-1} d^{(n)}_{kj} \hat{u}_j, \quad \forall \, k \in I^{N}.
+label{eq:fhat}
+\end{equation}
+!et
+The matrix $d^{(n)}_{kj}$ is upper triangular, and the last $n$ rows are zero. Since $d^{(n)}_{kj}$ is
+dense the matrix vector product $\sum_{j=0}^{N-1} d^{(n)}_{kj} \hat{u}_j$ is costly
+and also susceptible to roundoff errors if the structure of the matrix is
+not taken advantage of. But computing it in shenfun
+is straightforward, for $n=1$ and $2$:
+
+!bc pycod
+uN1 = project(Dx(uN, 0, 1), SN)
+uN2 = project(Dx(uN, 0, 2), SN)
+uN1
+!ec
+
+where `uN1` $=u_N^{(1)} $ and `uN2` $=u_N^{(2)}$.
+Alternatively, doing all the work that goes on under the hood
+
+!bc pycod
+u = TrialFunction(SN)
+v = TestFunction(SN)
+D0 = inner(u, v)
+D1 = inner(Dx(u, 0, 1), v)
+D2 = inner(Dx(u, 0, 2), v)
+w0 = Function(SN) # work array
+uN1 = Function(SN)
+uN2 = Function(SN)
+uN1 = D0.solve(D1.matvec(uN, w0), uN1)
+uN2 = D0.solve(D2.matvec(uN, w0), uN2)
+uN1
+!ec
+
+We can look at the sparsity patterns of $(d^{(1)}_{kj})$ and $(d^{(2)}_{kj})$
+
+!bc pycod
+import matplotlib.pyplot as plt
+fig, (ax1, ax2) = plt.subplots(1, 2)
+ax1.spy(D1.diags(), markersize=2, color='r')
+ax2.spy(D2.diags(), markersize=2, color='b')
+!ec
+
+just to see that they are upper triangular. We now ask is there a better and faster
+way to get `uN1` and `uN2`? A better approach would involve only sparse
+matrices, like the diagonal $(d^{(0)}_{kj})$. But how do we get there?
+Most textbooks on spectral methods use recursive methods to
+find $\{\hat{u}_N^{(n)}\}$. Here we will show a Galerkin approach.
+
+It turns out that a simple change of test space/function will be sufficient.
+Let us first replace the test space $S_N$ with
+the Dirichlet space $D_N=\{v \in S_N | v(\pm 1) = 0\}$ using basis
+functions $v=T_k-T_{k+2}$ and see
+what happens. Because of the two boundary conditions,
+the number of degrees of freedom is reduced by two, and we need to use a
+space with $N+2$ quadrature points in order to get a square matrix system.
+The method now becomes classified as Chebyshev-Petrov-Galerkin, as we
+wish to find $u_N^{(1)} \in S_N$ such that
+!bt
+   (u_N^{(n)}-u^{(n)}, v)_{\omega^{-1/2}} = 0, \quad \forall v \in D_{N+2}.
+!et
+
+The implementation is straightforward
+
+!bc pycod
+SD = FunctionSpace(N+2, 'C', bc=(0, 0))
+v = TestFunction(SD)
+D0 = inner(u, v)
+D1 = inner(Dx(u, 0, 1), v)
+uN11 = Function(SN)
+uN11 = D0.solve(D1.matvec(uN, w0), uN11)
+print(uN11-uN1)
+!ec
+
+and since `uN11 = uN1` we see that we have achived the same result as in
+the regular projection. However, the matrices in use now look like
+
+!bc pycod
+fig, (ax1, ax2) = plt.subplots(1, 2)
+ax1.spy(D0.diags(), markersize=2, color='r')
+ax2.spy(D1.diags(), markersize=2, color='b')
+!ec
+
+So $(d^{(0)}_{kj})$ now contains two nonzero diagonals, whereas $(d^{(1)}_{kj})$ is
+a matrix with one single diagonal. There is no longer a `full` differentiation
+matrix, and we can easily perform this projection for millions of degrees of freedom.
+What about $(d^{(2)}_{kj})$? We can now use biharmonic test functions that
+satisfy four boundary conditions in the space $B_N = \{v \in S_N | v(\pm 1) = v'(\pm 1) =0\}$,
+and continue in a similar fashion:
+
+!bc pycod
+SB = FunctionSpace(N+4, 'C', bc=(0, 0, 0, 0))
+v = TestFunction(SB)
+D0 = inner(u, v)
+D2 = inner(Dx(u, 0, 2), v)
+uN22 = Function(SN)
+uN22 = D0.solve(D2.matvec(uN, w0), uN22)
+print(uN22-uN2)
+!ec
+We get that `uN22 = uN2`, so the Chebyshev-Petrov-Galerkin projection works. The matrices involved are now
+
+!bc pycod
+fig, (ax1, ax2) = plt.subplots(1, 2)
+ax1.spy(D0.diags(), markersize=2, color='r')
+ax2.spy(D2.diags(), markersize=2, color='b')
+!ec
+
+So there are now three nonzero diagonals in $(d^{(0)}_{kj})$, whereas the differentiation matrix
+$(d^{(2)}_{kj})$ contains only one nonzero diagonal.
+
+Why does this work? The Chebyshev polynomials and their derivatives satisfy the following orthogonality relation
+!bt
+\begin{equation}
+label{eq:orthon}
+  \int_{-1}^{1} T^{(n)}_j T^{(n)}_k \omega^{n-1/2} dx = \alpha^{n}_k \delta_{kj}, \quad \text{for}\, n \ge 0,
+\end{equation}
+!et
+where
+!bt
+\begin{equation}
+    \alpha^n_k = \frac{c_{k+n}\pi k (k+n-1)!}{2(k-n)!}.
+\end{equation}
+!et
+
+So when we choose a test function that is $\omega^n T^{(n)}_k$, we get the diagonal differentiation matrix
+
+!bt
+\begin{equation}
+  d^{(n)}_{kj} = \int_{-1}^{1} T^{(n)}_j (\omega^n T^{(n)}_k) \omega^{-1/2} dx = \alpha^{n}_k \delta_{kj}, \quad \text{for}\, n \ge 0.
+\end{equation}
+!et
+
+The two chosen test functions above are both proportional to $\omega^n T^{(n)}_k$. More precisely,
+$T_k-T_{k+2} = \frac{2}{k+1} \omega T^{(1)}_{k+1}$ and the biharmonic test function is
+$T_k-\frac{2(k+2)}{k+3}T_{k+2} + \frac{k+1}{k+3}T_{k+4} = \frac{4 \omega^2T^{(2)}_{k+2}}{(k+2)(k+3)}$.
+Using these very specific test functions correponds closely to using the Chebyshev
+recursion formulas that are found in most textbooks. Here they are adapted to
+a Chebyshev-Petrov-Galerkin method, where we simply choose test and trial functions and everything
+else falls into place in a few lines of code.
+
+===== Recursion =====
+
+Let us for completion show how to
+find $\hat{u}_N^{(1)}$ with a recursive approach. The Chebyshev polynomials
+satisfy
+
+!bt
+\begin{equation}
+2T_k = \frac{1}{k+1}T'_{k+1}- \frac{1}{k-1} T'_{k-1}, \quad k \ge 1.
+label{eq:Trec1}
+\end{equation}
+!et
+By using this and setting $u' = \sum_{k=0}^{\infty} \hat{u}^{(1)}_k T_k = \sum_{k=0}^{\infty} \hat{u}_k T'_k$
+we get
+!bt
+\begin{equation}
+2k\hat{u}_k = c_{k-1}\hat{u}^{(1)}_{k-1} - \hat{u}^{(1)}_{k+1}, \quad k \ge 1.
+label{eq:Trec2}
+\end{equation}
+!et
+Using this recursion together with $\hat{u}^{(1)}_{N-1} = 0$ we get (cite{canuto})
+!bt
+\begin{equation}
+c_k \hat{u}^{(1)}_k = \hat{u}^{(1)}_{k+2} + 2(k+1)\hat{u}_{k+1}, \quad 0 \le k \le N-2,
+label{eq:Trec3}
+\end{equation}
+!et
+
+which is easily implemented in a (slow) for-loop
+
+!bc pycod
+f1 = np.zeros(N+1)
+ck = np.ones(N); ck[0] = 2
+for k in range(N-2, -1, -1):
+    f1[k] = (f1[k+2]+2*(k+1)*uN[k+1])/ck[k]
+print(f1[:-1]-uN1)
+!ec
+
+which evidently is exactly the same result. It turns out that this is not strange. If we multiply
+(ref{eq:Trec3}) by $\pi/2$ and rearrange a little bit we get
+
+!bt
+\begin{align}
+c_k \pi/2 \hat{u}^{(1)}_k -  \pi/2 \hat{u}^{(1)}_{k+2} &= (k+1)\pi \hat{u}_{k+1} \\
+\underbrace{(c_k \pi/2 \delta_{kj} - \pi/2 \delta_{k, j-2})}_{(D^0)_{kj}} \hat{u}^{(1)}_j &= \underbrace{(k+1)\pi \delta_{k,j-1}}_{(D^1)_{kj}} \hat{u}_{j} \\
+D^0 \boldsymbol{\hat{u}} &= D^1 \boldsymbol{\hat{u}} \\
+\boldsymbol{\hat{u}^{(1)}} &= (D^0)^{-1} D^1 \boldsymbol{\hat{u}}
+\end{align}
+!et
+which is exactly how $\boldsymbol{\hat{u}^{(1)}}$ was computed above with the Chebyshev-Petrov-Galerkin approach
+(`uN11 = D0.solve(D1.matvec(uN, w0), uN11)`). Not convinced? Check that the matrices
+`D0` and `D1` are truly as stated above. The matrices below are printed as dictionaries with diagonal
+number as key (main is 0, first upper is 1 etc) and diagonal values as values:
+
+!bc pycod
+import pprint
+SD = FunctionSpace(N+2, 'C', bc=(0, 0))
+v = TestFunction(SD)
+D0 = inner(u, v)
+D1 = inner(Dx(u, 0, 1), v)
+pprint.pprint(dict(D0))
+pprint.pprint(dict(D1))
+!ec
+
+In conclusion, we have shown that we can use an efficient Chebyshev-Petrov-Galerkin approach to obtain
+the discrete Chebyshev coefficients for the derivatives
+of a function. By inspection, it turns out that this approach is identical to the common methods based on
+well-known Chebyshev recursion formulas.
+
+#======= Bibliography =======
+
+## Publish (https://bitbucket.org/logg/publish is used to
+## handle references. The line below specifies the name of
+## the Publish database file (see the doconce manual for details).
+
+% if FORMAT not in ("sphinx"):
+
+BIBFILE: ../papers.pub
+
+% else:
+
+% endif

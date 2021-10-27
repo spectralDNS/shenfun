@@ -61,6 +61,7 @@ Document build status
    fasttransforms
    mixingbases
    tau
+   sparsity
    zrefs
 
 .. toctree::

@@ -149,7 +149,6 @@ def main(N, method=0, alpha=0, returntype=0):
         B[2] *= K[0][:-2]
         B[4] *= K[0][:-4]
 
-
     if returntype == 0:
         if alpha == 0:
             con = np.linalg.cond(A.diags().toarray()[1:, 1:])
