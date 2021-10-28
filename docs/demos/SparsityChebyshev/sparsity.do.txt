@@ -132,7 +132,7 @@ uN2 = project(Dx(uN, 0, 2), SN)
 uN1
 !ec
 
-where `uN1` $=u_N^{(1)} $ and `uN2` $=u_N^{(2)}$.
+where `uN1` $=u_N^{(1)}$ and `uN2` $u_N^{(2)}$.
 Alternatively, doing all the work that goes on under the hood
 
 !bc pycod
@@ -180,8 +180,8 @@ wish to find $u_N^{(1)} \in S_N$ such that
 The implementation is straightforward
 
 !bc pycod
-SD = FunctionSpace(N+2, 'C', bc=(0, 0))
-v = TestFunction(SD)
+DN = FunctionSpace(N+2, 'C', bc=(0, 0))
+v = TestFunction(DN)
 D0 = inner(u, v)
 D1 = inner(Dx(u, 0, 1), v)
 uN11 = Function(SN)
@@ -206,8 +206,8 @@ satisfy four boundary conditions in the space $B_N = \{v \in S_N | v(\pm 1) = v'
 and continue in a similar fashion:
 
 !bc pycod
-SB = FunctionSpace(N+4, 'C', bc=(0, 0, 0, 0))
-v = TestFunction(SB)
+BN = FunctionSpace(N+4, 'C', bc=(0, 0, 0, 0))
+v = TestFunction(BN)
 D0 = inner(u, v)
 D2 = inner(Dx(u, 0, 2), v)
 uN22 = Function(SN)
@@ -239,7 +239,8 @@ where
 \end{equation}
 !et
 
-So when we choose a test function that is $\omega^n T^{(n)}_k$, we get the diagonal differentiation matrix
+So when we choose a test function $\omega^n T^{(n)}_k$ and a trial function $T_j$,
+we get the diagonal differentiation matrix
 
 !bt
 \begin{equation}
@@ -312,8 +313,8 @@ number as key (main is 0, first upper is 1 etc) and diagonal values as values:
 
 !bc pycod
 import pprint
-SD = FunctionSpace(N+2, 'C', bc=(0, 0))
-v = TestFunction(SD)
+DN = FunctionSpace(N+2, 'C', bc=(0, 0))
+v = TestFunction(DN)
 D0 = inner(u, v)
 D1 = inner(Dx(u, 0, 1), v)
 pprint.pprint(dict(D0))
