@@ -21,7 +21,7 @@ from shenfun.jacobi import bases as jbases
 from shenfun.chebyshev import la as cla
 from shenfun.legendre import la as lla
 from shenfun import div, grad, inner, TensorProductSpace, FunctionSpace, SparseMatrix, \
-    Function, comm, VectorSpace, TrialFunction, TestFunction, BlockMatrix, CompositeSpace
+    Function, comm, VectorSpace, BlockMatrix, CompositeSpace
 from shenfun.spectralbase import inner_product
 from shenfun.config import config
 
@@ -707,8 +707,8 @@ F2 = FunctionSpace(8, 'F', dtype='D')
 def test_blockmatrix(bases):
     T = TensorProductSpace(comm, bases)
     V = VectorSpace(T)
-    u = TrialFunction(V)
-    v = TestFunction(V)
+    u = shenfun.TrialFunction(V)
+    v = shenfun.TestFunction(V)
     A = inner(u, v)
     B = BlockMatrix(A)
     uh = Function(V, val=1)
@@ -718,8 +718,8 @@ def test_blockmatrix(bases):
     c2 = B.matvec(uh, c2, use_scipy=False)
     assert np.linalg.norm(c2-c) < 1e-8
     VQ = CompositeSpace([V, T])
-    u, p = TrialFunction(VQ)
-    v, q = TestFunction(VQ)
+    u, p = shenfun.TrialFunction(VQ)
+    v, q = shenfun.TestFunction(VQ)
     A2 = inner(u, v) + [inner(p, q)]
     B2 = BlockMatrix(A2)
     uh = Function(VQ, val=1)
@@ -735,7 +735,7 @@ if __name__ == '__main__':
     x = sp.symbols('x', real=True)
     xp = sp.Symbol('x', real=True, positive=True)
 
-    #test_mat(((cbases.ShenBiharmonic, 0), (cbases.ShenDirichlet, 0)), cmatrices.BSBSDmat, 'GL')
+    test_mat(((cbases.ShenBiharmonic, 0), (cbases.ShenDirichlet, 0)), cmatrices.BSBSDmat, 'GL')
     #test_mat(*cmats_and_quads[12])
     #test_cmatvec(cBasis[2], cBasis[2], 'GC', 2)
     #test_lmatvec(lBasis[0], lBasis[0], 'LG', 2, 0)
@@ -743,7 +743,7 @@ if __name__ == '__main__':
     #test_hmatvec(hBasis[0], hBasis[0], 'HG', 'self', 3, 1, 1)
     #test_isub(((cbases.ShenNeumann, 0), (cbases.ShenDirichlet, 1)), cmatrices.CSNSDmat, 'GC')
     #test_add(((cbases.Orthogonal, 0), (cbases.ShenDirichlet, 1)), cmatrices.CTSDmat, 'GC')
-    test_blockmatrix((D, F2, F))
+    #test_blockmatrix((D, F2, F))
     #test_sub(*mats_and_quads[15])
     #test_mul2()
     #test_div2(cBasis[1], 'GC')

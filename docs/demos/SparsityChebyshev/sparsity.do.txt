@@ -48,9 +48,10 @@ uN
 The Python Function `uN` represents the expansion (ref{eq:uT}), and the printed
 values represent $\boldsymbol{\hat{u}} = \{\hat{u}_k\}_{k=0}^{N-1}$. The expansion is fairly well resolved since
 the highest values of $\{\hat{u}_k\}_{k=0}^{N-1}$ approach 0.
-Note that the coefficients obtained are the discrete coefficients based on interpolation at
-quadrature points and they do not agree completely with the coefficients truncated from a
-series $u(x) = \sum_{k=0}^{\infty} \hat{u}_k T_k$.
+Note that the coefficients obtained are based on interpolation at
+quadrature points and they do not agree completely with the coefficients truncated from an
+infinite series $u(x) = \sum_{k=0}^{\infty} \hat{u}_k T_k$. The obtained series is
+often denoted as $u_N(x) = I_N u(x)$, where $I_N$ is an interpolation operator.
 Under the hood the coefficients are found by projection using quadrature for the integrals:
 find $u_N \in S_N$ such that
 !bt
@@ -73,10 +74,11 @@ and thus
 \hat{u}_k = \frac{2}{c_k \pi} (\sin(\pi x), T_k)_{\omega^{-1/2}}, \quad \forall \, k\in I^N,
 !et
 where $I^N = \{0, 1, \ldots, N-1\}$.
-We can compare this to the exact coefficients, where the integral $(\sin(\pi x), T_k)_{\omega^{-1/2}}$
+We can compare this to the truncated coefficients, where the integral $(\sin(\pi x), T_k)_{\omega^{-1/2}}$
 is computed with high precision. To this end we could use adaptive quadrature, or symbolic integration
 with sympy, but it is sufficient to use a large enough number of polynomials to fully resolve the
-function. Below we find this number to be 22 and we see that the absolute error in $\hat{u}_{N-1} \approx 10^{-11}$.
+function. Below we find this number to be 22 and we see that the absolute error in
+the highest wavenumber $\hat{u}_{15} \approx 10^{-11}$.
 
 !bc pycod
 SM = FunctionSpace(0, 'C')
@@ -87,17 +89,19 @@ print(len(uM))
 
 ===== Differentiation =====
 
-Let us now consider the $n$'th derivative of $u(x)$ instead, denoted here as $u^{(n)}$,
-and attempt to find $u^{(n)}$ in the space $S_N$, i.e.,
+Let us now consider the $n$'th derivative of $u(x)$ instead, denoted here as $u^{(n)}$.
+We want to find $u^{(n)}$ in the space $S_N$, which means that we want to obtain
+the following expansion
 !bt
 u_N^{(n)} = \sum_{k=0}^{N-1} \hat{u}^{(n)}_k T_k.
 !et
-We note that this is not the same as $(u_N)^{(n)}$, which is
+First note that this expansion is not the same as the derivative of
+the previously found $u_N$, which is
 !bt
 (u_N)^{(n)} = \sum_{k=0}^{N-1} \hat{u}_k T^{(n)}_k,
 !et
 where $T^{(n)}_k$ is the $n$'th derivative of $T_k$, a polynomial of order $k-n$.
-Again use projection to find $u_N^{(n)} \in S_N$ such that
+We again use projection to find $u_N^{(n)} \in S_N$ such that
 !bt
     (u_N^{(n)}-u^{(n)}, v)_{\omega^{-1/2}} = 0, \quad \forall v \in S_N.
 !et
@@ -109,7 +113,7 @@ Inserting for $u_N^{(n)}$ and $u^{(n)} = (u_N)^{(n)}$ we get
 \end{align}
 !et
 where $d^{(n)}_{kj} = (T_j^{(n)}, T_k)_{\omega^{-1/2}}$.
-We compute $\hat{u}_k^{(n)}$ by inverting the diagonal $d^{(0)_{kj}}$
+We compute $\hat{u}_k^{(n)}$ by inverting the diagonal $d^{(0)}_{kj}$
 !bt
 \begin{equation}
 \hat{u}_k^{(n)} = \frac{2}{c_k \pi} \sum_{j=0}^{N-1} d^{(n)}_{kj} \hat{u}_j, \quad \forall \, k \in I^{N}.
@@ -157,8 +161,8 @@ ax2.spy(D2.diags(), markersize=2, color='b')
 just to see that they are upper triangular. We now ask is there a better and faster
 way to get `uN1` and `uN2`? A better approach would involve only sparse
 matrices, like the diagonal $(d^{(0)}_{kj})$. But how do we get there?
-Most textbooks on spectral methods use recursive methods to
-find $\{\hat{u}_N^{(n)}\}$. Here we will show a Galerkin approach.
+Most textbooks on spectral methods use fast recursive methods to
+find $\{\hat{u}_N^{(n)}\}$. Here we will show a fast Galerkin approach.
 
 It turns out that a simple change of test space/function will be sufficient.
 Let us first replace the test space $S_N$ with
@@ -221,7 +225,7 @@ ax2.spy(D2.diags(), markersize=2, color='b')
 So there are now three nonzero diagonals in $(d^{(0)}_{kj})$, whereas the differentiation matrix
 $(d^{(2)}_{kj})$ contains only one nonzero diagonal.
 
-Why does this work? The Chebyshev polynomials and their derivatives satisfy the following orthogonality relation
+Why does this work so well? The Chebyshev polynomials and their derivatives satisfy the following orthogonality relation
 !bt
 \begin{equation}
 label{eq:orthon}
@@ -271,7 +275,8 @@ we get
 label{eq:Trec2}
 \end{equation}
 !et
-Using this recursion together with $\hat{u}^{(1)}_{N-1} = 0$ we get (cite{canuto})
+Using this recursion on a discrete series, together with $\hat{u}^{(1)}_{N} = \hat{u}^{(1)}_{N-1} = 0$, we get
+(see cite{canuto} Eq.~(2.4.24))
 !bt
 \begin{equation}
 c_k \hat{u}^{(1)}_k = \hat{u}^{(1)}_{k+2} + 2(k+1)\hat{u}_{k+1}, \quad 0 \le k \le N-2,
@@ -290,7 +295,7 @@ print(f1[:-1]-uN1)
 !ec
 
 which evidently is exactly the same result. It turns out that this is not strange. If we multiply
-(ref{eq:Trec3}) by $\pi/2$ and rearrange a little bit we get
+(ref{eq:Trec3}) by $\pi/2$, rearrange a little bit and move to a matrix form we get
 
 !bt
 \begin{align}
@@ -301,7 +306,7 @@ D^0 \boldsymbol{\hat{u}} &= D^1 \boldsymbol{\hat{u}} \\
 \end{align}
 !et
 which is exactly how $\boldsymbol{\hat{u}^{(1)}}$ was computed above with the Chebyshev-Petrov-Galerkin approach
-(`uN11 = D0.solve(D1.matvec(uN, w0), uN11)`). Not convinced? Check that the matrices
+(compare with the code line `uN11 = D0.solve(D1.matvec(uN, w0), uN11)`). Not convinced? Check that the matrices
 `D0` and `D1` are truly as stated above. The matrices below are printed as dictionaries with diagonal
 number as key (main is 0, first upper is 1 etc) and diagonal values as values:
 

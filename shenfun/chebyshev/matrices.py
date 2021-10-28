@@ -734,8 +734,8 @@ class BSBSDmat(SpectralMatrix):
         b = (k+1)/(k+3)
         d = {-2: -np.pi/2,
               0: (ck[:Q] + a)*np.pi/2,
-              2: -(a[:min(Q, M-2)]+b[:min(Q, M-2)])*np.pi/2,
-              4: b[:min(Q, M-4)]*np.pi/2}
+              2: -(a[:min(Q, M-2)]+ck[4:min(Q+4, M+2)]*b[:min(Q, M-2)])*np.pi/2,
+              4: b[:min(Q, M-4)]*ck[4:min(Q+4, M)]*np.pi/2}
 
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
         self._matvec_methods += ['cython', 'self']
@@ -791,13 +791,13 @@ class BSBTmat(SpectralMatrix):
     def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], T)
-        N, M = test[0].N, trial[0].N
+        N, M = test[0].N-4, trial[0].N
         Q = min(M, N)
         ck = get_ck(test[0].N, test[0].quad)
         k = np.arange(Q, dtype=float)
-        d = {0: ck*np.pi/2,
+        d = {0: ck[:Q]*np.pi/2,
              2: -np.pi*(k[:min(Q, M-2)]+2)/(k[:min(Q, M-2)]+3),
-             4: 0.5*np.pi*(k[:min(Q, M-4)]+1)/(k[:min(Q, M-4)]+3)}
+             4: 0.5*np.pi*ck[4:min(Q+4,M)]*(k[:min(Q, M-4)]+1)/(k[:min(Q, M-4)]+3)}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 class BCNCNmat(SpectralMatrix):
@@ -1069,7 +1069,7 @@ class ASBTmat(SpectralMatrix):
     def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], SB)
         assert isinstance(trial[0], T)
-        N, M = test[0].N, trial[0].N
+        N, M = test[0].N-4, trial[0].N
         Q = min(N, M)
         k = np.arange(Q, dtype=float)
         d = {2: 2*np.pi*(k[:min(Q, M-2)]+2)*(k[:min(Q, M-2)]+1)}
