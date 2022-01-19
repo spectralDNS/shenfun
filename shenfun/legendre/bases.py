@@ -221,6 +221,12 @@ class Orthogonal(LegendreBase):
     def sympy_basis(self, i=0, x=xp):
         return sp.legendre(i, x)
 
+    def bnd_values(self, k=0):
+        if k == 0:
+            return (lambda i: (-1)**i, lambda i: 1)
+        elif k == 1:
+            return (lambda i: sp.Rational(1, 2)*(-1)**(i+1)*(i+1)*i, lambda i: sp.Rational(1, 2)*i*(i+1))
+
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
         if output_array is None:

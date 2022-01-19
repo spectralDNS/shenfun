@@ -33,7 +33,6 @@ from mpi4py_fft import fftw
 from shenfun.config import config
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
 from shenfun.matrixbase import SparseMatrix
-from shenfun.chebyshev.bases import BCBiharmonic, BCDirichlet
 from .recursions import b, h, matpow
 
 try:
@@ -248,6 +247,13 @@ class Orthogonal(JacobiBase):
 
     def sympy_basis(self, i=0, x=xp):
         return sp.jacobi(i, self.alpha, self.beta, x)
+
+    def bnd_values(self, k=0):
+        if k == 0:
+            return (lambda i: (-1)**i*sp.binomial(i+self.beta, i), lambda i: sp.binomial(i+self.alpha, i))
+        elif k == 1:
+            gam = lambda i: sp.gamma(self.alpha+self.beta+i+2)/(2*sp.gamma(self.alpha+self.beta+i+1))
+            return (lambda i: (-1)**(i-1)*gam(i)*sp.binomial(i+self.beta, i-1), lambda i: gam(i)*sp.binomial(i+self.alpha, i-1))
 
     def evaluate_basis(self, x, i=0, output_array=None):
         x = np.atleast_1d(x)
@@ -474,7 +480,8 @@ class Phi1(CompositeSpace):
         if self._bc_basis:
             return self._bc_basis
         self._bc_basis = BCDirichlet(self.N, quad=self.quad, domain=self.domain,
-                                     scaled=self._scaled, coordinates=self.coors.coordinates)
+                                     scaled=self._scaled, alpha=self.alpha, beta=self.beta,
+                                     coordinates=self.coors.coordinates)
         return self._bc_basis
 
 class Phi2(CompositeSpace):
@@ -521,7 +528,8 @@ class Phi2(CompositeSpace):
         if self._bc_basis:
             return self._bc_basis
         self._bc_basis = BCBiharmonic(self.N, quad=self.quad, domain=self.domain,
-                                      scaled=self._scaled, coordinates=self.coors.coordinates)
+                                      scaled=self._scaled, alpha=self.alpha, beta=self.beta,
+                                      coordinates=self.coors.coordinates)
         return self._bc_basis
 
 class CompactDirichlet(CompositeSpace):
@@ -563,7 +571,8 @@ class CompactDirichlet(CompositeSpace):
         if self._bc_basis:
             return self._bc_basis
         self._bc_basis = BCDirichlet(self.N, quad=self.quad, domain=self.domain,
-                                     scaled=self._scaled, coordinates=self.coors.coordinates)
+                                     scaled=self._scaled, alpha=self.alpha, beta=self.beta,
+                                     coordinates=self.coors.coordinates)
         return self._bc_basis
 
 class ShenDirichlet(JacobiBase):
@@ -716,7 +725,7 @@ class ShenDirichlet(JacobiBase):
         if self._bc_basis:
             return self._bc_basis
         self._bc_basis = BCDirichlet(self.N, quad=self.quad, domain=self.domain,
-                                     coordinates=self.coors.coordinates)
+                                     alpha=1, beta=1, coordinates=self.coors.coordinates)
         return self._bc_basis
 
 class ShenBiharmonic(JacobiBase):
@@ -872,7 +881,7 @@ class ShenBiharmonic(JacobiBase):
         if self._bc_basis:
             return self._bc_basis
         self._bc_basis = BCBiharmonic(self.N, quad=self.quad, domain=self.domain,
-                                      coordinates=self.coors.coordinates)
+                                      alpha=self.alpha, beta=self.beta, coordinates=self.coors.coordinates)
         return self._bc_basis
 
 
@@ -1022,3 +1031,137 @@ class ShenOrder6(JacobiBase):
     #    output_array[self.sl[slice(2, -2)]] -= z*_factor1
     #    output_array[self.sl[slice(4, None)]] += z*_factor2
     #    return output_array
+
+class BCBase(CompositeSpace):
+    """Function space for inhomogeneous boundary conditions
+
+    Parameters
+    ----------
+        N : int, optional
+            Number of quadrature points
+        quad : str, optional
+            Type of quadrature
+
+            - JG - Jacobi-Gauss
+
+        domain : 2-tuple of floats, optional
+            The computational domain
+        scaled : bool, optional
+            Whether or not to use scaled basis
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
+
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
+    """
+
+    def __init__(self, N, quad="JG", domain=(-1., 1.), scaled=False,
+                 dtype=float, alpha=0, beta=0, coordinates=None, **kw):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain,
+                                dtype=dtype, alpha=alpha, beta=beta,
+                                coordinates=coordinates)
+
+    def stencil_matrix(self, N=None):
+        raise NotImplementedError
+
+    @staticmethod
+    def short_name():
+        raise NotImplementedError
+
+    @staticmethod
+    def boundary_condition():
+        return 'Apply'
+
+    def shape(self, forward_output=True):
+        if forward_output:
+            return self.stencil_matrix().shape[0]
+        else:
+            return self.N
+
+    @property
+    def num_T(self):
+        return self.stencil_matrix().shape[1]
+
+    def slice(self):
+        return slice(self.N-self.shape(), self.N)
+
+    def vandermonde(self, x):
+        return Orthogonal.vandermonde(x, self.num_T-1)
+
+    def _composite(self, V, argument=1):
+        N = self.shape()
+        P = np.zeros(V[:, :N].shape)
+        P[:] = np.tensordot(V[:, :self.num_T], self.stencil_matrix(), (1, 1))
+        return P
+
+    def sympy_basis(self, i=0, x=xp):
+        M = self.stencil_matrix()
+        return np.sum(M[i]*np.array([sp.jacobi(j, self.alpha, self.beta, x) for j in range(self.num_T)]))
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        V = self.vandermonde(x)
+        output_array[:] = np.dot(V, self.stencil_matrix()[i])
+        return output_array
+
+    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
+        output_array = SpectralBase.evaluate_basis_derivative(self, x=x, i=i, k=k, output_array=output_array)
+        return output_array
+
+    def to_ortho(self, input_array, output_array=None):
+        from shenfun import Function
+        T = self.get_orthogonal()
+        if output_array is None:
+            output_array = Function(T)
+        else:
+            output_array.fill(0)
+        M = self.stencil_matrix().T
+        for k, row in enumerate(M):
+            output_array[k] = np.dot(row, input_array)
+        return output_array
+
+    def eval(self, x, u, output_array=None):
+        v = self.to_ortho(u)
+        output_array = v.eval(x, output_array=output_array)
+        return output_array
+
+class BCDirichlet(BCBase):
+
+    @staticmethod
+    def short_name():
+        return 'BCD'
+
+    def stencil_matrix(self, N=None):
+        a, b = sp.symbols('a,b', real=True)
+        A = sp.Matrix([[(a + 1)/(a + b + 2), -1/(a + b + 2)],
+                       [(b + 1)/(a + b + 2),  1/(a + b + 2)]])
+        return np.array(A.subs(a, self.alpha).subs(b, self.beta))
+
+class BCNeumann(BCBase):
+
+    @staticmethod
+    def short_name():
+        return 'BCN'
+
+    def stencil_matrix(self, N=None):
+        a, b = sp.symbols('a,b', real=True)
+        A = sp.Matrix([[(a + 2)/(a + b + 4), -1/(a + b + 4)],
+                       [(b + 2)/(a + b + 4),  1/(a + b + 4)]])
+        return np.array(A.subs(a, self.alpha).subs(b, self.beta))
+
+class BCBiharmonic(BCBase):
+
+    @staticmethod
+    def short_name():
+        return 'BCB'
+
+    def stencil_matrix(self, N=None):
+        return sp.Rational(1, 16)*np.array([[8, -9, 0, 1],
+                                            [2, -1, -2, 1],
+                                            [8, 9, 0, -1],
+                                            [-2, -1, 2, 1]])

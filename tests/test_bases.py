@@ -1,14 +1,12 @@
 import pytest
 import numpy as np
 import sympy as sp
-from shenfun import chebyshev, legendre, fourier, hermite, laguerre,\
-    jacobi
+from shenfun import chebyshev, chebyshevu, legendre, fourier, hermite, \
+    laguerre, jacobi
 
 bases = (
     chebyshev.Orthogonal,
-    chebyshev.OrthogonalU,
     chebyshev.ShenDirichlet,
-    chebyshev.DirichletU,
     chebyshev.Heinrichs,
     chebyshev.ShenNeumann,
     chebyshev.MikNeumann,
@@ -32,6 +30,11 @@ bases = (
     legendre.LowerDirichlet,
     legendre.UpperDirichletNeumann,
     legendre.DirichletNeumannDirichlet,
+    chebyshevu.Orthogonal,
+    chebyshevu.CompactDirichlet,
+    chebyshevu.CompactNeumann,
+    chebyshevu.Phi1,
+    chebyshevu.Phi2,
     fourier.R2C,
     fourier.C2C,
     hermite.Orthogonal,
@@ -61,7 +64,9 @@ bcbases = (
     legendre.BCUpperDirichlet,
     legendre.BCUpperDirichletNeumann,
     legendre.BCDirichletNeumannDirichlet,
-    legendre.BCShenBiPolar0
+    legendre.BCShenBiPolar0,
+    chebyshevu.BCDirichlet,
+    chebyshevu.BCNeumann,
 )
 
 nonBC = (

@@ -36,7 +36,6 @@ cBasis = (cbases.Orthogonal,
 cBasisGC = (cbases.UpperDirichlet,
             cbases.ShenBiPolar,
             cbases.Heinrichs,
-            cbases.DirichletU,
             cbases.MikNeumann,
             cbases.CombinedShenNeumann,
             )

@@ -6,6 +6,7 @@ from sympy import symbols, sin, cos, pi, lambdify
 import numpy as np
 import shenfun
 from shenfun.chebyshev import bases as cbases
+from shenfun.chebyshevu import bases as cubases
 from shenfun.legendre import bases as lbases
 from shenfun.laguerre import bases as labases
 from shenfun.fourier import bases as fbases
@@ -25,10 +26,12 @@ cBasis = (cbases.Orthogonal,
           cbases.ShenNeumann,
           cbases.ShenBiharmonic)
 
+cuBasis = (cubases.Orthogonal,
+           cubases.CompactDirichlet,
+           cubases.CompactNeumann)
+
 # Bases with only GC quadrature
-cBasisGC = (cbases.OrthogonalU,
-            cbases.DirichletU,
-            cbases.Heinrichs,
+cBasisGC = (cbases.Heinrichs,
             cbases.MikNeumann,
             cbases.UpperDirichlet,
             cbases.CombinedShenNeumann,
@@ -63,6 +66,7 @@ all_bases_and_quads = (list(product(laBasis, laquads))
                      +list(product(lBasis, lquads))
                      +list(product(lBasisLG, ('LG',)))
                      +list(product(cBasis, cquads))
+                     +list(product(cuBasis, ('GU',)))
                      +list(product(cBasisGC, ('GC',)))
                      +list(product(fBasis, ('',)))
                      +list(product(jBasis, ('JG',))))
@@ -556,5 +560,5 @@ if __name__ == '__main__':
     #test_transforms(cBasisGC[3], 'GC')
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[2], 'GC')
-    test_eval(cBasisGC[6], 'GC')
+    test_eval(cuBasis[1], 'GU')
     #test_axis(laBasis[1], 'LG', 1)
