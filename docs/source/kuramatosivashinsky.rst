@@ -1,5 +1,6 @@
-.. Automatically generated Sphinx-extended reStructuredText file from DocOnce source
-   (https://github.com/hplgit/doconce/)
+.. File automatically generated using DocOnce (https://github.com/doconce/doconce/):
+
+.. doconce format sphinx kuramatosivashinsky.do.txt --sphinx_preserve_bib_keys
 
 .. Document title:
 
@@ -416,5 +417,4 @@ Now all that remains is to create the integrator and call it
     #integrator = RK4(T, L=LinearRHS, N=NonlinearRHS, update=update, **par)
     integrator.setup(dt)
     U_hat = integrator.solve(U, U_hat, dt, (0, end_time))
-
 

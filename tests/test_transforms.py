@@ -556,5 +556,5 @@ if __name__ == '__main__':
     #test_transforms(cBasisGC[3], 'GC')
     #test_project_1D(cBasis[0])
     #test_scalarproduct(cBasis[2], 'GC')
-    #test_eval(cBasis[1], 'GL')
-    test_axis(laBasis[1], 'LG', 1)
+    test_eval(cBasisGC[6], 'GC')
+    #test_axis(laBasis[1], 'LG', 1)

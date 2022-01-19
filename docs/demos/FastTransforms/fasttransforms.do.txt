@@ -271,7 +271,7 @@ label{eq:ft:dirichletU}
 We get the basis using
 
 !bc pycod
-D2 = FunctionSpace(N, 'C', bc=(0, 0), basis='DirichletU')
+D2 = FunctionSpace(N, 'U', bc=(0, 0), quad='GC') # quad='GU' is default for U
 !ec
 
 and the expansion coefficients are found as
@@ -288,8 +288,9 @@ fb = f.backward().copy()
 !ec
 
 Next, we perform the regular projections into the three spaces
-`D0`, `D1` and `D2`, using the inner product
-in $L^2_{\omega^{-1/2}}$. Now `u0`, `u1` and `u2` will be the
+`D0`, `D1` and `D2`, using the default inner product
+in $L^2_{\omega^{-1/2}}$ for `D0` and `D1`, whereas $L^2_{\omega^{1/2}}$
+is used for `D2`. Now `u0`, `u1` and `u2` will be the
 three solution vectors
 $\boldsymbol{\hat{u}}^{\varphi}$, $\boldsymbol{\hat{u}}^{\phi}$
 and $\boldsymbol{\hat{u}}^{\psi}$, respectively.

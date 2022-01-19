@@ -1301,7 +1301,7 @@ class BSDBCDmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
-class BSBBCBmat(SpectralMatrix):
+class SBBCBmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
     .. math::
@@ -1316,6 +1316,8 @@ class BSBBCBmat(SpectralMatrix):
 
     and :math:`\psi_j` is the Biharmonic boundary basis and
     :math:`\phi_k` is the Shen Biharmonic basis function.
+
+    #FIXME Reordered bases
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -1408,7 +1410,7 @@ mat = _LegMatDict({
     ((UD, 0), (UD, 0), (0, 1), xp**2): functools.partial(BUDUDrp1smat, scale=0.25, measure=xp**2),
     ((UD, 0), (UD, 0)): BUDUDmat,
     ((SD, 0), (BCD, 0)): BSDBCDmat,
-    ((SB, 0), (BCB, 0)): BSBBCBmat,
+    #((SB, 0), (BCB, 0)): BSBBCBmat, # reordered bases
     ((DN, 0), (DN, 0)): BDNDNmat,
     ((DN, 1), (DN, 1)): ADNDNmat,
     ((DN, 2), (DN, 0)): functools.partial(ADNDNmat, scale=-1.),

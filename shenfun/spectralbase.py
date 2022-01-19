@@ -1401,7 +1401,7 @@ def inner_product(test, trial, measure=1):
     >>> [np.all(B[k] == v) for k, v in d.items()]
     [True, True, True]
     """
-    assert trial[0].__module__ == test[0].__module__
+    #assert trial[0].__module__ == test[0].__module__
     key = ((test[0].__class__, test[1]), (trial[0].__class__, trial[1]))
     sc = 1
     if measure != 1:

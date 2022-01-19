@@ -32,7 +32,9 @@ from scipy.special import eval_jacobi, roots_jacobi #, gamma
 from mpi4py_fft import fftw
 from shenfun.config import config
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
+from shenfun.matrixbase import SparseMatrix
 from shenfun.chebyshev.bases import BCBiharmonic, BCDirichlet
+from .recursions import b, h, matpow
 
 try:
     import quadpy
@@ -47,10 +49,12 @@ mode = config['bases']['jacobi']['mode']
 mode = mode if has_quadpy else 'numpy'
 
 xp = sp.Symbol('x', real=True)
+m, n, k = sp.symbols('m,n,k', real=True, integer=True)
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
-__all__ = ['JacobiBase', 'Orthogonal', 'ShenDirichlet', 'ShenBiharmonic',
+__all__ = ['JacobiBase', 'Orthogonal', 'Phi1', 'Phi2', 'CompactDirichlet',
+           'ShenDirichlet', 'ShenBiharmonic',
            'ShenOrder6', 'mode', 'has_quadpy', 'mp']
 
 
@@ -274,15 +278,14 @@ class Orthogonal(JacobiBase):
     def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
         if x is None:
             x = self.mpmath_points_and_weights(mode=mode)[0]
-        #if x.dtype == 'O':
-        #    x = np.array(x, dtype=self.dtype)
         if mode == 'numpy':
             return self.derivative_jacobi(x, self.alpha, self.beta, k)
         else:
             N = self.shape(False)
             V = np.zeros((x.shape[0], N))
             for i in range(N):
-                V[:, i] = self.evaluate_basis_derivative(x, i, k, output_array=V[:, i])
+                f = sp.jacobi(i, self.alpha, self.beta, xp)
+                V[:, i] = sp.lambdify(xp, f.diff(xp, k), 'mpmath')(x)
         return V
 
     def evaluate_basis_all(self, x=None, argument=0):
@@ -290,6 +293,278 @@ class Orthogonal(JacobiBase):
             x = self.mpmath_points_and_weights()[0]
         return self.vandermonde(x)
 
+class CompositeSpace(Orthogonal):
+    """Common class for all spaces based on composite bases"""
+
+    def __init__(self, N, quad="JG", bc=(0, 0), domain=(-1., 1.), dtype=float, alpha=0, beta=0,
+                 scaled=False, padding_factor=1, dealias_direct=False, coordinates=None):
+        Orthogonal.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
+                            padding_factor=padding_factor, dealias_direct=dealias_direct,
+                            alpha=alpha, beta=beta, coordinates=coordinates)
+        JacobiBase.plan(self, (int(padding_factor*N),), 0, dtype, {})
+        from shenfun.tensorproductspace import BoundaryValues
+        self._bc_basis = None
+        self._scaled = scaled
+        self.bc = BoundaryValues(self, bc=bc)
+
+    def plan(self, shape, axis, dtype, options):
+        Orthogonal.plan(self, shape, axis, dtype, options)
+        JacobiBase.plan(self, shape, axis, dtype, options)
+
+    def evaluate_basis_all(self, x=None, argument=0):
+        V = Orthogonal.evaluate_basis_all(self, x=x, argument=argument)
+        return self._composite(V, argument=argument)
+
+    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
+        V = Orthogonal.evaluate_basis_derivative_all(self, x=x, k=k, argument=argument)
+        return self._composite(V, argument=argument)
+
+    def _evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
+        if fast_transform is False:
+            SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, False)
+            return
+        assert input_array is self.backward.tmp_array
+        assert output_array is self.backward.output_array
+        input_array[:] = self.to_ortho(input_array, output_array)
+        Orthogonal._evaluate_expansion_all(self, input_array, output_array, x, fast_transform)
+
+    def _evaluate_scalar_product(self, fast_transform=True):
+        output = self.scalar_product.tmp_array
+        if fast_transform is False:
+            SpectralBase._evaluate_scalar_product(self)
+            output[self.sl[slice(-(self.N-self.dim()), None)]] = 0
+            return
+        Orthogonal._evaluate_scalar_product(self, True)
+        K = self.stencil_matrix(self.shape(False))
+        w0 = output.copy()
+        output = K.matvec(w0, output, axis=self.axis)
+
+    @property
+    def is_orthogonal(self):
+        return False
+
+    @property
+    def has_nonhomogeneous_bcs(self):
+        return self.bc.has_nonhomogeneous_bcs()
+
+    def is_scaled(self):
+        """Return True if scaled basis is used, otherwise False"""
+        return self._scaled
+
+    def stencil_matrix(self, N=None):
+        """Matrix describing the linear combination of orthogonal basis
+        functions for the current basis.
+
+        Parameters
+        ----------
+        N : int, optional
+            The number of quadrature points
+        """
+        raise NotImplementedError
+
+    def _composite(self, V, argument=0):
+        """Return Vandermonde matrix V adjusted for basis composition
+
+        Parameters
+        ----------
+        V : Vandermonde type matrix
+        argument : int
+            Zero for test and 1 for trialfunction
+
+        """
+        P = np.zeros_like(V)
+        P[:] = V * self.stencil_matrix(V.shape[1]).diags().T
+        if argument == 1: # if trial function
+            P[:, slice(-(self.N-self.dim()), None)] = self.get_bc_basis()._composite(V)
+        return P
+
+    def sympy_basis(self, i=0, x=xp):
+        assert i < self.N
+        if i < self.dim():
+            row = self.stencil_matrix().diags().getrow(i)
+            f = 0
+            for j, val in zip(row.indices, row.data):
+                f += sp.nsimplify(val)*Orthogonal.sympy_basis(self, i=j, x=x)
+        else:
+            f = self.get_bc_basis().sympy_basis(i=i-self.dim(), x=x)
+        return f
+
+    def to_ortho(self, input_array, output_array=None):
+        if output_array is None:
+            output_array = np.zeros_like(input_array)
+        else:
+            output_array.fill(0)
+        s = [np.newaxis]*self.dimensions
+        for key, val in self.stencil_matrix().items():
+            M = self.N if key >= 0 else self.dim()
+            s0 = slice(max(0, -key), min(self.dim(), M-max(0, key)))
+            Q = s0.stop-s0.start
+            s1 = slice(max(0, key), max(0, key)+Q)
+            s[self.axis] = slice(0, Q)
+            output_array[self.sl[s1]] += val[tuple(s)]*input_array[self.sl[s0]]
+        if self.has_nonhomogeneous_bcs:
+            self.bc.add_to_orthogonal(output_array, input_array)
+        return output_array
+
+    def evaluate_basis(self, x, i=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        if i < self.dim():
+            row = self.stencil_matrix().diags().getrow(i)
+            w0 = np.zeros_like(output_array)
+            output_array.fill(0)
+            for j, val in zip(row.indices, row.data):
+                output_array[:] += val*Orthogonal.evaluate_basis(self, x, i=j, output_array=w0)
+        else:
+            assert i < self.N
+            output_array = self.get_bc_basis().evaluate_basis(x, i=i-self.dim(), output_array=output_array)
+        return output_array
+
+    def evaluate_basis_derivative(self, x, i=0, k=0, output_array=None):
+        x = np.atleast_1d(x)
+        if output_array is None:
+            output_array = np.zeros(x.shape)
+        if i < self.dim():
+            row = self.stencil_matrix().diags().getrow(i)
+            w0 = np.zeros_like(output_array)
+            output_array.fill(0)
+            for j, val in zip(row.indices, row.data):
+                output_array[:] += val*Orthogonal.evaluate_basis_derivative(self, x, i=j, k=k, output_array=w0)
+        else:
+            assert i < self.N
+            output_array = self.get_bc_basis().evaluate_basis_derivative(x, i=i-self.dim(), k=k, output_array=output_array)
+        return output_array
+
+class Phi1(CompositeSpace):
+    def __init__(self, N, quad="JG", bc=(0., 0.), domain=(-1., 1.), dtype=float, scaled=False,
+                 padding_factor=1, dealias_direct=False, alpha=0, beta=0, coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                alpha=alpha, beta=beta, coordinates=coordinates)
+        self.b0n = sp.simplify(b(alpha, beta, n+1, n) / h(alpha, beta, n, 0))
+        if not alpha == beta:
+            self.b1n = sp.simplify(b(alpha, beta, n+1, n+1) / h(alpha, beta, n+1, 0))
+        self.b2n = sp.simplify(b(alpha, beta, n+1, n+2) / h(alpha, beta, n+2, 0))
+
+    @staticmethod
+    def boundary_condition():
+        return 'Dirichlet'
+
+    @staticmethod
+    def short_name():
+        return 'P1'
+
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        k = np.arange(N)
+        d0, d2 = np.zeros(N), np.zeros(N-2)
+        d0[:-2] = sp.lambdify(n, self.b0n)(k[:N-2])
+        d2[:] = sp.lambdify(n, self.b2n)(k[:N-2])
+        if not self.alpha == self.beta:
+            d1 = np.zeros(N-1)
+            d1[:-1] = sp.lambdify(n, self.b1n)(k[:N-2])
+            return SparseMatrix({0: d0, 1: d1, 2: d2}, (N, N))
+        return SparseMatrix({0: d0, 2: d2}, (N, N))
+
+    def slice(self):
+        return slice(0, self.N-2)
+
+    def get_bc_basis(self):
+        if self._bc_basis:
+            return self._bc_basis
+        self._bc_basis = BCDirichlet(self.N, quad=self.quad, domain=self.domain,
+                                     scaled=self._scaled, coordinates=self.coors.coordinates)
+        return self._bc_basis
+
+class Phi2(CompositeSpace):
+    def __init__(self, N, quad="JG", bc=(0, 0, 0, 0), domain=(-1., 1.), dtype=float, scaled=False,
+                 padding_factor=1, dealias_direct=False, alpha=0, beta=0, coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                alpha=alpha, beta=beta, coordinates=coordinates)
+        self.b0n = sp.simplify(matpow(b, 2, alpha, beta, n+2, n) / h(alpha, beta, n, 0))
+        self.b1n = None
+        self.b2n = sp.simplify(matpow(b, 2, alpha, beta, n+2, n+2) / h(alpha, beta, n+2, 0))
+        self.b3n = None
+        self.b4n = sp.simplify(matpow(b, 2, alpha, beta, n+2, n+4) / h(alpha, beta, n+4, 0))
+        if not alpha == beta:
+            self.b1n = sp.simplify(matpow(b, 2, alpha, beta, n+2, n+1) / h(alpha, beta, n+1, 0))
+            self.b3n = sp.simplify(matpow(b, 2, alpha, beta, n+2, n+3) / h(alpha, beta, n+3, 0))
+
+    @staticmethod
+    def boundary_condition():
+        return 'Biharmonic'
+
+    @staticmethod
+    def short_name():
+        return 'P2'
+
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        k = np.arange(N)
+        d0, d2, d4 = np.zeros(N), np.zeros(N-2), np.zeros(N-4)
+        d0[:-4] = sp.lambdify(n, self.b0n)(k[:N-4])
+        d2[:-2] = sp.lambdify(n, self.b2n)(k[:N-4])
+        d4[:] = sp.lambdify(n, self.b4n)(k[:N-4])
+        if self.b1n:
+            d1, d3 = np.zeros(N-1), np.zeros(N-3)
+            d1[:-3] = sp.lambdify(n, self.b1n)(k[:N-4])
+            d3[:-1] = sp.lambdify(n, self.b3n)(k[:N-4])
+            return SparseMatrix({0: d0, 1: d1, 2: d2, 3: d3, 4: d4}, (N, N))
+        return SparseMatrix({0: d0, 2: d2, 4: d4}, (N, N))
+
+    def slice(self):
+        return slice(0, self.N-4)
+
+    def get_bc_basis(self):
+        if self._bc_basis:
+            return self._bc_basis
+        self._bc_basis = BCBiharmonic(self.N, quad=self.quad, domain=self.domain,
+                                      scaled=self._scaled, coordinates=self.coors.coordinates)
+        return self._bc_basis
+
+class CompactDirichlet(CompositeSpace):
+    def __init__(self, N, quad="JG", bc=(0., 0.), domain=(-1., 1.), dtype=float, scaled=False,
+                 padding_factor=1, dealias_direct=False, alpha=0, beta=0, coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                alpha=alpha, beta=beta, coordinates=coordinates)
+        self.b0n = sp.simplify(b(alpha, beta, n+1, n) * (h(alpha, beta, n+1, 1) / h(alpha, beta, n, 0)))
+        self.b1n = None
+        self.b2n = sp.simplify(b(alpha, beta, n+1, n+2) * (h(alpha, beta, n+1, 1)/ h(alpha, beta, n+2, 0)))
+        if self.alpha == self.beta:
+            self.b1n = sp.simplify(b(alpha, beta, n+1, n+1) * (h(alpha, beta, n+1, 1)/ h(alpha, beta, n+1, 0)))
+
+    @staticmethod
+    def boundary_condition():
+        return 'Dirichlet'
+
+    @staticmethod
+    def short_name():
+        return 'CD'
+
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        k = np.arange(N)
+        d0, d2 = np.zeros(N), np.zeros(N-2)
+        d0[:-2] = sp.lambdify(n, self.b0n)(k[:N-2])
+        d2[:] = sp.lambdify(n, self.b2n)(k[:N-2])
+        if self.b1n:
+            d1 = np.zeros(N-1)
+            d1[:-1] = sp.lambdify(n, self.b1n)(k[:N-2])
+            return SparseMatrix({0: d0, 1: d1, 2: d2}, (N, N))
+        return SparseMatrix({0: d0, 2: d2}, (N, N))
+
+    def slice(self):
+        return slice(0, self.N-2)
+
+    def get_bc_basis(self):
+        if self._bc_basis:
+            return self._bc_basis
+        self._bc_basis = BCDirichlet(self.N, quad=self.quad, domain=self.domain,
+                                     scaled=self._scaled, coordinates=self.coors.coordinates)
+        return self._bc_basis
 
 class ShenDirichlet(JacobiBase):
     """Jacobi function space for Dirichlet boundary conditions

@@ -71,7 +71,7 @@ from shenfun import *
 N = 40
 V0 = FunctionSpace(N, 'C', basis='ShenDirichlet')
 V1 = FunctionSpace(N, 'C', basis='Heinrichs')
-V2 = FunctionSpace(N, 'C', basis='DirichletU')
+V2 = FunctionSpace(N, 'U', basis='CompactDirichlet')
 !ec
 
 where $V0 = \text{span}\{\phi_k\}_{k=0}^{N-3}$,
@@ -165,9 +165,9 @@ def main(N, test, trial, alpha=1, method=0, ue=sp.sin(2*sp.pi*sp.cos(2*sp.pi*x))
     not difficult.
 
     """
-    bases = {0: 'ShenDirichlet', 1: 'Heinrichs', 2: 'DirichletU'}
-    test = FunctionSpace(N, 'C', basis=bases[test])
-    trial= FunctionSpace(N, 'C', basis=bases[trial], bc=(0, 0))
+    bases = {0: ('C', 'ShenDirichlet'), 1: ('C', 'Heinrichs'), 2: ('U', 'CompactDirichlet')}
+    test = FunctionSpace(N, bases[test][0], basis=bases[test][1])
+    trial= FunctionSpace(N, bases[trial][0], basis=bases[trial][1])
     # Check that boundary conditions are homogeneous
     assert abs(ue.subs(x, -1)) < 1e-8 and abs(ue.subs(x, 1)) < 1e-8
     u = TrialFunction(trial)

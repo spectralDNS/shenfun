@@ -20,7 +20,9 @@ from . import fastgl
 __all__ = ['LegendreBase',
            'Orthogonal',
            'ShenDirichlet',
+           'Phi1',
            'ShenBiharmonic',
+           'Phi2',
            'ShenNeumann',
            'ShenBiPolar',
            'ShenBiPolar0',
@@ -278,6 +280,19 @@ class Orthogonal(LegendreBase):
             return output_array
         return input_array
 
+    def _evaluate_scalar_product(self, fast_transform=False):
+        input_array = self.scalar_product.input_array
+        output_array = self.scalar_product.tmp_array
+        if fast_transform is False:
+            SpectralBase._evaluate_scalar_product(self)
+            return
+        M = self.shape(False)
+        xj, wj = self.points_and_weights(M)
+        assert input_array.ndim == 1, 'Use fast_transform=False'
+        from shenfun.optimization.numba import legendre as legn
+        legn.legendre_orthogonal_scalar_product(xj, wj, input_array, output_array)
+
+
 class CompositeSpace(Orthogonal):
     """Common class for all spaces based on composite bases"""
 
@@ -312,26 +327,16 @@ class CompositeSpace(Orthogonal):
         input_array[:] = self.to_ortho(input_array, output_array)
         Orthogonal._evaluate_expansion_all(self, input_array, output_array, x, fast_transform)
 
-    def _evaluate_scalar_product(self, fast_transform=False):
+    def _evaluate_scalar_product(self, fast_transform=True):
         output = self.scalar_product.tmp_array
         if fast_transform is False:
             SpectralBase._evaluate_scalar_product(self)
             output[self.sl[slice(-(self.N-self.dim()), None)]] = 0
             return
         Orthogonal._evaluate_scalar_product(self, fast_transform)
-        nbcs = self.N-self.dim()
-        s = [np.newaxis]*self.dimensions
+        K = self.stencil_matrix(self.shape(False))
         w0 = output.copy()
-        output.fill(0)
-        for key, val in self.stencil_matrix(self.shape(False)).items():
-            M = self.N if key >= 0 else self.dim()
-            s1 = slice(max(0, -key), M-max(0, key))
-            Q = s1.stop-s1.start
-            s2 = self.sl[slice(max(0, key), Q+max(0, key))]
-            sk = self.sl[s1]
-            s[self.axis] = slice(0, Q)
-            output[sk] += val[tuple(s)]*w0[s2]
-        output[self.sl[slice(-nbcs, None)]] = 0
+        output[:] = K.matvec(output, w0, axis=self.axis)
 
     @property
     def is_orthogonal(self):
@@ -545,6 +550,76 @@ class ShenDirichlet(CompositeSpace):
                                      scaled=self._scaled, coordinates=self.coors.coordinates)
         return self._bc_basis
 
+class Phi1(CompositeSpace):
+    r"""Function space for Dirichlet boundary conditions
+
+    u(-1)=a and u(1)=b.
+
+    .. math::
+
+        \phi_k = \frac{1}{2}(L_k-L_{k+2})
+
+    Parameters
+    ----------
+        N : int
+            Number of quadrature points
+        quad : str, optional
+            Type of quadrature
+
+            - LG - Legendre-Gauss
+            - GL - Legendre-Gauss-Lobatto
+
+        bc : tuple of numbers
+            Boundary conditions at edges of domain
+        domain : 2-tuple of floats, optional
+            The computational domain
+        scaled : bool, optional
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
+
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
+    """
+    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float, scaled=False,
+                 padding_factor=1, dealias_direct=False, coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
+
+    @staticmethod
+    def boundary_condition():
+        return 'Dirichlet'
+
+    @staticmethod
+    def short_name():
+        return 'P1'
+
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        d = np.ones(N)/2
+        d[-2:] = 0
+        return SparseMatrix({0: d, 2: -d[:-2]}, (N, N))
+
+    def slice(self):
+        return slice(0, self.N-2)
+
+    def get_bc_basis(self):
+        if self._bc_basis:
+            return self._bc_basis
+        self._bc_basis = BCDirichlet(self.N, quad=self.quad, domain=self.domain,
+                                     scaled=self._scaled, coordinates=self.coors.coordinates)
+        return self._bc_basis
+
 class ShenNeumann(CompositeSpace):
     """Function space for Neumann boundary conditions
 
@@ -658,7 +733,9 @@ class ShenBiharmonic(CompositeSpace):
             - GL - Legendre-Gauss-Lobatto
         bc : 4-tuple of numbers, optional
             The values of the 4 boundary conditions at x=(-1, 1).
-            The two Dirichlet first and then the Neumann.
+            The two conditions on x=-1 first, and then x=1.
+            With (a, b, c, d) corresponding to
+            bc = {'left': [('D', a), ('N', b)], 'right': [('D', c), ('N', d)]}
         domain : 2-tuple of floats, optional
             The computational domain
         padding_factor : float, optional
@@ -697,6 +774,79 @@ class ShenBiharmonic(CompositeSpace):
         d[-4:] = 0
         k = np.arange(N)
         return SparseMatrix({0: d, 2: -2*(2*k[:-2]+5)/(2*k[:-2]+7), 4: (2*k[:-4]+3)/(2*k[:-4]+7)}, (N, N))
+
+    def slice(self):
+        return slice(0, self.N-4)
+
+    def get_bc_basis(self):
+        if self._bc_basis:
+            return self._bc_basis
+        self._bc_basis = BCBiharmonic(self.N, quad=self.quad, domain=self.domain,
+                                      coordinates=self.coors.coordinates)
+        return self._bc_basis
+
+class Phi2(CompositeSpace):
+    r"""Function space for biharmonic basis with both Dirichlet and
+    Neumann boundary conditions
+
+    u(-1)=a, u(1)=c, u'(-1)=b, u'(1)=d.
+
+    .. math::
+
+        \phi_k &= (L_k - \frac{2(2k+5)}{2k+7}L_{k+2} + \frac{2k+3}{2k+7}L_{k+4})/(2 (2k+3)), \\
+               &= \frac{(2k+5)k!(1-x^2)^2}{2(m+4)!} L''_{k+2}
+
+    Parameters
+    ----------
+        N : int
+            Number of quadrature points
+        quad : str, optional
+            Type of quadrature
+
+            - LG - Legendre-Gauss
+            - GL - Legendre-Gauss-Lobatto
+        bc : 4-tuple of numbers, optional
+            The values of the 4 boundary conditions at x=(-1, 1).
+            The two on x=-1 first and then x=1. (a, b, c, d)
+        domain : 2-tuple of floats, optional
+            The computational domain
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
+
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
+    """
+    def __init__(self, N, quad="LG", bc=(0, 0, 0, 0), domain=(-1., 1.), padding_factor=1,
+                 scaled=False, dealias_direct=False, dtype=float, coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
+
+    @staticmethod
+    def boundary_condition():
+        return 'Biharmonic'
+
+    @staticmethod
+    def short_name():
+        return 'P2'
+
+    def stencil_matrix(self, N=None):
+        N = self.N if N is None else N
+        d = np.ones(N, dtype=int)
+        d[-4:] = 0
+        k = np.arange(N)
+        sc = 1/(2*(2*k+3))
+        return SparseMatrix({0: d*sc, 2: -2*(2*k[:-2]+5)/(2*k[:-2]+7)*sc[:-2], 4: (2*k[:-4]+3)/(2*k[:-4]+7)*sc[:-4]}, (N, N))
 
     def slice(self):
         return slice(0, self.N-4)
@@ -846,7 +996,7 @@ class UpperDirichlet(CompositeSpace):
 class ShenBiPolar(CompositeSpace):
     r"""Function space for the Biharmonic equation with boundary conditions
 
-    u(-1)=a, u(1)=b, u'(-1)=c, u'(1)=d.
+    u(-1)=a, u(1)=c, u'(-1)=b, u'(1)=d.
 
     The basis function is
 
@@ -865,7 +1015,7 @@ class ShenBiPolar(CompositeSpace):
             - GL - Legendre-Gauss-Lobatto
         bc : 4-tuple of numbers, optional
             The values of the 4 boundary conditions at x=(-1, 1).
-            The two Dirichlet first and then the Neumann.
+            The two on x=-1 first and then x=1. (a, b, c, d)
         domain : 2-tuple of floats, optional
             The computational domain
         padding_factor : float, optional
@@ -1018,7 +1168,7 @@ class DirichletNeumann(CompositeSpace):
             - GL - Legendre-Gauss-Lobatto
 
         bc : tuple of numbers
-            Boundary conditions at edges of domain
+            Boundary conditions at edges of domain. Dirichlet first.
         domain : 2-tuple of floats, optional
             The computational domain
         scaled : bool, optional
@@ -1144,7 +1294,7 @@ class DirichletNeumannDirichlet(CompositeSpace):
     """Function space for biharmonic basis with merely three boundary
     conditions
 
-    u(-1)=a, u(1)=b and u'(-1)=c
+    u(-1)=a, u(1)=c and u'(-1)=b
 
     Parameters
     ----------
@@ -1156,8 +1306,8 @@ class DirichletNeumannDirichlet(CompositeSpace):
             - LG - Legendre-Gauss
             - GL - Legendre-Gauss-Lobatto
         3-tuple of numbers, optional
-            The values of the 3 boundary conditions at x=(-1, 1).
-            The two Dirichlet first and then the Neumann.
+            The values of the 3 boundary conditions.
+            The two at x=-1 first and then the Neumann. (a, b, c)
         domain : 2-tuple of floats, optional
             The computational domain
         padding_factor : float, optional
@@ -1226,7 +1376,7 @@ class NeumannDirichlet(CompositeSpace):
             - GL - Legendre-Gauss-Lobatto
 
         bc : tuple of numbers
-            Boundary conditions at edges of domain
+            Boundary conditions at edges of domain. Neumann first.
         domain : 2-tuple of floats, optional
             The computational domain
         scaled : bool, optional
@@ -1298,7 +1448,7 @@ class UpperDirichletNeumann(CompositeSpace):
             - GL - Legendre-Gauss-Lobatto
 
         bc : tuple of numbers
-            Boundary conditions at edges of domain
+            Boundary conditions at edges of domain, Dirichlet first.
         domain : 2-tuple of floats, optional
             The computational domain
         scaled : bool, optional
@@ -1485,8 +1635,8 @@ class BCBiharmonic(BCBase):
 
     def stencil_matrix(self, N=None):
         return sp.Rational(1, 30)*np.array([[15, -18, 0, 3],
-                                            [15, 18, 0, -3],
                                             [5, -3, -5, 3],
+                                            [15, 18, 0, -3],
                                             [-5, -3, 5, 3]])
 
 class BCBeamFixedFree(BCBase):

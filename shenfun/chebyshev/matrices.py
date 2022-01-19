@@ -21,7 +21,6 @@ SB = ShenBiharmonic
 SN = ShenNeumann
 CN = CombinedShenNeumann
 MN = MikNeumann
-DU = DirichletU
 UD = UpperDirichlet
 LD = LowerDirichlet
 DN = DirichletNeumann
@@ -95,7 +94,6 @@ SB = bases.ShenBiharmonic
 SN = bases.ShenNeumann
 CN = bases.CombinedShenNeumann
 MN = bases.MikNeumann
-DU = bases.DirichletU
 UD = bases.UpperDirichlet
 LD = bases.LowerDirichlet
 DN = bases.DirichletNeumann
@@ -2140,6 +2138,8 @@ class BSBBCBmat(SpectralMatrix):
     and :math:`\psi_j` is the Biharmonic boundary basis and
     :math:`\phi_k` is the Shen Biharmonic basis function.
 
+    #FIXME Reordered bases of boundary basis
+
     """
     def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], SB)
@@ -2217,10 +2217,10 @@ mat = _ChebMatDict({
     ((SN, 0), (CN, 0)): BSNCNmat,
     ((SD, 0), (HH, 0)): BSDHHmat,
     ((SD, 0), (HH, 2)): ASDHHmat,
-    ((DU, 0), (SD, 2), (-1, 1), (1-x**2)): functools.partial(ADUSDmat, measure=(1-x**2)),
-    ((DU, 0), (SD, 0), (-1, 1), (1-x**2)): functools.partial(BDUSDmat, measure=(1-x**2)),
-    ((DU, 0), (SN, 2), (-1, 1), (1-x**2)): functools.partial(ADUSNmat, measure=(1-x**2)),
-    ((DU, 0), (SN, 0), (-1, 1), (1-x**2)): functools.partial(BDUSNmat, measure=(1-x**2)),
+    #((DU, 0), (SD, 2), (-1, 1), (1-x**2)): functools.partial(ADUSDmat, measure=(1-x**2)),
+    #((DU, 0), (SD, 0), (-1, 1), (1-x**2)): functools.partial(BDUSDmat, measure=(1-x**2)),
+    #((DU, 0), (SN, 2), (-1, 1), (1-x**2)): functools.partial(ADUSNmat, measure=(1-x**2)),
+    #((DU, 0), (SN, 0), (-1, 1), (1-x**2)): functools.partial(BDUSNmat, measure=(1-x**2)),
     ((SB, 0), (SB, 4)): SSBSBmat,
     ((SD, 0), (SN, 1)): CSDSNmat,
     ((SB, 0), (SD, 1)): CSBSDmat,
@@ -2232,7 +2232,7 @@ mat = _ChebMatDict({
     ((SD, 0), (SB, 1)): CSDSBmat,
     ((SD, 0), (T,  1)): CSDTmat,
     ((SD, 0), (BCD, 0)): BSDBCDmat,
-    ((SB, 0), (BCB, 0)): BSBBCBmat,
+    #((SB, 0), (BCB, 0)): BSBBCBmat, # reordered bases
     })
 
 #mat = _ChebMatDict({})

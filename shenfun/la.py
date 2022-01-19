@@ -641,6 +641,53 @@ class TwoDMA(BandedMatrixSolver):
     def Solve(u, data, axis=0):
         raise NotImplementedError('Only optimized version')
 
+class ThreeDMA(BandedMatrixSolver):
+    """3-diagonal matrix solver - all diagonals upper
+
+    Parameters
+    ----------
+    mat : SparseMatrix
+        3-diagonal matrix with diagonals in offsets 0, 2, 4
+
+    """
+    def __init__(self, mat):
+        BandedMatrixSolver.__init__(self, mat)
+        self._inner_arg = self._lu.data
+
+    def apply_constraints(self, b, constraints, axis=0):
+        if len(constraints) > 0:
+            assert len(constraints) == 1
+            assert constraints[0][0] == 0, 'Can only fix first row of TwoDMA'
+            self._lu.diagonal(0)[0] = 1
+            self._lu.diagonal(2)[0] = 0
+            self._lu.diagonal(4)[0] = 0
+            s = [slice(None)]*len(b.shape)
+            s[axis] = 0
+            b[tuple(s)] = constraints[0][1]
+        return b
+
+    def perform_lu(self):
+        return self._lu
+
+    @staticmethod
+    @optimizer
+    def inner_solve(u, data):
+        d = data[0, :]
+        u1 = data[1, 2:]
+        u2 = data[1, 4:]
+        n = d.shape[0]
+        u[n-1] = u[n-1]/d[n-1]
+        u[n-2] = u[n-2]/d[n-2]
+        u[n-3] = (u[n-3]-u1[n-3]*u[n-1])/d[n-3]
+        u[n-4] = (u[n-4]-u1[n-4]*u[n-2])/d[n-4]
+        for i in range(n - 5, -1, -1):
+            u[i] = (u[i] - u1[i]*u[i+2] - u2[i]*u[i+4])/d[i]
+
+    @staticmethod
+    @optimizer
+    def Solve(u, data, axis=0):
+        raise NotImplementedError('Only optimized version')
+
 class Solve(SparseMatrixSolver):
     """Generic solver class for SparseMatrix
 
@@ -913,7 +960,8 @@ class Solver2D:
         if u is None:
             u = b
         else:
-            assert u.shape == b.shape
+            pass
+            #assert u.shape == b.shape
 
         if len(self.bc_mats) > 0:
             u.set_boundary_dofs()

@@ -1,6 +1,7 @@
 import numpy as np
 import numba as nb
 from .diagma import *
+from .threedma import *
 from .twodma import *
 from .tdma import *
 from .pdma import *

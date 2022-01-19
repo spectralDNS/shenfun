@@ -132,7 +132,7 @@ uN2 = project(Dx(uN, 0, 2), SN)
 uN1
 !ec
 
-where `uN1` $=u_N^{(1)}$ and `uN2` $u_N^{(2)}$.
+where `uN1` $=u_N^{(1)}$ and `uN2` $=u_N^{(2)}$.
 Alternatively, doing all the work that goes on under the hood
 
 !bc pycod
@@ -162,7 +162,7 @@ just to see that they are upper triangular. We now ask is there a better and fas
 way to get `uN1` and `uN2`? A better approach would involve only sparse
 matrices, like the diagonal $(d^{(0)}_{kj})$. But how do we get there?
 Most textbooks on spectral methods use fast recursive methods to
-find $\{\hat{u}_N^{(n)}\}$. Here we will show a fast Galerkin approach.
+find the coefficients $\{\hat{u}_k^{(n)}\}$. Here we will show a fast Galerkin approach.
 
 It turns out that a simple change of test space/function will be sufficient.
 Let us first replace the test space $S_N$ with
@@ -174,7 +174,7 @@ space with $N+2$ quadrature points in order to get a square matrix system.
 The method now becomes classified as Chebyshev-Petrov-Galerkin, as we
 wish to find $u_N^{(1)} \in S_N$ such that
 !bt
-   (u_N^{(n)}-u^{(n)}, v)_{\omega^{-1/2}} = 0, \quad \forall v \in D_{N+2}.
+   (u_N^{(1)}-u^{(1)}, v)_{\omega^{-1/2}} = 0, \quad \forall v \in D_{N+2}.
 !et
 
 The implementation is straightforward

@@ -30,6 +30,7 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
         Choose one of
 
         - ``Chebyshev`` or ``C``,
+        - ``Chebyshevu`` or ``U``,
         - ``Legendre`` or ``L``,
         - ``Fourier`` or ``F``,
         - ``Laguerre`` or ``La``,
@@ -81,19 +82,28 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
           - GL - Chebyshev-Gauss-Lobatto
           - GC - Chebyshev-Gauss
 
+        * For family=Chebyshevu:
+
+          - GU - Chebyshevu-Gauss
+          - GC - Chebyshev-Gauss
+
         * For family=Legendre:
 
           - LG - Legendre-Gauss
           - GL - Legendre-Gauss-Lobatto
+
         * For family=Laguerre:
 
           - LG - Laguerre-Gauss
+
         * For family=Hermite:
 
           - HG - Hermite-Gauss
+
         * For family=Jacobi:
 
           - JG - Jacobi-Gauss
+
     domain : two-tuple of floats, optional
         The computational domain
     scaled : bool
@@ -149,8 +159,8 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
                     bcs['right'] = [('D', bc[1])]
 
             if len(bc) == 4:
-                bcs['left'] = [('D', bc[0]), ('N', bc[2])]
-                bcs['right'] = [('D', bc[1]), ('N', bc[3])]
+                bcs['left'] = [('D', bc[0]), ('N', bc[1])]
+                bcs['right'] = [('D', bc[2]), ('N', bc[3])]
             key = ['L'+bci[0] for bci in bcs['left']] + ['R'+bci[0] for bci in bcs['right']]
 
         elif isinstance(bc, dict):
@@ -181,7 +191,6 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
                     else:
                         bc.append(bci[1])
                 key += ['R'+bci[0] for bci in bcs['right']]
-
         return key, tuple(bc)
 
     if family.lower() in ('fourier', 'f'):
@@ -274,6 +283,39 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
         if basis is not None:
             assert isinstance(basis, str)
             B = getattr(legendre.bases, basis)
+        else:
+            B = bases[''.join(key)]
+
+        return B(N, **par)
+
+    elif family.lower() in ('chebyshevu', 'u'):
+        from shenfun import chebyshevu
+        if quad is not None:
+            assert quad in ('GC', 'GU')
+            par['quad'] = quad
+
+        if scaled is not None:
+            assert isinstance(scaled, bool)
+            par['scaled'] = scaled
+
+        bases = {
+            '': chebyshevu.bases.Orthogonal,
+            'LDRD': chebyshevu.bases.CompactDirichlet,
+            'LDLNRDRN': chebyshevu.bases.Phi2
+        }
+
+        if isinstance(bc, (tuple, dict)):
+            key, par['bc'] = _process_bcs(bc, domain)
+
+        elif bc is None:
+            key = ''
+
+        else:
+            raise NotImplementedError
+
+        if basis is not None:
+            assert isinstance(basis, str)
+            B = getattr(chebyshevu.bases, basis)
         else:
             B = bases[''.join(key)]
 

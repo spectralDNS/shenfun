@@ -27,8 +27,8 @@ domain = (-1., 1.)
 d = 2./(domain[1]-domain[0])
 x = symbols("x", real=True)
 x_map = -1+(x-domain[0])*d
-a = 0
-b = -0
+a = 1
+b = -1
 if family == 'jacobi':
     a = 0
     b = 0
@@ -47,7 +47,7 @@ fe = aa*ue.diff(x, 4) + bb*ue.diff(x, 2) + cc*ue
 # Size of discretization
 N = int(sys.argv[-2])
 
-SD = FunctionSpace(N, family=family, bc=(a, b, 0, 0), domain=domain)
+SD = FunctionSpace(N, family=family, bc=(a, 0, b, 0), domain=domain)
 X = SD.mesh()
 u = TrialFunction(SD)
 v = TestFunction(SD)

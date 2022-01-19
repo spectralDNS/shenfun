@@ -447,7 +447,7 @@ class SparseMatrix(MutableMapping):
         Fall back on generic Solve, which is using Scipy sparse
         matrices with splu/spsolve. This is still pretty fast.
         """
-        from .la import Solve, TDMA, TDMA_O, FDMA, TwoDMA, PDMA, DiagMA
+        from .la import Solve, TDMA, TDMA_O, FDMA, TwoDMA, ThreeDMA, PDMA, DiagMA
         if len(self) == 1:
             if list(self.keys())[0] == 0:
                 return DiagMA
@@ -459,6 +459,8 @@ class SparseMatrix(MutableMapping):
                 return TDMA
             elif np.all(self.sorted_keys() == (-1, 0, 1)) and self.issymmetric:
                 return TDMA_O
+            elif np.all(self.sorted_keys() == (0, 2, 4)):
+                return ThreeDMA
         elif len(self) == 4:
             if np.all(self.sorted_keys() == (-2, 0, 2, 4)):
                 return FDMA

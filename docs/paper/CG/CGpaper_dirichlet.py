@@ -143,7 +143,7 @@ def main(N, method=0, alpha=0, returntype=0):
     basis = {0: ('ShenDirichlet', 'Heinrichs'),
              1: ('ShenDirichlet', 'ShenDirichlet'),
              2: ('Heinrichs', 'Heinrichs'),
-             3: ('DirichletU', 'ShenDirichlet'),
+             3: ('Theta1', 'ShenDirichlet'),
              4: ('Orthogonal', 'ShenDirichlet'),    # Quasi-Galerkin
              5: ('ShenDirichlet', 'ShenDirichlet'), # Legendre
              }
@@ -153,32 +153,23 @@ def main(N, method=0, alpha=0, returntype=0):
         ue = sp.sin(100*sp.pi*x)
 
     family = 'C' if method < 5 else 'L'
+    famtest = 'U' if method == 3 else family
     kw = {}
     scaled = True if method in (0, 5) else False
     if scaled:
         kw['scaled'] = True
-    ST = FunctionSpace(N, family, basis=test, **kw)
+    ST = FunctionSpace(N, famtest, basis=test, **kw)
     TS = FunctionSpace(N, family, basis=trial, **kw)
-    wt = {0: 1, 1: 1, 2: 1, 3: 1-x**2, 4: 1, 5: 1}[method]
     u = TrialFunction(TS)
     v = TestFunction(ST)
-    A = inner(v*wt, div(grad(u)))
-    B = inner(v*wt, u)
+    A = inner(v, div(grad(u)))
+    B = inner(v, u)
 
     if method == 4:
         # Quasi
         Q2 = chebyshev.quasi.QIGmat(N)
         A = Q2*A
         B = Q2*B
-    if method == 3:
-        k = np.arange(N-2)
-        K = SparseMatrix({0: 1/((k+1)*(k+2)*2)}, (N-2, N-2))
-        A[0] *= K[0]
-        A[2] *= K[0][:-2]
-        B[-2] *= K[0][2:]
-        B[0] *= K[0]
-        B[2] *= K[0][:-2]
-        B[4] *= K[0][:-4]
 
     if returntype == 0:
         M = alpha*B.diags()-A.diags()
@@ -201,15 +192,10 @@ def main(N, method=0, alpha=0, returntype=0):
         fe = alpha*ue - ue.diff(x, 2)
         f_hat = Function(ST)
         fj = Array(ST, buffer=fe)
-        if wt != 1:
-            fj *= np.sin((np.arange(N)+0.5)*np.pi/N)**2
         f_hat = ST.scalar_product(fj, f_hat, fast_transform=True)
 
         if method == 4:
             f_hat[:-2] = Q2.diags('csc')*f_hat
-
-        if method == 3:
-            f_hat[:-2] *= K[0]
 
         sol = get_solver(A, B, alpha, method)
         u_hat = Function(TS)

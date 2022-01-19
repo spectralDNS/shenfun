@@ -1,5 +1,6 @@
-.. Automatically generated Sphinx-extended reStructuredText file from DocOnce source
-   (https://github.com/hplgit/doconce/)
+.. File automatically generated using DocOnce (https://github.com/doconce/doconce/):
+
+.. doconce format sphinx polarhelmholtz.do.txt --sphinx_preserve_bib_keys
 
 .. Document title:
 

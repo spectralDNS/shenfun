@@ -1,5 +1,6 @@
-.. Automatically generated Sphinx-extended reStructuredText file from DocOnce source
-   (https://github.com/hplgit/doconce/)
+.. File automatically generated using DocOnce (https://github.com/doconce/doconce/):
+
+.. doconce format sphinx rayleighbenard.do.txt --sphinx_preserve_bib_keys
 
 .. Document title:
 
@@ -524,13 +525,13 @@ some model constants
     solver = []
     for rk in range(3):
         mats = inner(div(grad(u)) - ((a[rk]+b[rk])*nu*dt/2.)*div(grad(div(grad(u)))), v)
-        solver.append(chebyshev.la.Biharmonic(*mats))
+        solver.append(chebyshev.la.Biharmonic(mats))
 
 Notice the one-to-one resemblance with the left hand side of :eq:`eq:rk3stagesvar`, where :math:`\psi^{k+1}`
 now has been replaced by :math:`\nabla^2 u` (or ``div(grad(u))``) from Eq. :eq:`eq:rb:u2`.
 For each stage we assemble a list of tensor product matrices ``mats``, and in ``chebyshev.la``
 there is available a very fast direct solver for exactly this type of (biharmonic)
-matrices. The solver is created with ``chebyshev.la.Biharmonic(*mats)``, and here
+matrices. The solver is created with ``chebyshev.la.Biharmonic(mats)``, and here
 the necessary LU-decomposition is carried out for later use and reuse on each time step.
 
 The right hand side depends on the solution on the previous stage, and the
@@ -619,7 +620,7 @@ each RK stage.
     solver0 = []
     for rk in range(3):
         mats0 = inner(v0, 2./(nu*(a[rk]+b[rk])*dt)*u0 - div(grad(u0)))
-        solver0.append(chebyshev.la.Helmholtz(*mats0))
+        solver0.append(chebyshev.la.Helmholtz(mats0))
     
     # Allocate work arrays and variables
     u00 = Function(VD0)
@@ -803,7 +804,7 @@ the temperature equation these boundary matrices are extracted using
     for rk in range(3):
         matsT = inner(q, 2./(kappa*(a[rk]+b[rk])*dt)*p - div(grad(p)))
         lhs_mat.append(extract_bc_matrices([matsT]))
-        solverT.append(chebyshev.la.Helmholtz(*matsT))
+        solverT.append(chebyshev.la.Helmholtz(matsT))
 
 The boundary contribution to the right hand side is computed for each
 stage as

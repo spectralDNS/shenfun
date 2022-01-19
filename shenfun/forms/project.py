@@ -116,7 +116,8 @@ def project(uh, T, output_array=None, fill=True, use_to_ortho=True, use_assign=T
             output_array = T.forward(uh, output_array)
             return output_array
         else:
-            raise RuntimeError('Provided Array not the same shape as space projected into')
+            uh = uh.forward()
+            #raise RuntimeError('Provided Array not the same shape as space projected into')
 
     assert isinstance(uh, (Expr, BasisFunction))
 

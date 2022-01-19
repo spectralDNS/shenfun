@@ -23,6 +23,22 @@ ctypedef void (*funcT)(T*, int, real_t*, int, int)
 
 # XXX_Solve - Solve multidimensional array u along axis
 
+def ThreeDMA_Solve(u, data, axis=0):
+    if u.dtype.char in 'FDG':
+        if u.ndim == 1:
+            ThreeDMA_inner_solve[np.complex128_t](u, data)
+        elif u.ndim == 2:
+            Solve_axis_2D[np.complex128_t](u, data, ThreeDMA_inner_solve_ptr, axis, False)
+        elif u.ndim == 3:
+            Solve_axis_3D[np.complex128_t](u, data, ThreeDMA_inner_solve_ptr, axis, False)
+    else:
+        if u.ndim == 1:
+            ThreeDMA_inner_solve[np.float64_t](u, data)
+        elif u.ndim == 2:
+            Solve_axis_2D[np.float64_t](u, data, ThreeDMA_inner_solve_ptr, axis, False)
+        elif u.ndim == 3:
+            Solve_axis_3D[np.float64_t](u, data, ThreeDMA_inner_solve_ptr, axis, False)
+
 def TwoDMA_Solve(u, data, axis=0):
     if u.dtype.char in 'FDG':
         if u.ndim == 1:
@@ -198,6 +214,8 @@ cdef innerfunc func_from_name(fun_name) except NULL:
         return TDMA_O_inner_solve_ptr
     elif fun_name == "FDMA_inner_solve":
         return FDMA_inner_solve_ptr
+    elif fun_name == "ThreeDMA_inner_solve":
+        return ThreeDMA_inner_solve_ptr
     elif fun_name == "TwoDMA_inner_solve":
         return TwoDMA_inner_solve_ptr
     elif fun_name == "DiagMA_inner_solve":
@@ -420,6 +438,23 @@ cdef void TwoDMA_inner_solve_ptr(T* u, int st, real_t* data, int m0, int m1):
     u[(n-2)*st] = u[(n-2)*st]/d[n-2]
     for i in range(n - 3, -1, -1):
         u[i*st] = (u[i*st] - u1[i]*u[(i+2)*st])/d[i]
+
+cpdef ThreeDMA_inner_solve(T[:] u, real_t[:, ::1] data):
+    ThreeDMA_inner_solve_ptr[T](&u[0], u.strides[0]/u.itemsize, &data[0, 0], data.shape[0], data.shape[1])
+
+@cython.cdivision(True)
+cdef void ThreeDMA_inner_solve_ptr(T* u, int st, real_t* data, int m0, int m1):
+    cdef:
+        int i, n = m1
+        real_t* d = &data[0]
+        real_t* u1 = &data[m1+2]
+        real_t* u2 = &data[m1+4]
+    u[(n-1)*st] = u[(n-1)*st]/d[n-1]
+    u[(n-2)*st] = u[(n-2)*st]/d[n-2]
+    u[(n-3)*st] = (u[(n-3)*st]-u1[n-3]*u[(n-1)*st])/d[n-3]
+    u[(n-4)*st] = (u[(n-4)*st]-u1[n-4]*u[(n-2)*st])/d[n-4]
+    for i in range(n - 5, -1, -1):
+        u[i*st] = (u[i*st] - u1[i]*u[(i+2)*st] - u2[i]*u[(i+4)*st])/d[i]
 
 cpdef DiagMA_inner_solve(T[:] u, real_t[:, ::1] data):
     DiagMA_inner_solve_ptr[T](&u[0], u.strides[0]/u.itemsize, &data[0, 0], data.shape[0], data.shape[1])

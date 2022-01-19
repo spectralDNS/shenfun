@@ -203,6 +203,9 @@ def Dx(test, x, k=1):
     """
     assert isinstance(test, (Expr, BasisFunction))
 
+    if k == 0:
+        return test
+
     if k > 1:
         for _ in range(k):
             test = Dx(test, x, 1)

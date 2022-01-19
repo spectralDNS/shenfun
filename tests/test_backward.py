@@ -251,8 +251,8 @@ def test_padding_biharmonic(family):
 if __name__ == '__main__':
     #test_backward()
     #test_backward2D()
-    test_padding('C')
-    #test_padding_biharmonic('L')
+    #test_padding('C')
+    test_padding_biharmonic('C')
     #test_padding_neumann('C')
     #test_padding_orthogonal('F')
     #test_padding_orthogonal('C')

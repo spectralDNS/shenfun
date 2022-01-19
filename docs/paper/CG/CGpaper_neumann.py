@@ -116,38 +116,32 @@ def main(N, method=0, alpha=0, returntype=0):
     basis = {0: ('ShenNeumann', 'CombinedShenNeumann'),
              1: ('ShenDirichlet', 'MikNeumann'),
              2: ('ShenNeumann', 'ShenNeumann'),
-             3: ('DirichletU', 'ShenNeumann'),
+             3: ('Phi1', 'ShenNeumann'),
              4: ('Orthogonal', 'ShenNeumann'),  # Quasi-Galerkin
              5: ('ShenNeumann', 'ShenNeumann'), # Legendre
              }
 
     test, trial = basis[method]
 
-    wt = {0: 1, 1: 1, 2: 1, 3: 1-x**2, 4: 1, 5: 1}[method]
     family = 'C' if method < 5 else 'L'
-    test = FunctionSpace(N, family, basis=test)
+    famtest = 'U' if method == 3 else family
+    #M = N if method == 3 else N
+    kw = {}
+    if method == 3:
+        kw['scaled'] = True
+    test = FunctionSpace(N, famtest, basis=test, **kw)
     trial = FunctionSpace(N, family, basis=trial)
 
     v = TestFunction(test)
     u = TrialFunction(trial)
-    A = inner(v*wt, div(grad(u)))
-    B = inner(v*wt, u)
+    A = inner(v, div(grad(u)))
+    B = inner(v, u)
 
     if method == 4:
         # Quasi preconditioning
         Q2 = chebyshev.quasi.QIGmat(N)
         A = Q2*A
         B = Q2*B
-
-    if method == 3:
-        k = np.arange(N-2)
-        K = SparseMatrix({0: 1/(2*(k+1)*(k+2))}, (N-2, N-2))
-        A[0] *= K[0]
-        A[2] *= K[0][:-2]
-        B[-2] *= K[0][2:]
-        B[0] *= K[0]
-        B[2] *= K[0][:-2]
-        B[4] *= K[0][:-4]
 
     if returntype == 0:
         if alpha == 0:
@@ -170,17 +164,9 @@ def main(N, method=0, alpha=0, returntype=0):
         fe = alpha*ue-ue.diff(x, 2)
         f_hat = Function(test)
         fj = Array(test, buffer=fe)
-        if wt != 1:
-            if test.quad == 'GC':
-                fj *= np.sin((np.arange(N)+0.5)*np.pi/N)**2
-            else:
-                fj *= np.sin((np.arange(N)+1)*np.pi/(N+1))**2
         f_hat = test.scalar_product(fj, f_hat, fast_transform=True)
         if method == 4:
             f_hat[:-2] = Q2.diags('csc')*f_hat
-
-        if method == 3:
-            f_hat[:-2] *= K[0]
 
         u_hat = Function(trial)
         u_hat = solve(f_hat, u_hat, A, B, alpha, method)

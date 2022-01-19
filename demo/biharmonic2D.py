@@ -36,7 +36,7 @@ N = (30, 30)
 if family == 'chebyshev':
     assert N[0] % 2 == 0, "Biharmonic solver only implemented for even numbers"
 
-bcs = (ue.subs(x, -1), ue.subs(x, 1), ue.diff(x, 1).subs(x, -1), ue.diff(x, 1).subs(x, 1))
+bcs = (ue.subs(x, -1), ue.diff(x, 1).subs(x, -1), ue.subs(x, 1), ue.diff(x, 1).subs(x, 1))
 #SD = FunctionSpace(N[0], family=family, bc='Biharmonic')
 SD = FunctionSpace(N[0], family=family, bc=bcs)
 K1 = FunctionSpace(N[1], family='F')
