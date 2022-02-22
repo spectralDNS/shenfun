@@ -30,14 +30,21 @@ cBasis = (cbases.Orthogonal,
           cbases.ShenNeumann,
           cbases.ShenBiharmonic,
           cbases.DirichletNeumann,
-          cbases.NeumannDirichlet)
+          cbases.NeumannDirichlet,
+          cbases.UpperDirichlet,
+          cbases.LowerDirichlet,
+          cbases.UpperDirichletNeumann,
+          cbases.LowerDirichletNeumann
+          )
 
 # Bases with only GC quadrature
-cBasisGC = (cbases.UpperDirichlet,
-            cbases.ShenBiPolar,
+cBasisGC = (cbases.ShenBiPolar,
             cbases.Heinrichs,
             cbases.MikNeumann,
             cbases.CombinedShenNeumann,
+            cbases.Phi1,
+            cbases.Phi2,
+            cbases.Phi4
             )
 
 lBasis = (lbases.Orthogonal,
@@ -48,8 +55,12 @@ lBasis = (lbases.Orthogonal,
 
 # Bases with only LG quadrature
 lBasisLG = (lbases.UpperDirichlet,
+            lbases.LowerDirichlet,
             lbases.ShenBiPolar,
-            lbases.ShenBiPolar0)
+            lbases.ShenBiPolar0,
+            lbases.Phi1,
+            lbases.Phi2,
+            lbases.Phi4)
 
 lagBasis = (lagbases.Orthogonal,
             lagbases.ShenDirichlet)
@@ -70,7 +81,7 @@ jquads = ('JG',)
 for f in ['dct', 'dst', 'fft', 'ifft', 'rfft', 'irfft']:
     config['fftw'][f]['planner_effort'] = 'FFTW_ESTIMATE'
 
-N = 12
+N = 14
 k = np.arange(N).astype(float)
 a = np.random.random(N)
 c = np.zeros(N)
@@ -121,10 +132,10 @@ def test_mat(key, mat, quad):
         if quad == 'GL':
             return
         if not measure == 1:
-            # Way too time-consuming
+            # Way too time-consuming. Test when adding new matrices.
             return
 
-    if trial[0] in lBasisLG+cBasisGC +cBasisGC  and quad == 'GL':
+    if (trial[0] in lBasisLG+cBasisGC) or (test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
 
     t0 = test[0]
@@ -281,7 +292,7 @@ def test_imul(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
-    if trial[0] in lBasisLG+cBasisGC  and quad == 'GL':
+    if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
 
     t0 = test[0]
@@ -314,7 +325,7 @@ def test_mul(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
-    if trial[0] in lBasisLG+cBasisGC  and quad == 'GL':
+    if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
 
     t0 = test[0]
@@ -361,7 +372,7 @@ def test_rmul(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
-    if trial[0] in lBasisLG+cBasisGC  and quad == 'GL':
+    if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
     t0 = test[0]
     t1 = trial[0]
@@ -391,7 +402,7 @@ def test_div(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
-    if trial[0] in lBasisLG+cBasisGC  and quad == 'GL':
+    if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
     t0 = test[0]
     t1 = trial[0]
@@ -438,7 +449,7 @@ def test_add(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
-    if trial[0] in lBasisLG+cBasisGC  and quad == 'GL':
+    if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
     t0 = test[0]
     t1 = trial[0]
@@ -469,7 +480,7 @@ def test_iadd(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
-    if trial[0] in lBasisLG+cBasisGC  and quad == 'GL':
+    if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
     t0 = test[0]
     t1 = trial[0]
@@ -498,7 +509,7 @@ def test_isub(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
-    if trial[0] in lBasisLG+cBasisGC  and quad == 'GL':
+    if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
     t0 = test[0]
     t1 = trial[0]
@@ -530,7 +541,7 @@ def test_sub(key, mat, quad):
         measure = key[3]
         if quad == 'GL':
             return
-    if trial[0] in lBasisLG+cBasisGC  and quad == 'GL':
+    if (trial[0] in lBasisLG+cBasisGC or test[0] in lBasisLG+cBasisGC)  and quad == 'GL':
         return
     t0 = test[0]
     t1 = trial[0]

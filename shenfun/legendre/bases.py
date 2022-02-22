@@ -21,9 +21,10 @@ __all__ = ['LegendreBase',
            'Orthogonal',
            'ShenDirichlet',
            'Phi1',
-           'ShenBiharmonic',
            'Phi2',
+           'Phi4',
            'ShenNeumann',
+           'ShenBiharmonic',
            'ShenBiPolar',
            'ShenBiPolar0',
            'LowerDirichlet',
@@ -863,6 +864,53 @@ class Phi2(CompositeSpace):
         self._bc_basis = BCBiharmonic(self.N, quad=self.quad, domain=self.domain,
                                       coordinates=self.coors.coordinates)
         return self._bc_basis
+
+class Phi4(CompositeSpace):
+    def __init__(self, N, quad="LG", bc=(0,)*8, domain=(-1, 1), dtype=float, scaled=False,
+                 padding_factor=1, dealias_direct=False, coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
+        from shenfun.jacobi.recursions import b, h, matpow, n
+        #self.b0n = sp.simplify(matpow(b, 4, 0, 0, n+4, n) / h(0, 0, n, 0))
+        #self.b2n = sp.simplify(matpow(b, 4, 0, 0, n+4, n+2) / h(0, 0, n+2, 0))
+        #self.b4n = sp.simplify(matpow(b, 4, 0, 0, n+4, n+4) / h(0, 0, n+4, 0))
+        #self.b6n = sp.simplify(matpow(b, 4, 0, 0, n+4, n+6) / h(0, 0, n+6, 0))
+        #self.b8n = sp.simplify(matpow(b, 4, 0, 0, n+4, n+8) / h(0, 0, n+8, 0))
+        # Below are the same but faster since already simplified
+        self.b0n = 1/(2*(8*n**3 + 60*n**2 + 142*n + 105))
+        self.b2n = -2/(8*n**3 + 84*n**2 + 262*n + 231)
+        self.b4n = 3*(2*n + 9)/((2*n + 5)*(2*n + 7)*(2*n + 11)*(2*n + 13))
+        self.b6n = -2/(8*n**3 + 132*n**2 + 694*n + 1155)
+        self.b8n = 1/(2*(8*n**3 + 156*n**2 + 1006*n + 2145))
+
+    @staticmethod
+    def boundary_condition():
+        return 'Biharmonic*2'
+
+    @staticmethod
+    def short_name():
+        return 'P4'
+
+    def stencil_matrix(self, N=None):
+        from shenfun.jacobi.recursions import n
+        N = self.N if N is None else N
+        k = np.arange(N)
+        d0, d2, d4, d6, d8 = np.zeros(N), np.zeros(N-2), np.zeros(N-4), np.zeros(N-6), np.zeros(N-8)
+        d0[:-8] = sp.lambdify(n, self.b0n)(k[:N-8])
+        d2[:-6] = sp.lambdify(n, self.b2n)(k[:N-8])
+        d4[:-4] = sp.lambdify(n, self.b4n)(k[:N-8])
+        d6[:-2] = sp.lambdify(n, self.b6n)(k[:N-8])
+        d8[:] = sp.lambdify(n, self.b8n)(k[:N-8])
+        return SparseMatrix({0: d0, 2: d2, 4: d4, 6: d6, 8: d8}, (N, N))
+
+    def slice(self):
+        return slice(0, self.N-8)
+
+    def get_bc_basis(self):
+        raise NotImplementedError
+        # This basis should probably only be used as test function, and thus no inhomogeneous bcs required
+
 
 class BeamFixedFree(CompositeSpace):
     """Function space for biharmonic equation with boundary conditions

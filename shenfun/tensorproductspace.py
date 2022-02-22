@@ -1653,7 +1653,7 @@ class BoundaryValues:
     def update_bcs(self, bc=None):
         if bc is not None:
             assert isinstance(bc, (list, tuple))
-            assert len(bc) in (2, 3, 4, 6)
+            assert len(bc) in (2, 3, 4, 6, 8)
             self.bc = list(bc)
             for i, bci in enumerate(bc):
                 if isinstance(bci, (Number, sp.Expr, np.ndarray)):
@@ -1866,9 +1866,9 @@ class BoundaryValues:
                 bc_this = this_base.bc.bc.copy()
                 bc_other = other_base.bc.bc.copy()
                 df = 2./(other_base.domain[1]-other_base.domain[0])
-                for i in range(2): # x = -1 and then x = 1
+                for i in range(2): # e.g., x = -1 and then x = 1
                     bcj = bc_this[i]
-                    for j in range(2): # y = -1 and then y = 1
+                    for j in range(2): # e.g., y = -1 and then y = 1
                         xj = other_base.domain[j]
                         sym = sp.sympify(bcj).free_symbols
                         if len(sym) == 1:

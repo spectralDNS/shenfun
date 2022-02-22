@@ -52,8 +52,8 @@ m, n, k = sp.symbols('m,n,k', real=True, integer=True)
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
-__all__ = ['JacobiBase', 'Orthogonal', 'Phi1', 'Phi2', 'CompactDirichlet',
-           'ShenDirichlet', 'ShenBiharmonic',
+__all__ = ['JacobiBase', 'Orthogonal', 'Phi1', 'Phi2', 'Phi4',
+           'CompactDirichlet', 'ShenDirichlet', 'ShenBiharmonic',
            'ShenOrder6', 'mode', 'has_quadpy', 'mp']
 
 
@@ -532,6 +532,60 @@ class Phi2(CompositeSpace):
                                       coordinates=self.coors.coordinates)
         return self._bc_basis
 
+class Phi4(CompositeSpace):
+    def __init__(self, N, quad="GC", bc=(0,)*8, domain=(-1, 1), dtype=float, scaled=False,
+                 padding_factor=1, dealias_direct=False, alpha=0, beta=0, coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                alpha=alpha, beta=beta, coordinates=coordinates)
+        from shenfun.jacobi.recursions import b, h, matpow, n
+        self.b0n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n) / h(alpha, beta, n, 0))
+        self.b2n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+2) / h(alpha, beta, n+2, 0))
+        self.b4n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+4) / h(alpha, beta, n+4, 0))
+        self.b6n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+6) / h(alpha, beta, n+6, 0))
+        self.b8n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+8) / h(alpha, beta, n+8, 0))
+        self.b1n, self.b3n, self.b5n, self.b7n = (None,)*4
+        if not alpha == beta:
+            self.b1n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+1) / h(alpha, beta, n, 0))
+            self.b3n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+3) / h(alpha, beta, n, 0))
+            self.b5n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+5) / h(alpha, beta, n, 0))
+            self.b7n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+7) / h(alpha, beta, n, 0))
+
+    @staticmethod
+    def boundary_condition():
+        return 'Biharmonic*2'
+
+    @staticmethod
+    def short_name():
+        return 'P4'
+
+    def stencil_matrix(self, N=None):
+        from shenfun.jacobi.recursions import n
+        N = self.N if N is None else N
+        k = np.arange(N)
+        d0, d2, d4, d6, d8 = np.zeros(N), np.zeros(N-2), np.zeros(N-4), np.zeros(N-6), np.zeros(N-8)
+        d0[:-8] = sp.lambdify(n, self.b0n)(k[:N-8])
+        d2[:-6] = sp.lambdify(n, self.b2n)(k[:N-8])
+        d4[:-4] = sp.lambdify(n, self.b4n)(k[:N-8])
+        d6[:-2] = sp.lambdify(n, self.b6n)(k[:N-8])
+        d8[:] = sp.lambdify(n, self.b8n)(k[:N-8])
+        if not self.alpha == self.beta:
+            d1, d3, d5, d7 = np.zeros(N-1), np.zeros(N-3), np.zeros(N-5), np.zeros(N-7)
+            d1[:-7] = sp.lambdify(n, self.b1n)(k[:N-8])
+            d3[:-5] = sp.lambdify(n, self.b3n)(k[:N-8])
+            d5[:-3] = sp.lambdify(n, self.b5n)(k[:N-8])
+            d7[:-1] = sp.lambdify(n, self.b7n)(k[:N-8])
+            return SparseMatrix({0: d0, 1: d2, 2: d2, 3: d3, 4: d4, 5: d5, 6: d6, 7: d7, 8: d8}, (N, N))
+        return SparseMatrix({0: d0, 2: d2, 4: d4, 6: d6, 8: d8}, (N, N))
+
+    def slice(self):
+        return slice(0, self.N-8)
+
+    def get_bc_basis(self):
+        raise NotImplementedError
+        # This basis should probably only be used as test function, and thus no inhomogeneous bcs required
+
+
 class CompactDirichlet(CompositeSpace):
     def __init__(self, N, quad="JG", bc=(0., 0.), domain=(-1., 1.), dtype=float, scaled=False,
                  padding_factor=1, dealias_direct=False, alpha=0, beta=0, coordinates=None):
@@ -541,7 +595,7 @@ class CompactDirichlet(CompositeSpace):
         self.b0n = sp.simplify(b(alpha, beta, n+1, n) * (h(alpha, beta, n+1, 1) / h(alpha, beta, n, 0)))
         self.b1n = None
         self.b2n = sp.simplify(b(alpha, beta, n+1, n+2) * (h(alpha, beta, n+1, 1)/ h(alpha, beta, n+2, 0)))
-        if self.alpha == self.beta:
+        if not self.alpha == self.beta:
             self.b1n = sp.simplify(b(alpha, beta, n+1, n+1) * (h(alpha, beta, n+1, 1)/ h(alpha, beta, n+1, 0)))
 
     @staticmethod
@@ -614,7 +668,6 @@ class ShenDirichlet(JacobiBase):
         JacobiBase.__init__(self, N, quad=quad, alpha=-1, beta=-1, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
                             coordinates=coordinates)
-        assert bc in ((0, 0), 'Dirichlet')
         from shenfun.tensorproductspace import BoundaryValues
         self._bc_basis = None
         self.bc = BoundaryValues(self, bc=bc)
@@ -1089,7 +1142,8 @@ class BCBase(CompositeSpace):
         return slice(self.N-self.shape(), self.N)
 
     def vandermonde(self, x):
-        return Orthogonal.vandermonde(x, self.num_T-1)
+        return self.jacobi(x, self.alpha, self.beta, self.num_T)
+        #return Orthogonal.vandermonde(self, x)
 
     def _composite(self, V, argument=1):
         N = self.shape()

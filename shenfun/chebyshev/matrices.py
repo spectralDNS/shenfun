@@ -75,7 +75,7 @@ import functools
 import numpy as np
 import sympy as sp
 from shenfun.optimization import cython, numba, optimizer
-from shenfun.matrixbase import SpectralMatrix, SparseMatrix
+from shenfun.matrixbase import SpectralMatrix, SparseMatrix, extract_diagonal_matrix
 from shenfun.la import SparseMatrixSolver
 from shenfun.la import TDMA as generic_TDMA
 from shenfun.la import PDMA as generic_PDMA
@@ -97,6 +97,9 @@ MN = bases.MikNeumann
 UD = bases.UpperDirichlet
 LD = bases.LowerDirichlet
 DN = bases.DirichletNeumann
+P1 = bases.Phi1
+P2 = bases.Phi2
+P4 = bases.Phi4
 
 BCD = bases.BCDirichlet
 BCB = bases.BCBiharmonic
@@ -224,6 +227,483 @@ class BSDSDmatW(SpectralMatrix):
 
     def get_solver(self):
         return generic_PDMA
+
+class BP1LDmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj}=(\phi_j, x**n*\psi_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\phi_j` is a LowerDirichlet basis function and
+    :math:`\psi_k` is a Phi1 basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P1)
+        assert isinstance(trial[0], (LD, UD))
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(1, q, 1, M, N+1, -half, -half, cn)
+        K = trial[0].stencil_matrix()
+        K.shape = (N, N+1)
+        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q+1, upperband=q+2)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+class BP1Tmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj}=(T_j, x**n*\psi_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-1 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`T_j` is a Chebyshev basis function and
+    :math:`\psi_k` is a Phi1 basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P1)
+        assert isinstance(trial[0], T)
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(1, q, 1, M, N, -half, -half, cn)
+        D = extract_diagonal_matrix(D, lowerband=q+1, upperband=q+2)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+
+class CP1LDmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj}=(\phi'_j, x**n*\psi_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\phi_j` is a LowerDirichlet basis function and
+    :math:`\psi_k` is a Phi1 basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P1)
+        assert isinstance(trial[0], (LD, UD))
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(1, q, 0, M, N+1, -half, -half, cn)
+        K = trial[0].stencil_matrix()
+        K.shape = (N, N+1)
+        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q, upperband=q+1)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+class CP1Tmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj}=(T'_j, x**n*\psi_k)_w
+
+    where
+
+    .. math::
+
+        j = 0, 1, ..., N-1 \text{ and } k = 0, 1, ..., N-2
+
+    and :math:`\phi_j` is a LowerDirichlet basis function and
+    :math:`\psi_k` is a Phi1 basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P1)
+        assert isinstance(trial[0], T)
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(1, q, 0, M, N, -half, -half, cn)
+        D = extract_diagonal_matrix(D, lowerband=q, upperband=q+1)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+class BP2Tmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj}=(T_j, x**n*\psi_k)_w
+
+    where :math:`\psi_k` is a Phi2 basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P2)
+        assert isinstance(trial[0], T)
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(2, q, 2, M, N, -half, -half, cn)
+        D = extract_diagonal_matrix(D, lowerband=q, upperband=q+8)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+class BP4Tmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj}=(T_j, x**n*\psi_k)_w
+
+    where :math:`\psi_k` is a Phi4 basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P4)
+        assert isinstance(trial[0], T)
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(4, q, 4, M, N, -half, -half, cn)
+        D = extract_diagonal_matrix(D, lowerband=q, upperband=q+8)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+class BP2SDmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj}=(\phi_j, x**n*\psi_k)_w
+
+    where :math:`\psi_k` is a Phi2 basis function and :math:`\phi_j`
+    is a ShenDirichlet basis.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P2)
+        assert isinstance(trial[0], SD)
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(2, q, 2, M, N+2, -half, -half, cn)
+        K = trial[0].stencil_matrix()
+        K.shape = (N, N+2)
+        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q+2, upperband=q+4)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+class BP4SBmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj}=(\phi_j, x**n*\psi_k)_w
+
+    where :math:`\psi_k` is a Phi4 basis function and :math:`\phi_j`
+    is a ShenBiharmonic basis.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P4)
+        assert isinstance(trial[0], SB)
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(4, q, 4, M, N+4, -half, -half, cn)
+        K = trial[0].stencil_matrix()
+        K.shape = (N, N+4)
+        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q+4, upperband=q+8)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+class CP2Tmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj}=(T'_j, x**n*\psi_k)_w
+
+    where :math:`\psi_k` is a Phi2 basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P2)
+        assert isinstance(trial[0], T)
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(2, q, 1, M, N, -half, -half, cn)
+        D = extract_diagonal_matrix(D, lowerband=q-1, upperband=q+3)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+class AP2Tmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj}=(T''_j, x**n*\psi_k)_w
+
+    where :math:`\psi_k` is a Phi2 basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P2)
+        assert isinstance(trial[0], T)
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(2, q, 0, M, N, -half, -half, cn)
+        D = extract_diagonal_matrix(D, lowerband=q-2, upperband=q+2)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+class CP4Tmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj}=(T'_j, x**n*\psi_k)_w
+
+    where :math:`\psi_k` is a Phi4 basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P4)
+        assert isinstance(trial[0], T)
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(4, q, 3, M, N, -half, -half, cn)
+        D = extract_diagonal_matrix(D, lowerband=q-1, upperband=q+7)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+class AP4Tmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj}=(T''_j, x**n*\psi_k)_w
+
+    where :math:`\psi_k` is a Phi4 basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P4)
+        assert isinstance(trial[0], T)
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(4, q, 2, M, N, -half, -half, cn)
+        D = extract_diagonal_matrix(D, lowerband=q-2, upperband=q+6)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+class CP2SDmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj}=(\phi'_j, x**n*\psi_k)_w
+
+    where :math:`\psi_k` is a Phi2 basis function and :math:`\phi_j`
+    is a ShenDirichlet basis.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P2)
+        assert isinstance(trial[0], SD)
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(2, q, 1, M, N+2, -half, -half, cn)
+        K = trial[0].stencil_matrix()
+        K.shape = (N, N+2)
+        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q+1, upperband=q+3)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+class AP2SDmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj}=(\phi''_j, x**n*\psi_k)_w
+
+    where :math:`\psi_k` is a Phi2 basis function and :math:`\phi_j`
+    is a ShenDirichlet basis.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P2)
+        assert isinstance(trial[0], SD)
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(2, q, 0, M, N+2, -half, -half, cn)
+        K = trial[0].stencil_matrix()
+        K.shape = (N, N+2)
+        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q, upperband=q+2)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+class AP4SBmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj}=(\phi''_j, x**n*\psi_k)_w
+
+    where :math:`\psi_k` is a Phi4 basis function and :math:`\phi_j`
+    is a ShenBiharmonic basis.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P4)
+        assert isinstance(trial[0], SB)
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(4, q, 2, M, N+4, -half, -half, cn)
+        K = trial[0].stencil_matrix()
+        K.shape = (N, N+4)
+        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q+2, upperband=q+6)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+class CP4SBmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj}=(\phi'_j, x**n*\psi_k)_w
+
+    where :math:`\psi_k` is a Phi4 basis function and :math:`\phi_j`
+    is a ShenBiharmonic basis.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P4)
+        assert isinstance(trial[0], SB)
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(4, q, 3, M, N+4, -half, -half, cn)
+        K = trial[0].stencil_matrix()
+        K.shape = (N, N+4)
+        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q+3, upperband=q+7)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+class SP4Tmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj}=(T^{(4)}_j, x**n*\psi_k)_w
+
+    where :math:`\psi_k` is a Phi4 basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P4)
+        assert isinstance(trial[0], T)
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        M = test[0].dim()
+        N = trial[0].N
+        q = sp.degree(measure)
+        D = Lmat(4, q, 0, M, N, -half, -half, cn)
+        D = extract_diagonal_matrix(D, lowerband=q-4, upperband=q+4)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+class GP4Tmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj}=(T^{(3)}_j, x**n*\psi_k)_w
+
+    where :math:`\psi_k` is a Phi4 basis function.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P4)
+        assert isinstance(trial[0], T)
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        M = test[0].dim()
+        N = trial[0].N
+        q = sp.degree(measure)
+        D = Lmat(4, q, 1, M, N, -half, -half, cn)
+        D = extract_diagonal_matrix(D, lowerband=q-3, upperband=q+5)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+class SP4SBmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj}=(\phi^{(4)}_j, x**n*\psi_k)_w
+
+    where :math:`\psi_k` is a Phi4 basis function and :math:`\phi_j`
+    is a ShenBiharmonic basis.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P4)
+        assert isinstance(trial[0], SB)
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(4, q, 0, M, N+4, -half, -half, cn)
+        K = trial[0].stencil_matrix()
+        K.shape = (N, N+4)
+        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q, upperband=q+4)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+class GP4SBmat(SpectralMatrix):
+    r"""Matrix for inner product
+
+    .. math::
+
+        B_{kj}=(\phi^{(3)}_j, x**n*\psi_k)_w
+
+    where :math:`\psi_k` is a Phi4 basis function and :math:`\phi_j`
+    is a ShenBiharmonic basis.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P4)
+        assert isinstance(trial[0], SB)
+        from shenfun.jacobi.recursions import Lmat, half, cn
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(4, q, 1, M, N+4, -half, -half, cn)
+        K = trial[0].stencil_matrix()
+        K.shape = (N, N+4)
+        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q-1, upperband=q+5)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
 
 class BSNSDmat(SpectralMatrix):
     r"""Mass matrix for inner product
@@ -2217,10 +2697,6 @@ mat = _ChebMatDict({
     ((SN, 0), (CN, 0)): BSNCNmat,
     ((SD, 0), (HH, 0)): BSDHHmat,
     ((SD, 0), (HH, 2)): ASDHHmat,
-    #((DU, 0), (SD, 2), (-1, 1), (1-x**2)): functools.partial(ADUSDmat, measure=(1-x**2)),
-    #((DU, 0), (SD, 0), (-1, 1), (1-x**2)): functools.partial(BDUSDmat, measure=(1-x**2)),
-    #((DU, 0), (SN, 2), (-1, 1), (1-x**2)): functools.partial(ADUSNmat, measure=(1-x**2)),
-    #((DU, 0), (SN, 0), (-1, 1), (1-x**2)): functools.partial(BDUSNmat, measure=(1-x**2)),
     ((SB, 0), (SB, 4)): SSBSBmat,
     ((SD, 0), (SN, 1)): CSDSNmat,
     ((SB, 0), (SD, 1)): CSBSDmat,
@@ -2233,6 +2709,116 @@ mat = _ChebMatDict({
     ((SD, 0), (T,  1)): CSDTmat,
     ((SD, 0), (BCD, 0)): BSDBCDmat,
     #((SB, 0), (BCB, 0)): BSBBCBmat, # reordered bases
+    ((P1, 0), (T, 0)): BP1Tmat,
+    ((P1, 0), (T, 0), (-1, 1), x): functools.partial(BP1Tmat, measure=x),
+    ((P1, 0), (T, 0), (-1, 1), x**2): functools.partial(BP1Tmat, measure=x**2),
+    ((P1, 0), (T, 0), (-1, 1), x**3): functools.partial(BP1Tmat, measure=x**3),
+    ((P1, 0), (T, 0), (-1, 1), x**4): functools.partial(BP1Tmat, measure=x**4),
+    ((P1, 0), (T, 1)): CP1Tmat,
+    ((P1, 0), (T, 1), (-1, 1), x): functools.partial(CP1Tmat, measure=x),
+    ((P1, 0), (T, 1), (-1, 1), x**2): functools.partial(CP1Tmat, measure=x**2),
+    ((P1, 0), (T, 1), (-1, 1), x**3): functools.partial(CP1Tmat, measure=x**3),
+    ((P1, 0), (T, 1), (-1, 1), x**4): functools.partial(CP1Tmat, measure=x**4),
+    ((P1, 0), (LD, 0)): BP1LDmat,
+    ((P1, 0), (LD, 0), (-1, 1), x): functools.partial(BP1LDmat, measure=x),
+    ((P1, 0), (LD, 0), (-1, 1), x**2): functools.partial(BP1LDmat, measure=x**2),
+    ((P1, 0), (LD, 0), (-1, 1), x**3): functools.partial(BP1LDmat, measure=x**3),
+    ((P1, 0), (LD, 0), (-1, 1), x**4): functools.partial(BP1LDmat, measure=x**4),
+    ((P1, 0), (LD, 1)): CP1LDmat,
+    ((P1, 0), (LD, 1), (-1, 1), x): functools.partial(CP1LDmat, measure=x),
+    ((P1, 0), (LD, 1), (-1, 1), x**2): functools.partial(CP1LDmat, measure=x**2),
+    ((P1, 0), (LD, 1), (-1, 1), x**3): functools.partial(CP1LDmat, measure=x**3),
+    ((P1, 0), (LD, 1), (-1, 1), x**4): functools.partial(CP1LDmat, measure=x**4),
+    ((P1, 0), (UD, 0)): BP1LDmat,
+    ((P1, 0), (UD, 0), (-1, 1), x): functools.partial(BP1LDmat, measure=x),
+    ((P1, 0), (UD, 0), (-1, 1), x**2): functools.partial(BP1LDmat, measure=x**2),
+    ((P1, 0), (UD, 0), (-1, 1), x**3): functools.partial(BP1LDmat, measure=x**3),
+    ((P1, 0), (UD, 0), (-1, 1), x**4): functools.partial(BP1LDmat, measure=x**4),
+    ((P1, 0), (UD, 1)): CP1LDmat,
+    ((P1, 0), (UD, 1), (-1, 1), x): functools.partial(CP1LDmat, measure=x),
+    ((P1, 0), (UD, 1), (-1, 1), x**2): functools.partial(CP1LDmat, measure=x**2),
+    ((P1, 0), (UD, 1), (-1, 1), x**3): functools.partial(CP1LDmat, measure=x**3),
+    ((P1, 0), (UD, 1), (-1, 1), x**4): functools.partial(CP1LDmat, measure=x**4),
+    ((P2, 0), (T, 0)) : BP2Tmat,
+    ((P2, 0), (T, 0), (-1, 1), x): functools.partial(BP2Tmat, measure=x),
+    ((P2, 0), (T, 0), (-1, 1), x**2): functools.partial(BP2Tmat, measure=x**2),
+    ((P2, 0), (T, 0), (-1, 1), x**3): functools.partial(BP2Tmat, measure=x**3),
+    ((P2, 0), (T, 0), (-1, 1), x**4): functools.partial(BP2Tmat, measure=x**4),
+    ((P2, 0), (T, 1)) : CP2Tmat,
+    ((P2, 0), (T, 1), (-1, 1), x): functools.partial(CP2Tmat, measure=x),
+    ((P2, 0), (T, 1), (-1, 1), x**2): functools.partial(CP2Tmat, measure=x**2),
+    ((P2, 0), (T, 1), (-1, 1), x**3): functools.partial(CP2Tmat, measure=x**3),
+    ((P2, 0), (T, 1), (-1, 1), x**4): functools.partial(CP2Tmat, measure=x**4),
+    ((P2, 0), (T, 2)) : AP2Tmat,
+    ((P2, 0), (T, 2), (-1, 1), x): functools.partial(AP2Tmat, measure=x),
+    ((P2, 0), (T, 2), (-1, 1), x**2): functools.partial(AP2Tmat, measure=x**2),
+    ((P2, 0), (T, 2), (-1, 1), x**3): functools.partial(AP2Tmat, measure=x**3),
+    ((P2, 0), (T, 2), (-1, 1), x**4): functools.partial(AP2Tmat, measure=x**4),
+    ((P2, 0), (SD, 0)) : BP2SDmat,
+    ((P2, 0), (SD, 0), (-1, 1), x): functools.partial(BP2SDmat, measure=x),
+    ((P2, 0), (SD, 0), (-1, 1), x**2): functools.partial(BP2SDmat, measure=x**2),
+    ((P2, 0), (SD, 0), (-1, 1), x**3): functools.partial(BP2SDmat, measure=x**3),
+    ((P2, 0), (SD, 0), (-1, 1), x**4): functools.partial(BP2SDmat, measure=x**4),
+    ((P2, 0), (SD, 1)) : CP2SDmat,
+    ((P2, 0), (SD, 1), (-1, 1), x): functools.partial(CP2SDmat, measure=x),
+    ((P2, 0), (SD, 1), (-1, 1), x**2): functools.partial(CP2SDmat, measure=x**2),
+    ((P2, 0), (SD, 1), (-1, 1), x**3): functools.partial(CP2SDmat, measure=x**3),
+    ((P2, 0), (SD, 1), (-1, 1), x**4): functools.partial(CP2SDmat, measure=x**4),
+    ((P2, 0), (SD, 2)) : AP2SDmat,
+    ((P2, 0), (SD, 2), (-1, 1), x): functools.partial(AP2SDmat, measure=x),
+    ((P2, 0), (SD, 2), (-1, 1), x**2): functools.partial(AP2SDmat, measure=x**2),
+    ((P2, 0), (SD, 2), (-1, 1), x**3): functools.partial(AP2SDmat, measure=x**3),
+    ((P2, 0), (SD, 2), (-1, 1), x**4): functools.partial(AP2SDmat, measure=x**4),
+    ((P4, 0), (T, 0)) : BP4Tmat,
+    ((P4, 0), (T, 0), (-1, 1), x): functools.partial(BP4Tmat, measure=x),
+    ((P4, 0), (T, 0), (-1, 1), x**2): functools.partial(BP4Tmat, measure=x**2),
+    ((P4, 0), (T, 0), (-1, 1), x**3): functools.partial(BP4Tmat, measure=x**3),
+    ((P4, 0), (T, 0), (-1, 1), x**4): functools.partial(BP4Tmat, measure=x**4),
+    ((P4, 0), (SB, 0)) : BP4SBmat,
+    ((P4, 0), (SB, 0), (-1, 1), x): functools.partial(BP4SBmat, measure=x),
+    ((P4, 0), (SB, 0), (-1, 1), x**2): functools.partial(BP4SBmat, measure=x**2),
+    ((P4, 0), (SB, 0), (-1, 1), x**3): functools.partial(BP4SBmat, measure=x**3),
+    ((P4, 0), (SB, 0), (-1, 1), x**4): functools.partial(BP4SBmat, measure=x**4),
+    ((P4, 0), (T, 1)) : CP4SBmat,
+    ((P4, 0), (T, 1), (-1, 1), x): functools.partial(CP4Tmat, measure=x),
+    ((P4, 0), (T, 1), (-1, 1), x**2): functools.partial(CP4Tmat, measure=x**2),
+    ((P4, 0), (T, 1), (-1, 1), x**3): functools.partial(CP4Tmat, measure=x**3),
+    ((P4, 0), (T, 1), (-1, 1), x**4): functools.partial(CP4Tmat, measure=x**4),
+    ((P4, 0), (SB, 1)) : CP4SBmat,
+    ((P4, 0), (SB, 1), (-1, 1), x): functools.partial(CP4SBmat, measure=x),
+    ((P4, 0), (SB, 1), (-1, 1), x**2): functools.partial(CP4SBmat, measure=x**2),
+    ((P4, 0), (SB, 1), (-1, 1), x**3): functools.partial(CP4SBmat, measure=x**3),
+    ((P4, 0), (SB, 1), (-1, 1), x**4): functools.partial(CP4SBmat, measure=x**4),
+    ((P4, 0), (T, 2)) : AP4Tmat,
+    ((P4, 0), (T, 2), (-1, 1), x): functools.partial(AP4Tmat, measure=x),
+    ((P4, 0), (T, 2), (-1, 1), x**2): functools.partial(AP4Tmat, measure=x**2),
+    ((P4, 0), (T, 2), (-1, 1), x**3): functools.partial(AP4Tmat, measure=x**3),
+    ((P4, 0), (T, 2), (-1, 1), x**4): functools.partial(AP4Tmat, measure=x**4),
+    ((P4, 0), (SB, 2)) : AP4SBmat,
+    ((P4, 0), (SB, 2), (-1, 1), x): functools.partial(AP4SBmat, measure=x),
+    ((P4, 0), (SB, 2), (-1, 1), x**2): functools.partial(AP4SBmat, measure=x**2),
+    ((P4, 0), (SB, 2), (-1, 1), x**3): functools.partial(AP4SBmat, measure=x**3),
+    ((P4, 0), (SB, 2), (-1, 1), x**4): functools.partial(AP4SBmat, measure=x**4),
+    ((P4, 0), (T, 3)) : GP4Tmat,
+    ((P4, 0), (T, 3), (-1, 1), x): functools.partial(GP4Tmat, measure=x),
+    ((P4, 0), (T, 3), (-1, 1), x**2): functools.partial(GP4Tmat, measure=x**2),
+    ((P4, 0), (T, 3), (-1, 1), x**3): functools.partial(GP4Tmat, measure=x**3),
+    ((P4, 0), (T, 3), (-1, 1), x**4): functools.partial(GP4Tmat, measure=x**4),
+    ((P4, 0), (SB, 3)) : GP4SBmat,
+    ((P4, 0), (SB, 3), (-1, 1), x): functools.partial(GP4SBmat, measure=x),
+    ((P4, 0), (SB, 3), (-1, 1), x**2): functools.partial(GP4SBmat, measure=x**2),
+    ((P4, 0), (SB, 3), (-1, 1), x**3): functools.partial(GP4SBmat, measure=x**3),
+    ((P4, 0), (SB, 3), (-1, 1), x**4): functools.partial(GP4SBmat, measure=x**4),
+    ((P4, 0), (T, 4)) : SP4Tmat,
+    ((P4, 0), (T, 4), (-1, 1), x): functools.partial(SP4Tmat, measure=x),
+    ((P4, 0), (T, 4), (-1, 1), x**2): functools.partial(SP4Tmat, measure=x**2),
+    ((P4, 0), (T, 4), (-1, 1), x**3): functools.partial(SP4Tmat, measure=x**3),
+    ((P4, 0), (T, 4), (-1, 1), x**4): functools.partial(SP4Tmat, measure=x**4),
+    ((P4, 0), (SB, 4)) : SP4SBmat,
+    ((P4, 0), (SB, 4), (-1, 1), x): functools.partial(SP4SBmat, measure=x),
+    ((P4, 0), (SB, 4), (-1, 1), x**2): functools.partial(SP4SBmat, measure=x**2),
+    ((P4, 0), (SB, 4), (-1, 1), x**3): functools.partial(SP4SBmat, measure=x**3),
+    ((P4, 0), (SB, 4), (-1, 1), x**4): functools.partial(SP4SBmat, measure=x**4),
     })
 
 #mat = _ChebMatDict({})

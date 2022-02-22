@@ -367,30 +367,37 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
     elif family.lower() in ('jacobi', 'j'):
         from shenfun import jacobi
         if quad is not None:
-            assert quad in ('JG',)
+            assert quad in ('JG', )
             par['quad'] = quad
 
-        if bc is None:
-            B = jacobi.bases.Orthogonal
+        if scaled is not None:
+            assert isinstance(scaled, bool)
+            par['scaled'] = scaled
 
-        elif isinstance(bc, tuple):
-            assert len(bc) in (2, 4)
-            par['bc'] = bc
-            if len(bc) == 2:
-                B = jacobi.bases.ShenDirichlet
-            else:
-                assert np.all([abs(bci) < 1e-12 for bci in bc])
-                B = jacobi.bases.ShenBiharmonic
+        bases = {
+            '': jacobi.bases.Orthogonal,
+            'LDRD': jacobi.bases.CompactDirichlet,
+            'LDLNRDRN': jacobi.bases.Phi2,
+            '6th order': jacobi.bases.ShenOrder6
+        }
 
-        elif isinstance(bc, str):
-            if bc.lower() == 'dirichlet':
-                B = jacobi.bases.ShenDirichlet
-            elif bc.lower() == 'biharmonic':
-                B = jacobi.bases.ShenBiharmonic
-            elif bc.lower() == '6th order':
-                B = jacobi.bases.ShenOrder6
-            else:
-                raise NotImplementedError
+        if isinstance(bc, (tuple, dict)):
+            key, par['bc'] = _process_bcs(bc, domain)
+
+        elif bc is None:
+            key = ''
+
+        elif bc == '6th order':
+            key = bc
+
+        else:
+            raise NotImplementedError
+
+        if basis is not None:
+            assert isinstance(basis, str)
+            B = getattr(jacobi.bases, basis)
+        else:
+            B = bases[''.join(key)]
 
         return B(N, **par)
 
@@ -1388,10 +1395,9 @@ class ShenfunBaseArray(DistArray):
 
 class Function(ShenfunBaseArray, BasisFunction):
     r"""
-    Spectral Galerkin function for given :class:`.TensorProductSpace` or :func:`.Basis`
+    Spectral Galerkin function for given :class:`.TensorProductSpace` or :func:`.SpectralBase`
 
-    The Function is the product of all 1D basis expansions, that for each
-    dimension is defined like
+    The Function in one dimension is
 
     .. math::
 
@@ -1433,7 +1439,12 @@ class Function(ShenfunBaseArray, BasisFunction):
         If array it must be of correct shape.
         A sympy expression is evaluated on the quadrature mesh and
         forward transformed to create the buffer array.
-
+    reltol : number, optional
+        Relative tolerance for adaptively finding dimension of space from
+        the buffer.
+    abstol : number, optional
+        Absolute tolerance for adaptively finding dimension of space from
+        the buffer
 
     .. note:: For more information, see `numpy.ndarray <https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html>`_
 
@@ -1502,13 +1513,11 @@ class Function(ShenfunBaseArray, BasisFunction):
         return self.eval(x, output_array=output_array)
 
     def eval(self, x, output_array=None):
-        """Evaluate Function at points
+        """Evaluate Function at points `x`
 
         Parameters
         ----------
-        points : float or array of floats
-        coefficients : array
-            Expansion coefficients
+        x : float or array of floats
         output_array : array, optional
             Return array, function values at points
 
@@ -1842,8 +1851,7 @@ class Array(ShenfunBaseArray):
     The Array is the result of a :class:`.Function` evaluated on its quadrature
     mesh.
 
-    The Function is the product of all 1D basis expansions, that for each
-    dimension is defined like
+    The Function represents in 1D
 
     .. math::
 

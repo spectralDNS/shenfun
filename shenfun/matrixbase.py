@@ -1532,6 +1532,7 @@ def check_sanity(A, test, trial, measure=1):
 
         - :mod:`.legendre.bases`
         - :mod:`.chebyshev.bases`
+        - :mod:`.chebyshevu.bases`
         - :mod:`.fourier.bases`
         - :mod:`.laguerre.bases`
         - :mod:`.hermite.bases`
@@ -1562,6 +1563,7 @@ def get_dense_matrix(test, trial, measure=1):
 
         - :mod:`.legendre.bases`
         - :mod:`.chebyshev.bases`
+        - :mod:`.chebyshevu.bases`
         - :mod:`.fourier.bases`
         - :mod:`.laguerre.bases`
         - :mod:`.hermite.bases`
@@ -1603,6 +1605,7 @@ def get_denser_matrix(test, trial, measure=1):
 
         - :mod:`.legendre.bases`
         - :mod:`.chebyshev.bases`
+        - :mod:`.chebyshevu.bases`
         - :mod:`.fourier.bases`
         - :mod:`.laguerre.bases`
         - :mod:`.hermite.bases`
@@ -1626,12 +1629,16 @@ def get_denser_matrix(test, trial, measure=1):
     u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])[:, :K1]
     return np.dot(np.conj(v.T)*ws[np.newaxis, :], u)
 
-def extract_diagonal_matrix(M, abstol=1e-10, reltol=1e-10):
+def extract_diagonal_matrix(M, lowerband=None, upperband=None, abstol=1e-10, reltol=1e-10):
     """Return SparseMatrix version of dense matrix ``M``
 
     Parameters
     ----------
     M : Numpy array of ndim=2
+    lowerband : int or None
+        Assumed lower bandwidth of M
+    upperband : int or None
+        Assumed upper bandwidth of M
     abstol : float
         Tolerance. Only diagonals with max(:math:`|d|`) < tol are
         kept in the returned SparseMatrix, where :math:`d` is the
@@ -1645,16 +1652,12 @@ def extract_diagonal_matrix(M, abstol=1e-10, reltol=1e-10):
     d = {}
     relmax = abs(M).max()
     dtype = float if M.dtype == 'O' else M.dtype # For mpf object
-    for i in range(M.shape[1]):
+    upperband = M.shape[1] if upperband is None else min(upperband+1, M.shape[1])
+    lowerband = M.shape[0]-1 if lowerband is None else min(lowerband, M.shape[0]-1)
+    for i in range(-lowerband, upperband):
         u = M.diagonal(i).copy()
         if abs(u).max() > abstol and abs(u).max()/relmax > reltol:
             d[i] = np.array(u, dtype=dtype)
-
-    for i in range(1, M.shape[0]):
-        l = M.diagonal(-i).copy()
-        if abs(l).max() > abstol and abs(l).max()/relmax > reltol:
-            d[-i] = np.array(l, dtype=dtype)
-
     return SparseMatrix(d, M.shape)
 
 def extract_bc_matrices(mats):
@@ -1693,6 +1696,7 @@ def get_dense_matrix_sympy(test, trial, measure=1):
 
         - :mod:`.legendre.bases`
         - :mod:`.chebyshev.bases`
+        - :mod:`.chebyshevu.bases`
         - :mod:`.fourier.bases`
         - :mod:`.laguerre.bases`
         - :mod:`.hermite.bases`
@@ -1728,7 +1732,7 @@ def get_dense_matrix_sympy(test, trial, measure=1):
         pi = np.conj(test[0].sympy_basis(i, x=x))
         for j in range(trial[0].slice().start, trial[0].slice().stop):
             pj = trial[0].sympy_basis(j, x=x)
-            integrand = sp.simplify(measure*pi.diff(x, test[1])*pj.diff(x, trial[1]))
+            integrand = measure*pi.diff(x, test[1])*pj.diff(x, trial[1])
             V[i, j] = integrate_sympy(integrand,
                                       (x, test[0].sympy_reference_domain()[0], test[0].sympy_reference_domain()[1]))
 
@@ -1749,6 +1753,7 @@ def get_dense_matrix_quadpy(test, trial, measure=1):
 
         - :mod:`.legendre.bases`
         - :mod:`.chebyshev.bases`
+        - :mod:`.chebyshevu.bases`
         - :mod:`.fourier.bases`
         - :mod:`.laguerre.bases`
         - :mod:`.hermite.bases`
@@ -1785,7 +1790,7 @@ def get_dense_matrix_quadpy(test, trial, measure=1):
         pi = np.conj(test[0].sympy_basis(i, x=x))
         for j in range(trial[0].slice().start, trial[0].slice().stop):
             pj = trial[0].sympy_basis(j, x=x)
-            integrand = sp.simplify(measure*pi.diff(x, test[1])*pj.diff(x, trial[1]))
+            integrand = measure*pi.diff(x, test[1])*pj.diff(x, trial[1])
             if not integrand == 0:
                 V[i, j] = quadpy.c1.integrate_adaptive(sp.lambdify(x, integrand),
                                                        test[0].reference_domain())[0]

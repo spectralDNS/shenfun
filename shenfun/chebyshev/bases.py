@@ -19,12 +19,13 @@ __all__ = ['ChebyshevBase',
            'Orthogonal',
            'ShenDirichlet',
            'Phi1',
+           'Phi2',
+           'Phi4',
            'Heinrichs',
            'ShenNeumann',
            'CombinedShenNeumann',
            'MikNeumann',
            'ShenBiharmonic',
-           'Phi2',
            'SecondNeumann',
            'UpperDirichlet',
            'LowerDirichlet',
@@ -442,6 +443,7 @@ class CompositeSpace(Orthogonal):
             SpectralBase._evaluate_scalar_product(self)
             output[self.sl[slice(-(self.N-self.dim()), None)]] = 0
             return
+
         Orthogonal._evaluate_scalar_product(self, True)
         K = self.stencil_matrix(self.shape(False))
         w0 = output.copy()
@@ -751,7 +753,7 @@ class Phi1(CompositeSpace):
         d = np.ones(N, dtype=int)
         d[-2:] = 0
         sc = 1/np.pi/(np.arange(N)+1)
-        return SparseMatrix({0: d*sc, 2: -d[:-2]*sc[:-2]}, (N, N))
+        return SparseMatrix({0: d*sc, 2: -sc[:-2]}, (N, N))
 
     def get_bc_basis(self):
         if self._bc_basis:
@@ -1204,6 +1206,13 @@ class Phi2(CompositeSpace):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, scaled=scaled, bc=bc,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
+        from shenfun.jacobi.recursions import half, cn, b, h, matpow, n
+        #self.b0n = sp.simplify(matpow(b, 2, -half, -half, n+2, n, cn) / h(-half, -half, n, 0, cn))
+        #self.b2n = sp.simplify(matpow(b, 2, -half, -half, n+2, n+2, cn) / h(-half, -half, n+2, 0, cn))
+        #self.b4n = sp.simplify(matpow(b, 2, -half, -half, n+2, n+4, cn) / h(-half, -half, n+4, 0, cn))
+        self.b0n = 1/(2*sp.pi*(n + 1)*(n + 2))
+        self.b2n = -1/(sp.pi*(n**2 + 4*n + 3))
+        self.b4n = 1/(2*sp.pi*(n + 2)*(n + 3))
 
     @staticmethod
     def boundary_condition():
@@ -1214,15 +1223,14 @@ class Phi2(CompositeSpace):
         return 'P2'
 
     def stencil_matrix(self, N=None):
+        from shenfun.jacobi.recursions import n
         N = self.N if N is None else N
-        d = np.ones(N, dtype=int)
-        d[-4:] = 0
         k = np.arange(N)
-        d2 = - (2*(k[:-2]+2)/(k[:-2]+3))
-        d2[-2:] = 0
-        d4 = (k[:-4]+1)/(k[:-4]+3)
-        sc = 1/(2*np.pi*(k+1)*(k+2))
-        return SparseMatrix({0: d*sc, 2: d2*sc[:-2], 4: d4*sc[:-4]}, (N, N))
+        d0, d2, d4 = np.zeros(N), np.zeros(N-2), np.zeros(N-4)
+        d0[:-4] = sp.lambdify(n, self.b0n)(k[:N-4])
+        d2[:-2] = sp.lambdify(n, self.b2n)(k[:N-4])
+        d4[:] = sp.lambdify(n, self.b4n)(k[:N-4])
+        return SparseMatrix({0: d0, 2: d2, 4: d4}, (N, N))
 
     def slice(self):
         return slice(0, self.N-4)
@@ -1233,6 +1241,52 @@ class Phi2(CompositeSpace):
         self._bc_basis = BCBiharmonic(self.N, quad=self.quad, domain=self.domain,
                                       coordinates=self.coors.coordinates)
         return self._bc_basis
+
+class Phi4(CompositeSpace):
+    def __init__(self, N, quad="GC", bc=(0,)*8, domain=(-1, 1), dtype=float, scaled=False,
+                 padding_factor=1, dealias_direct=False, coordinates=None):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
+        from shenfun.jacobi.recursions import half, cn, b, h, matpow, n
+        #self.b0n = sp.simplify(matpow(b, 4, -half, -half, n+4, n, cn) / h(-half, -half, n, 0, cn))
+        #self.b2n = sp.simplify(matpow(b, 4, -half, -half, n+4, n+2, cn) / h(-half, -half, n+2, 0, cn))
+        #self.b4n = sp.simplify(matpow(b, 4, -half, -half, n+4, n+4, cn) / h(-half, -half, n+4, 0, cn))
+        #self.b6n = sp.simplify(matpow(b, 4, -half, -half, n+4, n+6, cn) / h(-half, -half, n+6, 0, cn))
+        #self.b8n = sp.simplify(matpow(b, 4, -half, -half, n+4, n+8, cn) / h(-half, -half, n+8, 0, cn))
+        # Below are the same but faster since already simplified
+        self.b0n = 1/(8*sp.pi*(n + 1)*(n + 2)*(n + 3)*(n + 4))
+        self.b2n = -1/(2*sp.pi*(n + 1)*(n + 3)*(n + 4)*(n + 5))
+        self.b4n = 3/(4*sp.pi*(n + 2)*(n + 3)*(n + 5)*(n + 6))
+        self.b6n = -1/(2*sp.pi*(n + 3)*(n + 4)*(n + 5)*(n + 7))
+        self.b8n = 1/(8*sp.pi*(n + 4)*(n + 5)*(n + 6)*(n + 7))
+
+    @staticmethod
+    def boundary_condition():
+        return 'Biharmonic*2'
+
+    @staticmethod
+    def short_name():
+        return 'P4'
+
+    def stencil_matrix(self, N=None):
+        from shenfun.jacobi.recursions import n
+        N = self.N if N is None else N
+        k = np.arange(N)
+        d0, d2, d4, d6, d8 = np.zeros(N), np.zeros(N-2), np.zeros(N-4), np.zeros(N-6), np.zeros(N-8)
+        d0[:-8] = sp.lambdify(n, self.b0n)(k[:N-8])
+        d2[:-6] = sp.lambdify(n, self.b2n)(k[:N-8])
+        d4[:-4] = sp.lambdify(n, self.b4n)(k[:N-8])
+        d6[:-2] = sp.lambdify(n, self.b6n)(k[:N-8])
+        d8[:] = sp.lambdify(n, self.b8n)(k[:N-8])
+        return SparseMatrix({0: d0, 2: d2, 4: d4, 6: d6, 8: d8}, (N, N))
+
+    def slice(self):
+        return slice(0, self.N-8)
+
+    def get_bc_basis(self):
+        raise NotImplementedError
+        # This basis should probably only be used as test function, and thus no inhomogeneous bcs required
 
 class SecondNeumann(CompositeSpace): #pragma: no cover
     """Function space for homogeneous second order Neumann boundary conditions

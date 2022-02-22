@@ -8,6 +8,9 @@ bases = (
     chebyshev.Orthogonal,
     chebyshev.ShenDirichlet,
     chebyshev.Heinrichs,
+    chebyshev.Phi1,
+    chebyshev.Phi2,
+    chebyshev.Phi4,
     chebyshev.ShenNeumann,
     chebyshev.MikNeumann,
     chebyshev.CombinedShenNeumann,
@@ -22,6 +25,9 @@ bases = (
     legendre.ShenDirichlet,
     legendre.ShenNeumann,
     legendre.ShenBiharmonic,
+    legendre.Phi1,
+    legendre.Phi2,
+    legendre.Phi4,
     legendre.UpperDirichlet,
     legendre.ShenBiPolar,
     legendre.ShenBiPolar0,
@@ -43,7 +49,10 @@ bases = (
     jacobi.Orthogonal,
     jacobi.ShenDirichlet,
     jacobi.ShenBiharmonic,
-    jacobi.ShenOrder6
+    jacobi.ShenOrder6,
+    jacobi.Phi1,
+    jacobi.Phi2,
+    jacobi.Phi4
 )
 
 bcbases = (
@@ -73,6 +82,7 @@ nonBC = (
     'Apply',
     'Neumann2',
     'Periodic',
+    'Biharmonic*2'
 )
 
 @pytest.mark.parametrize('base', bases+bcbases)

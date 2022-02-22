@@ -12,6 +12,7 @@ import numpy as np
 import sympy as sp
 from scipy.fftpack import dct
 from shenfun.optimization import optimizer
+from shenfun.config import config
 
 __all__ = ['dx', 'clenshaw_curtis1D', 'CachedArrayDict', 'surf3D', 'wrap_periodic',
            'outer', 'dot', 'apply_mask', 'integrate_sympy', 'mayavi_show',
@@ -403,8 +404,9 @@ def split(measures):
         return d
 
     ms = sp.sympify(measures)
-    if len(ms.free_symbols) <= 1:
-        return [_split(ms)]
+    if not config['assembly']['splitmeasure']:
+        if len(ms.free_symbols) <= 1:
+            return [_split(ms)]
 
     ms = ms.expand()
     result = []

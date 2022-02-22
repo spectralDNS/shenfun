@@ -13,6 +13,10 @@ config = {
         'verbose': False,
     },
     'basisvectors': 'normal',
+    'assembly':
+    {
+        'splitmeasure': False,
+    },
     'matrix':
     {
         'sparse':
