@@ -33,7 +33,7 @@ from mpi4py_fft import fftw
 from shenfun.config import config
 from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
 from shenfun.matrixbase import SparseMatrix
-from .recursions import b, h, matpow
+from .recursions import b, h, matpow, n
 
 try:
     import quadpy
@@ -538,7 +538,6 @@ class Phi4(CompositeSpace):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 alpha=alpha, beta=beta, coordinates=coordinates)
-        from shenfun.jacobi.recursions import b, h, matpow, n
         self.b0n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n) / h(alpha, beta, n, 0))
         self.b2n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+2) / h(alpha, beta, n+2, 0))
         self.b4n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+4) / h(alpha, beta, n+4, 0))
@@ -560,7 +559,6 @@ class Phi4(CompositeSpace):
         return 'P4'
 
     def stencil_matrix(self, N=None):
-        from shenfun.jacobi.recursions import n
         N = self.N if N is None else N
         k = np.arange(N)
         d0, d2, d4, d6, d8 = np.zeros(N), np.zeros(N-2), np.zeros(N-4), np.zeros(N-6), np.zeros(N-8)
