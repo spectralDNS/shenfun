@@ -9,7 +9,7 @@ from time import time
 from scipy.special import eval_chebyu
 from numpy.polynomial import chebyshev as n_cheb
 from mpi4py_fft import fftw
-from shenfun.spectralbase import SpectralBase, work, Transform, FuncWrap, \
+from shenfun.spectralbase import SpectralBase, Transform, FuncWrap, \
     islicedict, slicedict
 from shenfun.matrixbase import SparseMatrix
 from shenfun.config import config
