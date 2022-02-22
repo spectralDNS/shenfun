@@ -235,7 +235,7 @@ def Lmat(k, q, l, M, N, alf=0, bet=0, gn=1):
     """
 
     if l == 0 and q == 0:
-        return SparseMatrix({k:1}, (M, N)).diags('csr')
+        return SparseMatrix({k: 1}, (M, N)).diags('csr')
     elif l == 0:
         A = ShiftedMatrix(a_, q, k, k, M, N, k=k, alf=alf, bet=bet, gn=gn).diags('csr')
         return A*SparseMatrix({k: 1}, (N, N)).diags('csr')

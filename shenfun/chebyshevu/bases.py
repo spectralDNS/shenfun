@@ -13,7 +13,6 @@ from shenfun.spectralbase import SpectralBase, Transform, FuncWrap, \
     islicedict, slicedict
 from shenfun.matrixbase import SparseMatrix
 from shenfun.config import config
-from shenfun.jacobi.recursions import b, h, half, n, matpow, cn, un
 
 #pylint: disable=abstract-method, not-callable, method-hidden, no-self-use, cyclic-import
 
@@ -512,6 +511,7 @@ class Phi1(CompositeSpace):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
+        from shenfun.jacobi.recursions import b, h, half, n, un
         self.b0n = sp.simplify(b(half, half, n+1, n, un) / (h(half, half, n, 0, un)))
         self.b2n = sp.simplify(b(half, half, n+1, n+2, un) / (h(half, half, n+2, 0, un)))
 
@@ -524,6 +524,7 @@ class Phi1(CompositeSpace):
         return 'P1'
 
     def stencil_matrix(self, N=None):
+        from shenfun.jacobi.recursions import n
         N = self.N if N is None else N
         k = np.arange(N)
         d0, d2 = np.zeros(N), np.zeros(N-2)
@@ -549,6 +550,7 @@ class Phi2(CompositeSpace):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
+        from shenfun.jacobi.recursions import b, h, half, n, matpow, un
         self.b0n = sp.simplify(matpow(b, 2, half, half, n+2, n, un) / (h(half, half, n, 0, un)))
         self.b2n = sp.simplify(matpow(b, 2, half, half, n+2, n+2, un) / (h(half, half, n+2, 0, un)))
         self.b4n = sp.simplify(matpow(b, 2, half, half, n+2, n+4, un) / (h(half, half, n+4, 0, un)))
@@ -562,6 +564,7 @@ class Phi2(CompositeSpace):
         return 'P2'
 
     def stencil_matrix(self, N=None):
+        from shenfun.jacobi.recursions import n
         N = self.N if N is None else N
         k = np.arange(N)
         d0, d2, d4 = np.zeros(N), np.zeros(N-2), np.zeros(N-4)

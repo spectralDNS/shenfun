@@ -36,7 +36,7 @@ import numpy as np
 from mpi4py import MPI
 from .config import config, dumpconfig
 from . import chebyshev
-#from . import chebyshevu
+from . import chebyshevu
 from . import legendre
 from . import laguerre
 from . import hermite
