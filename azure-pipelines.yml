@@ -1,8 +1,8 @@
 jobs:
 - job: macOS
-  displayName: macOS-10.14
+  displayName: macOS-latest
   pool:
-    vmImage: 'macOS-10.14'
+    vmImage: 'macOS-latest'
   strategy:
     matrix:
       Python36:
