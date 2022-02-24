@@ -7,6 +7,7 @@ Subpackages
 .. toctree::
 
     shenfun.chebyshev
+    shenfun.chebyshevu
     shenfun.forms
     shenfun.fourier
     shenfun.legendre

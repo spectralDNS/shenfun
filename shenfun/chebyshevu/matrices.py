@@ -17,11 +17,11 @@ different bases according to
 
 T  = Orthogonal
 CD = CompactDirichlet
+CN = CompactNeumann
 BD = BCDirichlet
 BB = BCBiharmonic
 P1 = Phi1
 P2 = Phi2
-T1 = Theta1
 
 So a mass matrix using CompactDirichlet trial and Phi1 test is named
 BP1CDmat.
@@ -82,6 +82,7 @@ xp = sp.symbols('x', real=True, positive=True)
 # Short names for instances of bases
 U = bases.Orthogonal
 CD = bases.CompactDirichlet
+CN = bases.CompactNeumann
 P1 = bases.Phi1
 P2 = bases.Phi2
 BCD = bases.BCDirichlet

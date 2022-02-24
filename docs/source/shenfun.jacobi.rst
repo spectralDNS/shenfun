@@ -20,6 +20,13 @@ shenfun.jacobi.matrices module
     :undoc-members:
     :show-inheritance:
 
+shenfun.jacobi.recursions module
+--------------------------------
+
+.. automodule:: shenfun.jacobi.recursions
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 Module contents
 ---------------

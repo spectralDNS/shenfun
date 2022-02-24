@@ -71,16 +71,51 @@ def a_(k, q, alf, bet, i, j, gn=1):
     return f if gn == 1 else gn(alf, bet, j) / gn(alf, bet, i) * f
 
 def gamma(alf, bet, n):
+
     f = 2**(alfa+beta+1)*sp.gamma(m+alfa+1)*sp.gamma(m+beta+1)/sp.gamma(m+alfa+beta+1)/sp.gamma(m+1)/(2*m+alfa+beta+1)
     return sp.simplify(f.subs(m, n)).subs([(alfa, alf), (beta, bet)])
 
 def h(alf, bet, n, k, gn=1):
-    """Return normalization factor"""
+    r"""Return normalization factor for inner product of derivatives of Jacobi polynomials
+
+
+    .. math::
+
+        Q_n(x) = g_n(x)P^{(\alpha,\beta)}_n(x)
+        h_n^{(k)} = (\frac{d^k Q_n}{dx^k}, \frac{d^k Q_m}{dx^k})_{\omega^{(\alpha,\beta)}}
+
+    Parameters
+    ----------
+    alf, bet : numbers
+        Jacobi parameters
+    n : int
+        Index
+    k : int
+        For derivative of k'th order
+    gn : scaling function, optional
+        Chebyshev of first and second kind use cn and un, respectively.
+        Legendre uses gn=1.
+    """
     f = gamma(alf+k, bet+k, n-k)*(psi(alf, bet, n, k))**2
     return sp.simplify(f) if gn == 1 else sp.simplify(gn(alf, bet, n)**2*f)
 
 def matpow(mat, q, alf, bet, i, j, gn=1):
-    """Compute and return q'th matrix power of mat"""
+    """Compute and return component of q'th matrix power of mat
+
+    Parameters
+    ----------
+    mat : Python function (a, b or c)
+    q : int
+        matrix power
+    alf, bet : numbers
+        Jacobi parameters
+    i, j : int
+        Row and column indices
+    gn : scaling function, optional
+        Chebyshev of first and second kind use cn and un, respectively.
+        Legendre uses gn=1.
+
+    """
     assert q < 7
     m = _matpow(mat, mat, q, alf, bet, i, j)
     return m if gn == 1 else gn(alf, bet, j) / gn(alf, bet, i) * m
@@ -106,7 +141,23 @@ def _matpow(mat, m2, q, alf, bet, i, j):
 
 
 def pmat(mat, q, alf, bet, M, N, gn=1):
-    """Return SparseMatrix of q'th matrix power of mat"""
+    r"""Return SparseMatrix of q'th matrix power of recursion matrix mat
+
+    Parameters
+    ----------
+    mat : Python function for matrix
+        The Python function must have signature (alf, bet, i, j, gn=1)
+    q : int
+        Matrix power
+    alf, bet : numbers
+        Jacobi parameters
+    M, N : int
+        Shape of returned matrix
+    gn : scaling function, optional
+        Chebyshev of first and second kind use cn and un, respectively.
+        Legendre uses gn=1.
+
+    """
     d = {}
     for i in range(-q, q+1):
         f = matpow(mat, q, alfa, beta, m, m+i, gn)
@@ -137,7 +188,7 @@ def pmat(mat, q, alf, bet, M, N, gn=1):
     return SparseMatrix(d, (M, N))
 
 def a_mat(mat, k, q, alf, bet, M, N, gn=1):
-    r"""Return SparseMatrix of
+    r"""Return SparseMatrix of recursion matrix
 
     .. math::
 
@@ -147,6 +198,17 @@ def a_mat(mat, k, q, alf, bet, M, N, gn=1):
     ----------
     mat : Python function for matrix
         The Python function must have signature (k, q, alf, bet, i, j, gn=1)
+    k : int
+        Parameter
+    q : int
+        Matrix power
+    alf, bet : numbers
+        Jacobi parameters
+    M, N : int
+        Shape of returned matrix
+    gn : scaling function, optional
+        Chebyshev of first and second kind use cn and un, respectively.
+        Legendre uses gn=1.
 
     """
     d = {}
@@ -179,6 +241,22 @@ def ShiftedMatrix(mat, q, r, s, M=0, N=0, k=None, alf=0, bet=0, gn=1):
     ----------
     mat : Python function or SparseMatrix
         The Python function must have signature (k, q, alf, bet, i, j, gn=1)
+    q : int
+        The matrix power
+    r : int
+        Shift in row
+    s : int
+        Shift in column
+    M, N : int, optional
+        The shape of the final matrix
+    k : int or None, optional
+        Parameter of recursion of the k'th derivative
+        This is only used if the recursion matrix is A.
+    alf, bet : numbers, optional
+        Jacobi paramters
+    gn : scaling function, optional
+        Chebyshev of first and second kind use cn and un, respectively.
+        Legendre uses gn=1.
 
     Note
     ----
@@ -222,15 +300,18 @@ def Lmat(k, q, l, M, N, alf=0, bet=0, gn=1):
     ----------
     k, q, l : integers
         Numbers in variational form (1)
-    alf, bet : Jacobian parameters
-    N : integer
-        Number of quadrature points
+    M, N : int
+        Shape of matrix
+    alf, bet : numbers, optional
+        Jacobian parameters
     gn : scaling function
+        Chebyshev of first and second kind use cn and un, respectively.
+        Legendre uses gn=1.
 
     Example
     -------
     >>> from shenfun.jacobi.recursions import Lmat, cn, half
-    >>> X = Lmat(-half, -half, 2, 2, 0, 10, 12, cn)
+    >>> X = Lmat(2, 2, 0, 10, 12, -half, -half, cn)
 
     """
 

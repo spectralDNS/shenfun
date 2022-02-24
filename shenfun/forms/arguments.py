@@ -110,8 +110,8 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
         Whether to use scaled basis (only Legendre)
     basis : str
         Name of basis to use, if there are more than one possible basis for a given
-        boundary condition. For example, there are two Dirichlet bases for the
-        Chebyshev family: 'Heinricht' and 'ShenDirichlet'
+        boundary condition. For example, there are three Dirichlet bases for the
+        Chebyshev family: 'Heinricht', 'ShenDirichlet' and 'Phi1'
     padding_factor : float, optional
         For padding backward transform (for dealiasing)
     dealias_direct : bool, optional
