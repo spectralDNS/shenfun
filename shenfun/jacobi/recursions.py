@@ -115,7 +115,7 @@ def _c(alf, bet, i, j):
     return f
 
 def a(alf, bet, i, j, gn=1):
-    r"""Recursion matrix $A$ for standardized Jacobi polynomials
+    r"""Recursion matrix :math:`A` for standardized Jacobi polynomials
 
     The recursion is
 
@@ -144,7 +144,7 @@ def a(alf, bet, i, j, gn=1):
     return f if gn == 1 else gn(alf, bet, j) / gn(alf, bet, i) * f
 
 def b(alf, bet, i, j, gn=1):
-    r"""Recursion matrix $B$ for standardized Jacobi polynomials
+    r"""Recursion matrix :math:`B` for standardized Jacobi polynomials
 
     The recursion is
 
@@ -174,7 +174,7 @@ def b(alf, bet, i, j, gn=1):
     return f if gn == 1 else gn(alf, bet, j) / gn(alf, bet, i) * f
 
 def c(alf, bet, i, j, gn=1):
-    r"""Recursion matrix $C$ for standardized Jacobi polynomials
+    r"""Recursion matrix :math:`C` for standardized Jacobi polynomials
 
     The recursion is
 
@@ -182,7 +182,7 @@ def c(alf, bet, i, j, gn=1):
 
         (1-x^2) \partial \boldsymbol{Q} = {C}^T \boldsymbol{Q}
 
-    where $\partial$ represents the derivative and
+    where :math:`\partial` represents the derivative and
 
     .. math::
 
@@ -210,7 +210,7 @@ def psi(alf, bet, n, k):
 
         \partial^k P^{(\alpha, \beta)}_n = \psi^{(k,\alpha,\beta)}_{n} P^{(\alpha+k,\beta+k)}_{n-k}, \quad n \ge k, \quad (*)
 
-    where $\partial^k$ represents the $k$'th derivative
+    where :math:`\partial^k` represents the $k$'th derivative
 
     Parameters
     ----------
@@ -222,7 +222,7 @@ def psi(alf, bet, n, k):
     return sp.rf(n+alf+bet+1, k) / 2**k
 
 def a_(k, q, alf, bet, i, j, gn=1):
-    r"""Recursion matrix $\underline{A}$ for standardized Jacobi polynomials
+    r"""Recursion matrix :math:`\underline{A}` for standardized Jacobi polynomials
 
     The recursion is
 
@@ -230,7 +230,7 @@ def a_(k, q, alf, bet, i, j, gn=1):
 
         x \partial^k \boldsymbol{Q} = \underline{A}^T \partial^k \boldsymbol{Q} \quad (*)
 
-    where $\partial^k$ represents the $k$'th derivative and
+    where :math:`\partial^k` represents the :math:`k`'th derivative and
 
     .. math::
 
@@ -253,7 +253,7 @@ def a_(k, q, alf, bet, i, j, gn=1):
     return f if gn == 1 else gn(alf, bet, j) / gn(alf, bet, i) * f
 
 def gamma(alf, bet, n):
-    r"""Return normalization factor $h_n$ for inner product of Jacobi polynomials
+    r"""Return normalization factor :math:`h_n` for inner product of Jacobi polynomials
 
     .. math::
 
@@ -270,7 +270,7 @@ def gamma(alf, bet, n):
     return sp.simplify(f.subs(m, n)).subs([(alfa, alf), (beta, bet)])
 
 def h(alf, bet, n, k, gn=1):
-    r"""Return normalization factor $h^{(k)}_n$ for inner product of derivatives of Jacobi polynomials
+    r"""Return normalization factor :math:`h^{(k)}_n` for inner product of derivatives of Jacobi polynomials
 
     .. math::
 
@@ -431,7 +431,7 @@ def ShiftedMatrix(mat, q, r, s, M=0, N=0, k=None, alf=0, bet=0, gn=1):
     .. math::
 
         A^{(k, q)}_{(r, s)} = (a^{(k, q)}_{m+r,n+s})_{m,n=0}^{M,N} \\
-        B^{(q)}_{r, s} = (b^{(q)}_{m+r,n+s})_{m,n=0}^{M,N}
+        B^{(q)}_{(r, s)} = (b^{(q)}_{m+r,n+s})_{m,n=0}^{M,N}
 
     Parameters
     ----------
