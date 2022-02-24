@@ -514,8 +514,10 @@ class Phi1(CompositeSpace):
 
     .. math::
 
-        \phi_n = \frac{1}{\pi}\left(\frac{U_n}{n+1}-\frac{U_{n+2}}{n+3}\right) =  \frac{(1-x^2)U'_{k+1}}{h^{(1)}_{k+1}} \\
-        h^{(1)}_n = \frac{\pi n(n+2)}{2}
+        \phi_n &= \frac{1}{\pi}\left(\frac{U_n}{n+1}-\frac{U_{n+2}}{n+3}\right) \\
+               &=  \frac{(1-x^2)U'_{k+1}}{h^{(1)}_{k+1}}
+
+    where :math:`h^{(1)}_n = \frac{\pi n(n+2)}{2}`.
 
     Parameters
     ----------
@@ -602,8 +604,9 @@ class Phi2(CompositeSpace):
     .. math::
 
         \phi_n &= \frac{(1-x^2)^2 U''_{k+1}}{h^{(2)}_{k+2}} \\
-               &= \frac{1}{2\pi(n+1)(n+2)}\left(U_n- \frac{2(n+1)}{n+4}U_{n+2} + \frac{(n+1)(n+2)}{(n+3)(n+4)}U_{n+4} \right) \\
-        h^{(2)}_n &= \frac{\pi (n+3)(n+2)n(n-1)}{2}
+               &= \frac{1}{2\pi(n+1)(n+2)}\left(U_n- \frac{2(n+1)}{n+4}U_{n+2} + \frac{(n+1)(n+2)}{(n+3)(n+4)}U_{n+4} \right)
+
+    where :math:`h^{(2)}_n = \frac{\pi (n+3)(n+2)n(n-1)}{2}`.
 
     Parameters
     ----------
@@ -945,8 +948,8 @@ class BCDirichlet(BCBase):
 
     .. math::
 
-        \phi_0 = \frac{1}{2}U_0 - \frac{1}{4}U_1 \\
-        \phi_1 = \frac{1}{2}U_0 + \frac{1}{4}U_1
+        \phi_0 &= \frac{1}{2}U_0 - \frac{1}{4}U_1 \\
+        \phi_1 &= \frac{1}{2}U_0 + \frac{1}{4}U_1
     """
     @staticmethod
     def short_name():
@@ -961,8 +964,8 @@ class BCNeumann(BCBase):
 
     .. math::
 
-        \phi_0 = \frac{1}{16}(4U_1 - U_2) \\
-        \phi_1 = \frac{1}{16}(4U_1 + U_2
+        \phi_0 &= \frac{1}{16}(4U_1 - U_2) \\
+        \phi_1 &= \frac{1}{16}(4U_1 + U_2)
     """
 
     @staticmethod
@@ -978,10 +981,10 @@ class BCBiharmonic(BCBase):
 
     .. math::
 
-        \phi_0 = \frac{1}{32}(16U_0 - 10U_1 + U_3 \\
-        \phi_1 = \frac{1}{32}(6U_0 - 2U_1 - 2U_2 + U_3) \\
-        \phi_2 = \frac{1}{32}(16U_0 + 10U_1 - U_3) \\
-        \phi_3 = \frac{1}{32}(-6U_0 - 2U_1 + 2U_2 + U_3)
+        \phi_0 &= \frac{1}{32}(16U_0 - 10U_1 + U_3 \\
+        \phi_1 &= \frac{1}{32}(6U_0 - 2U_1 - 2U_2 + U_3) \\
+        \phi_2 &= \frac{1}{32}(16U_0 + 10U_1 - U_3) \\
+        \phi_3 &= \frac{1}{32}(-6U_0 - 2U_1 + 2U_2 + U_3)
     """
 
     @staticmethod

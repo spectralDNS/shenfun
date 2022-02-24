@@ -403,7 +403,7 @@ class Orthogonal(ChebyshevBase):
 # is implemented and reused by all.
 
 class CompositeSpace(Orthogonal):
-    """Common class for all spaces based on composite bases"""
+    """Common abstract class for all spaces based on composite bases"""
 
     def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float,
                  scaled=False, padding_factor=1, dealias_direct=False, coordinates=None):
@@ -859,9 +859,15 @@ class Heinrichs(CompositeSpace):
         return self._bc_basis
 
 class ShenNeumann(CompositeSpace):
-    """Function space for Neumann boundary conditions
+    r"""Function space for Neumann boundary conditions
 
     u'(-1)=a and u'(1)=b
+
+    The basis function is
+
+    .. math::
+
+        \phi_n = T_n - \left(\frac{k}{k+2}\right)^2 T_{n+2}
 
     Parameters
     ----------
@@ -927,9 +933,20 @@ class ShenNeumann(CompositeSpace):
         return self._bc_basis
 
 class CombinedShenNeumann(CompositeSpace):
-    """Function space for Neumann boundary conditions
+    r"""Function space for Neumann boundary conditions
 
     u'(-1)=a and u'(1)=b
+
+    The basis functions are
+
+    .. math::
+
+        \phi_k = \begin{cases}
+            T_0, \quad &k=0, \\
+            T_1 - T_3/9, \quad &k=1, \\
+            T_2/4 - T_4/16, \quad &k=2, \\
+            -\frac{T_{k-2}}{(k-2)^2} +2\frac{T_k}{k^2} - \frac{T_{k+2}}{(k+2)^2}, &k=3, 4, \ldots, N-3.
+        \end{cases}
 
     Parameters
     ----------
@@ -1085,10 +1102,16 @@ class MikNeumann(CompositeSpace):
         return self._bc_basis
 
 class ShenBiharmonic(CompositeSpace):
-    """Function space for biharmonic equation with 2 Dirichlet and
+    r"""Function space for biharmonic equation with 2 Dirichlet and
     2 Neumann boundary conditions
 
     u(-1)=a, u(1)=c, u'(-1)=b and u'(1)=d
+
+    The basis functions are
+
+    .. math::
+
+        \phi_n = T_n - \frac{2(n+2)}{n+3}T_{n+2}+\frac{n+1}{n+3}T_{n+4}
 
     Parameters
     ----------
@@ -1243,6 +1266,49 @@ class Phi2(CompositeSpace):
         return self._bc_basis
 
 class Phi4(CompositeSpace):
+    r"""Function space for biharmonic equation with 4 Dirichlet and
+    4 Neumann boundary conditions
+
+    The 8 boundary conditions are
+
+    .. math::
+
+        \frac{d^k}{dx^k}u(\pm 1) = 0, \quad \forall k \in (0,1,2,3)
+
+    .. math::
+
+        \phi_k = \frac{(1-x^2)^4}{h^{(4)}_{k+4}} T^{(4)}_{k+4} \\
+        h^{(4)}_k = \frac{\pi k \Gamma (k+4)}{2(k-4)!}
+
+    Parameters
+    ----------
+        N : int, optional
+            Number of quadrature points
+        quad : str, optional
+            Type of quadrature
+
+            - GL - Chebyshev-Gauss-Lobatto
+            - GC - Chebyshev-Gauss
+        bc : 8-tuple of zeros
+        domain : 2-tuple of floats, optional
+            The computational domain
+        dtype : data-type, optional
+            Type of input data in real physical space. Will be overloaded when
+            basis is part of a :class:`.TensorProductSpace`.
+        padding_factor : float, optional
+            Factor for padding backward transforms.
+        dealias_direct : bool, optional
+            Set upper 1/3 of coefficients to zero before backward transform
+        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
+            Map for curvilinear coordinatesystem.
+            The new coordinate variable in the new coordinate system is the first item.
+            Second item is a tuple for the Cartesian position vector as function of the
+            new variable in the first tuple. Example::
+
+                theta = sp.Symbols('x', real=True, positive=True)
+                rv = (sp.cos(theta), sp.sin(theta))
+
+    """
     def __init__(self, N, quad="GC", bc=(0,)*8, domain=(-1, 1), dtype=float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
@@ -1422,6 +1488,12 @@ class UpperDirichlet(CompositeSpace):
 
     u(1)=a
 
+    The basis functions are
+
+    .. math::
+
+        \phi_n = T_n - T_{n+1}
+
     Parameters
     ----------
         N : int, optional
@@ -1432,7 +1504,7 @@ class UpperDirichlet(CompositeSpace):
             - GL - Chebyshev-Gauss-Lobatto
             - GC - Chebyshev-Gauss
 
-        bc : 2-tuple of (number, None), optional
+        bc : 2-tuple of (None, number), optional
             The number is the boundary condition value
         domain : 2-tuple of floats, optional
             The computational domain
@@ -1490,6 +1562,12 @@ class LowerDirichlet(CompositeSpace):
     """Function space with single Dirichlet boundary condition
 
     u(-1)=a
+
+    The basis functions are
+
+    .. math::
+
+        \phi_n = T_n + T_{n+1}
 
     Parameters
     ----------
