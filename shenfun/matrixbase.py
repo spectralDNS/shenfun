@@ -198,9 +198,6 @@ class SparseMatrix(MutableMapping):
     def __len__(self):
         return len(self._storage)
 
-    def __quasi__(self, Q):
-        return Q.diags('csc')*self.diags('csc')
-
     def __eq__(self, a):
         if self.shape != a.shape:
             return False

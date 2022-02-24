@@ -545,10 +545,10 @@ class Phi4(CompositeSpace):
         self.b8n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+8) / h(alpha, beta, n+8, 0))
         self.b1n, self.b3n, self.b5n, self.b7n = (None,)*4
         if not alpha == beta:
-            self.b1n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+1) / h(alpha, beta, n, 0))
-            self.b3n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+3) / h(alpha, beta, n, 0))
-            self.b5n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+5) / h(alpha, beta, n, 0))
-            self.b7n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+7) / h(alpha, beta, n, 0))
+            self.b1n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+1) / h(alpha, beta, n+1, 0))
+            self.b3n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+3) / h(alpha, beta, n+3, 0))
+            self.b5n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+5) / h(alpha, beta, n+5, 0))
+            self.b7n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n+7) / h(alpha, beta, n+7, 0))
 
     @staticmethod
     def boundary_condition():

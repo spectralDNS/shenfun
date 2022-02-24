@@ -162,8 +162,8 @@ class Orthogonal(ChebyshevuBase):
     def __init__(self, N, quad='GU', domain=(-1, 1), dtype=float, padding_factor=1,
                  dealias_direct=False, coordinates=None):
         ChebyshevuBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                               padding_factor=padding_factor, dealias_direct=dealias_direct,
-                               coordinates=coordinates)
+                                padding_factor=padding_factor, dealias_direct=dealias_direct,
+                                coordinates=coordinates)
         assert quad in ('GU', 'GC')
         if quad == 'GC':
             self._xfftn_fwd = functools.partial(fftw.dstn, type=2)

@@ -71,12 +71,8 @@ import functools
 import numpy as np
 import sympy as sp
 import scipy.sparse as scp
-from shenfun.optimization import cython, numba, optimizer
 from shenfun.matrixbase import SpectralMatrix, SparseMatrix
-from shenfun.la import SparseMatrixSolver
-from shenfun.la import TDMA as generic_TDMA
-from shenfun.la import PDMA as generic_PDMA
-from shenfun.la import TwoDMA, FDMA
+from shenfun.la import TwoDMA
 from . import bases
 from shenfun.chebyshev import bases as chebbases
 
@@ -93,17 +89,6 @@ BCB = bases.BCBiharmonic
 
 SD = chebbases.ShenDirichlet
 SN = chebbases.ShenNeumann
-
-def get_B2(N):
-    """Get index-shifted B2 matrix for Chebyshev basis of first kind
-    """
-    ck = np.ones(N, int)
-    ck[0] = 2
-    k = np.arange(N+2)
-    bm2 = ck/(4*k[2:]*(k[2:]-1))
-    b0 = -1/(2*k[2:]**2-2)
-    bp2 = 1/(4*k[2:]*(k[2:]+1))
-    return scp.diags([bm2, b0, bp2], [0, 2, 4], shape=(N, N+2), format='csr')
 
 class BUUmat(SpectralMatrix):
     r"""Matrix for inner product
@@ -144,13 +129,14 @@ class BP1SDmat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
+        from shenfun.jacobi.recursions import Lmat, half, cn
         assert isinstance(test[0], P1)
         assert isinstance(trial[0], SD)
         N = test[0].N-2
         K = trial[0].stencil_matrix()
         K.shape = (N, N+2)
         K = K.diags('csr')
-        B2 = get_B2(N)
+        B2 = Lmat(2, 0, 2, N, N+2, -half, -half, cn) # B^{(2)_{(2)}}
         if not test[0].is_scaled:
             k = np.arange(N+2)
             B2 = SparseMatrix({0: (k[:-2]+2)}, (N, N)).diags('csr')*B2
@@ -205,14 +191,16 @@ class BP1SNmat(SpectralMatrix):
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
+        from shenfun.jacobi.recursions import Lmat, half, cn
         assert isinstance(test[0], P1)
         assert isinstance(trial[0], SN)
         N = test[0].N-2
         K = trial[0].stencil_matrix()
         K.shape = (N, N+2)
         K = K.diags('csr')
-        B2 = get_B2(N)
+        B2 = Lmat(2, 0, 2, N, N+2, -half, -half, cn) # B^{(2)_{(2)}}
         if not test[0].is_scaled:
+            k = np.arange(test[0].N)
             B2 = SparseMatrix({0: (k[:-2]+2)}, (N, N)).diags('csr')*B2
         M = B2 * K.T
         d = {-2: M.diagonal(-2), 0: M.diagonal(0), 2: M.diagonal(2), 4: M.diagonal(4)}

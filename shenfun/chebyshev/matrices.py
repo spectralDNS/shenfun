@@ -24,6 +24,9 @@ MN = MikNeumann
 UD = UpperDirichlet
 LD = LowerDirichlet
 DN = DirichletNeumann
+P1 = Phi1
+P2 = Phi2
+P4 = Phi4
 BD = BCDirichlet
 BB = BCBiharmonic
 
@@ -914,14 +917,6 @@ class BTTmat(SpectralMatrix):
         u[ss] = b[ss]*d[sl]
         return u
 
-    def __quasi__(self, Q):
-        N = self.testfunction[0].N
-        ck = get_ck(N, self.testfunction[0].quad)
-        sc = self.scale*Q.scale
-        return SparseMatrix({0: self.scale*np.pi/2*Q[0],
-                            -2: self.scale*ck[:-2]*np.pi/2*Q[-2],
-                             2: self.scale*np.pi/2*Q[2]}, (N, N), scale=sc)
-
 class BSNSNmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -1038,25 +1033,6 @@ class BTSDmat(SpectralMatrix):
             d[-2][-1] *= 2
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
-    def __quasi__(self, Q):
-        N = self.testfunction[0].N
-        d = {0: Q[0]*self[0]}
-        #d[0][:-2] += Q[2]*self[-2]
-        #d[-2] = Q[0][2:]*self[-2]
-        #d[2] = Q[2][:]*(self[0][2:])
-        #d[2][:-2] += Q[4]*self[-2]
-        #d[4] = Q[4][:]*self[0][4:]
-
-        d[0] += Q[2]*self[-2]
-        d[-2] = Q[0][2:]*self[-2]
-        d[2] = Q[2][:-2]*(self[0][2:])
-        d[2] += Q[4]*self[-2]
-        d[4] = Q[4][:-2]*self[0][4:]
-
-        sc = self.scale*Q.scale
-        return SparseMatrix(d, (N-2, N-2), scale=sc)
-
-
 class BTSNmat(SpectralMatrix):
     r"""Mass matrix for inner product
 
@@ -1082,27 +1058,6 @@ class BTSNmat(SpectralMatrix):
         d = {-2: -np.pi/2*ck[2:]*((k[2:]-2)/k[2:])**2,
               0: np.pi/2*ck[:-2]}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-
-    def __quasi__(self, Q):
-        N = self.testfunction[0].N
-        k = np.ones(N)
-        k[:2] = 0
-        sc = self.scale*Q.scale
-        d = {0: Q[0]*self[0]}
-        #d[0][:-2] += Q[2]*self[-2][:N-4]
-        #d[-2] = Q[0][2:]*self[-2][:N-4]
-        #d[2] = Q[2]*self[0][2:]
-        #d[2][:-2] += Q[4]*self[-2][2:N-4]
-        #d[4] = Q[4][:]*self[0][4:]
-
-        d[0][:] += Q[2]*self[-2]
-        d[-2] = Q[0][2:]*self[-2][:N-4]
-        d[2] = Q[2][:-2]*self[0][2:]
-        d[2] += Q[4]*self[-2][2:N-2]
-        d[4] = Q[4][:-2]*self[0][4:]
-        d[2][-2:] = 0
-        d[4][-2:] = 0
-        return SparseMatrix(d, (N-2, N-2), scale=sc)
 
 class BSBSBmat(SpectralMatrix):
     r"""Mass matrix for inner product
@@ -2026,14 +1981,6 @@ class ATTmat(SpectralMatrix):
             c = super(ATTmat, self).matvec(v, c, format=format, axis=axis)
         return c
 
-    def __quasi__(self, Q):
-        N = self.testfunction[0].N
-        k = np.ones(N)*np.pi/2
-        k[:2] = 0
-        sc = self.scale*Q.scale
-        return SparseMatrix({0: k}, (N, N), scale=sc)
-
-
 class ATSDmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
@@ -2065,12 +2012,6 @@ class ATSDmat(SpectralMatrix):
         d = dict.fromkeys(np.arange(0, N-2, 2), _getkey)
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
-    def __quasi__(self, Q):
-        N = self.testfunction[0].N
-        sc = self.scale*Q.scale
-        return SparseMatrix({2: np.pi/2, 0: -np.pi/2}, (N-2, N-2), scale=sc)
-
-
 class ATSNmat(SpectralMatrix):
     r"""Stiffness matrix for inner product
 
@@ -2100,15 +2041,6 @@ class ATSNmat(SpectralMatrix):
             return (k[j:-2]*(k[j:-2]**2-k[:-(j+2)]**2) - k[j:-2]**2/(k[j:-2]+2)*((k[j:-2]+2)**2-k[:-(j+2)]**2))*np.pi/2.*self._keyscale
         d = dict.fromkeys(np.arange(0, N-2, 2), _getkey)
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
-
-    def __quasi__(self, Q):
-        N = self.testfunction[0].N
-        k = np.arange(N)
-        sc = self.scale*Q.scale
-        return SparseMatrix({2: np.pi/2,
-                             0: -np.pi/2*(k[:-2]/(k[:-2]+2))**2},
-                            (N-2, N-2), scale=sc)
-
 
 class ACNCNmat(SpectralMatrix):
     r"""Stiffness matrix for inner product

@@ -110,7 +110,8 @@ def solve(f_hat, u_hat, A, B, alpha, method):
 
 def main(N, method=0, alpha=0, returntype=0):
     from shenfun import FunctionSpace, TrialFunction, TestFunction, \
-        inner, div, grad, chebyshev, SparseMatrix, Function, Array
+        inner, div, grad, chebyshev, SparseMatrix, Function, Array, \
+        jacobi, extract_diagonal_matrix
     global fe
 
     basis = {0: ('ShenNeumann', 'CombinedShenNeumann'),
@@ -139,9 +140,21 @@ def main(N, method=0, alpha=0, returntype=0):
 
     if method == 4:
         # Quasi preconditioning
-        Q2 = chebyshev.quasi.QIGmat(N)
-        A = Q2*A
-        B = Q2*B
+        #Q2 = chebyshev.quasi.QIGmat(N)
+        #A = Q2*A
+        #B = Q2*B
+        Q2 = jacobi.recursions.ShiftedMatrix(jacobi.recursions.b, 2, 2, 0, N-2, N, alf=-sp.S.Half, bet=-sp.S.Half, gn=jacobi.recursions.cn)
+        #I2 = jacobi.recursions.Lmat(2, 0, 0, N-2, N, -sp.S.Half, -sp.S.Half, jacobi.recursions.cn)
+        I2 = SparseMatrix({2: 1}, (N-2, N)).diags('csr')
+        K = trial.stencil_matrix()
+        K.shape = (N-2, N)
+        K = K.diags('csr')
+        BT = inner(v, TrialFunction(test)).diags('csr')
+        Q2[0][0] /= 2
+        Q2[2][-2:] = 0
+        Q2[4][-2:] = 0
+        A = extract_diagonal_matrix(I2*BT*K.T, lowerband=0, upperband=2)
+        B = extract_diagonal_matrix(Q2.diags('csr')*BT*K.T, lowerband=2, upperband=4)
 
     if returntype == 0:
         if alpha == 0:
@@ -214,7 +227,7 @@ if __name__ == '__main__':
     cond = []
     M = 6 if args.include_legendre else 5
     if args.return_type == 2:
-        N = (2**4,2**6, 2**8, 2**12, 2**16, 2**20)
+        N = (2**4,2**6, 2**8, 2**12)#, 2**16, 2**20)
     elif args.return_type == 1:
         N = (2**4, 2**12, 2**20)
     else:
