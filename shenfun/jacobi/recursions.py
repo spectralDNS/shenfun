@@ -42,7 +42,7 @@ def un(alf, bet, n):
 
     .. math::
 
-        c_n^{(\alpha, \beta)} = \frac{n+1}{P^{(\alpha,\beta)}_n(1)}
+        u_n^{(\alpha, \beta)} = \frac{n+1}{P^{(\alpha,\beta)}_n(1)}
 
     Parameters
     ----------
@@ -152,7 +152,7 @@ def b(alf, bet, i, j, gn=1):
 
         \boldsymbol{Q} = {B}^T \partial \boldsymbol{Q}
 
-    where $\partial$ represents the derivative and
+    where :math:`\partial` represents the derivative and
 
     .. math::
 
@@ -210,7 +210,7 @@ def psi(alf, bet, n, k):
 
         \partial^k P^{(\alpha, \beta)}_n = \psi^{(k,\alpha,\beta)}_{n} P^{(\alpha+k,\beta+k)}_{n-k}, \quad n \ge k, \quad (*)
 
-    where :math:`\partial^k` represents the $k$'th derivative
+    where :math:`\partial^k` represents the :math:`k`'th derivative
 
     Parameters
     ----------
@@ -274,10 +274,10 @@ def h(alf, bet, n, k, gn=1):
 
     .. math::
 
-        Q_n(x) = g_n(x)P^{(\alpha,\beta)}_n(x)
+        Q_n(x) = g_n(x)P^{(\alpha,\beta)}_n(x) \\
         h_n^{(k)} = (\partial^k Q_n, \partial^k Q_n)_{\omega^{(\alpha,\beta)}} \quad (*)
 
-    where $\partial^k$ represents the $k$'th derivative.
+    where :math:`\partial^k` represents the :math:`k`'th derivative.
 
     Parameters
     ----------
@@ -486,7 +486,7 @@ def Lmat(k, q, l, M, N, alf=0, bet=0, gn=1):
 
         (\partial^{k-l}Q_{n}, x^q \phi^{(k)}_m)_{\omega}\quad (1)
 
-    where $\partial^k$ represents the $k$'th derivative and
+    where :math:`\partial^k` represents the :math:`k`'th derivative and
 
     .. math::
 
