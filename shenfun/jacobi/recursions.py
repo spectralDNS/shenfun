@@ -17,15 +17,81 @@ jt = lambda alf, bet, n: sp.jacobi(n, alf, bet, x)
 djt = lambda alf, bet, n, k: sp.diff(jt(alf, bet, n), x, k)
 
 # Scaled Qn = gn*Jn
-cn = lambda alf, bet, n: sp.S(1)/sp.jacobi(n, alf, bet, 1)
-un = lambda alf, bet, n: (n+1)/sp.jacobi(n, alf, bet, 1)
+def cn(alf, bet, n):
+    r"""Scaling function
+
+    .. math::
+
+        c_n^{(\alpha, \beta)} = \frac{1}{P^{(\alpha,\beta)}_n(1)}
+
+    Parameters
+    ----------
+    alf, bet : numbers
+        Jacobi parameters
+    n : int
+        Index
+
+    Note
+    ----
+    Used by Legendre and Chebyshev polynomials of first kind.
+    """
+    return sp.S(1)/sp.jacobi(n, alf, bet, 1)
+
+def un(alf, bet, n):
+    r"""Scaling function
+
+    .. math::
+
+        c_n^{(\alpha, \beta)} = \frac{n+1}{P^{(\alpha,\beta)}_n(1)}
+
+    Parameters
+    ----------
+    alf, bet : numbers
+        Jacobi parameters
+    n : int
+        Index
+
+    Note
+    ----
+    Used by Chebyshev polynomials of second kind
+    """
+    return (n+1)/sp.jacobi(n, alf, bet, 1)
+
 def qn(alf, bet, n, gn=cn):
+    """Specialized Jacobi polynomial
+
+    Parameters
+    ----------
+    alf, bet : numbers
+        Jacobi parameters
+    n : int
+        Index
+    gn : scaling function, optional
+        Chebyshev of first and second kind use cn and un, respectively.
+        Legendre uses gn=1.
+    """
     return gn(alf, bet, n)*jt(alf, bet, n)
+
 def dqn(alf, bet, n, k, gn=cn):
+    """Derivative of specialized Jacobi polynomial
+
+    Parameters
+    ----------
+    alf, bet : numbers
+        Jacobi parameters
+    n : int
+        Index
+    k : int
+        The k'th derivative
+    gn : scaling function, optional
+        Chebyshev of first and second kind use cn and un, respectively.
+        Legendre uses gn=1.
+    """
     return gn(alf, bet, n)*djt(alf, bet, n, k)
 
 def _a(alf, bet, i, j):
-    """Matrix A for non-normalized Jacobi polynomials"""
+    """Matrix A for non-normalized Jacobi polynomials
+    """
     return (
         sp.S(2)*(j+alf)*(j+bet)/((sp.S(2)*j+alf+bet+1)*(sp.S(2)*j+alf+bet))*delta(i+1, j)-
         (alf**2-bet**2)/((sp.S(2)*j+alf+bet+sp.S(2))*(sp.S(2)*j+alf+bet))*delta(i, j)+
@@ -49,40 +115,169 @@ def _c(alf, bet, i, j):
     return f
 
 def a(alf, bet, i, j, gn=1):
-    """Matrix A for standardized Jacobi polynomials"""
+    r"""Recursion matrix $A$ for standardized Jacobi polynomials
+
+    The recursion is
+
+    .. math::
+
+        x \boldsymbol{Q} = {A}^T \boldsymbol{Q}
+
+    where
+
+    .. math::
+
+        Q_n(x) = g_n^{(\alpha,\beta)} P^{(\alpha,\beta)}_n(x) \\
+        \boldsymbol{Q} = (Q_0, Q_1, \ldots, Q_{N})^T
+
+    Parameters
+    ----------
+    alf, bet : numbers
+        Jacobi parameters
+    i, j : int
+        Indices for row and column
+    gn : scaling function, optional
+        Chebyshev of first and second kind use cn and un, respectively.
+        Legendre uses gn=1.
+    """
     f = _a(alf, bet, i, j)
     return f if gn == 1 else gn(alf, bet, j) / gn(alf, bet, i) * f
 
 def b(alf, bet, i, j, gn=1):
-    """Matrix B for standardized Jacobi polynomials"""
+    r"""Recursion matrix $B$ for standardized Jacobi polynomials
+
+    The recursion is
+
+    .. math::
+
+        \boldsymbol{Q} = {B}^T \partial \boldsymbol{Q}
+
+    where $\partial$ represents the derivative and
+
+    .. math::
+
+        Q_n(x) = g_n^{(\alpha,\beta)} P^{(\alpha,\beta)}_n(x) \\
+        \boldsymbol{Q} = (Q_0, Q_1, \ldots, Q_{N})^T
+
+    Parameters
+    ----------
+    alf, bet : numbers
+        Jacobi parameters
+    i, j : int
+        Indices for row and column
+    gn : scaling function, optional
+        Chebyshev of first and second kind use cn and un, respectively.
+        Legendre uses gn=1.
+
+    """
     f = _b(alf, bet, i, j)
     return f if gn == 1 else gn(alf, bet, j) / gn(alf, bet, i) * f
 
 def c(alf, bet, i, j, gn=1):
-    """Matrix C for standardized Jacobi polynomials"""
+    r"""Recursion matrix $C$ for standardized Jacobi polynomials
+
+    The recursion is
+
+    .. math::
+
+        (1-x^2) \partial \boldsymbol{Q} = {C}^T \boldsymbol{Q}
+
+    where $\partial$ represents the derivative and
+
+    .. math::
+
+        Q_n(x) = g_n^{(\alpha,\beta)} P^{(\alpha,\beta)}_n(x) \\
+        \boldsymbol{Q} = (Q_0, Q_1, \ldots, Q_{N})^T
+
+    Parameters
+    ----------
+    alf, bet : numbers
+        Jacobi parameters
+    i, j : int
+        Indices for row and column
+    gn : scaling function, optional
+        Chebyshev of first and second kind use cn and un, respectively.
+        Legendre uses gn=1.
+
+    """
     f = _c(alf, bet, i, j)
     return f if gn == 1 else gn(alf, bet, j) / gn(alf, bet, i) * f
 
 def psi(alf, bet, n, k):
+    r"""Normalization factor for
+
+    .. math::
+
+        \partial^k P^{(\alpha, \beta)}_n = \psi^{(k,\alpha,\beta)}_{n} P^{(\alpha+k,\beta+k)}_{n-k}, \quad n \ge k, \quad (*)
+
+    where $\partial^k$ represents the $k$'th derivative
+
+    Parameters
+    ----------
+    alf, bet : numbers
+        Jacobi parameters
+    n, k : int
+        Parameters in (*)
+    """
     return sp.rf(n+alf+bet+1, k) / 2**k
 
 def a_(k, q, alf, bet, i, j, gn=1):
+    r"""Recursion matrix $\underline{A}$ for standardized Jacobi polynomials
+
+    The recursion is
+
+    .. math::
+
+        x \partial^k \boldsymbol{Q} = \underline{A}^T \partial^k \boldsymbol{Q} \quad (*)
+
+    where $\partial^k$ represents the $k$'th derivative and
+
+    .. math::
+
+        Q_n(x) = g_n^{(\alpha,\beta)} P^{(\alpha,\beta)}_n(x) \\
+        \boldsymbol{Q} = (Q_0, Q_1, \ldots, Q_{N})^T
+
+    Parameters
+    ----------
+    k, q : int
+        Parameters in (*)
+    alf, bet : numbers
+        Jacobi parameters
+    i, j : int
+        Indices for row and column
+    gn : scaling function, optional
+        Chebyshev of first and second kind use cn and un, respectively.
+        Legendre uses gn=1.
+    """
     f = psi(alf, bet, j, k)/psi(alf, bet, i, k)*matpow(a, q, alf+k, bet+k, i-k, j-k)
     return f if gn == 1 else gn(alf, bet, j) / gn(alf, bet, i) * f
 
 def gamma(alf, bet, n):
+    r"""Return normalization factor $h_n$ for inner product of Jacobi polynomials
 
+    .. math::
+
+        h_n = (P^{(\alpha,\beta)}_n, P^{(\alpha,\beta)}_n)_{\omega^{(\alpha,\beta)}}
+
+    Parameters
+    ----------
+    alf, bet : numbers
+        Jacobi parameters
+    n : int
+        Index
+    """
     f = 2**(alfa+beta+1)*sp.gamma(m+alfa+1)*sp.gamma(m+beta+1)/sp.gamma(m+alfa+beta+1)/sp.gamma(m+1)/(2*m+alfa+beta+1)
     return sp.simplify(f.subs(m, n)).subs([(alfa, alf), (beta, bet)])
 
 def h(alf, bet, n, k, gn=1):
-    r"""Return normalization factor for inner product of derivatives of Jacobi polynomials
-
+    r"""Return normalization factor $h^{(k)}_n$ for inner product of derivatives of Jacobi polynomials
 
     .. math::
 
         Q_n(x) = g_n(x)P^{(\alpha,\beta)}_n(x)
-        h_n^{(k)} = (\frac{d^k Q_n}{dx^k}, \frac{d^k Q_m}{dx^k})_{\omega^{(\alpha,\beta)}}
+        h_n^{(k)} = (\partial^k Q_n, \partial^k Q_n)_{\omega^{(\alpha,\beta)}} \quad (*)
+
+    where $\partial^k$ represents the $k$'th derivative.
 
     Parameters
     ----------
@@ -91,7 +286,7 @@ def h(alf, bet, n, k, gn=1):
     n : int
         Index
     k : int
-        For derivative of k'th order
+        For derivative of k'th order, see (*)
     gn : scaling function, optional
         Chebyshev of first and second kind use cn and un, respectively.
         Legendre uses gn=1.
@@ -231,16 +426,18 @@ def a_mat(mat, k, q, alf, bet, M, N, gn=1):
     return SparseMatrix(d, (M, N))
 
 def ShiftedMatrix(mat, q, r, s, M=0, N=0, k=None, alf=0, bet=0, gn=1):
-    """Index-shifted q'th power of matrix `mat`
+    r"""Index-shifted q'th power of matrix `mat`. Either
 
     .. math::
 
-        A^{(k, q)}_{(r, s)} = (a^{(k, q)}_{m+r,n+s})_{m,n=0}^{M,N}
+        A^{(k, q)}_{(r, s)} = (a^{(k, q)}_{m+r,n+s})_{m,n=0}^{M,N} \\
+        B^{(q)}_{r, s} = (b^{(q)}_{m+r,n+s})_{m,n=0}^{M,N}
 
     Parameters
     ----------
     mat : Python function or SparseMatrix
         The Python function must have signature (k, q, alf, bet, i, j, gn=1)
+        or (alf, bet, i, j, gn=1) if `k` is None
     q : int
         The matrix power
     r : int
@@ -287,13 +484,13 @@ def Lmat(k, q, l, M, N, alf=0, bet=0, gn=1):
 
     .. math::
 
-        (\partial^{k-l}Q_{n}, x^q \phi^{(k)}_m)_{\omega} (1)
+        (\partial^{k-l}Q_{n}, x^q \phi^{(k)}_m)_{\omega}\quad (1)
 
-    where
+    where $\partial^k$ represents the $k$'th derivative and
 
     .. math::
 
-        Q^{(\alpha, \beta)}_n = g_n^{(\alpha, \beta)} P^{(\alpha, \beta)}_n \\
+        Q_n = g_n^{(\alpha, \beta)} P^{(\alpha, \beta)}_n \\
         \phi^{(k)}_m = \frac{(1-x^2)^k \partial^k Q_{m+k}}{h^{(k)}_{m+k}}
 
     Parameters
