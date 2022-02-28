@@ -92,19 +92,16 @@ SD = chebbases.ShenDirichlet
 SN = chebbases.ShenNeumann
 
 class BUUmat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Mass matrix :math:`B` for inner product
 
     .. math::
 
-        B_{kj}=(\phi_j, \phi_k)_w
+        b_{kj} &= (U_j, U_k)_w \\
+        B &= (b_{kj})_{k,j=0}^{M-1,N-1} \in \mathbb{R}^{M \times N}
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-1 \text{ and } k = 0, 1, ..., N-1
-
-    :math:`\phi_k = U_k` is a Chebyshev basis function of second kind.
+    where :math:`U_k` is a Chebyshev basis function of the second kind
+    (:class:`.bases.Orthogonal`, :class:`.chebyshevu.bases.Orthogonal`, :class:`.Orthogonal`) and test
+    and trial spaces have dimensions M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):

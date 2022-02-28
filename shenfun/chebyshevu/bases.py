@@ -603,7 +603,7 @@ class Phi2(CompositeSpace):
 
     .. math::
 
-        \phi_n &= \frac{(1-x^2)^2 U''_{k+1}}{h^{(2)}_{k+2}} \\
+        \phi_n &= \frac{(1-x^2)^2 U''_{k+2}}{h^{(2)}_{k+2}} \\
                &= \frac{1}{2\pi(n+1)(n+2)}\left(U_n- \frac{2(n+1)}{n+4}U_{n+2} + \frac{(n+1)(n+2)}{(n+3)(n+4)}U_{n+4} \right)
 
     where :math:`h^{(2)}_n = \frac{\pi (n+3)(n+2)n(n-1)}{2}`.
