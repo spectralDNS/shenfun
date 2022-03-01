@@ -1550,7 +1550,7 @@ def check_sanity(A, test, trial, measure=1):
     for key, val in A.items():
         assert np.allclose(val*A.scale, Dsp[key])
 
-def get_dense_matrix(test, trial, measure=1):
+def get_dense_matrix(test, trial, measure=1, incorporate_domain=False):
     """Return dense matrix automatically computed from basis
 
     Parameters
@@ -1573,13 +1573,16 @@ def get_dense_matrix(test, trial, measure=1):
     measure : Sympy expression of coordinate, or number, optional
         Additional weight to integral. For example, in cylindrical
         coordinates an additional measure is the radius `r`.
+    incorporate_domain : bool, optional
+        Whether or not to adjust integral for different domain sizes.
+        If True, the result is multiplied by 1/test[0].domain_factor().
     """
     K0 = test[0].slice().stop - test[0].slice().start
     K1 = trial[0].slice().stop - trial[0].slice().start
     N = test[0].N
     x = test[0].mpmath_points_and_weights(N, map_true_domain=False)[0]
     ws = test[0].get_measured_weights(N, measure)
-    if test[0].domain_factor() != 1:
+    if test[0].domain_factor() != 1 and incorporate_domain:
         ws /= test[0].domain_factor()
     v = test[0].evaluate_basis_derivative_all(x=x, k=test[1])[:, :K0]
     u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])[:, :K1]

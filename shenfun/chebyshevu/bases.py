@@ -230,18 +230,15 @@ class Orthogonal(ChebyshevuBase):
             SpectralBase._evaluate_scalar_product(self)
             return
 
-        pf = self.padding_factor
-        if self.domain_factor() != 1:
-            pf *= self.domain_factor()
         if self.quad == 'GU':
             self.scalar_product._input_array *= self.broadcast_to_ndims(np.sin(np.pi/(self.N+1)*(np.arange(1, self.N+1))))
             out = self.scalar_product.xfftn()
-            out *= (np.pi/(2*(self.N+1)*pf))
+            out *= (np.pi/(2*(self.N+1)*self.padding_factor*self.domain_factor()))
 
         elif self.quad == 'GC':
             self.scalar_product._input_array *= self.broadcast_to_ndims(self._sinGC)
             out = self.scalar_product.xfftn()
-            out *= (np.pi/(2*self.N*pf))
+            out *= (np.pi/(2*self.N*self.padding_factor*self.domain_factor()))
 
     def _evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
         if fast_transform is False:
