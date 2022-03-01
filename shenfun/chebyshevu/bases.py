@@ -230,15 +230,18 @@ class Orthogonal(ChebyshevuBase):
             SpectralBase._evaluate_scalar_product(self)
             return
 
+        pf = self.padding_factor
+        if self.domain_factor() != 1:
+            pf *= self.domain_factor()
         if self.quad == 'GU':
             self.scalar_product._input_array *= self.broadcast_to_ndims(np.sin(np.pi/(self.N+1)*(np.arange(1, self.N+1))))
             out = self.scalar_product.xfftn()
-            out *= (np.pi/(2*(self.N+1)*self.padding_factor))
+            out *= (np.pi/(2*(self.N+1)*pf))
 
         elif self.quad == 'GC':
             self.scalar_product._input_array *= self.broadcast_to_ndims(self._sinGC)
             out = self.scalar_product.xfftn()
-            out *= (np.pi/(2*self.N*self.padding_factor))
+            out *= (np.pi/(2*self.N*pf))
 
     def _evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
         if fast_transform is False:
@@ -508,7 +511,9 @@ class CompositeSpace(Orthogonal):
 class Phi1(CompositeSpace):
     r"""Function space for Dirichlet boundary conditions
 
-    u(-1)=a and u(1)=b
+    .. math::
+
+        u(x_0)=bc[0] \text{ and } u(x_1)=bc[1], \quad \text{for } x \in [x_0, x_1]
 
     The basis function is
 

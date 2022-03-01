@@ -10,19 +10,25 @@ The first letter refers to type of matrix.
     - Stiffness - One derivative for test and trial - start with `A`
     - Biharmonic - Two derivatives for test and trial - start with `S`
 
-The next two letters refer to the test and trialfunctions, respectively
+A matrix may consist of different types of test and trialfunctions. The next
+letters in the matrix name uses the short form for all these different bases
+according to
 
-    - Dirichlet:   `D`
-    - Neumann:     `N`
-    - Legendre:    `L`
-    - Biharmonic:  `B`
+    - L  = Orthogonal
+    - SD = ShenDirichlet
+    - SB = ShenBiharmonic
+    - SN = ShenNeumann
+    - UD = UpperDirichlet
+    - DN = DirichletNeumann
+    - BF = BeamFixedFree
+    - P1 = Phi1
+    - P2 = Phi2
+    - P4 = Phi4
+    - BCD = BCDirichlet
+    - BCB = BCBiharmonic
 
-As such, there are 4 mass matrices, BSDSDmat, BSNSNmat, BLLmat and BSBSBmat,
-corresponding to the four bases above.
-
-A matrix may consist of different types of test and trialfunctions as long as
-they are all in the Legendre family. A mass matrix using Dirichlet test and
-Neumann trial is named BDNmat.
+So a mass matrix using ShenDirichlet test and ShenNeumann trial is named
+BSDSNmat.
 
 All matrices in this module may be looked up using the 'mat' dictionary,
 which takes test and trialfunctions along with the number of derivatives
@@ -68,7 +74,7 @@ from __future__ import division
 import functools
 import numpy as np
 import sympy as sp
-from shenfun.matrixbase import SpectralMatrix
+from shenfun.matrixbase import SpectralMatrix, extract_diagonal_matrix
 from shenfun.optimization import cython
 from shenfun.la import TDMA, PDMA
 from . import bases
@@ -79,8 +85,12 @@ SD = bases.ShenDirichlet
 SB = bases.ShenBiharmonic
 SN = bases.ShenNeumann
 UD = bases.UpperDirichlet
+LD = bases.LowerDirichlet
 DN = bases.DirichletNeumann
 BF = bases.BeamFixedFree
+P1 = bases.Phi1
+P2 = bases.Phi2
+P4 = bases.Phi4
 
 BCD = bases.BCDirichlet
 BCB = bases.BCBiharmonic
@@ -92,20 +102,14 @@ xp = sp.symbols('x', real=True, positive=True)
 
 
 class BLLmat(SpectralMatrix):
-    r"""Mass matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        B_{kj} = (L_j, L_k)_w
+        b_{kj}=(L_j, L_k),
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N
-
-    and :math:`L_k` is the Legendre basis function.
-
+    where :math:`L_k \in` :class:`.legendre.bases.Orthogonal`, and test
+    and trial spaces have dimensions of M and N, respectively.
     """
     def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], L)
@@ -131,21 +135,64 @@ class BLLmat(SpectralMatrix):
     #    u[ss] = b[ss]*d[sl]
     #    return u
 
+class BP1Lmat(SpectralMatrix):
+    r"""Matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
+
+    .. math::
+
+        b_{kj}=(L_j, x^n \phi_k)_w,
+
+    where the test function :math:`\phi_k \in` :class:`.legendre.bases.Phi1`, the trial
+    function :math:`T_j \in` :class:`.legendre.bases.Orthogonal`, and test and
+    trial spaces have dimensions of M and N, respectively.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P1)
+        assert isinstance(trial[0], L)
+        from shenfun.jacobi.recursions import Lmat
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(1, q, 1, M, N, 0, 0)
+        D = extract_diagonal_matrix(D, lowerband=q+1, upperband=q+2)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+class BP1LDmat(SpectralMatrix):
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
+
+    .. math::
+
+        b_{kj}=(\psi_j, x^n \phi_k)_w,
+
+    where the test function :math:`\phi_k \in` :class:`.legendre.bases.Phi1`, the
+    trial :math:`\psi_j \in` :class:`.legendre.bases.LowerDirichlet` or
+    :class:`.legendre.bases.UpperDirichlet`, and test and
+    trial spaces have dimensions of M and N, respectively.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P1)
+        assert isinstance(trial[0], (LD, UD))
+        from shenfun.jacobi.recursions import Lmat
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(1, q, 1, M, N+1, 0, 0)
+        K = trial[0].stencil_matrix()
+        K.shape = (N, N+1)
+        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q+1, upperband=q+2)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
 
 class BSDSDmat(SpectralMatrix):
-    r"""Mass matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        B_{kj} = (\psi_j, \psi_k)_w
+        b_{kj}=(\phi_j, \phi_k),
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
+    where :math:`\phi_k \in` :class:`.legendre.bases.ShenDirichlet`, and test
+    and trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -170,20 +217,14 @@ class BSDSDmat(SpectralMatrix):
         return TDMA
 
 class BSNSNmat(SpectralMatrix):
-    r"""Mass matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        B_{kj} = (\psi_j, \psi_k)_w
+        b_{kj}=(\phi_j, \phi_k),
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Shen Legendre Neumann basis function.
-
+    where :math:`\phi_k \in` :class:`.legendre.bases.ShenNeumann`, and test
+    and trial spaces have dimensions of M and N, respectively.
     """
     def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], SN)
@@ -202,19 +243,14 @@ class BSNSNmat(SpectralMatrix):
 
 
 class BSBSBmat(SpectralMatrix):
-    r"""Mass matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        B_{kj} = (\psi_j, \psi_k)_w
+        b_{kj}=(\phi_j, \phi_k),
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-4 \text{ and } k = 0, 1, ..., N-4
-
-    and :math:`\psi_k` is the Shen Legendre Biharmonic basis function.
+    where :math:`\phi_k \in` :class:`.legendre.bases.ShenBiharmonic`, and test
+    and trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -238,20 +274,14 @@ class BSBSBmat(SpectralMatrix):
         return PDMA
 
 class BBFBFmat(SpectralMatrix):
-    r"""Mass matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        B_{kj} = (\psi_j, \psi_k)_w
+        b_{kj}=(\phi_j, \phi_k),
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-4 \text{ and } k = 0, 1, ..., N-4
-
-    and :math:`\psi_k` is the BeamFixedFree Biharmonic basis function.
-
+    where :math:`\phi_k \in` :class:`.legendre.bases.BeamFixedFree`, and test
+    and trial spaces have dimensions of M and N, respectively.
     """
     def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], BF)
@@ -279,19 +309,15 @@ class BBFBFmat(SpectralMatrix):
 
 
 class BSDLmat(SpectralMatrix):
-    r"""Mass matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        B_{kj} = (L_j, \psi_k)_w
+        b_{kj}=(L_j, \phi_k),
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
+    where the test function :math:`\phi_k \in` :class:`.legendre.bases.ShenDirichlet`, the
+    trial function :math:`L_j \in` :class:`.legendre.bases.Orthogonal`, and test
+    and trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -310,19 +336,15 @@ class BSDLmat(SpectralMatrix):
 
 
 class BLSDmat(SpectralMatrix):
-    r"""Mass matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        B_{kj} = (\psi_j, L_k)_w
+        b_{kj}=(\psi_j, L_k),
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N
-
-    and :math:`\psi_j` is the Shen Legendre Dirichlet basis function.
+    where the test function :math:`L_k \in` :class:`.legendre.bases.Orthogonal`, the
+    trial function :math:`\psi_j \in` :class:`.legendre.bases.ShenDirichlet`, and test
+    and trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -341,19 +363,14 @@ class BLSDmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 class BDNDNmat(SpectralMatrix):
-    r"""Mass matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        B_{kj} = (\psi_j, \psi_k)_w
+        b_{kj}=(\phi_j, \phi_k),
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is a mixed Legendre Dirichlet/Neumann basis function.
+    where :math:`\phi_k \in` :class:`.legendre.bases.DirichletNeumann`, and test
+    and trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -378,19 +395,14 @@ class BDNDNmat(SpectralMatrix):
 
 
 class ASDSDmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product
+    r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj} = (\psi'_j, \psi'_k)_w
+        a_{kj} = (\phi'_j, \phi'_k)
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
+    where :math:`\phi_k \in` :class:`.legendre.bases.ShenDirichlet`, and test and
+    trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -447,19 +459,14 @@ class ASDSDmat(SpectralMatrix):
 
 
 class ASNSNmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product
+    r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj} = (\psi'_j, \psi'_k)_w
+        a_{kj} = (\phi'_j, \phi'_k)
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Shen Legendre Neumann basis function.
+    where :math:`\phi_k \in` :class:`.legendre.bases.ShenNeumann`, and test and
+    trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -507,19 +514,14 @@ class ASNSNmat(SpectralMatrix):
 
 
 class ASBSBmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product
+    r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj} = (\psi'_j, \psi'_k)_w
+        a_{kj} = (\phi'_j, \phi'_k)
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-4 \text{ and } k = 0, 1, ..., N-4
-
-    and :math:`\psi_k` is the Shen Legendre Biharmonic basis function.
+    where :math:`\phi_k \in` :class:`.legendre.bases.ShenBiharmonic`, and test and
+    trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -534,19 +536,14 @@ class ASBSBmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 class ADNDNmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product
+    r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj} = (\psi'_j, \psi'_k)_w
+        a_{kj} = (\phi'_j, \phi'_k)
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the mixed Legendre Dirichlet/Neumann basis function.
+    where :math:`\phi_k \in` :class:`.legendre.bases.DirichletNeumann`, and test and
+    trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -566,7 +563,6 @@ class ADNDNmat(SpectralMatrix):
             u = b
         else:
             assert u.shape == b.shape
-
 
         # Move axis to first
         if axis > 0:
@@ -591,20 +587,14 @@ class ADNDNmat(SpectralMatrix):
         return u
 
 class SBFBFmat(SpectralMatrix):
-    r"""Biharmonic matrix for inner product
+    r"""Biharmonic matrix :math:`S=(s_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        S_{kj} = (\psi''_j, \psi''_k)_w
+        s_{kj} = (\phi''_j, \phi''_k)
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-4 \text{ and } k = 0, 1, ..., N-4
-
-    and :math:`\psi_k` is the BeamFixedFree basis function.
-
+    where :math:`\phi_k \in` :class:`.legendre.bases.BeamFixedFree`, and test and
+    trial spaces have dimensions of M and N, respectively.
     """
     def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], BF)
@@ -647,21 +637,16 @@ class SBFBFmat(SpectralMatrix):
 
         return u
 
-
-class GLLmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product
-
-    .. math::
-
-        B_{kj} = (L_j'', L_k)_w
-
-    where
+class ALLmat(SpectralMatrix):
+    r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N
+        a_{kj} &= (L''_j, L_k), \text{ or } \\
+        a_{kj} &= (L_j, L''_k)
 
-    and :math:`L_k` is the Legendre basis function.
+    where :math:`L_k \in` :class:`.legendre.bases.Orthogonal`, and test and
+    trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -696,24 +681,18 @@ class GLLmat(SpectralMatrix):
             self.scale_array(c, self.scale*self._keyscale)
         else:
             format = None if format in self._matvec_methods else format
-            c = super(GLLmat, self).matvec(v, c, format=format, axis=axis)
+            c = super(ALLmat, self).matvec(v, c, format=format, axis=axis)
         return c
 
 class SSBSBmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product
+    r"""Biharmonic matrix :math:`S=(s_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj} = (\psi''_j, \psi''_k)_w
+        s_{kj} = (\phi''_j, \phi''_k)
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-4 \text{ and } k = 0, 1, ..., N-4
-
-    and :math:`\psi_k` is the Shen Legendre Biharmonic basis function.
-
+    where :math:`\phi_k \in` :class:`.legendre.bases.ShenBiharmonic`, and test and
+    trial spaces have dimensions of M and N, respectively.
     """
     def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], SB)
@@ -725,19 +704,14 @@ class SSBSBmat(SpectralMatrix):
 
 
 class CLLmat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Derivative matrix :math:`C=(c_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        C_{kj} = (\psi'_j, \psi_k)_w
+        c_{kj}=(L'_j, L_k),
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N
-
-    and :math:`\psi_k` is the orthogonal Legendre basis function.
+    where :math:`L_k \in` :class:`.legendre.bases.Orthogonal`, and test
+    and trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -782,19 +756,14 @@ class CLLmat(SpectralMatrix):
         return c
 
 class CLLmatT(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Derivative matrix :math:`C=(c_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        C_{kj} = (\psi'_j, \psi_k)_w
+        c_{kj}=(L_j, L'_k),
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N
-
-    and :math:`\psi_k` is the orthogonal Legendre basis function.
+    where :math:`L_k \in` :class:`.legendre.bases.Orthogonal`, and test
+    and trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -810,19 +779,15 @@ class CLLmatT(SpectralMatrix):
 
 
 class CLSDmat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Derivative matrix :math:`C=(c_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        C_{kj} = (\psi'_j, L_k)_w
+        c_{kj}=(\psi'_j, L_k),
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N
-
-    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
+    where the test function :math:`L_k \in` :class:`.legendre.bases.Orthogonal`, the trial
+    function :math:`\psi_j \in` :class:`.legendre.bases.ShenDirichlet`, and test
+    and trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -837,19 +802,15 @@ class CLSDmat(SpectralMatrix):
 
 
 class CSDLmat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Derivative matrix :math:`C=(c_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        C_{kj} = (L_j, \psi'_k)_w
+        c_{kj}=(L'_j, \phi_k),
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
+    where the test function :math:`\phi_k \in` :class:`.legendre.bases.ShenDirichlet`, the trial
+    function :math:`L_j \in` :class:`.legendre.bases.Orthogonal`, and test
+    and trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -864,19 +825,14 @@ class CSDLmat(SpectralMatrix):
 
 
 class CSDSDmat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Derivative matrix :math:`C=(c_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        C_{kj} = (\psi'_j, \psi_k)_w
+        c_{kj}=(\phi'_j, \phi_k),
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
+    where :math:`\phi_k \in` :class:`.legendre.bases.ShenDirichlet`, and test
+    and trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -891,19 +847,14 @@ class CSDSDmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 class CSDSDTmat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Derivative matrix :math:`C=(c_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        C_{kj} = (\psi_j, \psi'_k)_w
+        c_{kj}=(\phi_j, \phi'_k),
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
+    where :math:`\phi_k \in` :class:`.legendre.bases.ShenDirichlet`, and test
+    and trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -917,22 +868,65 @@ class CSDSDTmat(SpectralMatrix):
             d[1] = -2/np.sqrt(4*k[:-1]+6)
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
+class CP1LDmat(SpectralMatrix):
+    r"""Derivative matrix :math:`C=(c_{kj}) \in \mathbb{R}^{M \times N}`, where
+
+    .. math::
+
+        C_{kj}=(\psi'_j, x^n \phi_k)_w,
+
+    where the test function :math:`\phi_k \in` :class:`.legendre.bases.Phi1`, the trial
+    function :math:`\psi_j \in` :class:`.legendre.bases.LowerDirichlet` or
+    :class:`.legendre.bases.UpperDirichlet`, and test and
+    trial spaces have dimensions of M and N, respectively.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P1)
+        assert isinstance(trial[0], (LD, UD))
+        from shenfun.jacobi.recursions import Lmat
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(1, q, 0, M, N+1, 0, 0)
+        K = trial[0].stencil_matrix()
+        K.shape = (N, N+1)
+        D = extract_diagonal_matrix(D*K.diags('csr').T, lowerband=q, upperband=q+1)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
+class CP1Lmat(SpectralMatrix):
+    r"""Derivative matrix :math:`C=(c_{kj}) \in \mathbb{R}^{M \times N}`, where
+
+    .. math::
+
+        C_{kj}=(T'_j, x^n \phi_k)_w,
+
+    where the test function :math:`\phi_k \in` :class:`.legendre.bases.Phi1`, the trial
+    function :math:`T_j \in` :class:`.legendre.bases.Orthogonal`, and test and
+    trial spaces have dimensions of M and N, respectively.
+
+    """
+    def __init__(self, test, trial, scale=1, measure=1):
+        assert isinstance(test[0], P1)
+        assert isinstance(trial[0], L)
+        from shenfun.jacobi.recursions import Lmat
+        M = test[0].dim()
+        N = trial[0].dim()
+        q = sp.degree(measure)
+        D = Lmat(1, q, 0, M, N, 0, 0)
+        D = extract_diagonal_matrix(D, lowerband=q, upperband=q+1)
+        SpectralMatrix.__init__(self, dict(D), test, trial, scale=scale, measure=measure)
+
 
 class ASDSDrp1mat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj} = \int_{-1}^{1} \psi_j'(x) \psi_k'(x) (1+x) dx
+        a_{kj} = (\phi'_j, (1+x)\phi'_k)
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
-
+    where :math:`\phi_k \in` :class:`.legendre.bases.ShenDirichlet`, and test and
+    trial spaces have dimensions of M and N, respectively.
     """
     def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], SD)
@@ -945,45 +939,34 @@ class ASDSDrp1mat(SpectralMatrix):
 
 
 class ASDSD2rp1mat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj} = \int_{-1}^{1} \psi_j(x) \psi_k''(x) (1+x) dx
+        a_{kj} = (\phi_j, (1+x)\phi''_k)
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
+    where :math:`\phi_k \in` :class:`.legendre.bases.ShenDirichlet`, and test and
+    trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], SD)
         assert isinstance(trial[0], SD)
         assert test[0].quad == 'LG'
-
         k = np.arange(test[0].N-2)
         d = {0: -(4*k+6), 1: -(2*k[:-1]+6), -1: -(2*k[:-1]+2)}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 
 class ASDSD2Trp1mat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj} = \int_{-1}^{1} \psi_j''(x) \psi_k(x) (1+x) dx
+        a_{kj} = (\phi_j, (1+x)\phi''_k)
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
+    where :math:`\phi_k \in` :class:`.legendre.bases.ShenDirichlet`, and test and
+    trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -997,20 +980,14 @@ class ASDSD2Trp1mat(SpectralMatrix):
 
 
 class AUDUDrp1mat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj} = \int_{-1}^{1} \psi_j'(x) \psi_k'(x) (1+x) dx
+        a_{kj} = (\phi'_j, (1+x)\phi'_k)
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Upper Dirichlet basis function.
-
+    where :math:`\phi_k \in` :class:`.legendre.bases.UpperDirichlet`, and test and
+    trial spaces have dimensions of M and N, respectively.
     """
     def __init__(self, test, trial, scale=1, measure=1):
         assert isinstance(test[0], UD)
@@ -1021,19 +998,14 @@ class AUDUDrp1mat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 class AUDUDrp1smat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj} = \int_{-1}^{1} \psi_j'(x) \psi_k'(x) (1+x)**2 dx
+        a_{kj} = (\phi'_j, (1+x)^2\phi'_k)
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Upper Dirichlet basis function.
+    where :math:`\phi_k \in` :class:`.legendre.bases.UpperDirichlet`, and test and
+    trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -1049,19 +1021,14 @@ class AUDUDrp1smat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 class GUDUDrp1smat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj} = \int_{-1}^{1} \psi_j(x) \psi_k''(x) (1+x)**2 dx
+        a_{kj} = (\phi_j, (1+x)^2\phi''_k)
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Upper Dirichlet basis function.
+    where :math:`\phi_k \in` :class:`.legendre.bases.UpperDirichlet`, and test and
+    trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -1075,19 +1042,14 @@ class GUDUDrp1smat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 class BUDUDrp1smat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        B_{kj} = \int_{-1}^{1} \psi_j(x) \psi_k(x) (1+x)**2 dx
+        b_{kj} = (\phi_j, (1+x)^2\phi_k)
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Upper Dirichlet basis function.
+    where :math:`\phi_k \in` :class:`.legendre.bases.UpperDirichlet`, and test and
+    trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -1123,19 +1085,14 @@ class BUDUDrp1smat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 class CUDUDrp1mat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Derivative matrix :math:`C=(c_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj} = \int_{-1}^{1} \psi_j(x) \psi_k'(x) (1+x) dx
+        c_{kj} = (\phi_j, (1+x)\phi'_k)
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Upper Dirichlet basis function.
+    where :math:`\phi_k \in` :class:`.legendre.bases.UpperDirichlet`, and test and
+    trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -1150,19 +1107,14 @@ class CUDUDrp1mat(SpectralMatrix):
 
 
 class BUDUDmat(SpectralMatrix):
-    r"""Mass matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        B_{kj} = (\psi_j, \psi_k)_w
+        b_{kj} = (\phi_j, \phi_k)
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-1 \text{ and } k = 0, 1, ..., N-1
-
-    and :math:`\psi_k` is the Legendre UpperDirichlet basis function.
+    where :math:`\phi_k \in` :class:`.legendre.bases.UpperDirichlet`, and test and
+    trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -1180,19 +1132,14 @@ class BUDUDmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 class BUDUDrp1mat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        B_{kj} = \int_{-1}^{1} \psi_j(x) \psi_k(x) (1+x) dx
+        b_{kj} = (\phi_j, (1+x)\phi_k)
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Upper Dirichlet basis function.
+    where :math:`\phi_k \in` :class:`.legendre.bases.UpperDirichlet`, and test and
+    trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -1210,19 +1157,14 @@ class BUDUDrp1mat(SpectralMatrix):
 
 
 class BSDSD1orp1mat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj} = \int_{-1}^{1} \psi_j(x) \psi_k(x) 1/(1+x) dx
+        b_{kj} = (\phi_j, \frac{1}{1+x}\phi_k)
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
+    where :math:`\phi_k \in` :class:`.legendre.bases.ShenDirichlet`, and test and
+    trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -1236,19 +1178,14 @@ class BSDSD1orp1mat(SpectralMatrix):
 
 
 class BSDSDrp1mat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj} = \int_{-1}^{1} \psi_j(x) \psi_k(x) (1+x) dx
+        b_{kj} = (\phi_j, (1+x)\phi_k)
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Shen Legendre Dirichlet basis function.
+    where :math:`\phi_k \in` :class:`.legendre.bases.ShenDirichlet`, and test and
+    trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -1268,20 +1205,15 @@ class BSDSDrp1mat(SpectralMatrix):
 
 
 class BSDBCDmat(SpectralMatrix):
-    r"""Mass matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        B_{kj} = (\psi_j, \phi_k)_w
+        b_{kj} = (\psi_j, \phi_k)
 
-    where
-
-    .. math::
-
-        j = 0, 1 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_j` is the Dirichlet boundary basis and
-    :math:`\phi_k` is the Shen Dirichlet basis function.
+    where the test function :math:`\phi_k \in` :class:`.legendre.bases.ShenDirichlet`, the
+    trial function :math:`\psi_j \in` :class:`.legendre.bases.BCDirichlet`, and test and
+    trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -1302,22 +1234,15 @@ class BSDBCDmat(SpectralMatrix):
 
 
 class SBBCBmat(SpectralMatrix):
-    r"""Mass matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        B_{kj} = (\psi_j, \phi_k)_w
+        b_{kj} = (\psi_j, \phi_k)
 
-    where
-
-    .. math::
-
-        j = 0, 1, 2, 3 \text{ and } k = 0, 1, ..., N-4
-
-    and :math:`\psi_j` is the Biharmonic boundary basis and
-    :math:`\phi_k` is the Shen Biharmonic basis function.
-
-    #FIXME Reordered bases
+    where the test function :math:`\phi_k \in` :class:`.legendre.bases.ShenBiharmonic`, the
+    trial function :math:`\psi_j \in` :class:`.legendre.bases.BCBiharmonic`, and test and
+    trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -1340,7 +1265,6 @@ class _Legmatrix(SpectralMatrix):
     def __init__(self, test, trial, scale=1, measure=1):
         SpectralMatrix.__init__(self, {}, test, trial, scale=scale, measure=measure)
 
-
 class _LegMatDict(dict):
     """Dictionary of inner product matrices
 
@@ -1356,7 +1280,11 @@ class _LegMatDict(dict):
         return c
 
     def __getitem__(self, key):
-        matrix = dict.__getitem__(self, key)
+        if len(key) == 4:
+            matrix = functools.partial(dict.__getitem__(self, key),
+                                       measure=key[3])
+        else:
+            matrix = dict.__getitem__(self, key)
         return matrix
 
 mat = _LegMatDict({
@@ -1378,36 +1306,34 @@ mat = _LegMatDict({
     ((SN, 1), (SN, 1)): ASNSNmat,
     ((SN, 2), (SN, 0)): functools.partial(ASNSNmat, scale=-1.),
     ((SN, 0), (SN, 2)): functools.partial(ASNSNmat, scale=-1.),
-    ((L,  2), (L,  0)): GLLmat,
-    ((L,  0), (L,  2)): GLLmat,
+    ((L,  2), (L,  0)): ALLmat,
+    ((L,  0), (L,  2)): ALLmat,
     ((SB, 2), (SB, 2)): SSBSBmat,
     ((SB, 1), (SB, 1)): ASBSBmat,
     ((SB, 0), (SB, 2)): functools.partial(ASBSBmat, scale=-1.),
     ((SB, 2), (SB, 0)): functools.partial(ASBSBmat, scale=-1.),
     ((SB, 0), (SB, 4)): SSBSBmat,
     ((SB, 4), (SB, 0)): SSBSBmat,
-    ((SD, 1), (SD, 1), (-1, 1), 1+x): functools.partial(ASDSDrp1mat, measure=1+x),
-    ((SD, 0), (SD, 2), (-1, 1), 1+x): functools.partial(ASDSD2rp1mat, measure=1+x),
-    ((SD, 2), (SD, 0), (-1, 1), 1+x): functools.partial(ASDSD2Trp1mat, measure=1+x),
-    ((SD, 0), (SD, 2), (0, 1), xp): functools.partial(ASDSD2rp1mat, scale=0.5, measure=xp),
-    ((SD, 2), (SD, 0), (0, 1), xp): functools.partial(ASDSD2Trp1mat, scale=0.5, measure=xp),
-    ((SD, 1), (SD, 1), (0, 1), xp): functools.partial(ASDSDrp1mat, scale=0.5, measure=xp),
-    ((SD, 0), (SD, 0), (-1, 1), 1+x): functools.partial(BSDSDrp1mat, measure=1+x),
-    ((SD, 0), (SD, 0), (0, 1), xp): functools.partial(BSDSDrp1mat, scale=0.5, measure=xp),
-    ((SD, 0), (SD, 0), (-1, 1), 1/(1+x)): functools.partial(BSDSD1orp1mat, measure=1/(1+x)),
-    ((SD, 0), (SD, 0), (0, 1), 1/xp): functools.partial(BSDSD1orp1mat, scale=2, measure=1/xp),
-    ((UD, 1), (UD, 1), (-1, 1), 1+x): functools.partial(AUDUDrp1mat, measure=(1+x)),
-    ((UD, 1), (UD, 1), (0, 1), xp): functools.partial(AUDUDrp1mat, scale=0.5, measure=xp),
-    ((UD, 0), (UD, 0), (-1, 1), 1+x): functools.partial(BUDUDrp1mat, measure=(1+x)),
-    ((UD, 0), (UD, 0), (0, 1), xp): functools.partial(BUDUDrp1mat, scale=0.5, measure=xp),
-    ((UD, 1), (UD, 1), (-1, 1), (1+x)**2): functools.partial(AUDUDrp1smat, measure=(1+x)**2),
-    ((UD, 1), (UD, 1), (0, 1), xp**2): functools.partial(AUDUDrp1smat, scale=0.25, measure=xp**2),
-    ((UD, 0), (UD, 2), (-1, 1), (1+x)**2): functools.partial(GUDUDrp1smat, measure=(1+x)**2),
-    ((UD, 0), (UD, 2), (0, 1), xp**2): functools.partial(GUDUDrp1smat, scale=0.25, measure=xp**2),
-    ((UD, 0), (UD, 1), (-1, 1), (1+x)): functools.partial(CUDUDrp1mat, measure=(1+x)),
-    ((UD, 0), (UD, 1), (0, 1), xp): functools.partial(CUDUDrp1mat, scale=0.5, measure=xp),
-    ((UD, 0), (UD, 0), (-1, 1), (1+x)**2): functools.partial(BUDUDrp1smat, measure=(1+x)**2),
-    ((UD, 0), (UD, 0), (0, 1), xp**2): functools.partial(BUDUDrp1smat, scale=0.25, measure=xp**2),
+    ((SD, 0), (SD, 2), (-1, 1), 1+x): ASDSD2rp1mat,
+    ((SD, 0), (SD, 2), (0, 1), xp): functools.partial(ASDSD2rp1mat, scale=0.5),
+    ((SD, 2), (SD, 0), (-1, 1), 1+x): ASDSD2Trp1mat,
+    ((SD, 2), (SD, 0), (0, 1), xp): functools.partial(ASDSD2Trp1mat, scale=0.5),
+    ((SD, 0), (SD, 0), (-1, 1), 1+x): BSDSDrp1mat,
+    ((SD, 0), (SD, 0), (0, 1), xp): functools.partial(BSDSDrp1mat, scale=0.5),
+    ((SD, 0), (SD, 0), (-1, 1), 1/(1+x)): BSDSD1orp1mat,
+    ((SD, 0), (SD, 0), (0, 1), 1/xp): functools.partial(BSDSD1orp1mat, scale=2),
+    ((UD, 1), (UD, 1), (-1, 1), 1+x): AUDUDrp1mat,
+    ((UD, 1), (UD, 1), (0, 1), xp): functools.partial(AUDUDrp1mat, scale=0.5),
+    ((UD, 0), (UD, 0), (-1, 1), 1+x): BUDUDrp1mat,
+    ((UD, 0), (UD, 0), (0, 1), xp): functools.partial(BUDUDrp1mat, scale=0.5),
+    ((UD, 1), (UD, 1), (-1, 1), (1+x)**2): AUDUDrp1smat,
+    ((UD, 1), (UD, 1), (0, 1), xp**2): functools.partial(AUDUDrp1smat, scale=0.25),
+    ((UD, 0), (UD, 2), (-1, 1), (1+x)**2): GUDUDrp1smat,
+    ((UD, 0), (UD, 2), (0, 1), xp**2): functools.partial(GUDUDrp1smat, scale=0.25),
+    ((UD, 0), (UD, 1), (-1, 1), (1+x)): CUDUDrp1mat,
+    ((UD, 0), (UD, 1), (0, 1), xp): functools.partial(CUDUDrp1mat, scale=0.5),
+    ((UD, 0), (UD, 0), (-1, 1), (1+x)**2): BUDUDrp1smat,
+    ((UD, 0), (UD, 0), (0, 1), xp**2): functools.partial(BUDUDrp1smat, scale=0.25),
     ((UD, 0), (UD, 0)): BUDUDmat,
     ((SD, 0), (BCD, 0)): BSDBCDmat,
     #((SB, 0), (BCB, 0)): BSBBCBmat, # reordered bases
@@ -1418,7 +1344,37 @@ mat = _LegMatDict({
     ((BF, 4), (BF, 0)): SBFBFmat,
     ((BF, 0), (BF, 4)): SBFBFmat,
     ((BF, 2), (BF, 2)): SBFBFmat,
-    ((BF, 0), (BF, 0)): BBFBFmat
+    ((BF, 0), (BF, 0)): BBFBFmat,
+    ((P1, 0), (L, 0)): BP1Lmat,
+    ((P1, 0), (L, 0), (-1, 1), x): BP1Lmat,
+    ((P1, 0), (L, 0), (-1, 1), x**2): BP1Lmat,
+    ((P1, 0), (L, 0), (-1, 1), x**3): BP1Lmat,
+    ((P1, 0), (L, 0), (-1, 1), x**4): BP1Lmat,
+    ((P1, 0), (L, 1)): CP1Lmat,
+    ((P1, 0), (L, 1), (-1, 1), x): CP1Lmat,
+    ((P1, 0), (L, 1), (-1, 1), x**2): CP1Lmat,
+    ((P1, 0), (L, 1), (-1, 1), x**3): CP1Lmat,
+    ((P1, 0), (L, 1), (-1, 1), x**4): CP1Lmat,
+    ((P1, 0), (LD, 0)): BP1LDmat,
+    ((P1, 0), (LD, 0), (-1, 1), x): BP1LDmat,
+    ((P1, 0), (LD, 0), (-1, 1), x**2): BP1LDmat,
+    ((P1, 0), (LD, 0), (-1, 1), x**3): BP1LDmat,
+    ((P1, 0), (LD, 0), (-1, 1), x**4): BP1LDmat,
+    ((P1, 0), (LD, 1)): CP1LDmat,
+    ((P1, 0), (LD, 1), (-1, 1), x): CP1LDmat,
+    ((P1, 0), (LD, 1), (-1, 1), x**2): CP1LDmat,
+    ((P1, 0), (LD, 1), (-1, 1), x**3): CP1LDmat,
+    ((P1, 0), (LD, 1), (-1, 1), x**4): CP1LDmat,
+    ((P1, 0), (UD, 0)): BP1LDmat,
+    ((P1, 0), (UD, 0), (-1, 1), x): BP1LDmat,
+    ((P1, 0), (UD, 0), (-1, 1), x**2): BP1LDmat,
+    ((P1, 0), (UD, 0), (-1, 1), x**3): BP1LDmat,
+    ((P1, 0), (UD, 0), (-1, 1), x**4): BP1LDmat,
+    ((P1, 0), (UD, 1)): CP1LDmat,
+    ((P1, 0), (UD, 1), (-1, 1), x): CP1LDmat,
+    ((P1, 0), (UD, 1), (-1, 1), x**2): CP1LDmat,
+    ((P1, 0), (UD, 1), (-1, 1), x**3): CP1LDmat,
+    ((P1, 0), (UD, 1), (-1, 1), x**4): CP1LDmat,
     })
 
 #mat = _LegMatDict({})

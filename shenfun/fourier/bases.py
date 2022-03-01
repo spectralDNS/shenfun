@@ -164,7 +164,7 @@ class FourierBase(SpectralBase):
         self.forward.xfftn()
         self._truncation_forward(self.forward.tmp_array,
                                  self.forward.output_array)
-        M = self.get_normalization()
+        M = self.get_normalization()/self.domain_factor()
         self.forward._output_array *= M
 
         self.apply_inverse_mass(self.forward.output_array)
@@ -177,6 +177,8 @@ class FourierBase(SpectralBase):
         coors = self.tensorproductspace.coors if self.tensorproductspace else self.coors
         if not coors.is_cartesian: # mass matrix may not be diagonal, or there is scaling
             return SpectralBase.apply_inverse_mass(self, array)
+        if self.domain_factor() != 1:
+            array *= self.domain_factor()
         return array
 
     def _evaluate_scalar_product(self, fast_transform=True):
@@ -184,7 +186,7 @@ class FourierBase(SpectralBase):
             SpectralBase._evaluate_scalar_product(self)
             return
         output = self.scalar_product.xfftn()
-        output *= self.get_normalization()
+        output *= (self.get_normalization()/self.domain_factor())
 
     def reference_domain(self):
         return (0., 2*np.pi)

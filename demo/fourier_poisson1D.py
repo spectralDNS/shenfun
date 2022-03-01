@@ -23,12 +23,12 @@ from shenfun import inner, grad, TestFunction, TrialFunction, FunctionSpace, Fun
 
 # Use sympy to compute a rhs, given an analytical solution
 x = Symbol("x", real=True)
-ue = cos(4*x) + 1j*sin(6*x)
+ue = cos(2*x) + 1j*sin(1*x)
 #ue = cos(4*x)
 fe = ue.diff(x, 2)
 
 # Size of discretization
-N = 40
+N = 10
 
 dtype = {True: complex, False: float}[ue.has(1j)]
 ST = FunctionSpace(N, dtype=dtype, domain=(-2*np.pi, 2*np.pi))
@@ -49,8 +49,9 @@ u_hat = Function(ST)
 u_hat = A.solve(-f_hat, u_hat)
 
 uq = ST.backward(u_hat)
-u_hat = ST.forward(uq, u_hat, fast_transform=False)
-uq = ST.backward(u_hat, uq, fast_transform=False)
+uh = Function(ST)
+uh = ST.forward(uq, uh, fast_transform=False)
+uq = ST.backward(uh, uq, fast_transform=False)
 
 assert np.allclose(uj, uq)
 

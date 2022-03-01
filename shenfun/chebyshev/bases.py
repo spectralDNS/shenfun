@@ -301,11 +301,11 @@ class Orthogonal(ChebyshevBase):
 
         if self.quad == "GC":
             out = self.scalar_product.xfftn()
-            out *= (np.pi/(2*self.N*self.padding_factor))
+            out *= (np.pi/(2*self.domain_factor()*self.N*self.padding_factor))
 
         elif self.quad == "GL":
             out = self.scalar_product.xfftn()
-            out *= (np.pi/(2*(self.N*self.padding_factor-1)))
+            out *= (np.pi/(2*self.domain_factor()*(self.N*self.padding_factor-1)))
 
     def eval(self, x, u, output_array=None):
         x = np.atleast_1d(x)

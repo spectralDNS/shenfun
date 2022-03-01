@@ -15,13 +15,13 @@ they are all in the Chebyshev family, either first or second kind.
 The next letters in the matrix name uses the short form for all these
 different bases according to
 
-T  = Orthogonal
-CD = CompactDirichlet
-CN = CompactNeumann
-BD = BCDirichlet
-BB = BCBiharmonic
-P1 = Phi1
-P2 = Phi2
+    - T  = Orthogonal
+    - CD = CompactDirichlet
+    - CN = CompactNeumann
+    - BD = BCDirichlet
+    - BB = BCBiharmonic
+    - P1 = Phi1
+    - P2 = Phi2
 
 So a mass matrix using CompactDirichlet trial and Phi1 test is named
 BP1CDmat.
@@ -92,16 +92,14 @@ SD = chebbases.ShenDirichlet
 SN = chebbases.ShenNeumann
 
 class BUUmat(SpectralMatrix):
-    r"""Mass matrix :math:`B` for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        b_{kj} &= (U_j, U_k)_w \\
-        B &= (b_{kj})_{k,j=0}^{M-1,N-1} \in \mathbb{R}^{M \times N}
+        b_{kj}=(U_j, U_k)_w,
 
-    where :math:`U_k` is a Chebyshev basis function of the second kind
-    (:class:`.bases.Orthogonal`, :class:`.chebyshevu.bases.Orthogonal`, :class:`.Orthogonal`) and test
-    and trial spaces have dimensions M and N, respectively.
+    :math:`U_k \in` :class:`.chebyshevu.bases.Orthogonal` and test and trial spaces have
+    dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -110,20 +108,15 @@ class BUUmat(SpectralMatrix):
         SpectralMatrix.__init__(self, {0: np.pi/2}, test, trial, scale=scale, measure=measure)
 
 class BP1SDmat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        B_{kj}=(\psi_j, \phi_k)_w
+        b_{kj}=(\psi_j, \phi_k)_w,
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-3 \text{ and } k = 0, 1, ..., N-3
-
-    :math:`\phi_k` is a Phi1 basis function (second kind) and :math:`\psi_j`
-    is a ShenDirichlet basis function of first kind.
+    where the test function :math:`\phi_k \in` :class:`.chebyshevu.bases.Phi1`, the
+    trial :math:`\psi_j \in` :class:`.chebyshev.bases.ShenDirichlet`, and test and
+    trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -143,20 +136,15 @@ class BP1SDmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 class AP1SDmat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj}=(\psi''_j, \phi_k)_w
+        a_{kj}=(\psi''_j, \phi_k)_w,
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-3 \text{ and } k = 0, 1, ..., N-3
-
-    :math:`\phi_k` is a Phi1 basis function (second kind) and :math:`\psi_j`
-    is a ShenDirichlet basis function of first kind.
+    where the test function :math:`\phi_k \in` :class:`.chebyshevu.bases.Phi2`, the trial
+    function :math:`\psi_j \in` :class:`.chebyshev.bases.ShenDirichlet`, and test and
+    trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -172,20 +160,15 @@ class AP1SDmat(SpectralMatrix):
         return TwoDMA
 
 class BP1SNmat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        B_{kj}=(\psi_j, \phi_k)_w
+        b_{kj}=(\psi_j, \phi_k)_w,
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-3 \text{ and } k = 0, 1, ..., N-3
-
-    :math:`\phi_k` is a Phi1 basis function (second kind) and :math:`\psi_j`
-    is a ShenNeumann basis function of first kind.
+    where the test function :math:`\phi_k \in` :class:`.chebyshevu.bases.Phi1`, the
+    trial function :math:`\psi_j \in` :class:`.chebyshev.bases.ShenNeumann`, and test and
+    trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -205,20 +188,15 @@ class BP1SNmat(SpectralMatrix):
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
 class AP1SNmat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj}=(\psi''_j, \phi_k)_w
+        a_{kj}=(\psi''_j, \phi_k)_w,
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-3 \text{ and } k = 0, 1, ..., N-3
-
-    :math:`\phi_k` is a Phi1 basis function (second kind) and :math:`\psi_j`
-    is a ShenNeumann basis function of first kind.
+    where the test function :math:`\phi_k \in` :class:`.chebyshevu.bases.Phi1`, the trial
+    function :math:`\psi_j \in` :class:`.chebyshev.bases.ShenNeumann`, and test and
+    trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):

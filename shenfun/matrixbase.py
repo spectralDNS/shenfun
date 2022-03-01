@@ -1579,6 +1579,8 @@ def get_dense_matrix(test, trial, measure=1):
     N = test[0].N
     x = test[0].mpmath_points_and_weights(N, map_true_domain=False)[0]
     ws = test[0].get_measured_weights(N, measure)
+    if test[0].domain_factor() != 1:
+        ws /= test[0].domain_factor()
     v = test[0].evaluate_basis_derivative_all(x=x, k=test[1])[:, :K0]
     u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])[:, :K1]
     A = np.dot(np.conj(v.T)*ws[np.newaxis, :], u)
@@ -1622,6 +1624,8 @@ def get_denser_matrix(test, trial, measure=1):
     N = test2.N
     x = test2.mpmath_points_and_weights(N, map_true_domain=False)[0]
     ws = test2.get_measured_weights(N, measure)
+    if test[0].domain_factor() != 1:
+        ws /= test[0].domain_factor()
     v = test[0].evaluate_basis_derivative_all(x=x, k=test[1])[:, :K0]
     u = trial[0].evaluate_basis_derivative_all(x=x, k=trial[1])[:, :K1]
     return np.dot(np.conj(v.T)*ws[np.newaxis, :], u)

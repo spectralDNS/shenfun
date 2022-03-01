@@ -521,6 +521,8 @@ class SpectralBase:
         output_array = self.scalar_product.tmp_array
         M = self.shape(False)
         weights = self.points_and_weights(M)[1]
+        if self.domain_factor() != 1:
+            weights /= self.domain_factor()
         P = self.evaluate_basis_all(argument=0)
         if input_array.ndim == 1:
             output_array[slice(0, M)] = np.dot(input_array*weights, np.conj(P))
@@ -549,6 +551,8 @@ class SpectralBase:
         if self._mass is None:
             B = self.get_mass_matrix()
             self._mass = B((self, 0), (self, 0))
+            if self.domain_factor() != 1:
+                self._mass.scale /= self.domain_factor()
         array = self._mass.solve(array, axis=self.axis)
         return array
 
@@ -1370,6 +1374,7 @@ def inner_product(test, trial, measure=1):
             Basis is any of the classes from
 
             - :mod:`.chebyshev.bases`
+            - :mod:`.chebyshevu.bases`
             - :mod:`.legendre.bases`
             - :mod:`.fourier.bases`
             - :mod:`.laguerre.bases`
@@ -1418,13 +1423,14 @@ def inner_product(test, trial, measure=1):
             pass
         if measure.is_polynomial():
             measure = sp.simplify(measure)
+
         key = key + (test[0].domain, measure)
 
     mat = test[0]._get_mat()
     A = mat[key](test, trial)
     A.scale *= sc
     if not test[0].domain_factor() == 1:
-        A.scale *= test[0].domain_factor()**(test[1]+trial[1])
+        A.scale *= test[0].domain_factor()**(test[1]+trial[1]-1)
     return A
 
 class FuncWrap:

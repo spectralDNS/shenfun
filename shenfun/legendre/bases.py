@@ -295,6 +295,8 @@ class Orthogonal(LegendreBase):
             return
         M = self.shape(False)
         xj, wj = self.points_and_weights(M)
+        if self.domain_factor() != 1:
+            wj /= self.domain_factor()
         assert input_array.ndim == 1, 'Use fast_transform=False'
         from shenfun.optimization.numba import legendre as legn
         legn.legendre_orthogonal_scalar_product(xj, wj, input_array, output_array)
@@ -544,6 +546,8 @@ class ShenDirichlet(CompositeSpace):
             return
         M = self.shape(False)
         xj, wj = self.points_and_weights(M)
+        if self.domain_factor() != 1:
+            wj /= self.domain_factor()
         assert input_array.ndim == 1, 'Use fast_transform=False'
         from shenfun.optimization.numba import legendre as legn
         legn.legendre_shendirichlet_scalar_product(xj, wj, input_array, output_array, self.is_scaled())
@@ -693,8 +697,9 @@ class ShenNeumann(CompositeSpace):
             return
 
         assert input_array.ndim == 1, 'Use fast_transform=False'
-
         xj, wj = self.points_and_weights(self.N)
+        if self.domain_factor() != 1:
+            wj /= self.domain_factor()
         from shenfun.optimization.numba import legendre as legn
         legn.legendre_shenneumann_scalar_product(xj, wj, input_array, output_array)
         output_array[self.sl[slice(-2, None)]] = 0
