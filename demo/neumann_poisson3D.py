@@ -21,7 +21,7 @@ from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
 
 # Collect basis and solver from either Chebyshev or Legendre submodules
 assert len(sys.argv) == 3, "Call with two command-line arguments"
-assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
+assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'chebyshevu')
 assert isinstance(int(sys.argv[-2]), int)
 
 family = sys.argv[-1].lower()

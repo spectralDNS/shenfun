@@ -11,6 +11,9 @@ python dirichlet_poisson3D.py 32 legendre
 python dirichlet_poisson1D.py 32 jacobi
 python dirichlet_poisson2D.py 32 jacobi
 python dirichlet_poisson3D.py 32 jacobi
+python dirichlet_poisson1D.py 32 chebyshevu
+python dirichlet_poisson2D.py 32 chebyshevu
+python dirichlet_poisson3D.py 32 chebyshevu
 
 python fourier_poisson1D.py
 python fourier_poisson2D.py
@@ -22,6 +25,9 @@ python neumann_poisson3D.py 24 chebyshev
 python neumann_poisson1D.py 24 legendre
 python neumann_poisson2D.py 24 legendre
 python neumann_poisson3D.py 24 legendre
+python neumann_poisson1D.py 24 chebyshevu
+python neumann_poisson2D.py 24 chebyshevu
+python neumann_poisson3D.py 24 chebyshevu
 
 python biharmonic1D.py 32 chebyshev
 python biharmonic2D.py

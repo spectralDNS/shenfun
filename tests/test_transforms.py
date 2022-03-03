@@ -456,7 +456,7 @@ def test_SSBSBmat(SB, quad):
     uj = ul(points)
     fj = fl(points)
 
-    if isinstance(SB, shenfun.chebyshev.bases.ChebyshevBase):
+    if SB.family() == 'chebyshev':
         A = inner_product((SB, 0), (SB, 4))
     else:
         A = inner_product((SB, 2), (SB, 2))
@@ -502,7 +502,7 @@ def test_ASBSBmat(SB, quad):
 
     f_hat = np.zeros(M)
     f_hat = SB.scalar_product(fj, f_hat)
-    if isinstance(SB, shenfun.chebyshev.bases.ChebyshevBase):
+    if SB.family() == 'chebyshev':
         A = inner_product((SB, 0), (SB, 2))
     else:
         A = inner_product((SB, 1), (SB, 1))

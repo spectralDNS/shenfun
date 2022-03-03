@@ -647,10 +647,10 @@ def test_eval_expression2(fam):
 if __name__ == '__main__':
     #test_transform('f', 3)
     #test_transform('d', 2)
-    test_shentransform('d', 2, lbases.UpperDirichlet, 'LG')
+    #test_shentransform('d', 2, lbases.UpperDirichlet, 'LG')
     #test_eval_expression()
     #test_eval_expression2('L')
-    #test_project('d', 1, cBasis[3], 'GC')
+    test_project('d', 1, cBasis[3], 'GC')
     #test_project_lag('d', 2)
     #test_project_hermite('d', 2)
     #test_project2('d', 2, lbases.ShenNeumann, 'LG')

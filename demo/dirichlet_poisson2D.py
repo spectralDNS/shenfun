@@ -22,7 +22,7 @@ from shenfun import inner, div, grad, TestFunction, TrialFunction, \
     chebyshev
 
 assert len(sys.argv) == 3, "Call with two command-line arguments"
-assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi')
+assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi', 'chebyshevu')
 assert isinstance(int(sys.argv[-2]), int)
 
 # Collect solver
@@ -43,7 +43,7 @@ fe = ue.diff(x, 2) + ue.diff(y, 2)
 # Size of discretization
 N = (int(sys.argv[-2]), int(sys.argv[-2])+1)
 
-SD = FunctionSpace(N[0], family=family, scaled=True, bc=(a, b))
+SD = FunctionSpace(N[0], family=family, bc=(a, b))
 K1 = FunctionSpace(N[1], family='F', dtype='d', domain=(-2*np.pi, 2*np.pi))
 T = TensorProductSpace(comm, (SD, K1), axes=(0, 1))
 

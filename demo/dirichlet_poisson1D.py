@@ -16,7 +16,7 @@ from shenfun import inner, div, grad, TestFunction, TrialFunction, \
     Array, Function, FunctionSpace, dx
 
 assert len(sys.argv) == 3, 'Call with two command-line arguments'
-assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi')
+assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi', 'chebyshevu')
 assert isinstance(int(sys.argv[-2]), int)
 
 # Get family from args
@@ -39,7 +39,7 @@ fe = ue.diff(x, 2)
 # Size of discretization
 N = int(sys.argv[-2])
 
-SD = FunctionSpace(N, family=family, bc=(a, b), domain=domain, scaled=False)
+SD = FunctionSpace(N, family=family, bc=(a, b), domain=domain)
 u = TrialFunction(SD)
 v = TestFunction(SD)
 

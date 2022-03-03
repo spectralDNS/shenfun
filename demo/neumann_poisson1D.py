@@ -19,7 +19,7 @@ from shenfun import inner, div, grad, TestFunction, TrialFunction, FunctionSpace
 
 # Collect basis from either Chebyshev or Legendre submodules
 assert len(sys.argv) == 3, "Call with two command-line arguments"
-assert sys.argv[-1].lower() in ('legendre', 'chebyshev')
+assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'chebyshevu')
 assert isinstance(int(sys.argv[-2]), int)
 family = sys.argv[-1].lower()
 Solver = chebyshev.la.Helmholtz if family == 'chebyshev' else la.SolverGeneric1ND
@@ -35,7 +35,7 @@ fe = -ue.diff(x, 2)+alpha*ue
 N = int(sys.argv[-2])
 
 bc = {'left': ('N', ue.diff(x, 1).subs(x, -1)), 'right': ('N', ue.diff(x, 1).subs(x, 1))}
-SD = FunctionSpace(N, family=family, bc=bc, basis='ShenNeumann')
+SD = FunctionSpace(N, family=family, bc=bc)
 u = TrialFunction(SD)
 v = TestFunction(SD)
 

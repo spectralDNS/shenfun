@@ -31,7 +31,8 @@ import sympy as sp
 from scipy.special import eval_jacobi, roots_jacobi #, gamma
 from mpi4py_fft import fftw
 from shenfun.config import config
-from shenfun.spectralbase import SpectralBase, Transform, islicedict, slicedict
+from shenfun.spectralbase import SpectralBase, Transform, islicedict, \
+    slicedict, getCompositeSpace
 from shenfun.matrixbase import SparseMatrix
 from .recursions import b, h, matpow, n
 
@@ -52,13 +53,13 @@ m, n, k = sp.symbols('m,n,k', real=True, integer=True)
 
 #pylint: disable=method-hidden,no-else-return,not-callable,abstract-method,no-member,cyclic-import
 
-__all__ = ['JacobiBase', 'Orthogonal', 'Phi1', 'Phi2', 'Phi4',
+__all__ = ['Orthogonal', 'Phi1', 'Phi2', 'Phi4',
            'CompactDirichlet', 'ShenDirichlet', 'ShenBiharmonic',
            'ShenOrder6', 'mode', 'has_quadpy', 'mp']
 
 
-class JacobiBase(SpectralBase):
-    """Base class for all Jacobi spaces
+class Orthogonal(SpectralBase):
+    """Function space for regular (orthogonal) Jacobi functions
 
     Parameters
     ----------
@@ -72,8 +73,6 @@ class JacobiBase(SpectralBase):
             Parameter of the Jacobi polynomial
         beta : number, optional
             Parameter of the Jacobi polynomial
-        domain : 2-tuple of floats, optional
-            The computational domain
         padding_factor : float, optional
             Factor for padding backward transforms.
         dealias_direct : bool, optional
@@ -89,11 +88,10 @@ class JacobiBase(SpectralBase):
 
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
-
     """
 
-    def __init__(self, N, quad="JG", alpha=0, beta=0, domain=(-1., 1.), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None):
+    def __init__(self, N, quad="JG", alpha=-0.5, beta=-0.5, domain=(-1., 1.),
+                 dtype=float, padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         SpectralBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
@@ -112,15 +110,7 @@ class JacobiBase(SpectralBase):
         return (-1, 1)
 
     def get_orthogonal(self):
-        return Orthogonal(self.N,
-                          quad=self.quad,
-                          domain=self.domain,
-                          dtype=self.dtype,
-                          padding_factor=self.padding_factor,
-                          dealias_direct=self.dealias_direct,
-                          coordinates=self.coors.coordinates,
-                          alpha=0,
-                          beta=0)
+        return self
 
     def points_and_weights(self, N=None, map_true_domain=False, weighted=True, **kw):
         if N is None:
@@ -198,48 +188,9 @@ class JacobiBase(SpectralBase):
         self.si = islicedict(axis=self.axis, dimensions=self.dimensions)
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
-
-class Orthogonal(JacobiBase):
-    """Function space for regular (orthogonal) Jacobi functions
-
-    Parameters
-    ----------
-        N : int
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
-
-            - JG - Jacobi-Gauss
-
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        dtype : data-type, optional
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
-    """
-
-    def __init__(self, N, quad="JG", alpha=-0.5, beta=-0.5, domain=(-1., 1.),
-                 dtype=float, padding_factor=1, dealias_direct=False, coordinates=None):
-        JacobiBase.__init__(self, N, quad=quad, alpha=alpha, beta=beta, domain=domain, dtype=dtype,
-                            padding_factor=padding_factor, dealias_direct=dealias_direct,
-                            coordinates=coordinates)
-
     @property
     def is_orthogonal(self):
         return True
-
-    #def get_orthogonal(self):
-    #    return self
 
     @staticmethod
     def short_name():
@@ -299,153 +250,13 @@ class Orthogonal(JacobiBase):
             x = self.mpmath_points_and_weights()[0]
         return self.vandermonde(x)
 
-class CompositeSpace(Orthogonal):
-    """Common class for all spaces based on composite bases"""
-
-    def __init__(self, N, quad="JG", bc=(0, 0), domain=(-1., 1.), dtype=float, alpha=0, beta=0,
-                 scaled=False, padding_factor=1, dealias_direct=False, coordinates=None):
-        Orthogonal.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                            padding_factor=padding_factor, dealias_direct=dealias_direct,
-                            alpha=alpha, beta=beta, coordinates=coordinates)
-        JacobiBase.plan(self, (int(padding_factor*N),), 0, dtype, {})
-        from shenfun.tensorproductspace import BoundaryValues
-        self._bc_basis = None
-        self._scaled = scaled
-        self.bc = BoundaryValues(self, bc=bc)
-
-    def plan(self, shape, axis, dtype, options):
-        Orthogonal.plan(self, shape, axis, dtype, options)
-        JacobiBase.plan(self, shape, axis, dtype, options)
-
-    def evaluate_basis_all(self, x=None, argument=0):
-        V = Orthogonal.evaluate_basis_all(self, x=x, argument=argument)
-        return self._composite(V, argument=argument)
-
-    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
-        V = Orthogonal.evaluate_basis_derivative_all(self, x=x, k=k, argument=argument)
-        return self._composite(V, argument=argument)
-
-    def _evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
-        if fast_transform is False:
-            SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, False)
-            return
-        assert input_array is self.backward.tmp_array
-        assert output_array is self.backward.output_array
-        input_array[:] = self.to_ortho(input_array, output_array)
-        Orthogonal._evaluate_expansion_all(self, input_array, output_array, x, fast_transform)
-
-    def _evaluate_scalar_product(self, fast_transform=True):
-        output = self.scalar_product.tmp_array
-        if fast_transform is False:
-            SpectralBase._evaluate_scalar_product(self)
-            output[self.sl[slice(-(self.N-self.dim()), None)]] = 0
-            return
-        Orthogonal._evaluate_scalar_product(self, True)
-        K = self.stencil_matrix(self.shape(False))
-        w0 = output.copy()
-        output = K.matvec(w0, output, axis=self.axis)
-
-    @property
-    def is_orthogonal(self):
-        return False
-
-    @property
-    def has_nonhomogeneous_bcs(self):
-        return self.bc.has_nonhomogeneous_bcs()
-
-    def is_scaled(self):
-        """Return True if scaled basis is used, otherwise False"""
-        return self._scaled
-
-    def stencil_matrix(self, N=None):
-        """Matrix describing the linear combination of orthogonal basis
-        functions for the current basis.
-
-        Parameters
-        ----------
-        N : int, optional
-            The number of quadrature points
-        """
-        raise NotImplementedError
-
-    def _composite(self, V, argument=0):
-        """Return Vandermonde matrix V adjusted for basis composition
-
-        Parameters
-        ----------
-        V : Vandermonde type matrix
-        argument : int
-            Zero for test and 1 for trialfunction
-
-        """
-        P = np.zeros_like(V)
-        P[:] = V * self.stencil_matrix(V.shape[1]).diags().T
-        if argument == 1: # if trial function
-            P[:, slice(-(self.N-self.dim()), None)] = self.get_bc_basis()._composite(V)
-        return P
-
-    def sympy_basis(self, i=0, x=xp):
-        assert i < self.N
-        if i < self.dim():
-            row = self.stencil_matrix().diags().getrow(i)
-            f = 0
-            for j, val in zip(row.indices, row.data):
-                f += sp.nsimplify(val)*Orthogonal.sympy_basis(self, i=j, x=x)
-        else:
-            f = self.get_bc_basis().sympy_basis(i=i-self.dim(), x=x)
-        return f
-
-    def to_ortho(self, input_array, output_array=None):
-        if output_array is None:
-            output_array = np.zeros_like(input_array)
-        else:
-            output_array.fill(0)
-        s = [np.newaxis]*self.dimensions
-        for key, val in self.stencil_matrix().items():
-            M = self.N if key >= 0 else self.dim()
-            s0 = slice(max(0, -key), min(self.dim(), M-max(0, key)))
-            Q = s0.stop-s0.start
-            s1 = slice(max(0, key), max(0, key)+Q)
-            s[self.axis] = slice(0, Q)
-            output_array[self.sl[s1]] += val[tuple(s)]*input_array[self.sl[s0]]
-        if self.has_nonhomogeneous_bcs:
-            self.bc.add_to_orthogonal(output_array, input_array)
-        return output_array
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i < self.dim():
-            row = self.stencil_matrix().diags().getrow(i)
-            w0 = np.zeros_like(output_array)
-            output_array.fill(0)
-            for j, val in zip(row.indices, row.data):
-                output_array[:] += val*Orthogonal.evaluate_basis(self, x, i=j, output_array=w0)
-        else:
-            assert i < self.N
-            output_array = self.get_bc_basis().evaluate_basis(x, i=i-self.dim(), output_array=output_array)
-        return output_array
-
-    def evaluate_basis_derivative(self, x, i=0, k=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i < self.dim():
-            row = self.stencil_matrix().diags().getrow(i)
-            w0 = np.zeros_like(output_array)
-            output_array.fill(0)
-            for j, val in zip(row.indices, row.data):
-                output_array[:] += val*Orthogonal.evaluate_basis_derivative(self, x, i=j, k=k, output_array=w0)
-        else:
-            assert i < self.N
-            output_array = self.get_bc_basis().evaluate_basis_derivative(x, i=i-self.dim(), k=k, output_array=output_array)
-        return output_array
+CompositeSpace = getCompositeSpace(Orthogonal)
 
 class Phi1(CompositeSpace):
-    def __init__(self, N, quad="JG", bc=(0., 0.), domain=(-1., 1.), dtype=float, scaled=False,
-                 padding_factor=1, dealias_direct=False, alpha=0, beta=0, coordinates=None):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+    def __init__(self, N, quad="JG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
+                 padding_factor=1, dealias_direct=False, alpha=0, beta=0,
+                 coordinates=None, **kw):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 alpha=alpha, beta=beta, coordinates=coordinates)
         self.b0n = sp.simplify(b(alpha, beta, n+1, n) / h(alpha, beta, n, 0))
@@ -480,14 +291,14 @@ class Phi1(CompositeSpace):
         if self._bc_basis:
             return self._bc_basis
         self._bc_basis = BCDirichlet(self.N, quad=self.quad, domain=self.domain,
-                                     scaled=self._scaled, alpha=self.alpha, beta=self.beta,
+                                     alpha=self.alpha, beta=self.beta,
                                      coordinates=self.coors.coordinates)
         return self._bc_basis
 
 class Phi2(CompositeSpace):
-    def __init__(self, N, quad="JG", bc=(0, 0, 0, 0), domain=(-1., 1.), dtype=float, scaled=False,
-                 padding_factor=1, dealias_direct=False, alpha=0, beta=0, coordinates=None):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+    def __init__(self, N, quad="JG", bc=(0, 0, 0, 0), domain=(-1., 1.), dtype=float,
+                 padding_factor=1, dealias_direct=False, alpha=0, beta=0, coordinates=None, **kw):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 alpha=alpha, beta=beta, coordinates=coordinates)
         self.b0n = sp.simplify(matpow(b, 2, alpha, beta, n+2, n) / h(alpha, beta, n, 0))
@@ -528,14 +339,15 @@ class Phi2(CompositeSpace):
         if self._bc_basis:
             return self._bc_basis
         self._bc_basis = BCBiharmonic(self.N, quad=self.quad, domain=self.domain,
-                                      scaled=self._scaled, alpha=self.alpha, beta=self.beta,
+                                      alpha=self.alpha, beta=self.beta,
                                       coordinates=self.coors.coordinates)
         return self._bc_basis
 
 class Phi4(CompositeSpace):
-    def __init__(self, N, quad="GC", bc=(0,)*8, domain=(-1, 1), dtype=float, scaled=False,
-                 padding_factor=1, dealias_direct=False, alpha=0, beta=0, coordinates=None):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+    def __init__(self, N, quad="GC", bc=(0,)*8, domain=(-1, 1), dtype=float,
+                 padding_factor=1, dealias_direct=False, alpha=0, beta=0,
+                 coordinates=None, **kw):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 alpha=alpha, beta=beta, coordinates=coordinates)
         self.b0n = sp.simplify(matpow(b, 4, alpha, beta, n+4, n) / h(alpha, beta, n, 0))
@@ -585,9 +397,10 @@ class Phi4(CompositeSpace):
 
 
 class CompactDirichlet(CompositeSpace):
-    def __init__(self, N, quad="JG", bc=(0., 0.), domain=(-1., 1.), dtype=float, scaled=False,
-                 padding_factor=1, dealias_direct=False, alpha=0, beta=0, coordinates=None):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+    def __init__(self, N, quad="JG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
+                 padding_factor=1, dealias_direct=False, alpha=0, beta=0,
+                 coordinates=None, **kw):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 alpha=alpha, beta=beta, coordinates=coordinates)
         self.b0n = sp.simplify(b(alpha, beta, n+1, n) * (h(alpha, beta, n+1, 1) / h(alpha, beta, n, 0)))
@@ -623,11 +436,11 @@ class CompactDirichlet(CompositeSpace):
         if self._bc_basis:
             return self._bc_basis
         self._bc_basis = BCDirichlet(self.N, quad=self.quad, domain=self.domain,
-                                     scaled=self._scaled, alpha=self.alpha, beta=self.beta,
+                                     alpha=self.alpha, beta=self.beta,
                                      coordinates=self.coors.coordinates)
         return self._bc_basis
 
-class ShenDirichlet(JacobiBase):
+class ShenDirichlet(Orthogonal):
     """Jacobi function space for Dirichlet boundary conditions
 
     Parameters
@@ -661,9 +474,10 @@ class ShenDirichlet(JacobiBase):
 
     """
     def __init__(self, N, quad='JG', bc=(0, 0), domain=(-1., 1.), dtype=float,
-                 padding_factor=1, dealias_direct=False, coordinates=None, alpha=-1, beta=-1):
+                 padding_factor=1, dealias_direct=False, coordinates=None,
+                 alpha=-1, beta=-1, **kw):
         assert alpha == -1 and beta == -1
-        JacobiBase.__init__(self, N, quad=quad, alpha=-1, beta=-1, domain=domain, dtype=dtype,
+        Orthogonal.__init__(self, N, quad=quad, alpha=-1, beta=-1, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
                             coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues
@@ -772,6 +586,10 @@ class ShenDirichlet(JacobiBase):
         SpectralBase._evaluate_scalar_product(self)
         self.scalar_product.tmp_array[self.sl[slice(-2, None)]] = 0
 
+    def get_orthogonal(self):
+        return Orthogonal(self.N, alpha=0, beta=0, dtype=self.dtype, domain=self.domain,
+                          coordinates=self.coors.coordinates)
+
     def get_bc_basis(self):
         if self._bc_basis:
             return self._bc_basis
@@ -779,7 +597,7 @@ class ShenDirichlet(JacobiBase):
                                      alpha=1, beta=1, coordinates=self.coors.coordinates)
         return self._bc_basis
 
-class ShenBiharmonic(JacobiBase):
+class ShenBiharmonic(Orthogonal):
     """Function space for Biharmonic boundary conditions
 
     Parameters
@@ -817,9 +635,9 @@ class ShenBiharmonic(JacobiBase):
     """
     def __init__(self, N, quad='JG', bc=(0, 0, 0, 0), domain=(-1., 1.), dtype=float,
                  padding_factor=1, dealias_direct=False, coordinates=None,
-                 alpha=-2, beta=-2):
+                 alpha=-2, beta=-2, **kw):
         assert alpha == -2 and beta == -2
-        JacobiBase.__init__(self, N, quad=quad, alpha=-2, beta=-2, domain=domain, dtype=dtype,
+        Orthogonal.__init__(self, N, quad=quad, alpha=-2, beta=-2, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
                             coordinates=coordinates)
         assert bc in ((0, 0, 0, 0), 'Biharmonic')
@@ -928,6 +746,10 @@ class ShenBiharmonic(JacobiBase):
         output_array[self.sl[slice(4, None)]] += z*_factor2
         return output_array
 
+    def get_orthogonal(self):
+        return Orthogonal(self.N, alpha=0, beta=0, dtype=self.dtype,
+                          domain=self.domain, coordinates=self.coors.coordinates)
+
     def get_bc_basis(self):
         if self._bc_basis:
             return self._bc_basis
@@ -936,7 +758,7 @@ class ShenBiharmonic(JacobiBase):
         return self._bc_basis
 
 
-class ShenOrder6(JacobiBase):
+class ShenOrder6(Orthogonal):
     """Function space for 6th order equation
 
     Parameters
@@ -973,9 +795,9 @@ class ShenOrder6(JacobiBase):
 
     """
     def __init__(self, N, quad='JG', domain=(-1., 1.), dtype=float, padding_factor=1, dealias_direct=False,
-                 coordinates=None, bc=(0, 0, 0, 0, 0, 0), alpha=-3, beta=-3):
+                 coordinates=None, bc=(0, 0, 0, 0, 0, 0), alpha=-3, beta=-3, **kw):
         assert alpha == -3 and beta == -3
-        JacobiBase.__init__(self, N, quad=quad, alpha=-3, beta=-3, domain=domain, dtype=dtype,
+        Orthogonal.__init__(self, N, quad=quad, alpha=-3, beta=-3, domain=domain, dtype=dtype,
                             padding_factor=padding_factor, dealias_direct=dealias_direct,
                             coordinates=coordinates)
         from shenfun.tensorproductspace import BoundaryValues

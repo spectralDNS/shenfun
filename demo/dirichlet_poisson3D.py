@@ -23,7 +23,7 @@ from shenfun import inner, div, grad, TestFunction, TrialFunction, Array, \
 from mpi4py_fft.pencil import Subcomm
 
 assert len(sys.argv) == 3
-assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi')
+assert sys.argv[-1].lower() in ('legendre', 'chebyshev', 'jacobi', 'chebyshevu')
 assert isinstance(int(sys.argv[-2]), int)
 
 family = sys.argv[-1].lower()

@@ -1,14 +1,13 @@
 r"""
-This module contains classes for working with the spectral-Galerkin method
-
-All spectral functions have the following expansions on the line (real or complex)
+This module contains classes for working with global spectral Galerkin methods
+in one dimension. All spectral functions have the following expansions on the
+real line
 
    :math:`u(x) = \sum_{k\in\mathcal{I}}\hat{u}_{k} \phi_k(x)`
 
 where :math:`\mathcal{I}` is a index set of the basis, which differs from
 space to space. :math:`\phi_k` is the k't basis function and the function
-space is the span of these basis functions. The basis function is also
-called a test function, whereas :math:`u(x)` often is called a trial function.
+space is the span of these basis functions.
 
 See the [documentation](https://shenfun.readthedocs.io) for more details.
 
@@ -39,6 +38,7 @@ class SpectralBase:
         self.quad = quad
         self.axis = 0
         self.bc = None
+        self._bc_basis = None
         self.padding_factor = padding_factor
         if padding_factor != 1:
             self.padding_factor = np.floor(N*padding_factor)/N if N > 0 else 1
@@ -1166,6 +1166,180 @@ class SpectralBase:
             sp = self.sl[slice(-nd, None)]
             padded_array[sp] = trunc_array[sl]
 
+def getCompositeSpace(Orthogonal):
+    """Dynamic class factory for Composite spaces
+
+    Parameters
+    ----------
+    Orthogonal : SpectralBase class
+        Either Chebyshev, ChebyshevU, Legendre or Jacobi
+    """
+
+    class CompositeSpace(Orthogonal):
+        """Common class for all spaces based on composite bases"""
+
+        def __init__(self, *args, **kwargs):
+            bc = kwargs.pop('bc', None)
+            scaled = kwargs.pop('scaled', None)
+            alpha = kwargs.pop('alpha', None)
+            beta = kwargs.pop('beta', None)
+            Orthogonal.__init__(self, *args, **kwargs)
+            if bc is not None:
+                from shenfun.tensorproductspace import BoundaryValues
+                self.bc = bc
+                self.bc = BoundaryValues(self, bc=bc)
+            if scaled is not None:
+                self._scaled = scaled
+            if alpha is not None:
+                self.alpha = alpha
+            if beta is not None:
+                self.beta = beta
+
+        def evaluate_basis_all(self, x=None, argument=0):
+            V = Orthogonal.evaluate_basis_all(self, x=x, argument=argument)
+            return self._composite(V, argument=argument)
+
+        def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
+            V = Orthogonal.evaluate_basis_derivative_all(self, x=x, k=k, argument=argument)
+            return self._composite(V, argument=argument)
+
+        def _evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=True):
+            if fast_transform is False:
+                SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, False)
+                return
+            assert input_array is self.backward.tmp_array
+            assert output_array is self.backward.output_array
+            input_array[:] = self.to_ortho(input_array, output_array)
+            Orthogonal._evaluate_expansion_all(self, input_array, output_array, x, fast_transform)
+
+        def _evaluate_scalar_product(self, fast_transform=True):
+            output = self.scalar_product.tmp_array
+            if fast_transform is False:
+                SpectralBase._evaluate_scalar_product(self)
+                output[self.sl[slice(-(self.N-self.dim()), None)]] = 0
+                return
+            Orthogonal._evaluate_scalar_product(self, True)
+            K = self.stencil_matrix(self.shape(False))
+            w0 = output.copy()
+            output = K.matvec(w0, output, axis=self.axis)
+
+        @property
+        def is_orthogonal(self):
+            return False
+
+        def get_orthogonal(self):
+            return Orthogonal(self.N, quad=self.quad, domain=self.domain, dtype=self.dtype,
+                              padding_factor=self.padding_factor,
+                              dealias_direct=self.dealias_direct,
+                              coordinates=self.coors.coordinates)
+
+        @property
+        def has_nonhomogeneous_bcs(self):
+            if self.bc is None:
+                return False
+            return self.bc.has_nonhomogeneous_bcs()
+
+        def is_scaled(self):
+            """Return True if scaled basis is used, otherwise False"""
+            if not hasattr(self, '_scaled'):
+                return False
+            return self._scaled
+
+        def stencil_matrix(self, N=None):
+            """Matrix describing the linear combination of orthogonal basis
+            functions for the current basis.
+
+            Parameters
+            ----------
+            N : int, optional
+                The number of quadrature points
+            """
+            raise NotImplementedError
+
+        def _composite(self, V, argument=0):
+            """Return Vandermonde matrix V adjusted for basis composition
+
+            Parameters
+            ----------
+            V : Vandermonde type matrix
+            argument : int
+                Zero for test and 1 for trialfunction
+
+            """
+            P = np.zeros_like(V)
+            P[:] = V * self.stencil_matrix(V.shape[1]).diags().T
+            if argument == 1: # if trial function
+                P[:, slice(-(self.N-self.dim()), None)] = self.get_bc_basis()._composite(V)
+            return P
+
+        def sympy_basis(self, i=0, x=sp.Symbol('x', real=True)):
+            assert i < self.N
+            if i < self.dim():
+                row = self.stencil_matrix().diags().getrow(i)
+                f = 0
+                for j, val in zip(row.indices, row.data):
+                    f += sp.nsimplify(val)*Orthogonal.sympy_basis(self, i=j, x=x)
+            else:
+                f = self.get_bc_basis().sympy_basis(i=i-self.dim(), x=x)
+            return f
+
+        def to_ortho(self, input_array, output_array=None):
+            if output_array is None:
+                output_array = np.zeros_like(input_array)
+            else:
+                output_array.fill(0)
+            s = [np.newaxis]*self.dimensions
+            for key, val in self.stencil_matrix().items():
+                M = self.N if key >= 0 else self.dim()
+                s0 = slice(max(0, -key), min(self.dim(), M-max(0, key)))
+                Q = s0.stop-s0.start
+                s1 = slice(max(0, key), max(0, key)+Q)
+                s[self.axis] = slice(0, Q)
+                output_array[self.sl[s1]] += val[tuple(s)]*input_array[self.sl[s0]]
+            if self.has_nonhomogeneous_bcs:
+                self.bc.add_to_orthogonal(output_array, input_array)
+            return output_array
+
+        def evaluate_basis(self, x, i=0, output_array=None):
+            x = np.atleast_1d(x)
+            if output_array is None:
+                output_array = np.zeros(x.shape)
+            if i < self.dim():
+                row = self.stencil_matrix().diags().getrow(i)
+                w0 = np.zeros_like(output_array)
+                output_array.fill(0)
+                for j, val in zip(row.indices, row.data):
+                    output_array[:] += val*Orthogonal.evaluate_basis(self, x, i=j, output_array=w0)
+            else:
+                assert i < self.N
+                output_array = self.get_bc_basis().evaluate_basis(x, i=i-self.dim(), output_array=output_array)
+            return output_array
+
+        def evaluate_basis_derivative(self, x, i=0, k=0, output_array=None):
+            x = np.atleast_1d(x)
+            if output_array is None:
+                output_array = np.zeros(x.shape)
+            if i < self.dim():
+                row = self.stencil_matrix().diags().getrow(i)
+                w0 = np.zeros_like(output_array)
+                output_array.fill(0)
+                for j, val in zip(row.indices, row.data):
+                    output_array[:] += val*Orthogonal.evaluate_basis_derivative(self, x, i=j, k=k, output_array=w0)
+            else:
+                assert i < self.N
+                output_array = self.get_bc_basis().evaluate_basis_derivative(x, i=i-self.dim(), k=k, output_array=output_array)
+            return output_array
+
+        def eval(self, x, u, output_array=None):
+            x = np.atleast_1d(x)
+            if output_array is None:
+                output_array = np.zeros(x.shape, dtype=self.dtype)
+            x = self.map_reference_domain(x)
+            w = self.to_ortho(u)
+            output_array = Orthogonal.eval(self, x, w, output_array)
+            return output_array
+
+    return CompositeSpace
 
 class MixedFunctionSpace:
     """Class for composite bases in 1D

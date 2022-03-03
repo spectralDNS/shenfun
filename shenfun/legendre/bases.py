@@ -1,5 +1,40 @@
-"""
-Module for defining function spaces in the Legendre family
+r"""
+Module for defining function spaces in the Legendre family.
+
+A function is approximated in the Legendre basis as
+
+..  math::
+
+    u(x) = \sum_{i=0}^{N-1} \hat{u}_i L_i(x)
+
+where :math:`L_i(x)` is the i'th Legendre polynomial of the first kind.
+The Legendre polynomials are orthogonal with weight :math:`\omega=1`
+
+.. math::
+
+    \int_{-1}^1 L_i L_k dx = \frac{2}{2k+1} \delta_{ki}.
+
+All other bases defined in this module are combinations of :math:`L_i`'s.
+For example, a Dirichlet basis is
+
+.. math::
+
+    \phi_i = L_i - L_{i+2}
+
+The basis is implemented using a stencil matrix :math:`K \in \mathbb{R}^{N-2 \times N}`,
+such that
+
+.. math::
+
+    \boldsymbol{\phi} = K \boldsymbol{L},
+
+where :math:`\boldsymbol{\phi}=(\phi_0, \phi_1, \ldots, \phi_{N-3})` and
+:math:`\boldsymbol{L}=(L_0, L_1, \ldots, L_{N-1})`. For the Dirichlet basis
+:math:`K = (\delta_{i, j} - \delta_{i+2, j})_{i,j=0}^{N-2, N}`.
+
+The stencil matrix is used to transfer any composite basis back and forth
+to the orthogonal basis.
+
 """
 
 from __future__ import division
@@ -12,13 +47,12 @@ from scipy.special import eval_legendre
 from mpi4py_fft import fftw
 from shenfun.config import config
 from shenfun.spectralbase import SpectralBase, work, Transform, islicedict, \
-    slicedict
+    slicedict, getCompositeSpace
 from shenfun.matrixbase import SparseMatrix
 from .lobatto import legendre_lobatto_nodes_and_weights
 from . import fastgl
 
-__all__ = ['LegendreBase',
-           'Orthogonal',
+__all__ = ['Orthogonal',
            'ShenDirichlet',
            'Phi1',
            'Phi2',
@@ -61,8 +95,9 @@ mode = mode if has_quadpy else 'numpy'
 
 xp = sp.Symbol('x', real=True)
 
-class LegendreBase(SpectralBase):
-    """Base class for all Legendre spaces
+
+class Orthogonal(SpectralBase):
+    """Function space for regular (orthogonal) Legendre series
 
     Parameters
     ----------
@@ -73,9 +108,8 @@ class LegendreBase(SpectralBase):
 
             - LG - Legendre-Gauss
             - GL - Legendre-Gauss-Lobatto
-
         domain : 2-tuple of floats, optional
-                 The computational domain
+            The computational domain
         padding_factor : float, optional
             Factor for padding backward transforms.
         dealias_direct : bool, optional
@@ -94,7 +128,7 @@ class LegendreBase(SpectralBase):
     """
 
     def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=float, padding_factor=1,
-                 dealias_direct=False, coordinates=None):
+                 dealias_direct=False, coordinates=None, **kw):
         SpectralBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
                               padding_factor=padding_factor, dealias_direct=dealias_direct,
                               coordinates=coordinates)
@@ -176,48 +210,7 @@ class LegendreBase(SpectralBase):
         self.sl = slicedict(axis=self.axis, dimensions=self.dimensions)
 
     def get_orthogonal(self):
-        return Orthogonal(self.N, quad=self.quad, dtype=self.dtype,
-                          domain=self.domain,
-                          padding_factor=self.padding_factor,
-                          dealias_direct=self.dealias_direct,
-                          coordinates=self.coors.coordinates)
-
-class Orthogonal(LegendreBase):
-    """Function space for regular (orthogonal) Legendre series
-
-    Parameters
-    ----------
-        N : int
-            Number of quadrature points
-        quad : str, optional
-            Type of quadrature
-
-            - LG - Legendre-Gauss
-            - GL - Legendre-Gauss-Lobatto
-        domain : 2-tuple of floats, optional
-            The computational domain
-        padding_factor : float, optional
-            Factor for padding backward transforms.
-        dealias_direct : bool, optional
-            Set upper 1/3 of coefficients to zero before backward transform
-        dtype : data-type, optional
-            Type of input data in real physical space. Will be overloaded when
-            basis is part of a :class:`.TensorProductSpace`.
-        coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
-            Map for curvilinear coordinatesystem.
-            The new coordinate variable in the new coordinate system is the first item.
-            Second item is a tuple for the Cartesian position vector as function of the
-            new variable in the first tuple. Example::
-
-                theta = sp.Symbols('x', real=True, positive=True)
-                rv = (sp.cos(theta), sp.sin(theta))
-    """
-
-    def __init__(self, N, quad="LG", domain=(-1., 1.), dtype=float, padding_factor=1,
-                 dealias_direct=False, coordinates=None):
-        LegendreBase.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                              padding_factor=padding_factor, dealias_direct=dealias_direct,
-                              coordinates=coordinates)
+        return self
 
     def sympy_basis(self, i=0, x=xp):
         return sp.legendre(i, x)
@@ -301,165 +294,7 @@ class Orthogonal(LegendreBase):
         from shenfun.optimization.numba import legendre as legn
         legn.legendre_orthogonal_scalar_product(xj, wj, input_array, output_array)
 
-
-class CompositeSpace(Orthogonal):
-    """Common class for all spaces based on composite bases"""
-
-    def __init__(self, N, quad="GC", bc=(0, 0), domain=(-1., 1.), dtype=float, scaled=False,
-                 padding_factor=1, dealias_direct=False, coordinates=None):
-        Orthogonal.__init__(self, N, quad=quad, domain=domain, dtype=dtype,
-                            padding_factor=padding_factor, dealias_direct=dealias_direct,
-                            coordinates=coordinates)
-        from shenfun.tensorproductspace import BoundaryValues
-        self._scaled = scaled
-        self._bc_basis = None
-        self.bc = BoundaryValues(self, bc=bc)
-
-    def plan(self, shape, axis, dtype, options):
-        Orthogonal.plan(self, shape, axis, dtype, options)
-        LegendreBase.plan(self, shape, axis, dtype, options)
-
-    def evaluate_basis_all(self, x=None, argument=0):
-        V = Orthogonal.evaluate_basis_all(self, x=x, argument=argument)
-        return self._composite(V, argument=argument)
-
-    def evaluate_basis_derivative_all(self, x=None, k=0, argument=0):
-        V = Orthogonal.evaluate_basis_derivative_all(self, x=x, k=k, argument=argument)
-        return self._composite(V, argument=argument)
-
-    def _evaluate_expansion_all(self, input_array, output_array, x=None, fast_transform=False):
-        if fast_transform is False:
-            SpectralBase._evaluate_expansion_all(self, input_array, output_array, x, False)
-            return
-        assert input_array is self.backward.tmp_array
-        assert output_array is self.backward.output_array
-        input_array[:] = self.to_ortho(input_array, output_array)
-        Orthogonal._evaluate_expansion_all(self, input_array, output_array, x, fast_transform)
-
-    def _evaluate_scalar_product(self, fast_transform=True):
-        output = self.scalar_product.tmp_array
-        if fast_transform is False:
-            SpectralBase._evaluate_scalar_product(self)
-            output[self.sl[slice(-(self.N-self.dim()), None)]] = 0
-            return
-        Orthogonal._evaluate_scalar_product(self, fast_transform)
-        K = self.stencil_matrix(self.shape(False))
-        w0 = output.copy()
-        output[:] = K.matvec(output, w0, axis=self.axis)
-
-    @property
-    def is_orthogonal(self):
-        return False
-
-    @property
-    def has_nonhomogeneous_bcs(self):
-        return self.bc.has_nonhomogeneous_bcs()
-
-    def is_scaled(self):
-        """Return True if scaled basis is used, otherwise False"""
-        return self._scaled
-
-    def stencil_matrix(self, N=None):
-        """Matrix describing the linear combination of orthogonal basis
-        functions for the current basis.
-
-        Parameters
-        ----------
-        N : int, optional
-            The number of quadrature points
-        """
-        raise NotImplementedError
-
-    def _composite(self, V, argument=0):
-        """Return Vandermonde matrix V adjusted for basis composition
-
-        Parameters
-        ----------
-        V : Vandermonde type matrix
-        argument : int
-                Zero for test and 1 for trialfunction
-
-        """
-        P = np.zeros_like(V)
-        P[:] = V * self.stencil_matrix(V.shape[1]).diags().T
-        if argument == 1: # if trial function
-            P[:, slice(-(self.N-self.dim()), None)] = self.get_bc_basis()._composite(V)
-        return P
-
-    def sympy_basis(self, i=0, x=xp):
-        assert i < self.N
-        if i < self.dim():
-            row = self.stencil_matrix().diags().getrow(i)
-            f = 0
-            for j, val in zip(row.indices, row.data):
-                f += sp.nsimplify(val)*Orthogonal.sympy_basis(self, i=j, x=x)
-        else:
-            f = self.get_bc_basis().sympy_basis(i=i-self.dim(), x=x)
-        return f
-
-    def to_ortho(self, input_array, output_array=None):
-        if output_array is None:
-            output_array = np.zeros_like(input_array)
-        else:
-            output_array.fill(0)
-        s = [np.newaxis]*self.dimensions
-        for key, val in self.stencil_matrix().items():
-            M = self.N if key >= 0 else self.dim()
-            s0 = slice(max(0, -key), min(self.dim(), M-max(0, key)))
-            Q = s0.stop-s0.start
-            s1 = slice(max(0, key), max(0, key)+Q)
-            s[self.axis] = slice(0, Q)
-            output_array[self.sl[s1]] += val[tuple(s)]*input_array[self.sl[s0]]
-
-        if self.has_nonhomogeneous_bcs:
-            self.bc.add_to_orthogonal(output_array, input_array)
-        return output_array
-
-    def evaluate_basis(self, x, i=0, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        if i < self.dim():
-            row = self.stencil_matrix().diags().getrow(i)
-            w0 = np.zeros_like(output_array)
-            output_array.fill(0)
-            for j, val in zip(row.indices, row.data):
-                output_array[:] += val*Orthogonal.evaluate_basis(self, x, i=j, output_array=w0)
-        else:
-            assert i < self.N
-            output_array = self.get_bc_basis().evaluate_basis(x, i=i-self.dim(), output_array=output_array)
-        return output_array
-
-    def evaluate_basis_derivative(self, x=None, i=0, k=0, output_array=None):
-        if x is None:
-            x = self.mesh(False, False)
-        if output_array is None:
-            output_array = np.zeros(x.shape)
-        x = np.atleast_1d(x)
-
-        if i < self.dim():
-            basis = np.zeros(self.shape(True))
-            M = self.stencil_matrix()
-            row = M.diags().getrow(i)
-            indices = row.indices
-            vals = row.data
-            basis[np.array(indices)] = vals
-            basis = leg.Legendre(basis)
-            if k > 0:
-                basis = basis.deriv(k)
-            output_array[:] = basis(x)
-        else:
-            output_array[:] = self.get_bc_basis().evaluate_basis_derivative(x, i-self.dim(), k)
-        return output_array
-
-    def eval(self, x, u, output_array=None):
-        x = np.atleast_1d(x)
-        if output_array is None:
-            output_array = np.zeros(x.shape, dtype=self.dtype)
-        x = self.map_reference_domain(x)
-        w = self.to_ortho(u)
-        output_array[:] = leg.legval(x, w)
-        return output_array
+CompositeSpace = getCompositeSpace(Orthogonal)
 
 class ShenDirichlet(CompositeSpace):
     """Function space for Dirichlet boundary conditions
@@ -500,8 +335,8 @@ class ShenDirichlet(CompositeSpace):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float, scaled=False,
-                 padding_factor=1, dealias_direct=False, coordinates=None):
+    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
+                 scaled=False, padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
@@ -584,7 +419,6 @@ class Phi1(CompositeSpace):
             Boundary conditions at edges of domain
         domain : 2-tuple of floats, optional
             The computational domain
-        scaled : bool, optional
         padding_factor : float, optional
             Factor for padding backward transforms.
         dealias_direct : bool, optional
@@ -601,9 +435,9 @@ class Phi1(CompositeSpace):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float, scaled=False,
-                 padding_factor=1, dealias_direct=False, coordinates=None):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+    def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
 
@@ -628,7 +462,7 @@ class Phi1(CompositeSpace):
         if self._bc_basis:
             return self._bc_basis
         self._bc_basis = BCDirichlet(self.N, quad=self.quad, domain=self.domain,
-                                     scaled=self._scaled, coordinates=self.coors.coordinates)
+                                     coordinates=self.coors.coordinates)
         return self._bc_basis
 
 class ShenNeumann(CompositeSpace):
@@ -668,8 +502,8 @@ class ShenNeumann(CompositeSpace):
     """
 
     def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), padding_factor=1,
-                 scaled=False, dealias_direct=False, dtype=float, coordinates=None):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                 dealias_direct=False, dtype=float, coordinates=None, **kw):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
 
@@ -767,8 +601,8 @@ class ShenBiharmonic(CompositeSpace):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="LG", bc=(0, 0, 0, 0), domain=(-1., 1.), padding_factor=1,
-                 scaled=False, dealias_direct=False, dtype=float, coordinates=None):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                 dealias_direct=False, dtype=float, coordinates=None, **kw):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
 
@@ -839,8 +673,8 @@ class Phi2(CompositeSpace):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="LG", bc=(0, 0, 0, 0), domain=(-1., 1.), padding_factor=1,
-                 scaled=False, dealias_direct=False, dtype=float, coordinates=None):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                 dealias_direct=False, dtype=float, coordinates=None, **kw):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
 
@@ -871,9 +705,9 @@ class Phi2(CompositeSpace):
         return self._bc_basis
 
 class Phi4(CompositeSpace):
-    def __init__(self, N, quad="LG", bc=(0,)*8, domain=(-1, 1), dtype=float, scaled=False,
-                 padding_factor=1, dealias_direct=False, coordinates=None):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+    def __init__(self, N, quad="LG", bc=(0,)*8, domain=(-1, 1), dtype=float,
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
         from shenfun.jacobi.recursions import b, h, matpow, n
@@ -954,8 +788,8 @@ class BeamFixedFree(CompositeSpace):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="LG", bc=(0, 0, 0, 0), domain=(-1., 1.), padding_factor=1,
-                 scaled=False, dealias_direct=False, dtype=float, coordinates=None):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                 dealias_direct=False, dtype=float, coordinates=None, **kw):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
 
@@ -1022,9 +856,9 @@ class UpperDirichlet(CompositeSpace):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="LG", bc=(None, 0), domain=(-1., 1.), dtype=float,
-                 scaled=False, padding_factor=1, dealias_direct=False, coordinates=None):
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         assert quad == "LG"
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
 
@@ -1093,10 +927,10 @@ class ShenBiPolar(CompositeSpace):
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
     """
-    def __init__(self, N, quad="LG", domain=(-1., 1.), bc=(0, 0, 0, 0), dtype=float, scaled=False,
-                 padding_factor=1, dealias_direct=False, coordinates=None):
+    def __init__(self, N, quad="LG", domain=(-1., 1.), bc=(0, 0, 0, 0), dtype=float,
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         assert quad == "LG"
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
 
@@ -1177,9 +1011,9 @@ class ShenBiPolar0(CompositeSpace):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="LG", domain=(-1., 1.), bc=(0, 0, 0), padding_factor=1,
-                 scaled=False, dealias_direct=False, dtype=float, coordinates=None):
+                 dealias_direct=False, dtype=float, coordinates=None, **kw):
         assert quad == "LG"
-        CompositeSpace.__init__(self, N, quad="LG", domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+        CompositeSpace.__init__(self, N, quad="LG", domain=domain, dtype=dtype, bc=bc,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
 
@@ -1230,10 +1064,6 @@ class DirichletNeumann(CompositeSpace):
             Boundary conditions at edges of domain. Dirichlet first.
         domain : 2-tuple of floats, optional
             The computational domain
-        scaled : bool, optional
-            Whether or not to scale test functions with 1/sqrt(4k+6).
-            Scaled test functions give a stiffness matrix equal to the
-            identity matrix.
         padding_factor : float, optional
             Factor for padding backward transforms.
         dealias_direct : bool, optional
@@ -1251,8 +1081,8 @@ class DirichletNeumann(CompositeSpace):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
-                 scaled=False, padding_factor=1, dealias_direct=False, coordinates=None):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
 
@@ -1319,9 +1149,9 @@ class LowerDirichlet(CompositeSpace):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="LG", bc=(0, None), domain=(-1., 1.), dtype=float,
-                 scaled=False, padding_factor=1, dealias_direct=False, coordinates=None):
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
         assert quad == "LG"
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
 
@@ -1386,8 +1216,8 @@ class DirichletNeumannDirichlet(CompositeSpace):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="LG", bc=(0, 0, 0), domain=(-1., 1.), padding_factor=1,
-                 scaled=False, dealias_direct=False, dtype=float, coordinates=None):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                 dealias_direct=False, dtype=float, coordinates=None, **kw):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
 
@@ -1438,10 +1268,6 @@ class NeumannDirichlet(CompositeSpace):
             Boundary conditions at edges of domain. Neumann first.
         domain : 2-tuple of floats, optional
             The computational domain
-        scaled : bool, optional
-            Whether or not to scale test functions with 1/sqrt(4k+6).
-            Scaled test functions give a stiffness matrix equal to the
-            identity matrix.
         padding_factor : float, optional
             Factor for padding backward transforms.
         dealias_direct : bool, optional
@@ -1459,8 +1285,8 @@ class NeumannDirichlet(CompositeSpace):
                 rv = (sp.cos(theta), sp.sin(theta))
     """
     def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
-                 scaled=False, padding_factor=1, dealias_direct=False, coordinates=None):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
 
@@ -1510,10 +1336,6 @@ class UpperDirichletNeumann(CompositeSpace):
             Boundary conditions at edges of domain, Dirichlet first.
         domain : 2-tuple of floats, optional
             The computational domain
-        scaled : bool, optional
-            Whether or not to scale test functions with 1/sqrt(4k+6).
-            Scaled test functions give a stiffness matrix equal to the
-            identity matrix.
         padding_factor : float, optional
             Factor for padding backward transforms.
         dealias_direct : bool, optional
@@ -1536,8 +1358,8 @@ class UpperDirichletNeumann(CompositeSpace):
     stiffness matrix.
     """
     def __init__(self, N, quad="LG", bc=(0., 0.), domain=(-1., 1.), dtype=float,
-                 scaled=False, padding_factor=1, dealias_direct=False, coordinates=None):
-        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
+                 padding_factor=1, dealias_direct=False, coordinates=None, **kw):
+        CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc,
                                 padding_factor=padding_factor, dealias_direct=dealias_direct,
                                 coordinates=coordinates)
 
@@ -1583,8 +1405,6 @@ class BCBase(CompositeSpace):
 
         domain : 2-tuple of floats, optional
             The computational domain
-        scaled : bool, optional
-            Whether or not to use scaled basis
         coordinates: 2- or 3-tuple (coordinate, position vector (, sympy assumptions)), optional
             Map for curvilinear coordinatesystem.
             The new coordinate variable in the new coordinate system is the first item.

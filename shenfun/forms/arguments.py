@@ -301,6 +301,7 @@ def FunctionSpace(N, family='Fourier', bc=None, dtype='d', quad=None,
         bases = {
             '': chebyshevu.bases.Orthogonal,
             'LDRD': chebyshevu.bases.CompactDirichlet,
+            'LNRN': chebyshevu.bases.CompactNeumann,
             'LDLNRDRN': chebyshevu.bases.Phi2
         }
 
