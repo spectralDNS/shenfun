@@ -26,7 +26,7 @@ config = {
             'solve': 'csc',
             'diags': 'csc',
             'matvec': 'csr',
-            'construct': 'dense' # denser, sympy - The method used to construct non-implemented matrices
+            'construct': 'dense' # denser, sympy, quadpy - The method used to construct non-implemented matrices
         },
         'block':
         {

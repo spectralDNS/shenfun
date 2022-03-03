@@ -20,13 +20,13 @@ xp = sp.Symbol('x', real=True, positive=True)
 
 
 class Acos2mat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Stiffness matrix for :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj}=(\exp(i k x), \exp(i l x)'')_w
+        a_{kj}=(\exp(i k x), \cos^2(x) \exp(i l x)'')
 
-    where weight w = \cos^2 x
+    where test and trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -41,13 +41,13 @@ class Acos2mat(SpectralMatrix):
 
 
 class Acosmat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Stiffness matrix for :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj}=(\exp(i k x), \exp(i l x)'')_w
+        a_{kj}=(\exp(i k x), \cos(x) \exp(i l x)'')
 
-    where weight w = \cos x
+    where test and trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -60,13 +60,13 @@ class Acosmat(SpectralMatrix):
 
 
 class Csinmat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Derivative matrix for :math:`C=(c_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj}=(\exp(i k x), \exp(i l x)')_w
+        c_{kj}=(\exp(i k x), \sin(x) \exp(i l x)')
 
-    where weight w = \sin x
+    where test and trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -79,13 +79,13 @@ class Csinmat(SpectralMatrix):
 
 
 class Csincosmat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Derivative matrix for :math:`C=(c_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj}=(\exp(i k x), \exp(i l x)')_w
+        c_{kj}=(\exp(i k x), \sin(2x)/2 \exp(i l x)')
 
-    where weight w = \sin x
+    where test and trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -99,13 +99,13 @@ class Csincosmat(SpectralMatrix):
 
 
 class Bcos2mat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Matrix for :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj}=(\exp(i k x), \exp(i l x))_w
+        b_{kj}=(\exp(i k x), \cos^2(x) \exp(i l x))
 
-    where weight w = \cos^2 x
+    where test and trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -119,13 +119,13 @@ class Bcos2mat(SpectralMatrix):
 
 
 class Bcosmat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Matrix for :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj}=(\exp(i k x), \exp(i l x))_w
+        b_{kj}=(\exp(i k x), \cos(x) \exp(i l x))
 
-    where weight w = \cos x
+    where test and trial spaces have dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -160,9 +160,9 @@ class _Fouriermatrix(SpectralMatrix):
                 val = (1j*k)**(k_trial)*(-1j*k)**k_test
                 if (k_trial + k_test) % 2 == 0:
                     val = val.real
-                d = {0: val}
+                d = {0: val*test[0].domain_factor()}
             else:
-                d = {0: 1.0}
+                d = {0: test[0].domain_factor()}
         SpectralMatrix.__init__(self, d, test, trial, scale=scale, measure=measure)
 
     def solve(self, b, u=None, axis=0, constraints=()):

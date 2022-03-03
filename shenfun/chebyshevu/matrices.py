@@ -40,11 +40,9 @@ and an instance of the matrix can be created as
 >>> B0 = T(10)
 >>> BM = B((B0, 0), (B0, 0))
 >>> import numpy as np
->>> d = {-2: np.array([-np.pi/2]),
-...       0: np.array([ 1.5*np.pi, np.pi, np.pi, np.pi, np.pi, np.pi, np.pi, np.pi]),
-...       2: np.array([-np.pi/2])}
+>>> d = {0: np.pi/2}
 >>> [np.all(BM[k] == v) for k, v in d.items()]
-[True, True, True]
+[True]
 
 However, this way of creating matrices is not reccommended use. It is far
 more elegant to use the TrialFunction/TestFunction interface, and to
@@ -55,12 +53,12 @@ generate the matrix as an inner product:
 >>> v = TestFunction(B0)
 >>> BM = inner(u, v)
 >>> [np.all(BM[k] == v) for k, v in d.items()]
-[True, True, True]
+[True]
 
-To see that this is in fact the BSDSDmat:
+To see that this is in fact the BUUmat:
 
 >>> print(BM.__class__)
-<class 'shenfun.chebyshev.matrices.BSDSDmat'>
+<class 'shenfun.chebyshevu.matrices.BUUmat'>
 
 """
 #pylint: disable=bad-continuation, redefined-builtin

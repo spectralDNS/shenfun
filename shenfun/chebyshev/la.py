@@ -261,8 +261,8 @@ class Helmholtz:
         if T is not None:
             shape = list(T.shape(True))
             shape[A.axis] = 1
-        self.alfa = np.atleast_1d(self.alfa)
-        self.beta = np.atleast_1d(self.beta)
+        self.alfa = np.atleast_1d(self.alfa).astype(float)
+        self.beta = np.atleast_1d(self.beta).astype(float)
         if not self.alfa.shape == shape:
             self.alfa = np.broadcast_to(self.alfa, shape).copy()
         if not self.beta.shape == shape:

@@ -1484,7 +1484,7 @@ class SecondNeumann(CompositeSpace): #pragma: no cover
         return output_array
 
 class UpperDirichlet(CompositeSpace):
-    """Function space with single Dirichlet on upper edge
+    r"""Function space with single Dirichlet on upper edge
 
     u(1)=a
 
@@ -1525,9 +1525,7 @@ class UpperDirichlet(CompositeSpace):
 
                 theta = sp.Symbols('x', real=True, positive=True)
                 rv = (sp.cos(theta), sp.sin(theta))
-
     """
-
     def __init__(self, N, quad="GC", bc=(None, 0), domain=(-1., 1.), dtype=float, scaled=False,
                  padding_factor=1, dealias_direct=False, coordinates=None):
         CompositeSpace.__init__(self, N, quad=quad, domain=domain, dtype=dtype, bc=bc, scaled=scaled,
@@ -1559,7 +1557,7 @@ class UpperDirichlet(CompositeSpace):
         return self._bc_basis
 
 class LowerDirichlet(CompositeSpace):
-    """Function space with single Dirichlet boundary condition
+    r"""Function space with single Dirichlet boundary condition
 
     u(-1)=a
 

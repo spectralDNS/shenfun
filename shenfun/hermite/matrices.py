@@ -9,19 +9,14 @@ H = bases.Orthogonal
 
 
 class BHHmat(SpectralMatrix):
-    r"""Mass matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        B_{kj} = (H_j, H_k)_w
+        b_{kj}=(H_j, H_k)_w,
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N
-
-    and :math:`H_k` is the Hermite (function) basis function.
+    :math:`H_k \in` :class:`.hermite.bases.Orthogonal` and test and trial spaces have
+    dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -49,19 +44,14 @@ class BHHmat(SpectralMatrix):
 
 
 class AHHmat(SpectralMatrix):
-    r"""Mass matrix for inner product
+    r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj} = (H'_j, H'_k)_w
+        a_{kj}=(H'_j, H'_k)_w,
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N
-
-    and :math:`H_k` is the Hermite (function) basis function.
+    :math:`H_k \in` :class:`.hermite.bases.Orthogonal` and test and trial spaces have
+    dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):

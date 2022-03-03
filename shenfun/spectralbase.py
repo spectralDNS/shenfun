@@ -551,8 +551,6 @@ class SpectralBase:
         if self._mass is None:
             B = self.get_mass_matrix()
             self._mass = B((self, 0), (self, 0))
-            if self.domain_factor() != 1:
-                self._mass.scale /= self.domain_factor()
         array = self._mass.solve(array, axis=self.axis)
         return array
 
@@ -694,7 +692,12 @@ class SpectralBase:
         raise NotImplementedError
 
     def sympy_reference_domain(self):
+        """Return reference domain sympified"""
         return self.reference_domain()
+
+    def domain_length(self):
+        """Return length of domain"""
+        return self.domain[1]-self.domain[0]
 
     def slice(self):
         """Return index set of current space"""
@@ -1429,8 +1432,8 @@ def inner_product(test, trial, measure=1):
     mat = test[0]._get_mat()
     A = mat[key](test, trial)
     A.scale *= sc
-    if not test[0].domain_factor() == 1:
-        A.scale *= test[0].domain_factor()**(test[1]+trial[1]-1)
+    #if not test[0].domain_factor() == 1:
+    #    A.scale *= test[0].domain_factor()**(test[1]+trial[1]-1)
     return A
 
 class FuncWrap:

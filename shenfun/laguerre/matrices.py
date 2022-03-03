@@ -8,19 +8,14 @@ L = bases.Orthogonal
 
 
 class BLLmat(SpectralMatrix):
-    r"""Mass matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        B_{kj} = (L_j, L_k)_w
+        b_{kj}=(La_j, La_k)_w,
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N \text{ and } k = 0, 1, ..., N
-
-    and :math:`L_k` is the Laguerre function.
+    :math:`La_k \in` :class:`.laguerre.bases.Orthogonal` and test and trial spaces have
+    dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -45,19 +40,14 @@ class BLLmat(SpectralMatrix):
 
 
 class BSDSDmat(SpectralMatrix):
-    r"""Mass matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        B_{kj} = (\phi_j, \phi_k)_w
+        b_{kj}=(\phi_j, \phi_k)_w,
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-1 \text{ and } k = 0, 1, ..., N-1
-
-    and :math:`\phi_k` is the Laguerre (function) Dirichlet basis function.
+    :math:`\phi_k \in` :class:`.laguerre.bases.ShenDirichlet` and test and trial spaces have
+    dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -71,19 +61,14 @@ class BSDSDmat(SpectralMatrix):
 
 
 class ASDSDmat(SpectralMatrix):
-    r"""Mass matrix for inner product
+    r"""Stiffness matrix :math:`BA=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj} = (\phi'_j, \phi'_k)_w
+        a_{kj}=(\phi'_j, \phi'_k)_w,
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-1 \text{ and } k = 0, 1, ..., N-1
-
-    and :math:`\phi_k` is the Laguerre (function) Dirichlet basis function.
+    :math:`\phi_k \in` :class:`.laguerre.bases.ShenDirichlet` and test and trial spaces have
+    dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):

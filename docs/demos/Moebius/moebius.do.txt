@@ -369,7 +369,7 @@ much alike.
 
 !bc pycod
 import plotly.express as px
-z = np.where(abs(mm.mat.toarray()) > 1e-6, 0, 1).astype(np.bool)
+z = np.where(abs(mm.mat.toarray()) > 1e-6, 0, 1).astype(bool)
 fig = px.imshow(z, binary_string=True)
 fig.show()
 !ec

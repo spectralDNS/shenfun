@@ -12,19 +12,14 @@ SB = bases.ShenBiharmonic
 
 
 class BJJmat(SpectralMatrix):
-    r"""Mass matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        B_{kj} = (\psi_j, \psi_k)
+        b_{kj}=(J_j, J_k)_w,
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-1 \text{ and } k = 0, 1, ..., N-1
-
-    and :math:`\psi_k` is the Jacobi basis function.
+    :math:`J_k \in` :class:`.jacobi.bases.Orthogonal` and test and trial spaces have
+    dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -80,19 +75,14 @@ class BJJmat(SpectralMatrix):
 
 
 class BSDSDmat(SpectralMatrix):
-    r"""Mass matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        B_{kj} = (\psi_j, \psi_k)
+        b_{kj}=(\phi_j, \phi_k)_w,
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Jacobi Dirichlet basis function.
+    :math:`\phi_k \in` :class:`.jacobi.bases.ShenDirichlet` and test and trial spaces have
+    dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -110,19 +100,14 @@ class BSDSDmat(SpectralMatrix):
         return TDMA
 
 class ASDSDmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product
+    r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj} = (\psi'_j, \psi'_k)
+        a_{kj}=(\phi'_j, \phi'_k)_w,
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Jacobi Dirichlet basis function.
+    :math:`\phi_k \in` :class:`.jacobi.bases.ShenDirichlet` and test and trial spaces have
+    dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -167,19 +152,14 @@ class ASDSDmat(SpectralMatrix):
 
 
 class BSBSBmat(SpectralMatrix):
-    r"""Mass matrix for inner product
+    r"""Mass matrix :math:`B=(b_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        B_{kj} = (\psi_j, \psi_k)
+        b_{kj}=(\phi_j, \phi_k)_w,
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-2 \text{ and } k = 0, 1, ..., N-2
-
-    and :math:`\psi_k` is the Biharmonic basis function.
+    :math:`\phi_k \in` :class:`.jacobi.bases.ShenBiharmonic` and test and trial spaces have
+    dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -207,19 +187,14 @@ class BSBSBmat(SpectralMatrix):
 
 
 class ASBSBmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product
+    r"""Stiffness matrix :math:`A=(a_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj} = (\psi'_j, \psi'_k)_w
+        a_{kj}=(\phi'_j, \phi'_k)_w,
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-4 \text{ and } k = 0, 1, ..., N-4
-
-    and :math:`\psi_k` is the Jacobi Biharmonic basis function.
+    :math:`\phi_k \in` :class:`.jacobi.bases.ShenBiharmonic` and test and trial spaces have
+    dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -238,19 +213,14 @@ class ASBSBmat(SpectralMatrix):
 
 
 class SSBSBmat(SpectralMatrix):
-    r"""Stiffness matrix for inner product
+    r"""Biharmonic matrix :math:`S=(s_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj} = (\psi''_j, \psi''_k)_w
+        s_{kj}=(\phi''_j, \phi''_k)_w,
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-4 \text{ and } k = 0, 1, ..., N-4
-
-    and :math:`\psi_k` is the Jacobi Biharmonic basis function.
+    :math:`\phi_k \in` :class:`.jacobi.bases.ShenBiharmonic` and test and trial spaces have
+    dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):
@@ -263,19 +233,14 @@ class SSBSBmat(SpectralMatrix):
 
 
 class OSBSBmat(SpectralMatrix):
-    r"""Matrix for inner product
+    r"""Matrix :math:`M=(m_{kj}) \in \mathbb{R}^{M \times N}`, where
 
     .. math::
 
-        A_{kj} = (\psi'''_j, \psi'''_k)_w
+        m_{kj}=(\phi'''_j, \phi'''_k)_w,
 
-    where
-
-    .. math::
-
-        j = 0, 1, ..., N-6 \text{ and } k = 0, 1, ..., N-6
-
-    and :math:`\psi_k` is the 6th order Jacobi basis function.
+    :math:`\phi_k \in` :class:`.jacobi.bases.ShenBiharmonic` and test and trial spaces have
+    dimensions of M and N, respectively.
 
     """
     def __init__(self, test, trial, scale=1, measure=1):

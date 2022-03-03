@@ -39,12 +39,12 @@ def dx(u, weighted=False):
 
     """
     T = u.function_space()
-    uc = u.copy()
     dim = len(u.shape)
     if dim == 1:
         w = T.points_and_weights(weighted=weighted)[1]
-        return np.sum(uc*w).item()
+        return np.sum(u*w).item()
 
+    uc = u.copy()
     for ax in range(dim):
         uc = uc.redistribute(axis=ax)
         w = T.bases[ax].points_and_weights(weighted=weighted)[1]
