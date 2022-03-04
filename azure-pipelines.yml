@@ -56,7 +56,7 @@ jobs:
       conda create --name shenfun pip shenfun python=$PYTHON_VERSION --use-local
       source activate shenfun
       pip install pytest-cov pytest
-      pip install -r "${RECIPE_DIR}/component-requirements.txt"
+      pip install -r '/conf/conda/component-requirements.txt'
       pytest tests/ --junitxml=junit/test-results.xml --cov=$(python -c "import site; print(site.getsitepackages()[0]+'/shenfun')") --cov-report=xml --cov-report=html
     displayName: Build and test
 
